@@ -2812,7 +2812,7 @@ export default function TrustSlipPage() {
     );
   const readerVerdict = hasBlockingTrustSlipState
     ? "Do not ask someone to rely on this TrustSlip by itself. The current state needs fresh evidence before support, goods, money, work, or a referral."
-    : `Use this TrustSlip as a short public trust story for ${holderName}. It can help you decide what to check next, but it does not replace your judgement.`;
+    : `Use this TrustSlip as a short public evidence summary for ${holderName}. It can help you decide what to check next, but it does not replace your judgement.`;
   const fourDecisionQuestions = [
     {
       title: "What decision can this TrustSlip evidence support?",
@@ -2852,7 +2852,7 @@ export default function TrustSlipPage() {
   ];
   const briefDecisionAnswers = [
     {
-      label: "Trust decision",
+      label: "Decision support",
       value: hasBlockingTrustSlipState
         ? "Do not rely yet. Ask for a refreshed TrustSlip before support, goods, money, work, or referral."
         : `Use carefully. Reading ${merchantBandLabel}; trust-limit signal ${merchantTrustLimit} ${merchantCurrency}; cross-community evidence posture ${cciEvidenceStatusLabel}.`,
@@ -2950,7 +2950,7 @@ export default function TrustSlipPage() {
     },
     {
       icon: "community" as GsnIconName,
-      label: "Support trust",
+      label: "Support evidence",
       status: hasBlockingTrustSlipState ? "Needs caution" : "Mixed",
     },
     {
@@ -2968,7 +2968,7 @@ export default function TrustSlipPage() {
     },
     {
       icon: "shop" as GsnIconName,
-      label: "Trade trust",
+      label: "Trade evidence",
       status:
         Number(summary?.unique_counterparties ?? 0) > 0 ? "Mixed" : "Limited",
     },
@@ -2992,9 +2992,9 @@ export default function TrustSlipPage() {
   ];
   const trustSlipUseCases: Array<[GsnIconName, string]> = [
     ["community", "Community-backed support conversations"],
-    ["briefcase", "Small trade or low-risk trust checks"],
+    ["briefcase", "Small trade or low-risk evidence checks"],
     ["shop", "Merchant review before a trade decision"],
-    ["search", "First-look trust screening"],
+    ["search", "First-look evidence screening"],
   ];
   const trustSlipLimits = [
     "Not a bank guarantee",
@@ -3009,7 +3009,7 @@ export default function TrustSlipPage() {
     trustSlipCode
       ? "Can be checked through public verification"
       : "Public verification code is not ready yet",
-    "Based on recorded trust signals where available",
+    "Based on recorded evidence signals where available",
     "Linked to community activity where shown",
   ];
   const trustSlipKnownAsRows: Array<[GsnIconName, string, string]> = [
@@ -4360,7 +4360,7 @@ export default function TrustSlipPage() {
                         marginTop: 4,
                       }}
                     >
-                      Portable Trust Summary
+                      Portable Evidence Summary
                     </div>
                   </div>
                 </div>
@@ -5471,7 +5471,7 @@ export default function TrustSlipPage() {
         <PageTopNav
           sectionLabel="TrustSlip"
           title="TrustSlip"
-          subtitle="Use TrustSlip to review the public trust summary. Open TrustSlip Verify when you need to confirm the current public reading."
+          subtitle="Use TrustSlip to review the public evidence summary. Open TrustSlip Verify when you need to confirm the current public reading."
           homeTo={routes.dashboard}
           homeLabel="Dashboard"
           backTo={routes.dashboard}
@@ -5506,7 +5506,7 @@ export default function TrustSlipPage() {
         >
           <div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span style={badge(true)}>Portable trust summary</span>
+              <span style={badge(true)}>Portable evidence summary</span>
               <span style={badge(false)}>Portable verification summary</span>
             </div>
 
@@ -5534,7 +5534,7 @@ export default function TrustSlipPage() {
                 maxWidth: 840,
               }}
             >
-              A short public trust paper you can share. It shows who this belongs
+              A short public evidence paper you can share. It shows who this belongs
               to, what the current evidence says, and how to verify it.
             </div>
 
@@ -5646,8 +5646,8 @@ export default function TrustSlipPage() {
 
             <ExplainToggle
               label="What this does"
-              what="This portable reading summarizes the trust state that other people can verify from your current TrustSlip."
-              why="It keeps the main public trust signals, document codes, and issue window visible in one place before you share or verify anything."
+              what="This portable reading summarizes the evidence state that other people can verify from your current TrustSlip."
+              why="It keeps the main public evidence signals, document codes, and issue window visible in one place before you share or verify anything."
               next="Read the evidence status, visible TrustSlip limit signal, cross-community evidence posture, and issue window here first, then use the TrustSlip code or verification link when needed."
               tone="light"
               style={{ marginTop: 12 }}
@@ -5931,8 +5931,8 @@ export default function TrustSlipPage() {
           <div style={disclosureBody()}>
             <ExplainToggle
               label="What this screen does"
-              what="TrustSlip is the portable public trust summary for your current trust state."
-              why="It keeps the public-facing trust summary, code, expiry window, and verification link together in one shareable place."
+              what="TrustSlip is the portable public evidence summary for your current evidence state."
+              why="It keeps the public-facing evidence summary, code, expiry window, and verification link together in one shareable place."
               next="Start with the main TrustSlip paper, then use TrustSlip Verify when you need to confirm the current public reading."
               tone="blue"
             />
@@ -5940,7 +5940,7 @@ export default function TrustSlipPage() {
               storageKey="gmfn.trustSlip.nextActionGuide.v1"
               compact={isCompact}
               items={guideItems}
-              intro="Say what you need next in simple words, like verify this code, explain the trust story, or open the identity side behind the same document."
+              intro="Say what you need next in simple words, like verify this code, explain the evidence summary, or open the identity side behind the same document."
               onSelect={handleGuideSelect}
             />
             <TrustDocumentActionGuide content={actionGuide} compact={isCompact} />
@@ -5948,13 +5948,13 @@ export default function TrustSlipPage() {
               compact={isCompact}
               items={trustDocumentFamilyItems}
               title="How TrustSlip fits into the wider trust-document family"
-              intro="TrustSlip is the portable summary layer. Use this map when you need to separate the fuller Trust Passport story from the shorter outward-facing document and the public verification check that shows whether it is still current."
+              intro="TrustSlip is the portable summary layer. Use this map when you need to separate the fuller Trust Passport evidence record from the shorter outward-facing document and the public verification check that shows whether it is still current."
             />
             <TrustDocumentUseCases
               compact={isCompact}
               items={trustDocumentUseCases}
-              title="Which trust question should stay in TrustSlip?"
-              intro="Stay here when the task is carrying a concise outward-facing record. Move outward to public verification for current validity, or back inward to Trust Passport and Identity & Integrity when the fuller story matters."
+              title="Which evidence question should stay in TrustSlip?"
+              intro="Stay here when the task is carrying a concise outward-facing record. Move outward to public verification for current validity, or back inward to Trust Passport and Identity & Integrity when the fuller evidence record matters."
             />
           </div>
         ) : null}
@@ -6593,7 +6593,7 @@ export default function TrustSlipPage() {
                 Trust Passport
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Trust Passport explains the full trust story. TrustSlip shows the current portable state.
+                Trust Passport explains the fuller evidence record. TrustSlip shows the current portable state.
               </div>
 
               <div style={{ marginTop: 12 }}>

@@ -49,6 +49,12 @@ function assertContains(key, pattern, message, text) {
   if (pattern.test(source)) return;
   addFinding(key, -1, message, text || pattern.toString());
 }
+function assertNotContains(key, pattern, message) {
+  const source = sourceByKey[key];
+  const match = source.match(pattern);
+  if (!match || match.index === undefined) return;
+  addFinding(key, match.index, message, match[0]);
+}
 
 function assertOrder(key, orderedPatterns, message) {
   const source = sourceByKey[key];
@@ -214,6 +220,17 @@ assertContains(
   "trustSlip",
   /data-gsn-trust-document-certificate="trustslip-holder"[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipHolderConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Known by community"[\s\S]*?trustSlipStatusLabel=\{trustSlipPublicStatus\}/,
   "TrustSlip holder page must show the shared Known by community proof layer after the confidence ribbon."
+);
+assertNotContains(
+  "trustSlip",
+  /Trust decision|Support trust|Trade trust|public trust story|public trust summary|Portable trust summary|public trust paper|public trust signals|trust state|public-facing trust summary|trust story|trust signals|trust checks|trust screening|Which trust question should stay in TrustSlip|full trust story/i,
+  "TrustSlip holder page must frame portable sharing as evidence summary and decision support, not public trust-story or trust-decision language."
+);
+
+assertContains(
+  "trustSlip",
+  /short public evidence summary[\s\S]*?label: "Decision support"[\s\S]*?label: "Support evidence"[\s\S]*?label: "Trade evidence"[\s\S]*?Portable evidence summary[\s\S]*?public evidence summary[\s\S]*?Which evidence question should stay in TrustSlip[\s\S]*?fuller evidence record/,
+  "TrustSlip holder page must keep evidence-summary and decision-support language visible."
 );
 assertContains(
   "decisionPacks",

@@ -152561,3 +152561,32 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this Evidence Pack language slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the local commit on `2`.
+## 2026-07-26 - TrustSlip Evidence Summary Language
+
+- Trigger:
+  - owner selected `1` after the Evidence Pack decision-support copy slice was committed locally.
+- Unabated truth:
+  - this pass cleans signed-in `/app/trust-slip` holder-page presentation only;
+  - it does not rename TrustSlip, Trust Passport, Trust Document, TrustSlip limit signal, backend trust fields, QR/verify routes, Decision Pack query contracts, or public verification behavior;
+  - this is not a new TrustSlip engine, Decision Pack generator, Evidence Ledger route, Behavioural Placement schema, verified-community model, scoring rewrite, approval workflow, bank/credit/guarantee workflow, or public-recipient storage change.
+- Changed:
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - reframes the holder TrustSlip from a public trust story/summary/paper to a public evidence summary/paper;
+    - renames visible rows from `Trust decision`, `Support trust`, and `Trade trust` to `Decision support`, `Support evidence`, and `Trade evidence`;
+    - changes trust-signal/check/screening copy to recorded evidence-signal/check/screening copy;
+    - changes help/family/use-case copy from trust story/question/full-story language to evidence summary/question/fuller evidence record language.
+  - `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+    - adds an `assertNotContains` helper and a TrustSlip holder-page source cage rejecting the old trust-story/trust-decision wording;
+    - asserts the new evidence-summary and decision-support language remains present.
+- Verification:
+  - passed `npm exec -- eslint src/pages/TrustSlipPage.tsx tools/audit-trust-passport-trustslip-boundary.mjs tools/smoke-trust-passport-trustslip-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - non-escalated `npm --prefix frontend run smoke:trust-passport-trustslip-boundary` hit sandbox `spawn EPERM` while starting Vite/esbuild;
+  - passed escalated `npm --prefix frontend run smoke:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this TrustSlip evidence-summary slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
