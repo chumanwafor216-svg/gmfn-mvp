@@ -82,6 +82,7 @@ export type TrustSlipVerifyRecord = {
   access_status?: string | null;
   access_note?: string | null;
   decision_pack_focus?: string | null;
+  decision_pack_profile?: Record<string, any> | null;
   message?: string | null;
   detail?: string | null;
   community_confirmation?: CommunityConfirmationSummary | null;
@@ -542,6 +543,7 @@ export function normalizeTrustSlipVerification(
       src?.share_access_record?.focus,
       src?.viewer_access_record?.focus
     ),
+    decision_pack_profile: src?.decision_pack_profile || null,
     message: firstTruthy(src?.message),
     detail: firstTruthy(src?.detail, src?.description),
     community_confirmation:

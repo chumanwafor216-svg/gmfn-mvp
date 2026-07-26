@@ -622,6 +622,7 @@ export default function TrustSlipVerifyPage() {
     memberCredentialPath,
     issuedAtLabel,
     expiresAtLabel,
+    decisionPackProfile,
     recipientAccessRecord,
   } = trustSlipView;
   const verifyCommunityActivityEvidence = communityActivityCount
@@ -1268,6 +1269,7 @@ export default function TrustSlipVerifyPage() {
             void requestCommunityPulse(draft);
           }}
           publicActions={publicTrustSlipActions}
+          decisionPackProfile={decisionPackProfile}
           recipientAccessRecord={recipientAccessRecord}
           variant={isLiteRoute ? "lite" : "full"}
         />

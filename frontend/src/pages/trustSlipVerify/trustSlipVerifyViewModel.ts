@@ -13,7 +13,29 @@ import type { TrustSlipVerifyQuickAnswer } from "./TrustSlipVerifyPublicPaper";
 
 type VerifyBannerTone = "success" | "warning" | "error" | "info";
 
-type BuildTrustSlipVerifyViewModelArgs = {
+
+type DecisionPackProfileSignal = {
+  key: string;
+  label: string;
+  status: string;
+  value: string;
+  decisionUse: string;
+};
+
+export type DecisionPackProfileView = {
+  accessPurpose: string;
+  recipientQuestion: string;
+  relevantSignals: DecisionPackProfileSignal[];
+  gapsToCheck: Array<{
+    key: string;
+    label: string;
+    reason: string;
+    nextStep: string;
+  }>;
+  recommendedChecks: string[];
+  basisNote: string;
+  boundaryNote: string;
+};type BuildTrustSlipVerifyViewModelArgs = {
   record: any;
   me: any;
   isAppRoute: boolean;
@@ -102,6 +124,7 @@ export type TrustSlipVerifyViewModel = {
   systemNote: string;
   verificationState: string;
   verificationNote: string;
+  decisionPackProfile: DecisionPackProfileView;
   recipientAccessRecord: {
     recipientLabel: string;
     purpose: string;
@@ -153,7 +176,74 @@ function safeDateTime(x: any): string {
   return d.toLocaleString();
 }
 
-export function buildTrustSlipVerifyViewModel({
+
+function stringList(value: any): string[] {
+  return Array.isArray(value) ? value.map((item) => safeStr(item)).filter(Boolean) : [];
+}
+
+function normalizeDecisionPackProfile(
+  raw: any,
+  fallbackPurpose: string,
+  fallbackQuestion: string,
+  fallbackFocus: string
+): DecisionPackProfileView {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const rawSignals = Array.isArray(source.relevant_signals) ? source.relevant_signals : [];
+  const rawGaps = Array.isArray(source.gaps_to_check) ? source.gaps_to_check : [];
+  const relevantSignals = rawSignals
+    .map((signal: any) => ({
+      key: firstTruthy(signal?.key, signal?.label),
+      label: firstTruthy(signal?.label, "Evidence signal"),
+      status: firstTruthy(signal?.status, "not_shown"),
+      value: firstTruthy(signal?.value, "Not shown on this public paper."),
+      decisionUse: firstTruthy(
+        signal?.decision_use,
+        signal?.decisionUse,
+        "Ask for live community confirmation if this signal matters."
+      ),
+    }))
+    .filter((signal: DecisionPackProfileSignal) => signal.key || signal.label)
+    .slice(0, 6);
+  const gapsToCheck = rawGaps
+    .map((gap: any) => ({
+      key: firstTruthy(gap?.key, gap?.label),
+      label: firstTruthy(gap?.label, "Evidence gap"),
+      reason: firstTruthy(gap?.reason, "This signal is not fully shown on the public paper."),
+      nextStep: firstTruthy(gap?.next_step, gap?.nextStep, "Resolve this before relying on the paper."),
+    }))
+    .filter((gap: { key: string; label: string }) => gap.key || gap.label)
+    .slice(0, 4);
+
+  return {
+    accessPurpose: firstTruthy(source.access_purpose, fallbackPurpose, "Decision Pack"),
+    recipientQuestion: firstTruthy(
+      source.recipient_question,
+      fallbackQuestion,
+      "Can I make a better decision with this evidence?"
+    ),
+    relevantSignals: relevantSignals.length
+      ? relevantSignals
+      : [
+          {
+            key: "decision_focus",
+            label: "Evidence focus",
+            status: "context",
+            value: fallbackFocus || "Current public TrustSlip evidence and next verification step.",
+            decisionUse: "Use this as a pointer to what to inspect, not as automatic approval.",
+          },
+        ],
+    gapsToCheck,
+    recommendedChecks: stringList(source.recommended_checks).slice(0, 4),
+    basisNote: firstTruthy(
+      source.basis_note,
+      "Generated from public TrustSlip signals already visible to the recipient; no private Trust Passport contents are exposed."
+    ),
+    boundaryNote: firstTruthy(
+      source.boundary_note,
+      "This profile highlights relevant evidence and gaps. It does not score the person, guarantee future behaviour, or make the decision for the recipient."
+    ),
+  };
+}export function buildTrustSlipVerifyViewModel({
   record,
   me,
   isAppRoute,
@@ -388,6 +478,12 @@ export function buildTrustSlipVerifyViewModel({
     record?.decision_pack_focus,
     rawAccessRecord?.focus,
     "Current public identity, community standing, evidence currentness, and the next verification step."
+  );
+  const decisionPackProfile = normalizeDecisionPackProfile(
+    record?.decision_pack_profile,
+    accessPurpose,
+    accessNote,
+    accessFocus
   );
   const hasBlockingState =
     record?.is_current === false ||
@@ -634,6 +730,7 @@ export function buildTrustSlipVerifyViewModel({
     systemNote: firstTruthy(record?.message, record?.detail),
     verificationState,
     verificationNote: firstTruthy(record?.verification_note, record?.disclaimer),
+    decisionPackProfile,
     recipientAccessRecord: {
       recipientLabel: accessRecipientLabel,
       purpose: accessPurpose,

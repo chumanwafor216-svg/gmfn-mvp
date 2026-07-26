@@ -106,6 +106,26 @@ type TrustSlipVerifyPublicPaperProps = {
   canRequestCommunityPulse: boolean;
   onRequestCommunityPulse: (draft?: CommunityConfirmationCallbackDraft) => void;
   publicActions: React.ReactNode;
+  decisionPackProfile: {
+    accessPurpose: string;
+    recipientQuestion: string;
+    relevantSignals: Array<{
+      key: string;
+      label: string;
+      status: string;
+      value: string;
+      decisionUse: string;
+    }>;
+    gapsToCheck: Array<{
+      key: string;
+      label: string;
+      reason: string;
+      nextStep: string;
+    }>;
+    recommendedChecks: string[];
+    basisNote: string;
+    boundaryNote: string;
+  };
   recipientAccessRecord: {
     recipientLabel: string;
     purpose: string;
@@ -782,6 +802,7 @@ export default function TrustSlipVerifyPublicPaper({
   canRequestCommunityPulse,
   onRequestCommunityPulse,
   publicActions,
+  decisionPackProfile,
   recipientAccessRecord,
   variant = "full",
 }: TrustSlipVerifyPublicPaperProps) {
@@ -930,6 +951,17 @@ export default function TrustSlipVerifyPublicPaper({
   const decisionNextStep = validNow
     ? "For important decisions, request instant community confirmation before relying on this paper."
     : "Ask the holder for a fresh TrustSlip before relying on this paper.";
+  const decisionPackProfileSignals = decisionPackProfile.relevantSignals.slice(0, 4);
+  const decisionPackProfileGaps = decisionPackProfile.gapsToCheck.slice(0, 3);
+  const decisionPackProfileChecks = decisionPackProfile.recommendedChecks.slice(0, 3);
+  const decisionPackGapRows: Array<[string, string]> = (decisionPackProfileGaps.length
+    ? decisionPackProfileGaps.map((gap): [string, string] => [gap.label, gap.nextStep])
+    : [["No major gap shown", "Still match the evidence to your own decision risk."] as [string, string]]
+  ).slice(0, 3);
+  const decisionPackCheckRows: Array<[string, string]> = (decisionPackProfileChecks.length
+    ? decisionPackProfileChecks.map((check, index): [string, string] => [`Check ${index + 1}`, check])
+    : [["Live confirmation", decisionNextStep] as [string, string]]
+  ).slice(0, 3);
   const isLite = variant === "lite";
   const recordFingerprint = referenceFingerprint(
     resolvedCode,
@@ -1463,6 +1495,116 @@ export default function TrustSlipVerifyPublicPaper({
               compact={compact}
               tone={validNow ? "trust" : "warning"}
             />
+          </div>
+          <div
+            data-gsn-decision-pack-profile="public-purpose-filter"
+            style={{
+              borderRadius: compact ? 12 : 16,
+              border: "1px solid rgba(37,78,119,0.12)",
+              background: "#FFFFFF",
+              padding: compact ? 10 : 13,
+              display: "grid",
+              gap: compact ? 8 : 10,
+            }}
+          >
+            <div>
+              <div style={{ ...sectionLabel(), color: "#0B63D1" }}>
+                Purpose-filtered evidence
+              </div>
+              <div
+                style={{
+                  ...readableText(),
+                  marginTop: 3,
+                  color: "#07172C",
+                  fontSize: compact ? 14 : 16,
+                  fontWeight: 1000,
+                  lineHeight: 1.2,
+                }}
+              >
+                {decisionPackProfile.recipientQuestion}
+              </div>
+              <p
+                style={{
+                  ...readableText(),
+                  margin: "5px 0 0",
+                  color: "#526579",
+                  fontSize: compact ? 11 : 12,
+                  fontWeight: 820,
+                  lineHeight: 1.35,
+                }}
+              >
+                {decisionPackProfile.basisNote}
+              </p>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: compact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                gap: 8,
+              }}
+            >
+              {decisionPackProfileSignals.map((signal) => (
+                <div
+                  key={`${signal.key}-${signal.label}`}
+                  style={{
+                    borderRadius: 12,
+                    border: "1px solid rgba(37,78,119,0.10)",
+                    background: signal.status === "available" ? "#F4FBF7" : "#FFF9EB",
+                    padding: compact ? "8px 9px" : "9px 10px",
+                    minWidth: 0,
+                  }}
+                >
+                  <div style={{ ...sectionLabel(), fontSize: compact ? 9 : 10 }}>
+                    {signal.label}
+                  </div>
+                  <div
+                    style={{
+                      ...readableText(),
+                      marginTop: 3,
+                      color: "#07172C",
+                      fontSize: compact ? 11.5 : 12.5,
+                      fontWeight: 950,
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    {signal.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {decisionPackProfileGaps.length || decisionPackProfileChecks.length ? (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: compact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+                  gap: 8,
+                }}
+              >
+                <OfficialResultTable
+                  title="Gaps to check"
+                  rows={decisionPackGapRows}
+                  compact={compact}
+                />
+                <OfficialResultTable
+                  title="Recommended checks"
+                  rows={decisionPackCheckRows}
+                  compact={compact}
+                />
+              </div>
+            ) : null}
+
+            <div
+              style={{
+                color: "#5F4100",
+                fontSize: compact ? 10.5 : 11.5,
+                fontWeight: 850,
+                lineHeight: 1.35,
+              }}
+            >
+              {decisionPackProfile.boundaryNote}
+            </div>
           </div>
         </div>
 

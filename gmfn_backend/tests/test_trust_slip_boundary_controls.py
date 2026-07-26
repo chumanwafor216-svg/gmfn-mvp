@@ -190,6 +190,16 @@ def test_public_verify_records_decision_pack_access_without_trust_event(
     assert payload["access_note"] == "Can this person be referred without damaging my credibility?"
     assert payload["decision_pack_focus"].startswith("Who knows the person")
     assert payload["share_access_record"]["status"] == "backend_access_recorded"
+    profile = payload["decision_pack_profile"]
+    assert profile["decision_pack"] == "referral_decision"
+    assert profile["access_purpose"] == "Referral Decision Pack"
+    assert "relationship_evidence" in profile["evidence_filter"]
+    assert "private Trust Passport" in profile["basis_note"]
+    assert "does not score" in profile["boundary_note"]
+    assert isinstance(profile["relevant_signals"], list)
+    assert profile["relevant_signals"]
+    assert "recipient_name" not in profile
+    assert "trust_score" not in profile
 
     db = SessionLocal()
     try:

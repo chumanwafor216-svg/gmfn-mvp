@@ -1,3 +1,55 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Public Decision Pack relevance profile added locally
+
+Owner trigger:
+- Owner selected `1` to continue after the holder Decision Pack access ledger surface.
+
+Unabated truth:
+- This slice adds the first purpose-filtered Decision Pack profile, but it is still not the full Evidence Ledger architecture, not Behavioural Placement, not Global TrustSlip, not a scoring engine, and not true pack-specific raw evidence extraction.
+- The profile is generated from public TrustSlip signals already visible to the recipient. It does not expose private Trust Passport contents, private notes, recipient identity, raw TrustEvents, scores, payment references, bank details, or admin records.
+- The profile highlights relevant public signals, gaps to check, and recommended checks. It does not approve, reject, guarantee, or decide for the recipient.
+
+Changed:
+- `gmfn_backend/app/services/trust_slip_decision_packs.py`
+  - Added `PACK_RELEVANCE_SIGNALS` mapping for each Decision Pack.
+  - Added `build_decision_pack_profile()` to convert the already-public TrustSlip payload into relevant signals, gaps, recommended checks, and boundary notes.
+- `gmfn_backend/app/api/routes/trust_slips.py`
+  - Public `/trust-slips/verify/{code}` now attaches `decision_pack_profile` when a Decision Pack context is present.
+  - The profile is built from `response_payload`, meaning it can only use the public-safe payload already being returned.
+- `gmfn_backend/tests/test_trust_slip_boundary_controls.py`
+  - Added assertions proving the public profile exists for a Decision Pack, includes a relevance filter, avoids recipient identity, and avoids score fields.
+- `frontend/src/pages/trustSlipVerify/trustSlipVerifyData.ts`
+  - Preserves `decision_pack_profile` in the public verify normalizer.
+- `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+  - Normalizes backend snake_case profile fields into a typed public-paper view model.
+  - Keeps fallback boundary language that says the profile does not score the person or make the decision.
+- `frontend/src/pages/TrustSlipVerifyPage.tsx`
+  - Passes the normalized profile into the public paper.
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Shows a compact `Purpose-filtered evidence` panel with relevant signals, gaps to check, recommended checks, and the boundary note.
+- `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+  - Added cages for the backend profile builder, route attachment, frontend normalizer, view model, and public paper rendering.
+
+Routes/screens affected:
+- Backend public route `/trust-slips/verify/{code}` adds `decision_pack_profile` only when Decision Pack query context is present.
+- Frontend public TrustSlip Verify routes such as `/t/:code`, `/trust-slips/verify/:code`, and aliases render the profile inside the existing Decision Pack reading section.
+
+Verification:
+- Passed `python -m py_compile gmfn_backend\app\services\trust_slip_decision_packs.py gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\tests\test_trust_slip_boundary_controls.py`.
+- Passed `python -m pytest -q gmfn_backend\tests\test_trust_slip_boundary_controls.py`.
+- Passed `npm exec -- eslint src/pages/TrustSlipVerifyPage.tsx src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts src/pages/trustSlipVerify/trustSlipVerifyData.ts tools/audit-public-trustslip-verify-boundary.mjs` from `frontend`.
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:proof-surfaces`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check` with only recurring LF/CRLF warnings.
+
+Deployment:
+- Local only. Not pushed or deployed because the current pilot protocol says routine continuation work should be batched locally and published only when the owner explicitly approves.
+
+Recommended next step:
+- Start a real Decision Pack evidence extraction service that reads a controlled subset of TrustEvents and classifies them into pack evidence categories with provenance, recency, and dispute/caution boundaries. Do not turn it into a trust score.
 ## CURRENT LOCAL STATE - 2026-07-26 - Holder Decision Pack access ledger surface added locally
 
 Owner trigger:

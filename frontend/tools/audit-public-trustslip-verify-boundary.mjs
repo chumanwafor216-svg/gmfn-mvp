@@ -9,6 +9,8 @@ const files = {
   app: "src/App.tsx",
   verify: "src/pages/TrustSlipVerifyPage.tsx",
   publicPaper: "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  verifyData: "src/pages/trustSlipVerify/trustSlipVerifyData.ts",
+  viewModel: "src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts",
   privateEvidence: "src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx",
   boundary: "src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx",
   communityProofPanel: "src/components/CommunityProofPanel.tsx",
@@ -260,6 +262,34 @@ assertContains(
   "backend",
   /normalize_decision_pack_context\(request\.query_params\)[\s\S]*?response_payload: Dict\[str, Any\][\s\S]*?record_decision_pack_access[\s\S]*?build_decision_pack_access_payload[\s\S]*?return response_payload/,
   "Backend public verify route must attach public-safe Decision Pack access context and record it without changing TrustEvent evidence."
+);assertContains(
+  "backendDecisionPacks",
+  /PACK_RELEVANCE_SIGNALS[\s\S]*?build_decision_pack_profile[\s\S]*?relevant_signals[\s\S]*?gaps_to_check[\s\S]*?does not score the person/,
+  "Backend Decision Pack profile must remain a purpose-filtered evidence relevance profile, not a score or decision engine."
+);
+
+assertContains(
+  "backend",
+  /response_payload\["decision_pack_profile"\] = build_decision_pack_profile\([\s\S]*?public_payload=response_payload/,
+  "Backend public verify route must attach the Decision Pack profile from the already public payload."
+);
+
+assertContains(
+  "verifyData",
+  /decision_pack_profile\?: Record<string, any>[\s\S]*?decision_pack_profile: src\?\.decision_pack_profile \|\| null/,
+  "Public TrustSlip Verify normalizer must preserve the backend Decision Pack profile contract."
+);
+
+assertContains(
+  "viewModel",
+  /normalizeDecisionPackProfile[\s\S]*?relevantSignals[\s\S]*?gapsToCheck[\s\S]*?It does not score the person[\s\S]*?decisionPackProfile,/,
+  "Public TrustSlip Verify view model must translate the Decision Pack profile without inventing a score."
+);
+
+assertContains(
+  "publicPaper",
+  /data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?Purpose-filtered evidence[\s\S]*?Gaps to check[\s\S]*?Recommended checks[\s\S]*?decisionPackProfile\.boundaryNote/,
+  "Public TrustSlip paper must render purpose-filtered evidence, gaps, checks, and the non-decision boundary."
 );
 assertContains(
   "backendDecisionPacks",
