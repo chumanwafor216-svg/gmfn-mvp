@@ -1482,6 +1482,7 @@ export default function TrustScorePage() {
     useState(false);
   const [identityEvidenceOpen, setIdentityEvidenceOpen] = useState(false);
   const [evidenceReadingNoteOpen, setEvidenceReadingNoteOpen] = useState(false);
+  const [standingDecisionDetailsOpen, setStandingDecisionDetailsOpen] = useState(false);
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
@@ -4212,8 +4213,8 @@ export default function TrustScorePage() {
             style={{
               display:
                 activeTrustPassportLane === "standing" ? "grid" : "none",
-              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
-              gap: 14,
+              gridTemplateColumns: "1fr",
+              gap: isCompact ? 10 : 12,
               marginTop: 14,
             }}
           >
@@ -4416,65 +4417,106 @@ export default function TrustScorePage() {
             </div>
 
             <div
+              data-trust-passport-standing-decision-details="collapsed"
               style={{
                 ...innerCard("#FFFFFF"),
                 border: "1px solid rgba(216,227,238,0.9)",
+                display: "grid",
+                gap: standingDecisionDetailsOpen ? (isCompact ? 8 : 10) : 0,
               }}
             >
-              <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
-                3. What this evidence helps you decide
-              </div>
-              <p style={{ ...helperText(), margin: "8px 0 0" }}>
-                These lines do not make the decision. They show what this record can and
-                cannot support before a recipient asks for live confirmation.
-              </p>
-              <div style={{ marginTop: 12, display: "grid", gap: 6 }}>
-                {passportVm.trustQuestions.map((item) => (
-                  <div
-                    key={item.title}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
-                      gap: isCompact ? 7 : 10,
-                      alignItems: isCompact ? "start" : "center",
-                      padding: "9px 0",
-                      borderBottom: "1px solid rgba(216,227,238,0.72)",
-                    }}
-                  >
-                    <span
-                      style={{
-                        color: "#334155",
-                        fontWeight: 900,
-                        display: "grid",
-                        gridTemplateColumns: "30px minmax(0, 1fr)",
-                        gap: 8,
-                        alignItems: "start",
-                        minWidth: 0,
-                      }}
-                    >
-                      <GsnLegacyIcon
-                        name={trustQuestionIcons[item.title] || "shield"}
-                        size={30}
-                        decorative
-                      />
-                      <span style={{ minWidth: 0, display: "grid", gap: 3 }}>
-                        <span>{item.title}</span>
+              <SubtleButton
+                debugId="trust-score.standing-decision-details.toggle"
+                stableHeight={isCompact ? 42 : 44}
+                onClick={() => setStandingDecisionDetailsOpen((open) => !open)}
+                aria-expanded={standingDecisionDetailsOpen}
+                fullWidth
+                style={{
+                  justifyContent: "space-between",
+                  borderRadius: 13,
+                  background: standingDecisionDetailsOpen ? "#F8FBFF" : "#FFFFFF",
+                  border: "1px solid rgba(11,99,209,0.14)",
+                  color: "#24415C",
+                  boxShadow: "none",
+                  fontSize: 12.5,
+                  fontWeight: 1000,
+                }}
+              >
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                  <GsnLegacyIcon name="document" size={24} decorative />
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    Decision support details
+                  </span>
+                </span>
+                <span aria-hidden="true" style={{ color: "#617085", fontSize: 18 }}>
+                  {standingDecisionDetailsOpen ? "-" : "+"}
+                </span>
+              </SubtleButton>
+
+              {standingDecisionDetailsOpen ? (
+                <div
+                  style={{
+                    display: "grid",
+                    gap: isCompact ? 8 : 10,
+                    paddingTop: isCompact ? 8 : 10,
+                    borderTop: "1px solid rgba(216,227,238,0.62)",
+                  }}
+                >
+                  <div style={{ color: "#07172C", fontWeight: 1000, fontSize: isCompact ? 17 : 20 }}>
+                    What this evidence helps you decide
+                  </div>
+                  <p style={{ ...helperText(), margin: 0 }}>
+                    These lines show what this record can and cannot support before a recipient asks for live confirmation.
+                  </p>
+                  <div style={{ display: "grid", gap: 6 }}>
+                    {passportVm.trustQuestions.map((item) => (
+                      <div
+                        key={item.title}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+                          gap: isCompact ? 7 : 10,
+                          alignItems: isCompact ? "start" : "center",
+                          padding: "9px 0",
+                          borderBottom: "1px solid rgba(216,227,238,0.72)",
+                        }}
+                      >
                         <span
                           style={{
-                            color: "#617085",
-                            fontSize: isCompact ? 11.5 : 12.5,
-                            lineHeight: 1.35,
-                            fontWeight: 800,
+                            color: "#334155",
+                            fontWeight: 900,
+                            display: "grid",
+                            gridTemplateColumns: "30px minmax(0, 1fr)",
+                            gap: 8,
+                            alignItems: "start",
+                            minWidth: 0,
                           }}
                         >
-                          {item.meaning}
+                          <GsnLegacyIcon
+                            name={trustQuestionIcons[item.title] || "shield"}
+                            size={30}
+                            decorative
+                          />
+                          <span style={{ minWidth: 0, display: "grid", gap: 3 }}>
+                            <span>{item.title}</span>
+                            <span
+                              style={{
+                                color: "#617085",
+                                fontSize: isCompact ? 11.5 : 12.5,
+                                lineHeight: 1.35,
+                                fontWeight: 800,
+                              }}
+                            >
+                              {item.meaning}
+                            </span>
+                          </span>
                         </span>
-                      </span>
-                    </span>
-                    <EvidenceMeter status={item.status}>{item.status}</EvidenceMeter>
+                        <EvidenceMeter status={item.status}>{item.status}</EvidenceMeter>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              ) : null}
             </div>
           </section>
 

@@ -1,3 +1,40 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport standing lane details collapsed locally
+
+Owner trigger:
+- Owner selected `1` to continue the decision-first Trust Passport enhancement after the private passport first-read overview was added.
+
+Unabated truth:
+- This is a hierarchy cleanup inside the signed-in Trust Passport standing lane, not a full Trust Passport redesign.
+- The default standing lane now shows the current evidence reading first and moves the decision-support question matrix behind a stable `Decision support details` toggle.
+- This reduces equal-weight information in the first active lane, but the route still has deeper community, document, finance, evidence, and institutional sections that may need the same collapse treatment.
+- No backend route, schema, evidence extraction, scoring, TrustEvent, permission, or deployment behavior changed.
+- This slice passed source/build checks, but it has not yet been visually inspected in a real phone/browser viewport.
+
+Changed:
+- `frontend/src/pages/TrustScorePage.tsx`
+  - Added `standingDecisionDetailsOpen` state.
+  - Made the standing lane a single-column guided reading.
+  - Replaced the always-visible `What this evidence helps you decide` matrix with a stable `Decision support details` disclosure.
+- `frontend/tools/audit-trust-passport-button-inventory.mjs`
+  - Updated the Trust Passport stable action baseline from 18 to 19 source actions and 26 to 27 expected rendered action roots.
+  - Added a cage requiring the standing lane to show the evidence reading first and keep decision-support rows collapsed behind `trust-score.standing-decision-details.toggle`.
+
+Routes/screens affected:
+- Signed-in Trust Passport / TrustScore route.
+- No public TrustSlip route behavior changed in this slice.
+
+Verification:
+- Passed `npm exec -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-passport-button-inventory.mjs tools/audit-trust-actions.mjs` from `frontend`.
+- Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- Phone-width visual review of Trust Passport first viewport and standing lane, then collapse the next heaviest active-lane sections such as Community Confirmation or Shareable trust tools if they still read as equal-weight detail.
 ## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport decision-first overview added locally
 
 Owner trigger:

@@ -59,8 +59,8 @@ while ((match = actionPattern.exec(source))) {
   });
 }
 
-const expectedSourceActions = 18;
-const expectedRenderedActions = 26;
+const expectedSourceActions = 19;
+const expectedRenderedActions = 27;
 
 if (actions.length !== expectedSourceActions) {
   findings.push({
@@ -106,6 +106,7 @@ const expectedOrder = [
   "trust-score.open-public-community-record",
   "trust-score.identity-evidence-meter.toggle",
   "debugId={item.debugId}",
+  "trust-score.standing-decision-details.toggle",
   "trust-score.repair-next-step",
   "trust-score.community-lane.open-public-community-record",
   "trust-score.community-lane.open-member-credential",
@@ -238,6 +239,11 @@ assertContains(
   /debugId="trust-score\.verdict-note\.toggle"[\s\S]*?Evidence reading note[\s\S]*?Record state, not character judgement\. Add current evidence to strengthen this reading\./,
   "Trust Passport evidence reading note must stay behind a stable open/close control so the screenshot surface stays compact."
 );
+assertContains(
+  /const \[standingDecisionDetailsOpen, setStandingDecisionDetailsOpen\][\s\S]*?activeTrustPassportLane === "standing" \? "grid" : "none"[\s\S]*?gridTemplateColumns: "1fr"[\s\S]*?data-trust-passport-standing-decision-details="collapsed"[\s\S]*?debugId="trust-score\.standing-decision-details\.toggle"[\s\S]*?aria-expanded=\{standingDecisionDetailsOpen\}[\s\S]*?Decision support details[\s\S]*?standingDecisionDetailsOpen \?[\s\S]*?What this evidence helps you decide[\s\S]*?passportVm\.trustQuestions\.map/,
+  "Trust Passport standing lane must show the evidence reading first and keep decision-support rows collapsed behind a stable toggle."
+);
+
 
 assertContains(
   /gridTemplateColumns: isCompact[\s\S]*?"58px minmax\(0, 1fr\)"[\s\S]*?"78px minmax\(0, 1fr\)"[\s\S]*?minHeight: isCompact \? 58 : 78[\s\S]*?fontSize: isCompact \? 34 : 46/,
@@ -285,5 +291,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  `Trust Passport button inventory audit passed: ${actions.length} stable source actions, ${expectedRenderedActions} expected rendered action roots including the lane selector, evidence reading note toggle, and two evidence-surface cards.`
+  `Trust Passport button inventory audit passed: ${actions.length} stable source actions, ${expectedRenderedActions} expected rendered action roots including the lane selector, evidence reading note toggle, standing decision detail toggle, and two evidence-surface cards.`
 );
