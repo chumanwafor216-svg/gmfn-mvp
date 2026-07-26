@@ -1,3 +1,38 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Combined local readiness verified locally
+
+Owner trigger:
+- Owner selected `1` after the evidence boundary wording guard repair was committed locally.
+
+Unabated truth:
+- No runtime code changed in this slice. This was a readiness verification pass over the accumulated local Trust Passport, TrustSlip, evidence-boundary, and PWA/build guard state.
+- The first non-escalated `verify:combined-local-batch-readiness` attempt failed only because the sandbox blocked git status, Vite/esbuild, Playwright, and one live-harness dry-run process with `spawn EPERM`.
+- The same verifier passed after sandbox escalation.
+- This proves local mocked route-state smokes, static boundary audits, live-harness fail-closed behavior, PWA icon publish-readiness checks, production build, and whitespace checks. It still does not prove live API authorization, production payload shape, Render deployment, live-site availability, or refreshed phone shortcut caches.
+
+Changed:
+- `docs/HANDOFF_NOTES.md`
+  - Recorded the combined local readiness verification result and the sandbox-only failure/retry truth.
+
+Routes/screens affected:
+- No runtime route changed.
+- Verification covered the public TrustSlip Verify, private TrustSlip evidence, community confirmation outcome, community verification, signed-in Trust Passport, holder TrustSlip, Trust Timeline/evidence pack, PWA icon/build readiness, and shared evidence boundary suites.
+
+Verification:
+- Passed `npm --prefix frontend run audit:evidence-publish-readiness-nonmutating`.
+- Passed `npm --prefix frontend run audit:evidence-boundary-local-batch-manifest`.
+- Passed `npm --prefix frontend run audit:evidence-local-batch-status-scope` with escalation after sandbox `git EPERM`.
+- Passed `npm --prefix frontend run audit:evidence-local-batch-stage-plan`.
+- Passed `npm --prefix frontend run audit:combined-local-batch-readiness-nonmutating`.
+- Passed `npm --prefix frontend run audit:combined-local-batch-manifest`.
+- Passed `npm --prefix frontend run audit:combined-local-batch-status-scope` with escalation after sandbox `git EPERM`.
+- Non-escalated `npm --prefix frontend run verify:combined-local-batch-readiness` failed on sandbox `spawn EPERM` for git/Vite/Playwright/esbuild/live-harness process starts.
+- Passed escalated `npm --prefix frontend run verify:combined-local-batch-readiness`.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- The local batch is ready for owner review. If the owner wants pilot deployment, select `2` to push/deploy the accumulated local commits.
 ## CURRENT LOCAL STATE - 2026-07-26 - Evidence boundary batch wording guard repaired locally
 
 Owner trigger:
