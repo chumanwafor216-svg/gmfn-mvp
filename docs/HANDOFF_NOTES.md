@@ -151717,3 +151717,30 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
 - Next recommended step:
   - review whether the public TrustSlip first viewport is now becoming too dense on phone; if so, compact the first three recipient panels without removing their meaning.
+
+## 2026-07-26 - Public Verify Mobile Density Compacting
+
+- Trigger:
+  - owner selected `1` after the deployed public verify trustability grouping.
+- Unabated truth:
+  - the public TrustSlip verify paper had become more decision-complete, but the first mobile surface risked becoming too tall because recipient/trustability/decision tiles stacked as full mini cards;
+  - this pass is density-only. It does not change backend verification, public payloads, Decision Pack semantics, private evidence boundaries, or trust claims.
+- Changed:
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - made `PublicReadingTile` use a compact horizontal mobile layout with smaller text rhythm and stable `84px` minimum height;
+    - kept the desktop tile layout unchanged at the larger institutional card rhythm;
+    - changed the `Why this record can be trusted` mobile grid to a two-by-two layout so all four trustability signals remain visible with less scrolling.
+  - `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+    - caged the compact tile density and the two-by-two trust-reasons grid.
+- Verification:
+  - passed `npm exec -- eslint src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx tools/audit-public-trustslip-verify-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed `npm --prefix frontend run audit:proof-surfaces`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`.
+- Deployment:
+  - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
+- Next recommended step:
+  - if continuing the Decision Pack line, add a small source audit for the public verify first-viewport sequence/density as a named route-local contract instead of growing the generic public boundary audit further.

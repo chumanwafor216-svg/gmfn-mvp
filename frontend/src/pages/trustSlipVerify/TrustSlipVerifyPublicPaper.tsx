@@ -515,12 +515,69 @@ function PublicReadingTile({
   const color =
     tone === "trust" ? "#166534" : tone === "warning" ? "#92400E" : "#0B63D1";
 
+  if (compact) {
+    return (
+      <div
+        data-gsn-public-reading-tile-density="compact"
+        style={{
+          ...innerCard(background),
+          padding: 8,
+          minHeight: 84,
+          display: "grid",
+          gridTemplateColumns: "32px minmax(0, 1fr)",
+          gap: 7,
+          alignItems: "start",
+          minWidth: 0,
+        }}
+      >
+        {paperIconBadge(icon, tone, 30)}
+        <div style={{ minWidth: 0, display: "grid", gap: 3 }}>
+          <div
+            style={{
+              ...readableText(),
+              color,
+              fontSize: 9,
+              fontWeight: 1000,
+              lineHeight: 1.05,
+              textTransform: "uppercase",
+            }}
+          >
+            {label}
+          </div>
+          <strong
+            style={{
+              ...readableText(),
+              color: "#07172C",
+              fontSize: 12.5,
+              fontWeight: 1000,
+              lineHeight: 1.12,
+            }}
+          >
+            {title}
+          </strong>
+          <p
+            style={{
+              ...readableText(),
+              margin: 0,
+              color: "#334155",
+              fontSize: 10.5,
+              fontWeight: 820,
+              lineHeight: 1.2,
+            }}
+          >
+            {text}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
         ...innerCard(background),
-        padding: compact ? 11 : 10,
-        minHeight: compact ? "auto" : 132,
+        padding: 10,
+        minHeight: 132,
         display: "grid",
         alignContent: "start",
         gap: 7,
@@ -546,7 +603,7 @@ function PublicReadingTile({
         style={{
           ...readableText(),
           color: "#07172C",
-          fontSize: compact ? 15 : 14,
+          fontSize: 14,
           fontWeight: 1000,
           lineHeight: 1.2,
         }}
@@ -558,9 +615,9 @@ function PublicReadingTile({
           ...readableText(),
           margin: 0,
           color: "#334155",
-          fontSize: compact ? 12.5 : 12,
+          fontSize: 12,
           fontWeight: 820,
-          lineHeight: compact ? 1.5 : 1.42,
+          lineHeight: 1.42,
         }}
       >
         {text}
@@ -1529,10 +1586,11 @@ export default function TrustSlipVerifyPublicPaper({
           </div>
 
           <div
+            data-gsn-public-record-trust-reasons-grid="compact-two-by-two"
             style={{
               display: "grid",
-              gridTemplateColumns: compact ? "1fr" : "repeat(4, minmax(0, 1fr))",
-              gap: 8,
+              gridTemplateColumns: compact ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
+              gap: compact ? 6 : 8,
             }}
           >
             {recordTrustReasonTiles.map((item) => (
