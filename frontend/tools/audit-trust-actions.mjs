@@ -142,6 +142,18 @@ assertContains(
   "CCI Reading missing-reading state must say the reading is not shown yet."
 );
 
+assertNotContains(
+  "src/pages/CCIReadingPage.tsx",
+  /Your trust position|trust strength|visible trust signals|next trust step|fuller trust story|another trust surface|view of trust consistency/i,
+  "CCI Reading must frame cross-community consistency as evidence, not a trust position or universal trust story."
+);
+
+assertContains(
+  "src/pages/CCIReadingPage.tsx",
+  /Wider evidence consistency reading[\s\S]*?visible evidence looks beyond one community[\s\S]*?Choose the next evidence step[\s\S]*?fuller evidence record[\s\S]*?Which evidence question should stay here\?/,
+  "CCI Reading must keep the visible evidence-consistency framing."
+);
+
 assertContains(
   "src/pages/CCIReadingPage.tsx",
   /function getCciState\(me: any, trustSlip\?: any, trust\?: any\)[\s\S]*?trustSlip\?\.cci_score[\s\S]*?trust\?\.cci\?\.score[\s\S]*?trustSlip\?\.cci_band[\s\S]*?trust\?\.cci\?\.band/,

@@ -268,7 +268,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
         postureSource: formatReadingScore(rawScore, scoreNum),
         tone: "green",
         statusText: "Healthy across visible communities",
-        whyText: String(rawWhy || "Your trust position is steady right now."),
+        whyText: String(rawWhy || "The visible community evidence is steady right now."),
       };
     }
     if (classText === "B") {
@@ -286,7 +286,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
         postureSource: formatReadingScore(rawScore, scoreNum),
         tone: "yellow",
         statusText: "Needs attention",
-        whyText: String(rawWhy || "A few better actions can improve your standing."),
+        whyText: String(rawWhy || "A few clearer recent actions can strengthen the visible evidence."),
       };
     }
     return {
@@ -294,7 +294,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
       postureSource: formatReadingScore(rawScore, scoreNum),
       tone: "red",
       statusText: "At risk",
-      whyText: String(rawWhy || "Your trust position needs action and repair."),
+      whyText: String(rawWhy || "The visible evidence needs action and repair."),
     };
   }
 
@@ -305,7 +305,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
         postureSource: formatReadingScore(rawScore, scoreNum),
         tone: "green",
         statusText: "Healthy across visible communities",
-        whyText: String(rawWhy || "Your trust position is looking strong."),
+        whyText: String(rawWhy || "Visible cross-community evidence is looking strong."),
       };
     }
     if (scoreNum >= 55) {
@@ -314,7 +314,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
         postureSource: formatReadingScore(rawScore, scoreNum),
         tone: "green",
         statusText: "Stable and growing",
-        whyText: String(rawWhy || "Keep consistent actions to strengthen your standing."),
+        whyText: String(rawWhy || "Keep consistent actions to strengthen the visible evidence."),
       };
     }
     if (scoreNum >= 35) {
@@ -323,7 +323,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
         postureSource: formatReadingScore(rawScore, scoreNum),
         tone: "yellow",
         statusText: "Needs attention",
-        whyText: String(rawWhy || "Some recent actions may have reduced your trust strength."),
+        whyText: String(rawWhy || "Some recent actions may have weakened the visible evidence."),
       };
     }
     return {
@@ -331,7 +331,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
       postureSource: formatReadingScore(rawScore, scoreNum),
       tone: "red",
       statusText: "At risk",
-      whyText: String(rawWhy || "Your trust position needs urgent improvement."),
+      whyText: String(rawWhy || "The visible evidence needs urgent improvement."),
     };
   }
 
@@ -486,7 +486,7 @@ export default function CCIReadingPage() {
       <PageTopNav
         sectionLabel="Cross-community consistency"
         title="Cross-community consistency"
-        subtitle="Your wider trust reading across communities."
+        subtitle="Your wider evidence consistency reading across communities."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.dashboard}
@@ -496,10 +496,10 @@ export default function CCIReadingPage() {
       <section style={pageCard("#FFFFFF")}>
         <div style={sectionLabel()}>{labelWithIcon("community", "Cross-community consistency")}</div>
         <div style={{ marginTop: 10, color: "#0B1F33", fontSize: isCompact ? 28 : 34, fontWeight: 900, lineHeight: 1.1 }}>
-          Wider trust consistency reading
+          Wider evidence consistency reading
         </div>
         <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-          See how steady this member's visible trust signals look beyond one community.
+          See how steady this member's visible evidence looks beyond one community.
         </div>
         <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
           {cciIconBadge("community", <>Posture {cciPosture.shortLabel}</>, true)}
@@ -570,7 +570,7 @@ export default function CCIReadingPage() {
         storageKey="gmfn.cciReading.nextActionGuide.v1"
         compact={isCompact}
         items={guideItems}
-        intro="Choose the next trust step in plain language. GSN will point you to the right evidence surface."
+        intro="Choose the next evidence step in plain language. GSN will point you to the right evidence surface."
         onSelect={handleGuideSelect}
       />
 
@@ -578,14 +578,14 @@ export default function CCIReadingPage() {
         compact={isCompact}
         items={familyItems}
         title="Where consistency sits inside the trust-document family"
-        intro="Use this map to decide whether you need this narrow reading, a fuller trust story, a portable record, or public verification."
+        intro="Use this map to decide whether you need this narrow reading, a fuller evidence record, a portable record, or public verification."
       />
 
       <TrustDocumentUseCases
         compact={isCompact}
         items={trustDocumentUseCases}
-        title="Which trust question should stay here?"
-        intro="Stay here for the wider consistency read. Move to another trust surface when someone needs identity, evidence, or public verification."
+        title="Which evidence question should stay here?"
+        intro="Stay here for the wider consistency read. Move to another evidence surface when someone needs identity, evidence, or public verification."
       />
 
       <section style={pageCard("#FFFFFF")}>
@@ -603,7 +603,7 @@ export default function CCIReadingPage() {
               Use this for the wider read
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Use it when someone needs a quick view of trust consistency
+              Use it when someone needs a quick view of evidence consistency
               across communities.
             </div>
           </div>

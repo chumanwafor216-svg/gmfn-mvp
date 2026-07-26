@@ -152507,3 +152507,31 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this support evidence-label slice locally, then either continue another small Trust Passport wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
+## 2026-07-26 - CCI Reading Evidence Consistency Language
+
+- Trigger:
+  - owner selected `1` after the Trust Passport support-evidence label slice was committed locally.
+- Unabated truth:
+  - this pass cleans the signed-in `/app/cci-reading` presentation only;
+  - it does not rename CCI data fields, score plumbing, route contracts, backend trust-score APIs, Trust Passport, TrustSlip, or Trust Document terminology;
+  - CCI still uses the existing numeric/class inputs internally, so this is a visible-language safety improvement rather than a scoring-model redesign;
+  - this is not an Evidence Ledger route, Behavioural Placement schema, Decision Pack generator, verified-community model, approval engine, or universal trust replacement.
+- Changed:
+  - `frontend/src/pages/CCIReadingPage.tsx`
+    - reframes fallback reasons from `Your trust position...`, `standing`, and `trust strength` language to visible evidence consistency language;
+    - changes the page subtitle and headline from wider trust reading/consistency to wider evidence consistency;
+    - changes the intro from visible trust signals to visible evidence;
+    - changes next-action, family-map, and use-case copy from trust step/story/surface/question wording to evidence step/record/surface/question wording.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - adds a CCI source cage that rejects the old trust-position/trust-story phrases and asserts the new evidence-consistency framing remains visible.
+- Verification:
+  - passed `npm exec -- eslint src/pages/CCIReadingPage.tsx tools/audit-trust-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-actions.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this CCI evidence-language slice locally, then either continue another small visible wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
