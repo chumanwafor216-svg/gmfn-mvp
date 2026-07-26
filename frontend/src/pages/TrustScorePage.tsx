@@ -1161,7 +1161,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
             : String(Math.round(scoreNum)),
         tone: "green",
         statusText: "Healthy across visible communities",
-        whyText: String(rawWhy || "Your trust position is steady right now."),
+        whyText: String(rawWhy || "Your evidence reading is steady right now."),
       };
     }
 
@@ -1190,7 +1190,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
         tone: "yellow",
         statusText: "Needs attention",
         whyText: String(
-          rawWhy || "A few better actions can improve your standing."
+          rawWhy || "A few better actions can improve the evidence reading."
         ),
       };
     }
@@ -1203,7 +1203,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
           : String(Math.round(scoreNum)),
       tone: "red",
       statusText: "At risk",
-      whyText: String(rawWhy || "Your trust position needs action and repair."),
+      whyText: String(rawWhy || "Your evidence reading needs action and repair."),
     };
   }
 
@@ -1214,7 +1214,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
         postureSource: String(Math.round(scoreNum)),
         tone: "green",
         statusText: "Healthy across visible communities",
-        whyText: String(rawWhy || "Your trust position is looking strong."),
+        whyText: String(rawWhy || "Your evidence reading is looking strong."),
       };
     }
 
@@ -1225,7 +1225,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
         tone: "green",
         statusText: "Stable and growing",
         whyText: String(
-          rawWhy || "Keep consistent actions to strengthen your standing."
+          rawWhy || "Keep consistent actions to strengthen your evidence record."
         ),
       };
     }
@@ -1237,7 +1237,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
         tone: "yellow",
         statusText: "Needs attention",
         whyText: String(
-          rawWhy || "Some recent actions may have reduced your trust strength."
+          rawWhy || "Some recent actions may have weakened the evidence reading."
         ),
       };
     }
@@ -1247,7 +1247,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
       postureSource: String(Math.round(scoreNum)),
       tone: "red",
       statusText: "At risk",
-      whyText: String(rawWhy || "Your trust position needs urgent improvement."),
+      whyText: String(rawWhy || "Your evidence reading needs urgent repair."),
     };
   }
 

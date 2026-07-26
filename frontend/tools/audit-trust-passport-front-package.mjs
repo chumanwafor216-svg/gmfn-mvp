@@ -204,6 +204,16 @@ assertNotContains(
 
 assertContains(
   "trust",
+  /Your evidence reading is steady right now[\s\S]*?improve the evidence reading[\s\S]*?Your evidence reading needs action and repair[\s\S]*?Your evidence reading is looking strong[\s\S]*?strengthen your evidence record[\s\S]*?weakened the evidence reading[\s\S]*?Your evidence reading needs urgent repair/,
+  "Trust Passport fallback reading copy must frame state as evidence reading, not trust position or trust strength."
+);
+assertNotContains(
+  "trust",
+  /Your trust position|trust strength|strengthen your standing|improve your standing/i,
+  "Trust Passport fallback reading copy must not use trust-position, standing, or trust-strength verdict wording."
+);
+assertContains(
+  "trust",
   /data-trust-passport-verdict-marker="true"[\s\S]*?overflow: "hidden"[\s\S]*?data-trust-passport-evidence-rail="true"[\s\S]*?display: isCompact \? "grid" : "flex"[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : undefined[\s\S]*?aria-label="Evidence posture rail"[\s\S]*?minWidth: 0[\s\S]*?wordBreak: "normal"/,
   "Trust Passport evidence posture rail must wrap into a two-column mobile grid instead of forcing five long labels into one phone row."
 );

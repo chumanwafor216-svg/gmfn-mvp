@@ -1,3 +1,38 @@
+﻿## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport fallback evidence-reading language added locally
+
+Owner trigger:
+- Owner selected `1` to continue after the Community Home Trust Passport evidence-copy slice was committed locally.
+
+Unabated truth:
+- This is a copy and audit cage slice only. It does not create the full Trust Passport architecture, Decision Packs, Evidence Ledger, Behavioural Placement, Global TrustSlip, new CCI fields, new backend APIs, or approval workflow.
+- The fallback CCI reason text is still derived from the existing frontend score/state logic. This change only removes verdict-like `trust position`, `standing`, and `trust strength` language from that fallback reading.
+
+Changed:
+- `frontend/src/pages/TrustScorePage.tsx`
+  - Reframed fallback CCI `whyText` strings as `evidence reading` and `evidence record` language.
+  - Removed fallback wording that implied GSN directly declares a member's trust position, standing, or trust strength.
+- `frontend/tools/audit-trust-passport-front-package.mjs`
+  - Added a positive cage requiring the fallback evidence-reading wording.
+  - Added a negative cage rejecting `trust position`, `trust strength`, and standing-improvement fallback verdict wording.
+
+Routes/screens affected:
+- Frontend Trust Passport / trust score page fallback reading copy only.
+- No backend routes, schemas, permissions, evidence extraction, or public TrustSlip behavior changed in this slice.
+
+Verification:
+- Passed `npm exec -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-passport-front-package.mjs tools/audit-trust-actions.mjs tools/audit-trust-passport-trustslip-boundary.mjs` from `frontend`.
+- Passed `node tools/audit-trust-passport-front-package.mjs`.
+- Passed `node tools/audit-trust-actions.mjs`.
+- Passed `node tools/audit-trust-passport-trustslip-boundary.mjs`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check` before handoff with only recurring LF/CRLF warnings.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- Continue replacing remaining Trust Passport verdict surfaces with evidence, decision-support, and consent-boundary language, one caged slice at a time.
 ## CURRENT LOCAL STATE - 2026-07-26 - Redacted Decision Pack TrustEvent extract added locally
 
 Owner trigger:
