@@ -537,7 +537,7 @@ export default function OpenTrustPage() {
               {openTrustIconText("document", "Why this reading", 22)}
             </div>
             <div style={{ marginTop: 10, ...helperText() }}>
-              {loading ? "Loading the current community trust reading..." : openTrust.whyText}
+              {loading ? "Loading the current community evidence reading..." : openTrust.whyText}
             </div>
             <CardActionRow style={{ marginTop: 16 }}>
               <StableCtaLink to={routes.trust} kind="primary" debugId="open-trust.trust">

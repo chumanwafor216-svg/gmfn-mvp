@@ -1,3 +1,42 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Local community evidence-reading labels added locally
+
+Owner trigger:
+- Owner selected `1` to continue after the Trust Passport standing-wording slice was committed locally.
+
+Unabated truth:
+- This is a visible language and audit cage slice only. It does not change the community trust score fields, backend payload names, ranking logic, route contracts, or marketplace permissions.
+- The older unmounted `frontend/src/pages/TrustPage.tsx` still contains legacy trust-position/story copy, but `/app/trust` currently routes to `TrustScorePage`, not that legacy page. Cleaning it is lower impact unless it becomes routed again.
+
+Changed:
+- `frontend/src/pages/OpenTrustPage.tsx`
+  - Replaced the loading fallback `Loading the current community trust reading...` with `Loading the current community evidence reading...`.
+- `frontend/src/pages/MarketplaceWorkspacePage.tsx`
+  - Replaced `No community trust reading yet` with `No community evidence reading yet`.
+  - Replaced the card label `Community trust reading` with `Community evidence reading`.
+- `frontend/tools/audit-trust-actions.mjs`
+  - Expanded the Open Trust forbidden wording cage to catch `community trust reading`.
+  - Added Marketplace Workspace positive and negative cages for community evidence-reading labels.
+
+Routes/screens affected:
+- `/app/open-trust-reading` loading copy.
+- `/app/community/workspace` Marketplace workspace local reading card copy.
+- No backend, schema, permission, payment, or TrustSlip public verification behavior changed.
+
+Verification:
+- Passed `npm exec -- eslint src/pages/OpenTrustPage.tsx src/pages/MarketplaceWorkspacePage.tsx tools/audit-trust-actions.mjs` from `frontend`.
+- Passed `node tools/audit-trust-actions.mjs`.
+- Passed `node tools/audit-button-stability.mjs`.
+- Passed `node tools/audit-trust-passport-trustslip-boundary.mjs`.
+- Passed `node tools/audit-trust-passport-front-package.mjs`.
+- Passed `git diff --check` before handoff with only recurring LF/CRLF warnings.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- Continue scanning live routed surfaces for visible verdict language, especially `trust signal`, `trust story`, and public/community trust labels, while leaving backend/API field names alone until a deliberate contract migration exists.
 ## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport standing wording reduced locally
 
 Owner trigger:

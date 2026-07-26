@@ -398,7 +398,7 @@ function getCommunityTrustState(source: any): CommunityTrustState {
     classText: "Awaiting reading",
     postureSource: "Not available yet",
     tone: "neutral",
-    statusText: "No community trust reading yet",
+    statusText: "No community evidence reading yet",
   };
 }
 
@@ -1313,7 +1313,7 @@ export default function MarketplaceWorkspacePage() {
         }}
       >
         <div style={{ fontSize: 13, color: trustTone.text, fontWeight: 900 }}>
-          Community trust reading
+          Community evidence reading
         </div>
 
         <div

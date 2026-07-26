@@ -192,14 +192,32 @@ assertContains(
 
 assertNotContains(
   "src/pages/OpenTrustPage.tsx",
-  /Local community trust|local trust reading|immediate community trust reading|fuller trust story|trust surface|fuller trust record|longer trust record|trust reading is being formed/i,
+  /Local community trust|community trust reading|local trust reading|immediate community trust reading|fuller trust story|trust surface|fuller trust record|longer trust record|trust reading is being formed/i,
   "Open Trust page must frame the local reading as community evidence and evidence views, not trust-story or trust-surface language."
 );
 
 assertContains(
   "src/pages/OpenTrustPage.tsx",
-  /Local community evidence[\s\S]*?fuller evidence record[\s\S]*?evidence views[\s\S]*?immediate community evidence reading[\s\S]*?Local evidence reading[\s\S]*?right evidence view for the right question/,
+  /Local community evidence[\s\S]*?fuller evidence record[\s\S]*?evidence views[\s\S]*?immediate community evidence reading[\s\S]*?Local evidence reading[\s\S]*?current community evidence reading[\s\S]*?right evidence view for the right question/,
   "Open Trust page must keep the local community evidence-view framing."
+);
+
+assertContains(
+  "src/pages/MarketplaceWorkspacePage.tsx",
+  /statusText: "No community evidence reading yet"/,
+  "Marketplace workspace empty state must describe missing community evidence readings, not community trust readings."
+);
+
+assertContains(
+  "src/pages/MarketplaceWorkspacePage.tsx",
+  /Community evidence reading/,
+  "Marketplace workspace local reading card must be labelled as community evidence reading."
+);
+
+assertNotContains(
+  "src/pages/MarketplaceWorkspacePage.tsx",
+  /Community trust reading|No community trust reading yet/i,
+  "Marketplace workspace must not label the local evidence card as a community trust reading."
 );
 
 assertNotContains(
