@@ -1,3 +1,32 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Live API identity contracts verified after deploy
+
+Owner trigger:
+- Owner selected `1` after the live frontend mobile sweep verification was committed locally.
+
+Unabated truth:
+- No runtime code changed in this slice. This was a post-deploy live API sanity check after a frontend-only deploy.
+- Local `main` was ahead of `origin/main` by one documentation-only verification note before this check; the deployed runtime commit was still `ea39c08abbb14de7102f6f5e2734ae1b21f805ec`.
+- `https://gmfn-api.onrender.com/health` returned HTTP 200 with `{"ok":true,"dev_mode":false}`.
+- The live API identity/public verification contract audit passed against `https://gmfn-api.onrender.com` on attempt 1/3.
+- This confirms the live API has the expected identity/public verification route contracts. It does not prove every production payload, real user login, private authorization path, database freshness, Render backend commit SHA, or end-to-end phone behavior.
+
+Changed:
+- `docs/HANDOFF_NOTES.md`
+  - Recorded the post-deploy live API health and identity route contract verification.
+
+Routes/screens affected:
+- No runtime route changed.
+- Verification covered live API identity/public verification contracts used by the deployed frontend.
+
+Verification:
+- Confirmed `GET https://gmfn-api.onrender.com/health` returned HTTP 200 and `dev_mode:false`.
+- Passed `npm --prefix frontend run audit:live-api-identity-routes -- --attempts 3 --delay-ms 5000` with escalation for live network access.
+
+Deployment:
+- Documentation-only local note. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- A real phone pass remains the best next UX check for `/app/trust`, `/app/trust-slip`, and a public TrustSlip Verify link. Automated live frontend/API checks are now green.
 ## CURRENT LOCAL STATE - 2026-07-26 - Live frontend mobile sweep verified after deploy
 
 Owner trigger:
