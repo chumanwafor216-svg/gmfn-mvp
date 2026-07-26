@@ -464,11 +464,11 @@ export default function TrustSlipVerifyPrivateEvidence({
           </div>
 
           <div style={innerCard("#FFFFFF")}>
-            {documentSectionHeading("shield", "Visible trust reading")}
+            {documentSectionHeading("shield", "Visible evidence reading")}
 
             <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
               <div style={statTile()}>
-                <div style={sectionLabel()}>Evidence status</div>
+                <div style={sectionLabel()}>Evidence reading</div>
                 <div
                   style={{
                     marginTop: 8,

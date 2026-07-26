@@ -1,3 +1,47 @@
+## CURRENT LOCAL STATE - 2026-07-26 - TrustSlip evidence-reading labels
+
+Owner trigger:
+- Owner selected `1` after the signed-in TrustSlip compact Decision Boundary label pass.
+
+Unabated truth:
+- This is a frontend copy-only readability pass. It does not change backend payloads, evidence aggregation, auth, routes, permissions, TrustSlip issuance, Decision Pack data, or TrustEvent behavior.
+- The signed-in TrustSlip first-read facts now use `Evidence` instead of `Evidence status`, matching the simpler public TrustSlip Verify quick-fact label.
+- The deeper signed-in TrustSlip evidence tile now says `Evidence reading`, and its helper sentence says the reading is based on available records, not a character judgement, guarantee, approval, or payment instruction.
+- The private TrustSlip evidence page now says `Visible evidence reading` instead of `Visible trust reading`, avoiding language that sounds like GSN is judging trust itself.
+- Devil's advocate: this is wording polish, not a structural reduction. It reduces technical/loaded labels but does not remove deeper repeated evidence/legal sections.
+
+Changed:
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - Renamed the holder first-read fact from `Evidence status` to `Evidence`.
+  - Renamed the decision summary row from `Evidence status` to `Evidence`.
+  - Renamed the deeper evidence stat label to `Evidence reading` and simplified its helper sentence.
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx`
+  - Renamed `Visible trust reading` to `Visible evidence reading`.
+  - Renamed `Evidence status` to `Evidence reading`.
+- `frontend/tools/audit-trust-actions.mjs`
+  - Updated the holder first-read fact guard to require `Evidence`.
+- `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+  - Updated the holder first-read fact guard to require `Evidence`.
+
+Routes/screens affected:
+- `/app/trust-slip` signed-in holder TrustSlip.
+- Private TrustSlip evidence review page/component.
+- No public TrustSlip Verify paper, Trust Passport, backend route, database, auth, payment, or TrustEvent write behavior changed.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check`; Git still reports normal working-copy line-ending warnings on touched frontend files.
+
+Deployment:
+- Not pushed or deployed in this slice because owner selected `1`.
+- After commit, local `main` should be ahead of origin by 2 commits.
+
+Recommended next step:
+- Select `2` to push/deploy the local batch, or select `1` to continue another local pass.
 ## CURRENT LOCAL STATE - 2026-07-26 - TrustSlip compact Decision Boundary labels
 
 Owner trigger:

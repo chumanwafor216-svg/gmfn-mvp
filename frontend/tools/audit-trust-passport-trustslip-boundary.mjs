@@ -270,7 +270,7 @@ assertContains(
 
 assertContains(
   "trustSlip",
-  /data-gsn-trustslip-holder-primary-facts="compact-four"[\s\S]*?label: "Security"[\s\S]*?label: "Status"[\s\S]*?label: "Evidence status"[\s\S]*?label: "Holder check"[\s\S]*?label: "Identity check"[\s\S]*?label: "Community ID"[\s\S]*?label: "Issued"[\s\S]*?label: "Expires"[\s\S]*?\.filter\(\(_, index\) => !isCompact \|\| index < 4\)[\s\S]*?\.map\(\(\{ label, value, full, icon \}\) =>/,
+  /data-gsn-trustslip-holder-primary-facts="compact-four"[\s\S]*?label: "Security"[\s\S]*?label: "Status"[\s\S]*?label: "Evidence"[\s\S]*?label: "Holder check"[\s\S]*?label: "Identity check"[\s\S]*?label: "Community ID"[\s\S]*?label: "Issued"[\s\S]*?label: "Expires"[\s\S]*?\.filter\(\(_, index\) => !isCompact \|\| index < 4\)[\s\S]*?\.map\(\(\{ label, value, full, icon \}\) =>/,
   "TrustSlip holder hero must keep mobile to four quick facts while preserving the fuller desktop fact set."
 );
 assertNotContains(

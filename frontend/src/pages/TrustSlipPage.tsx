@@ -4865,7 +4865,7 @@ export default function TrustSlipPage() {
                 {[
                   { label: "Security", value: trustSlipSecurityLabel, icon: "shield" as GsnIconName },
                   { label: "Status", value: trustSlipPublicStatus, icon: "evidence" as GsnIconName },
-                  { label: "Evidence status", value: merchantBandHeroDisplay, full: merchantBandDisplay, icon: "certificate-seal" as GsnIconName },
+                  { label: "Evidence", value: merchantBandHeroDisplay, full: merchantBandDisplay, icon: "certificate-seal" as GsnIconName },
                   { label: "Holder check", value: heroHolderCheckShort, full: identityRecordSummary || "Phone verified; community membership recorded", icon: "id" as GsnIconName },
                   { label: "Identity check", value: identityCheckLabel || "Phone verified", icon: "phone" as GsnIconName },
                   { label: "Community ID", value: communityRef, icon: "qr" as GsnIconName },
@@ -5371,7 +5371,7 @@ export default function TrustSlipPage() {
                 <span>{decisionSummaryText}</span>
               </div>
               {[
-                ["Evidence status", merchantBandDisplay],
+                ["Evidence", merchantBandDisplay],
                 ["Support limit signal", `${merchantTrustLimit} ${merchantCurrency}`],
                 ["Evidence depth", trustSlipEvidenceLanguage.label],
               ].map(([label, value]) => (
@@ -5923,7 +5923,7 @@ export default function TrustSlipPage() {
               label="What this does"
               what="This portable reading summarizes the evidence state that other people can verify from your current TrustSlip."
               why="It keeps the main public evidence signals, document codes, and issue window visible in one place before you share or verify anything."
-              next="Read the evidence status, visible TrustSlip limit signal, cross-community evidence posture, and issue window here first, then use the TrustSlip code or verification link when needed."
+              next="Read the evidence reading, visible TrustSlip limit signal, cross-community evidence posture, and issue window here first, then use the TrustSlip code or verification link when needed."
               tone="light"
               style={{ marginTop: 12 }}
             />
@@ -5937,7 +5937,7 @@ export default function TrustSlipPage() {
               }}
             >
               <div style={statTile()}>
-                <div style={sectionLabel()}>Evidence status</div>
+                <div style={sectionLabel()}>Evidence reading</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -5989,7 +5989,7 @@ export default function TrustSlipPage() {
                   Detailed evidence index is available only in authorised review.
                 </div>
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>
-                  Evidence status is a public reading of available records. It is not a character judgement, guarantee, approval, or payment instruction.
+                  This evidence reading is based on available records. It is not a character judgement, guarantee, approval, or payment instruction.
                 </div>
               </div>
             </div>
