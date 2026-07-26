@@ -152023,3 +152023,32 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
 - Next recommended step:
   - push/deploy the accumulated local commits only when the owner explicitly asks, or continue with another small Decision Pack parity/risk-reduction slice.
+
+## 2026-07-26 - Public Decision Pack Backend-Only Status Smoke
+
+- Trigger:
+  - owner selected `1` after the context-only status copy fix was committed locally.
+- Unabated truth:
+  - the previous context-only status smoke was weaker than claimed because public URL Decision Pack context can be overlaid onto the backend verify response before normalization;
+  - that meant the browser smoke proved the visible recipient-card wording, but not a backend-only `share_access_record.status = backend_access_context_only` payload with no Decision Pack URL query;
+  - this pass strengthens proof only. It does not change runtime UI, backend evidence, access ledger persistence, private Trust Passport disclosure, Decision Pack profile logic, scores, approvals, guarantees, payments, or recipient identity handling.
+- Changed:
+  - `frontend/tools/smoke-public-trustslip-verify-states.mjs`
+    - added a backend-only Decision Pack context scenario using `/t/TS-BACKEND-CONTEXT-ONLY?level=standard` with no Decision Pack URL query;
+    - the mocked backend payload supplies `decision_pack`, `access_purpose`, `access_scope`, and `share_access_record.status = backend_access_context_only`;
+    - shared the recipient-card assertions across the URL-driven and backend-only paths;
+    - asserts the backend-only path does not rely on a Decision Pack URL query.
+  - `frontend/tools/audit-evidence-display-boundary-suite.mjs`
+    - updated the suite cage to require both the helper assertions and the backend-only status smoke path.
+- Verification:
+  - passed `npm exec -- eslint tools/smoke-public-trustslip-verify-states.mjs tools/audit-evidence-display-boundary-suite.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:evidence-display-boundary-suite`;
+  - passed `npm --prefix frontend run smoke:public-trustslip-verify-states` with sandbox escalation for Vite/Playwright process launch;
+  - passed `npm --prefix frontend run audit:evidence-display-boundary-batch`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`.
+- Deployment:
+  - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
+- Next recommended step:
+  - run `git diff --check`, commit this smoke-proof correction, then push/deploy only when the owner explicitly asks.

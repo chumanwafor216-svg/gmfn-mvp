@@ -121,6 +121,12 @@ const scenarios = {
   },
 };
 
+scenarios.backendContextOnly = {
+  ...scenarios.current,
+  code: "TS-BACKEND-CONTEXT-ONLY",
+  backendDecisionPackContextOnly: true,
+};
+
 function json(body, status = 200) {
   return {
     status,
@@ -269,7 +275,7 @@ async function installApiMocks(page, requestLog) {
       }
       const payload = publicTrustSlipPayload(scenario);
       const requestUrl = new URL(url);
-      if (requestUrl.searchParams.has("decision_pack")) {
+      if (scenario.backendDecisionPackContextOnly || requestUrl.searchParams.has("decision_pack")) {
         payload.decision_pack = "employment_decision";
         payload.access_purpose = "Employment Decision Pack";
         payload.access_scope = "public_decision_pack";
@@ -417,27 +423,7 @@ async function runCodedScenario(browser, baseURL, scenario, options = {}) {
   await context.close();
 }
 
-async function runDecisionPackRecipientCardScenario(browser, baseURL) {
-  const requestLog = [];
-  const context = await browser.newContext({
-    viewport: { width: 390, height: 844 },
-    deviceScaleFactor: 2,
-    isMobile: true,
-  });
-  await context.addInitScript(() => localStorage.clear());
-  const page = await context.newPage();
-  await installApiMocks(page, requestLog);
-
-  await page.goto(
-    `${baseURL}/t/${encodeURIComponent(
-      scenarios.current.code
-    )}?level=standard&decision_pack=Employment_Decision&access_scope=public_decision_pack`,
-    {
-      waitUntil: "domcontentloaded",
-      timeout: 60000,
-    }
-  );
-
+async function expectDecisionPackRecipientCard(page) {
   await assertPublicPaperBasics(page);
   const recipientCard = page.locator(
     '[data-debug-id="trust-slip-verify.public.recipient-access-record"]'
@@ -466,10 +452,48 @@ async function runDecisionPackRecipientCardScenario(browser, baseURL) {
       )}`
     );
   }
+}
+
+async function runDecisionPackRecipientCardScenario(browser, baseURL) {
+  const requestLog = [];
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+  });
+  await context.addInitScript(() => localStorage.clear());
+  const page = await context.newPage();
+  await installApiMocks(page, requestLog);
+
+  await page.goto(
+    `${baseURL}/t/${encodeURIComponent(
+      scenarios.current.code
+    )}?level=standard&decision_pack=Employment_Decision&access_scope=public_decision_pack`,
+    {
+      waitUntil: "domcontentloaded",
+      timeout: 60000,
+    }
+  );
+  await expectDecisionPackRecipientCard(page);
+
+  const backendOnlyLogStart = requestLog.length;
+  await page.goto(`${baseURL}/t/${encodeURIComponent(scenarios.backendContextOnly.code)}?level=standard`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60000,
+  });
+  await expectDecisionPackRecipientCard(page);
+  const backendOnlyRequests = requestLog.slice(backendOnlyLogStart);
+  if (backendOnlyRequests.some((entry) => entry.path.includes("decision_pack"))) {
+    throw new Error(
+      `Backend context-only recipient-card route should not rely on Decision Pack URL query: ${JSON.stringify(
+        backendOnlyRequests
+      )}`
+    );
+  }
 
   const verifyRequests = publicVerifyRequests(requestLog);
-  if (verifyRequests.length < 1) {
-    throw new Error("Decision Pack recipient-card route did not call public verify.");
+  if (verifyRequests.length < 2) {
+    throw new Error("Decision Pack recipient-card route did not call public verify for both URL and backend-only paths.");
   }
   const viewerContextRequests = requestLog.filter((entry) => entry.authPresent || entry.clanPresent);
   if (viewerContextRequests.length > 0) {
