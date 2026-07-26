@@ -12,6 +12,7 @@ const files = {
   reader: "src/components/TrustSlipReaderBlock.tsx",
   communityProofPanel: "src/components/CommunityProofPanel.tsx",
   communityProof: "src/lib/communityProof.ts",
+  decisionPacks: "src/lib/decisionPacks.ts",
   viewModel: "src/lib/trustPassportViewModel.ts",
   api: "src/lib/api.ts",
   package: "package.json",
@@ -214,10 +215,16 @@ assertContains(
   "TrustSlip holder page must show the shared Known by community proof layer after the confidence ribbon."
 );
 assertContains(
+  "decisionPacks",
+  /export const GSN_DECISION_PACKS[\s\S]*?Community Standing Decision Pack[\s\S]*?Referral Decision Pack[\s\S]*?Guarantor or Support Decision Pack[\s\S]*?Employment Decision Pack[\s\S]*?Housing Decision Pack[\s\S]*?Trade or Skilled Work Decision Pack[\s\S]*?Supplier Decision Pack[\s\S]*?Volunteer Decision Pack[\s\S]*?Business Partnership Decision Pack[\s\S]*?Community Membership Decision Pack[\s\S]*?normalizeDecisionPackPublicContext/,
+  "Decision Pack catalog must stay in the shared frontend contract, not hidden inside one page."
+);
+assertContains(
   "trustSlip",
-  /Community Standing Decision Pack[\s\S]*?Referral Decision Pack[\s\S]*?Guarantor or Support Decision Pack[\s\S]*?Employment Decision Pack[\s\S]*?Housing Decision Pack[\s\S]*?Trade or Skilled Work Decision Pack[\s\S]*?Supplier Decision Pack[\s\S]*?Volunteer Decision Pack[\s\S]*?Business Partnership Decision Pack[\s\S]*?Community Membership Decision Pack[\s\S]*?Decision Pack selection[\s\S]*?Each pack is a focused view of the same evidence[\s\S]*?does not remove risk or make the decision for the recipient/,
+  /GSN_DECISION_PACKS[\s\S]*?Decision Pack selection[\s\S]*?Each pack is a focused view of the same evidence[\s\S]*?does not remove risk or make the decision for the recipient/,
   "TrustSlip holder page must frame share preparation as a broad Decision Pack catalog, not generic purpose labels or automatic decisions."
-);assertContains(
+);
+assertContains(
   "trustSlip",
   /withPublicDecisionPackQuery[\s\S]*?decision_pack: selectedPurposeOption\.key[\s\S]*?access_purpose: selectedPurposeOption\.label[\s\S]*?recipient_question: selectedPurposeOption\.recipientQuestion[\s\S]*?decision_focus: selectedPurposeOption\.focus[\s\S]*?const verifyPath = useMemo[\s\S]*?withPublicDecisionPackQuery\(basePath, publicDecisionPackQuery\)/,
   "TrustSlip holder verify links and QR must carry the selected public Decision Pack context."

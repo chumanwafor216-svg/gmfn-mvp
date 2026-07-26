@@ -30,6 +30,11 @@ import TrustDocumentFamilyMap from "../components/TrustDocumentFamilyMap";
 import TrustDocumentUseCases from "../components/TrustDocumentUseCases";
 import TrustSlipReaderBlock from "../components/TrustSlipReaderBlock";
 import * as api from "../lib/api";
+import {
+  DEFAULT_DECISION_PACK,
+  GSN_DECISION_PACKS,
+  type DecisionPackKey,
+} from "../lib/decisionPacks";
 import { navigateWithOrigin } from "../lib/nav";
 import { resolveSharedProfileImage } from "../lib/profileImage";
 import { publicCommunityMemberCredentialPath } from "../lib/publicLinks";
@@ -345,97 +350,6 @@ const GSN_EXEC_SUMMARY_URL = "/GSN_FINAL_WHITE.pdf";
 const TRUST_SLIP_MOBILE_SCROLL_CLEARANCE = 116;
 const FETCH_FIRST_JSON_TIMEOUT_MS = 30000;
 const TRUST_SLIP_SUMMARY_STARTUP_CACHE_MS = 2500;
-
-type TrustSlipPurposeKey =
-  | "community_standing"
-  | "referral_decision"
-  | "guarantor_decision"
-  | "employment_decision"
-  | "housing_decision"
-  | "trade_check"
-  | "supplier_decision"
-  | "volunteer_decision"
-  | "business_partnership"
-  | "community_membership";
-
-const TRUST_SLIP_PURPOSE_OPTIONS: Array<{
-  key: TrustSlipPurposeKey;
-  label: string;
-  shortLabel: string;
-  recipientQuestion: string;
-  focus: string;
-}> = [
-  {
-    key: "community_standing",
-    label: "Community Standing Decision Pack",
-    shortLabel: "Standing",
-    recipientQuestion: "How is this person known where people actually know them?",
-    focus: "Community role, activity history, witness currentness, and unresolved public cautions.",
-  },
-  {
-    key: "referral_decision",
-    label: "Referral Decision Pack",
-    shortLabel: "Referral",
-    recipientQuestion: "Can this person be referred without damaging my credibility?",
-    focus: "Who knows the person, how they are placed in community, and whether live confirmation is needed before referral.",
-  },
-  {
-    key: "guarantor_decision",
-    label: "Guarantor or Support Decision Pack",
-    shortLabel: "Guarantor",
-    recipientQuestion: "Is there enough evidence to stand for or support this person?",
-    focus: "Responsibility signals, reliability evidence, support boundary, and community confirmation before accepting risk.",
-  },
-  {
-    key: "employment_decision",
-    label: "Employment Decision Pack",
-    shortLabel: "Employment",
-    recipientQuestion: "Is there enough evidence to continue an employment conversation?",
-    focus: "Role, consistency, contribution, leadership or service signals, and the next verification step.",
-  },
-  {
-    key: "housing_decision",
-    label: "Housing Decision Pack",
-    shortLabel: "Housing",
-    recipientQuestion: "Is there enough community evidence to continue a housing decision?",
-    focus: "Community standing, reliability posture, witness currentness, and the need for live confirmation before tenancy risk.",
-  },
-  {
-    key: "trade_check",
-    label: "Trade or Skilled Work Decision Pack",
-    shortLabel: "Trade",
-    recipientQuestion: "Who has seen this person trade, serve, or complete work?",
-    focus: "Observed service activity, community evidence, visible disputes or cautions, and confirmation before work begins.",
-  },
-  {
-    key: "supplier_decision",
-    label: "Supplier Decision Pack",
-    shortLabel: "Supplier",
-    recipientQuestion: "Is there enough evidence to continue a supplier or contractor decision?",
-    focus: "Business reliability posture, fulfilment evidence where visible, community standing, and public verification status.",
-  },
-  {
-    key: "volunteer_decision",
-    label: "Volunteer Decision Pack",
-    shortLabel: "Volunteer",
-    recipientQuestion: "Is there enough evidence to accept this person into a volunteer role?",
-    focus: "Participation, consistency, service posture, witness currentness, and safeguarding caution before placement.",
-  },
-  {
-    key: "business_partnership",
-    label: "Business Partnership Decision Pack",
-    shortLabel: "Partner",
-    recipientQuestion: "Is there enough evidence to continue a business partnership discussion?",
-    focus: "Community reliability, responsibility signals, public verification status, and caution before shared commercial risk.",
-  },
-  {
-    key: "community_membership",
-    label: "Community Membership Decision Pack",
-    shortLabel: "Membership",
-    recipientQuestion: "Is there enough evidence to admit or connect this person to a community?",
-    focus: "Identity context, community route, witness currentness, standing, and first live confirmation step.",
-  },
-];
 
 type TrustSlipSummaryStartupCache = {
   key: string;
@@ -1853,12 +1767,12 @@ export default function TrustSlipPage() {
   const [merchantRailBusy, setMerchantRailBusy] = useState(false);
   const [merchantRailLink, setMerchantRailLink] = useState<MerchantLinkResponse | null>(null);
   const [selectedTrustSlipPurpose, setSelectedTrustSlipPurpose] =
-    useState<TrustSlipPurposeKey>("community_standing");
+    useState<DecisionPackKey>(DEFAULT_DECISION_PACK.key);
   const selectedPurposeOption = useMemo(
     () =>
-      TRUST_SLIP_PURPOSE_OPTIONS.find(
+      GSN_DECISION_PACKS.find(
         (option) => option.key === selectedTrustSlipPurpose
-      ) || TRUST_SLIP_PURPOSE_OPTIONS[0],
+      ) || DEFAULT_DECISION_PACK,
     [selectedTrustSlipPurpose]
   );
   const publicDecisionPackQuery = useMemo(
@@ -3456,7 +3370,7 @@ export default function TrustSlipPage() {
                 gap: 8,
               }}
             >
-              {TRUST_SLIP_PURPOSE_OPTIONS.map((option) => {
+              {GSN_DECISION_PACKS.map((option) => {
                 const active = option.key === selectedTrustSlipPurpose;
                 const ButtonComponent = active ? PrimaryButton : SecondaryButton;
                 return (

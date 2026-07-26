@@ -11,6 +11,7 @@ import {
 } from "../components/StableButton";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
 import * as api from "../lib/api";
+import { normalizeDecisionPackPublicContext } from "../lib/decisionPacks";
 import {
   institutionalPageCard,
   institutionalSoftCard,
@@ -239,31 +240,37 @@ export default function TrustSlipVerifyPage() {
   }, [location.search]);
   const publicDecisionPackContext = useMemo(() => {
     const search = new URLSearchParams(location.search);
-    const accessPurpose = firstTruthy(
-      search.get("access_purpose"),
-      search.get("purpose"),
-      search.get("decision_pack")
-    );
+    const decisionPackKey = firstTruthy(search.get("decision_pack"), search.get("decision_pack_key"));
+    const accessPurpose = firstTruthy(search.get("access_purpose"), search.get("purpose"));
     const recipientQuestion = firstTruthy(
       search.get("recipient_question"),
       search.get("decision_question")
     );
     const accessScope = firstTruthy(search.get("access_scope"), "public_decision_pack");
     const decisionFocus = firstTruthy(search.get("decision_focus"), search.get("focus"));
-    if (!accessPurpose && !recipientQuestion && !decisionFocus) return null;
+    if (!decisionPackKey && !accessPurpose && !recipientQuestion && !decisionFocus) return null;
+
+    const decisionPack = normalizeDecisionPackPublicContext({
+      key: decisionPackKey,
+      label: accessPurpose,
+      recipientQuestion,
+      focus: decisionFocus,
+      scope: accessScope,
+    });
 
     return {
-      access_purpose: accessPurpose,
-      share_purpose: accessPurpose,
-      access_scope: accessScope,
-      access_note: recipientQuestion,
-      decision_pack_focus: decisionFocus,
+      decision_pack: decisionPack.key,
+      access_purpose: decisionPack.label,
+      share_purpose: decisionPack.label,
+      access_scope: decisionPack.scope,
+      access_note: decisionPack.recipientQuestion,
+      decision_pack_focus: decisionPack.focus,
       share_access_record: {
         recipient_label: "TrustSlip recipient",
-        purpose: accessPurpose,
-        scope: accessScope,
-        note: recipientQuestion,
-        focus: decisionFocus,
+        purpose: decisionPack.label,
+        scope: decisionPack.scope,
+        note: decisionPack.recipientQuestion,
+        focus: decisionPack.focus,
         status: "public_context_from_link",
       },
     };

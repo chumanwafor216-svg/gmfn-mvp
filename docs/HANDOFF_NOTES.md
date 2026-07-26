@@ -1,3 +1,45 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Decision Pack catalog moved into shared frontend contract
+
+Owner trigger:
+- Owner selected `1` to continue after the live Decision Pack catalog deployment.
+
+Unabated truth:
+- This slice still does not create a backend Decision Pack table, recipient access ledger, purpose-specific evidence filter, Global TrustSlip, Behavioural Placement schema, or Evidence Ledger architecture.
+- It strengthens the frontend contract only: the holder page and public verify page now use one shared Decision Pack vocabulary instead of separate/local string handling.
+- Public verify now canonicalizes safe known pack keys such as `referral_decision` into the proper label, recipient question, and evidence focus. Unknown future labels still degrade safely into a General Decision Pack rather than exposing private data or breaking the public page.
+
+Changed:
+- `frontend/src/lib/decisionPacks.ts`
+  - Added the shared 10-pack GSN Decision Pack catalog.
+  - Added `findDecisionPack()` and `normalizeDecisionPackPublicContext()` for safe public URL context normalization.
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - Removed the page-local Decision Pack catalog and imports the shared catalog/default pack.
+- `frontend/src/pages/TrustSlipVerifyPage.tsx`
+  - Uses the shared normalizer so public URLs carrying only a pack key still render canonical Decision Pack purpose, recipient question, and evidence focus.
+- `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+  - Requires the Decision Pack catalog to stay in the shared frontend contract.
+- `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+  - Requires public verify to canonicalize Decision Pack URL context through the shared normalizer.
+
+Routes/screens affected:
+- `/app/trust-slip`: no visible catalog change; same 10 choices now come from the shared contract.
+- Public TrustSlip Verify routes such as `/t/:code`, `/verify/trust-slip`, and `/trust-slips/verify/:code`: known pack keys now normalize to canonical public Decision Pack wording.
+
+Verification:
+- Passed `npm exec -- eslint src/lib/decisionPacks.ts src/pages/TrustSlipPage.tsx src/pages/TrustSlipVerifyPage.tsx tools/audit-public-trustslip-verify-boundary.mjs tools/audit-trust-passport-trustslip-boundary.mjs` from `frontend`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:proof-surfaces`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check` with only recurring LF/CRLF warnings.
+
+Deployment:
+- Local only. Not pushed or deployed because the current pilot protocol in `docs/PROJECT_PROTOCOL.md` / `docs/FREEZE_POLICY.md` says routine continuation work should be batched locally and published only when the owner explicitly approves.
+
+Recommended next step:
+- The next honest backend slice is a bounded recipient access ledger that stores pack key, purpose label, public scope, issued/accessed timestamp, and TrustSlip code. Do not add scoring or filtered conclusions until evidence inclusion rules are explicit.
 ## CURRENT LOCAL STATE - 2026-07-26 - Decision Pack catalog expanded with evidence focus
 
 Owner trigger:

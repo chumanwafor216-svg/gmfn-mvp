@@ -13,6 +13,7 @@ const files = {
   boundary: "src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx",
   communityProofPanel: "src/components/CommunityProofPanel.tsx",
   communityProof: "src/lib/communityProof.ts",
+  decisionPacks: "src/lib/decisionPacks.ts",
   api: "src/lib/api.ts",
   backend: "../gmfn_backend/app/api/routes/trust_slips.py",
   package: "package.json",
@@ -98,10 +99,17 @@ assertContains(
   "verify",
   /const noPublicCodeSupplied = !isAppRoute && !requestedCode;/,
   "Public no-code state must stay public-only and not fall through to signed-in lookup behavior."
-);assertContains(
+);
+assertContains(
+  "decisionPacks",
+  /export const GSN_DECISION_PACKS[\s\S]*?Referral Decision Pack[\s\S]*?normalizeDecisionPackPublicContext[\s\S]*?General Decision Pack[\s\S]*?Can I make a better decision with this evidence\?/,
+  "Public TrustSlip Verify must use the shared Decision Pack catalog and safe fallback normalization."
+);
+
+assertContains(
   "verify",
-  /const publicDecisionPackContext = useMemo[\s\S]*?access_purpose[\s\S]*?recipient_question[\s\S]*?decision_pack_focus[\s\S]*?share_access_record[\s\S]*?focus: decisionFocus[\s\S]*?public_context_from_link[\s\S]*?normalizeTrustSlipVerification\([\s\S]*?\.\.\.verifyResult, \.\.\.publicDecisionPackContext/,
-  "Public TrustSlip Verify must convert share-safe Decision Pack URL context into the normalized access record."
+  /const publicDecisionPackContext = useMemo[\s\S]*?decisionPackKey[\s\S]*?normalizeDecisionPackPublicContext[\s\S]*?decision_pack: decisionPack\.key[\s\S]*?decision_pack_focus: decisionPack\.focus[\s\S]*?share_access_record[\s\S]*?focus: decisionPack\.focus[\s\S]*?public_context_from_link[\s\S]*?normalizeTrustSlipVerification\([\s\S]*?\.\.\.verifyResult, \.\.\.publicDecisionPackContext/,
+  "Public TrustSlip Verify must canonicalize share-safe Decision Pack URL context into the normalized access record."
 );
 
 assertContains(
