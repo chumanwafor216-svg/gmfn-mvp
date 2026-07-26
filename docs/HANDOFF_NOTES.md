@@ -152535,3 +152535,29 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this CCI evidence-language slice locally, then either continue another small visible wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
+## 2026-07-26 - Evidence Pack Decision Support Language
+
+- Trigger:
+  - owner selected `1` after the CCI evidence-consistency slice was pushed/deployed.
+- Unabated truth:
+  - this pass cleans shared `EvidencePackPanel` copy only;
+  - current `rg` showed no JSX call sites for `EvidencePackPanel` under `frontend/src`, so this improves the reusable evidence-paper primitive before it is surfaced again rather than changing a currently visible route;
+  - it does not create a Decision Pack generator, Evidence Ledger route, Behavioural Placement schema, verified-community model, PDF export engine, backend evidence model, credit/guarantee workflow, or legal approval workflow.
+- Changed:
+  - `frontend/src/components/EvidencePackPanel.tsx`
+    - changes the default subtitle from trust/support records to evidence/support records;
+    - changes the package context and preview body from trust snapshot language to evidence snapshot language;
+    - changes the limitation note from `support a trust decision` to `support careful decision-making with relevant evidence` while preserving bank/credit/payment/auto-debit/money-movement boundaries.
+  - `frontend/tools/audit-institutional-proof-surfaces.mjs`
+    - adds a source cage rejecting the old trust-decision/trust-record wording and asserting evidence-first decision-support language.
+- Verification:
+  - passed `npm exec -- eslint src/components/EvidencePackPanel.tsx tools/audit-institutional-proof-surfaces.mjs tools/audit-button-stability.mjs` from `frontend`;
+  - passed direct `node tools/audit-institutional-proof-surfaces.mjs` from `frontend`;
+  - passed direct `node tools/audit-button-stability.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this Evidence Pack language slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the local commit on `2`.

@@ -597,6 +597,16 @@ assertNotContains(
   /kv\("Clan"/,
   "Loan evidence pack PDFs must not expose older Clan labels."
 );
+assertNotContains(
+  "evidencePanel",
+  /support a trust decision|Official trust and support records|Trust and support records|Includes trust snapshot/i,
+  "Evidence Pack panel must frame the share paper as evidence for decision support, not a trust-decision artifact."
+);
+assertContains(
+  "evidencePanel",
+  /Official evidence and support records[\s\S]*?Evidence and support records[\s\S]*?Includes evidence snapshot and timeline[\s\S]*?support careful decision-making with relevant evidence/,
+  "Evidence Pack panel must keep evidence-first decision-support language."
+);
 for (const key of ["evidencePack", "loanEvidencePack", "userEvidencePack"]) {
   assertNotContains(
     key,

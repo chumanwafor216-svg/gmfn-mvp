@@ -14,7 +14,7 @@ type Props = {
 
 export default function EvidencePackPanel({
   title = "GSN Evidence Pack (PDF)",
-  subtitle = "Official trust and support records for careful review.",
+  subtitle = "Official evidence and support records for careful review.",
   onDownloadFull,
   onDownloadRedacted,
   disabled = false,
@@ -26,12 +26,12 @@ export default function EvidencePackPanel({
         purpose: subtitle,
         reference: "GSN evidence pack",
         context: [
-          { label: "Package", value: "Trust and support records" },
+          { label: "Package", value: "Evidence and support records" },
           { label: "Reader boundary", value: "Redacted share copy first" },
           { label: "Complete record", value: "Authorized private review only" },
         ],
         bodyLines: [
-          "Includes trust snapshot and timeline.",
+          "Includes evidence snapshot and timeline.",
           "Includes supporter summary and decisions where provided.",
           "Includes repayment history, community context, and support context.",
           "Share copy removes sensitive identifiers for outside review.",
@@ -39,7 +39,7 @@ export default function EvidencePackPanel({
         privacyNote:
           "Privacy: the redacted share copy is the safer outside-review paper. Use the complete record only when the reviewer is allowed to see private member details.",
         limitationNote:
-          "Limitation: GSN evidence papers support a trust decision. They are not a bank guarantee, credit approval, payment instruction, automatic debit authority, or proof that money moved.",
+          "Limitation: GSN evidence papers support careful decision-making with relevant evidence. They are not a bank guarantee, credit approval, payment instruction, automatic debit authority, or proof that money moved.",
       }),
     [subtitle, title]
   );
