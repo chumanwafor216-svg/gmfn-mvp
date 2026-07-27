@@ -275,6 +275,64 @@ assertContains(
   /data-gsn-trustslip-holder-primary-facts="compact-four"[\s\S]*?label: "Security"[\s\S]*?label: "Status"[\s\S]*?label: "Evidence"[\s\S]*?label: "Holder check"[\s\S]*?label: "Identity check"[\s\S]*?label: "Community ID"[\s\S]*?label: "Issued"[\s\S]*?label: "Expires"[\s\S]*?\.filter\(\(_, index\) => !isCompact \|\| index < 4\)[\s\S]*?\.map\(\(\{ label, value, full, icon \}\) =>/,
   "TrustSlip holder hero must keep mobile to four quick facts while preserving the fuller desktop fact set."
 );
+assertContains(
+  "trustSlip",
+  /const TRUST_SLIP_UI_STORAGE_KEY = "gmfn\.trustSlip\.sections\.v5";/,
+  "TrustSlip holder page must reset old persisted open mobile section states after collapsing the holder paper details."
+);
+assertContains(
+  "trustSlip",
+  /function defaultCollapseState\(\): CollapseState \{[\s\S]*?summary: true,[\s\S]*?reader: true,[\s\S]*?merchantVerify: true,[\s\S]*?evidence: true,[\s\S]*?notes: true,/,
+  "TrustSlip holder page must keep repeated paper details and secondary evidence lanes collapsed by default."
+);
+
+const trustSlipHolderHeroActions = sourceByKey.trustSlip.match(
+  /<CardActionRow style=\{\{ marginTop: 16 \}\}>[\s\S]*?<\/CardActionRow>/
+)?.[0] || "";
+if (!trustSlipHolderHeroActions) {
+  addFinding(
+    "trustSlip",
+    -1,
+    "TrustSlip holder hero must keep a compact first action row.",
+    "Missing top CardActionRow with marginTop 16."
+  );
+} else {
+  if (!/debugId="trust-slip\.hero\.(open-verify|prepare-verify)"/.test(trustSlipHolderHeroActions)) {
+    addFinding(
+      "trustSlip",
+      sourceByKey.trustSlip.indexOf(trustSlipHolderHeroActions),
+      "TrustSlip holder hero must prioritize opening or preparing the verify page.",
+      trustSlipHolderHeroActions
+    );
+  }
+  if (!/debugId="trust-slip\.copy-code"[\s\S]*?debugId="trust-slip\.copy-verify-link"/.test(trustSlipHolderHeroActions)) {
+    addFinding(
+      "trustSlip",
+      sourceByKey.trustSlip.indexOf(trustSlipHolderHeroActions),
+      "TrustSlip holder hero must keep only the essential copy-code and copy-link actions beside verify.",
+      trustSlipHolderHeroActions
+    );
+  }
+  if (/debugId="trust-slip\.(copy-gmfn-id|print|copy-snapshot)"/.test(trustSlipHolderHeroActions)) {
+    addFinding(
+      "trustSlip",
+      sourceByKey.trustSlip.indexOf(trustSlipHolderHeroActions),
+      "TrustSlip holder hero must not expose secondary print/snapshot/GSN-ID controls in the first mobile action row.",
+      trustSlipHolderHeroActions
+    );
+  }
+}
+
+assertContains(
+  "trustSlip",
+  /data-gsn-trustslip-holder-full-details=\{collapsed\.summary \? "collapsed" : "open"\}[\s\S]*?Full paper details[\s\S]*?debugId="trust-slip\.toggle-summary"[\s\S]*?debugId="trust-slip\.copy-gmfn-id"[\s\S]*?debugId="trust-slip\.print"[\s\S]*?debugId="trust-slip\.copy-snapshot"/,
+  "TrustSlip holder page must move secondary copy, print, and snapshot controls into the collapsed Full paper details lane."
+);
+assertContains(
+  "trustSlip",
+  /Full paper details[\s\S]*?display: collapsed\.summary \? "none" : "block",[\s\S]*?Four-question answer[\s\S]*?display: collapsed\.summary \? "none" : "grid",[\s\S]*?Document reference[\s\S]*?display: collapsed\.summary \? "none" : "block",[\s\S]*?What verification checks/,
+  "TrustSlip holder repeated paper details must stay hidden until Full paper details is opened."
+);
 assertNotContains(
   "trustSlip",
   /Trust decision|Support trust|Trade trust|public trust story|public trust summary|Portable trust summary|public trust paper|public trust signals|trust state|public-facing trust summary|trust story|trust signals|trust checks|trust screening|Which trust question should stay in TrustSlip|full trust story/i,

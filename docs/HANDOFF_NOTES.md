@@ -1,3 +1,35 @@
+## CURRENT LOCAL STATE - 2026-07-27 - TrustSlip holder mobile paper collapse
+
+Owner trigger:
+- Owner clarified that the signed-in TrustSlip / trust link holder page needs the same phone correction as the Trust Passport/public TrustSlip work: less repetition, fewer exposed blocks, and a more institutional first view.
+
+Unabated truth:
+- This slice improves the holder page presentation only. It does not change TrustSlip evidence rules, Decision Pack evidence extraction, public verify payloads, QR logic, backend routes, or deployment state.
+- The main phone correction is that the holder sees the TrustSlip document and essential verify/share actions first, while repeated paper references and secondary controls sit behind one Full paper details opener.
+- Devil's advocate: the production bundle shows the TrustSlip holder page is not the largest frontend chunk, so any remaining slow arrival may come from startup/API loading, auth state, or network timing rather than only the visual layout.
+
+Changed:
+- frontend/src/pages/TrustSlipPage.tsx
+  - Bumped TrustSlip holder UI storage key to gmfn.trustSlip.sections.v5 so older expanded states do not keep the page busy on existing phones.
+  - Keeps the repeated summary/detail lane collapsed by default.
+  - Reduced the top paper action row to the essential verify/open, Copy TrustSlip Code, and Copy Verify Link controls.
+  - Moved Copy GSN ID, Print TrustSlip, and Copy TrustSlip snapshot into a collapsed Full paper details lane.
+  - Hid Four-question answer, Document reference, Issue window, and What verification checks until Full paper details is opened.
+- frontend/tools/audit-trust-passport-trustslip-boundary.mjs
+  - Added guards for the new storage reset, collapsed default state, compact hero action row, and Full paper details containment.
+
+Verification:
+- Passed npm --prefix frontend run audit:trust-passport-trustslip-boundary
+- Passed npm --prefix frontend run build
+- Passed npm --prefix frontend run audit:protected-button-freeze
+- Passed npm --prefix frontend run smoke:trust-passport-trustslip-boundary after elevated rerun for sandbox spawn EPERM
+
+Deployment:
+- Local only so far; do not push/deploy unless the owner explicitly selects push/deploy.
+
+Next recommended step:
+- Run the QR/public-link test, then continue with institutional confirmations, member/community confirmations, community-domain setup, and real-life scenario coverage.
+
 ## CURRENT LOCAL STATE - 2026-07-27 - Public TrustSlip opened-detail phone typography hardening
 
 Owner trigger:

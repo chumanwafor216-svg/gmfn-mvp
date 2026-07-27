@@ -525,7 +525,7 @@ type CommunityConfirmationOutcome = {
   } | null;
 };
 
-const TRUST_SLIP_UI_STORAGE_KEY = "gmfn.trustSlip.sections.v4";
+const TRUST_SLIP_UI_STORAGE_KEY = "gmfn.trustSlip.sections.v5";
 const GSN_EXEC_SUMMARY_URL = "/GSN_FINAL_WHITE.pdf";
 const TRUST_SLIP_MOBILE_SCROLL_CLEARANCE = 116;
 const FETCH_FIRST_JSON_TIMEOUT_MS = 30000;
@@ -1466,7 +1466,7 @@ function defaultCollapseState(): CollapseState {
     actionGuide: true,
     family: true,
     useCases: true,
-    summary: false,
+    summary: true,
     reader: true,
     merchantVerify: true,
     merchantView: true,
@@ -6694,7 +6694,39 @@ export default function TrustSlipPage() {
             </div>
 
             <CardActionRow style={{ marginTop: 16 }}>
-              <PrimaryButton
+              {verifyPath ? (
+                <StableCtaLink
+                  to={verifyPath}
+                  kind="primary"
+                  stableHeight={isCompact ? 52 : 50}
+                  fullWidth={isCompact}
+                  minWidth={isCompact ? undefined : 190}
+                  debugId="trust-slip.hero.open-verify"
+                >
+                  Open TrustSlip Verify
+                </StableCtaLink>
+              ) : (
+                <PrimaryButton
+                  type="button"
+                  onClick={() => {
+                    if (trustSlipBlockedByPhone) {
+                      navigateWithOrigin(navigate, routes.identityPhone, location);
+                      return;
+                    }
+                    void refreshTrustSlip();
+                  }}
+                  busy={refreshing}
+                  busyLabel={trustSlipBlockedByPhone ? "Opening..." : "Refreshing..."}
+                  stableHeight={isCompact ? 52 : 50}
+                  fullWidth={isCompact}
+                  minWidth={isCompact ? undefined : 190}
+                  debugId="trust-slip.hero.prepare-verify"
+                >
+                  {trustSlipBlockedByPhone ? "Verify phone" : "Refresh TrustSlip"}
+                </PrimaryButton>
+              )}
+
+              <SecondaryButton
                 onClick={() =>
                   void handleCopy(
                     trustSlipCode,
@@ -6703,11 +6735,12 @@ export default function TrustSlipPage() {
                   )
                 }
                 stableHeight={isCompact ? 52 : 50}
+                fullWidth={isCompact}
                 minWidth={isCompact ? undefined : 176}
                 debugId="trust-slip.copy-code"
               >
                 Copy TrustSlip Code
-              </PrimaryButton>
+              </SecondaryButton>
 
               <SecondaryButton
                 onClick={() =>
@@ -6718,53 +6751,12 @@ export default function TrustSlipPage() {
                   )
                 }
                 stableHeight={isCompact ? 52 : 50}
+                fullWidth={isCompact}
                 minWidth={isCompact ? undefined : 158}
                 debugId="trust-slip.copy-verify-link"
               >
                 Copy Verify Link
               </SecondaryButton>
-
-              <SecondaryButton
-                onClick={() =>
-                  void handleCopy(
-                    gmfnIdValue,
-                    "GSN ID copied.",
-                    "GSN ID is not ready yet."
-                  )
-                }
-                stableHeight={isCompact ? 52 : 50}
-                minWidth={isCompact ? undefined : 124}
-                debugId="trust-slip.copy-gmfn-id"
-              >
-                Copy GSN ID
-              </SecondaryButton>
-
-              <SubtleButton
-                onClick={() => {
-                  if (typeof window !== "undefined" && typeof window.print === "function") {
-                    window.print();
-                    return;
-                  }
-                  showNotice(
-                    "error",
-                    "Print is not available in this browser. Use Copy snapshot or Copy verify link."
-                  );
-                }}
-                stableHeight={isCompact ? 52 : 50}
-                minWidth={isCompact ? undefined : 136}
-                debugId="trust-slip.print"
-              >
-                Print TrustSlip
-              </SubtleButton>
-
-              <SubtleButton
-                onClick={copyTrustSlipSnapshot}
-                stableHeight={isCompact ? 52 : 50}
-                minWidth={isCompact ? undefined : 190}
-                debugId="trust-slip.copy-snapshot"
-              >
-                Copy TrustSlip snapshot
-              </SubtleButton>
             </CardActionRow>
           </div>
 
@@ -6775,15 +6767,6 @@ export default function TrustSlipPage() {
             }}
           >
             <div style={sectionLabel()}>Current portable reading</div>
-
-            <ExplainToggle
-              label="What this does"
-              what="This portable reading summarizes the evidence state that other people can verify from your current TrustSlip."
-              why="It keeps the main public evidence signals, document codes, and issue window visible in one place before you share or verify anything."
-              next="Read the evidence reading, visible TrustSlip limit signal, cross-community evidence posture, and issue window here first, then use the TrustSlip code or verification link when needed."
-              tone="light"
-              style={{ marginTop: 12 }}
-            />
 
             <div
               style={{
@@ -6875,7 +6858,92 @@ export default function TrustSlipPage() {
             </div>
 
             <div
+              data-gsn-trustslip-holder-full-details={collapsed.summary ? "collapsed" : "open"}
               style={{
+                marginTop: 14,
+                borderRadius: 18,
+                border: "1px solid rgba(11,31,51,0.10)",
+                background: "#FFFFFF",
+                padding: 12,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={sectionLabel()}>Full paper details</div>
+                  <div style={{ marginTop: 5, ...helperText(), color: "#0B1F33" }}>
+                    Open for the four-question answer, document references, secondary copy/print controls, and verification limits.
+                  </div>
+                </div>
+                <SubtleButton
+                  onClick={() => toggleSection("summary")}
+                  stableHeight={isCompact ? 48 : 42}
+                  style={collapseToggle()}
+                  debugId="trust-slip.toggle-summary"
+                >
+                  {collapsed.summary ? "Open" : "Hide"}
+                </SubtleButton>
+              </div>
+
+              {!collapsed.summary ? (
+                <CardActionRow style={{ marginTop: 12 }}>
+                  <SecondaryButton
+                    onClick={() =>
+                      void handleCopy(
+                        gmfnIdValue,
+                        "GSN ID copied.",
+                        "GSN ID is not ready yet."
+                      )
+                    }
+                    stableHeight={isCompact ? 52 : 50}
+                    fullWidth={isCompact}
+                    minWidth={isCompact ? undefined : 124}
+                    debugId="trust-slip.copy-gmfn-id"
+                  >
+                    Copy GSN ID
+                  </SecondaryButton>
+
+                  <SubtleButton
+                    onClick={() => {
+                      if (typeof window !== "undefined" && typeof window.print === "function") {
+                        window.print();
+                        return;
+                      }
+                      showNotice(
+                        "error",
+                        "Print is not available in this browser. Use Copy snapshot or Copy verify link."
+                      );
+                    }}
+                    stableHeight={isCompact ? 52 : 50}
+                    fullWidth={isCompact}
+                    minWidth={isCompact ? undefined : 136}
+                    debugId="trust-slip.print"
+                  >
+                    Print TrustSlip
+                  </SubtleButton>
+
+                  <SubtleButton
+                    onClick={copyTrustSlipSnapshot}
+                    stableHeight={isCompact ? 52 : 50}
+                    fullWidth={isCompact}
+                    minWidth={isCompact ? undefined : 190}
+                    debugId="trust-slip.copy-snapshot"
+                  >
+                    Copy TrustSlip snapshot
+                  </SubtleButton>
+                </CardActionRow>
+              ) : null}
+            </div>
+            <div
+              style={{
+                display: collapsed.summary ? "none" : "block",
                 marginTop: 14,
                 borderRadius: 18,
                 border: "1px solid rgba(11,31,51,0.10)",
@@ -6909,7 +6977,7 @@ export default function TrustSlipPage() {
             <div
               style={{
                 marginTop: 12,
-                display: "grid",
+                display: collapsed.summary ? "none" : "grid",
                 gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
                 gap: 10,
               }}
@@ -6938,7 +7006,13 @@ export default function TrustSlipPage() {
               </div>
             </div>
 
-            <div style={{ marginTop: 12, ...documentMetaCard("#F8FBFF") }}>
+            <div
+              style={{
+                display: collapsed.summary ? "none" : "block",
+                marginTop: 12,
+                ...documentMetaCard("#F8FBFF"),
+              }}
+            >
               <div style={sectionLabel()}>What verification checks</div>
               <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
                 Verification checks this TrustSlip code, holder reference, status,
