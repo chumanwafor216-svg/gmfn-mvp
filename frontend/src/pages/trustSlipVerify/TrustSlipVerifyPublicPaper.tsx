@@ -952,11 +952,11 @@ function DecisionFactorTable({
           style={{
             display: "grid",
             gridTemplateColumns: compact
-              ? "minmax(0, 0.46fr) minmax(0, 0.54fr)"
+              ? "1fr"
               : "minmax(0, 0.34fr) minmax(0, 0.66fr)",
-            gap: compact ? 8 : 12,
+            gap: compact ? 4 : 12,
             alignItems: "start",
-            padding: compact ? "8px 9px" : "10px 12px",
+            padding: compact ? "10px 11px" : "10px 12px",
             borderBottom: "1px solid rgba(216,227,238,0.62)",
             minWidth: 0,
           }}
@@ -967,7 +967,7 @@ function DecisionFactorTable({
               color: "#526579",
               fontSize: compact ? 10.5 : 11.5,
               fontWeight: 1000,
-              lineHeight: 1.16,
+              lineHeight: 1.18,
             }}
           >
             {factor}
@@ -976,9 +976,9 @@ function DecisionFactorTable({
             style={{
               ...readableText(),
               color: "#07172C",
-              fontSize: compact ? 11.5 : 13,
-              fontWeight: 950,
-              lineHeight: 1.24,
+              fontSize: compact ? 12.2 : 13,
+              fontWeight: 930,
+              lineHeight: 1.32,
             }}
           >
             {finding}
@@ -1873,7 +1873,7 @@ export default function TrustSlipVerifyPublicPaper({
             }}
           >
             <div style={{ ...sectionLabel(), color: "#0B63D1" }}>Why this decision</div>
-            <DecisionFactorTable rows={decisionTranslationRows} compact={compact} />
+            <DecisionFactorTable rows={compact ? decisionTranslationRows.filter(([label]) => label === "Community connection" || label === (supportPurpose ? "Relevant support evidence" : "Relevant evidence") || label === "Recommended action") : decisionTranslationRows} compact={compact} />
           </div>
           <div
             data-gsn-public-decision-first-facts="four-quick-facts"
@@ -1911,16 +1911,16 @@ export default function TrustSlipVerifyPublicPaper({
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: compact ? "repeat(2, minmax(0, 1fr))" : "repeat(5, minmax(0, 1fr))",
+                gridTemplateColumns: compact ? "1fr" : "repeat(5, minmax(0, 1fr))",
                 gap: 6,
               }}
             >
               {decisionBoundaryRows.map(([label, value]) => (
                 <div key={label} style={{ minWidth: 0 }}>
-                  <div style={{ color: "#5F4100", fontSize: compact ? 9.5 : 10.5, fontWeight: 1000, lineHeight: 1.1 }}>
+                  <div style={{ color: "#5F4100", fontSize: compact ? 10.5 : 10.5, fontWeight: 1000, lineHeight: 1.18 }}>
                     {label}
                   </div>
-                  <div style={{ marginTop: 2, color: "#07172C", fontSize: compact ? 11 : 12, fontWeight: 950, lineHeight: 1.15 }}>
+                  <div style={{ marginTop: 2, color: "#07172C", fontSize: compact ? 12.2 : 12, fontWeight: 930, lineHeight: 1.28 }}>
                     {value}
                   </div>
                 </div>
@@ -2130,6 +2130,11 @@ export default function TrustSlipVerifyPublicPaper({
           </div>
         </div>
 
+        <TrustDocumentDisclosureSection
+          title={decisionPackPurpose}
+          summary="Open for purpose-filtered evidence, gaps, checks, and reader guidance."
+          defaultOpen={!compact}
+        >
         <div
           data-debug-id="trust-slip-verify.public.decision-pack-reading"
           style={{
@@ -2406,6 +2411,8 @@ export default function TrustSlipVerifyPublicPaper({
         </TrustDocumentDisclosureSection>
         </div>
 
+        </TrustDocumentDisclosureSection>
+
         <TrustDocumentDisclosureSection
           title="Audit Details"
           summary="Open for technical record checks, community evidence, security, and limits."
@@ -2481,6 +2488,11 @@ export default function TrustSlipVerifyPublicPaper({
           </div>
         </TrustDocumentDisclosureSection>
 
+        <TrustDocumentDisclosureSection
+          title="Verification paper details"
+          summary="Open for holder, public reading, community evidence, QR, and confirmation request."
+          defaultOpen={!compact}
+        >
         <div style={publicVerifyShell("#F8FBFF", compact)}>
           <TrustPaperWatermark
             name={validNow ? "shield" : "lock"}
@@ -3290,6 +3302,7 @@ export default function TrustSlipVerifyPublicPaper({
 
           {publicActions}
         </div>
+        </TrustDocumentDisclosureSection>
       </div>
 
       <footer

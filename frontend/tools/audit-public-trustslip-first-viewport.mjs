@@ -114,9 +114,33 @@ assertContains(
   "Public TrustSlip first viewport must compute one big answer, immediate reason text, evidence translation rows, desktop quick facts, and a compact decision boundary."
 );
 
+
 assertContains(
   "publicPaper",
-  /data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision Summary[\s\S]*?\{decisionDisplayAnswer\}[\s\S]*?\{decisionReasonLine\}[\s\S]*?data-gsn-public-evidence-translation="decision-why"[\s\S]*?Why this decision[\s\S]*?<DecisionFactorTable rows=\{decisionTranslationRows\} compact=\{compact\} \/>[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?decisionFirstFacts\.map[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?decisionBoundaryRows\.map[\s\S]*?title="Full evidence and record details"[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"/,
+  /function DecisionFactorTable[\s\S]*?gridTemplateColumns: compact[\s\S]*?\? "1fr"[\s\S]*?fontSize: compact \? 12\.2 : 13[\s\S]*?fontWeight: 930/,
+  "Decision factor rows must stack on phone so institutional text does not squeeze into narrow columns."
+);
+
+assertContains(
+  "publicPaper",
+  /DecisionFactorTable rows=\{compact \? decisionTranslationRows\.filter\(\(\[label\]\) => label === "Community connection" \|\| label === \(supportPurpose \? "Relevant support evidence" : "Relevant evidence"\) \|\| label === "Recommended action"\) : decisionTranslationRows\}/,
+  "Public TrustSlip phone first viewport must show only the three essential decision factors before deeper evidence drawers."
+);
+
+assertContains(
+  "publicPaper",
+  /title=\{decisionPackPurpose\}[\s\S]*?summary="Open for purpose-filtered evidence, gaps, checks, and reader guidance\."[\s\S]*?defaultOpen=\{!compact\}[\s\S]*?data-debug-id="trust-slip-verify\.public\.decision-pack-reading"/,
+  "Decision Pack detail must be a closed phone drawer and an open desktop section."
+);
+
+assertContains(
+  "publicPaper",
+  /title="Verification paper details"[\s\S]*?summary="Open for holder, public reading, community evidence, QR, and confirmation request\."[\s\S]*?defaultOpen=\{!compact\}[\s\S]*?publicVerifyShell\("#F8FBFF", compact\)/,
+  "Legacy verification paper details must sit behind a phone drawer instead of exposing the whole paper at once."
+);
+assertContains(
+  "publicPaper",
+  /data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision Summary[\s\S]*?\{decisionDisplayAnswer\}[\s\S]*?\{decisionReasonLine\}[\s\S]*?data-gsn-public-evidence-translation="decision-why"[\s\S]*?Why this decision[\s\S]*?<DecisionFactorTable rows=\{compact \? decisionTranslationRows\.filter\(\(\[label\]\) => label === "Community connection" \|\| label === \(supportPurpose \? "Relevant support evidence" : "Relevant evidence"\) \|\| label === "Recommended action"\) : decisionTranslationRows\} compact=\{compact\} \/>[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?decisionFirstFacts\.map[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?decisionBoundaryRows\.map[\s\S]*?title="Full evidence and record details"[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"/,
   "Public TrustSlip phone viewport must render the answer, reason, decision-factor findings, desktop-only quick facts, compact boundary, and collapsed supporting details."
 );
 
@@ -146,7 +170,7 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /Decision Pack reading[\s\S]*?Can I make a better decision with this evidence\?[\s\S]*?This document exists to reduce uncertainty, not eliminate risk\.[\s\S]*?GSN provides trustworthy evidence; the recipient remains responsible for the decision\.[\s\S]*?Opened by \$\{decisionPackRecipient\}\. Read this as decision support, not a private investigation report\.[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="Decision evidence details"[\s\S]*?summary="Open for purpose-filtered signals, categories, gaps, checks, and evidence boundaries\."[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"/,
+  /title=\{decisionPackPurpose\}[\s\S]*?defaultOpen=\{!compact\}[\s\S]*?Decision Pack reading[\s\S]*?Can I make a better decision with this evidence\?[\s\S]*?This document exists to reduce uncertainty, not eliminate risk\.[\s\S]*?GSN provides trustworthy evidence; the recipient remains responsible for the decision\.[\s\S]*?Opened by \$\{decisionPackRecipient\}\. Read this as decision support, not a private investigation report\.[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="Decision evidence details"[\s\S]*?summary="Open for purpose-filtered signals, categories, gaps, checks, and evidence boundaries\."[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"/,
   "Decision Pack reading must keep the quick judgement read visible while purpose-filtered categories, gaps, checks, and boundaries stay collapsed."
 );
 

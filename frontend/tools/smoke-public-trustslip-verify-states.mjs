@@ -33,7 +33,7 @@ const scenarios = {
     visibility_level: "standard",
     expectedStatusText: "VALID NOW",
     expectedReadingTitle: "Current public slip",
-    expectedText: ["Open member credential", "Live check available"],
+    expectedText: ["Full evidence and record details", "Verification paper details"],
   },
   minimal: {
     code: "TS-MINIMAL-BOUNDARY",
@@ -402,8 +402,8 @@ async function assertPublicPaperBasics(page) {
   await expect(page.getByText("This paper does not confirm", { exact: true })).toHaveCount(1);
   await expect(page.getByText("Public paper ends here")).toBeVisible();
   await expect(page.getByText("Private review area below")).toBeVisible();
-  await expect(page.getByText("Evidence, not approval", { exact: true })).toBeVisible();
-  await expect(page.getByText("does not open the holder's private Trust Passport")).toBeVisible();
+  await expect(page.getByText("Verification paper details", { exact: true })).toBeVisible();
+  await expect(page.getByText("Audit Details", { exact: true })).toBeVisible();
   await assertNoPublicPrivateLeaks(page);
 }
 
@@ -463,6 +463,7 @@ async function runCodedScenario(browser, baseURL, scenario, options = {}) {
   });
 
   await assertPublicPaperBasics(page);
+  await page.locator('[data-cta-id="trust-document.section.verification-paper-details"]').click();
   await expectVisibleText(page, scenario.expectedStatusText);
   await expect(page.getByText(scenario.expectedReadingTitle, { exact: true })).toBeVisible();
 
@@ -542,6 +543,7 @@ async function expectDecisionPackRecipientCard(page, { expectRedactedExtract = f
   await expect(mobileFullEvidence).toContainText("Public Decision Pack");
   await expect(mobileFullEvidence).toContainText("Live record checks");
 
+  await page.locator('[data-cta-id="trust-document.section.employment-decision-pack"]').click();
   const decisionReading = page.locator('[data-debug-id="trust-slip-verify.public.decision-pack-reading"]');
   await expect(decisionReading).toBeVisible({ timeout: 30000 });
   await expect(decisionReading).toContainText("Can I make a better decision with this evidence?");
@@ -654,6 +656,7 @@ async function runUnknownCodeScenario(browser, baseURL) {
   });
 
   await assertPublicPaperBasics(page);
+  await page.locator('[data-cta-id="trust-document.section.verification-paper-details"]').click();
   await expectVisibleText(page, "No usable TrustSlip record was found");
   await expect(
     page.getByText(

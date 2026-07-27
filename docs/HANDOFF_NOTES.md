@@ -155795,3 +155795,44 @@ Deployment:
 
 Next recommended step:
 - Phone-review a public `/t/:code` Decision Pack and check that the first viewport now reads as answer first, reason second, compact factors third, with supporting record details behind the disclosure.
+
+## CURRENT LOCAL STATE - 2026-07-27 - Public TrustSlip institutional phone collapse polish
+
+Owner trigger:
+- Owner asked to take a phone screenshot of the public TrustSlip/Decision Pack page and correct the immature, squeezed-letter appearance and busy surface by putting lower-priority sections inside tap-to-open drawers.
+
+Unabated truth:
+- This is a phone presentation correction only for the public TrustSlip Verify paper.
+- It does not change backend evidence, Decision Pack mappings, Trust Passport data, scoring, landlord/contact policy, or private evidence exposure.
+- A Playwright mobile screenshot was captured to `C:\tmp\gsn-public-trustslip-employment-390x844.png` and a full-page version to `C:\tmp\gsn-public-trustslip-employment-full-390.png`; the in-tool image viewer was blocked by the Windows sandbox wrapper, so visual proof is via the captured files plus the browser smoke first-viewport checks.
+- Devil's advocate: this improves institutional hierarchy and text maturity on the public TrustSlip phone page, but it is not yet an app-wide solution for every busy page. The same drawer-first standard should be applied page by page where screenshots still look crowded.
+
+Changed:
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Stacks `DecisionFactorTable` rows on compact phone instead of using narrow two-column rows that squeeze text.
+  - Shows only the three essential phone decision factors first: community connection, relevant evidence, and recommended action; fuller factors remain in deeper evidence/details areas.
+  - Converts the compact Decision Boundary from two narrow columns to stacked official rows.
+  - Wraps the Decision Pack reading in a `TrustDocumentDisclosureSection` using the current purpose label, so `Employment Decision Pack` opens only when tapped on phone but stays open on desktop through `defaultOpen={!compact}`.
+  - Wraps the old full verification paper/details section in `Verification paper details`, also closed on phone and open on desktop.
+- `frontend/tools/smoke-public-trustslip-verify-states.mjs`
+  - Updates mobile smoke expectations to check the drawer-first page, then tap `Verification paper details` or `Employment Decision Pack` before checking deeper content.
+- `frontend/tools/audit-public-trustslip-first-viewport.mjs`
+  - Adds guards for stacked phone factor rows, three-factor first viewport, Decision Pack drawer, and Verification paper details drawer.
+- `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+  - Adds the same public verification boundary guards so the phone page cannot regress to fully exposed detail sections.
+- `frontend/tools/audit-evidence-display-boundary-suite.mjs`
+  - Updates suite-level smoke guards for the new phone drawer interaction and redacted Decision Pack evidence checks.
+
+Verification:
+- Passed `npm --prefix frontend run build`.
+- Passed `npm --prefix frontend run audit:public-trustslip-first-viewport`.
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed direct `node frontend\tools\audit-evidence-display-boundary-suite.mjs`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- `npm --prefix frontend run smoke:public-trustslip-verify-states` failed in sandbox with known Vite/esbuild `spawn EPERM`, then passed after elevated rerun.
+
+Deployment:
+- Local only so far; commit before push/deploy. Do not claim live until the owner selects `2`/push-deploy and the Render workflow returns live evidence.
+
+Next recommended step:
+- Phone-review the deployed public `/t/:code` Decision Pack after push/deploy. The first viewport should read like an institutional decision paper: decision first, three calm findings, boundary, then closed drawers for full evidence, Employment Decision Pack, Audit Details, and Verification paper details.

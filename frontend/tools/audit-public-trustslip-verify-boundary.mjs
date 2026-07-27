@@ -329,9 +329,27 @@ assertContains(
   "TrustSlip Verify view model must consume the explicit backend evidence scope before rendering public wording."
 );
 
+
 assertContains(
   "publicPaper",
-  /Public Decision Pack[\s\S]*?Public Decision Pack for a safer next decision[\s\S]*?data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision Summary[\s\S]*?\{decisionDisplayAnswer\}[\s\S]*?\{decisionReasonLine\}[\s\S]*?data-gsn-public-evidence-translation="decision-why"[\s\S]*?Why this decision[\s\S]*?DecisionFactorTable rows=\{decisionTranslationRows\} compact=\{compact\}[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?Full evidence and record details[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"[\s\S]*?Decision Pack reading[\s\S]*?Can I make a better decision with this evidence\?[\s\S]*?Decision evidence details[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?Audit Details[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"/,
+  /function DecisionFactorTable[\s\S]*?gridTemplateColumns: compact[\s\S]*?\? "1fr"[\s\S]*?fontSize: compact \? 12\.2 : 13[\s\S]*?fontWeight: 930/,
+  "Public TrustSlip decision-factor findings must stack on phone instead of squeezing text into narrow columns."
+);
+
+assertContains(
+  "publicPaper",
+  /title=\{decisionPackPurpose\}[\s\S]*?summary="Open for purpose-filtered evidence, gaps, checks, and reader guidance\."[\s\S]*?defaultOpen=\{!compact\}[\s\S]*?data-debug-id="trust-slip-verify\.public\.decision-pack-reading"/,
+  "Public TrustSlip Decision Pack detail must sit behind a phone drawer while staying open on desktop."
+);
+
+assertContains(
+  "publicPaper",
+  /title="Verification paper details"[\s\S]*?summary="Open for holder, public reading, community evidence, QR, and confirmation request\."[\s\S]*?defaultOpen=\{!compact\}[\s\S]*?publicVerifyShell\("#F8FBFF", compact\)/,
+  "Public TrustSlip verification paper details must be progressive on phone instead of fully exposed."
+);
+assertContains(
+  "publicPaper",
+  /Public Decision Pack[\s\S]*?Public Decision Pack for a safer next decision[\s\S]*?data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision Summary[\s\S]*?\{decisionDisplayAnswer\}[\s\S]*?\{decisionReasonLine\}[\s\S]*?data-gsn-public-evidence-translation="decision-why"[\s\S]*?Why this decision[\s\S]*?DecisionFactorTable rows=\{compact \? decisionTranslationRows\.filter\(\(\[label\]\) => label === "Community connection" \|\| label === \(supportPurpose \? "Relevant support evidence" : "Relevant evidence"\) \|\| label === "Recommended action"\) : decisionTranslationRows\} compact=\{compact\}[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?Full evidence and record details[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"[\s\S]*?title=\{decisionPackPurpose\}[\s\S]*?defaultOpen=\{!compact\}[\s\S]*?Decision Pack reading[\s\S]*?Can I make a better decision with this evidence\?[\s\S]*?Decision evidence details[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?Audit Details[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"/,
   "Public TrustSlip paper must lead with decision support, immediate evidence translation, and collapsed phone evidence before purpose-filtered details and heavier authority/security details."
 );
 
