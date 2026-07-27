@@ -1,3 +1,28 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Private TrustSlip evidence heading audit repair
+
+Owner trigger:
+- Owner selected `1`, meaning continue locally with no push/deploy.
+- Next correction was the remaining `audit:button-stability` failure reported after the responder Decision Pack guide.
+
+Unabated truth:
+- This is a tiny audit-drift repair, not a new TrustSlip feature or evidence policy change.
+- The private evidence paper already kept the shared 3D icon-led section, but one locked heading had drifted from `Visible trust reading` to `Visible evidence reading`, causing the stability audit to fail.
+
+Changed:
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx`
+  - Restored the approved section heading to `Visible trust reading`.
+
+Verification:
+- Passed `npm --prefix frontend run audit:button-stability`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+
+Deployment:
+- Local only. Do not push/deploy unless the owner selects `2` or explicitly says push/deploy.
+
+Next recommended step:
+- Commit this audit repair locally, then continue the page-by-page institutional/phone polish on `1`, or push/deploy only if the owner selects `2`.
 ## CURRENT LOCAL STATE - 2026-07-27 - Community confirmation responder Decision Pack guide
 
 Owner trigger:
