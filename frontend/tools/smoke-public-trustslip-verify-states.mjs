@@ -9,6 +9,19 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const profileImageDataUrl =
   "data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA=";
 
+async function expectVisibleText(page, text) {
+  const matches = page.getByText(text, { exact: false });
+  const count = await matches.count();
+  for (let index = 0; index < count; index += 1) {
+    const match = matches.nth(index);
+    if (await match.isVisible()) {
+      await expect(match).toBeVisible();
+      return;
+    }
+  }
+  throw new Error(`Expected visible text was not found: ${text}`);
+}
+
 const scenarios = {
   current: {
     code: "TS-CURRENT-BOUNDARY",
@@ -56,7 +69,7 @@ const scenarios = {
     visibility_level: "standard",
     expectedStatusText: "Valid now",
     expectedReadingTitle: "Do not rely on this alone",
-    expectedText: ["Inactive"],
+    expectedText: ["Request a fresh TrustSlip"],
   },
   lowDataMissingWindow: {
     code: "TS-LOW-DATA-BOUNDARY",
@@ -450,7 +463,7 @@ async function runCodedScenario(browser, baseURL, scenario, options = {}) {
   });
 
   await assertPublicPaperBasics(page);
-  await expect(page.getByText(scenario.expectedStatusText, { exact: false }).first()).toBeVisible();
+  await expectVisibleText(page, scenario.expectedStatusText);
   await expect(page.getByText(scenario.expectedReadingTitle, { exact: true })).toBeVisible();
 
   if (scenario.expectedReadingTitle !== "Current public slip") {
@@ -463,7 +476,7 @@ async function runCodedScenario(browser, baseURL, scenario, options = {}) {
     await expect(page.getByText("Current witness evidence")).toHaveCount(0);
   }
   for (const text of scenario.expectedText || []) {
-    await expect(page.getByText(text, { exact: false }).first()).toBeVisible();
+    await expectVisibleText(page, text);
   }
   for (const text of scenario.absentText || []) {
     await expect(page.getByText(text, { exact: false })).toHaveCount(0);
@@ -499,10 +512,35 @@ async function expectDecisionPackRecipientCard(page, { expectRedactedExtract = f
   const recipientCard = page.locator(
     '[data-debug-id="trust-slip-verify.public.recipient-access-record"]'
   );
-  await expect(recipientCard).toBeVisible({ timeout: 30000 });
-  await expect(recipientCard).toContainText("Shared to support Employment Decision Pack.");
-  await expect(recipientCard).toContainText("Employment Decision Pack");
-  await expect(recipientCard).toContainText("Public Decision Pack");
+  await expect(recipientCard).toBeHidden({ timeout: 30000 });
+
+  const mobileFullEvidenceSummary = page.locator('summary[data-cta-id="trust-document.section.full-evidence-and-record-details"]');
+  await expect(mobileFullEvidenceSummary).toBeVisible({ timeout: 30000 });
+  const summaryFacts = await mobileFullEvidenceSummary.evaluate((node) => {
+    const rect = node.getBoundingClientRect();
+    return {
+      text: node.textContent || "",
+      top: Math.round(rect.top),
+      bottom: Math.round(rect.bottom),
+      viewportHeight: node.ownerDocument.defaultView?.innerHeight || 0,
+    };
+  });
+  if (summaryFacts.top >= summaryFacts.viewportHeight) {
+    throw new Error(
+      `Decision Pack full-evidence summary started below the first phone viewport: ${JSON.stringify(
+        summaryFacts
+      )}`
+    );
+  }
+
+  await mobileFullEvidenceSummary.click();
+  const mobileFullEvidence = page.locator('[data-gsn-public-mobile-full-evidence="collapsed-summary"]');
+  await expect(mobileFullEvidence).toBeVisible({ timeout: 30000 });
+  await expect(mobileFullEvidence).toContainText("Why received");
+  await expect(mobileFullEvidence).toContainText("TrustSlip recipient");
+  await expect(mobileFullEvidence).toContainText("Employment Decision Pack");
+  await expect(mobileFullEvidence).toContainText("Public Decision Pack");
+  await expect(mobileFullEvidence).toContainText("Live record checks");
 
   const decisionReading = page.locator('[data-debug-id="trust-slip-verify.public.decision-pack-reading"]');
   await expect(decisionReading).toBeVisible({ timeout: 30000 });
@@ -525,29 +563,12 @@ async function expectDecisionPackRecipientCard(page, { expectRedactedExtract = f
     await expect(decisionReading).not.toContainText("Delivered to private address");
   }
 
-  await expect(recipientCard).not.toContainText("public_context_from_link");
-  await expect(recipientCard).not.toContainText("backend_access_context_only");
-  await expect(recipientCard).not.toContainText("backend_access_recorded");
-  await expect(recipientCard).not.toContainText("public_decision_pack");
-
-  const recipientCardFacts = await recipientCard.evaluate((node) => {
-    const rect = node.getBoundingClientRect();
-    return {
-      text: node.textContent || "",
-      top: Math.round(rect.top),
-      bottom: Math.round(rect.bottom),
-      viewportHeight: node.ownerDocument.defaultView?.innerHeight || 0,
-    };
-  });
-  if (recipientCardFacts.top >= recipientCardFacts.viewportHeight) {
-    throw new Error(
-      `Decision Pack recipient card started below the first phone viewport: ${JSON.stringify(
-        recipientCardFacts
-      )}`
-    );
-  }
+  const body = page.locator("body");
+  await expect(body).not.toContainText("public_context_from_link");
+  await expect(body).not.toContainText("backend_access_context_only");
+  await expect(body).not.toContainText("backend_access_recorded");
+  await expect(body).not.toContainText("public_decision_pack");
 }
-
 async function runDecisionPackRecipientCardScenario(browser, baseURL) {
   const requestLog = [];
   const context = await browser.newContext({
@@ -633,7 +654,7 @@ async function runUnknownCodeScenario(browser, baseURL) {
   });
 
   await assertPublicPaperBasics(page);
-  await expect(page.getByText("No usable TrustSlip record was found", { exact: false }).first()).toBeVisible();
+  await expectVisibleText(page, "No usable TrustSlip record was found");
   await expect(
     page.getByText(
       "The supplied TrustSlip code did not return a usable verification record from the available verification source.",

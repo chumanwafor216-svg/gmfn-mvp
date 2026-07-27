@@ -928,6 +928,66 @@ function OfficialResultTable({
   );
 }
 
+function DecisionFactorTable({
+  rows,
+  compact,
+}: {
+  rows: Array<[string, string]>;
+  compact: boolean;
+}) {
+  return (
+    <div
+      data-gsn-public-evidence-translation-table="decision-factor-finding"
+      style={{
+        borderRadius: compact ? 12 : 14,
+        border: "1px solid rgba(37,78,119,0.12)",
+        background: "#FFFFFF",
+        overflow: "hidden",
+        minWidth: 0,
+      }}
+    >
+      {rows.map(([factor, finding]) => (
+        <div
+          key={factor}
+          style={{
+            display: "grid",
+            gridTemplateColumns: compact
+              ? "minmax(0, 0.46fr) minmax(0, 0.54fr)"
+              : "minmax(0, 0.34fr) minmax(0, 0.66fr)",
+            gap: compact ? 8 : 12,
+            alignItems: "start",
+            padding: compact ? "8px 9px" : "10px 12px",
+            borderBottom: "1px solid rgba(216,227,238,0.62)",
+            minWidth: 0,
+          }}
+        >
+          <span
+            style={{
+              ...readableText(),
+              color: "#526579",
+              fontSize: compact ? 10.5 : 11.5,
+              fontWeight: 1000,
+              lineHeight: 1.16,
+            }}
+          >
+            {factor}
+          </span>
+          <strong
+            style={{
+              ...readableText(),
+              color: "#07172C",
+              fontSize: compact ? 11.5 : 13,
+              fontWeight: 950,
+              lineHeight: 1.24,
+            }}
+          >
+            {finding}
+          </strong>
+        </div>
+      ))}
+    </div>
+  );
+}
 export default function TrustSlipVerifyPublicPaper({
   compact,
   validNow,
@@ -1350,6 +1410,51 @@ export default function TrustSlipVerifyPublicPaper({
   const decisionPackPrivateReviewDisplayRows: Array<[string, string]> = decisionPackPrivateReviewRows.length
     ? decisionPackPrivateReviewRows
     : [["No sensitive category requested", "This public pack still remains evidence, not approval."]];
+  const supportPurpose = /guarantor|guarantee|support/i.test(decisionPackPurpose);
+  const communityConnectionFinding =
+    communityLabel && communityLabel !== "Not stated"
+      ? `Confirmed in ${communityLabel}`
+      : "Community anchor not shown";
+  const evidenceVolumeFinding = positiveNumber(communityActivityCountLabel)
+    ? `${communityActivityCountLabel} event${communityActivityCountLabel === "1" ? "" : "s"}${
+        knownAsCategoryLabel ? ` across ${knownAsCategoryLabel}` : " recorded"
+      }`
+    : "Community activity not visible on this paper";
+  const relevantSupportFinding = supportPurpose
+    ? decisionPackGuaranteeOutcomePointers.length
+      ? decisionPackGuaranteeOutcomeRows[0]?.[1] || "Support outcome pointer visible"
+      : "Not visible on this public paper"
+    : decisionPackEvidenceCategories.length
+      ? `${decisionPackEvidenceCategories.length} purpose evidence area${
+          decisionPackEvidenceCategories.length === 1 ? "" : "s"
+        } visible`
+      : "Purpose-specific evidence still needs confirmation";
+  const witnessCurrentnessFinding = hasWitnessEvidence
+    ? memberWitnessCurrentness
+    : positiveNumber(memberWitnessCountLabel) > 0
+      ? "Witnesses recorded; currentness still needs checking"
+      : "No current witness confirmation visible";
+  const liveConfirmationFinding = communityRelayAvailable || communityPulseAvailable
+    ? "Available"
+    : "Not available from this paper yet";
+  const decisionDisplayAnswer = !validNow
+    ? "Request a fresh TrustSlip"
+    : supportPurpose && (!hasWitnessEvidence || !decisionPackGuaranteeOutcomePointers.length)
+      ? "Not ready to guarantee yet"
+      : decisionFirstAnswer;
+  const decisionReasonLine = !validNow
+    ? "This public record is not current enough for a serious decision. Ask for a fresh TrustSlip before relying."
+    : supportPurpose
+      ? `The holder is connected to ${activeCommunityCountLabel || "their community record"} and ${evidenceVolumeFinding}. However, current witness confirmation and relevant support outcome evidence must be checked before guaranteeing.`
+      : `The holder has ${evidenceVolumeFinding}. Match the evidence to your decision risk, then request live confirmation for anything important.`;
+  const decisionTranslationRows: Array<[string, string]> = [
+    ["Community connection", communityConnectionFinding],
+    ["Evidence volume", evidenceVolumeFinding],
+    [supportPurpose ? "Relevant support evidence" : "Relevant evidence", relevantSupportFinding],
+    ["Witness currentness", witnessCurrentnessFinding],
+    ["Live confirmation", liveConfirmationFinding],
+    ["Recommended action", validNow ? "Request live community confirmation" : "Request new TrustSlip"],
+  ];
   const decisionPackGapRows: Array<[string, string]> = (decisionPackProfileGaps.length
     ? decisionPackProfileGaps.map((gap): [string, string] => [gap.label, gap.nextStep])
     : [["No major gap shown", "Still match the evidence to your own decision risk."] as [string, string]]
@@ -1736,7 +1841,7 @@ export default function TrustSlipVerifyPublicPaper({
                   fontWeight: 1000,
                 }}
               >
-                {decisionFirstAnswer}
+                {decisionDisplayAnswer}
               </h2>
               <div
                 style={{
@@ -1748,7 +1853,7 @@ export default function TrustSlipVerifyPublicPaper({
                   fontWeight: 850,
                 }}
               >
-                Use this as decision support for {decisionPackPurpose}.
+                {decisionReasonLine}
               </div>
             </div>
             {!compact ? (
@@ -1757,9 +1862,23 @@ export default function TrustSlipVerifyPublicPaper({
           </div>
 
           <div
+            data-gsn-public-evidence-translation="decision-why"
+            style={{
+              borderRadius: compact ? 12 : 16,
+              border: "1px solid rgba(37,78,119,0.12)",
+              background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,251,255,0.96) 100%)",
+              padding: compact ? 9 : 12,
+              display: "grid",
+              gap: compact ? 7 : 9,
+            }}
+          >
+            <div style={{ ...sectionLabel(), color: "#0B63D1" }}>Why this decision</div>
+            <DecisionFactorTable rows={decisionTranslationRows} compact={compact} />
+          </div>
+          <div
             data-gsn-public-decision-first-facts="four-quick-facts"
             style={{
-              display: "grid",
+              display: compact ? "none" : "grid",
               gridTemplateColumns: compact ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
               gap: compact ? 6 : 8,
             }}
@@ -1810,12 +1929,49 @@ export default function TrustSlipVerifyPublicPaper({
           </div>
         </div>
 
+        {compact ? (
+          <TrustDocumentDisclosureSection
+            title="Full evidence and record details"
+            summary="Open for recipient, access scope, live code checks, security signals, and the fuller evidence pack."
+          >
+            <div
+              data-gsn-public-mobile-full-evidence="collapsed-summary"
+              style={{ display: "grid", gap: 10 }}
+            >
+              <OfficialResultTable
+                title="Why received"
+                rows={[
+                  ["Recipient", recipientAccessRecord.recipientLabel],
+                  ["Decision Pack", decisionPackPurpose],
+                  ["Scope", recipientAccessRecord.scope],
+                  ["Access date", recipientAccessRecord.accessedAtLabel],
+                ]}
+                compact={compact}
+              />
+              <OfficialResultTable
+                title="Live record checks"
+                rows={recordTrustReasonTiles.map((item): [string, string] => [item.label, `${item.title}. ${item.text}`])}
+                compact={compact}
+              />
+              <div
+                style={{
+                  color: "#5F4100",
+                  fontSize: 11,
+                  fontWeight: 850,
+                  lineHeight: 1.35,
+                }}
+              >
+                {recipientAccessRecord.note}
+              </div>
+            </div>
+          </TrustDocumentDisclosureSection>
+        ) : null}
         <div
           data-debug-id="trust-slip-verify.public.recipient-access-record"
           style={{
             ...publicVerifyPanel("#FFFDF7", compact),
             border: "1px solid rgba(214,170,69,0.28)",
-            display: "grid",
+            display: compact ? "none" : "grid",
             gridTemplateColumns: compact ? "40px minmax(0, 1fr)" : "54px minmax(0, 1fr)",
             gap: compact ? 8 : 14,
             alignItems: "start",
@@ -1918,7 +2074,7 @@ export default function TrustSlipVerifyPublicPaper({
           style={{
             ...publicVerifyPanel("#FFFFFF", compact),
             border: "1px solid rgba(37,78,119,0.14)",
-            display: "grid",
+            display: compact ? "none" : "grid",
             gap: compact ? 9 : 12,
           }}
         >

@@ -155758,3 +155758,40 @@ Deployment:
 
 Next recommended step:
 - Owner phone-review `/app/trust`, open `Documents / TrustSlip`, open `Document preview details`, and confirm the Trust Passport snapshot title no longer breaks into letter fragments.
+
+## CURRENT LOCAL STATE - 2026-07-27 - Public TrustSlip phone decision hierarchy
+
+Owner trigger:
+- Owner clarified that the TrustSlip/Decision Pack evidence work should not be cancelled or rolled back; the issue is that the phone screenshot looks too busy and asks for too much attention at once.
+
+Unabated truth:
+- This pass is phone presentation polish for the public `/t/:code` TrustSlip Verify paper.
+- It does not remove the Decision Pack, housing, guarantor/support, community-evidence, or witness concepts already added.
+- It does not add new backend evidence sources, landlord-reference collection, tenancy-agent contact storage, scoring logic, private Trust Passport exposure, or final approval/guarantee authority.
+- Devil's advocate: the new phone view is clearer, but it still depends on the existing evidence payload. If the payload has weak or missing support/witness/community activity evidence, the paper can only say that clearly; it cannot manufacture proof.
+
+Changed:
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Adds a compact `DecisionFactorTable` so phone recipients see the decision answer, reason, and factor findings immediately.
+  - For support/guarantor purposes, shows `Not ready to guarantee yet` when current witness evidence or relevant guarantee/support outcome pointers are missing.
+  - Hides the old four quick-fact cards, recipient access card, and record-trust reason card on compact phone layouts.
+  - Adds a mobile `Full evidence and record details` disclosure for recipient, scope, access date, public-code, currentness, link/QR, and live-confirmation details.
+- `frontend/tools/audit-public-trustslip-first-viewport.mjs`
+  - Updates the first-viewport contract so phone must lead with the decision answer, evidence translation, compact boundary, and collapsed supporting details.
+- `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+  - Updates the public verification boundary audit to cage the same phone hierarchy and support/guarantor non-guarantee language.
+- `frontend/tools/smoke-public-trustslip-verify-states.mjs`
+  - Updates browser assertions for the new phone collapse behavior and verifies the mobile full-evidence disclosure instead of the hidden desktop recipient card.
+
+Verification:
+- Passed `npm --prefix frontend run audit:public-trustslip-first-viewport`.
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- `npm --prefix frontend run smoke:public-trustslip-verify-states` failed in sandbox with known Vite/esbuild `spawn EPERM`, then passed after elevated rerun.
+
+Deployment:
+- Local only so far; do not push/deploy unless the owner explicitly says `push deploy`.
+
+Next recommended step:
+- Phone-review a public `/t/:code` Decision Pack and check that the first viewport now reads as answer first, reason second, compact factors third, with supporting record details behind the disclosure.

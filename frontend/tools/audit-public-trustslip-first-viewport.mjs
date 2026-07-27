@@ -72,7 +72,8 @@ assertOrder(
   [
     { label: "public decision pack hero", pattern: /<header style=\{publicVerifyHero\(compact\)\}>[\s\S]*?Public Decision Pack/ },
     { label: "decision first answer", pattern: /data-gsn-public-decision-first="one-answer-four-facts"/ },
-    { label: "four quick facts", pattern: /data-gsn-public-decision-first-facts="four-quick-facts"/ },
+    { label: "decision evidence translation", pattern: /data-gsn-public-evidence-translation="decision-why"/ },
+    { label: "desktop quick facts", pattern: /data-gsn-public-decision-first-facts="four-quick-facts"/ },
     { label: "compact decision boundary", pattern: /data-gsn-public-decision-boundary="compact"/ },
     { label: "why received", pattern: /data-debug-id="trust-slip-verify\.public\.recipient-access-record"/ },
     { label: "why trusted", pattern: /data-gsn-public-record-trust-reasons="decision-pack"/ },
@@ -86,7 +87,7 @@ assertOrder(
     { label: "community evidence checked", pattern: /<CommunityProofPanel[\s\S]*?title="Community evidence checked"/ },
     { label: "security disclosure", pattern: /<TrustDocumentDisclosureSection[\s\S]*?title="What this cannot prove"/ },
   ],
-  "Public TrustSlip first viewport must lead with recipient decision support before heavier proof and security disclosure."
+  "Public TrustSlip first viewport must lead with recipient decision, immediate evidence translation, and collapsed supporting proof before heavier security disclosure."
 );
 
 assertContains(
@@ -109,20 +110,20 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /const decisionFirstAnswer = !validNow[\s\S]*?"Verification required"[\s\S]*?"Known across evidence contexts"[\s\S]*?"Known by community"[\s\S]*?"Evidence still building"[\s\S]*?const decisionFirstFacts:[\s\S]*?label: "Who\?"[\s\S]*?label: "What we checked"[\s\S]*?label: "Evidence"[\s\S]*?label: "Next step"[\s\S]*?const decisionBoundaryRows:[\s\S]*?\["What we checked", evidenceScopeIsWider \? "Primary \+ wider" : "Primary shown"\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Credit approval", "No"\][\s\S]*?\["Final decision", "Yours"\]/,
-  "Public TrustSlip first viewport must compute one big answer, four quick facts, and a compact decision boundary."
+  /const decisionFirstAnswer = !validNow[\s\S]*?"Verification required"[\s\S]*?"Known across evidence contexts"[\s\S]*?"Known by community"[\s\S]*?"Evidence still building"[\s\S]*?const decisionFirstFacts:[\s\S]*?label: "Who\?"[\s\S]*?label: "Next step"[\s\S]*?const decisionBoundaryRows:[\s\S]*?\["Final decision", "Yours"\][\s\S]*?const supportPurpose = \/guarantor\|guarantee\|support\/i.test\(decisionPackPurpose\)[\s\S]*?const decisionDisplayAnswer = !validNow[\s\S]*?"Not ready to guarantee yet"[\s\S]*?const decisionReasonLine = !validNow[\s\S]*?const decisionTranslationRows: Array<\[string, string\]> = \[[\s\S]*?\["Evidence volume", evidenceVolumeFinding\][\s\S]*?\["Recommended action", validNow \? "Request live community confirmation" : "Request new TrustSlip"\]/,
+  "Public TrustSlip first viewport must compute one big answer, immediate reason text, evidence translation rows, desktop quick facts, and a compact decision boundary."
 );
 
 assertContains(
   "publicPaper",
-  /data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision Summary[\s\S]*?\{decisionFirstAnswer\}[\s\S]*?Use this as decision support for \{decisionPackPurpose\}[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?decisionFirstFacts\.map[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?decisionBoundaryRows\.map/,
-  "Public TrustSlip first viewport must render the answer, four facts, and compact decision boundary before supporting details."
+  /data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision Summary[\s\S]*?\{decisionDisplayAnswer\}[\s\S]*?\{decisionReasonLine\}[\s\S]*?data-gsn-public-evidence-translation="decision-why"[\s\S]*?Why this decision[\s\S]*?<DecisionFactorTable rows=\{decisionTranslationRows\} compact=\{compact\} \/>[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?decisionFirstFacts\.map[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?decisionBoundaryRows\.map[\s\S]*?title="Full evidence and record details"[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"/,
+  "Public TrustSlip phone viewport must render the answer, reason, decision-factor findings, desktop-only quick facts, compact boundary, and collapsed supporting details."
 );
 
 assertContains(
   "publicPaper",
-  /data-debug-id="trust-slip-verify\.public\.recipient-access-record"[\s\S]*?gridTemplateColumns: compact \? "40px minmax\(0, 1fr\)" : "54px minmax\(0, 1fr\)"[\s\S]*?padding: compact \? 9 : 14[\s\S]*?Why you received this[\s\S]*?\{recipientAccessRecord\.status\}[\s\S]*?gridTemplateColumns: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?\["Recipient", recipientAccessRecord\.recipientLabel\][\s\S]*?\["Decision Pack", decisionPackPurpose\][\s\S]*?\["Scope", recipientAccessRecord\.scope\][\s\S]*?\["Access date", recipientAccessRecord\.accessedAtLabel\]/,
-  "Recipient access record must remain compact, decision-scoped, and fed by view-model labels after the first answer."
+  /data-debug-id="trust-slip-verify\.public\.recipient-access-record"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?gridTemplateColumns: compact \? "40px minmax\(0, 1fr\)" : "54px minmax\(0, 1fr\)"[\s\S]*?padding: compact \? 9 : 14[\s\S]*?Why you received this[\s\S]*?\{recipientAccessRecord\.status\}[\s\S]*?gridTemplateColumns: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?\["Recipient", recipientAccessRecord\.recipientLabel\][\s\S]*?\["Decision Pack", decisionPackPurpose\][\s\S]*?\["Scope", recipientAccessRecord\.scope\][\s\S]*?\["Access date", recipientAccessRecord\.accessedAtLabel\]/,
+  "Recipient access record must remain decision-scoped, fed by view-model labels, and hidden behind the mobile full-evidence disclosure on phones."
 );
 
 
@@ -133,8 +134,8 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /const recordTrustReasonTiles = \[[\s\S]*?Public code[\s\S]*?Current window[\s\S]*?Check path[\s\S]*?Live confirmation[\s\S]*?\];[\s\S]*?data-gsn-public-record-trust-reasons="decision-pack"[\s\S]*?Why this record can be trusted[\s\S]*?current, traceable, and limited[\s\S]*?do not guarantee the holder or replace your own judgement[\s\S]*?data-gsn-public-record-trust-reasons-grid="compact-two-by-two"[\s\S]*?gridTemplateColumns: compact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(4, minmax\(0, 1fr\)\)"/,
-  "Trustability reasons must stay grouped as code/currentness/check-path/live-confirmation signals without overclaiming."
+  /const recordTrustReasonTiles = \[[\s\S]*?Public code[\s\S]*?Current window[\s\S]*?Check path[\s\S]*?Live confirmation[\s\S]*?\];[\s\S]*?data-gsn-public-record-trust-reasons="decision-pack"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?Why this record can be trusted[\s\S]*?current, traceable, and limited[\s\S]*?do not guarantee the holder or replace your own judgement[\s\S]*?data-gsn-public-record-trust-reasons-grid="compact-two-by-two"[\s\S]*?gridTemplateColumns: compact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(4, minmax\(0, 1fr\)\)"/,
+  "Trustability reasons must stay grouped as code/currentness/check-path/live-confirmation signals without overclaiming, and collapse into the mobile full-evidence disclosure."
 );
 
 assertContains(
