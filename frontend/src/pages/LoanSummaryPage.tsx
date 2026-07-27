@@ -159,7 +159,7 @@ type CollapseState = {
   routes: boolean;
 };
 
-const LOAN_SUMMARY_UI_STORAGE_KEY = "gmfn.loanSummary.sections.v1";
+const LOAN_SUMMARY_UI_STORAGE_KEY = "gmfn.loanSummary.sections.v2";
 
 function safeItems<T>(res: any): T[] {
   if (!res) return [];
@@ -623,11 +623,11 @@ function communityImageSrc(clan: CommunityLite | null): string {
 
 function defaultCollapseState(): CollapseState {
   return {
-    overview: false,
-    guarantors: false,
-    repayment: false,
-    evidence: false,
-    routes: false,
+    overview: true,
+    guarantors: true,
+    repayment: true,
+    evidence: true,
+    routes: true,
   };
 }
 

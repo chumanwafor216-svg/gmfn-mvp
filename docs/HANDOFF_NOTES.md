@@ -157025,3 +157025,32 @@ Verification run locally:
 
 Deployment:
 - Local only. Push/deploy only when owner sends `2`.
+
+## 2026-07-27 - Local Support Summary And Readiness Decongestion Pass
+
+- Scope: local-only ease-of-use polish for support pages that still exposed too many major sections on phone.
+- `frontend/src/pages/LoanSummaryPage.tsx`
+  - Bumped the local UI storage key from `gmfn.loanSummary.sections.v1` to `gmfn.loanSummary.sections.v2`.
+  - Changed default section state so Summary facts, Supporter decisions, Repayment evidence, Latest trust note, and Next support steps start closed.
+  - Kept the fixed support hero, current process message, and copy actions visible so the page remains useful without dumping every block at once.
+- `frontend/src/pages/LoanReadinessPage.tsx`
+  - Bumped the local UI storage key from `gmfn.loanReadiness.sections.v3` to `gmfn.loanReadiness.sections.v4`.
+  - Changed default section state so Readiness summary, Readiness reading, Main blockers, and Next pages start closed.
+  - Kept the main readiness hero and recommended first action visible, preserving the app-led flow.
+- `frontend/tools/audit-loans-actions.mjs`
+  - Added guards that both pages keep their deeper mobile sections closed by default while preserving existing route/action contracts.
+
+Unabated truth:
+- This is default presentation decongestion only.
+- It does not change support amounts, supporter decisions, repayment logic, readiness calculations, route targets, backend APIs, auth, finance records, or evidence generation.
+- Users can still open every covered section immediately when needed.
+
+Verification run locally:
+- `node frontend\tools\audit-loans-actions.mjs`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run lint`
+- `git diff --check` passed with normal CRLF warnings.
+- `npm --prefix frontend run build`
+
+Deployment:
+- Local only. Push/deploy only when owner sends `2`.

@@ -324,6 +324,11 @@ assertContains(
   /display: isCompact \? "none" : "flex"[\s\S]*?debugId="loan-readiness\.front-next"[\s\S]*?stableHeight=\{isCompact \? 58 : 72\}[\s\S]*?height: isCompact \? 58 : 72,[\s\S]*?maxHeight: isCompact \? 58 : 72,[\s\S]*?loanReadinessRouteHeading\("navigation", recommendedNext\.ctaLabel\)/,
   "Loan Readiness must keep a compact first-viewport recommended next action and hide the decorative community image on phone."
 );
+assertContains(
+  "src/pages/LoanReadinessPage.tsx",
+  /const LOAN_READINESS_UI_STORAGE_KEY = "gmfn\.loanReadiness\.sections\.v4";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?overview: true,[\s\S]*?reading: true,[\s\S]*?blockers: true,[\s\S]*?routes: true,/,
+  "Loan Readiness must default deeper summary, reading, blockers, and routes closed so the phone view starts with the decision and one next action."
+);
 
 assertContains(
   "src/pages/LoanSuggestionsPage.tsx",
@@ -395,6 +400,11 @@ assertContains(
   "src/pages/LoanSummaryPage.tsx",
   /import \{ brandClampLines \} from "\.\.\/styles\/gmfnBrand";[\s\S]*?function routeTileStyle\(primary = false\): React\.CSSProperties \{[\s\S]*?height: 104,[\s\S]*?maxHeight: 104,[\s\S]*?overflow: "hidden",[\s\S]*?function routeTileTitleStyle\(\): React\.CSSProperties \{[\s\S]*?brandClampLines\(2\)[\s\S]*?function routeTileDetailStyle\(\): React\.CSSProperties \{[\s\S]*?brandClampLines\(2\)[\s\S]*?display: isCompact \? "none" : "block"[\s\S]*?debugId="loan-summary\.copy-summary"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="loan-summary\.copy-audit-link"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="loan-summary\.route\.workbench"[\s\S]*?stableHeight=\{104\}/,
   "Loan Summary must hide the compact decorative image, keep copy actions in the hero, and keep fixed phone-safe route cards."
+);
+assertContains(
+  "src/pages/LoanSummaryPage.tsx",
+  /const LOAN_SUMMARY_UI_STORAGE_KEY = "gmfn\.loanSummary\.sections\.v2";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?overview: true,[\s\S]*?guarantors: true,[\s\S]*?repayment: true,[\s\S]*?evidence: true,[\s\S]*?routes: true,/,
+  "Loan Summary must default deeper facts, supporter decisions, repayment, evidence, and route grids closed so the phone view is decision-first."
 );
 
 assertContains(
