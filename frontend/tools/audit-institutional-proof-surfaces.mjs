@@ -1118,7 +1118,7 @@ assertNotContains(
 );
 assertContains(
   "communityVerify",
-  /TrustDocumentDisclosureSection[\s\S]*?title="Community record security and limits"[\s\S]*?Open for what this page confirms, limits, security, and record reference\.[\s\S]*?data-gsn-community-verify-security-limits="true"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentFingerprint/,
+  /TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?Open for registry checks, what this page confirms, limits, security, and record reference\.[\s\S]*?data-gsn-community-verify-security-limits="true"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentFingerprint/,
   "Community Verification must keep security, limits, and record-reference detail collapsed behind one disclosure."
 );
 assertContains(
@@ -1193,17 +1193,17 @@ assertContains(
 );
 assertContains(
   "communityMemberVerify",
-  /data-gsn-trust-document-certificate="community-member-credential"[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(min\(100%, 320px\), 1fr\)\)"[\s\S]*?gridTemplateColumns:[\s\S]*?"repeat\(auto-fit, minmax\(min\(100%, 240px\), 1fr\)\)"/,
+  /data-gsn-trust-document-certificate="community-member-credential"[\s\S]*?gridTemplateColumns: "1fr"[\s\S]*?gridTemplateColumns:[\s\S]*?"repeat\(auto-fit, minmax\(min\(100%, 240px\), 1fr\)\)"/,
   "Public Community Member Credential panels must collapse on phone before boundaries and record-reference cards squeeze or overlap."
 );
 assertContains(
   "communityMemberVerify",
-  /TrustDocumentDisclosureSection[\s\S]*title="Audit Details"[\s\S]*Open for witness checks, community record, evidence notes, and limits\./,
+  /TrustDocumentDisclosureSection[\s\S]*title="Audit Details"[\s\S]*Open for confidence checks, evidence reading, full facts, limits, security, and record reference\./,
   "Public Community Member Credential must keep deeper public-reading guidance collapsed behind a clear institutional disclosure."
 );
 assertContains(
   "communityMemberVerify",
-  /data-gsn-member-credential-primary-facts="true"[\s\S]*?Member GSN ID[\s\S]*?Community ID[\s\S]*?Status[\s\S]*?Witness strength[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Credential facts"[\s\S]*?data-gsn-member-credential-secondary-facts="true"[\s\S]*?Next witness check[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Evidence and privacy notes"/,
+  /data-gsn-member-credential-primary-facts="true"[\s\S]*?Member GSN ID[\s\S]*?Community ID[\s\S]*?Status[\s\S]*?Witness strength[\s\S]*?<CommunityProofPanel[\s\S]*?title="Known by community"[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?data-gsn-member-credential-security-limits="true"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Credential facts"[\s\S]*?data-gsn-member-credential-secondary-facts="true"[\s\S]*?Next witness check[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Evidence and privacy notes"/,
   "Public Community Member Credential must expose only the core facts first and collapse secondary facts plus evidence/privacy notes."
 );
 assertNotContains(
@@ -1283,7 +1283,7 @@ assertContains(
 );
 assertContains(
   "communityConfirmationOutcome",
-  /TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?Open for what this outcome confirms, what it cannot prove, security, and record reference\.[\s\S]*?data-gsn-community-confirmation-outcome-security-limits="true"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentFingerprint/,
+  /TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?Open for confidence checks, evidence reading, privacy boundary, QR, security, and record reference\.[\s\S]*?data-gsn-community-confirmation-outcome-security-limits="true"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentFingerprint/,
   "Public Community Confirmation Outcome must keep security, limits, and record-reference detail collapsed behind one disclosure."
 );
 assertContains(

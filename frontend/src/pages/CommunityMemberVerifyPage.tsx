@@ -712,8 +712,6 @@ export default function CommunityMemberVerifyPage() {
                 </div>
               </div>
 
-              <TrustDocumentConfidenceRibbon items={memberCredentialConfidenceRibbonItems} />
-
               <CommunityProofPanel
                 title="Known by community"
                 subtitle="Public-safe membership proof for this Community ID. It supports judgement without exposing private witnesses or the full Trust Passport."
@@ -733,18 +731,36 @@ export default function CommunityMemberVerifyPage() {
               />
 
               <TrustDocumentDisclosureSection
-                title="Credential security and limits"
-                summary="Open for what this confirms, limits, security, and record reference."
+                title="Audit Details"
+                summary="Open for confidence checks, evidence reading, full facts, limits, security, and record reference."
               >
                 <div
                   data-gsn-member-credential-security-limits="true"
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
+                    gridTemplateColumns: "1fr",
                     gap: 12,
                     alignItems: "start",
                   }}
                 >
+                  <TrustDocumentConfidenceRibbon items={memberCredentialConfidenceRibbonItems} />
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
+                      gap: 8,
+                    }}
+                  >
+                    {memberReading.map((item) => (
+                      <CredentialReadingCard
+                        key={item.title}
+                        title={item.title}
+                        body={item.body}
+                        tone={item.tone}
+                      />
+                    ))}
+                  </div>
                   <div style={{ display: "grid", gap: 12 }}>
                     <TrustDocumentBoundaryPanel
                       title="This credential confirms"
@@ -770,47 +786,6 @@ export default function CommunityMemberVerifyPage() {
                   </div>
                 </div>
               </TrustDocumentDisclosureSection>
-
-              <div style={innerCard("#FFFFFF")}>
-                <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  {evidenceIcon("certificate-seal", "navy")}
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ color: "#07172C", fontSize: 18, fontWeight: 1000 }}>
-                      Public reading
-                    </div>
-                    <p style={{ margin: "7px 0 0", ...helperText() }}>
-                      Read this as scoped membership evidence inside one Community ID,
-                      not as universal trust or automatic approval.
-                      It does not certify shop, line, subgroup, payment, loan, or
-                      parent community approval claims.
-                    </p>
-                  </div>
-                </div>
-                <div style={{ marginTop: 12 }}>
-                  <TrustDocumentDisclosureSection
-                    title="Audit Details"
-                    summary="Open for witness checks, community record, evidence notes, and limits."
-                  >
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
-                        gap: 8,
-                      }}
-                    >
-                      {memberReading.map((item) => (
-                        <CredentialReadingCard
-                          key={item.title}
-                          title={item.title}
-                          body={item.body}
-                          tone={item.tone}
-                        />
-                      ))}
-                    </div>
-                  </TrustDocumentDisclosureSection>
-                </div>
-              </div>
 
               <TrustDocumentDisclosureSection
                 title="Credential facts"

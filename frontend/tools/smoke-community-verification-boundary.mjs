@@ -465,7 +465,7 @@ async function runCommunityRecordScenario(browser, baseURL) {
       exact: false,
     })
   ).toBeVisible();
-  await openDisclosure(state.page, "Community record security and limits");
+  await openDisclosure(state.page, "Audit Details");
   await openDisclosure(state.page, "More confirmed details");
   await openDisclosure(state.page, "More limits");
   await expectVisibleText(state.page, "Controlled relay availability");
@@ -607,7 +607,7 @@ async function runMemberCredentialScenario(browser, baseURL, member = memberKey,
   for (const text of expected.visibleText || []) {
     await expect(state.page.getByText(text, { exact: false }).first()).toBeVisible();
   }
-  await openDisclosure(state.page, "Credential security and limits");
+  await openDisclosure(state.page, "Audit Details");
   await openDisclosure(state.page, "More security details");
   await expectVisibleText(state.page, "Full Trust Passport or private member history");
   await expectVisibleText(state.page, "Payments, escrow, loans, credit approval, or delivery");
@@ -615,7 +615,6 @@ async function runMemberCredentialScenario(browser, baseURL, member = memberKey,
     state.page,
     "Private verifier names, contacts, review notes, payment records, and the full Trust Passport stay hidden."
   );
-  await openDisclosure(state.page, "Audit Details");
   await expectVisibleText(
     state.page,
     "This credential does not expose verifier names, private notes, phone numbers, shop details, payment records, loan details, or credit approval."
@@ -732,7 +731,7 @@ async function main() {
     await runMemberCredentialScenario(browser, baseURL, noWitnessMemberKey, {
       heading: "Active community member; witness evidence limited",
       visibleText: [
-        "No witness records shown",
+        "No active member witness count is shown yet.",
         "Joined / witness not started",
       ],
       fullReadingText:

@@ -1,3 +1,50 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Customer-facing public paper repetition cleanup
+
+Owner trigger:
+- Owner asked to check other customer-facing GSN papers for the same repetitiveness corrected in public TrustSlip and extend the correction to other papers.
+
+Unabated truth:
+- The issue was real on Community Verify, Community Member Credential, and Community Confirmation Outcome: technical confidence/security/audit blocks were competing with the actual decision reading.
+- This pass is presentation hierarchy cleanup only. It does not add new backend evidence categories, landlord-reference storage, new witness forms, or new decision scoring.
+- Devil's advocate: the papers are now less repetitive and more decision-first, but serious decisions still require live confirmation, TrustSlip/Trust Passport context, or external proof where the public paper does not have enough evidence.
+
+Changed:
+- `frontend/src/pages/CommunityVerifyPage.tsx`
+  - Removed the pre-decision `Registry check` drawer.
+  - Renamed `Community record security and limits` to a single `Audit Details` drawer and moved the confidence ribbon inside it.
+  - Removed the repeated `Share this record` drawer because Copy link and the QR-style verification snapshot already carry the same return/share job.
+- `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+  - Removed the standalone confidence ribbon before `Known by community`.
+  - Consolidated confidence, reading cards, security, confirms/does-not-confirm, and fingerprint into one `Audit Details` drawer after the decision facts and proof panel.
+  - Removed the older visible `Public reading` card and duplicate nested `Audit Details` drawer.
+- `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`
+  - Removed pre-decision `Outcome check` and old `Audit Details` drawers so the live state and Decision Summary come first.
+  - Renamed `Outcome evidence details` to one `Audit Details` drawer and moved confidence, boundary, security, fingerprint, public reading, return/QR, and screenshot security into it.
+  - Removed the repeated `What this cannot decide` drawer because its limits are already covered by the decision card, proof panel, and audit boundary lists.
+- Updated route-specific and wider audit/smoke guards to protect the new decision-first order.
+
+Verification:
+- Passed `npm --prefix frontend run lint`.
+- Passed `npm --prefix frontend run audit:community-verification-boundary`.
+- Passed `npm --prefix frontend run audit:community-confirmation-outcome-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:public-trustslip-first-viewport`.
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed elevated `npm --prefix frontend run smoke:community-verification-boundary`.
+- Passed elevated `npm --prefix frontend run smoke:community-confirmation-outcome-boundary`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed elevated `npm --prefix frontend run build`.
+- Passed `node --check frontend\tools\audit-institutional-proof-surfaces.mjs` and `node --check frontend\tools\audit-trust-actions.mjs`.
+- Passed `git diff --check`; only Git line-ending warnings were reported.
+
+Known caveat:
+- `npm --prefix frontend run audit:evidence-surfaces` and `npm --prefix frontend run audit:proof-surfaces` both hung after the npm banner and had to be stopped by killing the runaway audit Node processes. Route-local audits/smokes and build passed, so this appears to be a broad audit-runner/regex hang rather than a page failure.
+
+Deployment:
+- Local only. Do not push/deploy unless the owner selects `2` or explicitly says push/deploy.
+
+Next recommended step:
+- Commit this local public-paper repetition cleanup. If the owner selects `2`, push/deploy the batch and recheck the live public paper routes on a phone viewport.
 ## CURRENT LOCAL STATE - 2026-07-27 - Public TrustSlip repetition removal
 
 Owner trigger:

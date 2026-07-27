@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
 import { useParams } from "react-router-dom";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
 import {
@@ -986,13 +985,6 @@ export default function CommunityVerifyPage() {
               compact
             />
 
-            <TrustDocumentDisclosureSection
-              title="Registry check"
-              summary={`${active ? "Active registry status" : "Registry status available"} - record check, update status, evidence source, and check path.`}
-            >
-              <TrustDocumentConfidenceRibbon items={confidenceRibbonItems} />
-            </TrustDocumentDisclosureSection>
-
             {notice ? (
               <div
                 role="status"
@@ -1273,8 +1265,8 @@ export default function CommunityVerifyPage() {
                     </div>
                   </div>
                   <TrustDocumentDisclosureSection
-                    title="Community record security and limits"
-                    summary="Open for what this page confirms, limits, security, and record reference."
+                    title="Audit Details"
+                    summary="Open for registry checks, what this page confirms, limits, security, and record reference."
                   >
                     <div
                       data-gsn-trust-document-certificate="community-verification"
@@ -1285,6 +1277,7 @@ export default function CommunityVerifyPage() {
                         gap: 12,
                       }}
                     >
+                      <TrustDocumentConfidenceRibbon items={confidenceRibbonItems} />
                       <TrustDocumentSecurityPanel items={securityPanelItems} />
                       <div style={{ display: "grid", gap: 12 }}>
                         <TrustDocumentBoundaryPanel
@@ -1678,54 +1671,6 @@ export default function CommunityVerifyPage() {
                       </div>
                     </div>
                   </details>
-                  <TrustDocumentDisclosureSection
-                    title="Share this record"
-                    summary="Open for the QR code that returns to this same public Community ID record."
-                  >
-                    <div
-                      style={{
-                        ...sectionCard("#FFFFFF"),
-                        display: "grid",
-                        gridTemplateColumns: "minmax(0, 1fr)",
-                        gap: 12,
-                        alignItems: "start",
-                        boxShadow: "0 10px 28px rgba(6,24,39,0.05)",
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                        <div
-                          style={{
-                            width: 92,
-                            height: 92,
-                            borderRadius: 18,
-                            border: "1px solid rgba(8,35,58,0.14)",
-                            background: "#FFFFFF",
-                            display: "grid",
-                            placeItems: "center",
-                            padding: 8,
-                            flex: "0 0 auto",
-                          }}
-                        >
-                          <QRCodeSVG
-                            value={publicLink}
-                            size={74}
-                            bgColor="#FFFFFF"
-                            fgColor="#07172C"
-                            level="M"
-                            marginSize={1}
-                          />
-                        </div>
-                        <div style={{ minWidth: 0 }}>
-                          <h2 style={{ margin: 0, color: "#07172C", fontSize: 17, fontWeight: 1000 }}>
-                            Share this public record
-                          </h2>
-                          <p style={{ margin: "7px 0 0", ...helperText(), lineHeight: 1.38 }}>
-                            Scan or copy the link to reopen this same Community ID record. Private member lists and private review evidence stay hidden.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </TrustDocumentDisclosureSection>
                   <SecondaryButton
                     debugId="community-verify.refresh"
                     stableHeight={52}

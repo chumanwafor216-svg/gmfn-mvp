@@ -133,8 +133,8 @@ assertContains(
 );
 assertContains(
   "member",
-  /<TrustDocumentConfidenceRibbon items=\{memberCredentialConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Known by community"[\s\S]*?trustSlipStatusLabel="Community member credential"/,
-  "Community Member Credential must show the shared Known by community proof layer immediately after the confidence ribbon."
+  /data-gsn-member-credential-primary-facts="true"[\s\S]*?<CommunityProofPanel[\s\S]*?title="Known by community"[\s\S]*?trustSlipStatusLabel="Community member credential"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?<TrustDocumentConfidenceRibbon items=\{memberCredentialConfidenceRibbonItems\} \/>/,
+  "Community Member Credential must show decision facts and the shared Known by community proof before the heavier Audit Details drawer."
 );
 
 assertContains(

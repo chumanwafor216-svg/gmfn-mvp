@@ -347,7 +347,7 @@ assertContains(
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
-  /const trustSlipKnownAsRows[\s\S]*?Primary community role[\s\S]*?Primary community signals[\s\S]*?Aggregate scope[\s\S]*?Witness route[\s\S]*?const trustSlipEvidenceSummaryCards[\s\S]*?Primary \+ wider evidence[\s\S]*?Evidence basis[\s\S]*?Good for[\s\S]*?Not proof of[\s\S]*?data-gsn-trustslip-holder-practical-evidence="true"[\s\S]*?Practical evidence summary[\s\S]*?separates the primary community anchor from wider evidence context[\s\S]*?whole judgement/,
+  /const trustSlipKnownAsRows[\s\S]*?Primary community role[\s\S]*?Primary community signals[\s\S]*?Aggregate scope[\s\S]*?Witness route[\s\S]*?const trustSlipEvidenceSummaryCards[\s\S]*?Primary \+ wider evidence[\s\S]*?Evidence basis[\s\S]*?Good for[\s\S]*?Not proof of[\s\S]*?data-gsn-trustslip-holder-practical-evidence[\s\S]*?Practical evidence summary[\s\S]*?Open for wider evidence context after the main TrustSlip paper/,
   "Signed-in TrustSlip holder paper must condense known-as evidence, evidence basis, use cases, and limits into one practical summary instead of repeating long panels."
 );
 
@@ -443,13 +443,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityMemberVerifyPage.tsx",
-  /data-gsn-trust-document-certificate="community-member-credential"[\s\S]*?data-gsn-member-credential-primary-facts="true"[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(min\(100%, 190px\), 1fr\)\)"[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Credential security and limits"[\s\S]*?data-gsn-member-credential-security-limits="true"[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(min\(100%, 320px\), 1fr\)\)"/,
+  /data-gsn-trust-document-certificate="community-member-credential"[\s\S]*?data-gsn-member-credential-primary-facts="true"[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(min\(100%, 190px\), 1fr\)\)"[\s\S]*?<CommunityProofPanel[\s\S]*?title="Known by community"[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?data-gsn-member-credential-security-limits="true"[\s\S]*?gridTemplateColumns: "1fr"/,
   "Public Community Member Credential must show core anchor facts before collapsing the heavier security and limitation panels."
 );
 
 assertContains(
   "src/pages/CommunityMemberVerifyPage.tsx",
-  /TrustDocumentDisclosureSection[\s\S]*title="Audit Details"[\s\S]*Open for witness checks, community record, evidence notes, and limits\./,
+  /TrustDocumentDisclosureSection[\s\S]*title="Audit Details"[\s\S]*Open for confidence checks, evidence reading, full facts, limits, security, and record reference\./,
   "Public Community Member Credential must keep deeper public-reading guidance collapsed behind a clear institutional disclosure."
 );
 
@@ -786,7 +786,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityConfirmationOutcomePage.tsx",
-  /TrustDocumentDisclosureSection[\s\S]*?title="Outcome check"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?data-gsn-community-confirmation-outcome-fast-reading="true"[\s\S]*?Decision Summary[\s\S]*?What this shows[\s\S]*?What it does not mean[\s\S]*?Next safe action[\s\S]*?Public actions[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Outcome evidence details"[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="What this cannot decide"/,
+  /data-gsn-community-confirmation-outcome-fast-reading="true"[\s\S]*?Decision Summary[\s\S]*?What this shows[\s\S]*?What it does not mean[\s\S]*?Next safe action[\s\S]*?<CommunityProofPanel[\s\S]*?title="Community evidence behind this outcome"[\s\S]*?Public actions[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?TrustDocumentConfidenceRibbon/,
   "Public Community Confirmation Outcome must show a fast decision reading before collapsed full outcome and decision-boundary details."
 );
 
@@ -798,7 +798,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityConfirmationOutcomePage.tsx",
-  /TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?Open for what this outcome confirms, what it cannot prove, security, and record reference\.[\s\S]*?data-gsn-community-confirmation-outcome-security-limits="true"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentFingerprint/,
+  /TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?Open for confidence checks, evidence reading, privacy boundary, QR, security, and record reference\.[\s\S]*?data-gsn-community-confirmation-outcome-security-limits="true"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentFingerprint/,
   "Public Community Confirmation Outcome must keep security, limits, and record-reference detail collapsed behind one disclosure."
 );
 
@@ -828,7 +828,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityConfirmationOutcomePage.tsx",
-  /It is linked to a recorded GSN community record\.[\s\S]*?Not a whole-community vote\./,
+  /Counts come from the contacts asked to respond\. They are not a whole-community vote or a private responder list\./,
   "Community confirmation outcome limitations must avoid implying the response is a whole-community decision."
 );
 
@@ -888,7 +888,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /Community Verification[\s\S]*?Registry check[\s\S]*?Public community record[\s\S]*?This confirms the community identity in GSN[\s\S]*?does not verify every member, shop, line, or subgroup[\s\S]*?data-gsn-community-verify-decision-summary="true"[\s\S]*?Decision Summary[\s\S]*?What this shows[\s\S]*?What it does not prove[\s\S]*?Ask for next evidence[\s\S]*?community-verify\.copy-link[\s\S]*?Copy record link[\s\S]*?community-verify\.request-confirmation[\s\S]*?Request scoped confirmation[\s\S]*?Private by design[\s\S]*?Community record security and limits[\s\S]*?What are you checking\?[\s\S]*?Verification snapshot[\s\S]*?Community following[\s\S]*?Verification details[\s\S]*?Share this record/,
+  /Community Verification[\s\S]*?Public community record[\s\S]*?This confirms the community identity in GSN[\s\S]*?does not verify every member, shop, line, or subgroup[\s\S]*?data-gsn-community-verify-decision-summary="true"[\s\S]*?Decision Summary[\s\S]*?What this shows[\s\S]*?What it does not prove[\s\S]*?Ask for next evidence[\s\S]*?community-verify\.copy-link[\s\S]*?Copy record link[\s\S]*?community-verify\.request-confirmation[\s\S]*?Request scoped confirmation[\s\S]*?Private by design[\s\S]*?Audit Details[\s\S]*?What are you checking\?[\s\S]*?Verification snapshot[\s\S]*?Community following[\s\S]*?Verification details/,
   "CommunityVerifyPage must present an official record card, fast decision summary, collapsed registry/snapshot/details sections, and a privacy boundary."
 );
 
@@ -900,7 +900,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /TrustDocumentRegistryMasthead[\s\S]*?Official GSN Registry Record[\s\S]*?TrustDocumentConfidenceRibbon items=\{confidenceRibbonItems\}[\s\S]*?data-gsn-trust-document-certificate="community-verification"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This page confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This page does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Record reference"/,
+  /TrustDocumentRegistryMasthead[\s\S]*?Official GSN Registry Record[\s\S]*?data-gsn-trust-document-certificate="community-verification"[\s\S]*?TrustDocumentConfidenceRibbon items=\{confidenceRibbonItems\}[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This page confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This page does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Record reference"/,
   "CommunityVerifyPage must render the GSN Trust Document Language sequence with masthead, confidence ribbon, security panel, confirms/does-not-confirm panels, and record reference."
 );
 
@@ -912,7 +912,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /TrustDocumentDisclosureSection[\s\S]*?title="Community record security and limits"[\s\S]*?Open for what this page confirms, limits, security, and record reference\.[\s\S]*?data-gsn-community-verify-security-limits="true"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentFingerprint/,
+  /TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?Open for registry checks, what this page confirms, limits, security, and record reference\.[\s\S]*?data-gsn-community-verify-security-limits="true"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentFingerprint/,
   "CommunityVerifyPage must keep security, limits, and record-reference detail collapsed behind one disclosure."
 );
 
@@ -1146,7 +1146,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityMemberVerifyPage.tsx",
-  /It does not certify shop, line, subgroup, payment, loan, or[\s\S]*?parent community approval claims\./,
+  /memberCredentialDoesNotConfirmList[\s\S]*?Payments, escrow, loans, credit approval, or delivery[\s\S]*?Membership in any other community[\s\S]*?Recognised inside this Community ID[\s\S]*?Not universal trust, payment[\s\S]*?approval, or parent community membership/,
   "Community member public credential must separate scoped membership evidence from shop, subgroup, payment, loan, and parent community claims."
 );
 

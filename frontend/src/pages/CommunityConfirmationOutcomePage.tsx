@@ -1335,54 +1335,6 @@ export default function CommunityConfirmationOutcomePage() {
               </section>
             ) : outcome ? (
               <>
-                <TrustDocumentDisclosureSection
-                  title="Outcome check"
-                  summary="Open for status, response window, community responses, privacy, and check path."
-                >
-                  <TrustDocumentConfidenceRibbon items={outcomeConfidenceRibbonItems} />
-                </TrustDocumentDisclosureSection>
-
-                <TrustDocumentDisclosureSection
-                  title="Audit Details"
-                  summary="Open for what this outcome confirms, what it cannot prove, security, and record reference."
-                >
-                  <section
-                    data-gsn-trust-document-certificate="community-confirmation-outcome"
-                    data-gsn-community-confirmation-outcome-security-limits="true"
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
-                      gap: isCompactPaper ? 12 : 14,
-                      alignItems: "start",
-                    }}
-                  >
-                    <div style={{ display: "grid", gap: isCompactPaper ? 10 : 12 }}>
-                      <TrustDocumentBoundaryPanel
-                        title="This outcome confirms"
-                        tone="good"
-                        items={outcomeConfirmsList}
-                      />
-                      <TrustDocumentBoundaryPanel
-                        title="This outcome does not confirm"
-                        tone="warn"
-                        items={outcomeDoesNotConfirmList}
-                      />
-                    </div>
-                    <div style={{ display: "grid", gap: isCompactPaper ? 10 : 12 }}>
-                      <TrustDocumentSecurityPanel
-                        title="Outcome security"
-                        items={outcomeSecurityItems}
-                      />
-                      <TrustDocumentFingerprint
-                        label="Community confirmation outcome reference"
-                        value={confirmationOutcomeFingerprint}
-                        detail="Record reference for this visible public confirmation outcome. It helps match this page with its GSN record; it is not legal proof or payment approval."
-                      />
-                    </div>
-                  </section>
-                </TrustDocumentDisclosureSection>
-
                 <section
                   style={{
                     ...sectionCard(liveWindowOpen ? "#EAF3FF" : status === "expired" ? "#FEF2F2" : "#F7FAFF"),
@@ -1693,8 +1645,8 @@ export default function CommunityConfirmationOutcomePage() {
                 </section>
 
                 <TrustDocumentDisclosureSection
-                  title="Outcome evidence details"
-                  summary="Open for the simple reading, privacy boundary, decision note, return channel, QR, and screenshot security detail."
+                  title="Audit Details"
+                  summary="Open for confidence checks, evidence reading, privacy boundary, QR, security, and record reference."
                 >
                 <section
                   style={{
@@ -1703,6 +1655,51 @@ export default function CommunityConfirmationOutcomePage() {
                     gap: 14,
                   }}
                 >
+                  <section
+                    data-gsn-trust-document-certificate="community-confirmation-outcome"
+                    data-gsn-community-confirmation-outcome-security-limits="true"
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr",
+                      gap: isCompactPaper ? 12 : 14,
+                      alignItems: "start",
+                    }}
+                  >
+                    <TrustDocumentConfidenceRibbon items={outcomeConfidenceRibbonItems} />
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
+                        gap: isCompactPaper ? 12 : 14,
+                        alignItems: "start",
+                      }}
+                    >
+                      <div style={{ display: "grid", gap: isCompactPaper ? 10 : 12 }}>
+                        <TrustDocumentBoundaryPanel
+                          title="This outcome confirms"
+                          tone="good"
+                          items={outcomeConfirmsList}
+                        />
+                        <TrustDocumentBoundaryPanel
+                          title="This outcome does not confirm"
+                          tone="warn"
+                          items={outcomeDoesNotConfirmList}
+                        />
+                      </div>
+                      <div style={{ display: "grid", gap: isCompactPaper ? 10 : 12 }}>
+                        <TrustDocumentSecurityPanel
+                          title="Outcome security"
+                          items={outcomeSecurityItems}
+                        />
+                        <TrustDocumentFingerprint
+                          label="Community confirmation outcome reference"
+                          value={confirmationOutcomeFingerprint}
+                          detail="Record reference for this visible public confirmation outcome. It helps match this page with its GSN record; it is not legal proof or payment approval."
+                        />
+                      </div>
+                    </div>
+                  </section>
                   <div style={sectionCard("#FFFFFF")}>
                     <div style={{ display: "grid", gap: 8, marginBottom: 14 }}>
                       <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
@@ -1840,41 +1837,6 @@ export default function CommunityConfirmationOutcomePage() {
                         compact={isCompactPaper}
                       />
                     </div>
-                  </div>
-                </section>
-                </TrustDocumentDisclosureSection>
-
-                <TrustDocumentDisclosureSection
-                  title="What this cannot decide"
-                  summary="Open for when this public outcome may help and what it must never be treated as."
-                >
-                <section
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: isCompactPaper ? "1fr" : "repeat(auto-fit, minmax(250px, 1fr))",
-                    gap: isCompactPaper ? 12 : 14,
-                  }}
-                >
-                  <div style={sectionCard("#ECFDF3")}>
-                    <TrustPaperWatermark name="shield" color="#2E9B62" size={132} opacity={0.08} />
-                    <h2 style={sectionTitle()}>Why you may use this</h2>
-                    <ul style={{ ...helperText(), margin: "12px 0 0", paddingLeft: 20 }}>
-                      <li>It is linked to a recorded GSN community record.</li>
-                      <li>It uses approved community contacts.</li>
-                      <li>It gives a controlled public outcome.</li>
-                      <li>It can be refreshed as more responses arrive.</li>
-                    </ul>
-                  </div>
-                  <div style={sectionCard("#FEF2F2")}>
-                    <TrustPaperWatermark name="alert" color="#C83A3A" size={132} opacity={0.08} />
-                    <h2 style={sectionTitle()}>What this does not mean</h2>
-                    <ul style={{ ...helperText(), margin: "12px 0 0", paddingLeft: 20 }}>
-                      <li>Not a bank guarantee.</li>
-                      <li>Not automatic lending or credit release.</li>
-                      <li>Not a legal promise of repayment.</li>
-                      <li>Not a whole-community vote.</li>
-                      <li>Not a public list of community contacts.</li>
-                    </ul>
                   </div>
                 </section>
                 </TrustDocumentDisclosureSection>
