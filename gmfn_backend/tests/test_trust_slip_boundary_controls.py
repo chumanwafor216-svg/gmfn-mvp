@@ -306,13 +306,15 @@ def test_public_verify_decision_pack_matrix_answers_housing_and_trade_questions(
 
     assert housing_response.status_code == 200, housing_response.text
     housing_profile = housing_response.json()["decision_pack_profile"]
-    assert "Contribution, dues, ROSCA" in housing_profile["expected_evidence"][0]
+    assert "Community participation" in housing_profile["expected_evidence"][0]
+    assert "Contribution, dues, ROSCA" in housing_profile["expected_evidence"][1]
     assert any(row["label"] == "Finance" for row in housing_profile["gsn_sources"])
     assert any(row["label"] == "ROSCA / Money Pool" for row in housing_profile["gsn_sources"])
     assert "Previous landlord or accommodation witness route" in housing_profile["missing_links"]
     assert "Right to rent" in housing_profile["refuses_to_claim"]
     assert "Right to rent" in housing_profile["boundary_note"]
     assert housing_profile["community_confirmation_prompt"]["reason_type"] == "housing_reference_check"
+    assert "live with others" in housing_profile["community_confirmation_prompt"]["question"]
     assert "payment discipline" in housing_profile["community_confirmation_prompt"]["question"]
 
     assert trade_response.status_code == 200, trade_response.text
@@ -410,7 +412,7 @@ def test_public_verify_housing_pack_surfaces_financial_record_pointers_without_c
     assert "trust_score" not in profile_text
 
 
-def test_public_verify_housing_pack_surfaces_housing_reference_readiness_without_landlord_or_tenancy_overclaiming(
+def test_public_verify_housing_pack_surfaces_housing_conduct_readiness_without_landlord_or_tenancy_overclaiming(
     client,
     seed_clan_admin_membership,
 ):
@@ -429,6 +431,48 @@ def test_public_verify_housing_pack_surfaces_housing_reference_readiness_without
             )
         )
         db.flush()
+        db.add(
+            Clan(
+                id=99,
+                name="Outside Housing Conduct Clan",
+                invite_code="outside-housing-conduct",
+                community_code="GMFN-C-HOUSING-OUTSIDE",
+                status="active",
+                invite_uses=0,
+                created_at=now,
+            )
+        )
+        db.add_all(
+            [
+                TrustEvent(
+                    event_type="community_participation_attended",
+                    clan_id=1,
+                    actor_user_id=2,
+                    subject_user_id=1,
+                    meta={"private_note": "PRIVATE TEAM PLAYER NOTE"},
+                    dedupe_key="housing-conduct-participation",
+                    created_at=now,
+                ),
+                TrustEvent(
+                    event_type="responsibility_support_response",
+                    clan_id=1,
+                    actor_user_id=2,
+                    subject_user_id=1,
+                    meta={"private_note": "PRIVATE SUPPORT RESPONSE NOTE"},
+                    dedupe_key="housing-conduct-support",
+                    created_at=now,
+                ),
+                TrustEvent(
+                    event_type="community_participation_outside",
+                    clan_id=99,
+                    actor_user_id=2,
+                    subject_user_id=1,
+                    meta={"private_note": "OUTSIDE HOUSING CONDUCT NOTE"},
+                    dedupe_key="housing-conduct-outside",
+                    created_at=now,
+                ),
+            ]
+        )
         loan = Loan(
             borrower_user_id=1,
             clan_id=1,
@@ -548,10 +592,11 @@ def test_public_verify_housing_pack_surfaces_housing_reference_readiness_without
     profile = response.json()["decision_pack_profile"]
     extract = profile["evidence_extract"]
     pointers = {row["key"]: row for row in extract["housing_reference_pointers"]}
-    readiness = pointers["housing_reference_readiness"]
+    readiness = pointers["housing_conduct_readiness"]
     assert readiness["status"] == "caution"
-    assert readiness["evidence_count"] == 5
-    assert "5 housing-reference readiness pointers found" in readiness["value"]
+    assert readiness["evidence_count"] == 7
+    assert "7 housing conduct/readiness pointers found" in readiness["value"]
+    assert "2 community conduct TrustEvents" in readiness["value"]
     assert "1 repayment follow-through record" in readiness["value"]
     assert "1 pool/contribution event" in readiness["value"]
     assert "1 housing-reference confirmation request" in readiness["value"]
@@ -561,13 +606,17 @@ def test_public_verify_housing_pack_surfaces_housing_reference_readiness_without
     assert "do not expose landlords" in extract["housing_reference_boundary_note"]
     assert "right-to-rent checks" in extract["housing_reference_boundary_note"]
     assert "guaranteed rent" in extract["housing_reference_boundary_note"]
-    assert any(signal["key"] == "housing_reference_readiness_pointer" for signal in profile["relevant_signals"])
+    assert "support reader inference" in extract["housing_reference_boundary_note"]
+    assert any(signal["key"] == "housing_conduct_readiness_pointer" for signal in profile["relevant_signals"])
     profile_text = str(profile)
     assert "Private landlord reference checker" not in profile_text
     assert "landlord-witness-private@example.com" not in profile_text
     assert "GSN-U-LANDLORD-WITNESS" not in profile_text
     assert "PRIVATE-HOUSING-POOL-REF" not in profile_text
     assert "Private housing contribution note" not in profile_text
+    assert "PRIVATE TEAM PLAYER NOTE" not in profile_text
+    assert "PRIVATE SUPPORT RESPONSE NOTE" not in profile_text
+    assert "OUTSIDE HOUSING CONDUCT NOTE" not in profile_text
     assert "Private witness note about previous address" not in profile_text
     assert "PRIVATE-HOUSING-SUMMARY" not in profile_text
     assert "Private visible housing summary" not in profile_text

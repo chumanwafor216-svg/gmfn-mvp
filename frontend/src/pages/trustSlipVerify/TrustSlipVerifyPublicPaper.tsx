@@ -1300,7 +1300,7 @@ export default function TrustSlipVerifyPublicPaper({
         pointer.label,
         pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
       ])
-    : [["No housing readiness shown", "Ask for previous landlord/accommodation references, payment-discipline records, issue-resolution context, or live housing community confirmation."] as [string, string]]
+    : [["No housing conduct shown", "Ask for community conduct evidence, payment-discipline records, issue-resolution context, accommodation references where available, or live housing community confirmation."] as [string, string]]
   ).slice(0, 3);
   const decisionPackGuaranteeOutcomeRows: Array<[string, string]> = (decisionPackGuaranteeOutcomePointers.length
     ? decisionPackGuaranteeOutcomePointers.map((pointer): [string, string] => [
@@ -2163,7 +2163,7 @@ export default function TrustSlipVerifyPublicPaper({
                 compact={compact}
               />
               <OfficialResultTable
-                title="Housing reference readiness"
+                title="Housing conduct readiness"
                 rows={decisionPackHousingReferenceRows}
                 compact={compact}
               />

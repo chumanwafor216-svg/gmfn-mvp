@@ -170,7 +170,7 @@ assertContains(
 assertContains(
   "viewModel",
   /type DecisionPackHousingReferencePointer[\s\S]*?housingReferencePointers: DecisionPackHousingReferencePointer\[\][\s\S]*?source\.housing_reference_pointers[\s\S]*?housingReferenceBoundaryNote/,
-  "Public TrustSlip Verify view model must preserve aggregate housing-reference readiness pointer rows and their boundary note."
+  "Public TrustSlip Verify view model must preserve aggregate housing conduct/readiness pointer rows and their boundary note."
 );
 
 assertContains(
@@ -197,20 +197,20 @@ assertContains(
 
 assertContains(
   "backendDecisionPacks",
-  /HOUSING_REFERENCE_PACKS[\s\S]*?_decision_pack_housing_reference_pointers[\s\S]*?housing_reference_gap[\s\S]*?housing_reference_readiness[\s\S]*?housing_reference_pointers[\s\S]*?housing_reference_boundary_note[\s\S]*?right-to-rent/,
-  "Backend Decision Packs must expose aggregate housing-reference readiness pointers without landlord, tenancy, or legal overclaiming."
+  /HOUSING_REFERENCE_PACKS[\s\S]*?_decision_pack_housing_reference_pointers[\s\S]*?housing_reference_gap[\s\S]*?housing_conduct_readiness[\s\S]*?housing_reference_pointers[\s\S]*?housing_reference_boundary_note[\s\S]*?right-to-rent/,
+  "Backend Decision Packs must expose aggregate housing conduct/readiness pointers without landlord, tenancy, co-living, property-care, or legal overclaiming."
 );
 
 assertContains(
   "backendDecisionPackTests",
-  /test_public_verify_housing_pack_surfaces_housing_reference_readiness_without_landlord_or_tenancy_overclaiming[\s\S]*?housing_reference_readiness[\s\S]*?do not expose landlords[\s\S]*?right-to-rent checks[\s\S]*?Private landlord reference checker[\s\S]*?trust_score/,
-  "Backend boundary tests must prove housing-reference readiness stays aggregate and does not leak private landlord/witness detail."
+  /test_public_verify_housing_pack_surfaces_housing_conduct_readiness_without_landlord_or_tenancy_overclaiming[\s\S]*?housing_conduct_readiness[\s\S]*?do not expose landlords[\s\S]*?right-to-rent checks[\s\S]*?guaranteed rent[\s\S]*?support reader inference[\s\S]*?Private landlord reference checker[\s\S]*?trust_score/,
+  "Backend boundary tests must prove housing conduct/readiness stays aggregate and does not leak private landlord/witness detail."
 );
 
 assertContains(
   "publicPaper",
-  /decisionPackHousingReferencePointers[\s\S]*?decisionPackHousingReferenceRows[\s\S]*?Housing reference readiness[\s\S]*?housingReferenceBoundaryNote/,
-  "Public TrustSlip Verify paper must render housing-reference readiness rows and boundary language."
+  /decisionPackHousingReferencePointers[\s\S]*?decisionPackHousingReferenceRows[\s\S]*?Housing conduct readiness[\s\S]*?housingReferenceBoundaryNote/,
+  "Public TrustSlip Verify paper must render housing conduct/readiness rows and boundary language."
 );
 
 assertContains(

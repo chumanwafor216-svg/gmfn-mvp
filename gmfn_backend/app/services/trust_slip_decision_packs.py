@@ -140,13 +140,14 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
         short_label="Housing",
         recipient_question="Is there enough community evidence to continue a housing decision?",
         focus=(
-            "Payment discipline, repayment evidence, issue-resolution behaviour, community witness, "
-            "and live confirmation before tenancy risk."
+            "Community-living conduct, promise-keeping, payment discipline, issue-avoidance or "
+            "resolution behaviour, witness context, and live confirmation before housing risk."
         ),
         expected_evidence=(
+            "Community participation, support, responsiveness, role, or responsibility behaviour where recorded",
             "Contribution, dues, ROSCA, rent-like, or recurring payment completion where recorded",
             "Repayment history and support follow-through",
-            "Community witness that the person is responsible and reachable",
+            "Community witness that the person is responsible, reachable, and able to live with others",
             "Dispute or issue-resolution evidence, including absence of unresolved visible cautions",
         ),
         gsn_sources=(
@@ -162,7 +163,7 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
         ),
         refuses_to_claim=("Credit approval", "Right to rent", "Legal tenancy check", "Guaranteed rent"),
         confirmation_reason_type="housing_reference_check",
-        confirmation_question="Can current community witnesses confirm responsible conduct, payment discipline, or issue resolution relevant to housing?",
+        confirmation_question="Can current community witnesses confirm responsible conduct, ability to live with others, promise-keeping, payment discipline, or issue resolution relevant to housing?",
     ),
     DecisionPackDefinition(
         key="trade_check",
@@ -1085,6 +1086,26 @@ DEMAND_REQUEST_EXPIRED_STATUSES = {"expired", "stale"}
 HOUSING_REFERENCE_PACKS = {"housing_decision"}
 HOUSING_REFERENCE_CONFIRMATION_REASON = "housing_reference_check"
 HOUSING_REFERENCE_OPEN_REVIEW_STATUSES = {"open", "pending", "in_review"}
+HOUSING_CONDUCT_EVENT_TOKENS = (
+    "community",
+    "participation",
+    "contribution",
+    "responsibility",
+    "responsible",
+    "role",
+    "leader",
+    "committee",
+    "support",
+    "help",
+    "responsive",
+    "response",
+    "attendance",
+    "attended",
+    "team",
+    "cooperative",
+    "issue_resolved",
+    "settled",
+)
 
 
 def _claim_row(
@@ -1627,6 +1648,17 @@ def _decision_pack_housing_reference_pointers(
     if pack_key not in HOUSING_REFERENCE_PACKS:
         return []
 
+    event_query = _filter_query_to_holder_active_footprint(
+        db.query(TrustEvent).filter(TrustEvent.subject_user_id == int(holder_user_id)),
+        active_community_ids=active_community_ids,
+    )
+    event_rows = event_query.order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc()).limit(80).all()
+    conduct_event_rows = [
+        row
+        for row in event_rows
+        if any(token in _event_text(getattr(row, "event_type", None)) for token in HOUSING_CONDUCT_EVENT_TOKENS)
+    ]
+
     repayment_query = (
         db.query(Repayment)
         .join(Loan, Loan.id == Repayment.loan_id)
@@ -1678,14 +1710,14 @@ def _decision_pack_housing_reference_pointers(
     decision_rows = decision_query.order_by(CommunityConfirmationDecision.created_at.desc(), CommunityConfirmationDecision.id.desc()).limit(20).all()
     review_rows = review_query.order_by(CommunityConfirmationReviewCase.created_at.desc(), CommunityConfirmationReviewCase.id.desc()).limit(20).all()
 
-    total = len(repayment_rows) + len(pool_rows) + len(request_rows) + len(decision_rows) + len(review_rows)
+    total = len(conduct_event_rows) + len(repayment_rows) + len(pool_rows) + len(request_rows) + len(decision_rows) + len(review_rows)
     if not total and not response_count and not outcome_rows:
         return [
             _record_pointer_row(
                 key="housing_reference_gap",
-                label="Housing reference readiness",
+                label="Housing conduct readiness",
                 status="gap",
-                value="No housing-reference readiness pointer is visible for this holder yet.",
+                value="No housing conduct/readiness pointer is visible for this holder yet.",
                 source="decision_pack_extract",
                 count=0,
                 decision_use="Ask for previous landlord or accommodation witness records, payment-discipline evidence, issue-resolution context, or live housing community confirmation before relying.",
@@ -1707,7 +1739,9 @@ def _decision_pack_housing_reference_pointers(
     settled_decisions = sum(1 for row in decision_rows if getattr(row, "settled", None) is True)
     caution_outcomes = sum(1 for row in outcome_rows if _profile_int(getattr(row, "caution_count", 0)) or _profile_int(getattr(row, "objection_count", 0)))
 
-    value = f"{total} housing-reference readiness pointer{'s' if total != 1 else ''} found"
+    value = f"{total} housing conduct/readiness pointer{'s' if total != 1 else ''} found"
+    if conduct_event_rows:
+        value = f"{value}; {len(conduct_event_rows)} community conduct TrustEvent{'s' if len(conduct_event_rows) != 1 else ''}"
     if repayment_rows:
         value = f"{value}; {len(repayment_rows)} repayment follow-through record{'s' if len(repayment_rows) != 1 else ''}"
     if pool_rows:
@@ -1727,13 +1761,13 @@ def _decision_pack_housing_reference_pointers(
 
     return [
         _record_pointer_row(
-            key="housing_reference_readiness",
-            label="Housing reference readiness",
-            status="caution" if open_reviews or unresolved_decisions or caution_outcomes else "available",
+            key="housing_conduct_readiness",
+            label="Housing conduct readiness",
+            status="caution" if open_reviews or unresolved_decisions or caution_outcomes or not conduct_event_rows else "available",
             value=value,
             source="repayments+pool_events+community_confirmation",
             count=total,
-            decision_use="Use this as aggregate housing-reference readiness only. It is not a landlord reference, rent guarantee, right-to-rent or legal tenancy check, affordability proof, tenancy approval, or future conduct guarantee.",
+            decision_use="Use this as aggregate community-living and housing-context evidence only. It can support a reader's inference about living with others, keeping obligations, and resolving issues, but it is not a landlord reference, property-care proof, rent guarantee, right-to-rent or legal tenancy check, affordability proof, tenancy approval, or future conduct guarantee.",
         )
     ]
 
@@ -2287,7 +2321,7 @@ def build_decision_pack_private_evidence_extract(
         "record_pointers": record_pointers,
         "record_pointer_boundary_note": "Connected financial/support records are evidence pointers only. They do not prove creditworthiness, legal tenancy status, rent payment, bank approval, or future repayment.",
         "housing_reference_pointers": housing_reference_pointers,
-        "housing_reference_boundary_note": "Housing-reference readiness pointers are aggregate housing-context evidence only. They do not expose landlords, accommodation providers, addresses, rent amounts, payment references, private witness notes, allegations, legal tenancy status, right-to-rent checks, affordability decisions, tenancy approval, guaranteed rent, or future conduct guarantees.",
+        "housing_reference_boundary_note": "Housing conduct/readiness pointers are aggregate community-living and housing-context evidence only. They support reader inference; they do not prove tenancy behaviour, property care, co-living success, landlord approval, legal tenancy status, right-to-rent checks, affordability decisions, tenancy approval, guaranteed rent, or future conduct. They do not expose landlords, accommodation providers, addresses, rent amounts, payment references, private witness notes, or allegations.",
         "guarantee_outcome_pointers": guarantee_outcome_pointers,
         "guarantee_outcome_boundary_note": "Guarantee/support outcome pointers are aggregate support-context evidence only. They do not expose borrower or guarantor identities, amounts, payment references, private notes, bank guarantees, loan approvals, cash custody, or future support promises.",
         "fulfillment_outcome_pointers": fulfillment_outcome_pointers,
@@ -2406,7 +2440,7 @@ def build_decision_pack_evidence_extract(
     )
     return {
         "source": "trust_events_redacted_extract",
-        "source_note": "Aggregated from public-safe TrustEvent categories plus declared, connected-record, housing-reference readiness, guarantee/support outcome, protected-trade fulfilment/correction outcome, completed-work/customer-confirmation outcome, Demand Box request-outcome, community-witness outcome, and issue-resolution pointers where relevant. Raw TrustEvents, actor details, notes, metadata, amounts, payment references, borrower or guarantor identities, buyer or seller identities, trade codes, item details, customer or reviewer identities, review text, addresses, prices, landlords, accommodation providers, rent amounts, request titles, request descriptions, request areas, phone numbers, quotes, responder identities, private dispute details, and private contacts are not exposed publicly.",
+        "source_note": "Aggregated from public-safe TrustEvent categories plus declared, connected-record, housing conduct/readiness, guarantee/support outcome, protected-trade fulfilment/correction outcome, completed-work/customer-confirmation outcome, Demand Box request-outcome, community-witness outcome, and issue-resolution pointers where relevant. Raw TrustEvents, actor details, notes, metadata, amounts, payment references, borrower or guarantor identities, buyer or seller identities, trade codes, item details, customer or reviewer identities, review text, addresses, prices, landlords, accommodation providers, rent amounts, request titles, request descriptions, request areas, phone numbers, quotes, responder identities, private dispute details, and private contacts are not exposed publicly.",
         "evidence_scope": _decision_pack_evidence_scope(
             active_community_ids=active_community_ids,
             primary_clan_id=getattr(slip, "clan_id", None),
@@ -2417,7 +2451,7 @@ def build_decision_pack_evidence_extract(
         "record_pointers": record_pointers,
         "record_pointer_boundary_note": "Connected financial/support records are evidence pointers only. They do not prove creditworthiness, legal tenancy status, rent payment, bank approval, or future repayment.",
         "housing_reference_pointers": housing_reference_pointers,
-        "housing_reference_boundary_note": "Housing-reference readiness pointers are aggregate housing-context evidence only. They do not expose landlords, accommodation providers, addresses, rent amounts, payment references, private witness notes, allegations, legal tenancy status, right-to-rent checks, affordability decisions, tenancy approval, guaranteed rent, or future conduct guarantees.",
+        "housing_reference_boundary_note": "Housing conduct/readiness pointers are aggregate community-living and housing-context evidence only. They support reader inference; they do not prove tenancy behaviour, property care, co-living success, landlord approval, legal tenancy status, right-to-rent checks, affordability decisions, tenancy approval, guaranteed rent, or future conduct. They do not expose landlords, accommodation providers, addresses, rent amounts, payment references, private witness notes, or allegations.",
         "guarantee_outcome_pointers": guarantee_outcome_pointers,
         "guarantee_outcome_boundary_note": "Guarantee/support outcome pointers are aggregate support-context evidence only. They do not expose borrower or guarantor identities, amounts, payment references, private notes, bank guarantees, loan approvals, cash custody, or future support promises.",
         "fulfillment_outcome_pointers": fulfillment_outcome_pointers,
@@ -2522,11 +2556,11 @@ def build_decision_pack_profile(
         first_housing_pointer = housing_reference_pointers[0]
         housing_reference_signal = [
             {
-                "key": "housing_reference_readiness_pointer",
-                "label": "Housing reference readiness",
+                "key": "housing_conduct_readiness_pointer",
+                "label": "Housing conduct readiness",
                 "status": _clean(first_housing_pointer.get("status"), limit=32) or "available",
-                "value": _clean(first_housing_pointer.get("value"), limit=260) or "Housing-reference readiness evidence is visible.",
-                "decision_use": "Treat this as aggregate housing-context evidence. It is not a landlord reference, right-to-rent check, tenancy approval, affordability proof, rent guarantee, or future conduct guarantee.",
+                "value": _clean(first_housing_pointer.get("value"), limit=260) or "Housing conduct/readiness evidence is visible.",
+                "decision_use": "Treat this as aggregate community-living and housing-context evidence. It supports inference only; it is not a landlord reference, property-care proof, right-to-rent check, tenancy approval, affordability proof, rent guarantee, or future conduct guarantee.",
             }
         ]
     guarantee_outcome_pointers = []

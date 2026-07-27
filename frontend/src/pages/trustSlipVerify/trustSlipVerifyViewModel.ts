@@ -428,24 +428,24 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
     housingReferencePointers: housingReferencePointers
       .map((pointer: any) => ({
         key: firstTruthy(pointer?.key, pointer?.label),
-        label: firstTruthy(pointer?.label, "Housing reference readiness"),
+        label: firstTruthy(pointer?.label, "Housing conduct readiness"),
         status: firstTruthy(pointer?.status, "not_shown"),
         value: firstTruthy(
           pointer?.value,
-          "No housing-reference readiness pointer is visible for this Decision Pack yet."
+          "No housing conduct/readiness pointer is visible for this Decision Pack yet."
         ),
         source: firstTruthy(pointer?.source, "repayments+pool_events+community_confirmation"),
         evidenceCount: firstNumberLike(pointer?.evidence_count),
         decisionUse: firstTruthy(
           pointer?.decision_use,
-          "Use this as housing-context evidence only; ask for landlord/reference confirmation before relying."
+          "Use this as community-living and housing-context evidence only; ask for direct accommodation or community confirmation before relying."
         ),
       }))
       .filter((pointer: DecisionPackHousingReferencePointer) => pointer.key || pointer.label)
       .slice(0, 4),
     housingReferenceBoundaryNote: firstTruthy(
       source.housing_reference_boundary_note,
-      "Housing-reference readiness pointers are aggregate housing-context evidence only. They do not expose landlords, accommodation providers, addresses, rent amounts, payment references, private witness notes, allegations, legal tenancy status, right-to-rent checks, affordability decisions, tenancy approval, guaranteed rent, or future conduct guarantees."
+      "Housing conduct/readiness pointers are aggregate community-living and housing-context evidence only. They support reader inference; they do not prove tenancy behaviour, property care, co-living success, landlord approval, legal tenancy status, right-to-rent checks, affordability decisions, tenancy approval, guaranteed rent, or future conduct. They do not expose landlords, accommodation providers, addresses, rent amounts, payment references, private witness notes, or allegations."
     ),
     guaranteeOutcomePointers: guaranteeOutcomePointers
       .map((pointer: any) => ({

@@ -1853,7 +1853,7 @@ function normalizeTrustSlipDecisionPackEvidence(raw: any): TrustSlipDecisionPack
     ? extract.housing_reference_pointers
         .map((row: any) => ({
           key: firstTruthy(row?.key),
-          label: firstTruthy(row?.label, "Housing reference readiness"),
+          label: firstTruthy(row?.label, "Housing conduct readiness"),
           status: firstTruthy(row?.status),
           value: firstTruthy(row?.value),
           source: firstTruthy(row?.source),
@@ -4602,7 +4602,7 @@ export default function TrustSlipPage() {
                           lineHeight: 1.15,
                         }}
                       >
-                        Housing reference readiness
+                        Housing conduct readiness
                       </div>
                       {privateDecisionPackHousingReferencePointers.map((pointer) => (
                         <div

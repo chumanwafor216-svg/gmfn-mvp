@@ -1,3 +1,47 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack housing conduct readiness correction
+
+Owner trigger:
+- Owner clarified that housing decisions should not be centred on previous landlord references. The real substance is whether existing community behaviour supports an inference that a person can live with others, keep obligations, maintain responsibility, and avoid or resolve issues.
+
+Unabated truth:
+- This correction reframes the housing pointer from landlord/reference-first to housing conduct/readiness-first.
+- The engine now counts public-safe community conduct TrustEvents alongside repayment, pool/contribution, housing Community Confirmation, witness outcome, and issue-review records.
+- It still does not prove tenancy behaviour, property care, co-living success, landlord approval, legal tenancy status, right-to-rent, affordability, tenancy approval, rent guarantee, or future conduct.
+- Devil's advocate: this is an inference aid, not a tenant certificate. A strong reader can use these behaviours as evidence that the person is a team player and keeps obligations, but GSN must leave the final housing decision to the reader and live witnesses.
+
+Changed after dc120af8:
+- gmfn_backend/app/services/trust_slip_decision_packs.py
+  - Housing Decision Pack wording now prioritizes community-living conduct, promise-keeping, issue avoidance/resolution, and living-with-others inference.
+  - Housing readiness extraction now includes community conduct TrustEvents in the holder active community footprint.
+  - The aggregate pointer key is now housing_conduct_readiness, while the existing extract field housing_reference_pointers is kept stable for frontend compatibility.
+- gmfn_backend/tests/test_trust_slip_boundary_controls.py
+  - The housing test now seeds conduct TrustEvents and verifies they are counted without leaking private notes or outside-community evidence.
+- frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts
+- frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx
+- frontend/src/pages/TrustSlipPage.tsx
+  - Public and holder TrustSlip language now says Housing conduct readiness.
+- frontend/tools/audit-public-trustslip-verify-boundary.mjs
+- frontend/tools/audit-trust-passport-trustslip-boundary.mjs
+  - Audit guards now expect housing conduct/readiness and inference boundary language.
+- docs/GSN_DECISION_PACK_EVIDENCE_MATRIX.md
+  - Matrix now states landlord/accommodation references are optional corroboration, while the main housing question is community-living conduct plus payment/support/issue-resolution evidence.
+
+Verification:
+- Passed python -m py_compile gmfn_backend\app\services\trust_slip_decision_packs.py gmfn_backend\tests\test_trust_slip_boundary_controls.py
+- Passed python -m pytest gmfn_backend\tests\test_trust_slip_boundary_controls.py gmfn_backend\tests\test_community_confirmation_relay.py -q: 60 passed
+- Passed npm --prefix frontend run audit:public-trustslip-verify-boundary
+- Passed npm --prefix frontend run audit:trust-passport-trustslip-boundary
+- Passed npm --prefix frontend run audit:protected-button-freeze
+- Passed npm --prefix frontend run build
+- Passed npm --prefix frontend run smoke:public-trustslip-verify-states after elevated rerun for sandbox spawn EPERM
+- Passed npm --prefix frontend run smoke:trust-passport-trustslip-boundary after elevated rerun for sandbox spawn EPERM
+
+Deployment:
+- Local only so far; do not push/deploy unless the owner explicitly selects push/deploy.
+
+Next recommended step:
+- Verify and commit this correction, then continue with structured housing conduct witness answers and optional external accommodation reference links.
+
 ## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack housing-reference readiness pointers
 
 Owner trigger:
