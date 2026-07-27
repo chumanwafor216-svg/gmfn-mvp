@@ -10,12 +10,22 @@ export type DecisionPackKey =
   | "business_partnership"
   | "community_membership";
 
+export type DecisionPackSource = {
+  label: string;
+  route: string;
+  evidence: string;
+};
+
 export type DecisionPackDefinition = {
   key: DecisionPackKey;
   label: string;
   shortLabel: string;
   recipientQuestion: string;
   focus: string;
+  expectedEvidence: readonly string[];
+  gsnSources: readonly DecisionPackSource[];
+  missingLinks: readonly string[];
+  refusesToClaim: readonly string[];
 };
 
 export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
@@ -25,6 +35,23 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
     shortLabel: "Standing",
     recipientQuestion: "How is this person known where people actually know them?",
     focus: "Community role, activity history, witness currentness, and unresolved public cautions.",
+    expectedEvidence: [
+      "Active community membership and role",
+      "Member witness or sponsor confirmation",
+      "Participation, contribution, responsibility, support, leadership, or recognition TrustEvents",
+      "Community confirmation path for live questions",
+    ],
+    gsnSources: [
+      { label: "Community Home", route: "/app/community", evidence: "member communities, role, owner context" },
+      { label: "Marketplace", route: "/app/marketplace", evidence: "local member standing inside one community" },
+      { label: "Community Confirmation", route: "/community-confirmations", evidence: "live or relayed witness response" },
+      { label: "TrustEvents", route: "/app/trust-events", evidence: "recorded community activity categories" },
+    ],
+    missingLinks: [
+      "Structured reason-specific witness questions",
+      "Clear issue-resolution summary tied to the member",
+    ],
+    refusesToClaim: ["Moral character", "Government identity", "Future behaviour"],
   },
   {
     key: "referral_decision",
@@ -33,6 +60,22 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
     recipientQuestion: "Can this person be referred without damaging my credibility?",
     focus:
       "Who knows the person, how they are placed in community, and whether live confirmation is needed before referral.",
+    expectedEvidence: [
+      "Relationship route: inviter, sponsor, or known community path",
+      "Current witness strength and renewal status",
+      "Relevant activity categories behind the referral",
+      "Any visible cautions before passing the name on",
+    ],
+    gsnSources: [
+      { label: "Invite / Join records", route: "/app/community", evidence: "how the person came through a known relationship" },
+      { label: "Community Confirmation", route: "/community-confirmations", evidence: "recipient asks the community before relying" },
+      { label: "TrustSlip", route: "/app/trust-slip", evidence: "scoped public referral paper" },
+    ],
+    missingLinks: [
+      "Referral outcome record: did the referral succeed, fail, or create a complaint?",
+      "Referrer confidence statement tied to a specific purpose",
+    ],
+    refusesToClaim: ["Automatic suitability", "Guarantee by the referrer", "Recipient duty removed"],
   },
   {
     key: "guarantor_decision",
@@ -41,6 +84,23 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
     recipientQuestion: "Is there enough evidence to stand for or support this person?",
     focus:
       "Responsibility signals, reliability evidence, support boundary, and community confirmation before accepting risk.",
+    expectedEvidence: [
+      "Repayment history and missed/complete repayment outcomes",
+      "Existing support exposure and locked guarantee coverage",
+      "People who stood for the person and what happened",
+      "Contribution discipline and community responsibility records",
+    ],
+    gsnSources: [
+      { label: "Loans & Support", route: "/app/loans", evidence: "request reason, amount, guarantors, support status" },
+      { label: "Repayment", route: "/app/repayment", evidence: "repayment milestones and completion" },
+      { label: "Guarantor Inbox", route: "/app/guarantor-inbox", evidence: "pending and accepted support obligations" },
+      { label: "Finance", route: "/app/finance", evidence: "contribution, money-in/out, and readiness signals" },
+    ],
+    missingLinks: [
+      "Simple guarantor risk summary in Trust Passport",
+      "Outcome history for previous guarantees surfaced as decision evidence",
+    ],
+    refusesToClaim: ["Loan approval", "Bank guarantee", "Automatic repayment", "Money custody"],
   },
   {
     key: "employment_decision",
@@ -48,6 +108,24 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
     shortLabel: "Employment",
     recipientQuestion: "Is there enough evidence to continue an employment conversation?",
     focus: "Role, consistency, contribution, leadership or service signals, and the next verification step.",
+    expectedEvidence: [
+      "Declared work role or skill from onboarding, profile, shop, or community record",
+      "Work, service, contribution, responsibility, learning, or recognition TrustEvents",
+      "Employer/customer/community witness tied to the role being considered",
+      "Demand or service response history where the role involved practical work",
+    ],
+    gsnSources: [
+      { label: "Trust Passport", route: "/app/trust", evidence: "full signed-in work and evidence story" },
+      { label: "Shop / Service profile", route: "/app/shop/me", evidence: "declared services, categories, media, public shop face" },
+      { label: "Demand Box", route: "/app/demand-box", evidence: "requests answered, quotes, demand response trail" },
+      { label: "Community Confirmation", route: "/community-confirmations", evidence: "ask who has seen this work before" },
+    ],
+    missingLinks: [
+      "Structured skill claim field connected to Trust Passport",
+      "Completed work record with customer confirmation",
+      "Role-specific witness question: has this person done this work before?",
+    ],
+    refusesToClaim: ["Professional licence", "Right to work", "Future performance", "Employer decision"],
   },
   {
     key: "housing_decision",
@@ -55,7 +133,25 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
     shortLabel: "Housing",
     recipientQuestion: "Is there enough community evidence to continue a housing decision?",
     focus:
-      "Community standing, reliability posture, witness currentness, and the need for live confirmation before tenancy risk.",
+      "Payment discipline, repayment evidence, issue-resolution behaviour, community witness, and live confirmation before tenancy risk.",
+    expectedEvidence: [
+      "Contribution, dues, ROSCA, rent-like, or recurring payment completion where recorded",
+      "Repayment history and support follow-through",
+      "Community witness that the person is responsible and reachable",
+      "Dispute or issue-resolution evidence, including absence of unresolved visible cautions",
+    ],
+    gsnSources: [
+      { label: "Finance", route: "/app/finance", evidence: "money summary, contribution discipline, records/events" },
+      { label: "ROSCA / Money Pool", route: "/app/marketplace", evidence: "local contribution schedules and completion" },
+      { label: "Loans / Repayment", route: "/app/loans", evidence: "borrower follow-through and repayment behaviour" },
+      { label: "Community Confirmation", route: "/community-confirmations", evidence: "landlord can ask a community witness before tenancy risk" },
+    ],
+    missingLinks: [
+      "Housing-specific reference questions",
+      "Previous landlord or accommodation witness route",
+      "Issue-resolution summary visible without exposing private disputes",
+    ],
+    refusesToClaim: ["Credit approval", "Right to rent", "Legal tenancy check", "Guaranteed rent"],
   },
   {
     key: "trade_check",
@@ -63,6 +159,24 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
     shortLabel: "Trade",
     recipientQuestion: "Who has seen this person trade, serve, or complete work?",
     focus: "Observed service activity, community evidence, visible disputes or cautions, and confirmation before work begins.",
+    expectedEvidence: [
+      "Declared trade/service category such as plumbing, repairs, cleaning, delivery, or sales",
+      "Shop, advert, Demand Box, quote, or work-response trail",
+      "Customer or community witness that the work happened",
+      "Completion, complaint, or issue-resolution outcome where recorded",
+    ],
+    gsnSources: [
+      { label: "Shop Gallery", route: "/app/shop/me", evidence: "public service profile, media, categories, shop identity" },
+      { label: "Demand Box", route: "/app/demand-box", evidence: "requests, responses, quotes, service need trail" },
+      { label: "Marketplace", route: "/app/marketplace", evidence: "community where the advert/work relationship began" },
+      { label: "Merchant Verification", route: "/app/trust-slip", evidence: "community recognition and trade boundary" },
+    ],
+    missingLinks: [
+      "Customer-confirmed completed-job record",
+      "Work photos tied to a confirmed job, not only uploaded media",
+      "Direct ask-community question: is this person known for this trade?",
+    ],
+    refusesToClaim: ["Trade licence", "Insurance", "Home safety guarantee", "Future work quality"],
   },
   {
     key: "supplier_decision",
@@ -71,6 +185,23 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
     recipientQuestion: "Is there enough evidence to continue a supplier or contractor decision?",
     focus:
       "Business reliability posture, fulfilment evidence where visible, community standing, and public verification status.",
+    expectedEvidence: [
+      "Shop and supplier profile identity",
+      "Fulfilment, delivery, release, or protected trade records where available",
+      "Customer/community recognition and merchant verification",
+      "Visible dispute, delay, or correction outcome",
+    ],
+    gsnSources: [
+      { label: "Marketplace", route: "/app/marketplace", evidence: "community trade context and shop exposure" },
+      { label: "Merchant Release", route: "/merchant-release", evidence: "release evidence and delivery boundary" },
+      { label: "Vault", route: "/app/vault", evidence: "controlled private catalogue or quote access" },
+      { label: "TrustSlip Verify", route: "/trust-slips/verify", evidence: "public supplier check before relying" },
+    ],
+    missingLinks: [
+      "Supplier fulfilment TrustEvent standard across product lifecycle",
+      "Delivery/correction outcome joined to supplier Trust Passport",
+    ],
+    refusesToClaim: ["Delivery guarantee", "Payment release authority", "Escrow", "Automatic supplier approval"],
   },
   {
     key: "volunteer_decision",
@@ -78,6 +209,22 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
     shortLabel: "Volunteer",
     recipientQuestion: "Is there enough evidence to accept this person into a volunteer role?",
     focus: "Participation, consistency, service posture, witness currentness, and safeguarding caution before placement.",
+    expectedEvidence: [
+      "Participation and contribution records",
+      "Responsibility or leadership carried before",
+      "Community witness and sponsor currentness",
+      "Safeguarding or placement-specific confirmation where the role is sensitive",
+    ],
+    gsnSources: [
+      { label: "TrustEvents", route: "/app/trust-events", evidence: "participation, support, responsibility, leadership" },
+      { label: "Community Confirmation", route: "/community-confirmations", evidence: "ask current community responders before placement" },
+      { label: "Community Domain outcomes", route: "/app/community-domain", evidence: "beneficiary/outcome evidence where domains record it" },
+    ],
+    missingLinks: [
+      "Safeguarding-specific community confirmation questions",
+      "Volunteer outcome records connected to TrustEvents",
+    ],
+    refusesToClaim: ["Background check", "Safeguarding clearance", "Legal eligibility", "Future conduct"],
   },
   {
     key: "business_partnership",
@@ -86,6 +233,23 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
     recipientQuestion: "Is there enough evidence to continue a business partnership discussion?",
     focus:
       "Community reliability, responsibility signals, public verification status, and caution before shared commercial risk.",
+    expectedEvidence: [
+      "Shop, marketplace, and merchant recognition",
+      "Finance discipline and repayment/support follow-through",
+      "Supplier/trade outcomes and dispute resolution",
+      "Community witness from the domain where the person operates",
+    ],
+    gsnSources: [
+      { label: "Shop / Marketplace", route: "/app/marketplace", evidence: "commerce identity and community exposure" },
+      { label: "Finance", route: "/app/finance", evidence: "financial cooperation evidence, not bank approval" },
+      { label: "Trust Passport", route: "/app/trust", evidence: "cross-community evidence posture" },
+      { label: "Community Confirmation", route: "/community-confirmations", evidence: "live confirmation before shared risk" },
+    ],
+    missingLinks: [
+      "Partnership outcome/correction records",
+      "Shared commercial risk checklist tied to evidence categories",
+    ],
+    refusesToClaim: ["Company due diligence", "Legal authority", "Investment advice", "Guaranteed profit"],
   },
   {
     key: "community_membership",
@@ -93,6 +257,23 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
     shortLabel: "Membership",
     recipientQuestion: "Is there enough evidence to admit or connect this person to a community?",
     focus: "Identity context, community route, witness currentness, standing, and first live confirmation step.",
+    expectedEvidence: [
+      "Entry route: invite, join request, sponsor, or domain approval",
+      "Identity evidence recorded vs verified",
+      "Existing community roles and witness strength",
+      "Participation or contribution readiness for the new community",
+    ],
+    gsnSources: [
+      { label: "Join / Invite", route: "/join", evidence: "entry route and sponsor relationship" },
+      { label: "Identity Integrity", route: "/app/identity", evidence: "recorded identity evidence and verification status" },
+      { label: "Community Home", route: "/app/community", evidence: "existing communities and roles" },
+      { label: "Community Confirmation", route: "/community-confirmations", evidence: "current responders can confirm known relationship" },
+    ],
+    missingLinks: [
+      "Admission-purpose confirmation questions",
+      "Clear join outcome linked back into Trust Passport evidence",
+    ],
+    refusesToClaim: ["Citizenship", "Legal immigration status", "Automatic admission", "Universal community endorsement"],
   },
 ];
 
@@ -104,6 +285,31 @@ function cleanDecisionPackText(value: unknown): string {
 
 function decisionPackComparable(value: unknown): string {
   return cleanDecisionPackText(value).toLowerCase().replace(/\s+/g, " ");
+}
+
+function compactList(values: readonly string[], limit: number): string {
+  const items = values.map((value) => cleanDecisionPackText(value)).filter(Boolean);
+  if (!items.length) return "Not mapped yet";
+  const visible = items.slice(0, limit);
+  const suffix = items.length > visible.length ? ` +${items.length - visible.length} more` : "";
+  return `${visible.join("; ")}${suffix}`;
+}
+
+export function compactDecisionPackEvidence(pack: DecisionPackDefinition, limit = 3): string {
+  return compactList(pack.expectedEvidence, limit);
+}
+
+export function compactDecisionPackSources(pack: DecisionPackDefinition, limit = 3): string {
+  const sources = pack.gsnSources.map((source) => `${source.label}: ${source.evidence}`);
+  return compactList(sources, limit);
+}
+
+export function compactDecisionPackMissingLinks(pack: DecisionPackDefinition, limit = 2): string {
+  return compactList(pack.missingLinks, limit);
+}
+
+export function compactDecisionPackBoundaries(pack: DecisionPackDefinition, limit = 3): string {
+  return compactList(pack.refusesToClaim, limit);
 }
 
 export function findDecisionPack(value: unknown): DecisionPackDefinition | null {
@@ -126,6 +332,10 @@ export type DecisionPackPublicContext = {
   recipientQuestion: string;
   focus: string;
   scope: string;
+  expectedEvidence: readonly string[];
+  gsnSources: readonly DecisionPackSource[];
+  missingLinks: readonly string[];
+  refusesToClaim: readonly string[];
 };
 
 export function normalizeDecisionPackPublicContext(input: {
@@ -149,5 +359,9 @@ export function normalizeDecisionPackPublicContext(input: {
       cleanDecisionPackText(input.focus) ||
       "Current public identity, community standing, evidence currentness, and the next verification step.",
     scope: cleanDecisionPackText(input.scope) || "public_decision_pack",
+    expectedEvidence: pack?.expectedEvidence || [],
+    gsnSources: pack?.gsnSources || [],
+    missingLinks: pack?.missingLinks || [],
+    refusesToClaim: pack?.refusesToClaim || [],
   };
 }

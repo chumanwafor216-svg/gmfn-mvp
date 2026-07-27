@@ -23,6 +23,7 @@ const files = {
   backendDecisionPackTests: "../gmfn_backend/tests/test_trust_slip_boundary_controls.py",
   backendModels: "../gmfn_backend/app/db/models.py",
   package: "package.json",
+  decisionMatrix: "../docs/GSN_DECISION_PACK_EVIDENCE_MATRIX.md",
 };
 
 const sourceByKey = Object.fromEntries(
@@ -114,6 +115,18 @@ assertContains(
 
 assertContains(
   "decisionPacks",
+  /expectedEvidence[\s\S]*?gsnSources[\s\S]*?missingLinks[\s\S]*?refusesToClaim[\s\S]*?Employment Decision Pack[\s\S]*?Demand Box[\s\S]*?Housing Decision Pack[\s\S]*?Previous landlord[\s\S]*?Trade or Skilled Work Decision Pack[\s\S]*?Customer-confirmed completed-job record/,
+  "Shared Decision Pack catalog must map real recipient questions to expected evidence, GSN sources, missing links, and overclaim boundaries."
+);
+
+assertContains(
+  "decisionMatrix",
+  /Employment[\s\S]*?Demand Box[\s\S]*?Housing[\s\S]*?previous landlord[\s\S]*?Trade or Skilled Work[\s\S]*?Customer-confirmed completed-job record[\s\S]*?Backend parity/,
+  "Public Decision Pack evidence matrix doc must preserve real-world employment, housing, trade, and backend parity gaps."
+);
+
+assertContains(
+  "decisionPacks",
   /function decisionPackComparable[\s\S]*?export function findDecisionPack[\s\S]*?decisionPackComparable\(pack\.key\) === comparable[\s\S]*?decisionPackComparable\(pack\.shortLabel\) === comparable/,
   "Frontend Decision Pack lookup must canonicalize keys and short labels with the same comparable path."
 );
@@ -130,7 +143,7 @@ assertContains(
 );
 assertContains(
   "verify",
-  /const publicDecisionPackContext = useMemo[\s\S]*?decisionPackKey[\s\S]*?normalizeDecisionPackPublicContext[\s\S]*?decision_pack: decisionPack\.key[\s\S]*?decision_pack_focus: decisionPack\.focus[\s\S]*?share_access_record[\s\S]*?focus: decisionPack\.focus[\s\S]*?Shared to support \$\{decisionPack\.label\}[\s\S]*?normalizeTrustSlipVerification\([\s\S]*?\.\.\.verifyResult, \.\.\.publicDecisionPackContext/,
+  /const publicDecisionPackContext = useMemo[\s\S]*?decisionPackKey[\s\S]*?normalizeDecisionPackPublicContext[\s\S]*?decision_pack: decisionPack\.key[\s\S]*?decision_pack_focus: decisionPack\.focus[\s\S]*?decision_pack_profile[\s\S]*?relevant_signals: relevantSignals[\s\S]*?gaps_to_check: gapChecks[\s\S]*?recommended_checks: recommendedChecks[\s\S]*?evidence_extract[\s\S]*?gsn_decision_pack_matrix[\s\S]*?share_access_record[\s\S]*?Shared to support \$\{decisionPack\.label\}[\s\S]*?const mergedVerifyResult[\s\S]*?decision_pack_profile:[\s\S]*?verifyResult\?\.decision_pack_profile \|\| publicDecisionPackContext\.decision_pack_profile[\s\S]*?normalizeTrustSlipVerification\(mergedVerifyResult/,
   "Public TrustSlip Verify must canonicalize share-safe Decision Pack URL context into the normalized access record."
 );
 

@@ -31,6 +31,10 @@ import TrustDocumentUseCases from "../components/TrustDocumentUseCases";
 import TrustSlipReaderBlock from "../components/TrustSlipReaderBlock";
 import * as api from "../lib/api";
 import {
+  compactDecisionPackBoundaries,
+  compactDecisionPackEvidence,
+  compactDecisionPackMissingLinks,
+  compactDecisionPackSources,
   DEFAULT_DECISION_PACK,
   GSN_DECISION_PACKS,
   type DecisionPackKey,
@@ -3290,12 +3294,17 @@ export default function TrustSlipPage() {
       icon: "certificate-seal" as GsnIconName,
     },
     {
-      label: "Evidence focus",
-      value: selectedPurposeOption.focus,
+      label: "Expected evidence",
+      value: compactDecisionPackEvidence(selectedPurposeOption),
       icon: "document" as GsnIconName,
     },
     {
-      label: "Evidence included",
+      label: "Connected GSN sources",
+      value: compactDecisionPackSources(selectedPurposeOption),
+      icon: "community" as GsnIconName,
+    },
+    {
+      label: "Current visible evidence",
       value: firstTruthy(
         communityActivityLabel,
         identityRecordSummary,
@@ -3305,14 +3314,9 @@ export default function TrustSlipPage() {
       icon: "document" as GsnIconName,
     },
     {
-      label: "Currentness",
-      value: firstTruthy(membershipCurrentnessLabel, trustSlipPublicStatus),
-      icon: "refresh" as GsnIconName,
-    },
-    {
-      label: "Private details excluded",
-      value: "Passport, contacts, bank details, raw notes",
-      icon: "vault" as GsnIconName,
+      label: "Architecture gaps",
+      value: compactDecisionPackMissingLinks(selectedPurposeOption),
+      icon: "alert" as GsnIconName,
     },
   ];
   const privateDecisionPackEvidenceCategories = (decisionPackEvidenceExtract?.categories || []).slice(0, 4);
@@ -3350,7 +3354,7 @@ export default function TrustSlipPage() {
     },
     {
       label: "Final decision",
-      value: "This Decision Pack reduces uncertainty; it does not remove risk or make the decision for the recipient.",
+      value: `This Decision Pack reduces uncertainty; it does not remove risk or make the decision for the recipient. It also does not prove ${compactDecisionPackBoundaries(selectedPurposeOption, 2)}.`,
       tone: "info",
     },
   ];

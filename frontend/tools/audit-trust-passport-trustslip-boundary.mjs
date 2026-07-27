@@ -20,6 +20,7 @@ const files = {
   package: "package.json",
   map: "../docs/GSN_EVIDENCE_DISPLAY_IMPLEMENTATION_MAP_DRAFT.md",
   protocol: "../docs/TRUST_DOCUMENT_LANGUAGE_PROTOCOL.md",
+  decisionMatrix: "../docs/GSN_DECISION_PACK_EVIDENCE_MATRIX.md",
 };
 
 const sourceByKey = Object.fromEntries(
@@ -289,6 +290,27 @@ assertContains(
   /export const GSN_DECISION_PACKS[\s\S]*?Community Standing Decision Pack[\s\S]*?Referral Decision Pack[\s\S]*?Guarantor or Support Decision Pack[\s\S]*?Employment Decision Pack[\s\S]*?Housing Decision Pack[\s\S]*?Trade or Skilled Work Decision Pack[\s\S]*?Supplier Decision Pack[\s\S]*?Volunteer Decision Pack[\s\S]*?Business Partnership Decision Pack[\s\S]*?Community Membership Decision Pack[\s\S]*?normalizeDecisionPackPublicContext/,
   "Decision Pack catalog must stay in the shared frontend contract, not hidden inside one page."
 );
+assertContains(
+  "decisionPacks",
+  /expectedEvidence[\s\S]*?gsnSources[\s\S]*?missingLinks[\s\S]*?refusesToClaim[\s\S]*?Employment Decision Pack[\s\S]*?Demand Box[\s\S]*?Housing Decision Pack[\s\S]*?Previous landlord[\s\S]*?Trade or Skilled Work Decision Pack[\s\S]*?Customer-confirmed completed-job record/,
+  "Decision Pack catalog must map purpose questions to expected evidence, GSN sources, missing architecture, and explicit overclaim boundaries."
+);
+assertContains(
+  "trustSlip",
+  /compactDecisionPackEvidence[\s\S]*?compactDecisionPackSources[\s\S]*?compactDecisionPackMissingLinks[\s\S]*?compactDecisionPackBoundaries/,
+  "TrustSlip holder page must import the shared Decision Pack evidence, source, gap, and boundary compactors."
+);
+assertContains(
+  "trustSlip",
+  /purposeEvidenceSelectionRows[\s\S]*?Expected evidence[\s\S]*?compactDecisionPackEvidence\(selectedPurposeOption\)[\s\S]*?Connected GSN sources[\s\S]*?compactDecisionPackSources\(selectedPurposeOption\)[\s\S]*?Architecture gaps[\s\S]*?compactDecisionPackMissingLinks\(selectedPurposeOption\)[\s\S]*?Final decision[\s\S]*?compactDecisionPackBoundaries\(selectedPurposeOption, 2\)/,
+  "TrustSlip holder Decision Pack panel must show expected evidence, connected GSN sources, architecture gaps, and purpose boundaries."
+);
+assertContains(
+  "decisionMatrix",
+  /Employment[\s\S]*?Demand Box[\s\S]*?Housing[\s\S]*?previous landlord[\s\S]*?Trade or Skilled Work[\s\S]*?Customer-confirmed completed-job record[\s\S]*?Backend parity/,
+  "Decision Pack evidence matrix doc must preserve the owner examples and missing-app architecture gaps."
+);
+
 assertContains(
   "trustSlip",
   /GSN_DECISION_PACKS[\s\S]*?Decision Pack selection[\s\S]*?Each pack is a focused view of the same evidence[\s\S]*?does not remove risk or make the decision for the recipient/,

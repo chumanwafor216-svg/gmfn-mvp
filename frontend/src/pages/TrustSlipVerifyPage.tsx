@@ -258,6 +258,41 @@ export default function TrustSlipVerifyPage() {
       scope: accessScope,
     });
 
+    const relevantSignals = decisionPack.expectedEvidence.slice(0, 5).map((evidence, index) => ({
+      key: `expected_evidence_${index + 1}`,
+      label: index === 0 ? "Expected evidence" : `Expected evidence ${index + 1}`,
+      status: "expected",
+      value: evidence,
+      decision_use: "Check whether this evidence is visible, current, or confirmed by the community before relying.",
+    }));
+    const recommendedChecks = decisionPack.gsnSources.slice(0, 4).map(
+      (source) => `${source.label}: ${source.evidence}`
+    );
+    const gapChecks = decisionPack.missingLinks.slice(0, 4).map((gap, index) => ({
+      key: `missing_link_${index + 1}`,
+      label: index === 0 ? "Architecture gap" : `Architecture gap ${index + 1}`,
+      reason: gap,
+      next_step: "Ask for live community confirmation or the fuller Trust Passport before relying on this point.",
+    }));
+    const mappedSources = decisionPack.gsnSources.slice(0, 4).map((source, index) => ({
+      key: `mapped_source_${index + 1}`,
+      label: source.label,
+      status: "mapped_source",
+      evidence_count: null,
+      latest_at: "",
+      decision_use: source.evidence,
+    }));
+    const privateReviewRequired = decisionPack.missingLinks.slice(0, 4).map((gap, index) => ({
+      key: `private_review_${index + 1}`,
+      label: index === 0 ? "Needs confirmation" : `Needs confirmation ${index + 1}`,
+      status: "not_publicly_proven",
+      decision_use: gap,
+    }));
+    const sourceSummary = recommendedChecks.length
+      ? recommendedChecks.join("; ")
+      : "Public TrustSlip context only; ask for live community confirmation before relying.";
+    const boundaryList = decisionPack.refusesToClaim.slice(0, 3).join(", ") || "the final decision";
+
     return {
       decision_pack: decisionPack.key,
       access_purpose: decisionPack.label,
@@ -265,6 +300,32 @@ export default function TrustSlipVerifyPage() {
       access_scope: decisionPack.scope,
       access_note: decisionPack.recipientQuestion,
       decision_pack_focus: decisionPack.focus,
+      decision_pack_profile: {
+        access_purpose: decisionPack.label,
+        recipient_question: decisionPack.recipientQuestion,
+        relevant_signals: relevantSignals,
+        gaps_to_check: gapChecks,
+        recommended_checks: recommendedChecks,
+        evidence_extract: {
+          source: "gsn_decision_pack_matrix",
+          source_note:
+            "Prepared from the shared GSN Decision Pack evidence matrix; public verification shows the lens and gaps, not private Trust Passport records.",
+          evidence_scope: {
+            reading_scope: decisionPack.scope,
+            included_active_community_count: null,
+            includes_holder_level_records: false,
+            public_summary: sourceSummary,
+            boundary:
+              "The public link maps the decision question to possible GSN evidence sources; it does not expose private records or replace live confirmation.",
+          },
+          categories: mappedSources,
+          private_review_required: privateReviewRequired,
+          boundary_note: `This public Decision Pack does not prove ${boundaryList}.`,
+        },
+        basis_note:
+          "This Decision Pack says what evidence should be checked for this purpose and where GSN can currently point; it does not make the decision.",
+        boundary_note: `This Decision Pack reduces uncertainty; it does not remove risk, make the recipient's decision, or prove ${boundaryList}.`,
+      },
       share_access_record: {
         recipient_label: "TrustSlip recipient",
         purpose: decisionPack.label,
@@ -419,12 +480,16 @@ export default function TrustSlipVerifyPage() {
           return;
         }
 
-        const normalized = normalizeTrustSlipVerification(
+        const mergedVerifyResult =
           verifyResult && publicDecisionPackContext
-            ? { ...verifyResult, ...publicDecisionPackContext }
-            : verifyResult,
-          codeToUse
-        );
+            ? {
+                ...verifyResult,
+                ...publicDecisionPackContext,
+                decision_pack_profile:
+                  verifyResult?.decision_pack_profile || publicDecisionPackContext.decision_pack_profile,
+              }
+            : verifyResult;
+        const normalized = normalizeTrustSlipVerification(mergedVerifyResult, codeToUse);
         setRecord(normalized);
         const mySlipCode = firstTruthy(
           mySlip?.code,

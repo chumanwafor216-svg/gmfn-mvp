@@ -1,3 +1,50 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack evidence matrix
+
+Owner trigger:
+- Owner explained that GSN must answer real social verification questions across categories, not only show a generic Trust Passport. Examples included an employer/customer checking whether someone is actually known as a plumber, and a landlord needing payment/responsibility evidence before accepting a tenant.
+
+Unabated truth:
+- The owner is right: a generic Trust Passport title is not enough. GSN is strongest when a Decision Pack maps a recipient's exact question to evidence sources, witnesses, missing links, and boundaries.
+- This slice strengthens the frontend Decision Pack contract and public/signed-in presentation. It does not yet make the backend Decision Pack catalog the long-term rich source of truth, and it does not create new completed-job, landlord-reference, or skill-claim database records.
+- Devil's advocate: the platform can now say what should be checked and where GSN can point today; it still cannot honestly certify that Emeka is a plumber, that a tenant will pay rent, or that a borrower will repay unless those specific records/witnesses are captured.
+
+Changed:
+- frontend/src/lib/decisionPacks.ts
+  - Expanded all ten Decision Packs with expectedEvidence, gsnSources, missingLinks, and refusesToClaim fields.
+  - Added compact helpers for signed-in TrustSlip summaries.
+  - Extended public Decision Pack normalization so shared links can carry the richer evidence lens.
+- frontend/src/pages/TrustSlipPage.tsx
+  - Decision Pack selection now shows expected evidence, connected GSN sources, current visible evidence, and architecture gaps.
+  - The compact Decision Boundary now includes purpose-specific overclaim limits.
+- frontend/src/pages/TrustSlipVerifyPage.tsx
+  - Public Decision Pack URL context now creates a public-safe decision_pack_profile with expected signals, mapped GSN sources, gaps to check, recommended checks, and boundary notes.
+  - Backend-provided decision_pack_profile still takes priority when present.
+- docs/GSN_DECISION_PACK_EVIDENCE_MATRIX.md
+  - Added the architecture matrix for Community Standing, Referral, Guarantor/Support, Employment, Housing, Trade/Skilled Work, Supplier, Volunteer, Business Partnership, and Community Membership.
+  - Captures current sources, missing structural links, and what GSN must not claim.
+- frontend/tools/audit-trust-passport-trustslip-boundary.mjs
+- frontend/tools/audit-public-trustslip-verify-boundary.mjs
+  - Added guards for the richer Decision Pack evidence matrix and public profile path.
+
+Routes/screens affected:
+- /app/trust-slip signed-in TrustSlip Decision Pack preparation.
+- /trust-slips/verify and /app/trust-slips/verify public recipient Decision Pack reading.
+- No database schema, auth, payment, ledger, TrustEvent write path, or backend evidence aggregation changed in this slice.
+
+Verification:
+- Passed npm --prefix frontend run audit:trust-passport-trustslip-boundary.
+- Passed npm --prefix frontend run audit:public-trustslip-verify-boundary.
+- Passed npm --prefix frontend run audit:protected-button-freeze.
+- Passed npm --prefix frontend run build.
+- Passed npm --prefix frontend run smoke:public-trustslip-verify-states outside the sandbox after sandboxed Vite/esbuild spawn failed with EPERM.
+- Passed npm --prefix frontend run smoke:trust-passport-trustslip-boundary outside the sandbox after sandboxed Vite/esbuild spawn failed with EPERM.
+
+Deployment:
+- Not pushed or deployed in this slice. Git publishing is frozen into batch mode until the product owner approves publishing.
+
+Recommended next step:
+- Backend parity: move the richer Decision Pack fields into gmfn_backend/app/services/trust_slip_decision_packs.py and connect new record types over time: structured skill claims, completed work/customer confirmation, housing references, issue-resolution summaries, guarantor exposure outcomes, supplier fulfilment/correction, and purpose-specific community confirmation questions.
+
 ## CURRENT LOCAL STATE - 2026-07-27 - Trust Passport mobile snapshot title fix
 
 Owner trigger:
