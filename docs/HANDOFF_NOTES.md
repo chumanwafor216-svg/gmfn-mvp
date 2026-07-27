@@ -156979,3 +156979,24 @@ Verification run locally:
 
 Deployment:
 - Local only. Push/deploy only when owner sends `2`.
+## 2026-07-27 - Local Trust Passport Audit Alignment
+
+- Scope: local-only Trust Passport verification after continuing the app decongestion pass.
+- `frontend/src/pages/TrustScorePage.tsx`
+  - Inspected the Trust Passport mobile structure; no page edit was made because decision-first, quick facts, lane selector, and deeper details are already protected behind compact/collapsed sections.
+- `frontend/tools/audit-trust-passport-lane-map.mjs`
+  - Updated a stale lane-map assertion from the older `Trust-limit signal` wording to the current `Support limit signal` wording already present in the page.
+
+Unabated truth:
+- This pass does not change any user-facing Trust Passport code, Trust Passport behavior, TrustSlip behavior, backend evidence, routing, auth, or public verification.
+- It only repairs the local audit so it protects the current clearer wording instead of failing on an old label.
+
+Verification run locally:
+- `node --check frontend\tools\audit-trust-passport-lane-map.mjs`
+- `node frontend\tools\audit-trust-passport-lane-map.mjs`
+- `node frontend\tools\audit-trust-passport-button-inventory.mjs`
+- `node frontend\tools\audit-trust-passport-front-package.mjs`
+- `git diff --check` passed with normal CRLF warnings.
+
+Deployment:
+- Local only. Push/deploy only when owner sends `2`.
