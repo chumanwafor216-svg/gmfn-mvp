@@ -156212,3 +156212,12 @@ Next recommended step:
 - Strengthened the Community Home Trust evidence lane so finance reads as ability to transact, support reads as support/guarantor evidence, Trust Passport remains an evidence-record review, and notices read as response record evidence.
 - No landlord-reference data model was added. Current behaviour remains inference from GSN activity/evidence records; direct landlord/agent contact remains a later optional contact-field feature.
 - Verification run: npm --prefix frontend run audit:community-home-button-inventory, audit:community-home-phone-buttons, audit:dashboard-button-inventory, audit:dashboard-phone-buttons, audit:protected-button-freeze, audit:button-stability, audit:gsn-visible-language, and npm --prefix frontend run build all passed.
+
+
+## 2026-07-27 - TrustSlip Verification Tools Flow Strip
+
+- Scope: TrustSlip holder page copy/UX structure only.
+- Reframed the protected Decision Pack selector with a human-facing "Verification tools" heading while keeping the technical "Decision Pack selection" label and existing pack catalogue contract.
+- Added a compact three-step non-button strip inside the existing Decision Pack block: choose pack, refresh record, then share/respond using the selected public pack or community-confirmation question.
+- No new route, backend claim, landlord verification store, or action count was added. Existing housing optional external contact remains holder-supplied, housing-only, copied/exported only by holder action, and outside GSN verification/storage.
+- Verification run: audit:trust-passport-trustslip-boundary, audit:button-stability, audit:gsn-visible-language, audit:protected-button-freeze, smoke:trust-passport-trustslip-boundary, git diff --check, and npm --prefix frontend run build passed. The first smoke attempt was blocked by sandbox spawn EPERM and passed when rerun with escalation.

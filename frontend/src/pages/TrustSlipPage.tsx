@@ -3590,6 +3590,23 @@ export default function TrustSlipPage() {
       icon: "community-building" as GsnIconName,
     },
   ];
+  const trustSlipVerificationFlowRows = [
+    {
+      label: "1. Choose pack",
+      value: "Pick employment, housing, trade, support, referral, or another decision lens.",
+      icon: "evidence" as GsnIconName,
+    },
+    {
+      label: "2. Refresh record",
+      value: "Use the current TrustSlip reading so the selected pack carries today's visible evidence state.",
+      icon: "refresh" as GsnIconName,
+    },
+    {
+      label: "3. Share or respond",
+      value: "Copy the pack note, open the public pack, or use the selected community confirmation question.",
+      icon: "public-globe" as GsnIconName,
+    },
+  ];
   const privateDecisionPackEvidenceCategories = (decisionPackEvidenceExtract?.categories || []).slice(0, 4);
   const privateDecisionPackDeclaredClaims = (decisionPackEvidenceExtract?.declaredClaims || []).slice(0, 3);
   const privateDecisionPackRecordPointers = (decisionPackEvidenceExtract?.recordPointers || []).slice(0, 3);
@@ -4120,7 +4137,7 @@ export default function TrustSlipPage() {
                     lineHeight: 1.12,
                   }}
                 >
-                  Choose the Decision Pack for this recipient.
+                  Verification tools
                 </div>
                 <div
                   style={{
@@ -4134,6 +4151,50 @@ export default function TrustSlipPage() {
                   Each pack is a focused view of the same evidence. GSN reduces uncertainty; it does not remove risk or make the decision for the recipient.
                 </div>
               </div>
+            </div>
+
+            <div
+              data-gsn-trustslip-verification-flow="compact"
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                gap: 8,
+              }}
+            >
+              {trustSlipVerificationFlowRows.map((row) => (
+                <div
+                  key={row.label}
+                  style={{
+                    borderRadius: 13,
+                    border: "1px solid rgba(37,78,119,0.12)",
+                    background: "#FFFFFF",
+                    padding: isCompact ? "8px 9px" : "10px 11px",
+                    display: "grid",
+                    gridTemplateColumns: "28px minmax(0, 1fr)",
+                    gap: 7,
+                    alignItems: "center",
+                    minWidth: 0,
+                  }}
+                >
+                  <GsnLegacyIcon name={row.icon} size={26} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ ...sectionLabel(), fontSize: isCompact ? 9 : 10 }}>
+                      {row.label}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 2,
+                        color: "#334155",
+                        fontSize: isCompact ? 10.5 : 11.5,
+                        fontWeight: 850,
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {row.value}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
 
             {isCompact ? (
