@@ -371,8 +371,8 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /debugId="app-layout\.mobile\.close-tools"[\s\S]*?pageActions\.map[\s\S]*?debugId=\{`app-layout\.page-action\.\$\{item\.label\.toLowerCase\(\)[\s\S]*?debugId="app-layout\.page-action\.logout"/,
-  "Vault Control mobile Tools panel must count close, four focused route links, and logout as part of the outer navigator surface."
+  /debugId="app-layout\.mobile\.close-tools"[\s\S]*?pageActions\.map[\s\S]*?debugId=\{`app-layout\.page-action\.\$\{item\.label\.toLowerCase\(\)/,
+  "Vault Control focused Tools panel must count close and the focused task actions without the normal TrustSlip chooser."
 );
 
 assertLayoutContains(

@@ -156261,3 +156261,42 @@ Next recommended step:
 - Updated `frontend/tools/audit-dashboard-actions.mjs` so the protected Dashboard audit now requires the new dynamic `dashboard.apps.lane.${lane.key}` and `dashboard.apps.tool.${activeToolsLane.key}.${item.label...}` debug IDs.
 - Verified: `npm --prefix frontend run lint`; `audit:dashboard-actions`; `audit:dashboard-button-inventory`; `audit:dashboard-phone-buttons`; `audit:startup-root-boundary`; `audit:button-stability`; `audit:protected-button-freeze`; `npm --prefix frontend run build`; elevated `audit:startup-timing`.
 - No push/deploy in this pass because the product owner selected `1`.
+## 2026-07-27 - Top Tools Share TrustSlip Flow
+
+- Scope: local-only mobile app shell and TrustSlip holder deep-link support.
+- Owner correction: the top `Tools` button should not expose many verification tools at once. It should first show `Share TrustSlip`, then let the member choose the simple purpose: work, housing, trade, or support, then refresh/open the selected TrustSlip lens or share it.
+- `frontend/src/layout/AppLayout.tsx`
+  - Replaced the normal mobile Tools sheet page-action dump with one guided `Share TrustSlip` lane.
+  - The lane opens four purpose buttons: `Verify for work`, `Verify for housing`, `Verify for trade`, and `Verify for support`.
+  - Each purpose maps to an existing TrustSlip Decision Pack (`employment_decision`, `housing_decision`, `trade_check`, `guarantor_decision`) and a short evidence matrix.
+  - `Refresh` opens `/app/trust-slip?decision_pack=...#trust-slip-purpose-selection` with community context preserved.
+  - `Share` uses the browser/phone native share sheet where available; otherwise it copies the selected public verifier message/link, and falls back to opening the holder share section.
+  - Task-mode pages still show their focused task actions instead of the normal TrustSlip chooser.
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - Reads `decision_pack` from the URL and preselects the matching Decision Pack.
+  - Added anchors for `trust-slip-purpose-selection` and `public-decision-pack-share` so the top Tools sheet can land in the correct TrustSlip area.
+- Audit guards updated for the new shell contract in Dashboard, Community Home, Marketplace, Notifications, Shop Control, and Vault Control button-inventory audits.
+
+Unabated truth:
+- This implements the simple top-Tools UX the owner described; it does not add a backend-generated live TrustSlip code to AppLayout.
+- The shared public verifier link asks the recipient to enter the TrustSlip code the holder provides. The holder can use `Refresh` to open the selected TrustSlip page and copy/share the real holder pack from there.
+- This also does not add WhatsApp-number storage for landlords/agents or automatic contact verification. Browser-native share may show WhatsApp/phone contacts depending on the device; clipboard fallback is the non-native option.
+- AppLayout remains slightly heavier than before this Tools work, but after simplification the final build reports `AppLayout-C2IyznU6.js` at 52.28 kB / gzip 14.32 kB, lower than the earlier heavier 53.01 kB / gzip 14.43 kB sample.
+- Startup timing passed after the simplification: warm shell 3216ms, warm Dashboard 3453ms, auth-retry Dashboard 7319ms.
+
+Verification run locally:
+- `npm --prefix frontend run lint`
+- `npm --prefix frontend run audit:dashboard-button-inventory`
+- `npm --prefix frontend run audit:community-home-button-inventory`
+- `npm --prefix frontend run audit:marketplace-button-inventory`
+- `npm --prefix frontend run audit:shop-control-button-inventory`
+- `npm --prefix frontend run audit:notifications-button-inventory`
+- `npm --prefix frontend run audit:vault-control-button-inventory`
+- `npm --prefix frontend run audit:trust-passport-trustslip-boundary`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `git diff --check` passed with only normal CRLF warnings.
+- `npm --prefix frontend run build` passed after the final task-mode helper-copy correction.
+- Elevated `npm --prefix frontend run audit:startup-timing` passed.
+
+Deployment:
+- Local only. Owner selected `1`; do not push/deploy unless the owner selects `2`.

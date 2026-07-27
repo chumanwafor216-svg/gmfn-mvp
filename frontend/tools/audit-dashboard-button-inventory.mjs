@@ -299,8 +299,8 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /debugId="app-layout\.mobile\.close-tools"[\s\S]*?pageActions\.map[\s\S]*?debugId=\{`app-layout\.page-action\.\$\{item\.label\.toLowerCase\(\)[\s\S]*?debugId="app-layout\.page-action\.logout"/,
-  "Dashboard mobile Tools panel must count close, six page actions, and logout as part of the outer navigator surface."
+  /debugId="app-layout\.mobile\.close-tools"[\s\S]*?debugId="app-layout\.tools\.share-trustslip\.toggle"[\s\S]*?TRUST_SLIP_SHARE_PURPOSES\.map[\s\S]*?debugId=\{`app-layout\.tools\.trustslip-purpose\.\$\{purpose\.key\}`\}[\s\S]*?debugId="app-layout\.tools\.trustslip-refresh"[\s\S]*?debugId="app-layout\.tools\.trustslip-share"/,
+  "Dashboard mobile Tools panel must count the guided TrustSlip verification controls as part of the outer navigator surface."
 );
 
 assertLayoutContains(

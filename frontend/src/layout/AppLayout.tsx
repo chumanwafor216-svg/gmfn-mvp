@@ -46,6 +46,47 @@ type TaskModeMeta = {
   actions: NavLinkItem[];
 };
 
+type TrustSlipSharePurposeKey = "work" | "housing" | "trade" | "support";
+
+type TrustSlipSharePurpose = {
+  key: TrustSlipSharePurposeKey;
+  label: string;
+  decisionPack: string;
+  purpose: string;
+  evidenceMatrix: string;
+};
+
+const TRUST_SLIP_SHARE_PURPOSES: TrustSlipSharePurpose[] = [
+  {
+    key: "work",
+    label: "Verify for work",
+    decisionPack: "employment_decision",
+    purpose: "Show enough evidence to continue a work or employment conversation.",
+    evidenceMatrix: "role, service activity, community witness, Demand Box or shop trail",
+  },
+  {
+    key: "housing",
+    label: "Verify for housing",
+    decisionPack: "housing_decision",
+    purpose: "Show community evidence for rent, co-living, responsibility, and issue handling.",
+    evidenceMatrix: "payment discipline, repayment, community conduct, issue-resolution pointers",
+  },
+  {
+    key: "trade",
+    label: "Verify for trade",
+    decisionPack: "trade_check",
+    purpose: "Show who has seen this person trade, serve, or complete practical work.",
+    evidenceMatrix: "shop, advert, Demand Box, completed-work or community witness pointers",
+  },
+  {
+    key: "support",
+    label: "Verify for support",
+    decisionPack: "guarantor_decision",
+    purpose: "Show responsibility evidence before someone stands for, supports, or guarantees risk.",
+    evidenceMatrix: "repayment, support exposure, contribution discipline, community responsibility",
+  },
+];
+
 const COMMUNITY_CONTEXT_ROUTE_PREFIXES = [
   "/app/community",
   "/app/marketplace",
@@ -58,6 +99,7 @@ const COMMUNITY_CONTEXT_ROUTE_PREFIXES = [
   "/app/shop/me",
   "/app/trust",
   "/app/trust-slip",
+  "/app/community-confirmations",
   "/app/vault-control",
   "/app/demand-box",
 ];
@@ -72,6 +114,32 @@ function shouldCarryCommunityContext(to: string): boolean {
 function contextualizeAppNavTarget(to: string, communityId: number): string {
   if (!communityId || !shouldCarryCommunityContext(to)) return to;
   return routeWithCommunity(to, communityId);
+}
+
+function trustSlipPurposePath(
+  purpose: TrustSlipSharePurpose,
+  communityId: number,
+  hash = "trust-slip-purpose-selection"
+): string {
+  const search = new URLSearchParams();
+  search.set("decision_pack", purpose.decisionPack);
+  const base = contextualizeAppNavTarget(`/app/trust-slip?${search.toString()}`, communityId);
+  return `${base}#${hash.replace(/^#/, "")}`;
+}
+
+function publicTrustSlipCheckPath(purpose: TrustSlipSharePurpose): string {
+  const search = new URLSearchParams();
+  search.set("decision_pack", purpose.decisionPack);
+  return `/verify/trust-slip?${search.toString()}`;
+}
+
+function absoluteFrontendUrl(path: string): string {
+  if (typeof window === "undefined") return path;
+  try {
+    return new URL(path, window.location.origin).toString();
+  } catch {
+    return path;
+  }
 }
 
 function readRole(): string {
@@ -1657,6 +1725,10 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [trustSlipShareOpen, setTrustSlipShareOpen] = useState(false);
+  const [trustSlipSharePurpose, setTrustSlipSharePurpose] =
+    useState<TrustSlipSharePurposeKey>("work");
+  const [trustSlipShareNotice, setTrustSlipShareNotice] = useState("");
   const [myGmfnId, setMyGmfnId] = useState<string>(() => getStoredGmfnId() || "");
   const [myRole, setMyRole] = useState<string>(() => readRole());
   const [myClanRole, setMyClanRole] = useState<string>("");
@@ -2094,8 +2166,71 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
     loansItems,
   ]);
 
+  const selectedTrustSlipSharePurpose = useMemo(
+    () =>
+      TRUST_SLIP_SHARE_PURPOSES.find(
+        (purpose) => purpose.key === trustSlipSharePurpose
+      ) || TRUST_SLIP_SHARE_PURPOSES[0],
+    [trustSlipSharePurpose]
+  );
+  const selectedTrustSlipPurposePath = useMemo(
+    () =>
+      trustSlipPurposePath(
+        selectedTrustSlipSharePurpose,
+        activeCommunityId,
+        "trust-slip-purpose-selection"
+      ),
+    [activeCommunityId, selectedTrustSlipSharePurpose]
+  );
+  const selectedTrustSlipSharePath = useMemo(
+    () =>
+      trustSlipPurposePath(
+        selectedTrustSlipSharePurpose,
+        activeCommunityId,
+        "public-decision-pack-share"
+      ),
+    [activeCommunityId, selectedTrustSlipSharePurpose]
+  );
+
   const showMobileBottomRail =
     isMobile && (!taskMode || shouldKeepBottomRailInTaskMode(location.pathname));
+
+  async function shareSelectedTrustSlipPurpose() {
+    const publicPath = publicTrustSlipCheckPath(selectedTrustSlipSharePurpose);
+    const publicUrl = absoluteFrontendUrl(publicPath);
+    const text = [
+      `GSN TrustSlip check: ${selectedTrustSlipSharePurpose.label}`,
+      selectedTrustSlipSharePurpose.purpose,
+      `Evidence matrix: ${selectedTrustSlipSharePurpose.evidenceMatrix}`,
+      "Open the link and enter the TrustSlip code I provide. This is evidence for judgement, not approval or guarantee.",
+    ].join("\n");
+
+    try {
+      if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+        await navigator.share({
+          title: "GSN TrustSlip",
+          text,
+          url: publicUrl,
+        });
+        setTrustSlipShareNotice("Share sheet opened.");
+        setIsActionsOpen(false);
+        return;
+      }
+
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(`${text}\n${publicUrl}`);
+        setTrustSlipShareNotice("TrustSlip share message copied.");
+        return;
+      }
+    } catch {
+      setTrustSlipShareNotice("Share did not complete. Open TrustSlip and copy the selected pack there.");
+      return;
+    }
+
+    setTrustSlipShareNotice("Open TrustSlip and copy the selected pack there.");
+    navigate(selectedTrustSlipSharePath);
+    setIsActionsOpen(false);
+  }
 
   return (
     <div style={isMobile ? mobileShell() : desktopShell()}>
@@ -2445,7 +2580,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
             >
               <div>
                 <div style={actionsTitle()}>
-                  {taskMode ? "Current action" : "Page tools"}
+                  {taskMode ? "Current action" : "Tools and verification"}
                 </div>
                 <div
                   style={{
@@ -2455,7 +2590,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
                     color: "#0B1F33",
                   }}
                 >
-                  {taskMode ? taskMode.title : routeMeta.page}
+                  {taskMode ? taskMode.title : "Share TrustSlip"}
                 </div>
               </div>
 
@@ -2474,41 +2609,166 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
               style={{
                 color: "#5D7389",
                 fontSize: 14,
-                lineHeight: 1.75,
-                marginBottom: 14,
+                lineHeight: 1.55,
+                marginBottom: 12,
               }}
             >
               {taskMode
                 ? "Finish this step first, or choose where you want to go next."
-                : "These actions belong to the page you are using now."}
+                : "Choose the TrustSlip question first. GSN will open the right evidence lens before you share."}
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {pageActions.map((item) => (
-                <StableCtaLink
-                  key={`page-action-${item.label}-${item.to}`}
-                  to={contextualizeAppNavTarget(item.to, activeCommunityId)}
+            {taskMode ? (
+              <div style={{ display: "grid", gap: 8 }}>
+                {pageActions.map((item) => (
+                  <StableCtaLink
+                    key={`page-action-${item.label}-${item.to}`}
+                    to={contextualizeAppNavTarget(item.to, activeCommunityId)}
+                    kind="secondary"
+                    disabled={!!item.disabled}
+                    onClick={closeActionsAfterNavigation}
+                    debugId={`app-layout.page-action.${item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                    style={actionsLink(
+                      isItemActive(item, location.pathname, location.search),
+                      !!item.disabled
+                    )}
+                  >
+                    {item.label}
+                  </StableCtaLink>
+                ))}
+              </div>
+            ) : (
+              <div style={{ display: "grid", gap: 10 }}>
+                <StableButton
+                  type="button"
+                  onClick={() => setTrustSlipShareOpen((open) => !open)}
                   kind="secondary"
-                  disabled={!!item.disabled}
-                  onClick={closeActionsAfterNavigation}
-                  debugId={`app-layout.page-action.${item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
-                  style={actionsLink(
-                    isItemActive(item, location.pathname, location.search),
-                    !!item.disabled
-                  )}
+                  debugId="app-layout.tools.share-trustslip.toggle"
+                  aria-expanded={trustSlipShareOpen}
+                  style={{
+                    ...actionsLink(false, false),
+                    height: 54,
+                    minHeight: 54,
+                    maxHeight: 54,
+                    justifyContent: "space-between",
+                    background:
+                      "linear-gradient(180deg, #0B1F33 0%, #123A5A 100%)",
+                    color: "#FFF8DC",
+                    border: "1px solid rgba(214,170,69,0.30)",
+                  }}
                 >
-                  {item.label}
-                </StableCtaLink>
-              ))}
-              <StableButton
-                onClick={handleLogout}
-                kind="secondary"
-                debugId="app-layout.page-action.logout"
-                style={actionsLink(false, false)}
-              >
-                Log out
-              </StableButton>
-            </div>
+                  <span>Share TrustSlip</span>
+                  <span aria-hidden="true">{trustSlipShareOpen ? "-" : "+"}</span>
+                </StableButton>
+
+                {trustSlipShareOpen ? (
+                  <div
+                    style={{
+                      borderRadius: 16,
+                      border: "1px solid rgba(214,170,69,0.20)",
+                      background:
+                        "linear-gradient(180deg, #FFFDF7 0%, #F8FBFF 100%)",
+                      padding: 10,
+                      display: "grid",
+                      gap: 9,
+                    }}
+                  >
+                    <div style={actionsTitle()}>Share TrustSlip for</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
+                      {TRUST_SLIP_SHARE_PURPOSES.map((purpose) => {
+                        const active = purpose.key === selectedTrustSlipSharePurpose.key;
+                        return (
+                          <StableButton
+                            key={purpose.key}
+                            type="button"
+                            kind="secondary"
+                            aria-pressed={active}
+                            onClick={() => setTrustSlipSharePurpose(purpose.key)}
+                            debugId={`app-layout.tools.trustslip-purpose.${purpose.key}`}
+                            style={{
+                              ...actionsLink(active, false),
+                              height: 48,
+                              minHeight: 48,
+                              maxHeight: 48,
+                              fontSize: 12.5,
+                              whiteSpace: "normal",
+                              lineHeight: 1.12,
+                              background: active ? "#EAF4FF" : "#FFFFFF",
+                            }}
+                          >
+                            {purpose.label}
+                          </StableButton>
+                        );
+                      })}
+                    </div>
+
+                    <div
+                      style={{
+                        borderRadius: 13,
+                        border: "1px solid rgba(11,99,209,0.10)",
+                        background: "#FFFFFF",
+                        padding: "9px 10px",
+                        display: "grid",
+                        gap: 6,
+                      }}
+                    >
+                      <div style={{ color: "#0B1F33", fontWeight: 950, fontSize: 13 }}>
+                        {selectedTrustSlipSharePurpose.label}
+                      </div>
+                      <div style={{ color: "#5D7389", fontWeight: 750, fontSize: 12, lineHeight: 1.35 }}>
+                        {selectedTrustSlipSharePurpose.purpose}
+                      </div>
+                      <div style={{ color: "#254E77", fontWeight: 850, fontSize: 11.5, lineHeight: 1.35 }}>
+                        Evidence: {selectedTrustSlipSharePurpose.evidenceMatrix}
+                      </div>
+                    </div>
+
+                    {trustSlipShareNotice ? (
+                      <div
+                        style={{
+                          borderRadius: 12,
+                          background: "#F0F7FF",
+                          border: "1px solid rgba(11,99,209,0.12)",
+                          color: "#254E77",
+                          fontSize: 12,
+                          fontWeight: 800,
+                          lineHeight: 1.35,
+                          padding: "8px 9px",
+                        }}
+                      >
+                        {trustSlipShareNotice}
+                      </div>
+                    ) : null}
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      <StableCtaLink
+                        to={selectedTrustSlipPurposePath}
+                        kind="secondary"
+                        onClick={closeActionsAfterNavigation}
+                        debugId="app-layout.tools.trustslip-refresh"
+                        style={actionsLink(false, false)}
+                      >
+                        Refresh
+                      </StableCtaLink>
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        onClick={() => void shareSelectedTrustSlipPurpose()}
+                        debugId="app-layout.tools.trustslip-share"
+                        style={{
+                          ...actionsLink(false, false),
+                          background: "#0B63D1",
+                          border: "1px solid rgba(11,99,209,0.22)",
+                          color: "#FFFFFF",
+                        }}
+                      >
+                        Share
+                      </StableButton>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
         </>
       )}
@@ -2585,6 +2845,3 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
     </div>
   );
 }
-
-
-

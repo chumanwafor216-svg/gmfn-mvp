@@ -2245,6 +2245,16 @@ export default function TrustSlipPage() {
   const [merchantRailLink, setMerchantRailLink] = useState<MerchantLinkResponse | null>(null);
   const [selectedTrustSlipPurpose, setSelectedTrustSlipPurpose] =
     useState<DecisionPackKey>(DEFAULT_DECISION_PACK.key);
+
+  useEffect(() => {
+    const requestedPack = new URLSearchParams(location.search).get("decision_pack");
+    const matchedPack = GSN_DECISION_PACKS.find(
+      (option) => option.key === requestedPack
+    );
+    if (!matchedPack || matchedPack.key === selectedTrustSlipPurpose) return;
+    setSelectedTrustSlipPurpose(matchedPack.key);
+  }, [location.search, selectedTrustSlipPurpose]);
+
   const selectedPurposeOption = useMemo(
     () =>
       GSN_DECISION_PACKS.find(
@@ -4096,6 +4106,7 @@ export default function TrustSlipPage() {
           ) : null}
 
           <section
+            id="trust-slip-purpose-selection"
             data-debug-id="trust-slip.purpose-selection"
             style={{
               ...trustSlipScrollClearance(isCompact),
@@ -4491,6 +4502,7 @@ export default function TrustSlipPage() {
               </div>
             </div>
             <div
+              id="public-decision-pack-share"
               data-gsn-public-decision-pack-share="holder"
               style={{
                 borderRadius: 14,
@@ -8072,4 +8084,3 @@ export default function TrustSlipPage() {
     </div>
   );
 }
-

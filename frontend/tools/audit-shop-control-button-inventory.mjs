@@ -37,7 +37,7 @@ const expectedFileInputActionRoots = 2;
 const expectedMobileTaskShellBreakdown = {
   top: 2,
   drawer: 5,
-  pageTools: 5,
+  pageTools: 8,
   bottom: 0,
 };
 const expectedMobileTaskShellActions = Object.values(
@@ -466,8 +466,8 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /debugId="app-layout\.mobile\.close-tools"[\s\S]*?pageActions\.map[\s\S]*?debugId=\{`app-layout\.page-action\.\$\{item\.label\.toLowerCase\(\)[\s\S]*?debugId="app-layout\.page-action\.logout"/,
-  "Shop Control mobile Tools panel must count close, three focused route links, and logout as part of the outer navigator surface."
+  /debugId="app-layout\.mobile\.close-tools"[\s\S]*?debugId="app-layout\.tools\.share-trustslip\.toggle"[\s\S]*?TRUST_SLIP_SHARE_PURPOSES\.map[\s\S]*?debugId=\{`app-layout\.tools\.trustslip-purpose\.\$\{purpose\.key\}`\}[\s\S]*?debugId="app-layout\.tools\.trustslip-refresh"[\s\S]*?debugId="app-layout\.tools\.trustslip-share"/,
+  "Shop Control mobile Tools panel must count the guided TrustSlip verification controls as part of the outer navigator surface."
 );
 
 assertLayoutContains(
