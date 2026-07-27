@@ -50,6 +50,16 @@ type DecisionPackRecordPointer = {
   decisionUse: string;
 };
 
+type DecisionPackHousingReferencePointer = {
+  key: string;
+  label: string;
+  status: string;
+  value: string;
+  source: string;
+  evidenceCount: number | null;
+  decisionUse: string;
+};
+
 type DecisionPackGuaranteeOutcomePointer = {
   key: string;
   label: string;
@@ -125,6 +135,8 @@ export type DecisionPackEvidenceExtractView = {
   declarationBoundaryNote: string;
   recordPointers: DecisionPackRecordPointer[];
   recordPointerBoundaryNote: string;
+  housingReferencePointers: DecisionPackHousingReferencePointer[];
+  housingReferenceBoundaryNote: string;
   guaranteeOutcomePointers: DecisionPackGuaranteeOutcomePointer[];
   guaranteeOutcomeBoundaryNote: string;
   fulfillmentOutcomePointers: DecisionPackFulfillmentOutcomePointer[];
@@ -328,6 +340,7 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
     : [];
   const declaredClaims = Array.isArray(source.declared_claims) ? source.declared_claims : [];
   const recordPointers = Array.isArray(source.record_pointers) ? source.record_pointers : [];
+  const housingReferencePointers = Array.isArray(source.housing_reference_pointers) ? source.housing_reference_pointers : [];
   const guaranteeOutcomePointers = Array.isArray(source.guarantee_outcome_pointers) ? source.guarantee_outcome_pointers : [];
   const fulfillmentOutcomePointers = Array.isArray(source.fulfillment_outcome_pointers) ? source.fulfillment_outcome_pointers : [];
   const completedWorkPointers = Array.isArray(source.completed_work_pointers) ? source.completed_work_pointers : [];
@@ -411,6 +424,28 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
     recordPointerBoundaryNote: firstTruthy(
       source.record_pointer_boundary_note,
       "Connected financial/support records are evidence pointers only. They do not prove creditworthiness, legal tenancy status, rent payment, bank approval, or future repayment."
+    ),
+    housingReferencePointers: housingReferencePointers
+      .map((pointer: any) => ({
+        key: firstTruthy(pointer?.key, pointer?.label),
+        label: firstTruthy(pointer?.label, "Housing reference readiness"),
+        status: firstTruthy(pointer?.status, "not_shown"),
+        value: firstTruthy(
+          pointer?.value,
+          "No housing-reference readiness pointer is visible for this Decision Pack yet."
+        ),
+        source: firstTruthy(pointer?.source, "repayments+pool_events+community_confirmation"),
+        evidenceCount: firstNumberLike(pointer?.evidence_count),
+        decisionUse: firstTruthy(
+          pointer?.decision_use,
+          "Use this as housing-context evidence only; ask for landlord/reference confirmation before relying."
+        ),
+      }))
+      .filter((pointer: DecisionPackHousingReferencePointer) => pointer.key || pointer.label)
+      .slice(0, 4),
+    housingReferenceBoundaryNote: firstTruthy(
+      source.housing_reference_boundary_note,
+      "Housing-reference readiness pointers are aggregate housing-context evidence only. They do not expose landlords, accommodation providers, addresses, rent amounts, payment references, private witness notes, allegations, legal tenancy status, right-to-rent checks, affordability decisions, tenancy approval, guaranteed rent, or future conduct guarantees."
     ),
     guaranteeOutcomePointers: guaranteeOutcomePointers
       .map((pointer: any) => ({

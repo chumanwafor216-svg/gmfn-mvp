@@ -165,6 +165,16 @@ type TrustSlipVerifyPublicPaperProps = {
         decisionUse: string;
       }>;
       recordPointerBoundaryNote: string;
+      housingReferencePointers: Array<{
+        key: string;
+        label: string;
+        status: string;
+        value: string;
+        source: string;
+        evidenceCount: number | null;
+        decisionUse: string;
+      }>;
+      housingReferenceBoundaryNote: string;
       guaranteeOutcomePointers: Array<{
         key: string;
         label: string;
@@ -1254,6 +1264,7 @@ export default function TrustSlipVerifyPublicPaper({
   const decisionPackEvidenceCategories = decisionPackProfile.evidenceExtract.categories.slice(0, 4);
   const decisionPackDeclaredClaims = decisionPackProfile.evidenceExtract.declaredClaims.slice(0, 3);
   const decisionPackRecordPointers = decisionPackProfile.evidenceExtract.recordPointers.slice(0, 3);
+  const decisionPackHousingReferencePointers = decisionPackProfile.evidenceExtract.housingReferencePointers.slice(0, 3);
   const decisionPackGuaranteeOutcomePointers = decisionPackProfile.evidenceExtract.guaranteeOutcomePointers.slice(0, 3);
   const decisionPackFulfillmentOutcomePointers = decisionPackProfile.evidenceExtract.fulfillmentOutcomePointers.slice(0, 3);
   const decisionPackCompletedWorkPointers = decisionPackProfile.evidenceExtract.completedWorkPointers.slice(0, 3);
@@ -1283,6 +1294,13 @@ export default function TrustSlipVerifyPublicPaper({
         pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
       ])
     : [["No connected record shown", "Ask for private Trust Passport evidence, reference confirmation, or live community confirmation."] as [string, string]]
+  ).slice(0, 3);
+  const decisionPackHousingReferenceRows: Array<[string, string]> = (decisionPackHousingReferencePointers.length
+    ? decisionPackHousingReferencePointers.map((pointer): [string, string] => [
+        pointer.label,
+        pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
+      ])
+    : [["No housing readiness shown", "Ask for previous landlord/accommodation references, payment-discipline records, issue-resolution context, or live housing community confirmation."] as [string, string]]
   ).slice(0, 3);
   const decisionPackGuaranteeOutcomeRows: Array<[string, string]> = (decisionPackGuaranteeOutcomePointers.length
     ? decisionPackGuaranteeOutcomePointers.map((pointer): [string, string] => [
@@ -2145,6 +2163,11 @@ export default function TrustSlipVerifyPublicPaper({
                 compact={compact}
               />
               <OfficialResultTable
+                title="Housing reference readiness"
+                rows={decisionPackHousingReferenceRows}
+                compact={compact}
+              />
+              <OfficialResultTable
                 title="Guarantee/support outcomes"
                 rows={decisionPackGuaranteeOutcomeRows}
                 compact={compact}
@@ -2210,7 +2233,7 @@ export default function TrustSlipVerifyPublicPaper({
                 lineHeight: 1.35,
               }}
             >
-              {decisionPackProfile.evidenceExtract.sourceNote} {decisionPackProfile.evidenceExtract.declarationBoundaryNote} {decisionPackProfile.evidenceExtract.recordPointerBoundaryNote} {decisionPackProfile.evidenceExtract.guaranteeOutcomeBoundaryNote} {decisionPackProfile.evidenceExtract.fulfillmentOutcomeBoundaryNote} {decisionPackProfile.evidenceExtract.completedWorkBoundaryNote} {decisionPackProfile.evidenceExtract.demandRequestOutcomeBoundaryNote} {decisionPackProfile.evidenceExtract.confirmationPointerBoundaryNote} {decisionPackProfile.evidenceExtract.issueResolutionBoundaryNote} {decisionPackProfile.evidenceExtract.boundaryNote}
+              {decisionPackProfile.evidenceExtract.sourceNote} {decisionPackProfile.evidenceExtract.declarationBoundaryNote} {decisionPackProfile.evidenceExtract.recordPointerBoundaryNote} {decisionPackProfile.evidenceExtract.housingReferenceBoundaryNote} {decisionPackProfile.evidenceExtract.guaranteeOutcomeBoundaryNote} {decisionPackProfile.evidenceExtract.fulfillmentOutcomeBoundaryNote} {decisionPackProfile.evidenceExtract.completedWorkBoundaryNote} {decisionPackProfile.evidenceExtract.demandRequestOutcomeBoundaryNote} {decisionPackProfile.evidenceExtract.confirmationPointerBoundaryNote} {decisionPackProfile.evidenceExtract.issueResolutionBoundaryNote} {decisionPackProfile.evidenceExtract.boundaryNote}
             </div>
 
             <div

@@ -323,6 +323,12 @@ assertContains(
 
 assertContains(
   "trustSlip",
+  /TrustSlipDecisionPackHousingReferencePointer[\s\S]*?housingReferencePointers[\s\S]*?extract\?\.housing_reference_pointers[\s\S]*?privateDecisionPackHousingReferencePointers[\s\S]*?data-gsn-holder-decision-pack-housing-reference-pointers="true"[\s\S]*?Housing reference readiness[\s\S]*?housingReferenceBoundaryNote/,
+  "TrustSlip holder private Decision Pack preview must show housing-reference readiness pointers separately from TrustEvent categories."
+);
+
+assertContains(
+  "trustSlip",
   /TrustSlipDecisionPackGuaranteeOutcomePointer[\s\S]*?guaranteeOutcomePointers[\s\S]*?extract\?\.guarantee_outcome_pointers[\s\S]*?privateDecisionPackGuaranteeOutcomePointers[\s\S]*?data-gsn-holder-decision-pack-guarantee-outcome-pointers="true"[\s\S]*?Guarantee\/support outcomes[\s\S]*?guaranteeOutcomeBoundaryNote/,
   "TrustSlip holder private Decision Pack preview must show aggregate guarantee/support outcomes separately from TrustEvent categories."
 );

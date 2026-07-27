@@ -169,6 +169,12 @@ assertContains(
 
 assertContains(
   "viewModel",
+  /type DecisionPackHousingReferencePointer[\s\S]*?housingReferencePointers: DecisionPackHousingReferencePointer\[\][\s\S]*?source\.housing_reference_pointers[\s\S]*?housingReferenceBoundaryNote/,
+  "Public TrustSlip Verify view model must preserve aggregate housing-reference readiness pointer rows and their boundary note."
+);
+
+assertContains(
+  "viewModel",
   /type DecisionPackGuaranteeOutcomePointer[\s\S]*?guaranteeOutcomePointers: DecisionPackGuaranteeOutcomePointer\[\][\s\S]*?source\.guarantee_outcome_pointers[\s\S]*?guaranteeOutcomeBoundaryNote/,
   "Public TrustSlip Verify view model must preserve aggregate guarantee/support outcome pointer rows and their boundary note."
 );
@@ -187,6 +193,24 @@ assertContains(
   "viewModel",
   /type DecisionPackDemandRequestOutcomePointer[\s\S]*?demandRequestOutcomePointers: DecisionPackDemandRequestOutcomePointer\[\][\s\S]*?source\.demand_request_outcome_pointers[\s\S]*?demandRequestOutcomeBoundaryNote/,
   "Public TrustSlip Verify view model must preserve aggregate Demand Box request-outcome pointer rows and their boundary note."
+);
+
+assertContains(
+  "backendDecisionPacks",
+  /HOUSING_REFERENCE_PACKS[\s\S]*?_decision_pack_housing_reference_pointers[\s\S]*?housing_reference_gap[\s\S]*?housing_reference_readiness[\s\S]*?housing_reference_pointers[\s\S]*?housing_reference_boundary_note[\s\S]*?right-to-rent/,
+  "Backend Decision Packs must expose aggregate housing-reference readiness pointers without landlord, tenancy, or legal overclaiming."
+);
+
+assertContains(
+  "backendDecisionPackTests",
+  /test_public_verify_housing_pack_surfaces_housing_reference_readiness_without_landlord_or_tenancy_overclaiming[\s\S]*?housing_reference_readiness[\s\S]*?do not expose landlords[\s\S]*?right-to-rent checks[\s\S]*?Private landlord reference checker[\s\S]*?trust_score/,
+  "Backend boundary tests must prove housing-reference readiness stays aggregate and does not leak private landlord/witness detail."
+);
+
+assertContains(
+  "publicPaper",
+  /decisionPackHousingReferencePointers[\s\S]*?decisionPackHousingReferenceRows[\s\S]*?Housing reference readiness[\s\S]*?housingReferenceBoundaryNote/,
+  "Public TrustSlip Verify paper must render housing-reference readiness rows and boundary language."
 );
 
 assertContains(

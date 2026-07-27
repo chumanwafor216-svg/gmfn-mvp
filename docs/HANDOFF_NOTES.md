@@ -1,3 +1,57 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack housing-reference readiness pointers
+
+Owner trigger:
+- Owner continued the society-equivalent evidence correction after Demand Box request-outcome pointers. The next question was whether a landlord or housing decision can see practical evidence that a person has been responsible, reachable, able to pay/follow through, and reviewable through community witnesses.
+
+Unabated truth:
+- This slice wires existing repayment, pool/contribution, housing-specific Community Confirmation, aggregate witness outcome, and issue-review records into Decision Packs as public-safe housing-reference readiness pointers.
+- It does not create or read a real landlord, tenant, accommodation, lease, address, rent-payment, right-to-rent, affordability, or tenancy-history model because none exists in the current architecture.
+- It does not expose landlords, accommodation providers, addresses, rent amounts, payment references, private witness notes, allegations, legal tenancy status, right-to-rent checks, affordability decisions, tenancy approval, guaranteed rent, or future conduct guarantees.
+- Devil's advocate: this helps a landlord know where to look and what live confirmation to ask for, but it is not yet the full "previous landlord says this tenant paid and behaved well" engine. That still needs structured landlord/accommodation reference records and housing-specific witness answers.
+
+Changed:
+- gmfn_backend/app/services/trust_slip_decision_packs.py
+  - Added HOUSING_REFERENCE_PACKS and aggregate housing-reference readiness extraction for the housing Decision Pack.
+  - Public and holder-private evidence extracts now include housing_reference_pointers plus housing_reference_boundary_note.
+  - Decision Pack profiles now add a Housing reference readiness signal when aggregate housing-context evidence exists or a housing-reference gap should be shown.
+  - Public source wording now includes housing-reference readiness and excludes landlord/accommodation/private/legal/rent overclaims.
+- gmfn_backend/tests/test_trust_slip_boundary_controls.py
+  - Added coverage proving a housing Decision Pack surfaces aggregate housing-reference readiness without leaking private landlord/witness labels, notes, pool references, amounts, raw IDs, right-to-rent/tenancy overclaims, or trust_score.
+- frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts
+  - Normalizes housing_reference_pointers and housing_reference_boundary_note from backend Decision Pack profiles.
+- frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx
+  - Public TrustSlip Verify now renders Housing reference readiness after Connected record pointers and before Guarantee/support outcomes.
+- frontend/src/pages/TrustSlipPage.tsx
+  - Signed-in holder TrustSlip private Decision Pack preview now shows Housing reference readiness after Connected record pointers.
+- frontend/tools/audit-public-trustslip-verify-boundary.mjs
+- frontend/tools/audit-trust-passport-trustslip-boundary.mjs
+  - Added guards for backend extraction, frontend normalization, public rendering, holder rendering, and private landlord/accommodation/legal/rent overclaim boundaries.
+- docs/GSN_DECISION_PACK_EVIDENCE_MATRIX.md
+  - Updated the matrix to mark housing-reference readiness pointers as partially wired while keeping actual landlord/accommodation reference records and structured housing witness answers as remaining architecture work.
+
+Routes/screens affected:
+- Backend /trust-slips/verify/{code} Decision Pack profile payload.
+- Backend /trust-slips/me/decision-pack-evidence holder-private evidence extract.
+- /trust-slips/verify and /app/trust-slips/verify public Decision Pack reading.
+- /app/trust-slip signed-in holder private Decision Pack preview.
+- No database schema, auth, payment, ledger, landlord/accommodation model, rent-payment write path, right-to-rent check, affordability engine, legal tenancy check, or final housing decision engine changed.
+
+Verification:
+- Passed python -m py_compile gmfn_backend\app\services\trust_slip_decision_packs.py gmfn_backend\tests\test_trust_slip_boundary_controls.py
+- Passed python -m pytest gmfn_backend\tests\test_trust_slip_boundary_controls.py gmfn_backend\tests\test_community_confirmation_relay.py -q: 60 passed
+- Passed npm --prefix frontend run audit:public-trustslip-verify-boundary
+- Passed npm --prefix frontend run audit:trust-passport-trustslip-boundary
+- Passed npm --prefix frontend run audit:protected-button-freeze
+- Passed npm --prefix frontend run build
+- Passed npm --prefix frontend run smoke:public-trustslip-verify-states after elevated rerun for sandbox spawn EPERM
+- Passed npm --prefix frontend run smoke:trust-passport-trustslip-boundary after elevated rerun for sandbox spawn EPERM
+
+Deployment:
+- Local only so far; do not push/deploy unless the owner explicitly selects push/deploy.
+
+Next recommended step:
+- Verify and commit this housing-reference readiness pointer slice locally, then continue with missing society-equivalent layers: actual landlord/accommodation reference records, structured housing witness answers, Demand Box responder/quote/job-completion records, and category-specific decision cards.
+
 ## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack Demand Box request-outcome pointers
 
 Owner trigger:

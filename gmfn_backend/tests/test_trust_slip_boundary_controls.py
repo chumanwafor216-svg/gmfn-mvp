@@ -410,6 +410,182 @@ def test_public_verify_housing_pack_surfaces_financial_record_pointers_without_c
     assert "trust_score" not in profile_text
 
 
+def test_public_verify_housing_pack_surfaces_housing_reference_readiness_without_landlord_or_tenancy_overclaiming(
+    client,
+    seed_clan_admin_membership,
+):
+    slip_id = _create_trust_slip(code="ACCESS-HOUSING-REFERENCE")
+
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc)
+        db.add(
+            User(
+                id=2,
+                email="landlord-witness-private@example.com",
+                hashed_password="hashed",
+                role="user",
+                gmfn_id="GSN-U-LANDLORD-WITNESS",
+            )
+        )
+        db.flush()
+        loan = Loan(
+            borrower_user_id=1,
+            clan_id=1,
+            amount=Decimal("650.00"),
+            currency="GBP",
+            status="repaid",
+            paid_total=Decimal("650.00"),
+            remaining_amount=Decimal("0.00"),
+            repaid_at=now,
+        )
+        db.add(loan)
+        db.flush()
+        db.add(
+            Repayment(
+                loan_id=int(loan.id),
+                payer_user_id=1,
+                amount=Decimal("650.00"),
+                created_at=now,
+            )
+        )
+        db.add(
+            PoolEvent(
+                clan_id=1,
+                user_id=1,
+                event_type="contribution",
+                amount=Decimal("40.00"),
+                currency="GBP",
+                reference="PRIVATE-HOUSING-POOL-REF",
+                note="Private housing contribution note",
+                confirmed_at=now,
+            )
+        )
+        request = CommunityConfirmationRequest(
+            public_token="PUBLIC-HOUSING-REFERENCE",
+            requester_user_id=None,
+            requester_external_label="Private landlord reference checker",
+            subject_user_id=1,
+            community_id=1,
+            trust_slip_id=slip_id,
+            reason_type="housing_reference_check",
+            risk_level="medium",
+            mode="review",
+            status="closed",
+            visible_outcome="caution",
+            outcome_summary={"private_marker": "PRIVATE-HOUSING-SUMMARY"},
+            created_at=now,
+            expires_at=now + timedelta(hours=24),
+        )
+        db.add(request)
+        db.flush()
+        db.add(
+            CommunityConfirmationResponse(
+                request_id=int(request.id),
+                responder_user_id=2,
+                response_type="active_here",
+                response_reason="known_for_housing_reference",
+                response_note="Private witness note about previous address",
+                counted_in_outcome=True,
+                responded_at=now,
+            )
+        )
+        db.add(
+            CommunityConfirmationOutcome(
+                request_id=int(request.id),
+                positive_count=1,
+                caution_count=1,
+                objection_count=0,
+                no_response_count=0,
+                eligible_contact_count=2,
+                confidence_level="limited",
+                visible_summary="Private visible housing summary",
+                closed_at=now,
+            )
+        )
+        decision = CommunityConfirmationDecision(
+            request_id=int(request.id),
+            community_id=1,
+            subject_user_id=1,
+            actor_user_id=2,
+            decision="review_required",
+            issue_reported=True,
+            settled=False,
+            status="recorded",
+            decision_note="Private housing allegation detail",
+            confidence_snapshot={"private": "PRIVATE-HOUSING-SNAPSHOT"},
+            created_at=now,
+        )
+        db.add(decision)
+        db.flush()
+        db.add(
+            CommunityConfirmationReviewCase(
+                request_id=int(request.id),
+                decision_id=int(decision.id),
+                community_id=1,
+                subject_user_id=1,
+                opened_by_user_id=2,
+                status="open",
+                review_reason="housing_reference_issue",
+                reviewer_note="Private housing reviewer note",
+                resolution=None,
+                resolution_note="Private housing resolution note",
+                trust_impact="review_required",
+                evidence_summary={"private": "PRIVATE-HOUSING-EVIDENCE"},
+                created_at=now,
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get(
+        "/trust-slips/verify/ACCESS-HOUSING-REFERENCE",
+        params={"decision_pack": "housing_decision"},
+    )
+
+    assert response.status_code == 200, response.text
+    profile = response.json()["decision_pack_profile"]
+    extract = profile["evidence_extract"]
+    pointers = {row["key"]: row for row in extract["housing_reference_pointers"]}
+    readiness = pointers["housing_reference_readiness"]
+    assert readiness["status"] == "caution"
+    assert readiness["evidence_count"] == 5
+    assert "5 housing-reference readiness pointers found" in readiness["value"]
+    assert "1 repayment follow-through record" in readiness["value"]
+    assert "1 pool/contribution event" in readiness["value"]
+    assert "1 housing-reference confirmation request" in readiness["value"]
+    assert "1 counted witness response" in readiness["value"]
+    assert "1 aggregate housing witness outcome" in readiness["value"]
+    assert "2 still need housing-risk review" in readiness["value"]
+    assert "do not expose landlords" in extract["housing_reference_boundary_note"]
+    assert "right-to-rent checks" in extract["housing_reference_boundary_note"]
+    assert "guaranteed rent" in extract["housing_reference_boundary_note"]
+    assert any(signal["key"] == "housing_reference_readiness_pointer" for signal in profile["relevant_signals"])
+    profile_text = str(profile)
+    assert "Private landlord reference checker" not in profile_text
+    assert "landlord-witness-private@example.com" not in profile_text
+    assert "GSN-U-LANDLORD-WITNESS" not in profile_text
+    assert "PRIVATE-HOUSING-POOL-REF" not in profile_text
+    assert "Private housing contribution note" not in profile_text
+    assert "Private witness note about previous address" not in profile_text
+    assert "PRIVATE-HOUSING-SUMMARY" not in profile_text
+    assert "Private visible housing summary" not in profile_text
+    assert "Private housing allegation detail" not in profile_text
+    assert "Private housing reviewer note" not in profile_text
+    assert "Private housing resolution note" not in profile_text
+    assert "PRIVATE-HOUSING-SNAPSHOT" not in profile_text
+    assert "PRIVATE-HOUSING-EVIDENCE" not in profile_text
+    assert "requester_external_label" not in profile_text
+    assert "responder_user_id" not in profile_text
+    assert "opened_by_user_id" not in profile_text
+    assert "reviewer_note" not in profile_text
+    assert "650.00" not in profile_text
+    assert "40.00" not in profile_text
+    assert "rent_amount" not in profile_text
+    assert "trust_score" not in profile_text
+
+
 def test_public_verify_guarantor_pack_surfaces_support_outcomes_without_bank_or_identity_overclaiming(
     client,
     seed_clan_admin_membership,
