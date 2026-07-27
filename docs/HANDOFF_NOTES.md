@@ -1,3 +1,36 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Community Domain product contract repair
+
+Owner trigger:
+- Owner selected `1`, meaning continue locally with no push/deploy.
+- After Marketplace, Shop, Finance, Loans, Admin, Identity, and route/action audits passed, `audit:community-domain-product-contracts` exposed Community Domain/Demand Box contract drift.
+
+Unabated truth:
+- This is product-contract alignment, not a new Community Domain feature.
+- The remaining failures were mostly source-order and wording guards: activity Recent records appeared before the Change activity view control in source order, hero facts had drifted away from compact chip geometry, Demand Box posting was not disabled by domain policy at the button level, and Trust/Evidence readiness boundary wording no longer satisfied both readiness and product-contract guards.
+- Devil's advocate: this improves contract safety and mobile first-viewport protection, but it does not redesign the large Community Domain dashboard. Human phone review is still needed for the full institutional feel.
+
+Changed:
+- `frontend/src/pages/CommunityDomainDashboardPage.tsx`
+  - Restored Community Domain hero fact chips to the compact status-chip geometry guarded by the product contract.
+  - Moved Activity `Recent records` after the Record and Catalogue activity views so Record, Catalogue, and Recent remain behind the closed Change activity view control.
+- `frontend/src/pages/DemandBoxPage.tsx`
+  - New Demand Box request creation is disabled when the selected Community Domain policy turns Demand Box off, while existing requests remain visible for review/closure.
+- `frontend/src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx`
+  - Trust/Evidence readiness panels now carry both `Rule:` and `Boundary:` wording so the user-facing warning is explicit and both product/readiness guards remain aligned.
+
+Verification:
+- Passed `npm --prefix frontend run audit:community-domain-product-contracts`.
+- Passed `npm --prefix frontend run audit:community-domain-evidence-readiness-boundary`.
+- Passed elevated `npm --prefix frontend run audit:community-domain-billing-sequence` against local Vite on 127.0.0.1:5180.
+- Passed elevated `npm --prefix frontend run audit:community-domain-mobile-visual` against local Vite on 127.0.0.1:5180.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+
+Deployment:
+- Local only. Do not push/deploy unless the owner selects `2` or explicitly says push/deploy.
+
+Next recommended step:
+- Commit this Community Domain/Demand Box repair locally. If continuing on `1`, proceed with another audited lane or an owner-selected phone screenshot; if selecting `2`, push/deploy the local batch.
 ## CURRENT LOCAL STATE - 2026-07-27 - Notifications action handoff response repair
 
 Owner trigger:

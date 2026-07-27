@@ -2321,11 +2321,11 @@ function billingInputStyle(): React.CSSProperties {
 
 function factTile(): React.CSSProperties {
   return {
-    borderRadius: 18,
+    borderRadius: 999,
     background: "rgba(255,255,255,0.08)",
     border: "1px solid rgba(214,228,242,0.16)",
-    padding: "5px 8px",
-    minHeight: 30,
+    padding: "8px 10px",
+    minHeight: 42,
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
@@ -13073,46 +13073,6 @@ export default function CommunityDomainDashboardPage() {
                           </div>
                         ) : null}
 
-                        {activeActivityRecordTask === "recent" ? (
-                          activityRows.length ? (
-                            <div
-                              data-debug-id="community-domain-dashboard.activity-recent-records"
-                              style={{ display: "grid", gap: 8 }}
-                            >
-                              <div style={sectionLabel()}>Recent records</div>
-                              <div style={{ ...helperText(), fontSize: 13 }}>
-                                Recorded activity evidence is kept separate from confirmation and beneficiary outcome proof.
-                              </div>
-                              {activityRows.slice(0, 5).map((item) => (
-                                <div
-                                  key={cleanText(item?.event_id)}
-                                  style={{
-                                    display: "flex",
-                                    flexWrap: "wrap",
-                                    gap: 8,
-                                    alignItems: "center",
-                                    padding: "8px 0",
-                                    borderTop: "1px solid rgba(9,27,46,0.1)",
-                                  }}
-                                >
-                                  <strong style={{ color: "#091B2E", fontSize: 14 }}>
-                                    {cleanText(item?.activity_label, item?.activity_type)}
-                                  </strong>
-                                  <span style={statusBadge(item?.evidence_strength)}>
-                                    {compactStatus(item?.evidence_strength)}
-                                  </span>
-                                  <span style={statusBadge("subject")}>
-                                    {subjectReferenceLabel(item)}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div style={helperText()}>
-                              No activity records are loaded for this Community Domain yet.
-                            </div>
-                          )
-                        ) : null}
 
                         <div style={{ ...helperText(), fontSize: 13 }}>
                           Current activity view:{" "}
@@ -13493,6 +13453,46 @@ export default function CommunityDomainDashboardPage() {
                               ))}
                             </div>
                           </div>
+                        ) : null}
+                        {activeActivityRecordTask === "recent" ? (
+                          activityRows.length ? (
+                            <div
+                              data-debug-id="community-domain-dashboard.activity-recent-records"
+                              style={{ display: "grid", gap: 8 }}
+                            >
+                              <div style={sectionLabel()}>Recent records</div>
+                              <div style={{ ...helperText(), fontSize: 13 }}>
+                                Recorded activity evidence is kept separate from confirmation and beneficiary outcome proof.
+                              </div>
+                              {activityRows.slice(0, 5).map((item) => (
+                                <div
+                                  key={cleanText(item?.event_id)}
+                                  style={{
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    gap: 8,
+                                    alignItems: "center",
+                                    padding: "8px 0",
+                                    borderTop: "1px solid rgba(9,27,46,0.1)",
+                                  }}
+                                >
+                                  <strong style={{ color: "#091B2E", fontSize: 14 }}>
+                                    {cleanText(item?.activity_label, item?.activity_type)}
+                                  </strong>
+                                  <span style={statusBadge(item?.evidence_strength)}>
+                                    {compactStatus(item?.evidence_strength)}
+                                  </span>
+                                  <span style={statusBadge("subject")}>
+                                    {subjectReferenceLabel(item)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={helperText()}>
+                              No activity records are loaded for this Community Domain yet.
+                            </div>
+                          )
                         ) : null}
 
                       </div>
