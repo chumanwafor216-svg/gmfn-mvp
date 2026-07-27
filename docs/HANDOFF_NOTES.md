@@ -1,3 +1,56 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack completed-work/customer-confirmation pointers
+
+Owner trigger:
+- Owner continued after fulfilment/correction outcome pointers. The next society-equivalent question was whether the holder has visible evidence that practical work was completed, delivered, or reviewed by customers.
+
+Unabated truth:
+- This slice wires existing service/delivery TrustEvents and MarketplaceReview rows into Decision Packs as aggregate completed-work/customer-confirmation pointers.
+- It does not expose customer identities, reviewer identities, review text, notes, addresses, item details, prices, ratings by person, private metadata, licences, insurance, home-safety approval, workmanship guarantees, or future work quality.
+- Devil's advocate: this is still not a dedicated completed-job system. It reads existing evidence signals and customer-review rows, but it does not yet connect Demand Box requests, quotes, Shop service orders, before/after job photos, structured customer signoff, complaint detail, or mature correction timelines into one job record.
+
+Changed:
+- gmfn_backend/app/services/trust_slip_decision_packs.py
+  - Added COMPLETED_WORK_PACKS and aggregate extraction from service/delivery TrustEvents plus MarketplaceReview rows.
+  - Public and holder-private evidence extracts now include completed_work_pointers plus completed_work_boundary_note.
+  - Decision Pack profiles now add a Completed work/customer confirmation signal when aggregate completed-work records exist or when a completed-work gap should be shown.
+  - Public source wording now includes completed-work/customer-confirmation pointers and explicitly excludes customer/reviewer identities, review text, addresses, prices, and private metadata.
+- gmfn_backend/tests/test_trust_slip_boundary_controls.py
+  - Added coverage proving a trade Decision Pack surfaces aggregate completed-work/customer-confirmation outcomes without leaking customer emails, private GSN IDs, customer names, phone numbers, private job notes, addresses, job titles, review text, outside-community events, raw review field names, or trust_score.
+- frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts
+  - Normalizes completed_work_pointers and completed_work_boundary_note from backend Decision Pack profiles.
+- frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx
+  - Public TrustSlip Verify now renders Completed work/customer confirmation after Fulfilment/correction outcomes and before Community witness outcomes.
+- frontend/src/pages/TrustSlipPage.tsx
+  - Signed-in holder TrustSlip private Decision Pack preview now shows Completed work/customer confirmation after Fulfilment/correction outcomes.
+- frontend/tools/audit-public-trustslip-verify-boundary.mjs
+- frontend/tools/audit-trust-passport-trustslip-boundary.mjs
+  - Added guards for backend extraction, frontend normalization, public rendering, holder rendering, and private customer/review-detail overclaim tests.
+- docs/GSN_DECISION_PACK_EVIDENCE_MATRIX.md
+  - Updated the matrix to mark aggregate completed-work/customer-confirmation pointers as partially wired while keeping dedicated Demand Box/job/customer-signoff architecture as remaining work.
+
+Routes/screens affected:
+- Backend /trust-slips/verify/{code} Decision Pack profile payload.
+- Backend /trust-slips/me/decision-pack-evidence holder-private evidence extract.
+- /trust-slips/verify and /app/trust-slips/verify public Decision Pack reading.
+- /app/trust-slip signed-in holder private Decision Pack preview.
+- No database schema, auth, payment, ledger, Marketplace review write path, TrustEvent write path, Demand Box write path, Shop write path, or final hiring/trade/supplier decision engine changed.
+
+Verification:
+- Passed python -m py_compile gmfn_backend\app\services\trust_slip_decision_packs.py gmfn_backend\tests\test_trust_slip_boundary_controls.py
+- Passed python -m pytest gmfn_backend\tests\test_trust_slip_boundary_controls.py gmfn_backend\tests\test_community_confirmation_relay.py -q: 58 passed
+- Passed npm --prefix frontend run audit:public-trustslip-verify-boundary
+- Passed npm --prefix frontend run audit:trust-passport-trustslip-boundary
+- Passed npm --prefix frontend run audit:protected-button-freeze
+- Passed npm --prefix frontend run build
+- Passed npm --prefix frontend run smoke:public-trustslip-verify-states after elevated rerun for sandbox spawn EPERM
+- Passed npm --prefix frontend run smoke:trust-passport-trustslip-boundary after elevated rerun for sandbox spawn EPERM
+
+Deployment:
+- Local only so far; do not push/deploy unless the owner explicitly selects push/deploy.
+
+Next recommended step:
+- Commit this completed-work/customer-confirmation pointer slice locally, then continue with the next missing society-equivalent evidence layer: Demand Box response-to-job outcomes, landlord/accommodation references, and structured witness answers.
+
 ## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack fulfilment/correction outcome pointers
 
 Owner trigger:

@@ -431,6 +431,16 @@ type TrustSlipDecisionPackConfirmationPointer = {
   decisionUse: string;
 };
 
+type TrustSlipDecisionPackCompletedWorkPointer = {
+  key: string;
+  label: string;
+  status: string;
+  value: string;
+  source: string;
+  evidenceCount: number;
+  decisionUse: string;
+};
+
 type TrustSlipDecisionPackIssueResolutionPointer = {
   key: string;
   label: string;
@@ -462,6 +472,8 @@ type TrustSlipDecisionPackEvidenceExtract = {
   guaranteeOutcomeBoundaryNote: string;
   fulfillmentOutcomePointers: TrustSlipDecisionPackFulfillmentOutcomePointer[];
   fulfillmentOutcomeBoundaryNote: string;
+  completedWorkPointers: TrustSlipDecisionPackCompletedWorkPointer[];
+  completedWorkBoundaryNote: string;
   confirmationPointers: TrustSlipDecisionPackConfirmationPointer[];
   confirmationPointerBoundaryNote: string;
   issueResolutionPointers: TrustSlipDecisionPackIssueResolutionPointer[];
@@ -1841,6 +1853,20 @@ function normalizeTrustSlipDecisionPackEvidence(raw: any): TrustSlipDecisionPack
         .filter((row: TrustSlipDecisionPackFulfillmentOutcomePointer) => row.key || row.label || row.value)
         .slice(0, 4)
     : [];
+  const completedWorkPointers = Array.isArray(extract?.completed_work_pointers)
+    ? extract.completed_work_pointers
+        .map((row: any) => ({
+          key: firstTruthy(row?.key),
+          label: firstTruthy(row?.label, "Completed work/customer confirmation"),
+          status: firstTruthy(row?.status),
+          value: firstTruthy(row?.value),
+          source: firstTruthy(row?.source),
+          evidenceCount: Number(row?.evidence_count ?? row?.evidenceCount ?? 0) || 0,
+          decisionUse: firstTruthy(row?.decision_use, row?.decisionUse),
+        }))
+        .filter((row: TrustSlipDecisionPackCompletedWorkPointer) => row.key || row.label || row.value)
+        .slice(0, 4)
+    : [];
   const confirmationPointers = Array.isArray(extract?.confirmation_pointers)
     ? extract.confirmation_pointers
         .map((row: any) => ({
@@ -1934,6 +1960,8 @@ function normalizeTrustSlipDecisionPackEvidence(raw: any): TrustSlipDecisionPack
     guaranteeOutcomeBoundaryNote: firstTruthy(extract?.guarantee_outcome_boundary_note, raw?.guarantee_outcome_boundary_note),
     fulfillmentOutcomePointers,
     fulfillmentOutcomeBoundaryNote: firstTruthy(extract?.fulfillment_outcome_boundary_note, raw?.fulfillment_outcome_boundary_note),
+    completedWorkPointers,
+    completedWorkBoundaryNote: firstTruthy(extract?.completed_work_boundary_note, raw?.completed_work_boundary_note),
     confirmationPointers,
     confirmationPointerBoundaryNote: firstTruthy(extract?.confirmation_pointer_boundary_note, raw?.confirmation_pointer_boundary_note),
     issueResolutionPointers,
@@ -3498,6 +3526,7 @@ export default function TrustSlipPage() {
   const privateDecisionPackRecordPointers = (decisionPackEvidenceExtract?.recordPointers || []).slice(0, 3);
   const privateDecisionPackGuaranteeOutcomePointers = (decisionPackEvidenceExtract?.guaranteeOutcomePointers || []).slice(0, 3);
   const privateDecisionPackFulfillmentOutcomePointers = (decisionPackEvidenceExtract?.fulfillmentOutcomePointers || []).slice(0, 3);
+  const privateDecisionPackCompletedWorkPointers = (decisionPackEvidenceExtract?.completedWorkPointers || []).slice(0, 3);
   const privateDecisionPackConfirmationPointers = (decisionPackEvidenceExtract?.confirmationPointers || []).slice(0, 3);
   const privateDecisionPackIssueResolutionPointers = (decisionPackEvidenceExtract?.issueResolutionPointers || []).slice(0, 3);
   const privateDecisionPackEvidenceScope = decisionPackEvidenceExtract?.evidenceScope;
@@ -4589,6 +4618,55 @@ export default function TrustSlipPage() {
                           }}
                         >
                           {decisionPackEvidenceExtract.fulfillmentOutcomeBoundaryNote}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {privateDecisionPackCompletedWorkPointers.length ? (
+                    <div
+                      data-gsn-holder-decision-pack-completed-work-pointers="true"
+                      style={{
+                        border: "1px solid rgba(37,78,119,0.10)",
+                        borderRadius: 12,
+                        background: "#FFFFFF",
+                        padding: "8px 9px",
+                        display: "grid",
+                        gap: 6,
+                      }}
+                    >
+                      <div
+                        style={{
+                          color: "#07172C",
+                          fontSize: isCompact ? 12 : 13,
+                          fontWeight: 950,
+                          lineHeight: 1.15,
+                        }}
+                      >
+                        Completed work/customer confirmation
+                      </div>
+                      {privateDecisionPackCompletedWorkPointers.map((pointer) => (
+                        <div
+                          key={pointer.key || pointer.label}
+                          style={{
+                            color: "#526579",
+                            fontSize: isCompact ? 10 : 11,
+                            fontWeight: 800,
+                            lineHeight: 1.28,
+                          }}
+                        >
+                          <strong>{pointer.label}:</strong> {pointer.value || pointer.decisionUse}
+                        </div>
+                      ))}
+                      {decisionPackEvidenceExtract?.completedWorkBoundaryNote ? (
+                        <div
+                          style={{
+                            color: "#8A6500",
+                            fontSize: isCompact ? 9.5 : 10.5,
+                            fontWeight: 850,
+                            lineHeight: 1.28,
+                          }}
+                        >
+                          {decisionPackEvidenceExtract.completedWorkBoundaryNote}
                         </div>
                       ) : null}
                     </div>

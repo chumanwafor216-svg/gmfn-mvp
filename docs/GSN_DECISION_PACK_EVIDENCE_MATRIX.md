@@ -76,6 +76,15 @@ expose trade codes, buyer or seller identities, item details, amounts, payment
 references, private notes, escrow, payout approval, delivery guarantees,
 product-quality proof, or future performance promises.
 
+For employment, trade, supplier, and partnership decisions, the engine now also
+exposes public-safe completed-work/customer-confirmation pointers from existing
+service/delivery TrustEvents and Marketplace customer reviews where they exist.
+These answer "does GSN have aggregate evidence that work was completed or
+reviewed by a customer?" They do not expose customer identities, reviewer
+identities, review text, notes, addresses, item details, prices, ratings by
+person, private metadata, licences, insurance, home-safety approval, or future
+work quality.
+
 Across Decision Packs, the engine now also exposes public-safe aggregate community
 witness outcome pointers where matching Community Confirmation requests and
 outcomes already exist. These pointers answer "has anyone already asked the
@@ -93,11 +102,11 @@ private notes, legal findings, defamatory detail, or final suitability decisions
 
 - Structured profile declarations: skill, trade, occupation, service type, landlord/tenant references, supplier category, volunteer role, support role. Work/service packs now partially read existing Shop, Marketplace listing, and protected-trade seller records as declared claim pointers. Still missing: dedicated structured claim records, self-declared role categories, custom validation, and demand-response completion links.
 - Purpose-specific community confirmation: prompt routing is wired, and Decision Packs now read existing matching Community Confirmation request/outcome aggregates as witness outcome pointers. Still missing: custom per-person phrasing, richer structured witness answers by role/category, witness-to-record linkage for completed work or housing references, and category-specific confirmation summaries.
-- Completed work records: protected-trade release/receipt records can now appear as seller-side declared work pointers, and protected-trade fulfilment/correction status is now partially wired as aggregate outcome pointers. Still missing: customer-confirmed completed-job records connected to Demand Box, quotes, Shop services, completion media, complaint detail, and mature resolution timelines.
+- Completed work records: protected-trade release/receipt records can now appear as seller-side declared work pointers, protected-trade fulfilment/correction status is partially wired as aggregate outcome pointers, and service/delivery TrustEvents plus Marketplace reviews can now appear as aggregate completed-work/customer-confirmation pointers. Still missing: dedicated customer-confirmed completed-job records connected to Demand Box, quotes, Shop services, completion media, complaint detail, structured customer signoff, and mature resolution timelines.
 - Payment-discipline summaries: loan/support lifecycle, repayment, guarantor-response, and pool/contribution record pointers are now partially wired into housing, guarantor/support, and partnership packs. Still missing: mature payment-discipline summaries, lateness/consistency interpretation, landlord-specific references, and public-safe issue-resolution context without acting like a credit score.
 - Issue-resolution summaries: Community Confirmation decision/review record pointers are now partially wired as aggregate issue-resolution status. Still missing: mature issue-resolution summaries by category, safe dispute timelines, resolution evidence packs, and review-to-Trust Passport weighting rules.
 - Guarantee exposure and outcome: Loan/LoanGuarantor record pointers are now partially wired as aggregate support-outcome status. Still missing: mature guarantor risk summaries, safe guarantee-outcome timelines, support exposure weighting rules, and category-specific explanation of what happened without turning GSN into a bank or guarantor.
-- Backend parity: backend Decision Pack definitions now carry the same evidence/source/gap/boundary matrix, controlled purpose-specific community confirmation prompts, public-safe declared work/service claim pointers for relevant packs, public-safe financial/support record pointers for relevant packs, aggregate guarantee/support outcome pointers, aggregate protected-trade fulfilment/correction outcome pointers, aggregate community witness outcome pointers, and aggregate issue-resolution pointers. The remaining work is deeper data capture: dedicated structured claims, customer-confirmed completed jobs, landlord references, mature issue-resolution summaries, mature guarantee outcome summaries, mature supplier fulfilment timelines, and richer witness-answer workflows.
+- Backend parity: backend Decision Pack definitions now carry the same evidence/source/gap/boundary matrix, controlled purpose-specific community confirmation prompts, public-safe declared work/service claim pointers for relevant packs, public-safe financial/support record pointers for relevant packs, aggregate guarantee/support outcome pointers, aggregate protected-trade fulfilment/correction outcome pointers, aggregate completed-work/customer-confirmation pointers, aggregate community witness outcome pointers, and aggregate issue-resolution pointers. The remaining work is deeper data capture: dedicated structured claims, dedicated customer-confirmed completed jobs, Demand Box outcome links, landlord references, mature issue-resolution summaries, mature guarantee outcome summaries, mature supplier fulfilment timelines, and richer witness-answer workflows.
 
 ## Product Boundary
 

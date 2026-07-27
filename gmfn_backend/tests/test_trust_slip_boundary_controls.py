@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from app.db.database import SessionLocal
-from app.db.models import Clan, ClanMembership, CommunityConfirmationDecision, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, CommunityConfirmationReviewCase, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare, User
+from app.db.models import Clan, ClanMembership, CommunityConfirmationDecision, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, CommunityConfirmationReviewCase, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceReview, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare, User
 
 
 def _create_trust_slip(*, code: str, holder_user_id: int = 1) -> int:
@@ -915,6 +915,145 @@ def test_public_verify_trade_pack_surfaces_declared_work_claims_without_overclai
     assert any(signal["key"] == "declared_work_service_claim" for signal in profile["relevant_signals"])
     assert "workmanship guarantee" in str(claims)
     assert "trust_score" not in str(profile)
+
+
+def test_public_verify_trade_pack_surfaces_completed_work_customer_confirmation_without_private_details(
+    client,
+    seed_clan_admin_membership,
+):
+    _create_trust_slip(code="ACCESS-COMPLETED-WORK")
+    _add_active_membership(clan_id=2)
+
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc)
+        db.add(
+            User(
+                id=2,
+                email="customer-private@example.com",
+                hashed_password="x",
+                display_name="Private Customer",
+                gmfn_id="GSN-U-CUSTOMER-PRIVATE",
+            )
+        )
+        db.add(
+            Clan(
+                id=3,
+                name="Outside Completed Work Clan",
+                invite_code="outside-completed-work",
+                community_code="GMFN-C-COMPLETED-OUTSIDE",
+                status="active",
+                invite_uses=0,
+                created_at=now,
+            )
+        )
+        db.add_all(
+            [
+                TrustEvent(
+                    event_type="merchant.service_completed",
+                    clan_id=1,
+                    actor_user_id=2,
+                    subject_user_id=1,
+                    created_at=now,
+                    meta={
+                        "status": "completed",
+                        "customer_name": "PRIVATE CUSTOMER NAME",
+                        "customer_phone": "07000000000",
+                        "private_note": "PRIVATE JOB NOTE",
+                        "job_address": "PRIVATE CUSTOMER ADDRESS",
+                        "job_title": "PRIVATE KITCHEN REPAIR",
+                    },
+                ),
+                TrustEvent(
+                    event_type="merchant.delivery_confirmed",
+                    clan_id=2,
+                    actor_user_id=2,
+                    subject_user_id=1,
+                    created_at=now,
+                    meta={
+                        "confirmation_status": "confirmed",
+                        "review_text": "PRIVATE DELIVERY REVIEW",
+                    },
+                ),
+                TrustEvent(
+                    event_type="merchant.service_completed",
+                    clan_id=3,
+                    actor_user_id=2,
+                    subject_user_id=1,
+                    created_at=now,
+                    meta={"private_marker": "OUTSIDE-COMPLETED-WORK"},
+                ),
+                MarketplaceReview(
+                    clan_id=1,
+                    reviewer_user_id=2,
+                    merchant_user_id=1,
+                    rating=5,
+                    review_text="PRIVATE FIVE STAR REVIEW TEXT",
+                    created_at=now,
+                ),
+                MarketplaceReview(
+                    clan_id=2,
+                    reviewer_user_id=2,
+                    merchant_user_id=1,
+                    rating=1,
+                    review_text="PRIVATE LOW REVIEW TEXT",
+                    created_at=now,
+                ),
+                MarketplaceReview(
+                    clan_id=3,
+                    reviewer_user_id=2,
+                    merchant_user_id=1,
+                    rating=5,
+                    review_text="OUTSIDE REVIEW TEXT",
+                    created_at=now,
+                ),
+            ]
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get(
+        "/trust-slips/verify/ACCESS-COMPLETED-WORK",
+        params={"decision_pack": "trade_check"},
+    )
+
+    assert response.status_code == 200, response.text
+    profile = response.json()["decision_pack_profile"]
+    extract = profile["evidence_extract"]
+    pointers = {row["key"]: row for row in extract["completed_work_pointers"]}
+    completed_work = pointers["completed_work_customer_confirmation"]
+    assert completed_work["status"] == "caution"
+    assert completed_work["evidence_count"] == 4
+    assert "4 completed-work/customer confirmation pointers found" in completed_work["value"]
+    assert "2 service completion or delivery TrustEvents" in completed_work["value"]
+    assert "2 include customer or outcome confirmation markers" in completed_work["value"]
+    assert "2 marketplace customer reviews" in completed_work["value"]
+    assert "1 high-rating review" in completed_work["value"]
+    assert "1 low-rating or caution review" in completed_work["value"]
+    assert "do not expose customer identities" in extract["completed_work_boundary_note"]
+    assert "review text" in extract["completed_work_boundary_note"]
+    assert any(signal["key"] == "completed_work_customer_confirmation_pointer" for signal in profile["relevant_signals"])
+
+    profile_text = str(profile)
+    assert "customer-private@example.com" not in profile_text
+    assert "GSN-U-CUSTOMER-PRIVATE" not in profile_text
+    assert "PRIVATE CUSTOMER NAME" not in profile_text
+    assert "07000000000" not in profile_text
+    assert "PRIVATE JOB NOTE" not in profile_text
+    assert "PRIVATE CUSTOMER ADDRESS" not in profile_text
+    assert "PRIVATE KITCHEN REPAIR" not in profile_text
+    assert "PRIVATE DELIVERY REVIEW" not in profile_text
+    assert "PRIVATE FIVE STAR REVIEW TEXT" not in profile_text
+    assert "PRIVATE LOW REVIEW TEXT" not in profile_text
+    assert "OUTSIDE-COMPLETED-WORK" not in profile_text
+    assert "OUTSIDE REVIEW TEXT" not in profile_text
+    assert "reviewer_user_id" not in profile_text
+    assert "merchant_user_id" not in profile_text
+    assert "review_text" not in profile_text
+    assert "customer_phone" not in profile_text
+    assert "job_address" not in profile_text
+    assert "trust_score" not in profile_text
 
 
 def test_public_verify_decision_pack_access_bounds_unknown_public_context(

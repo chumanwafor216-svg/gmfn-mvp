@@ -1,4 +1,4 @@
-/* global console, process */
+﻿/* global console, process */
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -177,6 +177,11 @@ assertContains(
   "viewModel",
   /type DecisionPackFulfillmentOutcomePointer[\s\S]*?fulfillmentOutcomePointers: DecisionPackFulfillmentOutcomePointer\[\][\s\S]*?source\.fulfillment_outcome_pointers[\s\S]*?fulfillmentOutcomeBoundaryNote/,
   "Public TrustSlip Verify view model must preserve aggregate fulfilment/correction outcome pointer rows and their boundary note."
+);
+assertContains(
+  "viewModel",
+  /type DecisionPackCompletedWorkPointer[\s\S]*?completedWorkPointers: DecisionPackCompletedWorkPointer\[\][\s\S]*?source\.completed_work_pointers[\s\S]*?completedWorkBoundaryNote/,
+  "Public TrustSlip Verify view model must preserve aggregate completed-work/customer-confirmation pointer rows and their boundary note."
 );
 assertContains(
   "viewModel",
@@ -411,6 +416,11 @@ assertContains(
 );
 assertContains(
   "backendDecisionPacks",
+  /MarketplaceReview[\s\S]*?COMPLETED_WORK_PACKS[\s\S]*?_decision_pack_completed_work_pointers[\s\S]*?completed_work_gap[\s\S]*?completed_work_customer_confirmation[\s\S]*?completed_work_pointers[\s\S]*?completed_work_boundary_note/,
+  "Backend Decision Pack evidence extract must surface aggregate completed-work/customer-confirmation pointers without exposing customer identities, review text, addresses, or ratings by person."
+);
+assertContains(
+  "backendDecisionPacks",
   /CommunityConfirmationOutcome[\s\S]*?CommunityConfirmationRequest[\s\S]*?CommunityConfirmationResponse[\s\S]*?_decision_pack_confirmation_pointers[\s\S]*?community_confirmation_gap[\s\S]*?community_witness_outcome[\s\S]*?confirmation_pointers[\s\S]*?confirmation_pointer_boundary_note/,
   "Backend Decision Pack evidence extract must surface aggregate community witness outcome pointers without exposing responder identities or private notes."
 );
@@ -464,6 +474,11 @@ assertContains(
   "backendDecisionPackTests",
   /test_public_verify_supplier_pack_surfaces_fulfillment_outcomes_without_trade_private_details[\s\S]*?seller_fulfillment_outcome[\s\S]*?fulfillment_outcome_boundary_note[\s\S]*?PRIVATE-TRADE-CODE-001[\s\S]*?buyer_user_id[\s\S]*?seller_user_id[\s\S]*?trust_score/,
   "Backend tests must prove Decision Packs surface aggregate fulfilment/correction outcomes without exposing trade codes, identities, private details, amounts, or trust scores."
+);
+assertContains(
+  "backendDecisionPackTests",
+  /test_public_verify_trade_pack_surfaces_completed_work_customer_confirmation_without_private_details[\s\S]*?completed_work_customer_confirmation[\s\S]*?completed_work_boundary_note[\s\S]*?PRIVATE FIVE STAR REVIEW TEXT[\s\S]*?reviewer_user_id[\s\S]*?merchant_user_id[\s\S]*?trust_score/,
+  "Backend tests must prove Decision Packs surface aggregate completed-work/customer-confirmation outcomes without exposing customer identities, review text, private job details, raw IDs, or trust scores."
 );
 assertContains(
   "backendDecisionPackTests",
@@ -551,6 +566,11 @@ assertContains(
   "publicPaper",
   /decisionPackFulfillmentOutcomePointers[\s\S]*?Fulfilment\/correction outcomes[\s\S]*?decisionPackFulfillmentOutcomeRows[\s\S]*?fulfillmentOutcomeBoundaryNote/,
   "Public TrustSlip paper must render aggregate fulfilment/correction outcomes separately with the protected-trade boundary."
+);
+assertContains(
+  "publicPaper",
+  /decisionPackCompletedWorkPointers[\s\S]*?Completed work\/customer confirmation[\s\S]*?decisionPackCompletedWorkRows[\s\S]*?completedWorkBoundaryNote/,
+  "Public TrustSlip paper must render aggregate completed-work/customer-confirmation outcomes separately with the customer privacy boundary."
 );
 assertContains(
   "publicPaper",

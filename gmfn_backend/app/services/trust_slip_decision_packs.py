@@ -5,7 +5,7 @@ from typing import Any, Mapping, Optional
 
 from sqlalchemy.orm import Session
 
-from app.db.models import ClanMembership, CommunityConfirmationDecision, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, CommunityConfirmationReviewCase, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare
+from app.db.models import ClanMembership, CommunityConfirmationDecision, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, CommunityConfirmationReviewCase, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceReview, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare
 
 
 @dataclass(frozen=True)
@@ -1045,6 +1045,32 @@ RECEIPT_CONFIRMED_STATUSES = {"confirmed", "received", "delivered"}
 OPEN_TRADE_DISPUTE_STATUSES = {"open", "raised", "pending", "in_review", "unresolved"}
 RESOLVED_TRADE_DISPUTE_STATUSES = {"resolved", "closed", "settled"}
 
+COMPLETED_WORK_PACKS = {
+    "employment_decision",
+    "trade_check",
+    "supplier_decision",
+    "business_partnership",
+}
+COMPLETED_WORK_EVENT_TOKENS = (
+    "service_completed",
+    "service_fulfilled",
+    "work_completed",
+    "job_completed",
+    "delivery_confirmed",
+    "delivery_completed",
+    "customer_confirmed",
+    "completion_confirmed",
+)
+CUSTOMER_CONFIRMATION_EVENT_TOKENS = (
+    "customer_confirmed",
+    "delivery_confirmed",
+    "completion_confirmed",
+    "service_completed",
+)
+CUSTOMER_CONFIRMED_VALUES = {"confirmed", "completed", "delivered", "received", "satisfied", "yes"}
+MARKETPLACE_REVIEW_POSITIVE_MIN_RATING = 4
+MARKETPLACE_REVIEW_CAUTION_MAX_RATING = 2
+
 
 def _claim_row(
     *,
@@ -1562,6 +1588,100 @@ def _trade_status(row: ProtectedTradeRecord, field: str) -> str:
     return _clean(getattr(row, field, None), limit=40).lower()
 
 
+def _completed_work_meta_confirms(row: TrustEvent) -> bool:
+    meta = getattr(row, "meta", None) or {}
+    if not isinstance(meta, Mapping):
+        return False
+    values = (
+        meta.get("status"),
+        meta.get("confirmation_status"),
+        meta.get("customer_confirmation"),
+        meta.get("beneficiary_confirmation"),
+        meta.get("outcome_state"),
+    )
+    return any(_clean(value, limit=40).lower() in CUSTOMER_CONFIRMED_VALUES for value in values)
+
+
+def _decision_pack_completed_work_pointers(
+    db: Session,
+    *,
+    holder_user_id: int,
+    pack_key: str,
+    active_community_ids: set[int],
+) -> list[dict[str, Any]]:
+    if pack_key not in COMPLETED_WORK_PACKS:
+        return []
+
+    event_query = _filter_query_to_holder_active_footprint(
+        db.query(TrustEvent).filter(TrustEvent.subject_user_id == int(holder_user_id)),
+        active_community_ids=active_community_ids,
+    )
+    event_rows = event_query.order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc()).limit(80).all()
+    completed_events = [
+        row
+        for row in event_rows
+        if any(token in _event_text(getattr(row, "event_type", None)) for token in COMPLETED_WORK_EVENT_TOKENS)
+    ]
+    confirmed_events = [
+        row
+        for row in completed_events
+        if any(token in _event_text(getattr(row, "event_type", None)) for token in CUSTOMER_CONFIRMATION_EVENT_TOKENS)
+        or _completed_work_meta_confirms(row)
+    ]
+
+    review_query = db.query(MarketplaceReview).filter(MarketplaceReview.merchant_user_id == int(holder_user_id))
+    review_query = _filter_to_active_communities(review_query, MarketplaceReview, active_community_ids=active_community_ids)
+    review_rows = review_query.order_by(MarketplaceReview.created_at.desc(), MarketplaceReview.id.desc()).limit(30).all()
+
+    total = len(completed_events) + len(review_rows)
+    if not total:
+        return [
+            _record_pointer_row(
+                key="completed_work_gap",
+                label="Completed work/customer confirmation",
+                status="gap",
+                value="No completed-work or customer-confirmation pointer is visible for this Decision Pack yet.",
+                source="trust_events+marketplace_reviews",
+                count=0,
+                decision_use="Ask for customer-confirmed completed work, Demand Box outcome history, job media tied to confirmation, or live community confirmation before relying.",
+            )
+        ]
+
+    positive_reviews = sum(
+        1
+        for row in review_rows
+        if int(getattr(row, "rating", 0) or 0) >= MARKETPLACE_REVIEW_POSITIVE_MIN_RATING
+    )
+    caution_reviews = sum(
+        1
+        for row in review_rows
+        if int(getattr(row, "rating", 0) or 0) <= MARKETPLACE_REVIEW_CAUTION_MAX_RATING
+    )
+    value = f"{total} completed-work/customer confirmation pointer{'s' if total != 1 else ''} found"
+    if completed_events:
+        value = f"{value}; {len(completed_events)} service completion or delivery TrustEvent{'s' if len(completed_events) != 1 else ''}"
+    if confirmed_events:
+        value = f"{value}; {len(confirmed_events)} include customer or outcome confirmation markers"
+    if review_rows:
+        value = f"{value}; {len(review_rows)} marketplace customer review{'s' if len(review_rows) != 1 else ''}"
+    if positive_reviews:
+        value = f"{value}; {positive_reviews} high-rating review{'s' if positive_reviews != 1 else ''}"
+    if caution_reviews:
+        value = f"{value}; {caution_reviews} low-rating or caution review{'s' if caution_reviews != 1 else ''}"
+
+    return [
+        _record_pointer_row(
+            key="completed_work_customer_confirmation",
+            label="Completed work/customer confirmation",
+            status="caution" if caution_reviews else "available",
+            value=value,
+            source="trust_events+marketplace_reviews",
+            count=total,
+            decision_use="Use this as aggregate completed-work and customer-feedback context only. It is not a licence, insurance, home-safety approval, workmanship guarantee, or future work-quality proof.",
+        )
+    ]
+
+
 def _decision_pack_fulfillment_outcome_pointers(
     db: Session,
     *,
@@ -1912,6 +2032,12 @@ def build_decision_pack_private_evidence_extract(
         pack_key=pack_key,
         active_community_ids=active_community_ids,
     )
+    completed_work_pointers = _decision_pack_completed_work_pointers(
+        db,
+        holder_user_id=int(holder_user_id),
+        pack_key=pack_key,
+        active_community_ids=active_community_ids,
+    )
     confirmation_pointers = _decision_pack_confirmation_pointers(
         db,
         holder_user_id=int(holder_user_id),
@@ -1941,6 +2067,8 @@ def build_decision_pack_private_evidence_extract(
         "guarantee_outcome_boundary_note": "Guarantee/support outcome pointers are aggregate support-context evidence only. They do not expose borrower or guarantor identities, amounts, payment references, private notes, bank guarantees, loan approvals, cash custody, or future support promises.",
         "fulfillment_outcome_pointers": fulfillment_outcome_pointers,
         "fulfillment_outcome_boundary_note": "Fulfilment/correction outcome pointers are aggregate protected-trade evidence only. They do not expose trade codes, buyer or seller identities, item details, amounts, payment references, private notes, escrow, payout approval, delivery guarantees, product-quality proof, or future performance promises.",
+        "completed_work_pointers": completed_work_pointers,
+        "completed_work_boundary_note": "Completed-work/customer-confirmation pointers are aggregate work-outcome evidence only. They do not expose customer identities, reviewer identities, review text, notes, addresses, item details, prices, ratings by person, private metadata, licences, insurance, home-safety approval, or future work quality.",
         "confirmation_pointers": confirmation_pointers,
         "confirmation_pointer_boundary_note": "Community witness outcomes are aggregate evidence pointers only. They do not expose responders, private notes, licences, guarantees, approvals, or final decisions.",
         "issue_resolution_pointers": issue_resolution_pointers,
@@ -2020,6 +2148,12 @@ def build_decision_pack_evidence_extract(
         pack_key=pack_key,
         active_community_ids=active_community_ids,
     )
+    completed_work_pointers = _decision_pack_completed_work_pointers(
+        db,
+        holder_user_id=int(holder_user_id),
+        pack_key=pack_key,
+        active_community_ids=active_community_ids,
+    )
     confirmation_pointers = _decision_pack_confirmation_pointers(
         db,
         holder_user_id=int(holder_user_id),
@@ -2033,7 +2167,7 @@ def build_decision_pack_evidence_extract(
     )
     return {
         "source": "trust_events_redacted_extract",
-        "source_note": "Aggregated from public-safe TrustEvent categories plus declared, connected-record, guarantee/support outcome, protected-trade fulfilment/correction outcome, community-witness outcome, and issue-resolution pointers where relevant. Raw TrustEvents, actor details, notes, metadata, amounts, payment references, borrower or guarantor identities, buyer or seller identities, trade codes, item details, responder identities, private dispute details, and private contacts are not exposed publicly.",
+        "source_note": "Aggregated from public-safe TrustEvent categories plus declared, connected-record, guarantee/support outcome, protected-trade fulfilment/correction outcome, completed-work/customer-confirmation outcome, community-witness outcome, and issue-resolution pointers where relevant. Raw TrustEvents, actor details, notes, metadata, amounts, payment references, borrower or guarantor identities, buyer or seller identities, trade codes, item details, customer or reviewer identities, review text, addresses, prices, responder identities, private dispute details, and private contacts are not exposed publicly.",
         "evidence_scope": _decision_pack_evidence_scope(
             active_community_ids=active_community_ids,
             primary_clan_id=getattr(slip, "clan_id", None),
@@ -2047,6 +2181,8 @@ def build_decision_pack_evidence_extract(
         "guarantee_outcome_boundary_note": "Guarantee/support outcome pointers are aggregate support-context evidence only. They do not expose borrower or guarantor identities, amounts, payment references, private notes, bank guarantees, loan approvals, cash custody, or future support promises.",
         "fulfillment_outcome_pointers": fulfillment_outcome_pointers,
         "fulfillment_outcome_boundary_note": "Fulfilment/correction outcome pointers are aggregate protected-trade evidence only. They do not expose trade codes, buyer or seller identities, item details, amounts, payment references, private notes, escrow, payout approval, delivery guarantees, product-quality proof, or future performance promises.",
+        "completed_work_pointers": completed_work_pointers,
+        "completed_work_boundary_note": "Completed-work/customer-confirmation pointers are aggregate work-outcome evidence only. They do not expose customer identities, reviewer identities, review text, notes, addresses, item details, prices, ratings by person, private metadata, licences, insurance, home-safety approval, or future work quality.",
         "confirmation_pointers": confirmation_pointers,
         "confirmation_pointer_boundary_note": "Community witness outcomes are aggregate evidence pointers only. They do not expose responders, private notes, licences, guarantees, approvals, or final decisions.",
         "issue_resolution_pointers": issue_resolution_pointers,
@@ -2165,6 +2301,21 @@ def build_decision_pack_profile(
                 "decision_use": "Treat this as aggregate protected-trade outcome context. It is not escrow, payout approval, delivery guarantee, product-quality proof, or future performance proof.",
             }
         ]
+    completed_work_pointers = []
+    if isinstance(evidence_extract, Mapping) and isinstance(evidence_extract.get("completed_work_pointers"), list):
+        completed_work_pointers = [pointer for pointer in evidence_extract.get("completed_work_pointers", []) if isinstance(pointer, Mapping)]
+    completed_work_signal = []
+    if completed_work_pointers:
+        first_completed_work_pointer = completed_work_pointers[0]
+        completed_work_signal = [
+            {
+                "key": "completed_work_customer_confirmation_pointer",
+                "label": "Completed work/customer confirmation",
+                "status": _clean(first_completed_work_pointer.get("status"), limit=32) or "available",
+                "value": _clean(first_completed_work_pointer.get("value"), limit=260) or "Completed-work or customer-confirmation evidence is visible.",
+                "decision_use": "Treat this as aggregate completed-work context. It is not a licence, insurance, home-safety approval, workmanship guarantee, or future work-quality proof.",
+            }
+        ]
     confirmation_pointers = []
     if isinstance(evidence_extract, Mapping) and isinstance(evidence_extract.get("confirmation_pointers"), list):
         confirmation_pointers = [pointer for pointer in evidence_extract.get("confirmation_pointers", []) if isinstance(pointer, Mapping)]
@@ -2195,10 +2346,10 @@ def build_decision_pack_profile(
                 "decision_use": "Treat this as aggregate review status. It does not expose private dispute detail or make the final decision.",
             }
         ]
-    signals = expected_signals + declared_signal + record_pointer_signal + guarantee_outcome_signal + fulfillment_outcome_signal + confirmation_signal + issue_resolution_signal + visible_signals
+    signals = expected_signals + declared_signal + record_pointer_signal + guarantee_outcome_signal + fulfillment_outcome_signal + completed_work_signal + confirmation_signal + issue_resolution_signal + visible_signals
     signal_gaps = [
         signal
-        for signal in visible_signals + declared_signal + record_pointer_signal + guarantee_outcome_signal + fulfillment_outcome_signal + confirmation_signal + issue_resolution_signal
+        for signal in visible_signals + declared_signal + record_pointer_signal + guarantee_outcome_signal + fulfillment_outcome_signal + completed_work_signal + confirmation_signal + issue_resolution_signal
         if signal.get("status") in {"gap", "caution"}
     ]
     missing_gap_rows = [

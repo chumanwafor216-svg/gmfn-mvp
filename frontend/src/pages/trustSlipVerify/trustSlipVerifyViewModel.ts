@@ -70,6 +70,16 @@ type DecisionPackFulfillmentOutcomePointer = {
   decisionUse: string;
 };
 
+type DecisionPackCompletedWorkPointer = {
+  key: string;
+  label: string;
+  status: string;
+  value: string;
+  source: string;
+  evidenceCount: number | null;
+  decisionUse: string;
+};
+
 type DecisionPackConfirmationPointer = {
   key: string;
   label: string;
@@ -109,6 +119,8 @@ export type DecisionPackEvidenceExtractView = {
   guaranteeOutcomeBoundaryNote: string;
   fulfillmentOutcomePointers: DecisionPackFulfillmentOutcomePointer[];
   fulfillmentOutcomeBoundaryNote: string;
+  completedWorkPointers: DecisionPackCompletedWorkPointer[];
+  completedWorkBoundaryNote: string;
   confirmationPointers: DecisionPackConfirmationPointer[];
   confirmationPointerBoundaryNote: string;
   issueResolutionPointers: DecisionPackIssueResolutionPointer[];
@@ -306,6 +318,7 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
   const recordPointers = Array.isArray(source.record_pointers) ? source.record_pointers : [];
   const guaranteeOutcomePointers = Array.isArray(source.guarantee_outcome_pointers) ? source.guarantee_outcome_pointers : [];
   const fulfillmentOutcomePointers = Array.isArray(source.fulfillment_outcome_pointers) ? source.fulfillment_outcome_pointers : [];
+  const completedWorkPointers = Array.isArray(source.completed_work_pointers) ? source.completed_work_pointers : [];
   const confirmationPointers = Array.isArray(source.confirmation_pointers) ? source.confirmation_pointers : [];
   const issueResolutionPointers = Array.isArray(source.issue_resolution_pointers) ? source.issue_resolution_pointers : [];
   const evidenceScope = source.evidence_scope && typeof source.evidence_scope === "object" ? source.evidence_scope : {};
@@ -429,6 +442,28 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
     fulfillmentOutcomeBoundaryNote: firstTruthy(
       source.fulfillment_outcome_boundary_note,
       "Fulfilment/correction outcome pointers are aggregate protected-trade evidence only. They do not expose trade codes, buyer or seller identities, item details, amounts, payment references, private notes, escrow, payout approval, delivery guarantees, product-quality proof, or future performance promises."
+    ),
+    completedWorkPointers: completedWorkPointers
+      .map((pointer: any) => ({
+        key: firstTruthy(pointer?.key, pointer?.label),
+        label: firstTruthy(pointer?.label, "Completed work/customer confirmation"),
+        status: firstTruthy(pointer?.status, "not_shown"),
+        value: firstTruthy(
+          pointer?.value,
+          "No completed-work or customer-confirmation pointer is visible for this Decision Pack yet."
+        ),
+        source: firstTruthy(pointer?.source, "trust_events+marketplace_reviews"),
+        evidenceCount: firstNumberLike(pointer?.evidence_count),
+        decisionUse: firstTruthy(
+          pointer?.decision_use,
+          "Use this as completed-work context only; ask for private context or live confirmation before relying."
+        ),
+      }))
+      .filter((pointer: DecisionPackCompletedWorkPointer) => pointer.key || pointer.label)
+      .slice(0, 4),
+    completedWorkBoundaryNote: firstTruthy(
+      source.completed_work_boundary_note,
+      "Completed-work/customer-confirmation pointers are aggregate work-outcome evidence only. They do not expose customer identities, reviewer identities, review text, notes, addresses, item details, prices, ratings by person, private metadata, licences, insurance, home-safety approval, or future work quality."
     ),
     confirmationPointers: confirmationPointers
       .map((pointer: any) => ({
