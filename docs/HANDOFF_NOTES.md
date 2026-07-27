@@ -1,3 +1,36 @@
+## CURRENT LOCAL STATE - 2026-07-27 - My GSN Identity guide decongestion
+
+Owner trigger:
+- Owner showed the My GSN Identity phone view and asked to cover the exposed GSN Capabilities and major-domain route list with headings/buttons so the page appears neater and less congested.
+
+Unabated truth:
+- The page was still too busy on phone. Even after the focused capability card improvement, it exposed the selected capability explanation and the full domain route list as large visible blocks.
+- This fix keeps the content and route contracts intact. It only changes the presentation hierarchy so the member opens deeper explanation when needed.
+- Devil's advocate: this makes the page calmer, but the inside content is still long when opened. A later pass may still need to shorten the expanded copy itself if phone review says the opened panels feel too heavy.
+
+Changed:
+- `frontend/src/pages/MyGMFNAndIPage.tsx`
+  - Added reusable disclosure styles for the signed-in guide.
+  - Wrapped the capability decision-story area in a closed `GSN Capabilities` disclosure.
+  - Wrapped the route/domain list and page-use instructions in a closed `Major Domains` disclosure.
+  - Preserved the selected capability card, filters, previous/next controls, route links, and existing debug ids inside the covered areas.
+- `frontend/tools/audit-capability-mirror.mjs`
+  - Added a regression guard requiring `GSN Capabilities` and `Major Domains` disclosure shells before the deep guide content.
+
+Verification:
+- Passed `node --check frontend\tools\audit-capability-mirror.mjs`.
+- Passed `npm --prefix frontend run audit:capability-mirror`.
+- Passed `npm --prefix frontend run audit:member-entry-actions`.
+- Passed `git diff --check`; only Git line-ending warnings were reported.
+- Passed `npm --prefix frontend run lint`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+
+Deployment:
+- Local only. Do not push/deploy unless the owner selects `2` or explicitly says push/deploy.
+
+Next recommended step:
+- Commit locally, then phone-review My GSN Identity. If the owner selects `2`, push/deploy and retest on the live phone view.
 ## CURRENT LOCAL STATE - 2026-07-27 - Duplicate phone identity recovery path
 
 Owner trigger:

@@ -228,6 +228,50 @@ function appGuidePanel(compact = false): React.CSSProperties {
   };
 }
 
+function appGuideDisclosureShell(): React.CSSProperties {
+  return {
+    borderRadius: 20,
+    overflow: "hidden",
+  };
+}
+
+function appGuideDisclosureSummary(compact = false): React.CSSProperties {
+  return {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    padding: compact ? "12px 14px" : "14px 16px",
+    color: "#07172C",
+    fontSize: compact ? 15 : 17,
+    fontWeight: 1000,
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.995) 0%, rgba(247,250,255,0.98) 100%)",
+    borderRadius: 20,
+    border: "1px solid rgba(15,23,42,0.08)",
+    boxShadow:
+      "0 12px 26px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.98)",
+  };
+}
+
+function appGuideDisclosureBody(compact = false): React.CSSProperties {
+  return {
+    paddingTop: compact ? 12 : 14,
+    display: "grid",
+    gap: compact ? 10 : 12,
+  };
+}
+
+function appGuideDisclosureChevron(): React.CSSProperties {
+  return {
+    color: "#A7B0BE",
+    fontSize: 22,
+    fontWeight: 1000,
+    lineHeight: 1,
+    flex: "0 0 auto",
+  };
+}
+
 function appNavyCard(compact = false): React.CSSProperties {
   return {
     borderRadius: compact ? 18 : 20,
@@ -2498,13 +2542,51 @@ export default function MyGMFNAndIPage() {
       {activeTab === "guide" ? (
         <>
           <section
-            style={{
-              ...appGuidePanel(isCompact),
-              display: "grid",
-              gap: isCompact ? 10 : 12,
-            }}
+            data-my-gmfn-capabilities-shell="collapsed"
+            style={appGuidePanel(isCompact)}
           >
-            {selectedCapability ? (
+            <details style={appGuideDisclosureShell()}>
+              <StableDisclosureSummary
+                debugId="my-gmfn.profile.gsn-capabilities"
+                stableHeight={isCompact ? 64 : 70}
+                style={appGuideDisclosureSummary(isCompact)}
+              >
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 10,
+                    minWidth: 0,
+                  }}
+                >
+                  <span style={appGuideMiniIconBubble()}>
+                    <GsnLegacyIcon name="shield" size={26} decorative />
+                  </span>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: "block" }}>GSN Capabilities</span>
+                    {!isCompact ? (
+                      <span
+                        style={{
+                          display: "block",
+                          marginTop: 2,
+                          color: "#64748B",
+                          fontSize: 12,
+                          fontWeight: 760,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        Open decision stories and evidence paths only when needed.
+                      </span>
+                    ) : null}
+                  </span>
+                </span>
+                <span aria-hidden="true" style={appGuideDisclosureChevron()}>
+                  {">"}
+                </span>
+              </StableDisclosureSummary>
+
+              <div data-my-gmfn-capabilities-body="true" style={appGuideDisclosureBody(isCompact)}>
+                {selectedCapability ? (
               <div
                 data-my-gmfn-selected-capability="true"
                 style={{
@@ -2878,9 +2960,55 @@ export default function MyGMFNAndIPage() {
                 </div>
               </div>
             </details>
+              </div>
+            </details>
           </section>
 
-          <section style={appGuidePanel(isCompact)}>
+          <section
+            data-my-gmfn-major-domains-shell="collapsed"
+            style={appGuidePanel(isCompact)}
+          >
+            <details style={appGuideDisclosureShell()}>
+              <StableDisclosureSummary
+                debugId="my-gmfn.profile.major-domains"
+                stableHeight={isCompact ? 64 : 70}
+                style={appGuideDisclosureSummary(isCompact)}
+              >
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 10,
+                    minWidth: 0,
+                  }}
+                >
+                  <span style={appGuideMiniIconBubble()}>
+                    <GsnLegacyIcon name="home" size={26} decorative />
+                  </span>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: "block" }}>Major Domains</span>
+                    {!isCompact ? (
+                      <span
+                        style={{
+                          display: "block",
+                          marginTop: 2,
+                          color: "#64748B",
+                          fontSize: 12,
+                          fontWeight: 760,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        Open the app areas that carry identity, trade, finance, support, and trust.
+                      </span>
+                    ) : null}
+                  </span>
+                </span>
+                <span aria-hidden="true" style={appGuideDisclosureChevron()}>
+                  {">"}
+                </span>
+              </StableDisclosureSummary>
+
+              <div data-my-gmfn-major-domains-body="true" style={appGuideDisclosureBody(isCompact)}>
             <div
               style={{
                 color: "#07172C",
@@ -3042,6 +3170,8 @@ export default function MyGMFNAndIPage() {
                 ))}
               </div>
             </div>
+              </div>
+            </details>
           </section>
         </>
       ) : (
