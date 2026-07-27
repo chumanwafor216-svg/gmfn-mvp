@@ -24,10 +24,14 @@ Verification:
 - Passed git diff --check with line-ending warnings only
 
 Deployment:
-- Local only. Do not push/deploy unless the owner explicitly selects push/deploy for this follow-up batch.
+- Pushed to origin/main at commit 98087d6c.
+- Triggered frontend-only Render workflow run 30255547738.
+- Render frontend deploy id: dep-d9jijd24hv7c73coipj0.
+- Live frontend URL confirmed serving TrustSlip Verify build marker assets/TrustSlipVerifyPage-CnTVMiRi.js.
+- Backend deploy was correctly skipped: backend deploy needed=false.
 
 Next recommended step:
-- Owner phone-review the live deployed page from commit 928645d6, then push/deploy this local hardening patch if the opened-detail typography correction is accepted.
+- Owner phone-review the live public TrustSlip/Decision Pack page on a real phone for institutional feel. Code, audits, push, and frontend deploy are complete.
 
 ## CURRENT LOCAL STATE - 2026-07-27 - Optional housing external contact handoff
 
