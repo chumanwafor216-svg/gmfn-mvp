@@ -56,6 +56,14 @@ export type CommunityConfirmationOption = {
   holder_role?: string | null;
   role?: string | null;
   is_primary_anchor?: boolean | null;
+  community_status?: string | null;
+  active_member_count?: string | number | null;
+  contactable_reference_count?: string | number | null;
+  sponsor_signal_count?: string | number | null;
+  last_community_confirmation?: string | null;
+  relay_available?: boolean | null;
+  instant_pulse_available?: boolean | null;
+  plain_language?: string | null;
 };
 
 export type CommunityConfirmationCallbackDraft = {

@@ -2261,8 +2261,8 @@ assertContains(
 
 assertContains(
   "src/pages/TrustSlipVerifyPage.tsx",
-  /communityConfirmationOptions[\s\S]*?requestCommunityConfirmation\([\s\S]*?trust_slip_code: requestCode[\s\S]*?community_id: firstTruthy\([\s\S]*?draft\.confirmationCommunityId[\s\S]*?selectedConfirmationCommunityId/,
-  "TrustSlip Verify must send the selected confirmation community with the TrustSlip code."
+  /selectedCommunityRequestMode[\s\S]*?selectedCommunityConfirmationRows[\s\S]*?contactable_reference_count[\s\S]*?requestCommunityConfirmation\([\s\S]*?trust_slip_code: requestCode[\s\S]*?community_id: firstTruthy\([\s\S]*?draft\.confirmationCommunityId[\s\S]*?selectedConfirmationCommunityId[\s\S]*?mode: selectedCommunityRequestMode/,
+  "TrustSlip Verify must send the selected confirmation community with the TrustSlip code and use that community's readiness/mode."
 );
 
 assertContains(
@@ -2275,6 +2275,12 @@ assertContains(
   "../gmfn_backend/app/services/community_confirmation_service.py",
   /subject_user_id = int\(slip\.holder_user_id\)[\s\S]*?community_id = int\(community_id or slip\.clan_id\)[\s\S]*?Subject is not an active member of this community/,
   "Community confirmation service must validate selected TrustSlip communities against the holder membership."
+);
+
+assertContains(
+  "../gmfn_backend/app/api/routes/trust_slips.py",
+  /_public_community_confirmation_options\([\s\S]*?build_community_confirmation_summary\([\s\S]*?active_member_count[\s\S]*?contactable_reference_count[\s\S]*?relay_available[\s\S]*?instant_pulse_available/,
+  "TrustSlip public verify payload must expose selected-community confirmation readiness without private contacts."
 );
 assertContains(
   "../gmfn_backend/app/schemas/merchant_release.py",

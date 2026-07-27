@@ -157227,3 +157227,34 @@ Verification run locally:
 
 Deployment:
 - Local only. Push/deploy only when owner sends `2`.
+## 2026-07-27 - Local TrustSlip Selected-Community Readiness Finish
+
+- Scope: final local finish for TrustSlip multi-community confirmation after the owner said to continue.
+- `gmfn_backend/app/api/routes/trust_slips.py`
+  - Enriched each public-safe `community_confirmation_options` row with selected-community readiness from `build_community_confirmation_summary`: status, active members, eligible response pool, sponsor signals, last confirmation, relay availability, instant-pulse availability, and plain-language readiness.
+  - Still exposes no responder/contact identities, phone, email, or private notes.
+- `frontend/src/pages/trustSlipVerify/trustSlipVerifyData.ts`
+  - Preserves selected-community readiness fields during TrustSlip verification normalization.
+- `frontend/src/pages/TrustSlipVerifyPage.tsx`
+  - Uses the selected community's readiness rows, selected community's relay/pulse availability, and selected community's request mode instead of the primary TrustSlip community's summary.
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Accepts readiness fields in the community selector option shape.
+- `frontend/tools/audit-trust-actions.mjs`
+  - Tightened guards so selected-community readiness/mode remains wired into TrustSlip Verify.
+- `gmfn_backend/tests/test_community_confirmation_relay.py`
+  - Expanded regression coverage to verify public option readiness fields and absence of private contact identifiers.
+
+Unabated truth:
+- The first multi-community selector fix would have worked for routing, but the visible readiness/counts and request mode could still have reflected the primary community. This finish closes that misleading edge.
+- The selected community now drives the displayed readiness, lock state, and request mode.
+
+Verification run locally:
+- `python -m pytest gmfn_backend\tests\test_community_confirmation_relay.py -q`
+- `node frontend\tools\audit-trust-actions.mjs`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run lint`
+- `npm --prefix frontend run build`
+- `git diff --check` passed with normal line-ending warnings.
+
+Deployment:
+- Local only. Push/deploy only when owner sends `2`.

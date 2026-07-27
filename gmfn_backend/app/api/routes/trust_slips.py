@@ -281,9 +281,11 @@ def _public_trustslip_merchant_view(view: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _public_community_confirmation_options(
+    db: Session,
     footprint: Any,
     *,
     primary_clan_id: Any,
+    subject_user_id: Any,
 ) -> list[Dict[str, Any]]:
     if not isinstance(footprint, list):
         return []
@@ -303,6 +305,19 @@ def _public_community_confirmation_options(
         )
         community_code = _safe_str(item.get("community_code"))
         holder_role = _safe_str(item.get("role"), "member")
+        readiness: Dict[str, Any] = {}
+        try:
+            readiness = build_community_confirmation_summary(
+                db,
+                community_id=int(community_id),
+                subject_user_id=int(subject_user_id),
+            )
+        except Exception:
+            readiness = {
+                "relay_available": False,
+                "instant_pulse_available": False,
+                "plain_language": "Live confirmation readiness could not be loaded for this community.",
+            }
         options.append(
             {
                 "community_id": community_id,
@@ -311,6 +326,14 @@ def _public_community_confirmation_options(
                 "community_code": community_code,
                 "holder_role": holder_role,
                 "is_primary_anchor": community_id == primary_id,
+                "community_status": readiness.get("community_status"),
+                "active_member_count": readiness.get("active_member_count"),
+                "contactable_reference_count": readiness.get("contactable_reference_count"),
+                "sponsor_signal_count": readiness.get("sponsor_signal_count"),
+                "last_community_confirmation": readiness.get("last_community_confirmation"),
+                "relay_available": bool(readiness.get("relay_available")),
+                "instant_pulse_available": bool(readiness.get("instant_pulse_available")),
+                "plain_language": readiness.get("plain_language"),
                 "confirmation_scope_note": (
                     "Request responses from people connected to this community only."
                 ),
@@ -1335,11 +1358,13 @@ def verify_trust_slip_public(
             "plain_language": "Community confirmation could not be loaded for this TrustSlip.",
         }
     community_confirmation_options = _public_community_confirmation_options(
+        db,
         merchant_view_out.get("community_footprint")
         or merchant_summary.get("community_footprint")
         or full_summary.get("community_footprint")
         or [],
         primary_clan_id=getattr(slip, "clan_id", None),
+        subject_user_id=getattr(slip, "holder_user_id", None),
     )
 
     decision_pack_context = normalize_decision_pack_context(request.query_params)

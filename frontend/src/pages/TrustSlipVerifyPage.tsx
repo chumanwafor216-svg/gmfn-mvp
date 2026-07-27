@@ -734,6 +734,14 @@ export default function TrustSlipVerifyPage() {
         holder_role: firstTruthy(item.holder_role, item.role, "member"),
         role: firstTruthy(item.role, item.holder_role, "member"),
         is_primary_anchor: Boolean(item.is_primary_anchor),
+        community_status: firstTruthy(item.community_status),
+        active_member_count: item.active_member_count,
+        contactable_reference_count: item.contactable_reference_count,
+        sponsor_signal_count: item.sponsor_signal_count,
+        last_community_confirmation: item.last_community_confirmation,
+        relay_available: item.relay_available,
+        instant_pulse_available: item.instant_pulse_available,
+        plain_language: firstTruthy(item.plain_language),
       });
     };
     (record?.community_confirmation_options || []).forEach(addOption);
@@ -763,6 +771,36 @@ export default function TrustSlipVerifyPage() {
       setSelectedConfirmationCommunityId(firstOptionId);
     }
   }, [communityConfirmationOptions, selectedConfirmationCommunityId]);
+
+  const selectedConfirmationCommunity =
+    communityConfirmationOptions.find(
+      (item) => firstTruthy(item.community_id, item.clan_id) === selectedConfirmationCommunityId
+    ) || communityConfirmationOptions[0] || null;
+  const selectedCommunityRelayAvailable = selectedConfirmationCommunity
+    ? Boolean(selectedConfirmationCommunity.relay_available)
+    : communityRelayAvailable;
+  const selectedCommunityPulseAvailable = selectedConfirmationCommunity
+    ? Boolean(
+        selectedConfirmationCommunity.instant_pulse_available ||
+          selectedConfirmationCommunity.relay_available
+      )
+    : communityPulseAvailable;
+  const selectedCommunityRequestMode = selectedConfirmationCommunity?.instant_pulse_available
+    ? "instant_pulse"
+    : "relay";
+  const selectedCommunityConfirmationRows: Array<[string, string]> = selectedConfirmationCommunity
+    ? [
+        ["Community status", firstTruthy(selectedConfirmationCommunity.community_status, "Not shown")],
+        ["Active members", firstTruthy(selectedConfirmationCommunity.active_member_count, "Not shown")],
+        ["Eligible response pool", firstTruthy(selectedConfirmationCommunity.contactable_reference_count, "0")],
+        ["Sponsor signals", firstTruthy(selectedConfirmationCommunity.sponsor_signal_count, "0")],
+        ["Last confirmation", firstTruthy(selectedConfirmationCommunity.last_community_confirmation, "Not requested yet")],
+      ]
+    : communityConfirmationRows;
+  const selectedCommunityConfirmationText = firstTruthy(
+    selectedConfirmationCommunity?.plain_language,
+    communityConfirmationText
+  );
 
   const confirmationResult = confirmationOutcome?.community_response || null;
   const confirmationPublicPath = confirmationOutcome?.public_token
@@ -814,8 +852,8 @@ export default function TrustSlipVerifyPage() {
       return;
     }
 
-    if (!communityPulseAvailable) {
-      showNotice("error", "Community confirmation relay is not available yet.");
+    if (!selectedCommunityPulseAvailable) {
+      showNotice("error", "Community confirmation relay is not available for the selected community yet.");
       return;
     }
 
@@ -842,7 +880,7 @@ export default function TrustSlipVerifyPage() {
         reason_type:
           decisionPackProfile.communityConfirmationPrompt.reasonType || "community_standing_check",
         risk_level: "low",
-        mode: communityConfirmation?.instant_pulse_available ? "instant_pulse" : "relay",
+        mode: selectedCommunityRequestMode,
       });
       if (
         requestSeq !== confirmationSeqRef.current ||
@@ -1392,10 +1430,10 @@ export default function TrustSlipVerifyPage() {
           verifyPath={verifyPath}
           verifyUrl={verifyUrl}
           quickTrustAnswers={quickTrustAnswers}
-          communityRelayAvailable={communityRelayAvailable}
-          communityPulseAvailable={communityPulseAvailable}
-          communityConfirmationText={communityConfirmationText}
-          communityConfirmationRows={communityConfirmationRows}
+          communityRelayAvailable={selectedCommunityRelayAvailable}
+          communityPulseAvailable={selectedCommunityPulseAvailable}
+          communityConfirmationText={selectedCommunityConfirmationText}
+          communityConfirmationRows={selectedCommunityConfirmationRows}
           communityConfirmationOptions={communityConfirmationOptions}
           selectedConfirmationCommunityId={selectedConfirmationCommunityId}
           onConfirmationCommunityChange={setSelectedConfirmationCommunityId}

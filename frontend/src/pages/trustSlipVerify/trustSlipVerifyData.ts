@@ -8,6 +8,14 @@ export type TrustSlipCommunityOption = {
   holder_role?: string | null;
   role?: string | null;
   is_primary_anchor?: boolean | null;
+  community_status?: string | null;
+  active_member_count?: string | number | null;
+  contactable_reference_count?: string | number | null;
+  sponsor_signal_count?: string | number | null;
+  last_community_confirmation?: string | null;
+  relay_available?: boolean | null;
+  instant_pulse_available?: boolean | null;
+  plain_language?: string | null;
   confirmation_scope_note?: string | null;
 };
 
@@ -209,6 +217,14 @@ function normalizeCommunityOptions(...sources: any[]): TrustSlipCommunityOption[
       holder_role: firstTruthy(row.holder_role, row.role, "member"),
       role: firstTruthy(row.role, row.holder_role, "member"),
       is_primary_anchor: Boolean(row.is_primary_anchor),
+      community_status: firstTruthy(row.community_status),
+      active_member_count: firstNumberLike(row.active_member_count),
+      contactable_reference_count: firstNumberLike(row.contactable_reference_count),
+      sponsor_signal_count: firstNumberLike(row.sponsor_signal_count),
+      last_community_confirmation: firstTruthy(row.last_community_confirmation),
+      relay_available: firstBoolean(row.relay_available),
+      instant_pulse_available: firstBoolean(row.instant_pulse_available),
+      plain_language: firstTruthy(row.plain_language),
       confirmation_scope_note: firstTruthy(
         row.confirmation_scope_note,
         "Request responses from people connected to this community only."
