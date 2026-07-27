@@ -157000,3 +157000,28 @@ Verification run locally:
 
 Deployment:
 - Local only. Push/deploy only when owner sends `2`.
+## 2026-07-27 - Local Action Inbox Decongestion Pass
+
+- Scope: local-only ease-of-use polish for the authenticated `Action Inbox` / Notifications screen.
+- `frontend/src/pages/NotificationsPage.tsx`
+  - Bumped the local UI storage key from `gmfn.notifications.ui.v1` to `gmfn.notifications.ui.v2` so phones pick up the calmer default.
+  - Kept the `First item to check` section open by default.
+  - Changed `All waiting items` buckets to start collapsed by default, so the screen leads with one clear action before showing the full queue.
+  - Left raw feed and label explanations closed by default.
+- `frontend/tools/audit-notifications-button-inventory.mjs`
+  - Added a guard that Action Inbox keeps the first action visible while the full bucket list starts covered.
+
+Unabated truth:
+- This is presentation/default-state decongestion only.
+- It does not change notification fetching, action routing, mark-read behavior, bucket definitions, Companion behavior, backend notification creation, auth, or bottom navigation.
+- Users can still open `All waiting items` immediately when they need the full queue.
+
+Verification run locally:
+- `node frontend\tools\audit-notifications-button-inventory.mjs`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run lint`
+- `git diff --check` passed with normal CRLF warnings.
+- `npm --prefix frontend run build`
+
+Deployment:
+- Local only. Push/deploy only when owner sends `2`.

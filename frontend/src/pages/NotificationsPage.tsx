@@ -61,7 +61,7 @@ const DEFAULT_SETTINGS: SettingsState = {
   openActionsDirectly: true,
 };
 
-const NOTIFICATIONS_UI_STORAGE_KEY = "gmfn.notifications.ui.v1";
+const NOTIFICATIONS_UI_STORAGE_KEY = "gmfn.notifications.ui.v2";
 
 const BUCKET_ORDER: GuidanceInboxBucketKey[] = [
   "actNow",
@@ -893,7 +893,7 @@ function writeLocalJSON(key: string, value: any) {
 function defaultCollapseState(): CollapseState {
   return {
     focus: false,
-    buckets: false,
+    buckets: true,
     rawFeed: true,
     reading: true,
   };

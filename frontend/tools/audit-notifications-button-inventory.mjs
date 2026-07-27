@@ -289,6 +289,11 @@ assertContains(
   /isPhone \? \([\s\S]*?<StableCtaLink[\s\S]*?to=\{routes\.dashboard\}[\s\S]*?kind="secondary"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="notifications\.hero\.dashboard"[\s\S]*?width: "fit-content"[\s\S]*?minWidth: 164/,
   "Notifications phone Dashboard escape must stay a compact secondary action under the urgent primary button."
 );
+assertContains(
+  /const NOTIFICATIONS_UI_STORAGE_KEY = "gmfn\.notifications\.ui\.v2"[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?focus: false,[\s\S]*?buckets: true,[\s\S]*?rawFeed: true,[\s\S]*?reading: true/,
+  "Notifications should keep the first action visible while the full waiting-item bucket list starts covered on phone."
+);
+
 
 assertContains(
   /BUCKET_ORDER\.map\(\(bucket, index\) =>[\s\S]*?<StableButton[\s\S]*?stableHeight=\{bucketRowHeight\}[\s\S]*?debugId=\{`notifications\.bucket\.\$\{bucket\}`\}[\s\S]*?height: bucketRowHeight[\s\S]*?maxHeight: bucketRowHeight/,
