@@ -107,8 +107,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
   },
   {
     id: 6,
-    title: "Evidence-Based Visibility",
-    proverb: "Evidence-Based Visibility gives stronger recorded trust more reach.",
+    title: "Reputation-Based Visibility",
+    proverb: "Reputation-Based Visibility gives stronger recorded trust more reach.",
     gmfn:
       "GSN makes visibility depend on visible evidence, not noise alone, so access improves while risk falls.",
     category: "visibility",
@@ -233,8 +233,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
   },
   {
     id: 16,
-    title: "Evidence Mobility",
-    proverb: "Evidence Mobility stops trust from staying trapped in one place.",
+    title: "Reputation Mobility",
+    proverb: "Reputation Mobility stops trust from staying trapped in one place.",
     gmfn:
       "GSN helps earned evidence stay usable across new spaces, which improves access without losing accountability.",
     category: "identity",

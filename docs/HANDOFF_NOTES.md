@@ -1,3 +1,32 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Capability mirror terminology repair
+
+Owner trigger:
+- Owner selected `1`, meaning continue locally with no push/deploy.
+- After TrustSlip and mobile visual checks passed, the next concrete failure was `audit:capability-mirror`.
+
+Unabated truth:
+- This is a terminology alignment repair, not a new capability, route, or UI structure.
+- The canonical 23-capability mirror uses `Reputation-Based Visibility` and `Reputation Mobility`; the shared frontend registry had drifted to `Evidence-Based Visibility` and `Evidence Mobility`.
+- Devil's advocate: names are not just cosmetic here, because this registry feeds the public capability mirror and institutional story. A mismatch makes GSN look less deliberate.
+
+Changed:
+- `frontend/src/lib/gmfnCapabilities.ts`
+  - Restored capability 6 to `Reputation-Based Visibility`.
+  - Restored capability 16 to `Reputation Mobility`.
+
+Verification:
+- Passed `npm --prefix frontend run audit:capability-mirror`.
+- Passed `npm --prefix frontend run audit:gsn-visible-language`.
+- Passed `npm --prefix frontend run build`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `git diff --check`; only Git line-ending warnings were reported.
+- Before this repair pass, the Trust/phone corridor also passed `audit:public-trustslip-first-viewport`, `audit:public-trustslip-verify-boundary`, `audit:trust-passport-front-package`, `audit:trust-admin-mobile-overflow`, `audit:evidence-display-boundary-suite`, `audit:evidence-surfaces`, `audit:proof-surfaces`, and the elevated browser smokes for public TrustSlip, Trust Passport/TrustSlip boundary, private TrustSlip evidence, and mobile visual sweep.
+
+Deployment:
+- Local only. Do not push/deploy unless the owner selects `2` or explicitly says push/deploy.
+
+Next recommended step:
+- Commit this capability mirror repair locally. If continuing on `1`, move to another source-audited lane or an owner-selected phone screenshot; if selecting `2`, push/deploy the local batch.
 ## CURRENT LOCAL STATE - 2026-07-27 - Private TrustSlip evidence heading audit repair
 
 Owner trigger:
