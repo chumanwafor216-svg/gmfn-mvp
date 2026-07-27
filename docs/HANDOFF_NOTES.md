@@ -1,3 +1,30 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Notifications action handoff response repair
+
+Owner trigger:
+- Owner selected `1`, meaning continue locally with no push/deploy.
+- After route/link/protocol checks, the next concrete failure was `audit:action-response-protocol` on the Notifications page.
+
+Unabated truth:
+- This is an action-response repair inside the caged Action Inbox, not a redesign of the Notifications page.
+- The page already had visible notice cards for several states, but the direct primary action path navigated to the next route without first recording the visible `Opening ... now.` handoff response required by the action protocol.
+- Devil's advocate: this makes the action feel more accountable, but it does not change notification routing, unread semantics, or the deeper page reached after navigation.
+
+Changed:
+- `frontend/src/pages/NotificationsPage.tsx`
+  - Direct primary notification actions now set a success `actionNotice` before navigating: `Opening ${normalizedNotice.ctaLabel || "the next page"} now.`
+
+Verification:
+- Passed `npm --prefix frontend run audit:action-response-protocol`.
+- Passed `npm --prefix frontend run audit:notifications-button-inventory`.
+- Passed `npm --prefix frontend run audit:button-stability`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+
+Deployment:
+- Local only. Do not push/deploy unless the owner selects `2` or explicitly says push/deploy.
+
+Next recommended step:
+- Commit this notification response repair locally. If continuing on `1`, keep moving through app-wide source audits or an owner-selected phone screenshot; if selecting `2`, push/deploy the local batch.
 ## CURRENT LOCAL STATE - 2026-07-27 - Capability mirror terminology repair
 
 Owner trigger:

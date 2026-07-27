@@ -1160,6 +1160,10 @@ export default function NotificationsPage() {
       if (/^\d+$/.test(noticeId)) {
         void markNotificationRead(Number(noticeId)).catch(() => null);
       }
+      setActionNotice({
+        tone: "success",
+        text: `Opening ${normalizedNotice.ctaLabel || "the next page"} now.`,
+      });
       navigateWithOrigin(navigate, normalizedNotice.ctaTo, location);
       return;
     }
