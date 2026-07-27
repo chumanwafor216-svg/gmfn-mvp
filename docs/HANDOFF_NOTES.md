@@ -1,3 +1,36 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Payment Rails listing decongestion slice
+
+Owner trigger:
+- Owner asked to continue making the whole app appear less busy on phone.
+
+Unabated truth:
+- This is a small utility-route polish, not a full finance redesign.
+- Payment Rails was not as crowded as the larger trust and domain pages, but it still exposed a duplicate `How to use this page` card beside an existing explanatory toggle.
+- This pass removes that duplicate instructional layer and leaves the route read-only: no money movement, payment approval, settlement, or rail policy behavior changed.
+
+Changed:
+- `frontend/src/pages/PaymentRailsPage.tsx`
+  - Replaced the exposed `How to use this page` card in the structured rail listing area with a compact `Rail actions` card.
+  - Preserved `Copy paper` and `Show details` / `Hide details` controls and their stable debug ids.
+- `frontend/tools/audit-finance-banking-rails-lane.mjs`
+  - Added `assertNotContains` support.
+  - Added guards requiring compact `Rail actions` and preventing the old duplicate `How to use this page` card from returning.
+
+Verification:
+- Passed `node --check frontend\tools\audit-finance-banking-rails-lane.mjs`.
+- Passed `npm --prefix frontend run audit:finance-banking-rails-lane`.
+- Passed `npm --prefix frontend run audit:finance-actions`.
+- Passed `npm --prefix frontend run audit:button-stability`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run lint`.
+- Passed `git diff --check`; only normal CRLF warnings were reported.
+- Passed `npm --prefix frontend run build`.
+
+Deployment:
+- Local only. Do not push/deploy unless the owner selects `2` or explicitly says push/deploy.
+
+Next recommended step:
+- Commit this Payment Rails slice locally, then continue checking remaining phone-facing pages for exposed secondary guidance/actions.
 ## CURRENT LOCAL STATE - 2026-07-27 - Community Confirmation Outcome public-action decongestion slice
 
 Owner trigger:

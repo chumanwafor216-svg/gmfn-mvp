@@ -1152,10 +1152,7 @@ export default function PaymentRailsPage() {
           </div>
 
           <div style={softCard("#F8FBFF")}>
-            <div style={sectionLabel()}>How to use this page</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Use this to see whether deposit or withdrawal looks clearer.
-            </div>
+            <div style={sectionLabel()}>Rail actions</div>
             <div
               style={{
                 marginTop: 12,

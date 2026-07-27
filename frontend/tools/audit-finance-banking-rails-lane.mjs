@@ -40,6 +40,12 @@ function assertContains(key, pattern, message, text) {
   if (pattern.test(source)) return;
   addFinding(files[key], source, -1, message, text);
 }
+function assertNotContains(key, pattern, message) {
+  const source = sourceByFile[key];
+  const match = source.match(pattern);
+  if (!match) return;
+  addFinding(files[key], source, match.index ?? 0, message, match[0]);
+}
 
 assertContains(
   "finance",
@@ -69,6 +75,17 @@ assertContains(
   "paymentRails",
   /Rail status is not payment approval, settlement confirmation, or evidence that money moved; action should still happen on the guided Money In and Money Out pages\./,
   "Payment Rails must separate visible rail status from payment approval, settlement confirmation, or money movement."
+);
+assertContains(
+  "paymentRails",
+  /Structured rail listing[\s\S]*?Rail actions[\s\S]*?debugId="payment-rails\.copy-paper"[\s\S]*?debugId="payment-rails\.toggle-raw"/,
+  "Payment Rails structured listing must keep compact rail actions without a duplicate how-to card."
+);
+
+assertNotContains(
+  "paymentRails",
+  /How to use this page/,
+  "Payment Rails must not expose the old duplicate how-to card on the rail listing surface."
 );
 
 assertContains(
