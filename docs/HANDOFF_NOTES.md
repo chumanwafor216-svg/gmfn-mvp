@@ -156359,3 +156359,38 @@ Verification run locally:
 
 Deployment:
 - Local only so far. Current branch already has the previous unpushed app-led TrustSlip language commit plus this uncommitted public TrustSlip decision-support work. Push/deploy only when the owner selects `2`.
+
+## 2026-07-27 - Public TrustSlip Core Evidence Reading
+
+- Scope: local-only public TrustSlip Verify evidence-depth correction after owner review.
+- Owner correction: `Full evidence and record details` was showing recipient/access/security metadata and repeated empty evidence tables, but it did not explain what the recorded community activity actually means to an outsider. A count such as `153 events` is not useful unless GSN translates it into a cautious behavioural reading.
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Added a public-safe `Core evidence reading` that translates aggregate community activity into practical meaning: repeated participation, communication/reachability, community presence, and ability to operate around other people.
+  - Added purpose-specific interpretation for support/guarantor, employment/work, housing, trade/skilled work, and general community standing.
+  - Reordered the compact `Full evidence and record details` drawer so it starts with `Core evidence reading` and `Decision evidence summary` before `Why received` and live code/security checks.
+  - Changed the Decision Pack heading from `Can I make a better decision with this evidence?` to `What does the community activity mean?`.
+  - Replaced the old `What we checked` / `Evidence focus` tiles with `Activity meaning` and `Decision use` tiles.
+  - Filtered empty `0 public-safe record` category/pointer tables. The page now shows one summary when detailed public category records are absent instead of listing repeated empty sections.
+  - Compressed the long chain of category boundary notes into one concise public evidence boundary while keeping `decisionPackProfile.boundaryNote` visible.
+- `frontend/tools/audit-public-trustslip-first-viewport.mjs`
+  - Now requires the mobile full-evidence drawer to lead with core activity meaning and decision evidence summary.
+  - Now requires the Decision Pack reading to show the actual community activity meaning before collapsed purpose-filtered details.
+- `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+  - Now protects filtered meaningful evidence tables, the concise boundary, and the public-safe behavioural reading.
+  - No longer requires repeated per-category zero-record tables or every boundary paragraph to be visibly rendered in the public paper.
+
+Unabated truth:
+- This is still frontend interpretation of existing public-safe aggregate evidence. It does not add backend raw TrustEvent summaries, event-by-event explanations, skill proof, repayment scoring, landlord verification, WhatsApp/contact verification, or approval logic.
+- Because raw TrustEvents/private notes are not public, the wording stays careful: it says the activity supports an inference, not a final judgement or guarantee.
+
+Verification run locally:
+- `npm --prefix frontend run lint`
+- `npm --prefix frontend run audit:public-trustslip-first-viewport`
+- `npm --prefix frontend run audit:public-trustslip-verify-boundary`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run build`
+- `git diff --check` passed with only normal CRLF warnings.
+
+Deployment:
+- Local only so far. Branch remains ahead of `origin/main`; push/deploy only when the owner selects `2`.

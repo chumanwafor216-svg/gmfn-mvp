@@ -187,8 +187,14 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /title=\{decisionPackPurpose\}[\s\S]*?defaultOpen=\{!compact\}[\s\S]*?Decision Pack reading[\s\S]*?Can I make a better decision with this evidence\?[\s\S]*?This document exists to reduce uncertainty, not eliminate risk\.[\s\S]*?GSN provides trustworthy evidence; the recipient remains responsible for the decision\.[\s\S]*?Opened by \$\{decisionPackRecipient\}\. Read this as decision support, not a private investigation report\.[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="Decision evidence details"[\s\S]*?summary="Open for purpose-filtered signals, categories, gaps, checks, and evidence boundaries\."[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"/,
-  "Decision Pack reading must keep the quick judgement read visible while purpose-filtered categories, gaps, checks, and boundaries stay collapsed."
+  /title="Full evidence and record details"[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"[\s\S]*?title="Core evidence reading"[\s\S]*?rows=\{communityActivityMeaningRows\}[\s\S]*?title="Decision evidence summary"[\s\S]*?rows=\{decisionPackEvidenceSummaryRows\}[\s\S]*?title="Why received"[\s\S]*?title="Live record checks"/,
+  "Mobile Full Evidence drawer must lead with the core activity meaning and decision evidence summary before recipient metadata and live code checks."
+);
+
+assertContains(
+  "publicPaper",
+  /title=\{decisionPackPurpose\}[\s\S]*?defaultOpen=\{!compact\}[\s\S]*?Decision Pack reading[\s\S]*?What does the community activity mean\?[\s\S]*?GSN reads the public-safe community activity first[\s\S]*?title="Core evidence reading"[\s\S]*?rows=\{communityActivityMeaningRows\}[\s\S]*?label="Activity meaning"[\s\S]*?text=\{communityActivityMeaningLead\}[\s\S]*?label="Decision use"[\s\S]*?text=\{purposeSpecificActivityMeaning\}[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="Decision evidence details"[\s\S]*?summary="Open for purpose-filtered signals, categories, gaps, checks, and evidence boundaries\."[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"/,
+  "Decision Pack reading must show the actual community activity meaning before purpose-filtered details stay collapsed."
 );
 
 if (findings.length) {

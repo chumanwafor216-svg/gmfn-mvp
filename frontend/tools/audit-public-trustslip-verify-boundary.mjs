@@ -209,8 +209,8 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /decisionPackHousingReferencePointers[\s\S]*?decisionPackHousingReferenceRows[\s\S]*?Housing conduct readiness[\s\S]*?housingReferenceBoundaryNote/,
-  "Public TrustSlip Verify paper must render housing conduct/readiness rows and boundary language."
+  /decisionPackHousingReferencePointers[\s\S]*?decisionPackVisibleHousingReferencePointers[\s\S]*?decisionPackHousingReferenceRows[\s\S]*?decisionPackDetailTables[\s\S]*?title: "Housing conduct readiness", rows: decisionPackHousingReferenceRows[\s\S]*?decisionEvidenceBoundarySummary/,
+  "Public TrustSlip Verify paper must keep housing conduct rows available when meaningful, filter empty rows, and carry one concise public boundary."
 );
 
 assertContains(
@@ -349,8 +349,8 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /Public Decision Pack[\s\S]*?Public Decision Pack for a safer next decision[\s\S]*?data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision Summary[\s\S]*?\{decisionDisplayAnswer\}[\s\S]*?\{decisionReasonLine\}[\s\S]*?data-gsn-public-evidence-translation="decision-why"[\s\S]*?Evidence behind this recommendation[\s\S]*?DecisionFactorTable rows=\{compact \? decisionTranslationRows\.filter\(\(\[label\]\) => label === "Active Community ID" \|\| label === \(supportPurpose \? "Repayment\/support evidence" : "Purpose evidence"\) \|\| label === "Current witnesses" \|\| label === "Recommended action"\) : decisionTranslationRows\} compact=\{compact\}[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?Full evidence and record details[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"[\s\S]*?title=\{decisionPackPurpose\}[\s\S]*?defaultOpen=\{!compact\}[\s\S]*?Decision Pack reading[\s\S]*?Can I make a better decision with this evidence\?[\s\S]*?Decision evidence details[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?Audit Details[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"/,
-  "Public TrustSlip paper must lead with decision support, immediate evidence translation, and collapsed phone evidence before purpose-filtered details and heavier authority/security details."
+  /Public Decision Pack[\s\S]*?Public Decision Pack for a safer next decision[\s\S]*?data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision Summary[\s\S]*?\{decisionDisplayAnswer\}[\s\S]*?\{decisionReasonLine\}[\s\S]*?data-gsn-public-evidence-translation="decision-why"[\s\S]*?Evidence behind this recommendation[\s\S]*?DecisionFactorTable rows=\{compact \? decisionTranslationRows\.filter\(\(\[label\]\) => label === "Active Community ID" \|\| label === \(supportPurpose \? "Repayment\/support evidence" : "Purpose evidence"\) \|\| label === "Current witnesses" \|\| label === "Recommended action"\) : decisionTranslationRows\} compact=\{compact\}[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Full evidence and record details[\s\S]*?title="Core evidence reading"[\s\S]*?rows=\{communityActivityMeaningRows\}[\s\S]*?title="Decision evidence summary"[\s\S]*?rows=\{decisionPackEvidenceSummaryRows\}[\s\S]*?title=\{decisionPackPurpose\}[\s\S]*?defaultOpen=\{!compact\}[\s\S]*?Decision Pack reading[\s\S]*?What does the community activity mean\?[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?Audit Details[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"/,
+  "Public TrustSlip paper must lead with decision support, then core activity meaning, then collapsed purpose-filtered details and heavier authority/security details."
 );
 
 assertContains(
@@ -602,52 +602,26 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?Purpose-filtered evidence[\s\S]*?data-gsn-decision-pack-evidence-extract="redacted-trust-events"[\s\S]*?Evidence categories[\s\S]*?Private review needed[\s\S]*?Gaps to check[\s\S]*?Recommended checks[\s\S]*?decisionPackProfile\.boundaryNote/,
-  "Public TrustSlip paper must render purpose-filtered evidence, redacted event categories, private-review prompts, gaps, checks, and the non-decision boundary."
-);
-assertContains(
-  "publicPaper",
-  /decisionPackDeclaredClaims[\s\S]*?Declared work\/service claim[\s\S]*?decisionPackDeclaredClaimRows[\s\S]*?declarationBoundaryNote/,
-  "Public TrustSlip paper must render declared work/service claims separately from event categories with the declaration boundary."
-);
-assertContains(
-  "publicPaper",
-  /decisionPackRecordPointers[\s\S]*?Connected record pointers[\s\S]*?decisionPackRecordPointerRows[\s\S]*?recordPointerBoundaryNote/,
-  "Public TrustSlip paper must render connected record pointers separately from declarations and event categories with the financial/support boundary."
+  /hasMeaningfulDecisionValue[\s\S]*?hasVisibleDecisionEvidence[\s\S]*?decisionPackPositiveCategories[\s\S]*?decisionPackVisibleDeclaredClaims[\s\S]*?decisionPackVisibleHousingReferencePointers[\s\S]*?decisionPackVisibleGuaranteeOutcomePointers[\s\S]*?decisionPackEvidenceRows[\s\S]*?"Detailed public categories"[\s\S]*?"No detailed category records are shown here\. Read the community activity meaning first/,
+  "Public TrustSlip paper must filter empty public evidence rows and summarize missing detail once instead of exposing repeated zero-record tables."
 );
 
 assertContains(
   "publicPaper",
-  /decisionPackGuaranteeOutcomePointers[\s\S]*?Guarantee\/support outcomes[\s\S]*?decisionPackGuaranteeOutcomeRows[\s\S]*?guaranteeOutcomeBoundaryNote/,
-  "Public TrustSlip paper must render aggregate guarantee/support outcomes separately with the bank-guarantee boundary."
+  /communityActivityMeaningRows: Array<\[string, string\]> = \[[\s\S]*?"Observed activity"[\s\S]*?"Behavioural clue"[\s\S]*?"For this decision"[\s\S]*?"Reader limit"[\s\S]*?decisionPackEvidenceSummaryRows: Array<\[string, string\]> = \[[\s\S]*?"Core public signal"[\s\S]*?"Detailed public records"[\s\S]*?"Fuller evidence"/,
+  "Public TrustSlip paper must translate aggregate activity into a plain behavioural reading before showing technical evidence details."
 );
 
 assertContains(
   "publicPaper",
-  /decisionPackFulfillmentOutcomePointers[\s\S]*?Fulfilment\/correction outcomes[\s\S]*?decisionPackFulfillmentOutcomeRows[\s\S]*?fulfillmentOutcomeBoundaryNote/,
-  "Public TrustSlip paper must render aggregate fulfilment/correction outcomes separately with the protected-trade boundary."
-);
-assertContains(
-  "publicPaper",
-  /decisionPackCompletedWorkPointers[\s\S]*?Completed work\/customer confirmation[\s\S]*?decisionPackCompletedWorkRows[\s\S]*?completedWorkBoundaryNote/,
-  "Public TrustSlip paper must render aggregate completed-work/customer-confirmation outcomes separately with the customer privacy boundary."
-);
-assertContains(
-  "publicPaper",
-  /decisionPackDemandRequestOutcomePointers[\s\S]*?Demand Box request outcomes[\s\S]*?decisionPackDemandRequestOutcomeRows[\s\S]*?demandRequestOutcomeBoundaryNote/,
-  "Public TrustSlip paper must render aggregate Demand Box request outcomes separately with the request privacy and non-response-proof boundary."
+  /decisionPackDetailTables: Array<\{ title: string; rows: Array<\[string, string\]> \}> = \[[\s\S]*?title: "Evidence categories", rows: decisionPackEvidenceRows[\s\S]*?title: "Declared work\/service claim", rows: decisionPackDeclaredClaimRows[\s\S]*?title: "Housing conduct readiness", rows: decisionPackHousingReferenceRows[\s\S]*?title: "Guarantee\/support outcomes", rows: decisionPackGuaranteeOutcomeRows[\s\S]*?title: "Issue resolution pointers", rows: decisionPackIssueResolutionRows[\s\S]*?\.filter\(\(table\) => table\.rows\.length > 0\)/,
+  "Public TrustSlip paper must keep purpose-specific tables available but render only tables with meaningful rows."
 );
 
 assertContains(
   "publicPaper",
-  /decisionPackConfirmationPointers[\s\S]*?Community witness outcomes[\s\S]*?decisionPackConfirmationPointerRows[\s\S]*?confirmationPointerBoundaryNote/,
-  "Public TrustSlip paper must render aggregate community witness outcomes separately with the witness privacy boundary."
-);
-
-assertContains(
-  "publicPaper",
-  /decisionPackIssueResolutionPointers[\s\S]*?Issue resolution pointers[\s\S]*?decisionPackIssueResolutionRows[\s\S]*?issueResolutionBoundaryNote/,
-  "Public TrustSlip paper must render aggregate issue-resolution pointers separately with the dispute privacy boundary."
+  /data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?Purpose-filtered evidence[\s\S]*?data-gsn-decision-pack-evidence-extract="redacted-trust-events"[\s\S]*?decisionPackDetailTables\.map[\s\S]*?Gaps to check[\s\S]*?Recommended checks[\s\S]*?decisionEvidenceBoundarySummary[\s\S]*?decisionPackProfile\.boundaryNote/,
+  "Public TrustSlip paper must render mapped meaningful evidence tables, gaps, checks, and the concise public boundary."
 );
 assertContains(
   "backendDecisionPacks",

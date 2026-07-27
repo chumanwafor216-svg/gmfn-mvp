@@ -319,6 +319,32 @@ function compactListLabel(values: string[], fallback: string): string {
   return cleaned.length ? cleaned.join(", ") : fallback;
 }
 
+function hasMeaningfulDecisionValue(value: unknown): boolean {
+  const text = safeText(value).toLowerCase();
+  if (!text) return false;
+  return !(
+    text.startsWith("no ") ||
+    text.includes("not shown") ||
+    text.includes("not visible") ||
+    text.includes("not available") ||
+    text.includes("not stated") ||
+    text.includes("not yet")
+  );
+}
+
+function hasVisibleDecisionEvidence(status: unknown, evidenceCount: unknown, value?: unknown): boolean {
+  const statusText = safeText(status).toLowerCase();
+  return (
+    positiveNumber(evidenceCount) > 0 ||
+    statusText.includes("available") ||
+    statusText.includes("visible") ||
+    statusText.includes("present") ||
+    statusText.includes("recorded") ||
+    statusText.includes("confirmed") ||
+    hasMeaningfulDecisionValue(value)
+  );
+}
+
 function lockedActionFrame(compact: boolean): React.CSSProperties {
   return {
     display: "grid",
@@ -1025,7 +1051,7 @@ export default function TrustSlipVerifyPublicPaper({
   communityActivityLabel,
   activeCommunityCount,
   evidenceScopeSummary,
-  evidenceScopeBoundary,
+
   evidenceScopeReadingScope,
   relationshipEvidenceSummary,
   visibleBand,
@@ -1108,12 +1134,7 @@ export default function TrustSlipVerifyPublicPaper({
       ? `Primary anchor: ${communityLabel || "this community"}. Wider context: ${activeCommunityCountLabel} active community contexts.`
       : `Primary anchor: ${communityLabel || "this community"}. Wider context is still building.`
   );
-  const evidenceScopeBoundaryText = firstTruthy(
-    evidenceScopeBoundary,
-    "The TrustSlip has one primary community anchor. Wider-network or aggregate readings must be read as supporting context, not as proof that every community gives the same judgement."
-  );
   const evidenceScopeIsWider = firstTruthy(evidenceScopeReadingScope).toLowerCase() === "primary_plus_wider" || activeCommunityContexts > 1;
-  const aggregateScopeText = `${evidenceScopeSummaryText} ${evidenceScopeBoundaryText}`;
   const communityActivityCategoriesLabel = Array.isArray(communityActivityCategories)
     ? communityActivityCategories.map((item) => safeText(item)).filter(Boolean).join(", ")
     : "";
@@ -1203,16 +1224,6 @@ export default function TrustSlipVerifyPublicPaper({
     recipientAccessRecord.recipientLabel,
     "Recipient not named"
   );
-  const decisionPackFocus = firstTruthy(
-    recipientAccessRecord.focus,
-    "Current public identity, community standing, evidence currentness, and the next verification step."
-  );
-  const decisionKnownFor =
-    positiveNumber(communityActivityCountLabel) > 0
-      ? `Primary role: ${holderRoleLabel} inside ${communityLabel || "this community"}. ${communityActivityCountLabel} recorded primary-community event${
-          communityActivityCountLabel === "1" ? "" : "s"
-        }${knownAsCategoryLabel ? ` across ${knownAsCategoryLabel}` : ""}. ${aggregateScopeText}`
-      : `Primary role: ${holderRoleLabel} inside ${communityLabel || "this community"}. Activity evidence is still building on this paper. ${aggregateScopeText}`;
   const decisionNextStep = validNow
     ? "For important decisions, request instant community confirmation before relying on this paper."
     : "Request a new TrustSlip.";
@@ -1363,84 +1374,85 @@ export default function TrustSlipVerifyPublicPaper({
   const decisionPackConfirmationPointers = decisionPackProfile.evidenceExtract.confirmationPointers.slice(0, 3);
   const decisionPackIssueResolutionPointers = decisionPackProfile.evidenceExtract.issueResolutionPointers.slice(0, 3);
   const decisionPackPrivateReview = decisionPackProfile.evidenceExtract.privateReviewRequired.slice(0, 3);
-  const decisionPackEvidenceRows: Array<[string, string]> = (decisionPackEvidenceCategories.length
-    ? decisionPackEvidenceCategories.map((category): [string, string] => [
+  const decisionPackPositiveCategories = decisionPackEvidenceCategories.filter((category) =>
+    hasVisibleDecisionEvidence(category.status, category.evidenceCount)
+  );
+  const decisionPackVisibleDeclaredClaims = decisionPackDeclaredClaims.filter((claim) =>
+    hasVisibleDecisionEvidence(claim.status, claim.evidenceCount, claim.value)
+  );
+  const decisionPackVisibleRecordPointers = decisionPackRecordPointers.filter((pointer) =>
+    hasVisibleDecisionEvidence(pointer.status, pointer.evidenceCount, pointer.value)
+  );
+  const decisionPackVisibleHousingReferencePointers = decisionPackHousingReferencePointers.filter((pointer) =>
+    hasVisibleDecisionEvidence(pointer.status, pointer.evidenceCount, pointer.value)
+  );
+  const decisionPackVisibleGuaranteeOutcomePointers = decisionPackGuaranteeOutcomePointers.filter((pointer) =>
+    hasVisibleDecisionEvidence(pointer.status, pointer.evidenceCount, pointer.value)
+  );
+  const decisionPackVisibleFulfillmentOutcomePointers = decisionPackFulfillmentOutcomePointers.filter((pointer) =>
+    hasVisibleDecisionEvidence(pointer.status, pointer.evidenceCount, pointer.value)
+  );
+  const decisionPackVisibleCompletedWorkPointers = decisionPackCompletedWorkPointers.filter((pointer) =>
+    hasVisibleDecisionEvidence(pointer.status, pointer.evidenceCount, pointer.value)
+  );
+  const decisionPackVisibleDemandRequestOutcomePointers = decisionPackDemandRequestOutcomePointers.filter((pointer) =>
+    hasVisibleDecisionEvidence(pointer.status, pointer.evidenceCount, pointer.value)
+  );
+  const decisionPackVisibleConfirmationPointers = decisionPackConfirmationPointers.filter((pointer) =>
+    hasVisibleDecisionEvidence(pointer.status, pointer.evidenceCount, pointer.value)
+  );
+  const decisionPackVisibleIssueResolutionPointers = decisionPackIssueResolutionPointers.filter((pointer) =>
+    hasVisibleDecisionEvidence(pointer.status, pointer.evidenceCount, pointer.value)
+  );
+  const decisionPackEvidenceRows: Array<[string, string]> = (decisionPackPositiveCategories.length
+    ? decisionPackPositiveCategories.map((category): [string, string] => [
         category.label,
         `${category.evidenceCount ?? 0} public-safe record${category.evidenceCount === 1 ? "" : "s"}${
           category.latestAt ? `; latest ${category.latestAt}` : ""
         }`,
       ])
-    : [["No public-safe category", "Ask for live confirmation or the full Trust Passport if more evidence is needed."] as [string, string]]
+    : [["Detailed public categories", "No detailed category records are shown here. Read the community activity meaning first, then ask for live confirmation or the full Trust Passport if the decision is high-risk."] as [string, string]]
   ).slice(0, 4);
-  const decisionPackDeclaredClaimRows: Array<[string, string]> = (decisionPackDeclaredClaims.length
-    ? decisionPackDeclaredClaims.map((claim): [string, string] => [
-        claim.label,
-        `${claim.value}${claim.evidenceCount ? ` (${claim.evidenceCount} pointer${claim.evidenceCount === 1 ? "" : "s"})` : ""}`,
-      ])
-    : [["No structured claim shown", "Ask for shop/service records, completed-work evidence, or live community confirmation."] as [string, string]]
-  ).slice(0, 3);
-  const decisionPackRecordPointerRows: Array<[string, string]> = (decisionPackRecordPointers.length
-    ? decisionPackRecordPointers.map((pointer): [string, string] => [
-        pointer.label,
-        pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
-      ])
-    : [["No connected record shown", "Ask for private Trust Passport evidence, reference confirmation, or live community confirmation."] as [string, string]]
-  ).slice(0, 3);
-  const decisionPackHousingReferenceRows: Array<[string, string]> = (decisionPackHousingReferencePointers.length
-    ? decisionPackHousingReferencePointers.map((pointer): [string, string] => [
-        pointer.label,
-        pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
-      ])
-    : [["No housing conduct shown", "Ask for community conduct evidence, payment-discipline records, issue-resolution context, or live housing community confirmation."] as [string, string]]
-  ).slice(0, 3);
-  const decisionPackGuaranteeOutcomeRows: Array<[string, string]> = (decisionPackGuaranteeOutcomePointers.length
-    ? decisionPackGuaranteeOutcomePointers.map((pointer): [string, string] => [
-        pointer.label,
-        pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
-      ])
-    : [["No support outcome shown", "Ask for private Trust Passport evidence or live community confirmation before relying on support risk."] as [string, string]]
-  ).slice(0, 3);
-  const decisionPackFulfillmentOutcomeRows: Array<[string, string]> = (decisionPackFulfillmentOutcomePointers.length
-    ? decisionPackFulfillmentOutcomePointers.map((pointer): [string, string] => [
-        pointer.label,
-        pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
-      ])
-    : [["No fulfilment outcome shown", "Ask for protected-trade records, completed-work evidence, or live community confirmation before relying on this point."] as [string, string]]
-  ).slice(0, 3);
-  const decisionPackCompletedWorkRows: Array<[string, string]> = (decisionPackCompletedWorkPointers.length
-    ? decisionPackCompletedWorkPointers.map((pointer): [string, string] => [
-        pointer.label,
-        pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
-      ])
-    : [["No completed work shown", "Ask for customer-confirmed completed work, Demand Box outcome history, or live community confirmation before relying on this point."] as [string, string]]
-  ).slice(0, 3);
-  const decisionPackDemandRequestOutcomeRows: Array<[string, string]> = (decisionPackDemandRequestOutcomePointers.length
-    ? decisionPackDemandRequestOutcomePointers.map((pointer): [string, string] => [
-        pointer.label,
-        pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
-      ])
-    : [["No Demand Box outcome shown", "Ask for demand response records, quote-to-job history, customer confirmation, or live community confirmation before relying on this point."] as [string, string]]
-  ).slice(0, 3);
-  const decisionPackConfirmationPointerRows: Array<[string, string]> = (decisionPackConfirmationPointers.length
-    ? decisionPackConfirmationPointers.map((pointer): [string, string] => [
-        pointer.label,
-        pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
-      ])
-    : [["No witness outcome shown", "Ask for live community confirmation before relying on this point."] as [string, string]]
-  ).slice(0, 3);
-  const decisionPackIssueResolutionRows: Array<[string, string]> = (decisionPackIssueResolutionPointers.length
-    ? decisionPackIssueResolutionPointers.map((pointer): [string, string] => [
-        pointer.label,
-        pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
-      ])
-    : [["No issue review shown", "Ask for live community confirmation or private Trust Passport context before relying on this point."] as [string, string]]
-  ).slice(0, 3);
+  const decisionPackDeclaredClaimRows: Array<[string, string]> = decisionPackVisibleDeclaredClaims.map((claim): [string, string] => [
+    claim.label,
+    `${claim.value}${claim.evidenceCount ? ` (${claim.evidenceCount} pointer${claim.evidenceCount === 1 ? "" : "s"})` : ""}`,
+  ]);
+  const decisionPackRecordPointerRows: Array<[string, string]> = decisionPackVisibleRecordPointers.map((pointer): [string, string] => [
+    pointer.label,
+    pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
+  ]);
+  const decisionPackHousingReferenceRows: Array<[string, string]> = decisionPackVisibleHousingReferencePointers.map((pointer): [string, string] => [
+    pointer.label,
+    pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
+  ]);
+  const decisionPackGuaranteeOutcomeRows: Array<[string, string]> = decisionPackVisibleGuaranteeOutcomePointers.map((pointer): [string, string] => [
+    pointer.label,
+    pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
+  ]);
+  const decisionPackFulfillmentOutcomeRows: Array<[string, string]> = decisionPackVisibleFulfillmentOutcomePointers.map((pointer): [string, string] => [
+    pointer.label,
+    pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
+  ]);
+  const decisionPackCompletedWorkRows: Array<[string, string]> = decisionPackVisibleCompletedWorkPointers.map((pointer): [string, string] => [
+    pointer.label,
+    pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
+  ]);
+  const decisionPackDemandRequestOutcomeRows: Array<[string, string]> = decisionPackVisibleDemandRequestOutcomePointers.map((pointer): [string, string] => [
+    pointer.label,
+    pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
+  ]);
+  const decisionPackConfirmationPointerRows: Array<[string, string]> = decisionPackVisibleConfirmationPointers.map((pointer): [string, string] => [
+    pointer.label,
+    pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
+  ]);
+  const decisionPackIssueResolutionRows: Array<[string, string]> = decisionPackVisibleIssueResolutionPointers.map((pointer): [string, string] => [
+    pointer.label,
+    pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
+  ]);
   const decisionPackPrivateReviewRows: Array<[string, string]> = decisionPackPrivateReview.map(
     (category): [string, string] => [category.label, category.decisionUse]
   );
-  const decisionPackPrivateReviewDisplayRows: Array<[string, string]> = decisionPackPrivateReviewRows.length
-    ? decisionPackPrivateReviewRows
-    : [["No sensitive category requested", "This public pack still remains evidence, not approval."]];
+  const decisionPackPrivateReviewDisplayRows: Array<[string, string]> = decisionPackPrivateReviewRows;
   const communityConnectionFinding =
     communityLabel && communityLabel !== "Not stated"
       ? `Supported: active community record in ${communityLabel}.`
@@ -1453,15 +1465,73 @@ export default function TrustSlipVerifyPublicPaper({
   const roleFinding = holderRoleLabel && holderRoleLabel !== "Community member"
     ? `Supported: active role shown as ${holderRoleLabel}.`
     : "Shown: community member role only.";
+  const activityCountNumber = positiveNumber(communityActivityCountLabel);
+  const activityCategoryReading = knownAsCategoryLabel || "general community activity";
+  const communityActivityMeaningTitle = activityCountNumber > 0
+    ? `${communityActivityCountLabel} recorded community activit${communityActivityCountLabel === "1" ? "y" : "ies"}`
+    : "Community activity not yet visible";
+  const communityActivityMeaningLead = activityCountNumber > 0
+    ? `${holderName} has repeated visible activity inside ${communityLabel || "the community"}${knownAsCategoryLabel ? ` across ${activityCategoryReading}` : ""}. This gives the reader a practical clue that the holder has been present, reachable, and active where people can know them.`
+    : "This public TrustSlip does not yet show enough recorded activity for the reader to infer community participation.";
+  const purposeSpecificActivityMeaning = !validNow
+    ? "Because the paper is not current, the activity reading should not be used until the holder shares a fresh TrustSlip."
+    : supportPurpose
+      ? "For guarantor or support decisions, this supports community recognition and responsibility context only. It is not enough for financial guarantee without current witnesses and repayment or support outcome evidence."
+      : employmentPurpose
+        ? "For work or employment, this supports a basic conversation about consistency, participation, and reachability. It does not prove licence, right to work, or future performance."
+        : housingPurpose
+          ? "For housing, this supports a cautious inference that the holder can participate in a shared community and keep visible relationships. It does not prove rent history, property care, or legal tenancy checks."
+          : tradePurpose
+            ? "For trade or skilled work, this supports a low-risk check that the holder is visible in a community context. It does not prove licence, insurance, work quality, or home-safety outcomes."
+            : "For community standing, this supports recognition, participation, and community presence. It remains evidence for judgement, not a final character ruling.";
+  const communityActivityMeaningRows: Array<[string, string]> = [
+    ["Observed activity", activityCountNumber > 0 ? `${communityActivityCountLabel} recorded activity event${communityActivityCountLabel === "1" ? "" : "s"}${knownAsCategoryLabel ? ` across ${activityCategoryReading}` : ""}.` : "No recorded activity count is visible on this paper."],
+    ["Behavioural clue", activityCountNumber > 0 ? "Repeated community activity can support an inference of participation, communication, reachability, and ability to operate around other people." : "No behavioural inference should be made from activity until fresh evidence is shown."],
+    ["For this decision", purposeSpecificActivityMeaning],
+    ["Reader limit", "This is an inference from public-safe community activity, not proof of private conduct, legal status, payment ability, or future behaviour."],
+  ];
+  const visibleEvidenceAreaCount =
+    decisionPackPositiveCategories.length +
+    decisionPackVisibleDeclaredClaims.length +
+    decisionPackVisibleRecordPointers.length +
+    decisionPackVisibleHousingReferencePointers.length +
+    decisionPackVisibleGuaranteeOutcomePointers.length +
+    decisionPackVisibleFulfillmentOutcomePointers.length +
+    decisionPackVisibleCompletedWorkPointers.length +
+    decisionPackVisibleDemandRequestOutcomePointers.length +
+    decisionPackVisibleConfirmationPointers.length +
+    decisionPackVisibleIssueResolutionPointers.length;
+  const decisionPackEvidenceSummaryRows: Array<[string, string]> = [
+    ["Core public signal", activityCountNumber > 0 ? communityActivityMeaningLead : "The core activity signal is not visible yet."],
+    ["Detailed public records", visibleEvidenceAreaCount > 0 ? `${visibleEvidenceAreaCount} detailed public-safe evidence area${visibleEvidenceAreaCount === 1 ? "" : "s"} shown in this Decision Pack.` : "No detailed public-safe category records are shown here; do not confuse absence of public detail with a complete negative judgement."],
+    ["Fuller evidence", "Raw TrustEvents, private notes, contacts, payment records, addresses, and full evidence pages belong in Trust Passport or live community confirmation, not this public slip."],
+  ];
+  const decisionPackDetailTables: Array<{ title: string; rows: Array<[string, string]> }> = [
+    { title: "Evidence categories", rows: decisionPackEvidenceRows },
+    { title: "Declared work/service claim", rows: decisionPackDeclaredClaimRows },
+    { title: "Connected record pointers", rows: decisionPackRecordPointerRows },
+    { title: "Housing conduct readiness", rows: decisionPackHousingReferenceRows },
+    { title: "Guarantee/support outcomes", rows: decisionPackGuaranteeOutcomeRows },
+    { title: "Fulfilment/correction outcomes", rows: decisionPackFulfillmentOutcomeRows },
+    { title: "Completed work/customer confirmation", rows: decisionPackCompletedWorkRows },
+    { title: "Demand Box request outcomes", rows: decisionPackDemandRequestOutcomeRows },
+    { title: "Community witness outcomes", rows: decisionPackConfirmationPointerRows },
+    { title: "Issue resolution pointers", rows: decisionPackIssueResolutionRows },
+    { title: "Private review needed", rows: decisionPackPrivateReviewDisplayRows },
+  ].filter((table) => table.rows.length > 0);
+  const decisionEvidenceBoundarySummary =
+    "This public TrustSlip summarises public-safe evidence only. It does not expose raw TrustEvents, private notes, contacts, payment records, addresses, allegations, or the holder's full Trust Passport.";
   const relevantSupportFinding = supportPurpose
     ? hasSupportOutcomeEvidence
       ? `Visible: ${decisionPackGuaranteeOutcomeRows[0]?.[1] || "support outcome pointer found"}.`
       : "Missing: repayment or support outcome evidence is not yet available here."
-    : decisionPackEvidenceCategories.length
-      ? `Visible: ${decisionPackEvidenceCategories.length} purpose evidence area${
-          decisionPackEvidenceCategories.length === 1 ? "" : "s"
+    : visibleEvidenceAreaCount > 0
+      ? `Visible: ${visibleEvidenceAreaCount} detailed public-safe evidence area${
+          visibleEvidenceAreaCount === 1 ? "" : "s"
         }.`
-      : "Missing: purpose-specific evidence still needs confirmation.";
+      : activityCountNumber > 0
+        ? "Visible: community activity meaning is the main public evidence; detailed category records are not shown here."
+        : "Missing: purpose-specific evidence still needs confirmation.";
   const witnessCurrentnessFinding = hasWitnessEvidence
     ? `Visible: ${memberWitnessCurrentness}.`
     : positiveNumber(memberWitnessCountLabel) > 0
@@ -1481,12 +1551,12 @@ export default function TrustSlipVerifyPublicPaper({
     : supportPurpose && (!hasWitnessEvidence || !hasSupportOutcomeEvidence)
       ? "Evidence is strong enough for community recognition, but not yet strong enough for financial guarantee. Request live community confirmation before relying."
       : employmentPurpose
-        ? "This evidence can support employment screening. Request live confirmation if the role carries serious trust or money risk."
+        ? "The activity trail supports an employment conversation. Request live confirmation if the role carries serious trust, safety, or money risk."
         : housingPurpose
-          ? "This evidence supports community recognition. Ask for live confirmation before a high-risk tenancy decision."
+          ? "The activity trail supports community recognition and a cautious housing conversation. Ask for live confirmation before tenancy risk."
           : tradePurpose
-            ? "This evidence can support a low-risk trade check. Ask for live confirmation before larger work or money exposure."
-            : "This evidence supports community recognition. Match the evidence to your risk, then request live confirmation for anything important.";
+            ? "The activity trail supports a low-risk trade check. Ask for live confirmation before larger work, home access, or money exposure."
+            : "The activity trail supports community recognition. Match the evidence to your risk, then request live confirmation for anything important.";
   const decisionTranslationRows: Array<[string, string]> = [
     ["Active Community ID", communityConnectionFinding],
     ["Recorded activity", evidenceVolumeFinding],
@@ -2017,6 +2087,16 @@ export default function TrustSlipVerifyPublicPaper({
               style={{ display: "grid", gap: 10 }}
             >
               <OfficialResultTable
+                title="Core evidence reading"
+                rows={communityActivityMeaningRows}
+                compact={compact}
+              />
+              <OfficialResultTable
+                title="Decision evidence summary"
+                rows={decisionPackEvidenceSummaryRows}
+                compact={compact}
+              />
+              <OfficialResultTable
                 title="Why received"
                 rows={[
                   ["Recipient", recipientAccessRecord.recipientLabel],
@@ -2235,7 +2315,7 @@ export default function TrustSlipVerifyPublicPaper({
                 fontWeight: 1000,
               }}
             >
-              Can I make a better decision with this evidence?
+              What does the community activity mean?
             </h2>
             <p
               style={{
@@ -2247,9 +2327,14 @@ export default function TrustSlipVerifyPublicPaper({
                 fontWeight: 850,
               }}
             >
-              This document exists to reduce uncertainty, not eliminate risk. GSN provides trustworthy evidence; the recipient remains responsible for the decision.
+              GSN reads the public-safe community activity first. Security checks prove the paper can be checked; this section explains what the holder's visible activity can and cannot support.
             </p>
           </div>
+          <OfficialResultTable
+            title="Core evidence reading"
+            rows={communityActivityMeaningRows}
+            compact={compact}
+          />
           <div
             style={{
               display: "grid",
@@ -2267,17 +2352,17 @@ export default function TrustSlipVerifyPublicPaper({
             />
             <PublicReadingTile
               icon="community-building"
-              label="What we checked"
-              title="Primary + wider context"
-              text={decisionKnownFor}
+              label="Activity meaning"
+              title={communityActivityMeaningTitle}
+              text={communityActivityMeaningLead}
               compact={compact}
               tone={positiveNumber(communityActivityCountLabel) > 0 ? "trust" : "warning"}
             />
             <PublicReadingTile
               icon="records-folder"
-              label="Evidence focus"
-              title="What to inspect"
-              text={decisionPackFocus}
+              label="Decision use"
+              title="What it supports"
+              text={purposeSpecificActivityMeaning}
               compact={compact}
               tone="neutral"
             />
@@ -2386,61 +2471,14 @@ export default function TrustSlipVerifyPublicPaper({
                 gap: 8,
               }}
             >
-              <OfficialResultTable
-                title="Evidence categories"
-                rows={decisionPackEvidenceRows}
-                compact={compact}
-              />
-              <OfficialResultTable
-                title="Declared work/service claim"
-                rows={decisionPackDeclaredClaimRows}
-                compact={compact}
-              />
-              <OfficialResultTable
-                title="Connected record pointers"
-                rows={decisionPackRecordPointerRows}
-                compact={compact}
-              />
-              <OfficialResultTable
-                title="Housing conduct readiness"
-                rows={decisionPackHousingReferenceRows}
-                compact={compact}
-              />
-              <OfficialResultTable
-                title="Guarantee/support outcomes"
-                rows={decisionPackGuaranteeOutcomeRows}
-                compact={compact}
-              />
-              <OfficialResultTable
-                title="Fulfilment/correction outcomes"
-                rows={decisionPackFulfillmentOutcomeRows}
-                compact={compact}
-              />
-              <OfficialResultTable
-                title="Completed work/customer confirmation"
-                rows={decisionPackCompletedWorkRows}
-                compact={compact}
-              />
-              <OfficialResultTable
-                title="Demand Box request outcomes"
-                rows={decisionPackDemandRequestOutcomeRows}
-                compact={compact}
-              />
-              <OfficialResultTable
-                title="Community witness outcomes"
-                rows={decisionPackConfirmationPointerRows}
-                compact={compact}
-              />
-              <OfficialResultTable
-                title="Issue resolution pointers"
-                rows={decisionPackIssueResolutionRows}
-                compact={compact}
-              />
-              <OfficialResultTable
-                title="Private review needed"
-                rows={decisionPackPrivateReviewDisplayRows}
-                compact={compact}
-              />
+              {decisionPackDetailTables.map((table) => (
+                <OfficialResultTable
+                  key={table.title}
+                  title={table.title}
+                  rows={table.rows}
+                  compact={compact}
+                />
+              ))}
             </div>
 
             {decisionPackProfileGaps.length || decisionPackProfileChecks.length ? (
@@ -2472,7 +2510,7 @@ export default function TrustSlipVerifyPublicPaper({
                 lineHeight: 1.35,
               }}
             >
-              {decisionPackProfile.evidenceExtract.sourceNote} {decisionPackProfile.evidenceExtract.declarationBoundaryNote} {decisionPackProfile.evidenceExtract.recordPointerBoundaryNote} {decisionPackProfile.evidenceExtract.housingReferenceBoundaryNote} {decisionPackProfile.evidenceExtract.guaranteeOutcomeBoundaryNote} {decisionPackProfile.evidenceExtract.fulfillmentOutcomeBoundaryNote} {decisionPackProfile.evidenceExtract.completedWorkBoundaryNote} {decisionPackProfile.evidenceExtract.demandRequestOutcomeBoundaryNote} {decisionPackProfile.evidenceExtract.confirmationPointerBoundaryNote} {decisionPackProfile.evidenceExtract.issueResolutionBoundaryNote} {decisionPackProfile.evidenceExtract.boundaryNote}
+              {decisionEvidenceBoundarySummary}
             </div>
 
             <div
