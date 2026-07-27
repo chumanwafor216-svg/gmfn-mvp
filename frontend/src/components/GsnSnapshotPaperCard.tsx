@@ -276,11 +276,10 @@ export default function GsnSnapshotPaperCard({
         style={{
           position: "relative",
           display: "grid",
-          gridTemplateColumns:
-            compactPreview && compact
-              ? "auto minmax(0, 1fr)"
-              : "auto minmax(0, 1fr) auto",
-          gap: compact ? 10 : 12,
+          gridTemplateColumns: compact
+            ? "auto minmax(0, 1fr)"
+            : "auto minmax(0, 1fr) auto",
+          gap: compact ? 9 : 12,
           alignItems: "center",
         }}
       >
@@ -308,8 +307,9 @@ export default function GsnSnapshotPaperCard({
               fontSize: compact ? 20 : 24,
               fontWeight: 1000,
               lineHeight: 1.1,
-              overflowWrap: "break-word",
+              overflowWrap: compact ? "normal" : "break-word",
               wordBreak: "normal",
+              hyphens: "none",
             }}
           >
             {paper.title}
@@ -331,7 +331,7 @@ export default function GsnSnapshotPaperCard({
           ) : null}
         </div>
 
-        {compactPreview && compact ? null : (
+        {compact ? null : (
           <div
             aria-hidden="true"
             style={{

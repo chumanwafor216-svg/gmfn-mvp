@@ -1,3 +1,44 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Trust Passport mobile snapshot title fix
+
+Owner trigger:
+- Owner shared a phone screenshot showing the Trust Passport Snapshot title splitting into narrow word/letter fragments on /app/trust.
+
+Unabated truth:
+- The previous done answer was too optimistic for visual QA. Code was clean and deployed, but the phone screenshot exposed a real production-polish failure.
+- The failure was in the shared visual snapshot paper card when rendered compact inside the Trust Passport document preview: compact mode kept a trailing decorative seal column beside the brand mark and title, leaving the title column too narrow.
+- This is a frontend layout correction only. It does not change backend evidence aggregation, auth, routes, TrustSlip issuance, TrustEvent data, permissions, payments, or public/private evidence boundaries.
+- Devil's advocate: the fix prevents the title squeeze shown in the screenshot; it does not prove every Trust Passport section is now visually perfect on every physical device. The Playwright mobile smoke now cages this specific title failure.
+
+Changed:
+- frontend/src/components/GsnSnapshotPaperCard.tsx
+  - Compact snapshot paper headers now use two columns: GSN mark plus title text.
+  - The decorative trailing seal is hidden in compact mode so controlled title words stay readable.
+  - Compact snapshot titles now preserve whole words instead of allowing mid-word forced wrapping.
+- frontend/tools/audit-trust-admin-mobile-overflow.mjs
+  - Added guards requiring the compact two-column snapshot header and whole-word title wrapping.
+- frontend/tools/smoke-trust-passport-trustslip-boundary.mjs
+  - Added a mobile smoke check that opens Trust Passport Documents / TrustSlip preview details and fails if GSN Trust Passport Snapshot renders as a cramped multi-line title.
+  - Updated the TrustSlip holder compact boundary expectation from stale What this cannot decide to current Decision Boundary.
+
+Routes/screens affected:
+- /app/trust Trust Passport document preview / snapshot paper card on mobile.
+- Shared GsnSnapshotPaperCard compact rendering wherever compact snapshot papers are used.
+- /app/trust-slip smoke expectation only; no runtime TrustSlip page code changed.
+
+Verification:
+- Passed npm --prefix frontend run audit:trust-admin-mobile-overflow.
+- Passed npm --prefix frontend run audit:trust-passport-button-inventory.
+- Passed npm --prefix frontend run audit:trust-passport-front-package.
+- Passed npm --prefix frontend run audit:proof-surfaces.
+- Passed npm --prefix frontend run audit:protected-button-freeze.
+- Passed npm --prefix frontend run build.
+- Passed npm --prefix frontend run smoke:trust-passport-trustslip-boundary outside the sandbox after sandboxed Vite/esbuild spawn failed with EPERM.
+
+Deployment:
+- Not pushed or deployed in this slice yet. Current pipeline policy says routine continuation work should wait for owner approval before publishing the batch.
+
+Recommended next step:
+- Review/approve publishing this correction batch when ready; until then the fix is local, not live on Render.
 ## CURRENT LOCAL STATE - 2026-07-26 - TrustSlip evidence-reading labels
 
 Owner trigger:

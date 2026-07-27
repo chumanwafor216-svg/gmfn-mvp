@@ -565,6 +565,31 @@ async function runTrustPassportScenario(browser, baseURL) {
   await expect(state.page.getByText("What money discipline says about trust", { exact: true })).toHaveCount(0);
   await expect(state.page.getByText("This lane explains the trust-facing money signals", { exact: false })).toHaveCount(0);
 
+  await state.page.getByText("Documents / TrustSlip", { exact: true }).first().click();
+  await expect(state.page.getByText("7. Shareable trust tools", { exact: true })).toBeVisible();
+  await state.page.locator('[data-cta-id="trust-score.documents-lane.preview-details.toggle"]').click();
+  const snapshotTitleMetrics = await state.page
+    .locator(".gsn-snapshot-paper-card h3")
+    .filter({ hasText: "GSN Trust Passport Snapshot" })
+    .first()
+    .evaluate((title) => {
+      const rect = title.getBoundingClientRect();
+      const styles = window.getComputedStyle(title);
+      const lineHeight = Number.parseFloat(styles.lineHeight || "0") || 22;
+      return {
+        width: rect.width,
+        height: rect.height,
+        lineHeight,
+        estimatedLines: Math.round((rect.height / lineHeight) * 10) / 10,
+        text: title.textContent?.trim() || "",
+      };
+    });
+  if (snapshotTitleMetrics.estimatedLines > 3.2 || snapshotTitleMetrics.width < 140) {
+    throw new Error(
+      `Trust Passport snapshot title is cramped on mobile: ${JSON.stringify(snapshotTitleMetrics)}`
+    );
+  }
+
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trust-passport"]')).toHaveCount(1);
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]')).toHaveCount(0);
   await expect(state.page.getByText("This passport confirms", { exact: true })).toHaveCount(1);
@@ -643,7 +668,7 @@ async function runTrustSlipScenario(browser, baseURL) {
   const decisionBoundary = state.page.locator(
     '[data-gsn-trustslip-decision-boundary="compact"]'
   );
-  await expect(decisionBoundary).toContainText("What this cannot decide");
+  await expect(decisionBoundary).toContainText("Decision Boundary");
   await expect(decisionBoundary).toContainText("Public link");
   await expect(decisionBoundary).toContainText("Private preview");
   await expect(decisionBoundary).toContainText("Consent log");

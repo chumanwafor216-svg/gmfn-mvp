@@ -73,6 +73,17 @@ assertContains(
   /function containedTextStyle\(\): React\.CSSProperties[\s\S]*?overflowWrap: "anywhere"[\s\S]*?wordBreak: "break-word"/,
   "GSN snapshot paper must keep a shared contained text style for long record URLs, references, and notes."
 );
+assertContains(
+  "snapshot",
+  /gridTemplateColumns: compact[\s\S]*?\? "auto minmax\(0, 1fr\)"[\s\S]*?: "auto minmax\(0, 1fr\) auto"[\s\S]*?\{compact \? null : \(/,
+  "Compact GSN snapshot paper headers must use two columns and hide the trailing seal so titles do not split into one-letter stacks on phones."
+);
+
+assertContains(
+  "snapshot",
+  /<h3[\s\S]*?overflowWrap: compact \? "normal" : "break-word"[\s\S]*?wordBreak: "normal"[\s\S]*?hyphens: "none"[\s\S]*?>[\s\S]*?\{paper\.title\}/,
+  "Compact GSN snapshot paper titles must keep whole words intact instead of forced mid-word wrapping."
+);
 
 assertContains(
   "snapshot",
