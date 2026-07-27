@@ -1509,6 +1509,11 @@ assertContains(
   /Your answer records what you personally know; it is not parent community certification or a whole-community vote\./,
   "Community confirmation inbox responder lane must scope individual answers as personal knowledge, not certification."
 );
+assertContains(
+  "src/pages/CommunityConfirmationInboxPage.tsx",
+  /import \{ decisionPackConfirmationMechanics \} from "\.\.\/lib\/decisionPacks";[\s\S]*?const CONFIRMATION_REASON_LABELS[\s\S]*?function confirmationPurposeGuide[\s\S]*?data-gsn-confirmation-purpose-guide="responder"[\s\S]*?Who can answer[\s\S]*?What it counts as[\s\S]*?If unsure/,
+  "Community confirmation inbox responder guide must translate each Decision Pack into who should answer, what the answer counts as, and how concerns escalate."
+);
 
 assertNotContains(
   "src/pages/CommunityConfirmationInboxPage.tsx",

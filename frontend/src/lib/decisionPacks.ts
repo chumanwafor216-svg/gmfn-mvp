@@ -22,6 +22,10 @@ export type DecisionPackConfirmationMechanics = {
   escalation: string;
 };
 
+export type DecisionPackConfirmationInput = {
+  confirmationReasonType?: string | null;
+};
+
 export type DecisionPackDefinition = {
   key: DecisionPackKey;
   label: string;
@@ -345,7 +349,7 @@ export function compactDecisionPackConfirmation(pack: DecisionPackDefinition): s
 }
 
 export function decisionPackConfirmationMechanics(
-  pack: DecisionPackDefinition | DecisionPackPublicContext | null | undefined
+  pack: DecisionPackDefinition | DecisionPackPublicContext | DecisionPackConfirmationInput | null | undefined
 ): DecisionPackConfirmationMechanics {
   const reason = cleanDecisionPackText(pack?.confirmationReasonType).toLowerCase();
   if (reason === "employment_role_check") {

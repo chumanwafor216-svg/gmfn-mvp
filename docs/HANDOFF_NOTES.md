@@ -1,3 +1,37 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Community confirmation responder Decision Pack guide
+
+Owner trigger:
+- Owner selected `1`, meaning continue locally with no push/deploy.
+- Product direction: GSN should show how each social decision category is answered in practice, including who should respond, what the response counts as, and what happens when the evidence is thin or disputed.
+
+Unabated truth:
+- This slice strengthens the responder side of the existing confirmation flow. It does not add new backend witness forms, landlord-reference storage, tenancy-agent contacts, committee voting, or new evidence capture categories.
+- The inbox now tells a responder why they are being asked and how their answer will be used, but the answer still remains personal/community evidence for judgement, not parent-community certification, legal approval, payment approval, credit approval, or release authority.
+- Devil's advocate: this improves clarity, but GSN is only as strong as the member's actual community behaviour and the availability of people who genuinely know the person.
+
+Changed:
+- `frontend/src/lib/decisionPacks.ts`
+  - Added a light `DecisionPackConfirmationInput` type so shared confirmation mechanics can be reused when a screen only has `confirmationReasonType`.
+- `frontend/src/pages/CommunityConfirmationInboxPage.tsx`
+  - Imports `decisionPackConfirmationMechanics`.
+  - Replaces raw-ish reason labels with institutional labels such as Employment/work check, Housing conduct check, Trade/service check, and Support/guarantor check.
+  - Adds a responder guide card on each request: `Who can answer`, `What it counts as`, and `If unsure`.
+- `frontend/tools/audit-trust-actions.mjs`
+  - Adds a guard requiring the responder guide and shared Decision Pack mechanics to remain present.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run build`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `git diff --check`; only Git line-ending warnings were reported.
+- `npm --prefix frontend run audit:button-stability` still fails on `src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx` expecting the old/guarded private-evidence section order. That file has no uncommitted diff and is not part of this local slice; treat it as a separate audit drift to resolve in a follow-up correction.
+
+Deployment:
+- Local only. Do not push/deploy unless the owner selects `2` or explicitly says push/deploy.
+
+Next recommended step:
+- Commit this responder guide slice locally, then continue with the next small institutional confirmation page/screen correction on `1`, or push/deploy the accumulated local commits only when the owner selects `2`.
 ## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack confirmation mechanics
 
 Owner trigger:

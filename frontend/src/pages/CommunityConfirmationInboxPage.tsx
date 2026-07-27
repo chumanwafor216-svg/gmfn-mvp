@@ -31,6 +31,7 @@ import {
   institutionalStatTile,
 } from "../lib/institutionalSurface";
 import { buildGsnSnapshotPaper } from "../lib/gsnSnapshotPaper";
+import { decisionPackConfirmationMechanics } from "../lib/decisionPacks";
 import { navigateWithOrigin } from "../lib/nav";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 
@@ -557,9 +558,34 @@ function responseActionLabel(option: ResponseOption): string {
   return "Record objection";
 }
 
+const CONFIRMATION_REASON_LABELS: Record<string, string> = {
+  community_standing_check: "Community standing check",
+  referral_check: "Referral check",
+  guarantor_support_check: "Support/guarantor check",
+  employment_role_check: "Employment/work check",
+  housing_reference_check: "Housing conduct check",
+  trade_skill_check: "Trade/service check",
+  supplier_reliability_check: "Supplier reliability check",
+  volunteer_role_check: "Volunteer role check",
+  partnership_check: "Partnership check",
+  membership_admission_check: "Membership admission check",
+};
+
 function reasonLabel(value?: string | null): string {
-  const text = safeStr(value).replace(/_/g, " ");
+  const key = safeStr(value).toLowerCase();
+  if (CONFIRMATION_REASON_LABELS[key]) return CONFIRMATION_REASON_LABELS[key];
+  const text = key.replace(/_/g, " ");
   return text ? text[0].toUpperCase() + text.slice(1) : "Reason not stated";
+}
+
+function confirmationPurposeGuide(reasonType?: string | null) {
+  const mechanics = decisionPackConfirmationMechanics({ confirmationReasonType: reasonType });
+  return {
+    title: `${reasonLabel(reasonType)}: answer what you personally know`,
+    responders: mechanics.responders,
+    countsAs: mechanics.countsAs,
+    escalation: mechanics.escalation,
+  };
 }
 
 function subjectName(row: ConfirmationRow): string {
@@ -2577,6 +2603,7 @@ function CommunityConfirmationInboxPage() {
               row.subjectProfile?.membership_status,
               "Member"
             );
+            const purposeGuide = confirmationPurposeGuide(row.reasonType);
             const isFocusedRequest = focusedRequestId === row.id;
             return (
               <article
@@ -2664,6 +2691,39 @@ function CommunityConfirmationInboxPage() {
                       Community: {firstTruthy(row.communityName, row.communityId, "Not shown")}. {row.readerNote || "Answer only if you genuinely know this member."}
                       {" "}Your answer records what you personally know; it is not parent community certification or a whole-community vote.
                     </p>
+                    <div
+                      data-gsn-confirmation-purpose-guide="responder"
+                      style={{
+                        marginTop: 12,
+                        ...innerCard("#F8FBFF"),
+                        display: "grid",
+                        gap: 9,
+                      }}
+                    >
+                      <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 15 }}>
+                        {purposeGuide.title}
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                          gap: 8,
+                        }}
+                      >
+                        {([
+                          ["Who can answer", purposeGuide.responders],
+                          ["What it counts as", purposeGuide.countsAs],
+                          ["If unsure", purposeGuide.escalation],
+                        ] as Array<[string, string]>).map(([label, value]) => (
+                          <div key={label} style={{ minWidth: 0 }}>
+                            <div style={{ ...sectionLabel(), fontSize: 10 }}>{label}</div>
+                            <div style={{ marginTop: 3, ...helperText(), fontSize: 12, lineHeight: 1.35 }}>
+                              {value}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                     <div style={{ marginTop: 10, display: "grid", gap: 5, ...helperText() }}>
                       <span>Created: {safeDateTime(row.createdAt)}</span>
                       <span>Expires: {safeDateTime(row.expiresAt)}</span>
