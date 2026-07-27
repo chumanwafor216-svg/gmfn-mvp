@@ -1220,10 +1220,6 @@ export default function TrustSlipVerifyPublicPaper({
     recipientAccessRecord.purpose,
     "General Decision Pack"
   );
-  const decisionPackRecipient = firstTruthy(
-    recipientAccessRecord.recipientLabel,
-    "Recipient not named"
-  );
   const decisionNextStep = validNow
     ? "For important decisions, request instant community confirmation before relying on this paper."
     : "Request a new TrustSlip.";
@@ -1467,9 +1463,6 @@ export default function TrustSlipVerifyPublicPaper({
     : "Shown: community member role only.";
   const activityCountNumber = positiveNumber(communityActivityCountLabel);
   const activityCategoryReading = knownAsCategoryLabel || "general community activity";
-  const communityActivityMeaningTitle = activityCountNumber > 0
-    ? `${communityActivityCountLabel} recorded community activit${communityActivityCountLabel === "1" ? "y" : "ies"}`
-    : "Community activity not yet visible";
   const communityActivityMeaningLead = activityCountNumber > 0
     ? `${holderName} has repeated visible activity inside ${communityLabel || "the community"}${knownAsCategoryLabel ? ` across ${activityCategoryReading}` : ""}. This gives the reader a practical clue that the holder has been present, reachable, and active where people can know them.`
     : "This public TrustSlip does not yet show enough recorded activity for the reader to infer community participation.";
@@ -2094,7 +2087,7 @@ export default function TrustSlipVerifyPublicPaper({
         {compact ? (
           <TrustDocumentDisclosureSection
             title="Full evidence and record details"
-            summary="Open for recipient, access scope, live code checks, security signals, and the fuller evidence pack."
+            summary="Open for core reading, decision summary, live code checks, and the fuller evidence pack."
           >
             <div
               data-gsn-public-mobile-full-evidence="collapsed-summary"
@@ -2111,200 +2104,16 @@ export default function TrustSlipVerifyPublicPaper({
                 compact={compact}
               />
               <OfficialResultTable
-                title="Why received"
-                rows={[
-                  ["Recipient", recipientAccessRecord.recipientLabel],
-                  ["Decision Pack", decisionPackPurpose],
-                  ["Scope", recipientAccessRecord.scope],
-                  ["Access date", recipientAccessRecord.accessedAtLabel],
-                ]}
-                compact={compact}
-              />
-              <OfficialResultTable
                 title="Live record checks"
                 rows={recordTrustReasonTiles.map((item): [string, string] => [item.label, `${item.title}. ${item.text}`])}
                 compact={compact}
               />
-              <div
-                style={{
-                  color: "#5F4100",
-                  fontSize: 11,
-                  fontWeight: 850,
-                  lineHeight: 1.35,
-                }}
-              >
-                {recipientAccessRecord.note}
-              </div>
             </div>
           </TrustDocumentDisclosureSection>
         ) : null}
-        <div
-          data-debug-id="trust-slip-verify.public.recipient-access-record"
-          style={{
-            ...publicVerifyPanel("#FFFDF7", compact),
-            border: "1px solid rgba(214,170,69,0.28)",
-            display: compact ? "none" : "grid",
-            gridTemplateColumns: compact ? "40px minmax(0, 1fr)" : "54px minmax(0, 1fr)",
-            gap: compact ? 8 : 14,
-            alignItems: "start",
-            padding: compact ? 9 : 14,
-          }}
-        >
-          <span
-            aria-hidden
-            style={{
-              width: compact ? 40 : 48,
-              height: compact ? 40 : 48,
-              borderRadius: compact ? 10 : 14,
-              display: "grid",
-              placeItems: "center",
-              background: "#FFFFFF",
-              border: "1px solid rgba(214,170,69,0.28)",
-              boxShadow: "0 8px 18px rgba(7,23,44,0.08)",
-            }}
-          >
-            <GsnRealisticIcon name="qr-record" size={compact ? 28 : 42} decorative />
-          </span>
-          <div style={{ minWidth: 0, display: "grid", gap: compact ? 6 : 9 }}>
-            <div>
-              <div style={{ ...sectionLabel(), color: "#7A4A00" }}>
-                Why you received this
-              </div>
-              <div
-                style={{
-                  ...readableText(),
-                  marginTop: 3,
-                  color: "#07172C",
-                  fontSize: compact ? 14 : 17,
-                  fontWeight: 1000,
-                  lineHeight: 1.2,
-                }}
-              >
-                {recipientAccessRecord.status}
-              </div>
-            </div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                gap: compact ? 6 : 8,
-              }}
-            >
-              {[
-                ["Recipient", recipientAccessRecord.recipientLabel],
-                ["Decision Pack", decisionPackPurpose],
-                ["Scope", recipientAccessRecord.scope],
-                ["Access date", recipientAccessRecord.accessedAtLabel],
-              ].map(([label, value]) => (
-                <div
-                  key={label}
-                  style={
-                    compact
-                      ? {
-                          borderRadius: 11,
-                          padding: "7px 8px",
-                          background: "#FFFFFF",
-                          border: "1px solid rgba(37,78,119,0.12)",
-                          minWidth: 0,
-                        }
-                      : documentMetaCard("#FFFFFF")
-                  }
-                >
-                  <div style={{ ...sectionLabel(), fontSize: compact ? 9 : 10 }}>
-                    {label}
-                  </div>
-                  <div
-                    style={{
-                      ...readableText(),
-                      marginTop: 3,
-                      color: "#07172C",
-                      fontSize: compact ? 10 : 12,
-                      fontWeight: 950,
-                      lineHeight: compact ? 1.15 : 1.22,
-                    }}
-                  >
-                    {value}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div
-              style={{
-                color: "#5F4100",
-                fontSize: compact ? 10 : 11,
-                fontWeight: 850,
-                lineHeight: compact ? 1.25 : 1.35,
-              }}
-            >
-              {recipientAccessRecord.note}
-            </div>
-          </div>
-        </div>
-
-        <div
-          data-gsn-public-record-trust-reasons="decision-pack"
-          style={{
-            ...publicVerifyPanel("#FFFFFF", compact),
-            border: "1px solid rgba(37,78,119,0.14)",
-            display: compact ? "none" : "grid",
-            gap: compact ? 9 : 12,
-          }}
-        >
-          <div>
-            <div style={{ ...sectionLabel(), color: "#0B63D1" }}>
-              Why this record can be trusted
-            </div>
-            <h2
-              style={{
-                ...readableText(),
-                margin: "5px 0 0",
-                color: "#07172C",
-                fontSize: compact ? 18 : 22,
-                lineHeight: 1.12,
-                fontWeight: 1000,
-              }}
-            >
-              Check the live paper, then decide.
-            </h2>
-            <p
-              style={{
-                ...readableText(),
-                margin: "7px 0 0",
-                color: "#334155",
-                fontSize: compact ? 12 : 13.5,
-                lineHeight: 1.42,
-                fontWeight: 850,
-              }}
-            >
-              These signals show the record is current, traceable, and limited. They do not guarantee the holder or replace your own judgement.
-            </p>
-          </div>
-
-          <div
-            data-gsn-public-record-trust-reasons-grid="compact-two-by-two"
-            style={{
-              display: "grid",
-              gridTemplateColumns: compact ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
-              gap: compact ? 6 : 8,
-            }}
-          >
-            {recordTrustReasonTiles.map((item) => (
-              <PublicReadingTile
-                key={item.label}
-                icon={item.icon}
-                label={item.label}
-                title={item.title}
-                text={item.text}
-                compact={compact}
-                tone={item.tone as "trust" | "warning" | "neutral"}
-              />
-            ))}
-          </div>
-        </div>
-
         <TrustDocumentDisclosureSection
           title={decisionPackPurpose}
-          summary="Open for purpose-filtered evidence, gaps, checks, and reader guidance."
+          summary="Open for evidence sources, gaps, checks, and evidence boundaries."
           defaultOpen={!compact}
         >
         <div
@@ -2349,49 +2158,14 @@ export default function TrustSlipVerifyPublicPaper({
             rows={communityActivityMeaningRows}
             compact={compact}
           />
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: compact ? "1fr" : "repeat(4, minmax(0, 1fr))",
-              gap: 8,
-            }}
-          >
-            <PublicReadingTile
-              icon="qr-record"
-              label="Why received"
-              title={decisionPackPurpose}
-              text={`Opened by ${decisionPackRecipient}. Read this as decision support, not a private investigation report.`}
-              compact={compact}
-              tone="neutral"
-            />
-            <PublicReadingTile
-              icon="community-building"
-              label="Activity meaning"
-              title={communityActivityMeaningTitle}
-              text={communityActivityMeaningLead}
-              compact={compact}
-              tone={positiveNumber(communityActivityCountLabel) > 0 ? "trust" : "warning"}
-            />
-            <PublicReadingTile
-              icon="records-folder"
-              label="Decision use"
-              title="What it supports"
-              text={purposeSpecificActivityMeaning}
-              compact={compact}
-              tone="neutral"
-            />
-            <PublicReadingTile
-              icon="certificate-seal"
-              label="Next safe step"
-              title={validNow ? "Check live confirmation" : "Request new TrustSlip"}
-              text={decisionNextStep}
-              compact={compact}
-              tone={validNow ? "trust" : "warning"}
-            />
-          </div>
+          <OfficialResultTable
+            title="Decision evidence summary"
+            rows={decisionPackEvidenceSummaryRows}
+            compact={compact}
+          />
           <TrustDocumentDisclosureSection
             title="Decision evidence details"
-            summary="Open for purpose-filtered signals, categories, gaps, checks, and evidence boundaries."
+            summary="Open for evidence sources, categories, gaps, checks, and evidence boundaries."
           >
             <div
               data-gsn-decision-pack-profile="public-purpose-filter"
@@ -2406,7 +2180,7 @@ export default function TrustSlipVerifyPublicPaper({
           >
             <div>
               <div style={{ ...sectionLabel(), color: "#0B63D1" }}>
-                Purpose-filtered evidence
+                Evidence source map
               </div>
               <div
                 style={{
@@ -2418,7 +2192,7 @@ export default function TrustSlipVerifyPublicPaper({
                   lineHeight: 1.2,
                 }}
               >
-                {decisionPackProfile.recipientQuestion}
+                Where can GSN point for this decision?
               </div>
               <p
                 style={{
@@ -2525,17 +2299,6 @@ export default function TrustSlipVerifyPublicPaper({
               }}
             >
               {decisionEvidenceBoundarySummary}
-            </div>
-
-            <div
-              style={{
-                color: "#5F4100",
-                fontSize: compact ? 10.5 : 11.5,
-                fontWeight: 850,
-                lineHeight: 1.35,
-              }}
-            >
-              {decisionPackProfile.boundaryNote}
             </div>
           </div>
         </TrustDocumentDisclosureSection>

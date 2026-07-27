@@ -1,3 +1,43 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Public TrustSlip repetition removal
+
+Owner trigger:
+- Owner pointed out that after the improved Decision Pack reading, the public TrustSlip still exposed older repeated blocks such as `Why received`, general recipient Decision Pack metadata, and trust/reason sections that did not answer the evidence question.
+
+Unabated truth:
+- The owner's criticism was correct: the new Decision Pack reading carried the useful explanation, but older surrounding blocks still competed with it and made the paper feel repetitive.
+- This is a presentation and public-paper hierarchy cleanup, not a backend evidence expansion.
+- Devil's advocate: removing repeated metadata makes the paper clearer, but the paper still cannot prove private conduct, licence, payment ability, or future behaviour without Trust Passport/live confirmation.
+
+Changed:
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Removed the visible `Why received` table from the mobile Full Evidence drawer.
+  - Removed the desktop `Why you received this` recipient/access metadata card from the public paper flow.
+  - Removed the visible `Why this record can be trusted` section; live code/currentness/check-path checks remain inside Full Evidence and Audit Details.
+  - Removed the repeated `Why received`, `Activity meaning`, `Decision use`, and `Next safe step` tile grid from Decision Pack reading.
+  - Added `Decision evidence summary` directly under `Core evidence reading`.
+  - Renamed the deeper detail heading to `Evidence source map` and replaced old question-style copy with `Where can GSN point for this decision?`.
+  - Removed the duplicate `decisionPackProfile.boundaryNote` paragraph and kept the concise public boundary.
+- `frontend/tools/smoke-public-trustslip-verify-states.mjs`
+  - Updated smoke checks to require the simpler structure and assert old `Why received` / old question wording is not shown.
+- `frontend/tools/audit-public-trustslip-first-viewport.mjs`
+  - Updated first-viewport contracts to guard the simplified Decision Pack reading and mobile Full Evidence drawer.
+- `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+  - Updated boundary contracts so live record checks remain behind Full Evidence instead of as a repeated visible block.
+
+Verification:
+- Passed elevated `npm --prefix frontend run smoke:public-trustslip-verify-states`.
+- Passed `npm --prefix frontend run lint`.
+- Passed `npm --prefix frontend run audit:public-trustslip-first-viewport`.
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed `npm --prefix frontend run audit:gsn-visible-language`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed elevated `npm --prefix frontend run build`.
+
+Deployment:
+- Ready to commit/push/deploy as the follow-up TrustSlip repetition cleanup.
+
+Next recommended step:
+- After deploy, recheck the live phone TrustSlip route for absence of `Why received`, `Why this record can be trusted`, and the old backend question text.
 ## CURRENT LOCAL STATE - 2026-07-27 - Public TrustSlip phone first-viewport tightening
 
 Owner trigger:

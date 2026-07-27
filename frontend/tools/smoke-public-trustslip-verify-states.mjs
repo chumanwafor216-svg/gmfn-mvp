@@ -539,11 +539,10 @@ async function expectDecisionPackRecipientCard(page, { expectRedactedExtract = f
   await expect(mobileFullEvidence).toBeVisible({ timeout: 30000 });
   await expect(mobileFullEvidence).toContainText("Core evidence reading");
   await expect(mobileFullEvidence).toContainText("Decision evidence summary");
-  await expect(mobileFullEvidence).toContainText("Why received");
-  await expect(mobileFullEvidence).toContainText("TrustSlip recipient");
-  await expect(mobileFullEvidence).toContainText("Employment Decision Pack");
-  await expect(mobileFullEvidence).toContainText("Public Decision Pack");
   await expect(mobileFullEvidence).toContainText("Live record checks");
+  await expect(mobileFullEvidence).not.toContainText("Why received");
+  await expect(mobileFullEvidence).not.toContainText("TrustSlip recipient");
+  await expect(mobileFullEvidence).not.toContainText("Public Decision Pack");
 
   await page.locator('[data-cta-id="trust-document.section.employment-decision-pack"]').click();
   const decisionReading = page.locator('[data-debug-id="trust-slip-verify.public.decision-pack-reading"]');
@@ -551,12 +550,13 @@ async function expectDecisionPackRecipientCard(page, { expectRedactedExtract = f
   await expect(decisionReading).toContainText("What does the community activity mean?");
   await expect(decisionReading).toContainText("GSN reads the public-safe community activity first");
   await expect(decisionReading).toContainText("This is an inference from public-safe community activity");
-  await expect(decisionReading).toContainText("Activity meaning");
-  await expect(decisionReading).toContainText("Decision use");
-  await expect(decisionReading).toContainText("Next safe step");
-  await expect(decisionReading).toContainText("Check live confirmation");
-  await expect(decisionReading).toContainText("Purpose-filtered evidence");
+  await expect(decisionReading).toContainText("Decision evidence summary");
+  await expect(decisionReading).toContainText("Core public signal");
+  await expect(decisionReading).toContainText("Evidence source map");
+  await expect(decisionReading).toContainText("Where can GSN point for this decision?");
   await expect(decisionReading).toContainText("This public TrustSlip summarises public-safe evidence only");
+  await expect(decisionReading).not.toContainText("Why received");
+  await expect(decisionReading).not.toContainText("Can I make a better decision with this evidence?");
   if (expectRedactedExtract) {
     await expect(decisionReading).toContainText("Evidence categories");
     await expect(decisionReading).toContainText("Community participation evidence");

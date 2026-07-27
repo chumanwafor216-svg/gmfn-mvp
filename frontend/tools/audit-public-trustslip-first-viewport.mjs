@@ -75,8 +75,6 @@ assertOrder(
     { label: "decision evidence translation", pattern: /data-gsn-public-evidence-translation="decision-why"/ },
     { label: "desktop quick facts", pattern: /data-gsn-public-decision-first-facts="four-quick-facts"/ },
     { label: "compact decision boundary", pattern: /data-gsn-public-decision-boundary="compact"/ },
-    { label: "why received", pattern: /data-debug-id="trust-slip-verify\.public\.recipient-access-record"/ },
-    { label: "why trusted", pattern: /data-gsn-public-record-trust-reasons="decision-pack"/ },
     { label: "decision reading", pattern: /data-debug-id="trust-slip-verify\.public\.decision-pack-reading"/ },
     { label: "decision evidence details", pattern: /<TrustDocumentDisclosureSection[\s\S]*?title="Decision evidence details"/ },
     { label: "decision profile cage", pattern: /data-gsn-decision-pack-profile="public-purpose-filter"/ },
@@ -146,7 +144,7 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /title=\{decisionPackPurpose\}[\s\S]*?summary="Open for purpose-filtered evidence, gaps, checks, and reader guidance\."[\s\S]*?defaultOpen=\{!compact\}[\s\S]*?data-debug-id="trust-slip-verify\.public\.decision-pack-reading"/,
+  /title=\{decisionPackPurpose\}[\s\S]*?summary="Open for evidence sources, gaps, checks, and evidence boundaries\."[\s\S]*?defaultOpen=\{!compact\}[\s\S]*?data-debug-id="trust-slip-verify\.public\.decision-pack-reading"/,
   "Decision Pack detail must be a closed phone drawer and an open desktop section."
 );
 
@@ -161,23 +159,7 @@ assertContains(
   "Public TrustSlip phone viewport must render the answer, reason, decision-factor findings, desktop-only quick facts, compact boundary, and collapsed supporting details."
 );
 
-assertContains(
-  "publicPaper",
-  /data-debug-id="trust-slip-verify\.public\.recipient-access-record"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?gridTemplateColumns: compact \? "40px minmax\(0, 1fr\)" : "54px minmax\(0, 1fr\)"[\s\S]*?padding: compact \? 9 : 14[\s\S]*?Why you received this[\s\S]*?\{recipientAccessRecord\.status\}[\s\S]*?gridTemplateColumns: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?\["Recipient", recipientAccessRecord\.recipientLabel\][\s\S]*?\["Decision Pack", decisionPackPurpose\][\s\S]*?\["Scope", recipientAccessRecord\.scope\][\s\S]*?\["Access date", recipientAccessRecord\.accessedAtLabel\]/,
-  "Recipient access record must remain decision-scoped, fed by view-model labels, and hidden behind the mobile full-evidence disclosure on phones."
-);
 
-
-assertContains(
-  "publicPaper",
-  /Why you received this[\s\S]*?\{recipientAccessRecord\.status\}/,
-  "Recipient access record must render the human status supplied by the view model."
-);
-assertContains(
-  "publicPaper",
-  /const recordTrustReasonTiles = \[[\s\S]*?Public code[\s\S]*?Current window[\s\S]*?Check path[\s\S]*?Live confirmation[\s\S]*?\];[\s\S]*?data-gsn-public-record-trust-reasons="decision-pack"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?Why this record can be trusted[\s\S]*?current, traceable, and limited[\s\S]*?do not guarantee the holder or replace your own judgement[\s\S]*?data-gsn-public-record-trust-reasons-grid="compact-two-by-two"[\s\S]*?gridTemplateColumns: compact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(4, minmax\(0, 1fr\)\)"/,
-  "Trustability reasons must stay grouped as code/currentness/check-path/live-confirmation signals without overclaiming, and collapse into the mobile full-evidence disclosure."
-);
 
 assertContains(
   "publicPaper",
@@ -187,14 +169,14 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /title="Full evidence and record details"[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"[\s\S]*?title="Core evidence reading"[\s\S]*?rows=\{communityActivityMeaningRows\}[\s\S]*?title="Decision evidence summary"[\s\S]*?rows=\{decisionPackEvidenceSummaryRows\}[\s\S]*?title="Why received"[\s\S]*?title="Live record checks"/,
-  "Mobile Full Evidence drawer must lead with the core activity meaning and decision evidence summary before recipient metadata and live code checks."
+  /title="Full evidence and record details"[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"[\s\S]*?title="Core evidence reading"[\s\S]*?rows=\{communityActivityMeaningRows\}[\s\S]*?title="Decision evidence summary"[\s\S]*?rows=\{decisionPackEvidenceSummaryRows\}[\s\S]*?title="Live record checks"/,
+  "Mobile Full Evidence drawer must lead with the core activity meaning and decision evidence summary before live code checks."
 );
 
 assertContains(
   "publicPaper",
-  /title=\{decisionPackPurpose\}[\s\S]*?defaultOpen=\{!compact\}[\s\S]*?Decision Pack reading[\s\S]*?What does the community activity mean\?[\s\S]*?GSN reads the public-safe community activity first[\s\S]*?title="Core evidence reading"[\s\S]*?rows=\{communityActivityMeaningRows\}[\s\S]*?label="Activity meaning"[\s\S]*?text=\{communityActivityMeaningLead\}[\s\S]*?label="Decision use"[\s\S]*?text=\{purposeSpecificActivityMeaning\}[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="Decision evidence details"[\s\S]*?summary="Open for purpose-filtered signals, categories, gaps, checks, and evidence boundaries\."[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"/,
-  "Decision Pack reading must show the actual community activity meaning before purpose-filtered details stay collapsed."
+  /title=\{decisionPackPurpose\}[\s\S]*?defaultOpen=\{!compact\}[\s\S]*?Decision Pack reading[\s\S]*?What does the community activity mean\?[\s\S]*?GSN reads the public-safe community activity first[\s\S]*?title="Core evidence reading"[\s\S]*?rows=\{communityActivityMeaningRows\}[\s\S]*?title="Decision evidence summary"[\s\S]*?rows=\{decisionPackEvidenceSummaryRows\}[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="Decision evidence details"[\s\S]*?summary="Open for evidence sources, categories, gaps, checks, and evidence boundaries\."[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?Evidence source map[\s\S]*?Where can GSN point for this decision\?/,
+  "Decision Pack reading must show the actual community activity meaning and decision evidence summary before source-map details stay collapsed."
 );
 
 if (findings.length) {
