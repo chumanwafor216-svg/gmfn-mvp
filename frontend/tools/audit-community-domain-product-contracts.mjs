@@ -1571,8 +1571,8 @@ assertContains(
 
 assertContains(
   "src/pages/DemandBoxPage.tsx",
-  /listMyCommunityDomains[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"demand_box"[\s\S]*demandBoxFeatureOff[\s\S]*demandBoxFeatureOffText[\s\S]*Demand Box[\s\S]*Existing Demand Box requests can still be\s+reviewed or closed[\s\S]*new requests are paused by this domain policy[\s\S]*disabled=\{creating \|\| demandBoxFeatureOff\}/,
-  "Demand Box page must read Community Domain feature policy, explain disabled Demand Box before posting, and disable new request creation while leaving existing requests visible.",
+  /listMyCommunityDomains[\s\S]*function handleCreateDemand[\s\S]*if \(demandBoxFeatureOff\)[\s\S]*showNotice\("error", demandBoxFeatureOffText\)[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"demand_box"[\s\S]*demandBoxFeatureOff[\s\S]*demandBoxFeatureOffText[\s\S]*Existing Demand Box requests can still be\s+reviewed or closed[\s\S]*new requests are paused by this domain policy[\s\S]*disabled=\{creating\}/,
+  "Demand Box page must read Community Domain feature policy, explain paused Demand Box posting, block new request creation in the handler, and leave existing requests visible.",
   { frontend: true }
 );
 

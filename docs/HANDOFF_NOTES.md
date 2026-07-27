@@ -156165,3 +156165,40 @@ Deployment:
 
 Next recommended step:
 - Phone-review the deployed public `/t/:code` Decision Pack after push/deploy. The first viewport should read like an institutional decision paper: decision first, three calm findings, boundary, then closed drawers for full evidence, Employment Decision Pack, Audit Details, and Verification paper details.
+## CURRENT LOCAL STATE - 2026-07-27 - Trust Passport and Demand Box audit reconciliation
+
+Owner trigger:
+- Owner selected `1`, meaning continue locally with no push/deploy.
+- Additional lane/app-wide audits exposed one Trust Passport lane-map label drift and one Demand Box audit-contract conflict.
+
+Unabated truth:
+- This is not a new feature slice. It is audit and behaviour reconciliation after the larger local correction batch.
+- The Trust Passport finance lane had drifted from the guarded `Trust-limit signal` wording to `Support limit signal`, which broke the approved Finance Discipline lane map.
+- Demand Box had two competing guards: one required policy-off posting to be disabled at the button level, while the front-package guard correctly requires the post action to stay tappable for in-place missing-title feedback. The reconciled behaviour is: only active posting disables the button; domain-off posting is blocked in `handleCreateDemand()` with a visible policy notice, and existing requests remain visible.
+- Devil's advocate: this improves audit consistency, but it does not complete human screenshot review of every phone surface.
+
+Changed:
+- `frontend/src/pages/TrustScorePage.tsx`
+  - Restored the Finance Discipline institutional row label to `Trust-limit signal`.
+- `frontend/src/pages/DemandBoxPage.tsx`
+  - Restored the post button to `disabled={creating}` only, while keeping the existing domain-off handler block and visible policy notice.
+- `frontend/tools/audit-community-domain-product-contracts.mjs`
+  - Updated the Demand Box product-contract guard to require policy reading, visible pause explanation, handler-level block, and existing-request visibility instead of a quiet disabled post button.
+- `frontend/tools/audit-marketplace-button-lines.mjs`
+  - Updated the reviewed Marketplace stable-action inventory count to 88; Marketplace source itself was unchanged in this pass.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-passport-lane-map`.
+- Passed `npm --prefix frontend run audit:demand-box-front-package`.
+- Passed `npm --prefix frontend run audit:community-domain-product-contracts`.
+- Passed `npm --prefix frontend run audit:marketplace-button-lines`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check`; only Git line-ending warnings were reported.
+- Also passed app-wide/dashboard/community/marketplace/trust/startup/join/share/notification/finance/static-asset audits during this `1` pass. `audit:startup-timing` required an elevated rerun because the sandbox blocked Vite/esbuild spawn with EPERM, then passed.
+
+Deployment:
+- Local only. Do not push/deploy unless the owner selects `2` or explicitly says push/deploy.
+
+Next recommended step:
+- Commit this reconciliation locally, then either continue local phone/institutional audits on `1` or push/deploy the accumulated local commits only when the owner selects `2`.

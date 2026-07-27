@@ -3102,7 +3102,7 @@ export default function TrustScorePage() {
     "No recent evidence movement is shown yet. When new events occur, the reason will appear here in plain language.";
 
   const institutionalRows = [
-    ["Support limit signal", `${trustLimit} ${trustCurrency}`],
+    ["Trust-limit signal", `${trustLimit} ${trustCurrency}`],
     ["Event count", eventCount],
     ["Counterparties", counterpartiesCount],
     [

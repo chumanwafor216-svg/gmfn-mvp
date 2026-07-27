@@ -1811,7 +1811,7 @@ export default function DemandBoxPage() {
             <div style={demandActionRowStyle(isCompact, 54, 180, 14)}>
               <PrimaryButton
                 onClick={() => handleCreateDemand()}
-                disabled={creating || demandBoxFeatureOff}
+                disabled={creating}
                 busy={creating}
                 busyLabel="Posting..."
                 fullWidth
