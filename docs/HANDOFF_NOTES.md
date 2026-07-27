@@ -155722,3 +155722,39 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this Community Home Trust Passport evidence-copy slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
+
+## CURRENT LOCAL STATE - 2026-07-27 - Trust Passport snapshot title finishing polish
+
+Owner trigger:
+- Owner said to finish the correction batch after the Decision Pack and housing-contact deploy, with the visible phone screenshot still showing Trust Passport snapshot title words breaking into fragments.
+
+Unabated truth:
+- This is a visual/document-polish fix, not a new evidence category, scoring rule, backend route, or Decision Pack policy change.
+- The real bug was not the evidence engine. The shared GSN snapshot paper could still render long human titles inside a narrow mobile paper header in a way that allowed ugly mid-word breaks.
+- Devil's advocate: automated smoke can prove the title is no longer using fragment-prone rendering, but final phone review is still needed to judge whether the whole screenshot feels premium enough.
+
+Changed:
+- `frontend/src/components/GsnSnapshotPaperCard.tsx`
+  - Renders snapshot-paper titles as whole-word inline spans with `data-gsn-snapshot-title-word="true"`.
+  - Tightens the compact paper header icon size, watermark field padding, title size, and purpose spacing.
+  - Keeps long generated times, record codes, links, security marks, privacy notes, and limitation notes on the existing contained wrapping style so IDs can still fit without layout overflow.
+- `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+  - Adds a source guard requiring whole-word snapshot title rendering.
+- `frontend/tools/audit-trust-admin-mobile-overflow.mjs`
+  - Updates the existing mobile overflow guard to match the stronger whole-word title contract.
+- `frontend/tools/smoke-trust-passport-trustslip-boundary.mjs`
+  - Adds a rendered mobile assertion that the Trust Passport snapshot title exposes `GSN`, `Trust`, `Passport`, and `Snapshot` as whole title-word spans.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-passport-front-package`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:trust-admin-mobile-overflow`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- `npm --prefix frontend run smoke:trust-passport-trustslip-boundary` failed in sandbox with known Vite/esbuild `spawn EPERM`, then passed after elevated rerun.
+
+Deployment:
+- Local committed work should remain local until the owner explicitly says `push deploy` again.
+
+Next recommended step:
+- Owner phone-review `/app/trust`, open `Documents / TrustSlip`, open `Document preview details`, and confirm the Trust Passport snapshot title no longer breaks into letter fragments.

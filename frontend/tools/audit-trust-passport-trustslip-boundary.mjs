@@ -12,6 +12,7 @@ const files = {
   smoke: "tools/smoke-trust-passport-trustslip-boundary.mjs",
   reader: "src/components/TrustSlipReaderBlock.tsx",
   communityProofPanel: "src/components/CommunityProofPanel.tsx",
+  snapshotPaper: "src/components/GsnSnapshotPaperCard.tsx",
   communityProof: "src/lib/communityProof.ts",
   decisionPacks: "src/lib/decisionPacks.ts",
   viewModel: "src/lib/trustPassportViewModel.ts",
@@ -553,6 +554,17 @@ assertContains(
   "TrustSlip reader block must keep non-approval guidance and escalation to Passport/community confirmation."
 );
 
+assertContains(
+  "snapshotPaper",
+  /function unbrokenTitleWords\(text: string\)[\s\S]*?data-gsn-snapshot-title-word="true"[\s\S]*?whiteSpace: "nowrap"/,
+  "Shared GSN snapshot paper titles must render as whole-word spans so mobile screenshots do not split title words into fragments."
+);
+
+assertContains(
+  "snapshotPaper",
+  /<h3[\s\S]*?overflowWrap: "normal"[\s\S]*?wordBreak: "keep-all"[\s\S]*?\{unbrokenTitleWords\(paper\.title\)\}/,
+  "Shared GSN snapshot paper title style must protect human words while record codes can still wrap elsewhere."
+);
 assertOrder(
   "trustPassport",
   [

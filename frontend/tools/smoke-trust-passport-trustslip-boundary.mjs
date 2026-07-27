@@ -582,12 +582,22 @@ async function runTrustPassportScenario(browser, baseURL) {
         lineHeight,
         estimatedLines: Math.round((rect.height / lineHeight) * 10) / 10,
         text: title.textContent?.trim() || "",
+        titleWords: Array.from(
+          title.querySelectorAll('[data-gsn-snapshot-title-word="true"]')
+        ).map((node) => node.textContent?.trim() || ""),
       };
     });
   if (snapshotTitleMetrics.estimatedLines > 3.2 || snapshotTitleMetrics.width < 140) {
     throw new Error(
       `Trust Passport snapshot title is cramped on mobile: ${JSON.stringify(snapshotTitleMetrics)}`
     );
+  }
+  for (const word of ["GSN", "Trust", "Passport", "Snapshot"]) {
+    if (!snapshotTitleMetrics.titleWords.includes(word)) {
+      throw new Error(
+        `Trust Passport snapshot title lost whole-word rendering for ${word}: ${JSON.stringify(snapshotTitleMetrics)}`
+      );
+    }
   }
 
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trust-passport"]')).toHaveCount(1);

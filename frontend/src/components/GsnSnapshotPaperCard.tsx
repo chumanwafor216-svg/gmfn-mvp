@@ -198,6 +198,22 @@ function containedTextStyle(): React.CSSProperties {
   };
 }
 
+function unbrokenTitleWords(text: string) {
+  return text.split(/(\s+)/).map((part, index) =>
+    /\s+/.test(part) ? (
+      part
+    ) : (
+      <span
+        key={`${part}-${index}`}
+        data-gsn-snapshot-title-word="true"
+        style={{ display: "inline-block", whiteSpace: "nowrap" }}
+      >
+        {part}
+      </span>
+    )
+  );
+}
+
 function isGeneratedPlaceholder(value: string): boolean {
   const normalized = value.trim().toLowerCase();
   return normalized === "current when viewed" || normalized === "current when copied";
@@ -266,7 +282,7 @@ export default function GsnSnapshotPaperCard({
           opacity={0.044}
           color="#0B63D1"
           style={{
-            padding: compact ? "92px 16px 74px" : "116px 24px 90px",
+            padding: compact ? "74px 14px 64px" : "116px 24px 90px",
             gap: compact ? 26 : 34,
           }}
         />
@@ -279,15 +295,15 @@ export default function GsnSnapshotPaperCard({
           gridTemplateColumns: compact
             ? "auto minmax(0, 1fr)"
             : "auto minmax(0, 1fr) auto",
-          gap: compact ? 9 : 12,
+          gap: compact ? 8 : 12,
           alignItems: "center",
         }}
       >
         <div
           style={{
-            width: compact ? 54 : 62,
-            height: compact ? 54 : 62,
-            borderRadius: 18,
+            width: compact ? 42 : 62,
+            height: compact ? 42 : 62,
+            borderRadius: compact ? 14 : 18,
             display: "grid",
             placeItems: "center",
             background: "#FFFFFF",
@@ -295,7 +311,7 @@ export default function GsnSnapshotPaperCard({
             boxShadow: "0 12px 26px rgba(8,17,31,0.10)",
           }}
         >
-          <GSNBrandMark width={compact ? 28 : 34} height={compact ? 34 : 40} />
+          <GSNBrandMark width={compact ? 22 : 34} height={compact ? 27 : 40} />
         </div>
 
         <div style={{ minWidth: 0 }}>
@@ -304,25 +320,25 @@ export default function GsnSnapshotPaperCard({
             style={{
               margin: "4px 0 0",
               color: "#07172C",
-              fontSize: compact ? 20 : 24,
+              fontSize: compact ? 18 : 24,
               fontWeight: 1000,
               lineHeight: 1.1,
-              overflowWrap: compact ? "normal" : "break-word",
-              wordBreak: "normal",
+              overflowWrap: "normal",
+              wordBreak: "keep-all",
               hyphens: "none",
             }}
           >
-            {paper.title}
+            {unbrokenTitleWords(paper.title)}
           </h3>
           {paper.purpose && !compactPreview ? (
             <p
               style={{
-                margin: "7px 0 0",
+                margin: compact ? "5px 0 0" : "7px 0 0",
                 color: "#4A5F78",
-                fontSize: compact ? 13 : 14,
-                lineHeight: 1.45,
+                fontSize: compact ? 12.5 : 14,
+                lineHeight: compact ? 1.32 : 1.45,
                 fontWeight: 750,
-                overflowWrap: "break-word",
+                overflowWrap: "normal",
                 wordBreak: "normal",
               }}
             >
@@ -480,7 +496,7 @@ export default function GsnSnapshotPaperCard({
                 gap: 9,
                 alignItems: "flex-start",
                 color: "#21364E",
-                fontSize: compact ? 13 : 14,
+                fontSize: compact ? 12.5 : 14,
                 fontWeight: 780,
                 lineHeight: 1.45,
               }}

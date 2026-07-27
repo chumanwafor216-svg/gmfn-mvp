@@ -81,7 +81,13 @@ assertContains(
 
 assertContains(
   "snapshot",
-  /<h3[\s\S]*?overflowWrap: compact \? "normal" : "break-word"[\s\S]*?wordBreak: "normal"[\s\S]*?hyphens: "none"[\s\S]*?>[\s\S]*?\{paper\.title\}/,
+  /function unbrokenTitleWords\(text: string\)[\s\S]*?data-gsn-snapshot-title-word="true"[\s\S]*?whiteSpace: "nowrap"/,
+  "Compact GSN snapshot paper titles must render title words as unbroken spans."
+);
+
+assertContains(
+  "snapshot",
+  /<h3[\s\S]*?overflowWrap: "normal"[\s\S]*?wordBreak: "keep-all"[\s\S]*?hyphens: "none"[\s\S]*?>[\s\S]*?\{unbrokenTitleWords\(paper\.title\)\}/,
   "Compact GSN snapshot paper titles must keep whole words intact instead of forced mid-word wrapping."
 );
 
