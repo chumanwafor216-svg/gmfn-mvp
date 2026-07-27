@@ -1795,7 +1795,7 @@ export default function CommunityHomePage() {
   const currentUserId = useMemo(() => getCurrentUserId(me), [me]);
   const currentGmfnKey = useMemo(() => getCurrentGmfnKey(me), [me]);
   const communityNextActionIntro =
-    "Tick what you want to do here, or write it in simple words. GSN will check the first required step and lead you from there.";
+    "Choose the verification or work evidence you need. GSN checks the first required step, then opens the right community, trust, finance, support, or notice path.";
   const spotlightGuidanceSuspendedView = guidedActionFamilyFocus === "spotlight";
 
   useEffect(() => {
@@ -3208,6 +3208,7 @@ export default function CommunityHomePage() {
           />
 
           <NextActionGuide
+            title="Verification tools"
             storageKey="gmfn.communityHome.nextActionGuide.v1"
             compact={isCompact}
             items={communityNextActionItems}
@@ -3997,7 +3998,7 @@ export default function CommunityHomePage() {
                   lineHeight: 1.12,
                 }}
               >
-                What do you want to do next?
+                Verification tools
               </div>
             </div>
 
@@ -4023,19 +4024,19 @@ export default function CommunityHomePage() {
                   id: "marketplace-tools",
                   lane: "marketplaceTools",
                   icon: "shop",
-                  title: "Marketplace & Tools",
+                  title: "Work tools",
                 },
                 {
                   id: "subscriptions",
                   lane: "subscriptions",
                   icon: "financeInstitution",
-                  title: "Subscriptions",
+                  title: "Dues & access",
                 },
                 {
                   id: "trust-finance",
                   lane: "trustFinance",
                   icon: "shield",
-                  title: "Trust & Finance",
+                  title: "Trust evidence",
                 },
               ].map((item) => (
                 <StableButton
@@ -4096,7 +4097,7 @@ export default function CommunityHomePage() {
               alignItems: "start",
             }}
           >
-            <div style={sectionLabel()}>What do you want to do next?</div>
+            <div style={sectionLabel()}>Verification tools</div>
             <div
               style={{
                 display: "flex",
@@ -4665,7 +4666,7 @@ export default function CommunityHomePage() {
 
             {!collapsed.trustFinance ? (
               <div>
-                <div style={sectionLabel()}>Trust & Finance</div>
+                <div style={sectionLabel()}>Trust evidence</div>
                 <div
                   style={{
                     marginTop: 10,
@@ -4680,16 +4681,16 @@ export default function CommunityHomePage() {
                     {
                       icon: "financeInstitution",
                       id: "finance",
-                      title: `Finance summary: ${moneyPositionLabel}`,
-                      detail: `${moneyPositionDetail}. Review the wider money record across your communities.`,
+                      title: `Ability to transact: ${moneyPositionLabel}`,
+                      detail: `${moneyPositionDetail}. Use the visible money record as evidence of dues, promises, and payment behaviour.`,
                       onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                         openCommunityNextAction(event, "finance"),
                     },
                     {
                       icon: "repaymentSchedule",
                       id: "support",
-                      title: "Loan Support",
-                      detail: "Open borrowing, support, and guarantor work for the selected community.",
+                      title: "Support and guarantor",
+                      detail: "Open support, borrowing, and guarantor evidence for the selected community.",
                       onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                         openCommunityNextAction(event, "support"),
                     },
@@ -4697,15 +4698,15 @@ export default function CommunityHomePage() {
                       icon: "shield",
                       id: "trust",
                       title: "Trust Passport",
-                      detail: "Review evidence strength across your GSN record.",
+                      detail: "Review evidence strength across your GSN record, including community evidence, consistency, and response behaviour.",
                       onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                         openCommunityNextAction(event, "trust"),
                     },
                     {
                       icon: "evidence",
                       id: "notifications",
-                      title: "Notices",
-                      detail: "Open the action queue and see what needs attention.",
+                      title: "Response record",
+                      detail: "Open notices and pending actions that show whether requests are answered or left waiting.",
                       onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                         openCommunityNextAction(event, "notifications"),
                     },

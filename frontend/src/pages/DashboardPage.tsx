@@ -781,7 +781,7 @@ function dashboardActionSignal(label: string): DashboardSignalName {
 
 function dashboardSectionSignal(label: string): DashboardSignalName {
   switch (label) {
-    case "What do you want to do next?":
+    case "Tools and verification":
       return "compass";
     case "Your Identity Passport":
       return "trust";
@@ -8980,17 +8980,17 @@ export default function DashboardPage() {
             )}
           >
             <DashboardSignalIcon
-              name={dashboardSectionSignal("What do you want to do next?")}
+              name={dashboardSectionSignal("Tools and verification")}
               size={isPhone ? 19 : 21}
               strokeWidth={2.3}
             />
           </span>
           <span style={{ minWidth: 0 }}>
             <span style={dashboardAccordionTitleStyle}>
-              What do you want to do next?
+              Tools and verification
             </span>
             <span style={dashboardAccordionSummaryStyle}>
-              Marketplace, demand, spotlight, trust, and more.
+              Choose a tool, then open the work, trust, or evidence lane.
             </span>
           </span>
           <span

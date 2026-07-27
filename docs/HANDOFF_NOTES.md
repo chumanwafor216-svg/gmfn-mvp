@@ -156202,3 +156202,13 @@ Deployment:
 
 Next recommended step:
 - Commit this reconciliation locally, then either continue local phone/institutional audits on `1` or push/deploy the accumulated local commits only when the owner selects `2`.
+
+
+## 2026-07-27 - Tools And Verification Launcher Copy
+
+- Scope: frontend copy/UX labels only for Dashboard and Community Home.
+- Updated Dashboard app launcher title from "What do you want to do next?" to "Tools and verification" while preserving the existing four launcher actions and Dashboard action inventory.
+- Updated Community Home visible launcher language to "Verification tools" and renamed the four grouped lanes to Marketplaces, Work tools, Dues & access, and Trust evidence without changing lane ids or row counts.
+- Strengthened the Community Home Trust evidence lane so finance reads as ability to transact, support reads as support/guarantor evidence, Trust Passport remains an evidence-record review, and notices read as response record evidence.
+- No landlord-reference data model was added. Current behaviour remains inference from GSN activity/evidence records; direct landlord/agent contact remains a later optional contact-field feature.
+- Verification run: npm --prefix frontend run audit:community-home-button-inventory, audit:community-home-phone-buttons, audit:dashboard-button-inventory, audit:dashboard-phone-buttons, audit:protected-button-freeze, audit:button-stability, audit:gsn-visible-language, and npm --prefix frontend run build all passed.
