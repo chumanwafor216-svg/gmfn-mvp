@@ -771,21 +771,37 @@ async function runTrustSlipScenario(browser, baseURL) {
     })
   ).toBeVisible();
   await expect(
-    state.page.getByText("Not a bank guarantee", {
+    state.page.getByText("Bank approval, credit approval, payment movement, or escrow", {
       exact: true,
     })
   ).toBeVisible();
   await expect(
-    state.page.getByText("No auto-debit", {
-      exact: false,
-    })
-  ).toBeVisible();
+    state.page.locator('[data-gsn-trustslip-holder-decision-boundary="compact"]')
+  ).toContainText("Credit approval");
+  await expect(
+    state.page.locator('[data-gsn-trustslip-holder-decision-boundary="compact"]')
+  ).toContainText("No");
 
   await expect(
-    state.page.getByText("Not a substitute for your own judgement", {
+    state.page.locator('[data-gsn-trustslip-holder-decision-boundary="compact"]')
+  ).toContainText("Final decision");
+  await expect(
+    state.page.locator('[data-gsn-trustslip-holder-decision-boundary="compact"]')
+  ).toContainText("Yours");
+  const collapsedPracticalEvidence = state.page.locator(
+    '[data-gsn-trustslip-holder-practical-evidence="collapsed"]'
+  );
+  await expect(collapsedPracticalEvidence).toHaveCount(1);
+  await expect(collapsedPracticalEvidence).toContainText("Practical evidence summary");
+  await expect(collapsedPracticalEvidence).toContainText(
+    "Open for wider evidence context after the main TrustSlip paper."
+  );
+  await expect(
+    state.page.getByText("This section separates the primary community anchor from wider evidence context, so the recipient does not mistake one community label for the whole judgement.", {
       exact: false,
     })
-  ).toBeVisible();
+  ).toHaveCount(0);
+  await state.page.locator('[data-cta-id="trust-slip.toggle-practical-evidence"]').click();
   await expect(
     state.page.getByText("This section separates the primary community anchor from wider evidence context, so the recipient does not mistake one community label for the whole judgement.", {
       exact: false,
@@ -941,7 +957,6 @@ async function main() {
         "Preparing",
         "Waiting for a public code",
         "No public TrustSlip code is available yet.",
-        "Public verification code is not ready yet",
         "Code not ready",
       ],
     });
@@ -995,8 +1010,9 @@ async function main() {
         "Evidence building",
         "Use with caution",
         "Evidence still building",
-        "Community signals",
-        "0 community activity events",
+        "Practical evidence summary",
+        "Open for wider evidence context after the main TrustSlip paper.",
+        "No community activity recorded yet",
         "Joined / witness not started",
       ],
     });

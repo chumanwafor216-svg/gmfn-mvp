@@ -72,6 +72,7 @@ type CollapseState = {
   useCases: boolean;
   summary: boolean;
   reader: boolean;
+  practicalEvidence: boolean;
   merchantVerify: boolean;
   merchantView: boolean;
   evidence: boolean;
@@ -526,7 +527,7 @@ type CommunityConfirmationOutcome = {
   } | null;
 };
 
-const TRUST_SLIP_UI_STORAGE_KEY = "gmfn.trustSlip.sections.v5";
+const TRUST_SLIP_UI_STORAGE_KEY = "gmfn.trustSlip.sections.v6";
 const GSN_EXEC_SUMMARY_URL = "/GSN_FINAL_WHITE.pdf";
 const TRUST_SLIP_MOBILE_SCROLL_CLEARANCE = 116;
 const FETCH_FIRST_JSON_TIMEOUT_MS = 30000;
@@ -1473,6 +1474,7 @@ function defaultCollapseState(): CollapseState {
     useCases: true,
     summary: true,
     reader: true,
+    practicalEvidence: true,
     merchantVerify: true,
     merchantView: true,
     evidence: true,
@@ -1490,6 +1492,7 @@ function normalizeCollapseState(raw: any): CollapseState {
     useCases: Boolean(raw?.useCases ?? base.useCases),
     summary: Boolean(raw?.summary ?? base.summary),
     reader: Boolean(raw?.reader ?? base.reader),
+    practicalEvidence: Boolean(raw?.practicalEvidence ?? base.practicalEvidence),
     merchantVerify: Boolean(raw?.merchantVerify ?? base.merchantVerify),
     merchantView: Boolean(raw?.merchantView ?? base.merchantView),
     evidence: Boolean(raw?.evidence ?? base.evidence),
@@ -6413,7 +6416,9 @@ export default function TrustSlipPage() {
             </div>
 
             <div
-              data-gsn-trustslip-holder-practical-evidence="true"
+              data-gsn-trustslip-holder-practical-evidence={
+                isCompact && collapsed.practicalEvidence ? "collapsed" : "open"
+              }
               style={{
                 ...trustSlipPaperPanel("#FFFFFF"),
                 order: 5,
@@ -6422,126 +6427,163 @@ export default function TrustSlipPage() {
             >
               <TrustPaperWatermark name="globe" color="#0B63D1" size={210} opacity={0.035} />
               <div style={trustSlipPanelContent()}>
-              <div style={trustSlipPaperTitle(isCompact)}>
-                Practical evidence summary
-              </div>
-              <p
-                style={{
-                  margin: "8px 0 0",
-                  color: "#526579",
-                  fontSize: isCompact ? 13 : 14,
-                  fontWeight: 850,
-                  lineHeight: 1.45,
-                }}
-              >
-                This section separates the primary community anchor from wider evidence context, so the recipient does not mistake one community label for the whole judgement.
-              </p>
-              <div
-                style={{
-                  marginTop: 12,
-                  display: "grid",
-                  gridTemplateColumns: isCompact
-                    ? "1fr"
-                    : "repeat(4, minmax(0, 1fr))",
-                  gap: 10,
-                }}
-              >
-                {trustSlipEvidenceSummaryCards.map((card) => (
-                  <div
-                    key={card.title}
-                    style={{
-                      ...documentMetaCard(
-                        card.tone === "red"
-                          ? "#FFF1F2"
-                          : card.tone === "green"
-                            ? "#F0FBF4"
-                            : "#F8FBFF"
-                      ),
-                      display: "grid",
-                      alignContent: "start",
-                      gap: 8,
-                      border:
-                        card.tone === "red"
-                          ? "1px solid rgba(153,27,27,0.14)"
-                          : card.tone === "green"
-                            ? "1px solid rgba(46,155,98,0.16)"
-                            : "1px solid rgba(11,99,209,0.14)",
-                    }}
-                  >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div style={trustSlipPaperTitle(isCompact)}>
+                      Practical evidence summary
+                    </div>
                     <div
                       style={{
-                        display: "grid",
-                        gridTemplateColumns: "30px minmax(0, 1fr)",
-                        gap: 8,
-                        alignItems: "center",
-                        color:
-                          card.tone === "red"
-                            ? "#991B1B"
-                            : card.tone === "green"
-                              ? "#166534"
-                              : "#0B3E78",
+                        marginTop: 5,
+                        color: "#526579",
+                        fontSize: isCompact ? 12 : 13,
+                        fontWeight: 850,
+                        lineHeight: 1.35,
                       }}
                     >
-                      {trustSlipIconBadge(
-                        card.icon,
-                        30,
-                        card.tone === "red" ? "red" : card.tone === "green" ? "green" : "blue"
-                      )}
-                      <div style={{ fontSize: 13, fontWeight: 1000, lineHeight: 1.15 }}>
-                        {card.title}
-                      </div>
+                      Open for wider evidence context after the main TrustSlip paper.
                     </div>
-                    <div style={{ display: "grid", gap: 7 }}>
-                      {card.rows.map(([icon, label, value]) => (
+                  </div>
+                  {isCompact ? (
+                    <SubtleButton
+                      onClick={() => toggleSection("practicalEvidence")}
+                      stableHeight={48}
+                      style={collapseToggle()}
+                      debugId="trust-slip.toggle-practical-evidence"
+                    >
+                      {collapsed.practicalEvidence ? "Open" : "Hide"}
+                    </SubtleButton>
+                  ) : null}
+                </div>
+
+                {!isCompact || !collapsed.practicalEvidence ? (
+                  <>
+                    <p
+                      style={{
+                        margin: "8px 0 0",
+                        color: "#526579",
+                        fontSize: isCompact ? 13 : 14,
+                        fontWeight: 850,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      This section separates the primary community anchor from wider evidence context, so the recipient does not mistake one community label for the whole judgement.
+                    </p>
+                    <div
+                      style={{
+                        marginTop: 12,
+                        display: "grid",
+                        gridTemplateColumns: isCompact
+                          ? "1fr"
+                          : "repeat(4, minmax(0, 1fr))",
+                        gap: 10,
+                      }}
+                    >
+                      {trustSlipEvidenceSummaryCards.map((card) => (
                         <div
-                          key={`${card.title}-${label}-${value}`}
+                          key={card.title}
                           style={{
+                            ...documentMetaCard(
+                              card.tone === "red"
+                                ? "#FFF1F2"
+                                : card.tone === "green"
+                                  ? "#F0FBF4"
+                                  : "#F8FBFF"
+                            ),
                             display: "grid",
-                            gridTemplateColumns: "24px minmax(0, 1fr)",
-                            gap: 7,
-                            alignItems: "start",
+                            alignContent: "start",
+                            gap: 8,
+                            border:
+                              card.tone === "red"
+                                ? "1px solid rgba(153,27,27,0.14)"
+                                : card.tone === "green"
+                                  ? "1px solid rgba(46,155,98,0.16)"
+                                  : "1px solid rgba(11,99,209,0.14)",
                           }}
                         >
-                          {trustSlipIconBadge(
-                            icon,
-                            24,
-                            card.tone === "red" ? "red" : card.tone === "green" ? "green" : "blue"
-                          )}
-                          <span style={{ minWidth: 0 }}>
-                            <span
-                              style={{
-                                display: "block",
-                                color: "#64748B",
-                                fontSize: 9.5,
-                                fontWeight: 1000,
-                                textTransform: "uppercase",
-                              }}
-                            >
-                              {label}
-                            </span>
-                            <span
-                              style={{
-                                display: "block",
-                                marginTop: 2,
-                                color: card.tone === "red" ? "#991B1B" : "#334155",
-                                fontSize: 12,
-                                fontWeight: 880,
-                                lineHeight: 1.28,
-                              }}
-                            >
-                              {value}
-                            </span>
-                          </span>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "30px minmax(0, 1fr)",
+                              gap: 8,
+                              alignItems: "center",
+                              color:
+                                card.tone === "red"
+                                  ? "#991B1B"
+                                  : card.tone === "green"
+                                    ? "#166534"
+                                    : "#0B3E78",
+                            }}
+                          >
+                            {trustSlipIconBadge(
+                              card.icon,
+                              30,
+                              card.tone === "red" ? "red" : card.tone === "green" ? "green" : "blue"
+                            )}
+                            <div style={{ fontSize: 13, fontWeight: 1000, lineHeight: 1.15 }}>
+                              {card.title}
+                            </div>
+                          </div>
+                          <div style={{ display: "grid", gap: 7 }}>
+                            {card.rows.map(([icon, label, value]) => (
+                              <div
+                                key={`${card.title}-${label}-${value}`}
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "24px minmax(0, 1fr)",
+                                  gap: 7,
+                                  alignItems: "start",
+                                }}
+                              >
+                                {trustSlipIconBadge(
+                                  icon,
+                                  24,
+                                  card.tone === "red" ? "red" : card.tone === "green" ? "green" : "blue"
+                                )}
+                                <span style={{ minWidth: 0 }}>
+                                  <span
+                                    style={{
+                                      display: "block",
+                                      color: "#64748B",
+                                      fontSize: 9.5,
+                                      fontWeight: 1000,
+                                      textTransform: "uppercase",
+                                    }}
+                                  >
+                                    {label}
+                                  </span>
+                                  <span
+                                    style={{
+                                      display: "block",
+                                      marginTop: 2,
+                                      color: card.tone === "red" ? "#991B1B" : "#334155",
+                                      fontSize: 12,
+                                      fontWeight: 880,
+                                      lineHeight: 1.28,
+                                    }}
+                                  >
+                                    {value}
+                                  </span>
+                                </span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       ))}
                     </div>
-                  </div>
-                ))}
-              </div>
+                  </>
+                ) : null}
               </div>
             </div>
           </section>
-
           <section
             style={{
               ...trustSlipPaperPanel("#FFFFFF"),

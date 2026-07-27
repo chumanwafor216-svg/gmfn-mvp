@@ -156231,3 +156231,13 @@ Next recommended step:
 - No new routes, backend claims, public exposure, or button/action roots were added.
 - Verification run locally: audit:trust-passport-lane-map, audit:trust-passport-front-package, audit:trust-passport-button-inventory, audit:trust-passport-trustslip-boundary, audit:trust-passport-evidence-story-lane, audit:trust-passport-repair-lane, audit:trust-passport-finance-discipline-lane, audit:trust-passport-community-confirmation-lane, audit:protected-button-freeze, audit:gsn-visible-language, git diff --check, and npm --prefix frontend run build passed.
 - Owner selected 1, so this was not pushed or deployed in this slice.
+
+## 2026-07-27 - TrustSlip Holder Practical Evidence Phone Drawer
+
+- Scope: local-only signed-in TrustSlip holder page phone-density correction.
+- Collapsed the `Practical evidence summary` card stack behind a phone-only drawer while keeping the section open on desktop.
+- Added `practicalEvidence` to the TrustSlip collapse state and bumped `gmfn.trustSlip.sections` from v5 to v6 so older persisted open states do not reopen the phone drawer.
+- Updated the Trust Passport / TrustSlip boundary audit and browser smoke so the holder page must keep practical evidence collapsed on phone and open only after the holder taps the drawer.
+- No backend evidence, Decision Pack mapping, public verify route, Trust Passport exposure, landlord/contact policy, scoring, or action inventory was changed.
+- Verification run locally: eslint for TrustSlipPage/audit/smoke files, audit:trust-passport-trustslip-boundary, audit:button-stability, audit:protected-button-freeze, smoke:trust-passport-trustslip-boundary after elevated rerun, git diff --check, and npm --prefix frontend run build passed. The first smoke attempt was blocked by sandbox spawn EPERM before the elevated rerun.
+- Owner selected 1, so this was not pushed or deployed in this slice.
