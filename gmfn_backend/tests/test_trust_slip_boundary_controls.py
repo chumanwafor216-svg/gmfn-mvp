@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from app.db.database import SessionLocal
-from app.db.models import Clan, ClanMembership, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare, User
+from app.db.models import Clan, ClanMembership, CommunityConfirmationDecision, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, CommunityConfirmationReviewCase, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare, User
 
 
 def _create_trust_slip(*, code: str, holder_user_id: int = 1) -> int:
@@ -498,6 +498,111 @@ def test_public_verify_decision_pack_surfaces_aggregate_community_witness_outcom
     assert "PRIVATE-SUMMARY" not in profile_text
     assert "responder_user_id" not in profile_text
     assert "requester_external_label" not in profile_text
+    assert "trust_score" not in profile_text
+
+
+def test_public_verify_decision_pack_surfaces_issue_resolution_pointers_without_private_dispute_detail(
+    client,
+    seed_clan_admin_membership,
+):
+    slip_id = _create_trust_slip(code="ACCESS-ISSUE-REVIEW")
+
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc)
+        db.add(
+            User(
+                id=2,
+                email="reviewer-private@example.com",
+                hashed_password="hashed",
+                role="user",
+                gmfn_id="GSN-U-REVIEWER",
+            )
+        )
+        db.flush()
+        request = CommunityConfirmationRequest(
+            public_token="PUBLIC-ISSUE-REVIEW",
+            requester_user_id=None,
+            requester_external_label="Private landlord dispute check",
+            subject_user_id=1,
+            community_id=1,
+            trust_slip_id=slip_id,
+            reason_type="housing_reference_check",
+            risk_level="medium",
+            mode="review",
+            status="closed",
+            visible_outcome="caution",
+            outcome_summary={"private_marker": "PRIVATE-SUMMARY"},
+            created_at=now,
+            expires_at=now + timedelta(hours=24),
+        )
+        db.add(request)
+        db.flush()
+        decision = CommunityConfirmationDecision(
+            request_id=int(request.id),
+            community_id=1,
+            subject_user_id=1,
+            actor_user_id=2,
+            decision="review_required",
+            issue_reported=True,
+            settled=False,
+            status="recorded",
+            decision_note="Private allegation detail",
+            confidence_snapshot={"private": "PRIVATE-SNAPSHOT"},
+            created_at=now,
+        )
+        db.add(decision)
+        db.flush()
+        db.add(
+            CommunityConfirmationReviewCase(
+                request_id=int(request.id),
+                decision_id=int(decision.id),
+                community_id=1,
+                subject_user_id=1,
+                opened_by_user_id=2,
+                status="open",
+                review_reason="payment_issue",
+                reviewer_note="Private reviewer note",
+                resolution=None,
+                resolution_note="Private resolution note",
+                trust_impact="review_required",
+                evidence_summary={"private": "PRIVATE-EVIDENCE"},
+                created_at=now,
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get(
+        "/trust-slips/verify/ACCESS-ISSUE-REVIEW",
+        params={"decision_pack": "housing_decision"},
+    )
+
+    assert response.status_code == 200, response.text
+    profile = response.json()["decision_pack_profile"]
+    extract = profile["evidence_extract"]
+    pointers = {row["key"]: row for row in extract["issue_resolution_pointers"]}
+    issue_review = pointers["issue_resolution_review"]
+    assert issue_review["status"] == "caution"
+    assert issue_review["evidence_count"] == 2
+    assert "2 decision-review or issue-resolution pointers found" in issue_review["value"]
+    assert "1 decision marked issue reported" in issue_review["value"]
+    assert "1 still need review" in issue_review["value"]
+    assert "do not expose allegations" in extract["issue_resolution_boundary_note"]
+    assert any(signal["key"] == "issue_resolution_pointer" for signal in profile["relevant_signals"])
+    profile_text = str(profile)
+    assert "Private landlord dispute check" not in profile_text
+    assert "reviewer-private@example.com" not in profile_text
+    assert "Private allegation detail" not in profile_text
+    assert "Private reviewer note" not in profile_text
+    assert "Private resolution note" not in profile_text
+    assert "PRIVATE-SUMMARY" not in profile_text
+    assert "PRIVATE-SNAPSHOT" not in profile_text
+    assert "PRIVATE-EVIDENCE" not in profile_text
+    assert "actor_user_id" not in profile_text
+    assert "decision_note" not in profile_text
+    assert "reviewer_note" not in profile_text
     assert "trust_score" not in profile_text
 
 

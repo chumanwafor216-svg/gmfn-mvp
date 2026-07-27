@@ -67,15 +67,21 @@ community this kind of question, and did aggregate witness responses arrive?"
 They do not expose responder identities, private notes, requester labels, licences,
 guarantees, approvals, or final decisions.
 
+Across Decision Packs, the engine now also exposes public-safe issue-resolution
+pointers from existing Community Confirmation decision/review records where they
+exist. These answer "does GSN have any review-status evidence showing issues were
+reported, settled, unresolved, or closed?" They do not expose allegations,
+private notes, legal findings, defamatory detail, or final suitability decisions.
+
 ## Architecture Gaps To Build Next
 
 - Structured profile declarations: skill, trade, occupation, service type, landlord/tenant references, supplier category, volunteer role, support role. Work/service packs now partially read existing Shop, Marketplace listing, and protected-trade seller records as declared claim pointers. Still missing: dedicated structured claim records, self-declared role categories, custom validation, and demand-response completion links.
 - Purpose-specific community confirmation: prompt routing is wired, and Decision Packs now read existing matching Community Confirmation request/outcome aggregates as witness outcome pointers. Still missing: custom per-person phrasing, richer structured witness answers by role/category, witness-to-record linkage for completed work or housing references, and category-specific confirmation summaries.
 - Completed work records: protected-trade release/receipt records can now appear as seller-side declared work pointers. Still missing: customer-confirmed completed-job records connected to Demand Box, quotes, Shop services, completion media, complaints, and resolution outcomes.
 - Payment-discipline summaries: loan/support lifecycle, repayment, guarantor-response, and pool/contribution record pointers are now partially wired into housing, guarantor/support, and partnership packs. Still missing: mature payment-discipline summaries, lateness/consistency interpretation, landlord-specific references, and public-safe issue-resolution context without acting like a credit score.
-- Issue-resolution summaries: show whether issues were resolved or remain unresolved without exposing private disputes or defamatory detail.
+- Issue-resolution summaries: Community Confirmation decision/review record pointers are now partially wired as aggregate issue-resolution status. Still missing: mature issue-resolution summaries by category, safe dispute timelines, resolution evidence packs, and review-to-Trust Passport weighting rules.
 - Guarantee exposure and outcome: show where people stood for a person and what happened, without turning GSN into a bank or guarantor.
-- Backend parity: backend Decision Pack definitions now carry the same evidence/source/gap/boundary matrix, controlled purpose-specific community confirmation prompts, public-safe declared work/service claim pointers for relevant packs, public-safe financial/support record pointers for relevant packs, and aggregate community witness outcome pointers. The remaining work is deeper data capture: dedicated structured claims, customer-confirmed completed jobs, landlord references, issue-resolution summaries, guarantee outcomes, supplier fulfilment outcomes, and richer witness-answer workflows.
+- Backend parity: backend Decision Pack definitions now carry the same evidence/source/gap/boundary matrix, controlled purpose-specific community confirmation prompts, public-safe declared work/service claim pointers for relevant packs, public-safe financial/support record pointers for relevant packs, aggregate community witness outcome pointers, and aggregate issue-resolution pointers. The remaining work is deeper data capture: dedicated structured claims, customer-confirmed completed jobs, landlord references, mature issue-resolution summaries, guarantee outcomes, supplier fulfilment outcomes, and richer witness-answer workflows.
 
 ## Product Boundary
 

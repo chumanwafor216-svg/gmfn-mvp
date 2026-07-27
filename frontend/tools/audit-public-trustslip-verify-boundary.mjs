@@ -171,6 +171,12 @@ assertContains(
   /type DecisionPackConfirmationPointer[\s\S]*?confirmationPointers: DecisionPackConfirmationPointer\[\][\s\S]*?source\.confirmation_pointers[\s\S]*?confirmationPointerBoundaryNote/,
   "Public TrustSlip Verify view model must preserve aggregate community witness outcome pointer rows and their boundary note."
 );
+
+assertContains(
+  "viewModel",
+  /type DecisionPackIssueResolutionPointer[\s\S]*?issueResolutionPointers: DecisionPackIssueResolutionPointer\[\][\s\S]*?source\.issue_resolution_pointers[\s\S]*?issueResolutionBoundaryNote/,
+  "Public TrustSlip Verify view model must preserve aggregate issue-resolution pointer rows and their boundary note."
+);
 assertContains(
   "verify",
   /requestCommunityPulse[\s\S]*?requestCommunityConfirmation[\s\S]*?reason_type:[\s\S]*?decisionPackProfile\.communityConfirmationPrompt\.reasonType \|\| "community_standing_check"/,
@@ -384,6 +390,12 @@ assertContains(
   /CommunityConfirmationOutcome[\s\S]*?CommunityConfirmationRequest[\s\S]*?CommunityConfirmationResponse[\s\S]*?_decision_pack_confirmation_pointers[\s\S]*?community_confirmation_gap[\s\S]*?community_witness_outcome[\s\S]*?confirmation_pointers[\s\S]*?confirmation_pointer_boundary_note/,
   "Backend Decision Pack evidence extract must surface aggregate community witness outcome pointers without exposing responder identities or private notes."
 );
+
+assertContains(
+  "backendDecisionPacks",
+  /CommunityConfirmationDecision[\s\S]*?CommunityConfirmationReviewCase[\s\S]*?_decision_pack_issue_resolution_pointers[\s\S]*?issue_resolution_gap[\s\S]*?issue_resolution_review[\s\S]*?issue_resolution_pointers[\s\S]*?issue_resolution_boundary_note/,
+  "Backend Decision Pack evidence extract must surface aggregate issue-resolution pointers without exposing allegations, private notes, or final suitability decisions."
+);
 assertContains(
   "backendDecisionPacks",
   /expected_evidence_[\s\S]*?Architecture gap[\s\S]*?does not score the person[\s\S]*?or prove \{boundary_list\}/,
@@ -421,6 +433,12 @@ assertContains(
   "backendDecisionPackTests",
   /test_public_verify_decision_pack_surfaces_aggregate_community_witness_outcomes_without_private_responder_details[\s\S]*?CommunityConfirmationRequest[\s\S]*?CommunityConfirmationResponse[\s\S]*?CommunityConfirmationOutcome[\s\S]*?community_witness_outcome[\s\S]*?confirmation_pointer_boundary_note[\s\S]*?Private witness note[\s\S]*?responder_user_id[\s\S]*?trust_score/,
   "Backend tests must prove Decision Packs surface aggregate community witness outcomes without exposing private responder/requester details or trust scores."
+);
+
+assertContains(
+  "backendDecisionPackTests",
+  /test_public_verify_decision_pack_surfaces_issue_resolution_pointers_without_private_dispute_detail[\s\S]*?CommunityConfirmationDecision[\s\S]*?CommunityConfirmationReviewCase[\s\S]*?issue_resolution_review[\s\S]*?issue_resolution_boundary_note[\s\S]*?Private allegation detail[\s\S]*?reviewer_note[\s\S]*?trust_score/,
+  "Backend tests must prove Decision Packs surface aggregate issue-resolution pointers without exposing private dispute details or trust scores."
 );
 
 assertContains(
@@ -490,6 +508,12 @@ assertContains(
   "publicPaper",
   /decisionPackConfirmationPointers[\s\S]*?Community witness outcomes[\s\S]*?decisionPackConfirmationPointerRows[\s\S]*?confirmationPointerBoundaryNote/,
   "Public TrustSlip paper must render aggregate community witness outcomes separately with the witness privacy boundary."
+);
+
+assertContains(
+  "publicPaper",
+  /decisionPackIssueResolutionPointers[\s\S]*?Issue resolution pointers[\s\S]*?decisionPackIssueResolutionRows[\s\S]*?issueResolutionBoundaryNote/,
+  "Public TrustSlip paper must render aggregate issue-resolution pointers separately with the dispute privacy boundary."
 );
 assertContains(
   "backendDecisionPacks",

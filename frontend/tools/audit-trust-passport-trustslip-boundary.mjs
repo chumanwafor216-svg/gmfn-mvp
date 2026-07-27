@@ -325,6 +325,12 @@ assertContains(
   /TrustSlipDecisionPackConfirmationPointer[\s\S]*?confirmationPointers[\s\S]*?extract\?\.confirmation_pointers[\s\S]*?privateDecisionPackConfirmationPointers[\s\S]*?data-gsn-holder-decision-pack-confirmation-pointers="true"[\s\S]*?Community witness outcomes[\s\S]*?confirmationPointerBoundaryNote/,
   "TrustSlip holder private Decision Pack preview must show aggregate community witness outcomes separately from TrustEvent categories."
 );
+
+assertContains(
+  "trustSlip",
+  /TrustSlipDecisionPackIssueResolutionPointer[\s\S]*?issueResolutionPointers[\s\S]*?extract\?\.issue_resolution_pointers[\s\S]*?privateDecisionPackIssueResolutionPointers[\s\S]*?data-gsn-holder-decision-pack-issue-resolution-pointers="true"[\s\S]*?Issue resolution pointers[\s\S]*?issueResolutionBoundaryNote/,
+  "TrustSlip holder private Decision Pack preview must show aggregate issue-resolution pointers separately from TrustEvent categories."
+);
 assertContains(
   "decisionMatrix",
   /Employment[\s\S]*?Demand Box[\s\S]*?Housing[\s\S]*?previous landlord[\s\S]*?Trade or Skilled Work[\s\S]*?Customer-confirmed completed-job record[\s\S]*?Backend parity/,

@@ -1,3 +1,58 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack issue-resolution pointers
+
+Owner trigger:
+- Owner continued the correction work after community witness outcome pointers. The next gap was to make Trust Passport / TrustSlip Decision Packs answer whether GSN has any safe issue-review status evidence, especially for housing, work, support, guarantorship, and other real society decisions.
+
+Unabated truth:
+- This slice wires existing Community Confirmation decision/review records into Decision Packs as aggregate issue-resolution pointers.
+- It does not expose allegations, private notes, legal findings, defamatory detail, responder/reviewer identity, or final suitability decisions.
+- Devil's advocate: this is still not a mature dispute-resolution system. It can show that visible review-status pointers exist, or that none are visible, but absence of a visible review is not proof that no issue ever happened.
+
+Changed:
+- gmfn_backend/app/services/trust_slip_decision_packs.py
+  - Added CommunityConfirmationDecision and CommunityConfirmationReviewCase extraction for Decision Pack issue-resolution pointers.
+  - Public and holder-private evidence extracts now include issue_resolution_pointers plus issue_resolution_boundary_note.
+  - Decision Pack profiles now add an Issue resolution pointer signal where review records exist or where a review-status gap should be shown.
+  - De-duplicated unresolved/open review counting by request id so one decision plus its review case does not overstate one matter as multiple unresolved matters.
+  - Public source wording now includes issue-resolution pointers and explicitly excludes private dispute details.
+- gmfn_backend/tests/test_trust_slip_boundary_controls.py
+  - Added coverage proving a housing Decision Pack surfaces aggregate issue-review status without leaking requester labels, reviewer emails, private allegation details, private reviewer/resolution notes, private summary/snapshot/evidence markers, actor_user_id, decision_note, reviewer_note, or trust_score.
+- frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts
+  - Normalizes issue_resolution_pointers and issue_resolution_boundary_note from backend Decision Pack profiles.
+- frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx
+  - Public TrustSlip Verify now renders Issue resolution pointers separately after Community witness outcomes and before Private review needed.
+- frontend/src/pages/TrustSlipPage.tsx
+  - Signed-in holder TrustSlip private Decision Pack preview now shows Issue resolution pointers separately before TrustEvent categories.
+- frontend/tools/audit-public-trustslip-verify-boundary.mjs
+- frontend/tools/audit-trust-passport-trustslip-boundary.mjs
+  - Added guards for backend extraction, frontend normalization, public rendering, holder rendering, and private-dispute boundary tests.
+- docs/GSN_DECISION_PACK_EVIDENCE_MATRIX.md
+  - Updated matrix notes to mark aggregate issue-resolution pointers as partially wired and keep mature issue-resolution summaries, safe dispute timelines, resolution evidence packs, and weighting rules as remaining architecture work.
+
+Routes/screens affected:
+- Backend /trust-slips/verify/{code} Decision Pack profile payload.
+- Backend /trust-slips/me/decision-pack-evidence holder-private evidence extract.
+- /trust-slips/verify and /app/trust-slips/verify public Decision Pack reading.
+- /app/trust-slip signed-in holder private Decision Pack preview.
+- No database schema, auth, payment, ledger, community confirmation write path, review workflow, responder/reviewer identity disclosure, private dispute disclosure, or final decision engine changed.
+
+Verification:
+- Passed python -m py_compile gmfn_backend\app\services\trust_slip_decision_packs.py gmfn_backend\tests\test_trust_slip_boundary_controls.py.
+- Passed python -m pytest gmfn_backend\tests\test_trust_slip_boundary_controls.py gmfn_backend\tests\test_community_confirmation_relay.py -q.
+- Passed npm --prefix frontend run audit:public-trustslip-verify-boundary.
+- Passed npm --prefix frontend run audit:trust-passport-trustslip-boundary.
+- Passed npm --prefix frontend run audit:protected-button-freeze.
+- Passed npm --prefix frontend run build.
+- Passed npm --prefix frontend run smoke:public-trustslip-verify-states outside the sandbox after known Vite/esbuild spawn EPERM.
+- Passed npm --prefix frontend run smoke:trust-passport-trustslip-boundary outside the sandbox after known Vite/esbuild spawn EPERM.
+- Passed git diff --check, with only existing line-ending warnings.
+
+Deployment:
+- Not pushed or deployed. Git publishing remains frozen into batch mode until owner approves publishing.
+
+Recommended next step:
+- Continue the same evidence-engine hardening for guarantee outcomes, supplier fulfilment/correction records, completed-work/customer-confirmed jobs, landlord/accommodation references, Demand Box response-to-job outcomes, and structured per-category witness answers.
+
 ## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack community witness outcome pointers
 
 Owner trigger:

@@ -5,7 +5,7 @@ from typing import Any, Mapping, Optional
 
 from sqlalchemy.orm import Session
 
-from app.db.models import ClanMembership, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare
+from app.db.models import ClanMembership, CommunityConfirmationDecision, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, CommunityConfirmationReviewCase, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare
 
 
 @dataclass(frozen=True)
@@ -1091,6 +1091,125 @@ def _confirmation_pointer_row(
     }
 
 
+def _issue_pointer_row(
+    *,
+    key: str,
+    label: str,
+    value: str,
+    source: str,
+    status: str = "available",
+    count: int = 1,
+    decision_use: str,
+) -> dict[str, Any]:
+    return {
+        "key": key,
+        "label": _clean(label, limit=96),
+        "status": _clean(status, limit=32) or "available",
+        "value": _clean(value, limit=280),
+        "source": _clean(source, limit=80),
+        "evidence_count": _profile_int(count),
+        "decision_use": _clean(decision_use, limit=240),
+    }
+
+
+def _decision_pack_issue_resolution_pointers(
+    db: Session,
+    *,
+    holder_user_id: int,
+    active_community_ids: set[int],
+) -> list[dict[str, Any]]:
+    decision_query = db.query(CommunityConfirmationDecision).filter(
+        CommunityConfirmationDecision.subject_user_id == int(holder_user_id)
+    )
+    review_query = db.query(CommunityConfirmationReviewCase).filter(
+        CommunityConfirmationReviewCase.subject_user_id == int(holder_user_id)
+    )
+    if active_community_ids:
+        decision_query = decision_query.filter(CommunityConfirmationDecision.community_id.in_(active_community_ids))
+        review_query = review_query.filter(CommunityConfirmationReviewCase.community_id.in_(active_community_ids))
+
+    decisions = (
+        decision_query.order_by(CommunityConfirmationDecision.created_at.desc(), CommunityConfirmationDecision.id.desc())
+        .limit(30)
+        .all()
+    )
+    review_cases = (
+        review_query.order_by(CommunityConfirmationReviewCase.created_at.desc(), CommunityConfirmationReviewCase.id.desc())
+        .limit(30)
+        .all()
+    )
+
+    if not decisions and not review_cases:
+        return [
+            _issue_pointer_row(
+                key="issue_resolution_gap",
+                label="Issue resolution pointer",
+                status="gap",
+                value="No decision-review or issue-resolution pointer is visible for this holder yet.",
+                source="community_confirmation_reviews",
+                count=0,
+                decision_use="Absence of a visible review is not proof that no issue exists. Ask for live confirmation or private Trust Passport context when risk matters.",
+            )
+        ]
+
+    issue_reported = sum(1 for row in decisions if getattr(row, "issue_reported", None) is True)
+    settled_decisions = sum(1 for row in decisions if getattr(row, "settled", None) is True)
+    unresolved_decisions = sum(1 for row in decisions if getattr(row, "settled", None) is False)
+    unresolved_request_ids = {
+        int(getattr(row, "request_id", 0) or 0)
+        for row in decisions
+        if getattr(row, "settled", None) is False
+    }
+    open_review_request_ids = {
+        int(getattr(row, "request_id", 0) or 0)
+        for row in review_cases
+        if _clean(getattr(row, "status", None), limit=32).lower()
+        in {"open", "pending", "in_review"}
+    }
+    open_reviews = len(open_review_request_ids)
+    unresolved_review_count = len({request_id for request_id in unresolved_request_ids | open_review_request_ids if request_id})
+    if not unresolved_review_count:
+        unresolved_review_count = unresolved_decisions + open_reviews
+    resolved_reviews = sum(
+        1
+        for row in review_cases
+        if getattr(row, "resolved_at", None) is not None
+        or _clean(getattr(row, "status", None), limit=32).lower() in {"resolved", "closed"}
+    )
+    trust_impacts = sorted(
+        {
+            _clean(getattr(row, "trust_impact", None), limit=32)
+            for row in review_cases
+            if _clean(getattr(row, "trust_impact", None), limit=32)
+        }
+    )
+
+    total = len(decisions) + len(review_cases)
+    value = f"{total} decision-review or issue-resolution pointer{'s' if total != 1 else ''} found"
+    if issue_reported:
+        value = f"{value}; {issue_reported} decision{'s' if issue_reported != 1 else ''} marked issue reported"
+    if settled_decisions:
+        value = f"{value}; {settled_decisions} marked settled"
+    if resolved_reviews:
+        value = f"{value}; {resolved_reviews} review case{'s' if resolved_reviews != 1 else ''} resolved or closed"
+    if unresolved_review_count:
+        value = f"{value}; {unresolved_review_count} still need review"
+    if trust_impacts:
+        value = f"{value}. Trust impact markers: {', '.join(trust_impacts[:3])}."
+
+    return [
+        _issue_pointer_row(
+            key="issue_resolution_review",
+            label="Issue resolution pointer",
+            status="caution" if open_reviews or unresolved_decisions else "available",
+            value=value,
+            source="community_confirmation_reviews",
+            count=total,
+            decision_use="Use this as aggregate review status only. It does not expose allegations, private notes, legal findings, defamatory detail, or final suitability decisions.",
+        )
+    ]
+
+
 def _decision_pack_confirmation_pointers(
     db: Session,
     *,
@@ -1540,6 +1659,11 @@ def build_decision_pack_private_evidence_extract(
         reason_type=context.get("confirmation_reason_type") or "community_standing_check",
         active_community_ids=active_community_ids,
     )
+    issue_resolution_pointers = _decision_pack_issue_resolution_pointers(
+        db,
+        holder_user_id=int(holder_user_id),
+        active_community_ids=active_community_ids,
+    )
     return {
         "source": "holder_private_decision_pack_extract",
         "decision_pack": pack_key,
@@ -1556,6 +1680,8 @@ def build_decision_pack_private_evidence_extract(
         "record_pointer_boundary_note": "Connected financial/support records are evidence pointers only. They do not prove creditworthiness, legal tenancy status, rent payment, bank approval, or future repayment.",
         "confirmation_pointers": confirmation_pointers,
         "confirmation_pointer_boundary_note": "Community witness outcomes are aggregate evidence pointers only. They do not expose responders, private notes, licences, guarantees, approvals, or final decisions.",
+        "issue_resolution_pointers": issue_resolution_pointers,
+        "issue_resolution_boundary_note": "Issue-resolution pointers are aggregate review-status evidence only. They do not expose allegations, private notes, legal findings, defamatory detail, or final suitability decisions.",
         "privacy_note": "Authenticated holder preview only. Event references are provenance pointers for consented review, not a public evidence paper.",
         "boundary_note": "This private preview is not a score, approval, guarantee, payment instruction, dispute disclosure, or public TrustSlip output.",
     }
@@ -1625,9 +1751,14 @@ def build_decision_pack_evidence_extract(
         reason_type=context.get("confirmation_reason_type") or "community_standing_check",
         active_community_ids=active_community_ids,
     )
+    issue_resolution_pointers = _decision_pack_issue_resolution_pointers(
+        db,
+        holder_user_id=int(holder_user_id),
+        active_community_ids=active_community_ids,
+    )
     return {
         "source": "trust_events_redacted_extract",
-        "source_note": "Aggregated from public-safe TrustEvent categories plus declared, connected-record, and community-witness outcome pointers where relevant. Raw TrustEvents, actor details, notes, metadata, amounts, payment references, responder identities, and private contacts are not exposed publicly.",
+        "source_note": "Aggregated from public-safe TrustEvent categories plus declared, connected-record, community-witness outcome, and issue-resolution pointers where relevant. Raw TrustEvents, actor details, notes, metadata, amounts, payment references, responder identities, private dispute details, and private contacts are not exposed publicly.",
         "evidence_scope": _decision_pack_evidence_scope(
             active_community_ids=active_community_ids,
             primary_clan_id=getattr(slip, "clan_id", None),
@@ -1639,6 +1770,8 @@ def build_decision_pack_evidence_extract(
         "record_pointer_boundary_note": "Connected financial/support records are evidence pointers only. They do not prove creditworthiness, legal tenancy status, rent payment, bank approval, or future repayment.",
         "confirmation_pointers": confirmation_pointers,
         "confirmation_pointer_boundary_note": "Community witness outcomes are aggregate evidence pointers only. They do not expose responders, private notes, licences, guarantees, approvals, or final decisions.",
+        "issue_resolution_pointers": issue_resolution_pointers,
+        "issue_resolution_boundary_note": "Issue-resolution pointers are aggregate review-status evidence only. They do not expose allegations, private notes, legal findings, defamatory detail, or final suitability decisions.",
         "private_review_required": [
             {
                 "key": category,
@@ -1738,10 +1871,25 @@ def build_decision_pack_profile(
                 "decision_use": "Treat this as aggregate witness context. It does not replace recipient judgement or formal checks.",
             }
         ]
-    signals = expected_signals + declared_signal + record_pointer_signal + confirmation_signal + visible_signals
+    issue_resolution_pointers = []
+    if isinstance(evidence_extract, Mapping) and isinstance(evidence_extract.get("issue_resolution_pointers"), list):
+        issue_resolution_pointers = [pointer for pointer in evidence_extract.get("issue_resolution_pointers", []) if isinstance(pointer, Mapping)]
+    issue_resolution_signal = []
+    if issue_resolution_pointers:
+        first_issue_pointer = issue_resolution_pointers[0]
+        issue_resolution_signal = [
+            {
+                "key": "issue_resolution_pointer",
+                "label": "Issue resolution pointer",
+                "status": _clean(first_issue_pointer.get("status"), limit=32) or "available",
+                "value": _clean(first_issue_pointer.get("value"), limit=260) or "Issue-resolution review evidence is visible.",
+                "decision_use": "Treat this as aggregate review status. It does not expose private dispute detail or make the final decision.",
+            }
+        ]
+    signals = expected_signals + declared_signal + record_pointer_signal + confirmation_signal + issue_resolution_signal + visible_signals
     signal_gaps = [
         signal
-        for signal in visible_signals + declared_signal + record_pointer_signal + confirmation_signal
+        for signal in visible_signals + declared_signal + record_pointer_signal + confirmation_signal + issue_resolution_signal
         if signal.get("status") in {"gap", "caution"}
     ]
     missing_gap_rows = [

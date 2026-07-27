@@ -60,6 +60,16 @@ type DecisionPackConfirmationPointer = {
   decisionUse: string;
 };
 
+type DecisionPackIssueResolutionPointer = {
+  key: string;
+  label: string;
+  status: string;
+  value: string;
+  source: string;
+  evidenceCount: number | null;
+  decisionUse: string;
+};
+
 export type DecisionPackEvidenceExtractView = {
   source: string;
   sourceNote: string;
@@ -77,6 +87,8 @@ export type DecisionPackEvidenceExtractView = {
   recordPointerBoundaryNote: string;
   confirmationPointers: DecisionPackConfirmationPointer[];
   confirmationPointerBoundaryNote: string;
+  issueResolutionPointers: DecisionPackIssueResolutionPointer[];
+  issueResolutionBoundaryNote: string;
   privateReviewRequired: DecisionPackPrivateReviewCategory[];
   boundaryNote: string;
 };
@@ -269,6 +281,7 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
   const declaredClaims = Array.isArray(source.declared_claims) ? source.declared_claims : [];
   const recordPointers = Array.isArray(source.record_pointers) ? source.record_pointers : [];
   const confirmationPointers = Array.isArray(source.confirmation_pointers) ? source.confirmation_pointers : [];
+  const issueResolutionPointers = Array.isArray(source.issue_resolution_pointers) ? source.issue_resolution_pointers : [];
   const evidenceScope = source.evidence_scope && typeof source.evidence_scope === "object" ? source.evidence_scope : {};
   return {
     source: firstTruthy(source.source, "trust_events_redacted_extract"),
@@ -368,6 +381,28 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
     confirmationPointerBoundaryNote: firstTruthy(
       source.confirmation_pointer_boundary_note,
       "Community witness outcomes are aggregate evidence pointers only. They do not expose responders, private notes, licences, guarantees, approvals, or final decisions."
+    ),
+    issueResolutionPointers: issueResolutionPointers
+      .map((pointer: any) => ({
+        key: firstTruthy(pointer?.key, pointer?.label),
+        label: firstTruthy(pointer?.label, "Issue resolution pointer"),
+        status: firstTruthy(pointer?.status, "not_shown"),
+        value: firstTruthy(
+          pointer?.value,
+          "No issue-resolution pointer is visible for this Decision Pack yet."
+        ),
+        source: firstTruthy(pointer?.source, "community_confirmation_reviews"),
+        evidenceCount: firstNumberLike(pointer?.evidence_count),
+        decisionUse: firstTruthy(
+          pointer?.decision_use,
+          "Use this as aggregate review status only; ask for private context or live confirmation before relying."
+        ),
+      }))
+      .filter((pointer: DecisionPackIssueResolutionPointer) => pointer.key || pointer.label)
+      .slice(0, 4),
+    issueResolutionBoundaryNote: firstTruthy(
+      source.issue_resolution_boundary_note,
+      "Issue-resolution pointers are aggregate review-status evidence only. They do not expose allegations, private notes, legal findings, defamatory detail, or final suitability decisions."
     ),
     privateReviewRequired: privateReviewRequired
       .map((category: any) => ({
