@@ -156515,3 +156515,33 @@ Verification run locally:
 
 Deployment:
 - Local only so far. Branch remains ahead of `origin/main`; push/deploy only when the owner selects `2`.
+
+## 2026-07-27 - Local Proof Audit Hang Repair
+
+- Scope: local-only continuation after owner selected `1`.
+- Owner instruction now active: `1` means keep working locally on unfinished areas; do not push/deploy unless the owner sends `2`.
+- Fixed the unfinished caveat from the public-paper cleanup where `npm --prefix frontend run audit:proof-surfaces` and `npm --prefix frontend run audit:evidence-surfaces` hung after the npm banner.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - Replaced several large public verification/credential/outcome page-wide regex checks with `assertOrdered` checks so they protect the same institutional order without expensive backtracking risk.
+  - Fixed `assertNotContains` so non-global regexes run once and report a finding instead of looping forever when they match.
+- `frontend/src/pages/TrustScorePage.tsx`
+  - Changed remaining visible `Trust-limit signal` label to `Support limit signal` in the Trust Passport institutional rows.
+
+Unabated truth:
+- This is local only and not deployed.
+- The hang was partly an audit-helper bug: a negative regex without `/g` could loop forever if it found forbidden text.
+- The audit then exposed one real old Trust Passport label, which is now corrected locally.
+
+Verification run locally:
+- `node --check frontend\tools\audit-institutional-proof-surfaces.mjs`
+- `npm --prefix frontend run audit:proof-surfaces`
+- `npm --prefix frontend run audit:evidence-surfaces`
+- `npm --prefix frontend run lint`
+- `npm --prefix frontend run audit:trust-actions`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `npm --prefix frontend run build`
+- `git diff --check` passed with normal CRLF warnings.
+
+Deployment:
+- Local only. Do not push/deploy unless the owner sends `2`.

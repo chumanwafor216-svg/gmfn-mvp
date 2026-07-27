@@ -147,6 +147,13 @@ function assertContains(key, pattern, message) {
 
 function assertNotContains(key, pattern, message) {
   const source = sourceByFile[key];
+
+  if (!pattern.global) {
+    const match = pattern.exec(source);
+    if (match) addFinding(key, match.index, message, match[0]);
+    return;
+  }
+
   let match;
   while ((match = pattern.exec(source))) {
     addFinding(key, match.index, message, match[0]);
@@ -1106,19 +1113,43 @@ assertContains(
   /\.gsn-trust-document-masthead[\s\S]*?grid-template-columns: minmax\(0, 1fr\) minmax\(240px, auto\)[\s\S]*?@media \(max-width: 640px\)[\s\S]*?\.gsn-trust-document-masthead[\s\S]*?grid-template-columns: minmax\(0, 1fr\)[\s\S]*?\.gsn-trust-document-masthead-record[\s\S]*?justify-self: stretch/,
   "Shared Trust Document Language masthead must stack the record-title block on phone widths instead of overlapping brand and record text."
 );
-assertContains(
+assertOrdered(
   "communityVerify",
-  /TrustDocumentRegistryMasthead[\s\S]*?Public verification[\s\S]*?Community Verification[\s\S]*?Official GSN Registry Record[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?confidenceRibbonItems[\s\S]*?data-gsn-trust-document-certificate="community-verification"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?This page confirms[\s\S]*?This page does not confirm[\s\S]*?TrustDocumentFingerprint[\s\S]*?Record reference/,
-  "Community Verification must implement the GSN Trust Document Language sequence: registry masthead, confidence ribbon, security panel, confirms/does-not-confirm boundary, and record reference."
+  [
+    "TrustDocumentRegistryMasthead",
+    "Public verification",
+    "Community Verification",
+    "Official GSN Registry Record",
+    'title="Audit Details"',
+    'data-gsn-trust-document-certificate="community-verification"',
+    'data-gsn-community-verify-security-limits="true"',
+    "TrustDocumentConfidenceRibbon",
+    "TrustDocumentSecurityPanel",
+    "TrustDocumentBoundaryPanel",
+    "This page confirms",
+    "This page does not confirm",
+    "TrustDocumentFingerprint",
+    "Record reference",
+  ],
+  "Community Verification must implement the GSN Trust Document Language sequence: registry masthead, collapsed confidence/security, confirms/does-not-confirm boundary, and record reference."
 );
 assertNotContains(
   "communityVerify",
   /Public verification navigation|community-verify\.home|community-verify\.back/,
   "Community Verification public links must open directly into the official registry paper, not a duplicate pre-paper navigation strip."
 );
-assertContains(
+assertOrdered(
   "communityVerify",
-  /TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?Open for registry checks, what this page confirms, limits, security, and record reference\.[\s\S]*?data-gsn-community-verify-security-limits="true"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentFingerprint/,
+  [
+    "TrustDocumentDisclosureSection",
+    'title="Audit Details"',
+    "Open for registry checks, what this page confirms, limits, security, and record reference.",
+    'data-gsn-community-verify-security-limits="true"',
+    "TrustDocumentConfidenceRibbon",
+    "TrustDocumentSecurityPanel",
+    "TrustDocumentBoundaryPanel",
+    "TrustDocumentFingerprint",
+  ],
   "Community Verification must keep security, limits, and record-reference detail collapsed behind one disclosure."
 );
 assertContains(
@@ -1186,10 +1217,23 @@ assertContains(
   /TrustDocumentConfidenceRibbon[\s\S]*?memberCredentialConfidenceRibbonItems[\s\S]*?Member status[\s\S]*?Community record[\s\S]*?Community witnesses[\s\S]*?Are witnesses up to date\?[\s\S]*?Check path/,
   "Public Community Member Credential must carry the Trust Document Language confidence ribbon."
 );
-assertContains(
+assertOrdered(
   "communityMemberVerify",
-  /data-gsn-trust-document-certificate="community-member-credential"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This credential confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This credential does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Member credential security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?Community member credential reference/,
-  "Public Community Member Credential must implement the Trust Document Language sequence with security, confirms/does-not-confirm panels, and record reference."
+  [
+    'data-gsn-trust-document-certificate="community-member-credential"',
+    'title="Audit Details"',
+    'data-gsn-member-credential-security-limits="true"',
+    "TrustDocumentConfidenceRibbon",
+    "TrustDocumentBoundaryPanel",
+    'title="This credential confirms"',
+    "TrustDocumentBoundaryPanel",
+    'title="This credential does not confirm"',
+    "TrustDocumentSecurityPanel",
+    'title="Member credential security"',
+    "TrustDocumentFingerprint",
+    "Community member credential reference",
+  ],
+  "Public Community Member Credential must implement the Trust Document Language sequence with collapsed confidence/security, confirms/does-not-confirm panels, and record reference."
 );
 assertContains(
   "communityMemberVerify",
@@ -1201,9 +1245,27 @@ assertContains(
   /TrustDocumentDisclosureSection[\s\S]*title="Audit Details"[\s\S]*Open for confidence checks, evidence reading, full facts, limits, security, and record reference\./,
   "Public Community Member Credential must keep deeper public-reading guidance collapsed behind a clear institutional disclosure."
 );
-assertContains(
+assertOrdered(
   "communityMemberVerify",
-  /data-gsn-member-credential-primary-facts="true"[\s\S]*?Member GSN ID[\s\S]*?Community ID[\s\S]*?Status[\s\S]*?Witness strength[\s\S]*?<CommunityProofPanel[\s\S]*?title="Known by community"[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?data-gsn-member-credential-security-limits="true"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Credential facts"[\s\S]*?data-gsn-member-credential-secondary-facts="true"[\s\S]*?Next witness check[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Evidence and privacy notes"/,
+  [
+    'data-gsn-member-credential-primary-facts="true"',
+    "Member GSN ID",
+    "Community ID",
+    "Status",
+    "Witness strength",
+    "<CommunityProofPanel",
+    'title="Known by community"',
+    "TrustDocumentDisclosureSection",
+    'title="Audit Details"',
+    'data-gsn-member-credential-security-limits="true"',
+    "TrustDocumentConfidenceRibbon",
+    "TrustDocumentDisclosureSection",
+    'title="Credential facts"',
+    'data-gsn-member-credential-secondary-facts="true"',
+    "Next witness check",
+    "TrustDocumentDisclosureSection",
+    'title="Evidence and privacy notes"',
+  ],
   "Public Community Member Credential must expose only the core facts first and collapse secondary facts plus evidence/privacy notes."
 );
 assertNotContains(
@@ -1276,14 +1338,36 @@ assertContains(
   /TrustDocumentConfidenceRibbon[\s\S]*?outcomeConfidenceRibbonItems[\s\S]*?Outcome now[\s\S]*?Can people still respond\?[\s\S]*?Community responses[\s\S]*?Contacts private[\s\S]*?Check path/,
   "Public Community Confirmation Outcome must carry the Trust Document Language confidence ribbon."
 );
-assertContains(
+assertOrdered(
   "communityConfirmationOutcome",
-  /data-gsn-trust-document-certificate="community-confirmation-outcome"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This outcome confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This outcome does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Outcome security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?Community confirmation outcome reference/,
-  "Public Community Confirmation Outcome must implement the Trust Document Language sequence with security, confirms/does-not-confirm panels, and record reference."
+  [
+    'title="Audit Details"',
+    'data-gsn-trust-document-certificate="community-confirmation-outcome"',
+    'data-gsn-community-confirmation-outcome-security-limits="true"',
+    "TrustDocumentConfidenceRibbon",
+    "TrustDocumentBoundaryPanel",
+    'title="This outcome confirms"',
+    "TrustDocumentBoundaryPanel",
+    'title="This outcome does not confirm"',
+    "TrustDocumentSecurityPanel",
+    'title="Outcome security"',
+    "TrustDocumentFingerprint",
+    "Community confirmation outcome reference",
+  ],
+  "Public Community Confirmation Outcome must implement the Trust Document Language sequence with collapsed confidence/security, confirms/does-not-confirm panels, and record reference."
 );
-assertContains(
+assertOrdered(
   "communityConfirmationOutcome",
-  /TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?Open for confidence checks, evidence reading, privacy boundary, QR, security, and record reference\.[\s\S]*?data-gsn-community-confirmation-outcome-security-limits="true"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentFingerprint/,
+  [
+    "TrustDocumentDisclosureSection",
+    'title="Audit Details"',
+    "Open for confidence checks, evidence reading, privacy boundary, QR, security, and record reference.",
+    'data-gsn-community-confirmation-outcome-security-limits="true"',
+    "TrustDocumentConfidenceRibbon",
+    "TrustDocumentBoundaryPanel",
+    "TrustDocumentSecurityPanel",
+    "TrustDocumentFingerprint",
+  ],
   "Public Community Confirmation Outcome must keep security, limits, and record-reference detail collapsed behind one disclosure."
 );
 assertContains(
