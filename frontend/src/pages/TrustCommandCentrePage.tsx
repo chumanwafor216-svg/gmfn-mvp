@@ -1522,18 +1522,9 @@ export default function TrustCommandCentrePage() {
           </div>
 
           <div style={softCard("#FFFFFF")}>
-            <div>{sectionLabelWithIcon("navigation", "How to use this page")}</div>
-
-            <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-              <div style={helperText()}>
-                Start here before opening an admin page.
-              </div>
-              <div style={helperText()}>
-                Pick the page that matches the current task.
-              </div>
-              <div style={helperText()}>
-                Keep member work in the member pages. Keep system work here.
-              </div>
+            <div>{sectionLabelWithIcon("navigation", "Command rule")}</div>
+            <div style={{ marginTop: 10, ...helperText() }}>
+              Start with the live reading, then open only the admin page that matches the current task.
             </div>
           </div>
         </div>

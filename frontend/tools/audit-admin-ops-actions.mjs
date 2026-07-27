@@ -117,6 +117,17 @@ assertNotContains(
   /Next routes|route cards below|route that matches|matching route/,
   "System Operations visible copy must not expose route wording."
 );
+assertContains(
+  "src/pages/TrustCommandCentrePage.tsx",
+  /sectionLabelWithIcon\("navigation", "Command rule"\)[\s\S]*?Start with the live reading, then open only the admin page that matches the current task\./,
+  "Trust Command Centre must use a compact command rule instead of a multi-line how-to card."
+);
+
+assertNotContains(
+  "src/pages/TrustCommandCentrePage.tsx",
+  /How to use this page|Start here before opening an admin page|Pick the page that matches the current task|Keep member work in the member pages/,
+  "Trust Command Centre must not restore the old exposed how-to card."
+);
 
 assertContains(
   "src/pages/SystemOperationsPage.tsx",

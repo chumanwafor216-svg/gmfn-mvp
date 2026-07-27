@@ -1,3 +1,34 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Trust Command Centre guidance decongestion slice
+
+Owner trigger:
+- Owner asked to continue making the whole app appear less busy on phone.
+
+Unabated truth:
+- This is a small admin-facing polish, not a redesign of the Trust Command Centre.
+- The page already has an executive reading and collapsible sections. The exposed hero-side `How to use this page` card repeated the same instruction in three lines.
+- This pass reduces that top-card reading burden but does not collapse the deeper executive/admin sections.
+
+Changed:
+- `frontend/src/pages/TrustCommandCentrePage.tsx`
+  - Replaced the multi-line `How to use this page` card with a shorter `Command rule` card.
+  - Kept the rule focused: start with the live reading, then open only the admin page that matches the current task.
+- `frontend/tools/audit-admin-ops-actions.mjs`
+  - Added narrow guards so Trust Command Centre keeps the compact command rule and does not restore the old exposed how-to card.
+
+Verification:
+- Passed `node --check frontend\tools\audit-admin-ops-actions.mjs`.
+- Passed `npm --prefix frontend run audit:admin-ops-actions`.
+- Passed `npm --prefix frontend run audit:button-stability`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run lint`.
+- Passed `git diff --check`; only normal CRLF warnings were reported.
+- Passed `npm --prefix frontend run build`.
+
+Deployment:
+- Local only. Do not push/deploy unless the owner selects `2` or explicitly says push/deploy.
+
+Next recommended step:
+- Commit this Trust Command Centre slice locally, then continue only with low-risk decongestion slices unless the owner asks for push/deploy.
 ## CURRENT LOCAL STATE - 2026-07-27 - Payment Rails listing decongestion slice
 
 Owner trigger:
