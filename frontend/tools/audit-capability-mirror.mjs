@@ -145,8 +145,8 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /data-my-gmfn-capabilities-shell="collapsed"[\s\S]*StableDisclosureSummary[\s\S]*debugId="my-gmfn\.profile\.gsn-capabilities"[\s\S]*GSN Capabilities[\s\S]*data-my-gmfn-capabilities-body="true"[\s\S]*data-my-gmfn-selected-capability="true"[\s\S]*data-my-gmfn-major-domains-shell="collapsed"[\s\S]*StableDisclosureSummary[\s\S]*debugId="my-gmfn\.profile\.major-domains"[\s\S]*Major Domains[\s\S]*data-my-gmfn-major-domains-body="true"[\s\S]*appGuideRoutes\.map/,
-  "The signed-in My GSN and I guide must keep GSN Capabilities and Major Domains covered by closed institutional disclosure headings on phone."
+  /data-my-gmfn-capabilities-shell="collapsed"[\s\S]*StableDisclosureSummary[\s\S]*debugId="my-gmfn\.profile\.gsn-capabilities"[\s\S]*GSN Capabilities[\s\S]*data-my-gmfn-capabilities-body="true"[\s\S]*data-my-gmfn-selected-capability="true"[\s\S]*data-my-gmfn-major-domains-shell="collapsed"[\s\S]*StableDisclosureSummary[\s\S]*debugId="my-gmfn\.profile\.major-domains"[\s\S]*Major Domains[\s\S]*data-my-gmfn-major-domains-body="true"[\s\S]*appGuideRoutes\.map[\s\S]*data-my-gmfn-page-guide="collapsed"[\s\S]*debugId="my-gmfn\.profile\.page-guide"[\s\S]*Page Guide/,
+  "The signed-in My GSN and I guide must keep GSN Capabilities, Major Domains, and page-use guidance covered by closed institutional disclosure headings on phone."
 );
 
 assertContains(

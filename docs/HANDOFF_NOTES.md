@@ -156903,3 +156903,28 @@ Verification run locally:
 
 Deployment:
 - Local only. Do not push/deploy unless the owner sends `2`.
+
+## 2026-07-27 - Local Ease-of-Use Final Pass
+
+- Scope: local-only final decongestion pass after owner clarified the whole idea is to make the app easy to use.
+- `frontend/src/pages/MyGMFNAndIPage.tsx`
+  - Folded the open `How to use this page` instruction card behind a compact `Page Guide` disclosure inside Major Domains.
+  - Kept GSN Capabilities and Major Domains as the two main covered sections, so the user sees the major choice first instead of another open instruction block.
+- `frontend/tools/audit-capability-mirror.mjs`
+  - Updated the capability mirror cage so `Page Guide` stays collapsed beside the existing `GSN Capabilities` and `Major Domains` disclosures.
+
+Unabated truth:
+- This is a small route-local ease-of-use polish, not a full app redesign.
+- It does not change routes, capability data, bottom navigation, authentication, backend logic, or public TrustSlip/confirmation evidence behavior.
+- The app is now less busy in this remaining guide area, but true whole-app ease still requires continued live phone screenshot review page by page.
+
+Verification run locally:
+- `node --check frontend\tools\audit-capability-mirror.mjs`
+- `node frontend\tools\audit-capability-mirror.mjs`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run lint`
+- `git diff --check` passed with normal CRLF warnings.
+- `npm --prefix frontend run build`
+
+Deployment:
+- Local only. Push/deploy only when owner sends `2`.

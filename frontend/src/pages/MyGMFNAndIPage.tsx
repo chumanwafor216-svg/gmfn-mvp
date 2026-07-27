@@ -3120,33 +3120,67 @@ export default function MyGMFNAndIPage() {
               </div>
             )}
 
-            <div
+            <details
+              data-my-gmfn-page-guide="collapsed"
               style={{
-                marginTop: 18,
-                borderRadius: 20,
-                border: "1px solid rgba(214,170,69,0.16)",
+                marginTop: 14,
+                borderRadius: 18,
+                border: "1px solid rgba(214,170,69,0.18)",
                 background:
-                  "linear-gradient(180deg, rgba(255,249,232,0.96) 0%, rgba(255,253,246,0.98) 100%)",
-                padding: isCompact ? 18 : 22,
+                  "linear-gradient(180deg, rgba(255,249,232,0.90) 0%, rgba(255,253,246,0.98) 100%)",
+                overflow: "hidden",
               }}
             >
-              <div
+              <StableDisclosureSummary
+                debugId="my-gmfn.profile.page-guide"
+                stableHeight={isCompact ? 56 : 60}
                 style={{
                   display: "flex",
                   alignItems: "center",
+                  justifyContent: "space-between",
                   gap: 12,
+                  padding: isCompact ? "11px 13px" : "12px 15px",
                   color: "#07172C",
-                  fontSize: 16,
+                  fontSize: isCompact ? 13.5 : 14,
                   fontWeight: 1000,
+                  background: "transparent",
                 }}
               >
-                <span style={appGuideMiniIconBubble()}>
-                  <GsnLegacyIcon name="document" size={28} decorative />
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 9,
+                    minWidth: 0,
+                  }}
+                >
+                  <span style={appGuideMiniIconBubble()}>
+                    <GsnLegacyIcon name="document" size={24} decorative />
+                  </span>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: "block" }}>Page Guide</span>
+                    {!isCompact ? (
+                      <span
+                        style={{
+                          display: "block",
+                          marginTop: 2,
+                          color: "#64748B",
+                          fontSize: 12,
+                          fontWeight: 760,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        Open only if you need help reading this guide.
+                      </span>
+                    ) : null}
+                  </span>
                 </span>
-                How to use this page
-              </div>
+                <span aria-hidden="true" style={appGuideDisclosureChevron()}>
+                  {">"}
+                </span>
+              </StableDisclosureSummary>
 
-              <div style={{ marginTop: 18, display: "grid", gap: 15 }}>
+              <div style={{ padding: isCompact ? "0 13px 13px" : "0 15px 15px", display: "grid", gap: 12 }}>
                 {[
                   "Read the real-world decision.",
                   "Check the GSN evidence path.",
@@ -3160,7 +3194,7 @@ export default function MyGMFNAndIPage() {
                       gap: 12,
                       alignItems: "center",
                       color: "#243247",
-                      fontSize: 14,
+                      fontSize: isCompact ? 13 : 14,
                       fontWeight: 850,
                     }}
                   >
@@ -3169,7 +3203,7 @@ export default function MyGMFNAndIPage() {
                   </div>
                 ))}
               </div>
-            </div>
+            </details>
               </div>
             </details>
           </section>
