@@ -1916,7 +1916,19 @@ export default function DemandBoxPage() {
             longer matters, close it cleanly.
           </div>
 
-          <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
+          <details style={{ marginTop: 14, ...detailsShell() }}>
+            <StableDisclosureSummary
+              style={detailsSummary()}
+              stableHeight={52}
+              debugId="demand-box.my-demand.summary"
+            >
+              <span>Open my demand</span>
+              <span style={{ color: "#64748B", fontSize: 13 }}>
+                {myOpenRows.length === 0 ? "None" : `${myOpenRows.length} open`}
+              </span>
+            </StableDisclosureSummary>
+
+            <div style={{ padding: "0 14px 14px", display: "grid", gap: 10 }}>
             {myOpenRows.length === 0 ? (
               <div
                 style={{
@@ -2171,6 +2183,7 @@ export default function DemandBoxPage() {
               </>
             )}
           </div>
+          </details>
         </section>
 
         <section style={pageCard("#FFFFFF")}>
@@ -2189,7 +2202,19 @@ export default function DemandBoxPage() {
             money.
           </div>
 
-          <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
+          <details style={{ marginTop: 14, ...detailsShell() }}>
+            <StableDisclosureSummary
+              style={detailsSummary()}
+              stableHeight={52}
+              debugId="demand-box.community-demand.summary"
+            >
+              <span>Open community demand</span>
+              <span style={{ color: "#64748B", fontSize: 13 }}>
+                {visibleRows.length === 0 ? "None" : `${visibleRows.length} visible`}
+              </span>
+            </StableDisclosureSummary>
+
+            <div style={{ padding: "0 14px 14px", display: "grid", gap: 10 }}>
             {visiblePreview.length === 0 ? (
               <div
                 style={{
@@ -2399,6 +2424,7 @@ export default function DemandBoxPage() {
               </>
             )}
           </div>
+          </details>
 
           <div style={demandActionRowStyle(isCompact, 54, 156, 14)}>
             <StableCtaLink

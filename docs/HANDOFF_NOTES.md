@@ -157163,3 +157163,28 @@ Verification run locally:
 
 Deployment:
 - Local only. Push/deploy only when owner sends `2`.
+
+## 2026-07-27 - Local Demand Box Lower-List Decongestion Pass
+
+- Scope: local-only continuation of the phone decongestion work after the owner selected `1`.
+- `frontend/src/pages/DemandBoxPage.tsx`
+  - Folded the lower `My live demand` preview behind `Open my demand`.
+  - Folded the lower `Requests I can answer` preview behind `Open community demand`.
+  - Kept the create/post demand form, community context, optional detail drawer, copy-paper actions, contact actions, fulfil/cancel actions, and bottom route actions intact.
+- `frontend/tools/audit-demand-box-front-package.mjs`
+  - Added guards requiring the two compact Demand Box list drawers so the page does not drift back to exposed lower lists by default.
+
+Unabated truth:
+- This is presentation decongestion only.
+- It does not change Demand Box creation, visible-row filtering, request status updates, copy-paper output, contact behavior, Community Domain policy checks, backend APIs, auth, notifications, or evidence generation.
+- Users can still open personal and community demand lists immediately.
+
+Verification run locally:
+- `node frontend\tools\audit-demand-box-front-package.mjs`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run lint`
+- `git diff --check` passed with normal CRLF warnings.
+- `npm --prefix frontend run build`
+
+Deployment:
+- Local only. Push/deploy only when owner sends `2`.

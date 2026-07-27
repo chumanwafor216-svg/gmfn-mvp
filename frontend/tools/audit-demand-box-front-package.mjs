@@ -135,6 +135,14 @@ function requirePattern(pattern, message) {
     "Demand Box must keep additional personal demand behind a stable disclosure.",
   ],
   [
+    /debugId="demand-box\.my-demand\.summary"[\s\S]*?<span>Open my demand<\/span>[\s\S]*?myOpenRows\.slice\(0, 1\)\.map/,
+    "Demand Box personal demand preview must sit behind the compact Open my demand drawer.",
+  ],
+  [
+    /debugId="demand-box\.community-demand\.summary"[\s\S]*?<span>Open community demand<\/span>[\s\S]*?visiblePreview\.map/,
+    "Demand Box community demand preview must sit behind the compact Open community demand drawer.",
+  ],
+  [
     /debugId="demand-box\.more-visible-demand\.summary"/,
     "Demand Box must keep additional community demand behind a stable disclosure.",
   ],
