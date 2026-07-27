@@ -757,9 +757,22 @@ export default function CommunityConfirmationOutcomePage() {
       : status === "expired"
         ? "Instant community confirmation is expired. No valid response was received before the window closed."
         : "Instant community confirmation is not complete yet. Refresh later or ask for more evidence.");
+  const safeDecisionActionText =
+    objectionCount > 0 || confidence === "caution"
+      ? "Use with care. Review the caution or objection before relying on this outcome."
+      : confirmedKnown > 0 || confidence === "strong" || confidence === "moderate"
+        ? "Suitable for low-risk reliance. Ask for more evidence before high-risk decisions."
+        : liveWindowOpen
+          ? "Wait for more community responses before relying on this outcome."
+          : status === "expired"
+            ? "Do not rely on this alone. Ask for fresh community confirmation."
+            : "Use as supporting evidence only. Ask for more evidence before relying on it.";
+  const suppliedDecisionNote = safeStr(outcome?.decision_note);
   const decisionNoteText =
-    outcome?.decision_note ||
-    "This is evidence for judgement, not a guarantee, payment instruction, or automatic approval.";
+    suppliedDecisionNote &&
+    !/proceed with confidence|use this confirmation for judgement/i.test(suppliedDecisionNote)
+      ? suppliedDecisionNote
+      : safeDecisionActionText;
   const privacyLimitText =
     outcome?.privacy_note ||
     "This public outcome shows aggregate response evidence only. It does not expose private responder contacts, verifier names, phone numbers, shop details, payment records, or credit approval.";
@@ -1498,26 +1511,30 @@ export default function CommunityConfirmationOutcomePage() {
                     />
                   </div>
                 </section>
-                <CommunityProofPanel
-                  title="Community evidence behind this outcome"
-                  subtitle="Read the response evidence beside community identity, privacy limits, and the next safe action."
-                  compact={isCompactPaper}
-                  communityName={outcome.community_name}
-                  holderRole="Confirmation subject"
-                  identityLabel={confirmationProofIdentityLabel}
-                  memberWitnessLabel="Confirmation response"
-                  memberWitnessCount={responsesReceived}
-                  memberWitnessDetail={`${confirmationProofResponseLabel}. This is controlled confirmation response evidence, not a whole-community vote or separate member-witness credential count.`}
-                  membershipStrengthLabel={outcomeTitle(status, confidence)}
-                  membershipCurrentnessLabel={confirmationProofCurrentnessLabel}
-                  membershipCurrentnessScope={`${responseCountScope} ${privacyLimitText}`}
-                  communityActivityLabel="Outcome record only"
-                  trustSlipStatusLabel={decisionNoteText}
-                  style={{
-                    marginTop: isCompactPaper ? 0 : 2,
-                    boxShadow: "0 14px 34px rgba(6,24,39,0.07)",
-                  }}
-                />
+                <TrustDocumentDisclosureSection
+                  title="Outcome Details"
+                  summary="Open for community evidence, who was confirmed, what was requested, and response counts."
+                >
+                  <CommunityProofPanel
+                    title="Community evidence behind this outcome"
+                    subtitle="Read the response evidence beside community identity, privacy limits, and the next safe action."
+                    compact={isCompactPaper}
+                    communityName={outcome.community_name}
+                    holderRole="Confirmation subject"
+                    identityLabel={confirmationProofIdentityLabel}
+                    memberWitnessLabel="Confirmation response"
+                    memberWitnessCount={responsesReceived}
+                    memberWitnessDetail={`${confirmationProofResponseLabel}. This is controlled confirmation response evidence, not a whole-community vote or separate member-witness credential count.`}
+                    membershipStrengthLabel={outcomeTitle(status, confidence)}
+                    membershipCurrentnessLabel={confirmationProofCurrentnessLabel}
+                    membershipCurrentnessScope={`${responseCountScope} ${privacyLimitText}`}
+                    communityActivityLabel="Outcome record only"
+                    trustSlipStatusLabel={decisionNoteText}
+                    style={{
+                      marginTop: isCompactPaper ? 0 : 2,
+                      boxShadow: "0 14px 34px rgba(6,24,39,0.07)",
+                    }}
+                  />
 
 
                 <section
@@ -1614,6 +1631,7 @@ export default function CommunityConfirmationOutcomePage() {
                   </div>
                 </section>
 
+                </TrustDocumentDisclosureSection>
                 <section style={sectionCard("#FFFFFF")}>
                   <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
                     {outcomeIconBadge("spark", 32, "blue")}

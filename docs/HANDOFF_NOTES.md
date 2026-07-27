@@ -156844,3 +156844,31 @@ Verification run locally:
 
 Deployment:
 - Local only. Do not push/deploy unless the owner sends `2`.
+
+## 2026-07-27 - Local Community Confirmation Outcome Final Polish
+
+- Scope: local-only public Community Confirmation Outcome polish after owner asked to perfect the current public-paper direction.
+- `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`
+  - Kept the decision-first `Decision Summary` as the first reading surface.
+  - Added safer next-action wording so overconfident supplied phrases such as `Proceed with confidence` or `Use this confirmation for judgement` are replaced with low-risk / ask-more-evidence guidance.
+  - Collapsed the deeper proof panel, confirmed-person details, request details, and response counts behind one `Outcome Details` disclosure before `Public actions`.
+  - Kept `Public actions` compact: refresh first, copy/print hidden behind `More public actions`.
+- `frontend/tools/audit-community-confirmation-outcome-boundary.mjs`
+  - Updated the cage to protect the new hierarchy: `Decision Summary` -> collapsed `Outcome Details` -> `Public actions`.
+  - Added protection for the safer decision-note fallback.
+
+Unabated truth:
+- This is frontend/public-paper hierarchy and language polish only.
+- It does not change backend confirmation logic, response counting, QR generation, expiry windows, or member/private-contact privacy.
+- The page is less busy by default, but a final phone screenshot review on the live deployment should still be done after the owner asks to push/deploy.
+
+Verification run locally:
+- `npm --prefix frontend run audit:community-confirmation-outcome-boundary`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run lint`
+- `git diff --check` passed with normal CRLF warnings.
+- `npm --prefix frontend run build`
+- Elevated `npm --prefix frontend run smoke:community-confirmation-outcome-boundary`
+
+Deployment:
+- Local only. Do not push/deploy unless the owner sends `2`.

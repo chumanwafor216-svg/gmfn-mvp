@@ -136,10 +136,28 @@ assertContains(
 
 assertContains(
   "outcome",
-  /import CommunityProofPanel from "\.\.\/components\/CommunityProofPanel";[\s\S]*?const confirmationProofResponseLabel = requestsSent > 0[\s\S]*?requested contacts responded[\s\S]*?const confirmationProofCurrentnessLabel = liveWindowOpen[\s\S]*?const confirmationProofIdentityLabel = firstTruthy[\s\S]*?Decision Summary[\s\S]*?<CommunityProofPanel[\s\S]*?title="Community evidence behind this outcome"[\s\S]*?memberWitnessLabel="Confirmation response"[\s\S]*?not a whole-community vote or separate member-witness credential count[\s\S]*?membershipCurrentnessScope=\{[\s\S]*?responseCountScope[\s\S]*?privacyLimitText[\s\S]*?trustSlipStatusLabel=\{decisionNoteText\}[\s\S]*?Who is being confirmed\?/,
-  "Community Confirmation Outcome must render shared proof after fast reading and before identity details."
+  /const safeDecisionActionText =[\s\S]*?Suitable for low-risk reliance\. Ask for more evidence before high-risk decisions\.[\s\S]*?Wait for more community responses before relying on this outcome\.[\s\S]*?Do not rely on this alone\. Ask for fresh community confirmation\.[\s\S]*?proceed with confidence\|use this confirmation for judgement[\s\S]*?: safeDecisionActionText;/,
+  "Community Confirmation Outcome must replace overconfident supplied decision notes with safer next-action wording."
 );
 
+assertOrder(
+  "outcome",
+  [
+    { label: "decision summary", pattern: /Decision Summary/ },
+    { label: "outcome details disclosure", pattern: /<TrustDocumentDisclosureSection/ },
+    { label: "outcome details title", pattern: /title="Outcome Details"/ },
+    { label: "outcome details summary", pattern: /summary="Open for community evidence, who was confirmed, what was requested, and response counts\."/ },
+    { label: "shared community proof panel", pattern: /<CommunityProofPanel/ },
+    { label: "confirmation response wording", pattern: /memberWitnessLabel="Confirmation response"/ },
+    { label: "whole-community vote boundary", pattern: /not a whole-community vote or separate member-witness credential count/ },
+    { label: "identity details", pattern: /Who is being confirmed\?/ },
+    { label: "request details", pattern: /What was requested\?/ },
+    { label: "community response details", pattern: /Community response/ },
+    { label: "outcome details close", pattern: /<\/TrustDocumentDisclosureSection>/ },
+    { label: "public actions", pattern: /Public actions/ },
+  ],
+  "Community Confirmation Outcome must keep the decision summary first and collapse proof, identity, request, and response details before public actions."
+);
 assertContains(
   "communityProofPanel",
   /data-gsn-community-proof-layer="true"[\s\S]*?data-gsn-community-proof-item=\{item\.key\}/,
