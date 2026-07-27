@@ -401,6 +401,16 @@ type TrustSlipDecisionPackRecordPointer = {
   decisionUse: string;
 };
 
+type TrustSlipDecisionPackGuaranteeOutcomePointer = {
+  key: string;
+  label: string;
+  status: string;
+  value: string;
+  source: string;
+  evidenceCount: number;
+  decisionUse: string;
+};
+
 type TrustSlipDecisionPackConfirmationPointer = {
   key: string;
   label: string;
@@ -438,6 +448,8 @@ type TrustSlipDecisionPackEvidenceExtract = {
   declarationBoundaryNote: string;
   recordPointers: TrustSlipDecisionPackRecordPointer[];
   recordPointerBoundaryNote: string;
+  guaranteeOutcomePointers: TrustSlipDecisionPackGuaranteeOutcomePointer[];
+  guaranteeOutcomeBoundaryNote: string;
   confirmationPointers: TrustSlipDecisionPackConfirmationPointer[];
   confirmationPointerBoundaryNote: string;
   issueResolutionPointers: TrustSlipDecisionPackIssueResolutionPointer[];
@@ -1789,6 +1801,20 @@ function normalizeTrustSlipDecisionPackEvidence(raw: any): TrustSlipDecisionPack
         .filter((row: TrustSlipDecisionPackRecordPointer) => row.key || row.label || row.value)
         .slice(0, 4)
     : [];
+  const guaranteeOutcomePointers = Array.isArray(extract?.guarantee_outcome_pointers)
+    ? extract.guarantee_outcome_pointers
+        .map((row: any) => ({
+          key: firstTruthy(row?.key),
+          label: firstTruthy(row?.label, "Guarantee/support outcome pointer"),
+          status: firstTruthy(row?.status),
+          value: firstTruthy(row?.value),
+          source: firstTruthy(row?.source),
+          evidenceCount: Number(row?.evidence_count ?? row?.evidenceCount ?? 0) || 0,
+          decisionUse: firstTruthy(row?.decision_use, row?.decisionUse),
+        }))
+        .filter((row: TrustSlipDecisionPackGuaranteeOutcomePointer) => row.key || row.label || row.value)
+        .slice(0, 4)
+    : [];
   const confirmationPointers = Array.isArray(extract?.confirmation_pointers)
     ? extract.confirmation_pointers
         .map((row: any) => ({
@@ -1878,6 +1904,8 @@ function normalizeTrustSlipDecisionPackEvidence(raw: any): TrustSlipDecisionPack
     declarationBoundaryNote: firstTruthy(extract?.declaration_boundary_note, raw?.declaration_boundary_note),
     recordPointers,
     recordPointerBoundaryNote: firstTruthy(extract?.record_pointer_boundary_note, raw?.record_pointer_boundary_note),
+    guaranteeOutcomePointers,
+    guaranteeOutcomeBoundaryNote: firstTruthy(extract?.guarantee_outcome_boundary_note, raw?.guarantee_outcome_boundary_note),
     confirmationPointers,
     confirmationPointerBoundaryNote: firstTruthy(extract?.confirmation_pointer_boundary_note, raw?.confirmation_pointer_boundary_note),
     issueResolutionPointers,
@@ -3440,6 +3468,7 @@ export default function TrustSlipPage() {
   const privateDecisionPackEvidenceCategories = (decisionPackEvidenceExtract?.categories || []).slice(0, 4);
   const privateDecisionPackDeclaredClaims = (decisionPackEvidenceExtract?.declaredClaims || []).slice(0, 3);
   const privateDecisionPackRecordPointers = (decisionPackEvidenceExtract?.recordPointers || []).slice(0, 3);
+  const privateDecisionPackGuaranteeOutcomePointers = (decisionPackEvidenceExtract?.guaranteeOutcomePointers || []).slice(0, 3);
   const privateDecisionPackConfirmationPointers = (decisionPackEvidenceExtract?.confirmationPointers || []).slice(0, 3);
   const privateDecisionPackIssueResolutionPointers = (decisionPackEvidenceExtract?.issueResolutionPointers || []).slice(0, 3);
   const privateDecisionPackEvidenceScope = decisionPackEvidenceExtract?.evidenceScope;
@@ -4433,6 +4462,55 @@ export default function TrustSlipPage() {
                           }}
                         >
                           {decisionPackEvidenceExtract.recordPointerBoundaryNote}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {privateDecisionPackGuaranteeOutcomePointers.length ? (
+                    <div
+                      data-gsn-holder-decision-pack-guarantee-outcome-pointers="true"
+                      style={{
+                        border: "1px solid rgba(37,78,119,0.10)",
+                        borderRadius: 12,
+                        background: "#FFFFFF",
+                        padding: "8px 9px",
+                        display: "grid",
+                        gap: 6,
+                      }}
+                    >
+                      <div
+                        style={{
+                          color: "#07172C",
+                          fontSize: isCompact ? 12 : 13,
+                          fontWeight: 950,
+                          lineHeight: 1.15,
+                        }}
+                      >
+                        Guarantee/support outcomes
+                      </div>
+                      {privateDecisionPackGuaranteeOutcomePointers.map((pointer) => (
+                        <div
+                          key={pointer.key || pointer.label}
+                          style={{
+                            color: "#526579",
+                            fontSize: isCompact ? 10 : 11,
+                            fontWeight: 800,
+                            lineHeight: 1.28,
+                          }}
+                        >
+                          <strong>{pointer.label}:</strong> {pointer.value || pointer.decisionUse}
+                        </div>
+                      ))}
+                      {decisionPackEvidenceExtract?.guaranteeOutcomeBoundaryNote ? (
+                        <div
+                          style={{
+                            color: "#8A6500",
+                            fontSize: isCompact ? 9.5 : 10.5,
+                            fontWeight: 850,
+                            lineHeight: 1.28,
+                          }}
+                        >
+                          {decisionPackEvidenceExtract.guaranteeOutcomeBoundaryNote}
                         </div>
                       ) : null}
                     </div>

@@ -320,6 +320,12 @@ assertContains(
   /TrustSlipDecisionPackRecordPointer[\s\S]*?recordPointers[\s\S]*?extract\?\.record_pointers[\s\S]*?privateDecisionPackRecordPointers[\s\S]*?data-gsn-holder-decision-pack-record-pointers="true"[\s\S]*?Connected record pointers[\s\S]*?recordPointerBoundaryNote/,
   "TrustSlip holder private Decision Pack preview must show connected financial/support record pointers separately from TrustEvent categories."
 );
+
+assertContains(
+  "trustSlip",
+  /TrustSlipDecisionPackGuaranteeOutcomePointer[\s\S]*?guaranteeOutcomePointers[\s\S]*?extract\?\.guarantee_outcome_pointers[\s\S]*?privateDecisionPackGuaranteeOutcomePointers[\s\S]*?data-gsn-holder-decision-pack-guarantee-outcome-pointers="true"[\s\S]*?Guarantee\/support outcomes[\s\S]*?guaranteeOutcomeBoundaryNote/,
+  "TrustSlip holder private Decision Pack preview must show aggregate guarantee/support outcomes separately from TrustEvent categories."
+);
 assertContains(
   "trustSlip",
   /TrustSlipDecisionPackConfirmationPointer[\s\S]*?confirmationPointers[\s\S]*?extract\?\.confirmation_pointers[\s\S]*?privateDecisionPackConfirmationPointers[\s\S]*?data-gsn-holder-decision-pack-confirmation-pointers="true"[\s\S]*?Community witness outcomes[\s\S]*?confirmationPointerBoundaryNote/,

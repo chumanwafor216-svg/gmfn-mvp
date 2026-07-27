@@ -1,3 +1,61 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack guarantee/support outcome pointers
+
+Owner trigger:
+- Owner continued the evidence-engine correction after issue-resolution pointers. The next gap was guarantorship/support: a real society decision often asks whether anyone has stood for this person, whether this person has stood for others, and what aggregate outcome status is visible.
+
+Unabated truth:
+- This slice wires existing Loan and LoanGuarantor records into Decision Packs as aggregate guarantee/support outcome pointers.
+- It does not expose borrower or guarantor identities, amounts, payment references, private notes, bank guarantees, loan approvals, cash custody, or future support promises.
+- Devil's advocate: this is still not a mature guarantor-risk summary. It shows support-context pointers and outcome status, but it does not calculate risk, rank people, approve support, or prove that someone can safely stand for the holder now.
+
+Changed:
+- gmfn_backend/app/services/trust_slip_decision_packs.py
+  - Added GUARANTEE_OUTCOME_PACKS and aggregate extraction from existing Loan and LoanGuarantor rows.
+  - Public and holder-private evidence extracts now include guarantee_outcome_pointers plus guarantee_outcome_boundary_note.
+  - Decision Pack profiles now add a Guarantee/support outcome pointer signal when support outcome records exist or when a support-outcome gap should be shown.
+  - Separates two social questions: people_who_stood_for_holder and holder_support_given_outcome.
+  - Public source wording now includes guarantee/support outcome pointers and explicitly excludes borrower/guarantor identities and amounts.
+  - Guarantor Decision Pack missing-link wording now marks mature summaries/weighting as still missing, instead of claiming the mature engine exists.
+- gmfn_backend/tests/test_trust_slip_boundary_controls.py
+  - Added coverage proving a guarantor/support Decision Pack surfaces aggregate support outcomes without leaking supporter/borrower emails, private GSN IDs, amounts, borrower_user_id, guarantor_user_id, pledge_amount, locked_amount, released_amount, or trust_score.
+- frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts
+  - Normalizes guarantee_outcome_pointers and guarantee_outcome_boundary_note from backend Decision Pack profiles.
+- frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx
+  - Public TrustSlip Verify now renders Guarantee/support outcomes separately after Connected record pointers and before Community witness outcomes.
+- frontend/src/pages/TrustSlipPage.tsx
+  - Signed-in holder TrustSlip private Decision Pack preview now shows Guarantee/support outcomes separately before Community witness outcomes.
+- frontend/src/lib/decisionPacks.ts
+  - Updated Guarantor Decision Pack missing-link wording to match the backend catalogue truth: aggregate pointers are wired, mature summary/weighting is still missing.
+- frontend/tools/audit-public-trustslip-verify-boundary.mjs
+- frontend/tools/audit-trust-passport-trustslip-boundary.mjs
+  - Added guards for backend extraction, frontend normalization, public rendering, holder rendering, and bank/identity/amount overclaim tests.
+- docs/GSN_DECISION_PACK_EVIDENCE_MATRIX.md
+  - Updated matrix notes to mark aggregate guarantee/support outcome pointers as partially wired and keep mature support timelines, exposure weighting, and safe explanation rules as remaining architecture work.
+
+Routes/screens affected:
+- Backend /trust-slips/verify/{code} Decision Pack profile payload.
+- Backend /trust-slips/me/decision-pack-evidence holder-private evidence extract.
+- /trust-slips/verify and /app/trust-slips/verify public Decision Pack reading.
+- /app/trust-slip signed-in holder private Decision Pack preview.
+- No database schema, auth, payment, ledger, loan write path, guarantor write path, repayment write path, bank logic, money custody, or final support decision engine changed.
+
+Verification:
+- Passed python -m py_compile gmfn_backend\app\services\trust_slip_decision_packs.py gmfn_backend\tests\test_trust_slip_boundary_controls.py.
+- Passed python -m pytest gmfn_backend\tests\test_trust_slip_boundary_controls.py gmfn_backend\tests\test_community_confirmation_relay.py -q: 56 passed.
+- Passed npm --prefix frontend run audit:public-trustslip-verify-boundary.
+- Passed npm --prefix frontend run audit:trust-passport-trustslip-boundary.
+- Passed npm --prefix frontend run audit:protected-button-freeze.
+- Passed npm --prefix frontend run build.
+- Passed npm --prefix frontend run smoke:public-trustslip-verify-states outside the sandbox after known Vite/esbuild spawn EPERM.
+- Passed npm --prefix frontend run smoke:trust-passport-trustslip-boundary outside the sandbox after known Vite/esbuild spawn EPERM.
+- Passed git diff --check, with only existing line-ending warnings.
+
+Deployment:
+- Not pushed or deployed. Git publishing remains frozen into batch mode until owner approves publishing.
+
+Recommended next step:
+- Continue the same evidence-engine hardening for supplier fulfilment/correction records, completed-work/customer-confirmed jobs, landlord/accommodation references, Demand Box response-to-job outcomes, and structured per-category witness answers.
+
 ## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack issue-resolution pointers
 
 Owner trigger:

@@ -100,8 +100,8 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
             {"label": "Finance", "route": "/app/finance", "evidence": "contribution, money-in/out, and readiness signals"},
         ),
         missing_links=(
-            "Simple guarantor risk summary in Trust Passport",
-            "Outcome history for previous guarantees surfaced as decision evidence",
+            "Mature guarantor risk summary in Trust Passport",
+            "Detailed guarantee outcome history and weighting rules beyond aggregate pointers",
         ),
         refuses_to_claim=("Loan approval", "Bank guarantee", "Automatic repayment", "Money custody"),
         confirmation_reason_type="guarantor_support_check",
@@ -1021,6 +1021,18 @@ FINANCIAL_RECORD_PACKS = {
     "business_partnership",
 }
 
+GUARANTEE_OUTCOME_PACKS = {
+    "community_standing",
+    "referral_decision",
+    "guarantor_decision",
+    "housing_decision",
+    "business_partnership",
+}
+
+COMPLETED_LOAN_STATUSES = {"repaid", "paid", "settled", "closed"}
+CURRENT_REVIEW_LOAN_STATUSES = {"approved", "disbursed", "active", "pending", "incomplete"}
+ACCEPTED_GUARANTOR_STATUSES = {"approved", "accepted", "confirmed", "released"}
+
 
 def _claim_row(
     *,
@@ -1287,6 +1299,129 @@ def _decision_pack_confirmation_pointers(
         )
     ]
 
+
+
+def _money_positive(value: Any) -> bool:
+    try:
+        return float(value or 0) > 0
+    except Exception:
+        return False
+
+
+def _loan_completed(loan: Loan) -> bool:
+    return _clean(getattr(loan, "status", None), limit=40).lower() in COMPLETED_LOAN_STATUSES or getattr(loan, "repaid_at", None) is not None
+
+
+def _loan_needs_current_review(loan: Loan) -> bool:
+    return _clean(getattr(loan, "status", None), limit=40).lower() in CURRENT_REVIEW_LOAN_STATUSES
+
+
+def _guarantor_accepted(row: LoanGuarantor) -> bool:
+    return _clean(getattr(row, "status", None), limit=32).lower() in ACCEPTED_GUARANTOR_STATUSES
+
+
+def _decision_pack_guarantee_outcome_pointers(
+    db: Session,
+    *,
+    holder_user_id: int,
+    pack_key: str,
+    active_community_ids: set[int],
+) -> list[dict[str, Any]]:
+    if pack_key not in GUARANTEE_OUTCOME_PACKS:
+        return []
+
+    pointers: list[dict[str, Any]] = []
+
+    supported_query = (
+        db.query(LoanGuarantor, Loan)
+        .join(Loan, Loan.id == LoanGuarantor.loan_id)
+        .filter(Loan.borrower_user_id == int(holder_user_id))
+    )
+    if active_community_ids:
+        supported_query = supported_query.filter(Loan.clan_id.in_(active_community_ids))
+    supported_pairs = supported_query.order_by(Loan.created_at.desc(), Loan.id.desc(), LoanGuarantor.id.desc()).limit(30).all()
+    if supported_pairs:
+        supported_loans = {int(getattr(loan, "id", 0) or 0): loan for _, loan in supported_pairs}
+        accepted = sum(1 for row, _ in supported_pairs if _guarantor_accepted(row))
+        locked = sum(1 for row, _ in supported_pairs if getattr(row, "is_locked", None) is True or _money_positive(getattr(row, "locked_amount", 0)))
+        released = sum(1 for row, _ in supported_pairs if _money_positive(getattr(row, "released_amount", 0)))
+        completed = sum(1 for loan in supported_loans.values() if _loan_completed(loan))
+        current_review = sum(1 for loan in supported_loans.values() if _loan_needs_current_review(loan))
+        value = f"{len(supported_pairs)} support/guarantor record{'s' if len(supported_pairs) != 1 else ''} found on holder loan/support requests"
+        if accepted:
+            value = f"{value}; {accepted} accepted or approved"
+        if locked:
+            value = f"{value}; {locked} currently locked"
+        if released:
+            value = f"{value}; {released} show released support exposure"
+        if completed:
+            value = f"{value}; {completed} linked to repaid, settled, or closed loan/support outcomes"
+        if current_review:
+            value = f"{value}; {current_review} still need current-context review"
+        pointers.append(
+            _record_pointer_row(
+                key="people_who_stood_for_holder",
+                label="People who stood for holder",
+                status="caution" if locked or current_review else "available",
+                value=value,
+                source="loan_guarantors+loans",
+                count=len(supported_pairs),
+                decision_use="Use this as support-network and outcome context only. It is not loan approval, bank guarantee, automatic repayment, cash custody, or proof of future support.",
+            )
+        )
+
+    given_query = (
+        db.query(LoanGuarantor, Loan)
+        .join(Loan, Loan.id == LoanGuarantor.loan_id)
+        .filter(LoanGuarantor.guarantor_user_id == int(holder_user_id))
+    )
+    if active_community_ids:
+        given_query = given_query.filter(LoanGuarantor.clan_id.in_(active_community_ids))
+    given_pairs = given_query.order_by(LoanGuarantor.created_at.desc(), LoanGuarantor.id.desc()).limit(30).all()
+    if given_pairs:
+        given_loans = {int(getattr(loan, "id", 0) or 0): loan for _, loan in given_pairs}
+        accepted = sum(1 for row, _ in given_pairs if _guarantor_accepted(row))
+        locked = sum(1 for row, _ in given_pairs if getattr(row, "is_locked", None) is True or _money_positive(getattr(row, "locked_amount", 0)))
+        released = sum(1 for row, _ in given_pairs if _money_positive(getattr(row, "released_amount", 0)))
+        completed = sum(1 for loan in given_loans.values() if _loan_completed(loan))
+        current_review = sum(1 for loan in given_loans.values() if _loan_needs_current_review(loan))
+        value = f"{len(given_pairs)} record{'s' if len(given_pairs) != 1 else ''} where holder stood for others"
+        if accepted:
+            value = f"{value}; {accepted} accepted or approved"
+        if locked:
+            value = f"{value}; {locked} currently locked"
+        if released:
+            value = f"{value}; {released} show released support exposure"
+        if completed:
+            value = f"{value}; {completed} linked to repaid, settled, or closed loan/support outcomes"
+        if current_review:
+            value = f"{value}; {current_review} still need current-context review"
+        pointers.append(
+            _record_pointer_row(
+                key="holder_support_given_outcome",
+                label="Holder support given",
+                status="caution" if locked or current_review else "available",
+                value=value,
+                source="loan_guarantors+loans",
+                count=len(given_pairs),
+                decision_use="Use this as responsibility and support-follow-through context only. It is not a bank guarantee, cash custody, loan approval, or a promise that the holder can support again.",
+            )
+        )
+
+    if not pointers:
+        pointers.append(
+            _record_pointer_row(
+                key="guarantee_outcome_gap",
+                label="Guarantee/support outcome pointer",
+                status="gap",
+                value="No guarantee/support outcome pointer is visible for this Decision Pack yet.",
+                source="loan_guarantors+loans",
+                count=0,
+                decision_use="Absence of a visible support outcome is not proof that nobody stood for the person. Ask for private Trust Passport evidence or live community confirmation before relying.",
+            )
+        )
+
+    return pointers[:4]
 
 def _decision_pack_record_pointers(
     db: Session,
@@ -1653,6 +1788,12 @@ def build_decision_pack_private_evidence_extract(
         pack_key=pack_key,
         active_community_ids=active_community_ids,
     )
+    guarantee_outcome_pointers = _decision_pack_guarantee_outcome_pointers(
+        db,
+        holder_user_id=int(holder_user_id),
+        pack_key=pack_key,
+        active_community_ids=active_community_ids,
+    )
     confirmation_pointers = _decision_pack_confirmation_pointers(
         db,
         holder_user_id=int(holder_user_id),
@@ -1678,6 +1819,8 @@ def build_decision_pack_private_evidence_extract(
         "declaration_boundary_note": "Declared shop, listing, or trade records are evidence pointers only. They do not prove licence, insurance, work quality, or future performance.",
         "record_pointers": record_pointers,
         "record_pointer_boundary_note": "Connected financial/support records are evidence pointers only. They do not prove creditworthiness, legal tenancy status, rent payment, bank approval, or future repayment.",
+        "guarantee_outcome_pointers": guarantee_outcome_pointers,
+        "guarantee_outcome_boundary_note": "Guarantee/support outcome pointers are aggregate support-context evidence only. They do not expose borrower or guarantor identities, amounts, payment references, private notes, bank guarantees, loan approvals, cash custody, or future support promises.",
         "confirmation_pointers": confirmation_pointers,
         "confirmation_pointer_boundary_note": "Community witness outcomes are aggregate evidence pointers only. They do not expose responders, private notes, licences, guarantees, approvals, or final decisions.",
         "issue_resolution_pointers": issue_resolution_pointers,
@@ -1745,6 +1888,12 @@ def build_decision_pack_evidence_extract(
         pack_key=pack_key,
         active_community_ids=active_community_ids,
     )
+    guarantee_outcome_pointers = _decision_pack_guarantee_outcome_pointers(
+        db,
+        holder_user_id=int(holder_user_id),
+        pack_key=pack_key,
+        active_community_ids=active_community_ids,
+    )
     confirmation_pointers = _decision_pack_confirmation_pointers(
         db,
         holder_user_id=int(holder_user_id),
@@ -1758,7 +1907,7 @@ def build_decision_pack_evidence_extract(
     )
     return {
         "source": "trust_events_redacted_extract",
-        "source_note": "Aggregated from public-safe TrustEvent categories plus declared, connected-record, community-witness outcome, and issue-resolution pointers where relevant. Raw TrustEvents, actor details, notes, metadata, amounts, payment references, responder identities, private dispute details, and private contacts are not exposed publicly.",
+        "source_note": "Aggregated from public-safe TrustEvent categories plus declared, connected-record, guarantee/support outcome, community-witness outcome, and issue-resolution pointers where relevant. Raw TrustEvents, actor details, notes, metadata, amounts, payment references, borrower or guarantor identities, responder identities, private dispute details, and private contacts are not exposed publicly.",
         "evidence_scope": _decision_pack_evidence_scope(
             active_community_ids=active_community_ids,
             primary_clan_id=getattr(slip, "clan_id", None),
@@ -1768,6 +1917,8 @@ def build_decision_pack_evidence_extract(
         "declaration_boundary_note": "Declared shop, listing, or trade records are evidence pointers only. They do not prove licence, insurance, work quality, or future performance.",
         "record_pointers": record_pointers,
         "record_pointer_boundary_note": "Connected financial/support records are evidence pointers only. They do not prove creditworthiness, legal tenancy status, rent payment, bank approval, or future repayment.",
+        "guarantee_outcome_pointers": guarantee_outcome_pointers,
+        "guarantee_outcome_boundary_note": "Guarantee/support outcome pointers are aggregate support-context evidence only. They do not expose borrower or guarantor identities, amounts, payment references, private notes, bank guarantees, loan approvals, cash custody, or future support promises.",
         "confirmation_pointers": confirmation_pointers,
         "confirmation_pointer_boundary_note": "Community witness outcomes are aggregate evidence pointers only. They do not expose responders, private notes, licences, guarantees, approvals, or final decisions.",
         "issue_resolution_pointers": issue_resolution_pointers,
@@ -1856,6 +2007,21 @@ def build_decision_pack_profile(
                 "decision_use": "Treat this as a record pointer. Review private evidence or community confirmation before relying.",
             }
         ]
+    guarantee_outcome_pointers = []
+    if isinstance(evidence_extract, Mapping) and isinstance(evidence_extract.get("guarantee_outcome_pointers"), list):
+        guarantee_outcome_pointers = [pointer for pointer in evidence_extract.get("guarantee_outcome_pointers", []) if isinstance(pointer, Mapping)]
+    guarantee_outcome_signal = []
+    if guarantee_outcome_pointers:
+        first_guarantee_pointer = guarantee_outcome_pointers[0]
+        guarantee_outcome_signal = [
+            {
+                "key": "guarantee_support_outcome_pointer",
+                "label": "Guarantee/support outcome pointer",
+                "status": _clean(first_guarantee_pointer.get("status"), limit=32) or "available",
+                "value": _clean(first_guarantee_pointer.get("value"), limit=260) or "Guarantee/support outcome evidence is visible.",
+                "decision_use": "Treat this as aggregate support-context evidence. It is not a bank guarantee, loan approval, or future support promise.",
+            }
+        ]
     confirmation_pointers = []
     if isinstance(evidence_extract, Mapping) and isinstance(evidence_extract.get("confirmation_pointers"), list):
         confirmation_pointers = [pointer for pointer in evidence_extract.get("confirmation_pointers", []) if isinstance(pointer, Mapping)]
@@ -1886,10 +2052,10 @@ def build_decision_pack_profile(
                 "decision_use": "Treat this as aggregate review status. It does not expose private dispute detail or make the final decision.",
             }
         ]
-    signals = expected_signals + declared_signal + record_pointer_signal + confirmation_signal + issue_resolution_signal + visible_signals
+    signals = expected_signals + declared_signal + record_pointer_signal + guarantee_outcome_signal + confirmation_signal + issue_resolution_signal + visible_signals
     signal_gaps = [
         signal
-        for signal in visible_signals + declared_signal + record_pointer_signal + confirmation_signal + issue_resolution_signal
+        for signal in visible_signals + declared_signal + record_pointer_signal + guarantee_outcome_signal + confirmation_signal + issue_resolution_signal
         if signal.get("status") in {"gap", "caution"}
     ]
     missing_gap_rows = [

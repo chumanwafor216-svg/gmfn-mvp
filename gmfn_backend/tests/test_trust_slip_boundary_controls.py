@@ -410,6 +410,142 @@ def test_public_verify_housing_pack_surfaces_financial_record_pointers_without_c
     assert "trust_score" not in profile_text
 
 
+def test_public_verify_guarantor_pack_surfaces_support_outcomes_without_bank_or_identity_overclaiming(
+    client,
+    seed_clan_admin_membership,
+):
+    _create_trust_slip(code="ACCESS-GUARANTEE-OUTCOMES")
+
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc)
+        db.add(
+            User(
+                id=2,
+                email="supporter-private@example.com",
+                hashed_password="hashed",
+                role="user",
+                gmfn_id="GSN-U-SUPPORTER-PRIVATE",
+            )
+        )
+        db.add(
+            User(
+                id=3,
+                email="borrower-private@example.com",
+                hashed_password="hashed",
+                role="user",
+                gmfn_id="GSN-U-BORROWER-PRIVATE",
+            )
+        )
+        db.add(
+            ClanMembership(
+                clan_id=1,
+                user_id=2,
+                role="member",
+                personal_pool_balance=Decimal("0.00"),
+                created_at=now,
+            )
+        )
+        supported_loan = Loan(
+            borrower_user_id=1,
+            clan_id=1,
+            amount=Decimal("900.00"),
+            currency="GBP",
+            guarantee_gap=Decimal("300.00"),
+            guarantors_required=1,
+            status="repaid",
+            paid_total=Decimal("900.00"),
+            remaining_amount=Decimal("0.00"),
+            repaid_at=now,
+            due_at=now,
+        )
+        other_loan = Loan(
+            borrower_user_id=3,
+            clan_id=1,
+            amount=Decimal("700.00"),
+            currency="GBP",
+            guarantee_gap=Decimal("200.00"),
+            guarantors_required=1,
+            status="active",
+            paid_total=Decimal("100.00"),
+            remaining_amount=Decimal("600.00"),
+            due_at=now + timedelta(days=14),
+        )
+        db.add(supported_loan)
+        db.add(other_loan)
+        db.flush()
+        db.add(
+            LoanGuarantor(
+                loan_id=int(supported_loan.id),
+                clan_id=1,
+                guarantor_user_id=2,
+                pledge_amount=Decimal("300.00"),
+                status="approved",
+                is_locked=False,
+                locked_amount=Decimal("0.00"),
+                released_amount=Decimal("100.00"),
+                responded_at=now,
+            )
+        )
+        db.add(
+            LoanGuarantor(
+                loan_id=int(other_loan.id),
+                clan_id=1,
+                guarantor_user_id=1,
+                pledge_amount=Decimal("200.00"),
+                status="approved",
+                is_locked=True,
+                locked_amount=Decimal("50.00"),
+                released_amount=Decimal("0.00"),
+                responded_at=now,
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get(
+        "/trust-slips/verify/ACCESS-GUARANTEE-OUTCOMES",
+        params={"decision_pack": "guarantor_decision"},
+    )
+
+    assert response.status_code == 200, response.text
+    profile = response.json()["decision_pack_profile"]
+    extract = profile["evidence_extract"]
+    pointers = {row["key"]: row for row in extract["guarantee_outcome_pointers"]}
+    stood_for_holder = pointers["people_who_stood_for_holder"]
+    holder_stood = pointers["holder_support_given_outcome"]
+    assert stood_for_holder["status"] == "available"
+    assert stood_for_holder["evidence_count"] == 1
+    assert "1 support/guarantor record found on holder loan/support requests" in stood_for_holder["value"]
+    assert "1 accepted or approved" in stood_for_holder["value"]
+    assert "1 linked to repaid, settled, or closed loan/support outcomes" in stood_for_holder["value"]
+    assert holder_stood["status"] == "caution"
+    assert holder_stood["evidence_count"] == 1
+    assert "1 record where holder stood for others" in holder_stood["value"]
+    assert "1 currently locked" in holder_stood["value"]
+    assert "1 still need current-context review" in holder_stood["value"]
+    assert "do not expose borrower or guarantor identities" in extract["guarantee_outcome_boundary_note"]
+    assert "bank guarantees" in extract["guarantee_outcome_boundary_note"]
+    assert any(signal["key"] == "guarantee_support_outcome_pointer" for signal in profile["relevant_signals"])
+    profile_text = str(profile)
+    assert "supporter-private@example.com" not in profile_text
+    assert "borrower-private@example.com" not in profile_text
+    assert "GSN-U-SUPPORTER-PRIVATE" not in profile_text
+    assert "GSN-U-BORROWER-PRIVATE" not in profile_text
+    assert "900.00" not in profile_text
+    assert "700.00" not in profile_text
+    assert "300.00" not in profile_text
+    assert "200.00" not in profile_text
+    assert "50.00" not in profile_text
+    assert "borrower_user_id" not in profile_text
+    assert "guarantor_user_id" not in profile_text
+    assert "pledge_amount" not in profile_text
+    assert "locked_amount" not in profile_text
+    assert "released_amount" not in profile_text
+    assert "trust_score" not in profile_text
+
+
 def test_public_verify_decision_pack_surfaces_aggregate_community_witness_outcomes_without_private_responder_details(
     client,
     seed_clan_admin_membership,

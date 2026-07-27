@@ -50,6 +50,16 @@ type DecisionPackRecordPointer = {
   decisionUse: string;
 };
 
+type DecisionPackGuaranteeOutcomePointer = {
+  key: string;
+  label: string;
+  status: string;
+  value: string;
+  source: string;
+  evidenceCount: number | null;
+  decisionUse: string;
+};
+
 type DecisionPackConfirmationPointer = {
   key: string;
   label: string;
@@ -85,6 +95,8 @@ export type DecisionPackEvidenceExtractView = {
   declarationBoundaryNote: string;
   recordPointers: DecisionPackRecordPointer[];
   recordPointerBoundaryNote: string;
+  guaranteeOutcomePointers: DecisionPackGuaranteeOutcomePointer[];
+  guaranteeOutcomeBoundaryNote: string;
   confirmationPointers: DecisionPackConfirmationPointer[];
   confirmationPointerBoundaryNote: string;
   issueResolutionPointers: DecisionPackIssueResolutionPointer[];
@@ -280,6 +292,7 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
     : [];
   const declaredClaims = Array.isArray(source.declared_claims) ? source.declared_claims : [];
   const recordPointers = Array.isArray(source.record_pointers) ? source.record_pointers : [];
+  const guaranteeOutcomePointers = Array.isArray(source.guarantee_outcome_pointers) ? source.guarantee_outcome_pointers : [];
   const confirmationPointers = Array.isArray(source.confirmation_pointers) ? source.confirmation_pointers : [];
   const issueResolutionPointers = Array.isArray(source.issue_resolution_pointers) ? source.issue_resolution_pointers : [];
   const evidenceScope = source.evidence_scope && typeof source.evidence_scope === "object" ? source.evidence_scope : {};
@@ -359,6 +372,28 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
     recordPointerBoundaryNote: firstTruthy(
       source.record_pointer_boundary_note,
       "Connected financial/support records are evidence pointers only. They do not prove creditworthiness, legal tenancy status, rent payment, bank approval, or future repayment."
+    ),
+    guaranteeOutcomePointers: guaranteeOutcomePointers
+      .map((pointer: any) => ({
+        key: firstTruthy(pointer?.key, pointer?.label),
+        label: firstTruthy(pointer?.label, "Guarantee/support outcome pointer"),
+        status: firstTruthy(pointer?.status, "not_shown"),
+        value: firstTruthy(
+          pointer?.value,
+          "No guarantee/support outcome pointer is visible for this Decision Pack yet."
+        ),
+        source: firstTruthy(pointer?.source, "loan_guarantors+loans"),
+        evidenceCount: firstNumberLike(pointer?.evidence_count),
+        decisionUse: firstTruthy(
+          pointer?.decision_use,
+          "Use this as support-context evidence only; ask for private context or live confirmation before relying."
+        ),
+      }))
+      .filter((pointer: DecisionPackGuaranteeOutcomePointer) => pointer.key || pointer.label)
+      .slice(0, 4),
+    guaranteeOutcomeBoundaryNote: firstTruthy(
+      source.guarantee_outcome_boundary_note,
+      "Guarantee/support outcome pointers are aggregate support-context evidence only. They do not expose borrower or guarantor identities, amounts, payment references, private notes, bank guarantees, loan approvals, cash custody, or future support promises."
     ),
     confirmationPointers: confirmationPointers
       .map((pointer: any) => ({

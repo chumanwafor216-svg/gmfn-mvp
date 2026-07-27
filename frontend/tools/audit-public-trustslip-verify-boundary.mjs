@@ -166,6 +166,12 @@ assertContains(
   /type DecisionPackRecordPointer[\s\S]*?recordPointers: DecisionPackRecordPointer\[\][\s\S]*?source\.record_pointers[\s\S]*?recordPointerBoundaryNote/,
   "Public TrustSlip Verify view model must preserve connected financial/support record pointer rows and their boundary note."
 );
+
+assertContains(
+  "viewModel",
+  /type DecisionPackGuaranteeOutcomePointer[\s\S]*?guaranteeOutcomePointers: DecisionPackGuaranteeOutcomePointer\[\][\s\S]*?source\.guarantee_outcome_pointers[\s\S]*?guaranteeOutcomeBoundaryNote/,
+  "Public TrustSlip Verify view model must preserve aggregate guarantee/support outcome pointer rows and their boundary note."
+);
 assertContains(
   "viewModel",
   /type DecisionPackConfirmationPointer[\s\S]*?confirmationPointers: DecisionPackConfirmationPointer\[\][\s\S]*?source\.confirmation_pointers[\s\S]*?confirmationPointerBoundaryNote/,
@@ -385,6 +391,12 @@ assertContains(
   /Loan[\s\S]*?LoanGuarantor[\s\S]*?PoolEvent[\s\S]*?Repayment[\s\S]*?FINANCIAL_RECORD_PACKS[\s\S]*?_decision_pack_record_pointers[\s\S]*?loan_support_lifecycle[\s\S]*?repayment_follow_through[\s\S]*?guarantor_support_response[\s\S]*?pool_contribution_activity[\s\S]*?record_pointers[\s\S]*?record_pointer_boundary_note/,
   "Backend Decision Pack evidence extract must surface public-safe financial/support record pointers for housing, support, and partnership decisions without exposing amounts or credit claims."
 );
+
+assertContains(
+  "backendDecisionPacks",
+  /GUARANTEE_OUTCOME_PACKS[\s\S]*?_decision_pack_guarantee_outcome_pointers[\s\S]*?people_who_stood_for_holder[\s\S]*?holder_support_given_outcome[\s\S]*?guarantee_outcome_gap[\s\S]*?guarantee_outcome_pointers[\s\S]*?guarantee_outcome_boundary_note/,
+  "Backend Decision Pack evidence extract must surface aggregate guarantee/support outcome pointers without exposing borrower or guarantor identities, amounts, or bank guarantees."
+);
 assertContains(
   "backendDecisionPacks",
   /CommunityConfirmationOutcome[\s\S]*?CommunityConfirmationRequest[\s\S]*?CommunityConfirmationResponse[\s\S]*?_decision_pack_confirmation_pointers[\s\S]*?community_confirmation_gap[\s\S]*?community_witness_outcome[\s\S]*?confirmation_pointers[\s\S]*?confirmation_pointer_boundary_note/,
@@ -428,6 +440,12 @@ assertContains(
   "backendDecisionPackTests",
   /test_public_verify_housing_pack_surfaces_financial_record_pointers_without_credit_overclaiming[\s\S]*?loan_support_lifecycle[\s\S]*?repayment_follow_through[\s\S]*?guarantor_support_response[\s\S]*?pool_contribution_activity[\s\S]*?record_pointer_boundary_note[\s\S]*?PRIVATE-POOL-REF[\s\S]*?trust_score/,
   "Backend tests must prove housing packs surface financial/support record pointers without exposing private references, amounts, or trust scores."
+);
+
+assertContains(
+  "backendDecisionPackTests",
+  /test_public_verify_guarantor_pack_surfaces_support_outcomes_without_bank_or_identity_overclaiming[\s\S]*?people_who_stood_for_holder[\s\S]*?holder_support_given_outcome[\s\S]*?guarantee_outcome_boundary_note[\s\S]*?supporter-private@example\.com[\s\S]*?borrower_user_id[\s\S]*?guarantor_user_id[\s\S]*?trust_score/,
+  "Backend tests must prove Decision Packs surface aggregate guarantee/support outcomes without exposing identities, amounts, raw IDs, or trust scores."
 );
 assertContains(
   "backendDecisionPackTests",
@@ -503,6 +521,12 @@ assertContains(
   "publicPaper",
   /decisionPackRecordPointers[\s\S]*?Connected record pointers[\s\S]*?decisionPackRecordPointerRows[\s\S]*?recordPointerBoundaryNote/,
   "Public TrustSlip paper must render connected record pointers separately from declarations and event categories with the financial/support boundary."
+);
+
+assertContains(
+  "publicPaper",
+  /decisionPackGuaranteeOutcomePointers[\s\S]*?Guarantee\/support outcomes[\s\S]*?decisionPackGuaranteeOutcomeRows[\s\S]*?guaranteeOutcomeBoundaryNote/,
+  "Public TrustSlip paper must render aggregate guarantee/support outcomes separately with the bank-guarantee boundary."
 );
 assertContains(
   "publicPaper",

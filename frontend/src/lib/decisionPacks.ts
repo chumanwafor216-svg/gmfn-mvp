@@ -103,8 +103,8 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
       { label: "Finance", route: "/app/finance", evidence: "contribution, money-in/out, and readiness signals" },
     ],
     missingLinks: [
-      "Simple guarantor risk summary in Trust Passport",
-      "Outcome history for previous guarantees surfaced as decision evidence",
+      "Mature guarantor risk summary in Trust Passport",
+      "Detailed guarantee outcome history and weighting rules beyond aggregate pointers",
     ],
     refusesToClaim: ["Loan approval", "Bank guarantee", "Automatic repayment", "Money custody"],
     confirmationReasonType: "guarantor_support_check",
