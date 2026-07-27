@@ -391,6 +391,16 @@ type TrustSlipDecisionPackDeclaredClaim = {
   decisionUse: string;
 };
 
+type TrustSlipDecisionPackRecordPointer = {
+  key: string;
+  label: string;
+  status: string;
+  value: string;
+  source: string;
+  evidenceCount: number;
+  decisionUse: string;
+};
+
 type TrustSlipDecisionPackEvidenceExtract = {
   source: string;
   decisionPack: string;
@@ -406,6 +416,8 @@ type TrustSlipDecisionPackEvidenceExtract = {
   categories: TrustSlipDecisionPackEvidenceCategory[];
   declaredClaims: TrustSlipDecisionPackDeclaredClaim[];
   declarationBoundaryNote: string;
+  recordPointers: TrustSlipDecisionPackRecordPointer[];
+  recordPointerBoundaryNote: string;
   privacyNote: string;
   boundaryNote: string;
 };
@@ -1739,6 +1751,20 @@ function normalizeTrustSlipDecisionPackEvidence(raw: any): TrustSlipDecisionPack
         .filter((row: TrustSlipDecisionPackDeclaredClaim) => row.key || row.label || row.value)
         .slice(0, 4)
     : [];
+  const recordPointers = Array.isArray(extract?.record_pointers)
+    ? extract.record_pointers
+        .map((row: any) => ({
+          key: firstTruthy(row?.key),
+          label: firstTruthy(row?.label, "Connected record pointer"),
+          status: firstTruthy(row?.status),
+          value: firstTruthy(row?.value),
+          source: firstTruthy(row?.source),
+          evidenceCount: Number(row?.evidence_count ?? row?.evidenceCount ?? 0) || 0,
+          decisionUse: firstTruthy(row?.decision_use, row?.decisionUse),
+        }))
+        .filter((row: TrustSlipDecisionPackRecordPointer) => row.key || row.label || row.value)
+        .slice(0, 4)
+    : [];
   const categories = Array.isArray(extract?.categories)
     ? extract.categories
         .map((row: any) => ({
@@ -1798,6 +1824,8 @@ function normalizeTrustSlipDecisionPackEvidence(raw: any): TrustSlipDecisionPack
     categories,
     declaredClaims,
     declarationBoundaryNote: firstTruthy(extract?.declaration_boundary_note, raw?.declaration_boundary_note),
+    recordPointers,
+    recordPointerBoundaryNote: firstTruthy(extract?.record_pointer_boundary_note, raw?.record_pointer_boundary_note),
     privacyNote: firstTruthy(extract?.privacy_note, raw?.privacy_note),
     boundaryNote: firstTruthy(extract?.boundary_note, raw?.boundary_note),
   };
@@ -3355,6 +3383,7 @@ export default function TrustSlipPage() {
   ];
   const privateDecisionPackEvidenceCategories = (decisionPackEvidenceExtract?.categories || []).slice(0, 4);
   const privateDecisionPackDeclaredClaims = (decisionPackEvidenceExtract?.declaredClaims || []).slice(0, 3);
+  const privateDecisionPackRecordPointers = (decisionPackEvidenceExtract?.recordPointers || []).slice(0, 3);
   const privateDecisionPackEvidenceScope = decisionPackEvidenceExtract?.evidenceScope;
   const privateDecisionPackEvidenceScopeSummary = firstTruthy(
     privateDecisionPackEvidenceScope?.publicSummary,
@@ -4297,6 +4326,55 @@ export default function TrustSlipPage() {
                           }}
                         >
                           {decisionPackEvidenceExtract.declarationBoundaryNote}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {privateDecisionPackRecordPointers.length ? (
+                    <div
+                      data-gsn-holder-decision-pack-record-pointers="true"
+                      style={{
+                        border: "1px solid rgba(37,78,119,0.10)",
+                        borderRadius: 12,
+                        background: "#FFFFFF",
+                        padding: "8px 9px",
+                        display: "grid",
+                        gap: 6,
+                      }}
+                    >
+                      <div
+                        style={{
+                          color: "#07172C",
+                          fontSize: isCompact ? 12 : 13,
+                          fontWeight: 950,
+                          lineHeight: 1.15,
+                        }}
+                      >
+                        Connected record pointers
+                      </div>
+                      {privateDecisionPackRecordPointers.map((pointer) => (
+                        <div
+                          key={pointer.key || pointer.label}
+                          style={{
+                            color: "#526579",
+                            fontSize: isCompact ? 10 : 11,
+                            fontWeight: 800,
+                            lineHeight: 1.28,
+                          }}
+                        >
+                          <strong>{pointer.label}:</strong> {pointer.value || pointer.decisionUse}
+                        </div>
+                      ))}
+                      {decisionPackEvidenceExtract?.recordPointerBoundaryNote ? (
+                        <div
+                          style={{
+                            color: "#8A6500",
+                            fontSize: isCompact ? 9.5 : 10.5,
+                            fontWeight: 850,
+                            lineHeight: 1.28,
+                          }}
+                        >
+                          {decisionPackEvidenceExtract.recordPointerBoundaryNote}
                         </div>
                       ) : null}
                     </div>

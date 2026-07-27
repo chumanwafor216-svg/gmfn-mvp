@@ -162,6 +162,11 @@ assertContains(
   "Public TrustSlip Verify view model must preserve declared work/service claim rows and their boundary note."
 );
 assertContains(
+  "viewModel",
+  /type DecisionPackRecordPointer[\s\S]*?recordPointers: DecisionPackRecordPointer\[\][\s\S]*?source\.record_pointers[\s\S]*?recordPointerBoundaryNote/,
+  "Public TrustSlip Verify view model must preserve connected financial/support record pointer rows and their boundary note."
+);
+assertContains(
   "verify",
   /requestCommunityPulse[\s\S]*?requestCommunityConfirmation[\s\S]*?reason_type:[\s\S]*?decisionPackProfile\.communityConfirmationPrompt\.reasonType \|\| "community_standing_check"/,
   "Public TrustSlip Verify live community confirmation must use the Decision Pack prompt reason type."
@@ -366,6 +371,11 @@ assertContains(
 );
 assertContains(
   "backendDecisionPacks",
+  /Loan[\s\S]*?LoanGuarantor[\s\S]*?PoolEvent[\s\S]*?Repayment[\s\S]*?FINANCIAL_RECORD_PACKS[\s\S]*?_decision_pack_record_pointers[\s\S]*?loan_support_lifecycle[\s\S]*?repayment_follow_through[\s\S]*?guarantor_support_response[\s\S]*?pool_contribution_activity[\s\S]*?record_pointers[\s\S]*?record_pointer_boundary_note/,
+  "Backend Decision Pack evidence extract must surface public-safe financial/support record pointers for housing, support, and partnership decisions without exposing amounts or credit claims."
+);
+assertContains(
+  "backendDecisionPacks",
   /expected_evidence_[\s\S]*?Architecture gap[\s\S]*?does not score the person[\s\S]*?or prove \{boundary_list\}/,
   "Backend Decision Pack profile must turn expectations and gaps into public-readable rows without becoming a score."
 );
@@ -391,6 +401,11 @@ assertContains(
   "backendDecisionPackTests",
   /test_public_verify_trade_pack_surfaces_declared_work_claims_without_overclaiming[\s\S]*?Emeka Plumbing Services[\s\S]*?Bathroom leak repair[\s\S]*?Kitchen pipe repair[\s\S]*?declaration_boundary_note[\s\S]*?workmanship guarantee[\s\S]*?trust_score/,
   "Backend tests must prove trade packs surface declared shop/listing/trade evidence without turning it into a score or workmanship guarantee."
+);
+assertContains(
+  "backendDecisionPackTests",
+  /test_public_verify_housing_pack_surfaces_financial_record_pointers_without_credit_overclaiming[\s\S]*?loan_support_lifecycle[\s\S]*?repayment_follow_through[\s\S]*?guarantor_support_response[\s\S]*?pool_contribution_activity[\s\S]*?record_pointer_boundary_note[\s\S]*?PRIVATE-POOL-REF[\s\S]*?trust_score/,
+  "Backend tests must prove housing packs surface financial/support record pointers without exposing private references, amounts, or trust scores."
 );
 
 assertContains(
@@ -450,6 +465,11 @@ assertContains(
   "publicPaper",
   /decisionPackDeclaredClaims[\s\S]*?Declared work\/service claim[\s\S]*?decisionPackDeclaredClaimRows[\s\S]*?declarationBoundaryNote/,
   "Public TrustSlip paper must render declared work/service claims separately from event categories with the declaration boundary."
+);
+assertContains(
+  "publicPaper",
+  /decisionPackRecordPointers[\s\S]*?Connected record pointers[\s\S]*?decisionPackRecordPointerRows[\s\S]*?recordPointerBoundaryNote/,
+  "Public TrustSlip paper must render connected record pointers separately from declarations and event categories with the financial/support boundary."
 );
 assertContains(
   "backendDecisionPacks",

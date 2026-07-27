@@ -155,6 +155,16 @@ type TrustSlipVerifyPublicPaperProps = {
         decisionUse: string;
       }>;
       declarationBoundaryNote: string;
+      recordPointers: Array<{
+        key: string;
+        label: string;
+        status: string;
+        value: string;
+        source: string;
+        evidenceCount: number | null;
+        decisionUse: string;
+      }>;
+      recordPointerBoundaryNote: string;
       privateReviewRequired: Array<{
         key: string;
         label: string;
@@ -1183,6 +1193,7 @@ export default function TrustSlipVerifyPublicPaper({
   ];
   const decisionPackEvidenceCategories = decisionPackProfile.evidenceExtract.categories.slice(0, 4);
   const decisionPackDeclaredClaims = decisionPackProfile.evidenceExtract.declaredClaims.slice(0, 3);
+  const decisionPackRecordPointers = decisionPackProfile.evidenceExtract.recordPointers.slice(0, 3);
   const decisionPackPrivateReview = decisionPackProfile.evidenceExtract.privateReviewRequired.slice(0, 3);
   const decisionPackEvidenceRows: Array<[string, string]> = (decisionPackEvidenceCategories.length
     ? decisionPackEvidenceCategories.map((category): [string, string] => [
@@ -1199,6 +1210,13 @@ export default function TrustSlipVerifyPublicPaper({
         `${claim.value}${claim.evidenceCount ? ` (${claim.evidenceCount} pointer${claim.evidenceCount === 1 ? "" : "s"})` : ""}`,
       ])
     : [["No structured claim shown", "Ask for shop/service records, completed-work evidence, or live community confirmation."] as [string, string]]
+  ).slice(0, 3);
+  const decisionPackRecordPointerRows: Array<[string, string]> = (decisionPackRecordPointers.length
+    ? decisionPackRecordPointers.map((pointer): [string, string] => [
+        pointer.label,
+        pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
+      ])
+    : [["No connected record shown", "Ask for private Trust Passport evidence, reference confirmation, or live community confirmation."] as [string, string]]
   ).slice(0, 3);
   const decisionPackPrivateReviewRows: Array<[string, string]> = decisionPackPrivateReview.map(
     (category): [string, string] => [category.label, category.decisionUse]
@@ -2014,6 +2032,11 @@ export default function TrustSlipVerifyPublicPaper({
                 compact={compact}
               />
               <OfficialResultTable
+                title="Connected record pointers"
+                rows={decisionPackRecordPointerRows}
+                compact={compact}
+              />
+              <OfficialResultTable
                 title="Private review needed"
                 rows={decisionPackPrivateReviewDisplayRows}
                 compact={compact}
@@ -2049,7 +2072,7 @@ export default function TrustSlipVerifyPublicPaper({
                 lineHeight: 1.35,
               }}
             >
-              {decisionPackProfile.evidenceExtract.sourceNote} {decisionPackProfile.evidenceExtract.declarationBoundaryNote} {decisionPackProfile.evidenceExtract.boundaryNote}
+              {decisionPackProfile.evidenceExtract.sourceNote} {decisionPackProfile.evidenceExtract.declarationBoundaryNote} {decisionPackProfile.evidenceExtract.recordPointerBoundaryNote} {decisionPackProfile.evidenceExtract.boundaryNote}
             </div>
 
             <div

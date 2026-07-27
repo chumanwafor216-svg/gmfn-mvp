@@ -52,15 +52,23 @@ this person declared or presented on GSN?" It still does not answer the stronger
 question, "has a customer or community witness confirmed this skill and outcome?"
 until witness, completed-work, and complaint/resolution records exist.
 
+For housing, guarantor/support, and partnership decisions, the engine now exposes
+public-safe connected record pointers where existing finance/support records
+support it: loan/support lifecycle counts, repayment record counts, guarantor
+response counts, and pool/contribution event counts. These pointers answer
+"does GSN have any financial/support behaviour records to review?" They do not
+answer legal tenancy, creditworthiness, bank approval, rent guarantee, or future
+repayment questions.
+
 ## Architecture Gaps To Build Next
 
 - Structured profile declarations: skill, trade, occupation, service type, landlord/tenant references, supplier category, volunteer role, support role. Work/service packs now partially read existing Shop, Marketplace listing, and protected-trade seller records as declared claim pointers. Still missing: dedicated structured claim records, self-declared role categories, custom validation, and demand-response completion links.
 - Purpose-specific community confirmation: first prompt routing is wired. Each Decision Pack now carries a controlled confirmation reason type and a direct community-witness question, and TrustSlip community confirmation requests use that reason type. Still missing: custom per-person phrasing, structured witness answers by role/category, and new records for completed work, housing references, or payment discipline.
 - Completed work records: protected-trade release/receipt records can now appear as seller-side declared work pointers. Still missing: customer-confirmed completed-job records connected to Demand Box, quotes, Shop services, completion media, complaints, and resolution outcomes.
-- Payment-discipline summaries: convert contribution, ROSCA, repayment, and support follow-through into public-safe decision evidence without acting like a credit score.
+- Payment-discipline summaries: loan/support lifecycle, repayment, guarantor-response, and pool/contribution record pointers are now partially wired into housing, guarantor/support, and partnership packs. Still missing: mature payment-discipline summaries, lateness/consistency interpretation, landlord-specific references, and public-safe issue-resolution context without acting like a credit score.
 - Issue-resolution summaries: show whether issues were resolved or remain unresolved without exposing private disputes or defamatory detail.
 - Guarantee exposure and outcome: show where people stood for a person and what happened, without turning GSN into a bank or guarantor.
-- Backend parity: backend Decision Pack definitions now carry the same evidence/source/gap/boundary matrix, controlled purpose-specific community confirmation prompts, and public-safe declared work/service claim pointers for relevant packs. The remaining work is deeper data capture: dedicated structured claims, customer-confirmed completed jobs, landlord references, issue-resolution summaries, guarantee outcomes, supplier fulfilment outcomes, and richer witness-answer workflows.
+- Backend parity: backend Decision Pack definitions now carry the same evidence/source/gap/boundary matrix, controlled purpose-specific community confirmation prompts, public-safe declared work/service claim pointers for relevant packs, and public-safe financial/support record pointers for relevant packs. The remaining work is deeper data capture: dedicated structured claims, customer-confirmed completed jobs, landlord references, issue-resolution summaries, guarantee outcomes, supplier fulfilment outcomes, and richer witness-answer workflows.
 
 ## Product Boundary
 

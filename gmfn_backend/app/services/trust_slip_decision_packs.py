@@ -5,7 +5,7 @@ from typing import Any, Mapping, Optional
 
 from sqlalchemy.orm import Session
 
-from app.db.models import ClanMembership, MarketplaceProduct, MarketplaceShop, ProtectedTradeRecord, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare
+from app.db.models import ClanMembership, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare
 
 
 @dataclass(frozen=True)
@@ -1015,6 +1015,12 @@ WORK_DECLARATION_PACKS = {
     "business_partnership",
 }
 
+FINANCIAL_RECORD_PACKS = {
+    "guarantor_decision",
+    "housing_decision",
+    "business_partnership",
+}
+
 
 def _claim_row(
     *,
@@ -1035,6 +1041,155 @@ def _claim_row(
         "evidence_count": _profile_int(count),
         "decision_use": _clean(decision_use, limit=240),
     }
+
+
+def _record_pointer_row(
+    *,
+    key: str,
+    label: str,
+    value: str,
+    source: str,
+    status: str = "available",
+    count: int = 1,
+    decision_use: str,
+) -> dict[str, Any]:
+    return {
+        "key": key,
+        "label": _clean(label, limit=96),
+        "status": _clean(status, limit=32) or "available",
+        "value": _clean(value, limit=280),
+        "source": _clean(source, limit=80),
+        "evidence_count": _profile_int(count),
+        "decision_use": _clean(decision_use, limit=240),
+    }
+
+
+def _filter_to_active_communities(query: Any, model: Any, *, active_community_ids: set[int]) -> Any:
+    if active_community_ids:
+        return query.filter(model.clan_id.in_(active_community_ids))
+    return query
+
+
+def _decision_pack_record_pointers(
+    db: Session,
+    *,
+    holder_user_id: int,
+    pack_key: str,
+    active_community_ids: set[int],
+) -> list[dict[str, Any]]:
+    if pack_key not in FINANCIAL_RECORD_PACKS:
+        return []
+
+    pointers: list[dict[str, Any]] = []
+
+    loan_query = db.query(Loan).filter(Loan.borrower_user_id == int(holder_user_id))
+    loan_query = _filter_to_active_communities(loan_query, Loan, active_community_ids=active_community_ids)
+    loans = loan_query.order_by(Loan.created_at.desc(), Loan.id.desc()).limit(20).all()
+    if loans:
+        repaid_count = sum(
+            1
+            for loan in loans
+            if _clean(getattr(loan, "status", None), limit=40).lower()
+            in {"repaid", "paid", "settled", "closed"}
+            or getattr(loan, "repaid_at", None) is not None
+        )
+        active_count = sum(
+            1
+            for loan in loans
+            if _clean(getattr(loan, "status", None), limit=40).lower()
+            in {"approved", "disbursed", "active", "pending", "incomplete"}
+        )
+        value = f"{len(loans)} loan/support lifecycle record{'s' if len(loans) != 1 else ''} found"
+        if repaid_count:
+            value = f"{value}; {repaid_count} show repaid, settled, or closed status"
+        if active_count:
+            value = f"{value}; {active_count} still need current-context review"
+        pointers.append(
+            _record_pointer_row(
+                key="loan_support_lifecycle",
+                label="Loan/support lifecycle",
+                value=value,
+                source="loans",
+                count=len(loans),
+                decision_use="Use lifecycle counts as repayment-context pointers only. They are not credit approval, rent guarantee, or proof of future payment.",
+            )
+        )
+
+    repayment_query = (
+        db.query(Repayment)
+        .join(Loan, Loan.id == Repayment.loan_id)
+        .filter(Repayment.payer_user_id == int(holder_user_id))
+    )
+    if active_community_ids:
+        repayment_query = repayment_query.filter(Loan.clan_id.in_(active_community_ids))
+    repayments = repayment_query.order_by(Repayment.created_at.desc(), Repayment.id.desc()).limit(20).all()
+    if repayments:
+        pointers.append(
+            _record_pointer_row(
+                key="repayment_follow_through",
+                label="Repayment follow-through",
+                value=f"{len(repayments)} repayment record{'s' if len(repayments) != 1 else ''} found for this holder.",
+                source="repayments",
+                count=len(repayments),
+                decision_use="Use repayment counts as discipline evidence to review privately. They do not expose bank references, amounts, or create a credit score.",
+            )
+        )
+
+    guarantor_query = db.query(LoanGuarantor).filter(LoanGuarantor.guarantor_user_id == int(holder_user_id))
+    guarantor_query = _filter_to_active_communities(guarantor_query, LoanGuarantor, active_community_ids=active_community_ids)
+    guarantor_rows = guarantor_query.order_by(LoanGuarantor.created_at.desc(), LoanGuarantor.id.desc()).limit(20).all()
+    if guarantor_rows:
+        approved = sum(1 for row in guarantor_rows if _clean(getattr(row, "status", None), limit=32).lower() == "approved")
+        released = sum(1 for row in guarantor_rows if float(getattr(row, "released_amount", 0) or 0) > 0)
+        value = f"{len(guarantor_rows)} guarantor/support response record{'s' if len(guarantor_rows) != 1 else ''} found"
+        if approved:
+            value = f"{value}; {approved} accepted or approved"
+        if released:
+            value = f"{value}; {released} show released support exposure"
+        pointers.append(
+            _record_pointer_row(
+                key="guarantor_support_response",
+                label="Guarantor/support response",
+                value=value,
+                source="loan_guarantors",
+                count=len(guarantor_rows),
+                decision_use="Use this as standing-for-someone context only. It is not a bank guarantee, cash custody, or automatic support approval.",
+            )
+        )
+
+    pool_query = db.query(PoolEvent).filter(PoolEvent.user_id == int(holder_user_id))
+    pool_query = _filter_to_active_communities(pool_query, PoolEvent, active_community_ids=active_community_ids)
+    pool_rows = pool_query.order_by(PoolEvent.created_at.desc(), PoolEvent.id.desc()).limit(20).all()
+    if pool_rows:
+        confirmed = sum(1 for row in pool_rows if getattr(row, "confirmed_at", None) is not None)
+        value = f"{len(pool_rows)} pool/contribution event{'s' if len(pool_rows) != 1 else ''} found"
+        if confirmed:
+            value = f"{value}; {confirmed} confirmed by community process"
+        pointers.append(
+            _record_pointer_row(
+                key="pool_contribution_activity",
+                label="Pool/contribution activity",
+                value=value,
+                source="pool_events",
+                count=len(pool_rows),
+                decision_use="Use this as contribution discipline context only. It is not a credit score, tenancy approval, or guaranteed rent signal.",
+            )
+        )
+
+    if not pointers:
+        pointers.append(
+            _record_pointer_row(
+                key="financial_record_gap",
+                label="Financial discipline records",
+                status="gap",
+                value="No loan, repayment, guarantor, or pool/contribution pointer is visible for this Decision Pack yet.",
+                source="decision_pack_extract",
+                count=0,
+                decision_use="Ask for private Trust Passport evidence, landlord/reference confirmation, or live community confirmation before relying on financial discipline.",
+            )
+        )
+
+    return pointers[:4]
 
 
 def _decision_pack_declared_claims(
@@ -1274,6 +1429,12 @@ def build_decision_pack_private_evidence_extract(
         pack_key=pack_key,
         active_community_ids=active_community_ids,
     )
+    record_pointers = _decision_pack_record_pointers(
+        db,
+        holder_user_id=int(holder_user_id),
+        pack_key=pack_key,
+        active_community_ids=active_community_ids,
+    )
     return {
         "source": "holder_private_decision_pack_extract",
         "decision_pack": pack_key,
@@ -1286,6 +1447,8 @@ def build_decision_pack_private_evidence_extract(
         "categories": categories,
         "declared_claims": declared_claims,
         "declaration_boundary_note": "Declared shop, listing, or trade records are evidence pointers only. They do not prove licence, insurance, work quality, or future performance.",
+        "record_pointers": record_pointers,
+        "record_pointer_boundary_note": "Connected financial/support records are evidence pointers only. They do not prove creditworthiness, legal tenancy status, rent payment, bank approval, or future repayment.",
         "privacy_note": "Authenticated holder preview only. Event references are provenance pointers for consented review, not a public evidence paper.",
         "boundary_note": "This private preview is not a score, approval, guarantee, payment instruction, dispute disclosure, or public TrustSlip output.",
     }
@@ -1343,9 +1506,15 @@ def build_decision_pack_evidence_extract(
         pack_key=pack_key,
         active_community_ids=active_community_ids,
     )
+    record_pointers = _decision_pack_record_pointers(
+        db,
+        holder_user_id=int(holder_user_id),
+        pack_key=pack_key,
+        active_community_ids=active_community_ids,
+    )
     return {
         "source": "trust_events_redacted_extract",
-        "source_note": "Aggregated from TrustEvent categories only. Raw TrustEvents, actor details, notes, metadata, payment references, and private contacts are not exposed publicly.",
+        "source_note": "Aggregated from public-safe TrustEvent categories plus declared or connected-record pointers where relevant. Raw TrustEvents, actor details, notes, metadata, amounts, payment references, and private contacts are not exposed publicly.",
         "evidence_scope": _decision_pack_evidence_scope(
             active_community_ids=active_community_ids,
             primary_clan_id=getattr(slip, "clan_id", None),
@@ -1353,6 +1522,8 @@ def build_decision_pack_evidence_extract(
         "categories": categories,
         "declared_claims": declared_claims,
         "declaration_boundary_note": "Declared shop, listing, or trade records are evidence pointers only. They do not prove licence, insurance, work quality, or future performance.",
+        "record_pointers": record_pointers,
+        "record_pointer_boundary_note": "Connected financial/support records are evidence pointers only. They do not prove creditworthiness, legal tenancy status, rent payment, bank approval, or future repayment.",
         "private_review_required": [
             {
                 "key": category,
@@ -1364,6 +1535,8 @@ def build_decision_pack_evidence_extract(
         ],
         "boundary_note": "This extract shows public-safe category counts only. It is not a raw event timeline, score, approval, guarantee, repayment history, or dispute disclosure.",
     }
+
+
 def build_decision_pack_profile(
     context: Optional[dict[str, Any]],
     *,
@@ -1420,8 +1593,27 @@ def build_decision_pack_profile(
                 "decision_use": "Treat this as a claim pointer. Ask for customer, community, or completed-work confirmation before relying.",
             }
         ]
-    signals = expected_signals + declared_signal + visible_signals
-    signal_gaps = [signal for signal in visible_signals + declared_signal if signal.get("status") in {"gap", "caution"}]
+    record_pointers = []
+    if isinstance(evidence_extract, Mapping) and isinstance(evidence_extract.get("record_pointers"), list):
+        record_pointers = [pointer for pointer in evidence_extract.get("record_pointers", []) if isinstance(pointer, Mapping)]
+    record_pointer_signal = []
+    if record_pointers:
+        first_pointer = record_pointers[0]
+        record_pointer_signal = [
+            {
+                "key": "connected_record_pointer",
+                "label": "Connected record pointer",
+                "status": _clean(first_pointer.get("status"), limit=32) or "available",
+                "value": _clean(first_pointer.get("value"), limit=260) or "Connected record evidence is visible.",
+                "decision_use": "Treat this as a record pointer. Review private evidence or community confirmation before relying.",
+            }
+        ]
+    signals = expected_signals + declared_signal + record_pointer_signal + visible_signals
+    signal_gaps = [
+        signal
+        for signal in visible_signals + declared_signal + record_pointer_signal
+        if signal.get("status") in {"gap", "caution"}
+    ]
     missing_gap_rows = [
         {
             "key": f"missing_link_{index + 1}",

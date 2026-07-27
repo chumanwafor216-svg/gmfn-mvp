@@ -40,6 +40,16 @@ type DecisionPackDeclaredClaim = {
   decisionUse: string;
 };
 
+type DecisionPackRecordPointer = {
+  key: string;
+  label: string;
+  status: string;
+  value: string;
+  source: string;
+  evidenceCount: number | null;
+  decisionUse: string;
+};
+
 export type DecisionPackEvidenceExtractView = {
   source: string;
   sourceNote: string;
@@ -53,6 +63,8 @@ export type DecisionPackEvidenceExtractView = {
   categories: DecisionPackEvidenceCategory[];
   declaredClaims: DecisionPackDeclaredClaim[];
   declarationBoundaryNote: string;
+  recordPointers: DecisionPackRecordPointer[];
+  recordPointerBoundaryNote: string;
   privateReviewRequired: DecisionPackPrivateReviewCategory[];
   boundaryNote: string;
 };
@@ -243,6 +255,7 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
     ? source.private_review_required
     : [];
   const declaredClaims = Array.isArray(source.declared_claims) ? source.declared_claims : [];
+  const recordPointers = Array.isArray(source.record_pointers) ? source.record_pointers : [];
   const evidenceScope = source.evidence_scope && typeof source.evidence_scope === "object" ? source.evidence_scope : {};
   return {
     source: firstTruthy(source.source, "trust_events_redacted_extract"),
@@ -298,6 +311,28 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
     declarationBoundaryNote: firstTruthy(
       source.declaration_boundary_note,
       "Declared shop, listing, or trade records are evidence pointers only. They do not prove licence, insurance, work quality, or future performance."
+    ),
+    recordPointers: recordPointers
+      .map((pointer: any) => ({
+        key: firstTruthy(pointer?.key, pointer?.label),
+        label: firstTruthy(pointer?.label, "Connected record pointer"),
+        status: firstTruthy(pointer?.status, "not_shown"),
+        value: firstTruthy(
+          pointer?.value,
+          "No connected financial/support record pointer is visible for this Decision Pack yet."
+        ),
+        source: firstTruthy(pointer?.source, "decision_pack_extract"),
+        evidenceCount: firstNumberLike(pointer?.evidence_count),
+        decisionUse: firstTruthy(
+          pointer?.decision_use,
+          "Use this as a record pointer only; review private evidence or ask for confirmation before relying."
+        ),
+      }))
+      .filter((pointer: DecisionPackRecordPointer) => pointer.key || pointer.label)
+      .slice(0, 4),
+    recordPointerBoundaryNote: firstTruthy(
+      source.record_pointer_boundary_note,
+      "Connected financial/support records are evidence pointers only. They do not prove creditworthiness, legal tenancy status, rent payment, bank approval, or future repayment."
     ),
     privateReviewRequired: privateReviewRequired
       .map((category: any) => ({

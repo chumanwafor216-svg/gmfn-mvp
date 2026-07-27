@@ -1,3 +1,56 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack financial/support record pointers
+
+Owner trigger:
+- Owner continued the correction work after declared work/service pointers. The next honest gap was housing, guarantor/support, and partnership evidence: landlords and supporters need to know whether GSN has repayment, contribution, support, or guarantee records to review.
+
+Unabated truth:
+- This slice makes housing/support questions more answerable, but it still does not prove creditworthiness, legal tenancy status, rent payment, bank approval, or future repayment.
+- Decision Packs now surface public-safe connected record pointers from existing loans, repayments, guarantor responses, and pool/contribution events.
+- Devil's advocate: these are counts/status pointers only. They are not a mature payment-discipline summary, not a landlord reference, not a credit score, and not an issue-resolution engine.
+
+Changed:
+- gmfn_backend/app/services/trust_slip_decision_packs.py
+  - Added financial/support record pointer extraction for housing, guarantor/support, and partnership packs.
+  - Reads existing Loan, Repayment, LoanGuarantor, and PoolEvent rows inside the holder's active community footprint.
+  - Public and holder-private Decision Pack evidence extracts now include record_pointers plus record_pointer_boundary_note.
+  - Decision Pack profiles now add a Connected record pointer signal where relevant.
+  - Public source wording now says extracts include TrustEvent categories plus declared/connected-record pointers where relevant, not TrustEvents only.
+- gmfn_backend/tests/test_trust_slip_boundary_controls.py
+  - Added housing Decision Pack coverage proving loan/support lifecycle, repayment, guarantor response, and pool/contribution pointers surface without leaking private references, notes, amounts, trust_score, or credit/rent overclaims.
+- frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts
+  - Normalizes record_pointers and record_pointer_boundary_note from backend Decision Pack profiles.
+- frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx
+  - Public TrustSlip Verify now renders Connected record pointers separately from declarations, TrustEvent categories, and private-review prompts.
+- frontend/src/pages/TrustSlipPage.tsx
+  - Signed-in holder TrustSlip private Decision Pack preview now shows connected record pointers separately before event categories.
+- frontend/tools/audit-public-trustslip-verify-boundary.mjs
+- frontend/tools/audit-trust-passport-trustslip-boundary.mjs
+  - Added guards for backend extraction, frontend normalization, public rendering, holder rendering, and overclaim/privacy tests.
+- docs/GSN_DECISION_PACK_EVIDENCE_MATRIX.md
+  - Updated matrix notes to mark financial/support record pointers as partially wired and keep mature payment discipline, landlord references, and issue-resolution summaries as remaining gaps.
+
+Routes/screens affected:
+- Backend /trust-slips/verify/{code} Decision Pack profile payload.
+- Backend /trust-slips/me/decision-pack-evidence holder-private evidence extract.
+- /trust-slips/verify and /app/trust-slips/verify public Decision Pack reading.
+- /app/trust-slip signed-in holder private Decision Pack preview.
+- No database schema, auth, payment, ledger, bank reconciliation, loan write path, pool write path, landlord-reference app, or issue-resolution workflow changed.
+
+Verification:
+- Passed python -m pytest gmfn_backend\tests\test_trust_slip_boundary_controls.py gmfn_backend\tests\test_community_confirmation_relay.py -q.
+- Passed npm --prefix frontend run audit:public-trustslip-verify-boundary.
+- Passed npm --prefix frontend run audit:trust-passport-trustslip-boundary.
+- Passed npm --prefix frontend run audit:protected-button-freeze.
+- Passed npm --prefix frontend run build.
+- Passed npm --prefix frontend run smoke:public-trustslip-verify-states outside the sandbox after known Vite/esbuild spawn EPERM.
+- Passed npm --prefix frontend run smoke:trust-passport-trustslip-boundary outside the sandbox after known Vite/esbuild spawn EPERM.
+
+Deployment:
+- Not pushed or deployed. Git publishing remains frozen into batch mode until owner approves publishing.
+
+Recommended next step:
+- Build the missing capture workflows: Demand Box response-to-job outcomes, customer-confirmed completed work, landlord/accommodation references, issue-resolution summaries, guarantee outcome summaries, supplier fulfilment/correction records, and richer witness-answer workflows.
+
 ## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack declared work/service claim pointers
 
 Owner trigger:

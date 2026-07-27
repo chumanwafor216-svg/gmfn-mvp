@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from app.db.database import SessionLocal
-from app.db.models import Clan, ClanMembership, MarketplaceProduct, MarketplaceShop, ProtectedTradeRecord, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare, User
+from app.db.models import Clan, ClanMembership, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare, User
 
 
 def _create_trust_slip(*, code: str, holder_user_id: int = 1) -> int:
@@ -326,6 +326,88 @@ def test_public_verify_decision_pack_matrix_answers_housing_and_trade_questions(
     assert "known for this trade" in trade_profile["community_confirmation_prompt"]["question"]
     assert "trust_score" not in str(housing_profile)
     assert "recipient_name" not in str(trade_profile)
+
+
+def test_public_verify_housing_pack_surfaces_financial_record_pointers_without_credit_overclaiming(
+    client,
+    seed_clan_admin_membership,
+):
+    _create_trust_slip(code="ACCESS-HOUSING-RECORDS")
+
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc)
+        loan = Loan(
+            borrower_user_id=1,
+            clan_id=1,
+            amount=Decimal("500.00"),
+            currency="GBP",
+            status="repaid",
+            paid_total=Decimal("500.00"),
+            remaining_amount=Decimal("0.00"),
+            repaid_at=now,
+        )
+        db.add(loan)
+        db.flush()
+        db.add(
+            Repayment(
+                loan_id=int(loan.id),
+                payer_user_id=1,
+                amount=Decimal("500.00"),
+                created_at=now,
+            )
+        )
+        db.add(
+            LoanGuarantor(
+                loan_id=int(loan.id),
+                clan_id=1,
+                guarantor_user_id=1,
+                pledge_amount=Decimal("100.00"),
+                status="approved",
+                is_locked=False,
+                locked_amount=Decimal("0.00"),
+                released_amount=Decimal("100.00"),
+                responded_at=now,
+            )
+        )
+        db.add(
+            PoolEvent(
+                clan_id=1,
+                user_id=1,
+                event_type="contribution",
+                amount=Decimal("25.00"),
+                currency="GBP",
+                reference="PRIVATE-POOL-REF",
+                note="Private contribution note",
+                confirmed_at=now,
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get(
+        "/trust-slips/verify/ACCESS-HOUSING-RECORDS",
+        params={"decision_pack": "housing_decision"},
+    )
+
+    assert response.status_code == 200, response.text
+    profile = response.json()["decision_pack_profile"]
+    extract = profile["evidence_extract"]
+    pointers = {row["key"]: row for row in extract["record_pointers"]}
+    assert pointers["loan_support_lifecycle"]["evidence_count"] == 1
+    assert pointers["repayment_follow_through"]["evidence_count"] == 1
+    assert pointers["guarantor_support_response"]["evidence_count"] == 1
+    assert pointers["pool_contribution_activity"]["evidence_count"] == 1
+    assert "do not prove creditworthiness" in extract["record_pointer_boundary_note"]
+    assert any(signal["key"] == "connected_record_pointer" for signal in profile["relevant_signals"])
+    profile_text = str(profile)
+    assert "PRIVATE-POOL-REF" not in profile_text
+    assert "Private contribution note" not in profile_text
+    assert "500.00" not in profile_text
+    assert "do not expose bank references, amounts, or create a credit score" in profile_text
+    assert "not a credit score, tenancy approval, or guaranteed rent signal" in profile_text
+    assert "trust_score" not in profile_text
 
 
 def test_public_verify_trade_pack_surfaces_declared_work_claims_without_overclaiming(
