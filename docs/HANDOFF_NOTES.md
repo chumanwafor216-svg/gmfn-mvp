@@ -156329,3 +156329,33 @@ Verification run locally:
 
 Deployment:
 - Local only so far. Do not push/deploy unless the owner selects `2`.
+
+## 2026-07-27 - Public TrustSlip Decision-Support First View
+
+- Scope: local-only public TrustSlip verification paper correction.
+- Owner correction: public TrustSlip must not only report what GSN knows. It must answer what decision the visible evidence can support, then explain the missing evidence and keep deeper record sections collapsible on phone.
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Changed the first decision answer from generic statuses like `Known by community` / `Evidence still building` to purpose-aware recommendations.
+  - Examples now include `Suitable for employment screening`, `Community recognition visible; housing still needs confirmation`, `Suitable for a low-risk trade check`, and `Community recognition supported; guarantee still needs confirmation`.
+  - Added purpose detection for guarantor/support, employment/work, housing/tenant, and trade/supplier/skilled-work questions.
+  - Added repayment/support-outcome awareness for guarantor/support decisions, so financial guarantee stays warning-toned unless witness and support outcome evidence are both visible.
+  - Reframed the first explanation as `Evidence behind this recommendation` with plain findings: active community ID, recorded activity, role, purpose evidence, current witnesses, live confirmation, and recommended action.
+  - On compact phone view, the first surface shows only the essential decision factors: community anchor, purpose/support evidence, current witnesses, and recommended action.
+- `frontend/tools/audit-public-trustslip-first-viewport.mjs` and `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+  - Updated public TrustSlip contracts so tests protect the decision-support behavior instead of the old information-status wording.
+
+Unabated truth:
+- This does not add backend scoring, approval, credit decisioning, landlord reference capture, WhatsApp/contact verification, or a legal guarantee.
+- The page now gives a better decision-support read from existing public-safe Decision Pack evidence, but the recipient still owns the final decision and high-risk decisions still require live community confirmation.
+
+Verification run locally:
+- `npm --prefix frontend run lint`
+- `npm --prefix frontend run audit:public-trustslip-first-viewport`
+- `npm --prefix frontend run audit:public-trustslip-verify-boundary`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `npm --prefix frontend run build`
+- `git diff --check` passed with only normal CRLF warnings.
+
+Deployment:
+- Local only so far. Current branch already has the previous unpushed app-led TrustSlip language commit plus this uncommitted public TrustSlip decision-support work. Push/deploy only when the owner selects `2`.

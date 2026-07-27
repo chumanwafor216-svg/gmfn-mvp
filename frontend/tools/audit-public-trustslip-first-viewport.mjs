@@ -110,8 +110,8 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /const decisionFirstAnswer = !validNow[\s\S]*?"Verification required"[\s\S]*?"Known across evidence contexts"[\s\S]*?"Known by community"[\s\S]*?"Evidence still building"[\s\S]*?const decisionFirstFacts:[\s\S]*?label: "Who\?"[\s\S]*?label: "Next step"[\s\S]*?const decisionBoundaryRows:[\s\S]*?\["Final decision", "Yours"\][\s\S]*?const supportPurpose = \/guarantor\|guarantee\|support\/i.test\(decisionPackPurpose\)[\s\S]*?const decisionDisplayAnswer = !validNow[\s\S]*?"Not ready to guarantee yet"[\s\S]*?const decisionReasonLine = !validNow[\s\S]*?const decisionTranslationRows: Array<\[string, string\]> = \[[\s\S]*?\["Evidence volume", evidenceVolumeFinding\][\s\S]*?\["Recommended action", validNow \? "Request live community confirmation" : "Request new TrustSlip"\]/,
-  "Public TrustSlip first viewport must compute one big answer, immediate reason text, evidence translation rows, desktop quick facts, and a compact decision boundary."
+  /const supportPurpose = \/guarantor\|guarantee\|support\/i\.test\(decisionPackPurpose\)[\s\S]*?const employmentPurpose = \/employment\|work\|job\/i\.test\(decisionPackPurpose\)[\s\S]*?const housingPurpose = \/housing\|tenant\|rent\/i\.test\(decisionPackPurpose\)[\s\S]*?const tradePurpose = \/trade\|supplier\|skilled\|market\/i\.test\(decisionPackPurpose\)[\s\S]*?const decisionFirstAnswer = !validNow[\s\S]*?"Community recognition supported; guarantee still needs confirmation"[\s\S]*?"Suitable for employment screening"[\s\S]*?"Community recognition visible; housing still needs confirmation"[\s\S]*?"Suitable for a low-risk trade check"[\s\S]*?const decisionFirstFacts:[\s\S]*?label: "Who\?"[\s\S]*?label: "Next step"[\s\S]*?const decisionBoundaryRows:[\s\S]*?\["Final decision", "Yours"\][\s\S]*?const decisionReasonLine = !validNow[\s\S]*?"Evidence is strong enough for community recognition, but not yet strong enough for financial guarantee\. Request live community confirmation before relying\."[\s\S]*?const decisionTranslationRows: Array<\[string, string\]> = \[[\s\S]*?\["Active Community ID", communityConnectionFinding\][\s\S]*?\["Recommended action", recommendedActionFinding\]/,
+  "Public TrustSlip first viewport must state what decision the evidence supports, explain why, keep quick facts, and preserve the compact decision boundary."
 );
 
 
@@ -140,7 +140,7 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /DecisionFactorTable rows=\{compact \? decisionTranslationRows\.filter\(\(\[label\]\) => label === "Community connection" \|\| label === \(supportPurpose \? "Relevant support evidence" : "Relevant evidence"\) \|\| label === "Recommended action"\) : decisionTranslationRows\}/,
+  /DecisionFactorTable rows=\{compact \? decisionTranslationRows\.filter\(\(\[label\]\) => label === "Active Community ID" \|\| label === \(supportPurpose \? "Repayment\/support evidence" : "Purpose evidence"\) \|\| label === "Current witnesses" \|\| label === "Recommended action"\) : decisionTranslationRows\}/,
   "Public TrustSlip phone first viewport must show only the three essential decision factors before deeper evidence drawers."
 );
 
@@ -157,7 +157,7 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision Summary[\s\S]*?\{decisionDisplayAnswer\}[\s\S]*?\{decisionReasonLine\}[\s\S]*?data-gsn-public-evidence-translation="decision-why"[\s\S]*?Why this decision[\s\S]*?<DecisionFactorTable rows=\{compact \? decisionTranslationRows\.filter\(\(\[label\]\) => label === "Community connection" \|\| label === \(supportPurpose \? "Relevant support evidence" : "Relevant evidence"\) \|\| label === "Recommended action"\) : decisionTranslationRows\} compact=\{compact\} \/>[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?decisionFirstFacts\.map[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?decisionBoundaryRows\.map[\s\S]*?title="Full evidence and record details"[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"/,
+  /data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision Summary[\s\S]*?\{decisionDisplayAnswer\}[\s\S]*?\{decisionReasonLine\}[\s\S]*?data-gsn-public-evidence-translation="decision-why"[\s\S]*?Evidence behind this recommendation[\s\S]*?<DecisionFactorTable rows=\{compact \? decisionTranslationRows\.filter\(\(\[label\]\) => label === "Active Community ID" \|\| label === \(supportPurpose \? "Repayment\/support evidence" : "Purpose evidence"\) \|\| label === "Current witnesses" \|\| label === "Recommended action"\) : decisionTranslationRows\} compact=\{compact\} \/>[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?decisionFirstFacts\.map[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?decisionBoundaryRows\.map[\s\S]*?title="Full evidence and record details"[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"/,
   "Public TrustSlip phone viewport must render the answer, reason, decision-factor findings, desktop-only quick facts, compact boundary, and collapsed supporting details."
 );
 

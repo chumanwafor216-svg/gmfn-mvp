@@ -1220,18 +1220,39 @@ export default function TrustSlipVerifyPublicPaper({
   const hasWitnessEvidence =
     positiveNumber(memberWitnessCountLabel) > 0 &&
     !memberWitnessCurrentness.toLowerCase().includes("not");
+  const supportPurpose = /guarantor|guarantee|support/i.test(decisionPackPurpose);
+  const employmentPurpose = /employment|work|job/i.test(decisionPackPurpose);
+  const housingPurpose = /housing|tenant|rent/i.test(decisionPackPurpose);
+  const tradePurpose = /trade|supplier|skilled|market/i.test(decisionPackPurpose);
+  const hasSupportOutcomeEvidence = decisionPackProfile.evidenceExtract.guaranteeOutcomePointers.length > 0;
   const decisionFirstAnswer = !validNow
-    ? "Verification required"
-    : hasCommunityEvidence || hasWitnessEvidence
-      ? activeCommunityContexts > 1
-        ? "Known across evidence contexts"
-        : "Known by community"
-      : "Evidence still building";
+    ? "Fresh TrustSlip needed before decision"
+    : supportPurpose
+      ? hasWitnessEvidence && hasSupportOutcomeEvidence
+        ? "Use as support evidence; confirm before guarantee"
+        : "Community recognition supported; guarantee still needs confirmation"
+      : employmentPurpose
+        ? hasCommunityEvidence || hasWitnessEvidence
+          ? "Suitable for employment screening"
+          : "Employment screening still needs confirmation"
+        : housingPurpose
+          ? hasCommunityEvidence || hasWitnessEvidence
+            ? "Community recognition visible; housing still needs confirmation"
+            : "Housing decision still needs confirmation"
+          : tradePurpose
+            ? hasCommunityEvidence || hasWitnessEvidence
+              ? "Suitable for a low-risk trade check"
+              : "Trade decision still needs confirmation"
+            : hasCommunityEvidence || hasWitnessEvidence
+              ? "Community recognition supported"
+              : "Evidence still needs confirmation";
   const decisionFirstTone: "trust" | "warning" | "neutral" = !validNow
     ? "warning"
-    : hasCommunityEvidence || hasWitnessEvidence
-      ? "trust"
-      : "neutral";
+    : supportPurpose && (!hasWitnessEvidence || !hasSupportOutcomeEvidence)
+      ? "warning"
+      : hasCommunityEvidence || hasWitnessEvidence
+        ? "trust"
+        : "neutral";
   const decisionFirstFacts: Array<{
     icon: Gsn3DIconKey;
     label: string;
@@ -1420,50 +1441,60 @@ export default function TrustSlipVerifyPublicPaper({
   const decisionPackPrivateReviewDisplayRows: Array<[string, string]> = decisionPackPrivateReviewRows.length
     ? decisionPackPrivateReviewRows
     : [["No sensitive category requested", "This public pack still remains evidence, not approval."]];
-  const supportPurpose = /guarantor|guarantee|support/i.test(decisionPackPurpose);
   const communityConnectionFinding =
     communityLabel && communityLabel !== "Not stated"
-      ? `Confirmed in ${communityLabel}`
-      : "Community anchor not shown";
+      ? `Supported: active community record in ${communityLabel}.`
+      : "Missing: community anchor not shown.";
   const evidenceVolumeFinding = positiveNumber(communityActivityCountLabel)
-    ? `${communityActivityCountLabel} event${communityActivityCountLabel === "1" ? "" : "s"}${
-        knownAsCategoryLabel ? ` across ${knownAsCategoryLabel}` : " recorded"
-      }`
-    : "Community activity not visible on this paper";
+    ? `Supported: ${communityActivityCountLabel} recorded community activit${
+        communityActivityCountLabel === "1" ? "y" : "ies"
+      }${knownAsCategoryLabel ? ` across ${knownAsCategoryLabel}` : ""}.`
+    : "Missing: recorded community activity is not visible on this paper.";
+  const roleFinding = holderRoleLabel && holderRoleLabel !== "Community member"
+    ? `Supported: active role shown as ${holderRoleLabel}.`
+    : "Shown: community member role only.";
   const relevantSupportFinding = supportPurpose
-    ? decisionPackGuaranteeOutcomePointers.length
-      ? decisionPackGuaranteeOutcomeRows[0]?.[1] || "Support outcome pointer visible"
-      : "Not visible on this public paper"
+    ? hasSupportOutcomeEvidence
+      ? `Visible: ${decisionPackGuaranteeOutcomeRows[0]?.[1] || "support outcome pointer found"}.`
+      : "Missing: repayment or support outcome evidence is not yet available here."
     : decisionPackEvidenceCategories.length
-      ? `${decisionPackEvidenceCategories.length} purpose evidence area${
+      ? `Visible: ${decisionPackEvidenceCategories.length} purpose evidence area${
           decisionPackEvidenceCategories.length === 1 ? "" : "s"
-        } visible`
-      : "Purpose-specific evidence still needs confirmation";
+        }.`
+      : "Missing: purpose-specific evidence still needs confirmation.";
   const witnessCurrentnessFinding = hasWitnessEvidence
-    ? memberWitnessCurrentness
+    ? `Visible: ${memberWitnessCurrentness}.`
     : positiveNumber(memberWitnessCountLabel) > 0
-      ? "Witnesses recorded; currentness still needs checking"
-      : "No current witness confirmation visible";
+      ? "Warning: witnesses exist, but current confirmation still needs checking."
+      : "Missing: no current member witness confirmation is visible.";
   const liveConfirmationFinding = communityRelayAvailable || communityPulseAvailable
-    ? "Available"
-    : "Not available from this paper yet";
-  const decisionDisplayAnswer = !validNow
-    ? "Request a fresh TrustSlip"
-    : supportPurpose && (!hasWitnessEvidence || !decisionPackGuaranteeOutcomePointers.length)
-      ? "Not ready to guarantee yet"
-      : decisionFirstAnswer;
+    ? "Available: request live community confirmation before high-risk decisions."
+    : "Missing: live community confirmation is not available from this paper yet.";
+  const recommendedActionFinding = !validNow
+    ? "Request a fresh TrustSlip before deciding."
+    : supportPurpose
+      ? "Request live community confirmation before any guarantor or support decision."
+      : "Use for low-risk decisions; request live confirmation before important decisions.";
+  const decisionDisplayAnswer = decisionFirstAnswer;
   const decisionReasonLine = !validNow
     ? "This public record is not current enough for a serious decision. Ask for a fresh TrustSlip before relying."
-    : supportPurpose
-      ? `The holder is connected to ${activeCommunityCountLabel || "their community record"} and ${evidenceVolumeFinding}. However, current witness confirmation and relevant support outcome evidence must be checked before guaranteeing.`
-      : `The holder has ${evidenceVolumeFinding}. Match the evidence to your decision risk, then request live confirmation for anything important.`;
+    : supportPurpose && (!hasWitnessEvidence || !hasSupportOutcomeEvidence)
+      ? "Evidence is strong enough for community recognition, but not yet strong enough for financial guarantee. Request live community confirmation before relying."
+      : employmentPurpose
+        ? "This evidence can support employment screening. Request live confirmation if the role carries serious trust or money risk."
+        : housingPurpose
+          ? "This evidence supports community recognition. Ask for live confirmation before a high-risk tenancy decision."
+          : tradePurpose
+            ? "This evidence can support a low-risk trade check. Ask for live confirmation before larger work or money exposure."
+            : "This evidence supports community recognition. Match the evidence to your risk, then request live confirmation for anything important.";
   const decisionTranslationRows: Array<[string, string]> = [
-    ["Community connection", communityConnectionFinding],
-    ["Evidence volume", evidenceVolumeFinding],
-    [supportPurpose ? "Relevant support evidence" : "Relevant evidence", relevantSupportFinding],
-    ["Witness currentness", witnessCurrentnessFinding],
+    ["Active Community ID", communityConnectionFinding],
+    ["Recorded activity", evidenceVolumeFinding],
+    ["Community role", roleFinding],
+    [supportPurpose ? "Repayment/support evidence" : "Purpose evidence", relevantSupportFinding],
+    ["Current witnesses", witnessCurrentnessFinding],
     ["Live confirmation", liveConfirmationFinding],
-    ["Recommended action", validNow ? "Request live community confirmation" : "Request new TrustSlip"],
+    ["Recommended action", recommendedActionFinding],
   ];
   const decisionPackGapRows: Array<[string, string]> = (decisionPackProfileGaps.length
     ? decisionPackProfileGaps.map((gap): [string, string] => [gap.label, gap.nextStep])
@@ -1919,8 +1950,8 @@ export default function TrustSlipVerifyPublicPaper({
               gap: compact ? 7 : 9,
             }}
           >
-            <div style={{ ...sectionLabel(), color: "#0B63D1" }}>Why this decision</div>
-            <DecisionFactorTable rows={compact ? decisionTranslationRows.filter(([label]) => label === "Community connection" || label === (supportPurpose ? "Relevant support evidence" : "Relevant evidence") || label === "Recommended action") : decisionTranslationRows} compact={compact} />
+            <div style={{ ...sectionLabel(), color: "#0B63D1" }}>Evidence behind this recommendation</div>
+            <DecisionFactorTable rows={compact ? decisionTranslationRows.filter(([label]) => label === "Active Community ID" || label === (supportPurpose ? "Repayment/support evidence" : "Purpose evidence") || label === "Current witnesses" || label === "Recommended action") : decisionTranslationRows} compact={compact} />
           </div>
           <div
             data-gsn-public-decision-first-facts="four-quick-facts"
