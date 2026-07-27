@@ -69,6 +69,25 @@ assertContains(
   /const IDENTITY_PAGE_UI_STORAGE_KEY = "gmfn\.identityPage\.sections\.v2";/,
   "Identity Integrity must bump the section-state storage key when default exposure changes so old open layouts do not persist on pilot phones."
 );
+assertContains(
+  /function decongestedSectionCard\([\s\S]*?padding: collapsed \? \(compact \? 12 : 14\) : compact \? 14 : 20[\s\S]*?boxShadow: collapsed/,
+  "Identity Integrity collapsed secondary sections must render as slim rows, not full heavy cards."
+);
+
+assertContains(
+  /summary: true,[\s\S]*?continuity: true,[\s\S]*?recovery: true,[\s\S]*?reasons: true,[\s\S]*?timeline: true,[\s\S]*?next: true,[\s\S]*?guides: true/,
+  "Identity Integrity readings, recovery, timeline, next-step, and reference guides must stay closed by default."
+);
+
+assertContains(
+  /data-identity-integrity-secondary-section="readings"[\s\S]*?decongestedSectionCard\(collapsed\.summary, isCompact\)[\s\S]*?data-identity-integrity-secondary-section="continuity"[\s\S]*?decongestedSectionCard\(collapsed\.continuity, isCompact\)[\s\S]*?data-identity-integrity-secondary-section="recovery"[\s\S]*?data-identity-integrity-secondary-section="reasons"[\s\S]*?data-identity-integrity-secondary-section="timeline"[\s\S]*?data-identity-integrity-secondary-section="next"/,
+  "Identity Integrity secondary page material must stay inside decongested route-local section shells."
+);
+
+assertContains(
+  /data-identity-integrity-secondary-section="guides"[\s\S]*?Evidence Guides[\s\S]*?debugId="identity-integrity\.toggle-guides"[\s\S]*?!collapsed\.guides[\s\S]*?data-identity-integrity-guide-stack="true"/,
+  "Identity Integrity reference maps and guidance widgets must be covered by the Evidence Guides disclosure."
+);
 
 assertContains(
   /type TrustSlipRecord = \{[\s\S]*?bank_details_recorded\?: boolean \| null;[\s\S]*?identity_context\?: Record<string, any> \| null;[\s\S]*?function normalizeTrustSlipRecord[\s\S]*?src\?\.identity_context \|\| null/,

@@ -114,6 +114,7 @@ type CollapseState = {
   reasons: boolean;
   timeline: boolean;
   next: boolean;
+  guides: boolean;
 };
 
 type IdentityTaskKey = "phone" | "community" | "bank" | "official_id" | "recovery";
@@ -256,6 +257,20 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
     boxShadow:
       "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
     overflow: "hidden",
+  };
+}
+
+function decongestedSectionCard(
+  collapsed: boolean,
+  compact: boolean,
+  bg = "#FFFFFF"
+): React.CSSProperties {
+  return {
+    ...pageCard(bg),
+    padding: collapsed ? (compact ? 12 : 14) : compact ? 14 : 20,
+    boxShadow: collapsed
+      ? "0 8px 20px rgba(15,23,42,0.035)"
+      : "0 14px 34px rgba(15,23,42,0.045), 0 2px 8px rgba(15,23,42,0.02)",
   };
 }
 
@@ -722,6 +737,7 @@ function defaultCollapseState(): CollapseState {
     reasons: true,
     timeline: true,
     next: true,
+    guides: true,
   };
 }
 
@@ -739,6 +755,7 @@ function normalizeCollapseState(raw: any): CollapseState {
     reasons: Boolean(raw?.reasons ?? base.reasons),
     timeline: Boolean(raw?.timeline ?? base.timeline),
     next: Boolean(raw?.next ?? base.next),
+    guides: Boolean(raw?.guides ?? base.guides),
   };
 }
 
@@ -3231,7 +3248,7 @@ export default function IdentityIntegrityPage() {
         </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section data-identity-integrity-secondary-section="readings" style={decongestedSectionCard(collapsed.summary, isCompact)}>
         {sectionIconHeader(
           "chart",
           "Identity readings",
@@ -3350,7 +3367,7 @@ export default function IdentityIntegrityPage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section data-identity-integrity-secondary-section="continuity" style={decongestedSectionCard(collapsed.continuity, isCompact)}>
         {sectionIconHeader(
           "shield",
           "Identity continuity",
@@ -3444,7 +3461,7 @@ export default function IdentityIntegrityPage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section data-identity-integrity-secondary-section="recovery" style={decongestedSectionCard(collapsed.recovery && activeIdentityTask !== "recovery" && !recovery.shouldVerify, isCompact)}>
         {sectionIconHeader(
           "lock",
           "Private recovery challenge",
@@ -3702,7 +3719,7 @@ export default function IdentityIntegrityPage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section data-identity-integrity-secondary-section="reasons" style={decongestedSectionCard(collapsed.reasons, isCompact)}>
         {sectionIconHeader(
           "search",
           "Why identity and trust changed",
@@ -3812,7 +3829,7 @@ export default function IdentityIntegrityPage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section data-identity-integrity-secondary-section="timeline" style={decongestedSectionCard(collapsed.timeline, isCompact)}>
         {sectionIconHeader(
           "calendar",
           "Identity and trust timeline",
@@ -3901,7 +3918,7 @@ export default function IdentityIntegrityPage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section data-identity-integrity-secondary-section="next" style={decongestedSectionCard(collapsed.next, isCompact)}>
         {sectionIconHeader(
           "spark",
           "Next clean step",
@@ -3995,29 +4012,49 @@ export default function IdentityIntegrityPage() {
         ) : null}
       </section>
 
-      <NextActionGuide
-        storageKey="gmfn.identityIntegrity.nextActionGuide.v1"
-        compact={isCompact}
-        items={guideItems}
-        intro="Say what you need next in plain words like open Trust Passport, check consistency, or open the portable record. GSN will carry you into the closest evidence surface."
-        onSelect={handleGuideSelect}
-      />
+      <section data-identity-integrity-secondary-section="guides" style={decongestedSectionCard(collapsed.guides, isCompact)}>
+        {sectionIconHeader(
+          "document",
+          "Evidence Guides",
+          "Reference maps and deeper identity guidance stay closed until needed.",
+          <SubtleButton
+            onClick={() => toggleSection("guides")}
+            stableHeight={52}
+            style={collapseToggle()}
+            debugId="identity-integrity.toggle-guides"
+          >
+            {collapsed.guides ? "Open" : "Hide"}
+          </SubtleButton>
+        )}
 
-      <TrustDocumentActionGuide content={actionGuide} compact={isCompact} />
+        {!collapsed.guides ? (
+          <div data-identity-integrity-guide-stack="true" style={{ marginTop: 14, display: "grid", gap: 14 }}>
+            <NextActionGuide
+              storageKey="gmfn.identityIntegrity.nextActionGuide.v1"
+              compact={isCompact}
+              items={guideItems}
+              intro="Say what you need next in plain words like open Trust Passport, check consistency, or open the portable record. GSN will carry you into the closest evidence surface."
+              onSelect={handleGuideSelect}
+            />
 
-      <TrustDocumentFamilyMap
-        compact={isCompact}
-        items={trustDocumentFamilyItems}
-        title="How Identity & Integrity fits into the wider trust-document family"
-        intro="Identity & Integrity is the steady anchor under the evidence family. Use this map when you need to separate stable identity and continuity from the fuller Trust Passport evidence record, portable TrustSlip evidence, and public validity checks."
-      />
+            <TrustDocumentActionGuide content={actionGuide} compact={isCompact} />
 
-      <TrustDocumentUseCases
-        compact={isCompact}
-        items={trustDocumentUseCases}
-        title="Which evidence question should stay with identity first?"
-        intro="Stay here when the question is who this person is, what holds steady across evidence changes, or what narrower verification and consistency context sits behind the evidence record."
-      />
+            <TrustDocumentFamilyMap
+              compact={isCompact}
+              items={trustDocumentFamilyItems}
+              title="How Identity & Integrity fits into the wider trust-document family"
+              intro="Identity & Integrity is the steady anchor under the evidence family. Use this map when you need to separate stable identity and continuity from the fuller Trust Passport evidence record, portable TrustSlip evidence, and public validity checks."
+            />
+
+            <TrustDocumentUseCases
+              compact={isCompact}
+              items={trustDocumentUseCases}
+              title="Which evidence question should stay with identity first?"
+              intro="Stay here when the question is who this person is, what holds steady across evidence changes, or what narrower verification and consistency context sits behind the evidence record."
+            />
+          </div>
+        ) : null}
+      </section>
     </div>
   );
 }

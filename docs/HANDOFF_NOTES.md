@@ -1,3 +1,36 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Identity Integrity decongestion slice
+
+Owner trigger:
+- Owner approved making the whole app appear less busy after My GSN Identity was decongested.
+
+Unabated truth:
+- This is not the entire app finished in one stroke. It is the next safe app-wide polish slice: Identity & Integrity was still visually busy because collapsed secondary areas looked like full heavy cards and the guide/reference widgets were exposed below the main task.
+- Marketplace, Finance, Community Home, Shop Control, and Trust Passport already have stronger lane-collapse or freeze audits, so this pass avoided broad churn there.
+- Devil's advocate: the page is calmer by default now, but when a user opens every panel, the underlying content is still long. A later phone review may still ask us to shorten expanded copy, not only hide it.
+
+Changed:
+- `frontend/src/pages/IdentityIntegrityPage.tsx`
+  - Added a route-local `decongestedSectionCard` style so closed secondary sections render as slimmer rows instead of full heavy cards.
+  - Applied that slimmer shell to Identity readings, Identity continuity, Private recovery challenge, Why identity and trust changed, Identity and trust timeline, and Next clean step.
+  - Added a closed `Evidence Guides` section covering `NextActionGuide`, `TrustDocumentActionGuide`, `TrustDocumentFamilyMap`, and `TrustDocumentUseCases` so reference material no longer competes with the active evidence task.
+  - Preserved duplicate-phone recovery actions, active evidence task behavior, stable debug ids, and existing route targets.
+- `frontend/tools/audit-identity-integrity-front-package.mjs`
+  - Added regression guards requiring decongested secondary section shells, guides closed by default, and the `Evidence Guides` cover around the guide stack.
+
+Verification:
+- Passed `node --check frontend\tools\audit-identity-integrity-front-package.mjs`.
+- Passed `npm --prefix frontend run audit:identity-integrity-front-package`.
+- Passed `npm --prefix frontend run audit:button-stability`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run lint`.
+- Passed `git diff --check`; only normal CRLF warnings were reported.
+- Passed `npm --prefix frontend run build`.
+
+Deployment:
+- Local only. Do not push/deploy unless the owner selects `2` or explicitly says push/deploy.
+
+Next recommended step:
+- Commit this slice locally, then continue the same decongestion pattern page-by-page, with Community Domain Dashboard as the next likely heavy surface.
 ## CURRENT LOCAL STATE - 2026-07-27 - My GSN Identity guide decongestion
 
 Owner trigger:
