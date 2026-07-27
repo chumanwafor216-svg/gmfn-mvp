@@ -44,8 +44,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money and trust tools for this marketplace"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?<MarketplaceGlyph name="pool"[\s\S]*?Money & Trust[\s\S]*?Local money pages and standing\.[\s\S]*?Finance[\s\S]*?Money In[\s\S]*?Money Out[\s\S]*?Trust/,
-  "Money & Trust grouped card must keep finance, Money In, Money Out, and compact trust under one guided front-door lane."
+  /debugId="marketplace\.tile\.support-money-group"[\s\S]*?Support & Money Trust[\s\S]*?Money routes, trust standing, and support requests\.[\s\S]*?frontDomainGroup === "supportMoney"[\s\S]*?debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money and trust tools for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"money",\s*"marketplace-money-routes"\s*\)[\s\S]*?Money & Trust/,
+  "Money & Trust must stay behind the Support & Money Trust group and keep the guided money route lane."
 );
 
 assertContains(

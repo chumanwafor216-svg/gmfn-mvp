@@ -404,6 +404,9 @@ async function run() {
     waitUntil: "networkidle",
     timeout: 60000,
   });
+  await page.locator('[data-cta-id="marketplace.tile.board-members-group"]').click({
+    timeout: 30000,
+  });
   await page.locator('[data-cta-id="marketplace.tile.members"]').click({
     timeout: 30000,
   });
@@ -469,6 +472,9 @@ async function run() {
   await page.goto(`${baseURL}/app/marketplace?community=8#marketplace-loans-support`, {
     waitUntil: "networkidle",
     timeout: 60000,
+  });
+  await page.locator('[data-cta-id="marketplace.tile.support-money-group"]').click({
+    timeout: 30000,
   });
   await page.locator('[data-cta-id="marketplace.tile.support"]').click({
     timeout: 30000,

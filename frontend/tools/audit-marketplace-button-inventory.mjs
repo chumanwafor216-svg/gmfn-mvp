@@ -19,10 +19,10 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 88;
+const expectedStableActionCount = 90;
 const expectedNativeFieldCount = 37;
 const expectedSourceBreakdown = {
-  front: 11,
+  front: 13,
   body: 77,
 };
 const expectedVisibleIntentActionCount = 5;
@@ -352,8 +352,8 @@ if (visibleIntentActionCount !== expectedVisibleIntentActionCount) {
 }
 
 assertContains(
-  /debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money and trust tools for this marketplace"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?<MarketplaceGlyph name="pool"[\s\S]*?Money & Trust[\s\S]*?Local money pages and standing\.[\s\S]*?Finance[\s\S]*?Money In[\s\S]*?Money Out[\s\S]*?Trust/,
-  "Marketplace Money & Trust card must group local finance, Money In, Money Out, and compact trust standing behind one front-door lane."
+  /debugId="marketplace\.tile\.support-money-group"[\s\S]*?aria-label="Open Support and Money Trust choices for this marketplace"[\s\S]*?openFrontDomainGroup\(event, "supportMoney"\)[\s\S]*?Support & Money Trust[\s\S]*?Money routes, trust standing, and support requests\.[\s\S]*?Money & Trust[\s\S]*?Support[\s\S]*?frontDomainGroup === "supportMoney"[\s\S]*?debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money and trust tools for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"money",\s*"marketplace-money-routes"\s*\)[\s\S]*?Money & Trust/,
+  "Marketplace Money & Trust must sit behind the Support & Money Trust group and still open the money route lane."
 );
 
 assertContains(
@@ -367,8 +367,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?<MarketplaceGlyph name="support"[\s\S]*?Support[\s\S]*?Ask for backing when balance is not enough\.[\s\S]*?Start Request[\s\S]*?Supporters[\s\S]*?Repayment/,
-  "Marketplace Support card must open support directly while ROSCA stays a separate desk handoff inside the support lane."
+  /debugId="marketplace\.tile\.support-money-group"[\s\S]*?Support & Money Trust[\s\S]*?frontDomainGroup === "supportMoney"[\s\S]*?debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?Support/,
+  "Marketplace Support must sit behind the Support & Money Trust group and still open support directly while ROSCA stays inside the support lane."
 );
 
 assertContains(
@@ -377,13 +377,13 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open community domains, members, and shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Community Members & Shops[\s\S]*?Domains, known members, and public shops\.[\s\S]*?Domains[\s\S]*?Public Shops[\s\S]*?Members/,
-  "Marketplace Community Members & Shops grouped card must open the community-bound domain/member/shop directory."
+  /debugId="marketplace\.tile\.board-members-group"[\s\S]*?aria-label="Open Official Board and Community Members and Shops choices"[\s\S]*?openFrontDomainGroup\(event, "boardMembers"\)[\s\S]*?Official Board & Members\/Shops[\s\S]*?Official Board[\s\S]*?Community Members & Shops[\s\S]*?frontDomainGroup === "supportMoney"[\s\S]*?: \([\s\S]*?debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open community domains, members, and shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?Members & Shops/,
+  "Marketplace Community Members & Shops must sit behind the Official Board & Members/Shops group and still open the community-bound directory."
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.official-board"[\s\S]*?aria-label="Open the official community board for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"board",\s*"marketplace-official-board"\s*\)[\s\S]*?<MarketplaceGlyph name="notice"[\s\S]*?Official Board[\s\S]*?Notices stay inside this selected marketplace\.[\s\S]*?This marketplace[\s\S]*?Members only[\s\S]*?No broadcast/,
-  "Marketplace Official Board grouped card must open the marketplace-local official notice board."
+  /debugId="marketplace\.tile\.board-members-group"[\s\S]*?Official Board & Members\/Shops[\s\S]*?frontDomainGroup === "supportMoney"[\s\S]*?: \([\s\S]*?debugId="marketplace\.tile\.official-board"[\s\S]*?aria-label="Open the official community board for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"board",\s*"marketplace-official-board"\s*\)[\s\S]*?Official Board/,
+  "Marketplace Official Board must sit behind the Official Board & Members/Shops group and still open the marketplace-local board."
 );
 
 assertNotContains(
@@ -859,12 +859,14 @@ assertFileContains(
 const expectedOrder = [
   exactDebugId("marketplace.empty.community-home"),
   exactDebugId("marketplace.empty.dashboard"),
-  exactDebugId("marketplace.tile.money"),
-  exactDebugId("marketplace.tile.members"),
+  exactDebugId("marketplace.tile.support-money-group"),
+  exactDebugId("marketplace.tile.board-members-group"),
   exactDebugId("marketplace.row.records-links"),
-  exactDebugId("marketplace.tile.official-board"),
-  exactDebugId("marketplace.tile.support"),
   exactDebugId("marketplace.tile.marketing-tools"),
+  exactDebugId("marketplace.tile.support"),
+  exactDebugId("marketplace.tile.money"),
+  exactDebugId("marketplace.tile.official-board"),
+  exactDebugId("marketplace.tile.members"),
   exactDebugId("marketplace.row.wisdom-action"),
   exactDebugId("marketplace.intent.submit"),
   dynamicDebugId(

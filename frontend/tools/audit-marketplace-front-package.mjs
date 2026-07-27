@@ -134,40 +134,28 @@ assertNotContains(
 
 [
   {
-    id: "marketplace.tile.money",
+    id: "marketplace.tile.support-money-group",
     glyph: "pool",
-    label: "Money & Trust",
-    tags: ["Finance", "Money In", "Money Out", "Trust"],
+    label: "Support & Money Trust",
+    tags: ["Money & Trust", "Support"],
   },
   {
-    id: "marketplace.tile.members",
-    glyph: "trade",
-    label: "Community Members & Shops",
-    tags: ["Domains", "Public Shops", "Members"],
+    id: "marketplace.tile.board-members-group",
+    glyph: "members",
+    label: "Official Board & Members/Shops",
+    tags: ["Official Board", "Community Members & Shops"],
   },
   {
     id: "marketplace.row.records-links",
     glyph: "links",
     label: "Marketplace Tools",
-    tags: ["Verify", "Invite", "Create", "Shop Face"],
-  },
-  {
-    id: "marketplace.tile.official-board",
-    glyph: "notice",
-    label: "Official Board",
-    tags: ["This marketplace", "Members only", "No broadcast"],
-  },
-  {
-    id: "marketplace.tile.support",
-    glyph: "support",
-    label: "Support",
-    tags: ["Start Request", "Supporters", "Repayment"],
+    tags: ["Verify", "Invite", "Shop Face"],
   },
   {
     id: "marketplace.tile.marketing-tools",
     glyph: "repost",
     label: "Marketing Tools",
-    tags: ["Repost", "Free Spotlight", "Subscription Spotlight", "Evidence"],
+    tags: ["Repost", "Spotlight", "Evidence"],
   },
 ].forEach((card) => {
   const pattern = new RegExp(
@@ -189,21 +177,21 @@ const compactHiddenFrontTagRows = (
     /!\s*isCompact\s*\?\s*\(\s*<span style=\{marketplaceFrontTagRowStyle\(isCompact\)\}>/g
   ) || []
 ).length;
-if (compactHiddenFrontTagRows < 6) {
+if (compactHiddenFrontTagRows < 4) {
   addFinding(
     marketplaceFile,
     marketplaceSource,
     -1,
     "Marketplace front card tag rows must stay hidden on compact screens so mobile cards do not show truncated pill text.",
-    `Expected at least 6 compact-hidden front tag rows, found ${compactHiddenFrontTagRows}.`
+    `Expected at least 4 compact-hidden front tag rows, found ${compactHiddenFrontTagRows}.`
   );
 }
 
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open community domains, members, and shops"[\s\S]*?openMarketplaceSection\(event, "members", "marketplace-members-shops"\)[\s\S]*?Community Members & Shops[\s\S]*?Domains, known members, and public shops\.[\s\S]*?Domains[\s\S]*?Public Shops[\s\S]*?Members/,
-  "Community Members & Shops must open the domain, visible member, and shop directory lane."
+  /debugId="marketplace\.tile\.board-members-group"[\s\S]*?Official Board & Members\/Shops[\s\S]*?frontDomainGroup === "supportMoney"[\s\S]*?: \([\s\S]*?debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open community domains, members, and shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?Members & Shops/,
+  "Community Members & Shops must open from the Official Board & Members/Shops group into the domain, visible member, and shop directory lane."
 );
 
 assertNotContains(

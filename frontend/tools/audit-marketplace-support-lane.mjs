@@ -57,8 +57,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?<MarketplaceGlyph name="support"[\s\S]*?Support[\s\S]*?Ask for backing when balance is not enough[\s\S]*?Start Request[\s\S]*?Supporters[\s\S]*?Repayment/,
-  "Support front card must open support directly instead of presenting ROSCA as the same public choice."
+  /debugId="marketplace\.tile\.support-money-group"[\s\S]*?Support & Money Trust[\s\S]*?frontDomainGroup === "supportMoney"[\s\S]*?debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?Support/,
+  "Support must stay behind the Support & Money Trust group and open support directly instead of presenting ROSCA as the same public choice."
 );
 
 assertContains(

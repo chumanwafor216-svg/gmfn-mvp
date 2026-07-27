@@ -269,10 +269,9 @@ async function run() {
         "Trust",
         "Wider",
         "Insufficient",
-        "Money & Trust",
-        "Community Members & Shops",
+        "Support & Money Trust",
+        "Official Board & Members/Shops",
         "Marketplace Tools",
-        "Support",
         "Marketing Tools",
         "Spotlight",
       ];
@@ -325,6 +324,7 @@ async function run() {
       process.exit(1);
     }
 
+    await page.locator('[data-cta-id="marketplace.tile.board-members-group"]').click();
     await page.locator('[data-cta-id="marketplace.tile.members"]').click();
     await page.waitForFunction(
       () =>
@@ -369,9 +369,10 @@ async function run() {
       waitUntil: "networkidle",
       timeout: 60000,
     });
-    await page.waitForSelector('[data-cta-id="marketplace.tile.members"]', {
+    await page.waitForSelector('[data-cta-id="marketplace.tile.board-members-group"]', {
       timeout: 30000,
     });
+    await page.locator('[data-cta-id="marketplace.tile.board-members-group"]').click();
     await page.locator('[data-cta-id="marketplace.tile.members"]').click();
     await page.waitForFunction(
       () =>

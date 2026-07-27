@@ -1,3 +1,45 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Marketplace front-domain decongestion slice
+
+Owner trigger:
+- Owner asked for Marketplace to benefit from the Profile-domain style decongestion: Support plus Money & Trust under one button, and Official Board plus Community Members & Shops under another named button.
+
+Unabated truth:
+- This reduces the first visible Marketplace surface, but it does not reduce the underlying Marketplace page bundle size. The production build still reports `MarketplacePage` as a large route chunk.
+- The source action inventory increases from 88 to 90 stable actions because two group buttons were added while the four existing lane buttons remain available inside the opened group drawer.
+- Browser smokes passed only outside the sandbox because the sandbox blocks Vite/esbuild spawn with `EPERM`.
+
+Changed:
+- `frontend/src/pages/MarketplacePage.tsx`
+  - Added a compact first-surface group state for Marketplace front domains.
+  - Replaced the exposed Support, Money & Trust, Official Board, and Community Members & Shops front cards with two grouped choices: `Support & Money Trust` and `Official Board & Members/Shops`.
+  - Kept `Marketplace Tools` and `Marketing Tools` visible as direct front buttons.
+  - Preserved the existing lane actions and stable debug ids inside the opened group drawer.
+- Marketplace audit and smoke scripts now guard the two-step grouped phone flow instead of the old six-card front surface.
+
+Verification:
+- Passed `npm --prefix frontend run audit:marketplace-button-inventory`.
+- Passed `npm --prefix frontend run audit:marketplace-front-package`.
+- Passed `npm --prefix frontend run audit:marketplace-money-pool-lane`.
+- Passed `npm --prefix frontend run audit:marketplace-support-lane`.
+- Passed `npm --prefix frontend run audit:marketplace-trusted-trade-lane`.
+- Passed `npm --prefix frontend run audit:marketplace-actions`.
+- Passed `npm --prefix frontend run audit:marketplace-department-boundaries`.
+- Passed `npm --prefix frontend run audit:marketplace-records-links-lane`.
+- Passed `npm --prefix frontend run audit:marketplace-more-tools-lane`.
+- Passed `npm --prefix frontend run audit:marketplace-button-lines`.
+- Passed `npm --prefix frontend run audit:button-stability`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run lint`.
+- Passed `npm --prefix frontend run build`.
+- Passed `npm --prefix frontend run smoke:marketplace-hero` outside the sandbox after sandbox `EPERM`.
+- Passed `npm --prefix frontend run smoke:marketplace-boundaries` outside the sandbox after sandbox `EPERM`.
+- Passed `git diff --check`; only normal CRLF warnings were reported.
+
+Deployment:
+- Local only. Do not push/deploy unless the owner selects `2` or explicitly says push/deploy.
+
+Next recommended step:
+- If the owner likes the Marketplace grouping on phone, repeat the same narrow pattern on the next still-busy first surface. For speed complaints, the next real performance step is still bundle splitting for the largest route chunks.
 ## CURRENT LOCAL STATE - 2026-07-27 - Authenticated route-load latency reduction
 
 Owner trigger:

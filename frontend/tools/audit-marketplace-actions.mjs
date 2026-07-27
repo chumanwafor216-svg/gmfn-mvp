@@ -422,7 +422,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /debugId="marketplace\.tile\.money"[\s\S]*?Money & Trust[\s\S]*?Money Out[\s\S]*?id="marketplace-money-routes"[\s\S]*?to=\{marketplaceMoneyOutTo\}[\s\S]*?debugId="marketplace\.money\.money-out-destination"[\s\S]*?Open Withdrawal/,
+  /debugId="marketplace\.tile\.support-money-group"[\s\S]*?Support & Money Trust[\s\S]*?frontDomainGroup === "supportMoney"[\s\S]*?debugId="marketplace\.tile\.money"[\s\S]*?Money & Trust[\s\S]*?id="marketplace-money-routes"[\s\S]*?Money Out[\s\S]*?to=\{marketplaceMoneyOutTo\}[\s\S]*?debugId="marketplace\.money\.money-out-destination"[\s\S]*?Open Withdrawal/,
   "Marketplace normal withdrawal must remain available inside the Money & Trust lane, not as a separate busy front-door button or a Support & Loans opener."
 );
 

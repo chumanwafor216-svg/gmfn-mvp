@@ -67,8 +67,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open community domains, members, and shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Community Members & Shops[\s\S]*?Domains, known members, and public shops\.[\s\S]*?Domains[\s\S]*?Public Shops[\s\S]*?Members/,
-  "Community Members & Shops grouped card must open the community-bound domain/member/shop directory."
+  /debugId="marketplace\.tile\.board-members-group"[\s\S]*?Official Board & Members\/Shops[\s\S]*?frontDomainGroup === "supportMoney"[\s\S]*?: \([\s\S]*?debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open community domains, members, and shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?Members & Shops/,
+  "Community Members & Shops must stay behind the Official Board & Members/Shops group and still open the community-bound directory."
 );
 
 assertContains(
