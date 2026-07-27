@@ -2221,6 +2221,9 @@ export default function TrustSlipPage() {
   const [decisionPackEvidenceExtract, setDecisionPackEvidenceExtract] =
     useState<TrustSlipDecisionPackEvidenceExtract | null>(null);
   const [decisionPackEvidenceLoading, setDecisionPackEvidenceLoading] = useState(false);
+  const [housingExternalContactLabel, setHousingExternalContactLabel] = useState("");
+  const [housingExternalContactChannel, setHousingExternalContactChannel] = useState("whatsapp");
+  const [housingExternalContactValue, setHousingExternalContactValue] = useState("");
   const [confirmationBusy, setConfirmationBusy] = useState(false);
   const [confirmationOutcome, setConfirmationOutcome] =
     useState<CommunityConfirmationOutcome | null>(null);
@@ -3783,6 +3786,24 @@ export default function TrustSlipPage() {
     );
   }
 
+  const housingExternalContact = useMemo(() => {
+    if (selectedPurposeOption.key !== "housing_decision") return null;
+    const contact = safeStr(housingExternalContactValue);
+    if (!contact) return null;
+    return {
+      label: firstTruthy(housingExternalContactLabel, "Holder-supplied external contact"),
+      channel: firstTruthy(housingExternalContactChannel, "contact"),
+      contact,
+      boundary:
+        "Holder supplied this contact for optional direct follow-up. GSN does not verify, require, publish, or store the contact in the consent ledger.",
+    };
+  }, [
+    selectedPurposeOption.key,
+    housingExternalContactLabel,
+    housingExternalContactChannel,
+    housingExternalContactValue,
+  ]);
+
   function buildPublicDecisionPackShareText() {
     if (!verifyUrl) return "";
 
@@ -3792,6 +3813,10 @@ export default function TrustSlipPage() {
       `Recipient question: ${selectedPurposeOption.recipientQuestion}`,
       `Evidence focus: ${selectedPurposeOption.focus}`,
       `Public TrustSlip check: ${verifyUrl}`,
+      housingExternalContact
+        ? `Optional external follow-up contact: ${housingExternalContact.label} | ${housingExternalContact.channel} | ${housingExternalContact.contact}`
+        : "",
+      housingExternalContact ? housingExternalContact.boundary : "",
       "This is public decision support. It reduces uncertainty, does not eliminate risk, does not expose private Trust Passport contents, and does not make the decision for the recipient.",
     ]
       .map((line) => safeStr(line))
@@ -3832,6 +3857,10 @@ export default function TrustSlipPage() {
         return `- ${category.label}: ${category.evidenceCount} event${category.evidenceCount === 1 ? "" : "s"}; latest ${latest}${sample}`;
       }),
       verifyUrl ? `Public TrustSlip check: ${verifyUrl}` : "",
+      housingExternalContact
+        ? `Optional external follow-up contact: ${housingExternalContact.label} | ${housingExternalContact.channel} | ${housingExternalContact.contact}`
+        : "",
+      housingExternalContact ? housingExternalContact.boundary : "",
       "Shared by holder consent from a private preview. Evidence only; ask for live community confirmation before important risk.",
       "Not a public evidence paper, score, approval, guarantee, payment instruction, raw event timeline, or private note disclosure.",
       "GSN records only that the holder copied/exported this consent share. It does not store recipient identity, copied text, raw TrustEvents, private notes, contacts, payment references, or bank details.",
@@ -3870,6 +3899,16 @@ export default function TrustSlipPage() {
               includes_holder_level_records: privateDecisionPackEvidenceScope.includesHolderLevelRecords,
               public_summary: privateDecisionPackEvidenceScope.publicSummary || null,
               boundary: privateDecisionPackEvidenceScope.boundary || null,
+            }
+          : null,
+        optional_external_follow_up_contact: housingExternalContact
+          ? {
+              label: housingExternalContact.label,
+              channel: housingExternalContact.channel,
+              contact: housingExternalContact.contact,
+              boundary: housingExternalContact.boundary,
+              holder_supplied: true,
+              stored_by_gsn: false,
             }
           : null,
         evidence_categories: rows.map((category) => ({
@@ -4986,6 +5025,112 @@ export default function TrustSlipPage() {
                 </div>
               )}
 
+
+              {selectedPurposeOption.key === "housing_decision" ? (
+                <div
+                  data-gsn-housing-external-contact-handoff="holder"
+                  style={{
+                    border: "1px solid rgba(37,78,119,0.12)",
+                    borderRadius: 14,
+                    background: "#FFFFFF",
+                    padding: isCompact ? "9px 10px" : "10px 12px",
+                    display: "grid",
+                    gap: 8,
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ ...sectionLabel(), fontSize: isCompact ? 9 : 10 }}>
+                      Optional external contact
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 2,
+                        color: "#07172C",
+                        fontSize: isCompact ? 12 : 13,
+                        fontWeight: 950,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      Holder-supplied follow-up only
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 3,
+                        color: "#526579",
+                        fontSize: isCompact ? 10 : 11,
+                        fontWeight: 800,
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      Use this only when the holder decides it is safe to share a landlord, letting agent, or tenancy-office contact. GSN does not verify, require, publish, or store it in the consent ledger.
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 140px minmax(0, 1fr)",
+                      gap: 7,
+                    }}
+                  >
+                    <input
+                      aria-label="External contact label"
+                      value={housingExternalContactLabel}
+                      onChange={(event) => setHousingExternalContactLabel(event.target.value)}
+                      placeholder="Landlord, agent, tenancy office"
+                      style={{
+                        width: "100%",
+                        minHeight: 44,
+                        borderRadius: 12,
+                        border: "1px solid rgba(37,78,119,0.18)",
+                        background: "#FFFDF7",
+                        color: "#07172C",
+                        fontSize: 16,
+                        fontWeight: 850,
+                        padding: "0 11px",
+                      }}
+                    />
+                    <select
+                      aria-label="External contact channel"
+                      value={housingExternalContactChannel}
+                      onChange={(event) => setHousingExternalContactChannel(event.target.value)}
+                      style={{
+                        width: "100%",
+                        minHeight: 44,
+                        borderRadius: 12,
+                        border: "1px solid rgba(37,78,119,0.18)",
+                        background: "#FFFDF7",
+                        color: "#07172C",
+                        fontSize: 16,
+                        fontWeight: 900,
+                        padding: "0 10px",
+                      }}
+                    >
+                      <option value="whatsapp">WhatsApp</option>
+                      <option value="phone">Phone</option>
+                      <option value="email">Email</option>
+                      <option value="other">Other</option>
+                    </select>
+                    <input
+                      aria-label="External contact value"
+                      value={housingExternalContactValue}
+                      onChange={(event) => setHousingExternalContactValue(event.target.value)}
+                      placeholder="Number, email, or contact"
+                      style={{
+                        width: "100%",
+                        minHeight: 44,
+                        borderRadius: 12,
+                        border: "1px solid rgba(37,78,119,0.18)",
+                        background: "#FFFDF7",
+                        color: "#07172C",
+                        fontSize: 16,
+                        fontWeight: 850,
+                        padding: "0 11px",
+                      }}
+                    />
+                  </div>
+                </div>
+              ) : null}
 
               <CardActionRow data-gsn-decision-pack-consent-export="holder">
                 <SecondaryButton

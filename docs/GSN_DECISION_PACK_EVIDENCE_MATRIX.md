@@ -71,7 +71,11 @@ prove tenancy behaviour, co-living success, landlord approval,
 legal tenancy status, right-to-rent checks, affordability decisions, tenancy
 approval, guaranteed rent, or future conduct, and they do not expose landlords,
 accommodation providers, addresses, rent amounts, payment references, private
-witness notes, or allegations.
+witness notes, or allegations. If the holder wants to let the inquirer go beyond
+GSN, the holder page may add an optional landlord/agent/tenancy-office WhatsApp,
+phone, email, or other contact to copied Decision Pack text/JSON. That contact is
+holder-supplied only; it is not required, verified, published, stored in the
+consent ledger, or treated as behaviour evidence.
 
 For community-standing, referral, guarantor/support, housing, and partnership
 decisions, the engine now exposes public-safe guarantee/support outcome pointers

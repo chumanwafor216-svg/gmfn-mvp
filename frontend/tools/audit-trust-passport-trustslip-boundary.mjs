@@ -329,6 +329,18 @@ assertContains(
 
 assertContains(
   "trustSlip",
+  /housingExternalContactLabel[\s\S]*?housingExternalContactChannel[\s\S]*?housingExternalContactValue[\s\S]*?selectedPurposeOption\.key !== "housing_decision"[\s\S]*?Holder supplied this contact for optional direct follow-up[\s\S]*?does not verify, require, publish, or store the contact in the consent ledger/,
+  "Housing Decision Pack optional external contact must stay holder-supplied, housing-only, and outside GSN storage or verification."
+);
+
+assertContains(
+  "trustSlip",
+  /Optional external follow-up contact:[\s\S]*?optional_external_follow_up_contact:[\s\S]*?holder_supplied: true[\s\S]*?stored_by_gsn: false[\s\S]*?data-gsn-housing-external-contact-handoff="holder"[\s\S]*?Optional external contact[\s\S]*?WhatsApp[\s\S]*?Phone[\s\S]*?Email/,
+  "Housing Decision Pack external contact handoff must be copied/exported only by holder action with clear channel options."
+);
+
+assertContains(
+  "trustSlip",
   /TrustSlipDecisionPackGuaranteeOutcomePointer[\s\S]*?guaranteeOutcomePointers[\s\S]*?extract\?\.guarantee_outcome_pointers[\s\S]*?privateDecisionPackGuaranteeOutcomePointers[\s\S]*?data-gsn-holder-decision-pack-guarantee-outcome-pointers="true"[\s\S]*?Guarantee\/support outcomes[\s\S]*?guaranteeOutcomeBoundaryNote/,
   "TrustSlip holder private Decision Pack preview must show aggregate guarantee/support outcomes separately from TrustEvent categories."
 );

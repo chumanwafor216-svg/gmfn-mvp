@@ -1,3 +1,38 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Optional housing external contact handoff
+
+Owner trigger:
+- Owner clarified that GSN should stop housing inference at community behaviour, but the holder may optionally share a landlord, letting agent, tenancy agency, WhatsApp, phone, email, or other contact when the inquirer wants to go beyond GSN.
+
+Unabated truth:
+- This is a holder-supplied contact handoff, not GSN evidence.
+- It is optional, housing-only, and appears only in copied Decision Pack text/JSON when the holder fills the contact field.
+- It is not required, verified, published by default, stored in the backend consent-share ledger, or used to score/decide anything.
+- Devil's advocate: this contact can help an inquirer go further, but it must not become a back door that makes landlord/agent references the main Housing Decision Pack engine. The main engine remains community conduct/readiness inference.
+
+Changed:
+- frontend/src/pages/TrustSlipPage.tsx
+  - Added holder-side optional external contact fields for the Housing Decision Pack: label, channel, and contact value.
+  - Public Decision Pack copy text and holder consent summary/JSON include the contact only when the holder has filled it.
+  - JSON export marks the contact holder_supplied=true and stored_by_gsn=false.
+- frontend/tools/audit-trust-passport-trustslip-boundary.mjs
+  - Added guards that the optional contact remains housing-only, holder-supplied, copied/exported only by holder action, and outside GSN storage/verification.
+- docs/GSN_DECISION_PACK_EVIDENCE_MATRIX.md
+  - Recorded optional external contact as a voluntary handoff, not required evidence.
+
+Verification:
+- Passed npm --prefix frontend run audit:trust-passport-trustslip-boundary
+- Passed npm --prefix frontend run audit:public-trustslip-verify-boundary
+- Passed npm --prefix frontend run audit:protected-button-freeze
+- Passed npm --prefix frontend run build
+- Passed npm --prefix frontend run smoke:public-trustslip-verify-states after elevated rerun for sandbox spawn EPERM
+- Passed npm --prefix frontend run smoke:trust-passport-trustslip-boundary after elevated rerun for sandbox spawn EPERM
+
+Deployment:
+- Local only so far; do not push/deploy unless the owner explicitly selects push/deploy.
+
+Next recommended step:
+- Verify and commit this optional contact handoff.
+
 ## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack housing conduct readiness correction
 
 Owner trigger:
