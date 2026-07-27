@@ -164,6 +164,18 @@ type DashboardUIState = {
   trustExpanded: boolean;
 };
 
+type DashboardToolsLaneKey = "evidence" | "work" | "community";
+
+type DashboardToolsLane = {
+  key: DashboardToolsLaneKey;
+  label: string;
+  detail: string;
+  items: {
+    label: string;
+    to: string;
+  }[];
+};
+
 type DashboardNoticeItem = {
   id: string;
   title: string;
@@ -3096,6 +3108,8 @@ export default function DashboardPage() {
       readLocalJSON(DASHBOARD_UI_STORAGE_KEY, defaultDashboardUIState())
     )
   );
+  const [toolsLane, setToolsLane] =
+    useState<DashboardToolsLaneKey>("evidence");
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
@@ -5482,6 +5496,52 @@ export default function DashboardPage() {
         : mostUsedAppFallback
       ).slice(0, 4),
     [actualMostUsedApps, mostUsedAppFallback]
+  );
+
+  const dashboardToolsLanes = useMemo<DashboardToolsLane[]>(
+    () => [
+      {
+        key: "evidence",
+        label: "Evidence checks",
+        detail: "Trust, identity, TrustSlip, and public verification checks.",
+        items: [
+          { label: "TrustSlip", to: DASHBOARD_TARGETS.TRUST_SLIP },
+          { label: "Trust Passport", to: DASHBOARD_TARGETS.TRUST },
+          { label: "Identity", to: DASHBOARD_TARGETS.CCI },
+          { label: "Verify code", to: DASHBOARD_TARGETS.TRUST_SLIP_VERIFY },
+        ],
+      },
+      {
+        key: "work",
+        label: "Work and demand",
+        detail: "Find work, ask for service, promote, or open your shop face.",
+        items: [
+          { label: "Marketplace", to: DASHBOARD_TARGETS.MARKETPLACE },
+          { label: "Demand Box", to: DASHBOARD_TARGETS.DEMAND_BOX },
+          { label: "Spotlight", to: DASHBOARD_TARGETS.COMMUNITY_SPOTLIGHT },
+          { label: "Shop", to: DASHBOARD_TARGETS.SHOP_ME },
+        ],
+      },
+      {
+        key: "community",
+        label: "Community and money",
+        detail: "Return to the community room, alerts, finance, or money-in path.",
+        items: [
+          { label: "Community", to: DASHBOARD_TARGETS.COMMUNITY },
+          { label: "Alerts", to: DASHBOARD_TARGETS.WHAT_MATTERS_NOW },
+          { label: "Finance", to: DASHBOARD_TARGETS.FINANCE },
+          { label: "Money In", to: DASHBOARD_TARGETS.MONEY_IN },
+        ],
+      },
+    ],
+    []
+  );
+
+  const activeToolsLane = useMemo(
+    () =>
+      dashboardToolsLanes.find((lane) => lane.key === toolsLane) ||
+      dashboardToolsLanes[0],
+    [dashboardToolsLanes, toolsLane]
   );
 
   useEffect(() => {
@@ -9002,138 +9062,171 @@ export default function DashboardPage() {
         </StableButton>
 
         {uiState.appsExpanded ? (
-        <div
-          style={{
-            marginTop: isPhone ? 10 : 12,
-            display: "grid",
-            gridTemplateColumns: isPhone
-              ? "repeat(2, minmax(0, 1fr))"
-              : "repeat(4, minmax(0, 1fr))",
-            gap: isPhone ? 9 : 12,
-          }}
-        >
-          {[
-            {
-              label: "Your Marketplace",
-              to: DASHBOARD_TARGETS.MARKETPLACE,
-            },
-            {
-              label: "Create Demand",
-              to: DASHBOARD_TARGETS.DEMAND_BOX,
-            },
-            {
-              label: "Your Spotlight",
-              to: DASHBOARD_TARGETS.COMMUNITY_SPOTLIGHT,
-            },
-            {
-              label: "Your Trust Events",
-              to: DASHBOARD_TARGETS.TRUST,
-            },
-          ].map((item) => (
-            <StableButton
-              debugId={`dashboard.apps.primary.${item.label
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, "-")
-                .replace(/^-|-$/g, "")}`}
-              key={item.label}
-              type="button"
-              onClick={(event) => openDashboardRoute(event, item.to)}
-              onPointerDown={consumeDashboardPointerEvent}
-              style={dashboardLauncherButtonStyle}
-            >
-              <span
-                aria-hidden="true"
-                style={dashboardAccordionIconStyle(
-                  "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(221,234,250,0.86) 100%)",
-                  "1px solid rgba(11,99,209,0.16)"
-                )}
-              >
-                <DashboardSignalIcon
-                  name={dashboardActionSignal(item.label)}
-                  size={isPhone ? 18 : 20}
-                  strokeWidth={2.25}
-                />
-              </span>
-              <span
-                style={{
-                  minWidth: 0,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  lineHeight: 1.15,
-                }}
-              >
-                {item.label}
-              </span>
-            </StableButton>
-          ))}
-        </div>
-        ) : null}
-
-        {uiState.appsExpanded ? (
           <div
             style={{
               marginTop: isPhone ? 10 : 12,
               display: "grid",
-              gridTemplateColumns: isPhone
-                ? "repeat(2, minmax(0, 1fr))"
-                : "repeat(4, minmax(0, 1fr))",
-              gap: isPhone ? 9 : 12,
+              gap: isPhone ? 10 : 12,
             }}
           >
-            {[
-              {
-                label: "Your Community",
-                to: DASHBOARD_TARGETS.COMMUNITY,
-              },
-              {
-                label: "Your Shop",
-                to: DASHBOARD_TARGETS.SHOP_ME,
-              },
-              {
-                label: "Your Alerts",
-                to: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
-              },
-            {
-              label: "Your Identity",
-              to: DASHBOARD_TARGETS.CCI,
-            },
-          ].map((item) => (
-            <StableButton
-              debugId={`dashboard.apps.secondary.${item.label
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, "-")
-                .replace(/^-|-$/g, "")}`}
-              key={item.label}
-              type="button"
-              onClick={(event) => openDashboardRoute(event, item.to)}
-              onPointerDown={consumeDashboardPointerEvent}
-              style={dashboardLauncherButtonStyle}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isPhone
+                  ? "1fr"
+                  : "repeat(3, minmax(0, 1fr))",
+                gap: isPhone ? 8 : 10,
+              }}
             >
-              <span
-                aria-hidden="true"
-                style={dashboardAccordionIconStyle(
-                  "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(221,234,250,0.86) 100%)",
-                  "1px solid rgba(11,99,209,0.16)"
-                )}
-              >
-                <DashboardSignalIcon
-                  name={dashboardActionSignal(item.label)}
-                  size={isPhone ? 18 : 20}
-                  strokeWidth={2.25}
-                />
-              </span>
-              <span
+              {dashboardToolsLanes.map((lane) => {
+                const selected = lane.key === activeToolsLane.key;
+
+                return (
+                  <StableButton
+                    key={lane.key}
+                    debugId={`dashboard.apps.lane.${lane.key}`}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={(event) =>
+                      runDashboardUiMutation(
+                        event,
+                        () => setToolsLane(lane.key),
+                        220
+                      )
+                    }
+                    onPointerDown={consumeDashboardPointerEvent}
+                    style={{
+                      ...dashboardLauncherButtonStyle,
+                      minHeight: isPhone ? 66 : 72,
+                      height: "auto",
+                      maxHeight: "none",
+                      gridTemplateColumns: "1fr",
+                      justifyContent: "start",
+                      alignItems: "start",
+                      textAlign: "left",
+                      gap: 8,
+                      background: selected
+                        ? "linear-gradient(180deg, #0B1F33 0%, #123A5A 100%)"
+                        : "linear-gradient(180deg, #FFFFFF 0%, #F6FAFF 100%)",
+                      color: selected ? "#FFF8DC" : "#0B1F33",
+                      border: selected
+                        ? "1px solid rgba(214,170,69,0.34)"
+                        : "1px solid rgba(11,99,209,0.12)",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: isPhone ? 13 : 14,
+                        fontWeight: 950,
+                        lineHeight: 1.15,
+                      }}
+                    >
+                      {lane.label}
+                    </span>
+                    <span
+                      style={{
+                        color: selected
+                          ? "rgba(255,248,220,0.78)"
+                          : DASHBOARD_BRAND.helper,
+                        fontSize: isPhone ? 11.5 : 12,
+                        fontWeight: 750,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {lane.detail}
+                    </span>
+                  </StableButton>
+                );
+              })}
+            </div>
+
+            <div
+              style={{
+                borderRadius: isPhone ? 16 : 18,
+                border: "1px solid rgba(214,170,69,0.18)",
+                background:
+                  "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,251,255,0.98) 100%)",
+                padding: isPhone ? 10 : 12,
+                display: "grid",
+                gap: isPhone ? 9 : 11,
+              }}
+            >
+              <div
                 style={{
-                  minWidth: 0,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  lineHeight: 1.15,
+                  display: "grid",
+                  gap: 3,
                 }}
               >
-                {item.label}
-              </span>
-            </StableButton>
-          ))}
+                <span
+                  style={{
+                    color: DASHBOARD_BRAND.ink,
+                    fontSize: isPhone ? 14 : 15,
+                    fontWeight: 950,
+                    lineHeight: 1.15,
+                  }}
+                >
+                  {activeToolsLane.label}
+                </span>
+                <span
+                  style={{
+                    color: DASHBOARD_BRAND.helper,
+                    fontSize: isPhone ? 12 : 13,
+                    fontWeight: 750,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {activeToolsLane.detail}
+                </span>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isPhone
+                    ? "repeat(2, minmax(0, 1fr))"
+                    : "repeat(4, minmax(0, 1fr))",
+                  gap: isPhone ? 8 : 10,
+                }}
+              >
+                {activeToolsLane.items.map((item) => (
+                  <StableButton
+                    debugId={`dashboard.apps.tool.${activeToolsLane.key}.${item.label
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]+/g, "-")
+                      .replace(/^-|-$/g, "")}`}
+                    key={`${activeToolsLane.key}-${item.label}`}
+                    type="button"
+                    onClick={(event) => openDashboardRoute(event, item.to)}
+                    onPointerDown={consumeDashboardPointerEvent}
+                    style={dashboardLauncherButtonStyle}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={dashboardAccordionIconStyle(
+                        "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(221,234,250,0.86) 100%)",
+                        "1px solid rgba(11,99,209,0.16)"
+                      )}
+                    >
+                      <DashboardSignalIcon
+                        name={dashboardActionSignal(item.label)}
+                        size={isPhone ? 18 : 20}
+                        strokeWidth={2.25}
+                      />
+                    </span>
+                    <span
+                      style={{
+                        minWidth: 0,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        lineHeight: 1.15,
+                      }}
+                    >
+                      {item.label}
+                    </span>
+                  </StableButton>
+                ))}
+              </div>
+            </div>
           </div>
         ) : null}
       </section>
@@ -12821,30 +12914,5 @@ export default function DashboardPage() {
       </div>
     </div>
   );
-} 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+}
 

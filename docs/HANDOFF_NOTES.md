@@ -156252,3 +156252,12 @@ Next recommended step:
 - No backend evidence, Decision Pack catalogue/mapping, public verify route, Trust Passport exposure, landlord/contact policy, scoring, or button/action inventory was changed.
 - Verification run locally: eslint for TrustSlipPage/audit/smoke files, audit:trust-passport-trustslip-boundary, audit:button-stability, audit:protected-button-freeze, smoke:trust-passport-trustslip-boundary after elevated run, and npm --prefix frontend run build passed.
 - Owner selected 1, so this was not pushed or deployed in this slice.
+
+### Dashboard tools lane consolidation (2026-07-27)
+- Local-only `1` pass after the TrustSlip/Trust Passport deploy.
+- `frontend/src/pages/DashboardPage.tsx` now keeps the existing `Tools and verification` accordion, but when opened it shows one selected lane at a time instead of dumping all launcher buttons at once.
+- Default lane is `Evidence checks`: TrustSlip, Trust Passport, Identity, Verify code. Other lanes are `Work and demand` and `Community and money`.
+- This is a phone/institutional clutter correction, not a raw load-speed fix. Startup timing still passed, but the measured warm Dashboard was slower than the earlier same-session sample: 4280ms after this change versus roughly 3333ms before. Both remain under the 7500ms audit ceiling.
+- Updated `frontend/tools/audit-dashboard-actions.mjs` so the protected Dashboard audit now requires the new dynamic `dashboard.apps.lane.${lane.key}` and `dashboard.apps.tool.${activeToolsLane.key}.${item.label...}` debug IDs.
+- Verified: `npm --prefix frontend run lint`; `audit:dashboard-actions`; `audit:dashboard-button-inventory`; `audit:dashboard-phone-buttons`; `audit:startup-root-boundary`; `audit:button-stability`; `audit:protected-button-freeze`; `npm --prefix frontend run build`; elevated `audit:startup-timing`.
+- No push/deploy in this pass because the product owner selected `1`.

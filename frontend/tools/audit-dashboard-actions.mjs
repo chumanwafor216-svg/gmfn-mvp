@@ -331,8 +331,8 @@ assertNotContains(
 );
 
 assertContains(
-  /debugId=\{`dashboard\.apps\.primary\.\$\{item\.label[\s\S]*?debugId=\{`dashboard\.apps\.secondary\.\$\{item\.label/,
-  "Dashboard app launcher rows must keep dynamic debug IDs."
+  /debugId=\{`dashboard\.apps\.lane\.\$\{lane\.key\}`\}[\s\S]*?debugId=\{`dashboard\.apps\.tool\.\$\{activeToolsLane\.key\}\.\$\{item\.label/,
+  "Dashboard app launcher lanes and tool rows must keep dynamic debug IDs."
 );
 
 assertContains(
