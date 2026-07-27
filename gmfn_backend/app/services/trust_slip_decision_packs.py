@@ -5,7 +5,7 @@ from typing import Any, Mapping, Optional
 
 from sqlalchemy.orm import Session
 
-from app.db.models import ClanMembership, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare
+from app.db.models import ClanMembership, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare
 
 
 @dataclass(frozen=True)
@@ -1070,6 +1070,105 @@ def _filter_to_active_communities(query: Any, model: Any, *, active_community_id
     return query
 
 
+def _confirmation_pointer_row(
+    *,
+    key: str,
+    label: str,
+    value: str,
+    source: str,
+    status: str = "available",
+    count: int = 1,
+    decision_use: str,
+) -> dict[str, Any]:
+    return {
+        "key": key,
+        "label": _clean(label, limit=96),
+        "status": _clean(status, limit=32) or "available",
+        "value": _clean(value, limit=280),
+        "source": _clean(source, limit=80),
+        "evidence_count": _profile_int(count),
+        "decision_use": _clean(decision_use, limit=240),
+    }
+
+
+def _decision_pack_confirmation_pointers(
+    db: Session,
+    *,
+    holder_user_id: int,
+    reason_type: str,
+    active_community_ids: set[int],
+) -> list[dict[str, Any]]:
+    reason = _clean(reason_type, limit=48) or "community_standing_check"
+    request_query = (
+        db.query(CommunityConfirmationRequest)
+        .filter(CommunityConfirmationRequest.subject_user_id == int(holder_user_id))
+        .filter(CommunityConfirmationRequest.reason_type == reason)
+        .filter(CommunityConfirmationRequest.abuse_flag.is_(False))
+    )
+    if active_community_ids:
+        request_query = request_query.filter(CommunityConfirmationRequest.community_id.in_(active_community_ids))
+    requests = (
+        request_query.order_by(CommunityConfirmationRequest.created_at.desc(), CommunityConfirmationRequest.id.desc())
+        .limit(12)
+        .all()
+    )
+    if not requests:
+        return [
+            _confirmation_pointer_row(
+                key="community_confirmation_gap",
+                label="Community witness outcome",
+                status="gap",
+                value="No community confirmation request or aggregate witness outcome is visible for this Decision Pack reason yet.",
+                source="community_confirmation_requests",
+                count=0,
+                decision_use="Ask for live community confirmation before relying on this point.",
+            )
+        ]
+
+    request_ids = [int(request.id) for request in requests]
+    outcomes = (
+        db.query(CommunityConfirmationOutcome)
+        .filter(CommunityConfirmationOutcome.request_id.in_(request_ids))
+        .all()
+    )
+    outcomes_by_request_id = {int(outcome.request_id): outcome for outcome in outcomes}
+    response_count = (
+        db.query(CommunityConfirmationResponse)
+        .filter(CommunityConfirmationResponse.request_id.in_(request_ids))
+        .filter(CommunityConfirmationResponse.counted_in_outcome.is_(True))
+        .count()
+    )
+    closed_outcomes = [outcome for outcome in outcomes if outcome is not None]
+    latest = requests[0]
+    latest_outcome = outcomes_by_request_id.get(int(latest.id))
+    latest_status = _clean(getattr(latest, "status", None), limit=32) or "pending"
+    value = f"{len(requests)} community confirmation request{'s' if len(requests) != 1 else ''} found for this Decision Pack reason"
+    if closed_outcomes:
+        value = f"{value}; {len(closed_outcomes)} aggregate outcome{'s' if len(closed_outcomes) != 1 else ''} recorded"
+    if response_count:
+        value = f"{value}; {int(response_count)} counted witness response{'s' if int(response_count) != 1 else ''}"
+    if latest_outcome is not None:
+        confidence = _clean(getattr(latest_outcome, "confidence_level", None), limit=32) or "limited"
+        positive = _profile_int(getattr(latest_outcome, "positive_count", 0))
+        caution = _profile_int(getattr(latest_outcome, "caution_count", 0))
+        objection = _profile_int(getattr(latest_outcome, "objection_count", 0))
+        value = f"{value}. Latest outcome: {confidence}; positive {positive}, caution {caution}, objection {objection}."
+    else:
+        value = f"{value}. Latest request status: {latest_status}."
+
+    return [
+        _confirmation_pointer_row(
+            key="community_witness_outcome",
+            label="Community witness outcome",
+            status="available" if closed_outcomes or response_count else "pending",
+            value=value,
+            source="community_confirmation_outcomes",
+            count=len(requests),
+            decision_use="Use this as aggregate witness context only. It does not reveal responders, private notes, licences, guarantees, approvals, or final decisions.",
+        )
+    ]
+
+
 def _decision_pack_record_pointers(
     db: Session,
     *,
@@ -1435,6 +1534,12 @@ def build_decision_pack_private_evidence_extract(
         pack_key=pack_key,
         active_community_ids=active_community_ids,
     )
+    confirmation_pointers = _decision_pack_confirmation_pointers(
+        db,
+        holder_user_id=int(holder_user_id),
+        reason_type=context.get("confirmation_reason_type") or "community_standing_check",
+        active_community_ids=active_community_ids,
+    )
     return {
         "source": "holder_private_decision_pack_extract",
         "decision_pack": pack_key,
@@ -1449,6 +1554,8 @@ def build_decision_pack_private_evidence_extract(
         "declaration_boundary_note": "Declared shop, listing, or trade records are evidence pointers only. They do not prove licence, insurance, work quality, or future performance.",
         "record_pointers": record_pointers,
         "record_pointer_boundary_note": "Connected financial/support records are evidence pointers only. They do not prove creditworthiness, legal tenancy status, rent payment, bank approval, or future repayment.",
+        "confirmation_pointers": confirmation_pointers,
+        "confirmation_pointer_boundary_note": "Community witness outcomes are aggregate evidence pointers only. They do not expose responders, private notes, licences, guarantees, approvals, or final decisions.",
         "privacy_note": "Authenticated holder preview only. Event references are provenance pointers for consented review, not a public evidence paper.",
         "boundary_note": "This private preview is not a score, approval, guarantee, payment instruction, dispute disclosure, or public TrustSlip output.",
     }
@@ -1512,9 +1619,15 @@ def build_decision_pack_evidence_extract(
         pack_key=pack_key,
         active_community_ids=active_community_ids,
     )
+    confirmation_pointers = _decision_pack_confirmation_pointers(
+        db,
+        holder_user_id=int(holder_user_id),
+        reason_type=context.get("confirmation_reason_type") or "community_standing_check",
+        active_community_ids=active_community_ids,
+    )
     return {
         "source": "trust_events_redacted_extract",
-        "source_note": "Aggregated from public-safe TrustEvent categories plus declared or connected-record pointers where relevant. Raw TrustEvents, actor details, notes, metadata, amounts, payment references, and private contacts are not exposed publicly.",
+        "source_note": "Aggregated from public-safe TrustEvent categories plus declared, connected-record, and community-witness outcome pointers where relevant. Raw TrustEvents, actor details, notes, metadata, amounts, payment references, responder identities, and private contacts are not exposed publicly.",
         "evidence_scope": _decision_pack_evidence_scope(
             active_community_ids=active_community_ids,
             primary_clan_id=getattr(slip, "clan_id", None),
@@ -1524,6 +1637,8 @@ def build_decision_pack_evidence_extract(
         "declaration_boundary_note": "Declared shop, listing, or trade records are evidence pointers only. They do not prove licence, insurance, work quality, or future performance.",
         "record_pointers": record_pointers,
         "record_pointer_boundary_note": "Connected financial/support records are evidence pointers only. They do not prove creditworthiness, legal tenancy status, rent payment, bank approval, or future repayment.",
+        "confirmation_pointers": confirmation_pointers,
+        "confirmation_pointer_boundary_note": "Community witness outcomes are aggregate evidence pointers only. They do not expose responders, private notes, licences, guarantees, approvals, or final decisions.",
         "private_review_required": [
             {
                 "key": category,
@@ -1608,10 +1723,25 @@ def build_decision_pack_profile(
                 "decision_use": "Treat this as a record pointer. Review private evidence or community confirmation before relying.",
             }
         ]
-    signals = expected_signals + declared_signal + record_pointer_signal + visible_signals
+    confirmation_pointers = []
+    if isinstance(evidence_extract, Mapping) and isinstance(evidence_extract.get("confirmation_pointers"), list):
+        confirmation_pointers = [pointer for pointer in evidence_extract.get("confirmation_pointers", []) if isinstance(pointer, Mapping)]
+    confirmation_signal = []
+    if confirmation_pointers:
+        first_confirmation = confirmation_pointers[0]
+        confirmation_signal = [
+            {
+                "key": "community_witness_outcome",
+                "label": "Community witness outcome",
+                "status": _clean(first_confirmation.get("status"), limit=32) or "available",
+                "value": _clean(first_confirmation.get("value"), limit=260) or "Community witness outcome evidence is visible.",
+                "decision_use": "Treat this as aggregate witness context. It does not replace recipient judgement or formal checks.",
+            }
+        ]
+    signals = expected_signals + declared_signal + record_pointer_signal + confirmation_signal + visible_signals
     signal_gaps = [
         signal
-        for signal in visible_signals + declared_signal + record_pointer_signal
+        for signal in visible_signals + declared_signal + record_pointer_signal + confirmation_signal
         if signal.get("status") in {"gap", "caution"}
     ]
     missing_gap_rows = [

@@ -321,6 +321,11 @@ assertContains(
   "TrustSlip holder private Decision Pack preview must show connected financial/support record pointers separately from TrustEvent categories."
 );
 assertContains(
+  "trustSlip",
+  /TrustSlipDecisionPackConfirmationPointer[\s\S]*?confirmationPointers[\s\S]*?extract\?\.confirmation_pointers[\s\S]*?privateDecisionPackConfirmationPointers[\s\S]*?data-gsn-holder-decision-pack-confirmation-pointers="true"[\s\S]*?Community witness outcomes[\s\S]*?confirmationPointerBoundaryNote/,
+  "TrustSlip holder private Decision Pack preview must show aggregate community witness outcomes separately from TrustEvent categories."
+);
+assertContains(
   "decisionMatrix",
   /Employment[\s\S]*?Demand Box[\s\S]*?Housing[\s\S]*?previous landlord[\s\S]*?Trade or Skilled Work[\s\S]*?Customer-confirmed completed-job record[\s\S]*?Backend parity/,
   "Decision Pack evidence matrix doc must preserve the owner examples and missing-app architecture gaps."

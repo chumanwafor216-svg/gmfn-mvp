@@ -50,6 +50,16 @@ type DecisionPackRecordPointer = {
   decisionUse: string;
 };
 
+type DecisionPackConfirmationPointer = {
+  key: string;
+  label: string;
+  status: string;
+  value: string;
+  source: string;
+  evidenceCount: number | null;
+  decisionUse: string;
+};
+
 export type DecisionPackEvidenceExtractView = {
   source: string;
   sourceNote: string;
@@ -65,6 +75,8 @@ export type DecisionPackEvidenceExtractView = {
   declarationBoundaryNote: string;
   recordPointers: DecisionPackRecordPointer[];
   recordPointerBoundaryNote: string;
+  confirmationPointers: DecisionPackConfirmationPointer[];
+  confirmationPointerBoundaryNote: string;
   privateReviewRequired: DecisionPackPrivateReviewCategory[];
   boundaryNote: string;
 };
@@ -256,6 +268,7 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
     : [];
   const declaredClaims = Array.isArray(source.declared_claims) ? source.declared_claims : [];
   const recordPointers = Array.isArray(source.record_pointers) ? source.record_pointers : [];
+  const confirmationPointers = Array.isArray(source.confirmation_pointers) ? source.confirmation_pointers : [];
   const evidenceScope = source.evidence_scope && typeof source.evidence_scope === "object" ? source.evidence_scope : {};
   return {
     source: firstTruthy(source.source, "trust_events_redacted_extract"),
@@ -333,6 +346,28 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
     recordPointerBoundaryNote: firstTruthy(
       source.record_pointer_boundary_note,
       "Connected financial/support records are evidence pointers only. They do not prove creditworthiness, legal tenancy status, rent payment, bank approval, or future repayment."
+    ),
+    confirmationPointers: confirmationPointers
+      .map((pointer: any) => ({
+        key: firstTruthy(pointer?.key, pointer?.label),
+        label: firstTruthy(pointer?.label, "Community witness outcome"),
+        status: firstTruthy(pointer?.status, "not_shown"),
+        value: firstTruthy(
+          pointer?.value,
+          "No community witness outcome is visible for this Decision Pack reason yet."
+        ),
+        source: firstTruthy(pointer?.source, "community_confirmation_requests"),
+        evidenceCount: firstNumberLike(pointer?.evidence_count),
+        decisionUse: firstTruthy(
+          pointer?.decision_use,
+          "Use this as aggregate witness context only; ask for live confirmation before relying."
+        ),
+      }))
+      .filter((pointer: DecisionPackConfirmationPointer) => pointer.key || pointer.label)
+      .slice(0, 4),
+    confirmationPointerBoundaryNote: firstTruthy(
+      source.confirmation_pointer_boundary_note,
+      "Community witness outcomes are aggregate evidence pointers only. They do not expose responders, private notes, licences, guarantees, approvals, or final decisions."
     ),
     privateReviewRequired: privateReviewRequired
       .map((category: any) => ({

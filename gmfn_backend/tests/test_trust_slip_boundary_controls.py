@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from app.db.database import SessionLocal
-from app.db.models import Clan, ClanMembership, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare, User
+from app.db.models import Clan, ClanMembership, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare, User
 
 
 def _create_trust_slip(*, code: str, holder_user_id: int = 1) -> int:
@@ -407,6 +407,97 @@ def test_public_verify_housing_pack_surfaces_financial_record_pointers_without_c
     assert "500.00" not in profile_text
     assert "do not expose bank references, amounts, or create a credit score" in profile_text
     assert "not a credit score, tenancy approval, or guaranteed rent signal" in profile_text
+    assert "trust_score" not in profile_text
+
+
+def test_public_verify_decision_pack_surfaces_aggregate_community_witness_outcomes_without_private_responder_details(
+    client,
+    seed_clan_admin_membership,
+):
+    slip_id = _create_trust_slip(code="ACCESS-WITNESS-OUTCOME")
+
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc)
+        db.add(
+            User(
+                id=2,
+                email="witness-private@example.com",
+                hashed_password="hashed",
+                role="user",
+                gmfn_id="GSN-U-WITNESS",
+            )
+        )
+        db.flush()
+        request = CommunityConfirmationRequest(
+            public_token="PUBLIC-WITNESS-OUTCOME",
+            requester_user_id=None,
+            requester_external_label="Private employer asking about plumbing",
+            subject_user_id=1,
+            community_id=1,
+            trust_slip_id=slip_id,
+            reason_type="trade_skill_check",
+            risk_level="medium",
+            mode="instant_pulse",
+            status="closed",
+            visible_outcome="limited",
+            outcome_summary={"private_marker": "PRIVATE-SUMMARY"},
+            created_at=now,
+            expires_at=now + timedelta(hours=24),
+        )
+        db.add(request)
+        db.flush()
+        db.add(
+            CommunityConfirmationResponse(
+                request_id=int(request.id),
+                responder_user_id=2,
+                response_type="active_here",
+                response_reason="known_for_trade",
+                response_note="Private witness note naming a customer",
+                counted_in_outcome=True,
+                responded_at=now,
+            )
+        )
+        db.add(
+            CommunityConfirmationOutcome(
+                request_id=int(request.id),
+                positive_count=1,
+                caution_count=0,
+                objection_count=0,
+                no_response_count=1,
+                eligible_contact_count=2,
+                confidence_level="limited",
+                visible_summary="1 of 2 community witnesses responded positively.",
+                closed_at=now,
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get(
+        "/trust-slips/verify/ACCESS-WITNESS-OUTCOME",
+        params={"decision_pack": "trade_check"},
+    )
+
+    assert response.status_code == 200, response.text
+    profile = response.json()["decision_pack_profile"]
+    extract = profile["evidence_extract"]
+    pointers = {row["key"]: row for row in extract["confirmation_pointers"]}
+    witness = pointers["community_witness_outcome"]
+    assert witness["status"] == "available"
+    assert witness["evidence_count"] == 1
+    assert "1 counted witness response" in witness["value"]
+    assert "Latest outcome: limited; positive 1, caution 0, objection 0" in witness["value"]
+    assert "do not expose responders" in extract["confirmation_pointer_boundary_note"]
+    assert any(signal["key"] == "community_witness_outcome" for signal in profile["relevant_signals"])
+    profile_text = str(profile)
+    assert "Private employer asking about plumbing" not in profile_text
+    assert "witness-private@example.com" not in profile_text
+    assert "Private witness note" not in profile_text
+    assert "PRIVATE-SUMMARY" not in profile_text
+    assert "responder_user_id" not in profile_text
+    assert "requester_external_label" not in profile_text
     assert "trust_score" not in profile_text
 
 

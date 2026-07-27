@@ -1,3 +1,55 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack community witness outcome pointers
+
+Owner trigger:
+- Owner continued the correction work after financial/support record pointers. The next honest gap was to make existing community witness outcomes visible inside Decision Packs, not only offer a button to ask the community again.
+
+Unabated truth:
+- This slice makes Decision Packs more society-like by showing whether matching Community Confirmation requests and aggregate outcomes already exist.
+- It still does not create richer per-role witness questions, customer-confirmed completed-work records, landlord-reference records, or final suitability decisions.
+- Devil's advocate: aggregate witness counts reduce uncertainty, but they can still be thin, stale, or context-limited. They must not be treated as licence, guarantee, approval, employment decision, tenancy decision, or universal endorsement.
+
+Changed:
+- gmfn_backend/app/services/trust_slip_decision_packs.py
+  - Added aggregate community witness outcome pointer extraction from existing CommunityConfirmationRequest, CommunityConfirmationResponse, and CommunityConfirmationOutcome rows.
+  - Public and holder-private Decision Pack evidence extracts now include confirmation_pointers plus confirmation_pointer_boundary_note.
+  - Decision Pack profiles now add a Community witness outcome signal when matching confirmation records exist or a confirmation gap exists.
+  - Public source wording now says extracts include TrustEvent categories plus declared, connected-record, and community-witness outcome pointers where relevant.
+- gmfn_backend/tests/test_trust_slip_boundary_controls.py
+  - Added coverage proving a trade Decision Pack surfaces aggregate witness counts/confidence without exposing requester labels, responder emails, responder_user_id, private witness notes, private summary markers, or trust_score.
+- frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts
+  - Normalizes confirmation_pointers and confirmation_pointer_boundary_note from backend Decision Pack profiles.
+- frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx
+  - Public TrustSlip Verify now renders Community witness outcomes separately from declarations, connected records, TrustEvent categories, and private-review prompts.
+- frontend/src/pages/TrustSlipPage.tsx
+  - Signed-in holder TrustSlip private Decision Pack preview now shows Community witness outcomes separately before event categories.
+- frontend/tools/audit-public-trustslip-verify-boundary.mjs
+- frontend/tools/audit-trust-passport-trustslip-boundary.mjs
+  - Added guards for backend extraction, frontend normalization, public rendering, holder rendering, and privacy/overclaim tests.
+- docs/GSN_DECISION_PACK_EVIDENCE_MATRIX.md
+  - Updated matrix notes to mark aggregate community witness outcome pointers as partially wired and keep richer witness-answer workflows as a remaining gap.
+
+Routes/screens affected:
+- Backend /trust-slips/verify/{code} Decision Pack profile payload.
+- Backend /trust-slips/me/decision-pack-evidence holder-private evidence extract.
+- /trust-slips/verify and /app/trust-slips/verify public Decision Pack reading.
+- /app/trust-slip signed-in holder private Decision Pack preview.
+- No database schema, auth, payment, ledger, community confirmation write path, responder identity disclosure, landlord-reference app, completed-work app, or issue-resolution workflow changed.
+
+Verification:
+- Passed python -m pytest gmfn_backend\tests\test_trust_slip_boundary_controls.py gmfn_backend\tests\test_community_confirmation_relay.py -q.
+- Passed npm --prefix frontend run audit:public-trustslip-verify-boundary.
+- Passed npm --prefix frontend run audit:trust-passport-trustslip-boundary.
+- Passed npm --prefix frontend run audit:protected-button-freeze.
+- Passed npm --prefix frontend run build.
+- Passed npm --prefix frontend run smoke:public-trustslip-verify-states outside the sandbox after known Vite/esbuild spawn EPERM.
+- Passed npm --prefix frontend run smoke:trust-passport-trustslip-boundary outside the sandbox after known Vite/esbuild spawn EPERM.
+
+Deployment:
+- Not pushed or deployed. Git publishing remains frozen into batch mode until owner approves publishing.
+
+Recommended next step:
+- Build the missing capture workflows: Demand Box response-to-job outcomes, customer-confirmed completed work, landlord/accommodation references, issue-resolution summaries, guarantee outcome summaries, supplier fulfilment/correction records, and richer structured witness-answer workflows.
+
 ## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack financial/support record pointers
 
 Owner trigger:

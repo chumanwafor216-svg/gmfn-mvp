@@ -167,6 +167,11 @@ assertContains(
   "Public TrustSlip Verify view model must preserve connected financial/support record pointer rows and their boundary note."
 );
 assertContains(
+  "viewModel",
+  /type DecisionPackConfirmationPointer[\s\S]*?confirmationPointers: DecisionPackConfirmationPointer\[\][\s\S]*?source\.confirmation_pointers[\s\S]*?confirmationPointerBoundaryNote/,
+  "Public TrustSlip Verify view model must preserve aggregate community witness outcome pointer rows and their boundary note."
+);
+assertContains(
   "verify",
   /requestCommunityPulse[\s\S]*?requestCommunityConfirmation[\s\S]*?reason_type:[\s\S]*?decisionPackProfile\.communityConfirmationPrompt\.reasonType \|\| "community_standing_check"/,
   "Public TrustSlip Verify live community confirmation must use the Decision Pack prompt reason type."
@@ -376,6 +381,11 @@ assertContains(
 );
 assertContains(
   "backendDecisionPacks",
+  /CommunityConfirmationOutcome[\s\S]*?CommunityConfirmationRequest[\s\S]*?CommunityConfirmationResponse[\s\S]*?_decision_pack_confirmation_pointers[\s\S]*?community_confirmation_gap[\s\S]*?community_witness_outcome[\s\S]*?confirmation_pointers[\s\S]*?confirmation_pointer_boundary_note/,
+  "Backend Decision Pack evidence extract must surface aggregate community witness outcome pointers without exposing responder identities or private notes."
+);
+assertContains(
+  "backendDecisionPacks",
   /expected_evidence_[\s\S]*?Architecture gap[\s\S]*?does not score the person[\s\S]*?or prove \{boundary_list\}/,
   "Backend Decision Pack profile must turn expectations and gaps into public-readable rows without becoming a score."
 );
@@ -406,6 +416,11 @@ assertContains(
   "backendDecisionPackTests",
   /test_public_verify_housing_pack_surfaces_financial_record_pointers_without_credit_overclaiming[\s\S]*?loan_support_lifecycle[\s\S]*?repayment_follow_through[\s\S]*?guarantor_support_response[\s\S]*?pool_contribution_activity[\s\S]*?record_pointer_boundary_note[\s\S]*?PRIVATE-POOL-REF[\s\S]*?trust_score/,
   "Backend tests must prove housing packs surface financial/support record pointers without exposing private references, amounts, or trust scores."
+);
+assertContains(
+  "backendDecisionPackTests",
+  /test_public_verify_decision_pack_surfaces_aggregate_community_witness_outcomes_without_private_responder_details[\s\S]*?CommunityConfirmationRequest[\s\S]*?CommunityConfirmationResponse[\s\S]*?CommunityConfirmationOutcome[\s\S]*?community_witness_outcome[\s\S]*?confirmation_pointer_boundary_note[\s\S]*?Private witness note[\s\S]*?responder_user_id[\s\S]*?trust_score/,
+  "Backend tests must prove Decision Packs surface aggregate community witness outcomes without exposing private responder/requester details or trust scores."
 );
 
 assertContains(
@@ -470,6 +485,11 @@ assertContains(
   "publicPaper",
   /decisionPackRecordPointers[\s\S]*?Connected record pointers[\s\S]*?decisionPackRecordPointerRows[\s\S]*?recordPointerBoundaryNote/,
   "Public TrustSlip paper must render connected record pointers separately from declarations and event categories with the financial/support boundary."
+);
+assertContains(
+  "publicPaper",
+  /decisionPackConfirmationPointers[\s\S]*?Community witness outcomes[\s\S]*?decisionPackConfirmationPointerRows[\s\S]*?confirmationPointerBoundaryNote/,
+  "Public TrustSlip paper must render aggregate community witness outcomes separately with the witness privacy boundary."
 );
 assertContains(
   "backendDecisionPacks",
