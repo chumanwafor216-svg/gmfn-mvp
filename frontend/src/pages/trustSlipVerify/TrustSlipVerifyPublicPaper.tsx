@@ -1559,6 +1559,52 @@ export default function TrustSlipVerifyPublicPaper({
     ["Live confirmation", liveConfirmationFinding],
     ["Recommended action", recommendedActionFinding],
   ];
+  const quickDecisionFacts = [
+    ...decisionFirstFacts,
+    {
+      icon: "community-building" as Gsn3DIconKey,
+      label: "Communities",
+      title: activeCommunityCountLabel ? `${activeCommunityCountLabel} active` : "Not shown",
+      text: evidenceScopeIsWider ? "Wider community context is included." : "Primary community evidence is shown.",
+      tone: evidenceScopeIsWider || activeCommunityCountLabel ? "trust" as const : "neutral" as const,
+    },
+    {
+      icon: "trust-shield" as Gsn3DIconKey,
+      label: "Recommendation",
+      title: validNow ? (supportPurpose ? "Live confirmation required" : "Use with caution") : "Fresh TrustSlip required",
+      text: recommendedActionFinding,
+      tone: validNow && !supportPurpose ? "trust" as const : "warning" as const,
+    },
+  ];
+  const decisionMeaningGroups = [
+    {
+      title: "Strong",
+      tone: "trust" as const,
+      items: [
+        communityLabel && communityLabel !== "Not stated" ? "Identity recognised" : "Identity still needs a clearer community anchor",
+        communityLabel && communityLabel !== "Not stated" ? "Community recognised" : "Community not clearly shown",
+        activityCountNumber > 0 ? "Activity recorded consistently" : "Activity record not visible yet",
+      ],
+    },
+    {
+      title: "Missing",
+      tone: "warning" as const,
+      items: [
+        hasWitnessEvidence ? "Current witness evidence visible" : "Current witnesses",
+        supportPurpose && !hasSupportOutcomeEvidence ? "Support or repayment follow-through" : "Purpose-specific confirmation",
+        "High-risk approval evidence",
+      ],
+    },
+    {
+      title: "Therefore",
+      tone: decisionFirstTone === "trust" ? "trust" as const : "warning" as const,
+      items: [
+        supportPurpose ? "Suitable for community recognition" : "Suitable for low-risk decisions",
+        "Use live confirmation before high-risk decisions",
+        "Final decision remains yours",
+      ],
+    },
+  ];
   const decisionPackGapRows: Array<[string, string]> = (decisionPackProfileGaps.length
     ? decisionPackProfileGaps.map((gap): [string, string] => [gap.label, gap.nextStep])
     : [["No major gap shown", "Still match the evidence to your own decision risk."] as [string, string]]
@@ -1970,7 +2016,7 @@ export default function TrustSlipVerifyPublicPaper({
             </span>
             <div style={{ minWidth: 0 }}>
               <div style={{ ...sectionLabel(), color: decisionFirstTone === "warning" ? "#92400E" : "#0B63D1" }}>
-                Decision Summary
+                Decision First
               </div>
               <h2
                 style={{
@@ -2013,18 +2059,19 @@ export default function TrustSlipVerifyPublicPaper({
               gap: compact ? 7 : 9,
             }}
           >
-            <div style={{ ...sectionLabel(), color: "#0B63D1" }}>Evidence behind this recommendation</div>
+            <div style={{ ...sectionLabel(), color: "#0B63D1" }}>Why this recommendation?</div>
             <DecisionFactorTable rows={compact ? decisionTranslationRows.filter(([label]) => label === "Active Community ID" || label === (supportPurpose ? "Repayment/support evidence" : "Purpose evidence") || label === "Current witnesses" || label === "Recommended action") : decisionTranslationRows} compact={compact} />
           </div>
           <div
             data-gsn-public-decision-first-facts="four-quick-facts"
             style={{
               display: compact ? "none" : "grid",
-              gridTemplateColumns: compact ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
+              gridTemplateColumns: compact ? "repeat(2, minmax(0, 1fr))" : "repeat(auto-fit, minmax(126px, 1fr))",
               gap: compact ? 6 : 8,
             }}
           >
-            {decisionFirstFacts.map((fact) => (
+            <div style={{ gridColumn: "1 / -1", ...sectionLabel(), color: "#0B63D1" }}>Quick Decision</div>
+            {quickDecisionFacts.map((fact) => (
               <PublicReadingTile
                 key={fact.label}
                 icon={fact.icon}
@@ -2037,6 +2084,88 @@ export default function TrustSlipVerifyPublicPaper({
             ))}
           </div>
 
+          {!compact ? (
+            <div
+              data-gsn-public-decision-support="meaning-next-action"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1.15fr) minmax(260px, 0.85fr)",
+                gap: 10,
+                alignItems: "stretch",
+              }}
+            >
+              <div
+                style={{
+                  borderRadius: 16,
+                  border: "1px solid rgba(37,78,119,0.12)",
+                  background: "#FFFFFF",
+                  padding: 12,
+                  display: "grid",
+                  gap: 9,
+                }}
+              >
+                <div style={{ ...sectionLabel(), color: "#0B63D1" }}>What this means</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+                  {decisionMeaningGroups.map((group) => (
+                    <div
+                      key={group.title}
+                      style={{
+                        borderRadius: 14,
+                        border: group.tone === "trust" ? "1px solid rgba(46,155,98,0.18)" : "1px solid rgba(245,158,11,0.22)",
+                        background: group.tone === "trust" ? "#EEF9F1" : "#FFF8E8",
+                        padding: "10px 11px",
+                        minWidth: 0,
+                      }}
+                    >
+                      <div style={{ color: group.tone === "trust" ? "#166534" : "#92400E", fontSize: 12, fontWeight: 1000 }}>
+                        {group.title}
+                      </div>
+                      <ul style={{ margin: "7px 0 0", paddingLeft: 16, color: "#334155", fontSize: 11.5, fontWeight: 820, lineHeight: 1.42 }}>
+                        {group.items.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  borderRadius: 16,
+                  border: "1px solid rgba(37,78,119,0.12)",
+                  background: "#F8FBFF",
+                  padding: 12,
+                  display: "grid",
+                  gap: 10,
+                  alignContent: "start",
+                }}
+              >
+                <div style={{ ...sectionLabel(), color: "#0B63D1" }}>Next recommended action</div>
+                <div style={{ display: "grid", gridTemplateColumns: "44px minmax(0, 1fr)", gap: 10, alignItems: "start" }}>
+                  {paperIconBadge("community-building", validNow ? "neutral" : "warning", 42)}
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ ...readableText(), color: "#07172C", fontSize: 18, fontWeight: 1000, lineHeight: 1.12 }}>
+                      {validNow ? "Request live community confirmation" : "Request a fresh TrustSlip"}
+                    </div>
+                    <p style={{ ...readableText(), margin: "5px 0 0", color: "#526579", fontSize: 12.5, fontWeight: 820, lineHeight: 1.36 }}>
+                      {recommendedActionFinding}
+                    </p>
+                  </div>
+                </div>
+                {canRequestCommunityPulse ? (
+                  <PrimaryButton
+                    debugId="trust-slip-verify.public.request-confirmation-first-view"
+                    stableHeight={48}
+                    onClick={() => onRequestCommunityPulse()}
+                    style={{ justifyContent: "center", borderRadius: 12 }}
+                  >
+                    Request confirmation
+                  </PrimaryButton>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
           <div
             data-gsn-public-decision-boundary="compact"
             style={{

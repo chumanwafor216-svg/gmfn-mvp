@@ -156872,3 +156872,34 @@ Verification run locally:
 
 Deployment:
 - Local only. Do not push/deploy unless the owner sends `2`.
+
+## 2026-07-27 - Local TrustSlip Verify Public Paper Final Polish
+
+- Scope: local-only TrustSlip Verify public-paper polish based on the owner's decision-first mockup.
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Renamed the first visible answer block from `Decision Summary` to `Decision First`.
+  - Changed the evidence explanation heading to `Why this recommendation?`.
+  - Expanded the desktop quick facts into a clearer `Quick Decision` row with holder, community/evidence, communities, role/decision context, and recommendation.
+  - Added a visible desktop `What this means` and `Next recommended action` strip with Strong, Missing, Therefore, and request-confirmation guidance.
+  - Kept heavier evidence source maps, audit/security layers, and legacy verification paper details behind disclosure controls.
+- `frontend/tools/audit-public-trustslip-first-viewport.mjs`
+  - Updated first-viewport protection for the new `Decision First`, `Quick Decision`, meaning/action strip, and recommendation language.
+- `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+  - Updated broader TrustSlip boundary protection to include the new quick decision and meaning/action structures while preserving privacy and Decision Pack evidence controls.
+
+Unabated truth:
+- This is frontend/public-paper hierarchy and language polish only.
+- It does not change TrustSlip generation, backend Decision Pack evidence extraction, public-code validity, QR generation, private evidence access, or community confirmation response rules.
+- The desktop/export paper now matches the supplied institutional mockup more closely, but a final live screenshot review should still happen after deployment.
+
+Verification run locally:
+- `npm --prefix frontend run audit:public-trustslip-first-viewport`
+- `npm --prefix frontend run audit:public-trustslip-verify-boundary`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run lint`
+- `git diff --check` passed with normal CRLF warnings.
+- `npm --prefix frontend run build`
+- Elevated `npm --prefix frontend run smoke:public-trustslip-verify-states`
+
+Deployment:
+- Local only. Do not push/deploy unless the owner sends `2`.
