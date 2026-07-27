@@ -245,6 +245,11 @@ type TrustSlipVerifyPublicPaperProps = {
     };
     basisNote: string;
     boundaryNote: string;
+    communityConfirmationPrompt: {
+      reasonType: string;
+      question: string;
+      boundary: string;
+    };
   };
   recipientAccessRecord: {
     recipientLabel: string;
@@ -1465,6 +1470,33 @@ export default function TrustSlipVerifyPublicPaper({
     ? decisionPackProfileChecks.map((check, index): [string, string] => [`Check ${index + 1}`, check])
     : [["Live confirmation", decisionNextStep] as [string, string]]
   ).slice(0, 3);
+  const liveConfirmationRouteRows: Array<[string, string]> = [
+    [
+      "Decision question",
+      firstTruthy(
+        decisionPackProfile.communityConfirmationPrompt.question,
+        "Can current community witnesses confirm what they know about this member?"
+      ),
+    ],
+    [
+      "Institutional route",
+      `GSN routes this as ${firstTruthy(
+        decisionPackProfile.communityConfirmationPrompt.reasonType,
+        "community_standing_check"
+      )} to eligible community responders.`,
+    ],
+    [
+      "Evidence created",
+      "Responses become aggregate community witness evidence and may point back into TrustEvents.",
+    ],
+    [
+      "Boundary",
+      firstTruthy(
+        decisionPackProfile.communityConfirmationPrompt.boundary,
+        "Responses are community witness evidence only; they are not licences, guarantees, approvals, or final decisions."
+      ),
+    ],
+  ];
   const isLite = variant === "lite";
   const recordFingerprint = referenceFingerprint(
     resolvedCode,
@@ -3073,6 +3105,11 @@ export default function TrustSlipVerifyPublicPaper({
                     <p style={{ margin: "8px 0 0", color: "#334155", fontWeight: 850, lineHeight: 1.45 }}>
                       {communityConfirmationText}
                     </p>
+                    <OfficialResultTable
+                      title="Live confirmation route"
+                      rows={liveConfirmationRouteRows}
+                      compact={compact}
+                    />
                     <div style={{ marginTop: 10, color: "#64748B", fontSize: 12, fontWeight: 800, lineHeight: 1.4 }}>
                       GSN returns counts and outcome only. It does not publish member phone numbers.
                     </div>

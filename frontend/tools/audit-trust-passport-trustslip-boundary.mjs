@@ -11,6 +11,7 @@ const files = {
   trustSlip: "src/pages/TrustSlipPage.tsx",
   smoke: "tools/smoke-trust-passport-trustslip-boundary.mjs",
   reader: "src/components/TrustSlipReaderBlock.tsx",
+  publicPaper: "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
   communityProofPanel: "src/components/CommunityProofPanel.tsx",
   snapshotPaper: "src/components/GsnSnapshotPaperCard.tsx",
   communityProof: "src/lib/communityProof.ts",
@@ -368,6 +369,21 @@ assertContains(
   "trustSlip",
   /requestCommunityPulse[\s\S]*?requestCommunityConfirmation[\s\S]*?reason_type: selectedPurposeOption\.confirmationReasonType \|\| "community_standing_check"/,
   "TrustSlip holder live community confirmation must use the selected Decision Pack reason type."
+);
+assertContains(
+  "trustSlip",
+  /label: "Confirmation route"[\s\S]*?selectedPurposeOption\.confirmationQuestion[\s\S]*?Responses become community witness evidence, not approval/,
+  "TrustSlip holder Decision Pack selection must visibly map the selected purpose to its live community confirmation question and boundary."
+);
+assertContains(
+  "publicPaper",
+  /communityConfirmationPrompt: \{[\s\S]*?reasonType: string;[\s\S]*?question: string;[\s\S]*?boundary: string;[\s\S]*?\}/,
+  "Public TrustSlip paper must type the Decision Pack community confirmation prompt so the selected route is not treated as generic community proof."
+);
+assertContains(
+  "publicPaper",
+  /const liveConfirmationRouteRows[\s\S]*?decisionPackProfile\.communityConfirmationPrompt\.question[\s\S]*?decisionPackProfile\.communityConfirmationPrompt\.reasonType[\s\S]*?Responses become aggregate community witness evidence[\s\S]*?decisionPackProfile\.communityConfirmationPrompt\.boundary[\s\S]*?title="Live confirmation route"[\s\S]*?rows=\{liveConfirmationRouteRows\}/,
+  "Public TrustSlip verification must show the selected Decision Pack question, institutional route, evidence created, and boundary before the live request button."
 );
 assertContains(
   "trustSlip",

@@ -1,3 +1,36 @@
+## CURRENT LOCAL STATE - 2026-07-27 - TrustSlip Decision Pack live confirmation route
+
+Owner trigger:
+- Owner selected `1` to continue locally into institutional confirmations after the QR/public-link Decision Pack test.
+- Product direction: GSN should not merely say "trust"; for each category it should show what society would normally ask, what GSM/GSN evidence can reasonably infer from community behaviour, and where live community/member confirmation enters the decision.
+
+Unabated truth:
+- The backend and public URL context already carried the selected Decision Pack confirmation reason type. The weak spot was presentation: holder and public pages still made the live request look too generic.
+- This slice makes the selected confirmation question and institutional route visible. It does not create new backend response types, new landlord-reference storage, new direct witness forms, or a guarantee/licence/approval claim.
+- Devil's advocate: this strengthens the reader's understanding, but it still depends on communities having eligible responders and meaningful TrustEvents. Where community evidence is thin, the honest answer remains "ask live confirmation or find external proof."
+
+Changed:
+- frontend/src/pages/TrustSlipPage.tsx
+  - Added a compact Decision Pack "Confirmation route" row showing the selected pack's `confirmationQuestion` and the boundary that responses become witness evidence, not approval.
+- frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx
+  - Declared `communityConfirmationPrompt` on the public paper prop type.
+  - Added a "Live confirmation route" result table on public verify showing the decision question, selected institutional route/reason type, evidence created, and boundary before the request button.
+- frontend/tools/audit-trust-passport-trustslip-boundary.mjs
+  - Added guards so holder and public TrustSlip surfaces cannot silently fall back to generic community proof without the selected Decision Pack question/route/boundary.
+
+Verification:
+- Passed npm --prefix frontend run audit:trust-passport-trustslip-boundary
+- Passed npm --prefix frontend run build
+- Passed npm --prefix frontend run smoke:trust-passport-trustslip-boundary after elevated rerun for sandbox spawn EPERM
+- Passed npm --prefix frontend run audit:protected-button-freeze
+- Passed npm --prefix frontend run smoke:public-trustslip-verify-states after elevated rerun for sandbox spawn EPERM
+- Passed git diff --check; only Git line-ending warnings were reported.
+
+Deployment:
+- Local only. Not pushed or deployed in this slice because owner selected `1`, not `2=push deploy`.
+
+Next recommended step:
+- Continue with committee/member confirmation mechanics and real-life scenario coverage: employment/trade, housing, guarantorship/support, supplier/work, membership/admission, and partnership should each be walked through against visible GSN evidence, live community confirmation, and remaining architecture gaps.
 ## CURRENT LOCAL STATE - 2026-07-27 - TrustSlip holder QR Decision Pack link test
 
 Owner trigger:

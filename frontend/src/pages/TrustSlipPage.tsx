@@ -3583,6 +3583,11 @@ export default function TrustSlipPage() {
       value: compactDecisionPackConfirmation(selectedPurposeOption),
       icon: "community" as GsnIconName,
     },
+    {
+      label: "Confirmation route",
+      value: `${selectedPurposeOption.confirmationQuestion} Responses become community witness evidence, not approval.`,
+      icon: "community-building" as GsnIconName,
+    },
   ];
   const privateDecisionPackEvidenceCategories = (decisionPackEvidenceExtract?.categories || []).slice(0, 4);
   const privateDecisionPackDeclaredClaims = (decisionPackEvidenceExtract?.declaredClaims || []).slice(0, 3);
