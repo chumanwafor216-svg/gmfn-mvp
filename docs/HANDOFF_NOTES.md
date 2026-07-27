@@ -1,3 +1,39 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Duplicate phone identity recovery path
+
+Owner trigger:
+- Owner tested Identity Integrity on phone and still saw `This phone belongs to another GSN identity` with no real resolution path.
+
+Unabated truth:
+- The backend block is correct. A phone number controls verification, TrustSlip code, and QR access, so GSN must not silently attach a phone that already belongs to another active/protected identity.
+- The unresolved part was the frontend journey: the member saw a warning but was not guided into original-ID recovery or admin-reviewed identity review.
+- Devil's advocate: this change does not merge accounts automatically and does not bypass duplicate-phone protection. Active/protected conflicts still require sign-in to the original GSN ID or admin review after ownership checks.
+
+Changed:
+- `frontend/src/pages/IdentityIntegrityPage.tsx`
+  - Parses structured `phone_owned_by_another_identity` errors.
+  - Shows a compact duplicate-phone recovery card with `Recover original GSN ID`.
+  - Shows `Open identity review` only for `admin` users, matching the backend admin-only identity-risk route.
+  - Clears the conflict card when the phone input changes or phone verification succeeds.
+- `frontend/src/pages/LoginPage.tsx`
+  - Supports `/login?force=1&recovery=1&phone_e164=...` so the recovery panel opens immediately with the phone prefilled.
+- `frontend/src/pages/AdminIdentityRiskPage.tsx`
+  - Supports `?phone_e164=...` / `?phone=...` so admin phone-lineage lookup opens prefilled from Identity Integrity.
+- `frontend/tools/audit-button-stability.mjs`
+  - Added regression guards for the duplicate-phone recovery card, login recovery prefill, and admin identity-risk phone prefill.
+
+Verification:
+- Passed `node --check frontend\tools\audit-button-stability.mjs`.
+- Passed `npm --prefix frontend run audit:button-stability`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `git diff --check`; only Git line-ending warnings were reported.
+- Passed `npm --prefix frontend run lint`.
+- Passed `npm --prefix frontend run build`.
+
+Deployment:
+- Local only. Do not push/deploy unless the owner selects `2` or explicitly says push/deploy.
+
+Next recommended step:
+- Commit this duplicate-phone recovery fix locally. If the owner selects `2`, push/deploy, then retest the same phone conflict on a phone viewport.
 ## CURRENT LOCAL STATE - 2026-07-27 - Community confirmation 72-hour response window
 
 Owner trigger:

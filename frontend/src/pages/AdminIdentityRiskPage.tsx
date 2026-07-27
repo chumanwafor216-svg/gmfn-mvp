@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, StableDisclosureSummary } from "../components/StableButton";
@@ -234,9 +235,13 @@ function classify(row: any): { level: "green" | "yellow" | "red"; label: string;
 }
 
 export default function AdminIdentityRiskPage() {
+  const [searchParams] = useSearchParams();
+  const phoneLookupFromQuery = safeStr(
+    searchParams.get("phone_e164") || searchParams.get("phone")
+  ).trim();
   const [data, setData] = useState<any>(null);
   const [err, setErr] = useState("");
-  const [phoneLookup, setPhoneLookup] = useState("");
+  const [phoneLookup, setPhoneLookup] = useState(phoneLookupFromQuery);
   const [phoneLineage, setPhoneLineage] = useState<any>(null);
   const [phoneLineageErr, setPhoneLineageErr] = useState("");
   const [phoneLineageBusy, setPhoneLineageBusy] = useState(false);

@@ -35,6 +35,7 @@ import {
 } from "../lib/guidance";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
+import { structuredErrorDetail } from "../lib/structuredErrors";
 import { buildIdentityActionGuide } from "../lib/trustDocumentActionGuide";
 import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
 import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
@@ -99,6 +100,12 @@ type ReadingState = {
 
 type NoticeTone = "success" | "error";
 type PhoneTaskTone = "success" | "error";
+
+type PhoneConflictState = {
+  recoveryPath: string;
+  title: string;
+  firstStep: string;
+};
 
 type CollapseState = {
   summary: boolean;
@@ -193,6 +200,20 @@ function parsePhoneTaskError(err: any): string {
   return raw;
 }
 
+function parsePhoneTaskConflict(err: any): PhoneConflictState | null {
+  const detail = structuredErrorDetail(err);
+  if (safeStr(detail?.code) !== "phone_owned_by_another_identity") {
+    return null;
+  }
+
+  return {
+    recoveryPath: safeStr(detail?.recovery_path) || "/login",
+    title: safeStr(detail?.title) || "Phone belongs to another GSN identity",
+    firstStep:
+      safeStr(detail?.first_step) ||
+      "Sign in to the GSN ID that already owns this phone, or ask support/admin to merge after ownership check.",
+  };
+}
 function firstNumberLike(...values: any[]): number | null {
   for (const value of values) {
     if (value === null || value === undefined || String(value).trim() === "") {
@@ -1250,6 +1271,11 @@ export default function IdentityIntegrityPage() {
         selectedClanId,
         "identity-integrity.route.notifications"
       ),
+      identityRisk: routeTarget(
+        "identityRisk",
+        selectedClanId,
+        "identity-integrity.route.identity-risk"
+      ),
     }),
     [selectedClanId]
   );
@@ -1312,6 +1338,7 @@ export default function IdentityIntegrityPage() {
   const [phoneOtpPreview, setPhoneOtpPreview] = useState("");
   const [phoneTaskMessage, setPhoneTaskMessage] = useState("");
   const [phoneTaskTone, setPhoneTaskTone] = useState<PhoneTaskTone>("success");
+  const [phoneConflict, setPhoneConflict] = useState<PhoneConflictState | null>(null);
   const [phoneBusy, setPhoneBusy] = useState(false);
   const [officialIdType, setOfficialIdType] = useState("Passport");
   const [officialIdReference, setOfficialIdReference] = useState("");
@@ -2113,6 +2140,7 @@ export default function IdentityIntegrityPage() {
         phone_e164: out?.phone_e164 || phoneInput,
         phone_recorded: true,
       }));
+      setPhoneConflict(null);
       setPhoneTaskMessage(
         out?.otp_preview
           ? `System code generated: ${out.otp_preview}. Confirm it below.`
@@ -2126,7 +2154,9 @@ export default function IdentityIntegrityPage() {
           : "Phone number recorded. Confirmation is still pending."
       );
     } catch (err: any) {
+      const conflict = parsePhoneTaskConflict(err);
       const message = parsePhoneTaskError(err);
+      setPhoneConflict(conflict);
       setPhoneTaskMessage(message);
       setPhoneTaskTone("error");
       showNotice("error", message);
@@ -2152,6 +2182,7 @@ export default function IdentityIntegrityPage() {
         phone_verified_at: out?.phone_verified_at || new Date().toISOString(),
       }));
       setPhoneVerificationId(null);
+      setPhoneConflict(null);
       setPhoneCode("");
       setPhoneOtpPreview("");
       const nextTrustSlip = await refreshTrustSlipAfterIdentityChange();
@@ -2182,6 +2213,29 @@ export default function IdentityIntegrityPage() {
       setPhoneBusy(false);
     }
   }
+
+  const phoneConflictRecoveryUrl = useMemo(() => {
+    if (!phoneConflict) return "";
+    const params = new URLSearchParams();
+    params.set("force", "1");
+    params.set("recovery", "1");
+    const phone = safeStr(phoneInput || me?.phone_e164 || me?.phone);
+    if (phone) params.set("phone_e164", phone);
+    return `${phoneConflict.recoveryPath || "/login"}?${params.toString()}`;
+  }, [me?.phone, me?.phone_e164, phoneConflict, phoneInput]);
+
+  const phoneConflictAdminReviewUrl = useMemo(() => {
+    if (!phoneConflict) return "";
+    const params = new URLSearchParams();
+    const phone = safeStr(phoneInput || me?.phone_e164 || me?.phone);
+    if (phone) params.set("phone_e164", phone);
+    const query = params.toString();
+    return `${routes.identityRisk}${query ? `?${query}` : ""}`;
+  }, [me?.phone, me?.phone_e164, phoneConflict, phoneInput, routes.identityRisk]);
+
+  const canOpenIdentityRiskReview = Boolean(
+    phoneConflict && safeStr(me?.role).toLowerCase() === "admin"
+  );
 
   async function handleRecordOfficialId(e: React.FormEvent) {
     e.preventDefault();
@@ -2790,7 +2844,10 @@ export default function IdentityIntegrityPage() {
                   </span>
                   <input
                     value={phoneInput}
-                    onChange={(event) => setPhoneInput(event.target.value)}
+                    onChange={(event) => {
+                      setPhoneInput(event.target.value);
+                      setPhoneConflict(null);
+                    }}
                     placeholder="+447700900123"
                     disabled={phoneBusy || Boolean(phoneVerificationId)}
                     style={identityCompletionFieldStyle()}
@@ -2835,6 +2892,57 @@ export default function IdentityIntegrityPage() {
                 >
                   {phoneTaskMessage || "Phone task response"}
                 </div>
+                {phoneConflict ? (
+                  <div
+                    data-identity-integrity-phone-conflict-recovery="true"
+                    style={{
+                      gridColumn: "1 / -1",
+                      display: "grid",
+                      gap: 8,
+                      borderRadius: 14,
+                      border: "1px solid rgba(180,83,9,0.18)",
+                      background: "#FFFBEB",
+                      padding: 10,
+                    }}
+                  >
+                    <div style={{ color: "#713F12", fontSize: 12.5, fontWeight: 900, lineHeight: 1.35 }}>
+                      <div style={{ fontWeight: 1000 }}>{phoneConflict.title}</div>
+                      <div style={{ marginTop: 4 }}>{phoneConflict.firstStep}</div>
+                      <div style={{ marginTop: 4 }}>
+                        This number is protected on another GSN identity. Recover that identity first; only merge after owner/admin review.
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                        gap: 8,
+                      }}
+                    >
+                      <StableCtaLink
+                        to={phoneConflictRecoveryUrl || "/login?force=1&recovery=1"}
+                        stableHeight={52}
+                        fullWidth
+                        debugId="identity-integrity.phone-conflict.recover-original"
+                        style={{ ...identityTaskButtonStyle(), borderRadius: 14 }}
+                      >
+                        Recover original GSN ID
+                      </StableCtaLink>
+                      {canOpenIdentityRiskReview ? (
+                        <StableCtaLink
+                          to={phoneConflictAdminReviewUrl || routes.identityRisk}
+                          kind="secondary"
+                          stableHeight={52}
+                          fullWidth
+                          debugId="identity-integrity.phone-conflict.admin-review"
+                          style={{ ...identityTaskButtonStyle(), borderRadius: 14 }}
+                        >
+                          Open identity review
+                        </StableCtaLink>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
                 <PrimaryButton
                   type="submit"
                   disabled={phoneBusy || !phoneInput || (Boolean(phoneVerificationId) && !phoneCode)}

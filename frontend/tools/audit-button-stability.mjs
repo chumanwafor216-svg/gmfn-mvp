@@ -770,6 +770,23 @@ assertContains(
 
 assertContains(
   "src/pages/IdentityIntegrityPage.tsx",
+  /parsePhoneTaskConflict[\s\S]*?phone_owned_by_another_identity[\s\S]*?data-identity-integrity-phone-conflict-recovery="true"[\s\S]*?debugId="identity-integrity\.phone-conflict\.recover-original"[\s\S]*?debugId="identity-integrity\.phone-conflict\.admin-review"/,
+  "Identity & Integrity duplicate-phone errors must offer a real original-ID recovery path and admin identity-review path instead of leaving the member at a dead-end warning."
+);
+
+assertContains(
+  "src/pages/LoginPage.tsx",
+  /recoveryRequested[\s\S]*?recoveryPhoneFromQuery[\s\S]*?useState\(recoveryRequested\)[\s\S]*?useState\(recoveryPhoneFromQuery\)[\s\S]*?setRecoveryOpen\(true\)/,
+  "Login must auto-open password recovery and prefill the phone when Identity Integrity sends a duplicate-phone recovery link."
+);
+
+assertContains(
+  "src/pages/AdminIdentityRiskPage.tsx",
+  /useSearchParams[\s\S]*?phoneLookupFromQuery[\s\S]*?searchParams\.get\("phone_e164"\)[\s\S]*?useState\(phoneLookupFromQuery\)[\s\S]*?debugId="admin-identity-risk\.phone-lineage\.lookup"/,
+  "Admin identity-risk review must prefill phone-lineage lookup when Identity Integrity sends a duplicate-phone admin review link."
+);
+assertContains(
+  "src/pages/IdentityIntegrityPage.tsx",
   /stableHeight=\{52\}[\s\S]*?debugId="identity-integrity\.identity-photo\.selfie"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="identity-integrity\.identity-photo\.id-photo"[\s\S]*?data-identity-integrity-photo-preview-slot="true"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="identity-integrity\.identity-photo\.record"[\s\S]*?visibility: identityPhotoPreview \? "visible" : "hidden"/,
   "Identity & Integrity photo evidence controls must reserve a stable preview/action slot before and after file selection."
 );

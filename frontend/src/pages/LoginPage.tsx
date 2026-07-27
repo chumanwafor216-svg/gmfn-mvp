@@ -496,6 +496,11 @@ export default function LoginPage() {
     safeStr(searchParams.get("gmfn_id"));
   const founderCommunityName = safeStr(founderContext.clan_name || "");
   const forceLogin = searchParams.get("force") === "1";
+  const recoveryRequested =
+    searchParams.get("recovery") === "1" || searchParams.get("mode") === "recovery";
+  const recoveryPhoneFromQuery = safeStr(
+    searchParams.get("phone_e164") || searchParams.get("phone")
+  );
 
   const redirectTarget = useMemo(() => {
     const inviteTarget = joinRedirectFromLoginSearch(searchParams);
@@ -526,10 +531,10 @@ export default function LoginPage() {
   const [activationPath, setActivationPath] = useState<string | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
-  const [recoveryOpen, setRecoveryOpen] = useState(false);
+  const [recoveryOpen, setRecoveryOpen] = useState(recoveryRequested);
   const [recoveryStep, setRecoveryStep] = useState<"claim" | "answers">("claim");
   const [recoveryGsnId, setRecoveryGsnId] = useState(inviteGsnId || "");
-  const [recoveryPhone, setRecoveryPhone] = useState("");
+  const [recoveryPhone, setRecoveryPhone] = useState(recoveryPhoneFromQuery);
   const [recoveryPrompts, setRecoveryPrompts] = useState<string[]>([]);
   const [recoveryAnswers, setRecoveryAnswers] = useState(["", "", ""]);
   const [recoveryNewPassword, setRecoveryNewPassword] = useState("");
@@ -546,6 +551,16 @@ export default function LoginPage() {
   } | null>(null);
   const innerRailWidth = "min(100%, 760px)";
 
+  useEffect(() => {
+    if (!recoveryRequested) return;
+    setRecoveryOpen(true);
+    if (recoveryPhoneFromQuery) {
+      setRecoveryPhone(recoveryPhoneFromQuery);
+    }
+    if (inviteGsnId) {
+      setRecoveryGsnId(inviteGsnId);
+    }
+  }, [inviteGsnId, recoveryPhoneFromQuery, recoveryRequested]);
   useEffect(() => {
     if (typeof window === "undefined") return;
 
