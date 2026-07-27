@@ -5,7 +5,7 @@ from typing import Any, Mapping, Optional
 
 from sqlalchemy.orm import Session
 
-from app.db.models import ClanMembership, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare
+from app.db.models import ClanMembership, MarketplaceProduct, MarketplaceShop, ProtectedTradeRecord, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare
 
 
 @dataclass(frozen=True)
@@ -1008,6 +1008,144 @@ def _decision_pack_evidence_scope(
     }
 
 
+WORK_DECLARATION_PACKS = {
+    "employment_decision",
+    "trade_check",
+    "supplier_decision",
+    "business_partnership",
+}
+
+
+def _claim_row(
+    *,
+    key: str,
+    label: str,
+    value: str,
+    source: str,
+    status: str = "available",
+    count: int = 1,
+    decision_use: str,
+) -> dict[str, Any]:
+    return {
+        "key": key,
+        "label": _clean(label, limit=96),
+        "status": _clean(status, limit=32) or "available",
+        "value": _clean(value, limit=280),
+        "source": _clean(source, limit=80),
+        "evidence_count": _profile_int(count),
+        "decision_use": _clean(decision_use, limit=240),
+    }
+
+
+def _decision_pack_declared_claims(
+    db: Session,
+    *,
+    holder_user_id: int,
+    pack_key: str,
+    active_community_ids: set[int],
+) -> list[dict[str, Any]]:
+    if pack_key not in WORK_DECLARATION_PACKS:
+        return []
+
+    claims: list[dict[str, Any]] = []
+    shop = (
+        db.query(MarketplaceShop)
+        .filter(MarketplaceShop.owner_user_id == int(holder_user_id))
+        .filter(MarketplaceShop.is_active.is_(True))
+        .order_by(MarketplaceShop.created_at.desc(), MarketplaceShop.id.desc())
+        .first()
+    )
+    if shop is not None:
+        name = _clean(getattr(shop, "name", None), limit=120)
+        description = _clean(getattr(shop, "description", None), limit=180)
+        value = f"Shop profile: {name}" if name else "Active shop profile is present."
+        if description:
+            value = f"{value}. Public description: {description}"
+        claims.append(
+            _claim_row(
+                key="shop_service_declaration",
+                label="Shop/service declaration",
+                value=value,
+                source="marketplace_shop",
+                decision_use="Use this as the holder's declared service face. Ask witnesses or customers before treating it as proven skill.",
+            )
+        )
+
+    product_query = (
+        db.query(MarketplaceProduct)
+        .filter(MarketplaceProduct.seller_user_id == int(holder_user_id))
+        .filter(MarketplaceProduct.is_active.is_(True))
+    )
+    if active_community_ids:
+        product_query = product_query.filter(MarketplaceProduct.clan_id.in_(active_community_ids))
+    products = (
+        product_query.order_by(MarketplaceProduct.created_at.desc(), MarketplaceProduct.id.desc())
+        .limit(6)
+        .all()
+    )
+    product_titles = [_clean(getattr(product, "name", None), limit=80) for product in products]
+    product_titles = [title for title in product_titles if title]
+    if product_titles:
+        claims.append(
+            _claim_row(
+                key="listed_service_or_item",
+                label="Listed service or item",
+                value="Active listing titles include: " + ", ".join(product_titles[:4]),
+                source="marketplace_products",
+                count=len(product_titles),
+                decision_use="Use listings as declared service scope only. They do not prove completion, licence, or future work quality.",
+            )
+        )
+
+    trades = (
+        db.query(ProtectedTradeRecord)
+        .filter(ProtectedTradeRecord.seller_user_id == int(holder_user_id))
+        .order_by(ProtectedTradeRecord.created_at.desc(), ProtectedTradeRecord.id.desc())
+        .limit(20)
+        .all()
+    )
+    if trades:
+        completed = [
+            trade
+            for trade in trades
+            if _clean(getattr(trade, "release_status", None), limit=40).lower() == "released"
+            or _clean(getattr(trade, "receipt_status", None), limit=40).lower() in {"confirmed", "received"}
+            or _clean(getattr(trade, "status", None), limit=40).lower() in {"released", "completed", "closed"}
+        ]
+        titles = [_clean(getattr(trade, "item_title", None), limit=80) for trade in trades]
+        titles = [title for title in titles if title]
+        value = f"{len(trades)} protected trade record{'s' if len(trades) != 1 else ''} found for this seller"
+        if completed:
+            value = f"{value}; {len(completed)} show release, receipt, or completion status"
+        if titles:
+            value = f"{value}. Recent: {', '.join(titles[:3])}"
+        claims.append(
+            _claim_row(
+                key="protected_trade_seller_record",
+                label="Protected trade record",
+                value=value,
+                source="protected_trade_records",
+                count=len(trades),
+                decision_use="Use protected trade records as transaction evidence. They are not escrow, insurance, professional licensing, or a workmanship guarantee.",
+            )
+        )
+
+    if not claims:
+        claims.append(
+            _claim_row(
+                key="structured_work_claim_gap",
+                label="Structured work claim",
+                status="gap",
+                value="No active shop, listing, or protected-trade record is visible for this Decision Pack yet.",
+                source="decision_pack_extract",
+                count=0,
+                decision_use="Ask the holder for a shop/service profile, completed-work evidence, or live community confirmation before relying on the work claim.",
+            )
+        )
+
+    return claims[:4]
+
+
 def _private_event_scope(
     row: TrustEvent,
     *,
@@ -1130,6 +1268,12 @@ def build_decision_pack_private_evidence_extract(
         )
         for category in category_filter
     ]
+    declared_claims = _decision_pack_declared_claims(
+        db,
+        holder_user_id=int(holder_user_id),
+        pack_key=pack_key,
+        active_community_ids=active_community_ids,
+    )
     return {
         "source": "holder_private_decision_pack_extract",
         "decision_pack": pack_key,
@@ -1140,6 +1284,8 @@ def build_decision_pack_private_evidence_extract(
             primary_clan_id=getattr(slip, "clan_id", None),
         ),
         "categories": categories,
+        "declared_claims": declared_claims,
+        "declaration_boundary_note": "Declared shop, listing, or trade records are evidence pointers only. They do not prove licence, insurance, work quality, or future performance.",
         "privacy_note": "Authenticated holder preview only. Event references are provenance pointers for consented review, not a public evidence paper.",
         "boundary_note": "This private preview is not a score, approval, guarantee, payment instruction, dispute disclosure, or public TrustSlip output.",
     }
@@ -1191,6 +1337,12 @@ def build_decision_pack_evidence_extract(
             grouped[category].append(row)
 
     categories = [_event_category_row(category, grouped.get(category, [])) for category in public_categories]
+    declared_claims = _decision_pack_declared_claims(
+        db,
+        holder_user_id=int(holder_user_id),
+        pack_key=pack_key,
+        active_community_ids=active_community_ids,
+    )
     return {
         "source": "trust_events_redacted_extract",
         "source_note": "Aggregated from TrustEvent categories only. Raw TrustEvents, actor details, notes, metadata, payment references, and private contacts are not exposed publicly.",
@@ -1199,6 +1351,8 @@ def build_decision_pack_evidence_extract(
             primary_clan_id=getattr(slip, "clan_id", None),
         ),
         "categories": categories,
+        "declared_claims": declared_claims,
+        "declaration_boundary_note": "Declared shop, listing, or trade records are evidence pointers only. They do not prove licence, insurance, work quality, or future performance.",
         "private_review_required": [
             {
                 "key": category,
@@ -1251,8 +1405,23 @@ def build_decision_pack_profile(
         }
         for index, evidence in enumerate(expected_evidence[:5])
     ]
-    signals = expected_signals + visible_signals
-    signal_gaps = [signal for signal in visible_signals if signal.get("status") in {"gap", "caution"}]
+    declared_claims = []
+    if isinstance(evidence_extract, Mapping) and isinstance(evidence_extract.get("declared_claims"), list):
+        declared_claims = [claim for claim in evidence_extract.get("declared_claims", []) if isinstance(claim, Mapping)]
+    declared_signal = []
+    if declared_claims:
+        first_claim = declared_claims[0]
+        declared_signal = [
+            {
+                "key": "declared_work_service_claim",
+                "label": "Declared work/service claim",
+                "status": _clean(first_claim.get("status"), limit=32) or "available",
+                "value": _clean(first_claim.get("value"), limit=260) or "Declared work/service evidence is visible.",
+                "decision_use": "Treat this as a claim pointer. Ask for customer, community, or completed-work confirmation before relying.",
+            }
+        ]
+    signals = expected_signals + declared_signal + visible_signals
+    signal_gaps = [signal for signal in visible_signals + declared_signal if signal.get("status") in {"gap", "caution"}]
     missing_gap_rows = [
         {
             "key": f"missing_link_{index + 1}",

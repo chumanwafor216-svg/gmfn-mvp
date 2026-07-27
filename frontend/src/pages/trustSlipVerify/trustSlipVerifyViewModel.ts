@@ -30,6 +30,16 @@ type DecisionPackPrivateReviewCategory = {
   decisionUse: string;
 };
 
+type DecisionPackDeclaredClaim = {
+  key: string;
+  label: string;
+  status: string;
+  value: string;
+  source: string;
+  evidenceCount: number | null;
+  decisionUse: string;
+};
+
 export type DecisionPackEvidenceExtractView = {
   source: string;
   sourceNote: string;
@@ -41,6 +51,8 @@ export type DecisionPackEvidenceExtractView = {
     boundary: string;
   };
   categories: DecisionPackEvidenceCategory[];
+  declaredClaims: DecisionPackDeclaredClaim[];
+  declarationBoundaryNote: string;
   privateReviewRequired: DecisionPackPrivateReviewCategory[];
   boundaryNote: string;
 };
@@ -230,6 +242,7 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
   const privateReviewRequired = Array.isArray(source.private_review_required)
     ? source.private_review_required
     : [];
+  const declaredClaims = Array.isArray(source.declared_claims) ? source.declared_claims : [];
   const evidenceScope = source.evidence_scope && typeof source.evidence_scope === "object" ? source.evidence_scope : {};
   return {
     source: firstTruthy(source.source, "trust_events_redacted_extract"),
@@ -264,6 +277,28 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
       }))
       .filter((category: DecisionPackEvidenceCategory) => category.key || category.label)
       .slice(0, 6),
+    declaredClaims: declaredClaims
+      .map((claim: any) => ({
+        key: firstTruthy(claim?.key, claim?.label),
+        label: firstTruthy(claim?.label, "Declared work/service claim"),
+        status: firstTruthy(claim?.status, "not_shown"),
+        value: firstTruthy(
+          claim?.value,
+          "No structured work/service claim is visible for this Decision Pack yet."
+        ),
+        source: firstTruthy(claim?.source, "decision_pack_extract"),
+        evidenceCount: firstNumberLike(claim?.evidence_count),
+        decisionUse: firstTruthy(
+          claim?.decision_use,
+          "Use this as a claim pointer only; ask for direct confirmation before relying on it."
+        ),
+      }))
+      .filter((claim: DecisionPackDeclaredClaim) => claim.key || claim.label)
+      .slice(0, 4),
+    declarationBoundaryNote: firstTruthy(
+      source.declaration_boundary_note,
+      "Declared shop, listing, or trade records are evidence pointers only. They do not prove licence, insurance, work quality, or future performance."
+    ),
     privateReviewRequired: privateReviewRequired
       .map((category: any) => ({
         key: firstTruthy(category?.key, category?.label),

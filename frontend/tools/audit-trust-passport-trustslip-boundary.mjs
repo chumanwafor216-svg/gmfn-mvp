@@ -311,6 +311,11 @@ assertContains(
   "TrustSlip holder live community confirmation must use the selected Decision Pack reason type."
 );
 assertContains(
+  "trustSlip",
+  /TrustSlipDecisionPackDeclaredClaim[\s\S]*?declaredClaims[\s\S]*?extract\?\.declared_claims[\s\S]*?privateDecisionPackDeclaredClaims[\s\S]*?data-gsn-holder-decision-pack-declared-claims="true"[\s\S]*?Declared work\/service claim[\s\S]*?declarationBoundaryNote/,
+  "TrustSlip holder private Decision Pack preview must show declared work/service claim pointers separately from TrustEvent categories."
+);
+assertContains(
   "decisionMatrix",
   /Employment[\s\S]*?Demand Box[\s\S]*?Housing[\s\S]*?previous landlord[\s\S]*?Trade or Skilled Work[\s\S]*?Customer-confirmed completed-job record[\s\S]*?Backend parity/,
   "Decision Pack evidence matrix doc must preserve the owner examples and missing-app architecture gaps."

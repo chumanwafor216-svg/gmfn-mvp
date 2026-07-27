@@ -157,6 +157,11 @@ assertContains(
   "Public TrustSlip Verify view model must preserve the backend Decision Pack community-confirmation prompt."
 );
 assertContains(
+  "viewModel",
+  /type DecisionPackDeclaredClaim[\s\S]*?declaredClaims: DecisionPackDeclaredClaim\[\][\s\S]*?source\.declared_claims[\s\S]*?declarationBoundaryNote/,
+  "Public TrustSlip Verify view model must preserve declared work/service claim rows and their boundary note."
+);
+assertContains(
   "verify",
   /requestCommunityPulse[\s\S]*?requestCommunityConfirmation[\s\S]*?reason_type:[\s\S]*?decisionPackProfile\.communityConfirmationPrompt\.reasonType \|\| "community_standing_check"/,
   "Public TrustSlip Verify live community confirmation must use the Decision Pack prompt reason type."
@@ -356,6 +361,11 @@ assertContains(
 );
 assertContains(
   "backendDecisionPacks",
+  /MarketplaceProduct[\s\S]*?MarketplaceShop[\s\S]*?ProtectedTradeRecord[\s\S]*?WORK_DECLARATION_PACKS[\s\S]*?_decision_pack_declared_claims[\s\S]*?shop_service_declaration[\s\S]*?listed_service_or_item[\s\S]*?protected_trade_seller_record[\s\S]*?declared_claims[\s\S]*?declaration_boundary_note/,
+  "Backend Decision Pack evidence extract must surface public-safe declared work/service claims from shop, listing, and protected-trade records without schema changes."
+);
+assertContains(
+  "backendDecisionPacks",
   /expected_evidence_[\s\S]*?Architecture gap[\s\S]*?does not score the person[\s\S]*?or prove \{boundary_list\}/,
   "Backend Decision Pack profile must turn expectations and gaps into public-readable rows without becoming a score."
 );
@@ -376,6 +386,11 @@ assertContains(
   "backendDecisionPackTests",
   /test_public_verify_decision_pack_matrix_answers_housing_and_trade_questions[\s\S]*?housing_decision[\s\S]*?trade_check[\s\S]*?Previous landlord or accommodation witness route[\s\S]*?housing_reference_check[\s\S]*?Customer-confirmed completed-job record[\s\S]*?trade_skill_check/,
   "Backend tests must prove housing and trade packs answer different real-world questions with different expected evidence, gaps, and community-confirmation prompts."
+);
+assertContains(
+  "backendDecisionPackTests",
+  /test_public_verify_trade_pack_surfaces_declared_work_claims_without_overclaiming[\s\S]*?Emeka Plumbing Services[\s\S]*?Bathroom leak repair[\s\S]*?Kitchen pipe repair[\s\S]*?declaration_boundary_note[\s\S]*?workmanship guarantee[\s\S]*?trust_score/,
+  "Backend tests must prove trade packs surface declared shop/listing/trade evidence without turning it into a score or workmanship guarantee."
 );
 
 assertContains(
@@ -430,6 +445,11 @@ assertContains(
   "publicPaper",
   /data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?Purpose-filtered evidence[\s\S]*?data-gsn-decision-pack-evidence-extract="redacted-trust-events"[\s\S]*?Evidence categories[\s\S]*?Private review needed[\s\S]*?Gaps to check[\s\S]*?Recommended checks[\s\S]*?decisionPackProfile\.boundaryNote/,
   "Public TrustSlip paper must render purpose-filtered evidence, redacted event categories, private-review prompts, gaps, checks, and the non-decision boundary."
+);
+assertContains(
+  "publicPaper",
+  /decisionPackDeclaredClaims[\s\S]*?Declared work\/service claim[\s\S]*?decisionPackDeclaredClaimRows[\s\S]*?declarationBoundaryNote/,
+  "Public TrustSlip paper must render declared work/service claims separately from event categories with the declaration boundary."
 );
 assertContains(
   "backendDecisionPacks",

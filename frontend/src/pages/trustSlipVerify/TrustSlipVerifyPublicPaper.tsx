@@ -145,6 +145,16 @@ type TrustSlipVerifyPublicPaperProps = {
         latestAt: string;
         decisionUse: string;
       }>;
+      declaredClaims: Array<{
+        key: string;
+        label: string;
+        status: string;
+        value: string;
+        source: string;
+        evidenceCount: number | null;
+        decisionUse: string;
+      }>;
+      declarationBoundaryNote: string;
       privateReviewRequired: Array<{
         key: string;
         label: string;
@@ -1172,6 +1182,7 @@ export default function TrustSlipVerifyPublicPaper({
     ],
   ];
   const decisionPackEvidenceCategories = decisionPackProfile.evidenceExtract.categories.slice(0, 4);
+  const decisionPackDeclaredClaims = decisionPackProfile.evidenceExtract.declaredClaims.slice(0, 3);
   const decisionPackPrivateReview = decisionPackProfile.evidenceExtract.privateReviewRequired.slice(0, 3);
   const decisionPackEvidenceRows: Array<[string, string]> = (decisionPackEvidenceCategories.length
     ? decisionPackEvidenceCategories.map((category): [string, string] => [
@@ -1182,6 +1193,13 @@ export default function TrustSlipVerifyPublicPaper({
       ])
     : [["No public-safe category", "Ask for live confirmation or the full Trust Passport if more evidence is needed."] as [string, string]]
   ).slice(0, 4);
+  const decisionPackDeclaredClaimRows: Array<[string, string]> = (decisionPackDeclaredClaims.length
+    ? decisionPackDeclaredClaims.map((claim): [string, string] => [
+        claim.label,
+        `${claim.value}${claim.evidenceCount ? ` (${claim.evidenceCount} pointer${claim.evidenceCount === 1 ? "" : "s"})` : ""}`,
+      ])
+    : [["No structured claim shown", "Ask for shop/service records, completed-work evidence, or live community confirmation."] as [string, string]]
+  ).slice(0, 3);
   const decisionPackPrivateReviewRows: Array<[string, string]> = decisionPackPrivateReview.map(
     (category): [string, string] => [category.label, category.decisionUse]
   );
@@ -1991,6 +2009,11 @@ export default function TrustSlipVerifyPublicPaper({
                 compact={compact}
               />
               <OfficialResultTable
+                title="Declared work/service claim"
+                rows={decisionPackDeclaredClaimRows}
+                compact={compact}
+              />
+              <OfficialResultTable
                 title="Private review needed"
                 rows={decisionPackPrivateReviewDisplayRows}
                 compact={compact}
@@ -2026,7 +2049,7 @@ export default function TrustSlipVerifyPublicPaper({
                 lineHeight: 1.35,
               }}
             >
-              {decisionPackProfile.evidenceExtract.sourceNote} {decisionPackProfile.evidenceExtract.boundaryNote}
+              {decisionPackProfile.evidenceExtract.sourceNote} {decisionPackProfile.evidenceExtract.declarationBoundaryNote} {decisionPackProfile.evidenceExtract.boundaryNote}
             </div>
 
             <div

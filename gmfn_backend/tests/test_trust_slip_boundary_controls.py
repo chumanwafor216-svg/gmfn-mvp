@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from app.db.database import SessionLocal
-from app.db.models import Clan, ClanMembership, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare, User
+from app.db.models import Clan, ClanMembership, MarketplaceProduct, MarketplaceShop, ProtectedTradeRecord, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare, User
 
 
 def _create_trust_slip(*, code: str, holder_user_id: int = 1) -> int:
@@ -326,6 +326,77 @@ def test_public_verify_decision_pack_matrix_answers_housing_and_trade_questions(
     assert "known for this trade" in trade_profile["community_confirmation_prompt"]["question"]
     assert "trust_score" not in str(housing_profile)
     assert "recipient_name" not in str(trade_profile)
+
+
+def test_public_verify_trade_pack_surfaces_declared_work_claims_without_overclaiming(
+    client,
+    seed_clan_admin_membership,
+):
+    _create_trust_slip(code="ACCESS-TRADE-CLAIMS")
+
+    db = SessionLocal()
+    try:
+        shop = MarketplaceShop(
+            clan_id=1,
+            owner_user_id=1,
+            name="Emeka Plumbing Services",
+            description="Plumbing repairs, pipe fitting, and home leak service.",
+            is_active=True,
+        )
+        db.add(shop)
+        db.flush()
+        db.add(
+            MarketplaceProduct(
+                clan_id=1,
+                shop_id=int(shop.id),
+                seller_user_id=1,
+                name="Bathroom leak repair",
+                description="Emergency plumbing visit.",
+                price="manual quote",
+                currency="GBP",
+                is_active=True,
+                visibility_mode="public",
+            )
+        )
+        db.add(
+            ProtectedTradeRecord(
+                trade_code="GSN-TRADE-CLAIMS-1",
+                clan_id=1,
+                creator_user_id=1,
+                seller_user_id=1,
+                buyer_user_id=None,
+                shop_id=int(shop.id),
+                item_title="Kitchen pipe repair",
+                terms_summary="Customer checks work before relying again.",
+                status="released",
+                payment_status="not_started",
+                release_status="released",
+                receipt_status="confirmed",
+                dispute_status="none",
+                currency="GBP",
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get(
+        "/trust-slips/verify/ACCESS-TRADE-CLAIMS",
+        params={"decision_pack": "trade_check"},
+    )
+
+    assert response.status_code == 200, response.text
+    profile = response.json()["decision_pack_profile"]
+    extract = profile["evidence_extract"]
+    claims = extract["declared_claims"]
+    assert any(claim["key"] == "shop_service_declaration" for claim in claims)
+    assert any("Emeka Plumbing Services" in claim["value"] for claim in claims)
+    assert any("Bathroom leak repair" in claim["value"] for claim in claims)
+    assert any("Kitchen pipe repair" in claim["value"] for claim in claims)
+    assert "do not prove licence" in extract["declaration_boundary_note"]
+    assert any(signal["key"] == "declared_work_service_claim" for signal in profile["relevant_signals"])
+    assert "workmanship guarantee" in str(claims)
+    assert "trust_score" not in str(profile)
 
 
 def test_public_verify_decision_pack_access_bounds_unknown_public_context(

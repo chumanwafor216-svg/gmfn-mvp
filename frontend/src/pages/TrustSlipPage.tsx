@@ -381,6 +381,16 @@ type TrustSlipDecisionPackEvidenceCategory = {
   eventRefs: TrustSlipDecisionPackEvidenceRef[];
 };
 
+type TrustSlipDecisionPackDeclaredClaim = {
+  key: string;
+  label: string;
+  status: string;
+  value: string;
+  source: string;
+  evidenceCount: number;
+  decisionUse: string;
+};
+
 type TrustSlipDecisionPackEvidenceExtract = {
   source: string;
   decisionPack: string;
@@ -394,6 +404,8 @@ type TrustSlipDecisionPackEvidenceExtract = {
     boundary: string;
   };
   categories: TrustSlipDecisionPackEvidenceCategory[];
+  declaredClaims: TrustSlipDecisionPackDeclaredClaim[];
+  declarationBoundaryNote: string;
   privacyNote: string;
   boundaryNote: string;
 };
@@ -1713,6 +1725,20 @@ function normalizeTrustSlipDecisionPackEvidence(raw: any): TrustSlipDecisionPack
   if (!extract || typeof extract !== "object") return null;
 
   const evidenceScope = extract?.evidence_scope && typeof extract.evidence_scope === "object" ? extract.evidence_scope : {};
+  const declaredClaims = Array.isArray(extract?.declared_claims)
+    ? extract.declared_claims
+        .map((row: any) => ({
+          key: firstTruthy(row?.key),
+          label: firstTruthy(row?.label, "Declared work/service claim"),
+          status: firstTruthy(row?.status),
+          value: firstTruthy(row?.value),
+          source: firstTruthy(row?.source),
+          evidenceCount: Number(row?.evidence_count ?? row?.evidenceCount ?? 0) || 0,
+          decisionUse: firstTruthy(row?.decision_use, row?.decisionUse),
+        }))
+        .filter((row: TrustSlipDecisionPackDeclaredClaim) => row.key || row.label || row.value)
+        .slice(0, 4)
+    : [];
   const categories = Array.isArray(extract?.categories)
     ? extract.categories
         .map((row: any) => ({
@@ -1770,6 +1796,8 @@ function normalizeTrustSlipDecisionPackEvidence(raw: any): TrustSlipDecisionPack
       ),
     },
     categories,
+    declaredClaims,
+    declarationBoundaryNote: firstTruthy(extract?.declaration_boundary_note, raw?.declaration_boundary_note),
     privacyNote: firstTruthy(extract?.privacy_note, raw?.privacy_note),
     boundaryNote: firstTruthy(extract?.boundary_note, raw?.boundary_note),
   };
@@ -3326,6 +3354,7 @@ export default function TrustSlipPage() {
     },
   ];
   const privateDecisionPackEvidenceCategories = (decisionPackEvidenceExtract?.categories || []).slice(0, 4);
+  const privateDecisionPackDeclaredClaims = (decisionPackEvidenceExtract?.declaredClaims || []).slice(0, 3);
   const privateDecisionPackEvidenceScope = decisionPackEvidenceExtract?.evidenceScope;
   const privateDecisionPackEvidenceScopeSummary = firstTruthy(
     privateDecisionPackEvidenceScope?.publicSummary,
@@ -4223,6 +4252,55 @@ export default function TrustSlipPage() {
                   >
                     {privateDecisionPackEvidenceScopeSummary} {privateDecisionPackEvidenceScopeBoundary}
                   </div>
+                  {privateDecisionPackDeclaredClaims.length ? (
+                    <div
+                      data-gsn-holder-decision-pack-declared-claims="true"
+                      style={{
+                        border: "1px solid rgba(37,78,119,0.10)",
+                        borderRadius: 12,
+                        background: "#FFFFFF",
+                        padding: "8px 9px",
+                        display: "grid",
+                        gap: 6,
+                      }}
+                    >
+                      <div
+                        style={{
+                          color: "#07172C",
+                          fontSize: isCompact ? 12 : 13,
+                          fontWeight: 950,
+                          lineHeight: 1.15,
+                        }}
+                      >
+                        Declared work/service claim
+                      </div>
+                      {privateDecisionPackDeclaredClaims.map((claim) => (
+                        <div
+                          key={claim.key || claim.label}
+                          style={{
+                            color: "#526579",
+                            fontSize: isCompact ? 10 : 11,
+                            fontWeight: 800,
+                            lineHeight: 1.28,
+                          }}
+                        >
+                          <strong>{claim.label}:</strong> {claim.value || claim.decisionUse}
+                        </div>
+                      ))}
+                      {decisionPackEvidenceExtract?.declarationBoundaryNote ? (
+                        <div
+                          style={{
+                            color: "#8A6500",
+                            fontSize: isCompact ? 9.5 : 10.5,
+                            fontWeight: 850,
+                            lineHeight: 1.28,
+                          }}
+                        >
+                          {decisionPackEvidenceExtract.declarationBoundaryNote}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {privateDecisionPackEvidenceCategories.map((category) => (
                     <div
                       key={category.key || category.label}

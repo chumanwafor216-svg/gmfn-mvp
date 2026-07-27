@@ -44,15 +44,23 @@ A Decision Pack should always show four layers:
 3. GSN sources: the existing app surfaces where that evidence may be present.
 4. Gaps and boundaries: what is not yet structurally captured and what GSN refuses to certify.
 
+For work, employment, supplier, trade, and partnership decisions, the engine now
+also exposes a public-safe declaration layer where existing records support it:
+active Shop service face, active Marketplace listings, and protected-trade seller
+records. This answers the first part of the Emeka plumber question: "what has
+this person declared or presented on GSN?" It still does not answer the stronger
+question, "has a customer or community witness confirmed this skill and outcome?"
+until witness, completed-work, and complaint/resolution records exist.
+
 ## Architecture Gaps To Build Next
 
-- Structured profile declarations: skill, trade, occupation, service type, landlord/tenant references, supplier category, volunteer role, support role.
+- Structured profile declarations: skill, trade, occupation, service type, landlord/tenant references, supplier category, volunteer role, support role. Work/service packs now partially read existing Shop, Marketplace listing, and protected-trade seller records as declared claim pointers. Still missing: dedicated structured claim records, self-declared role categories, custom validation, and demand-response completion links.
 - Purpose-specific community confirmation: first prompt routing is wired. Each Decision Pack now carries a controlled confirmation reason type and a direct community-witness question, and TrustSlip community confirmation requests use that reason type. Still missing: custom per-person phrasing, structured witness answers by role/category, and new records for completed work, housing references, or payment discipline.
-- Completed work records: connect Demand Box, quotes, Shop services, customer confirmation, completion media, complaints, and resolution outcomes.
+- Completed work records: protected-trade release/receipt records can now appear as seller-side declared work pointers. Still missing: customer-confirmed completed-job records connected to Demand Box, quotes, Shop services, completion media, complaints, and resolution outcomes.
 - Payment-discipline summaries: convert contribution, ROSCA, repayment, and support follow-through into public-safe decision evidence without acting like a credit score.
 - Issue-resolution summaries: show whether issues were resolved or remain unresolved without exposing private disputes or defamatory detail.
 - Guarantee exposure and outcome: show where people stood for a person and what happened, without turning GSN into a bank or guarantor.
-- Backend parity: backend Decision Pack definitions now carry the same evidence/source/gap/boundary matrix plus controlled purpose-specific community confirmation prompts, and public profiles expose those prompts. The remaining work is deeper data capture: structured claims, completed jobs, landlord references, issue-resolution summaries, guarantee outcomes, supplier fulfilment outcomes, and richer witness-answer workflows.
+- Backend parity: backend Decision Pack definitions now carry the same evidence/source/gap/boundary matrix, controlled purpose-specific community confirmation prompts, and public-safe declared work/service claim pointers for relevant packs. The remaining work is deeper data capture: dedicated structured claims, customer-confirmed completed jobs, landlord references, issue-resolution summaries, guarantee outcomes, supplier fulfilment outcomes, and richer witness-answer workflows.
 
 ## Product Boundary
 

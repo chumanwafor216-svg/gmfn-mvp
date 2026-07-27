@@ -1,3 +1,54 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack declared work/service claim pointers
+
+Owner trigger:
+- Owner approved continuing the correction that GSN should answer real verification questions across categories and connect TrustSlip/Decision Pack evidence to actual declared work, housing, support, guarantorship, and community records where available.
+
+Unabated truth:
+- This slice makes the Emeka plumber-type question more answerable, but it still does not prove professional skill, licence, insurance, workmanship, or future performance.
+- Work/service Decision Packs now surface public-safe declared claim pointers from existing Shop, Marketplace listing, and protected-trade seller records.
+- Devil's advocate: this is still an evidence pointer layer, not a completed-work ledger, customer-confirmed job record, landlord-reference workflow, or structured witness-answer database. The next missing engine is evidence capture, not more badge language.
+
+Changed:
+- gmfn_backend/app/services/trust_slip_decision_packs.py
+  - Added declared work/service claim extraction for employment, trade, supplier, and partnership packs using active MarketplaceShop, active MarketplaceProduct, and ProtectedTradeRecord rows.
+  - Public and holder-private Decision Pack evidence extracts now include declared_claims plus a declaration boundary note.
+  - Decision Pack profiles now include a Declared work/service claim signal without turning it into a trust score.
+- gmfn_backend/tests/test_trust_slip_boundary_controls.py
+  - Added coverage proving a trade Decision Pack can show Emeka Plumbing Services, Bathroom leak repair, and Kitchen pipe repair while still refusing licence/workmanship overclaims and hiding trust_score.
+- frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts
+  - Normalizes declared_claims and declaration_boundary_note from backend Decision Pack profiles.
+- frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx
+  - Public TrustSlip Verify now renders Declared work/service claim separately from TrustEvent evidence categories and repeats the declaration boundary.
+- frontend/src/pages/TrustSlipPage.tsx
+  - Signed-in holder TrustSlip private Decision Pack preview now shows declared work/service claim pointers before event categories.
+- frontend/tools/audit-public-trustslip-verify-boundary.mjs
+- frontend/tools/audit-trust-passport-trustslip-boundary.mjs
+  - Added guards for backend extraction, frontend normalization, public rendering, holder rendering, and backend overclaim tests.
+- docs/GSN_DECISION_PACK_EVIDENCE_MATRIX.md
+  - Updated the architecture matrix to mark declared work/service pointers as partially wired and keep completed work/customer/witness evidence as the next gap.
+
+Routes/screens affected:
+- Backend /trust-slips/verify/{code} Decision Pack profile payload.
+- Backend /trust-slips/me/decision-pack-evidence holder-private evidence extract.
+- /trust-slips/verify and /app/trust-slips/verify public Decision Pack reading.
+- /app/trust-slip signed-in holder private Decision Pack preview.
+- No database schema, auth, payment, ledger, private Trust Passport disclosure, free-form private witness answers, or new record apps changed.
+
+Verification:
+- Passed python -m pytest gmfn_backend\tests\test_trust_slip_boundary_controls.py gmfn_backend\tests\test_community_confirmation_relay.py -q.
+- Passed npm --prefix frontend run audit:public-trustslip-verify-boundary.
+- Passed npm --prefix frontend run audit:trust-passport-trustslip-boundary.
+- Passed npm --prefix frontend run audit:protected-button-freeze.
+- Passed npm --prefix frontend run build.
+- Passed npm --prefix frontend run smoke:public-trustslip-verify-states outside the sandbox after known Vite/esbuild spawn EPERM.
+- Passed npm --prefix frontend run smoke:trust-passport-trustslip-boundary outside the sandbox after known Vite/esbuild spawn EPERM.
+
+Deployment:
+- Not pushed or deployed. Git publishing remains frozen into batch mode until owner approves publishing.
+
+Recommended next step:
+- Build the missing capture workflows by category: structured skill/trade declarations, completed work/customer confirmation, Demand Box response-to-job outcomes, landlord/accommodation references, payment-discipline summaries, issue-resolution summaries, guarantee exposure outcomes, supplier fulfilment/correction records, and richer witness-answer workflows.
+
 ## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack community confirmation prompts
 
 Owner trigger:
