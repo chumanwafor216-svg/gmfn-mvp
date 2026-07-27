@@ -1233,6 +1233,23 @@ try {
   if (commandText.includes("Record from real life")) {
     findings.push("Active Community Domain dashboard exposes broad Record from real life wording on the first command surface.");
   }
+  if (await isDebugVisible(page, "community-domain-dashboard.open-subscription")) {
+    findings.push("Active Community Domain dashboard exposes Subscription before More domain actions is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.more-actions-toggle"))) {
+    findings.push("Active Community Domain dashboard does not cover secondary actions with More domain actions.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.more-actions-toggle");
+  await page.waitForTimeout(450);
+  if (!(await isDebugVisible(page, "community-domain-dashboard.open-subscription"))) {
+    findings.push("More domain actions does not reveal the Subscription action.");
+  }
+  await page.waitForTimeout(450);
+  await clickByDebugId(page, "community-domain-dashboard.more-actions-toggle");
+  await page.waitForTimeout(450);
+  if (await isDebugVisible(page, "community-domain-dashboard.open-subscription")) {
+    findings.push("Subscription action stays visible after closing More domain actions.");
+  }
   if (!(await isDebugVisible(page, "community-domain-dashboard.nav.dashboard"))) {
     findings.push("Active Community Domain dashboard does not expose the Dashboard route escape.");
   }

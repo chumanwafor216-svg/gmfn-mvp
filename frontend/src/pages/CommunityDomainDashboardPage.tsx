@@ -2875,6 +2875,7 @@ export default function CommunityDomainDashboardPage() {
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
   const [operatingAreaPickerOpen, setOperatingAreaPickerOpen] = useState(false);
   const [commandGuidanceOpen, setCommandGuidanceOpen] = useState(false);
+  const [commandMoreActionsOpen, setCommandMoreActionsOpen] = useState(false);
   const [workSurfaceNotesOpen, setWorkSurfaceNotesOpen] = useState(false);
   const [operatingSummaryNotesOpen, setOperatingSummaryNotesOpen] = useState(false);
   const [operatingSummaryGroupChooserOpen, setOperatingSummaryGroupChooserOpen] =
@@ -4723,6 +4724,7 @@ export default function CommunityDomainDashboardPage() {
     setSetupJourneyMode("setup");
     setShowAdvancedTools(requestedLane !== "settings");
     setCommandGuidanceOpen(false);
+    setCommandMoreActionsOpen(false);
     setWorkSurfaceNotesOpen(false);
     setOperatingSummaryNotesOpen(false);
     setOperatingSummaryGroupChooserOpen(false);
@@ -5508,6 +5510,7 @@ export default function CommunityDomainDashboardPage() {
     setSetupWorkspaceOpen(true);
     setShowAdvancedTools(false);
     setCommandGuidanceOpen(false);
+    setCommandMoreActionsOpen(false);
     setWorkSurfaceNotesOpen(false);
     setOperatingSummaryNotesOpen(false);
     setOperatingSummaryGroupChooserOpen(false);
@@ -5583,6 +5586,7 @@ export default function CommunityDomainDashboardPage() {
     setShowAdvancedTools(true);
     setOperatingAreaPickerOpen(false);
     setCommandGuidanceOpen(false);
+    setCommandMoreActionsOpen(false);
     setWorkSurfaceNotesOpen(false);
     setOperatingSummaryNotesOpen(false);
     setSetupOverviewGroupChooserOpen(false);
@@ -5612,6 +5616,7 @@ export default function CommunityDomainDashboardPage() {
   function closeDomainCommandDrawers() {
     setOperatingAreaPickerOpen(false);
     setCommandGuidanceOpen(false);
+    setCommandMoreActionsOpen(false);
     setWorkSurfaceNotesOpen(false);
     setOperatingSummaryNotesOpen(false);
     setOperatingSummaryGroupChooserOpen(false);
@@ -5693,6 +5698,7 @@ export default function CommunityDomainDashboardPage() {
     setSetupWorkspaceOpen(false);
     setSetupJourneyMode("setup");
     setCommandGuidanceOpen(false);
+    setCommandMoreActionsOpen(false);
     setWorkSurfaceNotesOpen(false);
     setOperatingSummaryNotesOpen(false);
     setSetupOverviewGroupChooserOpen(false);
@@ -5814,6 +5820,7 @@ export default function CommunityDomainDashboardPage() {
     setSetupWorkspaceOpen(false);
     setShowAdvancedTools(true);
     setCommandGuidanceOpen(false);
+    setCommandMoreActionsOpen(false);
     setWorkSurfaceNotesOpen(false);
     setOperatingSummaryNotesOpen(false);
     setSetupEvidenceListOpen(false);
@@ -7230,23 +7237,47 @@ export default function CommunityDomainDashboardPage() {
                         Open Governance
                       </StableButton>
                     </div>
-                    <div style={commandLaneCard()}>
-                      <div style={sectionLabel()}>Subscription</div>
-                      <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                        Package, renewal, and billing status.
-                      </div>
-                      <StableButton
-                        type="button"
-                        kind="secondary"
-                        fullWidth
-                        stableHeight={44}
-                        debugId="community-domain-dashboard.open-subscription"
-                        onClick={openSubscriptionLane}
-                      >
-                        Open Subscription
-                      </StableButton>
-                    </div>
                   </div>
+                  <StableButton
+                    type="button"
+                    kind="secondary"
+                    fullWidth
+                    stableHeight={42}
+                    debugId="community-domain-dashboard.more-actions-toggle"
+                    aria-expanded={commandMoreActionsOpen}
+                    aria-controls="community-domain-command-more-actions"
+                    onClick={() => setCommandMoreActionsOpen((current) => !current)}
+                    style={{ justifyContent: "center", fontSize: 13, textTransform: "none" }}
+                  >
+                    {commandMoreActionsOpen ? "Close more actions" : "More domain actions"}
+                  </StableButton>
+                  {commandMoreActionsOpen ? (
+                    <div
+                      id="community-domain-command-more-actions"
+                      data-debug-id="community-domain-dashboard.more-actions-panel"
+                      style={commandLaneGrid()}
+                    >
+                      <div
+                        data-debug-id="community-domain-dashboard.subscription-card"
+                        style={commandLaneCard()}
+                      >
+                        <div style={sectionLabel()}>Subscription</div>
+                        <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
+                          Package, renewal, and billing status.
+                        </div>
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          stableHeight={44}
+                          debugId="community-domain-dashboard.open-subscription"
+                          onClick={openSubscriptionLane}
+                        >
+                          Open Subscription
+                        </StableButton>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               ) : (
                 <StableButton
@@ -7791,6 +7822,7 @@ export default function CommunityDomainDashboardPage() {
                       setShowAdvancedTools(false);
                     }
                     setCommandGuidanceOpen(false);
+                    setCommandMoreActionsOpen(false);
                     setWorkSurfaceNotesOpen(false);
                     setOperatingSummaryNotesOpen(false);
                     setServicePacketChooserOpen(false);
@@ -8242,6 +8274,7 @@ export default function CommunityDomainDashboardPage() {
                               setActiveLane(operationalLaneKey);
                               setSetupJourneyMode("setup");
                               setCommandGuidanceOpen(false);
+                              setCommandMoreActionsOpen(false);
                               setWorkSurfaceNotesOpen(false);
                               setOperatingSummaryNotesOpen(false);
                               setServicePacketChooserOpen(false);
@@ -16161,6 +16194,7 @@ export default function CommunityDomainDashboardPage() {
                         setOperatingAreaPickerOpen(false);
                         setSetupJourneyMode("setup");
                         setCommandGuidanceOpen(false);
+                        setCommandMoreActionsOpen(false);
                         setWorkSurfaceNotesOpen(false);
                         setOperatingSummaryNotesOpen(false);
     setSetupOverviewGroupChooserOpen(false);

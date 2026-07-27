@@ -1,3 +1,35 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Community Domain command decongestion slice
+
+Owner trigger:
+- Owner said to continue making the whole app appear less busy after the Identity and My GSN Identity decongestion work.
+
+Unabated truth:
+- This is not the whole app finished. It is the next safe route-local slice on the active Community Domain command surface.
+- The Community Domain page is still a large route with many operating lanes. This pass reduces first-surface exposure by hiding Subscription inside a closed More domain actions drawer while preserving the primary daily-work path.
+- Devil's advocate: the broad product-contract audit for this page still hangs after the npm banner and was stopped. The mobile visual audit, lint, protected-button guard, diff check, and build passed, but I am not claiming that broad audit passed.
+
+Changed:
+- `frontend/src/pages/CommunityDomainDashboardPage.tsx`
+  - Added a `More domain actions` toggle on the active command surface.
+  - Moved the Subscription action behind that closed drawer so Daily Work, Governance, Marketplace, Members, and Record activity remain the visible first choices.
+  - Reset the new drawer when the user enters/exits focused lanes so hidden secondary actions do not stay open across mode changes.
+- `frontend/tools/audit-community-domain-mobile-visual.mjs`
+  - Added mobile regression guards that Subscription must be hidden by default, visible after opening More domain actions, and hidden again after closing it.
+
+Verification:
+- Passed `node --check frontend\tools\audit-community-domain-mobile-visual.mjs`.
+- Passed `npm --prefix frontend run audit:community-domain-mobile-visual` with Vite on `127.0.0.1:5180`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run lint`.
+- Passed `git diff --check`; only normal CRLF warnings were reported.
+- Passed `npm --prefix frontend run build`.
+- Stopped the local Vite/node dev server after the audit; no listener remained on port 5180 at the final check before handoff.
+
+Deployment:
+- Local only. Do not push/deploy unless the owner selects `2` or explicitly says push/deploy.
+
+Next recommended step:
+- Commit this Community Domain slice locally, then continue the less-busy pass on the next heaviest phone-facing route unless the owner asks for deploy.
 ## CURRENT LOCAL STATE - 2026-07-27 - Identity Integrity decongestion slice
 
 Owner trigger:
