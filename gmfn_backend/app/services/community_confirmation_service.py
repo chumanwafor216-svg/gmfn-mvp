@@ -47,7 +47,8 @@ POSITIVE_RESPONSES = {"known_here", "active_here", "good_standing"}
 CAUTION_RESPONSES = {"ask_more_evidence", "known_but_caution", "cannot_confirm_now"}
 OBJECTION_RESPONSES = {"concern", "inactive", "under_dispute", "not_known"}
 VALID_RESPONSES = POSITIVE_RESPONSES | CAUTION_RESPONSES | OBJECTION_RESPONSES
-INSTANT_WINDOW_SECONDS = 300
+COMMUNITY_CONFIRMATION_RESPONSE_WINDOW_SECONDS = 72 * 60 * 60
+INSTANT_WINDOW_SECONDS = COMMUNITY_CONFIRMATION_RESPONSE_WINDOW_SECONDS
 VALID_CONFIRMATION_DECISIONS = {
     "released",
     "partial_release",
@@ -368,7 +369,7 @@ def get_or_create_confirmation_policy(
         instant_pulse_enabled=True,
         minimum_positive_responses=2,
         maximum_relay_contacts=8,
-        response_window_seconds=86400,
+        response_window_seconds=COMMUNITY_CONFIRMATION_RESPONSE_WINDOW_SECONDS,
         review_attention_after_hours=DEFAULT_REVIEW_ATTENTION_AFTER_HOURS,
         review_overdue_after_hours=DEFAULT_REVIEW_OVERDUE_AFTER_HOURS,
         allow_admin_contacts=True,
@@ -861,7 +862,10 @@ def create_confirmation_request(
     window_seconds = (
         INSTANT_WINDOW_SECONDS
         if normalized_mode == "instant_pulse"
-        else int(policy.response_window_seconds or 86400)
+        else max(
+            int(policy.response_window_seconds or COMMUNITY_CONFIRMATION_RESPONSE_WINDOW_SECONDS),
+            COMMUNITY_CONFIRMATION_RESPONSE_WINDOW_SECONDS,
+        )
     )
     request = CommunityConfirmationRequest(
         public_token=_public_token(),
@@ -1454,7 +1458,10 @@ def update_admin_confirmation_policy(
     if maximum_relay_contacts is not None:
         policy.maximum_relay_contacts = max(1, min(int(maximum_relay_contacts), 50))
     if response_window_seconds is not None:
-        policy.response_window_seconds = max(60, min(int(response_window_seconds), 604800))
+        policy.response_window_seconds = max(
+            COMMUNITY_CONFIRMATION_RESPONSE_WINDOW_SECONDS,
+            min(int(response_window_seconds), 604800),
+        )
     if review_attention_after_hours is not None:
         policy.review_attention_after_hours = max(
             1,

@@ -1573,8 +1573,8 @@ class CommunityConfirmationPolicy(Base):
     response_window_seconds: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
-        default=86400,
-        server_default="86400",
+        default=259200,
+        server_default="259200",
     )
     review_attention_after_hours: Mapped[int] = mapped_column(
         Integer,

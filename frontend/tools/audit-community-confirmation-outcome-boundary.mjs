@@ -8,6 +8,7 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
   app: "src/App.tsx",
   outcome: "src/pages/CommunityConfirmationOutcomePage.tsx",
+  policy: "src/pages/CommunityConfirmationPolicyPage.tsx",
   inbox: "src/pages/CommunityConfirmationInboxPage.tsx",
   communityProofPanel: "src/components/CommunityProofPanel.tsx",
   communityProof: "src/lib/communityProof.ts",
@@ -217,6 +218,29 @@ assertOrder(
   "Private review controls must remain under the review-case gate and in the expected signed-in inventory order."
 );
 
+assertContains(
+  "outcome",
+  /function formatCountdown\(totalSeconds: number\): string \{[\s\S]*?const days = Math\.floor\(safe \/ 86400\);[\s\S]*?return `\$\{days\}d \$\{hours\}h`;[\s\S]*?return `\$\{hours\}h \$\{String\(minutes\)\.padStart\(2, "0"\)\}m`;/,
+  "Community Confirmation Outcome countdown must display long confirmation windows in days/hours instead of giant minute counts."
+);
+
+assertContains(
+  "policy",
+  /Use enough time for real community members to see, think, and respond\.[\s\S]*?\["72 hours", 259200\][\s\S]*?\["5 days", 432000\][\s\S]*?\["7 days", 604800\]/,
+  "Community Confirmation Policy page must offer real social response windows starting at 72 hours."
+);
+
+assertNotContains(
+  "policy",
+  /\["5 min", 300\]|\["1 day", 86400\]|Short for quick checks/,
+  "Community Confirmation Policy page must not expose the old 5-minute or 1-day response-window choices."
+);
+
+assertContains(
+  "service",
+  /COMMUNITY_CONFIRMATION_RESPONSE_WINDOW_SECONDS = 72 \* 60 \* 60[\s\S]*?INSTANT_WINDOW_SECONDS = COMMUNITY_CONFIRMATION_RESPONSE_WINDOW_SECONDS[\s\S]*?response_window_seconds=COMMUNITY_CONFIRMATION_RESPONSE_WINDOW_SECONDS[\s\S]*?if normalized_mode == "instant_pulse"[\s\S]*?else max\([\s\S]*?COMMUNITY_CONFIRMATION_RESPONSE_WINDOW_SECONDS/,
+  "Backend community confirmation requests must keep instant and policy windows at a minimum of 72 hours."
+);
 assertContains(
   "service",
   /def public_confirmation_outcome\(db: Session, \*, public_token: str\) -> Dict\[str, Any\]:[\s\S]*?"review_case": _review_case_public_item\([\s\S]*?include_private_note=False[\s\S]*?"private_contacts_exposed": False[\s\S]*?"privacy_note": "GSN shows a controlled community outcome\. It does not expose private member phone numbers\."[\s\S]*?"decision_note": "This is evidence for judgement, not a guarantee, payment instruction, or automatic approval\."/,

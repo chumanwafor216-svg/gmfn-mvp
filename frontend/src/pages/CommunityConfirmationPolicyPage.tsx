@@ -2406,13 +2406,13 @@ function CommunityConfirmationPolicyPage() {
               {labelWithIcon("calendar", "Response window", "blue")}
             </div>
             <p style={{ margin: "6px 0 10px", ...helperText(), fontSize: 13 }}>
-              Short for quick checks. Longer for formal review.
+              Use enough time for real community members to see, think, and respond.
             </p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {[
-                ["5 min", 300],
-                ["1 day", 86400],
-                ["3 days", 259200],
+                ["72 hours", 259200],
+                ["5 days", 432000],
+                ["7 days", 604800],
               ].map(([label, seconds]) => (
                 <SecondaryButton
                   key={String(seconds)}

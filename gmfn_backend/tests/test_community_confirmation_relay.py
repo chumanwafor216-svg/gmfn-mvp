@@ -162,6 +162,15 @@ def test_community_confirmation_relay_keeps_public_outcome_aggregate_only(
     created_data = created.json()
 
     token = created_data["public_token"]
+    created_at = datetime.fromisoformat(created_data["created_at"])
+    expires_at = datetime.fromisoformat(created_data["expires_at"])
+    if created_at.tzinfo is None:
+        created_at = created_at.replace(tzinfo=timezone.utc)
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    confirmation_window = expires_at - created_at
+    assert confirmation_window >= timedelta(hours=71, minutes=59)
+    assert confirmation_window <= timedelta(hours=72, minutes=1)
     assert created_data["community_response"]["requests_sent"] == 1
     assert created_data["community_response"]["active_member_count"] == 2
     assert created_data["community_response"]["private_contacts_exposed"] is False

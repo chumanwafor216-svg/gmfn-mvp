@@ -542,7 +542,7 @@ class CommunityConfirmationPolicyAdminIn(CommunityConfirmationPayload):
     instant_pulse_enabled: Optional[bool] = None
     minimum_positive_responses: Optional[int] = Field(default=None, ge=1, le=10)
     maximum_relay_contacts: Optional[int] = Field(default=None, ge=1, le=50)
-    response_window_seconds: Optional[int] = Field(default=None, ge=60, le=604800)
+    response_window_seconds: Optional[int] = Field(default=None, ge=259200, le=604800)
     review_attention_after_hours: Optional[int] = Field(default=None, ge=1, le=168)
     review_overdue_after_hours: Optional[int] = Field(default=None, ge=2, le=720)
     allow_admin_contacts: Optional[bool] = None
