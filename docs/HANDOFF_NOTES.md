@@ -156928,3 +156928,28 @@ Verification run locally:
 
 Deployment:
 - Local only. Push/deploy only when owner sends `2`.
+## 2026-07-27 - Local Identity & Integrity Decongestion Pass
+
+- Scope: local-only ease-of-use polish for the signed-in `Identity & Integrity` page after the owner asked to keep making the app less busy and easier for underbanked/unbanked users.
+- `frontend/src/pages/IdentityIntegrityPage.tsx`
+  - Folded the active evidence task `Completion path` list behind a compact `Completion steps` disclosure.
+  - Kept the selected task status, explanation, primary action, phone form, phone conflict recovery, and ID/recovery forms visible where needed.
+  - Folded the secondary `Why this page matters` explanation behind a compact disclosure in the `next` section.
+- `frontend/tools/audit-identity-integrity-front-package.mjs`
+  - Updated the route cage so completion steps must remain covered by a collapsed disclosure while the actual selected evidence action stays visible.
+
+Unabated truth:
+- This is presentation decongestion only.
+- It does not change phone ownership rules, identity merge/recovery rules, TrustSlip generation, backend identity evidence, auth, routes, or public verification behavior.
+- The phone-conflict case from the screenshot remains governed by the backend: the same phone cannot be verified onto a different GSN identity without recovering the original identity or admin/support merge after ownership check.
+
+Verification run locally:
+- `node --check frontend\tools\audit-identity-integrity-front-package.mjs`
+- `node frontend\tools\audit-identity-integrity-front-package.mjs`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run lint`
+- `git diff --check` passed with normal CRLF warnings.
+- `npm --prefix frontend run build`
+
+Deployment:
+- Local only. Push/deploy only when owner sends `2`.

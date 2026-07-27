@@ -173,8 +173,8 @@ assertContains(
 );
 
 assertContains(
-  /data-identity-integrity-completion-target="true"[\s\S]*?Completion path[\s\S]*?activeTask\.completionSteps/,
-  "Identity Integrity active task must show the compact completion path for the selected evidence item."
+  /data-identity-integrity-completion-target="true"[\s\S]*?data-identity-integrity-completion-steps="collapsed"[\s\S]*?debugId="identity-integrity\.completion-steps\.toggle"[\s\S]*?Completion steps[\s\S]*?activeTask\.completionSteps/,
+  "Identity Integrity active task must keep completion steps covered while leaving the selected evidence action visible."
 );
 
 assertContains(

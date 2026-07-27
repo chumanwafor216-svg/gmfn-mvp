@@ -7,6 +7,7 @@ import {
   PrimaryButton,
   SecondaryButton,
   StableCtaLink,
+  StableDisclosureSummary,
   SubtleButton,
 } from "../components/StableButton";
 import TrustDocumentActionGuide from "../components/TrustDocumentActionGuide";
@@ -2799,45 +2800,85 @@ export default function IdentityIntegrityPage() {
               gap: 8,
             }}
           >
-            <div
+            <details
+              data-identity-integrity-completion-steps="collapsed"
               style={{
-                color: "#07172C",
-                fontWeight: 1000,
-                fontSize: 13,
-                textTransform: "uppercase",
+                borderRadius: 14,
+                border: "1px solid rgba(37,78,119,0.10)",
+                background: "#FFFFFF",
+                overflow: "hidden",
               }}
             >
-              Completion path
-            </div>
+              <StableDisclosureSummary
+                debugId="identity-integrity.completion-steps.toggle"
+                stableHeight={isCompact ? 52 : 50}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  padding: isCompact ? "10px 12px" : "10px 14px",
+                  color: "#07172C",
+                  fontSize: 13,
+                  fontWeight: 1000,
+                  background: "transparent",
+                }}
+              >
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: "block", textTransform: "uppercase" }}>
+                    Completion steps
+                  </span>
+                  {!isCompact ? (
+                    <span
+                      style={{
+                        display: "block",
+                        marginTop: 2,
+                        color: "#64748B",
+                        fontSize: 12,
+                        fontWeight: 760,
+                        lineHeight: 1.2,
+                        textTransform: "none",
+                      }}
+                    >
+                      Open only if you need the step-by-step path.
+                    </span>
+                  ) : null}
+                </span>
+                <span aria-hidden="true" style={{ color: "#8EA0B6", fontSize: 26, lineHeight: 1 }}>
+                  {">"}
+                </span>
+              </StableDisclosureSummary>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr"
-                  : `repeat(${Math.min(activeTask.completionSteps.length, 3)}, minmax(0, 1fr))`,
-                gap: 8,
-              }}
-            >
-              {activeTask.completionSteps.map((step, index) => (
-                <div
-                  key={`${activeTask.key}-${index}`}
-                  style={{
-                    minHeight: isCompact ? 48 : 42,
-                    borderRadius: 13,
-                    border: "1px solid rgba(37,78,119,0.10)",
-                    background: "#FFFFFF",
-                    padding: "8px 10px",
-                    color: "#334155",
-                    fontSize: 12.5,
-                    lineHeight: 1.25,
-                    fontWeight: 850,
-                  }}
-                >
-                  {index + 1}. {step}
-                </div>
-              ))}
-            </div>
+              <div
+                style={{
+                  padding: isCompact ? "0 10px 10px" : "0 12px 12px",
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "1fr"
+                    : `repeat(${Math.min(activeTask.completionSteps.length, 3)}, minmax(0, 1fr))`,
+                  gap: 8,
+                }}
+              >
+                {activeTask.completionSteps.map((step, index) => (
+                  <div
+                    key={`${activeTask.key}-${index}`}
+                    style={{
+                      minHeight: isCompact ? 48 : 42,
+                      borderRadius: 13,
+                      border: "1px solid rgba(37,78,119,0.10)",
+                      background: "#FFFFFF",
+                      padding: "8px 10px",
+                      color: "#334155",
+                      fontSize: 12.5,
+                      lineHeight: 1.25,
+                      fontWeight: 850,
+                    }}
+                  >
+                    {index + 1}. {step}
+                  </div>
+                ))}
+              </div>
+            </details>
 
             {activeTask.key === "phone" && !identitySignals.phoneReady ? (
               <form
@@ -3993,10 +4034,55 @@ export default function IdentityIntegrityPage() {
               </CardActionRow>
             </div>
 
-            <div style={softCard("#F8FBFF")}>
-              <div style={sectionLabel()}>Why this page matters</div>
+            <details
+              data-identity-integrity-why-this-page="collapsed"
+              style={{
+                ...softCard("#F8FBFF"),
+                padding: 0,
+                overflow: "hidden",
+              }}
+            >
+              <StableDisclosureSummary
+                debugId="identity-integrity.why-this-page.toggle"
+                stableHeight={isCompact ? 52 : 56}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  padding: isCompact ? "10px 12px" : "12px 14px",
+                  color: "#07172C",
+                  fontSize: 13,
+                  fontWeight: 1000,
+                  background: "transparent",
+                }}
+              >
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: "block", textTransform: "uppercase" }}>
+                    Why this page matters
+                  </span>
+                  {!isCompact ? (
+                    <span
+                      style={{
+                        display: "block",
+                        marginTop: 2,
+                        color: "#64748B",
+                        fontSize: 12,
+                        fontWeight: 760,
+                        lineHeight: 1.2,
+                        textTransform: "none",
+                      }}
+                    >
+                      Open only if you need the background.
+                    </span>
+                  ) : null}
+                </span>
+                <span aria-hidden="true" style={{ color: "#8EA0B6", fontSize: 26, lineHeight: 1 }}>
+                  {">"}
+                </span>
+              </StableDisclosureSummary>
 
-              <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+              <div style={{ padding: isCompact ? "0 12px 12px" : "0 14px 14px", display: "grid", gap: 10 }}>
                 <div style={helperText()}>
                   Identity is the stable layer. It should not split from one community to another.
                 </div>
@@ -4007,7 +4093,7 @@ export default function IdentityIntegrityPage() {
                   Local community evidence shows your immediate community context.
                 </div>
               </div>
-            </div>
+            </details>
           </div>
         ) : null}
       </section>
