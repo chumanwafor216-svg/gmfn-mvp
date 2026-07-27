@@ -156953,3 +156953,29 @@ Verification run locally:
 
 Deployment:
 - Local only. Push/deploy only when owner sends `2`.
+## 2026-07-27 - Local Tools Drawer TrustSlip Wording Pass
+
+- Scope: local-only ease-of-use polish for the authenticated mobile top `Tools` drawer TrustSlip shortcut.
+- `frontend/src/layout/AppLayout.tsx`
+  - Kept the existing two-step TrustSlip share structure and all existing debug IDs/routes.
+  - Simplified the drawer guidance from `Pick what this is for...` to `Choose why you are sharing. Refresh if needed, then share.`
+  - Renamed the purpose heading from `What is this for?` to `Choose reason`.
+  - Changed the evidence sentence to `Evidence focus: ...`.
+  - Renamed the first action from `Prepare` to `Refresh` so the phone flow reads as choose reason -> refresh -> share.
+  - Simplified the generated share message so recipients are told to open the link and check the current public record.
+
+Unabated truth:
+- This is wording and hierarchy polish only.
+- It does not change TrustSlip generation, selected decision pack routing, native share behavior, clipboard fallback, drawer controls, bottom navigation, auth, backend logic, or public verification behavior.
+- The TrustSlip page itself was inspected and already starts its heavy sections closed by default; no TrustSlipPage structural edit was needed in this pass.
+
+Verification run locally:
+- `node frontend\tools\audit-dashboard-button-inventory.mjs`
+- `node frontend\tools\audit-community-home-button-inventory.mjs`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run lint`
+- `git diff --check`
+- `npm --prefix frontend run build`
+
+Deployment:
+- Local only. Push/deploy only when owner sends `2`.

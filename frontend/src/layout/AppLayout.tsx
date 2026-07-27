@@ -2201,8 +2201,8 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
     const text = [
       `GSN TrustSlip: ${selectedTrustSlipSharePurpose.label}`,
       selectedTrustSlipSharePurpose.purpose,
-      `GSN will show: ${selectedTrustSlipSharePurpose.recordSummary}.`,
-      "Open the link and enter the TrustSlip code I provide. This helps your decision, but it is not an approval or guarantee.",
+      `Evidence focus: ${selectedTrustSlipSharePurpose.recordSummary}.`,
+      "Open the link to check the current public record. This helps your decision, but it is not an approval or guarantee.",
     ].join("\n");
 
     try {
@@ -2615,7 +2615,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
             >
               {taskMode
                 ? "Finish this step first, or choose where you want to go next."
-                : "Pick what this is for. GSN will prepare the right TrustSlip."}
+                : "Choose why you are sharing. Refresh if needed, then share."}
             </div>
 
             {taskMode ? (
@@ -2673,7 +2673,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
                       gap: 9,
                     }}
                   >
-                    <div style={actionsTitle()}>What is this for?</div>
+                    <div style={actionsTitle()}>Choose reason</div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
                       {TRUST_SLIP_SHARE_PURPOSES.map((purpose) => {
                         const active = purpose.key === selectedTrustSlipSharePurpose.key;
@@ -2719,7 +2719,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
                         {selectedTrustSlipSharePurpose.purpose}
                       </div>
                       <div style={{ color: "#254E77", fontWeight: 850, fontSize: 11.5, lineHeight: 1.35 }}>
-                        GSN will use {selectedTrustSlipSharePurpose.recordSummary}.
+                        Evidence focus: {selectedTrustSlipSharePurpose.recordSummary}.
                       </div>
                     </div>
 
@@ -2748,7 +2748,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
                         debugId="app-layout.tools.trustslip-refresh"
                         style={actionsLink(false, false)}
                       >
-                        Prepare
+                        Refresh
                       </StableCtaLink>
                       <StableButton
                         type="button"
