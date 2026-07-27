@@ -105,6 +105,11 @@ assertContains(
   /debugId="system-operations\.toggle\.overview"[\s\S]*?debugId="system-operations\.toggle\.intake"[\s\S]*?debugId="system-operations\.toggle\.signals"[\s\S]*?debugId="system-operations\.route\.bank-console"/,
   "System Operations toggles and route actions must remain traceable."
 );
+assertContains(
+  "src/pages/SystemOperationsPage.tsx",
+  /const SYSTEM_OPERATIONS_UI_STORAGE_KEY = "gmfn\.systemOperations\.sections\.v2";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?overview: true,[\s\S]*?intake: true,[\s\S]*?signals: true,[\s\S]*?queues: true,[\s\S]*?routes: true,/,
+  "System Operations must default deeper overview, intake, signals, queues, and route grids closed while keeping the live operations reading visible."
+);
 
 assertContains(
   "src/pages/SystemOperationsPage.tsx",
@@ -121,6 +126,11 @@ assertContains(
   "src/pages/TrustCommandCentrePage.tsx",
   /sectionLabelWithIcon\("navigation", "Command rule"\)[\s\S]*?Start with the live reading, then open only the admin page that matches the current task\./,
   "Trust Command Centre must use a compact command rule instead of a multi-line how-to card."
+);
+assertContains(
+  "src/pages/TrustCommandCentrePage.tsx",
+  /const COMMAND_CENTER_UI_STORAGE_KEY = "gmfn\.commandCenter\.sections\.v2";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?executive: true,[\s\S]*?overview: true,[\s\S]*?routes: true,[\s\S]*?workflows: true,[\s\S]*?pilot: true,[\s\S]*?notes: true,/,
+  "Trust Command Centre must default executive, overview, route, workflow, pilot, and notes sections closed so the phone starts with the live command reading."
 );
 
 assertNotContains(
@@ -145,6 +155,11 @@ assertContains(
   "src/pages/AdminTrustGraphPage.tsx",
   /debugId="admin-trust-graph\.toggle-overview"[\s\S]*?debugId="admin-trust-graph\.toggle-structure"[\s\S]*?debugId="admin-trust-graph\.route\.analytics"[\s\S]*?debugId="admin-trust-graph\.route\.command-center"/,
   "Admin Trust Graph toggles and route actions must remain traceable."
+);
+assertContains(
+  "src/pages/AdminTrustGraphPage.tsx",
+  /const TRUST_GRAPH_UI_STORAGE_KEY = "gmfn\.trustGraph\.sections\.v2";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?overview: true,[\s\S]*?structure: true,[\s\S]*?signals: true,[\s\S]*?routes: true,/,
+  "Admin Trust Graph must default overview, structure, signal, and route sections closed while keeping the structural reading visible."
 );
 
 assertContains(
@@ -193,6 +208,11 @@ assertContains(
   "src/pages/ExposureAdminPage.tsx",
   /debugId="exposure-admin\.toggle\.overview"[\s\S]*?debugId="exposure-admin\.toggle\.queues"[\s\S]*?debugId="exposure-admin\.route\.system-operations"[\s\S]*?debugId="exposure-admin\.route\.bank-console"/,
   "Exposure Admin toggles and route actions must remain traceable."
+);
+assertContains(
+  "src/pages/ExposureAdminPage.tsx",
+  /const EXPOSURE_ADMIN_UI_STORAGE_KEY = "gmfn\.exposureAdmin\.sections\.v2";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?overview: true,[\s\S]*?pressure: true,[\s\S]*?queues: true,[\s\S]*?routes: true,/,
+  "Exposure Admin must default exposure summary, pressure detail, queues, and route sections closed while keeping current pressure visible."
 );
 
 assertContains(

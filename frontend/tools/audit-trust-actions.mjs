@@ -261,6 +261,11 @@ assertContains(
   /This reading turns the evidence signals into one practical direction\./,
   "Trust Analytics explanation must frame inputs as evidence signals, not trust signals."
 );
+assertContains(
+  "src/pages/TrustAnalyticsPage.tsx",
+  /const TRUST_ANALYTICS_UI_STORAGE_KEY = "gmfn\.trustAnalytics\.sections\.v2";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?overview: true,[\s\S]*?mix: true,[\s\S]*?timeline: true,[\s\S]*?notes: true,/,
+  "Trust Analytics must default overview, evidence mix, timeline, and notes closed while keeping the current analytics reading visible."
+);
 
 assertNotContains(
   "src/pages/TrustAnalyticsPage.tsx",

@@ -157093,3 +157093,43 @@ Verification run locally:
 
 Deployment:
 - Local only. Push/deploy only when owner sends `2`.
+
+## 2026-07-27 - Local Admin And Analytics Decongestion Pass
+
+- Scope: local-only continuation of the app-wide phone decongestion work across admin/analytics surfaces.
+- `frontend/src/pages/ExposureAdminPage.tsx`
+  - Bumped `gmfn.exposureAdmin.sections.v1` to `gmfn.exposureAdmin.sections.v2`.
+  - Defaulted exposure summary, pressure detail, queues, and route sections closed while leaving the current pressure reading visible.
+- `frontend/src/pages/AdminTrustGraphPage.tsx`
+  - Bumped `gmfn.trustGraph.sections.v1` to `gmfn.trustGraph.sections.v2`.
+  - Defaulted overview, structure, signals, and routes closed while leaving the structural reading visible.
+- `frontend/src/pages/SystemOperationsPage.tsx`
+  - Bumped `gmfn.systemOperations.sections.v1` to `gmfn.systemOperations.sections.v2`.
+  - Defaulted overview, intake, signals, queues, and routes closed while leaving the live operations reading visible.
+- `frontend/src/pages/TrustAnalyticsPage.tsx`
+  - Bumped `gmfn.trustAnalytics.sections.v1` to `gmfn.trustAnalytics.sections.v2`.
+  - Defaulted overview, evidence mix, timeline, and notes closed while leaving the current analytics reading visible.
+- `frontend/src/pages/TrustCommandCentrePage.tsx`
+  - Bumped `gmfn.commandCenter.sections.v1` to `gmfn.commandCenter.sections.v2`.
+  - Defaulted executive, overview, route, workflow, pilot, and notes sections closed while leaving the live command reading visible.
+- `frontend/tools/audit-admin-ops-actions.mjs`
+  - Added guards for the quieter default-open posture on Exposure, Trust Graph, System Operations, and Trust Command Centre.
+- `frontend/tools/audit-trust-actions.mjs`
+  - Added a guard for Trust Analytics defaulting deeper sections closed.
+
+Unabated truth:
+- `Shop Assets` was inspected and not changed because its heavy signboard and product work areas were already folded by default.
+- This pass intentionally targets admin/analytics surfaces, not active transaction forms.
+- This is default presentation/state cleanup only. It does not change admin routes, backend reads, risk calculations, trust event classification, pilot worksheet data, auth, permissions, or evidence generation.
+- Users can still open every covered section immediately.
+
+Verification run locally:
+- `node frontend\tools\audit-admin-ops-actions.mjs`
+- `node frontend\tools\audit-trust-actions.mjs`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run lint`
+- `git diff --check` passed with normal CRLF warnings.
+- `npm --prefix frontend run build`
+
+Deployment:
+- Local only. Push/deploy only when owner sends `2`.

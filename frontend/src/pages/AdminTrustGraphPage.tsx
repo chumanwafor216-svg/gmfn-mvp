@@ -67,7 +67,7 @@ type TrustEventRow = {
   created_at?: string | null;
 };
 
-const TRUST_GRAPH_UI_STORAGE_KEY = "gmfn.trustGraph.sections.v1";
+const TRUST_GRAPH_UI_STORAGE_KEY = "gmfn.trustGraph.sections.v2";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -315,10 +315,10 @@ function writeLocalJSON(key: string, value: any) {
 
 function defaultCollapseState(): CollapseState {
   return {
-    overview: false,
-    structure: false,
+    overview: true,
+    structure: true,
     signals: true,
-    routes: false,
+    routes: true,
   };
 }
 

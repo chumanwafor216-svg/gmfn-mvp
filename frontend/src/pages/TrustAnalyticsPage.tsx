@@ -38,7 +38,7 @@ type CollapseState = {
   notes: boolean;
 };
 
-const TRUST_ANALYTICS_UI_STORAGE_KEY = "gmfn.trustAnalytics.sections.v1";
+const TRUST_ANALYTICS_UI_STORAGE_KEY = "gmfn.trustAnalytics.sections.v2";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -398,8 +398,8 @@ function writeLocalJSON(key: string, value: any) {
 
 function defaultCollapseState(): CollapseState {
   return {
-    overview: false,
-    mix: false,
+    overview: true,
+    mix: true,
     timeline: true,
     notes: true,
   };

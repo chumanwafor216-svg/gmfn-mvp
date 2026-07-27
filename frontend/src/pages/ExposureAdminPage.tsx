@@ -47,7 +47,7 @@ type DemandRow = {
   createdAt?: string | null;
 };
 
-const EXPOSURE_ADMIN_UI_STORAGE_KEY = "gmfn.exposureAdmin.sections.v1";
+const EXPOSURE_ADMIN_UI_STORAGE_KEY = "gmfn.exposureAdmin.sections.v2";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -358,10 +358,10 @@ function writeLocalJSON(key: string, value: any) {
 
 function defaultCollapseState(): CollapseState {
   return {
-    overview: false,
-    pressure: false,
+    overview: true,
+    pressure: true,
     queues: true,
-    routes: false,
+    routes: true,
   };
 }
 

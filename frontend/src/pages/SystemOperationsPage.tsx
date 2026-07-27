@@ -46,7 +46,7 @@ type CollapseState = {
   routes: boolean;
 };
 
-const SYSTEM_OPERATIONS_UI_STORAGE_KEY = "gmfn.systemOperations.sections.v1";
+const SYSTEM_OPERATIONS_UI_STORAGE_KEY = "gmfn.systemOperations.sections.v2";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -292,11 +292,11 @@ function writeLocalJSON(key: string, value: any) {
 
 function defaultCollapseState(): CollapseState {
   return {
-    overview: false,
-    intake: false,
-    signals: false,
+    overview: true,
+    intake: true,
+    signals: true,
     queues: true,
-    routes: false,
+    routes: true,
   };
 }
 

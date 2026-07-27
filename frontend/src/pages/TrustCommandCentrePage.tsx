@@ -72,7 +72,7 @@ function defaultExecutiveReading(): ExecutiveReading {
   };
 }
 
-const COMMAND_CENTER_UI_STORAGE_KEY = "gmfn.commandCenter.sections.v1";
+const COMMAND_CENTER_UI_STORAGE_KEY = "gmfn.commandCenter.sections.v2";
 const COMMAND_CENTER_PILOT_WORKSHEET_STORAGE_KEY =
   "gmfn.commandCenter.pilotWorksheet.v1";
 const PROFILE_NAME_STORAGE_KEY = "gmfn_profile_name";
@@ -677,11 +677,11 @@ function normalizePilotWorksheet(raw: any): PilotWorksheet {
 
 function defaultCollapseState(): CollapseState {
   return {
-    executive: false,
-    overview: false,
-    routes: false,
+    executive: true,
+    overview: true,
+    routes: true,
     workflows: true,
-    pilot: false,
+    pilot: true,
     notes: true,
   };
 }
