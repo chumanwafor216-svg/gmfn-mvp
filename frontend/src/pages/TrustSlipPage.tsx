@@ -441,6 +441,16 @@ type TrustSlipDecisionPackCompletedWorkPointer = {
   decisionUse: string;
 };
 
+type TrustSlipDecisionPackDemandRequestOutcomePointer = {
+  key: string;
+  label: string;
+  status: string;
+  value: string;
+  source: string;
+  evidenceCount: number;
+  decisionUse: string;
+};
+
 type TrustSlipDecisionPackIssueResolutionPointer = {
   key: string;
   label: string;
@@ -474,6 +484,8 @@ type TrustSlipDecisionPackEvidenceExtract = {
   fulfillmentOutcomeBoundaryNote: string;
   completedWorkPointers: TrustSlipDecisionPackCompletedWorkPointer[];
   completedWorkBoundaryNote: string;
+  demandRequestOutcomePointers: TrustSlipDecisionPackDemandRequestOutcomePointer[];
+  demandRequestOutcomeBoundaryNote: string;
   confirmationPointers: TrustSlipDecisionPackConfirmationPointer[];
   confirmationPointerBoundaryNote: string;
   issueResolutionPointers: TrustSlipDecisionPackIssueResolutionPointer[];
@@ -1867,6 +1879,20 @@ function normalizeTrustSlipDecisionPackEvidence(raw: any): TrustSlipDecisionPack
         .filter((row: TrustSlipDecisionPackCompletedWorkPointer) => row.key || row.label || row.value)
         .slice(0, 4)
     : [];
+  const demandRequestOutcomePointers = Array.isArray(extract?.demand_request_outcome_pointers)
+    ? extract.demand_request_outcome_pointers
+        .map((row: any) => ({
+          key: firstTruthy(row?.key),
+          label: firstTruthy(row?.label, "Demand Box request outcomes"),
+          status: firstTruthy(row?.status),
+          value: firstTruthy(row?.value),
+          source: firstTruthy(row?.source),
+          evidenceCount: Number(row?.evidence_count ?? row?.evidenceCount ?? 0) || 0,
+          decisionUse: firstTruthy(row?.decision_use, row?.decisionUse),
+        }))
+        .filter((row: TrustSlipDecisionPackDemandRequestOutcomePointer) => row.key || row.label || row.value)
+        .slice(0, 4)
+    : [];
   const confirmationPointers = Array.isArray(extract?.confirmation_pointers)
     ? extract.confirmation_pointers
         .map((row: any) => ({
@@ -1962,6 +1988,8 @@ function normalizeTrustSlipDecisionPackEvidence(raw: any): TrustSlipDecisionPack
     fulfillmentOutcomeBoundaryNote: firstTruthy(extract?.fulfillment_outcome_boundary_note, raw?.fulfillment_outcome_boundary_note),
     completedWorkPointers,
     completedWorkBoundaryNote: firstTruthy(extract?.completed_work_boundary_note, raw?.completed_work_boundary_note),
+    demandRequestOutcomePointers,
+    demandRequestOutcomeBoundaryNote: firstTruthy(extract?.demand_request_outcome_boundary_note, raw?.demand_request_outcome_boundary_note),
     confirmationPointers,
     confirmationPointerBoundaryNote: firstTruthy(extract?.confirmation_pointer_boundary_note, raw?.confirmation_pointer_boundary_note),
     issueResolutionPointers,
@@ -3527,6 +3555,7 @@ export default function TrustSlipPage() {
   const privateDecisionPackGuaranteeOutcomePointers = (decisionPackEvidenceExtract?.guaranteeOutcomePointers || []).slice(0, 3);
   const privateDecisionPackFulfillmentOutcomePointers = (decisionPackEvidenceExtract?.fulfillmentOutcomePointers || []).slice(0, 3);
   const privateDecisionPackCompletedWorkPointers = (decisionPackEvidenceExtract?.completedWorkPointers || []).slice(0, 3);
+  const privateDecisionPackDemandRequestOutcomePointers = (decisionPackEvidenceExtract?.demandRequestOutcomePointers || []).slice(0, 3);
   const privateDecisionPackConfirmationPointers = (decisionPackEvidenceExtract?.confirmationPointers || []).slice(0, 3);
   const privateDecisionPackIssueResolutionPointers = (decisionPackEvidenceExtract?.issueResolutionPointers || []).slice(0, 3);
   const privateDecisionPackEvidenceScope = decisionPackEvidenceExtract?.evidenceScope;
@@ -4667,6 +4696,55 @@ export default function TrustSlipPage() {
                           }}
                         >
                           {decisionPackEvidenceExtract.completedWorkBoundaryNote}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {privateDecisionPackDemandRequestOutcomePointers.length ? (
+                    <div
+                      data-gsn-holder-decision-pack-demand-request-outcome-pointers="true"
+                      style={{
+                        border: "1px solid rgba(37,78,119,0.10)",
+                        borderRadius: 12,
+                        background: "#FFFFFF",
+                        padding: "8px 9px",
+                        display: "grid",
+                        gap: 6,
+                      }}
+                    >
+                      <div
+                        style={{
+                          color: "#07172C",
+                          fontSize: isCompact ? 12 : 13,
+                          fontWeight: 950,
+                          lineHeight: 1.15,
+                        }}
+                      >
+                        Demand Box request outcomes
+                      </div>
+                      {privateDecisionPackDemandRequestOutcomePointers.map((pointer) => (
+                        <div
+                          key={pointer.key || pointer.label}
+                          style={{
+                            color: "#526579",
+                            fontSize: isCompact ? 10 : 11,
+                            fontWeight: 800,
+                            lineHeight: 1.28,
+                          }}
+                        >
+                          <strong>{pointer.label}:</strong> {pointer.value || pointer.decisionUse}
+                        </div>
+                      ))}
+                      {decisionPackEvidenceExtract?.demandRequestOutcomeBoundaryNote ? (
+                        <div
+                          style={{
+                            color: "#8A6500",
+                            fontSize: isCompact ? 9.5 : 10.5,
+                            fontWeight: 850,
+                            lineHeight: 1.28,
+                          }}
+                        >
+                          {decisionPackEvidenceExtract.demandRequestOutcomeBoundaryNote}
                         </div>
                       ) : null}
                     </div>

@@ -195,6 +195,16 @@ type TrustSlipVerifyPublicPaperProps = {
         decisionUse: string;
       }>;
       completedWorkBoundaryNote: string;
+      demandRequestOutcomePointers: Array<{
+        key: string;
+        label: string;
+        status: string;
+        value: string;
+        source: string;
+        evidenceCount: number | null;
+        decisionUse: string;
+      }>;
+      demandRequestOutcomeBoundaryNote: string;
       confirmationPointers: Array<{
         key: string;
         label: string;
@@ -1247,6 +1257,7 @@ export default function TrustSlipVerifyPublicPaper({
   const decisionPackGuaranteeOutcomePointers = decisionPackProfile.evidenceExtract.guaranteeOutcomePointers.slice(0, 3);
   const decisionPackFulfillmentOutcomePointers = decisionPackProfile.evidenceExtract.fulfillmentOutcomePointers.slice(0, 3);
   const decisionPackCompletedWorkPointers = decisionPackProfile.evidenceExtract.completedWorkPointers.slice(0, 3);
+  const decisionPackDemandRequestOutcomePointers = decisionPackProfile.evidenceExtract.demandRequestOutcomePointers.slice(0, 3);
   const decisionPackConfirmationPointers = decisionPackProfile.evidenceExtract.confirmationPointers.slice(0, 3);
   const decisionPackIssueResolutionPointers = decisionPackProfile.evidenceExtract.issueResolutionPointers.slice(0, 3);
   const decisionPackPrivateReview = decisionPackProfile.evidenceExtract.privateReviewRequired.slice(0, 3);
@@ -1293,6 +1304,13 @@ export default function TrustSlipVerifyPublicPaper({
         pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
       ])
     : [["No completed work shown", "Ask for customer-confirmed completed work, Demand Box outcome history, or live community confirmation before relying on this point."] as [string, string]]
+  ).slice(0, 3);
+  const decisionPackDemandRequestOutcomeRows: Array<[string, string]> = (decisionPackDemandRequestOutcomePointers.length
+    ? decisionPackDemandRequestOutcomePointers.map((pointer): [string, string] => [
+        pointer.label,
+        pointer.value + (pointer.evidenceCount ? " (" + pointer.evidenceCount + " pointer" + (pointer.evidenceCount === 1 ? "" : "s") + ")" : ""),
+      ])
+    : [["No Demand Box outcome shown", "Ask for demand response records, quote-to-job history, customer confirmation, or live community confirmation before relying on this point."] as [string, string]]
   ).slice(0, 3);
   const decisionPackConfirmationPointerRows: Array<[string, string]> = (decisionPackConfirmationPointers.length
     ? decisionPackConfirmationPointers.map((pointer): [string, string] => [
@@ -2142,6 +2160,11 @@ export default function TrustSlipVerifyPublicPaper({
                 compact={compact}
               />
               <OfficialResultTable
+                title="Demand Box request outcomes"
+                rows={decisionPackDemandRequestOutcomeRows}
+                compact={compact}
+              />
+              <OfficialResultTable
                 title="Community witness outcomes"
                 rows={decisionPackConfirmationPointerRows}
                 compact={compact}
@@ -2187,7 +2210,7 @@ export default function TrustSlipVerifyPublicPaper({
                 lineHeight: 1.35,
               }}
             >
-              {decisionPackProfile.evidenceExtract.sourceNote} {decisionPackProfile.evidenceExtract.declarationBoundaryNote} {decisionPackProfile.evidenceExtract.recordPointerBoundaryNote} {decisionPackProfile.evidenceExtract.guaranteeOutcomeBoundaryNote} {decisionPackProfile.evidenceExtract.fulfillmentOutcomeBoundaryNote} {decisionPackProfile.evidenceExtract.completedWorkBoundaryNote} {decisionPackProfile.evidenceExtract.confirmationPointerBoundaryNote} {decisionPackProfile.evidenceExtract.issueResolutionBoundaryNote} {decisionPackProfile.evidenceExtract.boundaryNote}
+              {decisionPackProfile.evidenceExtract.sourceNote} {decisionPackProfile.evidenceExtract.declarationBoundaryNote} {decisionPackProfile.evidenceExtract.recordPointerBoundaryNote} {decisionPackProfile.evidenceExtract.guaranteeOutcomeBoundaryNote} {decisionPackProfile.evidenceExtract.fulfillmentOutcomeBoundaryNote} {decisionPackProfile.evidenceExtract.completedWorkBoundaryNote} {decisionPackProfile.evidenceExtract.demandRequestOutcomeBoundaryNote} {decisionPackProfile.evidenceExtract.confirmationPointerBoundaryNote} {decisionPackProfile.evidenceExtract.issueResolutionBoundaryNote} {decisionPackProfile.evidenceExtract.boundaryNote}
             </div>
 
             <div

@@ -1,3 +1,57 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack Demand Box request-outcome pointers
+
+Owner trigger:
+- Owner continued the society-equivalent evidence correction after completed-work/customer-confirmation pointers. The next question was whether Demand Box can show practical demand/job history instead of a generic Trust Passport label.
+
+Unabated truth:
+- This slice wires existing MarketplaceRequest rows into Decision Packs as aggregate Demand Box request-outcome pointers for employment, trade, supplier, and partnership packs.
+- It answers only the limited requester-side question: has the holder posted real demands in active communities, and were those requests fulfilled, cancelled, expired, or still open?
+- It does not expose request titles, descriptions, areas, phone numbers, payment mode, quotes, requester identities, responder identities, private notes, Demand Box codes, prices, or trust_score.
+- Devil's advocate: this is not yet the Emeka-as-plumber proof engine. The current Demand Box schema has no responder, quote, selected provider, customer signoff, job media, or completion chain. We can show holder-owned demand outcomes; we cannot yet prove the holder responded to someone else's plumbing demand or completed that work.
+
+Changed:
+- gmfn_backend/app/services/trust_slip_decision_packs.py
+  - Added DEMAND_REQUEST_OUTCOME_PACKS and aggregate extraction from MarketplaceRequest rows inside the holder active community footprint.
+  - Public and holder-private evidence extracts now include demand_request_outcome_pointers plus demand_request_outcome_boundary_note.
+  - Decision Pack profiles now add a Demand Box request outcome signal when aggregate Demand Box request rows exist or when the gap should be shown.
+  - Public source wording now includes Demand Box request-outcome pointers and explicitly excludes request content, phone numbers, quotes, responder identities, and proof-of-work overclaims.
+- gmfn_backend/tests/test_trust_slip_boundary_controls.py
+  - Added coverage proving a trade Decision Pack surfaces aggregate Demand Box request outcomes without leaking private request titles, descriptions, areas, phone numbers, payment mode/quote wording, outside-community requests, responder raw IDs, or trust_score.
+- frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts
+  - Normalizes demand_request_outcome_pointers and demand_request_outcome_boundary_note from backend Decision Pack profiles.
+- frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx
+  - Public TrustSlip Verify now renders Demand Box request outcomes after Completed work/customer confirmation and before Community witness outcomes.
+- frontend/src/pages/TrustSlipPage.tsx
+  - Signed-in holder TrustSlip private Decision Pack preview now shows Demand Box request outcomes after Completed work/customer confirmation.
+- frontend/tools/audit-public-trustslip-verify-boundary.mjs
+- frontend/tools/audit-trust-passport-trustslip-boundary.mjs
+  - Added guards for backend extraction, frontend normalization, public rendering, holder rendering, and private request-detail/non-response-proof boundaries.
+- docs/GSN_DECISION_PACK_EVIDENCE_MATRIX.md
+  - Updated the matrix to mark aggregate Demand Box request outcomes as partially wired while keeping responder/quote/job-completion/customer-signoff architecture as remaining work.
+
+Routes/screens affected:
+- Backend /trust-slips/verify/{code} Decision Pack profile payload.
+- Backend /trust-slips/me/decision-pack-evidence holder-private evidence extract.
+- /trust-slips/verify and /app/trust-slips/verify public Decision Pack reading.
+- /app/trust-slip signed-in holder private Decision Pack preview.
+- No database schema, auth, payment, ledger, Demand Box create/status write path, responder/quote/job model, Shop write path, Marketplace review write path, or final employment/trade/supplier decision engine changed.
+
+Verification:
+- Passed python -m py_compile gmfn_backend\app\services\trust_slip_decision_packs.py gmfn_backend\tests\test_trust_slip_boundary_controls.py
+- Passed python -m pytest gmfn_backend\tests\test_trust_slip_boundary_controls.py gmfn_backend\tests\test_community_confirmation_relay.py -q: 59 passed
+- Passed npm --prefix frontend run audit:public-trustslip-verify-boundary
+- Passed npm --prefix frontend run audit:trust-passport-trustslip-boundary
+- Passed npm --prefix frontend run audit:protected-button-freeze
+- Passed npm --prefix frontend run build
+- Passed npm --prefix frontend run smoke:public-trustslip-verify-states after elevated rerun for sandbox spawn EPERM
+- Passed npm --prefix frontend run smoke:trust-passport-trustslip-boundary after elevated rerun for sandbox spawn EPERM
+
+Deployment:
+- Local only so far; do not push/deploy unless the owner explicitly selects push/deploy.
+
+Next recommended step:
+- Verify and commit this Demand Box request-outcome pointer slice locally, then continue with the missing society-equivalent layers: Demand Box responder/quote/job-completion records, landlord/accommodation references, and structured witness answers.
+
 ## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack completed-work/customer-confirmation pointers
 
 Owner trigger:

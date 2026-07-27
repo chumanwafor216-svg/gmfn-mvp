@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from app.db.database import SessionLocal
-from app.db.models import Clan, ClanMembership, CommunityConfirmationDecision, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, CommunityConfirmationReviewCase, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceReview, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare, User
+from app.db.models import Clan, ClanMembership, CommunityConfirmationDecision, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, CommunityConfirmationReviewCase, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceRequest, MarketplaceReview, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare, User
 
 
 def _create_trust_slip(*, code: str, holder_user_id: int = 1) -> int:
@@ -1053,6 +1053,136 @@ def test_public_verify_trade_pack_surfaces_completed_work_customer_confirmation_
     assert "review_text" not in profile_text
     assert "customer_phone" not in profile_text
     assert "job_address" not in profile_text
+    assert "trust_score" not in profile_text
+
+
+def test_public_verify_trade_pack_surfaces_demand_box_request_outcomes_without_private_request_details(
+    client,
+    seed_clan_admin_membership,
+):
+    _create_trust_slip(code="ACCESS-DEMAND-REQUESTS")
+    _add_active_membership(clan_id=2)
+
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc)
+        db.add(
+            Clan(
+                id=3,
+                name="Outside Demand Clan",
+                invite_code="outside-demand",
+                community_code="GMFN-C-DEMAND-OUTSIDE",
+                status="active",
+                invite_uses=0,
+                created_at=now,
+            )
+        )
+        db.add_all(
+            [
+                MarketplaceRequest(
+                    clan_id=1,
+                    user_id=1,
+                    title="PRIVATE PLUMBING DEMAND TITLE",
+                    description="PRIVATE DEMAND DESCRIPTION",
+                    category="plumbing",
+                    urgency="high",
+                    area="PRIVATE DEMAND AREA",
+                    whatsapp_number="070000111222",
+                    payment_mode="private cash quote",
+                    allow_trust_credit=True,
+                    status="fulfilled",
+                    created_at=now,
+                    expires_at=now + timedelta(hours=24),
+                ),
+                MarketplaceRequest(
+                    clan_id=2,
+                    user_id=1,
+                    title="PRIVATE CANCELLED DEMAND",
+                    description="PRIVATE CANCELLED DESCRIPTION",
+                    category="repairs",
+                    urgency="medium",
+                    area="PRIVATE CANCELLED AREA",
+                    whatsapp_number="070000333444",
+                    payment_mode="private transfer",
+                    allow_trust_credit=False,
+                    status="cancelled",
+                    created_at=now,
+                    expires_at=now + timedelta(hours=24),
+                ),
+                MarketplaceRequest(
+                    clan_id=1,
+                    user_id=1,
+                    title="PRIVATE OPEN DEMAND",
+                    description="PRIVATE OPEN DESCRIPTION",
+                    category="maintenance",
+                    urgency="low",
+                    area="PRIVATE OPEN AREA",
+                    whatsapp_number="070000555666",
+                    payment_mode="private quote",
+                    allow_trust_credit=False,
+                    status="open",
+                    created_at=now,
+                    expires_at=now + timedelta(hours=24),
+                ),
+                MarketplaceRequest(
+                    clan_id=3,
+                    user_id=1,
+                    title="OUTSIDE DEMAND TITLE",
+                    description="OUTSIDE DEMAND DESCRIPTION",
+                    category="outside",
+                    urgency="high",
+                    area="OUTSIDE DEMAND AREA",
+                    whatsapp_number="070000777888",
+                    payment_mode="outside quote",
+                    allow_trust_credit=True,
+                    status="fulfilled",
+                    created_at=now,
+                    expires_at=now + timedelta(hours=24),
+                ),
+            ]
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get(
+        "/trust-slips/verify/ACCESS-DEMAND-REQUESTS",
+        params={"decision_pack": "trade_check"},
+    )
+
+    assert response.status_code == 200, response.text
+    profile = response.json()["decision_pack_profile"]
+    extract = profile["evidence_extract"]
+    pointers = {row["key"]: row for row in extract["demand_request_outcome_pointers"]}
+    demand = pointers["demand_box_request_outcome"]
+    assert demand["status"] == "caution"
+    assert demand["evidence_count"] == 3
+    assert "3 Demand Box request outcome pointers found" in demand["value"]
+    assert "1 fulfilled or closed as met" in demand["value"]
+    assert "1 cancelled or withdrawn" in demand["value"]
+    assert "1 still open or pending" in demand["value"]
+    assert "3 carry service/category markers" in demand["value"]
+    assert "1 allowed trust-credit discussion" in demand["value"]
+    assert "do not expose requester identities" in extract["demand_request_outcome_boundary_note"]
+    assert "quotes" in extract["demand_request_outcome_boundary_note"]
+    assert "proof that the holder responded to" in extract["demand_request_outcome_boundary_note"]
+    assert any(signal["key"] == "demand_box_request_outcome_pointer" for signal in profile["relevant_signals"])
+
+    profile_text = str(profile)
+    assert "PRIVATE PLUMBING DEMAND TITLE" not in profile_text
+    assert "PRIVATE DEMAND DESCRIPTION" not in profile_text
+    assert "PRIVATE DEMAND AREA" not in profile_text
+    assert "070000111222" not in profile_text
+    assert "private cash quote" not in profile_text
+    assert "PRIVATE CANCELLED DEMAND" not in profile_text
+    assert "PRIVATE OPEN DEMAND" not in profile_text
+    assert "OUTSIDE DEMAND TITLE" not in profile_text
+    assert "OUTSIDE DEMAND DESCRIPTION" not in profile_text
+    assert "OUTSIDE DEMAND AREA" not in profile_text
+    assert "whatsapp_number" not in profile_text
+    assert "payment_mode" not in profile_text
+    assert "requester_email" not in profile_text
+    assert "responder_user_id" not in profile_text
     assert "trust_score" not in profile_text
 
 

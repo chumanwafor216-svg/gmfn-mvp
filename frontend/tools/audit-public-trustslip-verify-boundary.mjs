@@ -185,6 +185,12 @@ assertContains(
 );
 assertContains(
   "viewModel",
+  /type DecisionPackDemandRequestOutcomePointer[\s\S]*?demandRequestOutcomePointers: DecisionPackDemandRequestOutcomePointer\[\][\s\S]*?source\.demand_request_outcome_pointers[\s\S]*?demandRequestOutcomeBoundaryNote/,
+  "Public TrustSlip Verify view model must preserve aggregate Demand Box request-outcome pointer rows and their boundary note."
+);
+
+assertContains(
+  "viewModel",
   /type DecisionPackConfirmationPointer[\s\S]*?confirmationPointers: DecisionPackConfirmationPointer\[\][\s\S]*?source\.confirmation_pointers[\s\S]*?confirmationPointerBoundaryNote/,
   "Public TrustSlip Verify view model must preserve aggregate community witness outcome pointer rows and their boundary note."
 );
@@ -421,6 +427,12 @@ assertContains(
 );
 assertContains(
   "backendDecisionPacks",
+  /MarketplaceRequest[\s\S]*?DEMAND_REQUEST_OUTCOME_PACKS[\s\S]*?_decision_pack_demand_request_outcome_pointers[\s\S]*?demand_request_outcome_gap[\s\S]*?demand_box_request_outcome[\s\S]*?demand_request_outcome_pointers[\s\S]*?demand_request_outcome_boundary_note/,
+  "Backend Decision Pack evidence extract must surface aggregate Demand Box request outcomes without exposing request content, contacts, quotes, or responder/job proof overclaims."
+);
+
+assertContains(
+  "backendDecisionPacks",
   /CommunityConfirmationOutcome[\s\S]*?CommunityConfirmationRequest[\s\S]*?CommunityConfirmationResponse[\s\S]*?_decision_pack_confirmation_pointers[\s\S]*?community_confirmation_gap[\s\S]*?community_witness_outcome[\s\S]*?confirmation_pointers[\s\S]*?confirmation_pointer_boundary_note/,
   "Backend Decision Pack evidence extract must surface aggregate community witness outcome pointers without exposing responder identities or private notes."
 );
@@ -480,6 +492,12 @@ assertContains(
   /test_public_verify_trade_pack_surfaces_completed_work_customer_confirmation_without_private_details[\s\S]*?completed_work_customer_confirmation[\s\S]*?completed_work_boundary_note[\s\S]*?PRIVATE FIVE STAR REVIEW TEXT[\s\S]*?reviewer_user_id[\s\S]*?merchant_user_id[\s\S]*?trust_score/,
   "Backend tests must prove Decision Packs surface aggregate completed-work/customer-confirmation outcomes without exposing customer identities, review text, private job details, raw IDs, or trust scores."
 );
+assertContains(
+  "backendDecisionPackTests",
+  /test_public_verify_trade_pack_surfaces_demand_box_request_outcomes_without_private_request_details[\s\S]*?MarketplaceRequest[\s\S]*?demand_box_request_outcome[\s\S]*?demand_request_outcome_boundary_note[\s\S]*?PRIVATE PLUMBING DEMAND TITLE[\s\S]*?whatsapp_number[\s\S]*?responder_user_id[\s\S]*?trust_score/,
+  "Backend tests must prove Decision Packs surface aggregate Demand Box request outcomes without exposing request titles, descriptions, contacts, quote text, responder raw IDs, or trust scores."
+);
+
 assertContains(
   "backendDecisionPackTests",
   /test_public_verify_decision_pack_surfaces_aggregate_community_witness_outcomes_without_private_responder_details[\s\S]*?CommunityConfirmationRequest[\s\S]*?CommunityConfirmationResponse[\s\S]*?CommunityConfirmationOutcome[\s\S]*?community_witness_outcome[\s\S]*?confirmation_pointer_boundary_note[\s\S]*?Private witness note[\s\S]*?responder_user_id[\s\S]*?trust_score/,
@@ -572,6 +590,12 @@ assertContains(
   /decisionPackCompletedWorkPointers[\s\S]*?Completed work\/customer confirmation[\s\S]*?decisionPackCompletedWorkRows[\s\S]*?completedWorkBoundaryNote/,
   "Public TrustSlip paper must render aggregate completed-work/customer-confirmation outcomes separately with the customer privacy boundary."
 );
+assertContains(
+  "publicPaper",
+  /decisionPackDemandRequestOutcomePointers[\s\S]*?Demand Box request outcomes[\s\S]*?decisionPackDemandRequestOutcomeRows[\s\S]*?demandRequestOutcomeBoundaryNote/,
+  "Public TrustSlip paper must render aggregate Demand Box request outcomes separately with the request privacy and non-response-proof boundary."
+);
+
 assertContains(
   "publicPaper",
   /decisionPackConfirmationPointers[\s\S]*?Community witness outcomes[\s\S]*?decisionPackConfirmationPointerRows[\s\S]*?confirmationPointerBoundaryNote/,

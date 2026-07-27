@@ -5,7 +5,7 @@ from typing import Any, Mapping, Optional
 
 from sqlalchemy.orm import Session
 
-from app.db.models import ClanMembership, CommunityConfirmationDecision, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, CommunityConfirmationReviewCase, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceReview, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare
+from app.db.models import ClanMembership, CommunityConfirmationDecision, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, CommunityConfirmationReviewCase, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceRequest, MarketplaceReview, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare
 
 
 @dataclass(frozen=True)
@@ -1071,6 +1071,17 @@ CUSTOMER_CONFIRMED_VALUES = {"confirmed", "completed", "delivered", "received", 
 MARKETPLACE_REVIEW_POSITIVE_MIN_RATING = 4
 MARKETPLACE_REVIEW_CAUTION_MAX_RATING = 2
 
+DEMAND_REQUEST_OUTCOME_PACKS = {
+    "employment_decision",
+    "trade_check",
+    "supplier_decision",
+    "business_partnership",
+}
+DEMAND_REQUEST_FULFILLED_STATUSES = {"fulfilled", "completed", "closed", "resolved"}
+DEMAND_REQUEST_CANCELLED_STATUSES = {"cancelled", "canceled", "withdrawn"}
+DEMAND_REQUEST_OPEN_STATUSES = {"open", "active", "pending", "in_progress"}
+DEMAND_REQUEST_EXPIRED_STATUSES = {"expired", "stale"}
+
 
 def _claim_row(
     *,
@@ -1682,6 +1693,81 @@ def _decision_pack_completed_work_pointers(
     ]
 
 
+
+def _decision_pack_demand_request_outcome_pointers(
+    db: Session,
+    *,
+    holder_user_id: int,
+    pack_key: str,
+    active_community_ids: set[int],
+) -> list[dict[str, Any]]:
+    if pack_key not in DEMAND_REQUEST_OUTCOME_PACKS:
+        return []
+
+    request_query = db.query(MarketplaceRequest).filter(MarketplaceRequest.user_id == int(holder_user_id))
+    request_query = _filter_to_active_communities(request_query, MarketplaceRequest, active_community_ids=active_community_ids)
+    request_rows = request_query.order_by(MarketplaceRequest.created_at.desc(), MarketplaceRequest.id.desc()).limit(40).all()
+
+    if not request_rows:
+        return [
+            _record_pointer_row(
+                key="demand_request_outcome_gap",
+                label="Demand Box request outcomes",
+                status="gap",
+                value="No Demand Box request outcome pointer is visible for this Decision Pack yet.",
+                source="marketplace_requests",
+                count=0,
+                decision_use="Ask for Demand Box response records, quote-to-job history, customer confirmation, or live community confirmation before relying on demand-response claims.",
+            )
+        ]
+
+    fulfilled = 0
+    cancelled = 0
+    open_count = 0
+    expired = 0
+    category_markers = 0
+    trust_credit_allowed = 0
+    for row in request_rows:
+        status = _clean(getattr(row, "status", None), limit=32).lower()
+        if status in DEMAND_REQUEST_FULFILLED_STATUSES:
+            fulfilled += 1
+        elif status in DEMAND_REQUEST_CANCELLED_STATUSES:
+            cancelled += 1
+        elif status in DEMAND_REQUEST_OPEN_STATUSES:
+            open_count += 1
+        elif status in DEMAND_REQUEST_EXPIRED_STATUSES:
+            expired += 1
+        if _clean(getattr(row, "category", None), limit=80):
+            category_markers += 1
+        if bool(getattr(row, "allow_trust_credit", False)):
+            trust_credit_allowed += 1
+
+    value = f"{len(request_rows)} Demand Box request outcome pointer{'s' if len(request_rows) != 1 else ''} found"
+    if fulfilled:
+        value = f"{value}; {fulfilled} fulfilled or closed as met"
+    if cancelled:
+        value = f"{value}; {cancelled} cancelled or withdrawn"
+    if expired:
+        value = f"{value}; {expired} expired or stale"
+    if open_count:
+        value = f"{value}; {open_count} still open or pending"
+    if category_markers:
+        value = f"{value}; {category_markers} carry service/category markers"
+    if trust_credit_allowed:
+        value = f"{value}; {trust_credit_allowed} allowed trust-credit discussion"
+
+    return [
+        _record_pointer_row(
+            key="demand_box_request_outcome",
+            label="Demand Box request outcomes",
+            status="caution" if open_count or expired else "available",
+            value=value,
+            source="marketplace_requests",
+            count=len(request_rows),
+            decision_use="Use this as aggregate requester-side demand history only. It does not prove the holder responded to someone else, quoted for work, was hired, completed work, or will perform well in the future.",
+        )
+    ]
+
 def _decision_pack_fulfillment_outcome_pointers(
     db: Session,
     *,
@@ -2038,6 +2124,12 @@ def build_decision_pack_private_evidence_extract(
         pack_key=pack_key,
         active_community_ids=active_community_ids,
     )
+    demand_request_outcome_pointers = _decision_pack_demand_request_outcome_pointers(
+        db,
+        holder_user_id=int(holder_user_id),
+        pack_key=pack_key,
+        active_community_ids=active_community_ids,
+    )
     confirmation_pointers = _decision_pack_confirmation_pointers(
         db,
         holder_user_id=int(holder_user_id),
@@ -2069,6 +2161,8 @@ def build_decision_pack_private_evidence_extract(
         "fulfillment_outcome_boundary_note": "Fulfilment/correction outcome pointers are aggregate protected-trade evidence only. They do not expose trade codes, buyer or seller identities, item details, amounts, payment references, private notes, escrow, payout approval, delivery guarantees, product-quality proof, or future performance promises.",
         "completed_work_pointers": completed_work_pointers,
         "completed_work_boundary_note": "Completed-work/customer-confirmation pointers are aggregate work-outcome evidence only. They do not expose customer identities, reviewer identities, review text, notes, addresses, item details, prices, ratings by person, private metadata, licences, insurance, home-safety approval, or future work quality.",
+        "demand_request_outcome_pointers": demand_request_outcome_pointers,
+        "demand_request_outcome_boundary_note": "Demand Box request-outcome pointers are aggregate requester-side demand evidence only. They do not expose requester identities, responder identities, request titles, descriptions, areas, phone numbers, quotes, addresses, prices, private notes, Demand Box codes, or proof that the holder responded to, was hired for, or completed work.",
         "confirmation_pointers": confirmation_pointers,
         "confirmation_pointer_boundary_note": "Community witness outcomes are aggregate evidence pointers only. They do not expose responders, private notes, licences, guarantees, approvals, or final decisions.",
         "issue_resolution_pointers": issue_resolution_pointers,
@@ -2154,6 +2248,12 @@ def build_decision_pack_evidence_extract(
         pack_key=pack_key,
         active_community_ids=active_community_ids,
     )
+    demand_request_outcome_pointers = _decision_pack_demand_request_outcome_pointers(
+        db,
+        holder_user_id=int(holder_user_id),
+        pack_key=pack_key,
+        active_community_ids=active_community_ids,
+    )
     confirmation_pointers = _decision_pack_confirmation_pointers(
         db,
         holder_user_id=int(holder_user_id),
@@ -2167,7 +2267,7 @@ def build_decision_pack_evidence_extract(
     )
     return {
         "source": "trust_events_redacted_extract",
-        "source_note": "Aggregated from public-safe TrustEvent categories plus declared, connected-record, guarantee/support outcome, protected-trade fulfilment/correction outcome, completed-work/customer-confirmation outcome, community-witness outcome, and issue-resolution pointers where relevant. Raw TrustEvents, actor details, notes, metadata, amounts, payment references, borrower or guarantor identities, buyer or seller identities, trade codes, item details, customer or reviewer identities, review text, addresses, prices, responder identities, private dispute details, and private contacts are not exposed publicly.",
+        "source_note": "Aggregated from public-safe TrustEvent categories plus declared, connected-record, guarantee/support outcome, protected-trade fulfilment/correction outcome, completed-work/customer-confirmation outcome, Demand Box request-outcome, community-witness outcome, and issue-resolution pointers where relevant. Raw TrustEvents, actor details, notes, metadata, amounts, payment references, borrower or guarantor identities, buyer or seller identities, trade codes, item details, customer or reviewer identities, review text, addresses, prices, request titles, request descriptions, request areas, phone numbers, quotes, responder identities, private dispute details, and private contacts are not exposed publicly.",
         "evidence_scope": _decision_pack_evidence_scope(
             active_community_ids=active_community_ids,
             primary_clan_id=getattr(slip, "clan_id", None),
@@ -2183,6 +2283,8 @@ def build_decision_pack_evidence_extract(
         "fulfillment_outcome_boundary_note": "Fulfilment/correction outcome pointers are aggregate protected-trade evidence only. They do not expose trade codes, buyer or seller identities, item details, amounts, payment references, private notes, escrow, payout approval, delivery guarantees, product-quality proof, or future performance promises.",
         "completed_work_pointers": completed_work_pointers,
         "completed_work_boundary_note": "Completed-work/customer-confirmation pointers are aggregate work-outcome evidence only. They do not expose customer identities, reviewer identities, review text, notes, addresses, item details, prices, ratings by person, private metadata, licences, insurance, home-safety approval, or future work quality.",
+        "demand_request_outcome_pointers": demand_request_outcome_pointers,
+        "demand_request_outcome_boundary_note": "Demand Box request-outcome pointers are aggregate requester-side demand evidence only. They do not expose requester identities, responder identities, request titles, descriptions, areas, phone numbers, quotes, addresses, prices, private notes, Demand Box codes, or proof that the holder responded to, was hired for, or completed work.",
         "confirmation_pointers": confirmation_pointers,
         "confirmation_pointer_boundary_note": "Community witness outcomes are aggregate evidence pointers only. They do not expose responders, private notes, licences, guarantees, approvals, or final decisions.",
         "issue_resolution_pointers": issue_resolution_pointers,
@@ -2316,6 +2418,21 @@ def build_decision_pack_profile(
                 "decision_use": "Treat this as aggregate completed-work context. It is not a licence, insurance, home-safety approval, workmanship guarantee, or future work-quality proof.",
             }
         ]
+    demand_request_outcome_pointers = []
+    if isinstance(evidence_extract, Mapping) and isinstance(evidence_extract.get("demand_request_outcome_pointers"), list):
+        demand_request_outcome_pointers = [pointer for pointer in evidence_extract.get("demand_request_outcome_pointers", []) if isinstance(pointer, Mapping)]
+    demand_request_outcome_signal = []
+    if demand_request_outcome_pointers:
+        first_demand_pointer = demand_request_outcome_pointers[0]
+        demand_request_outcome_signal = [
+            {
+                "key": "demand_box_request_outcome_pointer",
+                "label": "Demand Box request outcome",
+                "status": _clean(first_demand_pointer.get("status"), limit=32) or "available",
+                "value": _clean(first_demand_pointer.get("value"), limit=260) or "Demand Box request outcome evidence is visible.",
+                "decision_use": "Treat this as aggregate requester-side demand history. It does not prove the holder responded to someone else, quoted for work, was hired, or completed work.",
+            }
+        ]
     confirmation_pointers = []
     if isinstance(evidence_extract, Mapping) and isinstance(evidence_extract.get("confirmation_pointers"), list):
         confirmation_pointers = [pointer for pointer in evidence_extract.get("confirmation_pointers", []) if isinstance(pointer, Mapping)]
@@ -2346,10 +2463,10 @@ def build_decision_pack_profile(
                 "decision_use": "Treat this as aggregate review status. It does not expose private dispute detail or make the final decision.",
             }
         ]
-    signals = expected_signals + declared_signal + record_pointer_signal + guarantee_outcome_signal + fulfillment_outcome_signal + completed_work_signal + confirmation_signal + issue_resolution_signal + visible_signals
+    signals = expected_signals + declared_signal + record_pointer_signal + guarantee_outcome_signal + fulfillment_outcome_signal + completed_work_signal + demand_request_outcome_signal + confirmation_signal + issue_resolution_signal + visible_signals
     signal_gaps = [
         signal
-        for signal in visible_signals + declared_signal + record_pointer_signal + guarantee_outcome_signal + fulfillment_outcome_signal + completed_work_signal + confirmation_signal + issue_resolution_signal
+        for signal in visible_signals + declared_signal + record_pointer_signal + guarantee_outcome_signal + fulfillment_outcome_signal + completed_work_signal + demand_request_outcome_signal + confirmation_signal + issue_resolution_signal
         if signal.get("status") in {"gap", "caution"}
     ]
     missing_gap_rows = [

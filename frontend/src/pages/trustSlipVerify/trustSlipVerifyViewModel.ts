@@ -80,6 +80,16 @@ type DecisionPackCompletedWorkPointer = {
   decisionUse: string;
 };
 
+type DecisionPackDemandRequestOutcomePointer = {
+  key: string;
+  label: string;
+  status: string;
+  value: string;
+  source: string;
+  evidenceCount: number | null;
+  decisionUse: string;
+};
+
 type DecisionPackConfirmationPointer = {
   key: string;
   label: string;
@@ -121,6 +131,8 @@ export type DecisionPackEvidenceExtractView = {
   fulfillmentOutcomeBoundaryNote: string;
   completedWorkPointers: DecisionPackCompletedWorkPointer[];
   completedWorkBoundaryNote: string;
+  demandRequestOutcomePointers: DecisionPackDemandRequestOutcomePointer[];
+  demandRequestOutcomeBoundaryNote: string;
   confirmationPointers: DecisionPackConfirmationPointer[];
   confirmationPointerBoundaryNote: string;
   issueResolutionPointers: DecisionPackIssueResolutionPointer[];
@@ -319,6 +331,7 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
   const guaranteeOutcomePointers = Array.isArray(source.guarantee_outcome_pointers) ? source.guarantee_outcome_pointers : [];
   const fulfillmentOutcomePointers = Array.isArray(source.fulfillment_outcome_pointers) ? source.fulfillment_outcome_pointers : [];
   const completedWorkPointers = Array.isArray(source.completed_work_pointers) ? source.completed_work_pointers : [];
+  const demandRequestOutcomePointers = Array.isArray(source.demand_request_outcome_pointers) ? source.demand_request_outcome_pointers : [];
   const confirmationPointers = Array.isArray(source.confirmation_pointers) ? source.confirmation_pointers : [];
   const issueResolutionPointers = Array.isArray(source.issue_resolution_pointers) ? source.issue_resolution_pointers : [];
   const evidenceScope = source.evidence_scope && typeof source.evidence_scope === "object" ? source.evidence_scope : {};
@@ -464,6 +477,28 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
     completedWorkBoundaryNote: firstTruthy(
       source.completed_work_boundary_note,
       "Completed-work/customer-confirmation pointers are aggregate work-outcome evidence only. They do not expose customer identities, reviewer identities, review text, notes, addresses, item details, prices, ratings by person, private metadata, licences, insurance, home-safety approval, or future work quality."
+    ),
+    demandRequestOutcomePointers: demandRequestOutcomePointers
+      .map((pointer: any) => ({
+        key: firstTruthy(pointer?.key, pointer?.label),
+        label: firstTruthy(pointer?.label, "Demand Box request outcomes"),
+        status: firstTruthy(pointer?.status, "not_shown"),
+        value: firstTruthy(
+          pointer?.value,
+          "No Demand Box request outcome pointer is visible for this Decision Pack yet."
+        ),
+        source: firstTruthy(pointer?.source, "marketplace_requests"),
+        evidenceCount: firstNumberLike(pointer?.evidence_count),
+        decisionUse: firstTruthy(
+          pointer?.decision_use,
+          "Use this as requester-side demand history only; ask for response, quote, job, or customer confirmation before relying."
+        ),
+      }))
+      .filter((pointer: DecisionPackDemandRequestOutcomePointer) => pointer.key || pointer.label)
+      .slice(0, 4),
+    demandRequestOutcomeBoundaryNote: firstTruthy(
+      source.demand_request_outcome_boundary_note,
+      "Demand Box request-outcome pointers are aggregate requester-side demand evidence only. They do not expose requester identities, responder identities, request titles, descriptions, areas, phone numbers, quotes, addresses, prices, private notes, Demand Box codes, or proof that the holder responded to, was hired for, or completed work."
     ),
     confirmationPointers: confirmationPointers
       .map((pointer: any) => ({

@@ -339,6 +339,12 @@ assertContains(
 );
 assertContains(
   "trustSlip",
+  /TrustSlipDecisionPackDemandRequestOutcomePointer[\s\S]*?demandRequestOutcomePointers[\s\S]*?extract\?\.demand_request_outcome_pointers[\s\S]*?privateDecisionPackDemandRequestOutcomePointers[\s\S]*?data-gsn-holder-decision-pack-demand-request-outcome-pointers="true"[\s\S]*?Demand Box request outcomes[\s\S]*?demandRequestOutcomeBoundaryNote/,
+  "TrustSlip holder private Decision Pack preview must show aggregate Demand Box request outcomes separately from TrustEvent categories."
+);
+
+assertContains(
+  "trustSlip",
   /TrustSlipDecisionPackConfirmationPointer[\s\S]*?confirmationPointers[\s\S]*?extract\?\.confirmation_pointers[\s\S]*?privateDecisionPackConfirmationPointers[\s\S]*?data-gsn-holder-decision-pack-confirmation-pointers="true"[\s\S]*?Community witness outcomes[\s\S]*?confirmationPointerBoundaryNote/,
   "TrustSlip holder private Decision Pack preview must show aggregate community witness outcomes separately from TrustEvent categories."
 );
