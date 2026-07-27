@@ -508,7 +508,7 @@ assertContains(
 
 assertContains(
   "trustSlip",
-  /data-gsn-trustslip-decision-boundary="compact"[\s\S]*?data-gsn-public-decision-pack-share="holder"[\s\S]*?Public Decision Pack link[\s\S]*?Share the selected public evidence lens[\s\S]*?Copies the selected Decision Pack question, evidence focus, and public verify link only[\s\S]*?debugId="trust-slip\.public-decision-pack\.copy-note"[\s\S]*?Copy pack note[\s\S]*?debugId="trust-slip\.public-decision-pack\.open"[\s\S]*?Open public pack/,
+  /data-gsn-trustslip-decision-boundary="compact"[\s\S]*?data-gsn-public-decision-pack-share="holder"[\s\S]*?TrustSlip share link[\s\S]*?Share this TrustSlip[\s\S]*?Copies a simple message and the public check link[\s\S]*?debugId="trust-slip\.public-decision-pack\.copy-note"[\s\S]*?Copy message[\s\S]*?debugId="trust-slip\.public-decision-pack\.open"[\s\S]*?Open link/,
   "TrustSlip holder page must expose a selected public Decision Pack link after the compact Decision Boundary without repeating private Passport or approval caveats as a separate footnote."
 );
 

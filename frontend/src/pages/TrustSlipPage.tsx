@@ -3874,7 +3874,7 @@ export default function TrustSlipPage() {
     void handleCopy(
       buildPublicDecisionPackShareText(),
       "Public Decision Pack note copied.",
-      "Selected Decision Pack link is not ready yet."
+      "This TrustSlip link is not ready yet."
     );
   }
 
@@ -4524,7 +4524,7 @@ export default function TrustSlipPage() {
                 <GsnLegacyIcon name="public-globe" size={30} />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ ...sectionLabel(), fontSize: isCompact ? 9 : 10 }}>
-                    Public Decision Pack link
+                    TrustSlip share link
                   </div>
                   <div
                     style={{
@@ -4535,7 +4535,7 @@ export default function TrustSlipPage() {
                       lineHeight: 1.16,
                     }}
                   >
-                    Share the selected public evidence lens
+                    Share this TrustSlip
                   </div>
                 </div>
               </div>
@@ -4548,7 +4548,7 @@ export default function TrustSlipPage() {
                   lineHeight: 1.35,
                 }}
               >
-                Copies the selected Decision Pack question, evidence focus, and public verify link only. Private preview categories stay separate unless you use the holder consent export below.
+                Copies a simple message and the public check link. Private details stay inside GSN unless you choose to share more.
               </div>
 
               <CardActionRow>
@@ -4560,7 +4560,7 @@ export default function TrustSlipPage() {
                   debugId="trust-slip.public-decision-pack.copy-note"
                   style={{ fontSize: isCompact ? 11 : 12 }}
                 >
-                  Copy pack note
+                  Copy message
                 </PrimaryButton>
                 {verifyPath ? (
                   <StableCtaLink
@@ -4573,20 +4573,20 @@ export default function TrustSlipPage() {
                     minWidth={isCompact ? undefined : 158}
                     debugId="trust-slip.public-decision-pack.open"
                   >
-                    Open public pack
+                    Open link
                   </StableCtaLink>
                 ) : (
                   <SubtleButton
                     type="button"
                     onClick={() =>
-                      showNotice("error", "Selected Decision Pack link is not ready yet.")
+                      showNotice("error", "This TrustSlip link is not ready yet.")
                     }
                     stableHeight={isCompact ? 50 : 48}
                     minWidth={isCompact ? undefined : 158}
                     debugId="trust-slip.public-decision-pack.open"
                     style={{ fontSize: isCompact ? 11 : 12 }}
                   >
-                    Open public pack
+                    Open link
                   </SubtleButton>
                 )}
               </CardActionRow>

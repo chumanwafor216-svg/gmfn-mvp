@@ -156300,3 +156300,32 @@ Verification run locally:
 
 Deployment:
 - Local only. Owner selected `1`; do not push/deploy unless the owner selects `2`.
+## 2026-07-27 - App-Led TrustSlip Flow Language
+
+- Scope: local-only copy simplification for the top mobile `Tools` TrustSlip flow and the matching TrustSlip holder share panel.
+- Owner direction: GSN is for underbanked and unbanked users, so the app must lead every step with simple choices and avoid making users understand the evidence machinery.
+- `frontend/src/layout/AppLayout.tsx`
+  - Changed purpose buttons from `Verify for work/housing/trade/support` to `For work`, `For housing`, `For trade`, and `For support`.
+  - Replaced `evidence lens`, `Evidence matrix`, and `Refresh` user-facing language with `Pick what this is for`, `GSN will use...`, and `Prepare`.
+  - Share text now says what GSN will show in plain language and keeps the boundary as `not an approval or guarantee`.
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - Simplified the holder share panel from `Public Decision Pack link` / `Share the selected public evidence lens` / `Copy pack note` / `Open public pack` to `TrustSlip share link` / `Share this TrustSlip` / `Copy message` / `Open link`.
+  - Link-not-ready errors now say `This TrustSlip link is not ready yet.`
+- `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+  - Updated the guard so the simpler holder share wording is protected.
+
+Unabated truth:
+- This is a language and flow-surface correction only. It does not change Decision Pack mappings, backend evidence, public verify routes, TrustSlip code generation, WhatsApp/contact storage, or consent rules.
+- The internal system still uses Decision Pack keys and evidence mapping; the user-facing surface hides that machinery.
+
+Verification run locally:
+- `npm --prefix frontend run lint`
+- `npm --prefix frontend run audit:trust-passport-trustslip-boundary`
+- `npm --prefix frontend run audit:dashboard-button-inventory`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run audit:gsn-visible-language`
+- `npm --prefix frontend run build`
+- `git diff --check` passed with only normal CRLF warnings.
+
+Deployment:
+- Local only so far. Do not push/deploy unless the owner selects `2`.

@@ -53,37 +53,37 @@ type TrustSlipSharePurpose = {
   label: string;
   decisionPack: string;
   purpose: string;
-  evidenceMatrix: string;
+  recordSummary: string;
 };
 
 const TRUST_SLIP_SHARE_PURPOSES: TrustSlipSharePurpose[] = [
   {
     key: "work",
-    label: "Verify for work",
+    label: "For work",
     decisionPack: "employment_decision",
-    purpose: "Show enough evidence to continue a work or employment conversation.",
-    evidenceMatrix: "role, service activity, community witness, Demand Box or shop trail",
+    purpose: "Help someone decide if you are ready for work.",
+    recordSummary: "work activity, shop or Demand Box records, and community support",
   },
   {
     key: "housing",
-    label: "Verify for housing",
+    label: "For housing",
     decisionPack: "housing_decision",
-    purpose: "Show community evidence for rent, co-living, responsibility, and issue handling.",
-    evidenceMatrix: "payment discipline, repayment, community conduct, issue-resolution pointers",
+    purpose: "Help a landlord or agent decide if you can be trusted as a tenant.",
+    recordSummary: "payment behaviour, promise keeping, community conduct, and issue handling",
   },
   {
     key: "trade",
-    label: "Verify for trade",
+    label: "For trade",
     decisionPack: "trade_check",
-    purpose: "Show who has seen this person trade, serve, or complete practical work.",
-    evidenceMatrix: "shop, advert, Demand Box, completed-work or community witness pointers",
+    purpose: "Help someone decide if they can trade or do business with you.",
+    recordSummary: "shop activity, adverts, requests, completed work, and community witnesses",
   },
   {
     key: "support",
-    label: "Verify for support",
+    label: "For support",
     decisionPack: "guarantor_decision",
-    purpose: "Show responsibility evidence before someone stands for, supports, or guarantees risk.",
-    evidenceMatrix: "repayment, support exposure, contribution discipline, community responsibility",
+    purpose: "Help someone decide if they should support or stand for you.",
+    recordSummary: "repayment, contributions, responsibility, and people who have stood with you",
   },
 ];
 
@@ -2199,10 +2199,10 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
     const publicPath = publicTrustSlipCheckPath(selectedTrustSlipSharePurpose);
     const publicUrl = absoluteFrontendUrl(publicPath);
     const text = [
-      `GSN TrustSlip check: ${selectedTrustSlipSharePurpose.label}`,
+      `GSN TrustSlip: ${selectedTrustSlipSharePurpose.label}`,
       selectedTrustSlipSharePurpose.purpose,
-      `Evidence matrix: ${selectedTrustSlipSharePurpose.evidenceMatrix}`,
-      "Open the link and enter the TrustSlip code I provide. This is evidence for judgement, not approval or guarantee.",
+      `GSN will show: ${selectedTrustSlipSharePurpose.recordSummary}.`,
+      "Open the link and enter the TrustSlip code I provide. This helps your decision, but it is not an approval or guarantee.",
     ].join("\n");
 
     try {
@@ -2615,7 +2615,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
             >
               {taskMode
                 ? "Finish this step first, or choose where you want to go next."
-                : "Choose the TrustSlip question first. GSN will open the right evidence lens before you share."}
+                : "Pick what this is for. GSN will prepare the right TrustSlip."}
             </div>
 
             {taskMode ? (
@@ -2673,7 +2673,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
                       gap: 9,
                     }}
                   >
-                    <div style={actionsTitle()}>Share TrustSlip for</div>
+                    <div style={actionsTitle()}>What is this for?</div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
                       {TRUST_SLIP_SHARE_PURPOSES.map((purpose) => {
                         const active = purpose.key === selectedTrustSlipSharePurpose.key;
@@ -2719,7 +2719,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
                         {selectedTrustSlipSharePurpose.purpose}
                       </div>
                       <div style={{ color: "#254E77", fontWeight: 850, fontSize: 11.5, lineHeight: 1.35 }}>
-                        Evidence: {selectedTrustSlipSharePurpose.evidenceMatrix}
+                        GSN will use {selectedTrustSlipSharePurpose.recordSummary}.
                       </div>
                     </div>
 
@@ -2748,7 +2748,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
                         debugId="app-layout.tools.trustslip-refresh"
                         style={actionsLink(false, false)}
                       >
-                        Refresh
+                        Prepare
                       </StableCtaLink>
                       <StableButton
                         type="button"
