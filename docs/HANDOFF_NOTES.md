@@ -1,3 +1,40 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Authenticated route-load latency reduction
+
+Owner trigger:
+- Owner reported some pages taking 15-25 seconds to open and asked whether the lag can be reduced.
+
+Unabated truth:
+- This fixes avoidable frontend delay, not every possible delay source. If Render or the API cold-starts, a first request can still be slow.
+- The production build still shows large chunks for Dashboard, Marketplace, TrustSlip verification, and Community Domain. Route preloading improves navigation after the shell settles; deeper long-term work would split those large page modules internally.
+- The startup timing audit now passes after the pointerdown route-warming follow-up: warm shell 3404ms, warm Dashboard 3678ms, auth-retry Dashboard 7724ms in the mocked mobile timing audit.
+
+Changed:
+- `frontend/src/components/RequireAuth.tsx`
+  - Parallelized the authenticated startup identity read and current-community read so they no longer stack serial waits before the page shell appears.
+- `frontend/src/lib/api.ts`
+  - Increased short-lived startup identity/community read caches to 15 seconds so normal in-app navigation does not keep refetching the same startup context.
+- `frontend/src/lib/routePreload.ts`
+  - Added a small authenticated-route chunk preloader for core pages.
+  - Respects data-saver and very slow network signals.
+- `frontend/src/layout/AppLayout.tsx`
+  - Idle-preloads the core authenticated route chunks after the app shell mounts.
+  - Warms routes on focus, desktop hover, and guarded pointerdown without adding mobile touch handlers that could double-fire.
+- `frontend/tools/audit-startup-root-boundary.mjs`
+  - Added guards for parallel auth/community startup reads, warmer startup cache, route preloading, and data-saver safety.
+
+Verification:
+- Passed `node --check frontend\tools\audit-startup-root-boundary.mjs`.
+- Passed `npm --prefix frontend run audit:startup-root-boundary`.
+- Passed `npm --prefix frontend run lint`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `npm --prefix frontend run audit:startup-timing` outside the sandbox after sandbox `EPERM` blocked Vite/esbuild spawn.
+
+Deployment:
+- Local commit only. Do not push/deploy unless the owner selects `2` or explicitly says push/deploy.
+
+Next recommended step:
+- If real phone testing still shows 15-25 seconds after deploy, inspect backend/API latency and Render cold-start behavior, then split the largest frontend chunks: `CommunityDomainDashboardPage`, `DashboardPage`, and `MarketplacePage`.
 ## CURRENT LOCAL STATE - 2026-07-27 - Trust Command Centre guidance decongestion slice
 
 Owner trigger:

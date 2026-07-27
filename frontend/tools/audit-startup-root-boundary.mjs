@@ -102,8 +102,26 @@ assertContains(
 
 assertContains(
   "src/components/RequireAuth.tsx",
-  /const currentClan = me[\s\S]*?getCurrentClan\(\{[\s\S]*?timeoutMs: SESSION_GATE_TIMEOUT_MS/,
-  "Authenticated route guard must skip community context when identity did not resolve."
+  /Promise\.allSettled\(\[[\s\S]*?getMeWithStoredTokenRetry\(tok\)[\s\S]*?getCurrentClan\(\{[\s\S]*?timeoutMs: SESSION_GATE_TIMEOUT_MS[\s\S]*?const currentClan =[\s\S]*?me && currentClanResult\.status === "fulfilled"/,
+  "Authenticated route guard must parallelize identity and community reads, then ignore community context when identity did not resolve."
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /const STARTUP_READ_CACHE_MS = 15000;/,
+  "Startup identity/community reads should remain warm long enough for normal app navigation."
+);
+
+assertContains(
+  "src/layout/AppLayout.tsx",
+  /preloadCoreAppRoutes\(\);/,
+  "Authenticated app shell should idle-preload core route chunks after sign-in."
+);
+
+assertContains(
+  "src/lib/routePreload.ts",
+  /connection\?\.saveData[\s\S]*?effectiveType !== "slow-2g" && effectiveType !== "2g"/,
+  "Route chunk preloading must respect data-saver and very slow network signals."
 );
 
 assertContains(

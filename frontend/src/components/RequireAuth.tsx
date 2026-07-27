@@ -302,20 +302,20 @@ export default function RequireAuth({ children, requireRole }: Props) {
           return;
         }
 
-        let me: any = null;
-        let meError: unknown = null;
-
-        try {
-          me = await getMeWithStoredTokenRetry(tok);
-        } catch (error) {
-          meError = error;
-        }
-
-        const currentClan = me
-          ? await getCurrentClan({
-              timeoutMs: SESSION_GATE_TIMEOUT_MS,
-            }).catch(() => null)
-          : null;
+        const [meResult, currentClanResult] = await Promise.allSettled([
+          getMeWithStoredTokenRetry(tok),
+          getCurrentClan({
+            timeoutMs: SESSION_GATE_TIMEOUT_MS,
+          }),
+        ]);
+        const me =
+          meResult.status === "fulfilled" ? meResult.value : null;
+        const meError =
+          meResult.status === "rejected" ? meResult.reason : null;
+        const currentClan =
+          me && currentClanResult.status === "fulfilled"
+            ? currentClanResult.value
+            : null;
 
         if (!me) {
           const status = httpStatus(meError);

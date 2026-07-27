@@ -13,6 +13,7 @@ import { currentPath, isSafeInternalPath } from "../lib/nav";
 import { routeWithCommunity } from "../lib/appRoutes";
 import { communityIdFromSearch } from "../lib/communityRouteContext";
 import { publicShopPath } from "../lib/publicLinks";
+import { preloadCoreAppRoutes, preloadRouteForPath } from "../lib/routePreload";
 import { gmfnBrand } from "../styles/gmfnBrand";
 
 type NavLinkItem = {
@@ -1806,6 +1807,10 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
   }, [refreshIdentityContext]);
 
   useEffect(() => {
+    preloadCoreAppRoutes();
+  }, []);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
 
     function handleResize() {
@@ -2043,6 +2048,10 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
 
   function closeActionsAfterNavigation() {
     window.setTimeout(() => setIsActionsOpen(false), 0);
+  }
+
+  function warmRouteBeforeNavigation(to: string): void {
+    preloadRouteForPath(contextualizeAppNavTarget(to, activeCommunityId));
   }
 
   function handleLogout() {
@@ -2319,6 +2328,9 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
                             )}
                             kind="soft"
                             disabled={!!item.disabled}
+                            onFocus={() => warmRouteBeforeNavigation(item.to)}
+                            onPointerDown={() => warmRouteBeforeNavigation(item.to)}
+                            onPointerEnter={() => warmRouteBeforeNavigation(item.to)}
                             debugId={`app-layout.desktop-nav.${group.key}.${item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
                             style={navItem(
                               isItemActive(item, location.pathname, location.search),
@@ -2498,6 +2510,9 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
                       kind="soft"
                       disabled={!!item.disabled}
                       onClick={closeDrawerAfterNavigation}
+                      onFocus={() => warmRouteBeforeNavigation(item.to)}
+                      onPointerDown={() => warmRouteBeforeNavigation(item.to)}
+                      onPointerEnter={() => warmRouteBeforeNavigation(item.to)}
                       debugId={`app-layout.drawer.${group.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.${item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
                       style={
                         group.variant === "tools"
@@ -2627,6 +2642,9 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
                     kind="secondary"
                     disabled={!!item.disabled}
                     onClick={closeActionsAfterNavigation}
+                    onFocus={() => warmRouteBeforeNavigation(item.to)}
+                    onPointerDown={() => warmRouteBeforeNavigation(item.to)}
+                    onPointerEnter={() => warmRouteBeforeNavigation(item.to)}
                     debugId={`app-layout.page-action.${item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
                     style={actionsLink(
                       isItemActive(item, location.pathname, location.search),
@@ -2745,6 +2763,9 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
                         to={selectedTrustSlipPurposePath}
                         kind="secondary"
                         onClick={closeActionsAfterNavigation}
+                        onFocus={() => warmRouteBeforeNavigation(selectedTrustSlipPurposePath)}
+                        onPointerDown={() => warmRouteBeforeNavigation(selectedTrustSlipPurposePath)}
+                        onPointerEnter={() => warmRouteBeforeNavigation(selectedTrustSlipPurposePath)}
                         debugId="app-layout.tools.trustslip-refresh"
                         style={actionsLink(false, false)}
                       >
@@ -2812,6 +2833,9 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
               to={contextualizeAppNavTarget(item.to, activeCommunityId)}
               kind="soft"
               disabled={!!item.disabled}
+              onFocus={() => warmRouteBeforeNavigation(item.to)}
+              onPointerDown={() => warmRouteBeforeNavigation(item.to)}
+              onPointerEnter={() => warmRouteBeforeNavigation(item.to)}
               data-gmfn-bottom-nav-item="true"
               data-bottom-nav-active={
                 isItemActive(item, location.pathname, location.search)
