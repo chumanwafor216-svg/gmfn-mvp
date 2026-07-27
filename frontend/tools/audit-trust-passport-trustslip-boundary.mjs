@@ -278,12 +278,12 @@ assertContains(
 );
 assertContains(
   "trustSlip",
-  /const TRUST_SLIP_UI_STORAGE_KEY = "gmfn\.trustSlip\.sections\.v6";/,
+  /const TRUST_SLIP_UI_STORAGE_KEY = "gmfn\.trustSlip\.sections\.v7";/,
   "TrustSlip holder page must reset old persisted open mobile section states after collapsing the holder paper details."
 );
 assertContains(
   "trustSlip",
-  /function defaultCollapseState\(\): CollapseState \{[\s\S]*?summary: true,[\s\S]*?reader: true,[\s\S]*?practicalEvidence: true,[\s\S]*?merchantVerify: true,[\s\S]*?evidence: true,[\s\S]*?notes: true,/,
+  /function defaultCollapseState\(\): CollapseState \{[\s\S]*?summary: true,[\s\S]*?reader: true,[\s\S]*?decisionPackMechanics: true,[\s\S]*?decisionPackPrivatePreview: true,[\s\S]*?practicalEvidence: true,[\s\S]*?merchantVerify: true,[\s\S]*?evidence: true,[\s\S]*?notes: true,/,
   "TrustSlip holder page must keep repeated paper details and secondary evidence lanes collapsed by default."
 );
 
@@ -328,6 +328,15 @@ assertContains(
   "trustSlip",
   /data-gsn-trustslip-holder-full-details=\{collapsed\.summary \? "collapsed" : "open"\}[\s\S]*?Full paper details[\s\S]*?debugId="trust-slip\.toggle-summary"[\s\S]*?debugId="trust-slip\.copy-gmfn-id"[\s\S]*?debugId="trust-slip\.print"[\s\S]*?debugId="trust-slip\.copy-snapshot"/,
   "TrustSlip holder page must move secondary copy, print, and snapshot controls into the collapsed Full paper details lane."
+);assertContains(
+  "trustSlip",
+  /data-gsn-trustslip-decision-pack-mechanics=\{[\s\S]*?collapsed\.decisionPackMechanics \? "collapsed" : "open"[\s\S]*?Pack evidence mechanics[\s\S]*?debugId="trust-slip\.toggle-decision-pack-mechanics"[\s\S]*?display: isCompact && collapsed\.decisionPackMechanics \? "none" : "grid"[\s\S]*?data-gsn-trustslip-decision-boundary="compact"[\s\S]*?display: isCompact && collapsed\.decisionPackMechanics \? "none" : "grid"/,
+  "TrustSlip holder Decision Pack mechanics must stay collapsed on phone while desktop keeps the evidence rows and boundary visible."
+);
+assertContains(
+  "trustSlip",
+  /data-gsn-trustslip-private-preview-drawer=\{[\s\S]*?collapsed\.decisionPackPrivatePreview \? "collapsed" : "open"[\s\S]*?Holder preview and history[\s\S]*?debugId="trust-slip\.toggle-private-decision-pack-preview"[\s\S]*?data-gsn-holder-private-decision-pack-evidence="true"[\s\S]*?display: isCompact && collapsed\.decisionPackPrivatePreview \? "none" : "grid"[\s\S]*?data-gsn-decision-pack-access-ledger="holder"[\s\S]*?display: isCompact && collapsed\.decisionPackPrivatePreview \? "none" : "grid"/,
+  "TrustSlip holder private preview, consent history, and access ledger must stay behind one phone drawer."
 );assertContains(
   "trustSlip",
   /data-gsn-trustslip-holder-practical-evidence=\{[\s\S]*?isCompact && collapsed\.practicalEvidence \? "collapsed" : "open"[\s\S]*?Practical evidence summary[\s\S]*?debugId="trust-slip\.toggle-practical-evidence"[\s\S]*?!isCompact \|\| !collapsed\.practicalEvidence \?/,

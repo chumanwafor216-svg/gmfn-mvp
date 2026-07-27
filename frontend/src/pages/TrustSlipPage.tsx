@@ -72,6 +72,8 @@ type CollapseState = {
   useCases: boolean;
   summary: boolean;
   reader: boolean;
+  decisionPackMechanics: boolean;
+  decisionPackPrivatePreview: boolean;
   practicalEvidence: boolean;
   merchantVerify: boolean;
   merchantView: boolean;
@@ -527,7 +529,7 @@ type CommunityConfirmationOutcome = {
   } | null;
 };
 
-const TRUST_SLIP_UI_STORAGE_KEY = "gmfn.trustSlip.sections.v6";
+const TRUST_SLIP_UI_STORAGE_KEY = "gmfn.trustSlip.sections.v7";
 const GSN_EXEC_SUMMARY_URL = "/GSN_FINAL_WHITE.pdf";
 const TRUST_SLIP_MOBILE_SCROLL_CLEARANCE = 116;
 const FETCH_FIRST_JSON_TIMEOUT_MS = 30000;
@@ -1474,6 +1476,8 @@ function defaultCollapseState(): CollapseState {
     useCases: true,
     summary: true,
     reader: true,
+    decisionPackMechanics: true,
+    decisionPackPrivatePreview: true,
     practicalEvidence: true,
     merchantVerify: true,
     merchantView: true,
@@ -1492,6 +1496,8 @@ function normalizeCollapseState(raw: any): CollapseState {
     useCases: Boolean(raw?.useCases ?? base.useCases),
     summary: Boolean(raw?.summary ?? base.summary),
     reader: Boolean(raw?.reader ?? base.reader),
+    decisionPackMechanics: Boolean(raw?.decisionPackMechanics ?? base.decisionPackMechanics),
+    decisionPackPrivatePreview: Boolean(raw?.decisionPackPrivatePreview ?? base.decisionPackPrivatePreview),
     practicalEvidence: Boolean(raw?.practicalEvidence ?? base.practicalEvidence),
     merchantVerify: Boolean(raw?.merchantVerify ?? base.merchantVerify),
     merchantView: Boolean(raw?.merchantView ?? base.merchantView),
@@ -4312,9 +4318,52 @@ export default function TrustSlipPage() {
               </div>
             )}
 
+            {isCompact ? (
+              <div
+                data-gsn-trustslip-decision-pack-mechanics={
+                  collapsed.decisionPackMechanics ? "collapsed" : "open"
+                }
+                style={{
+                  borderRadius: 14,
+                  border: "1px solid rgba(37,78,119,0.12)",
+                  background: "#FFFFFF",
+                  padding: "9px 10px",
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1fr) auto",
+                  gap: 8,
+                  alignItems: "center",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ ...sectionLabel(), fontSize: 9 }}>
+                    Pack evidence mechanics
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 2,
+                      color: "#334155",
+                      fontSize: 11,
+                      fontWeight: 850,
+                      lineHeight: 1.28,
+                    }}
+                  >
+                    Open for expected evidence, connected sources, gaps, and limits.
+                  </div>
+                </div>
+                <SubtleButton
+                  onClick={() => toggleSection("decisionPackMechanics")}
+                  stableHeight={44}
+                  style={collapseToggle()}
+                  debugId="trust-slip.toggle-decision-pack-mechanics"
+                >
+                  {collapsed.decisionPackMechanics ? "Open" : "Hide"}
+                </SubtleButton>
+              </div>
+            ) : null}
+
             <div
               style={{
-                display: "grid",
+                display: isCompact && collapsed.decisionPackMechanics ? "none" : "grid",
                 gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
                 gap: 8,
               }}
@@ -4362,7 +4411,7 @@ export default function TrustSlipPage() {
                 border: "1px solid rgba(214,170,69,0.28)",
                 background: "rgba(255,253,247,0.98)",
                 padding: isCompact ? 10 : 12,
-                display: "grid",
+                display: isCompact && collapsed.decisionPackMechanics ? "none" : "grid",
                 gap: 8,
               }}
             >
@@ -4532,6 +4581,49 @@ export default function TrustSlipPage() {
 
             </div>
 
+            {isCompact ? (
+              <div
+                data-gsn-trustslip-private-preview-drawer={
+                  collapsed.decisionPackPrivatePreview ? "collapsed" : "open"
+                }
+                style={{
+                  borderRadius: 14,
+                  border: "1px solid rgba(214,170,69,0.22)",
+                  background: "#FFFDF7",
+                  padding: "9px 10px",
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1fr) auto",
+                  gap: 8,
+                  alignItems: "center",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ ...sectionLabel(), fontSize: 9 }}>
+                    Holder preview and history
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 2,
+                      color: "#334155",
+                      fontSize: 11,
+                      fontWeight: 850,
+                      lineHeight: 1.28,
+                    }}
+                  >
+                    Open for private preview, consent exports, and public read history.
+                  </div>
+                </div>
+                <SubtleButton
+                  onClick={() => toggleSection("decisionPackPrivatePreview")}
+                  stableHeight={44}
+                  style={collapseToggle()}
+                  debugId="trust-slip.toggle-private-decision-pack-preview"
+                >
+                  {collapsed.decisionPackPrivatePreview ? "Open" : "Hide"}
+                </SubtleButton>
+              </div>
+            ) : null}
+
             <div
               data-gsn-holder-private-decision-pack-evidence="true"
               style={{
@@ -4539,7 +4631,7 @@ export default function TrustSlipPage() {
                 border: "1px solid rgba(214,170,69,0.24)",
                 background: "linear-gradient(180deg, #FFFDF7 0%, #F8FBFF 100%)",
                 padding: isCompact ? 11 : 13,
-                display: "grid",
+                display: isCompact && collapsed.decisionPackPrivatePreview ? "none" : "grid",
                 gap: 9,
               }}
             >
@@ -5355,7 +5447,7 @@ export default function TrustSlipPage() {
                 border: "1px solid rgba(37,78,119,0.12)",
                 background: "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)",
                 padding: isCompact ? 11 : 13,
-                display: "grid",
+                display: isCompact && collapsed.decisionPackPrivatePreview ? "none" : "grid",
                 gap: 9,
               }}
             >

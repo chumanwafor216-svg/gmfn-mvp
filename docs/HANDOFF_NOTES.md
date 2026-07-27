@@ -156241,3 +156241,14 @@ Next recommended step:
 - No backend evidence, Decision Pack mapping, public verify route, Trust Passport exposure, landlord/contact policy, scoring, or action inventory was changed.
 - Verification run locally: eslint for TrustSlipPage/audit/smoke files, audit:trust-passport-trustslip-boundary, audit:button-stability, audit:protected-button-freeze, smoke:trust-passport-trustslip-boundary after elevated rerun, git diff --check, and npm --prefix frontend run build passed. The first smoke attempt was blocked by sandbox spawn EPERM before the elevated rerun.
 - Owner selected 1, so this was not pushed or deployed in this slice.
+
+## 2026-07-27 - TrustSlip Holder Decision Pack Phone Drawers
+
+- Scope: local-only signed-in TrustSlip holder page phone-density correction.
+- Kept the Decision Pack menu and public share/open actions visible, but collapsed lower-priority Decision Pack mechanics on phone: expected evidence, connected GSN sources, architecture gaps, purpose-specific community ask, and Decision Boundary.
+- Collapsed the private holder preview, consent export controls/history, and public-read access ledger behind one phone drawer while keeping those sections open on desktop.
+- Added `decisionPackMechanics` and `decisionPackPrivatePreview` to the TrustSlip collapse state and bumped `gmfn.trustSlip.sections` from v6 to v7 so older persisted open states do not reopen the phone drawers.
+- Updated the Trust Passport / TrustSlip boundary audit and browser smoke to cage both phone drawers while preserving public pack share/open actions.
+- No backend evidence, Decision Pack catalogue/mapping, public verify route, Trust Passport exposure, landlord/contact policy, scoring, or button/action inventory was changed.
+- Verification run locally: eslint for TrustSlipPage/audit/smoke files, audit:trust-passport-trustslip-boundary, audit:button-stability, audit:protected-button-freeze, smoke:trust-passport-trustslip-boundary after elevated run, and npm --prefix frontend run build passed.
+- Owner selected 1, so this was not pushed or deployed in this slice.

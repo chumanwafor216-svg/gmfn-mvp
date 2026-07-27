@@ -737,16 +737,46 @@ async function runTrustSlipScenario(browser, baseURL) {
     "Is there enough evidence to continue an employment conversation?"
   );
   await expect(selectedPackSummary).toContainText("Role, consistency");
+  const mechanicsDrawer = state.page.locator(
+    '[data-gsn-trustslip-decision-pack-mechanics="collapsed"]'
+  );
+  await expect(mechanicsDrawer).toHaveCount(1);
+  await expect(mechanicsDrawer).toContainText("Pack evidence mechanics");
+  await expect(mechanicsDrawer).toContainText(
+    "Open for expected evidence, connected sources, gaps, and limits."
+  );
   await assertTrustSlipQrCarriesSelectedDecisionPack(state.page, baseURL);
   const decisionBoundary = state.page.locator(
     '[data-gsn-trustslip-decision-boundary="compact"]'
   );
+  await expect(decisionBoundary).toBeHidden();
+  await state.page.locator('[data-cta-id="trust-slip.toggle-decision-pack-mechanics"]').click();
+  await expect(
+    state.page.locator('[data-gsn-trustslip-decision-pack-mechanics="open"]')
+  ).toHaveCount(1);
+  await expect(decisionBoundary).toBeVisible();
   await expect(decisionBoundary).toContainText("Decision Boundary");
   await expect(decisionBoundary).toContainText("Public link");
   await expect(decisionBoundary).toContainText("Private preview");
   await expect(decisionBoundary).toContainText("Consent log");
   await expect(decisionBoundary).toContainText("Final decision");
   await expect(decisionBoundary).toContainText("does not remove risk");
+  const privatePreviewDrawer = state.page.locator(
+    '[data-gsn-trustslip-private-preview-drawer="collapsed"]'
+  );
+  await expect(privatePreviewDrawer).toHaveCount(1);
+  await expect(privatePreviewDrawer).toContainText("Holder preview and history");
+  await expect(privatePreviewDrawer).toContainText(
+    "Open for private preview, consent exports, and public read history."
+  );
+  await expect(state.page.locator('[data-gsn-holder-private-decision-pack-evidence="true"]')).toBeHidden();
+  await expect(state.page.locator('[data-gsn-decision-pack-access-ledger="holder"]')).toBeHidden();
+  await state.page.locator('[data-cta-id="trust-slip.toggle-private-decision-pack-preview"]').click();
+  await expect(
+    state.page.locator('[data-gsn-trustslip-private-preview-drawer="open"]')
+  ).toHaveCount(1);
+  await expect(state.page.locator('[data-gsn-holder-private-decision-pack-evidence="true"]')).toBeVisible();
+  await expect(state.page.locator('[data-gsn-decision-pack-access-ledger="holder"]')).toBeVisible();
   await expect(state.page.getByText("This TrustSlip confirms", { exact: true })).toHaveCount(1);
   await expect(state.page.getByText("This TrustSlip does not confirm", { exact: true })).toHaveCount(1);
   await state.page.locator("summary").filter({ hasText: "More security details" }).first().click();
@@ -1012,7 +1042,6 @@ async function main() {
         "Evidence still building",
         "Practical evidence summary",
         "Open for wider evidence context after the main TrustSlip paper.",
-        "No community activity recorded yet",
         "Joined / witness not started",
       ],
     });
