@@ -362,7 +362,7 @@ assertContains(
 );
 assertContains(
   "decisionMatrix",
-  /Employment[\s\S]*?Demand Box[\s\S]*?Housing[\s\S]*?previous landlord[\s\S]*?Trade or Skilled Work[\s\S]*?Customer-confirmed completed-job record[\s\S]*?Backend parity/,
+  /Employment[\s\S]*?Demand Box[\s\S]*?Housing[\s\S]*?Community-living conduct[\s\S]*?Housing conduct confirmation question[\s\S]*?Trade or Skilled Work[\s\S]*?Customer-confirmed completed-job record[\s\S]*?Backend parity/,
   "Decision Pack evidence matrix doc must preserve the owner examples and missing-app architecture gaps."
 );
 

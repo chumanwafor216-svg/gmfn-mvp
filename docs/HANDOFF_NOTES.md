@@ -1,12 +1,12 @@
 ## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack housing conduct readiness correction
 
 Owner trigger:
-- Owner clarified that housing decisions should not be centred on previous landlord references. The real substance is whether existing community behaviour supports an inference that a person can live with others, keep obligations, maintain responsibility, and avoid or resolve issues.
+- Owner clarified that housing decisions should not be centred on previous landlord references. The real substance is whether existing community behaviour supports an inference that a person can live with others, keep obligations, show responsibility, and avoid or resolve issues.
 
 Unabated truth:
 - This correction reframes the housing pointer from landlord/reference-first to housing conduct/readiness-first.
 - The engine now counts public-safe community conduct TrustEvents alongside repayment, pool/contribution, housing Community Confirmation, witness outcome, and issue-review records.
-- It still does not prove tenancy behaviour, property care, co-living success, landlord approval, legal tenancy status, right-to-rent, affordability, tenancy approval, rent guarantee, or future conduct.
+- It still does not prove tenancy behaviour, co-living success, landlord approval, legal tenancy status, right-to-rent, affordability, tenancy approval, rent guarantee, or future conduct.
 - Devil's advocate: this is an inference aid, not a tenant certificate. A strong reader can use these behaviours as evidence that the person is a team player and keeps obligations, but GSN must leave the final housing decision to the reader and live witnesses.
 
 Changed after dc120af8:
@@ -24,7 +24,7 @@ Changed after dc120af8:
 - frontend/tools/audit-trust-passport-trustslip-boundary.mjs
   - Audit guards now expect housing conduct/readiness and inference boundary language.
 - docs/GSN_DECISION_PACK_EVIDENCE_MATRIX.md
-  - Matrix now states landlord/accommodation references are optional corroboration, while the main housing question is community-living conduct plus payment/support/issue-resolution evidence.
+  - Matrix now states the main housing question is community-living conduct plus payment/support/issue-resolution evidence; deeper landlord/accommodation inspection is outside this level for now.
 
 Verification:
 - Passed python -m py_compile gmfn_backend\app\services\trust_slip_decision_packs.py gmfn_backend\tests\test_trust_slip_boundary_controls.py
@@ -40,7 +40,7 @@ Deployment:
 - Local only so far; do not push/deploy unless the owner explicitly selects push/deploy.
 
 Next recommended step:
-- Verify and commit this correction, then continue with structured housing conduct witness answers and optional external accommodation reference links.
+- Verify and commit this correction. Stop the housing layer here unless the owner later asks for a deeper housing-specific module.
 
 ## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack housing-reference readiness pointers
 

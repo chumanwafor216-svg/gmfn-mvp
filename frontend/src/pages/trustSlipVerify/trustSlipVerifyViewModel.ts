@@ -445,7 +445,7 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
       .slice(0, 4),
     housingReferenceBoundaryNote: firstTruthy(
       source.housing_reference_boundary_note,
-      "Housing conduct/readiness pointers are aggregate community-living and housing-context evidence only. They support reader inference; they do not prove tenancy behaviour, property care, co-living success, landlord approval, legal tenancy status, right-to-rent checks, affordability decisions, tenancy approval, guaranteed rent, or future conduct. They do not expose landlords, accommodation providers, addresses, rent amounts, payment references, private witness notes, or allegations."
+      "Housing conduct/readiness pointers are aggregate community-living and housing-context evidence only. They support reader inference; they do not prove tenancy behaviour, co-living success, landlord approval, legal tenancy status, right-to-rent checks, affordability decisions, tenancy approval, guaranteed rent, or future conduct. They do not expose landlords, accommodation providers, addresses, rent amounts, payment references, private witness notes, or allegations."
     ),
     guaranteeOutcomePointers: guaranteeOutcomePointers
       .map((pointer: any) => ({

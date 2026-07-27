@@ -1767,7 +1767,7 @@ def _decision_pack_housing_reference_pointers(
             value=value,
             source="repayments+pool_events+community_confirmation",
             count=total,
-            decision_use="Use this as aggregate community-living and housing-context evidence only. It can support a reader's inference about living with others, keeping obligations, and resolving issues, but it is not a landlord reference, property-care proof, rent guarantee, right-to-rent or legal tenancy check, affordability proof, tenancy approval, or future conduct guarantee.",
+            decision_use="Use this as aggregate community-living and housing-context evidence only. It can support a reader's inference about living with others, keeping obligations, and resolving issues, but it is not a landlord reference, rent guarantee, right-to-rent or legal tenancy check, affordability proof, tenancy approval, or future conduct guarantee.",
         )
     ]
 
@@ -2321,7 +2321,7 @@ def build_decision_pack_private_evidence_extract(
         "record_pointers": record_pointers,
         "record_pointer_boundary_note": "Connected financial/support records are evidence pointers only. They do not prove creditworthiness, legal tenancy status, rent payment, bank approval, or future repayment.",
         "housing_reference_pointers": housing_reference_pointers,
-        "housing_reference_boundary_note": "Housing conduct/readiness pointers are aggregate community-living and housing-context evidence only. They support reader inference; they do not prove tenancy behaviour, property care, co-living success, landlord approval, legal tenancy status, right-to-rent checks, affordability decisions, tenancy approval, guaranteed rent, or future conduct. They do not expose landlords, accommodation providers, addresses, rent amounts, payment references, private witness notes, or allegations.",
+        "housing_reference_boundary_note": "Housing conduct/readiness pointers are aggregate community-living and housing-context evidence only. They support reader inference; they do not prove tenancy behaviour, co-living success, landlord approval, legal tenancy status, right-to-rent checks, affordability decisions, tenancy approval, guaranteed rent, or future conduct. They do not expose landlords, accommodation providers, addresses, rent amounts, payment references, private witness notes, or allegations.",
         "guarantee_outcome_pointers": guarantee_outcome_pointers,
         "guarantee_outcome_boundary_note": "Guarantee/support outcome pointers are aggregate support-context evidence only. They do not expose borrower or guarantor identities, amounts, payment references, private notes, bank guarantees, loan approvals, cash custody, or future support promises.",
         "fulfillment_outcome_pointers": fulfillment_outcome_pointers,
@@ -2451,7 +2451,7 @@ def build_decision_pack_evidence_extract(
         "record_pointers": record_pointers,
         "record_pointer_boundary_note": "Connected financial/support records are evidence pointers only. They do not prove creditworthiness, legal tenancy status, rent payment, bank approval, or future repayment.",
         "housing_reference_pointers": housing_reference_pointers,
-        "housing_reference_boundary_note": "Housing conduct/readiness pointers are aggregate community-living and housing-context evidence only. They support reader inference; they do not prove tenancy behaviour, property care, co-living success, landlord approval, legal tenancy status, right-to-rent checks, affordability decisions, tenancy approval, guaranteed rent, or future conduct. They do not expose landlords, accommodation providers, addresses, rent amounts, payment references, private witness notes, or allegations.",
+        "housing_reference_boundary_note": "Housing conduct/readiness pointers are aggregate community-living and housing-context evidence only. They support reader inference; they do not prove tenancy behaviour, co-living success, landlord approval, legal tenancy status, right-to-rent checks, affordability decisions, tenancy approval, guaranteed rent, or future conduct. They do not expose landlords, accommodation providers, addresses, rent amounts, payment references, private witness notes, or allegations.",
         "guarantee_outcome_pointers": guarantee_outcome_pointers,
         "guarantee_outcome_boundary_note": "Guarantee/support outcome pointers are aggregate support-context evidence only. They do not expose borrower or guarantor identities, amounts, payment references, private notes, bank guarantees, loan approvals, cash custody, or future support promises.",
         "fulfillment_outcome_pointers": fulfillment_outcome_pointers,
@@ -2560,7 +2560,7 @@ def build_decision_pack_profile(
                 "label": "Housing conduct readiness",
                 "status": _clean(first_housing_pointer.get("status"), limit=32) or "available",
                 "value": _clean(first_housing_pointer.get("value"), limit=260) or "Housing conduct/readiness evidence is visible.",
-                "decision_use": "Treat this as aggregate community-living and housing-context evidence. It supports inference only; it is not a landlord reference, property-care proof, right-to-rent check, tenancy approval, affordability proof, rent guarantee, or future conduct guarantee.",
+                "decision_use": "Treat this as aggregate community-living and housing-context evidence. It supports inference only; it is not a landlord reference, right-to-rent check, tenancy approval, affordability proof, rent guarantee, or future conduct guarantee.",
             }
         ]
     guarantee_outcome_pointers = []
