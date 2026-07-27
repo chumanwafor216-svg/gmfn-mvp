@@ -258,9 +258,9 @@ class CommunityConfirmationRequestIn(CommunityConfirmationPayload):
         has_trust_slip = bool(str(self.trust_slip_code or "").strip())
         has_subject = self.subject_user_id is not None
         has_community = self.community_id is not None
-        if has_trust_slip and (has_subject or has_community):
+        if has_trust_slip and has_subject:
             raise ValueError(
-                "Use trust_slip_code or subject_user_id/community_id, not both."
+                "Use trust_slip_code with optional community_id, not subject_user_id."
             )
         if not has_trust_slip and has_subject != has_community:
             raise ValueError("subject_user_id and community_id must be supplied together.")

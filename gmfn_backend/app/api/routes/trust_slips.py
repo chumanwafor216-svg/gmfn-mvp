@@ -280,6 +280,45 @@ def _public_trustslip_merchant_view(view: Dict[str, Any]) -> Dict[str, Any]:
     return safe if isinstance(safe, dict) else {}
 
 
+def _public_community_confirmation_options(
+    footprint: Any,
+    *,
+    primary_clan_id: Any,
+) -> list[Dict[str, Any]]:
+    if not isinstance(footprint, list):
+        return []
+    primary_id = _safe_str(primary_clan_id)
+    options: list[Dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in footprint:
+        if not isinstance(item, dict):
+            continue
+        community_id = _safe_str(item.get("clan_id") or item.get("community_id"))
+        if not community_id or community_id in seen:
+            continue
+        seen.add(community_id)
+        community_name = _safe_str(
+            item.get("community_name") or item.get("name"),
+            f"Community {community_id}",
+        )
+        community_code = _safe_str(item.get("community_code"))
+        holder_role = _safe_str(item.get("role"), "member")
+        options.append(
+            {
+                "community_id": community_id,
+                "clan_id": community_id,
+                "community_name": community_name,
+                "community_code": community_code,
+                "holder_role": holder_role,
+                "is_primary_anchor": community_id == primary_id,
+                "confirmation_scope_note": (
+                    "Request responses from people connected to this community only."
+                ),
+            }
+        )
+    return options
+
+
 def _safe_public_path_key(value: Any) -> str:
     text = _safe_str(value)
     if not text:
@@ -1295,6 +1334,13 @@ def verify_trust_slip_public(
             "relay_available": False,
             "plain_language": "Community confirmation could not be loaded for this TrustSlip.",
         }
+    community_confirmation_options = _public_community_confirmation_options(
+        merchant_view_out.get("community_footprint")
+        or merchant_summary.get("community_footprint")
+        or full_summary.get("community_footprint")
+        or [],
+        primary_clan_id=getattr(slip, "clan_id", None),
+    )
 
     decision_pack_context = normalize_decision_pack_context(request.query_params)
 
@@ -1319,6 +1365,7 @@ def verify_trust_slip_public(
             "relay_available": bool(community_confirmation.get("relay_available")),
             "plain_language": community_confirmation.get("plain_language"),
         },
+        "community_confirmation_options": community_confirmation_options if visibility_level != "minimal" else [],
         "cci_explainer": public_cci_explainer if visibility_level != "minimal" else {},
         "identity_verified": bool(identity_context.get("identity_verified")),
         "identity_status_label": identity_context.get("identity_status_label"),

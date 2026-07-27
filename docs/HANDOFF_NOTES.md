@@ -157188,3 +157188,42 @@ Verification run locally:
 
 Deployment:
 - Local only. Push/deploy only when owner sends `2`.
+
+## 2026-07-27 - Local TrustSlip Multi-Community Confirmation Scope
+
+- Scope: local-only correction after the owner asked whether TrustSlip verification can choose the community relevant to the decision when a holder belongs to multiple communities.
+- `gmfn_backend/app/api/routes/community_confirmations.py`
+  - Allowed `trust_slip_code` with an optional `community_id` while still rejecting `trust_slip_code` plus `subject_user_id` to prevent subject spoofing.
+- `gmfn_backend/app/services/community_confirmation_service.py`
+  - When a TrustSlip code is used, the code still supplies the holder identity, but an optional selected community can override the slip's primary clan.
+  - Existing active-community and active-holder-membership checks then enforce that the selected community is legitimate.
+- `gmfn_backend/app/api/routes/trust_slips.py`
+  - Added public-safe `community_confirmation_options` from the holder's active community footprint: community id, name, code, role, primary-anchor flag, and a scope note only.
+  - Private contacts remain protected.
+- `frontend/src/pages/trustSlipVerify/trustSlipVerifyData.ts`
+  - Normalizes public community footprint/options into TrustSlip Verify records.
+- `frontend/src/pages/TrustSlipVerifyPage.tsx`
+  - Tracks the selected confirmation community and sends `community_id` with the TrustSlip confirmation request.
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Shows a compact `Confirmation community` selector when multiple holder communities are available.
+  - Keeps a single-community display quiet when only one option exists.
+- `frontend/tools/audit-trust-actions.mjs`
+  - Added guards for the selector, selected payload, and backend selected-community membership validation.
+- `gmfn_backend/tests/test_community_confirmation_relay.py`
+  - Added regression coverage for TrustSlip + selected active holder community, rejection of unrelated selected community, and public TrustSlip payload exposing safe option ids.
+
+Unabated truth:
+- Before this fix, public TrustSlip live confirmation was locked to the TrustSlip's stored primary community; the verifier could not choose the most relevant community.
+- This fix intentionally does not let a responder choose any community while answering. The requester chooses the community before sending; responders answer inside that scoped request so the outcome remains auditable.
+- This does not expose private member contacts, private notes, or full Trust Passport data.
+
+Verification run locally:
+- `python -m pytest gmfn_backend\tests\test_community_confirmation_relay.py -q`
+- `node frontend\tools\audit-trust-actions.mjs`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run lint`
+- `npm --prefix frontend run build`
+- `git diff --check` passed with normal line-ending warnings.
+
+Deployment:
+- Local only. Push/deploy only when owner sends `2`.

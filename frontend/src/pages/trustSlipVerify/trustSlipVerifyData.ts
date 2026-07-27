@@ -1,5 +1,16 @@
 import * as api from "../../lib/api";
 
+export type TrustSlipCommunityOption = {
+  community_id?: string | number | null;
+  clan_id?: string | number | null;
+  community_name?: string | null;
+  community_code?: string | null;
+  holder_role?: string | null;
+  role?: string | null;
+  is_primary_anchor?: boolean | null;
+  confirmation_scope_note?: string | null;
+};
+
 export type TrustSlipVerifyRecord = {
   id?: number;
   code?: string | null;
@@ -34,6 +45,8 @@ export type TrustSlipVerifyRecord = {
   profile_image_url?: string | null;
   identity_context?: Record<string, any> | null;
   community_context?: Record<string, any> | null;
+  community_footprint?: TrustSlipCommunityOption[] | null;
+  community_confirmation_options?: TrustSlipCommunityOption[] | null;
   cci_explainer?: Record<string, any> | null;
   identity_verified?: boolean | null;
   identity_status_label?: string | null;
@@ -179,6 +192,32 @@ function positiveNumber(value: any): number {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
+function normalizeCommunityOptions(...sources: any[]): TrustSlipCommunityOption[] {
+  const rows = sources.flatMap((source) => (Array.isArray(source) ? source : []));
+  const seen = new Set<string>();
+  const options: TrustSlipCommunityOption[] = [];
+  rows.forEach((row) => {
+    if (!row || typeof row !== "object") return;
+    const communityId = firstTruthy(row.community_id, row.clan_id);
+    if (!communityId || seen.has(communityId)) return;
+    seen.add(communityId);
+    options.push({
+      community_id: communityId,
+      clan_id: communityId,
+      community_name: firstTruthy(row.community_name, row.name, `Community ${communityId}`),
+      community_code: firstTruthy(row.community_code),
+      holder_role: firstTruthy(row.holder_role, row.role, "member"),
+      role: firstTruthy(row.role, row.holder_role, "member"),
+      is_primary_anchor: Boolean(row.is_primary_anchor),
+      confirmation_scope_note: firstTruthy(
+        row.confirmation_scope_note,
+        "Request responses from people connected to this community only."
+      ),
+    });
+  });
+  return options;
+}
+
 export function normalizeTrustSlipVerification(
   raw: any,
   fallbackCode: string
@@ -307,6 +346,19 @@ export function normalizeTrustSlipVerification(
     ),
     identity_context: identityContext,
     community_context: communityContext,
+    community_footprint: normalizeCommunityOptions(
+      src?.community_footprint,
+      merchantView?.community_footprint,
+      merchantSummary?.community_footprint
+    ),
+    community_confirmation_options: normalizeCommunityOptions(
+      src?.community_confirmation_options,
+      merchantView?.community_confirmation_options,
+      merchantSummary?.community_confirmation_options,
+      src?.community_footprint,
+      merchantView?.community_footprint,
+      merchantSummary?.community_footprint
+    ),
     cci_explainer: cciExplainer,
     identity_verified: firstBoolean(src?.identity_verified, identityContext?.identity_verified),
     identity_status_label: firstTruthy(

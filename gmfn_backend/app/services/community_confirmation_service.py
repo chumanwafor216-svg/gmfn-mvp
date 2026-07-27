@@ -805,7 +805,7 @@ def create_confirmation_request(
         if not slip:
             raise ValueError("TrustSlip not found")
         subject_user_id = int(slip.holder_user_id)
-        community_id = int(slip.clan_id)
+        community_id = int(community_id or slip.clan_id)
 
     if not subject_user_id or not community_id:
         raise ValueError("subject_user_id and community_id are required")

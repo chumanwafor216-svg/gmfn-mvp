@@ -667,7 +667,7 @@ def test_community_confirmation_request_requires_explicit_target_shape(
     )
     assert rejected_mixed_target.status_code == 422, rejected_mixed_target.text
     assert (
-        "Use trust_slip_code or subject_user_id/community_id, not both"
+        "Use trust_slip_code with optional community_id, not subject_user_id"
         in rejected_mixed_target.text
     )
 
@@ -716,6 +716,142 @@ def test_community_confirmation_request_requires_explicit_target_shape(
         event_types = [row.event_type for row in db.query(TrustEvent).all()]
         assert "community_confirmation.requested" in event_types
 
+
+def test_community_confirmation_request_can_scope_trustslip_to_selected_holder_community(
+    client: TestClient,
+):
+    _seed_relay_fixture()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO users (id, email, hashed_password, role)
+                VALUES (204, 'community204@example.com', 'hashed', 'user')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO clans (
+                    id,
+                    name,
+                    invite_code,
+                    community_code,
+                    status,
+                    invite_uses,
+                    created_at
+                )
+                VALUES (
+                    202,
+                    'Relevant Work Community',
+                    'test-invite-202',
+                    'GSN-C-000202',
+                    'active',
+                    0,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO clans (
+                    id,
+                    name,
+                    invite_code,
+                    community_code,
+                    status,
+                    invite_uses,
+                    created_at
+                )
+                VALUES (
+                    203,
+                    'Unrelated Community',
+                    'test-invite-203',
+                    'GSN-C-000203',
+                    'active',
+                    0,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO clan_memberships (clan_id, user_id, role, personal_pool_balance)
+                VALUES (202, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO clan_memberships (clan_id, user_id, role, personal_pool_balance)
+                VALUES (202, 204, 'user', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO clan_memberships (clan_id, user_id, role, personal_pool_balance)
+                VALUES (203, 204, 'user', 0)
+                """
+            )
+        )
+
+    verified_slip = client.get("/trust-slips/verify/CCR-TRUSTSLIP-1")
+    assert verified_slip.status_code == 200, verified_slip.text
+    option_ids = {
+        str(option.get("community_id"))
+        for option in verified_slip.json().get("community_confirmation_options", [])
+    }
+    assert {"1", "202"}.issubset(option_ids)
+
+    rejected = client.post(
+        "/community-confirmations/request",
+        json={
+            "trust_slip_code": "CCR-TRUSTSLIP-1",
+            "community_id": 203,
+            "requester_external_label": "Wrong community check",
+            "reason_type": "housing_tenancy_check",
+            "risk_level": "low",
+            "mode": "relay",
+        },
+    )
+    assert rejected.status_code == 400, rejected.text
+    assert "Subject is not an active member of this community" in rejected.text
+
+    created = client.post(
+        "/community-confirmations/request",
+        json={
+            "trust_slip_code": "CCR-TRUSTSLIP-1",
+            "community_id": 202,
+            "requester_external_label": "Relevant work community check",
+            "reason_type": "trade_skill_check",
+            "risk_level": "low",
+            "mode": "relay",
+        },
+    )
+    assert created.status_code == 200, created.text
+    data = created.json()
+    assert data["community_id"] == 202
+    assert data["community_name"] == "Relevant Work Community"
+
+    with SessionLocal() as db:
+        request = (
+            db.query(CommunityConfirmationRequest)
+            .filter(CommunityConfirmationRequest.reason_type == "trade_skill_check")
+            .filter(CommunityConfirmationRequest.community_id == 202)
+            .one()
+        )
+        assert request.subject_user_id == 1
+        assert request.community_id == 202
+        assert request.trust_slip_id is not None
 
 def test_community_confirmation_request_accepts_decision_pack_reason_type(
     client: TestClient,

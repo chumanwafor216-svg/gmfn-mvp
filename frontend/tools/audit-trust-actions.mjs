@@ -2254,6 +2254,29 @@ assertNotContains(
 );
 
 assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  /data-gsn-confirmation-community-selector="true"[\s\S]*?Confirmation community[\s\S]*?Choose the community that matches this decision[\s\S]*?confirmationCommunityId: selectedConfirmationCommunityId/,
+  "TrustSlip Verify must let a verifier choose the relevant holder community before requesting live confirmation."
+);
+
+assertContains(
+  "src/pages/TrustSlipVerifyPage.tsx",
+  /communityConfirmationOptions[\s\S]*?requestCommunityConfirmation\([\s\S]*?trust_slip_code: requestCode[\s\S]*?community_id: firstTruthy\([\s\S]*?draft\.confirmationCommunityId[\s\S]*?selectedConfirmationCommunityId/,
+  "TrustSlip Verify must send the selected confirmation community with the TrustSlip code."
+);
+
+assertContains(
+  "../gmfn_backend/app/api/routes/community_confirmations.py",
+  /if has_trust_slip and has_subject:[\s\S]*?Use trust_slip_code with optional community_id, not subject_user_id/,
+  "Community confirmation validation must allow a TrustSlip code to be scoped by community_id while rejecting subject spoofing."
+);
+
+assertContains(
+  "../gmfn_backend/app/services/community_confirmation_service.py",
+  /subject_user_id = int\(slip\.holder_user_id\)[\s\S]*?community_id = int\(community_id or slip\.clan_id\)[\s\S]*?Subject is not an active member of this community/,
+  "Community confirmation service must validate selected TrustSlip communities against the holder membership."
+);
+assertContains(
   "../gmfn_backend/app/schemas/merchant_release.py",
   /trade_context[\s\S]*?item_title[\s\S]*?counterparty_whatsapp_label[\s\S]*?invoice_reference[\s\S]*?courier_name[\s\S]*?expected_delivery_date[\s\S]*?payment_schedule_note[\s\S]*?receipt_status/,
   "Merchant release schema must keep the minimal GSN trade packet fields for WhatsApp/courier commerce evidence."

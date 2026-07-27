@@ -218,6 +218,7 @@ export default function TrustSlipVerifyPage() {
   const [confirmationBusy, setConfirmationBusy] = useState(false);
   const [confirmationOutcome, setConfirmationOutcome] =
     useState<CommunityConfirmationOutcome | null>(null);
+  const [selectedConfirmationCommunityId, setSelectedConfirmationCommunityId] = useState("");
   const [privateEvidenceOpen, setPrivateEvidenceOpen] = useState(false);
 
   const isAppRoute = location.pathname.startsWith("/app/");
@@ -717,6 +718,52 @@ export default function TrustSlipVerifyPage() {
     membershipCurrentnessLabel
   );
 
+  const communityConfirmationOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const options: Array<Record<string, any>> = [];
+    const addOption = (item: Record<string, any> | null | undefined) => {
+      if (!item) return;
+      const communityId = firstTruthy(item.community_id, item.clan_id);
+      if (!communityId || seen.has(communityId)) return;
+      seen.add(communityId);
+      options.push({
+        community_id: communityId,
+        clan_id: communityId,
+        community_name: firstTruthy(item.community_name, item.name, communityLabel),
+        community_code: firstTruthy(item.community_code),
+        holder_role: firstTruthy(item.holder_role, item.role, "member"),
+        role: firstTruthy(item.role, item.holder_role, "member"),
+        is_primary_anchor: Boolean(item.is_primary_anchor),
+      });
+    };
+    (record?.community_confirmation_options || []).forEach(addOption);
+    (record?.community_footprint || []).forEach(addOption);
+    if (communityConfirmation) {
+      addOption({
+        community_id: communityConfirmation.community_id,
+        community_name: communityConfirmation.community_name || communityLabel,
+        community_code: communityConfirmation.community_code,
+        holder_role: record?.holder_role,
+        is_primary_anchor: true,
+      });
+    }
+    return options;
+  }, [record, communityConfirmation, communityLabel]);
+
+  useEffect(() => {
+    const firstOptionId = firstTruthy(communityConfirmationOptions[0]?.community_id);
+    if (!firstOptionId) {
+      if (selectedConfirmationCommunityId) setSelectedConfirmationCommunityId("");
+      return;
+    }
+    const stillAvailable = communityConfirmationOptions.some(
+      (item) => firstTruthy(item.community_id, item.clan_id) === selectedConfirmationCommunityId
+    );
+    if (!stillAvailable) {
+      setSelectedConfirmationCommunityId(firstOptionId);
+    }
+  }, [communityConfirmationOptions, selectedConfirmationCommunityId]);
+
   const confirmationResult = confirmationOutcome?.community_response || null;
   const confirmationPublicPath = confirmationOutcome?.public_token
     ? `/community-confirmations/public/${encodeURIComponent(String(confirmationOutcome.public_token))}`
@@ -788,6 +835,10 @@ export default function TrustSlipVerifyPage() {
         requester_callback_channel: draft.callbackChannel || "none",
         requester_callback_contact: draft.callbackContact || undefined,
         requester_callback_consent: Boolean(draft.callbackConsent),
+        community_id: firstTruthy(
+          draft.confirmationCommunityId,
+          selectedConfirmationCommunityId
+        ) || undefined,
         reason_type:
           decisionPackProfile.communityConfirmationPrompt.reasonType || "community_standing_check",
         risk_level: "low",
@@ -1345,6 +1396,9 @@ export default function TrustSlipVerifyPage() {
           communityPulseAvailable={communityPulseAvailable}
           communityConfirmationText={communityConfirmationText}
           communityConfirmationRows={communityConfirmationRows}
+          communityConfirmationOptions={communityConfirmationOptions}
+          selectedConfirmationCommunityId={selectedConfirmationCommunityId}
+          onConfirmationCommunityChange={setSelectedConfirmationCommunityId}
           confirmationOutcome={confirmationOutcome}
           confirmationResult={confirmationResult}
           confirmationPublicPath={confirmationPublicPath}

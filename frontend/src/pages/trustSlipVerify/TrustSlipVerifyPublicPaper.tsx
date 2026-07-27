@@ -48,11 +48,22 @@ type CommunityConfirmationOutcome = {
   } | null;
 };
 
+export type CommunityConfirmationOption = {
+  community_id?: string | number | null;
+  clan_id?: string | number | null;
+  community_name?: string | null;
+  community_code?: string | null;
+  holder_role?: string | null;
+  role?: string | null;
+  is_primary_anchor?: boolean | null;
+};
+
 export type CommunityConfirmationCallbackDraft = {
   requesterExternalLabel?: string;
   callbackChannel?: "none" | "sms" | "whatsapp";
   callbackContact?: string;
   callbackConsent?: boolean;
+  confirmationCommunityId?: string;
 };
 
 type TrustSlipVerifyPublicPaperProps = {
@@ -103,6 +114,9 @@ type TrustSlipVerifyPublicPaperProps = {
   communityPulseAvailable: boolean;
   communityConfirmationText: string;
   communityConfirmationRows: Array<[string, string]>;
+  communityConfirmationOptions?: CommunityConfirmationOption[];
+  selectedConfirmationCommunityId?: string;
+  onConfirmationCommunityChange?: (communityId: string) => void;
   confirmationOutcome: CommunityConfirmationOutcome | null;
   confirmationResult: CommunityConfirmationResult | null;
   confirmationPublicPath: string;
@@ -1072,6 +1086,9 @@ export default function TrustSlipVerifyPublicPaper({
   communityPulseAvailable,
   communityConfirmationText,
   communityConfirmationRows,
+  communityConfirmationOptions = [],
+  selectedConfirmationCommunityId = "",
+  onConfirmationCommunityChange,
   confirmationOutcome,
   confirmationResult,
   confirmationPublicPath,
@@ -1088,6 +1105,13 @@ export default function TrustSlipVerifyPublicPaper({
     useState<CommunityConfirmationCallbackDraft["callbackChannel"]>("none");
   const [callbackContact, setCallbackContact] = useState("");
   const [callbackConsent, setCallbackConsent] = useState(false);
+  const selectableConfirmationCommunities = communityConfirmationOptions.filter((item) =>
+    Boolean(firstTruthy(item.community_id, item.clan_id))
+  );
+  const selectedConfirmationCommunity =
+    selectableConfirmationCommunities.find(
+      (item) => firstTruthy(item.community_id, item.clan_id) === selectedConfirmationCommunityId
+    ) || selectableConfirmationCommunities[0] || null;
   const activeMemberCount = positiveNumber(rowValue(communityConfirmationRows, "Active members"));
   const eligibleResponsePool = positiveNumber(rowValue(communityConfirmationRows, "Eligible response pool"));
   const requestLockedReason = !canRequestCommunityPulse
@@ -3198,6 +3222,47 @@ export default function TrustSlipVerifyPublicPaper({
                       </p>
                     </div>
 
+                    {selectableConfirmationCommunities.length > 1 ? (
+                      <label
+                        data-gsn-confirmation-community-selector="true"
+                        style={{ display: "grid", gap: 6 }}
+                      >
+                        <span style={fieldLabel()}>Confirmation community</span>
+                        <select
+                          value={selectedConfirmationCommunityId}
+                          onChange={(event) =>
+                            onConfirmationCommunityChange?.(event.target.value)
+                          }
+                          style={selectInput(compact)}
+                        >
+                          {selectableConfirmationCommunities.map((item) => {
+                            const optionId = firstTruthy(item.community_id, item.clan_id);
+                            const optionName = firstTruthy(item.community_name, `Community ${optionId}`);
+                            const optionCode = firstTruthy(item.community_code);
+                            const optionRole = firstTruthy(item.holder_role, item.role, "member");
+                            return (
+                              <option key={optionId} value={optionId}>
+                                {optionName}{optionCode ? ` - ${optionCode}` : ""} ({optionRole})
+                              </option>
+                            );
+                          })}
+                        </select>
+                        <p style={{ margin: 0, color: "#64748B", fontSize: 12.5, fontWeight: 850, lineHeight: 1.45 }}>
+                          Choose the community that matches this decision. The response will be scoped to that community.
+                        </p>
+                      </label>
+                    ) : selectedConfirmationCommunity ? (
+                      <div
+                        data-gsn-confirmation-community-selector="single"
+                        style={{ ...documentMetaCard("#FFFFFF"), display: "grid", gap: 4 }}
+                      >
+                        <span style={fieldLabel()}>Confirmation community</span>
+                        <strong style={{ color: "#07172C", fontSize: 15 }}>
+                          {firstTruthy(selectedConfirmationCommunity.community_name, communityLabel)}
+                        </strong>
+                      </div>
+                    ) : null}
+
                     <label style={{ display: "grid", gap: 6 }}>
                       <span style={fieldLabel()}>Requester label</span>
                       <input
@@ -3285,6 +3350,7 @@ export default function TrustSlipVerifyPublicPaper({
                         callbackChannel,
                         callbackContact,
                         callbackConsent,
+                        confirmationCommunityId: selectedConfirmationCommunityId,
                       })
                     }
                     busy={confirmationBusy}
