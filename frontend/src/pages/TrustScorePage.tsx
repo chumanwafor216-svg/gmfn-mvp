@@ -3196,6 +3196,24 @@ export default function TrustScorePage() {
     },
   ];
 
+  const trustPassportDocumentFlowRows = [
+    {
+      label: "1. Refresh reading",
+      value: "Pull the latest signed-in evidence before copying or opening a public check.",
+      icon: "refresh" as GsnIconName,
+    },
+    {
+      label: "2. Carry TrustSlip",
+      value: "Open the portable public summary when someone outside GSN needs a scoped record.",
+      icon: "document" as GsnIconName,
+    },
+    {
+      label: "3. Verify publicly",
+      value: "Use TrustSlip Verify when the reader needs the current code and validity check.",
+      icon: "search" as GsnIconName,
+    },
+  ];
+
   const activeLane =
     trustPassportLanes.find((lane) => lane.key === activeTrustPassportLane) ||
     trustPassportLanes[0];
@@ -5342,6 +5360,58 @@ export default function TrustScorePage() {
             >
               <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
                 7. Shareable trust tools
+              </div>
+              <div
+                data-trust-passport-document-flow="compact"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                  gap: 8,
+                  marginTop: 10,
+                }}
+              >
+                {trustPassportDocumentFlowRows.map((row) => (
+                  <div
+                    key={row.label}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "30px minmax(0, 1fr)",
+                      gap: 8,
+                      alignItems: "center",
+                      borderRadius: 13,
+                      border: "1px solid rgba(37,78,119,0.12)",
+                      background: "#FFFFFF",
+                      padding: isCompact ? "8px 9px" : "10px 11px",
+                      minWidth: 0,
+                    }}
+                  >
+                    {trustIconBadge(row.icon, 28, "blue")}
+                    <div style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          color: "#0B63D1",
+                          fontSize: isCompact ? 9 : 10,
+                          fontWeight: 1000,
+                          lineHeight: 1.1,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {row.label}
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 3,
+                          color: "#334155",
+                          fontSize: isCompact ? 10.5 : 11.5,
+                          fontWeight: 850,
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        {row.value}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
               <div
                 style={{

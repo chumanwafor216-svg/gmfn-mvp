@@ -156221,3 +156221,13 @@ Next recommended step:
 - Added a compact three-step non-button strip inside the existing Decision Pack block: choose pack, refresh record, then share/respond using the selected public pack or community-confirmation question.
 - No new route, backend claim, landlord verification store, or action count was added. Existing housing optional external contact remains holder-supplied, housing-only, copied/exported only by holder action, and outside GSN verification/storage.
 - Verification run: audit:trust-passport-trustslip-boundary, audit:button-stability, audit:gsn-visible-language, audit:protected-button-freeze, smoke:trust-passport-trustslip-boundary, git diff --check, and npm --prefix frontend run build passed. The first smoke attempt was blocked by sandbox spawn EPERM and passed when rerun with escalation.
+
+
+## 2026-07-27 - Trust Passport Documents Flow Strip
+
+- Scope: local-only Trust Passport Documents / TrustSlip lane UX structure.
+- Added a compact non-action flow strip above the existing Documents / TrustSlip action grid: refresh reading, carry TrustSlip, verify publicly.
+- Preserved the existing Documents / TrustSlip lane action inventory and order: refresh, copy snapshot, open TrustSlip, open TrustSlip verify, review pressure notes, export/print.
+- No new routes, backend claims, public exposure, or button/action roots were added.
+- Verification run locally: audit:trust-passport-lane-map, audit:trust-passport-front-package, audit:trust-passport-button-inventory, audit:trust-passport-trustslip-boundary, audit:trust-passport-evidence-story-lane, audit:trust-passport-repair-lane, audit:trust-passport-finance-discipline-lane, audit:trust-passport-community-confirmation-lane, audit:protected-button-freeze, audit:gsn-visible-language, git diff --check, and npm --prefix frontend run build passed.
+- Owner selected 1, so this was not pushed or deployed in this slice.
