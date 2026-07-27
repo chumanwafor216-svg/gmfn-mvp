@@ -214,7 +214,7 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
         ),
         missing_links=(
             "Supplier fulfilment TrustEvent standard across product lifecycle",
-            "Delivery/correction outcome joined to supplier Trust Passport",
+            "Mature delivery/correction outcome timeline beyond aggregate protected-trade pointers",
         ),
         refuses_to_claim=("Delivery guarantee", "Payment release authority", "Escrow", "Automatic supplier approval"),
         confirmation_reason_type="supplier_reliability_check",
@@ -1033,6 +1033,18 @@ COMPLETED_LOAN_STATUSES = {"repaid", "paid", "settled", "closed"}
 CURRENT_REVIEW_LOAN_STATUSES = {"approved", "disbursed", "active", "pending", "incomplete"}
 ACCEPTED_GUARANTOR_STATUSES = {"approved", "accepted", "confirmed", "released"}
 
+TRADE_FULFILLMENT_PACKS = {
+    "employment_decision",
+    "trade_check",
+    "supplier_decision",
+    "business_partnership",
+}
+COMPLETED_TRADE_STATUSES = {"released", "completed", "closed", "fulfilled"}
+RELEASED_TRADE_STATUSES = {"released", "recorded", "approved"}
+RECEIPT_CONFIRMED_STATUSES = {"confirmed", "received", "delivered"}
+OPEN_TRADE_DISPUTE_STATUSES = {"open", "raised", "pending", "in_review", "unresolved"}
+RESOLVED_TRADE_DISPUTE_STATUSES = {"resolved", "closed", "settled"}
+
 
 def _claim_row(
     *,
@@ -1545,6 +1557,102 @@ def _decision_pack_record_pointers(
     return pointers[:4]
 
 
+
+def _trade_status(row: ProtectedTradeRecord, field: str) -> str:
+    return _clean(getattr(row, field, None), limit=40).lower()
+
+
+def _decision_pack_fulfillment_outcome_pointers(
+    db: Session,
+    *,
+    holder_user_id: int,
+    pack_key: str,
+    active_community_ids: set[int],
+) -> list[dict[str, Any]]:
+    if pack_key not in TRADE_FULFILLMENT_PACKS:
+        return []
+
+    pointers: list[dict[str, Any]] = []
+
+    seller_query = db.query(ProtectedTradeRecord).filter(ProtectedTradeRecord.seller_user_id == int(holder_user_id))
+    seller_query = _filter_to_active_communities(seller_query, ProtectedTradeRecord, active_community_ids=active_community_ids)
+    seller_rows = seller_query.order_by(ProtectedTradeRecord.created_at.desc(), ProtectedTradeRecord.id.desc()).limit(30).all()
+    if seller_rows:
+        released = sum(1 for row in seller_rows if _trade_status(row, "release_status") in RELEASED_TRADE_STATUSES)
+        received = sum(1 for row in seller_rows if _trade_status(row, "receipt_status") in RECEIPT_CONFIRMED_STATUSES)
+        completed = sum(1 for row in seller_rows if _trade_status(row, "status") in COMPLETED_TRADE_STATUSES or getattr(row, "closed_at", None) is not None)
+        open_disputes = sum(1 for row in seller_rows if _trade_status(row, "dispute_status") in OPEN_TRADE_DISPUTE_STATUSES)
+        resolved_disputes = sum(1 for row in seller_rows if _trade_status(row, "dispute_status") in RESOLVED_TRADE_DISPUTE_STATUSES)
+        value = f"{len(seller_rows)} protected trade seller record{'s' if len(seller_rows) != 1 else ''} found"
+        if released:
+            value = f"{value}; {released} show release evidence"
+        if received:
+            value = f"{value}; {received} show receipt or delivery confirmation"
+        if completed:
+            value = f"{value}; {completed} show completed or closed status"
+        if resolved_disputes:
+            value = f"{value}; {resolved_disputes} dispute/correction status resolved or closed"
+        if open_disputes:
+            value = f"{value}; {open_disputes} still need dispute/correction review"
+        pointers.append(
+            _record_pointer_row(
+                key="seller_fulfillment_outcome",
+                label="Seller fulfilment outcome",
+                status="caution" if open_disputes else "available",
+                value=value,
+                source="protected_trade_records",
+                count=len(seller_rows),
+                decision_use="Use this as protected-trade fulfilment context only. It is not escrow, payout approval, delivery guarantee, product-quality proof, insurance, or future performance proof.",
+            )
+        )
+
+    buyer_query = db.query(ProtectedTradeRecord).filter(ProtectedTradeRecord.buyer_user_id == int(holder_user_id))
+    buyer_query = _filter_to_active_communities(buyer_query, ProtectedTradeRecord, active_community_ids=active_community_ids)
+    buyer_rows = buyer_query.order_by(ProtectedTradeRecord.created_at.desc(), ProtectedTradeRecord.id.desc()).limit(30).all()
+    if buyer_rows:
+        released = sum(1 for row in buyer_rows if _trade_status(row, "release_status") in RELEASED_TRADE_STATUSES)
+        received = sum(1 for row in buyer_rows if _trade_status(row, "receipt_status") in RECEIPT_CONFIRMED_STATUSES)
+        completed = sum(1 for row in buyer_rows if _trade_status(row, "status") in COMPLETED_TRADE_STATUSES or getattr(row, "closed_at", None) is not None)
+        open_disputes = sum(1 for row in buyer_rows if _trade_status(row, "dispute_status") in OPEN_TRADE_DISPUTE_STATUSES)
+        resolved_disputes = sum(1 for row in buyer_rows if _trade_status(row, "dispute_status") in RESOLVED_TRADE_DISPUTE_STATUSES)
+        value = f"{len(buyer_rows)} protected trade buyer record{'s' if len(buyer_rows) != 1 else ''} found"
+        if released:
+            value = f"{value}; {released} show release evidence"
+        if received:
+            value = f"{value}; {received} show receipt or delivery confirmation"
+        if completed:
+            value = f"{value}; {completed} show completed or closed status"
+        if resolved_disputes:
+            value = f"{value}; {resolved_disputes} dispute/correction status resolved or closed"
+        if open_disputes:
+            value = f"{value}; {open_disputes} still need dispute/correction review"
+        pointers.append(
+            _record_pointer_row(
+                key="buyer_fulfillment_outcome",
+                label="Buyer fulfilment outcome",
+                status="caution" if open_disputes else "available",
+                value=value,
+                source="protected_trade_records",
+                count=len(buyer_rows),
+                decision_use="Use this as buyer-side protected-trade context only. It is not payment approval, escrow, delivery guarantee, product-quality proof, or supplier approval.",
+            )
+        )
+
+    if not pointers:
+        pointers.append(
+            _record_pointer_row(
+                key="fulfillment_outcome_gap",
+                label="Fulfilment/correction outcome pointer",
+                status="gap",
+                value="No protected-trade fulfilment or correction outcome pointer is visible for this Decision Pack yet.",
+                source="protected_trade_records",
+                count=0,
+                decision_use="Ask for completed-work evidence, protected-trade records, customer confirmation, or live community confirmation before relying on fulfilment claims.",
+            )
+        )
+
+    return pointers[:4]
+
 def _decision_pack_declared_claims(
     db: Session,
     *,
@@ -1620,13 +1728,17 @@ def _decision_pack_declared_claims(
             or _clean(getattr(trade, "receipt_status", None), limit=40).lower() in {"confirmed", "received"}
             or _clean(getattr(trade, "status", None), limit=40).lower() in {"released", "completed", "closed"}
         ]
-        titles = [_clean(getattr(trade, "item_title", None), limit=80) for trade in trades]
-        titles = [title for title in titles if title]
+        public_titles = [
+            _clean(getattr(trade, "item_title", None), limit=80)
+            for trade in trades
+            if getattr(trade, "buyer_user_id", None) is None
+        ]
+        public_titles = [title for title in public_titles if title]
         value = f"{len(trades)} protected trade record{'s' if len(trades) != 1 else ''} found for this seller"
         if completed:
             value = f"{value}; {len(completed)} show release, receipt, or completion status"
-        if titles:
-            value = f"{value}. Recent: {', '.join(titles[:3])}"
+        if public_titles:
+            value = f"{value}. Public seller-side titles include: {', '.join(public_titles[:3])}"
         claims.append(
             _claim_row(
                 key="protected_trade_seller_record",
@@ -1794,6 +1906,12 @@ def build_decision_pack_private_evidence_extract(
         pack_key=pack_key,
         active_community_ids=active_community_ids,
     )
+    fulfillment_outcome_pointers = _decision_pack_fulfillment_outcome_pointers(
+        db,
+        holder_user_id=int(holder_user_id),
+        pack_key=pack_key,
+        active_community_ids=active_community_ids,
+    )
     confirmation_pointers = _decision_pack_confirmation_pointers(
         db,
         holder_user_id=int(holder_user_id),
@@ -1821,6 +1939,8 @@ def build_decision_pack_private_evidence_extract(
         "record_pointer_boundary_note": "Connected financial/support records are evidence pointers only. They do not prove creditworthiness, legal tenancy status, rent payment, bank approval, or future repayment.",
         "guarantee_outcome_pointers": guarantee_outcome_pointers,
         "guarantee_outcome_boundary_note": "Guarantee/support outcome pointers are aggregate support-context evidence only. They do not expose borrower or guarantor identities, amounts, payment references, private notes, bank guarantees, loan approvals, cash custody, or future support promises.",
+        "fulfillment_outcome_pointers": fulfillment_outcome_pointers,
+        "fulfillment_outcome_boundary_note": "Fulfilment/correction outcome pointers are aggregate protected-trade evidence only. They do not expose trade codes, buyer or seller identities, item details, amounts, payment references, private notes, escrow, payout approval, delivery guarantees, product-quality proof, or future performance promises.",
         "confirmation_pointers": confirmation_pointers,
         "confirmation_pointer_boundary_note": "Community witness outcomes are aggregate evidence pointers only. They do not expose responders, private notes, licences, guarantees, approvals, or final decisions.",
         "issue_resolution_pointers": issue_resolution_pointers,
@@ -1894,6 +2014,12 @@ def build_decision_pack_evidence_extract(
         pack_key=pack_key,
         active_community_ids=active_community_ids,
     )
+    fulfillment_outcome_pointers = _decision_pack_fulfillment_outcome_pointers(
+        db,
+        holder_user_id=int(holder_user_id),
+        pack_key=pack_key,
+        active_community_ids=active_community_ids,
+    )
     confirmation_pointers = _decision_pack_confirmation_pointers(
         db,
         holder_user_id=int(holder_user_id),
@@ -1907,7 +2033,7 @@ def build_decision_pack_evidence_extract(
     )
     return {
         "source": "trust_events_redacted_extract",
-        "source_note": "Aggregated from public-safe TrustEvent categories plus declared, connected-record, guarantee/support outcome, community-witness outcome, and issue-resolution pointers where relevant. Raw TrustEvents, actor details, notes, metadata, amounts, payment references, borrower or guarantor identities, responder identities, private dispute details, and private contacts are not exposed publicly.",
+        "source_note": "Aggregated from public-safe TrustEvent categories plus declared, connected-record, guarantee/support outcome, protected-trade fulfilment/correction outcome, community-witness outcome, and issue-resolution pointers where relevant. Raw TrustEvents, actor details, notes, metadata, amounts, payment references, borrower or guarantor identities, buyer or seller identities, trade codes, item details, responder identities, private dispute details, and private contacts are not exposed publicly.",
         "evidence_scope": _decision_pack_evidence_scope(
             active_community_ids=active_community_ids,
             primary_clan_id=getattr(slip, "clan_id", None),
@@ -1919,6 +2045,8 @@ def build_decision_pack_evidence_extract(
         "record_pointer_boundary_note": "Connected financial/support records are evidence pointers only. They do not prove creditworthiness, legal tenancy status, rent payment, bank approval, or future repayment.",
         "guarantee_outcome_pointers": guarantee_outcome_pointers,
         "guarantee_outcome_boundary_note": "Guarantee/support outcome pointers are aggregate support-context evidence only. They do not expose borrower or guarantor identities, amounts, payment references, private notes, bank guarantees, loan approvals, cash custody, or future support promises.",
+        "fulfillment_outcome_pointers": fulfillment_outcome_pointers,
+        "fulfillment_outcome_boundary_note": "Fulfilment/correction outcome pointers are aggregate protected-trade evidence only. They do not expose trade codes, buyer or seller identities, item details, amounts, payment references, private notes, escrow, payout approval, delivery guarantees, product-quality proof, or future performance promises.",
         "confirmation_pointers": confirmation_pointers,
         "confirmation_pointer_boundary_note": "Community witness outcomes are aggregate evidence pointers only. They do not expose responders, private notes, licences, guarantees, approvals, or final decisions.",
         "issue_resolution_pointers": issue_resolution_pointers,
@@ -2022,6 +2150,21 @@ def build_decision_pack_profile(
                 "decision_use": "Treat this as aggregate support-context evidence. It is not a bank guarantee, loan approval, or future support promise.",
             }
         ]
+    fulfillment_outcome_pointers = []
+    if isinstance(evidence_extract, Mapping) and isinstance(evidence_extract.get("fulfillment_outcome_pointers"), list):
+        fulfillment_outcome_pointers = [pointer for pointer in evidence_extract.get("fulfillment_outcome_pointers", []) if isinstance(pointer, Mapping)]
+    fulfillment_outcome_signal = []
+    if fulfillment_outcome_pointers:
+        first_fulfillment_pointer = fulfillment_outcome_pointers[0]
+        fulfillment_outcome_signal = [
+            {
+                "key": "fulfillment_correction_outcome_pointer",
+                "label": "Fulfilment/correction outcome pointer",
+                "status": _clean(first_fulfillment_pointer.get("status"), limit=32) or "available",
+                "value": _clean(first_fulfillment_pointer.get("value"), limit=260) or "Protected-trade fulfilment or correction evidence is visible.",
+                "decision_use": "Treat this as aggregate protected-trade outcome context. It is not escrow, payout approval, delivery guarantee, product-quality proof, or future performance proof.",
+            }
+        ]
     confirmation_pointers = []
     if isinstance(evidence_extract, Mapping) and isinstance(evidence_extract.get("confirmation_pointers"), list):
         confirmation_pointers = [pointer for pointer in evidence_extract.get("confirmation_pointers", []) if isinstance(pointer, Mapping)]
@@ -2052,10 +2195,10 @@ def build_decision_pack_profile(
                 "decision_use": "Treat this as aggregate review status. It does not expose private dispute detail or make the final decision.",
             }
         ]
-    signals = expected_signals + declared_signal + record_pointer_signal + guarantee_outcome_signal + confirmation_signal + issue_resolution_signal + visible_signals
+    signals = expected_signals + declared_signal + record_pointer_signal + guarantee_outcome_signal + fulfillment_outcome_signal + confirmation_signal + issue_resolution_signal + visible_signals
     signal_gaps = [
         signal
-        for signal in visible_signals + declared_signal + record_pointer_signal + guarantee_outcome_signal + confirmation_signal + issue_resolution_signal
+        for signal in visible_signals + declared_signal + record_pointer_signal + guarantee_outcome_signal + fulfillment_outcome_signal + confirmation_signal + issue_resolution_signal
         if signal.get("status") in {"gap", "caution"}
     ]
     missing_gap_rows = [

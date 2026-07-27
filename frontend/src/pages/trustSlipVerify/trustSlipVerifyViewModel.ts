@@ -60,6 +60,16 @@ type DecisionPackGuaranteeOutcomePointer = {
   decisionUse: string;
 };
 
+type DecisionPackFulfillmentOutcomePointer = {
+  key: string;
+  label: string;
+  status: string;
+  value: string;
+  source: string;
+  evidenceCount: number | null;
+  decisionUse: string;
+};
+
 type DecisionPackConfirmationPointer = {
   key: string;
   label: string;
@@ -97,6 +107,8 @@ export type DecisionPackEvidenceExtractView = {
   recordPointerBoundaryNote: string;
   guaranteeOutcomePointers: DecisionPackGuaranteeOutcomePointer[];
   guaranteeOutcomeBoundaryNote: string;
+  fulfillmentOutcomePointers: DecisionPackFulfillmentOutcomePointer[];
+  fulfillmentOutcomeBoundaryNote: string;
   confirmationPointers: DecisionPackConfirmationPointer[];
   confirmationPointerBoundaryNote: string;
   issueResolutionPointers: DecisionPackIssueResolutionPointer[];
@@ -293,6 +305,7 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
   const declaredClaims = Array.isArray(source.declared_claims) ? source.declared_claims : [];
   const recordPointers = Array.isArray(source.record_pointers) ? source.record_pointers : [];
   const guaranteeOutcomePointers = Array.isArray(source.guarantee_outcome_pointers) ? source.guarantee_outcome_pointers : [];
+  const fulfillmentOutcomePointers = Array.isArray(source.fulfillment_outcome_pointers) ? source.fulfillment_outcome_pointers : [];
   const confirmationPointers = Array.isArray(source.confirmation_pointers) ? source.confirmation_pointers : [];
   const issueResolutionPointers = Array.isArray(source.issue_resolution_pointers) ? source.issue_resolution_pointers : [];
   const evidenceScope = source.evidence_scope && typeof source.evidence_scope === "object" ? source.evidence_scope : {};
@@ -394,6 +407,28 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
     guaranteeOutcomeBoundaryNote: firstTruthy(
       source.guarantee_outcome_boundary_note,
       "Guarantee/support outcome pointers are aggregate support-context evidence only. They do not expose borrower or guarantor identities, amounts, payment references, private notes, bank guarantees, loan approvals, cash custody, or future support promises."
+    ),
+    fulfillmentOutcomePointers: fulfillmentOutcomePointers
+      .map((pointer: any) => ({
+        key: firstTruthy(pointer?.key, pointer?.label),
+        label: firstTruthy(pointer?.label, "Fulfilment/correction outcome pointer"),
+        status: firstTruthy(pointer?.status, "not_shown"),
+        value: firstTruthy(
+          pointer?.value,
+          "No protected-trade fulfilment or correction outcome pointer is visible for this Decision Pack yet."
+        ),
+        source: firstTruthy(pointer?.source, "protected_trade_records"),
+        evidenceCount: firstNumberLike(pointer?.evidence_count),
+        decisionUse: firstTruthy(
+          pointer?.decision_use,
+          "Use this as protected-trade outcome context only; ask for private context or live confirmation before relying."
+        ),
+      }))
+      .filter((pointer: DecisionPackFulfillmentOutcomePointer) => pointer.key || pointer.label)
+      .slice(0, 4),
+    fulfillmentOutcomeBoundaryNote: firstTruthy(
+      source.fulfillment_outcome_boundary_note,
+      "Fulfilment/correction outcome pointers are aggregate protected-trade evidence only. They do not expose trade codes, buyer or seller identities, item details, amounts, payment references, private notes, escrow, payout approval, delivery guarantees, product-quality proof, or future performance promises."
     ),
     confirmationPointers: confirmationPointers
       .map((pointer: any) => ({

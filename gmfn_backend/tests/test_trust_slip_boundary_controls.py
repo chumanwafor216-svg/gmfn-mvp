@@ -742,6 +742,110 @@ def test_public_verify_decision_pack_surfaces_issue_resolution_pointers_without_
     assert "trust_score" not in profile_text
 
 
+def test_public_verify_supplier_pack_surfaces_fulfillment_outcomes_without_trade_private_details(
+    client,
+    seed_clan_admin_membership,
+):
+    _create_trust_slip(code="ACCESS-SUPPLIER-FULFILLMENT")
+
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc)
+        db.add(
+            User(
+                id=2,
+                email="buyer-private@example.com",
+                hashed_password="hashed",
+                role="user",
+                gmfn_id="GSN-U-BUYER-PRIVATE",
+            )
+        )
+        db.add(
+            ProtectedTradeRecord(
+                trade_code="PRIVATE-TRADE-CODE-001",
+                clan_id=1,
+                creator_user_id=1,
+                seller_user_id=1,
+                buyer_user_id=2,
+                item_title="Private generator delivery contract",
+                terms_summary="Private terms and courier instructions",
+                amount=Decimal("1250.00"),
+                currency="GBP",
+                status="closed",
+                payment_status="claimed",
+                release_status="released",
+                receipt_status="confirmed",
+                dispute_status="resolved",
+                meta={"private_marker": "PRIVATE-TRADE-META"},
+                closed_at=now,
+            )
+        )
+        db.add(
+            ProtectedTradeRecord(
+                trade_code="PRIVATE-TRADE-CODE-002",
+                clan_id=1,
+                creator_user_id=1,
+                seller_user_id=1,
+                buyer_user_id=2,
+                item_title="Private repair correction case",
+                terms_summary="Private correction note",
+                amount=Decimal("450.00"),
+                currency="GBP",
+                status="released",
+                payment_status="claimed",
+                release_status="released",
+                receipt_status="not_confirmed",
+                dispute_status="open",
+                meta={"private_marker": "PRIVATE-DISPUTE-META"},
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get(
+        "/trust-slips/verify/ACCESS-SUPPLIER-FULFILLMENT",
+        params={"decision_pack": "supplier_decision"},
+    )
+
+    assert response.status_code == 200, response.text
+    profile = response.json()["decision_pack_profile"]
+    extract = profile["evidence_extract"]
+    pointers = {row["key"]: row for row in extract["fulfillment_outcome_pointers"]}
+    fulfillment = pointers["seller_fulfillment_outcome"]
+    assert fulfillment["status"] == "caution"
+    assert fulfillment["evidence_count"] == 2
+    assert "2 protected trade seller records found" in fulfillment["value"]
+    assert "2 show release evidence" in fulfillment["value"]
+    assert "1 show receipt or delivery confirmation" in fulfillment["value"]
+    assert "2 show completed or closed status" in fulfillment["value"]
+    assert "1 dispute/correction status resolved or closed" in fulfillment["value"]
+    assert "1 still need dispute/correction review" in fulfillment["value"]
+    assert "do not expose trade codes" in extract["fulfillment_outcome_boundary_note"]
+    assert "delivery guarantees" in extract["fulfillment_outcome_boundary_note"]
+    assert any(signal["key"] == "fulfillment_correction_outcome_pointer" for signal in profile["relevant_signals"])
+    profile_text = str(profile)
+    assert "buyer-private@example.com" not in profile_text
+    assert "GSN-U-BUYER-PRIVATE" not in profile_text
+    assert "PRIVATE-TRADE-CODE-001" not in profile_text
+    assert "PRIVATE-TRADE-CODE-002" not in profile_text
+    assert "Private generator delivery contract" not in profile_text
+    assert "Private repair correction case" not in profile_text
+    assert "Private terms and courier instructions" not in profile_text
+    assert "Private correction note" not in profile_text
+    assert "PRIVATE-TRADE-META" not in profile_text
+    assert "PRIVATE-DISPUTE-META" not in profile_text
+    assert "1250.00" not in profile_text
+    assert "450.00" not in profile_text
+    assert "buyer_user_id" not in profile_text
+    assert "seller_user_id" not in profile_text
+    assert "trade_code" not in profile_text
+    assert "item_title" not in profile_text
+    assert "terms_summary" not in profile_text
+    assert "amount':" not in profile_text
+    assert "trust_score" not in profile_text
+
+
 def test_public_verify_trade_pack_surfaces_declared_work_claims_without_overclaiming(
     client,
     seed_clan_admin_membership,

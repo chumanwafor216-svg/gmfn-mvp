@@ -1,3 +1,58 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack fulfilment/correction outcome pointers
+
+Owner trigger:
+- Owner continued the evidence-engine correction after guarantee/support outcome pointers. The next gap was practical work fulfilment: for hiring, trade, supplier, and partnership decisions, society asks whether work was delivered, whether receipt was confirmed, and whether correction/dispute issues were resolved.
+
+Unabated truth:
+- This slice wires existing ProtectedTradeRecord rows into Decision Packs as aggregate fulfilment/correction outcome pointers.
+- It does not expose trade codes, buyer or seller identities, item details, amounts, payment references, private notes, escrow, payout approval, delivery guarantees, product-quality proof, insurance, or future performance promises.
+- Buyer-linked protected trade item titles no longer leak through the declared-claim layer. Buyerless seller-side public titles are still allowed for the older declared-work evidence test.
+- Devil's advocate: this is still not a completed-work/customer-confirmed job system. It reads protected-trade status records already in the platform, but it does not yet connect Demand Box jobs, Shop service histories, quotation outcomes, job photos, structured customer confirmation, mature supplier delivery timelines, or detailed complaint/correction narratives.
+
+Changed:
+- gmfn_backend/app/services/trust_slip_decision_packs.py
+  - Added TRADE_FULFILLMENT_PACKS and aggregate ProtectedTradeRecord extraction for seller and buyer fulfilment/correction outcomes.
+  - Public and holder-private evidence extracts now include fulfillment_outcome_pointers plus fulfillment_outcome_boundary_note.
+  - Decision Pack profiles now add a Fulfilment/correction outcome pointer signal when protected-trade outcome records exist or when a fulfilment-outcome gap should be shown.
+  - Public source wording now includes protected-trade fulfilment/correction pointers and explicitly excludes buyer/seller identities, trade codes, item details, amounts, payment references, and private dispute details.
+  - Supplier and trade Decision Pack catalogue wording now says aggregate protected-trade pointers are wired while mature completed-job/customer-confirmed timelines remain missing.
+- gmfn_backend/tests/test_trust_slip_boundary_controls.py
+  - Added coverage proving a supplier Decision Pack surfaces aggregate fulfilment/correction outcomes without leaking buyer emails, private GSN IDs, trade codes, item titles, terms, metadata, amounts, internal trade field names, or trust_score.
+- frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts
+  - Normalizes fulfillment_outcome_pointers and fulfillment_outcome_boundary_note from backend Decision Pack profiles.
+- frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx
+  - Public TrustSlip Verify now renders Fulfilment/correction outcomes after Guarantee/support outcomes and before Community witness outcomes.
+- frontend/src/pages/TrustSlipPage.tsx
+  - Signed-in holder TrustSlip private Decision Pack preview now shows Fulfilment/correction outcomes after Guarantee/support outcomes.
+- frontend/tools/audit-public-trustslip-verify-boundary.mjs
+- frontend/tools/audit-trust-passport-trustslip-boundary.mjs
+  - Added guards for backend extraction, frontend normalization, public rendering, holder rendering, and private trade-detail overclaim tests.
+- docs/GSN_DECISION_PACK_EVIDENCE_MATRIX.md
+  - Updated the matrix to mark aggregate protected-trade fulfilment/correction outcome pointers as partially wired and keep mature supplier fulfilment timelines, customer-confirmed completed jobs, Demand Box outcomes, quotes, Shop services, completion media, and complaint-detail timelines as remaining architecture work.
+
+Routes/screens affected:
+- Backend /trust-slips/verify/{code} Decision Pack profile payload.
+- Backend /trust-slips/me/decision-pack-evidence holder-private evidence extract.
+- /trust-slips/verify and /app/trust-slips/verify public Decision Pack reading.
+- /app/trust-slip signed-in holder private Decision Pack preview.
+- No database schema, auth, payment, ledger, Protected Trade write path, release/write approval path, escrow, delivery guarantee, product-quality proof, or final employment/supplier decision engine changed.
+
+Verification:
+- Passed python -m py_compile gmfn_backend\app\services\trust_slip_decision_packs.py gmfn_backend\tests\test_trust_slip_boundary_controls.py
+- Passed python -m pytest gmfn_backend\tests\test_trust_slip_boundary_controls.py gmfn_backend\tests\test_community_confirmation_relay.py -q
+- Passed npm --prefix frontend run audit:public-trustslip-verify-boundary
+- Passed npm --prefix frontend run audit:trust-passport-trustslip-boundary
+- Passed npm --prefix frontend run audit:protected-button-freeze
+- Passed npm --prefix frontend run build
+- Passed npm --prefix frontend run smoke:public-trustslip-verify-states after elevated rerun for sandbox spawn EPERM
+- Passed npm --prefix frontend run smoke:trust-passport-trustslip-boundary after elevated rerun for sandbox spawn EPERM
+
+Deployment:
+- Local only so far; do not push/deploy unless the owner explicitly selects push/deploy.
+
+Next recommended step:
+- Commit this fulfilment/correction outcome pointer slice locally, then continue with the next missing society-equivalent evidence layer: customer-confirmed completed jobs, Demand Box response-to-job outcomes, landlord/accommodation references, and structured witness answers.
+
 ## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack guarantee/support outcome pointers
 
 Owner trigger:
