@@ -25,7 +25,11 @@ Verification:
 - Passed npm --prefix frontend run smoke:trust-passport-trustslip-boundary after elevated rerun for sandbox spawn EPERM
 
 Deployment:
-- Local only so far; do not push/deploy unless the owner explicitly selects push/deploy.
+- Product correction pushed to origin/main at commit 03404da8.
+- Triggered frontend-only Render workflow run 30257187313.
+- Render frontend deploy id: dep-d9jiug6rnols738s0lu0.
+- Live frontend URL confirmed serving the updated Decision Pack build marker from assets/TrustSlipVerifyPage-Db9jT0c_.js.
+- Backend deploy was correctly skipped: backend deploy needed=false.
 
 Next recommended step:
 - Run the QR/public-link test, then continue with institutional confirmations, member/community confirmations, community-domain setup, and real-life scenario coverage.
