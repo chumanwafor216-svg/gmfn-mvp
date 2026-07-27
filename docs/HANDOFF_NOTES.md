@@ -1,3 +1,33 @@
+## CURRENT LOCAL STATE - 2026-07-27 - TrustSlip holder QR Decision Pack link test
+
+Owner trigger:
+- Owner selected the next step after TrustSlip holder phone collapse. The handoff recommended the QR/public-link test before moving into institutional confirmations and community-domain scenario work.
+
+Unabated truth:
+- This slice adds a testable QR contract. It does not redesign the QR surface, change backend routes, change public verify payloads, or deploy anything by itself.
+- The important behaviour is now caged: after the holder selects a Decision Pack, the QR value and the Open public pack link must point to the same public `/t/{code}` URL with the same selected Decision Pack context.
+- Devil's advocate: this proves URL/QR consistency in the browser smoke. It does not prove a physical camera scan on a real phone; that remains a real-device check.
+
+Changed:
+- frontend/src/pages/TrustSlipPage.tsx
+  - Added a stable `data-gsn-trustslip-qr-value` hook and accessible label to the route-local TrustSlip QR wrapper so tests can verify what the QR encodes.
+- frontend/tools/smoke-trust-passport-trustslip-boundary.mjs
+  - Added a holder-page smoke assertion that selects Employment Decision Pack and proves the TrustSlip QR value matches the public Decision Pack link, including `decision_pack`, `access_purpose`, `recipient_question`, and `access_scope` query context.
+- frontend/tools/audit-trust-passport-trustslip-boundary.mjs
+  - Added guards for QR value precedence, the QR test hook, and the browser smoke QR/link consistency assertion.
+
+Verification:
+- Passed npm --prefix frontend run audit:trust-passport-trustslip-boundary
+- Passed npm --prefix frontend run smoke:trust-passport-trustslip-boundary after elevated rerun for sandbox spawn EPERM
+- Passed npm --prefix frontend run build
+- Passed npm --prefix frontend run audit:protected-button-freeze
+- Passed npm --prefix frontend run smoke:public-trustslip-verify-states after elevated rerun for sandbox spawn EPERM
+
+Deployment:
+- Local only. Not pushed or deployed in this slice because owner selected `1`, not `2=push deploy`.
+
+Next recommended step:
+- Continue into institutional confirmations: map committee/community confirmation, member witness confirmation, and live community request flows against the TrustSlip Decision Pack questions.
 ## CURRENT LOCAL STATE - 2026-07-27 - TrustSlip holder mobile paper collapse
 
 Owner trigger:

@@ -407,6 +407,68 @@ async function openMoreLimits(page) {
   await page.locator("summary").filter({ hasText: "More limits" }).first().click();
 }
 
+async function assertTrustSlipQrCarriesSelectedDecisionPack(page, baseURL) {
+  const expectedPath = `/t/${encodeURIComponent(trustSlipCode)}`;
+  const expectedParams = {
+    decision_pack: "employment_decision",
+    access_purpose: "Employment Decision Pack",
+    recipient_question: "Is there enough evidence to continue an employment conversation?",
+    access_scope: "public_decision_pack",
+  };
+
+  const publicPackLink = page.locator('[data-cta-id="trust-slip.public-decision-pack.open"]').first();
+  await expect(publicPackLink).toBeVisible({ timeout: 30000 });
+  const publicPackHref = await publicPackLink.getAttribute("href");
+  if (!publicPackHref) {
+    throw new Error("TrustSlip public Decision Pack link did not expose an href.");
+  }
+
+  const qrLocator = page.locator("[data-gsn-trustslip-qr-value]");
+  await expect(qrLocator.first()).toBeVisible({ timeout: 30000 });
+  await expect
+    .poll(async () => {
+      const values = await qrLocator.evaluateAll((nodes) =>
+        nodes.map((node) => node.getAttribute("data-gsn-trustslip-qr-value") || "")
+      );
+      return values.some((value) => {
+        const url = new URL(value, baseURL);
+        return (
+          url.pathname === expectedPath &&
+          url.searchParams.get("decision_pack") === expectedParams.decision_pack &&
+          url.searchParams.get("access_scope") === expectedParams.access_scope
+        );
+      });
+    }, { timeout: 7000 })
+    .toBeTruthy();
+
+  const linkUrl = new URL(publicPackHref, baseURL);
+  if (linkUrl.pathname !== expectedPath) {
+    throw new Error(
+      `Public Decision Pack link path does not match TrustSlip code: ${linkUrl.pathname}`
+    );
+  }
+
+  for (const [key, value] of Object.entries(expectedParams)) {
+    if (linkUrl.searchParams.get(key) !== value) {
+      throw new Error(
+        `Public Decision Pack link lost ${key}: expected ${value}, got ${linkUrl.searchParams.get(key)}`
+      );
+    }
+  }
+
+  const qrValues = await qrLocator.evaluateAll((nodes) =>
+    nodes.map((node) => node.getAttribute("data-gsn-trustslip-qr-value") || "")
+  );
+  for (const value of qrValues) {
+    const qrUrl = new URL(value, baseURL);
+    if (`${qrUrl.pathname}${qrUrl.search}` !== `${linkUrl.pathname}${linkUrl.search}`) {
+      throw new Error(
+        `TrustSlip QR value and public Decision Pack link diverged: qr=${value}; link=${publicPackHref}`
+      );
+    }
+  }
+}
+
 function assertSignedInHolderReads(requestLog, label) {
   const holderReads = requestLog.filter(
     (entry) => entry.method === "GET" && entry.path.startsWith("/trust-slips/me")
@@ -675,6 +737,7 @@ async function runTrustSlipScenario(browser, baseURL) {
     "Is there enough evidence to continue an employment conversation?"
   );
   await expect(selectedPackSummary).toContainText("Role, consistency");
+  await assertTrustSlipQrCarriesSelectedDecisionPack(state.page, baseURL);
   const decisionBoundary = state.page.locator(
     '[data-gsn-trustslip-decision-boundary="compact"]'
   );
@@ -945,6 +1008,7 @@ async function main() {
         "/app/trust-slip rendered the holder TrustSlip certificate;",
         "expired, revoked, frozen, phone-blocked, missing-code, and low-data holder states stayed bounded;",
         "signed-in holder reads carried auth;",
+        "holder QR and public pack link carried the same selected Decision Pack context;",
         "public verify was not called on holder/private page load;",
         "bank/payment/release/private Passport limits rendered.",
       ].join(" ")

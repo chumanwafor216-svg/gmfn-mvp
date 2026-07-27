@@ -1368,7 +1368,11 @@ function TrustSlipQrCode({
   size?: number;
 }) {
   return (
-    <div style={qrBoxStyle(size + 12)}>
+    <div
+      data-gsn-trustslip-qr-value={value}
+      aria-label="TrustSlip verify QR"
+      style={qrBoxStyle(size + 12)}
+    >
       <QRCodeSVG
         value={value}
         size={size}

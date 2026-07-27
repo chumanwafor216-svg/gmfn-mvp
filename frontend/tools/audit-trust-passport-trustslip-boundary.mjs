@@ -456,6 +456,20 @@ assertContains(
   "trustSlip",
   /withPublicDecisionPackQuery[\s\S]*?decision_pack: selectedPurposeOption\.key[\s\S]*?access_purpose: selectedPurposeOption\.label[\s\S]*?recipient_question: selectedPurposeOption\.recipientQuestion[\s\S]*?decision_focus: selectedPurposeOption\.focus[\s\S]*?const verifyPath = useMemo[\s\S]*?withPublicDecisionPackQuery\(basePath, publicDecisionPackQuery\)/,
   "TrustSlip holder verify links and QR must carry the selected public Decision Pack context."
+);assertContains(
+  "trustSlip",
+  /const qrValue = firstTruthy\(verifyUrl, verifyPath, trustSlipCode\);/,
+  "TrustSlip holder QR value must prefer the selected public verify URL before falling back to raw path or code."
+);
+assertContains(
+  "trustSlip",
+  /function TrustSlipQrCode[\s\S]*?data-gsn-trustslip-qr-value=\{value\}[\s\S]*?<QRCodeSVG[\s\S]*?value=\{value\}/,
+  "TrustSlip holder QR must expose a stable test hook proving the encoded public verification value."
+);
+assertContains(
+  "smoke",
+  /assertTrustSlipQrCarriesSelectedDecisionPack[\s\S]*?decision_pack: "employment_decision"[\s\S]*?trust-slip\.public-decision-pack\.open[\s\S]*?data-gsn-trustslip-qr-value[\s\S]*?TrustSlip QR value and public Decision Pack link diverged/,
+  "TrustSlip holder browser smoke must prove the QR and public pack link carry the same selected Decision Pack URL."
 );
 assertContains(
   "trustSlip",
