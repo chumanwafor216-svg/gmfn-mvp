@@ -523,6 +523,11 @@ assertContains(
 });
 
 assertContains(
+  "src/pages/LoansPage.tsx",
+  /const LOANS_UI_STORAGE_KEY = "gmfn\.loans\.sections\.v3";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?overview: true,[\s\S]*?focus: true,[\s\S]*?borrower: true,[\s\S]*?guarantor: true,[\s\S]*?routes: true,/,
+  "Loan Support landing page must default focus, borrower, supporter, overview, and route detail lanes closed so the phone starts with the support decision and first action."
+);
+assertContains(
   "src/pages/LoanSuggestionsPage.tsx",
   /const LOAN_SUGGESTIONS_UI_STORAGE_KEY = "gmfn\.loanSuggestions\.sections\.v3";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?overview: true,[\s\S]*?reading: true,[\s\S]*?supporters: true,[\s\S]*?routes: true,/,
   "Loan Suggestions must default deeper overview, reading, supporters, and routes closed so the phone view leads with the fit decision."

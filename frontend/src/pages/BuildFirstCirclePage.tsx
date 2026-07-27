@@ -78,7 +78,7 @@ type CollapseState = {
 type NoticeTone = "success" | "error";
 type FocusedAction = "invite" | null;
 
-const UI_STORAGE_KEY = "gmfn.buildFirstCircle.sections.v2";
+const UI_STORAGE_KEY = "gmfn.buildFirstCircle.sections.v3";
 const DRAFT_FALLBACK_KEY = "gmfn.firstCircle.fallback.v1";
 const COMMUNITY_DOMAIN_INVITE_MESSAGE_KEY =
   "gmfn.buildFirstCircle.communityDomainInviteMessage.v1";
@@ -508,8 +508,8 @@ function writeLocalJSON(key: string, value: any) {
 
 function defaultCollapseState(): CollapseState {
   return {
-    progress: false,
-    role: false,
+    progress: true,
+    role: true,
     add: true,
     contacts: true,
     invite: true,

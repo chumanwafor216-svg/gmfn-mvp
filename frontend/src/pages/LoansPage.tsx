@@ -65,7 +65,7 @@ type CollapseState = {
   routes: boolean;
 };
 
-const LOANS_UI_STORAGE_KEY = "gmfn.loans.sections.v2";
+const LOANS_UI_STORAGE_KEY = "gmfn.loans.sections.v3";
 const WITHDRAWAL_TASK_STORAGE_KEY_PREFIXES = [
   "gmfn.withdrawal.task.v5",
   "gmfn.withdrawal.task.v4",
@@ -438,9 +438,9 @@ function writeLocalJSON(key: string, value: any) {
 function defaultCollapseState(): CollapseState {
   return {
     overview: true,
-    focus: false,
-    borrower: false,
-    guarantor: false,
+    focus: true,
+    borrower: true,
+    guarantor: true,
     routes: true,
   };
 }

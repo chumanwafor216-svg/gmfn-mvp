@@ -226,6 +226,11 @@ assertNotContains(
 
 assertContains(
   "src/pages/BuildFirstCirclePage.tsx",
+  /const UI_STORAGE_KEY = "gmfn\.buildFirstCircle\.sections\.v3";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?progress: true,[\s\S]*?role: true,[\s\S]*?add: true,[\s\S]*?contacts: true,[\s\S]*?invite: true,/,
+  "Build First Circle must default progress, role, add, contacts, and invite lanes closed so the phone starts with the circle-building action instead of exposed guidance blocks."
+);
+assertContains(
+  "src/pages/BuildFirstCirclePage.tsx",
   /GSN ID: \{gmfnId \|\| "Not issued yet"\}/,
   "Build First Circle must show an honest missing-GSN-ID label instead of stale issue-tracking language."
 );

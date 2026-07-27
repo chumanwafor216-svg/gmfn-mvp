@@ -157133,3 +157133,33 @@ Verification run locally:
 
 Deployment:
 - Local only. Push/deploy only when owner sends `2`.
+
+## 2026-07-27 - Local First Circle And Loan Landing Decongestion Pass
+
+- Scope: local-only continuation of the app-wide phone decongestion work after the owner selected `1`.
+- `frontend/src/pages/BuildFirstCirclePage.tsx`
+  - Bumped `gmfn.buildFirstCircle.sections.v2` to `gmfn.buildFirstCircle.sections.v3`.
+  - Defaulted Progress, Role, Add, Contacts, and Invite lanes closed so the first phone view starts with the circle-building action instead of exposing multiple guidance blocks.
+- `frontend/src/pages/LoansPage.tsx`
+  - Bumped `gmfn.loans.sections.v2` to `gmfn.loans.sections.v3`.
+  - Defaulted Overview, Focus, Borrower, Supporter, and Routes lanes closed so Loan Support opens as a simple decision-first landing page.
+- `frontend/tools/audit-member-entry-actions.mjs`
+  - Added a guard for the Build First Circle v3 quiet default state.
+- `frontend/tools/audit-loans-actions.mjs`
+  - Added a guard for the Loan Support v3 quiet default state.
+
+Unabated truth:
+- This is default presentation/state cleanup only.
+- It does not change first-circle invite generation, contact selection, copied invite text, loan/support routing, support requests, borrower/supporter logic, finance records, backend APIs, auth, or evidence generation.
+- Users can still open every covered lane immediately when needed.
+
+Verification run locally:
+- `node frontend\tools\audit-loans-actions.mjs`
+- `node frontend\tools\audit-member-entry-actions.mjs`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run lint`
+- `git diff --check` passed with normal CRLF warnings.
+- `npm --prefix frontend run build`
+
+Deployment:
+- Local only. Push/deploy only when owner sends `2`.
