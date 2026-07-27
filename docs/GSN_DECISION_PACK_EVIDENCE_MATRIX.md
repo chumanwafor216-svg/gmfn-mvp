@@ -118,6 +118,12 @@ community this kind of question, and did aggregate witness responses arrive?"
 They do not expose responder identities, private notes, requester labels, licences,
 guarantees, approvals, or final decisions.
 
+Across Decision Packs, the live Community Confirmation prompt now carries
+purpose-specific mechanics: who can answer, what their answer counts as, and
+what happens when the answer is thin, cautious, disputed, or unable to confirm.
+This is the society-equivalent verification ladder: community witness evidence
+first, then review or external proof where the GSN evidence is not enough.
+
 Across Decision Packs, the engine now also exposes public-safe issue-resolution
 pointers from existing Community Confirmation decision/review records where they
 exist. These answer "does GSN have any review-status evidence showing issues were

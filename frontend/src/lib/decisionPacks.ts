@@ -16,6 +16,12 @@ export type DecisionPackSource = {
   evidence: string;
 };
 
+export type DecisionPackConfirmationMechanics = {
+  responders: string;
+  countsAs: string;
+  escalation: string;
+};
+
 export type DecisionPackDefinition = {
   key: DecisionPackKey;
   label: string;
@@ -338,6 +344,66 @@ export function compactDecisionPackConfirmation(pack: DecisionPackDefinition): s
   return cleanDecisionPackText(pack.confirmationQuestion) || "Ask current community witnesses the purpose-specific question before relying.";
 }
 
+export function decisionPackConfirmationMechanics(
+  pack: DecisionPackDefinition | DecisionPackPublicContext | null | undefined
+): DecisionPackConfirmationMechanics {
+  const reason = cleanDecisionPackText(pack?.confirmationReasonType).toLowerCase();
+  if (reason === "employment_role_check") {
+    return {
+      responders: "Community responders, customers, sponsors, or leaders who have seen the role or work context.",
+      countsAs: "Witness evidence that the person is known for the role; not right-to-work, licence, or future performance proof.",
+      escalation: "If answers are thin or disputed, ask for completed-work, employer, or customer evidence before relying.",
+    };
+  }
+  if (reason === "housing_reference_check") {
+    return {
+      responders: "Current community responders who can speak to participation, promise-keeping, issue handling, and community conduct.",
+      countsAs: "Society-equivalent conduct evidence for inference; not tenancy approval, affordability, right-to-rent, or landlord proof.",
+      escalation: "If more is needed, the holder may separately share an external landlord or agent contact with consent.",
+    };
+  }
+  if (reason === "trade_skill_check") {
+    return {
+      responders: "Community responders, customers, marketplace contacts, or leaders who have seen the trade or service.",
+      countsAs: "Witness evidence that the person is known for the trade; not licence, insurance, or home-safety guarantee.",
+      escalation: "If answers are thin, ask for customer-confirmed completed work or issue-resolution evidence.",
+    };
+  }
+  if (reason === "guarantor_support_check") {
+    return {
+      responders: "Community responders, sponsors, guarantors, or leaders who know responsibility and support behaviour.",
+      countsAs: "Responsibility and follow-through witness evidence; not loan approval, bank guarantee, or automatic repayment proof.",
+      escalation: "If support risk remains unclear, reduce exposure or ask for repayment and guarantee-outcome evidence.",
+    };
+  }
+  if (reason === "supplier_reliability_check" || reason === "partnership_check") {
+    return {
+      responders: "Community/domain responders, customers, suppliers, or leaders connected to the operating context.",
+      countsAs: "Reliability and fulfilment witness evidence; not due diligence, escrow, delivery guarantee, or profit assurance.",
+      escalation: "If there is concern, ask for protected-trade outcomes, correction history, and review evidence.",
+    };
+  }
+  if (reason === "volunteer_role_check" || reason === "membership_admission_check") {
+    return {
+      responders: "Sponsors, current witnesses, community admins, or delegated leaders who know the relationship route.",
+      countsAs: "Participation, responsibility, and relationship evidence; not safeguarding clearance, legal eligibility, or automatic admission.",
+      escalation: "If the role is sensitive or the relationship is unclear, use deeper review before admitting or placing the person.",
+    };
+  }
+  if (reason === "referral_check") {
+    return {
+      responders: "Sponsors, inviters, current witnesses, or community leaders who know the relationship route.",
+      countsAs: "Relationship evidence for referral judgement; not a guarantee or removal of recipient responsibility.",
+      escalation: "If the relationship is weak, ask for a stronger witness or choose not to refer yet.",
+    };
+  }
+  return {
+    responders: "Community admins, sponsors, nominated contacts, or current member witnesses allowed by the community policy.",
+    countsAs: "Aggregate community witness evidence about what the community genuinely knows.",
+    escalation: "Caution, dispute, or unable-to-confirm answers go to review or further evidence, not automatic judgement.",
+  };
+}
+
 export function findDecisionPack(value: unknown): DecisionPackDefinition | null {
   const text = cleanDecisionPackText(value);
   if (!text) return null;
@@ -364,6 +430,7 @@ export type DecisionPackPublicContext = {
   refusesToClaim: readonly string[];
   confirmationReasonType: string;
   confirmationQuestion: string;
+  confirmationMechanics: DecisionPackConfirmationMechanics;
 };
 
 export function normalizeDecisionPackPublicContext(input: {
@@ -395,5 +462,6 @@ export function normalizeDecisionPackPublicContext(input: {
     confirmationQuestion:
       pack?.confirmationQuestion ||
       "Ask current community witnesses the purpose-specific question before relying.",
+    confirmationMechanics: decisionPackConfirmationMechanics(pack || null),
   };
 }

@@ -352,7 +352,7 @@ assertContains(
 );
 assertContains(
   "decisionPacks",
-  /expectedEvidence[\s\S]*?gsnSources[\s\S]*?missingLinks[\s\S]*?refusesToClaim[\s\S]*?confirmationReasonType[\s\S]*?confirmationQuestion[\s\S]*?Employment Decision Pack[\s\S]*?Demand Box[\s\S]*?employment_role_check[\s\S]*?Housing Decision Pack[\s\S]*?Previous landlord[\s\S]*?housing_reference_check[\s\S]*?Trade or Skilled Work Decision Pack[\s\S]*?Customer-confirmed completed-job record[\s\S]*?trade_skill_check/,
+  /DecisionPackConfirmationMechanics[\s\S]*?expectedEvidence[\s\S]*?gsnSources[\s\S]*?missingLinks[\s\S]*?refusesToClaim[\s\S]*?confirmationReasonType[\s\S]*?confirmationQuestion[\s\S]*?Employment Decision Pack[\s\S]*?Demand Box[\s\S]*?employment_role_check[\s\S]*?Housing Decision Pack[\s\S]*?Previous landlord[\s\S]*?housing_reference_check[\s\S]*?Trade or Skilled Work Decision Pack[\s\S]*?Customer-confirmed completed-job record[\s\S]*?trade_skill_check[\s\S]*?decisionPackConfirmationMechanics[\s\S]*?promise-keeping[\s\S]*?Society-equivalent conduct evidence/,
   "Decision Pack catalog must map purpose questions to expected evidence, GSN sources, missing architecture, community-confirmation prompts, and explicit overclaim boundaries."
 );
 assertContains(
@@ -372,18 +372,18 @@ assertContains(
 );
 assertContains(
   "trustSlip",
-  /label: "Confirmation route"[\s\S]*?selectedPurposeOption\.confirmationQuestion[\s\S]*?Responses become community witness evidence, not approval/,
-  "TrustSlip holder Decision Pack selection must visibly map the selected purpose to its live community confirmation question and boundary."
+  /label: "Who answers"[\s\S]*?decisionPackConfirmationMechanics\(selectedPurposeOption\)\.responders/,
+  "TrustSlip holder Decision Pack selection must visibly map the selected purpose to who can answer the live community confirmation."
 );
 assertContains(
   "publicPaper",
-  /communityConfirmationPrompt: \{[\s\S]*?reasonType: string;[\s\S]*?question: string;[\s\S]*?boundary: string;[\s\S]*?\}/,
-  "Public TrustSlip paper must type the Decision Pack community confirmation prompt so the selected route is not treated as generic community proof."
+  /communityConfirmationPrompt: \{[\s\S]*?reasonType: string;[\s\S]*?question: string;[\s\S]*?responders: string;[\s\S]*?countsAs: string;[\s\S]*?escalation: string;[\s\S]*?boundary: string;[\s\S]*?\}/,
+  "Public TrustSlip paper must type the Decision Pack community confirmation mechanics so the selected route is not treated as generic community proof."
 );
 assertContains(
   "publicPaper",
-  /const liveConfirmationRouteRows[\s\S]*?decisionPackProfile\.communityConfirmationPrompt\.question[\s\S]*?decisionPackProfile\.communityConfirmationPrompt\.reasonType[\s\S]*?Responses become aggregate community witness evidence[\s\S]*?decisionPackProfile\.communityConfirmationPrompt\.boundary[\s\S]*?title="Live confirmation route"[\s\S]*?rows=\{liveConfirmationRouteRows\}/,
-  "Public TrustSlip verification must show the selected Decision Pack question, institutional route, evidence created, and boundary before the live request button."
+  /const liveConfirmationRouteRows[\s\S]*?Decision question[\s\S]*?decisionPackProfile\.communityConfirmationPrompt\.question[\s\S]*?Who answers[\s\S]*?decisionPackProfile\.communityConfirmationPrompt\.responders[\s\S]*?What counts[\s\S]*?decisionPackProfile\.communityConfirmationPrompt\.countsAs[\s\S]*?If there is concern[\s\S]*?decisionPackProfile\.communityConfirmationPrompt\.escalation[\s\S]*?Boundary[\s\S]*?title="Live confirmation route"[\s\S]*?rows=\{liveConfirmationRouteRows\}/,
+  "Public TrustSlip verification must show the selected Decision Pack question, who answers, what counts, escalation, and boundary before the live request button."
 );
 assertContains(
   "trustSlip",

@@ -304,6 +304,57 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
 )
 
 
+def _confirmation_mechanics(reason_type: Any) -> dict[str, str]:
+    reason = _clean(reason_type, limit=64).lower()
+    if reason == "employment_role_check":
+        return {
+            "responders": "Community responders, customers, sponsors, or leaders who have seen the role or work context.",
+            "counts_as": "Witness evidence that the person is known for the role; not right-to-work, licence, or future performance proof.",
+            "escalation": "If answers are thin or disputed, ask for completed-work, employer, or customer evidence before relying.",
+        }
+    if reason == "housing_reference_check":
+        return {
+            "responders": "Current community responders who can speak to participation, promise-keeping, issue handling, and community conduct.",
+            "counts_as": "Society-equivalent conduct evidence for inference; not tenancy approval, affordability, right-to-rent, or landlord proof.",
+            "escalation": "If more is needed, the holder may separately share an external landlord or agent contact with consent.",
+        }
+    if reason == "trade_skill_check":
+        return {
+            "responders": "Community responders, customers, marketplace contacts, or leaders who have seen the trade or service.",
+            "counts_as": "Witness evidence that the person is known for the trade; not licence, insurance, or home-safety guarantee.",
+            "escalation": "If answers are thin, ask for customer-confirmed completed work or issue-resolution evidence.",
+        }
+    if reason == "guarantor_support_check":
+        return {
+            "responders": "Community responders, sponsors, guarantors, or leaders who know responsibility and support behaviour.",
+            "counts_as": "Responsibility and follow-through witness evidence; not loan approval, bank guarantee, or automatic repayment proof.",
+            "escalation": "If support risk remains unclear, reduce exposure or ask for repayment and guarantee-outcome evidence.",
+        }
+    if reason in {"supplier_reliability_check", "partnership_check"}:
+        return {
+            "responders": "Community/domain responders, customers, suppliers, or leaders connected to the operating context.",
+            "counts_as": "Reliability and fulfilment witness evidence; not due diligence, escrow, delivery guarantee, or profit assurance.",
+            "escalation": "If there is concern, ask for protected-trade outcomes, correction history, and review evidence.",
+        }
+    if reason in {"volunteer_role_check", "membership_admission_check"}:
+        return {
+            "responders": "Sponsors, current witnesses, community admins, or delegated leaders who know the relationship route.",
+            "counts_as": "Participation, responsibility, and relationship evidence; not safeguarding clearance, legal eligibility, or automatic admission.",
+            "escalation": "If the role is sensitive or the relationship is unclear, use deeper review before admitting or placing the person.",
+        }
+    if reason == "referral_check":
+        return {
+            "responders": "Sponsors, inviters, current witnesses, or community leaders who know the relationship route.",
+            "counts_as": "Relationship evidence for referral judgement; not a guarantee or removal of recipient responsibility.",
+            "escalation": "If the relationship is weak, ask for a stronger witness or choose not to refer yet.",
+        }
+    return {
+        "responders": "Community admins, sponsors, nominated contacts, or current member witnesses allowed by the community policy.",
+        "counts_as": "Aggregate community witness evidence about what the community genuinely knows.",
+        "escalation": "Caution, dispute, or unable-to-confirm answers go to review or further evidence, not automatic judgement.",
+    }
+
+
 def _clean(value: Any, *, limit: int = 360) -> str:
     text = str(value or "").strip()
     if not text:
@@ -373,6 +424,7 @@ def normalize_decision_pack_context(params: Mapping[str, Any]) -> Optional[dict[
                 "refuses_to_claim": list(pack.refuses_to_claim),
                 "confirmation_reason_type": pack.confirmation_reason_type,
                 "confirmation_question": pack.confirmation_question,
+                "confirmation_mechanics": _confirmation_mechanics(pack.confirmation_reason_type),
             }
         )
     else:
@@ -384,6 +436,7 @@ def normalize_decision_pack_context(params: Mapping[str, Any]) -> Optional[dict[
                 "refuses_to_claim": [],
                 "confirmation_reason_type": "community_standing_check",
                 "confirmation_question": "Ask current community witnesses the purpose-specific question before relying.",
+                "confirmation_mechanics": _confirmation_mechanics("community_standing_check"),
             }
         )
     return context
@@ -2506,6 +2559,12 @@ def build_decision_pack_profile(
     ]
     gsn_sources = _context_source_rows(context)
     boundary_list = _context_boundaries(context)
+    raw_mechanics = context.get("confirmation_mechanics")
+    confirmation_mechanics = (
+        raw_mechanics
+        if isinstance(raw_mechanics, Mapping)
+        else _confirmation_mechanics(context.get("confirmation_reason_type"))
+    )
     expected_signals = [
         {
             "key": f"expected_evidence_{index + 1}",
@@ -2704,6 +2763,21 @@ def build_decision_pack_profile(
                 limit=320,
             )
             or "Ask current community witnesses the purpose-specific question before relying.",
+            "responders": _clean(
+                confirmation_mechanics.get("responders"),
+                limit=320,
+            )
+            or "Community admins, sponsors, nominated contacts, or current member witnesses allowed by the community policy.",
+            "counts_as": _clean(
+                confirmation_mechanics.get("counts_as"),
+                limit=320,
+            )
+            or "Aggregate community witness evidence about what the community genuinely knows.",
+            "escalation": _clean(
+                confirmation_mechanics.get("escalation"),
+                limit=320,
+            )
+            or "Caution, dispute, or unable-to-confirm answers go to review or further evidence, not automatic judgement.",
             "boundary": "Responses are community witness evidence only; they are not licences, guarantees, approvals, or final decisions.",
         },
         "relevant_signals": signals[:10],

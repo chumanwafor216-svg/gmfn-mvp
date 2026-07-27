@@ -34,6 +34,7 @@ import {
   compactDecisionPackBoundaries,
   compactDecisionPackEvidence,
   compactDecisionPackConfirmation,
+  decisionPackConfirmationMechanics,
   compactDecisionPackMissingLinks,
   compactDecisionPackSources,
   DEFAULT_DECISION_PACK,
@@ -3584,8 +3585,8 @@ export default function TrustSlipPage() {
       icon: "community" as GsnIconName,
     },
     {
-      label: "Confirmation route",
-      value: `${selectedPurposeOption.confirmationQuestion} Responses become community witness evidence, not approval.`,
+      label: "Who answers",
+      value: decisionPackConfirmationMechanics(selectedPurposeOption).responders,
       icon: "community-building" as GsnIconName,
     },
   ];

@@ -276,6 +276,9 @@ def test_public_verify_decision_pack_short_label_canonicalizes_like_frontend(
     prompt = profile["community_confirmation_prompt"]
     assert prompt["reason_type"] == "employment_role_check"
     assert "known for the work" in prompt["question"]
+    assert "customers" in prompt["responders"]
+    assert "not right-to-work" in prompt["counts_as"]
+    assert "completed-work" in prompt["escalation"]
     assert "not licences" in prompt["boundary"]
 
     db = SessionLocal()
@@ -313,9 +316,13 @@ def test_public_verify_decision_pack_matrix_answers_housing_and_trade_questions(
     assert "Previous landlord or accommodation witness route" in housing_profile["missing_links"]
     assert "Right to rent" in housing_profile["refuses_to_claim"]
     assert "Right to rent" in housing_profile["boundary_note"]
-    assert housing_profile["community_confirmation_prompt"]["reason_type"] == "housing_reference_check"
-    assert "live with others" in housing_profile["community_confirmation_prompt"]["question"]
-    assert "payment discipline" in housing_profile["community_confirmation_prompt"]["question"]
+    housing_prompt = housing_profile["community_confirmation_prompt"]
+    assert housing_prompt["reason_type"] == "housing_reference_check"
+    assert "live with others" in housing_prompt["question"]
+    assert "payment discipline" in housing_prompt["question"]
+    assert "promise-keeping" in housing_prompt["responders"]
+    assert "Society-equivalent conduct evidence" in housing_prompt["counts_as"]
+    assert "landlord or agent contact" in housing_prompt["escalation"]
 
     assert trade_response.status_code == 200, trade_response.text
     trade_profile = trade_response.json()["decision_pack_profile"]
@@ -324,8 +331,11 @@ def test_public_verify_decision_pack_matrix_answers_housing_and_trade_questions(
     assert "Customer-confirmed completed-job record" in trade_profile["missing_links"]
     assert "Trade licence" in trade_profile["refuses_to_claim"]
     assert "Trade licence" in trade_profile["boundary_note"]
-    assert trade_profile["community_confirmation_prompt"]["reason_type"] == "trade_skill_check"
-    assert "known for this trade" in trade_profile["community_confirmation_prompt"]["question"]
+    trade_prompt = trade_profile["community_confirmation_prompt"]
+    assert trade_prompt["reason_type"] == "trade_skill_check"
+    assert "known for this trade" in trade_prompt["question"]
+    assert "marketplace contacts" in trade_prompt["responders"]
+    assert "not licence" in trade_prompt["counts_as"]
     assert "trust_score" not in str(housing_profile)
     assert "recipient_name" not in str(trade_profile)
 

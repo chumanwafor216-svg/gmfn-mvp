@@ -11,7 +11,7 @@ import {
 } from "../components/StableButton";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
 import * as api from "../lib/api";
-import { normalizeDecisionPackPublicContext } from "../lib/decisionPacks";
+import { decisionPackConfirmationMechanics, normalizeDecisionPackPublicContext } from "../lib/decisionPacks";
 import {
   institutionalPageCard,
   institutionalSoftCard,
@@ -328,6 +328,9 @@ export default function TrustSlipVerifyPage() {
         community_confirmation_prompt: {
           reason_type: decisionPack.confirmationReasonType,
           question: decisionPack.confirmationQuestion,
+          responders: decisionPackConfirmationMechanics(decisionPack).responders,
+          counts_as: decisionPackConfirmationMechanics(decisionPack).countsAs,
+          escalation: decisionPackConfirmationMechanics(decisionPack).escalation,
           boundary:
             "Responses are community witness evidence only; they are not licences, guarantees, approvals, or final decisions.",
         },

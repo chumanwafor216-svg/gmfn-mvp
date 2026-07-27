@@ -167,6 +167,9 @@ export type DecisionPackProfileView = {
   communityConfirmationPrompt: {
     reasonType: string;
     question: string;
+    responders: string;
+    countsAs: string;
+    escalation: string;
     boundary: string;
   };
   relevantSignals: DecisionPackProfileSignal[];
@@ -645,6 +648,19 @@ function normalizeDecisionPackProfile(
       question: firstTruthy(
         prompt.question,
         "Ask current community witnesses the purpose-specific question before relying."
+      ),
+      responders: firstTruthy(
+        prompt.responders,
+        "Community admins, sponsors, nominated contacts, or current member witnesses allowed by the community policy."
+      ),
+      countsAs: firstTruthy(
+        prompt.counts_as,
+        prompt.countsAs,
+        "Aggregate community witness evidence about what the community genuinely knows."
+      ),
+      escalation: firstTruthy(
+        prompt.escalation,
+        "Caution, dispute, or unable-to-confirm answers go to review or further evidence, not automatic judgement."
       ),
       boundary: firstTruthy(
         prompt.boundary,

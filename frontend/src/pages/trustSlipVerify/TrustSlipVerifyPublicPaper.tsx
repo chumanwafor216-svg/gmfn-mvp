@@ -248,6 +248,9 @@ type TrustSlipVerifyPublicPaperProps = {
     communityConfirmationPrompt: {
       reasonType: string;
       question: string;
+      responders: string;
+      countsAs: string;
+      escalation: string;
       boundary: string;
     };
   };
@@ -1479,15 +1482,25 @@ export default function TrustSlipVerifyPublicPaper({
       ),
     ],
     [
-      "Institutional route",
-      `GSN routes this as ${firstTruthy(
-        decisionPackProfile.communityConfirmationPrompt.reasonType,
-        "community_standing_check"
-      )} to eligible community responders.`,
+      "Who answers",
+      firstTruthy(
+        decisionPackProfile.communityConfirmationPrompt.responders,
+        "Community admins, sponsors, nominated contacts, or current member witnesses allowed by the community policy."
+      ),
     ],
     [
-      "Evidence created",
-      "Responses become aggregate community witness evidence and may point back into TrustEvents.",
+      "What counts",
+      firstTruthy(
+        decisionPackProfile.communityConfirmationPrompt.countsAs,
+        "Aggregate community witness evidence about what the community genuinely knows."
+      ),
+    ],
+    [
+      "If there is concern",
+      firstTruthy(
+        decisionPackProfile.communityConfirmationPrompt.escalation,
+        "Caution, dispute, or unable-to-confirm answers go to review or further evidence, not automatic judgement."
+      ),
     ],
     [
       "Boundary",

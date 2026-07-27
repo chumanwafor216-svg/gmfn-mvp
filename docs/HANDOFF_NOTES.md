@@ -1,3 +1,50 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack confirmation mechanics
+
+Owner trigger:
+- Owner selected `1` again after the live confirmation route slice, continuing the institutional confirmation work locally.
+- Product direction: GSN should show the social equivalent of verification for each category: who can answer, what their answer counts as, and what happens when evidence is thin or disputed.
+
+Unabated truth:
+- The previous slice made the selected confirmation question visible, but it still exposed the route too generically and briefly showed internal-style reason wording on the public paper.
+- This slice adds the missing mechanics layer. It does not create new witness-answer forms, new landlord-reference storage, new committee voting rules, or new TrustEvent categories.
+- Devil's advocate: the UI can now explain who should answer, but the answer is only strong if the community has eligible responders and real evidence. Thin community evidence still means the reader should ask for live confirmation, private evidence, or external proof.
+
+Changed:
+- frontend/src/lib/decisionPacks.ts
+  - Added `DecisionPackConfirmationMechanics` and `decisionPackConfirmationMechanics()` for purpose-specific responders, evidence meaning, and escalation language.
+- frontend/src/pages/TrustSlipPage.tsx
+  - Replaced the holder Decision Pack confirmation route row with a clearer `Who answers` row tied to the selected pack mechanics.
+- frontend/src/pages/TrustSlipVerifyPage.tsx
+  - Public Decision Pack URL-created context now includes responders, what-counts-as, and escalation in `community_confirmation_prompt`.
+- frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts
+  - Normalizes the new prompt mechanics, with safe fallbacks for older payloads.
+- frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx
+  - Public paper now shows `Decision question`, `Who answers`, `What counts`, `If there is concern`, and `Boundary` before the live confirmation request button.
+  - Removed reader-visible raw reason-type phrasing from that table.
+- gmfn_backend/app/services/trust_slip_decision_packs.py
+  - Backend Decision Pack context/profile now carries the same confirmation mechanics for API-generated public verification payloads.
+- gmfn_backend/tests/test_trust_slip_boundary_controls.py
+  - Added assertions for employment, housing, and trade confirmation mechanics.
+- docs/GSN_DECISION_PACK_EVIDENCE_MATRIX.md
+  - Recorded the confirmation mechanics layer as part of the Decision Pack engine.
+- frontend/tools/audit-trust-passport-trustslip-boundary.mjs
+  - Added guards for shared mechanics and the public paper's who/what/escalation rows.
+
+Verification:
+- Passed npm --prefix frontend run audit:trust-passport-trustslip-boundary
+- Passed python -m pytest gmfn_backend\tests\test_trust_slip_boundary_controls.py -k "decision_pack_matrix"
+- Passed python -m pytest gmfn_backend\tests\test_trust_slip_boundary_controls.py::test_public_verify_decision_pack_short_label_canonicalizes_like_frontend gmfn_backend\tests\test_trust_slip_boundary_controls.py::test_public_verify_decision_pack_matrix_answers_housing_and_trade_questions
+- Passed npm --prefix frontend run build
+- Passed npm --prefix frontend run audit:protected-button-freeze
+- Passed npm --prefix frontend run smoke:trust-passport-trustslip-boundary after elevated rerun for browser spawn needs
+- Passed npm --prefix frontend run smoke:public-trustslip-verify-states after elevated rerun for sandbox spawn EPERM
+- Passed git diff --check; only Git line-ending warnings were reported.
+
+Deployment:
+- Local only. Not pushed or deployed in this slice because owner selected `1`, not `2=push deploy`.
+
+Next recommended step:
+- Continue scenario-by-scenario coverage: confirm public/holder wording for employment/trade, housing, guarantorship/support, supplier/work, membership/admission, and partnership against actual screens and backend extracts; then move into Community Confirmation Policy/Inbox phone presentation if the owner wants the responder side polished next.
 ## CURRENT LOCAL STATE - 2026-07-27 - TrustSlip Decision Pack live confirmation route
 
 Owner trigger:
