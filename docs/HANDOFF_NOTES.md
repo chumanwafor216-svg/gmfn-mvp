@@ -1,3 +1,48 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Backend Decision Pack matrix parity
+
+Owner trigger:
+- Owner selected continue=1 after the frontend/public TrustSlip Decision Pack evidence matrix pass.
+
+Unabated truth:
+- The frontend pass was strong but not complete architecture parity. Public verify prefers backend decision_pack_profile when present, so the backend also needed the same category intelligence.
+- This slice moves the evidence/source/gap/boundary matrix into gmfn_backend/app/services/trust_slip_decision_packs.py and exposes it through the existing public-safe decision_pack_profile.
+- Devil's advocate: this still does not create new data capture tables or prove the missing evidence exists. It makes the backend tell the truth about what should be checked, where GSN can point, what remains missing, and what GSN refuses to certify.
+
+Changed:
+- gmfn_backend/app/services/trust_slip_decision_packs.py
+  - DecisionPackDefinition now carries expected_evidence, gsn_sources, missing_links, and refuses_to_claim.
+  - All ten backend Decision Packs now mirror the frontend matrix for Community Standing, Referral, Guarantor/Support, Employment, Housing, Trade/Skilled Work, Supplier, Volunteer, Business Partnership, and Community Membership.
+  - normalize_decision_pack_context now attaches the matrix to the in-memory context without storing it in the bounded access ledger.
+  - build_decision_pack_profile now returns expected_evidence, gsn_sources, missing_links, refuses_to_claim, expected-evidence rows, architecture-gap rows, source-based recommended checks, and purpose-specific boundary text.
+- gmfn_backend/tests/test_trust_slip_boundary_controls.py
+  - Added assertions proving Employment returns work-role/Demand Box/completed-work/right-to-work boundaries.
+  - Added Housing and Trade matrix coverage for Finance/ROSCA/landlord gaps and Demand Box/customer-confirmed job/trade licence boundaries.
+- frontend/tools/audit-public-trustslip-verify-boundary.mjs
+  - Added guards that backend Decision Packs keep the same evidence/source/gap/boundary matrix and expose it in decision_pack_profile without becoming a score.
+- docs/GSN_DECISION_PACK_EVIDENCE_MATRIX.md
+  - Updated backend parity note: backend catalogue/profile parity is now in place; remaining work is deeper data capture and purpose-specific workflow buildout.
+
+Routes/screens affected:
+- Backend /trust-slips/verify/{code} when a Decision Pack query is supplied.
+- Backend /trust-slips/me/decision-pack-evidence context normalization indirectly.
+- Public /trust-slips/verify and /app/trust-slips/verify now receive richer server profiles when the backend is present.
+- No database schema, auth, payment, ledger, TrustEvent write path, or recipient identity capture changed.
+
+Verification:
+- Passed python -m pytest gmfn_backend\tests\test_trust_slip_boundary_controls.py -q.
+- Passed npm --prefix frontend run audit:public-trustslip-verify-boundary.
+- Passed npm --prefix frontend run audit:trust-passport-trustslip-boundary.
+- Passed npm --prefix frontend run audit:protected-button-freeze.
+- Passed npm --prefix frontend run build.
+- Passed npm --prefix frontend run smoke:public-trustslip-verify-states outside the sandbox after known Vite/esbuild spawn EPERM.
+- Passed npm --prefix frontend run smoke:trust-passport-trustslip-boundary outside the sandbox after known Vite/esbuild spawn EPERM.
+
+Deployment:
+- Not pushed or deployed. Git publishing remains frozen into batch mode until owner approves publishing.
+
+Recommended next step:
+- Build the actual missing record apps/workflows: structured skill/trade declarations, completed work and customer confirmation, landlord/accommodation references, issue-resolution summaries, guarantee exposure outcomes, supplier fulfilment/correction records, and purpose-specific community confirmation questions.
+
 ## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack evidence matrix
 
 Owner trigger:

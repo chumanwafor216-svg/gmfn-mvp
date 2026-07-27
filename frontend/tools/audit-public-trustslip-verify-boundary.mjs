@@ -330,6 +330,22 @@ assertContains(
 
 assertContains(
   "backendDecisionPacks",
+  /class DecisionPackDefinition:[\s\S]*?expected_evidence: tuple\[str, \.\.\.\][\s\S]*?gsn_sources: tuple\[dict\[str, str\], \.\.\.\][\s\S]*?missing_links: tuple\[str, \.\.\.\][\s\S]*?refuses_to_claim: tuple\[str, \.\.\.\][\s\S]*?Employment Decision Pack[\s\S]*?Demand Box[\s\S]*?Housing Decision Pack[\s\S]*?Previous landlord[\s\S]*?Trade or Skilled Work Decision Pack[\s\S]*?Customer-confirmed completed-job record/,
+  "Backend Decision Pack catalog must carry the same evidence/source/gap/boundary matrix as the frontend selector."
+);
+assertContains(
+  "backendDecisionPacks",
+  /build_decision_pack_profile[\s\S]*?expected_evidence[\s\S]*?gsn_sources[\s\S]*?missing_links[\s\S]*?refuses_to_claim/,
+  "Backend Decision Pack profile must expose expected evidence, mapped sources, missing links, and overclaim boundaries."
+);
+assertContains(
+  "backendDecisionPacks",
+  /expected_evidence_[\s\S]*?Architecture gap[\s\S]*?does not score the person[\s\S]*?or prove \{boundary_list\}/,
+  "Backend Decision Pack profile must turn expectations and gaps into public-readable rows without becoming a score."
+);
+
+assertContains(
+  "backendDecisionPacks",
   /class DecisionPackDefinition:[\s\S]*?short_label: str[\s\S]*?short_label="Employment"[\s\S]*?def find_decision_pack[\s\S]*?_comparable\(pack\.short_label\)/,
   "Backend Decision Pack catalog must canonicalize the same short labels used by the frontend selector."
 );

@@ -15,6 +15,10 @@ class DecisionPackDefinition:
     short_label: str
     recipient_question: str
     focus: str
+    expected_evidence: tuple[str, ...]
+    gsn_sources: tuple[dict[str, str], ...]
+    missing_links: tuple[str, ...]
+    refuses_to_claim: tuple[str, ...]
 
 
 DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
@@ -24,6 +28,23 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
         short_label="Standing",
         recipient_question="How is this person known where people actually know them?",
         focus="Community role, activity history, witness currentness, and unresolved public cautions.",
+        expected_evidence=(
+            "Active community membership and role",
+            "Member witness or sponsor confirmation",
+            "Participation, contribution, responsibility, support, leadership, or recognition TrustEvents",
+            "Community confirmation path for live questions",
+        ),
+        gsn_sources=(
+            {"label": "Community Home", "route": "/app/community", "evidence": "member communities, role, owner context"},
+            {"label": "Marketplace", "route": "/app/marketplace", "evidence": "local member standing inside one community"},
+            {"label": "Community Confirmation", "route": "/community-confirmations", "evidence": "live or relayed witness response"},
+            {"label": "TrustEvents", "route": "/app/trust-events", "evidence": "recorded community activity categories"},
+        ),
+        missing_links=(
+            "Structured reason-specific witness questions",
+            "Clear issue-resolution summary tied to the member",
+        ),
+        refuses_to_claim=("Moral character", "Government identity", "Future behaviour"),
     ),
     DecisionPackDefinition(
         key="referral_decision",
@@ -34,6 +55,22 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
             "Who knows the person, how they are placed in community, and whether live "
             "confirmation is needed before referral."
         ),
+        expected_evidence=(
+            "Relationship route: inviter, sponsor, or known community path",
+            "Current witness strength and renewal status",
+            "Relevant activity categories behind the referral",
+            "Any visible cautions before passing the name on",
+        ),
+        gsn_sources=(
+            {"label": "Invite / Join records", "route": "/app/community", "evidence": "how the person came through a known relationship"},
+            {"label": "Community Confirmation", "route": "/community-confirmations", "evidence": "recipient asks the community before relying"},
+            {"label": "TrustSlip", "route": "/app/trust-slip", "evidence": "scoped public referral paper"},
+        ),
+        missing_links=(
+            "Referral outcome record: did the referral succeed, fail, or create a complaint?",
+            "Referrer confidence statement tied to a specific purpose",
+        ),
+        refuses_to_claim=("Automatic suitability", "Guarantee by the referrer", "Recipient duty removed"),
     ),
     DecisionPackDefinition(
         key="guarantor_decision",
@@ -44,6 +81,23 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
             "Responsibility signals, reliability evidence, support boundary, and community "
             "confirmation before accepting risk."
         ),
+        expected_evidence=(
+            "Repayment history and missed/complete repayment outcomes",
+            "Existing support exposure and locked guarantee coverage",
+            "People who stood for the person and what happened",
+            "Contribution discipline and community responsibility records",
+        ),
+        gsn_sources=(
+            {"label": "Loans & Support", "route": "/app/loans", "evidence": "request reason, amount, guarantors, support status"},
+            {"label": "Repayment", "route": "/app/repayment", "evidence": "repayment milestones and completion"},
+            {"label": "Guarantor Inbox", "route": "/app/guarantor-inbox", "evidence": "pending and accepted support obligations"},
+            {"label": "Finance", "route": "/app/finance", "evidence": "contribution, money-in/out, and readiness signals"},
+        ),
+        missing_links=(
+            "Simple guarantor risk summary in Trust Passport",
+            "Outcome history for previous guarantees surfaced as decision evidence",
+        ),
+        refuses_to_claim=("Loan approval", "Bank guarantee", "Automatic repayment", "Money custody"),
     ),
     DecisionPackDefinition(
         key="employment_decision",
@@ -51,6 +105,24 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
         short_label="Employment",
         recipient_question="Is there enough evidence to continue an employment conversation?",
         focus="Role, consistency, contribution, leadership or service signals, and the next verification step.",
+        expected_evidence=(
+            "Declared work role or skill from onboarding, profile, shop, or community record",
+            "Work, service, contribution, responsibility, learning, or recognition TrustEvents",
+            "Employer/customer/community witness tied to the role being considered",
+            "Demand or service response history where the role involved practical work",
+        ),
+        gsn_sources=(
+            {"label": "Trust Passport", "route": "/app/trust", "evidence": "full signed-in work and evidence story"},
+            {"label": "Shop / Service profile", "route": "/app/shop/me", "evidence": "declared services, categories, media, public shop face"},
+            {"label": "Demand Box", "route": "/app/demand-box", "evidence": "requests answered, quotes, demand response trail"},
+            {"label": "Community Confirmation", "route": "/community-confirmations", "evidence": "ask who has seen this work before"},
+        ),
+        missing_links=(
+            "Structured skill claim field connected to Trust Passport",
+            "Completed work record with customer confirmation",
+            "Role-specific witness question: has this person done this work before?",
+        ),
+        refuses_to_claim=("Professional licence", "Right to work", "Future performance", "Employer decision"),
     ),
     DecisionPackDefinition(
         key="housing_decision",
@@ -58,19 +130,52 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
         short_label="Housing",
         recipient_question="Is there enough community evidence to continue a housing decision?",
         focus=(
-            "Community standing, reliability posture, witness currentness, and the need for "
-            "live confirmation before tenancy risk."
+            "Payment discipline, repayment evidence, issue-resolution behaviour, community witness, "
+            "and live confirmation before tenancy risk."
         ),
+        expected_evidence=(
+            "Contribution, dues, ROSCA, rent-like, or recurring payment completion where recorded",
+            "Repayment history and support follow-through",
+            "Community witness that the person is responsible and reachable",
+            "Dispute or issue-resolution evidence, including absence of unresolved visible cautions",
+        ),
+        gsn_sources=(
+            {"label": "Finance", "route": "/app/finance", "evidence": "money summary, contribution discipline, records/events"},
+            {"label": "ROSCA / Money Pool", "route": "/app/marketplace", "evidence": "local contribution schedules and completion"},
+            {"label": "Loans / Repayment", "route": "/app/loans", "evidence": "borrower follow-through and repayment behaviour"},
+            {"label": "Community Confirmation", "route": "/community-confirmations", "evidence": "landlord can ask a community witness before tenancy risk"},
+        ),
+        missing_links=(
+            "Housing-specific reference questions",
+            "Previous landlord or accommodation witness route",
+            "Issue-resolution summary visible without exposing private disputes",
+        ),
+        refuses_to_claim=("Credit approval", "Right to rent", "Legal tenancy check", "Guaranteed rent"),
     ),
     DecisionPackDefinition(
         key="trade_check",
         label="Trade or Skilled Work Decision Pack",
         short_label="Trade",
         recipient_question="Who has seen this person trade, serve, or complete work?",
-        focus=(
-            "Observed service activity, community evidence, visible disputes or cautions, "
-            "and confirmation before work begins."
+        focus="Observed service activity, community evidence, visible disputes or cautions, and confirmation before work begins.",
+        expected_evidence=(
+            "Declared trade/service category such as plumbing, repairs, cleaning, delivery, or sales",
+            "Shop, advert, Demand Box, quote, or work-response trail",
+            "Customer or community witness that the work happened",
+            "Completion, complaint, or issue-resolution outcome where recorded",
         ),
+        gsn_sources=(
+            {"label": "Shop Gallery", "route": "/app/shop/me", "evidence": "public service profile, media, categories, shop identity"},
+            {"label": "Demand Box", "route": "/app/demand-box", "evidence": "requests, responses, quotes, service need trail"},
+            {"label": "Marketplace", "route": "/app/marketplace", "evidence": "community where the advert/work relationship began"},
+            {"label": "Merchant Verification", "route": "/app/trust-slip", "evidence": "community recognition and trade boundary"},
+        ),
+        missing_links=(
+            "Customer-confirmed completed-job record",
+            "Work photos tied to a confirmed job, not only uploaded media",
+            "Direct ask-community question: is this person known for this trade?",
+        ),
+        refuses_to_claim=("Trade licence", "Insurance", "Home safety guarantee", "Future work quality"),
     ),
     DecisionPackDefinition(
         key="supplier_decision",
@@ -81,6 +186,23 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
             "Business reliability posture, fulfilment evidence where visible, community "
             "standing, and public verification status."
         ),
+        expected_evidence=(
+            "Shop and supplier profile identity",
+            "Fulfilment, delivery, release, or protected trade records where available",
+            "Customer/community recognition and merchant verification",
+            "Visible dispute, delay, or correction outcome",
+        ),
+        gsn_sources=(
+            {"label": "Marketplace", "route": "/app/marketplace", "evidence": "community trade context and shop exposure"},
+            {"label": "Merchant Release", "route": "/merchant-release", "evidence": "release evidence and delivery boundary"},
+            {"label": "Vault", "route": "/app/vault", "evidence": "controlled private catalogue or quote access"},
+            {"label": "TrustSlip Verify", "route": "/trust-slips/verify", "evidence": "public supplier check before relying"},
+        ),
+        missing_links=(
+            "Supplier fulfilment TrustEvent standard across product lifecycle",
+            "Delivery/correction outcome joined to supplier Trust Passport",
+        ),
+        refuses_to_claim=("Delivery guarantee", "Payment release authority", "Escrow", "Automatic supplier approval"),
     ),
     DecisionPackDefinition(
         key="volunteer_decision",
@@ -88,6 +210,22 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
         short_label="Volunteer",
         recipient_question="Is there enough evidence to accept this person into a volunteer role?",
         focus="Participation, consistency, service posture, witness currentness, and safeguarding caution before placement.",
+        expected_evidence=(
+            "Participation and contribution records",
+            "Responsibility or leadership carried before",
+            "Community witness and sponsor currentness",
+            "Safeguarding or placement-specific confirmation where the role is sensitive",
+        ),
+        gsn_sources=(
+            {"label": "TrustEvents", "route": "/app/trust-events", "evidence": "participation, support, responsibility, leadership"},
+            {"label": "Community Confirmation", "route": "/community-confirmations", "evidence": "ask current community responders before placement"},
+            {"label": "Community Domain outcomes", "route": "/app/community-domain", "evidence": "beneficiary/outcome evidence where domains record it"},
+        ),
+        missing_links=(
+            "Safeguarding-specific community confirmation questions",
+            "Volunteer outcome records connected to TrustEvents",
+        ),
+        refuses_to_claim=("Background check", "Safeguarding clearance", "Legal eligibility", "Future conduct"),
     ),
     DecisionPackDefinition(
         key="business_partnership",
@@ -98,6 +236,23 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
             "Community reliability, responsibility signals, public verification status, and "
             "caution before shared commercial risk."
         ),
+        expected_evidence=(
+            "Shop, marketplace, and merchant recognition",
+            "Finance discipline and repayment/support follow-through",
+            "Supplier/trade outcomes and dispute resolution",
+            "Community witness from the domain where the person operates",
+        ),
+        gsn_sources=(
+            {"label": "Shop / Marketplace", "route": "/app/marketplace", "evidence": "commerce identity and community exposure"},
+            {"label": "Finance", "route": "/app/finance", "evidence": "financial cooperation evidence, not bank approval"},
+            {"label": "Trust Passport", "route": "/app/trust", "evidence": "cross-community evidence posture"},
+            {"label": "Community Confirmation", "route": "/community-confirmations", "evidence": "live confirmation before shared risk"},
+        ),
+        missing_links=(
+            "Partnership outcome/correction records",
+            "Shared commercial risk checklist tied to evidence categories",
+        ),
+        refuses_to_claim=("Company due diligence", "Legal authority", "Investment advice", "Guaranteed profit"),
     ),
     DecisionPackDefinition(
         key="community_membership",
@@ -105,6 +260,23 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
         short_label="Membership",
         recipient_question="Is there enough evidence to admit or connect this person to a community?",
         focus="Identity context, community route, witness currentness, standing, and first live confirmation step.",
+        expected_evidence=(
+            "Entry route: invite, join request, sponsor, or domain approval",
+            "Identity evidence recorded vs verified",
+            "Existing community roles and witness strength",
+            "Participation or contribution readiness for the new community",
+        ),
+        gsn_sources=(
+            {"label": "Join / Invite", "route": "/join", "evidence": "entry route and sponsor relationship"},
+            {"label": "Identity Integrity", "route": "/app/identity", "evidence": "recorded identity evidence and verification status"},
+            {"label": "Community Home", "route": "/app/community", "evidence": "existing communities and roles"},
+            {"label": "Community Confirmation", "route": "/community-confirmations", "evidence": "current responders can confirm known relationship"},
+        ),
+        missing_links=(
+            "Admission-purpose confirmation questions",
+            "Clear join outcome linked back into Trust Passport evidence",
+        ),
+        refuses_to_claim=("Citizenship", "Legal immigration status", "Automatic admission", "Universal community endorsement"),
     ),
 )
 
@@ -136,7 +308,7 @@ def find_decision_pack(value: Any) -> Optional[DecisionPackDefinition]:
     return None
 
 
-def normalize_decision_pack_context(params: Mapping[str, Any]) -> Optional[dict[str, str]]:
+def normalize_decision_pack_context(params: Mapping[str, Any]) -> Optional[dict[str, Any]]:
     decision_pack_key = _clean(
         params.get("decision_pack") or params.get("decision_pack_key"),
         limit=64,
@@ -153,7 +325,7 @@ def normalize_decision_pack_context(params: Mapping[str, Any]) -> Optional[dict[
         return None
 
     pack = find_decision_pack(decision_pack_key) or find_decision_pack(label)
-    return {
+    context = {
         "decision_pack_key": pack.key if pack else decision_pack_key,
         "access_purpose": pack.label if pack else (label or "General Decision Pack"),
         "recipient_question": (
@@ -169,10 +341,53 @@ def normalize_decision_pack_context(params: Mapping[str, Any]) -> Optional[dict[
         ),
         "access_scope": scope,
     }
+    if pack:
+        context.update(
+            {
+                "expected_evidence": list(pack.expected_evidence),
+                "gsn_sources": [dict(source) for source in pack.gsn_sources],
+                "missing_links": list(pack.missing_links),
+                "refuses_to_claim": list(pack.refuses_to_claim),
+            }
+        )
+    else:
+        context.update(
+            {
+                "expected_evidence": [],
+                "gsn_sources": [],
+                "missing_links": [],
+                "refuses_to_claim": [],
+            }
+        )
+    return context
+
+
+def _context_list(context: Mapping[str, Any], key: str) -> list[Any]:
+    value = context.get(key)
+    return list(value) if isinstance(value, (list, tuple)) else []
+
+
+def _context_source_rows(context: Mapping[str, Any]) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for raw in _context_list(context, "gsn_sources"):
+        if not isinstance(raw, Mapping):
+            continue
+        label = _clean(raw.get("label"), limit=120)
+        route = _clean(raw.get("route"), limit=160)
+        evidence = _clean(raw.get("evidence"), limit=260)
+        if label or evidence:
+            rows.append({"label": label, "route": route, "evidence": evidence})
+    return rows
+
+
+def _context_boundaries(context: Mapping[str, Any], *, limit: int = 3) -> str:
+    values = [_clean(value, limit=96) for value in _context_list(context, "refuses_to_claim")]
+    values = [value for value in values if value]
+    return ", ".join(values[:limit]) or "the final decision"
 
 
 def build_decision_pack_access_payload(
-    context: Optional[dict[str, str]],
+    context: Optional[dict[str, Any]],
     *,
     recorded: bool,
 ) -> dict[str, Any]:
@@ -841,7 +1056,7 @@ def build_decision_pack_private_evidence_extract(
     db: Session,
     *,
     slip: TrustSlip,
-    context: Optional[dict[str, str]],
+    context: Optional[dict[str, Any]],
     limit: int = 80,
 ) -> dict[str, Any]:
     if not context:
@@ -908,7 +1123,7 @@ def build_decision_pack_evidence_extract(
     db: Session,
     *,
     slip: TrustSlip,
-    context: Optional[dict[str, str]],
+    context: Optional[dict[str, Any]],
     limit: int = 250,
 ) -> dict[str, Any]:
     if not context:
@@ -970,7 +1185,7 @@ def build_decision_pack_evidence_extract(
         "boundary_note": "This extract shows public-safe category counts only. It is not a raw event timeline, score, approval, guarantee, repayment history, or dispute disclosure.",
     }
 def build_decision_pack_profile(
-    context: Optional[dict[str, str]],
+    context: Optional[dict[str, Any]],
     *,
     public_payload: Mapping[str, Any],
     evidence_extract: Optional[dict[str, Any]] = None,
@@ -985,13 +1200,52 @@ def build_decision_pack_profile(
         "community_activity",
         "live_confirmation",
     )
-    signals = [_decision_signal(public_payload, key) for key in signal_keys]
-    gaps = [signal for signal in signals if signal.get("status") in {"gap", "caution"}]
+    visible_signals = [_decision_signal(public_payload, key) for key in signal_keys]
+    expected_evidence = [
+        _clean(value, limit=260)
+        for value in _context_list(context, "expected_evidence")
+        if _clean(value, limit=260)
+    ]
+    missing_links = [
+        _clean(value, limit=260)
+        for value in _context_list(context, "missing_links")
+        if _clean(value, limit=260)
+    ]
+    gsn_sources = _context_source_rows(context)
+    boundary_list = _context_boundaries(context)
+    expected_signals = [
+        {
+            "key": f"expected_evidence_{index + 1}",
+            "label": "Expected evidence" if index == 0 else f"Expected evidence {index + 1}",
+            "status": "expected",
+            "value": evidence,
+            "decision_use": (
+                "Check whether this evidence is visible, current, or confirmed by the community before relying."
+            ),
+        }
+        for index, evidence in enumerate(expected_evidence[:5])
+    ]
+    signals = expected_signals + visible_signals
+    signal_gaps = [signal for signal in visible_signals if signal.get("status") in {"gap", "caution"}]
+    missing_gap_rows = [
+        {
+            "key": f"missing_link_{index + 1}",
+            "label": "Architecture gap" if index == 0 else f"Architecture gap {index + 1}",
+            "reason": gap,
+            "next_step": "Ask for live community confirmation or the fuller Trust Passport before relying on this point.",
+        }
+        for index, gap in enumerate(missing_links[:4])
+    ]
     checks = [
         "Match the visible holder, GSN ID, community, and expiry with the person presenting the TrustSlip.",
         "Ask for live community confirmation before relying on this paper for important risk.",
     ]
-    if gaps:
+    checks.extend(
+        f"{source['label']}: {source['evidence']}"
+        for source in gsn_sources[:4]
+        if source.get("label") or source.get("evidence")
+    )
+    if signal_gaps or missing_links:
         checks.append("Treat missing or caution signals as questions to resolve, not as negative proof.")
 
     return {
@@ -999,7 +1253,15 @@ def build_decision_pack_profile(
         "access_purpose": context.get("access_purpose") or "Decision Pack",
         "recipient_question": context.get("recipient_question") or "Can I make a better decision with this evidence?",
         "evidence_filter": list(signal_keys),
-        "relevant_signals": signals,
+        "expected_evidence": expected_evidence,
+        "gsn_sources": gsn_sources,
+        "missing_links": missing_links,
+        "refuses_to_claim": [
+            _clean(value, limit=120)
+            for value in _context_list(context, "refuses_to_claim")
+            if _clean(value, limit=120)
+        ],
+        "relevant_signals": signals[:10],
         "gaps_to_check": [
             {
                 "key": signal.get("key"),
@@ -1007,12 +1269,18 @@ def build_decision_pack_profile(
                 "reason": signal.get("value"),
                 "next_step": signal.get("decision_use"),
             }
-            for signal in gaps[:4]
-        ],
-        "recommended_checks": checks,
+            for signal in signal_gaps[:4]
+        ] + missing_gap_rows,
+        "recommended_checks": checks[:8],
         "evidence_extract": evidence_extract or {},
-        "basis_note": "Generated from public TrustSlip signals already visible to the recipient; no private Trust Passport contents are exposed.",
-        "boundary_note": "This profile highlights relevant evidence and gaps. It does not score the person, guarantee future behaviour, or make the decision for the recipient.",
+        "basis_note": (
+            "Generated from public TrustSlip signals and the shared GSN Decision Pack evidence matrix; "
+            "no private Trust Passport contents are exposed."
+        ),
+        "boundary_note": (
+            "This profile highlights relevant evidence and gaps. It does not score the person, "
+            f"guarantee future behaviour, make the decision for the recipient, or prove {boundary_list}."
+        ),
     }
 
 def _bounded_non_negative_count(value: Any, *, limit: int = 1000) -> int:
@@ -1034,7 +1302,7 @@ def record_decision_pack_consent_share(
     db: Session,
     *,
     slip: TrustSlip,
-    context: Optional[dict[str, str]],
+    context: Optional[dict[str, Any]],
     export_format: str,
     category_count: int = 0,
     event_ref_count: int = 0,
@@ -1108,7 +1376,7 @@ def record_decision_pack_access(
     db: Session,
     *,
     slip: TrustSlip,
-    context: Optional[dict[str, str]],
+    context: Optional[dict[str, Any]],
     visibility_level: str,
     status: str,
 ) -> Optional[TrustSlipDecisionPackAccess]:

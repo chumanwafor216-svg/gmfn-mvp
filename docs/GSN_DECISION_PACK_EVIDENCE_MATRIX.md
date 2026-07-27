@@ -18,7 +18,7 @@ Example: if Emeka says he was a plumber in Nigeria and is now in the UK, GSN sho
 
 The direction is correct, but a generic Trust Passport is not enough by itself.
 
-The first GSN evidence engine must be a purpose-routed Decision Pack engine. Each pack asks a specific social question and maps that question to existing GSN evidence surfaces plus missing structural links. The TrustSlip should remain public-safe: it can reduce uncertainty, point to evidence, and request confirmation, but it must not certify professional status, guarantee future behaviour, expose private Trust Passport data, or make the decision for the recipient.
+The first GSN evidence engine must be a purpose-routed Decision Pack engine. Each pack asks a specific social question and maps that question to existing GSN evidence surfaces plus missing structural links. The frontend and backend catalogues should remain aligned so public TrustSlip Verify and signed-in TrustSlip preparation tell the same evidence story. The TrustSlip should remain public-safe: it can reduce uncertainty, point to evidence, and request confirmation, but it must not certify professional status, guarantee future behaviour, expose private Trust Passport data, or make the decision for the recipient.
 
 ## Decision Pack Categories
 
@@ -52,7 +52,7 @@ A Decision Pack should always show four layers:
 - Payment-discipline summaries: convert contribution, ROSCA, repayment, and support follow-through into public-safe decision evidence without acting like a credit score.
 - Issue-resolution summaries: show whether issues were resolved or remain unresolved without exposing private disputes or defamatory detail.
 - Guarantee exposure and outcome: show where people stood for a person and what happened, without turning GSN into a bank or guarantor.
-- Backend parity: the frontend Decision Pack matrix now carries richer category expectations; backend Decision Pack definitions still need equivalent fields if the server is to become the long-term source of truth.
+- Backend parity: backend Decision Pack definitions now carry the same evidence/source/gap/boundary matrix and public profiles can expose it. The remaining work is deeper data capture: structured claims, completed jobs, landlord references, issue-resolution summaries, guarantee outcomes, supplier fulfilment outcomes, and purpose-specific confirmation workflows.
 
 ## Product Boundary
 

@@ -262,8 +262,17 @@ def test_public_verify_decision_pack_short_label_canonicalizes_like_frontend(
     assert payload["decision_pack"] == "employment_decision"
     assert payload["access_purpose"] == "Employment Decision Pack"
     assert payload["access_note"] == "Is there enough evidence to continue an employment conversation?"
-    assert payload["decision_pack_profile"]["decision_pack"] == "employment_decision"
-    assert "community_activity" in payload["decision_pack_profile"]["evidence_filter"]
+    profile = payload["decision_pack_profile"]
+    assert profile["decision_pack"] == "employment_decision"
+    assert "community_activity" in profile["evidence_filter"]
+    assert "Declared work role or skill" in profile["expected_evidence"][0]
+    assert any(row["label"] == "Demand Box" for row in profile["gsn_sources"])
+    assert "Completed work record with customer confirmation" in profile["missing_links"]
+    assert "Right to work" in profile["refuses_to_claim"]
+    assert any(row["key"] == "expected_evidence_1" for row in profile["relevant_signals"])
+    assert any(row["key"] == "missing_link_1" for row in profile["gaps_to_check"])
+    assert "Demand Box" in " ".join(profile["recommended_checks"])
+    assert "Right to work" in profile["boundary_note"]
 
     db = SessionLocal()
     try:
@@ -274,6 +283,42 @@ def test_public_verify_decision_pack_short_label_canonicalizes_like_frontend(
         assert db.query(TrustEvent).count() == 0
     finally:
         db.close()
+
+def test_public_verify_decision_pack_matrix_answers_housing_and_trade_questions(
+    client,
+    seed_clan_admin_membership,
+):
+    _create_trust_slip(code="ACCESS-HOUSING-MATRIX")
+    _create_trust_slip(code="ACCESS-TRADE-MATRIX")
+
+    housing_response = client.get(
+        "/trust-slips/verify/ACCESS-HOUSING-MATRIX",
+        params={"decision_pack": "housing_decision"},
+    )
+    trade_response = client.get(
+        "/trust-slips/verify/ACCESS-TRADE-MATRIX",
+        params={"decision_pack": "trade_check"},
+    )
+
+    assert housing_response.status_code == 200, housing_response.text
+    housing_profile = housing_response.json()["decision_pack_profile"]
+    assert "Contribution, dues, ROSCA" in housing_profile["expected_evidence"][0]
+    assert any(row["label"] == "Finance" for row in housing_profile["gsn_sources"])
+    assert any(row["label"] == "ROSCA / Money Pool" for row in housing_profile["gsn_sources"])
+    assert "Previous landlord or accommodation witness route" in housing_profile["missing_links"]
+    assert "Right to rent" in housing_profile["refuses_to_claim"]
+    assert "Right to rent" in housing_profile["boundary_note"]
+
+    assert trade_response.status_code == 200, trade_response.text
+    trade_profile = trade_response.json()["decision_pack_profile"]
+    assert "Declared trade/service category" in trade_profile["expected_evidence"][0]
+    assert any(row["label"] == "Demand Box" for row in trade_profile["gsn_sources"])
+    assert "Customer-confirmed completed-job record" in trade_profile["missing_links"]
+    assert "Trade licence" in trade_profile["refuses_to_claim"]
+    assert "Trade licence" in trade_profile["boundary_note"]
+    assert "trust_score" not in str(housing_profile)
+    assert "recipient_name" not in str(trade_profile)
+
 
 def test_public_verify_decision_pack_access_bounds_unknown_public_context(
     client,
