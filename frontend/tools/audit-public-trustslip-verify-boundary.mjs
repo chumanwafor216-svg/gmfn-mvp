@@ -273,6 +273,12 @@ assertContains(
   "Public TrustSlip verify API calls must not inherit viewer auth or selected-community headers, and expected public not-found states should stay quiet."
 );
 
+assertContains(
+  "backend",
+  /holder_profile_image_url = getattr\(holder, "profile_image_url", None\)[\s\S]*?"profile_image_url": holder_profile_image_url,[\s\S]*?identity_context\["profile_image_url"\] = holder_profile_image_url[\s\S]*?merchant_view_out\.setdefault\("merchant_summary", \{\}\)\[[\s\S]*?"profile_image_url"[\s\S]*?\] = holder_profile_image_url/,
+  "Public TrustSlip verify must source holder photo only from the live TrustSlip holder record, not stale merchant-view, merchant-summary, identity-context, or viewer image data."
+);
+
 assertCount(
   "verify",
   /<PageTopNav\b/g,

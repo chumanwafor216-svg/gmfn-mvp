@@ -1132,6 +1132,7 @@ def verify_trust_slip_public(
     badge_text, _ = _merchant_badge(effective)
 
     merchant_summary = dict(merchant_view.get("merchant_summary") or {})
+    holder_profile_image_url = getattr(holder, "profile_image_url", None)
 
     gmfn_id = merchant_summary.get("gmfn_id") or getattr(holder, "gmfn_id", None)
     trust_limit = merchant_summary.get("trust_limit") or full_summary.get("trust_limit")
@@ -1179,9 +1180,7 @@ def verify_trust_slip_public(
         "display_name": display_name,
         "gmfn_id": gmfn_id,
         "community": community,
-        "profile_image_url": merchant_view.get("profile_image_url")
-        or merchant_summary.get("profile_image_url")
-        or full_summary.get("profile_image_url"),
+        "profile_image_url": holder_profile_image_url,
         "identity_context": merchant_view.get("identity_context")
         or full_summary.get("identity_context")
         or {},
@@ -1227,6 +1226,15 @@ def verify_trust_slip_public(
     if top_level_phone_verified is None:
         top_level_phone_verified = merchant_summary.get("phone_verified")
     identity_context = merchant_view_out.get("identity_context") or {}
+    if isinstance(identity_context, dict):
+        identity_context["profile_image_url"] = holder_profile_image_url
+        merchant_view_out["identity_context"] = identity_context
+    else:
+        identity_context = {"profile_image_url": holder_profile_image_url}
+        merchant_view_out["identity_context"] = identity_context
+    merchant_view_out.setdefault("merchant_summary", {})[
+        "profile_image_url"
+    ] = holder_profile_image_url
     community_context = merchant_view_out.get("community_context") or {}
     evidence_scope = merchant_view_out.get("evidence_scope") or {}
     if not isinstance(evidence_scope, dict):

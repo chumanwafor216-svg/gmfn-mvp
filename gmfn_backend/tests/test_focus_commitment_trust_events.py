@@ -884,6 +884,82 @@ def test_public_trustslip_verify_uses_holder_name_separate_from_gsn_id(
     assert datetime.fromisoformat(data["issued_at"]).replace(tzinfo=timezone.utc) == issued_at
 
 
+def test_public_trustslip_verify_uses_live_holder_profile_image_not_stale_snapshot(
+    client: TestClient,
+    seed_clan_member_membership,
+    monkeypatch,
+):
+    monkeypatch.setattr("app.api.routes.trust_slips.has_active_feature", lambda *args, **kwargs: True)
+    issued_at = datetime(2026, 5, 27, 9, 45, tzinfo=timezone.utc)
+
+    with SessionLocal() as db:
+        user = db.get(User, 1)
+        assert user is not None
+        user.display_name = "Chidimma"
+        user.gmfn_id = "GMFN-U-66E6A380"
+        user.profile_image_url = "/uploads/profile/chidimma-holder.jpg"
+        user.phone_e164 = "+2348000000000"
+        user.phone_verified_at = issued_at
+
+        stale_wrong_photo = "/uploads/profile/wrong-viewer-photo.jpg"
+        stale_snapshot = {
+            "snapshot_version": "trustslip-snapshot/test-stale-photo",
+            "merchant_visibility_level": "standard",
+            "merchant_view": {
+                "visibility_level": "standard",
+                "code": "PUBLIC-HOLDER-PHOTO",
+                "gmfn_id": "GMFN-U-66E6A380",
+                "display_name": "Chidimma",
+                "profile_image_url": stale_wrong_photo,
+                "identity_context": {"profile_image_url": stale_wrong_photo},
+                "community": "Test Clan",
+                "merchant_summary": {
+                    "gmfn_id": "GMFN-U-66E6A380",
+                    "display_name": "Chidimma",
+                    "profile_image_url": stale_wrong_photo,
+                    "community": "Test Clan",
+                    "code": "PUBLIC-HOLDER-PHOTO",
+                },
+            },
+            "full_summary": {
+                "gmfn_id": "GMFN-U-66E6A380",
+                "display_name": "Chidimma",
+                "profile_image_url": stale_wrong_photo,
+                "identity_context": {"profile_image_url": stale_wrong_photo},
+                "community": "Test Clan",
+            },
+        }
+        db.add(
+            TrustSlip(
+                code="PUBLIC-HOLDER-PHOTO",
+                clan_id=1,
+                holder_user_id=1,
+                trust_limit=Decimal("0.00"),
+                currency="NGN",
+                status="active",
+                expires_at=issued_at + timedelta(days=7),
+                created_at=issued_at,
+                is_current=True,
+                snapshot_json=json.dumps(stale_snapshot),
+                snapshot_visibility_level="standard",
+                snapshot_version="trustslip-snapshot/test-stale-photo",
+            )
+        )
+        db.commit()
+
+    response = client.get("/trust-slips/verify/PUBLIC-HOLDER-PHOTO")
+    assert response.status_code == 200, response.text
+    data = response.json()
+
+    assert data["holder_name"] == "Chidimma"
+    assert data["gmfn_id"] == "GMFN-U-66E6A380"
+    assert data["profile_image_url"] == "/uploads/profile/chidimma-holder.jpg"
+    assert data["merchant_view"]["profile_image_url"] == "/uploads/profile/chidimma-holder.jpg"
+    assert data["merchant_view"]["merchant_summary"]["profile_image_url"] == "/uploads/profile/chidimma-holder.jpg"
+    assert data["identity_context"]["profile_image_url"] == "/uploads/profile/chidimma-holder.jpg"
+    assert stale_wrong_photo not in json.dumps(data)
+
+
 def test_public_trustslip_verify_uses_public_id_when_holder_name_is_missing(
     client: TestClient,
     seed_clan_member_membership,

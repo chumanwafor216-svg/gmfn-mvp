@@ -156545,3 +156545,31 @@ Verification run locally:
 
 Deployment:
 - Local only. Do not push/deploy unless the owner sends `2`.
+
+## 2026-07-27 - Local TrustSlip Holder Photo Correction
+
+- Scope: local-only correction after owner reported a public TrustSlip showing Chidimma's holder name and GSN ID with another user's photo.
+- Owner instruction still active: do not push/deploy unless the owner sends `2`.
+- `gmfn_backend/app/api/routes/trust_slips.py`
+  - Public TrustSlip verify now sources `profile_image_url` only from the live TrustSlip holder record (`holder_user_id -> User.profile_image_url`).
+  - Stale `merchant_view`, `merchant_summary`, `full_summary`, and `identity_context` profile-image values are no longer allowed to decide the holder face shown on public TrustSlip verify.
+  - Public response now also overwrites `identity_context.profile_image_url` and `merchant_view.merchant_summary.profile_image_url` with the live holder image, or `None` if the holder has no image.
+- `gmfn_backend/tests/test_focus_commitment_trust_events.py`
+  - Added a regression test with a deliberately stale/wrong snapshot image. Public verify must return only the holder's live profile image and must not leak the wrong snapshot image.
+- `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+  - Added a static guard for the holder-image sourcing rule.
+
+Unabated truth:
+- This fixes the public verify payload source. A TrustSlip already loaded in a user's browser may need refresh/reopen to pick up the corrected payload after deploy.
+- This is not yet deployed; branch remains local-only until owner sends `2`.
+
+Verification run locally:
+- `python -m pytest gmfn_backend\tests\test_focus_commitment_trust_events.py -k "public_trustslip_verify_uses_holder_name_separate_from_gsn_id or public_trustslip_verify_uses_live_holder_profile_image_not_stale_snapshot or public_trustslip_verify_uses_public_id_when_holder_name_is_missing"`
+- `python -m compileall gmfn_backend\app\api\routes\trust_slips.py`
+- `npm --prefix frontend run audit:public-trustslip-verify-boundary`
+- `npm --prefix frontend run audit:trust-actions`
+- `npm --prefix frontend run lint`
+- `git diff --check` passed with normal line-ending warnings.
+
+Deployment:
+- Local only. Do not push/deploy unless the owner sends `2`.
