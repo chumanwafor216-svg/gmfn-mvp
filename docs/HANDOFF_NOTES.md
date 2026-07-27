@@ -1,3 +1,34 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Public TrustSlip opened-detail phone typography hardening
+
+Owner trigger:
+- Owner continued the phone visual correction after the deployed public TrustSlip/Decision Pack mobile pass, focusing on narrowed letters and busy institutional appearance.
+
+Unabated truth:
+- The already-deployed first phone surface is corrected and drawer-based.
+- This follow-up only hardens opened detail rows so label/value text does not compress into two narrow columns after a reader opens the deeper paper details.
+- It does not change backend evidence logic, Decision Pack categories, public/private boundaries, routing, or deployment state.
+
+Changed:
+- frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx
+  - Compact official result rows now stack label above value instead of splitting a phone row into 54/46 columns.
+  - Compact values align left with slightly stronger readable sizing.
+  - Compact verification-paper status facts and QR/public-link rows now stack on phone instead of using dense two-column layouts.
+- frontend/tools/audit-public-trustslip-first-viewport.mjs
+  - Added guards that opened detail rows, dense status facts, and QR/public-link rows stay stacked on phone.
+
+Verification:
+- Passed npm --prefix frontend run audit:public-trustslip-first-viewport
+- Passed npm --prefix frontend run build
+- Passed npm --prefix frontend run smoke:public-trustslip-verify-states after elevated rerun for sandbox spawn EPERM
+- Passed npm --prefix frontend run audit:protected-button-freeze
+- Passed git diff --check with line-ending warnings only
+
+Deployment:
+- Local only. Do not push/deploy unless the owner explicitly selects push/deploy for this follow-up batch.
+
+Next recommended step:
+- Owner phone-review the live deployed page from commit 928645d6, then push/deploy this local hardening patch if the opened-detail typography correction is accepted.
+
 ## CURRENT LOCAL STATE - 2026-07-27 - Optional housing external contact handoff
 
 Owner trigger:

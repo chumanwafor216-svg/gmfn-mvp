@@ -123,6 +123,23 @@ assertContains(
 
 assertContains(
   "publicPaper",
+  /function paperDataRow\(compact = false\): React\.CSSProperties \{[\s\S]*?gridTemplateColumns: compact \? "1fr" : "minmax\(0, 1fr\) auto"[\s\S]*?alignItems: compact \? "start" : "center"[\s\S]*?textAlign: compact \? "left" : "right"[\s\S]*?justifySelf: compact \? "start" : "end"[\s\S]*?fontSize: compact \? 13 : undefined/,
+  "Opened detail rows must stack label and value on phone so official record text stays mature and readable."
+);
+
+assertContains(
+  "publicPaper",
+  /gridTemplateColumns: compact \? "1fr" : "1fr 1fr"[\s\S]*?Community confidence/,
+  "Opened verification paper status facts must stack on phone."
+);
+assertContains(
+  "publicPaper",
+  /gridTemplateColumns: compact \? "1fr" : "1fr 92px"[\s\S]*?Public link:/,
+  "Opened verification paper QR and public-link row must stack on phone."
+);
+
+assertContains(
+  "publicPaper",
   /DecisionFactorTable rows=\{compact \? decisionTranslationRows\.filter\(\(\[label\]\) => label === "Community connection" \|\| label === \(supportPurpose \? "Relevant support evidence" : "Relevant evidence"\) \|\| label === "Recommended action"\) : decisionTranslationRows\}/,
   "Public TrustSlip phone first viewport must show only the three essential decision factors before deeper evidence drawers."
 );

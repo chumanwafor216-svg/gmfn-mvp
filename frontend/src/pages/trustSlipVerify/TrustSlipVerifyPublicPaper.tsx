@@ -730,9 +730,9 @@ function PublicReadingTile({
 function paperDataRow(compact = false): React.CSSProperties {
   return {
     display: "grid",
-    gridTemplateColumns: compact ? "minmax(0, 0.54fr) minmax(0, 0.46fr)" : "minmax(0, 1fr) auto",
-    gap: compact ? 8 : 10,
-    alignItems: "center",
+    gridTemplateColumns: compact ? "1fr" : "minmax(0, 1fr) auto",
+    gap: compact ? 3 : 10,
+    alignItems: compact ? "start" : "center",
     padding: compact ? "8px 0" : "8px 0",
     borderBottom: "1px solid rgba(216,227,238,0.72)",
     color: "#334155",
@@ -914,9 +914,11 @@ function OfficialResultTable({
               style={{
                 ...readableText(),
                 color: "#07172C",
-                textAlign: "right",
-                justifySelf: "end",
+                textAlign: compact ? "left" : "right",
+                justifySelf: compact ? "start" : "end",
                 maxWidth: "100%",
+                fontSize: compact ? 13 : undefined,
+                lineHeight: compact ? 1.28 : undefined,
               }}
             >
               {value}
@@ -2757,7 +2759,7 @@ export default function TrustSlipVerifyPublicPaper({
                 style={{
                   marginTop: 12,
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
+                  gridTemplateColumns: compact ? "1fr" : "1fr 1fr",
                   gap: 8,
                 }}
               >
@@ -2814,7 +2816,7 @@ export default function TrustSlipVerifyPublicPaper({
                 </div>
               </div>
 
-              <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 92px", gap: 10 }}>
+              <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: compact ? "1fr" : "1fr 92px", gap: 10 }}>
                 <div style={{ ...readableText(), display: "grid", gap: 5, color: "#334155", fontSize: 12, fontWeight: 850 }}>
                   <span>Code: {resolvedCode || "Not available"}</span>
                   <span>Public link: {verifyPath || "Not available"}</span>
