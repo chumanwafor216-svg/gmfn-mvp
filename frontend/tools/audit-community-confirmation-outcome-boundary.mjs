@@ -192,6 +192,24 @@ assertContains(
   /debugId="community-confirmation-outcome\.record-decision"[\s\S]*?Record your decision[\s\S]*?Signed-in action/,
   "Decision recording controls must stay inside an explicit signed-in disclosure."
 );
+assertContains(
+  "outcome",
+  /const \[publicActionsOpen, setPublicActionsOpen\] = useState\(false\);[\s\S]*?Public actions[\s\S]*?debugId="community-confirmation-outcome\.refresh"[\s\S]*?debugId="community-confirmation-outcome\.more-public-actions"[\s\S]*?\{publicActionsOpen \? \([\s\S]*?data-gsn-community-confirmation-outcome-secondary-actions="open"[\s\S]*?debugId="community-confirmation-outcome\.copy-link"[\s\S]*?debugId="community-confirmation-outcome\.print"/,
+  "Community Confirmation Outcome must keep secondary public copy/print actions hidden behind More public actions."
+);
+
+assertOrder(
+  "outcome",
+  [
+    { label: "public actions heading", pattern: /Public actions/ },
+    { label: "refresh primary action", pattern: /debugId="community-confirmation-outcome\.refresh"/ },
+    { label: "more public actions toggle", pattern: /debugId="community-confirmation-outcome\.more-public-actions"/ },
+    { label: "secondary action panel", pattern: /data-gsn-community-confirmation-outcome-secondary-actions="open"/ },
+    { label: "copy public link", pattern: /debugId="community-confirmation-outcome\.copy-link"/ },
+    { label: "print public paper", pattern: /debugId="community-confirmation-outcome\.print"/ },
+  ],
+  "Community Confirmation Outcome public actions must keep refresh first and secondary copy/print behind the compact toggle."
+);
 
 assertContains(
   "outcome",

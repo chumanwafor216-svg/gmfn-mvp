@@ -1,3 +1,30 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Community Confirmation Outcome public-action decongestion slice
+
+Owner trigger:
+- Owner asked to continue making the whole app appear less busy, especially on phone and especially around TrustSlip/community confirmation flows.
+
+Unabated truth:
+- This is a route-local decongestion slice, not a full visual redesign of the public confirmation outcome paper.
+- The page still keeps the protected evidence-boundary panels visible because the existing browser smoke expects those legal/public-proof boundaries to be present. I did not hide them without a broader smoke-contract rewrite.
+- The specific clutter reduced here is the public action block: only Refresh outcome remains immediately visible; Copy public link and Print / Save PDF move behind More public actions.
+
+Changed:
+- `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`
+  - Added `publicActionsOpen` state.
+  - Kept `Refresh outcome` as the primary visible public action.
+  - Moved `Copy public link` and `Print / Save PDF` into a compact secondary action drawer opened by `More public actions`.
+- `frontend/tools/audit-community-confirmation-outcome-boundary.mjs`
+  - Added guards that secondary public actions stay behind the compact toggle and keep the expected action order.
+
+Verification so far:
+- Passed `node --check frontend\tools\audit-community-confirmation-outcome-boundary.mjs`.
+- Passed `npm --prefix frontend run audit:community-confirmation-outcome-boundary`.
+
+Deployment:
+- Local only. Do not push/deploy unless the owner selects `2` or explicitly says push/deploy.
+
+Next recommended step:
+- Commit this outcome-page slice locally, then continue the less-busy pass on the next heaviest phone-facing route unless the owner asks for deploy.
 ## CURRENT LOCAL STATE - 2026-07-27 - Community Domain command decongestion slice
 
 Owner trigger:

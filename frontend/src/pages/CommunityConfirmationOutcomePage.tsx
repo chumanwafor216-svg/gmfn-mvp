@@ -521,6 +521,7 @@ export default function CommunityConfirmationOutcomePage() {
   const [evidenceBody, setEvidenceBody] = useState("");
   const [evidenceRef, setEvidenceRef] = useState("");
   const [isCompactPaper, setIsCompactPaper] = useState(false);
+  const [publicActionsOpen, setPublicActionsOpen] = useState(false);
   const outcomeLoadSeqRef = useRef(0);
   const outcomeLoadContextRef = useRef("");
   const decisionLoadSeqRef = useRef(0);
@@ -1635,22 +1636,45 @@ export default function CommunityConfirmationOutcomePage() {
                       Refresh outcome
                     </PrimaryButton>
                     <SecondaryButton
-                      debugId="community-confirmation-outcome.copy-link"
+                      debugId="community-confirmation-outcome.more-public-actions"
                       stableHeight={64}
-                      onClick={() => void copyLink()}
+                      aria-expanded={publicActionsOpen}
+                      aria-controls="community-confirmation-outcome-more-public-actions"
+                      onClick={() => setPublicActionsOpen((current) => !current)}
                     >
-                      {outcomeIconBadge("copy", 28, "navy")}
-                      Copy public link
-                    </SecondaryButton>
-                    <SecondaryButton
-                      debugId="community-confirmation-outcome.print"
-                      stableHeight={64}
-                      onClick={printPage}
-                    >
-                      {outcomeIconBadge("document", 28, "navy")}
-                      Print / Save PDF
+                      {outcomeIconBadge(publicActionsOpen ? "lock" : "copy", 28, "navy")}
+                      {publicActionsOpen ? "Close actions" : "More public actions"}
                     </SecondaryButton>
                   </div>
+                  {publicActionsOpen ? (
+                    <div
+                      id="community-confirmation-outcome-more-public-actions"
+                      data-gsn-community-confirmation-outcome-secondary-actions="open"
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: isCompactPaper ? "1fr" : "repeat(auto-fit, minmax(190px, 1fr))",
+                        gap: isCompactPaper ? 10 : 12,
+                        marginTop: 10,
+                      }}
+                    >
+                      <SecondaryButton
+                        debugId="community-confirmation-outcome.copy-link"
+                        stableHeight={56}
+                        onClick={() => void copyLink()}
+                      >
+                        {outcomeIconBadge("copy", 26, "navy")}
+                        Copy public link
+                      </SecondaryButton>
+                      <SecondaryButton
+                        debugId="community-confirmation-outcome.print"
+                        stableHeight={56}
+                        onClick={printPage}
+                      >
+                        {outcomeIconBadge("document", 26, "navy")}
+                        Print / Save PDF
+                      </SecondaryButton>
+                    </div>
+                  ) : null}
                 </section>
 
                 <TrustDocumentDisclosureSection
