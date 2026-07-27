@@ -91,7 +91,7 @@ type InboxLoadResult = {
   me: MeLite | null;
 };
 
-const GUARANTOR_INBOX_UI_STORAGE_KEY = "gmfn.guarantorInbox.sections.v1";
+const GUARANTOR_INBOX_UI_STORAGE_KEY = "gmfn.guarantorInbox.sections.v2";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -378,10 +378,10 @@ function writeLocalJSON(key: string, value: any) {
 
 function defaultCollapseState(): CollapseState {
   return {
-    overview: false,
-    queue: false,
-    guidance: false,
-    routes: false,
+    overview: true,
+    queue: true,
+    guidance: true,
+    routes: true,
   };
 }
 

@@ -157054,3 +157054,42 @@ Verification run locally:
 
 Deployment:
 - Local only. Push/deploy only when owner sends `2`.
+
+## 2026-07-27 - Local Support Lane Detail Decongestion Pass
+
+- Scope: local-only continuation of the phone decongestion work across the deeper support/finance-adjacent support screens.
+- `frontend/src/pages/LoanSuggestionsPage.tsx`
+  - Bumped `gmfn.loanSuggestions.sections.v2` to `gmfn.loanSuggestions.sections.v3`.
+  - Defaulted overview, reading, supporters, and routes closed while leaving the fit hero, current reading, refresh/copy, and next action visible.
+- `frontend/src/pages/LoanWorkbenchPage.tsx`
+  - Bumped `gmfn.loanWorkbench.sections.v2` to `gmfn.loanWorkbench.sections.v3`.
+  - Defaulted selection, summary, supporter tools, and routes closed while leaving the fixed work item and front refresh/copy actions visible.
+- `frontend/src/pages/GuarantorInboxPage.tsx`
+  - Bumped `gmfn.guarantorInbox.sections.v1` to `gmfn.guarantorInbox.sections.v2`.
+  - Defaulted queue overview, full queue, guidance, and routes closed while leaving the incoming-request hero and first recommended action visible.
+- `frontend/src/pages/GuarantorEarningsPage.tsx`
+  - Bumped `gmfn.guarantorEarnings.sections.v1` to `gmfn.guarantorEarnings.sections.v2`.
+  - Defaulted overview, meaning, recent records, and routes closed while leaving supporter-value reading and front next action visible.
+- `frontend/src/pages/RepaymentPage.tsx`
+  - Defaulted overview, instruction details, result, and routes closed while leaving the front repayment actions visible.
+- `frontend/src/pages/RevenueAllocationPage.tsx`
+  - Bumped `gmfn.revenueAllocation.sections.v1` to `gmfn.revenueAllocation.sections.v2`.
+  - Defaulted allocation summary, details, context, and routes closed while leaving load/copy actions visible.
+- `frontend/tools/audit-loans-actions.mjs`
+  - Added guards that these support-lane pages keep their deeper sections closed by default while preserving first-action visibility.
+
+Unabated truth:
+- This pass deliberately does not alter Money In or Money Out defaults because those are active transaction flows; hiding the wrong live form there could slow users down.
+- This is default presentation/state cleanup only. It does not change support calculations, repayment claim logic, supporter decisions, revenue allocation math, API calls, auth, routing, or evidence generation.
+- Users can still open every covered section immediately.
+
+Verification run locally:
+- `node frontend\tools\audit-loans-actions.mjs`
+- `node frontend\tools\audit-finance-actions.mjs`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run lint`
+- `git diff --check` passed with normal CRLF warnings.
+- `npm --prefix frontend run build`
+
+Deployment:
+- Local only. Push/deploy only when owner sends `2`.

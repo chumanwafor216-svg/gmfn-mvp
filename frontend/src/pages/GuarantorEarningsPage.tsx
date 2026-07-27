@@ -87,7 +87,7 @@ type EarningsLoadResult = {
   items: GuarantorEarningItem[];
 };
 
-const GUARANTOR_EARNINGS_UI_STORAGE_KEY = "gmfn.guarantorEarnings.sections.v1";
+const GUARANTOR_EARNINGS_UI_STORAGE_KEY = "gmfn.guarantorEarnings.sections.v2";
 const GUARANTOR_EARNINGS_PAYOUT_TRUTH =
   "Earned supporter value is recorded here for visibility. It is not an automatic payout, and withdrawal still needs the guided Money Out process when that step is approved.";
 
@@ -151,10 +151,10 @@ function writeLocalJSON(key: string, value: any) {
 
 function defaultCollapseState(): CollapseState {
   return {
-    overview: false,
-    meaning: false,
-    recent: false,
-    routes: false,
+    overview: true,
+    meaning: true,
+    recent: true,
+    routes: true,
   };
 }
 

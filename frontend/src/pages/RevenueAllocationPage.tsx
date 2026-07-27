@@ -49,7 +49,7 @@ type RevenueAllocationView = {
   raw: any;
 };
 
-const REVENUE_ALLOCATION_UI_STORAGE_KEY = "gmfn.revenueAllocation.sections.v1";
+const REVENUE_ALLOCATION_UI_STORAGE_KEY = "gmfn.revenueAllocation.sections.v2";
 const REVENUE_ALLOCATION_LOAN_STORAGE_KEY = "gmfn.revenueAllocation.lastLoanId";
 
 function safeStr(x: any): string {
@@ -133,10 +133,10 @@ function writeLocalJSON(key: string, value: any) {
 
 function defaultCollapseState(): CollapseState {
   return {
-    context: false,
-    summary: false,
-    details: false,
-    routes: false,
+    context: true,
+    summary: true,
+    details: true,
+    routes: true,
   };
 }
 

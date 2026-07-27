@@ -523,11 +523,45 @@ assertContains(
 });
 
 assertContains(
+  "src/pages/LoanSuggestionsPage.tsx",
+  /const LOAN_SUGGESTIONS_UI_STORAGE_KEY = "gmfn\.loanSuggestions\.sections\.v3";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?overview: true,[\s\S]*?reading: true,[\s\S]*?supporters: true,[\s\S]*?routes: true,/,
+  "Loan Suggestions must default deeper overview, reading, supporters, and routes closed so the phone view leads with the fit decision."
+);
+
+assertContains(
+  "src/pages/LoanWorkbenchPage.tsx",
+  /const LOAN_WORKBENCH_UI_STORAGE_KEY = "gmfn\.loanWorkbench\.sections\.v3";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?selection: true,[\s\S]*?summary: true,[\s\S]*?supporters: true,[\s\S]*?routes: true,/,
+  "Loan Workbench must default selection, summary, supporter tools, and routes closed while keeping the fixed work item visible."
+);
+
+assertContains(
+  "src/pages/GuarantorInboxPage.tsx",
+  /const GUARANTOR_INBOX_UI_STORAGE_KEY = "gmfn\.guarantorInbox\.sections\.v2";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?overview: true,[\s\S]*?queue: true,[\s\S]*?guidance: true,[\s\S]*?routes: true,/,
+  "Incoming Requests must default queue overview, full queue, guidance, and routes closed while keeping the first recommended action visible."
+);
+
+assertContains(
+  "src/pages/GuarantorEarningsPage.tsx",
+  /const GUARANTOR_EARNINGS_UI_STORAGE_KEY = "gmfn\.guarantorEarnings\.sections\.v2";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?overview: true,[\s\S]*?meaning: true,[\s\S]*?recent: true,[\s\S]*?routes: true,/,
+  "Supporter Value must default overview, meaning, recent records, and routes closed so earned-value reading is not crowded on phone."
+);
+
+assertContains(
+  "src/pages/RepaymentPage.tsx",
+  /function defaultCollapseState\(\): CollapseState \{[\s\S]*?overview: true,[\s\S]*?instruction: true,[\s\S]*?result: true,[\s\S]*?routes: true,/,
+  "Repayment must default overview, instruction details, result, and routes closed while keeping front Generate and Copy Reference actions visible."
+);
+assertContains(
   "src/pages/RevenueAllocationPage.tsx",
   /stableHeight=\{52\}[\s\S]*?debugId="revenue-allocation\.front-load"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="revenue-allocation\.front-copy-summary"[\s\S]*?debugId="revenue-allocation\.load"[\s\S]*?debugId="revenue-allocation\.copy-summary"/,
   "Revenue Allocation must keep Load and Copy Summary available before the stats grid while preserving the deeper current-action card."
 );
 
+assertContains(
+  "src/pages/RevenueAllocationPage.tsx",
+  /const REVENUE_ALLOCATION_UI_STORAGE_KEY = "gmfn\.revenueAllocation\.sections\.v2";[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?context: true,[\s\S]*?summary: true,[\s\S]*?details: true,[\s\S]*?routes: true,/,
+  "Revenue Allocation must default allocation summary, details, context, and routes closed while keeping front load/copy actions visible."
+);
 assertContains(
   "src/pages/RevenueAllocationPage.tsx",
   /status: firstTruthy\(src\?\.status, src\?\.allocation_status, "Status not recorded yet"\)[\s\S]*?\["Status", safeStr\(allocation\.status \|\| "Status not recorded yet"\)\]/,

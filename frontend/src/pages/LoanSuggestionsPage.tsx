@@ -82,7 +82,7 @@ type PersistedWithdrawalTask = {
   updatedAt?: string | null;
 };
 
-const LOAN_SUGGESTIONS_UI_STORAGE_KEY = "gmfn.loanSuggestions.sections.v2";
+const LOAN_SUGGESTIONS_UI_STORAGE_KEY = "gmfn.loanSuggestions.sections.v3";
 const WITHDRAWAL_TASK_STORAGE_KEY_PREFIXES = [
   "gmfn.withdrawal.task.v5",
   "gmfn.withdrawal.task.v4",
@@ -206,10 +206,10 @@ function writeLocalJSON(key: string, value: any) {
 
 function defaultCollapseState(): CollapseState {
   return {
-    overview: false,
-    reading: false,
-    supporters: false,
-    routes: false,
+    overview: true,
+    reading: true,
+    supporters: true,
+    routes: true,
   };
 }
 

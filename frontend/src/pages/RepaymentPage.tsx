@@ -345,10 +345,10 @@ function communityImageSrc(currentClan: any): string {
 
 function defaultCollapseState(): CollapseState {
   return {
-    overview: false,
-    instruction: false,
-    result: false,
-    routes: false,
+    overview: true,
+    instruction: true,
+    result: true,
+    routes: true,
   };
 }
 
