@@ -26,6 +26,8 @@ export type DecisionPackDefinition = {
   gsnSources: readonly DecisionPackSource[];
   missingLinks: readonly string[];
   refusesToClaim: readonly string[];
+  confirmationReasonType: string;
+  confirmationQuestion: string;
 };
 
 export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
@@ -52,6 +54,8 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
       "Clear issue-resolution summary tied to the member",
     ],
     refusesToClaim: ["Moral character", "Government identity", "Future behaviour"],
+    confirmationReasonType: "community_standing_check",
+    confirmationQuestion: "Can current community witnesses confirm how this person is known in this community?",
   },
   {
     key: "referral_decision",
@@ -76,6 +80,8 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
       "Referrer confidence statement tied to a specific purpose",
     ],
     refusesToClaim: ["Automatic suitability", "Guarantee by the referrer", "Recipient duty removed"],
+    confirmationReasonType: "referral_check",
+    confirmationQuestion: "Can current community witnesses confirm enough relationship evidence for this referral?",
   },
   {
     key: "guarantor_decision",
@@ -101,6 +107,8 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
       "Outcome history for previous guarantees surfaced as decision evidence",
     ],
     refusesToClaim: ["Loan approval", "Bank guarantee", "Automatic repayment", "Money custody"],
+    confirmationReasonType: "guarantor_support_check",
+    confirmationQuestion: "Can current community witnesses confirm responsibility evidence before anyone stands for this person?",
   },
   {
     key: "employment_decision",
@@ -126,6 +134,8 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
       "Role-specific witness question: has this person done this work before?",
     ],
     refusesToClaim: ["Professional licence", "Right to work", "Future performance", "Employer decision"],
+    confirmationReasonType: "employment_role_check",
+    confirmationQuestion: "Can current community witnesses confirm this person is known for the work or role being checked?",
   },
   {
     key: "housing_decision",
@@ -152,6 +162,8 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
       "Issue-resolution summary visible without exposing private disputes",
     ],
     refusesToClaim: ["Credit approval", "Right to rent", "Legal tenancy check", "Guaranteed rent"],
+    confirmationReasonType: "housing_reference_check",
+    confirmationQuestion: "Can current community witnesses confirm responsible conduct, payment discipline, or issue resolution relevant to housing?",
   },
   {
     key: "trade_check",
@@ -177,6 +189,8 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
       "Direct ask-community question: is this person known for this trade?",
     ],
     refusesToClaim: ["Trade licence", "Insurance", "Home safety guarantee", "Future work quality"],
+    confirmationReasonType: "trade_skill_check",
+    confirmationQuestion: "Can current community witnesses confirm this person is known for this trade or service?",
   },
   {
     key: "supplier_decision",
@@ -202,6 +216,8 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
       "Delivery/correction outcome joined to supplier Trust Passport",
     ],
     refusesToClaim: ["Delivery guarantee", "Payment release authority", "Escrow", "Automatic supplier approval"],
+    confirmationReasonType: "supplier_reliability_check",
+    confirmationQuestion: "Can current community witnesses confirm supplier reliability or completed trade outcomes?",
   },
   {
     key: "volunteer_decision",
@@ -225,6 +241,8 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
       "Volunteer outcome records connected to TrustEvents",
     ],
     refusesToClaim: ["Background check", "Safeguarding clearance", "Legal eligibility", "Future conduct"],
+    confirmationReasonType: "volunteer_role_check",
+    confirmationQuestion: "Can current community witnesses confirm this person is known for responsible participation or service?",
   },
   {
     key: "business_partnership",
@@ -250,6 +268,8 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
       "Shared commercial risk checklist tied to evidence categories",
     ],
     refusesToClaim: ["Company due diligence", "Legal authority", "Investment advice", "Guaranteed profit"],
+    confirmationReasonType: "partnership_check",
+    confirmationQuestion: "Can current community witnesses confirm reliability before shared business risk is taken?",
   },
   {
     key: "community_membership",
@@ -274,6 +294,8 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
       "Clear join outcome linked back into Trust Passport evidence",
     ],
     refusesToClaim: ["Citizenship", "Legal immigration status", "Automatic admission", "Universal community endorsement"],
+    confirmationReasonType: "membership_admission_check",
+    confirmationQuestion: "Can current community witnesses confirm the relationship route before admission or connection?",
   },
 ];
 
@@ -312,6 +334,10 @@ export function compactDecisionPackBoundaries(pack: DecisionPackDefinition, limi
   return compactList(pack.refusesToClaim, limit);
 }
 
+export function compactDecisionPackConfirmation(pack: DecisionPackDefinition): string {
+  return cleanDecisionPackText(pack.confirmationQuestion) || "Ask current community witnesses the purpose-specific question before relying.";
+}
+
 export function findDecisionPack(value: unknown): DecisionPackDefinition | null {
   const text = cleanDecisionPackText(value);
   if (!text) return null;
@@ -336,6 +362,8 @@ export type DecisionPackPublicContext = {
   gsnSources: readonly DecisionPackSource[];
   missingLinks: readonly string[];
   refusesToClaim: readonly string[];
+  confirmationReasonType: string;
+  confirmationQuestion: string;
 };
 
 export function normalizeDecisionPackPublicContext(input: {
@@ -363,5 +391,9 @@ export function normalizeDecisionPackPublicContext(input: {
     gsnSources: pack?.gsnSources || [],
     missingLinks: pack?.missingLinks || [],
     refusesToClaim: pack?.refusesToClaim || [],
+    confirmationReasonType: pack?.confirmationReasonType || "community_standing_check",
+    confirmationQuestion:
+      pack?.confirmationQuestion ||
+      "Ask current community witnesses the purpose-specific question before relying.",
   };
 }

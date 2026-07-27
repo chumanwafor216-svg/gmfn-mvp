@@ -33,6 +33,7 @@ import * as api from "../lib/api";
 import {
   compactDecisionPackBoundaries,
   compactDecisionPackEvidence,
+  compactDecisionPackConfirmation,
   compactDecisionPackMissingLinks,
   compactDecisionPackSources,
   DEFAULT_DECISION_PACK,
@@ -3318,6 +3319,11 @@ export default function TrustSlipPage() {
       value: compactDecisionPackMissingLinks(selectedPurposeOption),
       icon: "alert" as GsnIconName,
     },
+    {
+      label: "Ask community",
+      value: compactDecisionPackConfirmation(selectedPurposeOption),
+      icon: "community" as GsnIconName,
+    },
   ];
   const privateDecisionPackEvidenceCategories = (decisionPackEvidenceExtract?.categories || []).slice(0, 4);
   const privateDecisionPackEvidenceScope = decisionPackEvidenceExtract?.evidenceScope;
@@ -3382,7 +3388,7 @@ export default function TrustSlipPage() {
       const result = await (api as any).requestCommunityConfirmation({
         trust_slip_code: requestCode,
         requester_external_label: "TrustSlip viewer",
-        reason_type: "merchant_trust_check",
+        reason_type: selectedPurposeOption.confirmationReasonType || "community_standing_check",
         risk_level: "low",
         mode: communityConfirmation?.instant_pulse_available ? "instant_pulse" : "relay",
       });

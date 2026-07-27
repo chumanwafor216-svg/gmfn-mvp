@@ -292,18 +292,23 @@ assertContains(
 );
 assertContains(
   "decisionPacks",
-  /expectedEvidence[\s\S]*?gsnSources[\s\S]*?missingLinks[\s\S]*?refusesToClaim[\s\S]*?Employment Decision Pack[\s\S]*?Demand Box[\s\S]*?Housing Decision Pack[\s\S]*?Previous landlord[\s\S]*?Trade or Skilled Work Decision Pack[\s\S]*?Customer-confirmed completed-job record/,
-  "Decision Pack catalog must map purpose questions to expected evidence, GSN sources, missing architecture, and explicit overclaim boundaries."
+  /expectedEvidence[\s\S]*?gsnSources[\s\S]*?missingLinks[\s\S]*?refusesToClaim[\s\S]*?confirmationReasonType[\s\S]*?confirmationQuestion[\s\S]*?Employment Decision Pack[\s\S]*?Demand Box[\s\S]*?employment_role_check[\s\S]*?Housing Decision Pack[\s\S]*?Previous landlord[\s\S]*?housing_reference_check[\s\S]*?Trade or Skilled Work Decision Pack[\s\S]*?Customer-confirmed completed-job record[\s\S]*?trade_skill_check/,
+  "Decision Pack catalog must map purpose questions to expected evidence, GSN sources, missing architecture, community-confirmation prompts, and explicit overclaim boundaries."
 );
 assertContains(
   "trustSlip",
-  /compactDecisionPackEvidence[\s\S]*?compactDecisionPackSources[\s\S]*?compactDecisionPackMissingLinks[\s\S]*?compactDecisionPackBoundaries/,
-  "TrustSlip holder page must import the shared Decision Pack evidence, source, gap, and boundary compactors."
+  /compactDecisionPackEvidence[\s\S]*?compactDecisionPackConfirmation[\s\S]*?compactDecisionPackSources[\s\S]*?compactDecisionPackMissingLinks[\s\S]*?compactDecisionPackBoundaries/,
+  "TrustSlip holder page must import the shared Decision Pack evidence, source, gap, confirmation, and boundary compactors."
 );
 assertContains(
   "trustSlip",
-  /purposeEvidenceSelectionRows[\s\S]*?Expected evidence[\s\S]*?compactDecisionPackEvidence\(selectedPurposeOption\)[\s\S]*?Connected GSN sources[\s\S]*?compactDecisionPackSources\(selectedPurposeOption\)[\s\S]*?Architecture gaps[\s\S]*?compactDecisionPackMissingLinks\(selectedPurposeOption\)[\s\S]*?Final decision[\s\S]*?compactDecisionPackBoundaries\(selectedPurposeOption, 2\)/,
-  "TrustSlip holder Decision Pack panel must show expected evidence, connected GSN sources, architecture gaps, and purpose boundaries."
+  /purposeEvidenceSelectionRows[\s\S]*?Expected evidence[\s\S]*?compactDecisionPackEvidence\(selectedPurposeOption\)[\s\S]*?Connected GSN sources[\s\S]*?compactDecisionPackSources\(selectedPurposeOption\)[\s\S]*?Architecture gaps[\s\S]*?compactDecisionPackMissingLinks\(selectedPurposeOption\)[\s\S]*?Ask community[\s\S]*?compactDecisionPackConfirmation\(selectedPurposeOption\)[\s\S]*?Final decision[\s\S]*?compactDecisionPackBoundaries\(selectedPurposeOption, 2\)/,
+  "TrustSlip holder Decision Pack panel must show expected evidence, connected GSN sources, architecture gaps, purpose-specific community ask, and purpose boundaries."
+);
+assertContains(
+  "trustSlip",
+  /requestCommunityPulse[\s\S]*?requestCommunityConfirmation[\s\S]*?reason_type: selectedPurposeOption\.confirmationReasonType \|\| "community_standing_check"/,
+  "TrustSlip holder live community confirmation must use the selected Decision Pack reason type."
 );
 assertContains(
   "decisionMatrix",

@@ -19,6 +19,8 @@ class DecisionPackDefinition:
     gsn_sources: tuple[dict[str, str], ...]
     missing_links: tuple[str, ...]
     refuses_to_claim: tuple[str, ...]
+    confirmation_reason_type: str
+    confirmation_question: str
 
 
 DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
@@ -45,6 +47,8 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
             "Clear issue-resolution summary tied to the member",
         ),
         refuses_to_claim=("Moral character", "Government identity", "Future behaviour"),
+        confirmation_reason_type="community_standing_check",
+        confirmation_question="Can current community witnesses confirm how this person is known in this community?",
     ),
     DecisionPackDefinition(
         key="referral_decision",
@@ -71,6 +75,8 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
             "Referrer confidence statement tied to a specific purpose",
         ),
         refuses_to_claim=("Automatic suitability", "Guarantee by the referrer", "Recipient duty removed"),
+        confirmation_reason_type="referral_check",
+        confirmation_question="Can current community witnesses confirm enough relationship evidence for this referral?",
     ),
     DecisionPackDefinition(
         key="guarantor_decision",
@@ -98,6 +104,8 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
             "Outcome history for previous guarantees surfaced as decision evidence",
         ),
         refuses_to_claim=("Loan approval", "Bank guarantee", "Automatic repayment", "Money custody"),
+        confirmation_reason_type="guarantor_support_check",
+        confirmation_question="Can current community witnesses confirm responsibility evidence before anyone stands for this person?",
     ),
     DecisionPackDefinition(
         key="employment_decision",
@@ -123,6 +131,8 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
             "Role-specific witness question: has this person done this work before?",
         ),
         refuses_to_claim=("Professional licence", "Right to work", "Future performance", "Employer decision"),
+        confirmation_reason_type="employment_role_check",
+        confirmation_question="Can current community witnesses confirm this person is known for the work or role being checked?",
     ),
     DecisionPackDefinition(
         key="housing_decision",
@@ -151,6 +161,8 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
             "Issue-resolution summary visible without exposing private disputes",
         ),
         refuses_to_claim=("Credit approval", "Right to rent", "Legal tenancy check", "Guaranteed rent"),
+        confirmation_reason_type="housing_reference_check",
+        confirmation_question="Can current community witnesses confirm responsible conduct, payment discipline, or issue resolution relevant to housing?",
     ),
     DecisionPackDefinition(
         key="trade_check",
@@ -176,6 +188,8 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
             "Direct ask-community question: is this person known for this trade?",
         ),
         refuses_to_claim=("Trade licence", "Insurance", "Home safety guarantee", "Future work quality"),
+        confirmation_reason_type="trade_skill_check",
+        confirmation_question="Can current community witnesses confirm this person is known for this trade or service?",
     ),
     DecisionPackDefinition(
         key="supplier_decision",
@@ -203,6 +217,8 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
             "Delivery/correction outcome joined to supplier Trust Passport",
         ),
         refuses_to_claim=("Delivery guarantee", "Payment release authority", "Escrow", "Automatic supplier approval"),
+        confirmation_reason_type="supplier_reliability_check",
+        confirmation_question="Can current community witnesses confirm supplier reliability or completed trade outcomes?",
     ),
     DecisionPackDefinition(
         key="volunteer_decision",
@@ -226,6 +242,8 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
             "Volunteer outcome records connected to TrustEvents",
         ),
         refuses_to_claim=("Background check", "Safeguarding clearance", "Legal eligibility", "Future conduct"),
+        confirmation_reason_type="volunteer_role_check",
+        confirmation_question="Can current community witnesses confirm this person is known for responsible participation or service?",
     ),
     DecisionPackDefinition(
         key="business_partnership",
@@ -253,6 +271,8 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
             "Shared commercial risk checklist tied to evidence categories",
         ),
         refuses_to_claim=("Company due diligence", "Legal authority", "Investment advice", "Guaranteed profit"),
+        confirmation_reason_type="partnership_check",
+        confirmation_question="Can current community witnesses confirm reliability before shared business risk is taken?",
     ),
     DecisionPackDefinition(
         key="community_membership",
@@ -277,6 +297,8 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
             "Clear join outcome linked back into Trust Passport evidence",
         ),
         refuses_to_claim=("Citizenship", "Legal immigration status", "Automatic admission", "Universal community endorsement"),
+        confirmation_reason_type="membership_admission_check",
+        confirmation_question="Can current community witnesses confirm the relationship route before admission or connection?",
     ),
 )
 
@@ -348,6 +370,8 @@ def normalize_decision_pack_context(params: Mapping[str, Any]) -> Optional[dict[
                 "gsn_sources": [dict(source) for source in pack.gsn_sources],
                 "missing_links": list(pack.missing_links),
                 "refuses_to_claim": list(pack.refuses_to_claim),
+                "confirmation_reason_type": pack.confirmation_reason_type,
+                "confirmation_question": pack.confirmation_question,
             }
         )
     else:
@@ -357,6 +381,8 @@ def normalize_decision_pack_context(params: Mapping[str, Any]) -> Optional[dict[
                 "gsn_sources": [],
                 "missing_links": [],
                 "refuses_to_claim": [],
+                "confirmation_reason_type": "community_standing_check",
+                "confirmation_question": "Ask current community witnesses the purpose-specific question before relying.",
             }
         )
     return context
@@ -1261,6 +1287,19 @@ def build_decision_pack_profile(
             for value in _context_list(context, "refuses_to_claim")
             if _clean(value, limit=120)
         ],
+        "community_confirmation_prompt": {
+            "reason_type": _clean(
+                context.get("confirmation_reason_type"),
+                limit=48,
+            )
+            or "community_standing_check",
+            "question": _clean(
+                context.get("confirmation_question"),
+                limit=320,
+            )
+            or "Ask current community witnesses the purpose-specific question before relying.",
+            "boundary": "Responses are community witness evidence only; they are not licences, guarantees, approvals, or final decisions.",
+        },
         "relevant_signals": signals[:10],
         "gaps_to_check": [
             {

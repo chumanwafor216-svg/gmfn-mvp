@@ -708,6 +708,41 @@ def test_community_confirmation_request_requires_explicit_target_shape(
         assert "community_confirmation.requested" in event_types
 
 
+def test_community_confirmation_request_accepts_decision_pack_reason_type(
+    client: TestClient,
+):
+    _seed_relay_fixture()
+
+    created = client.post(
+        "/community-confirmations/request",
+        json={
+            "trust_slip_code": "CCR-TRUSTSLIP-1",
+            "requester_external_label": "Customer checking skilled work",
+            "reason_type": "trade_skill_check",
+            "risk_level": "low",
+            "mode": "relay",
+        },
+    )
+
+    assert created.status_code == 200, created.text
+    payload = created.json()
+    assert payload["reason_type"] == "trade_skill_check"
+
+    with SessionLocal() as db:
+        request = db.query(CommunityConfirmationRequest).one()
+        assert request.reason_type == "trade_skill_check"
+        event = (
+            db.query(TrustEvent)
+            .filter(TrustEvent.event_type == "community_confirmation.requested")
+            .one()
+        )
+        event_meta = json.loads(event.meta_json or "{}")
+        assert event_meta["reason_type"] == "trade_skill_check"
+        assert event_meta["private_contacts_exposed"] is False
+        assert "Customer checking skilled work" not in json.dumps(event_meta)
+
+
+
 def test_community_confirmation_request_rejects_non_bool_callback_consent(
     client: TestClient,
 ):

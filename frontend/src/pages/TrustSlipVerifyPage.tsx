@@ -325,6 +325,12 @@ export default function TrustSlipVerifyPage() {
         basis_note:
           "This Decision Pack says what evidence should be checked for this purpose and where GSN can currently point; it does not make the decision.",
         boundary_note: `This Decision Pack reduces uncertainty; it does not remove risk, make the recipient's decision, or prove ${boundaryList}.`,
+        community_confirmation_prompt: {
+          reason_type: decisionPack.confirmationReasonType,
+          question: decisionPack.confirmationQuestion,
+          boundary:
+            "Responses are community witness evidence only; they are not licences, guarantees, approvals, or final decisions.",
+        },
       },
       share_access_record: {
         recipient_label: "TrustSlip recipient",
@@ -779,7 +785,8 @@ export default function TrustSlipVerifyPage() {
         requester_callback_channel: draft.callbackChannel || "none",
         requester_callback_contact: draft.callbackContact || undefined,
         requester_callback_consent: Boolean(draft.callbackConsent),
-        reason_type: "merchant_trust_check",
+        reason_type:
+          decisionPackProfile.communityConfirmationPrompt.reasonType || "community_standing_check",
         risk_level: "low",
         mode: communityConfirmation?.instant_pulse_available ? "instant_pulse" : "relay",
       });

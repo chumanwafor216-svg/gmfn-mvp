@@ -56,6 +56,11 @@ type DecisionPackProfileSignal = {
 export type DecisionPackProfileView = {
   accessPurpose: string;
   recipientQuestion: string;
+  communityConfirmationPrompt: {
+    reasonType: string;
+    question: string;
+    boundary: string;
+  };
   relevantSignals: DecisionPackProfileSignal[];
   gapsToCheck: Array<{
     key: string;
@@ -286,6 +291,9 @@ function normalizeDecisionPackProfile(
   const source = raw && typeof raw === "object" ? raw : {};
   const rawSignals = Array.isArray(source.relevant_signals) ? source.relevant_signals : [];
   const rawGaps = Array.isArray(source.gaps_to_check) ? source.gaps_to_check : [];
+  const prompt = source.community_confirmation_prompt && typeof source.community_confirmation_prompt === "object"
+    ? source.community_confirmation_prompt
+    : {};
   const relevantSignals = rawSignals
     .map((signal: any) => ({
       key: firstTruthy(signal?.key, signal?.label),
@@ -317,6 +325,17 @@ function normalizeDecisionPackProfile(
       fallbackQuestion,
       "Can I make a better decision with this evidence?"
     ),
+    communityConfirmationPrompt: {
+      reasonType: firstTruthy(prompt.reason_type, prompt.reasonType, "community_standing_check"),
+      question: firstTruthy(
+        prompt.question,
+        "Ask current community witnesses the purpose-specific question before relying."
+      ),
+      boundary: firstTruthy(
+        prompt.boundary,
+        "Responses are community witness evidence only; they are not licences, guarantees, approvals, or final decisions."
+      ),
+    },
     relevantSignals: relevantSignals.length
       ? relevantSignals
       : [

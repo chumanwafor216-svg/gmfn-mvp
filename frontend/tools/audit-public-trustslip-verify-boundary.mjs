@@ -115,8 +115,8 @@ assertContains(
 
 assertContains(
   "decisionPacks",
-  /expectedEvidence[\s\S]*?gsnSources[\s\S]*?missingLinks[\s\S]*?refusesToClaim[\s\S]*?Employment Decision Pack[\s\S]*?Demand Box[\s\S]*?Housing Decision Pack[\s\S]*?Previous landlord[\s\S]*?Trade or Skilled Work Decision Pack[\s\S]*?Customer-confirmed completed-job record/,
-  "Shared Decision Pack catalog must map real recipient questions to expected evidence, GSN sources, missing links, and overclaim boundaries."
+  /expectedEvidence[\s\S]*?gsnSources[\s\S]*?missingLinks[\s\S]*?refusesToClaim[\s\S]*?confirmationReasonType[\s\S]*?confirmationQuestion[\s\S]*?Employment Decision Pack[\s\S]*?Demand Box[\s\S]*?employment_role_check[\s\S]*?Housing Decision Pack[\s\S]*?Previous landlord[\s\S]*?housing_reference_check[\s\S]*?Trade or Skilled Work Decision Pack[\s\S]*?Customer-confirmed completed-job record[\s\S]*?trade_skill_check/,
+  "Shared Decision Pack catalog must map real recipient questions to expected evidence, GSN sources, missing links, community-confirmation prompts, and overclaim boundaries."
 );
 
 assertContains(
@@ -146,6 +146,22 @@ assertContains(
   /const publicDecisionPackContext = useMemo[\s\S]*?decisionPackKey[\s\S]*?normalizeDecisionPackPublicContext[\s\S]*?decision_pack: decisionPack\.key[\s\S]*?decision_pack_focus: decisionPack\.focus[\s\S]*?decision_pack_profile[\s\S]*?relevant_signals: relevantSignals[\s\S]*?gaps_to_check: gapChecks[\s\S]*?recommended_checks: recommendedChecks[\s\S]*?evidence_extract[\s\S]*?gsn_decision_pack_matrix[\s\S]*?share_access_record[\s\S]*?Shared to support \$\{decisionPack\.label\}[\s\S]*?const mergedVerifyResult[\s\S]*?decision_pack_profile:[\s\S]*?verifyResult\?\.decision_pack_profile \|\| publicDecisionPackContext\.decision_pack_profile[\s\S]*?normalizeTrustSlipVerification\(mergedVerifyResult/,
   "Public TrustSlip Verify must canonicalize share-safe Decision Pack URL context into the normalized access record."
 );
+assertContains(
+  "verify",
+  /publicDecisionPackContext[\s\S]*?community_confirmation_prompt:[\s\S]*?reason_type: decisionPack\.confirmationReasonType[\s\S]*?question: decisionPack\.confirmationQuestion/,
+  "Public TrustSlip Verify URL fallback profile must carry the Decision Pack community-confirmation prompt."
+);
+assertContains(
+  "viewModel",
+  /communityConfirmationPrompt:[\s\S]*?reasonType[\s\S]*?source\.community_confirmation_prompt[\s\S]*?reasonType: firstTruthy\(prompt\.reason_type, prompt\.reasonType, "community_standing_check"\)/,
+  "Public TrustSlip Verify view model must preserve the backend Decision Pack community-confirmation prompt."
+);
+assertContains(
+  "verify",
+  /requestCommunityPulse[\s\S]*?requestCommunityConfirmation[\s\S]*?reason_type:[\s\S]*?decisionPackProfile\.communityConfirmationPrompt\.reasonType \|\| "community_standing_check"/,
+  "Public TrustSlip Verify live community confirmation must use the Decision Pack prompt reason type."
+);
+
 
 assertContains(
   "verify",
@@ -330,13 +346,13 @@ assertContains(
 
 assertContains(
   "backendDecisionPacks",
-  /class DecisionPackDefinition:[\s\S]*?expected_evidence: tuple\[str, \.\.\.\][\s\S]*?gsn_sources: tuple\[dict\[str, str\], \.\.\.\][\s\S]*?missing_links: tuple\[str, \.\.\.\][\s\S]*?refuses_to_claim: tuple\[str, \.\.\.\][\s\S]*?Employment Decision Pack[\s\S]*?Demand Box[\s\S]*?Housing Decision Pack[\s\S]*?Previous landlord[\s\S]*?Trade or Skilled Work Decision Pack[\s\S]*?Customer-confirmed completed-job record/,
-  "Backend Decision Pack catalog must carry the same evidence/source/gap/boundary matrix as the frontend selector."
+  /class DecisionPackDefinition:[\s\S]*?expected_evidence: tuple\[str, \.\.\.\][\s\S]*?gsn_sources: tuple\[dict\[str, str\], \.\.\.\][\s\S]*?missing_links: tuple\[str, \.\.\.\][\s\S]*?refuses_to_claim: tuple\[str, \.\.\.\][\s\S]*?confirmation_reason_type: str[\s\S]*?confirmation_question: str[\s\S]*?Employment Decision Pack[\s\S]*?Demand Box[\s\S]*?employment_role_check[\s\S]*?Housing Decision Pack[\s\S]*?Previous landlord[\s\S]*?housing_reference_check[\s\S]*?Trade or Skilled Work Decision Pack[\s\S]*?Customer-confirmed completed-job record[\s\S]*?trade_skill_check/,
+  "Backend Decision Pack catalog must carry the same evidence/source/gap/boundary matrix and community-confirmation prompts as the frontend selector."
 );
 assertContains(
   "backendDecisionPacks",
-  /build_decision_pack_profile[\s\S]*?expected_evidence[\s\S]*?gsn_sources[\s\S]*?missing_links[\s\S]*?refuses_to_claim/,
-  "Backend Decision Pack profile must expose expected evidence, mapped sources, missing links, and overclaim boundaries."
+  /build_decision_pack_profile[\s\S]*?expected_evidence[\s\S]*?gsn_sources[\s\S]*?missing_links[\s\S]*?refuses_to_claim[\s\S]*?community_confirmation_prompt[\s\S]*?reason_type[\s\S]*?confirmation_reason_type[\s\S]*?confirmation_question/,
+  "Backend Decision Pack profile must expose expected evidence, mapped sources, missing links, overclaim boundaries, and the purpose-specific community-confirmation prompt."
 );
 assertContains(
   "backendDecisionPacks",
@@ -352,8 +368,14 @@ assertContains(
 
 assertContains(
   "backendDecisionPackTests",
-  /test_public_verify_decision_pack_short_label_canonicalizes_like_frontend[\s\S]*?params=\{"decision_pack": "Employment"\}[\s\S]*?payload\["decision_pack"\] == "employment_decision"/,
-  "Backend tests must prove human short labels canonicalize to the existing Decision Pack key."
+  /test_public_verify_decision_pack_short_label_canonicalizes_like_frontend[\s\S]*?params=\{"decision_pack": "Employment"\}[\s\S]*?payload\["decision_pack"\] == "employment_decision"[\s\S]*?community_confirmation_prompt[\s\S]*?employment_role_check/,
+  "Backend tests must prove human short labels canonicalize to the existing Decision Pack key and expose the purpose-specific confirmation prompt."
+);
+
+assertContains(
+  "backendDecisionPackTests",
+  /test_public_verify_decision_pack_matrix_answers_housing_and_trade_questions[\s\S]*?housing_decision[\s\S]*?trade_check[\s\S]*?Previous landlord or accommodation witness route[\s\S]*?housing_reference_check[\s\S]*?Customer-confirmed completed-job record[\s\S]*?trade_skill_check/,
+  "Backend tests must prove housing and trade packs answer different real-world questions with different expected evidence, gaps, and community-confirmation prompts."
 );
 
 assertContains(

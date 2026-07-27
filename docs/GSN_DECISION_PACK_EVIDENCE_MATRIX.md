@@ -47,12 +47,12 @@ A Decision Pack should always show four layers:
 ## Architecture Gaps To Build Next
 
 - Structured profile declarations: skill, trade, occupation, service type, landlord/tenant references, supplier category, volunteer role, support role.
-- Purpose-specific community confirmation: ask the community a direct question such as "Is Emeka known as a plumber?" or "Has this person paid contributions reliably?"
+- Purpose-specific community confirmation: first prompt routing is wired. Each Decision Pack now carries a controlled confirmation reason type and a direct community-witness question, and TrustSlip community confirmation requests use that reason type. Still missing: custom per-person phrasing, structured witness answers by role/category, and new records for completed work, housing references, or payment discipline.
 - Completed work records: connect Demand Box, quotes, Shop services, customer confirmation, completion media, complaints, and resolution outcomes.
 - Payment-discipline summaries: convert contribution, ROSCA, repayment, and support follow-through into public-safe decision evidence without acting like a credit score.
 - Issue-resolution summaries: show whether issues were resolved or remain unresolved without exposing private disputes or defamatory detail.
 - Guarantee exposure and outcome: show where people stood for a person and what happened, without turning GSN into a bank or guarantor.
-- Backend parity: backend Decision Pack definitions now carry the same evidence/source/gap/boundary matrix and public profiles can expose it. The remaining work is deeper data capture: structured claims, completed jobs, landlord references, issue-resolution summaries, guarantee outcomes, supplier fulfilment outcomes, and purpose-specific confirmation workflows.
+- Backend parity: backend Decision Pack definitions now carry the same evidence/source/gap/boundary matrix plus controlled purpose-specific community confirmation prompts, and public profiles expose those prompts. The remaining work is deeper data capture: structured claims, completed jobs, landlord references, issue-resolution summaries, guarantee outcomes, supplier fulfilment outcomes, and richer witness-answer workflows.
 
 ## Product Boundary
 

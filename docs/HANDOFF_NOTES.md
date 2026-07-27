@@ -1,3 +1,60 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Decision Pack community confirmation prompts
+
+Owner trigger:
+- Owner approved continuing the correction that GSN should answer real social verification questions across employment, housing, trade, support, guarantorship, supplier, volunteer, partnership, and membership categories.
+
+Unabated truth:
+- The platform is now structurally better, but it still does not honestly prove that a person is a plumber, a safe tenant, or a guaranteed worker by itself.
+- This slice wires each Decision Pack to a controlled community-confirmation reason type and direct witness question, then passes that purpose reason into the existing Community Confirmation request path.
+- Devil's advocate: this is prompt routing and bounded evidence framing, not a new witness-answer database, completed-job ledger, landlord-reference app, or custom per-person question builder.
+
+Changed:
+- frontend/src/lib/decisionPacks.ts
+  - Added confirmationReasonType and confirmationQuestion to all ten Decision Packs.
+  - Added compactDecisionPackConfirmation and public-context fallback fields.
+- frontend/src/pages/TrustSlipPage.tsx
+  - Holder Decision Pack preparation now shows an Ask community row.
+  - Live community confirmation requests now use the selected Decision Pack reason type instead of the old generic merchant check.
+- frontend/src/pages/TrustSlipVerifyPage.tsx
+  - Public URL fallback Decision Pack profiles now include a community_confirmation_prompt.
+  - Public live confirmation requests use the normalized Decision Pack prompt reason.
+- frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts
+  - Normalizes communityConfirmationPrompt from backend/public fallback profile data.
+- gmfn_backend/app/services/trust_slip_decision_packs.py
+  - Backend DecisionPackDefinition now carries confirmation_reason_type and confirmation_question.
+  - build_decision_pack_profile exposes community_confirmation_prompt with a boundary that witness responses are not licences, guarantees, approvals, or final decisions.
+- gmfn_backend/tests/test_trust_slip_boundary_controls.py
+  - Added Employment, Housing, and Trade prompt assertions.
+- gmfn_backend/tests/test_community_confirmation_relay.py
+  - Added coverage that a Decision Pack reason type passes through the relay request, database row, and TrustEvent metadata without exposing requester labels.
+- frontend/tools/audit-trust-passport-trustslip-boundary.mjs
+- frontend/tools/audit-public-trustslip-verify-boundary.mjs
+  - Added guards for community-confirmation prompt fields and reason-type routing.
+- docs/GSN_DECISION_PACK_EVIDENCE_MATRIX.md
+  - Updated current/future architecture notes: prompt routing is wired; deeper data capture is still missing.
+
+Routes/screens affected:
+- /app/trust-slip signed-in TrustSlip Decision Pack preparation and live community confirmation request.
+- /trust-slips/verify and /app/trust-slips/verify public Decision Pack reading and live community confirmation request.
+- Backend /trust-slips/verify/{code} Decision Pack profile payload.
+- Backend /community-confirmations/request reason_type passthrough.
+- No database schema, auth, payment, ledger, private Trust Passport disclosure, or free-form private witness question storage changed.
+
+Verification:
+- Passed python -m pytest gmfn_backend\tests\test_trust_slip_boundary_controls.py gmfn_backend\tests\test_community_confirmation_relay.py -q.
+- Passed npm --prefix frontend run build.
+- Passed npm --prefix frontend run audit:trust-passport-trustslip-boundary.
+- Passed npm --prefix frontend run audit:public-trustslip-verify-boundary.
+- Passed npm --prefix frontend run audit:protected-button-freeze.
+- Passed npm --prefix frontend run smoke:public-trustslip-verify-states outside the sandbox after known Vite/esbuild spawn EPERM.
+- Passed npm --prefix frontend run smoke:trust-passport-trustslip-boundary outside the sandbox after known Vite/esbuild spawn EPERM.
+
+Deployment:
+- Not pushed or deployed. Git publishing remains frozen into batch mode until owner approves publishing.
+
+Recommended next step:
+- Build the missing record apps/workflows: structured skill/trade declarations, completed work/customer confirmation, landlord/accommodation references, payment-discipline summaries, issue-resolution summaries, guarantee exposure outcomes, supplier fulfilment/correction records, and richer witness-answer workflows.
+
 ## CURRENT LOCAL STATE - 2026-07-27 - Backend Decision Pack matrix parity
 
 Owner trigger:
