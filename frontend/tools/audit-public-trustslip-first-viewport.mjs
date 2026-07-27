@@ -98,13 +98,13 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /function publicVerifyHero\(compact: boolean\): React\.CSSProperties \{[\s\S]*?gridTemplateColumns: compact \? "minmax\(0, 1fr\)" : "190px minmax\(0, 1fr\)"[\s\S]*?minHeight: compact \? "auto" : 220[\s\S]*?padding: compact \? "18px 18px 26px" : "34px 44px 42px"/,
+  /function publicVerifyHero\(compact: boolean\): React\.CSSProperties \{[\s\S]*?gridTemplateColumns: compact \? "minmax\(0, 1fr\)" : "190px minmax\(0, 1fr\)"[\s\S]*?minHeight: compact \? "auto" : 220[\s\S]*?padding: compact \? "12px 14px 18px" : "34px 44px 42px"/,
   "Public verify hero must keep a bounded mobile first viewport and the institutional desktop composition."
 );
 
 assertContains(
   "publicPaper",
-  /Public Decision Pack[\s\S]*?fontSize: compact \? 34 : 58[\s\S]*?fontSize: compact \? 14 : 20[\s\S]*?Public Decision Pack for a safer next decision\./,
+  /Public Decision Pack[\s\S]*?fontSize: compact \? 28 : 58[\s\S]*?fontSize: compact \? 12\.5 : 20[\s\S]*?Public Decision Pack for a safer next decision\./,
   "Public verify hero must keep compact mobile headline/body sizing and a short Decision Pack framing."
 );
 
@@ -157,7 +157,7 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision Summary[\s\S]*?\{decisionDisplayAnswer\}[\s\S]*?\{decisionReasonLine\}[\s\S]*?data-gsn-public-evidence-translation="decision-why"[\s\S]*?Evidence behind this recommendation[\s\S]*?<DecisionFactorTable rows=\{compact \? decisionTranslationRows\.filter\(\(\[label\]\) => label === "Active Community ID" \|\| label === \(supportPurpose \? "Repayment\/support evidence" : "Purpose evidence"\) \|\| label === "Current witnesses" \|\| label === "Recommended action"\) : decisionTranslationRows\} compact=\{compact\} \/>[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?decisionFirstFacts\.map[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?decisionBoundaryRows\.map[\s\S]*?title="Full evidence and record details"[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"/,
+  /data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision Summary[\s\S]*?\{decisionDisplayAnswer\}[\s\S]*?\{decisionReasonLine\}[\s\S]*?data-gsn-public-evidence-translation="decision-why"[\s\S]*?Evidence behind this recommendation[\s\S]*?<DecisionFactorTable rows=\{compact \? decisionTranslationRows\.filter\(\(\[label\]\) => label === "Active Community ID" \|\| label === \(supportPurpose \? "Repayment\/support evidence" : "Purpose evidence"\) \|\| label === "Current witnesses" \|\| label === "Recommended action"\) : decisionTranslationRows\} compact=\{compact\} \/>[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?decisionFirstFacts\.map[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?GSN checked \{evidenceScopeIsWider \? "primary and wider community signals" : "the primary community signal"\}[\s\S]*?title="Full evidence and record details"[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"/,
   "Public TrustSlip phone viewport must render the answer, reason, decision-factor findings, desktop-only quick facts, compact boundary, and collapsed supporting details."
 );
 

@@ -537,6 +537,8 @@ async function expectDecisionPackRecipientCard(page, { expectRedactedExtract = f
   await mobileFullEvidenceSummary.click();
   const mobileFullEvidence = page.locator('[data-gsn-public-mobile-full-evidence="collapsed-summary"]');
   await expect(mobileFullEvidence).toBeVisible({ timeout: 30000 });
+  await expect(mobileFullEvidence).toContainText("Core evidence reading");
+  await expect(mobileFullEvidence).toContainText("Decision evidence summary");
   await expect(mobileFullEvidence).toContainText("Why received");
   await expect(mobileFullEvidence).toContainText("TrustSlip recipient");
   await expect(mobileFullEvidence).toContainText("Employment Decision Pack");
@@ -546,13 +548,15 @@ async function expectDecisionPackRecipientCard(page, { expectRedactedExtract = f
   await page.locator('[data-cta-id="trust-document.section.employment-decision-pack"]').click();
   const decisionReading = page.locator('[data-debug-id="trust-slip-verify.public.decision-pack-reading"]');
   await expect(decisionReading).toBeVisible({ timeout: 30000 });
-  await expect(decisionReading).toContainText("Can I make a better decision with this evidence?");
-  await expect(decisionReading).toContainText("This document exists to reduce uncertainty, not eliminate risk.");
-  await expect(decisionReading).toContainText("the recipient remains responsible for the decision");
-  await expect(decisionReading).toContainText("Evidence focus");
+  await expect(decisionReading).toContainText("What does the community activity mean?");
+  await expect(decisionReading).toContainText("GSN reads the public-safe community activity first");
+  await expect(decisionReading).toContainText("This is an inference from public-safe community activity");
+  await expect(decisionReading).toContainText("Activity meaning");
+  await expect(decisionReading).toContainText("Decision use");
   await expect(decisionReading).toContainText("Next safe step");
   await expect(decisionReading).toContainText("Check live confirmation");
   await expect(decisionReading).toContainText("Purpose-filtered evidence");
+  await expect(decisionReading).toContainText("This public TrustSlip summarises public-safe evidence only");
   if (expectRedactedExtract) {
     await expect(decisionReading).toContainText("Evidence categories");
     await expect(decisionReading).toContainText("Community participation evidence");
@@ -560,7 +564,7 @@ async function expectDecisionPackRecipientCard(page, { expectRedactedExtract = f
     await expect(decisionReading).toContainText("Private review needed");
     await expect(decisionReading).toContainText("Finance or repayment evidence");
     await expect(decisionReading).toContainText("Ask the holder for the full Trust Passport or live community confirmation if this sensitive evidence matters.");
-    await expect(decisionReading).toContainText("Raw TrustEvents, actor details, notes, metadata, payment references, and private contacts are not exposed publicly.");
+    await expect(decisionReading).toContainText("does not expose raw TrustEvents, private notes, contacts, payment records, addresses, allegations");
     await expect(decisionReading).not.toContainText("SECRET-REF-SHOULD-NOT-RENDER");
     await expect(decisionReading).not.toContainText("Delivered to private address");
   }

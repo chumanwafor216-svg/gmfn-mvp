@@ -508,10 +508,10 @@ function publicVerifyHero(compact: boolean): React.CSSProperties {
     overflow: "hidden",
     display: "grid",
     gridTemplateColumns: compact ? "minmax(0, 1fr)" : "190px minmax(0, 1fr)",
-    gap: compact ? 13 : 24,
+    gap: compact ? 8 : 24,
     alignItems: compact ? "start" : "center",
     minHeight: compact ? "auto" : 220,
-    padding: compact ? "18px 18px 26px" : "34px 44px 42px",
+    padding: compact ? "12px 14px 18px" : "34px 44px 42px",
     background: "linear-gradient(135deg, #061827 0%, #082A48 100%)",
     color: "#FFFFFF",
   };
@@ -1822,22 +1822,22 @@ export default function TrustSlipVerifyPublicPaper({
             position: "relative",
             zIndex: 1,
             display: "grid",
-            gridTemplateColumns: compact ? "44px minmax(0, 1fr)" : "54px minmax(0, 1fr)",
-            gap: compact ? 9 : 10,
+            gridTemplateColumns: compact ? "38px minmax(0, 1fr)" : "54px minmax(0, 1fr)",
+            gap: compact ? 8 : 10,
             alignItems: "center",
             borderRight: compact ? "none" : "1px solid rgba(255,255,255,0.16)",
             borderBottom: compact ? "1px solid rgba(255,255,255,0.14)" : "none",
             paddingRight: compact ? 0 : 20,
-            paddingBottom: compact ? 12 : 0,
+            paddingBottom: compact ? 8 : 0,
             minWidth: 0,
           }}
         >
           <span
             aria-hidden
             style={{
-              width: compact ? 44 : 54,
-              height: compact ? 44 : 54,
-              borderRadius: compact ? 11 : 12,
+              width: compact ? 38 : 54,
+              height: compact ? 38 : 54,
+              borderRadius: compact ? 10 : 12,
               border: "1px solid rgba(246,215,122,0.55)",
               color: "#F6D77A",
               display: "grid",
@@ -1846,15 +1846,15 @@ export default function TrustSlipVerifyPublicPaper({
           >
             <GsnRealisticIcon
               name="trust-shield"
-              size={compact ? 38 : 46}
+              size={compact ? 32 : 46}
               decorative
             />
           </span>
           <div
             style={{
               color: "#FFFFFF",
-              fontSize: compact ? 12 : 17,
-              lineHeight: 1.08,
+              fontSize: compact ? 10.5 : 17,
+              lineHeight: 1.04,
               fontWeight: 1000,
               textTransform: "uppercase",
             }}
@@ -1867,8 +1867,8 @@ export default function TrustSlipVerifyPublicPaper({
             style={{
               display: "inline-flex",
               alignItems: "center",
-              minHeight: 26,
-              padding: "5px 12px",
+              minHeight: compact ? 22 : 26,
+              padding: compact ? "4px 9px" : "5px 12px",
               borderRadius: 8,
               background: "rgba(246,215,122,0.14)",
               color: "#F6D77A",
@@ -1881,9 +1881,9 @@ export default function TrustSlipVerifyPublicPaper({
           </div>
           <h1
             style={{
-              margin: "12px 0 0",
+              margin: compact ? "7px 0 0" : "12px 0 0",
               color: "#FFFFFF",
-              fontSize: compact ? 34 : 58,
+              fontSize: compact ? 28 : 58,
               lineHeight: 1,
               fontWeight: 1000,
               fontFamily: "Georgia, 'Times New Roman', serif",
@@ -1895,11 +1895,11 @@ export default function TrustSlipVerifyPublicPaper({
           </h1>
           <p
             style={{
-              margin: "12px 0 0",
+              margin: compact ? "6px 0 0" : "12px 0 0",
               maxWidth: 520,
               color: "#DCE8F4",
-              fontSize: compact ? 14 : 20,
-              lineHeight: 1.35,
+              fontSize: compact ? 12.5 : 20,
+              lineHeight: compact ? 1.25 : 1.35,
               fontWeight: 760,
             }}
           >
@@ -1907,8 +1907,8 @@ export default function TrustSlipVerifyPublicPaper({
           </p>
           <div
             style={{
-              marginTop: 14,
-              display: "flex",
+              marginTop: compact ? 7 : 14,
+              display: compact ? "none" : "flex",
               gap: compact ? 9 : 12,
               alignItems: "center",
               flexWrap: "wrap",
@@ -2056,24 +2056,38 @@ export default function TrustSlipVerifyPublicPaper({
             }}
           >
             <div style={{ ...sectionLabel(), color: "#7A4A00" }}>Decision Boundary</div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: compact ? "1fr" : "repeat(5, minmax(0, 1fr))",
-                gap: 6,
-              }}
-            >
-              {decisionBoundaryRows.map(([label, value]) => (
-                <div key={label} style={{ minWidth: 0 }}>
-                  <div style={{ color: "#5F4100", fontSize: compact ? 10.5 : 10.5, fontWeight: 1000, lineHeight: 1.18 }}>
-                    {label}
+            {compact ? (
+              <div
+                style={{
+                  ...readableText(),
+                  color: "#07172C",
+                  fontSize: 12.2,
+                  fontWeight: 900,
+                  lineHeight: 1.32,
+                }}
+              >
+                GSN checked {evidenceScopeIsWider ? "primary and wider community signals" : "the primary community signal"}; it is not a guarantee, government ID, credit approval, or final decision.
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+                  gap: 6,
+                }}
+              >
+                {decisionBoundaryRows.map(([label, value]) => (
+                  <div key={label} style={{ minWidth: 0 }}>
+                    <div style={{ color: "#5F4100", fontSize: 10.5, fontWeight: 1000, lineHeight: 1.18 }}>
+                      {label}
+                    </div>
+                    <div style={{ marginTop: 2, color: "#07172C", fontSize: 12, fontWeight: 930, lineHeight: 1.28 }}>
+                      {value}
+                    </div>
                   </div>
-                  <div style={{ marginTop: 2, color: "#07172C", fontSize: compact ? 12.2 : 12, fontWeight: 930, lineHeight: 1.28 }}>
-                    {value}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

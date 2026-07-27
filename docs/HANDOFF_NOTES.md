@@ -1,3 +1,37 @@
+## CURRENT LOCAL STATE - 2026-07-27 - Public TrustSlip phone first-viewport tightening
+
+Owner trigger:
+- Owner asked to continue after the public TrustSlip decision-support deploy and wanted the phone page to stay simple, institutional, and not busy for underbanked/unbanked users.
+
+Unabated truth:
+- The previous TrustSlip correction improved the evidence meaning, but the phone first viewport was still too tall: the existing smoke found `Full evidence and record details` starting below a 390x844 phone viewport.
+- This is a mobile presentation repair, not a new TrustSlip evidence model.
+- Devil's advocate: this makes the first screen clearer and less bulky, but it does not replace the need for real live/community confirmation where the reader's decision is high-risk.
+
+Changed:
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Tightened the mobile public TrustSlip hero spacing, logo size, headline size, and supporting copy size.
+  - Hid the decorative GSN/Open/Trust/Impact word row on compact public TrustSlip views.
+  - Replaced the mobile five-field Decision Boundary grid with one readable boundary sentence while preserving the desktop grid.
+- `frontend/tools/smoke-public-trustslip-verify-states.mjs`
+  - Updated public TrustSlip smoke assertions to require the new core activity meaning, decision evidence summary, activity meaning, decision use, and public-safe privacy boundary wording.
+- `frontend/tools/audit-public-trustslip-first-viewport.mjs`
+  - Updated the first-viewport contract to protect the new tighter mobile hero and one-line boundary.
+
+Verification:
+- Passed elevated `npm --prefix frontend run smoke:public-trustslip-verify-states`.
+- Passed `npm --prefix frontend run lint`.
+- Passed `npm --prefix frontend run audit:public-trustslip-first-viewport`.
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed `npm --prefix frontend run audit:gsn-visible-language`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed elevated `npm --prefix frontend run build`.
+
+Deployment:
+- Ready to commit/push/deploy as the phone cleanup following the previous TrustSlip decision-support deploy.
+
+Next recommended step:
+- Push/deploy this phone first-viewport cleanup, then visually inspect the live public TrustSlip route on a phone viewport.
 ## CURRENT LOCAL STATE - 2026-07-27 - Community Domain product contract repair
 
 Owner trigger:
