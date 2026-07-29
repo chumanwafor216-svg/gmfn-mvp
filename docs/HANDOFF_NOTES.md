@@ -1,3 +1,11 @@
+## 2026-07-29 - Local Community Domain structure planning type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `3b739f59`; push/deploy only when the owner sends `push`, `2`, or explicitly asks.
+- Tightened `frontend/src/pages/communityDomainDashboard/StructurePlanningPanels.tsx` by replacing broad `any` props/helper arrays with route-local UI-facing surfaces for rollout plans, rollout phases, rollout units, activity maps, activity map lanes, group readiness summaries, and group candidate rows.
+- `readinessLanes`, `readyTotal`, `openRolloutPhases`, `rolloutUnitsNeedingAttention`, and `activityGroupRows` now return/accept typed structure-planning surfaces instead of `any` or `any[]`.
+- Cleaned the activity lane fallback expression so unknown backend lane keys are converted through `cleanText` before they become visible fallback text.
+- No app UI, backend API, rollout behavior, activity behavior, group planning behavior, permissions, action counts, button geometry, or user-facing Structure Planning behavior changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this is compile-time hardening only. It does not create real groups, ROSCA cycles, activities, marketplace records, generated backend schema validation, or reduce the heavy Community Domain route.
 ## 2026-07-29 - Local Community Domain identity readiness type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `6092f16a`; push/deploy only when the owner sends `push`, `2`, or explicitly asks.
 - Tightened `frontend/src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx` by replacing broad `any`/`Record<string, any>` props/helper arrays with route-local UI-facing surfaces for domain/template/status data, institutional profile maps, social bridge maps, affiliation readiness maps, primary next actions, and identity readiness lanes.

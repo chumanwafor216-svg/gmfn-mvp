@@ -2,10 +2,102 @@ import React, { useState } from "react";
 import { StableButton } from "../../components/StableButton";
 import { humanStatus } from "./statusLanguage";
 
+type UnknownRecord = Record<string, unknown>;
+
+type StructurePrimaryNextAction = UnknownRecord & {
+  label?: unknown;
+};
+
+type StructureReadinessLane = UnknownRecord & {
+  lane_key?: unknown;
+  label?: unknown;
+  ready?: unknown;
+  next_step?: unknown;
+  status?: unknown;
+};
+
+type RolloutPlanCountsSurface = UnknownRecord & {
+  first_level_units?: unknown;
+  ready_units?: unknown;
+  active_members?: unknown;
+  active_policies?: unknown;
+};
+
+type StructureNodeSurface = UnknownRecord & {
+  id?: unknown;
+  name?: unknown;
+};
+
+type RolloutPhaseSurface = UnknownRecord & {
+  phase_key?: unknown;
+  label?: unknown;
+  completed?: unknown;
+  next_step?: unknown;
+  status?: unknown;
+};
+
+type RolloutUnitSurface = UnknownRecord & {
+  ready_for_pilot?: unknown;
+  node?: StructureNodeSurface | null;
+};
+
+type RolloutPlanSurface = UnknownRecord & {
+  counts?: RolloutPlanCountsSurface;
+  phases?: unknown;
+  rollout_units?: unknown;
+  primary_next_action?: StructurePrimaryNextAction | null;
+  rollout_phase?: unknown;
+};
+
+type ActivityMapSummarySurface = UnknownRecord & {
+  activity_lane_count?: unknown;
+  active_operating_unit_count?: unknown;
+  active_member_count?: unknown;
+  active_policy_count?: unknown;
+  paid_activity_status?: unknown;
+  scheduled_activity_status?: unknown;
+};
+
+type ActivityMapTemplateSurface = UnknownRecord & {
+  marketplace_role?: unknown;
+};
+
+type ActivityMapSurface = UnknownRecord & {
+  summary?: ActivityMapSummarySurface;
+  template?: ActivityMapTemplateSurface;
+  lanes?: unknown;
+  ready_total?: unknown;
+  primary_next_action?: StructurePrimaryNextAction | null;
+};
+
+type ActivityGroupSummarySurface = UnknownRecord & {
+  activity_group_candidate_count?: unknown;
+  node_count?: unknown;
+  active_node_memberships?: unknown;
+  active_policies?: unknown;
+  review_records?: unknown;
+  activity_group_engine_status?: unknown;
+  activity_group_records_created?: unknown;
+  rosca_cycles_created?: unknown;
+};
+
+type ActivityGroupRowSurface = UnknownRecord & {
+  ready_for_activity_group_planning?: unknown;
+  next_step?: unknown;
+  activity_group_status?: unknown;
+  node?: StructureNodeSurface | null;
+};
+
+type ActivityGroupReadinessSurface = UnknownRecord & {
+  summary?: ActivityGroupSummarySurface;
+  flat_groups?: unknown;
+  primary_next_action?: StructurePrimaryNextAction | null;
+};
+
 type StructurePlanningPanelsProps = {
-  rolloutPlan?: any;
-  activityMap?: any;
-  activityGroupReadiness?: any;
+  rolloutPlan?: RolloutPlanSurface | null;
+  activityMap?: ActivityMapSurface | null;
+  activityGroupReadiness?: ActivityGroupReadinessSurface | null;
 };
 
 type StructurePlanningFocusKey = "rollout" | "activity" | "groups";
@@ -46,29 +138,42 @@ function countValue(value: unknown): string {
   return Number.isFinite(numberValue) ? String(numberValue) : "0";
 }
 
-function readinessLanes(map: any): any[] {
-  return Array.isArray(map?.lanes) ? map.lanes : [];
+function readinessLanes(map: ActivityMapSurface | null | undefined): StructureReadinessLane[] {
+  return Array.isArray(map?.lanes) ? (map.lanes as StructureReadinessLane[]) : [];
 }
 
-function readyTotal(map: any, lanes: any[]): number {
+function readyTotal(
+  map: ActivityMapSurface | null | undefined,
+  lanes: StructureReadinessLane[]
+): number {
   return typeof map?.ready_total === "number"
     ? map.ready_total
     : lanes.filter((lane) => lane.ready).length;
 }
 
-function openRolloutPhases(rolloutPlan: any): any[] {
-  const phases = Array.isArray(rolloutPlan?.phases) ? rolloutPlan.phases : [];
-  return phases.filter((phase: any) => !phase.completed);
+function openRolloutPhases(
+  rolloutPlan: RolloutPlanSurface | null | undefined
+): RolloutPhaseSurface[] {
+  const phases = Array.isArray(rolloutPlan?.phases)
+    ? (rolloutPlan.phases as RolloutPhaseSurface[])
+    : [];
+  return phases.filter((phase) => !phase.completed);
 }
 
-function rolloutUnitsNeedingAttention(rolloutPlan: any): any[] {
-  const units = Array.isArray(rolloutPlan?.rollout_units) ? rolloutPlan.rollout_units : [];
-  return units.filter((unit: any) => !unit.ready_for_pilot);
+function rolloutUnitsNeedingAttention(
+  rolloutPlan: RolloutPlanSurface | null | undefined
+): RolloutUnitSurface[] {
+  const units = Array.isArray(rolloutPlan?.rollout_units)
+    ? (rolloutPlan.rollout_units as RolloutUnitSurface[])
+    : [];
+  return units.filter((unit) => !unit.ready_for_pilot);
 }
 
-function activityGroupRows(activityGroupReadiness: any): any[] {
+function activityGroupRows(
+  activityGroupReadiness: ActivityGroupReadinessSurface | null | undefined
+): ActivityGroupRowSurface[] {
   return Array.isArray(activityGroupReadiness?.flat_groups)
-    ? activityGroupReadiness.flat_groups
+    ? (activityGroupReadiness.flat_groups as ActivityGroupRowSurface[])
     : [];
 }
 
@@ -420,7 +525,7 @@ export default function CommunityDomainStructurePlanningPanels({
             <strong>
               {blockedActivityMapLanes
                 .slice(0, 3)
-                .map((lane) => cleanText(lane.label, lane.lane_key || "activity check"))
+                .map((lane) => cleanText(lane.label, cleanText(lane.lane_key, "activity check")))
                 .join(", ")}
             </strong>
             .
