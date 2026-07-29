@@ -36,7 +36,12 @@ Verification:
 - Smoke output still lists the intentionally off-canvas mobile navigation drawer as overflow JSON, but the script accepted it and exited 0.
 
 Deployment:
-- Local only at time of this note. Commit, push, and frontend Render deploy still pending.
+- Pushed `4902cca8 Split Marketplace secondary lanes` to `origin/main`.
+- Triggered GitHub Actions `Trigger Render Deploy` run `30425550473` with `deploy_api=false`.
+- Workflow completed successfully in 2m09s.
+- Confirmed steps included frontend deploy hook, exact frontend Render API deploy, and public URL marker verification.
+- Backend/API deploy skipped by workflow because `deploy_api=false`.
+
 ## CURRENT LOCAL STATE - 2026-07-29 - Marketplace glyph dead-code polish
 
 Owner trigger:
