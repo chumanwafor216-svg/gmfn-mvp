@@ -883,15 +883,29 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type SponsorSummaryTaskKey = "overview" \| "evidence" \| "delivery" \| "export"[\s\S]*SPONSOR_SUMMARY_TASK_OPTIONS[\s\S]*key: "overview"[\s\S]*key: "evidence"[\s\S]*key: "delivery"[\s\S]*key: "export"[\s\S]*activeSponsorSummaryTask[\s\S]*sponsorSummaryTaskChooserOpen[\s\S]*activeSponsorSummaryTaskOption[\s\S]*community-domain-dashboard\.sponsor-summary-toggle[\s\S]*sponsorSummaryTaskChooserOpen[\s\S]*Close sponsor views[\s\S]*Change sponsor view[\s\S]*sponsorSummaryTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.sponsor-summary\.\$\{task\.key\}[\s\S]*setSponsorSummaryTaskChooserOpen\(false\)[\s\S]*activeSponsorSummaryTask === "overview"[\s\S]*Sponsor boundary[\s\S]*activeSponsorSummaryTask === "evidence"[\s\S]*sponsorTiles\.map[\s\S]*activeSponsorSummaryTask === "export"[\s\S]*community-domain-dashboard\.copy-sponsor-export-pack[\s\S]*activeSponsorSummaryTask === "delivery"[\s\S]*Delivery evidence[\s\S]*Provider delivery readiness/,
-  "Community Domain sponsor-safe summary must keep Overview, Evidence, Export, and Delivery views behind a closed Change sponsor view control.",
+  /type SponsorSummaryTaskKey = "overview" \| "evidence" \| "delivery" \| "export"[\s\S]*SPONSOR_SUMMARY_TASK_OPTIONS[\s\S]*key: "overview"[\s\S]*key: "evidence"[\s\S]*key: "delivery"[\s\S]*key: "export"[\s\S]*activeSponsorSummaryTask[\s\S]*sponsorSummaryTaskChooserOpen[\s\S]*activeSponsorSummaryTaskOption[\s\S]*CommunityDomainPeriodSponsorSummaryPanels[\s\S]*SPONSOR_SUMMARY_TASK_OPTIONS/,
+  "Community Domain dashboard must keep sponsor-safe summary state and pass the task catalogue into the lazy summary panel.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx",
+  /type SponsorSummaryTaskKey = "overview" \| "evidence" \| "delivery" \| "export"[\s\S]*sponsorSummaryTaskChooserOpen[\s\S]*debugPrefix="community-domain-dashboard\.sponsor-summary"[\s\S]*labelClosed="Change sponsor view"[\s\S]*labelOpen="Close sponsor views"[\s\S]*options=\{data\.SPONSOR_SUMMARY_TASK_OPTIONS\}[\s\S]*data\.activeSponsorSummaryTask === "overview"[\s\S]*Sponsor boundary[\s\S]*data\.activeSponsorSummaryTask === "evidence"[\s\S]*SummaryTiles rows=\{sponsorTiles\}[\s\S]*data\.activeSponsorSummaryTask === "export"[\s\S]*community-domain-dashboard\.copy-sponsor-export-pack[\s\S]*data\.activeSponsorSummaryTask === "delivery"[\s\S]*DeliveryEvidence evidence=\{evidence\} sponsor[\s\S]*ProviderDeliveryReadiness/,
+  "Lazy Community Domain sponsor-safe summary must keep Overview, Evidence, Export, and Delivery views behind a closed Change sponsor view control.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type DirectorSummaryTaskKey = "overview" \| "membership" \| "evidence" \| "delivery"[\s\S]*DIRECTOR_SUMMARY_TASK_OPTIONS[\s\S]*key: "overview"[\s\S]*key: "membership"[\s\S]*key: "evidence"[\s\S]*key: "delivery"[\s\S]*activeDirectorSummaryTask[\s\S]*directorSummaryTaskChooserOpen[\s\S]*activeDirectorSummaryTaskOption[\s\S]*community-domain-dashboard\.director-summary-toggle[\s\S]*directorSummaryTaskChooserOpen[\s\S]*Close report views[\s\S]*Change report view[\s\S]*directorSummaryTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.director-summary\.\$\{task\.key\}[\s\S]*setDirectorSummaryTaskChooserOpen\(false\)[\s\S]*activeDirectorSummaryTask === "overview"[\s\S]*Report boundary[\s\S]*activeDirectorSummaryTask === "membership"[\s\S]*membershipTiles\.map[\s\S]*activeDirectorSummaryTask === "evidence"[\s\S]*evidenceTiles\.map[\s\S]*activeDirectorSummaryTask === "delivery"[\s\S]*deliveryTiles\.map[\s\S]*Delivery evidence/,
-  "Community Domain director period summary must keep Overview, Membership, Evidence, and Delivery views behind a closed Change report view control.",
+  /type DirectorSummaryTaskKey = "overview" \| "membership" \| "evidence" \| "delivery"[\s\S]*DIRECTOR_SUMMARY_TASK_OPTIONS[\s\S]*key: "overview"[\s\S]*key: "membership"[\s\S]*key: "evidence"[\s\S]*key: "delivery"[\s\S]*activeDirectorSummaryTask[\s\S]*directorSummaryTaskChooserOpen[\s\S]*activeDirectorSummaryTaskOption[\s\S]*CommunityDomainPeriodSponsorSummaryPanels[\s\S]*DIRECTOR_SUMMARY_TASK_OPTIONS/,
+  "Community Domain dashboard must keep director summary state and pass the task catalogue into the lazy summary panel.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx",
+  /type DirectorSummaryTaskKey = "overview" \| "membership" \| "evidence" \| "delivery"[\s\S]*directorSummaryTaskChooserOpen[\s\S]*debugPrefix="community-domain-dashboard\.director-summary"[\s\S]*labelClosed="Change report view"[\s\S]*labelOpen="Close report views"[\s\S]*options=\{data\.DIRECTOR_SUMMARY_TASK_OPTIONS\}[\s\S]*data\.activeDirectorSummaryTask === "overview"[\s\S]*Report boundary[\s\S]*data\.activeDirectorSummaryTask === "membership"[\s\S]*SummaryTiles rows=\{membershipTiles\}[\s\S]*data\.activeDirectorSummaryTask === "evidence"[\s\S]*SummaryTiles rows=\{evidenceTiles\}[\s\S]*data\.activeDirectorSummaryTask === "delivery"[\s\S]*SummaryTiles rows=\{deliveryTiles\}[\s\S]*DeliveryEvidence evidence=\{evidence\}/,
+  "Lazy Community Domain director period summary must keep Overview, Membership, Evidence, and Delivery views behind a closed Change report view control.",
   { frontend: true }
 );
 
@@ -1127,9 +1141,16 @@ assertContains(
 );
 
 assertContains(
-  "src/pages/CommunityDomainDashboardPage.tsx",
-  /Current receipts[\s\S]*confirmation_delivery_receipts_current_uncorrected[\s\S]*Receipt corrections[\s\S]*Current receipts exclude receipts/,
+  "src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx",
+  /confirmation_delivery_receipts_current_uncorrected[\s\S]*Receipt corrections[\s\S]*confirmation_delivery_receipt_corrections/,
   "Community Domain dashboard must show current uncorrected delivery receipts separately from all manual receipt audit rows and corrections.",
+  { frontend: true }
+);
+
+assertIncludes(
+  "src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx",
+  "Current receipts exclude receipts",
+  "Community Domain dashboard must explain that current receipts exclude corrected, superseded, or reviewed manual receipt rows.",
   { frontend: true }
 );
 
@@ -1169,70 +1190,77 @@ assertContains(
 );
 
 assertIncludes(
-  "src/pages/CommunityDomainDashboardPage.tsx",
-  "evidence.beneficiary_confirmation_delivery_receipts_by_consent_basis",
+  "src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx",
+  "evidence?.beneficiary_confirmation_delivery_receipts_by_consent_basis",
   "Community Domain dashboard period summary must expose manual delivery consent-basis evidence.",
   { frontend: true }
 );
 
 assertIncludes(
-  "src/pages/CommunityDomainDashboardPage.tsx",
+  "src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx",
   "evidence.beneficiary_contact_consent_records",
   "Community Domain dashboard period summary must expose contact/consent attestation counts.",
   { frontend: true }
 );
 
 assertIncludes(
-  "src/pages/CommunityDomainDashboardPage.tsx",
+  "src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx",
   "evidence.beneficiary_contact_consent_withdrawals",
   "Community Domain dashboard period summary must expose contact/consent withdrawal counts.",
   { frontend: true }
 );
 
 assertIncludes(
-  "src/pages/CommunityDomainDashboardPage.tsx",
+  "src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx",
   "GSN did not send WhatsApp, SMS, or email;",
   "Community Domain dashboard period summary must avoid claiming GSN sent external channels.",
   { frontend: true }
 );
 
 assertContains(
-  "src/pages/CommunityDomainDashboardPage.tsx",
-  /confirmation_delivery_prepared_records[\s\S]*confirmation_delivery_receipt_records[\s\S]*confirmation_delivery_receipts_current_uncorrected[\s\S]*confirmation_delivery_receipt_corrections[\s\S]*contact_consent_records[\s\S]*contact_consent_withdrawals[\s\S]*activeSponsorSummaryTask === "delivery"[\s\S]*confirmation_delivery_receipts_current_by_status[\s\S]*confirmation_delivery_receipts_by_status[\s\S]*confirmation_delivery_receipts_by_consent_basis[\s\S]*confirmation_delivery_receipt_corrections_by_decision[\s\S]*contact_consent_by_reference_status[\s\S]*contact_consent_withdrawals_by_reason[\s\S]*GSN did not send external messages/,
+  "src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx",
+  /confirmation_delivery_prepared_records[\s\S]*confirmation_delivery_receipt_records[\s\S]*confirmation_delivery_receipts_current_uncorrected[\s\S]*confirmation_delivery_receipt_corrections[\s\S]*contact_consent_records[\s\S]*contact_consent_withdrawals[\s\S]*data\.activeSponsorSummaryTask === "delivery"[\s\S]*DeliveryEvidence evidence=\{evidence\} sponsor[\s\S]*ProviderDeliveryReadiness/,
   "Community Domain dashboard sponsor summary must expose delivery, contact/consent, and withdrawal evidence without provider-send claims.",
   { frontend: true }
 );
 
+assertContains(
+  "src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx",
+  /confirmation_delivery_receipts_current_by_status[\s\S]*confirmation_delivery_receipts_by_status[\s\S]*confirmation_delivery_receipts_by_consent_basis[\s\S]*confirmation_delivery_receipt_corrections_by_decision[\s\S]*contact_consent_by_reference_status[\s\S]*contact_consent_withdrawals_by_reason[\s\S]*GSN did not send external messages/,
+  "Community Domain dashboard sponsor delivery helper must keep the receipt, consent-basis, correction, contact/consent, and withdrawal breakdowns.",
+  { frontend: true }
+);
+
 assertIncludes(
-  "src/pages/CommunityDomainDashboardPage.tsx",
-  "sponsorSummary?.external_delivery_readiness",
+  "src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx",
+  "summary?.external_delivery_readiness",
   "Community Domain dashboard sponsor summary must read external delivery readiness.",
   { frontend: true }
 );
 
 assertIncludes(
-  "src/pages/CommunityDomainDashboardPage.tsx",
+  "src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx",
   "Provider delivery readiness",
   "Community Domain dashboard sponsor summary must show provider delivery readiness.",
   { frontend: true }
 );
 
 assertIncludes(
-  "src/pages/CommunityDomainDashboardPage.tsx",
+  "src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx",
   "externalDelivery.missing_components",
   "Community Domain dashboard sponsor summary must show missing provider delivery components.",
   { frontend: true }
 );
 
 assertContains(
-  "src/pages/CommunityDomainDashboardPage.tsx",
+  "src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx",
   /Provider setup contract[\s\S]{0,1400}provider_setup_contract[\s\S]{0,1400}send_lift_conditions[\s\S]{0,1400}truth_gate/,
   "Community Domain dashboard must show the provider setup contract and lift conditions without claiming provider delivery is active.",
   { frontend: true }
 );
 
 assertContains(
-  "src/pages/CommunityDomainDashboardPage.tsx",
+  "src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx",
   /Contact and consent gate[\s\S]{0,1000}contact_consent_contract[\s\S]{0,1200}provider_send_blocker[\s\S]{0,1200}active_contact_consent_status[\s\S]{0,1200}active_contact_consent_boundary[\s\S]{0,1200}minimum_send_rule[\s\S]{0,1200}privacy_boundary/,
   "Community Domain dashboard must show the contact/consent blocker before provider delivery can be treated as ready.",
   { frontend: true }
@@ -1253,7 +1281,7 @@ assertIncludes(
 );
 
 assertIncludes(
-  "src/pages/CommunityDomainDashboardPage.tsx",
+  "src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx",
   "community-domain-dashboard.copy-sponsor-export-pack",
   "Community Domain dashboard must expose the sponsor export pack copy action.",
   { frontend: true }

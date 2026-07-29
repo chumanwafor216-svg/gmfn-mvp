@@ -157748,3 +157748,13 @@ Deployment:
 - Verified: `node --check frontend/tools/audit-startup-root-boundary.mjs`; `npm --prefix frontend run audit:startup-root-boundary`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `git diff --check`; elevated `npm --prefix frontend run audit:startup-timing`.
 - Startup timing result after the change: warm shell `3280ms`, warm Dashboard `3457ms`, auth-retry Dashboard `7821ms`.
 - Devil's advocate: this improves perceived loading and likely second-click navigation after the app shell settles. It does not shrink the actual biggest chunks; build still shows `DashboardPage`, `CommunityDomainDashboardPage`, and `MarketplacePage` as large route chunks, and Babel still warns that `CommunityDomainDashboardPage.tsx` exceeds 500KB.
+
+## 2026-07-29 - Local Community Domain Summary Lazy Split
+- Status: Local only, not pushed/deployed. Builds on the prior local guidance/loading commits; push/deploy only when the owner sends `2` or explicitly asks.
+- Split the Community Domain Governance `Director period summary` and `Sponsor-safe summary` panels out of `frontend/src/pages/CommunityDomainDashboardPage.tsx` into lazy-loaded `frontend/src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx`.
+- Kept the same visible summary choices and protected debug IDs for director report views, sponsor views, and copy sponsor pack.
+- Kept the delivery-evidence truth boundaries: current receipts are separated from all receipt audit rows/corrections, consent-basis evidence remains visible, and GSN does not claim WhatsApp/SMS/email/provider sends.
+- Updated `frontend/tools/audit-community-domain-product-contracts.mjs` so the contract guards check the new lazy component plus the parent pass-through state/catalogue contract.
+- Build output after this split includes `PeriodSponsorSummaryPanels` at `16.88 kB` and `CommunityDomainDashboardPage` at `210.07 kB`.
+- Devil's advocate: this is a real chunk split, but Community Domain remains a large route chunk. The next likely candidates are outcome confirmation/correction and activity-record sections, which should be split carefully behind their existing governance tasks.
+- Verified: `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `git diff --check`.
