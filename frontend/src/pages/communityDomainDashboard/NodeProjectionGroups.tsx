@@ -2,26 +2,44 @@ import React, { useState } from "react";
 import { StableButton } from "../../components/StableButton";
 import { humanStatus } from "./statusLanguage";
 
-type NodeProjectionItem = {
-  node?: {
-    id?: number | string | null;
-    name?: string | null;
-  } | null;
-  autonomy_status?: string | null;
-  economy_status?: string | null;
-  activity_status?: string | null;
-  service_status?: string | null;
-  privacy_status?: string | null;
-  analytics_status?: string | null;
-  domain_boundary_status?: string | null;
-  evidence_authority_status?: string | null;
-  trust_status?: string | null;
-  participation_status?: string | null;
-  communication_status?: string | null;
-  vault_status?: string | null;
-  schedule_status?: string | null;
-  paid_activity_status?: string | null;
-  next_step?: string | null;
+type UnknownRecord = Record<string, unknown>;
+
+type NodeProjectionItem = UnknownRecord & {
+  node?: (UnknownRecord & {
+    id?: unknown;
+    name?: unknown;
+  }) | null;
+  autonomy_status?: unknown;
+  economy_status?: unknown;
+  activity_status?: unknown;
+  service_status?: unknown;
+  privacy_status?: unknown;
+  analytics_status?: unknown;
+  domain_boundary_status?: unknown;
+  evidence_authority_status?: unknown;
+  trust_status?: unknown;
+  participation_status?: unknown;
+  communication_status?: unknown;
+  vault_status?: unknown;
+  schedule_status?: unknown;
+  paid_activity_status?: unknown;
+  next_step?: unknown;
+};
+
+type NodeProjectionPrimaryNextAction = UnknownRecord & {
+  label?: unknown;
+};
+
+type NodeProjectionTemplateSurface = UnknownRecord & {
+  marketplace_role?: unknown;
+  template_key?: unknown;
+};
+
+type NodeProjectionMapSurface = UnknownRecord & {
+  counts?: unknown;
+  flat_nodes?: unknown;
+  primary_next_action?: NodeProjectionPrimaryNextAction | null;
+  template?: NodeProjectionTemplateSurface | null;
 };
 
 type StatusKey =
@@ -48,20 +66,20 @@ type ProjectionGroupProps = {
     | "structureBoundary"
     | "structureActivity"
     | "memberParticipation";
-  nodeAutonomyMap?: any;
-  nodeEconomicMap?: any;
-  nodeActivityMap?: any;
-  nodeEvidenceAuthorityMap?: any;
-  nodeTrustMap?: any;
-  nodeDomainBoundaryMap?: any;
-  nodeParticipationMap?: any;
-  nodeServiceMap?: any;
-  nodePrivacyMap?: any;
-  nodeAnalyticsMap?: any;
-  nodeCommunicationMap?: any;
-  nodeVaultMap?: any;
-  nodeScheduledActivityMap?: any;
-  nodePaidActivityMap?: any;
+  nodeAutonomyMap?: NodeProjectionMapSurface | null;
+  nodeEconomicMap?: NodeProjectionMapSurface | null;
+  nodeActivityMap?: NodeProjectionMapSurface | null;
+  nodeEvidenceAuthorityMap?: NodeProjectionMapSurface | null;
+  nodeTrustMap?: NodeProjectionMapSurface | null;
+  nodeDomainBoundaryMap?: NodeProjectionMapSurface | null;
+  nodeParticipationMap?: NodeProjectionMapSurface | null;
+  nodeServiceMap?: NodeProjectionMapSurface | null;
+  nodePrivacyMap?: NodeProjectionMapSurface | null;
+  nodeAnalyticsMap?: NodeProjectionMapSurface | null;
+  nodeCommunicationMap?: NodeProjectionMapSurface | null;
+  nodeVaultMap?: NodeProjectionMapSurface | null;
+  nodeScheduledActivityMap?: NodeProjectionMapSurface | null;
+  nodePaidActivityMap?: NodeProjectionMapSurface | null;
 };
 
 function cleanText(value: unknown, fallback = ""): string {
@@ -78,16 +96,22 @@ function countValue(value: unknown): string {
   return Number.isFinite(numberValue) ? String(numberValue) : "0";
 }
 
-function nodeProjectionCounts(map: any): Record<string, unknown> {
-  return map?.counts || {};
+function nodeProjectionCounts(
+  map: NodeProjectionMapSurface | null | undefined
+): Record<string, unknown> {
+  return typeof map?.counts === "object" && map.counts !== null
+    ? (map.counts as Record<string, unknown>)
+    : {};
 }
 
-function nodeProjectionRows(map: any): NodeProjectionItem[] {
-  return Array.isArray(map?.flat_nodes) ? map.flat_nodes : [];
+function nodeProjectionRows(
+  map: NodeProjectionMapSurface | null | undefined
+): NodeProjectionItem[] {
+  return Array.isArray(map?.flat_nodes) ? (map.flat_nodes as NodeProjectionItem[]) : [];
 }
 
 function nodeProjectionGaps(
-  map: any,
+  map: NodeProjectionMapSurface | null | undefined,
   statusKey: StatusKey,
   blockedTokens: string[]
 ): NodeProjectionItem[] {

@@ -1,3 +1,12 @@
+## 2026-07-29 - Local Community Domain node projection type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `b014624b`; push/deploy only when the owner sends `push`, `2`, or explicitly asks.
+- Tightened `frontend/src/pages/communityDomainDashboard/NodeProjectionGroups.tsx` by replacing broad `any` props/helper annotations with one route-local UI-facing node projection map surface for all projection variants.
+- `nodeProjectionCounts`, `nodeProjectionRows`, and `nodeProjectionGaps` now return/accept typed node projection surfaces instead of `any` or `any[]`.
+- The typed map surface covers the fields this shared projection child actually reads: counts, flat nodes, primary next action labels, and template marketplace/template fields.
+- No app UI, backend API, local unit projection behavior, service/structure/member/trust packet behavior, permissions, action counts, button geometry, or user-facing Node Projection behavior changed in this slice.
+- Verification passed after correcting the initial projection map surface: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this is compile-time hardening only. It does not validate parent dashboard state, add generated backend schema validation, change local unit readiness logic, or reduce the heavy Community Domain route.
+
 ## 2026-07-29 - Local Community Domain selector type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `ff5ef222`; push/deploy only when the owner sends `push`, `2`, or explicitly asks.
 - Tightened `frontend/src/pages/communityDomainDashboard/DomainSelectorPanel.tsx` by replacing broad `any` props/state/helper annotations with route-local UI-facing surfaces for domain selector items, domain records, memberships, viewers, and edit lookup results.
