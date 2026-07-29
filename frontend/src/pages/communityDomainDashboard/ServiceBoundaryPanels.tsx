@@ -2,12 +2,79 @@ import React, { useState } from "react";
 import { StableButton } from "../../components/StableButton";
 import { humanStatus } from "./statusLanguage";
 
+type UnknownRecord = Record<string, unknown>;
+
+type ServiceBoundaryPrimaryNextAction = UnknownRecord & {
+  label?: unknown;
+};
+
+type ServiceBoundaryLane = UnknownRecord & {
+  lane_key?: unknown;
+  label?: unknown;
+  ready?: unknown;
+  next_step?: unknown;
+  status?: unknown;
+  signal_count?: unknown;
+};
+
+type ServiceBoundarySummarySurface = UnknownRecord & {
+  domain_exchange_status?: unknown;
+  cross_domain_discovery_status?: unknown;
+  linked_social_community?: unknown;
+  active_affiliations?: unknown;
+  active_member_count?: unknown;
+  active_evidence_count?: unknown;
+  marketplace_role?: unknown;
+  verification_status?: unknown;
+  external_finance_status?: unknown;
+  public_profile_present?: unknown;
+  public_url_status?: unknown;
+  active_node_count?: unknown;
+  open_review_count?: unknown;
+  marketplace_private_record_status?: unknown;
+  finance_private_record_status?: unknown;
+  cross_domain_record_sharing_status?: unknown;
+  configuration_mode?: unknown;
+  custom_schema_status?: unknown;
+  custom_billing_status?: unknown;
+  active_operating_unit_count?: unknown;
+  active_policy_count?: unknown;
+  custom_tenant_status?: unknown;
+  custom_permission_status?: unknown;
+  domain_status?: unknown;
+  compliance_engine_status?: unknown;
+  legal_advice_status?: unknown;
+  payment_compliance_status?: unknown;
+  appeal_engine_status?: unknown;
+  appeal_records_created?: unknown;
+  mediator_assignment_status?: unknown;
+  appeal_decision_status?: unknown;
+  disputed_review_signal_count?: unknown;
+};
+
+type LinkedSocialCommunitySurface = UnknownRecord & {
+  status?: unknown;
+};
+
+type ConfigurationBlueprintSurface = UnknownRecord & {
+  default_modules?: unknown[];
+};
+
+type ServiceBoundaryMapSurface = UnknownRecord & {
+  summary?: ServiceBoundarySummarySurface;
+  linked_social_community?: LinkedSocialCommunitySurface;
+  blueprint?: ConfigurationBlueprintSurface;
+  lanes?: unknown;
+  ready_total?: unknown;
+  primary_next_action?: ServiceBoundaryPrimaryNextAction | null;
+};
+
 type ServiceBoundaryPanelsProps = {
-  networkExchangeMap?: any;
-  recordPrivacyMap?: any;
-  configurationMap?: any;
-  complianceMap?: any;
-  appealReadiness?: any;
+  networkExchangeMap?: ServiceBoundaryMapSurface | null;
+  recordPrivacyMap?: ServiceBoundaryMapSurface | null;
+  configurationMap?: ServiceBoundaryMapSurface | null;
+  complianceMap?: ServiceBoundaryMapSurface | null;
+  appealReadiness?: ServiceBoundaryMapSurface | null;
 };
 
 type BoundaryFocusKey = "exchange" | "privacy" | "setup" | "compliance" | "appeals";
@@ -57,21 +124,26 @@ function countValue(value: unknown): string {
   return Number.isFinite(numberValue) ? String(numberValue) : "0";
 }
 
-function readinessLanes(map: any): any[] {
-  return Array.isArray(map?.lanes) ? map.lanes : [];
+function readinessLanes(
+  map: ServiceBoundaryMapSurface | null | undefined
+): ServiceBoundaryLane[] {
+  return Array.isArray(map?.lanes) ? (map.lanes as ServiceBoundaryLane[]) : [];
 }
 
-function blockedLanes(lanes: any[]): any[] {
+function blockedLanes(lanes: ServiceBoundaryLane[]): ServiceBoundaryLane[] {
   return lanes.filter((lane) => !lane.ready);
 }
 
-function readyTotal(map: any, lanes: any[]): number {
+function readyTotal(
+  map: ServiceBoundaryMapSurface | null | undefined,
+  lanes: ServiceBoundaryLane[]
+): number {
   return typeof map?.ready_total === "number"
     ? map.ready_total
     : lanes.filter((lane) => lane.ready).length;
 }
 
-function signalTotal(lanes: any[]): number {
+function signalTotal(lanes: ServiceBoundaryLane[]): number {
   return lanes.reduce((total, lane) => total + Number(lane.signal_count || 0), 0);
 }
 
@@ -384,7 +456,7 @@ export default function CommunityDomainServiceBoundaryPanels({
             <strong>
               {blockedNetworkExchangeLanes
                 .slice(0, 3)
-                .map((lane) => cleanText(lane.label, lane.lane_key || "exchange check"))
+                .map((lane) => cleanText(lane.label, cleanText(lane.lane_key, "exchange check")))
                 .join(", ")}
             </strong>
             .
@@ -465,7 +537,7 @@ export default function CommunityDomainServiceBoundaryPanels({
             <strong>
               {blockedRecordPrivacyLanes
                 .slice(0, 3)
-                .map((lane) => cleanText(lane.label, lane.lane_key || "privacy check"))
+                .map((lane) => cleanText(lane.label, cleanText(lane.lane_key, "privacy check")))
                 .join(", ")}
             </strong>
             .
@@ -540,7 +612,7 @@ export default function CommunityDomainServiceBoundaryPanels({
               {blockedConfigurationMapLanes
                 .slice(0, 3)
                 .map((lane) =>
-                  cleanText(lane.label, lane.lane_key || "setup check")
+                  cleanText(lane.label, cleanText(lane.lane_key, "setup check"))
                 )
                 .join(", ")}
             </strong>
@@ -620,7 +692,7 @@ export default function CommunityDomainServiceBoundaryPanels({
             <strong>
               {blockedComplianceMapLanes
                 .slice(0, 3)
-                .map((lane) => cleanText(lane.label, lane.lane_key || "compliance check"))
+                .map((lane) => cleanText(lane.label, cleanText(lane.lane_key, "compliance check")))
                 .join(", ")}
             </strong>
             .
@@ -690,7 +762,7 @@ export default function CommunityDomainServiceBoundaryPanels({
             <strong>
               {blockedAppealReadinessLanes
                 .slice(0, 3)
-                .map((lane) => cleanText(lane.label, lane.lane_key || "appeal path"))
+                .map((lane) => cleanText(lane.label, cleanText(lane.lane_key, "appeal path")))
                 .join(", ")}
             </strong>
             .

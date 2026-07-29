@@ -1,3 +1,12 @@
+## 2026-07-29 - Local Community Domain service boundary type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `f2ea094d`; push/deploy only when the owner sends `push`, `2`, or explicitly asks.
+- Tightened `frontend/src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx` by replacing broad `any` props/helper arrays with route-local UI-facing surfaces for network exchange maps, record privacy maps, configuration maps, compliance maps, appeal readiness maps, linked social community status, configuration blueprints, primary next actions, and boundary lanes.
+- `readinessLanes`, `blockedLanes`, `readyTotal`, and `signalTotal` now return/accept typed service-boundary lane surfaces instead of `any` or `any[]`.
+- Cleaned exchange, privacy, setup, compliance, and appeal lane fallback expressions so unknown backend lane keys are converted through `cleanText` before rendering.
+- No app UI, backend API, exchange behavior, privacy behavior, configuration behavior, compliance behavior, appeal behavior, permissions, action counts, button geometry, or user-facing Service Boundary behavior changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this is compile-time hardening only. It does not enable outside-network exchange, expose private records, create special builds, issue compliance certificates, run appeals, add generated backend schema validation, or reduce the heavy Community Domain route.
+
 ## 2026-07-29 - Local Community Domain service readiness type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `1fcc193b`; push/deploy only when the owner sends `push`, `2`, or explicitly asks.
 - Tightened `frontend/src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx` by replacing broad `any` props/helper arrays with route-local UI-facing surfaces for module scope readiness, billing quote status, service settings projection rows, economic participation maps, and network presence maps.
