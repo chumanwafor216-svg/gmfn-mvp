@@ -1,9 +1,10 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-nocheck
-// Lazy UI shell receives parent-typed workflow state through one data prop; parent and audits keep behavioral coverage.
+// Lazy UI shell receives parent-owned workflow state through one data prop; parent and audits keep behavioral coverage.
 import React from "react";
 import { GsnRealisticIcon } from "../../components/GsnRealisticIcon";
 import { StableButton } from "../../components/StableButton";
+
+type BeneficiaryOutcomeConfirmationActionKey = "link" | "review";
+type BeneficiaryOutcomeContactActionKey = "record" | "withdraw";
 
 type Props = {
   data: Record<string, any>;
@@ -178,7 +179,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                             aria-expanded={realLifeRecordTypeChooserOpen}
                             aria-controls="community-domain-real-life-record-types"
                             onClick={() =>
-                              setRealLifeRecordTypeChooserOpen((current) => !current)
+                              setRealLifeRecordTypeChooserOpen((current: any) => !current)
                             }
                             style={{
                               justifyContent: "center",
@@ -345,7 +346,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                           aria-expanded={activityRecordTaskChooserOpen}
                           aria-controls="community-domain-activity-record-packets"
                           onClick={() =>
-                            setActivityRecordTaskChooserOpen((current) => !current)
+                            setActivityRecordTaskChooserOpen((current: any) => !current)
                           }
                           style={{
                             justifyContent: "center",
@@ -368,7 +369,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                               gap: 8,
                             }}
                           >
-                            {ACTIVITY_RECORD_TASK_OPTIONS.map((task) => (
+                            {ACTIVITY_RECORD_TASK_OPTIONS.map((task: any) => (
                               <StableButton
                                 key={task.key}
                                 type="button"
@@ -411,12 +412,12 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                 Current step:{" "}
                                 <strong>
                                   {ACTIVITY_RECORD_STAGE_OPTIONS.find(
-                                    (stage) => stage.key === activeActivityRecordStage
+                                    (stage: any) => stage.key === activeActivityRecordStage
                                   )?.label || "Person"}
                                 </strong>
                                 .{" "}
                                 {ACTIVITY_RECORD_STAGE_OPTIONS.find(
-                                  (stage) => stage.key === activeActivityRecordStage
+                                  (stage: any) => stage.key === activeActivityRecordStage
                                 )?.note || "Follow the next action to continue."}
                               </div>
                               <StableButton
@@ -429,7 +430,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                 aria-controls="community-domain-activity-record-stages"
                                 onClick={() =>
                                   setActivityRecordStageChooserOpen(
-                                    (current) => !current
+                                    (current: any) => !current
                                   )
                                 }
                                 style={{
@@ -453,7 +454,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                     gap: 8,
                                   }}
                                 >
-                                  {ACTIVITY_RECORD_STAGE_OPTIONS.map((stage) => {
+                                  {ACTIVITY_RECORD_STAGE_OPTIONS.map((stage: any) => {
                                     const selected =
                                       stage.key === activeActivityRecordStage;
                                     return (
@@ -518,7 +519,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                     }
                                     style={billingInputStyle()}
                                   >
-                                    {activityCatalogueOptions.map((item) => (
+                                    {activityCatalogueOptions.map((item: any) => (
                                       <option
                                         key={cleanText(item?.activity_type)}
                                         value={cleanText(item?.activity_type)}
@@ -690,7 +691,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                 gap: 8,
                               }}
                             >
-                              {activityCatalogueOptions.map((item) => (
+                              {activityCatalogueOptions.map((item: any) => (
                                 <div
                                   key={cleanText(item?.activity_type)}
                                   style={{
@@ -721,7 +722,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                               <div style={{ ...helperText(), fontSize: 13 }}>
                                 Recorded activity evidence is kept separate from confirmation and beneficiary outcome proof.
                               </div>
-                              {activityRows.slice(0, 5).map((item) => (
+                              {activityRows.slice(0, 5).map((item: any) => (
                                 <div
                                   key={cleanText(item?.event_id)}
                                   style={{
@@ -799,7 +800,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                           aria-expanded={beneficiaryOutcomeTaskChooserOpen}
                           aria-controls="community-domain-beneficiary-outcome-packets"
                           onClick={() =>
-                            setBeneficiaryOutcomeTaskChooserOpen((current) => !current)
+                            setBeneficiaryOutcomeTaskChooserOpen((current: any) => !current)
                           }
                           style={{
                             justifyContent: "center",
@@ -822,7 +823,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                               gap: 8,
                             }}
                           >
-                            {BENEFICIARY_OUTCOME_TASK_OPTIONS.map((task) => (
+                            {BENEFICIARY_OUTCOME_TASK_OPTIONS.map((task: any) => (
                               <StableButton
                                 key={task.key}
                                 type="button"
@@ -865,13 +866,13 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                 Current step:{" "}
                                 <strong>
                                   {BENEFICIARY_OUTCOME_RECORD_STAGE_OPTIONS.find(
-                                    (stage) =>
+                                    (stage: any) =>
                                       stage.key === activeBeneficiaryOutcomeRecordStage
                                   )?.label || "Person"}
                                 </strong>
                                 .{" "}
                                 {BENEFICIARY_OUTCOME_RECORD_STAGE_OPTIONS.find(
-                                  (stage) =>
+                                  (stage: any) =>
                                     stage.key === activeBeneficiaryOutcomeRecordStage
                                 )?.note || "Follow the next action to continue."}
                               </div>
@@ -885,7 +886,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                 aria-controls="community-domain-beneficiary-outcome-record-stages"
                                 onClick={() =>
                                   setBeneficiaryOutcomeRecordStageChooserOpen(
-                                    (current) => !current
+                                    (current: any) => !current
                                   )
                                 }
                                 style={{
@@ -910,7 +911,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                   }}
                                 >
                                   {BENEFICIARY_OUTCOME_RECORD_STAGE_OPTIONS.map(
-                                    (stage) => {
+                                    (stage: any) => {
                                       const selected =
                                         stage.key ===
                                         activeBeneficiaryOutcomeRecordStage;
@@ -1113,7 +1114,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                     }
                                     style={billingInputStyle()}
                                   >
-                                    {BENEFICIARY_OUTCOME_STATE_OPTIONS.map((item) => (
+                                    {BENEFICIARY_OUTCOME_STATE_OPTIONS.map((item: any) => (
                                       <option key={item.value} value={item.value}>
                                         {item.label}
                                       </option>
@@ -1131,7 +1132,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                     style={billingInputStyle()}
                                   >
                                     {BENEFICIARY_FOLLOW_UP_STATE_OPTIONS.map(
-                                      (item) => (
+                                      (item: any) => (
                                         <option key={item.value} value={item.value}>
                                           {item.label}
                                         </option>
@@ -1151,7 +1152,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                     }
                                     style={billingInputStyle()}
                                   >
-                                    {BENEFICIARY_CONFIRMATION_OPTIONS.map((item) => (
+                                    {BENEFICIARY_CONFIRMATION_OPTIONS.map((item: any) => (
                                       <option key={item.value} value={item.value}>
                                         {item.label}
                                       </option>
@@ -1169,7 +1170,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                     style={billingInputStyle()}
                                   >
                                     {BENEFICIARY_CHALLENGE_STATUS_OPTIONS.map(
-                                      (item) => (
+                                      (item: any) => (
                                         <option key={item.value} value={item.value}>
                                           {item.label}
                                         </option>
@@ -1242,7 +1243,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                           beneficiaryOutcomeRows.length ? (
                           <div style={{ display: "grid", gap: 8 }}>
                             <div style={sectionLabel()}>Recent outcomes</div>
-                            {beneficiaryOutcomeRows.slice(0, 5).map((item) => {
+                            {beneficiaryOutcomeRows.slice(0, 5).map((item: any) => {
                               const outcomeEventId = cleanText(item?.event_id);
                               const latestResponse =
                                 item?.latest_confirmation_response || null;
@@ -1343,7 +1344,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                               );
                               const activeOutcomeRecentPacketOption =
                                 BENEFICIARY_OUTCOME_RECENT_PACKET_OPTIONS.find(
-                                  (packet) =>
+                                  (packet: any) =>
                                     packet.key === activeOutcomeRecentPacket
                                 ) ||
                                 BENEFICIARY_OUTCOME_RECENT_PACKET_OPTIONS[0];
@@ -1639,7 +1640,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                     aria-controls={`community-domain-beneficiary-outcome-recent-packets-${outcomeEventId}`}
                                     onClick={() =>
                                       setBeneficiaryOutcomeRecentPacketChooserOpenById(
-                                        (current) => ({
+                                        (current: any) => ({
                                           ...current,
                                           [outcomeEventId]: !current[outcomeEventId],
                                         })
@@ -1667,7 +1668,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                       }}
                                     >
                                       {BENEFICIARY_OUTCOME_RECENT_PACKET_OPTIONS.map(
-                                        (packet) => {
+                                        (packet: any) => {
                                           const selected =
                                             packet.key === activeOutcomeRecentPacket;
                                           return (
@@ -1684,55 +1685,55 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                               debugId={`community-domain-dashboard.beneficiary-outcome-recent-packet.${packet.key}`}
                                               onClick={() => {
                                                 setBeneficiaryOutcomeRecentPacketById(
-                                                  (current) => ({
+                                                  (current: any) => ({
                                                     ...current,
                                                     [outcomeEventId]: packet.key,
                                                   })
                                                 );
                                                 setBeneficiaryOutcomeRecentPacketChooserOpenById(
-                                                  (current) => ({
+                                                  (current: any) => ({
                                                     ...current,
                                                     [outcomeEventId]: false,
                                                   })
                                                 );
                                                 setBeneficiaryOutcomeSummaryDetailsOpenById(
-                                                  (current) => ({
+                                                  (current: any) => ({
                                                     ...current,
                                                     [outcomeEventId]: false,
                                                   })
                                                 );
                                                 setBeneficiaryOutcomeConfirmationActionChooserOpenById(
-                                                  (current) => ({
+                                                  (current: any) => ({
                                                     ...current,
                                                     [outcomeEventId]: false,
                                                   })
                                                 );
                                                 setBeneficiaryOutcomeConfirmationActionOpenById(
-                                                  (current) => ({
+                                                  (current: any) => ({
                                                     ...current,
                                                     [outcomeEventId]: false,
                                                   })
                                                 );
                                                 setBeneficiaryOutcomeContactActionChooserOpenById(
-                                                  (current) => ({
+                                                  (current: any) => ({
                                                     ...current,
                                                     [outcomeEventId]: false,
                                                   })
                                                 );
                                                 setBeneficiaryOutcomeContactActionOpenById(
-                                                  (current) => ({
+                                                  (current: any) => ({
                                                     ...current,
                                                     [outcomeEventId]: false,
                                                   })
                                                 );
                                                 setBeneficiaryOutcomeReceiptFormOpenById(
-                                                  (current) => ({
+                                                  (current: any) => ({
                                                     ...current,
                                                     [outcomeEventId]: false,
                                                   })
                                                 );
                                                 setBeneficiaryOutcomeDeliveryNotesOpenById(
-                                                  (current) => ({
+                                                  (current: any) => ({
                                                     ...current,
                                                     [outcomeEventId]: false,
                                                   })
@@ -1776,7 +1777,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                           aria-controls={`community-domain-beneficiary-outcome-summary-details-${outcomeEventId}`}
                                           onClick={() =>
                                             setBeneficiaryOutcomeSummaryDetailsOpenById(
-                                              (current) => ({
+                                              (current: any) => ({
                                                 ...current,
                                                 [outcomeEventId]:
                                                   !outcomeSummaryDetailsOpen,
@@ -1900,7 +1901,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                         aria-controls={`community-domain-beneficiary-outcome-confirmation-actions-${outcomeEventId}`}
                                         onClick={() =>
                                           setBeneficiaryOutcomeConfirmationActionChooserOpenById(
-                                            (current) => ({
+                                            (current: any) => ({
                                               ...current,
                                               [outcomeEventId]:
                                                 !current[outcomeEventId],
@@ -1955,19 +1956,19 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                               debugId={`community-domain-dashboard.beneficiary-outcome-confirmation-action.${actionKey}`}
                                               onClick={() => {
                                                 setBeneficiaryOutcomeConfirmationActionById(
-                                                  (current) => ({
+                                                  (current: any) => ({
                                                     ...current,
                                                     [outcomeEventId]: actionKey,
                                                   })
                                                 );
                                                 setBeneficiaryOutcomeConfirmationActionChooserOpenById(
-                                                  (current) => ({
+                                                  (current: any) => ({
                                                     ...current,
                                                     [outcomeEventId]: false,
                                                   })
                                                 );
                                                 setBeneficiaryOutcomeConfirmationActionOpenById(
-                                                  (current) => ({
+                                                  (current: any) => ({
                                                     ...current,
                                                     [outcomeEventId]: false,
                                                   })
@@ -1995,7 +1996,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                       aria-controls={`community-domain-beneficiary-outcome-confirmation-action-form-${outcomeEventId}`}
                                       onClick={() =>
                                         setBeneficiaryOutcomeConfirmationActionOpenById(
-                                          (current) => ({
+                                          (current: any) => ({
                                             ...current,
                                             [outcomeEventId]:
                                               !current[outcomeEventId],
@@ -2043,7 +2044,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                       style={billingInputStyle()}
                                     >
                                       {BENEFICIARY_CORRECTION_DECISION_OPTIONS.map(
-                                        (option) => (
+                                        (option: any) => (
                                           <option
                                             key={option.value}
                                             value={option.value}
@@ -2152,7 +2153,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                         aria-controls={`community-domain-beneficiary-outcome-contact-actions-${outcomeEventId}`}
                                         onClick={() =>
                                           setBeneficiaryOutcomeContactActionChooserOpenById(
-                                            (current) => ({
+                                            (current: any) => ({
                                               ...current,
                                               [outcomeEventId]:
                                                 !current[outcomeEventId],
@@ -2210,19 +2211,19 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                               debugId={`community-domain-dashboard.beneficiary-outcome-contact-action.${actionKey}`}
                                               onClick={() => {
                                                 setBeneficiaryOutcomeContactActionById(
-                                                  (current) => ({
+                                                  (current: any) => ({
                                                     ...current,
                                                     [outcomeEventId]: actionKey,
                                                   })
                                                 );
                                                 setBeneficiaryOutcomeContactActionChooserOpenById(
-                                                  (current) => ({
+                                                  (current: any) => ({
                                                     ...current,
                                                     [outcomeEventId]: false,
                                                   })
                                                 );
                                                 setBeneficiaryOutcomeContactActionOpenById(
-                                                  (current) => ({
+                                                  (current: any) => ({
                                                     ...current,
                                                     [outcomeEventId]: false,
                                                   })
@@ -2250,7 +2251,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                       aria-controls={`community-domain-beneficiary-outcome-contact-action-form-${outcomeEventId}`}
                                       onClick={() =>
                                         setBeneficiaryOutcomeContactActionOpenById(
-                                          (current) => ({
+                                          (current: any) => ({
                                             ...current,
                                             [outcomeEventId]:
                                               !current[outcomeEventId],
@@ -2300,11 +2301,11 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                       aria-label="Contact consent channel"
                                     >
                                       {BENEFICIARY_DELIVERY_CHANNEL_OPTIONS.filter(
-                                        (option) =>
+                                        (option: any) =>
                                           option.value === "whatsapp" ||
                                           option.value === "sms" ||
                                           option.value === "email"
-                                      ).map((option) => (
+                                      ).map((option: any) => (
                                         <option
                                           key={option.value}
                                           value={option.value}
@@ -2332,7 +2333,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                       aria-label="Contact reference status"
                                     >
                                       {BENEFICIARY_CONTACT_REFERENCE_STATUS_OPTIONS.map(
-                                        (option) => (
+                                        (option: any) => (
                                           <option
                                             key={option.value}
                                             value={option.value}
@@ -2377,7 +2378,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                       aria-label="Contact consent basis"
                                     >
                                       {BENEFICIARY_DELIVERY_CONSENT_OPTIONS.map(
-                                        (option) => (
+                                        (option: any) => (
                                           <option
                                             key={option.value}
                                             value={option.value}
@@ -2464,7 +2465,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                       aria-label="Contact consent withdrawal reason"
                                     >
                                       {BENEFICIARY_CONTACT_CONSENT_WITHDRAWAL_REASON_OPTIONS.map(
-                                        (option) => (
+                                        (option: any) => (
                                           <option
                                             key={option.value}
                                             value={option.value}
@@ -2537,7 +2538,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                       aria-controls={`community-domain-beneficiary-outcome-delivery-notes-${outcomeEventId}`}
                                       onClick={() =>
                                         setBeneficiaryOutcomeDeliveryNotesOpenById(
-                                          (current) => ({
+                                          (current: any) => ({
                                             ...current,
                                             [outcomeEventId]:
                                               !current[outcomeEventId],
@@ -2615,7 +2616,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                         aria-controls={`community-domain-beneficiary-outcome-receipt-form-${outcomeEventId}`}
                                         onClick={() =>
                                           setBeneficiaryOutcomeReceiptFormOpenById(
-                                            (current) => ({
+                                            (current: any) => ({
                                               ...current,
                                               [outcomeEventId]:
                                                 !current[outcomeEventId],
@@ -2665,7 +2666,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                       aria-label="Manual delivery channel"
                                     >
                                       {BENEFICIARY_DELIVERY_CHANNEL_OPTIONS.map(
-                                        (option) => (
+                                        (option: any) => (
                                           <option
                                             key={option.value}
                                             value={option.value}
@@ -2694,7 +2695,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                       aria-label="Manual delivery status"
                                     >
                                       {BENEFICIARY_DELIVERY_STATUS_OPTIONS.map(
-                                        (option) => (
+                                        (option: any) => (
                                           <option
                                             key={option.value}
                                             value={option.value}
@@ -2739,7 +2740,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                       aria-label="Manual delivery consent basis"
                                     >
                                       {BENEFICIARY_DELIVERY_CONSENT_OPTIONS.map(
-                                        (option) => (
+                                        (option: any) => (
                                           <option
                                             key={option.value}
                                             value={option.value}
@@ -2823,7 +2824,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                       onChange={(event) => {
                                         const nextDecision = event.target.value;
                                         setBeneficiaryDeliveryReceiptCorrectionDraftByOutcomeId(
-                                          (current) => ({
+                                          (current: any) => ({
                                             ...current,
                                             [outcomeEventId]: {
                                               ...selectedDeliveryReceiptCorrectionDraft,
@@ -2836,7 +2837,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                       aria-label="Manual delivery receipt correction decision"
                                     >
                                       {BENEFICIARY_DELIVERY_RECEIPT_CORRECTION_OPTIONS.map(
-                                        (option) => (
+                                        (option: any) => (
                                           <option
                                             key={option.value}
                                             value={option.value}
@@ -2855,7 +2856,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                       onChange={(event) => {
                                         const nextNote = event.target.value;
                                         setBeneficiaryDeliveryReceiptCorrectionDraftByOutcomeId(
-                                          (current) => ({
+                                          (current: any) => ({
                                             ...current,
                                             [outcomeEventId]: {
                                               ...selectedDeliveryReceiptCorrectionDraft,

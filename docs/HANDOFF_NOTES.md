@@ -1,3 +1,32 @@
+## CURRENT LOCAL STATE - 2026-07-29 - Community Domain real-life record type hardening
+
+Owner trigger:
+- Owner said "continue" after the Community Domain real-life record lazy split was deployed, so this completed the partial hardening caveat left by that split.
+
+Unabated truth:
+- Removed the local `@ts-nocheck` and `ban-ts-comment` escape hatch from the lazy Real Life Record panel.
+- TypeScript now checks `RealLifeRecordPanel.tsx` again during `npm --prefix frontend run build`.
+- Devil's advocate caveat: this is not a full domain-model typing pass. The panel still receives one broad parent-owned `data: Record<string, any>` prop, with explicit callback annotations around the extracted workflow state. That is better than suppressing the whole file, but future cleanup should replace the broad `data` boundary with an explicit typed prop contract.
+- No route contracts, backend writes, permissions, dashboard frozen areas, or user-facing Community Domain UX structure were intentionally changed.
+
+Changed:
+- `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`
+  - Removed the file-level TypeScript suppression.
+  - Added local action key aliases for beneficiary outcome confirmation/contact action pickers.
+  - Annotated extracted callback parameters so strict TypeScript builds pass without suppressing the component.
+
+Verification:
+- Passed `npm --prefix frontend run build` with `RealLifeRecordPanel-Cheq-olT.js` at `41.91 kB / 7.68 kB gzip` and `CommunityDomainDashboardPage-XBEhh1yS.js` at `226.59 kB / 52.69 kB gzip`.
+- Passed `npm --prefix frontend run lint`.
+- Passed `npm --prefix frontend run audit:community-domain-product-contracts`.
+- Passed `npm --prefix frontend run audit:notice-board-phone-notifications`.
+- Passed elevated `npm --prefix frontend run audit:community-domain-billing-sequence` against local Vite on `127.0.0.1:5180`.
+- Passed elevated `npm --prefix frontend run audit:community-domain-mobile-visual` against local Vite on `127.0.0.1:5180`.
+- Normal sandbox Vite start failed first with esbuild `spawn EPERM`; elevated local server was required and was stopped after audits.
+
+Deployment:
+- Pending commit/push/deploy verification.
+
 ## CURRENT LOCAL STATE - 2026-07-29 - Community Domain real-life record split
 
 Owner trigger:
