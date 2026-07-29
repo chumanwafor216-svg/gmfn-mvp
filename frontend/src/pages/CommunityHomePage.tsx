@@ -11,7 +11,7 @@ import PageTopNav from "../components/PageTopNav";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { StableButton } from "../components/StableButton";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
-import { brandClampLines, brandSingleLine } from "../styles/gmfnBrand";
+import { brandClampLines } from "../styles/gmfnBrand";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";

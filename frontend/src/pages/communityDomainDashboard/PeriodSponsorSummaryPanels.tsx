@@ -190,7 +190,6 @@ function TagGroup({ rows, prefix = "" }: { rows: Record<string, unknown>; prefix
 }
 
 function DeliveryEvidence({ evidence, sponsor = false }: { evidence: any; sponsor?: boolean }) {
-  const prefix = sponsor ? "sponsor" : "period";
   const hasDeliveryEvidence = Boolean(
     Number(evidence?.beneficiary_confirmation_delivery_prepared ?? evidence?.confirmation_delivery_prepared_records ?? 0) ||
       Number(evidence?.beneficiary_confirmation_delivery_receipts ?? evidence?.confirmation_delivery_receipt_records ?? 0) ||
