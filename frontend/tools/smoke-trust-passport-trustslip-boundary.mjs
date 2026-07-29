@@ -413,7 +413,8 @@ async function assertTrustSlipQrCarriesSelectedDecisionPack(page, baseURL) {
     decision_pack: "employment_decision",
     access_purpose: "Employment Decision Pack",
     recipient_question: "Is there enough evidence to continue an employment conversation?",
-    access_scope: "public_decision_pack",
+    access_scope: "community_specific",
+    verification_scope: "community_specific",
   };
 
   const publicPackLink = page.locator('[data-cta-id="trust-slip.public-decision-pack.open"]').first();

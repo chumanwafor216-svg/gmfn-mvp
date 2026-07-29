@@ -10,6 +10,7 @@ const files = {
   trustPassport: "src/pages/TrustScorePage.tsx",
   trustPassportDocumentLane: "src/pages/trustScore/TrustPassportDocumentLane.tsx",
   trustSlip: "src/pages/TrustSlipPage.tsx",
+  trustSlipPrivatePreview: "src/pages/trustSlip/TrustSlipDecisionPackPrivatePreview.tsx",
   smoke: "tools/smoke-trust-passport-trustslip-boundary.mjs",
   reader: "src/components/TrustSlipReaderBlock.tsx",
   publicPaper: "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
@@ -32,6 +33,9 @@ const sourceByKey = Object.fromEntries(
     readFileSync(join(frontendRoot, file), "utf8"),
   ])
 );
+
+sourceByKey.trustSlipWithPrivatePreview = `${sourceByKey.trustSlip}\n${sourceByKey.trustSlipPrivatePreview}`;
+files.trustSlipWithPrivatePreview = `${files.trustSlip} + ${files.trustSlipPrivatePreview}`;
 
 const findings = [];
 
@@ -335,8 +339,8 @@ assertContains(
   "TrustSlip holder Decision Pack mechanics must stay collapsed on phone while desktop keeps the evidence rows and boundary visible."
 );
 assertContains(
-  "trustSlip",
-  /data-gsn-trustslip-private-preview-drawer=\{[\s\S]*?collapsed\.decisionPackPrivatePreview \? "collapsed" : "open"[\s\S]*?Holder preview and history[\s\S]*?debugId="trust-slip\.toggle-private-decision-pack-preview"[\s\S]*?data-gsn-holder-private-decision-pack-evidence="true"[\s\S]*?display: isCompact && collapsed\.decisionPackPrivatePreview \? "none" : "grid"[\s\S]*?data-gsn-decision-pack-access-ledger="holder"[\s\S]*?display: isCompact && collapsed\.decisionPackPrivatePreview \? "none" : "grid"/,
+  "trustSlipWithPrivatePreview",
+  /data-gsn-trustslip-private-preview-drawer=\{[\s\S]*?collapsed\.decisionPackPrivatePreview \? "collapsed" : "open"[\s\S]*?Holder preview and history[\s\S]*?debugId="trust-slip\.toggle-private-decision-pack-preview"[\s\S]*?data-gsn-holder-private-decision-pack-evidence="true"[\s\S]*?display: isCompact && (?:collapsed\.decisionPackPrivatePreview|isCollapsed) \? "none" : "grid"[\s\S]*?data-gsn-decision-pack-access-ledger="holder"[\s\S]*?display: isCompact && (?:collapsed\.decisionPackPrivatePreview|isCollapsed) \? "none" : "grid"/,
   "TrustSlip holder private preview, consent history, and access ledger must stay behind one phone drawer."
 );assertContains(
   "trustSlip",
@@ -400,18 +404,18 @@ assertContains(
   "Public TrustSlip verification must show the selected Decision Pack question, who answers, what counts, escalation, and boundary before the live request button."
 );
 assertContains(
-  "trustSlip",
+  "trustSlipWithPrivatePreview",
   /TrustSlipDecisionPackDeclaredClaim[\s\S]*?declaredClaims[\s\S]*?extract\?\.declared_claims[\s\S]*?privateDecisionPackDeclaredClaims[\s\S]*?data-gsn-holder-decision-pack-declared-claims="true"[\s\S]*?Declared work\/service claim[\s\S]*?declarationBoundaryNote/,
   "TrustSlip holder private Decision Pack preview must show declared work/service claim pointers separately from TrustEvent categories."
 );
 assertContains(
-  "trustSlip",
+  "trustSlipWithPrivatePreview",
   /TrustSlipDecisionPackRecordPointer[\s\S]*?recordPointers[\s\S]*?extract\?\.record_pointers[\s\S]*?privateDecisionPackRecordPointers[\s\S]*?data-gsn-holder-decision-pack-record-pointers="true"[\s\S]*?Connected record pointers[\s\S]*?recordPointerBoundaryNote/,
   "TrustSlip holder private Decision Pack preview must show connected financial/support record pointers separately from TrustEvent categories."
 );
 
 assertContains(
-  "trustSlip",
+  "trustSlipWithPrivatePreview",
   /TrustSlipDecisionPackHousingReferencePointer[\s\S]*?housingReferencePointers[\s\S]*?extract\?\.housing_reference_pointers[\s\S]*?privateDecisionPackHousingReferencePointers[\s\S]*?data-gsn-holder-decision-pack-housing-reference-pointers="true"[\s\S]*?Housing conduct readiness[\s\S]*?housingReferenceBoundaryNote/,
   "TrustSlip holder private Decision Pack preview must show housing conduct/readiness pointers separately from TrustEvent categories."
 );
@@ -423,41 +427,41 @@ assertContains(
 );
 
 assertContains(
-  "trustSlip",
+  "trustSlipWithPrivatePreview",
   /Optional external follow-up contact:[\s\S]*?optional_external_follow_up_contact:[\s\S]*?holder_supplied: true[\s\S]*?stored_by_gsn: false[\s\S]*?data-gsn-housing-external-contact-handoff="holder"[\s\S]*?Optional external contact[\s\S]*?WhatsApp[\s\S]*?Phone[\s\S]*?Email/,
   "Housing Decision Pack external contact handoff must be copied/exported only by holder action with clear channel options."
 );
 
 assertContains(
-  "trustSlip",
+  "trustSlipWithPrivatePreview",
   /TrustSlipDecisionPackGuaranteeOutcomePointer[\s\S]*?guaranteeOutcomePointers[\s\S]*?extract\?\.guarantee_outcome_pointers[\s\S]*?privateDecisionPackGuaranteeOutcomePointers[\s\S]*?data-gsn-holder-decision-pack-guarantee-outcome-pointers="true"[\s\S]*?Guarantee\/support outcomes[\s\S]*?guaranteeOutcomeBoundaryNote/,
   "TrustSlip holder private Decision Pack preview must show aggregate guarantee/support outcomes separately from TrustEvent categories."
 );
 
 assertContains(
-  "trustSlip",
+  "trustSlipWithPrivatePreview",
   /TrustSlipDecisionPackFulfillmentOutcomePointer[\s\S]*?fulfillmentOutcomePointers[\s\S]*?extract\?\.fulfillment_outcome_pointers[\s\S]*?privateDecisionPackFulfillmentOutcomePointers[\s\S]*?data-gsn-holder-decision-pack-fulfillment-outcome-pointers="true"[\s\S]*?Fulfilment\/correction outcomes[\s\S]*?fulfillmentOutcomeBoundaryNote/,
   "TrustSlip holder private Decision Pack preview must show aggregate fulfilment/correction outcomes separately from TrustEvent categories."
 );
 assertContains(
-  "trustSlip",
+  "trustSlipWithPrivatePreview",
   /TrustSlipDecisionPackCompletedWorkPointer[\s\S]*?completedWorkPointers[\s\S]*?extract\?\.completed_work_pointers[\s\S]*?privateDecisionPackCompletedWorkPointers[\s\S]*?data-gsn-holder-decision-pack-completed-work-pointers="true"[\s\S]*?Completed work\/customer confirmation[\s\S]*?completedWorkBoundaryNote/,
   "TrustSlip holder private Decision Pack preview must show aggregate completed-work/customer-confirmation outcomes separately from TrustEvent categories."
 );
 assertContains(
-  "trustSlip",
+  "trustSlipWithPrivatePreview",
   /TrustSlipDecisionPackDemandRequestOutcomePointer[\s\S]*?demandRequestOutcomePointers[\s\S]*?extract\?\.demand_request_outcome_pointers[\s\S]*?privateDecisionPackDemandRequestOutcomePointers[\s\S]*?data-gsn-holder-decision-pack-demand-request-outcome-pointers="true"[\s\S]*?Demand Box request outcomes[\s\S]*?demandRequestOutcomeBoundaryNote/,
   "TrustSlip holder private Decision Pack preview must show aggregate Demand Box request outcomes separately from TrustEvent categories."
 );
 
 assertContains(
-  "trustSlip",
+  "trustSlipWithPrivatePreview",
   /TrustSlipDecisionPackConfirmationPointer[\s\S]*?confirmationPointers[\s\S]*?extract\?\.confirmation_pointers[\s\S]*?privateDecisionPackConfirmationPointers[\s\S]*?data-gsn-holder-decision-pack-confirmation-pointers="true"[\s\S]*?Community witness outcomes[\s\S]*?confirmationPointerBoundaryNote/,
   "TrustSlip holder private Decision Pack preview must show aggregate community witness outcomes separately from TrustEvent categories."
 );
 
 assertContains(
-  "trustSlip",
+  "trustSlipWithPrivatePreview",
   /TrustSlipDecisionPackIssueResolutionPointer[\s\S]*?issueResolutionPointers[\s\S]*?extract\?\.issue_resolution_pointers[\s\S]*?privateDecisionPackIssueResolutionPointers[\s\S]*?data-gsn-holder-decision-pack-issue-resolution-pointers="true"[\s\S]*?Issue resolution pointers[\s\S]*?issueResolutionBoundaryNote/,
   "TrustSlip holder private Decision Pack preview must show aggregate issue-resolution pointers separately from TrustEvent categories."
 );
@@ -478,7 +482,7 @@ assertContains(
   "TrustSlip holder mobile Decision Pack selection must use one menu with the selected-pack summary instead of exposing every pack as mobile buttons."
 );
 assertContains(
-  "trustSlip",
+  "trustSlipWithPrivatePreview",
   /const decisionPackBoundaryRows = \[[\s\S]*?label: "Public link"[\s\S]*?Selected question, evidence focus, and public verify link only[\s\S]*?label: "Private preview"[\s\S]*?not a public evidence paper, score, approval, guarantee, or payment instruction[\s\S]*?label: "Consent log"[\s\S]*?does not store recipient identity, copied text, raw TrustEvents[\s\S]*?label: "Final decision"[\s\S]*?does not remove risk or make the decision for the recipient[\s\S]*?data-gsn-trustslip-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?decisionPackBoundaryRows\.map/,
   "TrustSlip holder Decision Pack area must compress repeated public/private/consent limitations into one compact Decision Boundary box."
 );
@@ -532,7 +536,7 @@ assertContains(
 );
 
 assertContains(
-  "trustSlip",
+  "trustSlipWithPrivatePreview",
   /const decisionPackBoundaryRows = \[[\s\S]*?Private preview[\s\S]*?not a public evidence paper[\s\S]*?score[\s\S]*?approval[\s\S]*?guarantee[\s\S]*?payment instruction[\s\S]*?Consent log[\s\S]*?does not store recipient identity[\s\S]*?copied text[\s\S]*?raw TrustEvents[\s\S]*?data-gsn-trustslip-decision-boundary="compact"[\s\S]*?decisionPackBoundaryRows\.map[\s\S]*?data-gsn-holder-private-decision-pack-evidence="true"[\s\S]*?Private holder preview[\s\S]*?Evidence behind this Decision Pack/,
   "TrustSlip holder private evidence preview must rely on the compact Decision Boundary for holder-only, non-score, non-approval, and consent-storage limits."
 );
@@ -550,7 +554,7 @@ assertContains(
 );
 
 assertContains(
-  "trustSlip",
+  "trustSlipWithPrivatePreview",
   /const decisionPackBoundaryRows = \[[\s\S]*?Copy\/export records a holder consent marker only[\s\S]*?data-gsn-trustslip-decision-boundary="compact"[\s\S]*?decisionPackBoundaryRows\.map[\s\S]*?data-gsn-holder-private-decision-pack-evidence="true"[\s\S]*?data-gsn-decision-pack-consent-export="holder"[\s\S]*?debugId="trust-slip\.private-decision-pack\.copy-summary"[\s\S]*?Copy consent summary[\s\S]*?debugId="trust-slip\.private-decision-pack\.copy-json"[\s\S]*?Copy safe JSON/,
   "TrustSlip holder private Decision Pack preview must show marker-only consent storage in the compact Decision Boundary before explicit consent-copy controls."
 );
@@ -591,13 +595,13 @@ assertContains(
 );
 
 assertContains(
-  "trustSlip",
+  "trustSlipWithPrivatePreview",
   /data-gsn-decision-pack-consent-share-ledger="holder"[\s\S]*?Recent consent exports[\s\S]*?Holder copy\/export audit trail[\s\S]*?No private Decision Pack exports are recorded yet[\s\S]*?Consent-share history records holder copy\/export markers only[\s\S]*?not public-read evidence[\s\S]*?recipient identity[\s\S]*?copied text[\s\S]*?raw TrustEvent history/,
   "TrustSlip holder page must show consent-share history without turning it into recipient identity, copied text, or raw TrustEvent disclosure."
 );
 
 assertContains(
-  "trustSlip",
+  "trustSlipWithPrivatePreview",
   /data-gsn-decision-pack-access-ledger="holder"[\s\S]*?Recent public reads[\s\S]*?Decision Pack access ledger[\s\S]*?Access records show public read context only[\s\S]*?not TrustEvents[\s\S]*?recipient identity[\s\S]*?private Passport disclosure/,
   "TrustSlip holder page must show recent Decision Pack accesses as bounded public-read context only."
 );
