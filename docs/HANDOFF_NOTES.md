@@ -157758,3 +157758,13 @@ Deployment:
 - Build output after this split includes `PeriodSponsorSummaryPanels` at `16.88 kB` and `CommunityDomainDashboardPage` at `210.07 kB`.
 - Devil's advocate: this is a real chunk split, but Community Domain remains a large route chunk. The next likely candidates are outcome confirmation/correction and activity-record sections, which should be split carefully behind their existing governance tasks.
 - Verified: `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `git diff --check`.
+
+## 2026-07-29 - Local Community Domain Billing Lazy Split
+- Status: Local only, not pushed/deployed. Builds on the prior local Community Domain summary split; push/deploy only when the owner sends `2` or explicitly asks.
+- Split the Community Domain Billing job surface out of `frontend/src/pages/CommunityDomainDashboardPage.tsx` into lazy-loaded `frontend/src/pages/communityDomainDashboard/BillingTaskPanels.tsx`.
+- Kept the parent route as the owner of payment/business state and handlers; the new lazy component renders the existing Billing jobs, pay-in account views, code/proof views, linked marketplace community selection, and proof upload panel from a passed data object.
+- Kept the protected Billing controls and debug IDs: billing job selector, pay-in account selector, code/proof group selector, payment step selector, linked marketplace creation, payment-code generation, proof upload, and open-generate fallback.
+- Updated `frontend/tools/audit-community-domain-product-contracts.mjs` so Billing guards now check parent lazy wiring plus the new Billing task component behavior.
+- Build output after this split includes `BillingTaskPanels` at `22.56 kB` and `CommunityDomainDashboardPage` at `192.64 kB`.
+- Devil's advocate: this is another real initial-route chunk reduction, but the new component currently uses a loose `Record<string, any>` data prop to keep the extraction small and reversible. A future hardening pass should replace that with a typed data contract if more Billing work is planned.
+- Verified: `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `git diff --check`.

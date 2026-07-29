@@ -1408,12 +1408,35 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type BillingTaskKey = "payment_code" \| "account" \| "steps" \| "readiness"[\s\S]*BILLING_TASK_OPTIONS[\s\S]*key: "payment_code"[\s\S]*key: "account"[\s\S]*key: "steps"[\s\S]*key: "readiness"[\s\S]*activeBillingTask[\s\S]*billingTaskChooserOpen[\s\S]*activeBillingTaskOption[\s\S]*Billing jobs[\s\S]*Current billing job[\s\S]*community-domain-dashboard\.billing-task-toggle[\s\S]*Close billing jobs[\s\S]*Change billing job[\s\S]*billingTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.billing-task\.\$\{task\.key\}[\s\S]*setBillingTaskChooserOpen\(false\)[\s\S]*activeBillingTask === "steps"[\s\S]*billingSequenceSteps\.map[\s\S]*billingStepCard[\s\S]*activeBillingTask === "account"[\s\S]*Community pay-in account[\s\S]*activeBillingTask === "payment_code"[\s\S]*community-domain-dashboard\.refresh-package-quote[\s\S]*Latest payment code[\s\S]*activeLane === "billing" && activeBillingTask === "readiness"[\s\S]*Subscription readiness[\s\S]*CommunityDomainBillingReadinessPanels/,
-  "Community Domain Billing must keep billing jobs behind a closed Change billing job selector so steps, account, payment code/proof, and readiness diagnostics do not dump together.",
+  /type BillingTaskKey = "payment_code" | "account" | "steps" | "readiness"[\s\S]*BILLING_TASK_OPTIONS[\s\S]*key: "payment_code"[\s\S]*key: "account"[\s\S]*key: "steps"[\s\S]*key: "readiness"[\s\S]*activeBillingTask[\s\S]*billingTaskChooserOpen[\s\S]*activeBillingTaskOption[\s\S]*CommunityDomainBillingTaskPanels[\s\S]*BILLING_TASK_OPTIONS[\s\S]*activeLane === "billing" && activeBillingTask === "readiness"[\s\S]*Subscription readiness[\s\S]*CommunityDomainBillingReadinessPanels/,
+  "Community Domain dashboard must keep Billing task state, the lazy Billing task panel, and readiness diagnostics wired from the parent route.",
   { frontend: true }
 );
 
-assertNotContains(
+[
+  "Billing jobs",
+  "Current billing job",
+  "community-domain-dashboard.billing-task-toggle",
+  "Close billing jobs",
+  "Change billing job",
+  "community-domain-dashboard.billing-task.\${task.key}",
+  "setBillingTaskChooserOpen(false)",
+  "activeBillingTask === \"steps\"",
+  "billingSequenceSteps.map",
+  "billingStepCard",
+  "activeBillingTask === \"account\"",
+  "Community pay-in account",
+  "activeBillingTask === \"payment_code\"",
+  "community-domain-dashboard.refresh-package-quote",
+  "Latest payment code",
+].forEach((needle) =>
+  assertIncludes(
+    "src/pages/communityDomainDashboard/BillingTaskPanels.tsx",
+    needle,
+    "Community Domain Billing must keep billing jobs behind a closed Change billing job selector so steps, account, payment code/proof, and readiness diagnostics do not dump together.",
+    { frontend: true }
+  )
+);assertNotContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /billingSequenceOpen|community-domain-dashboard\.billing-sequence-toggle/,
   "Community Domain Billing Steps must render directly after selecting the Steps job instead of adding a second nested Show steps reveal.",
@@ -1427,28 +1450,81 @@ assertNotContains(
   { frontend: true }
 );
 
-assertContains(
-  "src/pages/CommunityDomainDashboardPage.tsx",
-  /type BillingAccountTaskKey = "summary" \| "setup"[\s\S]*BILLING_ACCOUNT_TASK_OPTIONS[\s\S]*key: "summary"[\s\S]*key: "setup"[\s\S]*billingAccountTaskChooserOpen[\s\S]*activeBillingAccountTask[\s\S]*setActiveBillingAccountTask\("summary"\)[\s\S]*activeBillingAccountTaskOption[\s\S]*task\.key === "account"[\s\S]*setActiveBillingAccountTask\("summary"\)[\s\S]*activeBillingTask === "account"[\s\S]*Community pay-in account[\s\S]*Current pay-in account view[\s\S]*community-domain-dashboard\.billing-account-toggle[\s\S]*Close pay-in account views[\s\S]*Change pay-in account view[\s\S]*billingAccountTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.billing-account\.\$\{task\.key\}[\s\S]*setBillingAccountTaskChooserOpen\(false\)[\s\S]*activeBillingAccountTask === "summary" && communityPayInIsReady[\s\S]*activeBillingAccountTask === "summary" && !communityPayInIsReady[\s\S]*activeBillingAccountTask === "setup" && !canEditPayInAccount[\s\S]*activeBillingAccountTask === "setup" && canEditPayInAccount[\s\S]*community-domain-dashboard\.pay-in-account-save[\s\S]*community-domain-dashboard\.pay-in-account-close/,
-  "Community Domain Billing pay-in account must keep Summary and Setup behind a closed Change pay-in account view selector.",
-  { frontend: true }
-);
-
-assertNotContains(
+[
+  "BILLING_ACCOUNT_TASK_OPTIONS",
+  "billingAccountTaskChooserOpen",
+  "activeBillingAccountTask",
+  "activeBillingAccountTaskOption",
+  "task.key === \"account\"",
+  "setActiveBillingAccountTask(\"summary\")",
+  "Community pay-in account",
+  "Current pay-in account view",
+  "community-domain-dashboard.billing-account-toggle",
+  "Close pay-in account views",
+  "Change pay-in account view",
+  "community-domain-dashboard.billing-account.\${task.key}",
+  "setBillingAccountTaskChooserOpen(false)",
+  "activeBillingAccountTask === \"summary\" && communityPayInIsReady",
+  "activeBillingAccountTask === \"summary\" && !communityPayInIsReady",
+  "activeBillingAccountTask === \"setup\" && !canEditPayInAccount",
+  "activeBillingAccountTask === \"setup\" && canEditPayInAccount",
+  "community-domain-dashboard.pay-in-account-save",
+  "community-domain-dashboard.pay-in-account-close",
+].forEach((needle) =>
+  assertIncludes(
+    "src/pages/communityDomainDashboard/BillingTaskPanels.tsx",
+    needle,
+    "Community Domain Billing pay-in account must keep Summary and Setup behind a closed Change pay-in account view selector.",
+    { frontend: true }
+  )
+);assertNotContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /communityPayInEditorOpen|community-domain-dashboard\.pay-in-account-toggle/,
   "Community Domain Billing pay-in account must not return to a nested Set/Edit account reveal inside the account job.",
   { frontend: true }
 );
 
+
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type BillingPaymentTaskKey =[\s\S]*"reference"[\s\S]*"generate"[\s\S]*"credit_link"[\s\S]*"pay_account"[\s\S]*"proof"[\s\S]*type BillingPaymentGroupKey = "code" \| "settlement" \| "proof"[\s\S]*BILLING_PAYMENT_TASK_OPTIONS[\s\S]*key: "reference"[\s\S]*key: "generate"[\s\S]*key: "credit_link"[\s\S]*key: "pay_account"[\s\S]*key: "proof"[\s\S]*BILLING_PAYMENT_GROUP_OPTIONS[\s\S]*key: "code"[\s\S]*taskKeys: \["reference", "generate"\][\s\S]*key: "settlement"[\s\S]*taskKeys: \["credit_link", "pay_account"\][\s\S]*key: "proof"[\s\S]*taskKeys: \["proof"\][\s\S]*billingPaymentGroupChooserOpen[\s\S]*billingPaymentStepChooserOpen[\s\S]*activeBillingPaymentTask[\s\S]*setActiveBillingPaymentTask\("reference"\)[\s\S]*activeBillingPaymentGroup[\s\S]*BILLING_PAYMENT_GROUP_OPTIONS\.find[\s\S]*activeBillingPaymentGroupTasks[\s\S]*Code & proof views[\s\S]*Current view:[\s\S]*community-domain-dashboard\.billing-payment-group-toggle[\s\S]*Close code\/proof views[\s\S]*Change code\/proof view[\s\S]*billingPaymentGroupChooserOpen \? \([\s\S]*community-domain-dashboard\.billing-payment-group\.\$\{group\.key\}[\s\S]*setBillingPaymentGroupChooserOpen\(false\)[\s\S]*setBillingPaymentStepChooserOpen\(false\)[\s\S]*Current step:[\s\S]*community-domain-dashboard\.billing-payment-step-toggle[\s\S]*community-domain-dashboard\.billing-payment-step-panel[\s\S]*community-domain-dashboard\.billing-payment\.\$\{task\.key\}[\s\S]*setBillingPaymentStepChooserOpen\(false\)[\s\S]*activeBillingPaymentTask === "generate"[\s\S]*Payment-code generation is locked[\s\S]*activeBillingPaymentTask === "generate"[\s\S]*community-domain-dashboard\.generate-payment-code[\s\S]*activeBillingPaymentTask !== "generate"[\s\S]*activeBillingPaymentTask === "credit_link"[\s\S]*GSN credit link[\s\S]*activeBillingPaymentTask === "pay_account"[\s\S]*Official GSN account[\s\S]*activeBillingPaymentTask === "proof"[\s\S]*PaymentProofSubmissionPanel[\s\S]*Payment code needed[\s\S]*community-domain-dashboard\.open-generate-payment-code/,
-  "Community Domain Billing Code & proof must keep code, settlement, proof, and their sub-steps behind closed selectors while preserving reference review, payment-code generation, credit-link identity, official pay account, and proof upload as separate views.",
+  /type BillingPaymentTaskKey =[\s\S]*"reference"[\s\S]*"generate"[\s\S]*"credit_link"[\s\S]*"pay_account"[\s\S]*"proof"[\s\S]*type BillingPaymentGroupKey = "code" \| "settlement" \| "proof"[\s\S]*BILLING_PAYMENT_TASK_OPTIONS[\s\S]*key: "reference"[\s\S]*key: "generate"[\s\S]*key: "credit_link"[\s\S]*key: "pay_account"[\s\S]*key: "proof"[\s\S]*BILLING_PAYMENT_GROUP_OPTIONS[\s\S]*key: "code"[\s\S]*taskKeys: \["reference", "generate"\][\s\S]*key: "settlement"[\s\S]*taskKeys: \["credit_link", "pay_account"\][\s\S]*key: "proof"[\s\S]*taskKeys: \["proof"\][\s\S]*billingPaymentGroupChooserOpen[\s\S]*billingPaymentStepChooserOpen[\s\S]*activeBillingPaymentTask[\s\S]*setActiveBillingPaymentTask\("reference"\)[\s\S]*activeBillingPaymentGroup[\s\S]*BILLING_PAYMENT_GROUP_OPTIONS\.find[\s\S]*activeBillingPaymentGroupTasks[\s\S]*CommunityDomainBillingTaskPanels[\s\S]*BILLING_PAYMENT_GROUP_OPTIONS/,
+  "Community Domain dashboard must keep Billing payment task catalogues and selected payment steps wired into the lazy Billing task panel.",
   { frontend: true }
 );
 
-assertNotContains(
+[
+  "Code & proof views",
+  "Current view:",
+  "community-domain-dashboard.billing-payment-group-toggle",
+  "Close code/proof views",
+  "Change code/proof view",
+  "community-domain-dashboard.billing-payment-group.\${group.key}",
+  "setBillingPaymentGroupChooserOpen(false)",
+  "setBillingPaymentStepChooserOpen(false)",
+  "Current step:",
+  "community-domain-dashboard.billing-payment-step-toggle",
+  "community-domain-dashboard.billing-payment-step-panel",
+  "community-domain-dashboard.billing-payment.\${task.key}",
+  "activeBillingPaymentTask === \"generate\"",
+  "Payment-code generation is locked",
+  "community-domain-dashboard.generate-payment-code",
+  "activeBillingPaymentTask !== \"generate\"",
+  "activeBillingPaymentTask === \"credit_link\"",
+  "GSN credit link",
+  "activeBillingPaymentTask === \"pay_account\"",
+  "Official GSN account",
+  "activeBillingPaymentTask === \"proof\"",
+  "PaymentProofSubmissionPanel",
+  "Payment code needed",
+  "community-domain-dashboard.open-generate-payment-code",
+].forEach((needle) =>
+  assertIncludes(
+    "src/pages/communityDomainDashboard/BillingTaskPanels.tsx",
+    needle,
+    "Community Domain Billing Code & proof must keep code, settlement, proof, and their sub-steps behind closed selectors while preserving reference review, payment-code generation, credit-link identity, official pay account, and proof upload as separate views.",
+    { frontend: true }
+  )
+);assertNotContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /domainPaymentFormOpen|community-domain-dashboard\.payment-code-form-toggle|Generate another code|Hide code form/,
   "Community Domain Billing payment-code generation must be the selected Generate view, not a second nested reveal inside Reference.",
@@ -1561,12 +1637,16 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /paymentsContributionsPolicyMode[\s\S]*paymentsContributionsOff[\s\S]*This setup payment is the Community Domain subscription[\s\S]*remains available even when domain activity[\s\S]*[Rr]egistrations, donations, event fees,[\s\S]*Payment rule[\s\S]*Subscription billing: required[\s\S]*Do not use the Payments and Contributions[\s\S]*to block this setup payment/,
-  "Community Domain dashboard must distinguish required subscription billing from the domain Payments and Contributions service policy.",
+  /paymentsContributionsPolicyMode[\s\S]*paymentsContributionsOff[\s\S]*remains available even when domain activity[\s\S]*[Rr]egistrations, donations, event fees,[\s\S]*CommunityDomainBillingTaskPanels[\s\S]*paymentsContributionsOff[\s\S]*paymentsContributionsPolicyMode/,
+  "Community Domain dashboard must pass Payments and Contributions policy context into the lazy Billing task panel.",
   { frontend: true }
 );
-
 assertContains(
+  "src/pages/communityDomainDashboard/BillingTaskPanels.tsx",
+  /paymentsContributionsOff[\s\S]*paymentsContributionsPolicyMode[\s\S]*Payment rule[\s\S]*Subscription billing: required[\s\S]*Do not use the Payments and Contributions[\s\S]*to block this setup payment[\s\S]*Use that setting for registrations/,
+  "Community Domain dashboard must distinguish required subscription billing from the domain Payments and Contributions service policy.",
+  { frontend: true }
+);assertContains(
   "gmfn_backend/tests/test_community_domains.py",
   /test_community_domain_notice_board_respects_disabled_feature_policy[\s\S]*"domain\.feature_policy"[\s\S]*"announcement_board": "off"[\s\S]*"posting_enabled"\] is False[\s\S]*community_domain_feature_disabled[\s\S]*TrustEvent[\s\S]*count\(\)[\s\S]*== 0/,
   "Backend tests must prove disabled Announcement Board policy blocks notice posting without creating TrustEvents or notifications."
@@ -1866,11 +1946,17 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /createClan[\s\S]*listMyClans[\s\S]*selectClan[\s\S]*linkedDomainClanId = Number\(domain\?\.clan_id \|\| 0\)[\s\S]*paymentClanIdDraft[\s\S]*const clanId = Number\(\(dashboard\?\.community_domain as any\)\?\.clan_id \|\| paymentClanIdDraft \|\| 0\)[\s\S]*last selected marketplace automatically[\s\S]*debugId="community-domain-dashboard\.create-linked-marketplace"/,
-  "Community Domain billing must use an explicit linked marketplace community and must not silently fall back to the last selected marketplace.",
+  /createClan[\s\S]*listMyClans[\s\S]*selectClan[\s\S]*linkedDomainClanId = Number(domain?.clan_id || 0)[\s\S]*paymentClanIdDraft[\s\S]*const clanId = Number((dashboard?.community_domain as any)?.clan_id || paymentClanIdDraft || 0)[\s\S]*last selected marketplace automatically[\s\S]*CommunityDomainBillingTaskPanels/,
+  "Community Domain dashboard billing must keep the explicit linked marketplace/payment clan state wired into the lazy Billing task panel.",
   { frontend: true }
 );
 
+assertContains(
+  "src/pages/communityDomainDashboard/BillingTaskPanels.tsx",
+  /Linked marketplace community[\s\S]*Choose the dedicated marketplace community[\s\S]*Community Home record that belongs to[\s\S]*this Community Domain[\s\S]*no longer borrows[\s\S]*the last marketplace selected on your phone[\s\S]*community-domain-dashboard\.create-linked-marketplace/,
+  "Community Domain billing must use an explicit linked marketplace community and must not silently fall back to the last selected marketplace.",
+  { frontend: true }
+);
 assertNotContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /community_domain as any\)\?\.clan_id \|\| getSelectedClanId\(\)/,
@@ -2079,11 +2165,17 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /billingIsActive[\s\S]*packageReviewActionLabel[\s\S]*Review package details[\s\S]*Billing:[\s\S]*status\.billing_status \|\| selectedLane\?\.status[\s\S]*Quote:[\s\S]*quote\?\.pricing_status \|\| quote\?\.quote_status[\s\S]*\{packageReviewActionLabel\}/,
-  "Community Domain dashboard billing lane must lead with dashboard billing state and keep package quote details as reference when billing is active.",
+  /billingIsActive[\s\S]*packageReviewActionLabel[\s\S]*Review package details[\s\S]*Review package quote[\s\S]*CommunityDomainBillingTaskPanels[\s\S]*packageReviewActionLabel/,
+  "Community Domain dashboard billing lane must pass active billing state and package review action copy into the lazy Billing task panel.",
   { frontend: true }
 );
 
+assertContains(
+  "src/pages/communityDomainDashboard/BillingTaskPanels.tsx",
+  /Billing:[\s\S]*status\.billing_status || selectedLane\?\.status[\s\S]*Quote:[\s\S]*quote\?\.pricing_status || quote\?\.quote_status[\s\S]*{packageReviewActionLabel}/,
+  "Community Domain dashboard billing lane must lead with dashboard billing state and keep package quote details as reference when billing is active.",
+  { frontend: true }
+);
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/BillingReadinessPanels"\)[\s\S]*getCommunityDomainCapacityPlan[\s\S]*capacityPlan[\s\S]*CommunityDomainBillingReadinessPanels[\s\S]*subscriptionLifecycle=\{subscriptionLifecycle\}[\s\S]*capacityPlan=\{capacityPlan\}/,
@@ -2463,9 +2555,9 @@ assertContains(
       String.raw`community-domain-dashboard\.billing-task-toggle`,
       String.raw`Billing jobs do not expose a Change billing job control`,
       String.raw`community-domain-dashboard\.billing-payment-group\.settlement`,
-      String.raw`Community Domain Billing Code & proof view buttons are visible before Change code/proof view is opened`,
+      String.raw`Community Domain Billing Code & proof view buttons are visible before Change code\/proof view is opened`,
       String.raw`community-domain-dashboard\.billing-payment-group-toggle`,
-      String.raw`Community Domain Billing Code & proof does not expose a Change code/proof view control`,
+      String.raw`Community Domain Billing Code & proof does not expose a Change code\/proof view control`,
       String.raw`community-domain-dashboard\.billing-payment\.generate`,
       String.raw`Community Domain Billing Code step buttons are visible before Change Code step is opened`,
       String.raw`community-domain-dashboard\.billing-payment-step-toggle`,
