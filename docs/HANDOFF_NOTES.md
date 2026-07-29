@@ -34,7 +34,11 @@ Verification:
 - Local Vite server on port `5180` was stopped after audits.
 
 Deployment:
-- Local only at time of this note. Commit, push, and frontend Render deploy still pending.
+- Pushed `dbaee17f Split Community Domain real-life record panel` to `origin/main`.
+- Triggered GitHub Actions `Trigger Render Deploy` run `30426786618` with `deploy_api=false`.
+- Workflow completed successfully in 1m37s.
+- Confirmed steps included frontend deploy hook, exact frontend Render API deploy, and public URL marker verification.
+- Backend/API deploy skipped by workflow because `deploy_api=false`.
 
 ## CURRENT LOCAL STATE - 2026-07-29 - Marketplace secondary lane split
 
