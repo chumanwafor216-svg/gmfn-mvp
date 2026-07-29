@@ -2679,19 +2679,6 @@ export default function CommunityHomePage() {
     toggleSection(key);
   }
 
-  function toggleCommunitiesSectionFromHeader(
-    event: React.SyntheticEvent<HTMLElement> | undefined
-  ) {
-    toggleSectionFromButton(event, "communities");
-  }
-
-  function handleCommunitiesHeaderKeyDown(
-    event: React.KeyboardEvent<HTMLElement>
-  ) {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    toggleCommunitiesSectionFromHeader(event);
-  }
-
   function openCommunityHomeSection(
     event: React.SyntheticEvent<HTMLElement> | undefined,
     targetId: string,
@@ -5065,80 +5052,20 @@ export default function CommunityHomePage() {
             </div>
           </div>
         ) : null}
-      </section>
+        </section>
       ) : null}
 
-      <section
-        id="community-home-community-list"
-        style={{
-          ...communityBlockCard("raised"),
-          order: 20,
-          marginTop: isCompact ? 14 : undefined,
-          position: "relative",
-          zIndex: 30,
-        }}
-      >
-        <StableButton
-          type="button"
-          debugId="community-home.communities.header-toggle"
-          aria-expanded={!collapsed.communities}
-          aria-controls="community-home-communities-panel"
-          onClick={toggleCommunitiesSectionFromHeader}
-          onKeyDown={handleCommunitiesHeaderKeyDown}
+      {!collapsed.communities ? (
+        <section
+          id="community-home-community-list"
           style={{
-            ...communityToolRowStyle(),
-            borderRadius: 18,
-            boxShadow: "none",
+            ...communityBlockCard("raised"),
+            order: 20,
+            marginTop: isCompact ? 14 : undefined,
+            position: "relative",
+            zIndex: 30,
           }}
         >
-          <span style={communityActionIcon(false)}>{communityIconGlyph("community", 22)}</span>
-          <span style={{ minWidth: 0 }}>
-            <span
-              style={{
-                ...(isCompact ? brandClampLines(2) : brandSingleLine()),
-                color: "#07172C",
-                fontSize: isCompact ? 15 : 16,
-                fontWeight: 940,
-                lineHeight: 1.18,
-              }}
-            >
-              Marketplace Communities / Community Domains
-            </span>
-            <span
-              style={{
-                ...(isCompact ? brandClampLines(2) : brandSingleLine()),
-                marginTop: 4,
-                color: "#617085",
-                fontSize: isCompact ? 12.2 : 13,
-                fontWeight: 720,
-                lineHeight: 1.35,
-              }}
-            >
-              {isCompact
-                ? `${sortedClans.length} marketplace${
-                    combinedCommunityDomainCount
-                      ? ` / ${combinedCommunityDomainCount} ${
-                          combinedCommunityDomainCount === 1 ? "domain" : "domains"
-                        }`
-                      : ""
-                  }`
-                : `${sortedClans.length} marketplace ${
-                    sortedClans.length === 1 ? "community" : "communities"
-                  }${
-                    combinedCommunityDomainCount
-                      ? ` / ${combinedCommunityDomainCount} community ${
-                          combinedCommunityDomainCount === 1 ? "domain" : "domains"
-                        }`
-                      : ""
-                  }`}
-            </span>
-          </span>
-          <span aria-hidden="true" style={{ color: "#1E5D91", fontSize: 24 }}>
-            {collapsed.communities ? ">" : "v"}
-          </span>
-        </StableButton>
-
-        {!collapsed.communities ? (
           <div
             id="community-home-communities-panel"
             style={{ marginTop: isCompact ? 10 : 16, display: "grid", gap: 10 }}
@@ -5383,8 +5310,8 @@ export default function CommunityHomePage() {
               );
             })}
           </div>
-        ) : null}
-      </section>
+        </section>
+      ) : null}
       </>
       ) : null}
       </div>

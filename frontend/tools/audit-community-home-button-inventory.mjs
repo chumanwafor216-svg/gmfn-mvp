@@ -10,13 +10,13 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 27;
+const expectedStableButtonTemplateCount = 26;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 4;
 const expectedSpotlightGuidedActionCount = 5;
 const expectedGroupedLaneRowCount = 22;
-const expectedExpandedRouteLocalActionTemplates = 40;
+const expectedExpandedRouteLocalActionTemplates = 39;
 const expectedMobileShellBreakdown = {
   top: 2,
   drawer: 25,
@@ -325,9 +325,14 @@ assertContains(
   "Community Home summary must place ordinary marketplace communities and Community Domains in one room, while preserving the setup/governance versus Marketplace boundary."
 );
 
+assertNotContains(
+  /debugId="community-home\.communities\.header-toggle"/,
+  "Community Home must not duplicate the Live overview marketplace/community opener with a second lower header toggle."
+);
+
 assertContains(
-  /debugId="community-home\.communities\.header-toggle"[\s\S]*?Marketplace Communities \/ Community Domains[\s\S]*?\{sortedClans\.length\} marketplace[\s\S]*?combinedCommunityDomainCount[\s\S]*?domain" : "domains"[\s\S]*?Marketplace workspace for this community[\s\S]*?Open Marketplace[\s\S]*?sortedCommunityDomainRows\.map[\s\S]*?Community Domain marketplace workspace[\s\S]*?Marketplace ready[\s\S]*?Setup needed[\s\S]*?debugId=\{`community-home\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}[\s\S]*?openCommunityDomainMarketplace\(event, row\)[\s\S]*?\{row\.marketplaceReady \? "Open Marketplace" : "Open Setup"\}/,
-  "Community Home opened list must show ordinary marketplace communities and Community Domains together, with active domains using the strict Marketplace selection handoff and no per-row billing/settings controls."
+  /\{!collapsed\.communities \? \([\s\S]*?id="community-home-community-list"[\s\S]*?id="community-home-communities-panel"[\s\S]*?sortedClans\.map[\s\S]*?Marketplace workspace for this community[\s\S]*?Open Marketplace[\s\S]*?sortedCommunityDomainRows\.map[\s\S]*?Community Domain marketplace workspace[\s\S]*?Marketplace ready[\s\S]*?Setup needed[\s\S]*?debugId=\{`community-home\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}[\s\S]*?openCommunityDomainMarketplace\(event, row\)[\s\S]*?\{row\.marketplaceReady \? "Open Marketplace" : "Open Setup"\}/,
+  "Community Home opened list must show ordinary marketplace communities and Community Domains together after the single Live overview opener, with active domains using the strict Marketplace selection handoff and no per-row billing/settings controls."
 );
 
 assertContains(

@@ -157656,3 +157656,27 @@ Verification run locally:
 
 Deployment:
 - Local only. Not pushed/deployed in this step.
+
+## 2026-07-29 - Local Community Home Duplicate Marketplace Block Removal
+
+- Scope: local-only Community Home polish after the owner reported that the Live overview marketplace/community opener duplicated the lower Marketplace Communities / Community Domains header block.
+- `frontend/src/pages/CommunityHomePage.tsx`
+  - Removed the lower `community-home.communities.header-toggle` StableButton and its route-local keyboard helpers.
+  - Kept the actual opened `community-home-communities-panel` list for ordinary marketplace communities and Community Domains.
+  - The Live overview `community-home.summary.visible-communities` row is now the single opener for that list.
+- `frontend/tools/audit-community-home-button-inventory.mjs`
+  - Updated the protected baseline from 27 to 26 Community Home StableButton templates and from 40 to 39 expanded route-local action templates.
+  - Added a guard that fails if the duplicate lower header toggle is reintroduced.
+
+Unabated truth:
+- I did not remove the real marketplace/community list. Removing that would break the approved Community Home spec because Community Domains and ordinary marketplace communities still need one shared room.
+- This removes only the duplicated lower opener/header. When the Live overview row is opened, the list itself still appears.
+
+Verification run locally:
+- `node frontend\tools\audit-community-home-button-inventory.mjs`
+- `node frontend\tools\audit-community-home-phone-buttons.mjs`
+- `npm --prefix frontend run build`
+- `git diff --check` passed with normal CRLF warnings.
+
+Deployment:
+- Local only. Push/deploy only when owner sends `2`.
