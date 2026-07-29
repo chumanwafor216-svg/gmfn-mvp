@@ -157680,3 +157680,16 @@ Verification run locally:
 
 Deployment:
 - Local only. Push/deploy only when owner sends `2`.
+
+## 2026-07-29 - Community Home Duplicate Marketplace Block Deploy Completion
+
+- Scope: deploy completion for `364554c4 Remove duplicate Community Home marketplace opener` after the owner said to finish what was left undone.
+- Pushed branch: `main`.
+- GitHub Actions run: `30432308393` (`Trigger Render Deploy`) succeeded.
+- Render frontend deploy id: `dep-d9kqr961egvs7385iegg`.
+- Public frontend URL verified by workflow: `https://gmfn-frontend.onrender.com`.
+- Backend/API deploy was skipped because this slice changed frontend Community Home UX, frontend audit tooling, and docs only; workflow reported `Backend deploy needed: false`.
+
+Unabated truth:
+- The previous push alone did not start a deploy because the Render workflow is manual (`workflow_dispatch`).
+- This completion triggered the manual frontend deploy and verified the public frontend marker through GitHub Actions.
