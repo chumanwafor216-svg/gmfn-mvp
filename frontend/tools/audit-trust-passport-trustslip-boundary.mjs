@@ -8,6 +8,7 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
   app: "src/App.tsx",
   trustPassport: "src/pages/TrustScorePage.tsx",
+  trustPassportDocumentLane: "src/pages/trustScore/TrustPassportDocumentLane.tsx",
   trustSlip: "src/pages/TrustSlipPage.tsx",
   smoke: "tools/smoke-trust-passport-trustslip-boundary.mjs",
   reader: "src/components/TrustSlipReaderBlock.tsx",
@@ -667,7 +668,7 @@ assertContains(
   "Shared GSN snapshot paper title style must protect human words while record codes can still wrap elsewhere."
 );
 assertOrder(
-  "trustPassport",
+  "trustPassportDocumentLane",
   [
     { label: "open holder TrustSlip", pattern: /debugId="trust-score\.open-trust-slip"[\s\S]*?Open TrustSlip/ },
     { label: "open public verify", pattern: /debugId="trust-score\.verify"[\s\S]*?Open TrustSlip verify/ },
@@ -695,7 +696,7 @@ assertContains(
 
 assertContains(
   "trustSlip",
-  /const trustSlipHolderDecisionBoundaryRows: Array<\[string, string\]> = \[[\s\S]*?\["Evidence scope", numericCount\(activeCommunityCount\) > 1 \? "Primary \+ wider" : "Primary shown"\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Credit approval", "No"\][\s\S]*?\["Final decision", "Yours"\][\s\S]*?TrustDocumentConfidenceRibbon items=\{trustSlipHolderConfidenceRibbonItems\} \/>[\s\S]*?data-gsn-trustslip-holder-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?<CommunityProofPanel/,
+  /const trustSlipHolderDecisionBoundaryRows: Array<\[string, string\]> = \[[\s\S]*?\["Verification scope", verificationScopeLabel\][\s\S]*?\["Scope boundary", verificationScopeBoundary\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Credit approval", "No"\][\s\S]*?\["Final decision", "Yours"\][\s\S]*?TrustDocumentConfidenceRibbon items=\{trustSlipHolderConfidenceRibbonItems\} \/>[\s\S]*?data-gsn-trustslip-holder-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?<CommunityProofPanel/,
   "TrustSlip holder page must place a compact decision boundary between the confidence ribbon and primary community evidence."
 );
 if (findings.length > 0) {

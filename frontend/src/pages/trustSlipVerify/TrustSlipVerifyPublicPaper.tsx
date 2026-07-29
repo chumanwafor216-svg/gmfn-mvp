@@ -2152,6 +2152,34 @@ export default function TrustSlipVerifyPublicPaper({
             ))}
           </div>
 
+        {compact ? (
+          <TrustDocumentDisclosureSection
+            title="Full evidence and record details"
+            summary="Open for core reading, decision summary, live code checks, and the fuller evidence pack."
+          >
+            <div
+              data-gsn-public-mobile-full-evidence="collapsed-summary"
+              style={{ display: "grid", gap: 10 }}
+            >
+              <OfficialResultTable
+                title="Core evidence reading"
+                rows={communityActivityMeaningRows}
+                compact={compact}
+              />
+              <OfficialResultTable
+                title="Decision evidence summary"
+                rows={decisionPackEvidenceSummaryRows}
+                compact={compact}
+              />
+              <OfficialResultTable
+                title="Live record checks"
+                rows={recordTrustReasonTiles.map((item): [string, string] => [item.label, `${item.title}. ${item.text}`])}
+                compact={compact}
+              />
+            </div>
+          </TrustDocumentDisclosureSection>
+        ) : null}
+
           <div
             data-gsn-public-decision-support="meaning-next-action"
             data-gsn-public-reader-confirmation-options="membership-community-witness"
@@ -2348,34 +2376,6 @@ export default function TrustSlipVerifyPublicPaper({
             )}
           </div>
         </div>
-
-        {compact ? (
-          <TrustDocumentDisclosureSection
-            title="Full evidence and record details"
-            summary="Open for core reading, decision summary, live code checks, and the fuller evidence pack."
-          >
-            <div
-              data-gsn-public-mobile-full-evidence="collapsed-summary"
-              style={{ display: "grid", gap: 10 }}
-            >
-              <OfficialResultTable
-                title="Core evidence reading"
-                rows={communityActivityMeaningRows}
-                compact={compact}
-              />
-              <OfficialResultTable
-                title="Decision evidence summary"
-                rows={decisionPackEvidenceSummaryRows}
-                compact={compact}
-              />
-              <OfficialResultTable
-                title="Live record checks"
-                rows={recordTrustReasonTiles.map((item): [string, string] => [item.label, `${item.title}. ${item.text}`])}
-                compact={compact}
-              />
-            </div>
-          </TrustDocumentDisclosureSection>
-        ) : null}
         <TrustDocumentDisclosureSection
           title={decisionPackPurpose}
           summary="Open for evidence sources, gaps, checks, and evidence boundaries."

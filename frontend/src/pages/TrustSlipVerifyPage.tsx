@@ -20,7 +20,6 @@ import { navigateWithOrigin } from "../lib/nav";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { buildTrustSlipVerifyShareText } from "../lib/trustDocumentSnapshots";
 import TrustSlipVerifyBoundary from "./trustSlipVerify/TrustSlipVerifyBoundary";
-import TrustSlipVerifyPublicPaper from "./trustSlipVerify/TrustSlipVerifyPublicPaper";
 import type { CommunityConfirmationCallbackDraft } from "./trustSlipVerify/TrustSlipVerifyPublicPaper";
 import {
   callFirstAvailable,
@@ -31,6 +30,10 @@ import {
   type VerifyBannerTone,
 } from "./trustSlipVerify/trustSlipVerifyData";
 import { buildTrustSlipVerifyViewModel } from "./trustSlipVerify/trustSlipVerifyViewModel";
+
+const TrustSlipVerifyPublicPaper = React.lazy(
+  () => import("./trustSlipVerify/TrustSlipVerifyPublicPaper")
+);
 
 const TrustSlipVerifyPrivateEvidence = React.lazy(
   () => import("./trustSlipVerify/TrustSlipVerifyPrivateEvidence")
@@ -1468,70 +1471,85 @@ export default function TrustSlipVerifyPage() {
       ) : null}
 
       {noPublicCodeSupplied ? null : (
-        <TrustSlipVerifyPublicPaper
-          compact={isCompact}
-          validNow={validNow}
-          publicValidityLabel={publicValidityLabel}
-          bannerDetail={banner.detail}
-          profileImageUrl={profileImageUrl}
-          holderName={holderName}
-          gsnId={gmfnId}
-          communityLabel={communityLabel}
-          holderRole={holderRole}
-          memberWitnessCount={memberWitnessCount}
-          membershipStrengthLabel={membershipStrengthLabel}
-          membershipRenewalStatusLabel={membershipRenewalStatusLabel}
-          membershipValidUntil={membershipValidUntil}
-          nextWitnessRenewalAt={nextWitnessRenewalAt}
-          nextWitnessRenewalStatusLabel={nextWitnessRenewalStatusLabel}
-          membershipCurrentnessLabel={membershipCurrentnessLabel}
-          membershipCurrentnessScope={membershipCurrentnessScope}
-          communityEvidenceCurrentnessLabel={communityEvidenceCurrentnessLabel}
-          communityEvidenceCurrentnessScope={communityEvidenceCurrentnessScope}
-          memberCredentialPath={memberCredentialPath}
-          relationshipEvidenceSummary={relationshipEvidenceSummary}
-          communityActivityCount={communityActivityCount}
-          communityActivityLatestAt={communityActivityLatestAt}
-          communityActivityCategories={communityActivityCategories}
-          communityActivityLabel={communityActivityLabel}
-          activeCommunityCount={activeCommunityCount}
-          evidenceScopeSummary={evidenceScopeSummary}
-          evidenceScopeBoundary={evidenceScopeBoundary}
-          evidenceScopeReadingScope={evidenceScopeReadingScope}
-          visibleBand={visibleBand}
-          visibleBandLabel={visibleBandLabel}
-          visibleBandMeaning={visibleBandMeaning}
-          visibleEvidenceLabel={visibleEvidenceLabel}
-          publicEvidencePosture={publicEvidencePosture}
-          publicEvidencePostureMeaning={publicEvidencePostureMeaning}
-          publicEvidencePostureBoundary={publicEvidencePostureBoundary}
-          compactTrustLimit={compactTrustLimit}
-          issuedAtLabel={issuedAtLabel}
-          expiresAtLabel={expiresAtLabel}
-          resolvedCode={resolvedCode}
-          verifyPath={verifyPath}
-          verifyUrl={verifyUrl}
-          quickTrustAnswers={quickTrustAnswers}
-          communityRelayAvailable={selectedCommunityRelayAvailable}
-          communityPulseAvailable={selectedCommunityPulseAvailable}
-          communityConfirmationText={selectedCommunityConfirmationText}
-          communityConfirmationRows={selectedCommunityConfirmationRows}
-          communityConfirmationOptions={communityConfirmationOptions}
-          selectedConfirmationCommunityId={selectedConfirmationCommunityId}
-          onConfirmationCommunityChange={setSelectedConfirmationCommunityId}
-          confirmationOutcome={confirmationOutcome}
-          confirmationResult={confirmationResult}
-          confirmationPublicPath={confirmationPublicPath}
-          confirmationBusy={confirmationBusy}
-          canRequestCommunityPulse={Boolean(firstTruthy(record?.code, resolvedCode))}
-          onRequestCommunityPulse={(draft) => {
-            void requestCommunityPulse(draft);
-          }}
-          publicActions={publicTrustSlipActions}
-          decisionPackProfile={decisionPackProfile}
-          recipientAccessRecord={recipientAccessRecord}
-          variant={isLiteRoute ? "lite" : "full"}
-        />
+        <React.Suspense
+          fallback={
+            <section
+              style={{
+                ...pageCard("#FFFFFF"),
+                color: "#526579",
+                fontWeight: 850,
+                lineHeight: 1.6,
+              }}
+            >
+              Loading public TrustSlip evidence...
+            </section>
+          }
+        >
+          <TrustSlipVerifyPublicPaper
+            compact={isCompact}
+            validNow={validNow}
+            publicValidityLabel={publicValidityLabel}
+            bannerDetail={banner.detail}
+            profileImageUrl={profileImageUrl}
+            holderName={holderName}
+            gsnId={gmfnId}
+            communityLabel={communityLabel}
+            holderRole={holderRole}
+            memberWitnessCount={memberWitnessCount}
+            membershipStrengthLabel={membershipStrengthLabel}
+            membershipRenewalStatusLabel={membershipRenewalStatusLabel}
+            membershipValidUntil={membershipValidUntil}
+            nextWitnessRenewalAt={nextWitnessRenewalAt}
+            nextWitnessRenewalStatusLabel={nextWitnessRenewalStatusLabel}
+            membershipCurrentnessLabel={membershipCurrentnessLabel}
+            membershipCurrentnessScope={membershipCurrentnessScope}
+            communityEvidenceCurrentnessLabel={communityEvidenceCurrentnessLabel}
+            communityEvidenceCurrentnessScope={communityEvidenceCurrentnessScope}
+            memberCredentialPath={memberCredentialPath}
+            relationshipEvidenceSummary={relationshipEvidenceSummary}
+            communityActivityCount={communityActivityCount}
+            communityActivityLatestAt={communityActivityLatestAt}
+            communityActivityCategories={communityActivityCategories}
+            communityActivityLabel={communityActivityLabel}
+            activeCommunityCount={activeCommunityCount}
+            evidenceScopeSummary={evidenceScopeSummary}
+            evidenceScopeBoundary={evidenceScopeBoundary}
+            evidenceScopeReadingScope={evidenceScopeReadingScope}
+            visibleBand={visibleBand}
+            visibleBandLabel={visibleBandLabel}
+            visibleBandMeaning={visibleBandMeaning}
+            visibleEvidenceLabel={visibleEvidenceLabel}
+            publicEvidencePosture={publicEvidencePosture}
+            publicEvidencePostureMeaning={publicEvidencePostureMeaning}
+            publicEvidencePostureBoundary={publicEvidencePostureBoundary}
+            compactTrustLimit={compactTrustLimit}
+            issuedAtLabel={issuedAtLabel}
+            expiresAtLabel={expiresAtLabel}
+            resolvedCode={resolvedCode}
+            verifyPath={verifyPath}
+            verifyUrl={verifyUrl}
+            quickTrustAnswers={quickTrustAnswers}
+            communityRelayAvailable={selectedCommunityRelayAvailable}
+            communityPulseAvailable={selectedCommunityPulseAvailable}
+            communityConfirmationText={selectedCommunityConfirmationText}
+            communityConfirmationRows={selectedCommunityConfirmationRows}
+            communityConfirmationOptions={communityConfirmationOptions}
+            selectedConfirmationCommunityId={selectedConfirmationCommunityId}
+            onConfirmationCommunityChange={setSelectedConfirmationCommunityId}
+            confirmationOutcome={confirmationOutcome}
+            confirmationResult={confirmationResult}
+            confirmationPublicPath={confirmationPublicPath}
+            confirmationBusy={confirmationBusy}
+            canRequestCommunityPulse={Boolean(firstTruthy(record?.code, resolvedCode))}
+            onRequestCommunityPulse={(draft) => {
+              void requestCommunityPulse(draft);
+            }}
+            publicActions={publicTrustSlipActions}
+            decisionPackProfile={decisionPackProfile}
+            recipientAccessRecord={recipientAccessRecord}
+            variant={isLiteRoute ? "lite" : "full"}
+          />
+        </React.Suspense>
       )}
       {noPublicCodeSupplied ? null : <TrustSlipVerifyBoundary compact={isCompact} />}
 

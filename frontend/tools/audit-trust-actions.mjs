@@ -16,6 +16,7 @@ const trustDomainFiles = [
   "src/components/CompanionLayer.tsx",
   "src/pages/TrustPage.tsx",
   "src/pages/TrustScorePage.tsx",
+  "src/pages/trustScore/TrustPassportDocumentLane.tsx",
   "src/pages/TrustSlipPage.tsx",
   "src/pages/TrustSlipVerifyPage.tsx",
   "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
@@ -406,8 +407,14 @@ assertContains(
 
 assertContains(
   "src/pages/TrustScorePage.tsx",
-  /trustSlipVerify: routeTarget\([\s\S]*?"merchantVerify"[\s\S]*?"trust-score\.route\.trust-slip-verify"[\s\S]*?const verifyAppPath = useMemo\([\s\S]*?trustSlipVerifyAppPath\(trustSlipCode, routes\.trustSlipVerify\)[\s\S]*?onClick=\{\(\) => openTrustRoute\(verifyAppPath\)\}[\s\S]*?debugId="trust-score\.verify"/,
-  "Trust Passport verify action must open the signed-in TrustSlip Verify page and carry the visible code when one is available."
+  /trustSlipVerify: routeTarget\([\s\S]*?"merchantVerify"[\s\S]*?"trust-score\.route\.trust-slip-verify"[\s\S]*?const verifyAppPath = useMemo\([\s\S]*?trustSlipVerifyAppPath\(trustSlipCode, routes\.trustSlipVerify\)[\s\S]*?<TrustPassportDocumentLane[\s\S]*?verifyAppPath=\{verifyAppPath\}[\s\S]*?onOpenTrustRoute=\{openTrustRoute\}/,
+  "Trust Passport page must build the signed-in TrustSlip Verify path and pass it into the document lane with the trust-route opener."
+);
+
+assertContains(
+  "src/pages/trustScore/TrustPassportDocumentLane.tsx",
+  /onClick=\{\(\) => onOpenTrustRoute\(verifyAppPath\)\}[\s\S]*?debugId="trust-score\.verify"/,
+  "Trust Passport document lane verify action must open the signed-in TrustSlip Verify page and carry the visible code when one is available."
 );
 
 assertContains(
@@ -2059,6 +2066,7 @@ assertContains(
   "src/pages/CommunityMemberVerifyPage.tsx",
   "src/pages/IdentityIntegrityPage.tsx",
   "src/pages/TrustScorePage.tsx",
+  "src/pages/trustScore/TrustPassportDocumentLane.tsx",
   "src/pages/TrustSlipPage.tsx",
   "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
   "src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx",
