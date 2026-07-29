@@ -1,3 +1,27 @@
+## CURRENT LOCAL STATE - 2026-07-29 - QA/polish deploy completion
+
+Owner trigger:
+- Owner said to complete the locally verified QA/polish sweep.
+
+Unabated truth:
+- The verified QA/polish sweep was published to `main` and the frontend Render deployment workflow succeeded for the pushed commit.
+- Backend deploy was intentionally not requested because this slice changed frontend audit tooling and docs only.
+- The workflow verified the frontend public URL build marker.
+- Remaining non-blocking caveat: the largest route chunks are still CommunityDomainDashboardPage, DashboardPage, and MarketplacePage; bundle splitting remains a separate performance pass.
+
+Published:
+- Pushed `1ef3e1c1 Complete QA polish sweep` to `origin/main`.
+- Triggered GitHub Actions `Trigger Render Deploy` run `30423005718` with `deploy_api=false`.
+- Workflow completed successfully in 1m11s.
+- Confirmed steps included frontend deploy hook, exact frontend Render API deploy, and public URL verification.
+
+Deployment:
+- Frontend deploy confirmed by GitHub Actions run `30423005718`.
+- Backend/API deploy skipped by workflow because `deploy_api=false`.
+
+Next recommended step:
+- Start a separate bundle-splitting/performance pass only if the owner wants to reduce the remaining large route chunks.
+
 ## CURRENT LOCAL STATE - 2026-07-29 - QA/polish partial completion sweep
 
 Owner trigger:
