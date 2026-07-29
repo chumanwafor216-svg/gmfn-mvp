@@ -5,9 +5,51 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const marketplaceFile = "src/pages/MarketplacePage.tsx";
+const marketplaceBoardFile = "src/pages/marketplace/MarketplaceBoardSection.tsx";
+const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
+const trustScoreFile = "src/pages/TrustScorePage.tsx";
+const trustScoreDocumentLaneFile = "src/pages/trustScore/TrustPassportDocumentLane.tsx";
+const trustScoreFinanceLaneFile = "src/pages/trustScore/TrustPassportFinanceLane.tsx";
+const trustScoreInstitutionalContextFile =
+  "src/pages/trustScore/TrustPassportInstitutionalContext.tsx";
+const shopControlFile = "src/pages/ShopControlPage.tsx";
+const shopControlSpotlightWorkflowFile =
+  "src/pages/shopControl/ShopControlSpotlightWorkflow.tsx";
+
+function readRaw(relativePath) {
+  return readFileSync(join(frontendRoot, relativePath), "utf8");
+}
+
+function composeLazySource(parentPath, replacements) {
+  return replacements.reduce((source, [pattern, childPath]) => {
+    return source.replace(pattern, readRaw(childPath));
+  }, readRaw(parentPath));
+}
 
 function read(relativePath) {
-  return readFileSync(join(frontendRoot, relativePath), "utf8");
+  if (relativePath === marketplaceFile) {
+    return composeLazySource(marketplaceFile, [
+      [/<MarketplaceBoardSection[\s\S]*?\/>/, marketplaceBoardFile],
+      [/<MarketplaceMembersSection[\s\S]*?\/>/, marketplaceMembersFile],
+    ]);
+  }
+
+  if (relativePath === trustScoreFile) {
+    return composeLazySource(trustScoreFile, [
+      [/<TrustPassportDocumentLane[\s\S]*?\/>/, trustScoreDocumentLaneFile],
+      [/<TrustPassportFinanceLane[\s\S]*?\/>/, trustScoreFinanceLaneFile],
+      [/<TrustPassportInstitutionalContext[\s\S]*?\/>/, trustScoreInstitutionalContextFile],
+    ]);
+  }
+
+  if (relativePath === shopControlFile) {
+    return composeLazySource(shopControlFile, [
+      [/<ShopControlSpotlightWorkflow[\s\S]*?\/>/, shopControlSpotlightWorkflowFile],
+    ]);
+  }
+
+  return readRaw(relativePath);
 }
 
 const findings = [];
@@ -163,13 +205,13 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /import \{ StableButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}[\s\S]*?debugId="community-home\.communities\.header-toggle"[\s\S]*?debugId=\{`community-home\.communities\.\$\{clan\.id \?\? clan\.clan_id \?\? clan\.name \?\? "unknown"\}\.open-marketplace`\}/,
+  /import \{ StableButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="community-home\.summary\.visible-communities"[\s\S]*?debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.communities\.\$\{clan\.id \?\? clan\.clan_id \?\? clan\.name \?\? "unknown"\}\.open-marketplace`\}/,
   "Community Home must use the shared stable button primitive and shared CTA resolution for community selection, owner routes, and front next-action rows."
 );
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /import \{ brandClampLines, brandSingleLine \} from "\.\.\/styles\/gmfnBrand";[\s\S]*?function communityToolRowStyle\(\): React\.CSSProperties \{[\s\S]*?overflow: "hidden",[\s\S]*?overflowAnchor: "none",[\s\S]*?transform: "none",[\s\S]*?transition: "none",[\s\S]*?debugId="community-home\.finance-summary\.open"[\s\S]*?brandClampLines\(1\)[\s\S]*?brandClampLines\(2\)[\s\S]*?debugId="community-home\.trust-summary\.open"[\s\S]*?brandClampLines\(2\)/,
+  /import \{ brandClampLines \} from "\.\.\/styles\/gmfnBrand";[\s\S]*?function communityToolRowStyle\(\): React\.CSSProperties \{[\s\S]*?overflow: "hidden",[\s\S]*?overflowAnchor: "none",[\s\S]*?transform: "none",[\s\S]*?transition: "none",[\s\S]*?debugId="community-home\.finance-summary\.open"[\s\S]*?brandClampLines\(1\)[\s\S]*?brandClampLines\(2\)[\s\S]*?debugId="community-home\.trust-summary\.open"[\s\S]*?brandClampLines\(2\)/,
   "Community Home visible action rows must keep stable geometry and clamped text so labels cannot stretch, overlap, or create unstable tap targets."
 );
 
@@ -181,7 +223,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /import \{[\s\S]*?navigateToCta[\s\S]*?resolveCtaTarget[\s\S]*?type CtaIntent[\s\S]*?\} from "\.\.\/lib\/ctaTargets";[\s\S]*?function openMarketplaceCta[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?<StableButton[\s\S]*?Community Home[\s\S]*?<StableCtaLink[\s\S]*?Open shop[\s\S]*?Start Support Request/,
+  /import \{[\s\S]*?resolveCtaTarget[\s\S]*?type CtaIntent[\s\S]*?\} from "\.\.\/lib\/ctaTargets";[\s\S]*?function openMarketplaceCta[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?<StableButton[\s\S]*?Community Home[\s\S]*?<StableCtaLink[\s\S]*?Open shop[\s\S]*?Start Support Request/,
   "Marketplace must use shared stable primitives and shared CTA resolution for marketplace navigation, member/shop links, link desk actions, and support-request controls."
 );
 
@@ -686,7 +728,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/TrustScorePage.tsx",
-  /import \{[\s\S]*?DangerButton[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId: "trust-score\.surface\.local-community-trust"[\s\S]*?debugId: "trust-score\.surface\.cross-community-consistency"[\s\S]*?debugId=\{item\.debugId\}[\s\S]*?stableHeight=\{isCompact \? 48 : 58\}[\s\S]*?debugId="trust-score\.refresh"[\s\S]*?debugId="trust-score\.copy-snapshot"[\s\S]*?debugId="trust-score\.verify"[\s\S]*?debugId="trust-score\.review-care"/,
+  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableDisclosureSummary[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId: "trust-score\.surface\.local-community-trust"[\s\S]*?debugId: "trust-score\.surface\.cross-community-consistency"[\s\S]*?debugId=\{item\.debugId\}[\s\S]*?stableHeight=\{isCompact \? 48 : 58\}[\s\S]*?debugId="trust-score\.refresh"[\s\S]*?debugId="trust-score\.copy-snapshot"[\s\S]*?debugId="trust-score\.verify"[\s\S]*?debugId="trust-score\.review-care"/,
   "Trust Score must use shared stable button primitives and shared CTA resolution for surface navigation, refresh, copy, verify, and review actions."
 );
 
@@ -1603,7 +1645,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/ShopControlPage.tsx",
-  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="shop-control\.spotlight\.setup\.continue"[\s\S]*?debugId="shop-control\.spotlight\.upload\.preview"[\s\S]*?debugId="shop-control\.spotlight\.preview\.publish"[\s\S]*?debugId=\{`shop-control\.hero-shortcut\.[\s\S]*?debugId="shop-control\.vault\.pay-1-slot"[\s\S]*?debugId="shop-control\.verify\.pay"[\s\S]*?debugId="shop-control\.subscription\.open"[\s\S]*?debugId="shop-control\.details\.save"[\s\S]*?debugId="shop-control\.vault-layer\.create-link"[\s\S]*?debugId=\{`shop-control\.vault-link\.\$\{item\.id\}\.copy`\}/,
+  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="shop-control\.spotlight\.setup\.continue"[\s\S]*?debugId="shop-control\.spotlight\.upload\.preview"[\s\S]*?debugId="shop-control\.spotlight\.preview\.publish"[\s\S]*?debugId=\{`shop-control\.hero-shortcut\.[\s\S]*?debugId="shop-control\.vault\.pay-1-slot"[\s\S]*?debugId="shop-control\.verify\.pay"[\s\S]*?debugId="shop-control\.subscription\.open"[\s\S]*?debugId="shop-control\.details\.save"[\s\S]*?debugId="shop-control\.vault-layer\.create-link"[\s\S]*?debugId=\{`shop-control\.vault-link\.\$\{item\.id\}\.copy`\}/,
   "Shop Control must use shared stable primitives and shared CTA resolution for spotlight, owner shortcuts, paid tools, details, and vault-link actions."
 );
 

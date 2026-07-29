@@ -157836,3 +157836,11 @@ Deployment:
 - Removed unnecessary `\$` escapes from plain string needles in `frontend/tools/audit-community-domain-product-contracts.mjs`.
 - Verification passed: `npm --prefix frontend run lint`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `git diff --check`.
 - Devil's advocate: this is lint/QA hygiene only. It does not improve runtime speed or change user-visible behavior; it closes the lint caveat left after the Shop Control lazy split.
+
+## 2026-07-29 - Local Button Stability Audit Lazy-Source Cleanup
+- Status: Local only, not pushed/deployed. Builds on local commit `d84ee5e8`.
+- Updated `frontend/tools/audit-button-stability.mjs` so the shared button-stability audit composes already-extracted lazy route-local children back into the audited source for Marketplace, Trust Passport, and Shop Control.
+- Updated stale Community Home expectations to the current stable `community-home.summary.visible-communities` button and the current `brandClampLines` import after the lint cleanup.
+- Updated Trust Passport and Shop Control button-stability expectations so parent-owned route wiring remains checked while action IDs moved into their lazy child components remain visible to the audit.
+- Verification passed: `node --check frontend/tools/audit-button-stability.mjs`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run lint`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `git diff --check`.
+- Devil's advocate: this is audit/QA alignment only. It does not change the app UI, route behavior, or bundle size; it removes an old false-negative QA caveat so future button-stability failures are more meaningful.
