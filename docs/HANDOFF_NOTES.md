@@ -1,3 +1,12 @@
+## 2026-07-29 - Local Marketplace Lane Audit Lazy-Source Cleanup
+- Status: Local only, not pushed/deployed. Builds on local commit `e8ca8203`; push/deploy only when the owner sends `2` or explicitly asks.
+- Updated stale Marketplace lane audit guards so they understand the current lazy source layout after the Board, Members, and Support lane extractions.
+- Refreshed old inline-SVG icon assertions in Money Pool, ROSCA, and Trade Evidence lane audits to the current shared `GsnLegacyIcon` / `MARKETPLACE_GLYPH_ICON_MAP` 3D icon adapter.
+- Composed lazy Marketplace children in route-local audits that need whole-page boundaries: button-lines, Demand Box lane, department boundaries, ROSCA lane, and Trade Evidence lane.
+- Updated `audit-marketplace-button-lines.mjs` to the current canonical `89` stable Marketplace actions and `37` native fields, matching `audit-marketplace-button-inventory.mjs`.
+- No app UI, API, route, state, or bundle behavior changed in this slice.
+- Verification passed: `npm --prefix frontend run audit:marketplace-button-lines`; `npm --prefix frontend run audit:marketplace-demand-box-lane`; `npm --prefix frontend run audit:marketplace-department-boundaries`; `npm --prefix frontend run audit:marketplace-money-pool-lane`; `npm --prefix frontend run audit:marketplace-rosca-lane`; `npm --prefix frontend run audit:marketplace-trusted-trade-lane`; `npm --prefix frontend run audit:marketplace-support-lane`; `npm --prefix frontend run audit:marketplace-records-links-lane`; `npm --prefix frontend run audit:marketplace-more-tools-lane`; `npm --prefix frontend run audit:marketplace-shop-evidence-boundary`; `npm --prefix frontend run audit:marketplace-button-inventory`; `npm --prefix frontend run audit:marketplace-actions`; `npm --prefix frontend run audit:marketplace-touch-blockers`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `git diff --check`.
+- Devil's advocate: this improves QA truth, not runtime performance. It closes hidden stale-audit risk so future Marketplace changes are tested against the actual split source tree.
 ## 2026-07-29 - Local Marketplace Support Lane Lazy Split
 - Status: Local only, not pushed/deployed. Builds on local commit `2d05ddd0`; push/deploy only when the owner sends `2` or explicitly asks.
 - Split the closed-by-default Marketplace Support lane out of `frontend/src/pages/MarketplacePage.tsx` into lazy-loaded `frontend/src/pages/marketplace/MarketplaceSupportSection.tsx`.

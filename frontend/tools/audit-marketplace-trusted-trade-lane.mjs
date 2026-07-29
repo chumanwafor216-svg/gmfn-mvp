@@ -6,7 +6,14 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
-const source = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
+const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
+const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
+const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
+const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
+const marketplaceSupportSource = readFileSync(join(frontendRoot, marketplaceSupportFile), "utf8");
+const source = marketplacePageSource
+  .replace(/<MarketplaceMembersSection\b[\s\S]*?\n\s*\/>/, marketplaceMembersSource)
+  .replace(/<MarketplaceSupportSection\b[\s\S]*?\n\s*\/>/, marketplaceSupportSource);
 const findings = [];
 
 function lineAt(index) {
@@ -52,8 +59,8 @@ function sectionBetween(startPattern, endPattern) {
 }
 
 assertContains(
-  /case "trade":[\s\S]*?<path d="M5 10h14l-1\.2-4\.5H6\.2z"[\s\S]*?<path d="M13\.8 16\.1 15\.4 17\.7 18\.5 14\.5"/,
-  "Trade Evidence must use the stable checked-shop pictogram, not the generic shop mark."
+  /trade: "marketplace"[\s\S]*?function MarketplaceGlyph[\s\S]*?<GsnLegacyIcon/,
+  "Trade Evidence must use the stable GSN 3D marketplace/trade pictogram through the shared icon adapter."
 );
 
 assertNotContains(

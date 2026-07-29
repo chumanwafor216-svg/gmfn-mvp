@@ -39,8 +39,8 @@ function sectionBetween(startPattern, endPattern) {
 }
 
 assertContains(
-  /type MarketplaceGlyphName =[\s\S]*?\| "pool"[\s\S]*?case "pool":[\s\S]*?<rect x="4" y="5" width="16" height="14" rx="2\.8"[\s\S]*?<circle cx="8" cy="14" r="1\.7"[\s\S]*?<path d="M12 13h4\.5"/,
-  "Money Pool must use the stable pool ledger pictogram, not the generic card mark."
+  /pool: "financeInstitution"[\s\S]*?function MarketplaceGlyph[\s\S]*?<GsnLegacyIcon/,
+  "Money Pool must use the stable GSN 3D finance-institution pictogram through the shared icon adapter."
 );
 
 assertContains(

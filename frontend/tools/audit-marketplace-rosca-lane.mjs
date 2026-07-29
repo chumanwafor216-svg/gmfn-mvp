@@ -6,7 +6,13 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
-const source = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
+const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
+const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
+const marketplaceSupportSource = readFileSync(join(frontendRoot, marketplaceSupportFile), "utf8");
+const source = marketplacePageSource.replace(
+  /<MarketplaceSupportSection\b[\s\S]*?\n\s*\/>/,
+  marketplaceSupportSource
+);
 const findings = [];
 
 function lineAt(index) {
@@ -39,12 +45,12 @@ function sectionBetween(startPattern, endPattern) {
 }
 
 assertContains(
-  /type MarketplaceGlyphName =[\s\S]*?\| "rosca"[\s\S]*?case "rosca":[\s\S]*?<circle cx="12" cy="12" r="7\.2"[\s\S]*?<path d="M8\.7 12h6\.6"/,
-  "ROSCA must use the stable savings-circle pictogram, not a generic cycle mark."
+  /rosca: "repaymentSchedule"[\s\S]*?function MarketplaceGlyph[\s\S]*?<GsnLegacyIcon/,
+  "ROSCA must use the stable GSN 3D repayment/savings-circle pictogram through the shared icon adapter."
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.support"[\s\S]*?Support[\s\S]*?Start Request[\s\S]*?Supporters[\s\S]*?Repayment[\s\S]*?marketplace\.support\.path-chooser[\s\S]*?Loan Support[\s\S]*?ROSCA[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?Open ROSCA/,
+  /debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support for this marketplace"[\s\S]*?openMarketplaceSection\(event, "support", "marketplace-loans-support"\)[\s\S]*?Support[\s\S]*?marketplace\.support\.path-chooser[\s\S]*?Loan Support[\s\S]*?ROSCA[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?Open ROSCA/,
   "ROSCA must stay reachable from the Support doorway as a separate path, not as the same Loan Support surface."
 );
 
