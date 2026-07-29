@@ -9,8 +9,42 @@ import { APP_ROUTES } from "../../lib/appRoutes";
 import { lookupCommunityDomainByName } from "../../lib/api";
 import { humanStatus } from "./statusLanguage";
 
+type UnknownRecord = Record<string, unknown>;
+
+type DomainSurface = UnknownRecord & {
+  id?: unknown;
+  status?: unknown;
+  domain_status?: unknown;
+  billing_status?: unknown;
+  activation_status?: unknown;
+  display_name?: unknown;
+  domain_name?: unknown;
+  verification_status?: unknown;
+};
+
+type DomainMembershipSurface = UnknownRecord & {
+  role?: unknown;
+};
+
+type DomainViewerSurface = UnknownRecord & {
+  can_admin?: unknown;
+};
+
+type DomainSelectorItem = UnknownRecord & {
+  community_domain?: DomainSurface | null;
+  membership?: DomainMembershipSurface | null;
+  viewer?: DomainViewerSurface | null;
+  dashboard_path?: unknown;
+};
+
+type DomainLookupSurface = UnknownRecord & {
+  id?: unknown;
+  dashboard_path?: unknown;
+  display_name?: unknown;
+};
+
 type DomainSelectorPanelProps = {
-  domainItems?: any[];
+  domainItems?: DomainSelectorItem[];
 };
 
 type SelectorMode = "owned" | "start" | "edit";
@@ -24,7 +58,7 @@ function compactStatus(value: unknown): string {
   return humanStatus(value);
 }
 
-function isDraftDomain(domain: any): boolean {
+function isDraftDomain(domain: DomainSurface | null | undefined): boolean {
   const status = compactStatus(domain?.status || domain?.domain_status).toLowerCase();
   const billing = compactStatus(domain?.billing_status).toLowerCase();
   const activation = compactStatus(domain?.activation_status).toLowerCase();
@@ -34,6 +68,14 @@ function isDraftDomain(domain: any): boolean {
     activation.includes("not active") ||
     activation.includes("waiting")
   );
+}
+
+function errorMessage(error: unknown): string {
+  if (error instanceof Error) return cleanText(error.message);
+  if (typeof error === "object" && error !== null && "message" in error) {
+    return cleanText((error as { message?: unknown }).message);
+  }
+  return "";
 }
 
 function softCard(): React.CSSProperties {
@@ -235,7 +277,7 @@ export default function CommunityDomainSelectorPanel({
     domainItems.length ? "owned" : "start"
   );
   const [editDomainName, setEditDomainName] = useState("");
-  const [editLookup, setEditLookup] = useState<any | null>(null);
+  const [editLookup, setEditLookup] = useState<DomainLookupSurface | null>(null);
   const [editLookupMessage, setEditLookupMessage] = useState("");
   const [editLookupBusy, setEditLookupBusy] = useState(false);
   const [selectorNotice, setSelectorNotice] = useState("");
@@ -260,16 +302,19 @@ export default function CommunityDomainSelectorPanel({
     setEditLookupMessage("");
     try {
       const payload = await lookupCommunityDomainByName(requestedName);
-      const entry = payload?.community_domain || null;
+      const entry = payload?.community_domain
+        ? (payload.community_domain as DomainLookupSurface)
+        : null;
       setEditLookup(entry);
+      const displayName = cleanText(entry?.display_name);
       setEditLookupMessage(
-        entry?.display_name
-          ? `${entry.display_name} found. Open it next; if you are not authorised, GSN will show the owner-approval path.`
+        displayName
+          ? `${displayName} found. Open it next; if you are not authorised, GSN will show the owner-approval path.`
           : "Community Domain found. Open it next; if you are not authorised, GSN will show the owner-approval path."
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       setEditLookupMessage(
-        err?.message ||
+        errorMessage(err) ||
           "GSN could not find that Community Domain code. Ask the organization for its exact GSN domain code."
       );
     } finally {

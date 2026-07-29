@@ -1,3 +1,12 @@
+## 2026-07-29 - Local Community Domain selector type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `ff5ef222`; push/deploy only when the owner sends `push`, `2`, or explicitly asks.
+- Tightened `frontend/src/pages/communityDomainDashboard/DomainSelectorPanel.tsx` by replacing broad `any` props/state/helper annotations with route-local UI-facing surfaces for domain selector items, domain records, memberships, viewers, and edit lookup results.
+- `isDraftDomain` now accepts typed domain surfaces, edit lookup state is typed as a domain lookup surface, and lookup error handling now catches `unknown` before extracting a message.
+- Cleaned the edit lookup display-name path so unknown backend display names are converted through `cleanText` before rendering.
+- No app UI, backend API, lookup behavior, domain-opening behavior, selector modes, permissions, action counts, button geometry, or user-facing Community Domain selector behavior changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this is compile-time and error-surface hardening only. It does not validate the parent dashboard domain-list state, change authorization, add generated backend schema validation, or reduce the heavy Community Domain route.
+
 ## 2026-07-29 - Local Community Domain setup intelligence type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `b0158775`; push/deploy only when the owner sends `push`, `2`, or explicitly asks.
 - Tightened `frontend/src/pages/communityDomainDashboard/SetupIntelligenceCards.tsx` by replacing broad `any` props/helper arrays with route-local UI-facing surfaces for setup readiness, setup readiness items, setup plans, setup plan steps, and primary next actions.
