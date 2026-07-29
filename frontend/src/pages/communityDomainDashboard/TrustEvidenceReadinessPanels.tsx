@@ -3,12 +3,66 @@ import { StableButton, StableCtaLink } from "../../components/StableButton";
 import { APP_ROUTES } from "../../lib/appRoutes";
 import { humanStatus } from "./statusLanguage";
 
+type UnknownRecord = Record<string, unknown>;
+
+type TrustEvidencePrimaryNextAction = UnknownRecord & {
+  label?: unknown;
+};
+
+type TrustEvidenceLane = UnknownRecord & {
+  lane_key?: unknown;
+  label?: unknown;
+  summary?: unknown;
+  ready?: unknown;
+  next_step?: unknown;
+  status?: unknown;
+};
+
+type EvidenceRecordTypeSurface = UnknownRecord & {
+  record_type?: unknown;
+  label?: unknown;
+  ready_for_future_evidence_record?: unknown;
+  next_step?: unknown;
+  readiness_status?: unknown;
+};
+
+type TrustEvidenceSummarySurface = UnknownRecord & {
+  evidence_record_engine_status?: unknown;
+  record_type_count?: unknown;
+  evidence_records_created?: unknown;
+  review_evidence_metadata_count?: unknown;
+  evidence_release_engine_status?: unknown;
+  evidence_releases_created?: unknown;
+  public_proofs_published?: unknown;
+  release_evidence_count?: unknown;
+  trust_relay_engine_status?: unknown;
+  relay_paths_created?: unknown;
+  bridge_member_candidates?: unknown;
+  open_relay_review_count?: unknown;
+  notification_scope_engine_status?: unknown;
+  active_member_count?: unknown;
+  notification_policy_count?: unknown;
+  notifications_sent?: unknown;
+  verification_status?: unknown;
+  active_members?: unknown;
+  review_evidence_records?: unknown;
+  relay_paths?: unknown;
+};
+
+type TrustEvidenceReadinessMapSurface = UnknownRecord & {
+  summary?: TrustEvidenceSummarySurface;
+  lanes?: unknown;
+  record_types?: unknown;
+  ready_total?: unknown;
+  primary_next_action?: TrustEvidencePrimaryNextAction | null;
+};
+
 type TrustEvidenceReadinessPanelsProps = {
-  evidenceRecordReadiness?: any;
-  evidenceReleaseReadiness?: any;
-  trustRelayReadiness?: any;
-  notificationScopeReadiness?: any;
-  trustMobility?: any;
+  evidenceRecordReadiness?: TrustEvidenceReadinessMapSurface | null;
+  evidenceReleaseReadiness?: TrustEvidenceReadinessMapSurface | null;
+  trustRelayReadiness?: TrustEvidenceReadinessMapSurface | null;
+  notificationScopeReadiness?: TrustEvidenceReadinessMapSurface | null;
+  trustMobility?: TrustEvidenceReadinessMapSurface | null;
 };
 
 type TrustEvidenceFocusKey =
@@ -63,29 +117,43 @@ function countValue(value: unknown): string {
   return Number.isFinite(numberValue) ? String(numberValue) : "0";
 }
 
-function readinessLanes(map: any): any[] {
-  return Array.isArray(map?.lanes) ? map.lanes : [];
+function readinessLanes(
+  map: TrustEvidenceReadinessMapSurface | null | undefined
+): TrustEvidenceLane[] {
+  return Array.isArray(map?.lanes) ? (map.lanes as TrustEvidenceLane[]) : [];
 }
 
-function blockedLanes(lanes: any[]): any[] {
+function blockedLanes(lanes: TrustEvidenceLane[]): TrustEvidenceLane[] {
   return lanes.filter((lane) => !lane.ready);
 }
 
-function readyTotal(map: any, lanes: any[]): number {
+function readyTotal(
+  map: TrustEvidenceReadinessMapSurface | null | undefined,
+  lanes: TrustEvidenceLane[]
+): number {
   return typeof map?.ready_total === "number"
     ? map.ready_total
     : lanes.filter((lane) => lane.ready).length;
 }
 
-function evidenceRecordTypes(map: any): any[] {
-  return Array.isArray(map?.record_types) ? map.record_types : [];
+function evidenceRecordTypes(
+  map: TrustEvidenceReadinessMapSurface | null | undefined
+): EvidenceRecordTypeSurface[] {
+  return Array.isArray(map?.record_types)
+    ? (map.record_types as EvidenceRecordTypeSurface[])
+    : [];
 }
 
-function blockedEvidenceRecords(records: any[]): any[] {
+function blockedEvidenceRecords(
+  records: EvidenceRecordTypeSurface[]
+): EvidenceRecordTypeSurface[] {
   return records.filter((record) => !record.ready_for_future_evidence_record);
 }
 
-function computeEvidenceRecordReadyTotal(map: any, records: any[]): number {
+function computeEvidenceRecordReadyTotal(
+  map: TrustEvidenceReadinessMapSurface | null | undefined,
+  records: EvidenceRecordTypeSurface[]
+): number {
   return typeof map?.ready_total === "number"
     ? map.ready_total
     : records.filter((record) => record.ready_for_future_evidence_record).length;
@@ -445,7 +513,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
               {blockedEvidenceRecordTypes
                 .slice(0, 3)
                 .map((record) =>
-                  cleanText(record.label, record.record_type || "record type")
+                  cleanText(record.label, cleanText(record.record_type, "record type"))
                 )
                 .join(", ")}
             </strong>
@@ -516,7 +584,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
             <strong>
               {blockedEvidenceReleaseLanes
                 .slice(0, 3)
-                .map((lane) => cleanText(lane.label, lane.lane_key || "release check"))
+                .map((lane) => cleanText(lane.label, cleanText(lane.lane_key, "release check")))
                 .join(", ")}
             </strong>
             .
@@ -573,7 +641,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
             <strong>
               {blockedTrustRelayLanes
                 .slice(0, 3)
-                .map((lane) => cleanText(lane.label, lane.lane_key || "relay check"))
+                .map((lane) => cleanText(lane.label, cleanText(lane.lane_key, "relay check")))
                 .join(", ")}
             </strong>
             .
@@ -642,7 +710,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
               {blockedNotificationScopeLanes
                 .slice(0, 3)
                 .map((lane) =>
-                  cleanText(lane.label, lane.lane_key || "notification check")
+                  cleanText(lane.label, cleanText(lane.lane_key, "notification check"))
                 )
                 .join(", ")}
             </strong>
@@ -700,7 +768,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
             <strong>
               {blockedTrustMobilityLanes
                 .slice(0, 3)
-                .map((lane) => cleanText(lane.label, lane.lane_key || "mobility check"))
+                .map((lane) => cleanText(lane.label, cleanText(lane.lane_key, "mobility check")))
                 .join(", ")}
             </strong>
             .
