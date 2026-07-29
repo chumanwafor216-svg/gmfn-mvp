@@ -9,6 +9,7 @@ const files = {
   trust: "src/pages/TrustScorePage.tsx",
   documentLane: "src/pages/trustScore/TrustPassportDocumentLane.tsx",
   financeLane: "src/pages/trustScore/TrustPassportFinanceLane.tsx",
+  institutionalContext: "src/pages/trustScore/TrustPassportInstitutionalContext.tsx",
   band: "src/lib/trustBandLanguage.ts",
   viewModel: "src/lib/trustPassportViewModel.ts",
   app: "src/App.tsx",
@@ -110,6 +111,11 @@ assertContains(
   /const TrustPassportFinanceLane = lazy\([\s\S]*?import\("\.\/trustScore\/TrustPassportFinanceLane"\)[\s\S]*?activeTrustPassportLane === "finance" \? \([\s\S]*?<Suspense[\s\S]*?<TrustPassportFinanceLane[\s\S]*?financeDisciplineCards=\{financeDisciplineCards\}/,
   "Trust Passport must lazy-load the Finance Discipline lane from the page shell."
 );
+assertContains(
+  "trust",
+  /const TrustPassportInstitutionalContext = lazy\([\s\S]*?import\("\.\/trustScore\/TrustPassportInstitutionalContext"\)[\s\S]*?activeTrustPassportLane === "evidence" \|\|[\s\S]*?activeTrustPassportLane === "finance" \? \([\s\S]*?<Suspense[\s\S]*?<TrustPassportInstitutionalContext[\s\S]*?institutionalRows=\{institutionalRows\}/,
+  "Trust Passport must lazy-load the institutional context from the page shell."
+);
 
 
 assertContains(
@@ -173,7 +179,7 @@ assertContains(
   ["trust", "5. Evidence surfaces"],
   ["trust", "6. What changed in the evidence?"],
   ["documentLane", "7. Shareable trust tools"],
-  ["trust", "8. Evidence & institutional context"],
+  ["institutionalContext", "8. Evidence & institutional context"],
 ].forEach(([key, label]) => {
   assertContains(
     key,

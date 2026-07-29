@@ -7,12 +7,13 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const trustPassportFile = "src/pages/TrustScorePage.tsx";
 const documentLaneFile = "src/pages/trustScore/TrustPassportDocumentLane.tsx";
+const institutionalContextFile = "src/pages/trustScore/TrustPassportInstitutionalContext.tsx";
 const trustPassportSource = readFileSync(join(frontendRoot, trustPassportFile), "utf8");
 const documentLaneSource = readFileSync(join(frontendRoot, documentLaneFile), "utf8");
-const source = trustPassportSource.replace(
-  /<TrustPassportDocumentLane[\s\S]*?\/>/,
-  documentLaneSource
-);
+const institutionalContextSource = readFileSync(join(frontendRoot, institutionalContextFile), "utf8");
+const source = trustPassportSource
+  .replace(/<TrustPassportDocumentLane[\s\S]*?\/>/, documentLaneSource)
+  .replace(/<TrustPassportInstitutionalContext[\s\S]*?\/>/, institutionalContextSource);
 const findings = [];
 
 function lineAt(index) {
@@ -293,7 +294,7 @@ assertContains(
   "Trust Passport institutional evidence rows must stack values on phone instead of squeezing right-aligned text."
 );
 assertContains(
-  /const \[institutionalContextDetailsOpen, setInstitutionalContextDetailsOpen\][\s\S]*?Evidence & institutional context[\s\S]*?data-trust-passport-institutional-context-details="collapsed"[\s\S]*?debugId="trust-score\.institutional-context-details\.toggle"[\s\S]*?aria-expanded=\{institutionalContextDetailsOpen\}[\s\S]*?Institutional context details[\s\S]*?institutionalContextDetailsOpen \?[\s\S]*?institutionalRows\.map[\s\S]*?<TrustPaperSecurityFooter/,
+  /const \[institutionalContextDetailsOpen, setInstitutionalContextDetailsOpen\][\s\S]*?activeTrustPassportLane === "evidence"[\s\S]*?activeTrustPassportLane === "finance"[\s\S]*?Evidence & institutional context[\s\S]*?data-trust-passport-institutional-context-details="collapsed"[\s\S]*?debugId="trust-score\.institutional-context-details\.toggle"[\s\S]*?aria-expanded=\{institutionalContextDetailsOpen\}[\s\S]*?Institutional context details[\s\S]*?institutionalContextDetailsOpen \?[\s\S]*?institutionalRows\.map[\s\S]*?<TrustPaperSecurityFooter/,
   "Trust Passport institutional context must stay collapsed behind a stable details toggle on Evidence and Finance lanes."
 );
 

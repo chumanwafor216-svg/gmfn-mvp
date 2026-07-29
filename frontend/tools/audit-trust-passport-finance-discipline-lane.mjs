@@ -9,6 +9,7 @@ const files = {
   trust: "src/pages/TrustScorePage.tsx",
   financeLane: "src/pages/trustScore/TrustPassportFinanceLane.tsx",
   documentLane: "src/pages/trustScore/TrustPassportDocumentLane.tsx",
+  institutionalContext: "src/pages/trustScore/TrustPassportInstitutionalContext.tsx",
   package: "package.json",
   protocol: "../docs/GUIDED_WORK_SURFACE_PROTOCOL.md",
 };
@@ -105,8 +106,14 @@ assertContains(
 
 assertContains(
   "trust",
-  /activeTrustPassportLane === "evidence" \|\|[\s\S]*?activeTrustPassportLane === "finance"[\s\S]*?8\. Evidence & institutional context/,
+  /activeTrustPassportLane === "evidence" \|\|[\s\S]*?activeTrustPassportLane === "finance" \? \([\s\S]*?<TrustPassportInstitutionalContext/,
   "Finance Discipline lane must keep the deeper institutional evidence context available only inside the active finance or evidence lane."
+);
+
+assertContains(
+  "institutionalContext",
+  /8\. Evidence & institutional context[\s\S]*?institutionalRows\.map[\s\S]*?<TrustPaperSecurityFooter/,
+  "Finance Discipline lane must keep institutional evidence rows and the security footer in the lazy context panel."
 );
 
 assertContains(

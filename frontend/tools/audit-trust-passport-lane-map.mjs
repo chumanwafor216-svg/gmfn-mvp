@@ -8,6 +8,7 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
   trust: "src/pages/TrustScorePage.tsx",
   documentLane: "src/pages/trustScore/TrustPassportDocumentLane.tsx",
+  institutionalContext: "src/pages/trustScore/TrustPassportInstitutionalContext.tsx",
   package: "package.json",
   protocol: "../docs/GUIDED_WORK_SURFACE_PROTOCOL.md",
   specs: "../docs/SCREEN_SPECS.md",
@@ -154,9 +155,20 @@ assertOrderedSnippets(
     "6. What changed in the evidence?",
     "Latest explanation",
     "Recent evidence events",
-    "8. Evidence & institutional context",
+    "<TrustPassportInstitutionalContext",
   ],
-  "Evidence Story lane must map to evidence reasons, latest explanation, recent events, and evidence context before redesign."
+  "Evidence Story lane must map to evidence reasons, latest explanation, recent events, and lazy evidence context before redesign."
+);
+
+assertOrderedSnippets(
+  "institutionalContext",
+  [
+    "8. Evidence & institutional context",
+    "Institutional context details",
+    "institutionalRows.map",
+    "TrustPaperSecurityFooter",
+  ],
+  "Evidence Story lane must keep the institutional context details and security footer in the lazy context panel."
 );
 
 assertOrderedSnippets(
