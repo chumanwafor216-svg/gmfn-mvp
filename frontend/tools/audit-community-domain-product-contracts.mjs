@@ -3699,12 +3699,113 @@ assertContains(
   "Backend draft creation must normalize Community Domain template/type identifiers, preserve known aliases, expose resolved template metadata, and reject unsupported templates, unsupported domain types, and mismatched approved type/template pairs before creating institutional records."
 );
 
-assertContains(
+assertIncludes(
   "gmfn_backend/tests/test_community_domains.py",
-  /test_community_domain_draft_is_not_a_live_social_community[\s\S]*for field_name, field_value in \([\s\S]*"domain_name", True[\s\S]*"display_name", False[\s\S]*"domain_type", True[\s\S]*"template_key", False[\s\S]*"country", True[\s\S]*"state", False[\s\S]*"public_profile", True[\s\S]*rejected_bool_draft\.status_code == 422[\s\S]*Dominion College Abuja[\s\S]*db\.query\(CommunityDomain\)\.one\(\)[\s\S]*test_community_domain_draft_normalizes_template_type_aliases[\s\S]*Market Association[\s\S]*market-association[\s\S]*data\["domain_type"\] == "market_association"[\s\S]*data\["template_key"\] == "market_association"[\s\S]*data\["resolved_template"\]\["template_key"\] == "market_cooperative"[\s\S]*test_community_domain_draft_rejects_unsupported_template[\s\S]*\/community-domains\/drafts[\s\S]*invented_society_schema[\s\S]*response\.status_code == 422[\s\S]*community_domain_template_not_supported[\s\S]*db\.query\(CommunityDomain\)\.count\(\) == 0[\s\S]*test_community_domain_draft_rejects_unsupported_domain_type[\s\S]*invented_school_body[\s\S]*community_domain_type_not_supported[\s\S]*db\.query\(CommunityNode\)\.count\(\) == 0[\s\S]*test_community_domain_draft_rejects_mismatched_type_and_template[\s\S]*school[\s\S]*market_cooperative[\s\S]*community_domain_template_mismatch[\s\S]*expected_template_key"\] == "school_multi_branch"[\s\S]*db\.query\(CommunityDomainMembership\)\.count\(\) == 0/,
-  "Backend tests must prove draft creation rejects boolean institutional text fields, template/type identifier normalization works for approved aliases, resolved template metadata is explicit, and unsupported templates, unsupported domain types, and mismatched approved type/template pairs cannot create draft domains, root nodes, or owner memberships."
+  "test_community_domain_draft_is_not_a_live_social_community",
+  "Backend tests must cover draft creation without creating a live social Community."
 );
 
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '"domain_name", True',
+  "Backend tests must reject boolean domain-name draft fields."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '"display_name", False',
+  "Backend tests must reject boolean display-name draft fields."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '"domain_type", True',
+  "Backend tests must reject boolean domain-type draft fields."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '"template_key", False',
+  "Backend tests must reject boolean template-key draft fields."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "rejected_bool_draft.status_code == 422",
+  "Backend tests must prove boolean draft-field requests are rejected."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "test_community_domain_draft_normalizes_template_type_aliases",
+  "Backend tests must cover approved template/type alias normalization."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'data["domain_type"] == "market_association"',
+  "Backend tests must prove normalized domain type is explicit."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'data["template_key"] == "market_association"',
+  "Backend tests must preserve the requested template key in draft responses."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'data["resolved_template"]["template_key"] == "market_cooperative"',
+  "Backend tests must expose resolved template metadata."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "test_community_domain_draft_rejects_unsupported_template",
+  "Backend tests must cover unsupported template rejection."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "community_domain_template_not_supported",
+  "Backend tests must assert unsupported-template reason code."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "test_community_domain_draft_rejects_unsupported_domain_type",
+  "Backend tests must cover unsupported domain-type rejection."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "community_domain_type_not_supported",
+  "Backend tests must assert unsupported-domain-type reason code."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "test_community_domain_draft_rejects_mismatched_type_and_template",
+  "Backend tests must cover mismatched approved type/template rejection."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "community_domain_template_mismatch",
+  "Backend tests must assert template mismatch reason code."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '"expected_template_key"] == "school_multi_branch"',
+  "Backend tests must expose the expected template key for mismatches."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "db.query(CommunityDomainMembership).count() == 0",
+  "Backend tests must prove rejected draft requests do not create owner memberships."
+);
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
   /COMMUNITY_DOMAIN_TEMPLATE_OPERATING_BLUEPRINTS[\s\S]*school_multi_branch[\s\S]*market_cooperative[\s\S]*family_town_union_diaspora[\s\S]*hospital_health_body[\s\S]*ngo_project_network[\s\S]*uses_generic_fallback[\s\S]*does not create a Community Domain[\s\S]*separate schemas[\s\S]*@router\.get\("\/templates\/\{template_key\}\/operating-blueprint"/,
@@ -3801,12 +3902,65 @@ assertContains(
   "Backend tests must prove Community Domain membership requests reject boolean note/title fields, do not create membership until an admin approves and applies the review, create/duplicate applicant responses hide reviewer-private fields, and approved-but-unapplied reviews still block duplicate requests."
 );
 
-assertContains(
+assertIncludes(
   "gmfn_backend/tests/test_community_domains.py",
-  /test_generic_self_targeted_review_does_not_block_membership_request[\s\S]*requested_by_user_id=owner\.id[\s\S]*subject_user_id=requester\.id[\s\S]*target_type="domain_member"[\s\S]*payload_json=json\.dumps[\s\S]*"status": "active"[\s\S]*\/membership-requests[\s\S]*self_service_review\["id"\] != generic_review_id[\s\S]*previous_status"\] == "none"[\s\S]*community_domain_membership_request_pending[\s\S]*duplicate_detail\["action_review"\]\["id"\] == self_service_review\["id"\][\s\S]*duplicate_detail\["action_review"\]\["id"\] != generic_review_id[\s\S]*\[row\.status for row in rows\] == \["pending", "pending"\]/,
-  "Backend tests must prove generic self-targeted domain-member governance reviews do not block self-service membership requests or leak back as duplicate-request action-review details."
+  "test_generic_self_targeted_review_does_not_block_membership_request",
+  "Backend tests must prove generic self-targeted domain-member governance reviews are covered."
 );
 
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "requested_by_user_id=owner.id",
+  "Backend tests must keep the generic review owned by the admin actor."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "subject_user_id=requester.id",
+  "Backend tests must keep the generic review subject scoped to the requester."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'target_type="domain_member"',
+  "Backend tests must keep the generic review targeted as domain_member."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'self_service_review["id"] != generic_review_id',
+  "Backend tests must prove the self-service membership request is not the generic review."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'self_service_review["payload"]["previous_status"] == "none"',
+  "Backend tests must prove self-service membership requests snapshot no previous membership."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "community_domain_membership_request_pending",
+  "Backend tests must prove duplicate self-service membership requests return the pending-request blocker."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'duplicate_detail["action_review"]["id"] == self_service_review["id"]',
+  "Backend tests must point duplicate membership-request details at the self-service review."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'duplicate_detail["action_review"]["id"] != generic_review_id',
+  "Backend tests must not leak the generic governance review as the duplicate-request detail."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '[row.status for row in rows] == ["pending", "pending"]',
+  "Backend tests must preserve both generic and self-service rows without merging them."
+);
 assertContains(
   "gmfn_backend/tests/test_community_domains.py",
   /test_self_targeted_non_access_review_with_previous_status_is_not_membership_request[\s\S]*requested_by_user_id=requester\.id[\s\S]*subject_user_id=requester\.id[\s\S]*target_type="domain_member"[\s\S]*"role": "admin"[\s\S]*"status": "active"[\s\S]*"previous_status": "none"[\s\S]*incomplete_review[\s\S]*"user_id": requester\.id[\s\S]*"previous_status": "none"[\s\S]*corrupt_bool_review[\s\S]*requested_by_user_id=owner\.id[\s\S]*"user_id": True[\s\S]*corrupt_float_review[\s\S]*requested_by_user_id=owner\.id[\s\S]*"user_id": owner\.id \+ 0\.5[\s\S]*corrupt_bool_previous_status_review[\s\S]*"user_id": requester\.id[\s\S]*"role": "member"[\s\S]*"status": "active"[\s\S]*"previous_status": True[\s\S]*corrupt_float_previous_status_review[\s\S]*"previous_status": 1\.5[\s\S]*corrupt_unknown_previous_status_review[\s\S]*"previous_status": "invented"[\s\S]*owner_requests[\s\S]*owner_requests\.json\(\)\["total"\] == 0[\s\S]*\/membership-requests\/my[\s\S]*own_requests\.json\(\)\["total"\] == 0[\s\S]*\/membership-requests[\s\S]*self_service_review\["id"\] != role_review_id[\s\S]*self_service_review\["id"\] != incomplete_review_id[\s\S]*self_service_review\["id"\] != corrupt_bool_review_id[\s\S]*self_service_review\["id"\] != corrupt_float_review_id[\s\S]*self_service_review\["id"\] != corrupt_bool_previous_status_review_id[\s\S]*self_service_review\["id"\] != corrupt_float_previous_status_review_id[\s\S]*self_service_review\["id"\] != corrupt_unknown_previous_status_review_id[\s\S]*self_service_review\["payload"\]\["role"\] == "member"[\s\S]*self_service_review\["payload"\]\["status"\] == "active"/,
@@ -3969,12 +4123,95 @@ assertContains(
   "Backend must expose a requester-only and self-service-only Community Domain membership-request status route without exposing reviewer queues, reviewer identities, decision notes, decision records, governance policy identifiers, generic governance reviews, or granting membership."
 );
 
-assertContains(
+assertIncludes(
   "gmfn_backend/tests/test_community_domains.py",
-  /APPLICANT_MEMBERSHIP_STATUS_PRIVATE_KEYS[\s\S]*"decision"[\s\S]*"decision_note"[\s\S]*"decided_by_user_id"[\s\S]*"applied_by_user_id"[\s\S]*"policy_id"[\s\S]*"policy_key"[\s\S]*"recusal_count"[\s\S]*"decisions"[\s\S]*_assert_applicant_membership_status_payload_is_scoped[\s\S]*test_outsider_can_track_only_own_domain_membership_request[\s\S]*"config": \{"min_reviewers": 2\}[\s\S]*generic_self_review[\s\S]*payload_json=json\.dumps[\s\S]*\/membership-requests\/my[\s\S]*own Community Domain membership requests only[\s\S]*reviewer identities[\s\S]*decision notes[\s\S]*_assert_applicant_membership_status_payload_is_scoped\(my_review\)[\s\S]*required_approvals"\] == 2[\s\S]*approval_count"\] == 0[\s\S]*generic_self_review_id[\s\S]*First approval, still needs one more reviewer[\s\S]*_assert_applicant_membership_status_payload_is_scoped\(pending_review_item\)[\s\S]*pending_review_item\["status"\] == "pending_review"[\s\S]*pending_review_item\["approval_count"\] == 1[\s\S]*pending_review_item\["required_approvals"\] == 2[\s\S]*other_requests\.json\(\)\["total"\] == 0[\s\S]*db\.query\(CommunityDomainMembership\)[\s\S]*== 0[\s\S]*_assert_applicant_membership_status_payload_is_scoped\(rejected_item\)[\s\S]*review_row\.status == "rejected"[\s\S]*generic_row\.status == "pending"/,
-  "Backend tests must prove non-members can track only their own self-service Community Domain membership-request status, applicant status payloads carry approval progress for multi-approval policies, reviewer-private fields and governance policy identifiers stay hidden, generic self-targeted governance reviews stay hidden, and status tracking does not create membership."
+  "APPLICANT_MEMBERSHIP_STATUS_PRIVATE_KEYS",
+  "Backend tests must keep applicant membership status private-key coverage."
 );
 
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "test_outsider_can_track_only_own_domain_membership_request",
+  "Backend tests must cover requester-only Community Domain membership-request status tracking."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '"config": {"min_reviewers": 2}',
+  "Backend tests must prove applicant status payloads carry multi-reviewer approval progress."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "generic_self_review",
+  "Backend tests must keep generic self-targeted governance reviews out of requester status."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "/membership-requests/my",
+  "Backend tests must exercise the requester-only membership status route."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "own Community Domain membership requests only",
+  "Backend tests must prove other users cannot read the requester status route."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "reviewer identities",
+  "Backend tests must prove requester status hides reviewer identities."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "decision notes",
+  "Backend tests must prove requester status hides decision notes."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "_assert_applicant_membership_status_payload_is_scoped(my_review)",
+  "Backend tests must assert scoped applicant payloads for the first request."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'pending_review_item["status"] == "pending_review"',
+  "Backend tests must expose partially approved requests as pending review."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'pending_review_item["approval_count"] == 1',
+  "Backend tests must expose current approval count to applicants."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'pending_review_item["required_approvals"] == 2',
+  "Backend tests must expose required approval count to applicants."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'other_requests.json()["total"] == 0',
+  "Backend tests must prove unrelated non-members see no requester-status rows."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'review_row.status == "rejected"',
+  "Backend tests must keep rejected self-service status visible without granting membership."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'generic_row.status == "pending"',
+  "Backend tests must prove generic governance rows remain separate and hidden from requester status."
+);
 assertContains(
   "src/lib/api.ts",
   /CommunityDomainMembershipRequestPayload[\s\S]*requestCommunityDomainMembership[\s\S]*\/membership-requests[\s\S]*request_note[\s\S]*title/,

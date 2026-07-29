@@ -1,3 +1,59 @@
+## CURRENT LOCAL STATE - 2026-07-29 - QA/polish partial completion sweep
+
+Owner trigger:
+- Owner asked to complete what was partially done in QA testing and polishing.
+
+Unabated truth:
+- The partial QA caveat around Community Domain product contracts is now closed locally: the audit no longer has an unclaimable hang and passed normally after its runaway assertions were split.
+- This is still not a claim that every possible production risk is gone. The build continues to show large route chunks for CommunityDomainDashboardPage, DashboardPage, and MarketplacePage, and real Render/API cold starts can still affect live first-load speed.
+- Browser smokes still need elevated reruns on this Windows sandbox because Playwright/Vite/esbuild are blocked with spawn EPERM under the normal sandbox.
+- No push or Render deploy was performed.
+
+Changed:
+- `frontend/tools/audit-community-domain-product-contracts.mjs`
+  - Replaced three pathological whole-file `[\s\S]*` regex assertions against `gmfn_backend/tests/test_community_domains.py` with narrower literal checks.
+  - Preserved the same contract coverage for draft creation validation, generic self-targeted membership-request separation, and requester-only membership-status privacy.
+  - Made the Community Domain product-contract audit finish and report normally instead of hanging after the npm banner.
+
+Verification:
+- Passed `node --check frontend\tools\audit-community-domain-product-contracts.mjs`.
+- Passed `npm --prefix frontend run audit:community-domain-product-contracts` after the audit-performance fix.
+- Passed `npm --prefix frontend run audit:evidence-surfaces`.
+- Passed `npm --prefix frontend run audit:proof-surfaces`.
+- Passed `npm --prefix frontend run audit:gsn-visible-language`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run audit:button-stability`.
+- Passed `npm --prefix frontend run audit:action-response-protocol`.
+- Passed `npm --prefix frontend run audit:entry-flow-polish`.
+- Passed `npm --prefix frontend run audit:entry-copy-response`.
+- Passed `npm --prefix frontend run audit:marketplace-front-package`.
+- Passed `npm --prefix frontend run audit:finance-front-package`.
+- Passed `npm --prefix frontend run audit:trust-passport-front-package`.
+- Passed `npm --prefix frontend run audit:identity-integrity-front-package`.
+- Passed `npm --prefix frontend run audit:finance-banking-rails-lane`.
+- Passed `npm --prefix frontend run audit:community-confirmation-outcome-boundary`.
+- Passed `npm --prefix frontend run audit:startup-root-boundary`.
+- Passed `npm --prefix frontend run audit:global-action-debugids`.
+- Passed `npm --prefix frontend run audit:global-raw-action-elements`.
+- Passed `npm --prefix frontend run audit:icon-protocol`.
+- Passed `npm --prefix frontend run lint`.
+- Passed `npm --prefix frontend run build`.
+- Passed elevated `GSN_AUDIT_BASE_URL=http://127.0.0.1:5173 npm --prefix frontend run audit:mobile-visual-sweep` after sandbox Playwright EPERM.
+- Passed elevated `npm --prefix frontend run smoke:marketplace-hero` after sandbox Vite/esbuild EPERM.
+- Passed elevated `npm --prefix frontend run smoke:marketplace-boundaries` after sandbox Vite/esbuild EPERM.
+- Passed elevated `npm --prefix frontend run smoke:community-confirmation-outcome-boundary` after sandbox Vite/esbuild EPERM.
+- Passed elevated `npm --prefix frontend run smoke:public-trustslip-verify-states` after sandbox Vite/esbuild EPERM.
+- Passed elevated `npm --prefix frontend run smoke:trust-passport-trustslip-boundary` after sandbox Vite/esbuild EPERM.
+- Passed elevated `npm --prefix frontend run audit:startup-timing`: warm shell 3822ms, warm Dashboard 4054ms, auth-retry Dashboard 7560ms.
+- Passed elevated `GSN_AUDIT_BASE_URL=http://127.0.0.1:5173 npm --prefix frontend run audit:community-domain-mobile-visual` after the first elevated attempt failed only because it defaulted to no server on port 5180.
+- Stopped the local Vite server afterward; port 5173 was closed and no Node processes remained.
+
+Deployment:
+- Local only. Do not push/deploy unless the owner explicitly approves publishing the batch.
+
+Next recommended step:
+- Commit this QA/audit completion slice locally, then decide whether to keep polishing route-by-route or start the separate bundle-splitting pass for the largest route chunks.
+
 ## CURRENT LOCAL STATE - 2026-07-27 - Marketplace front-domain decongestion slice
 
 Owner trigger:
