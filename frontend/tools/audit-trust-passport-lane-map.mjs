@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
   trust: "src/pages/TrustScorePage.tsx",
+  documentLane: "src/pages/trustScore/TrustPassportDocumentLane.tsx",
   package: "package.json",
   protocol: "../docs/GUIDED_WORK_SURFACE_PROTOCOL.md",
   specs: "../docs/SCREEN_SPECS.md",
@@ -195,6 +196,12 @@ assertOrderedSnippets(
 
 assertContains(
   "trust",
+  /activeTrustPassportLane === "documents" \? \([\s\S]*?<TrustPassportDocumentLane/,
+  "Trust Passport page shell must keep the Documents / TrustSlip lane behind the active documents lane."
+);
+
+assertContains(
+  "documentLane",
   /7\. Shareable trust tools[\s\S]*?debugId="trust-score\.open-trust-slip"[\s\S]*?Open TrustSlip[\s\S]*?debugId="trust-score\.verify"[\s\S]*?TrustSlip: \{trustSlipStatus \|\| "Not issued yet"\}/,
   "Documents / TrustSlip lane must keep TrustSlip status, open, verify, and document readiness controls."
 );
@@ -206,10 +213,17 @@ assertOrderedSnippets(
     "Keep your next trust step clean.",
     "Open Action Inbox",
     "function scrollToPressureNotes()",
+  ],
+  "Repair or Next Step lane must keep next-step guidance and the pressure-note helper."
+);
+
+assertOrderedSnippets(
+  "documentLane",
+  [
     "debugId=\"trust-score.review-care\"",
     "Review pressure notes",
   ],
-  "Repair or Next Step lane must keep next-step guidance and the pressure-note review action."
+  "Documents / TrustSlip lane must keep the pressure-note review action wired to the parent helper."
 );
 
 assertContains(

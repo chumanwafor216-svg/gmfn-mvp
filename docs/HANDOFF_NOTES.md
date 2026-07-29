@@ -157779,3 +157779,13 @@ Deployment:
 - Build output after this split includes `TrustPassportDocumentLane` at `7.82 kB` and `TrustScorePage` at `96.51 kB` (`23.71 kB` gzip).
 - Devil's advocate: this is a real first-load reduction for Trust Passport, but only about 4.4 kB uncompressed from the main route chunk compared with the prior `100.93 kB`. Trust Passport is still a large, multi-lane page; larger gains require splitting another lane or extracting shared Trust Document rendering carefully.
 - Verified: `npm --prefix frontend run audit:trust-passport-front-package`; `npm --prefix frontend run audit:trust-passport-button-inventory`; `npm --prefix frontend run build`; `git diff --check`.
+
+## 2026-07-29 - Local Trust Passport Finance Discipline Lazy Split
+- Status: Local only, not pushed/deployed. Builds on local commit `72f71642`; push/deploy only when the owner explicitly asks again.
+- Split the Trust Passport `Finance Discipline` visual lane from `frontend/src/pages/TrustScorePage.tsx` into lazy-loaded `frontend/src/pages/trustScore/TrustPassportFinanceLane.tsx`.
+- Kept the parent Trust Passport route as the owner of computed finance evidence: trust limit, available capacity, locked support, support pressure, risk level, and institutional context rows.
+- Kept the same visible Finance lane behavior and boundaries: finance evidence signals only; no money movement, no bank guarantee, no auto-debit, and no repayment promise.
+- Updated `frontend/tools/audit-trust-passport-finance-discipline-lane.mjs`, `frontend/tools/audit-trust-passport-front-package.mjs`, and `frontend/tools/audit-trust-passport-lane-map.mjs` so guards follow the lazy Finance lane and the already-extracted Documents lane.
+- Build output after this split includes `TrustPassportFinanceLane` at `4.06 kB` and `TrustScorePage` at `94.70 kB` (`23.46 kB` gzip).
+- Devil's advocate: this is a smaller win than the Documents split. It removes about `1.81 kB` more from the first Trust Passport route chunk after the prior local split; useful, but not enough to solve all perceived slowness by itself. Bigger gains would require splitting a larger lane such as Community Confirmation or Evidence Story, with more risk because those lanes have more state and public-record actions.
+- Verification: `npm --prefix frontend run audit:trust-passport-finance-discipline-lane`; `npm --prefix frontend run audit:trust-passport-front-package`; `npm --prefix frontend run audit:trust-passport-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run audit:trust-passport-lane-map`; `npm --prefix frontend run build`; `git diff --check`.

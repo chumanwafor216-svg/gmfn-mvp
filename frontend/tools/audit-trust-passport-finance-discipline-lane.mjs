@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
   trust: "src/pages/TrustScorePage.tsx",
+  financeLane: "src/pages/trustScore/TrustPassportFinanceLane.tsx",
+  documentLane: "src/pages/trustScore/TrustPassportDocumentLane.tsx",
   package: "package.json",
   protocol: "../docs/GUIDED_WORK_SURFACE_PROTOCOL.md",
 };
@@ -55,18 +57,24 @@ function assertNotContains(key, pattern, message) {
 
 assertContains(
   "trust",
+  /const TrustPassportFinanceLane = lazy\([\s\S]*?import\("\.\/trustScore\/TrustPassportFinanceLane"\)[\s\S]*?activeTrustPassportLane === "finance" \? \([\s\S]*?<Suspense[\s\S]*?<TrustPassportFinanceLane[\s\S]*?financeDisciplineCards=\{financeDisciplineCards\}/,
+  "Finance Discipline lane must be lazy-loaded from the Trust Passport page shell with the parent-owned card model."
+);
+
+assertContains(
+  "trust",
   /const financeDisciplineCards:[\s\S]*?"Trust limit"[\s\S]*?"Available capacity"[\s\S]*?"Locked support"[\s\S]*?"Support pressure"[\s\S]*?"Risk level"/,
   "Finance Discipline lane must keep a plain card model for limit, capacity, locked support, support pressure, and risk."
 );
 
 assertContains(
-  "trust",
-  /activeTrustPassportLane === "finance" \? "block" : "none"[\s\S]*?Finance Discipline[\s\S]*?What money discipline adds to the evidence/,
-  "Finance Discipline lane must open with a plain-language lead gated to the finance lane."
+  "financeLane",
+  /Finance Discipline[\s\S]*?What money discipline adds to the evidence/,
+  "Finance Discipline lane must open with a plain-language lead."
 );
 
 assertContains(
-  "trust",
+  "financeLane",
   /It does not[\s\S]*?move money[\s\S]*?create a bank guarantee[\s\S]*?start auto-debit[\s\S]*?Finance[\s\S]*?fuller money story/,
   "Finance Discipline lane must clearly separate Trust Passport financial evidence signals from actual Finance money movement."
 );
@@ -83,9 +91,15 @@ assertNotContains(
   "Trust Passport technical finance rows must not restore old Borrower repayment delta wording."
 );
 
+assertNotContains(
+  "financeLane",
+  /"Borrower repayment delta"/,
+  "Trust Passport Finance lane must not restore old Borrower repayment delta wording."
+);
+
 assertContains(
-  "trust",
-  /function trustIconBadge\([\s\S]*?linear-gradient\(180deg, rgba\(255,255,255,0\.98\)[\s\S]*?size=\{Math\.max\(26, Math\.round\(size \* 0\.96\)\)\}[\s\S]*?financeDisciplineCards:[\s\S]*?"Trust limit"[\s\S]*?"financeInstitution"[\s\S]*?"Support pressure"[\s\S]*?"financeInstitution"[\s\S]*?financeDisciplineCards\.map\(\(\[label, value, detail, icon\]\) =>[\s\S]*?trustIconBadge\(icon, 28[\s\S]*?\{value\}[\s\S]*?\{detail\}/,
+  "financeLane",
+  /function trustIconBadge\([\s\S]*?linear-gradient\(180deg, rgba\(255,255,255,0\.98\)[\s\S]*?size=\{Math\.max\(26, Math\.round\(size \* 0\.96\)\)\}[\s\S]*?financeDisciplineCards\.map\(\(\[label, value, detail, icon\]\) =>[\s\S]*?trustIconBadge\(icon, 28[\s\S]*?\{value\}[\s\S]*?\{detail\}/,
   "Finance Discipline lane must render the finance signal cards with real icons, values, and plain detail."
 );
 
@@ -97,8 +111,14 @@ assertContains(
 
 assertContains(
   "trust",
-  /activeTrustPassportLane === "documents" \? "block" : "none"[\s\S]*?7\. Shareable trust tools/,
-  "Finance Discipline lane must not absorb Documents / TrustSlip actions."
+  /activeTrustPassportLane === "documents" \? \([\s\S]*?<TrustPassportDocumentLane/,
+  "Finance Discipline lane must not absorb Documents / TrustSlip actions from the parent lane switch."
+);
+
+assertContains(
+  "documentLane",
+  /7\. Shareable trust tools[\s\S]*?debugId="trust-score\.refresh"[\s\S]*?debugId="trust-score\.verify"/,
+  "Finance Discipline lane must not absorb Documents / TrustSlip actions from the extracted document lane."
 );
 
 assertContains(

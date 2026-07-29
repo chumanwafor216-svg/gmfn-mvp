@@ -8,6 +8,7 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
   trust: "src/pages/TrustScorePage.tsx",
   documentLane: "src/pages/trustScore/TrustPassportDocumentLane.tsx",
+  financeLane: "src/pages/trustScore/TrustPassportFinanceLane.tsx",
   band: "src/lib/trustBandLanguage.ts",
   viewModel: "src/lib/trustPassportViewModel.ts",
   app: "src/App.tsx",
@@ -104,12 +105,23 @@ assertContains(
   /const TrustPassportDocumentLane = lazy\([\s\S]*?import\("\.\/trustScore\/TrustPassportDocumentLane"\)[\s\S]*?activeTrustPassportLane === "documents" \? \([\s\S]*?<Suspense[\s\S]*?<TrustPassportDocumentLane[\s\S]*?onOpenTrustRoute=\{openTrustRoute\}/,
   "Trust Passport must lazy-load the Documents / TrustSlip lane from the page shell."
 );
+assertContains(
+  "trust",
+  /const TrustPassportFinanceLane = lazy\([\s\S]*?import\("\.\/trustScore\/TrustPassportFinanceLane"\)[\s\S]*?activeTrustPassportLane === "finance" \? \([\s\S]*?<Suspense[\s\S]*?<TrustPassportFinanceLane[\s\S]*?financeDisciplineCards=\{financeDisciplineCards\}/,
+  "Trust Passport must lazy-load the Finance Discipline lane from the page shell."
+);
 
 
 assertContains(
   "trust",
-  /import GSNBrandMark from "\.\.\/components\/GSNBrandMark";[\s\S]*?function OfficialGsnWatermark\([\s\S]*?<GSNBrandMark width=\{isCompact \? 148 : 210\} height=\{isCompact \? 186 : 264\} \/>[\s\S]*?OfficialGsnWatermark[\s\S]*?activeTrustPassportLane === "finance"/,
+  /import GSNBrandMark from "\.\.\/components\/GSNBrandMark";[\s\S]*?function OfficialGsnWatermark\([\s\S]*?<GSNBrandMark width=\{isCompact \? 148 : 210\} height=\{isCompact \? 186 : 264\} \/>/,
   "Trust Passport must use the official GSN brand mark as a watermark on the document shell and evidence lanes."
+);
+
+assertContains(
+  "financeLane",
+  /import GSNBrandMark from "\.\.\/\.\.\/components\/GSNBrandMark";[\s\S]*?function OfficialGsnWatermark\([\s\S]*?<GSNBrandMark width=\{isCompact \? 148 : 210\} height=\{isCompact \? 186 : 264\} \/>[\s\S]*?Finance Discipline/,
+  "Trust Passport Finance Discipline lane must keep the official GSN watermark."
 );
 
 assertContains(
@@ -133,6 +145,15 @@ if (/TrustPaperWatermark[\s\S]*?name="wallet"/.test(sourceByFile.trust)) {
     files.trust,
     sourceByFile.trust,
     sourceByFile.trust.search(/TrustPaperWatermark[\s\S]*?name="wallet"/),
+    "Trust Passport finance evidence surfaces must not use wallet watermark imagery.",
+    "Use the official GSN watermark and financeInstitution 3D icon for Finance Discipline."
+  );
+}
+if (/TrustPaperWatermark[\s\S]*?name="wallet"/.test(sourceByFile.financeLane)) {
+  addFinding(
+    files.financeLane,
+    sourceByFile.financeLane,
+    sourceByFile.financeLane.search(/TrustPaperWatermark[\s\S]*?name="wallet"/),
     "Trust Passport finance evidence surfaces must not use wallet watermark imagery.",
     "Use the official GSN watermark and financeInstitution 3D icon for Finance Discipline."
   );
