@@ -6,12 +6,22 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const shopControlFile = "src/pages/ShopControlPage.tsx";
+const shopControlSpotlightWorkflowFile =
+  "src/pages/shopControl/ShopControlSpotlightWorkflow.tsx";
 const appLayoutFile = "src/layout/AppLayout.tsx";
 const stableButtonFile = "src/components/StableButton.tsx";
 const ownerShopHandlesFile = "src/lib/ownerShopHandles.ts";
-const shopControlSource = readFileSync(
+const shopControlPageSource = readFileSync(
   join(frontendRoot, shopControlFile),
   "utf8"
+);
+const shopControlSpotlightWorkflowSource = readFileSync(
+  join(frontendRoot, shopControlSpotlightWorkflowFile),
+  "utf8"
+);
+const shopControlSource = shopControlPageSource.replace(
+  /<ShopControlSpotlightWorkflow[\s\S]*?\/>/,
+  shopControlSpotlightWorkflowSource
 );
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const stableButtonSource = readFileSync(
@@ -332,6 +342,11 @@ if (allActionRootMarkers !== expectedFileInputActionRoots * 2) {
     text: `Found ${allActionRootMarkers} action-root marker attributes.`,
   });
 }
+
+assertShopContains(
+  /const ShopControlSpotlightWorkflow = React\.lazy\(\(\) => import\("\.\/shopControl\/ShopControlSpotlightWorkflow"\)\);[\s\S]*?const spotlightWorkflowSection = spotlightOpen \? \([\s\S]*?<React\.Suspense[\s\S]*?handleCreateSpotlight/,
+  "Shop Control must lazy-load the Spotlight workflow only after the publisher lane opens while keeping publish state in the parent."
+);
 
 assertShopContains(
   /SHOP_CONTROL_SHORTCUTS[\s\S]*?from "\.\.\/lib\/ownerShopHandles";[\s\S]*?const SHOP_CONTROL_SHORTCUT_ICONS:[\s\S]*?"shop-billboard": "shop"[\s\S]*?"shop-diaries": "document"[\s\S]*?"shop-summary": "chart"[\s\S]*?"community-package": "financeInstitution"[\s\S]*?const shopHeroShortcuts:[\s\S]*?SHOP_CONTROL_SHORTCUTS\.map/,

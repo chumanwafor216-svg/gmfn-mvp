@@ -7,9 +7,28 @@ import { fileURLToPath } from "node:url";
 const toolDir = dirname(fileURLToPath(import.meta.url));
 const frontendRoot = join(toolDir, "..");
 const findings = [];
+const shopControlFile = "src/pages/ShopControlPage.tsx";
+const shopControlSpotlightWorkflowFile =
+  "src/pages/shopControl/ShopControlSpotlightWorkflow.tsx";
+
+function readRaw(relativePath) {
+  return readFileSync(join(frontendRoot, relativePath), "utf8");
+}
+
+function readShopControlAuditSource() {
+  const shopControlSource = readRaw(shopControlFile);
+  const spotlightWorkflowSource = readRaw(shopControlSpotlightWorkflowFile);
+  return shopControlSource.replace(
+    /<ShopControlSpotlightWorkflow[\s\S]*?\/>/,
+    spotlightWorkflowSource
+  );
+}
 
 function read(relativePath) {
-  return readFileSync(join(frontendRoot, relativePath), "utf8");
+  if (relativePath === shopControlFile) {
+    return readShopControlAuditSource();
+  }
+  return readRaw(relativePath);
 }
 
 function assertContains(file, pattern, message) {
@@ -39,6 +58,12 @@ function assertLineNotContains(file, pattern, message) {
     }
   });
 }
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /const ShopControlSpotlightWorkflow = React\.lazy\(\(\) => import\("\.\/shopControl\/ShopControlSpotlightWorkflow"\)\);[\s\S]*?const spotlightWorkflowSection = spotlightOpen \? \([\s\S]*?<React\.Suspense[\s\S]*?handleCreateSpotlight/,
+  "Shop Control must lazy-load the Spotlight workflow only after the publisher lane opens while keeping publish state in the parent."
+);
 
 assertContains(
   "src/pages/ShopControlPage.tsx",

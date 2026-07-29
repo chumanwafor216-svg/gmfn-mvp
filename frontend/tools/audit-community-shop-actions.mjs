@@ -5,9 +5,28 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const shopControlFile = "src/pages/ShopControlPage.tsx";
+const shopControlSpotlightWorkflowFile =
+  "src/pages/shopControl/ShopControlSpotlightWorkflow.tsx";
+
+function readRaw(relativePath) {
+  return readFileSync(join(frontendRoot, relativePath), "utf8");
+}
+
+function readShopControlAuditSource() {
+  const shopControlSource = readRaw(shopControlFile);
+  const spotlightWorkflowSource = readRaw(shopControlSpotlightWorkflowFile);
+  return shopControlSource.replace(
+    /<ShopControlSpotlightWorkflow[\s\S]*?\/>/,
+    spotlightWorkflowSource
+  );
+}
 
 function read(relativePath) {
-  return readFileSync(join(frontendRoot, relativePath), "utf8");
+  if (relativePath === shopControlFile) {
+    return readShopControlAuditSource();
+  }
+  return readRaw(relativePath);
 }
 
 const findings = [];
@@ -60,7 +79,7 @@ function assertStableActionsHaveDebugIds(file) {
   let match;
 
   while ((match = actionPattern.exec(text))) {
-    const preview = text.slice(match.index, match.index + 1100);
+    const preview = text.slice(match.index, match.index + 2400);
     if (!/debugId=/.test(preview)) {
       findings.push({
         file,
