@@ -157,7 +157,67 @@ type EntryMode = "general" | "create" | "invite" | "approved" | "existing";
 const LAST_AUTHENTICATED_APP_PATH_KEY = "gmfn_last_authenticated_app_path";
 const COVER_WELCOME_SESSION_KEY = "gmfn_cover_welcome_session";
 
+function routeFallbackCopy(): { title: string; detail: string } {
+  const pathname =
+    typeof window === "undefined"
+      ? ""
+      : String(window.location.pathname || "").toLowerCase();
+
+  if (pathname === "/app/trust") {
+    return {
+      title: "Opening Trust Passport",
+      detail: "Preparing the fuller evidence record and keeping private details inside GSN.",
+    };
+  }
+
+  if (pathname === "/app/trust-slip") {
+    return {
+      title: "Opening TrustSlip",
+      detail: "Preparing the portable evidence paper and current verification link.",
+    };
+  }
+
+    if (
+    pathname.startsWith("/t/") ||
+    pathname.startsWith("/verify/trust") ||
+    pathname.startsWith("/trust-slips/verify")
+  ) {
+    return {
+      title: "Opening public TrustSlip check",
+      detail: "Loading the current public evidence reading, limits, and confirmation choices.",
+    };
+  }
+
+  if (pathname === "/app/shop-control") {
+    return {
+      title: "Opening shop and provider tools",
+      detail: "Preparing shop controls, provider readiness, and community-safe actions.",
+    };
+  }
+
+  if (pathname.startsWith("/app/community-domain")) {
+    return {
+      title: "Opening community domain workspace",
+      detail: "Preparing the heavier community tools. This can take a moment on first open.",
+    };
+  }
+
+  if (pathname === "/app/marketplace") {
+    return {
+      title: "Opening marketplace",
+      detail: "Preparing community listings and trusted exchange tools.",
+    };
+  }
+
+  return {
+    title: "Opening page",
+    detail: "Preparing your GSN workspace.",
+  };
+}
+
 function RouteFallback() {
+  const copy = routeFallbackCopy();
+
   return (
     <div
       style={{
@@ -168,11 +228,43 @@ function RouteFallback() {
         padding: "24px",
         background: gmfnBrand.gradients.pageWash,
         color: gmfnBrand.colors.ink,
-        fontSize: "15px",
-        fontWeight: 700,
       }}
     >
-      Loading page...
+      <div
+        data-gsn-route-fallback="contextual"
+        style={{
+          width: "min(100%, 360px)",
+          borderRadius: 18,
+          border: "1px solid rgba(214,170,69,0.28)",
+          background: "rgba(255,255,255,0.96)",
+          boxShadow: "0 18px 36px rgba(7,23,44,0.12)",
+          padding: "18px 18px 16px",
+          display: "grid",
+          gap: 8,
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            color: gmfnBrand.colors.ink,
+            fontSize: 16,
+            fontWeight: 1000,
+            lineHeight: 1.18,
+          }}
+        >
+          {copy.title}
+        </div>
+        <div
+          style={{
+            color: gmfnBrand.colors.muted,
+            fontSize: 13,
+            fontWeight: 750,
+            lineHeight: 1.35,
+          }}
+        >
+          {copy.detail}
+        </div>
+      </div>
     </div>
   );
 }

@@ -88,6 +88,12 @@ const CORE_ROUTE_KEYS = [
   "identity-home",
 ];
 
+const SECONDARY_HEAVY_ROUTE_KEYS = [
+  "trust-passport",
+  "shop-control",
+  "community-domain",
+];
+
 function routePathname(to: string): string {
   try {
     return new URL(to, "https://gsn.local").pathname;
@@ -96,12 +102,23 @@ function routePathname(to: string): string {
   }
 }
 
+function routeConnectionEffectiveType(): string {
+  if (typeof navigator === "undefined") return "";
+  const connection = (navigator as any).connection;
+  return String(connection?.effectiveType || "").toLowerCase();
+}
+
 function shouldPreloadRouteChunks(): boolean {
   if (typeof navigator === "undefined") return false;
   const connection = (navigator as any).connection;
   if (connection?.saveData) return false;
-  const effectiveType = String(connection?.effectiveType || "").toLowerCase();
+  const effectiveType = routeConnectionEffectiveType();
   return effectiveType !== "slow-2g" && effectiveType !== "2g";
+}
+
+function shouldPreloadSecondaryHeavyRoutes(): boolean {
+  if (!shouldPreloadRouteChunks()) return false;
+  return routeConnectionEffectiveType() !== "3g";
 }
 
 function scheduleIdle(task: () => void, delayMs: number): void {
@@ -137,5 +154,10 @@ export function preloadCoreAppRoutes(): void {
   if (!shouldPreloadRouteChunks()) return;
   CORE_ROUTE_KEYS.forEach((key, index) => {
     scheduleIdle(() => preloadRouteByKey(key), 450 + index * 550);
+  });
+
+  if (!shouldPreloadSecondaryHeavyRoutes()) return;
+  SECONDARY_HEAVY_ROUTE_KEYS.forEach((key, index) => {
+    scheduleIdle(() => preloadRouteByKey(key), 5600 + index * 950);
   });
 }

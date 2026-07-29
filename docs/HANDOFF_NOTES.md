@@ -157733,3 +157733,18 @@ Deployment:
 - No backend/API/schema/auth changes. No new share/open buttons were added, to avoid another duplicate action surface.
 - Added an audit guard in `frontend/tools/audit-trust-actions.mjs` so the sender guide keeps the membership/community/witness confirmation mapping.
 - Verified: `node frontend/tools/audit-trust-actions.mjs`; `node frontend/tools/audit-public-trustslip-first-viewport.mjs`; `node frontend/tools/audit-public-trustslip-verify-boundary.mjs`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `git diff --check`.
+
+## 2026-07-29 - Local Heavy Route Warmup and Contextual Loading State
+- Status: Local only, not pushed/deployed. Builds on the two prior local TrustSlip guidance commits; push/deploy only when the owner sends `2` or explicitly asks.
+- Added contextual app-level route fallback copy in `frontend/src/App.tsx` so heavy routes no longer show only `Loading page...`:
+  - Trust Passport: `Opening Trust Passport`
+  - TrustSlip: `Opening TrustSlip`
+  - public TrustSlip verification aliases: `Opening public TrustSlip check`
+  - Shop Control/provider tools: `Opening shop and provider tools`
+  - Community Domain workspace: `Opening community domain workspace`
+  - Marketplace: `Opening marketplace`
+- Extended `frontend/src/lib/routePreload.ts` so authenticated idle preloading still warms core routes first, then warms heavier secondary routes only on faster/non-data-saver connections: Trust Passport, Shop Control, and Community Domain.
+- Updated `frontend/tools/audit-startup-root-boundary.mjs` to guard the secondary-heavy-route preload policy and contextual fallback copy.
+- Verified: `node --check frontend/tools/audit-startup-root-boundary.mjs`; `npm --prefix frontend run audit:startup-root-boundary`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `git diff --check`; elevated `npm --prefix frontend run audit:startup-timing`.
+- Startup timing result after the change: warm shell `3280ms`, warm Dashboard `3457ms`, auth-retry Dashboard `7821ms`.
+- Devil's advocate: this improves perceived loading and likely second-click navigation after the app shell settles. It does not shrink the actual biggest chunks; build still shows `DashboardPage`, `CommunityDomainDashboardPage`, and `MarketplacePage` as large route chunks, and Babel still warns that `CommunityDomainDashboardPage.tsx` exceeds 500KB.

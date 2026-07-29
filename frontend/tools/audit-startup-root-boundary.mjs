@@ -120,8 +120,14 @@ assertContains(
 
 assertContains(
   "src/lib/routePreload.ts",
-  /connection\?\.saveData[\s\S]*?effectiveType !== "slow-2g" && effectiveType !== "2g"/,
-  "Route chunk preloading must respect data-saver and very slow network signals."
+  /SECONDARY_HEAVY_ROUTE_KEYS = \[[\s\S]*?"trust-passport"[\s\S]*?"shop-control"[\s\S]*?"community-domain"[\s\S]*?connection\?\.saveData[\s\S]*?effectiveType !== "slow-2g" && effectiveType !== "2g"[\s\S]*?function shouldPreloadSecondaryHeavyRoutes\(\): boolean \{[\s\S]*?shouldPreloadRouteChunks\(\)[\s\S]*?routeConnectionEffectiveType\(\) !== "3g"[\s\S]*?5600 \+ index \* 950/,
+  "Route chunk preloading must respect data-saver and very slow network signals while warming heavy Trust Passport, shop/provider, and Community Domain routes only after core routes on faster connections."
+);
+
+assertContains(
+  "src/App.tsx",
+  /function routeFallbackCopy\(\): \{ title: string; detail: string \}[\s\S]*?Opening Trust Passport[\s\S]*?Opening public TrustSlip check[\s\S]*?Opening shop and provider tools[\s\S]*?Opening community domain workspace[\s\S]*?data-gsn-route-fallback="contextual"/,
+  "App route fallback must explain heavy Trust Passport, TrustSlip verification, shop/provider, and Community Domain loads instead of showing a generic frozen-looking page."
 );
 
 assertContains(
