@@ -143,8 +143,8 @@ assertContains(
 );
 assertContains(
   "verify",
-  /const publicDecisionPackContext = useMemo[\s\S]*?decisionPackKey[\s\S]*?normalizeDecisionPackPublicContext[\s\S]*?decision_pack: decisionPack\.key[\s\S]*?decision_pack_focus: decisionPack\.focus[\s\S]*?decision_pack_profile[\s\S]*?relevant_signals: relevantSignals[\s\S]*?gaps_to_check: gapChecks[\s\S]*?recommended_checks: recommendedChecks[\s\S]*?evidence_extract[\s\S]*?gsn_decision_pack_matrix[\s\S]*?share_access_record[\s\S]*?Shared to support \$\{decisionPack\.label\}[\s\S]*?const mergedVerifyResult[\s\S]*?decision_pack_profile:[\s\S]*?verifyResult\?\.decision_pack_profile \|\| publicDecisionPackContext\.decision_pack_profile[\s\S]*?normalizeTrustSlipVerification\(mergedVerifyResult/,
-  "Public TrustSlip Verify must canonicalize share-safe Decision Pack URL context into the normalized access record."
+  /const publicDecisionPackContext = useMemo[\s\S]*?decisionPackKey[\s\S]*?normalizeDecisionPackPublicContext[\s\S]*?decision_pack: decisionPack\.key[\s\S]*?decision_pack_focus: decisionPack\.focus[\s\S]*?decision_pack_profile[\s\S]*?relevant_signals: relevantSignals[\s\S]*?gaps_to_check: gapChecks[\s\S]*?recommended_checks: recommendedChecks[\s\S]*?evidence_extract[\s\S]*?gsn_decision_pack_matrix[\s\S]*?requested_community_confirmation[\s\S]*?share_access_record[\s\S]*?Shared to support \$\{decisionPack\.label\}[\s\S]*?const mergedVerifyResult[\s\S]*?backendDecisionPackProfile[\s\S]*?contextDecisionPackProfile[\s\S]*?backendEvidenceExtract[\s\S]*?contextEvidenceExtract[\s\S]*?evidence_scope:[\s\S]*?community_confirmation_prompt:[\s\S]*?normalizeTrustSlipVerification\(mergedVerifyResult/,
+  "Public TrustSlip Verify must canonicalize share-safe Decision Pack URL context into the normalized access record while preserving backend evidence extract fields."
 );
 assertContains(
   "verify",
@@ -357,6 +357,11 @@ assertContains(
   "publicPaper",
   /Public Decision Pack[\s\S]*?Public Decision Pack for a safer next decision[\s\S]*?data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision First[\s\S]*?\{decisionDisplayAnswer\}[\s\S]*?\{decisionReasonLine\}[\s\S]*?data-gsn-public-evidence-translation="decision-why"[\s\S]*?Why this recommendation\?[\s\S]*?DecisionFactorTable rows=\{compact \? decisionTranslationRows\.filter\(\(\[label\]\) => label === "Active Community ID" \|\| label === \(supportPurpose \? "Repayment\/support evidence" : "Purpose evidence"\) \|\| label === "Current witnesses" \|\| label === "Recommended action"\) : decisionTranslationRows\} compact=\{compact\}[\s\S]*?Quick Decision[\s\S]*?quickDecisionFacts\.map[\s\S]*?data-gsn-public-decision-support="meaning-next-action"[\s\S]*?What this means[\s\S]*?Next recommended action[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Full evidence and record details[\s\S]*?title="Core evidence reading"[\s\S]*?rows=\{communityActivityMeaningRows\}[\s\S]*?title="Decision evidence summary"[\s\S]*?rows=\{decisionPackEvidenceSummaryRows\}[\s\S]*?title=\{decisionPackPurpose\}[\s\S]*?defaultOpen=\{!compact\}[\s\S]*?Decision Pack reading[\s\S]*?What does the community activity mean\?[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?Audit Details[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"/,
   "Public TrustSlip paper must lead with decision support, then core activity meaning, then collapsed evidence source-map details and heavier authority/security details."
+);
+assertContains(
+  "publicPaper",
+  /data-gsn-public-reader-confirmation-options="membership-community-witness"[\s\S]*?Choose what to confirm next[\s\S]*?Confirm membership[\s\S]*?debugId="trust-slip-verify\.public\.confirm-membership-first-view"[\s\S]*?debugId="trust-slip-verify\.public\.confirm-membership-unavailable"[\s\S]*?Ask community[\s\S]*?debugId="trust-slip-verify\.public\.request-confirmation-first-view"[\s\S]*?Review witnesses[\s\S]*?debugId="trust-slip-verify\.public\.review-witness-evidence-first-view"[\s\S]*?id="trust-slip-verify-community-known-as"/,
+  "Public TrustSlip first viewport must offer honest next confirmation choices: membership credential, scoped community confirmation, and witness/activity evidence review."
 );
 
 assertContains(

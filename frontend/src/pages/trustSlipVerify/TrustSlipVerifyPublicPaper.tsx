@@ -3,7 +3,8 @@ import { QRCodeSVG } from "qrcode.react";
 import CommunityProofPanel from "../../components/CommunityProofPanel";
 import GSNBrandMark from "../../components/GSNBrandMark";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../../components/GsnRealisticIcon";
-import { PrimaryButton, StableCtaLink } from "../../components/StableButton";
+import { PrimaryButton, StableCtaLink, SubtleButton } from "../../components/StableButton";
+import { revealElementWithoutJump } from "../../lib/mobileRevealStability";
 import {
   TrustPaperAuthorityStrip,
   TrustPaperSeal,
@@ -1381,6 +1382,31 @@ export default function TrustSlipVerifyPublicPaper({
       tone: validNow ? "neutral" : "warning",
     },
   ];
+  const selectedConfirmationCommunityName = firstTruthy(
+    selectedConfirmationCommunity?.community_name,
+    communityLabel
+  );
+  const readerConfirmationIntro = !validNow
+    ? "Start by asking the holder for a fresh TrustSlip before using this paper."
+    : "Use the confirmation path that matches the decision: membership, the selected community, or the witness and activity evidence already shown here.";
+  const membershipConfirmationNote = memberCredentialPath
+    ? "Open the scoped member credential when the decision depends on active membership."
+    : "This TrustSlip does not include a separate member credential link yet.";
+  const communityConfirmationNote = requestLockedReason
+    ? requestLockedReason
+    : `Ask ${selectedConfirmationCommunityName || "the selected community"} for a live response before relying on this paper for important risk.`;
+  const witnessEvidenceNote = hasWitnessEvidence
+    ? "Read the witness currentness and community activity before deciding."
+    : "Check the visible evidence gaps before asking for stronger confirmation.";
+  const reviewPublicEvidence = () => {
+    const target = document.getElementById("trust-slip-verify-community-known-as");
+    if (!target) return;
+    revealElementWithoutJump(target, {
+      surface: "trust-slip-verify",
+      targetId: "trust-slip-verify-community-known-as",
+      reason: "reader-confirmation-choice",
+    });
+  };
   const decisionPackProfileSignals = decisionPackProfile.relevantSignals.slice(0, 4);
   const decisionPackProfileGaps = decisionPackProfile.gapsToCheck.slice(0, 3);
   const decisionPackProfileChecks = decisionPackProfile.recommendedChecks.slice(0, 3);
@@ -2126,88 +2152,156 @@ export default function TrustSlipVerifyPublicPaper({
             ))}
           </div>
 
-          {!compact ? (
+          <div
+            data-gsn-public-decision-support="meaning-next-action"
+            data-gsn-public-reader-confirmation-options="membership-community-witness"
+            style={{
+              display: "grid",
+              gridTemplateColumns: compact ? "1fr" : "minmax(0, 1.05fr) minmax(300px, 0.95fr)",
+              gap: 10,
+              alignItems: "stretch",
+            }}
+          >
             <div
-              data-gsn-public-decision-support="meaning-next-action"
               style={{
-                display: "grid",
-                gridTemplateColumns: "minmax(0, 1.15fr) minmax(260px, 0.85fr)",
-                gap: 10,
-                alignItems: "stretch",
+                borderRadius: compact ? 12 : 16,
+                border: "1px solid rgba(37,78,119,0.12)",
+                background: "#FFFFFF",
+                padding: compact ? 10 : 12,
+                display: compact ? "none" : "grid",
+                gap: 9,
               }}
             >
-              <div
-                style={{
-                  borderRadius: 16,
-                  border: "1px solid rgba(37,78,119,0.12)",
-                  background: "#FFFFFF",
-                  padding: 12,
-                  display: "grid",
-                  gap: 9,
-                }}
-              >
-                <div style={{ ...sectionLabel(), color: "#0B63D1" }}>What this means</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-                  {decisionMeaningGroups.map((group) => (
-                    <div
-                      key={group.title}
-                      style={{
-                        borderRadius: 14,
-                        border: group.tone === "trust" ? "1px solid rgba(46,155,98,0.18)" : "1px solid rgba(245,158,11,0.22)",
-                        background: group.tone === "trust" ? "#EEF9F1" : "#FFF8E8",
-                        padding: "10px 11px",
-                        minWidth: 0,
-                      }}
-                    >
-                      <div style={{ color: group.tone === "trust" ? "#166534" : "#92400E", fontSize: 12, fontWeight: 1000 }}>
-                        {group.title}
-                      </div>
-                      <ul style={{ margin: "7px 0 0", paddingLeft: 16, color: "#334155", fontSize: 11.5, fontWeight: 820, lineHeight: 1.42 }}>
-                        {group.items.map((item) => (
-                          <li key={item}>{item}</li>
-                        ))}
-                      </ul>
+              <div style={{ ...sectionLabel(), color: "#0B63D1" }}>What this means</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+                {decisionMeaningGroups.map((group) => (
+                  <div
+                    key={group.title}
+                    style={{
+                      borderRadius: 14,
+                      border: group.tone === "trust" ? "1px solid rgba(46,155,98,0.18)" : "1px solid rgba(245,158,11,0.22)",
+                      background: group.tone === "trust" ? "#EEF9F1" : "#FFF8E8",
+                      padding: "10px 11px",
+                      minWidth: 0,
+                    }}
+                  >
+                    <div style={{ color: group.tone === "trust" ? "#166534" : "#92400E", fontSize: 12, fontWeight: 1000 }}>
+                      {group.title}
                     </div>
-                  ))}
+                    <ul style={{ margin: "7px 0 0", paddingLeft: 16, color: "#334155", fontSize: 11.5, fontWeight: 820, lineHeight: 1.42 }}>
+                      {group.items.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div
+              style={{
+                borderRadius: compact ? 12 : 16,
+                border: "1px solid rgba(37,78,119,0.12)",
+                background: "#F8FBFF",
+                padding: compact ? 10 : 12,
+                display: "grid",
+                gap: compact ? 8 : 10,
+                alignContent: "start",
+              }}
+            >
+              <div style={{ ...sectionLabel(), color: "#0B63D1" }}>Next recommended action</div>
+              <div style={{ display: "grid", gridTemplateColumns: compact ? "38px minmax(0, 1fr)" : "44px minmax(0, 1fr)", gap: compact ? 8 : 10, alignItems: "start" }}>
+                {paperIconBadge("community-building", validNow ? "neutral" : "warning", compact ? 36 : 42)}
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ ...readableText(), color: "#07172C", fontSize: compact ? 16 : 18, fontWeight: 1000, lineHeight: 1.12 }}>
+                    Choose what to confirm next
+                  </div>
+                  <p style={{ ...readableText(), margin: "5px 0 0", color: "#526579", fontSize: compact ? 12 : 12.5, fontWeight: 820, lineHeight: 1.36 }}>
+                    {readerConfirmationIntro}
+                  </p>
                 </div>
               </div>
 
               <div
                 style={{
-                  borderRadius: 16,
-                  border: "1px solid rgba(37,78,119,0.12)",
-                  background: "#F8FBFF",
-                  padding: 12,
                   display: "grid",
-                  gap: 10,
-                  alignContent: "start",
+                  gridTemplateColumns: compact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                  gap: 8,
                 }}
               >
-                <div style={{ ...sectionLabel(), color: "#0B63D1" }}>Next recommended action</div>
-                <div style={{ display: "grid", gridTemplateColumns: "44px minmax(0, 1fr)", gap: 10, alignItems: "start" }}>
-                  {paperIconBadge("community-building", validNow ? "neutral" : "warning", 42)}
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ ...readableText(), color: "#07172C", fontSize: 18, fontWeight: 1000, lineHeight: 1.12 }}>
-                      {validNow ? "Request live community confirmation" : "Request a fresh TrustSlip"}
-                    </div>
-                    <p style={{ ...readableText(), margin: "5px 0 0", color: "#526579", fontSize: 12.5, fontWeight: 820, lineHeight: 1.36 }}>
-                      {recommendedActionFinding}
-                    </p>
+                <div style={documentMetaCard("#FFFFFF")}>
+                  <div style={{ color: "#07172C", fontSize: compact ? 13 : 14, fontWeight: 1000 }}>
+                    Confirm membership
                   </div>
+                  <p style={{ margin: "5px 0 8px", color: "#64748B", fontSize: 11.5, fontWeight: 820, lineHeight: 1.34 }}>
+                    {membershipConfirmationNote}
+                  </p>
+                  {memberCredentialPath ? (
+                    <StableCtaLink
+                      to={memberCredentialPath}
+                      kind="soft"
+                      stableHeight={44}
+                      debugId="trust-slip-verify.public.confirm-membership-first-view"
+                      style={{ width: "100%", borderRadius: 11, fontWeight: 1000 }}
+                    >
+                      Open credential
+                    </StableCtaLink>
+                  ) : (
+                    <SubtleButton
+                      type="button"
+                      debugId="trust-slip-verify.public.confirm-membership-unavailable"
+                      disabled
+                      fullWidth
+                      stableHeight={44}
+                      style={{ borderRadius: 11 }}
+                    >
+                      Not available
+                    </SubtleButton>
+                  )}
                 </div>
-                {canRequestCommunityPulse ? (
+
+                <div style={documentMetaCard("#FFFFFF")}>
+                  <div style={{ color: "#07172C", fontSize: compact ? 13 : 14, fontWeight: 1000 }}>
+                    Ask community
+                  </div>
+                  <p style={{ margin: "5px 0 8px", color: "#64748B", fontSize: 11.5, fontWeight: 820, lineHeight: 1.34 }}>
+                    {communityConfirmationNote}
+                  </p>
                   <PrimaryButton
                     debugId="trust-slip-verify.public.request-confirmation-first-view"
-                    stableHeight={48}
+                    stableHeight={44}
+                    busy={confirmationBusy}
+                    busyLabel="Requesting..."
+                    disabled={Boolean(requestLockedReason) || !canRequestCommunityPulse}
                     onClick={() => onRequestCommunityPulse()}
-                    style={{ justifyContent: "center", borderRadius: 12 }}
+                    fullWidth
+                    style={{ justifyContent: "center", borderRadius: 11 }}
                   >
-                    Request confirmation
+                    Request now
                   </PrimaryButton>
-                ) : null}
+                </div>
+
+                <div style={documentMetaCard("#FFFFFF")}>
+                  <div style={{ color: "#07172C", fontSize: compact ? 13 : 14, fontWeight: 1000 }}>
+                    Review witnesses
+                  </div>
+                  <p style={{ margin: "5px 0 8px", color: "#64748B", fontSize: 11.5, fontWeight: 820, lineHeight: 1.34 }}>
+                    {witnessEvidenceNote}
+                  </p>
+                  <SubtleButton
+                    type="button"
+                    debugId="trust-slip-verify.public.review-witness-evidence-first-view"
+                    stableHeight={44}
+                    fullWidth
+                    onClick={reviewPublicEvidence}
+                    style={{ borderRadius: 11 }}
+                  >
+                    Read evidence
+                  </SubtleButton>
+                </div>
               </div>
             </div>
-          ) : null}
+          </div>
           <div
             data-gsn-public-decision-boundary="compact"
             style={{
@@ -2746,6 +2840,7 @@ export default function TrustSlipVerifyPublicPaper({
               </div>
 
               <div
+                id="trust-slip-verify-community-known-as"
                 data-gsn-community-known-as-evidence="true"
                 style={{
                   marginTop: 12,

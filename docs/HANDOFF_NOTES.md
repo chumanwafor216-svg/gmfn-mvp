@@ -157693,3 +157693,35 @@ Deployment:
 Unabated truth:
 - The previous push alone did not start a deploy because the Render workflow is manual (`workflow_dispatch`).
 - This completion triggered the manual frontend deploy and verified the public frontend marker through GitHub Actions.
+
+## 2026-07-29 - Local TrustSlip Verify Reader Confirmation Guidance
+
+- Scope: first local slice of the app-wide guidance/clear-context direction after the owner asked for fewer duplicate surfaces, better guidance, better loading/slow-page handling, clearer context, and TrustSlip evidence that helps the reader make an informed decision.
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Made the first-viewport `Next recommended action` area visible on phone as well as desktop.
+  - Replaced the single visible first-view confirmation CTA with three honest reader choices:
+    - `Confirm membership`: opens the scoped member credential when the TrustSlip includes one; otherwise shows `Not available` with a visible note.
+    - `Ask community`: uses the existing selected/scoped live community confirmation request path.
+    - `Review witnesses`: reveals the existing public witness/activity evidence section with the mobile-safe `revealElementWithoutJump` helper, not smooth scrolling.
+  - Anchored the public `Community known-as evidence` block so the review action lands on the evidence already present instead of inventing a new route.
+- `frontend/tools/audit-public-trustslip-first-viewport.mjs`
+  - Added a guard requiring the three reader confirmation choices and the evidence anchor.
+- `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+  - Added the same reader-choice guard.
+  - Updated the Decision Pack context guard to match the current safer merge contract: URL/share context plus backend evidence extract fields, rather than replacing backend evidence.
+
+Unabated truth:
+- This does not make GSN decide for the reader. It gives the reader better next actions after reading the TrustSlip summary.
+- This does not expose private Trust Passport records, private notes, member phone numbers, or private responder identities.
+- This is the first route-local slice of the broader `GSN guide layer`; Dashboard, Community Home, Marketplace, provider-heavy pages, and Trust Passport still need their own focused passes.
+
+Verification run locally:
+- `node frontend\tools\audit-public-trustslip-first-viewport.mjs`
+- `node frontend\tools\audit-public-trustslip-verify-boundary.mjs`
+- `node frontend\tools\audit-trust-actions.mjs`
+- `npm --prefix frontend run audit:protected-button-freeze`
+- `npm --prefix frontend run build`
+- `git diff --check` passed with normal CRLF warnings.
+
+Deployment:
+- Local only. Push/deploy only when owner sends `2`.
