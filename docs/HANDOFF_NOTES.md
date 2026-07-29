@@ -1,3 +1,33 @@
+## CURRENT LOCAL STATE - 2026-07-29 - Community Domain real-life record data contract hardening
+
+Owner trigger:
+- Owner said "continue" after the previous Real Life Record panel type hardening pass, so this continued into the remaining split-boundary caveat.
+
+Unabated truth:
+- The lazy Real Life Record panel no longer accepts an unbounded `Record<string, any>` prop shape.
+- `RealLifeRecordPanel.tsx` now exports a named `RealLifeRecordPanelData` key contract for the 115 parent-owned values the extracted workflow consumes.
+- `CommunityDomainDashboardPage.tsx` now checks the object literal passed into the lazy panel with `satisfies RealLifeRecordPanelData`, so TypeScript will catch missing or extra keys at the parent/child split boundary.
+- Devil's advocate caveat: this is still not full value-level domain typing. The contract locks the key set, but values are still broadly typed because the extracted workflow is fed by many parent-owned state setters, API handlers, style helpers, and draft maps. Full value typing remains possible but would be a larger route-local typing pass.
+- No route behavior, backend writes, permissions, user-facing UX, or frozen Dashboard/Market Wisdom code was intentionally changed.
+
+Changed:
+- `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`
+  - Added `RealLifeRecordPanelDataKey` and exported `RealLifeRecordPanelData`.
+  - Replaced the prior broad `data: Record<string, any>` prop with `data: RealLifeRecordPanelData`.
+- `frontend/src/pages/CommunityDomainDashboardPage.tsx`
+  - Added a type-only import for `RealLifeRecordPanelData`.
+  - Wrapped the lazy panel data object with `satisfies RealLifeRecordPanelData`.
+
+Verification:
+- Passed `npm --prefix frontend run build` with unchanged split chunk sizes: `RealLifeRecordPanel-Cheq-olT.js` at `41.91 kB / 7.68 kB gzip` and `CommunityDomainDashboardPage-XBEhh1yS.js` at `226.59 kB / 52.69 kB gzip`.
+- Passed `npm --prefix frontend run lint`.
+- Passed `npm --prefix frontend run audit:community-domain-product-contracts`.
+- Passed `npm --prefix frontend run audit:notice-board-phone-notifications`.
+- Browser-backed visual/billing audits were not rerun for this pass because the generated runtime output and chunk sizes stayed unchanged; this was a compile-time contract-only change.
+
+Deployment:
+- Local verified change only. Not pushed/deployed yet because `docs/FREEZE_POLICY.md` currently says routine continuation work should be batched and pushed only when the owner explicitly says the batch is ready.
+
 ## CURRENT LOCAL STATE - 2026-07-29 - Community Domain real-life record type hardening
 
 Owner trigger:

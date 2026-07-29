@@ -112,6 +112,7 @@ import {
   type CommunityMoneySettlement,
 } from "../lib/communityMoney";
 import { humanStatus } from "./communityDomainDashboard/statusLanguage";
+import type { RealLifeRecordPanelData } from "./communityDomainDashboard/RealLifeRecordPanel";
 
 const CommunityDomainNodeProjectionGroups = lazy(
   () => import("./communityDomainDashboard/NodeProjectionGroups")
@@ -12921,7 +12922,7 @@ export default function CommunityDomainDashboardPage() {
                         }
                       >
                         <CommunityDomainRealLifeRecordPanel
-                          data={{
+                          data={({
                           ACTIVITY_RECORD_STAGE_OPTIONS,
                           ACTIVITY_RECORD_TASK_OPTIONS,
                           BENEFICIARY_CHALLENGE_STATUS_OPTIONS,
@@ -13037,7 +13038,7 @@ export default function CommunityDomainDashboardPage() {
                           updateBeneficiaryDeliveryReceiptDraft,
                           updateBeneficiaryOutcomeDraft,
                           withdrawBeneficiaryOutcomeContactConsent,
-                          }}
+                          } satisfies RealLifeRecordPanelData)}
                         />
                       </Suspense>
                     ) : null}
