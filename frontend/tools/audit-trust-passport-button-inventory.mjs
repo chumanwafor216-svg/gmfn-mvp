@@ -6,7 +6,13 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const trustPassportFile = "src/pages/TrustScorePage.tsx";
-const source = readFileSync(join(frontendRoot, trustPassportFile), "utf8");
+const documentLaneFile = "src/pages/trustScore/TrustPassportDocumentLane.tsx";
+const trustPassportSource = readFileSync(join(frontendRoot, trustPassportFile), "utf8");
+const documentLaneSource = readFileSync(join(frontendRoot, documentLaneFile), "utf8");
+const source = trustPassportSource.replace(
+  /<TrustPassportDocumentLane[\s\S]*?\/>/,
+  documentLaneSource
+);
 const findings = [];
 
 function lineAt(index) {
@@ -181,11 +187,11 @@ assertContains(
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(4, minmax\(0, 1fr\)\)"[\s\S]*?stableHeight=\{isCompact \? 48 : 58\}[\s\S]*?debugId="trust-score\.refresh"[\s\S]*?stableHeight=\{isCompact \? 48 : 58\}[\s\S]*?debugId="trust-score\.copy-snapshot"[\s\S]*?stableHeight=\{isCompact \? 48 : 58\}[\s\S]*?debugId="trust-score\.open-trust-slip"[\s\S]*?stableHeight=\{isCompact \? 48 : 58\}[\s\S]*?debugId="trust-score\.verify"/,
+  /gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?: "repeat\(4, minmax\(0, 1fr\)\)"[\s\S]*?stableHeight=\{isCompact \? 48 : 58\}[\s\S]*?debugId="trust-score\.refresh"[\s\S]*?stableHeight=\{isCompact \? 48 : 58\}[\s\S]*?debugId="trust-score\.copy-snapshot"[\s\S]*?stableHeight=\{isCompact \? 48 : 58\}[\s\S]*?debugId="trust-score\.open-trust-slip"[\s\S]*?stableHeight=\{isCompact \? 48 : 58\}[\s\S]*?debugId="trust-score\.verify"/,
   "Trust Passport shareable tools must keep shorter fixed phone heights while preserving the larger desktop paper controls."
 );
 assertContains(
-  /const \[documentPreviewDetailsOpen, setDocumentPreviewDetailsOpen\][\s\S]*?activeTrustPassportLane === "documents" \? "block" : "none"[\s\S]*?7\. Shareable trust tools[\s\S]*?debugId="trust-score\.export"[\s\S]*?data-trust-passport-document-preview-details="collapsed"[\s\S]*?debugId="trust-score\.documents-lane\.preview-details\.toggle"[\s\S]*?aria-expanded=\{documentPreviewDetailsOpen\}[\s\S]*?Document preview details[\s\S]*?documentPreviewDetailsOpen \?[\s\S]*?<GsnSnapshotPaperCard[\s\S]*?debugId="trust-score\.snapshot-open-trust-slip"/,
+  /const \[documentPreviewDetailsOpen, setDocumentPreviewDetailsOpen\][\s\S]*?activeTrustPassportLane === "documents" \? \([\s\S]*?7\. Shareable trust tools[\s\S]*?debugId="trust-score\.export"[\s\S]*?data-trust-passport-document-preview-details="collapsed"[\s\S]*?debugId="trust-score\.documents-lane\.preview-details\.toggle"[\s\S]*?aria-expanded=\{documentPreviewDetailsOpen\}[\s\S]*?Document preview details[\s\S]*?documentPreviewDetailsOpen \?[\s\S]*?<GsnSnapshotPaperCard[\s\S]*?debugId="trust-score\.snapshot-open-trust-slip"/,
   "Trust Passport Documents lane must keep the share/verify actions visible and collapse the full paper preview behind a stable details toggle."
 );
 
@@ -230,7 +236,7 @@ assertContains(
 );
 
 assertContains(
-  /trustSlipVerify: routeTarget\([\s\S]*?"merchantVerify"[\s\S]*?"trust-score\.route\.trust-slip-verify"[\s\S]*?const verifyAppPath = useMemo\([\s\S]*?trustSlipVerifyAppPath\(trustSlipCode, routes\.trustSlipVerify\)[\s\S]*?onClick=\{\(\) => openTrustRoute\(verifyAppPath\)\}[\s\S]*?debugId="trust-score\.verify"/,
+  /trustSlipVerify: routeTarget\([\s\S]*?"merchantVerify"[\s\S]*?"trust-score\.route\.trust-slip-verify"[\s\S]*?const verifyAppPath = useMemo\([\s\S]*?trustSlipVerifyAppPath\(trustSlipCode, routes\.trustSlipVerify\)[\s\S]*?onClick=\{\(\) => onOpenTrustRoute\(verifyAppPath\)\}[\s\S]*?debugId="trust-score\.verify"/,
   "Trust Passport TrustSlip verify action must open the signed-in verifier with the visible TrustSlip code instead of drifting to the wrong TrustSlip surface."
 );
 

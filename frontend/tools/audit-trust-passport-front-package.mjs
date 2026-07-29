@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
   trust: "src/pages/TrustScorePage.tsx",
+  documentLane: "src/pages/trustScore/TrustPassportDocumentLane.tsx",
   band: "src/lib/trustBandLanguage.ts",
   viewModel: "src/lib/trustPassportViewModel.ts",
   app: "src/App.tsx",
@@ -100,6 +101,13 @@ assertContains(
 
 assertContains(
   "trust",
+  /const TrustPassportDocumentLane = lazy\([\s\S]*?import\("\.\/trustScore\/TrustPassportDocumentLane"\)[\s\S]*?activeTrustPassportLane === "documents" \? \([\s\S]*?<Suspense[\s\S]*?<TrustPassportDocumentLane[\s\S]*?onOpenTrustRoute=\{openTrustRoute\}/,
+  "Trust Passport must lazy-load the Documents / TrustSlip lane from the page shell."
+);
+
+
+assertContains(
+  "trust",
   /import GSNBrandMark from "\.\.\/components\/GSNBrandMark";[\s\S]*?function OfficialGsnWatermark\([\s\S]*?<GSNBrandMark width=\{isCompact \? 148 : 210\} height=\{isCompact \? 186 : 264\} \/>[\s\S]*?OfficialGsnWatermark[\s\S]*?activeTrustPassportLane === "finance"/,
   "Trust Passport must use the official GSN brand mark as a watermark on the document shell and evidence lanes."
 );
@@ -137,17 +145,17 @@ assertContains(
 );
 
 [
-  "Identity & Community Overview",
-  "2. Current evidence reading",
-  "Decision support details",
-  "4. Why the evidence reads this way",
-  "5. Evidence surfaces",
-  "6. What changed in the evidence?",
-  "7. Shareable trust tools",
-  "8. Evidence & institutional context",
-].forEach((label) => {
+  ["trust", "Identity & Community Overview"],
+  ["trust", "2. Current evidence reading"],
+  ["trust", "Decision support details"],
+  ["trust", "4. Why the evidence reads this way"],
+  ["trust", "5. Evidence surfaces"],
+  ["trust", "6. What changed in the evidence?"],
+  ["documentLane", "7. Shareable trust tools"],
+  ["trust", "8. Evidence & institutional context"],
+].forEach(([key, label]) => {
   assertContains(
-    "trust",
+    key,
     new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
     `Trust Passport current front package must keep the ${label} section until a deliberate lane redesign replaces it.`
   );
@@ -308,7 +316,7 @@ assertOrderedSnippets(
 );
 
 assertOrderedSnippets(
-  "trust",
+  "documentLane",
   [
     "7. Shareable trust tools",
     "debugId=\"trust-score.refresh\"",
@@ -357,6 +365,11 @@ assertNotContains(
   "Trust Passport visible source must not reintroduce stale pending/issue placeholders for missing evidence."
 );
 
+assertNotContains(
+  "documentLane",
+  /Awaiting issue|classText: "Pending"|TrustSlip: \{trustSlipStatus \|\| "Pending"\}/,
+  "Trust Passport Documents lane visible source must not reintroduce stale pending/issue placeholders for missing evidence."
+);
 assertNotContains(
   "viewModel",
   /Awaiting issue|Identity status not shown|Community membership record not shown|trustSlipStatus: clean\(input\.trustSlipStatus, "Pending"\)/,

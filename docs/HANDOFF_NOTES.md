@@ -157768,3 +157768,14 @@ Deployment:
 - Build output after this split includes `BillingTaskPanels` at `22.56 kB` and `CommunityDomainDashboardPage` at `192.64 kB`.
 - Devil's advocate: this is another real initial-route chunk reduction, but the new component currently uses a loose `Record<string, any>` data prop to keep the extraction small and reversible. A future hardening pass should replace that with a typed data contract if more Billing work is planned.
 - Verified: `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `git diff --check`.
+
+## 2026-07-29 - Local Trust Passport Documents Lane Lazy Split
+- Status: Local only, not pushed/deployed. Builds on deployed `main` commit `6a5126f8`; push/deploy only when the owner explicitly asks again.
+- Split the Trust Passport `Documents / TrustSlip` lane from `frontend/src/pages/TrustScorePage.tsx` into lazy-loaded `frontend/src/pages/trustScore/TrustPassportDocumentLane.tsx`.
+- Kept the same visible Documents lane behavior: refresh evidence reading, copy text, open TrustSlip, open TrustSlip Verify, review pressure notes, export/print, TrustSlip status meters, collapsed document preview details, and the not-ready recovery card.
+- The parent Trust Passport route still owns route navigation, notice state, refresh/copy handlers, TrustSlip readiness, and document-preview open state; the lazy lane receives those as explicit props.
+- Updated `frontend/tools/audit-trust-passport-front-package.mjs` to check the extracted Documents lane and parent lazy wiring.
+- Updated `frontend/tools/audit-trust-passport-button-inventory.mjs` so it inlines the lazy lane source at the render call for action-count and action-order auditing.
+- Build output after this split includes `TrustPassportDocumentLane` at `7.82 kB` and `TrustScorePage` at `96.51 kB` (`23.71 kB` gzip).
+- Devil's advocate: this is a real first-load reduction for Trust Passport, but only about 4.4 kB uncompressed from the main route chunk compared with the prior `100.93 kB`. Trust Passport is still a large, multi-lane page; larger gains require splitting another lane or extracting shared Trust Document rendering carefully.
+- Verified: `npm --prefix frontend run audit:trust-passport-front-package`; `npm --prefix frontend run audit:trust-passport-button-inventory`; `npm --prefix frontend run build`; `git diff --check`.

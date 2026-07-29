@@ -1,6 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import GsnSnapshotPaperCard from "../components/GsnSnapshotPaperCard";
 import CommunityProofPanel from "../components/CommunityProofPanel";
 import EvidenceMeter, {
   evidenceMeterStyle,
@@ -9,7 +16,6 @@ import EvidenceMeter, {
 import PageTopNav from "../components/PageTopNav";
 import GSNBrandMark from "../components/GSNBrandMark";
 import {
-  DangerButton,
   PrimaryButton,
   SecondaryButton,
   StableDisclosureSummary,
@@ -63,6 +69,9 @@ import {
 } from "../lib/identityEvidenceCompletion";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 
+const TrustPassportDocumentLane = lazy(
+  () => import("./trustScore/TrustPassportDocumentLane")
+);
 type NoticeTone = "success" | "error";
 
 type TrustPassportLaneKey =
@@ -3196,24 +3205,6 @@ export default function TrustScorePage() {
     },
   ];
 
-  const trustPassportDocumentFlowRows = [
-    {
-      label: "1. Refresh reading",
-      value: "Pull the latest signed-in evidence before copying or opening a public check.",
-      icon: "refresh" as GsnIconName,
-    },
-    {
-      label: "2. Carry TrustSlip",
-      value: "Open the portable public summary when someone outside GSN needs a scoped record.",
-      icon: "document" as GsnIconName,
-    },
-    {
-      label: "3. Verify publicly",
-      value: "Use TrustSlip Verify when the reader needs the current code and validity check.",
-      icon: "search" as GsnIconName,
-    },
-  ];
-
   const activeLane =
     trustPassportLanes.find((lane) => lane.key === activeTrustPassportLane) ||
     trustPassportLanes[0];
@@ -5350,326 +5341,42 @@ export default function TrustScorePage() {
               </div>
             </div>
 
-            <div
-              style={{
-                ...innerCard("#FFFFFF"),
-                border: "1px solid rgba(216,227,238,0.9)",
-                display:
-                  activeTrustPassportLane === "documents" ? "block" : "none",
-              }}
-            >
-              <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
-                7. Shareable trust tools
-              </div>
-              <div
-                data-trust-passport-document-flow="compact"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
-                  gap: 8,
-                  marginTop: 10,
-                }}
-              >
-                {trustPassportDocumentFlowRows.map((row) => (
-                  <div
-                    key={row.label}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "30px minmax(0, 1fr)",
-                      gap: 8,
-                      alignItems: "center",
-                      borderRadius: 13,
-                      border: "1px solid rgba(37,78,119,0.12)",
-                      background: "#FFFFFF",
-                      padding: isCompact ? "8px 9px" : "10px 11px",
-                      minWidth: 0,
-                    }}
-                  >
-                    {trustIconBadge(row.icon, 28, "blue")}
-                    <div style={{ minWidth: 0 }}>
-                      <div
-                        style={{
-                          color: "#0B63D1",
-                          fontSize: isCompact ? 9 : 10,
-                          fontWeight: 1000,
-                          lineHeight: 1.1,
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        {row.label}
-                      </div>
-                      <div
-                        style={{
-                          marginTop: 3,
-                          color: "#334155",
-                          fontSize: isCompact ? 10.5 : 11.5,
-                          fontWeight: 850,
-                          lineHeight: 1.3,
-                        }}
-                      >
-                        {row.value}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
-                  gap: 10,
-                  marginTop: 12,
-                }}
-              >
-                <PrimaryButton
-                  onClick={() => {
-                    void handleRefreshTrust();
-                  }}
-                  busy={refreshing}
-                  busyLabel="Refreshing..."
-                  fullWidth
-                  stableHeight={isCompact ? 48 : 58}
-                  debugId="trust-score.refresh"
-                  style={{
-                    borderRadius: 11,
-                    fontSize: isCompact ? 12 : 14,
-                    fontWeight: 950,
-                    paddingInline: 10,
-                  }}
-                >
-                  {trustIconBadge("refresh", isCompact ? 26 : 28, "navy")}
-                  Refresh evidence reading
-                </PrimaryButton>
-                <SecondaryButton
-                  onClick={copyTrustSnapshot}
-                  fullWidth
-                  stableHeight={isCompact ? 48 : 58}
-                  debugId="trust-score.copy-snapshot"
-                  style={{
-                    borderRadius: 11,
-                    fontSize: isCompact ? 12 : 14,
-                    fontWeight: 950,
-                    paddingInline: 10,
-                  }}
-                >
-                  {trustIconBadge("copy", isCompact ? 26 : 28, "navy")}
-                  Copy text
-                </SecondaryButton>
-                <SecondaryButton
-                  onClick={() => openTrustRoute(routes.trustSlip)}
-                  fullWidth
-                  stableHeight={isCompact ? 48 : 58}
-                  debugId="trust-score.open-trust-slip"
-                  style={{
-                    borderRadius: 11,
-                    fontSize: isCompact ? 12 : 14,
-                    fontWeight: 950,
-                    paddingInline: 10,
-                  }}
-                >
-                  {trustIconBadge("document", isCompact ? 26 : 28, "navy")}
-                  Open TrustSlip
-                </SecondaryButton>
-                <SecondaryButton
-                  onClick={() => openTrustRoute(verifyAppPath)}
-                  fullWidth
-                  stableHeight={isCompact ? 48 : 58}
-                  debugId="trust-score.verify"
-                  style={{
-                    borderRadius: 11,
-                    fontSize: isCompact ? 12 : 14,
-                    fontWeight: 950,
-                    paddingInline: 10,
-                  }}
-                >
-                  {trustIconBadge("search", isCompact ? 26 : 28, "navy")}
-                  Open TrustSlip verify
-                </SecondaryButton>
-              </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 10,
-                  marginTop: 10,
-                }}
-              >
-                <DangerButton
-                  onClick={scrollToPressureNotes}
-                  fullWidth
-                  stableHeight={isCompact ? 52 : 40}
-                  debugId="trust-score.review-care"
-                  style={{ borderRadius: 10, fontSize: 13, fontWeight: 950 }}
-                >
-                  Review pressure notes
-                </DangerButton>
-                <SubtleButton
-                  onClick={() => {
-                    if (!trustPassportSnapshotReady) {
-                      setNotice({
-                        tone: "error",
-                        text: trustSlipBlockedByPhone
-                          ? trustSlipBlockDetail
-                          : "Trust Passport PDF is not ready yet. Issue the GSN ID and TrustSlip first.",
-                      });
-                      return;
-                    }
-
-                    if (
-                      typeof window !== "undefined" &&
-                      typeof window.print === "function"
-                    ) {
-                      window.print();
-                    }
-                  }}
-                  fullWidth
-                  stableHeight={isCompact ? 52 : 40}
-                  debugId="trust-score.export"
-                  style={{ borderRadius: 10, fontSize: 13, fontWeight: 950 }}
-                >
-                  Export / print
-                </SubtleButton>
-              </div>
-              <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <EvidenceMeter status={trustSlipStatus}>
-                  TrustSlip: {trustSlipStatus || "Not issued yet"}
-                </EvidenceMeter>
-                <EvidenceMeter status={trustSlipCode ? "Ready" : "Limited"}>
-                  Code: {trustSlipCode || "Not stated"}
-                </EvidenceMeter>
-                <EvidenceMeter status="Limited">Expires: {expiresText}</EvidenceMeter>
-              </div>
-              {trustPassportSnapshotReady ? (
-                <div
-                  data-trust-passport-document-preview-details="collapsed"
-                  style={{
-                    ...innerCard("#FFFFFF"),
-                    border: "1px solid rgba(216,227,238,0.9)",
-                    display: "grid",
-                    gap: documentPreviewDetailsOpen ? (isCompact ? 9 : 12) : 0,
-                    marginTop: 14,
-                  }}
-                >
-                  <SubtleButton
-                    debugId="trust-score.documents-lane.preview-details.toggle"
-                    stableHeight={isCompact ? 42 : 44}
-                    onClick={() => setDocumentPreviewDetailsOpen((open) => !open)}
-                    aria-expanded={documentPreviewDetailsOpen}
-                    fullWidth
-                    style={{
-                      justifyContent: "space-between",
-                      borderRadius: 13,
-                      background: documentPreviewDetailsOpen ? "#F8FBFF" : "#FFFFFF",
-                      border: "1px solid rgba(11,99,209,0.14)",
-                      color: "#24415C",
-                      boxShadow: "none",
-                      fontSize: 12.5,
-                      fontWeight: 1000,
-                    }}
-                  >
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                      <GsnLegacyIcon name="document" size={24} decorative />
-                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        Document preview details
-                      </span>
-                    </span>
-                    <span aria-hidden="true" style={{ color: "#617085", fontSize: 18 }}>
-                      {documentPreviewDetailsOpen ? "-" : "+"}
-                    </span>
-                  </SubtleButton>
-
-                  {documentPreviewDetailsOpen ? (
-                    <div
-                      style={{
-                        display: "grid",
-                        gap: isCompact ? 8 : 10,
-                        paddingTop: isCompact ? 8 : 10,
-                        borderTop: "1px solid rgba(216,227,238,0.62)",
-                      }}
-                    >
-                      <GsnSnapshotPaperCard
-                        paperText={trustPassportPaper}
-                        compact={isCompact}
-                        icon="shield"
-                        maxBodyLines={isCompact ? 6 : undefined}
-                      />
-                      <p
-                        style={{
-                          ...helperText(),
-                          margin: 0,
-                          fontSize: isCompact ? 12 : 13,
-                        }}
-                      >
-                        Copy gives a short text summary. Use screenshot or print to share
-                        the official GSN paper background.
-                      </p>
-                    </div>
-                  ) : null}
-                </div>
-              ) : (
-                <div
-                  style={{
-                    ...innerCard("#FFFDF7"),
-                    marginTop: 14,
-                    border: "1px solid rgba(245,158,11,0.20)",
-                    display: "grid",
-                    gap: 10,
-                  }}
-                >
+            {activeTrustPassportLane === "documents" ? (
+              <Suspense
+                fallback={
                   <div
                     style={{
-                      display: "grid",
-                      gridTemplateColumns: "42px minmax(0, 1fr)",
-                      gap: 10,
-                      alignItems: "center",
+                      ...innerCard("#FFFFFF"),
+                      border: "1px solid rgba(216,227,238,0.9)",
+                      color: "#526579",
                     }}
                   >
-                    {trustIconBadge("document", 34, "amber")}
-                    <div style={{ minWidth: 0 }}>
-                      <div
-                        style={{
-                          color: "#92400E",
-                          fontSize: 13,
-                          fontWeight: 1000,
-                          textTransform: "uppercase",
-                          letterSpacing: 0,
-                        }}
-                      >
-                        Snapshot not ready
-                      </div>
-                      <div
-                        style={{
-                          color: "#07172C",
-                          fontSize: isCompact ? 17 : 19,
-                          fontWeight: 1000,
-                          lineHeight: 1.18,
-                          marginTop: 3,
-                        }}
-                      >
-                        {trustSlipBlockedByPhone
-                          ? "Verify the phone number before sharing."
-                          : "Finish the GSN ID and TrustSlip before sharing."}
-                      </div>
-                    </div>
+                    Loading shareable trust tools...
                   </div>
-                  <p style={{ ...helperText(), margin: 0 }}>
-                    {trustSlipBlockedByPhone
-                      ? trustSlipBlockDetail
-                      : "A public-looking paper should not show a missing GSN ID or a blank TrustSlip code."}
-                  </p>
-                  <SecondaryButton
-                    onClick={() => openTrustRoute(routes.trustSlip)}
-                    fullWidth
-                    stableHeight={isCompact ? 50 : 52}
-                    debugId="trust-score.snapshot-open-trust-slip"
-                    style={{ borderRadius: 12, fontWeight: 950 }}
-                  >
-                    {trustIconBadge("document", 28, "navy")}
-                    Open TrustSlip
-                  </SecondaryButton>
-                </div>
-              )}
-            </div>
+                }
+              >
+                <TrustPassportDocumentLane
+                  isCompact={isCompact}
+                  refreshing={refreshing}
+                  trustPassportSnapshotReady={trustPassportSnapshotReady}
+                  trustSlipBlockedByPhone={trustSlipBlockedByPhone}
+                  trustSlipBlockDetail={trustSlipBlockDetail}
+                  trustSlipStatus={trustSlipStatus}
+                  trustSlipCode={trustSlipCode}
+                  expiresText={expiresText}
+                  trustPassportPaper={trustPassportPaper}
+                  trustSlipRoute={routes.trustSlip}
+                  verifyAppPath={verifyAppPath}
+                  documentPreviewDetailsOpen={documentPreviewDetailsOpen}
+                  setDocumentPreviewDetailsOpen={setDocumentPreviewDetailsOpen}
+                  setNotice={setNotice}
+                  onRefreshTrust={handleRefreshTrust}
+                  onCopyTrustSnapshot={copyTrustSnapshot}
+                  onOpenTrustRoute={openTrustRoute}
+                  onScrollToPressureNotes={scrollToPressureNotes}
+                />
+              </Suspense>
+            ) : null}
           </section>
 
           <section
