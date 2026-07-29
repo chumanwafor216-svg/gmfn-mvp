@@ -1,3 +1,12 @@
+## 2026-07-29 - Local Community Domain billing readiness type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `e134dd1e`; push/deploy only when the owner sends `2` or explicitly asks.
+- Tightened `frontend/src/pages/communityDomainDashboard/BillingReadinessPanels.tsx` by replacing broad `any` props/helper arrays with route-local UI-facing surfaces for subscription lifecycle, capacity plan, billing readiness lanes, and primary next actions.
+- `readinessLanes`, `blockedLanes`, `readyTotal`, and `attentionCapacityLanes` now return/accept typed billing readiness lane surfaces instead of `any[]`.
+- Cleaned the two lane-label fallback expressions so unknown backend lane keys are converted through `cleanText` before being used as display fallback text.
+- No app UI, backend API, payment route, settlement behavior, permissions, action counts, button geometry, or user-facing Billing readiness behavior changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:community-domain-billing-sequence`; `npm --prefix frontend run lint`; `git diff --check`.
+- Verification note: the Playwright billing-sequence audit required an escalated local Vite server on `127.0.0.1:5180`; the audit passed and the audit-server Node processes were stopped afterward.
+- Devil's advocate: this does not create a generated backend schema or reduce the heavy Community Domain route. It only makes the lazy Billing readiness UI surface less permissive at compile time.
 ## 2026-07-29 - Local Community Domain billing task data contract hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `ac94f3af`; push/deploy only when the owner sends `2` or explicitly asks.
 - Replaced the lazy `BillingTaskPanels` component's broad `Record<string, any>` prop boundary with a route-local `BillingTaskPanelsData` contract in `frontend/src/pages/communityDomainDashboard/BillingTaskPanelsTypes.ts`.

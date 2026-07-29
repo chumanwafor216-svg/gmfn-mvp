@@ -2,9 +2,44 @@ import React, { useState } from "react";
 import { StableButton } from "../../components/StableButton";
 import { humanStatus } from "./statusLanguage";
 
+type UnknownRecord = Record<string, unknown>;
+
+type BillingPrimaryNextAction = UnknownRecord & {
+  label?: unknown;
+};
+
+type BillingReadinessLane = UnknownRecord & {
+  lane_key?: unknown;
+  label?: unknown;
+  ready?: unknown;
+  status?: unknown;
+  summary?: unknown;
+  next_step?: unknown;
+  metered?: unknown;
+  used?: unknown;
+  limit?: unknown;
+  remaining?: unknown;
+};
+
+type SubscriptionLifecycleSurface = UnknownRecord & {
+  summary?: UnknownRecord;
+  package?: UnknownRecord;
+  primary_next_action?: BillingPrimaryNextAction | null;
+  lanes?: unknown;
+  ready_total?: unknown;
+};
+
+type CapacityPlanSurface = UnknownRecord & {
+  package_name?: unknown;
+  limits_source?: unknown;
+  primary_next_action?: BillingPrimaryNextAction | null;
+  lanes?: unknown;
+  ready_total?: unknown;
+};
+
 type BillingReadinessPanelsProps = {
-  subscriptionLifecycle?: any;
-  capacityPlan?: any;
+  subscriptionLifecycle?: SubscriptionLifecycleSurface | null;
+  capacityPlan?: CapacityPlanSurface | null;
 };
 
 type BillingDetailKey = "lifecycle" | "capacity";
@@ -39,21 +74,28 @@ function countValue(value: unknown): string {
   return Number.isFinite(numberValue) ? String(numberValue) : "0";
 }
 
-function readinessLanes(map: any): any[] {
-  return Array.isArray(map?.lanes) ? map.lanes : [];
+function isRecord(value: unknown): value is UnknownRecord {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
-function blockedLanes(lanes: any[]): any[] {
+function readinessLanes(map: { lanes?: unknown } | null | undefined): BillingReadinessLane[] {
+  return Array.isArray(map?.lanes) ? map.lanes.filter(isRecord) : [];
+}
+
+function blockedLanes(lanes: BillingReadinessLane[]): BillingReadinessLane[] {
   return lanes.filter((lane) => !lane.ready);
 }
 
-function readyTotal(map: any, lanes: any[]): number {
+function readyTotal(
+  map: { ready_total?: unknown } | null | undefined,
+  lanes: BillingReadinessLane[]
+): number {
   return typeof map?.ready_total === "number"
     ? map.ready_total
     : lanes.filter((lane) => lane.ready).length;
 }
 
-function attentionCapacityLanes(lanes: any[]): any[] {
+function attentionCapacityLanes(lanes: BillingReadinessLane[]): BillingReadinessLane[] {
   return lanes.filter((lane) => {
     const statusText = cleanText(lane.status).toLowerCase();
     return statusText.includes("near") || statusText.includes("over");
@@ -340,7 +382,7 @@ export default function CommunityDomainBillingReadinessPanels({
             <strong>
               {blockedSubscriptionLanes
                 .slice(0, 3)
-                .map((lane) => cleanText(lane.label, lane.lane_key || "billing check"))
+                .map((lane) => cleanText(lane.label, cleanText(lane.lane_key, "billing check")))
                 .join(", ")}
             </strong>
             .
@@ -394,7 +436,7 @@ export default function CommunityDomainBillingReadinessPanels({
             Capacity attention:{" "}
             <strong>
               {capacityAttentionLanes
-                .map((lane) => cleanText(lane.label, lane.lane_key || "capacity"))
+                .map((lane) => cleanText(lane.label, cleanText(lane.lane_key, "capacity")))
                 .join(", ")}
             </strong>
             .
