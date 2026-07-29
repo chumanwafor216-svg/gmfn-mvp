@@ -23,7 +23,11 @@ Verification:
 - Passed elevated `npm --prefix frontend run smoke:marketplace-boundaries` after sandbox Vite/esbuild `spawn EPERM`.
 
 Deployment:
-- Local only so far in this slice. Commit/push/deploy after final status review.
+- Pushed `9e6e37df Remove Marketplace glyph dead code` to `origin/main`.
+- Triggered GitHub Actions `Trigger Render Deploy` run `30423916192` with `deploy_api=false`.
+- Workflow completed successfully in 2m17s and verified the frontend public URL marker.
+- Backend/API deploy skipped by workflow because `deploy_api=false`.
+
 ## CURRENT LOCAL STATE - 2026-07-29 - QA/polish deploy completion
 
 Owner trigger:
