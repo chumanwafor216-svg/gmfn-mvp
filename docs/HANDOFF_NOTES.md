@@ -1,3 +1,30 @@
+## CURRENT LOCAL STATE - 2026-07-29 - Community Domain real-life record value contract finish
+
+Owner trigger:
+- Owner said "lets finish it up" after the key-level Real Life Record panel data contract was pushed/deployed, so this finished the remaining value-level typing caveat in the lazy panel.
+
+Unabated truth:
+- `RealLifeRecordPanel.tsx` no longer uses `Record<string, any>` or explicit `: any` callback/map annotations in the extracted lazy panel.
+- `RealLifeRecordPanelData` now types the workflow values it receives: record task keys, stage keys, recent packet keys, draft shapes, option arrays, row payload surfaces, string/boolean by-id maps, state setters, style helpers, text helpers, and action handlers.
+- The parent remains checked with `satisfies RealLifeRecordPanelData`, so the split boundary now catches both missing keys and many wrong value shapes.
+- Devil's advocate caveat: backend row payloads are still modeled as route-local UI-facing row surfaces with optional fields and index signatures where the API can return extra data. That is honest and safer than inventing a full backend schema in the UI file, but it is not a generated API contract.
+- No route behavior, backend writes, permissions, user-facing UX, or frozen Dashboard/Market Wisdom code was intentionally changed.
+
+Changed:
+- `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`
+  - Replaced the generated key-union-to-`any` contract with typed workflow value shapes.
+  - Removed explicit `: any` callback/map annotations now covered by the typed prop contract.
+
+Verification:
+- Passed `npm --prefix frontend run build` with unchanged split chunk sizes: `RealLifeRecordPanel-Cheq-olT.js` at `41.91 kB / 7.68 kB gzip` and `CommunityDomainDashboardPage-XBEhh1yS.js` at `226.59 kB / 52.69 kB gzip`.
+- Passed `npm --prefix frontend run lint`.
+- Passed `npm --prefix frontend run audit:community-domain-product-contracts`.
+- Passed `npm --prefix frontend run audit:notice-board-phone-notifications`.
+- Browser-backed visual/billing audits were not rerun for this pass because the emitted runtime bundle/chunk sizes stayed unchanged; this was compile-time type hardening only.
+
+Deployment:
+- Local verified change only. Not pushed/deployed yet because `docs/FREEZE_POLICY.md` currently says routine continuation work should be batched and pushed only when the owner explicitly says the batch is ready.
+
 ## CURRENT LOCAL STATE - 2026-07-29 - Community Domain real-life record data contract hardening
 
 Owner trigger:
