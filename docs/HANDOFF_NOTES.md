@@ -1,3 +1,11 @@
+## 2026-07-29 - Local Community Domain member readiness type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `b3355d3b`; push/deploy only when the owner sends `2` or explicitly asks.
+- Tightened `frontend/src/pages/communityDomainDashboard/MemberReadinessPanels.tsx` by replacing broad `any` props/helper arrays with route-local UI-facing surfaces for placement summaries, node placements, member verification maps, and member readiness lanes.
+- `readinessLanes`, `readyTotal`, `visibleNodePlacements`, and `laneDisplayLabel` now return/accept typed member readiness surfaces instead of `any` or `any[]`.
+- Cleaned lane fallback expressions so unknown backend lane labels/keys are converted through `cleanText` before they become React keys or visible text fallbacks.
+- No app UI, backend API, member placement behavior, verification behavior, permissions, action counts, button geometry, or user-facing Members lane behavior changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this is compile-time hardening only. It does not add real member verification, credential issuing, or generated backend schema validation, and it does not reduce the heavy Community Domain route.
 ## 2026-07-29 - Local Community Domain billing readiness type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `e134dd1e`; push/deploy only when the owner sends `2` or explicitly asks.
 - Tightened `frontend/src/pages/communityDomainDashboard/BillingReadinessPanels.tsx` by replacing broad `any` props/helper arrays with route-local UI-facing surfaces for subscription lifecycle, capacity plan, billing readiness lanes, and primary next actions.

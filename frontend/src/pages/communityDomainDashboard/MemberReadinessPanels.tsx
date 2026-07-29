@@ -1,10 +1,44 @@
 import React from "react";
 import { humanStatus } from "./statusLanguage";
 
+type UnknownRecord = Record<string, unknown>;
+
+type MemberReadinessLane = UnknownRecord & {
+  lane_key?: unknown;
+  label?: unknown;
+  ready?: unknown;
+  state?: unknown;
+  status?: unknown;
+  next_step?: unknown;
+};
+
+type NodePlacementSurface = UnknownRecord & {
+  id?: unknown;
+  community_node_id?: unknown;
+  community_node_name?: unknown;
+  role?: unknown;
+  status?: unknown;
+};
+
+type PlacementSummarySurface = UnknownRecord & {
+  counts?: UnknownRecord;
+  domain_role?: unknown;
+  lanes?: unknown;
+  ready_total?: unknown;
+  node_placements?: unknown;
+};
+
+type MemberVerificationMapSurface = UnknownRecord & {
+  summary?: UnknownRecord;
+  primary_next_action?: (UnknownRecord & { label?: unknown }) | null;
+  lanes?: unknown;
+  ready_total?: unknown;
+};
+
 type MemberReadinessPanelsProps = {
-  placementSummary?: any;
+  placementSummary?: PlacementSummarySurface | null;
   counts?: Record<string, unknown>;
-  memberVerificationMap?: any;
+  memberVerificationMap?: MemberVerificationMapSurface | null;
   children?: React.ReactNode;
 };
 
@@ -21,19 +55,28 @@ function countValue(value: unknown): string {
   return Number.isFinite(numberValue) ? String(numberValue) : "0";
 }
 
-function readinessLanes(map: any): any[] {
-  return Array.isArray(map?.lanes) ? map.lanes : [];
+function isRecord(value: unknown): value is UnknownRecord {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
-function readyTotal(map: any, lanes: any[]): number {
+function readinessLanes(map: { lanes?: unknown } | null | undefined): MemberReadinessLane[] {
+  return Array.isArray(map?.lanes) ? map.lanes.filter(isRecord) : [];
+}
+
+function readyTotal(
+  map: { ready_total?: unknown } | null | undefined,
+  lanes: MemberReadinessLane[]
+): number {
   return typeof map?.ready_total === "number"
     ? map.ready_total
     : lanes.filter((lane) => lane.ready).length;
 }
 
-function visibleNodePlacements(placementSummary: any): any[] {
+function visibleNodePlacements(
+  placementSummary: PlacementSummarySurface | null | undefined
+): NodePlacementSurface[] {
   return Array.isArray(placementSummary?.node_placements)
-    ? placementSummary.node_placements.slice(0, 3)
+    ? placementSummary.node_placements.filter(isRecord).slice(0, 3)
     : [];
 }
 
@@ -132,7 +175,7 @@ function factGrid(items: Array<[string, unknown]>): React.ReactNode {
   );
 }
 
-function laneDisplayLabel(lane: any, fallback = "Lane"): string {
+function laneDisplayLabel(lane: MemberReadinessLane, fallback = "Lane"): string {
   return cleanText(lane?.label, cleanText(lane?.lane_key, fallback));
 }
 
@@ -210,7 +253,7 @@ export default function CommunityDomainMemberReadinessPanels({
           </div>
           {nodePlacements.length ? (
             <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-              {nodePlacements.map((placement: any) =>
+              {nodePlacements.map((placement) =>
                 statusRow(
                   `${cleanText(placement.community_node_id)}:${cleanText(placement.id)}`,
                   cleanText(placement.community_node_name, "Operating unit"),
@@ -234,9 +277,9 @@ export default function CommunityDomainMemberReadinessPanels({
                 marginTop: 10,
               }}
             >
-              {placementLanes.slice(0, 4).map((lane: any) => (
+              {placementLanes.slice(0, 4).map((lane) => (
                 <div
-                  key={cleanText(lane.lane_key, lane.label)}
+                  key={cleanText(lane.lane_key, cleanText(lane.label))}
                   style={statusBadge(lane.state)}
                 >
                   {laneDisplayLabel(lane, "Placement")}
@@ -340,7 +383,7 @@ export default function CommunityDomainMemberReadinessPanels({
             <strong>
               {blockedMemberVerificationLanes
                 .slice(0, 3)
-                .map((lane) => cleanText(lane.label, lane.lane_key || "member check"))
+                .map((lane) => cleanText(lane.label, cleanText(lane.lane_key, "member check")))
                 .join(", ")}
             </strong>
             .
