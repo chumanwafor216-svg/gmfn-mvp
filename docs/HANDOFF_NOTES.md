@@ -1,3 +1,11 @@
+## 2026-07-29 - Local Marketplace Support data contract hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `ad9b3fb6`; push/deploy only when the owner sends `2` or explicitly asks.
+- Tightened the lazy Marketplace Support section split by replacing the child `Record<string, any>` data prop with exported `MarketplaceSupportSectionData` route-local UI value shapes.
+- `MarketplacePage.tsx` now checks the object passed into the lazy Support child with `satisfies MarketplaceSupportSectionData`, so missing, extra, or wrongly shaped support handoff keys are caught during TypeScript build.
+- Removed the remaining explicit `as any` child destructure and the explicit `: any` map annotations for support suggestions, selected supporters, and visible support items.
+- No app UI, backend API, route, permissions, marketplace state ownership, action counts, or runtime bundle sizes changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:marketplace-support-lane`; `npm --prefix frontend run audit:marketplace-button-inventory`; `npm --prefix frontend run audit:marketplace-actions`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`.
+- Devil's advocate: this is a compile-time trust improvement only. The route still has duplicated local UI row shapes between parent and child because the parent-owned types are not shared from a route-local model file yet; creating that shared model would be a broader cleanup.
 ## 2026-07-29 - Local Marketplace Lane Audit Lazy-Source Cleanup
 - Status: Local only, not pushed/deployed. Builds on local commit `e8ca8203`; push/deploy only when the owner sends `2` or explicitly asks.
 - Updated stale Marketplace lane audit guards so they understand the current lazy source layout after the Board, Members, and Support lane extractions.

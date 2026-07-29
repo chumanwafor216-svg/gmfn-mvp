@@ -4,8 +4,186 @@ import { StableButton, StableDisclosureSummary } from "../../components/StableBu
 import { GsnLegacyIcon, type GsnIconName } from "../../components/GsnLegacyIcon";
 import { marketplaceSectionStyle } from "../../lib/marketplaceActionStability";
 
+type MarketplaceActionKind = "primary" | "secondary" | "soft";
+type MarketplaceDepartmentTone =
+  | "trade"
+  | "members"
+  | "demand"
+  | "support"
+  | "rosca"
+  | "neutral";
+type MarketplaceSectionKey =
+  | "board"
+  | "money"
+  | "rosca"
+  | "tools"
+  | "members"
+  | "trade"
+  | "demand"
+  | "support";
+type SupportDeskMode = "choices" | "loan";
+type MarketplaceSupportCtaIntent =
+  | "loanReadiness"
+  | "loanSuggestions"
+  | "loanWorkbench"
+  | "finance"
+  | "loans";
+
+type MarketplaceSurfaceTouchProps = {
+  "data-gmfn-surface-root": string;
+  "data-gmfn-debug-id": string;
+};
+
+type MarketplaceFieldTouchProps = {
+  "data-gmfn-field-root": string;
+  "data-gmfn-debug-id": string;
+  onPointerDownCapture: () => void;
+  onFocusCapture: () => void;
+};
+
+type MarketplaceSupporterRow = {
+  key: string;
+  userId?: number;
+  gmfnId?: string;
+  name: string;
+  reason?: string | null;
+  recommendedPledge?: string | null;
+};
+
+type MarketplaceLoanDraftSummary = {
+  id?: number;
+  status?: string | null;
+  amount?: string | number | null;
+  currency?: string | null;
+  service_fee?: string | number | null;
+  net_disbursed_amount?: string | number | null;
+  guarantor_pool?: string | number | null;
+  platform_revenue?: string | number | null;
+  remaining_amount?: string | number | null;
+  guarantors_required?: number | null;
+  approved_guarantors?: number | null;
+  guarantors_total?: number | null;
+  due_at?: string | null;
+  decision_at?: string | null;
+};
+
+type MarketplaceLoanSupportItem = {
+  id?: number;
+  clan_id?: number;
+  title?: string | null;
+  purpose?: string | null;
+  status?: string | null;
+  amount?: string | number | null;
+  currency?: string | null;
+  borrower_name?: string | null;
+  guarantor_name?: string | null;
+  created_at?: string | null;
+  role?: string | null;
+};
+
+export type MarketplaceSupportSectionData = {
+  isCompact: boolean;
+  supportSectionRef: React.RefObject<HTMLElement | null>;
+  pageCard: (bg?: string) => React.CSSProperties;
+  activeLoanCount: number;
+  badge: (primary?: boolean) => React.CSSProperties;
+  toggleSectionFromButton: (
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    key: MarketplaceSectionKey
+  ) => void;
+  marketplaceActionStyle: (
+    kind?: MarketplaceActionKind,
+    disabled?: boolean
+  ) => React.CSSProperties;
+  marketplaceSurfaceTouchProps: (debugId: string) => MarketplaceSurfaceTouchProps;
+  marketplaceDepartmentShellStyle: (
+    tone: MarketplaceDepartmentTone,
+    isCompact: boolean
+  ) => React.CSSProperties;
+  activeCommunityName: string;
+  activeCommunityId: number;
+  currentGmfnId: string;
+  hasMoneyOutSupportTask: boolean;
+  moneyOutSupportAmountText: string;
+  poolCurrency: string;
+  moneyOutSupportGapText: string;
+  runMarketplaceAction: (
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    action: () => void
+  ) => void;
+  setSupportDeskMode: React.Dispatch<React.SetStateAction<SupportDeskMode>>;
+  scheduleMarketplaceSectionScroll: (
+    sectionId: string,
+    opts?: { force?: boolean }
+  ) => void;
+  supportLoanDeskOpen: boolean;
+  openMarketplaceSection: (
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    key: MarketplaceSectionKey,
+    sectionId: string
+  ) => void;
+  sectionLabel: () => React.CSSProperties;
+  helperText: () => React.CSSProperties;
+  innerCard: (bg?: string) => React.CSSProperties;
+  loanDraftId: number;
+  requiredGuarantorCount: number;
+  suggestedSupporters: MarketplaceSupporterRow[];
+  loanAmount: string;
+  setLoanAmount: React.Dispatch<React.SetStateAction<string>>;
+  supportProcessBusy: boolean;
+  inputStyle: () => React.CSSProperties;
+  loanDurationDays: string;
+  setLoanDurationDays: React.Dispatch<React.SetStateAction<string>>;
+  loanRepaymentCadence: string;
+  setLoanRepaymentCadence: React.Dispatch<React.SetStateAction<string>>;
+  loanPurpose: string;
+  setLoanPurpose: React.Dispatch<React.SetStateAction<string>>;
+  textAreaStyle: () => React.CSSProperties;
+  agreementAmount: number;
+  agreementServiceFee: string;
+  agreementNetAmount: string;
+  agreementDueAt: string;
+  agreementRepaymentCadence: string;
+  softCard: (bg?: string) => React.CSSProperties;
+  marketplaceInlineActionsStyle: (isCompact: boolean) => React.CSSProperties;
+  startingLoanDraft: boolean;
+  handleStartLoanDraft: () => Promise<void>;
+  marketplaceInlineActionStyle: (
+    kind: MarketplaceActionKind,
+    disabled: boolean,
+    isCompact: boolean
+  ) => React.CSSProperties;
+  loadingSuggestions: boolean;
+  handleRefreshSuggestions: () => Promise<void>;
+  cancellingLoanDraft: boolean;
+  handleCancelLoanDraft: () => Promise<void>;
+  openMarketplaceCta: (
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    intent: MarketplaceSupportCtaIntent
+  ) => void;
+  loanDraftSummary: MarketplaceLoanDraftSummary | null;
+  safeStr: (value: unknown) => string;
+  sentGuarantorCount: number;
+  approvedGuarantorCount: number;
+  supportProcessMessage: string;
+  selectedSupporterKeys: Set<string>;
+  toggleSuggestedSupporter: (item: MarketplaceSupporterRow) => void;
+  visibleSelectedSupporters: MarketplaceSupporterRow[];
+  guarantorRequestsBlocked: boolean;
+  showGuarantorRequestBlockedNotice: () => void;
+  handleSendGuarantorRequests: () => Promise<void>;
+  sendingGuarantorRequests: boolean;
+  loanStatusLower: string;
+  loans: MarketplaceLoanSupportItem[];
+  firstTruthy: (...values: unknown[]) => string;
+  getLoanAmountText: (item: MarketplaceLoanSupportItem) => string;
+  safeDateTime: (value: unknown) => string;
+  marketplaceOsIconStyle: (bg: string, isCompact?: boolean) => React.CSSProperties;
+  marketplaceFieldTouchProps: (debugId: string) => MarketplaceFieldTouchProps;
+};
+
 type Props = {
-  data: Record<string, any>;
+  data: MarketplaceSupportSectionData;
 };
 
 type MarketplaceGlyphName = "support";
@@ -99,7 +277,7 @@ export default function MarketplaceSupportSection({ data }: Props) {
     safeDateTime,
     marketplaceOsIconStyle,
     marketplaceFieldTouchProps
-  } = data as any;
+  } = data;
   const sectionsOpen = { support: true };
 
   return (
@@ -770,7 +948,7 @@ export default function MarketplaceSupportSection({ data }: Props) {
                         </div>
                       ) : (
                         <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                          {suggestedSupporters.map((item: any) => {
+                          {suggestedSupporters.map((item) => {
                             const selected = selectedSupporterKeys.has(item.key);
 
                             return (
@@ -861,7 +1039,7 @@ export default function MarketplaceSupportSection({ data }: Props) {
                               marginTop: 10,
                             }}
                           >
-                            {visibleSelectedSupporters.map((item: any) => (
+                            {visibleSelectedSupporters.map((item) => (
                               <StableButton
                                 debugId={`marketplace.support.selected.${item.key}.remove`}
                                 key={item.key}
@@ -977,7 +1155,7 @@ export default function MarketplaceSupportSection({ data }: Props) {
                     No visible support item is active in this community right now.
                   </div>
                 ) : (
-                  loans.slice(0, 6).map((item: any, index: number) => (
+                  loans.slice(0, 6).map((item, index) => (
                     <div key={`${item.id || index}`} style={innerCard("#FCFEFF")}>
                       <div
                         style={{

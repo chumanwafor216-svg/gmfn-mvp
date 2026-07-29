@@ -105,6 +105,7 @@ import {
   scrollElementToMarketplaceLanding,
   traceMarketplaceLanding,
 } from "../lib/marketplaceActionStability";
+import type { MarketplaceSupportSectionData } from "./marketplace/MarketplaceSupportSection";
 import {
   marketWisdomPairFromDailyInsight,
   type MarketWisdomPair,
@@ -13242,7 +13243,7 @@ export default function MarketplacePage() {
           safeDateTime,
           marketplaceOsIconStyle,
           marketplaceFieldTouchProps
-            }}
+            } satisfies MarketplaceSupportSectionData}
           />
         </Suspense>
       ) : null}
