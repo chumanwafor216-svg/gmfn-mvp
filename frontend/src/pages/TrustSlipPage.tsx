@@ -475,6 +475,8 @@ type TrustSlipDecisionPackIssueResolutionPointer = {
   decisionUse: string;
 };
 
+type TrustSlipVerificationScope = "community_specific" | "all_visible_communities";
+
 type TrustSlipDecisionPackEvidenceExtract = {
   source: string;
   decisionPack: string;
@@ -2245,6 +2247,8 @@ export default function TrustSlipPage() {
   const [merchantRailLink, setMerchantRailLink] = useState<MerchantLinkResponse | null>(null);
   const [selectedTrustSlipPurpose, setSelectedTrustSlipPurpose] =
     useState<DecisionPackKey>(DEFAULT_DECISION_PACK.key);
+  const [selectedVerificationScope, setSelectedVerificationScope] =
+    useState<TrustSlipVerificationScope>("community_specific");
 
   useEffect(() => {
     const requestedPack = new URLSearchParams(location.search).get("decision_pack");
@@ -2262,16 +2266,7 @@ export default function TrustSlipPage() {
       ) || DEFAULT_DECISION_PACK,
     [selectedTrustSlipPurpose]
   );
-  const publicDecisionPackQuery = useMemo(
-    () => ({
-      decision_pack: selectedPurposeOption.key,
-      access_purpose: selectedPurposeOption.label,
-      recipient_question: selectedPurposeOption.recipientQuestion,
-      decision_focus: selectedPurposeOption.focus,
-      access_scope: "public_decision_pack",
-    }),
-    [selectedPurposeOption]
-  );
+
   const clearTrustSlipState = useCallback(() => {
     setMe(null);
     setCurrentClan(null);
@@ -2620,6 +2615,51 @@ export default function TrustSlipPage() {
     [communityRefValue]
   );
 
+  const selectedVerificationCommunityId = useMemo(
+    () =>
+      firstTruthy(
+        summary?.community_id,
+        summary?.clan_id,
+        currentClan?.id,
+        selectedClanId
+      ),
+    [summary, currentClan, selectedClanId]
+  );
+  const verificationScopeLabel =
+    selectedVerificationScope === "community_specific"
+      ? `This community: ${communityName}`
+      : "All visible community context";
+  const verificationScopeBoundary =
+    selectedVerificationScope === "community_specific"
+      ? `Live confirmation requests should be answered by ${communityName}. Other communities are not treated as giving the same judgement.`
+      : "This link may show wider visible community context, but it is not proof that every community gives the same judgement. Live confirmation still needs a selected community.";
+  const publicDecisionPackQuery = useMemo(
+    () => ({
+      decision_pack: selectedPurposeOption.key,
+      access_purpose: selectedPurposeOption.label,
+      recipient_question: selectedPurposeOption.recipientQuestion,
+      decision_focus: selectedPurposeOption.focus,
+      access_scope: selectedVerificationScope,
+      verification_scope: selectedVerificationScope,
+      verification_scope_label: verificationScopeLabel,
+      verification_scope_boundary: verificationScopeBoundary,
+      verification_community_id:
+        selectedVerificationScope === "community_specific"
+          ? selectedVerificationCommunityId
+          : "",
+      verification_community_label: communityName,
+      verification_community_ref: communityRefValue,
+    }),
+    [
+      selectedPurposeOption,
+      selectedVerificationScope,
+      verificationScopeLabel,
+      verificationScopeBoundary,
+      selectedVerificationCommunityId,
+      communityName,
+      communityRefValue,
+    ]
+  );
   const trustSlipCode = useMemo(() => {
     return firstTruthy(
       summary?.merchant_view?.code,
@@ -3556,7 +3596,8 @@ export default function TrustSlipPage() {
     "Private Trust Passport history, private notes, private contacts, or admin records",
   ];
   const trustSlipHolderDecisionBoundaryRows: Array<[string, string]> = [
-    ["Evidence scope", numericCount(activeCommunityCount) > 1 ? "Primary + wider" : "Primary shown"],
+    ["Verification scope", verificationScopeLabel],
+    ["Scope boundary", verificationScopeBoundary],
     ["Guarantee", "No"],
     ["Government ID", "No"],
     ["Credit approval", "No"],
@@ -3567,6 +3608,11 @@ export default function TrustSlipPage() {
       label: "Decision Pack selected",
       value: selectedPurposeOption.label,
       icon: "evidence" as GsnIconName,
+    },
+    {
+      label: "Verification scope",
+      value: verificationScopeLabel,
+      icon: "community-building" as GsnIconName,
     },
     {
       label: "Recipient question",
@@ -3616,13 +3662,18 @@ export default function TrustSlipPage() {
       icon: "evidence" as GsnIconName,
     },
     {
-      label: "2. Refresh record",
+      label: "2. Choose scope",
+      value: "Choose this community for a scoped check, or wider visible context without claiming every community agrees.",
+      icon: "community-building" as GsnIconName,
+    },
+    {
+      label: "3. Refresh record",
       value: "Use the current TrustSlip reading so the selected pack carries today's visible evidence state.",
       icon: "refresh" as GsnIconName,
     },
     {
-      label: "3. Share or respond",
-      value: "Copy the pack note, open the public pack, or use the selected community confirmation question.",
+      label: "4. Share or respond",
+      value: "Copy the pack note, open the scoped public pack, or use the selected community confirmation question.",
       icon: "public-globe" as GsnIconName,
     },
   ];
@@ -3699,6 +3750,10 @@ export default function TrustSlipPage() {
         trust_slip_code: requestCode,
         requester_external_label: "TrustSlip viewer",
         reason_type: selectedPurposeOption.confirmationReasonType || "community_standing_check",
+        community_id:
+          selectedVerificationScope === "community_specific"
+            ? selectedVerificationCommunityId || undefined
+            : undefined,
         risk_level: "low",
         mode: communityConfirmation?.instant_pulse_available ? "instant_pulse" : "relay",
       });
@@ -4329,6 +4384,71 @@ export default function TrustSlipPage() {
               </div>
             )}
 
+            <div
+              data-gsn-trustslip-verification-scope="holder"
+              style={{
+                borderRadius: 14,
+                border: "1px solid rgba(37,78,119,0.12)",
+                background: "#FFFFFF",
+                padding: isCompact ? "10px 11px" : "12px 13px",
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 0.58fr) minmax(0, 1fr)",
+                gap: 9,
+                alignItems: "center",
+              }}
+            >
+              <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                <span style={{ ...sectionLabel(), color: "#7A4A00" }}>
+                  Verification scope
+                </span>
+                <select
+                  aria-label="Choose TrustSlip verification scope"
+                  value={selectedVerificationScope}
+                  onChange={(event) =>
+                    setSelectedVerificationScope(event.target.value as TrustSlipVerificationScope)
+                  }
+                  style={{
+                    width: "100%",
+                    minHeight: 46,
+                    borderRadius: 13,
+                    border: "1px solid rgba(37,78,119,0.2)",
+                    background: "#FFFDF7",
+                    color: "#07172C",
+                    fontSize: 16,
+                    fontWeight: 900,
+                    padding: "0 38px 0 11px",
+                  }}
+                >
+                  <option value="community_specific">This community only</option>
+                  <option value="all_visible_communities">All visible community context</option>
+                </select>
+              </label>
+              <div style={{ minWidth: 0 }}>
+                <div
+                  style={{
+                    color: "#07172C",
+                    fontSize: isCompact ? 13 : 14,
+                    fontWeight: 1000,
+                    lineHeight: 1.2,
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {verificationScopeLabel}
+                </div>
+                <div
+                  style={{
+                    marginTop: 4,
+                    color: "#526579",
+                    fontSize: isCompact ? 11 : 12,
+                    fontWeight: 850,
+                    lineHeight: 1.35,
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {verificationScopeBoundary}
+                </div>
+              </div>
+            </div>
             {isCompact ? (
               <div
                 data-gsn-trustslip-decision-pack-mechanics={

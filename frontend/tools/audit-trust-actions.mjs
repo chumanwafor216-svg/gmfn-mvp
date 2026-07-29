@@ -2255,7 +2255,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
-  /data-gsn-confirmation-community-selector="true"[\s\S]*?Confirmation community[\s\S]*?Choose the community that matches this decision[\s\S]*?confirmationCommunityId: selectedConfirmationCommunityId/,
+  /data-gsn-confirmation-community-selector="true"[\s\S]*?Which community should answer\?[\s\S]*?Choose the community that matches this decision[\s\S]*?confirmationCommunityId: selectedConfirmationCommunityId/,
   "TrustSlip Verify must let a verifier choose the relevant holder community before requesting live confirmation."
 );
 
@@ -2551,7 +2551,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
-  /const trustSlipHolderDecisionBoundaryRows: Array<\[string, string\]> = \[[\s\S]*?\["Evidence scope", numericCount\(activeCommunityCount\) > 1 \? "Primary \+ wider" : "Primary shown"\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Credit approval", "No"\][\s\S]*?\["Final decision", "Yours"\][\s\S]*?data-gsn-trustslip-holder-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?trustSlipHolderDecisionBoundaryRows\.map[\s\S]*?<CommunityProofPanel/,
+  /const trustSlipHolderDecisionBoundaryRows: Array<\[string, string\]> = \[[\s\S]*?\["Verification scope", verificationScopeLabel\][\s\S]*?\["Scope boundary", verificationScopeBoundary\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Credit approval", "No"\][\s\S]*?\["Final decision", "Yours"\][\s\S]*?data-gsn-trustslip-holder-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?trustSlipHolderDecisionBoundaryRows\.map[\s\S]*?<CommunityProofPanel/,
   "Signed-in TrustSlip holder paper must show one compact decision boundary before deeper community proof details."
 );
 if (findings.length > 0) {

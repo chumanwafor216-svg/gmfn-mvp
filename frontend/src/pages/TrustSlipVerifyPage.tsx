@@ -248,6 +248,30 @@ export default function TrustSlipVerifyPage() {
       search.get("decision_question")
     );
     const accessScope = firstTruthy(search.get("access_scope"), "public_decision_pack");
+    const verificationScope = firstTruthy(search.get("verification_scope"), accessScope);
+    const verificationCommunityId = firstTruthy(
+      search.get("verification_community_id"),
+      search.get("community_id"),
+      search.get("clan_id")
+    );
+    const verificationCommunityLabel = firstTruthy(search.get("verification_community_label"));
+    const verificationCommunityRef = firstTruthy(search.get("verification_community_ref"));
+    const verificationScopeLabel = firstTruthy(
+      search.get("verification_scope_label"),
+      verificationScope === "community_specific" && verificationCommunityLabel
+        ? `This community: ${verificationCommunityLabel}`
+        : verificationScope === "all_visible_communities"
+        ? "All visible community context"
+        : "Public Decision Pack"
+    );
+    const verificationScopeBoundary = firstTruthy(
+      search.get("verification_scope_boundary"),
+      verificationScope === "community_specific" && verificationCommunityLabel
+        ? `Live confirmation should be answered by ${verificationCommunityLabel}. Other communities are not treated as giving the same judgement.`
+        : verificationScope === "all_visible_communities"
+        ? "This link may show wider visible community context, but it is not proof that every community gives the same judgement. Live confirmation still needs a selected community."
+        : "The public link maps the decision question to possible GSN evidence sources; it does not expose private records or replace live confirmation."
+    );
     const decisionFocus = firstTruthy(search.get("decision_focus"), search.get("focus"));
     if (!decisionPackKey && !accessPurpose && !recipientQuestion && !decisionFocus) return null;
 
@@ -256,7 +280,7 @@ export default function TrustSlipVerifyPage() {
       label: accessPurpose,
       recipientQuestion,
       focus: decisionFocus,
-      scope: accessScope,
+      scope: verificationScope,
     });
 
     const relevantSignals = decisionPack.expectedEvidence.slice(0, 5).map((evidence, index) => ({
@@ -292,13 +316,16 @@ export default function TrustSlipVerifyPage() {
     const sourceSummary = recommendedChecks.length
       ? recommendedChecks.join("; ")
       : "Public TrustSlip context only; ask for live community confirmation before relying.";
+    const scopedSourceSummary = verificationScopeLabel
+      ? `${verificationScopeLabel}. ${sourceSummary}`
+      : sourceSummary;
     const boundaryList = decisionPack.refusesToClaim.slice(0, 3).join(", ") || "the final decision";
 
     return {
       decision_pack: decisionPack.key,
       access_purpose: decisionPack.label,
       share_purpose: decisionPack.label,
-      access_scope: decisionPack.scope,
+      access_scope: verificationScope,
       access_note: decisionPack.recipientQuestion,
       decision_pack_focus: decisionPack.focus,
       decision_pack_profile: {
@@ -315,9 +342,8 @@ export default function TrustSlipVerifyPage() {
             reading_scope: decisionPack.scope,
             included_active_community_count: null,
             includes_holder_level_records: false,
-            public_summary: sourceSummary,
-            boundary:
-              "The public link maps the decision question to possible GSN evidence sources; it does not expose private records or replace live confirmation.",
+            public_summary: scopedSourceSummary,
+            boundary: verificationScopeBoundary,
           },
           categories: mappedSources,
           private_review_required: privateReviewRequired,
@@ -336,11 +362,19 @@ export default function TrustSlipVerifyPage() {
             "Responses are community witness evidence only; they are not licences, guarantees, approvals, or final decisions.",
         },
       },
+      requested_community_confirmation: {
+        community_id: verificationCommunityId,
+        community_name: verificationCommunityLabel,
+        community_code: verificationCommunityRef,
+        requested_scope: verificationScope,
+        requested_scope_label: verificationScopeLabel,
+        requested_scope_boundary: verificationScopeBoundary,
+      },
       share_access_record: {
         recipient_label: "TrustSlip recipient",
         purpose: decisionPack.label,
-        scope: decisionPack.scope,
-        note: decisionPack.recipientQuestion,
+        scope: verificationScopeLabel || decisionPack.scope,
+        note: firstTruthy(decisionPack.recipientQuestion, verificationScopeBoundary),
         focus: decisionPack.focus,
         status: `Shared to support ${decisionPack.label}.`,
       },
@@ -492,12 +526,33 @@ export default function TrustSlipVerifyPage() {
 
         const mergedVerifyResult =
           verifyResult && publicDecisionPackContext
-            ? {
-                ...verifyResult,
-                ...publicDecisionPackContext,
-                decision_pack_profile:
-                  verifyResult?.decision_pack_profile || publicDecisionPackContext.decision_pack_profile,
-              }
+            ? (() => {
+                const backendDecisionPackProfile = verifyResult?.decision_pack_profile || {};
+                const contextDecisionPackProfile =
+                  publicDecisionPackContext.decision_pack_profile || {};
+                const backendEvidenceExtract = backendDecisionPackProfile?.evidence_extract || {};
+                const contextEvidenceExtract = contextDecisionPackProfile?.evidence_extract || {};
+                return {
+                  ...verifyResult,
+                  ...publicDecisionPackContext,
+                  decision_pack_profile: {
+                    ...backendDecisionPackProfile,
+                    ...contextDecisionPackProfile,
+                    evidence_extract: {
+                      ...contextEvidenceExtract,
+                      ...backendEvidenceExtract,
+                      evidence_scope: {
+                        ...(backendEvidenceExtract?.evidence_scope || {}),
+                        ...(contextEvidenceExtract?.evidence_scope || {}),
+                      },
+                    },
+                    community_confirmation_prompt: {
+                      ...(backendDecisionPackProfile?.community_confirmation_prompt || {}),
+                      ...(contextDecisionPackProfile?.community_confirmation_prompt || {}),
+                    },
+                  },
+                };
+              })()
             : verifyResult;
         const normalized = normalizeTrustSlipVerification(mergedVerifyResult, codeToUse);
         setRecord(normalized);
@@ -755,8 +810,21 @@ export default function TrustSlipVerifyPage() {
         is_primary_anchor: true,
       });
     }
+    const requestedCommunity = publicDecisionPackContext?.requested_community_confirmation;
+    if (requestedCommunity) {
+      addOption({
+        community_id: requestedCommunity.community_id,
+        community_name: requestedCommunity.community_name || communityLabel,
+        community_code: requestedCommunity.community_code,
+        holder_role: record?.holder_role,
+        is_primary_anchor: requestedCommunity.requested_scope === "community_specific",
+        relay_available: communityRelayAvailable,
+        instant_pulse_available: communityPulseAvailable,
+        plain_language: requestedCommunity.requested_scope_boundary,
+      });
+    }
     return options;
-  }, [record, communityConfirmation, communityLabel]);
+  }, [record, communityConfirmation, communityLabel, publicDecisionPackContext, communityRelayAvailable, communityPulseAvailable]);
 
   useEffect(() => {
     const firstOptionId = firstTruthy(communityConfirmationOptions[0]?.community_id);
@@ -764,13 +832,27 @@ export default function TrustSlipVerifyPage() {
       if (selectedConfirmationCommunityId) setSelectedConfirmationCommunityId("");
       return;
     }
+    const requestedOptionId = firstTruthy(
+      publicDecisionPackContext?.requested_community_confirmation?.community_id
+    );
+    const requestedAvailable = Boolean(
+      requestedOptionId &&
+        communityConfirmationOptions.some(
+          (item) => firstTruthy(item.community_id, item.clan_id) === requestedOptionId
+        )
+    );
+    const preferredOptionId = requestedAvailable ? requestedOptionId : firstOptionId;
     const stillAvailable = communityConfirmationOptions.some(
       (item) => firstTruthy(item.community_id, item.clan_id) === selectedConfirmationCommunityId
     );
-    if (!stillAvailable) {
-      setSelectedConfirmationCommunityId(firstOptionId);
+    if (!stillAvailable || (requestedAvailable && selectedConfirmationCommunityId !== requestedOptionId)) {
+      setSelectedConfirmationCommunityId(preferredOptionId);
     }
-  }, [communityConfirmationOptions, selectedConfirmationCommunityId]);
+  }, [
+    communityConfirmationOptions,
+    selectedConfirmationCommunityId,
+    publicDecisionPackContext,
+  ]);
 
   const selectedConfirmationCommunity =
     communityConfirmationOptions.find(
@@ -1705,8 +1787,3 @@ export default function TrustSlipVerifyPage() {
     </div>
   );
 }
-
-
-
-
-

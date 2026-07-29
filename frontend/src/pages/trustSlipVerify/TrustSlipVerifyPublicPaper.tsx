@@ -1073,7 +1073,7 @@ export default function TrustSlipVerifyPublicPaper({
   communityActivityLabel,
   activeCommunityCount,
   evidenceScopeSummary,
-
+  evidenceScopeBoundary,
   evidenceScopeReadingScope,
   relationshipEvidenceSummary,
   visibleBand,
@@ -1166,7 +1166,17 @@ export default function TrustSlipVerifyPublicPaper({
       ? `Primary anchor: ${communityLabel || "this community"}. Wider context: ${activeCommunityCountLabel} active community contexts.`
       : `Primary anchor: ${communityLabel || "this community"}. Wider context is still building.`
   );
+
   const evidenceScopeIsWider = firstTruthy(evidenceScopeReadingScope).toLowerCase() === "primary_plus_wider" || activeCommunityContexts > 1;
+  const requestedVerificationScopeLabel = firstTruthy(
+    recipientAccessRecord.scope,
+    evidenceScopeIsWider ? "Primary + wider" : "Primary shown"
+  );
+  const requestedVerificationScopeBoundary = firstTruthy(
+    decisionPackProfile.evidenceExtract.evidenceScope.boundary,
+    evidenceScopeBoundary,
+    "Live confirmation responses must be read as scoped community witness evidence, not as a universal judgement."
+  );
   const communityActivityCategoriesLabel = Array.isArray(communityActivityCategories)
     ? communityActivityCategories.map((item) => safeText(item)).filter(Boolean).join(", ")
     : "";
@@ -1309,8 +1319,8 @@ export default function TrustSlipVerifyPublicPaper({
     {
       icon: "community-building",
       label: "What we checked",
-      title: evidenceScopeIsWider ? `${activeCommunityCountLabel || "Multiple"} communities` : "Primary community",
-      text: evidenceScopeSummaryText,
+      title: requestedVerificationScopeLabel,
+      text: `${evidenceScopeSummaryText} ${requestedVerificationScopeBoundary}`,
       tone: holderRoleLabel.toLowerCase().includes("member") ? "neutral" : "trust",
     },
     {
@@ -1331,7 +1341,7 @@ export default function TrustSlipVerifyPublicPaper({
     },
   ];
   const decisionBoundaryRows: Array<[string, string]> = [
-    ["What we checked", evidenceScopeIsWider ? "Primary + wider" : "Primary shown"],
+    ["What we checked", requestedVerificationScopeLabel],
     ["Guarantee", "No"],
     ["Government ID", "No"],
     ["Credit approval", "No"],
@@ -3223,10 +3233,10 @@ export default function TrustSlipVerifyPublicPaper({
                   >
                     <div>
                       <div style={{ color: "#07172C", fontWeight: 1000 }}>
-                        Result return channel
+                        Choose confirmation community
                       </div>
                       <p style={{ margin: "6px 0 0", color: "#64748B", fontWeight: 850, lineHeight: 1.4 }}>
-                        The result link is the evidence source. SMS or WhatsApp only sends a notice back.
+                        Select the community that should answer this verification. The result link is the evidence source; SMS or WhatsApp only sends a notice back.
                       </p>
                     </div>
 
@@ -3235,7 +3245,7 @@ export default function TrustSlipVerifyPublicPaper({
                         data-gsn-confirmation-community-selector="true"
                         style={{ display: "grid", gap: 6 }}
                       >
-                        <span style={fieldLabel()}>Confirmation community</span>
+                        <span style={fieldLabel()}>Which community should answer?</span>
                         <select
                           value={selectedConfirmationCommunityId}
                           onChange={(event) =>
@@ -3264,7 +3274,7 @@ export default function TrustSlipVerifyPublicPaper({
                         data-gsn-confirmation-community-selector="single"
                         style={{ ...documentMetaCard("#FFFFFF"), display: "grid", gap: 4 }}
                       >
-                        <span style={fieldLabel()}>Confirmation community</span>
+                        <span style={fieldLabel()}>Which community should answer?</span>
                         <strong style={{ color: "#07172C", fontSize: 15 }}>
                           {firstTruthy(selectedConfirmationCommunity.community_name, communityLabel)}
                         </strong>

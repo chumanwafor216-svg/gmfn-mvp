@@ -157630,3 +157630,29 @@ Verification run locally:
 
 Deployment:
 - Local only. Push/deploy only when owner sends `2`.
+## 2026-07-29 - Local TrustSlip Holder Verification Scope Polish
+
+- Scope: local-only UX/data-flow finish after the owner tested TrustSlip Verify and could not see where to choose the community for verification.
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - Added an explicit holder-side `Verification scope` control next to Decision Pack selection.
+  - The public TrustSlip Verify link now carries `verification_scope`, `verification_scope_label`, `verification_scope_boundary`, and the selected primary community id/label/ref when scoped to one community.
+  - Holder-side instant community confirmation now sends `community_id` when the scope is `This community only`.
+- `frontend/src/pages/TrustSlipVerifyPage.tsx`
+  - Reads the verification-scope query params, merges them into the public Decision Pack evidence scope, and keeps backend evidence while letting the shared-link scope define the recipient-facing boundary.
+  - Adds the requested community into the confirmation options and preselects it when available.
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Shows the requested verification scope in the visible `What we checked` summary.
+  - Renamed the live confirmation control from `Result return channel` to `Choose confirmation community` and relabeled the selector as `Which community should answer?`.
+- `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+  - Added display labels for `community_specific` and `all_visible_communities` access scopes.
+
+Unabated truth:
+- This is not a new universal/all-community backend certification system.
+- `All visible community context` means the public paper can show wider visible context. It does not mean every community has confirmed the same judgement.
+- Live community confirmation remains scoped to one selected community per request, which is the auditable behavior we want.
+
+Verification run locally:
+- `npm --prefix frontend run build`
+
+Deployment:
+- Local only. Not pushed/deployed in this step.

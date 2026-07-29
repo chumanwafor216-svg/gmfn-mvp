@@ -931,6 +931,8 @@ function normalizeDecisionPackProfile(
   );
   const machineAccessScopeLabels = new Map([
     ["public_decision_pack", "Public Decision Pack"],
+    ["community_specific", "This community"],
+    ["all_visible_communities", "All visible community context"],
     ["decision_pack", "Decision Pack"],
     ["public_trustslip", "Public TrustSlip"],
     ["public_trust_slip", "Public TrustSlip"],
