@@ -2,27 +2,109 @@ import React, { useState } from "react";
 import { StableButton } from "../../components/StableButton";
 import { humanStatus } from "./statusLanguage";
 
-type ServiceReadinessPanelsProps = {
-  moduleScopeReadiness?: any;
-  moduleKeys?: unknown[];
-  billingStatus?: unknown;
-  quote?: any;
-  serviceSettingsProjection?: any;
-  economicParticipation?: any;
-  networkPresence?: any;
-  children?: React.ReactNode;
+type UnknownRecord = Record<string, unknown>;
+
+type ServicePrimaryNextAction = UnknownRecord & {
+  label?: unknown;
 };
 
-type ServiceReadinessItem = {
-  module_key?: string | null;
-  label?: string | null;
-  summary?: string | null;
-  enabled_by_template?: boolean;
-  module_scope_status?: string | null;
-  ready_for_future_module_scope?: boolean;
-  next_step?: string | null;
-  route_hint?: string | null;
-  requires_admin?: boolean;
+type ServiceReadinessItem = UnknownRecord & {
+  module_key?: unknown;
+  label?: unknown;
+  summary?: unknown;
+  enabled_by_template?: unknown;
+  module_scope_status?: unknown;
+  ready_for_future_module_scope?: unknown;
+  next_step?: unknown;
+  route_hint?: unknown;
+  requires_admin?: unknown;
+};
+
+type ModuleScopeReadinessSurface = UnknownRecord & {
+  modules?: unknown;
+  primary_next_action?: ServicePrimaryNextAction | null;
+};
+
+type BillingQuoteSurface = UnknownRecord & {
+  pricing_status?: unknown;
+  quote_status?: unknown;
+};
+
+type ServiceProjectionItem = UnknownRecord & {
+  module_key?: unknown;
+  label?: unknown;
+  summary?: unknown;
+  enabled?: unknown;
+  status?: unknown;
+};
+
+type ServiceSettingsProjectionSurface = UnknownRecord & {
+  items?: unknown;
+  enabled_total?: unknown;
+  optional_total?: unknown;
+  template_key?: unknown;
+  domain_type?: unknown;
+};
+
+type ServiceReadinessLane = UnknownRecord & {
+  lane_key?: unknown;
+  label?: unknown;
+  summary?: unknown;
+  ready?: unknown;
+  next_step?: unknown;
+  status?: unknown;
+};
+
+type EconomicParticipationCountsSurface = UnknownRecord & {
+  nodes?: unknown;
+  active_members?: unknown;
+  shops?: unknown;
+  listings?: unknown;
+  finance_records?: unknown;
+};
+
+type EconomicParticipationTemplateSurface = UnknownRecord & {
+  marketplace_role?: unknown;
+};
+
+type EconomicParticipationSurface = UnknownRecord & {
+  counts?: EconomicParticipationCountsSurface;
+  template?: EconomicParticipationTemplateSurface;
+  lanes?: unknown;
+  ready_total?: unknown;
+  primary_next_action?: ServicePrimaryNextAction | null;
+};
+
+type NetworkPresenceIdentitySurface = UnknownRecord & {
+  public_profile_present?: unknown;
+};
+
+type NetworkPresenceStatusSurface = UnknownRecord & {
+  public_url_status?: unknown;
+  verification_status?: unknown;
+  marketplace_role?: unknown;
+  social_community_bridge_status?: unknown;
+};
+
+type NetworkPresenceSurface = UnknownRecord & {
+  identity?: NetworkPresenceIdentitySurface;
+  status?: NetworkPresenceStatusSurface;
+  lanes?: unknown;
+  ready_total?: unknown;
+  primary_next_action?: ServicePrimaryNextAction | null;
+};
+
+type ServiceReadinessMapSurface = EconomicParticipationSurface | NetworkPresenceSurface;
+
+type ServiceReadinessPanelsProps = {
+  moduleScopeReadiness?: ModuleScopeReadinessSurface | null;
+  moduleKeys?: unknown[];
+  billingStatus?: unknown;
+  quote?: BillingQuoteSurface | null;
+  serviceSettingsProjection?: ServiceSettingsProjectionSurface | null;
+  economicParticipation?: EconomicParticipationSurface | null;
+  networkPresence?: NetworkPresenceSurface | null;
+  children?: React.ReactNode;
 };
 
 type ServiceReadinessRow = {
@@ -102,19 +184,26 @@ function countValue(value: unknown): string {
   return Number.isFinite(numberValue) ? String(numberValue) : "0";
 }
 
-function projectionItems(projection: any): any[] {
-  return Array.isArray(projection?.items) ? projection.items : [];
+function projectionItems(
+  projection: ServiceSettingsProjectionSurface | null | undefined
+): ServiceProjectionItem[] {
+  return Array.isArray(projection?.items) ? (projection.items as ServiceProjectionItem[]) : [];
 }
 
-function readinessLanes(map: any): any[] {
-  return Array.isArray(map?.lanes) ? map.lanes : [];
+function readinessLanes(
+  map: ServiceReadinessMapSurface | null | undefined
+): ServiceReadinessLane[] {
+  return Array.isArray(map?.lanes) ? (map.lanes as ServiceReadinessLane[]) : [];
 }
 
-function blockedLanes(lanes: any[]): any[] {
+function blockedLanes(lanes: ServiceReadinessLane[]): ServiceReadinessLane[] {
   return lanes.filter((lane) => !lane.ready);
 }
 
-function readyTotal(map: any, lanes: any[]): number {
+function readyTotal(
+  map: ServiceReadinessMapSurface | null | undefined,
+  lanes: ServiceReadinessLane[]
+): number {
   return typeof map?.ready_total === "number"
     ? map.ready_total
     : lanes.filter((lane) => lane.ready).length;
@@ -146,10 +235,10 @@ function serviceFallbackDetail(fallbackEnabled: boolean): string {
 }
 
 function serviceReadinessRows(
-  moduleScopeReadiness: any,
+  moduleScopeReadiness: ModuleScopeReadinessSurface | null | undefined,
   moduleKeys: unknown[],
   billingStatus: unknown,
-  quote: any
+  quote: BillingQuoteSurface | null | undefined
 ): ServiceReadinessRow[] {
   const readinessItems: ServiceReadinessItem[] = Array.isArray(moduleScopeReadiness?.modules)
     ? moduleScopeReadiness.modules
@@ -463,7 +552,7 @@ export default function CommunityDomainServiceReadinessPanels({
         {moduleScopeReadiness?.primary_next_action?.label ? (
           <div style={{ ...helperText(), marginTop: 7 }}>
             Next owner/admin step:{" "}
-            <strong>{moduleScopeReadiness.primary_next_action.label}</strong>.
+            <strong>{cleanText(moduleScopeReadiness.primary_next_action.label)}</strong>.
           </div>
         ) : null}
         <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
@@ -536,7 +625,7 @@ export default function CommunityDomainServiceReadinessPanels({
             <strong>
               {blockedEconomicParticipationLanes
                 .slice(0, 3)
-                .map((lane) => cleanText(lane.label, lane.lane_key || "economic check"))
+                .map((lane) => cleanText(lane.label, cleanText(lane.lane_key, "economic check")))
                 .join(", ")}
             </strong>
             .
@@ -598,7 +687,7 @@ export default function CommunityDomainServiceReadinessPanels({
             <strong>
               {blockedNetworkPresenceLanes
                 .slice(0, 3)
-                .map((lane) => cleanText(lane.label, lane.lane_key || "presence check"))
+                .map((lane) => cleanText(lane.label, cleanText(lane.lane_key, "presence check")))
                 .join(", ")}
             </strong>
             .

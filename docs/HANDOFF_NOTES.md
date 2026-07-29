@@ -1,3 +1,12 @@
+## 2026-07-29 - Local Community Domain service readiness type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `1fcc193b`; push/deploy only when the owner sends `push`, `2`, or explicitly asks.
+- Tightened `frontend/src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx` by replacing broad `any` props/helper arrays with route-local UI-facing surfaces for module scope readiness, billing quote status, service settings projection rows, economic participation maps, and network presence maps.
+- `projectionItems`, `readinessLanes`, `blockedLanes`, `readyTotal`, and `serviceReadinessRows` now return/accept typed service-readiness surfaces instead of `any` or `any[]`.
+- Cleaned service primary next action and lane fallback expressions so unknown backend labels/keys are converted through `cleanText` before rendering.
+- No app UI, backend API, service activation behavior, service settings behavior, economic participation behavior, network presence behavior, permissions, action counts, button geometry, or user-facing Service Readiness behavior changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this is compile-time hardening only. It does not activate services, publish the domain, move money, create marketplace/finance records, add generated backend schema validation, or reduce the heavy Community Domain route.
+
 ## 2026-07-29 - Local Community Domain structure planning type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `3b739f59`; push/deploy only when the owner sends `push`, `2`, or explicitly asks.
 - Tightened `frontend/src/pages/communityDomainDashboard/StructurePlanningPanels.tsx` by replacing broad `any` props/helper arrays with route-local UI-facing surfaces for rollout plans, rollout phases, rollout units, activity maps, activity map lanes, group readiness summaries, and group candidate rows.
