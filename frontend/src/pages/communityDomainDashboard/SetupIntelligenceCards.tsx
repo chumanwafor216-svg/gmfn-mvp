@@ -1,10 +1,47 @@
 import React from "react";
 import { humanStatus } from "./statusLanguage";
 
+type UnknownRecord = Record<string, unknown>;
+
+type SetupPrimaryNextAction = UnknownRecord & {
+  label?: unknown;
+};
+
+type SetupReadinessItem = UnknownRecord & {
+  lane_key?: unknown;
+  label?: unknown;
+  ready?: unknown;
+  next_step?: unknown;
+  state?: unknown;
+};
+
+type SetupReadinessSurface = UnknownRecord & {
+  items?: unknown;
+  ready_total?: unknown;
+  total?: unknown;
+  blocked_total?: unknown;
+  primary_next_action?: SetupPrimaryNextAction | null;
+};
+
+type SetupPlanStep = UnknownRecord & {
+  step_key?: unknown;
+  label?: unknown;
+  completed?: unknown;
+  missing_items?: unknown;
+  requires_admin?: unknown;
+};
+
+type SetupPlanSurface = UnknownRecord & {
+  steps?: unknown;
+  completed_steps?: unknown;
+  setup_phase?: unknown;
+  primary_next_action?: SetupPrimaryNextAction | null;
+};
+
 type SetupIntelligenceCardsProps = {
   isBaseReadinessLoading?: boolean;
-  setupReadiness?: any;
-  setupPlan?: any;
+  setupReadiness?: SetupReadinessSurface | null;
+  setupPlan?: SetupPlanSurface | null;
 };
 
 function cleanText(value: unknown, fallback = ""): string {
@@ -81,12 +118,16 @@ function statusBadge(status: unknown): React.CSSProperties {
   };
 }
 
-function setupReadinessItems(setupReadiness: any): any[] {
-  return Array.isArray(setupReadiness?.items) ? setupReadiness.items : [];
+function setupReadinessItems(
+  setupReadiness: SetupReadinessSurface | null | undefined
+): SetupReadinessItem[] {
+  return Array.isArray(setupReadiness?.items)
+    ? (setupReadiness.items as SetupReadinessItem[])
+    : [];
 }
 
-function setupPlanSteps(setupPlan: any): any[] {
-  return Array.isArray(setupPlan?.steps) ? setupPlan.steps : [];
+function setupPlanSteps(setupPlan: SetupPlanSurface | null | undefined): SetupPlanStep[] {
+  return Array.isArray(setupPlan?.steps) ? (setupPlan.steps as SetupPlanStep[]) : [];
 }
 
 const SETUP_SCOPE_NOTE =
@@ -215,7 +256,7 @@ export default function CommunityDomainSetupIntelligenceCards({
                   >
                     <span style={{ minWidth: 0 }}>
                       <span style={{ display: "block", fontWeight: 950 }}>
-                        {cleanText(step.label, compactStatus(step.step_key || "Setup step"))}
+                        {cleanText(step.label, compactStatus(cleanText(step.step_key, "Setup step")))}
                       </span>
                       <span
                         style={{
