@@ -1,3 +1,29 @@
+## CURRENT LOCAL STATE - 2026-07-29 - Marketplace glyph dead-code polish
+
+Owner trigger:
+- Owner said to continue after the QA/polish deployment, so this continued into the remaining route-size caveat.
+
+Unabated truth:
+- This is a small measured cleanup, not the full bundle-splitting fix.
+- `frontend/src/pages/MarketplacePage.tsx` still remains a large route chunk after the change: `MarketplacePage-Bo8kpxSp.js` reports `219.87 kB`, `55.53 kB gzip`.
+- An attempted lazy split of secondary Marketplace components made the route worse (`220.86 kB`, `55.76 kB gzip`), so it was reverted before final verification.
+- The real next performance step is a planned extraction of stateful Marketplace sections, not quick lazy imports around already-shared component chunks.
+
+Changed:
+- `frontend/src/pages/MarketplacePage.tsx`
+  - Removed the unused manual SVG switch inside `MarketplaceGlyph`.
+  - Kept the existing `GsnLegacyIcon` render path and `MARKETPLACE_GLYPH_ICON_MAP`, so the visible icon system remains unchanged.
+
+Verification:
+- Passed `npm --prefix frontend run lint`.
+- Passed `npm --prefix frontend run audit:marketplace-front-package`.
+- Passed `npm --prefix frontend run audit:icon-protocol`.
+- Passed `npm --prefix frontend run build`.
+- Passed elevated `npm --prefix frontend run smoke:marketplace-hero` after sandbox Vite/esbuild `spawn EPERM`.
+- Passed elevated `npm --prefix frontend run smoke:marketplace-boundaries` after sandbox Vite/esbuild `spawn EPERM`.
+
+Deployment:
+- Local only so far in this slice. Commit/push/deploy after final status review.
 ## CURRENT LOCAL STATE - 2026-07-29 - QA/polish deploy completion
 
 Owner trigger:
