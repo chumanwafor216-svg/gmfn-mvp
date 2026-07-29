@@ -25,7 +25,12 @@ Verification:
 - Normal sandbox Vite start failed first with esbuild `spawn EPERM`; elevated local server was required and was stopped after audits.
 
 Deployment:
-- Pending commit/push/deploy verification.
+- Pushed `8193c864 Harden Community Domain real-life record panel types` to `origin/main`.
+- Triggered GitHub Actions `Trigger Render Deploy` run `30427527746` with `deploy_api=false`.
+- Workflow completed successfully in 2m14s.
+- Confirmed steps included frontend deploy hook, exact frontend Render API deploy, and public URL marker verification.
+- Render API response did not include a deploy id; workflow looked up recent `gmfn-frontend` deploys and still completed successfully.
+- Backend/API deploy skipped by workflow because `deploy_api=false`.
 
 ## CURRENT LOCAL STATE - 2026-07-29 - Community Domain real-life record split
 
