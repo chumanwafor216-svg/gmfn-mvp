@@ -128,6 +128,28 @@ const files = {
   },
 };
 
+files.marketplacePage.source = files.marketplacePage.source.replace(
+  /<MarketplaceBoardSection[\s\S]*?\/>/,
+  readFileSync(
+    join(frontendRoot, "src", "pages", "marketplace", "MarketplaceBoardSection.tsx"),
+    "utf8"
+  )
+);
+
+files.communityDomainPage.source = files.communityDomainPage.source.replace(
+  /<CommunityDomainRealLifeRecordPanel[\s\S]*?\/>/,
+  readFileSync(
+    join(
+      frontendRoot,
+      "src",
+      "pages",
+      "communityDomainDashboard",
+      "RealLifeRecordPanel.tsx"
+    ),
+    "utf8"
+  )
+);
+
 const findings = [];
 
 function lineAt(source, index) {
@@ -334,7 +356,7 @@ assertContains(
 
 assertContains(
   files.marketplacePage,
-  /Demand Box signals[\s\S]*?read-only\s+[\s\S]*?pointers[\s\S]*?responding, contact, terms, and closure stay[\s\S]*?inside Demand Box[\s\S]*?Respond in Demand Box/,
+  /Demand Box signals[\s\S]*?read-only\s+[\s\S]*?pointers[\s\S]*?responding, contact, terms, and closure stay[\s\S]*?inside[\s\S]*?Demand Box[\s\S]*?Respond in Demand Box/,
   "Marketplace Official Board must show Demand Box signals as read-only pointers, not as a second response surface."
 );
 

@@ -9,15 +9,33 @@ const repoRoot = join(toolDir, "..", "..");
 const frontendRoot = join(toolDir, "..");
 
 const findings = [];
+const communityDomainDashboardFile = "src/pages/CommunityDomainDashboardPage.tsx";
+const communityDomainRealLifeRecordFile =
+  "src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx";
 
 function readFromRoot(relativePath) {
   return readFileSync(join(repoRoot, relativePath), "utf8");
 }
 
-function readFromFrontend(relativePath) {
+function readRawFromFrontend(relativePath) {
   return readFileSync(join(frontendRoot, relativePath), "utf8");
 }
 
+function readCommunityDomainDashboardAuditSource() {
+  const dashboardSource = readRawFromFrontend(communityDomainDashboardFile);
+  const realLifeRecordSource = readRawFromFrontend(communityDomainRealLifeRecordFile);
+  return dashboardSource.replace(
+    /<CommunityDomainRealLifeRecordPanel[\s\S]*?\/>/,
+    realLifeRecordSource
+  );
+}
+
+function readFromFrontend(relativePath) {
+  if (relativePath === communityDomainDashboardFile) {
+    return readCommunityDomainDashboardAuditSource();
+  }
+  return readRawFromFrontend(relativePath);
+}
 function assertContains(rootedPath, pattern, message, options = {}) {
   const text = options.frontend
     ? readFromFrontend(rootedPath)

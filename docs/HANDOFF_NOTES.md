@@ -1,3 +1,41 @@
+## CURRENT LOCAL STATE - 2026-07-29 - Community Domain real-life record split
+
+Owner trigger:
+- Owner said "continue" after the Marketplace secondary-lane split was deployed, so this continued the route-size/performance cleanup into the next largest frontend route.
+
+Unabated truth:
+- This is a real Community Domain route split for the admin-only Real Life Record workflow.
+- The initial `CommunityDomainDashboardPage` chunk dropped from the prior measured build output of `259.41 kB / 57.22 kB gzip` to `226.59 kB / 52.69 kB gzip`.
+- New lazy child chunk: `RealLifeRecordPanel-Cheq-olT.js` at `41.91 kB / 7.68 kB gzip`.
+- Devil's advocate caveat: `RealLifeRecordPanel.tsx` is a lazy UI shell that receives parent-owned workflow state through one `data` prop and uses a local `@ts-nocheck` waiver. This kept backend writes, permissions, and state ownership in the already-typed parent, but the child itself is not independently type-checked. Audits and browser checks passed, but a future hardening pass should replace the `data` prop with an explicit typed props contract.
+- Dashboard remains large and was not touched because the `/app/dashboard` Market Wisdom area is frozen.
+
+Changed:
+- `frontend/src/pages/CommunityDomainDashboardPage.tsx`
+  - Lazy-loads the admin-only Real Life Record workflow only when `isAdmin && activeGovernanceTask === "real_life_record"`.
+  - Keeps parent-owned state, API write handlers, permission gates, and active Governance task selection intact.
+- `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`
+  - New extracted lazy panel containing activity record, beneficiary outcome record, contact/consent, confirmation, manual delivery receipt, provider-send readiness, and correction-review UI.
+- `frontend/tools/audit-community-domain-product-contracts.mjs`
+  - Composes the extracted Real Life Record panel source back into static dashboard contract checks.
+- `frontend/tools/audit-notice-board-phone-notifications.mjs`
+  - Composes extracted Marketplace Official Board and Community Domain Real Life Record sources back into notice-board source checks.
+
+Verification:
+- Passed `npm --prefix frontend run lint`.
+- Passed `npm --prefix frontend run build` with `CommunityDomainDashboardPage-XBEhh1yS.js` at `226.59 kB / 52.69 kB gzip`.
+- Passed `npm --prefix frontend run audit:community-domain-product-contracts`.
+- Passed `npm --prefix frontend run audit:community-domain-evidence-readiness-boundary`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run audit:notice-board-phone-notifications`.
+- Passed elevated `npm --prefix frontend run audit:community-domain-billing-sequence` after starting local Vite on `127.0.0.1:5180`.
+- Passed elevated `npm --prefix frontend run audit:community-domain-mobile-visual` after starting local Vite on `127.0.0.1:5180`.
+- Normal sandbox browser runs failed first with Playwright `spawn EPERM`; elevated reruns were required.
+- Local Vite server on port `5180` was stopped after audits.
+
+Deployment:
+- Local only at time of this note. Commit, push, and frontend Render deploy still pending.
+
 ## CURRENT LOCAL STATE - 2026-07-29 - Marketplace secondary lane split
 
 Owner trigger:
