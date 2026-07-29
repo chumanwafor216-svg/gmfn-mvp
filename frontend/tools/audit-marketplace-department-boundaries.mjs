@@ -9,11 +9,13 @@ const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const marketplaceBoardFile = "src/pages/marketplace/MarketplaceBoardSection.tsx";
 const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
 const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
+const marketplaceSupportTypesFile = "src/pages/marketplace/MarketplaceSupportTypes.ts";
 const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const marketplaceBoardSource = readFileSync(join(frontendRoot, marketplaceBoardFile), "utf8");
 const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
 const marketplaceSupportSource = readFileSync(join(frontendRoot, marketplaceSupportFile), "utf8");
-const source = marketplacePageSource
+const marketplaceSupportTypesSource = readFileSync(join(frontendRoot, marketplaceSupportTypesFile), "utf8");
+const source = `${marketplaceSupportTypesSource}` + marketplacePageSource
   .replace(/<MarketplaceBoardSection\b[\s\S]*?\n\s*\/>/, marketplaceBoardSource)
   .replace(/<MarketplaceMembersSection\b[\s\S]*?\n\s*\/>/, marketplaceMembersSource)
   .replace(/<MarketplaceSupportSection\b[\s\S]*?\n\s*\/>/, marketplaceSupportSource);

@@ -105,7 +105,15 @@ import {
   scrollElementToMarketplaceLanding,
   traceMarketplaceLanding,
 } from "../lib/marketplaceActionStability";
-import type { MarketplaceSupportSectionData } from "./marketplace/MarketplaceSupportSection";
+import type {
+  LoanDraftSummary,
+  LoanSupportItem,
+  MarketplaceDepartmentTone,
+  MarketplaceSectionKey,
+  MarketplaceSupportSectionData,
+  SuggestedSupporter,
+  SupportDeskMode,
+} from "./marketplace/MarketplaceSupportTypes";
 import {
   marketWisdomPairFromDailyInsight,
   type MarketWisdomPair,
@@ -495,36 +503,6 @@ type RepostTargetSuggestion = {
   max_spotlights?: number | string | null;
 };
 
-type LoanSupportItem = {
-  id?: number;
-  clan_id?: number;
-  title?: string | null;
-  purpose?: string | null;
-  status?: string | null;
-  amount?: string | number | null;
-  currency?: string | null;
-  borrower_name?: string | null;
-  guarantor_name?: string | null;
-  created_at?: string | null;
-  role?: string | null;
-};
-
-type LoanDraftSummary = {
-  id?: number;
-  status?: string | null;
-  amount?: string | number | null;
-  currency?: string | null;
-  service_fee?: string | number | null;
-  net_disbursed_amount?: string | number | null;
-  guarantor_pool?: string | number | null;
-  platform_revenue?: string | number | null;
-  remaining_amount?: string | number | null;
-  guarantors_required?: number | null;
-  approved_guarantors?: number | null;
-  guarantors_total?: number | null;
-  due_at?: string | null;
-  decision_at?: string | null;
-};
 
 type PayInAccountDraft = {
   accountName: string;
@@ -536,27 +514,10 @@ type PayInAccountDraft = {
   note: string;
 };
 
-type SuggestedSupporter = {
-  key: string;
-  userId?: number;
-  gmfnId?: string;
-  name: string;
-  reason?: string | null;
-  recommendedPledge?: string | null;
-};
 
 type NoticeTone = "success" | "error";
 
-type SectionState = {
-  board: boolean;
-  money: boolean;
-  rosca: boolean;
-  tools: boolean;
-  members: boolean;
-  trade: boolean;
-  demand: boolean;
-  support: boolean;
-};
+type SectionState = Record<MarketplaceSectionKey, boolean>;
 
 type MarketplaceWisdomAction = {
   key: keyof SectionState;
@@ -568,7 +529,6 @@ type MarketplaceWisdomAction = {
   background: string;
 };
 
-type SupportDeskMode = "choices" | "loan";
 type FrontDomainGroup = "supportMoney" | "boardMembers" | null;
 
 type LinkCenterTool =
@@ -2557,13 +2517,6 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-type MarketplaceDepartmentTone =
-  | "trade"
-  | "members"
-  | "demand"
-  | "support"
-  | "rosca"
-  | "neutral";
 
 function marketplaceDepartmentShellStyle(
   tone: MarketplaceDepartmentTone,

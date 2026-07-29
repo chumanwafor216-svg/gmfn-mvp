@@ -140,8 +140,14 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/marketplace/MarketplaceSupportTypes.ts",
+  /export type MarketplaceSectionKey =[\s\S]*?\| "rosca"[\s\S]*?\| "support"/,
+  "Marketplace section key types must keep ROSCA and Support as first-class sections."
+);
+
+assertContains(
   "src/pages/MarketplacePage.tsx",
-  /type SectionState = \{[\s\S]*?rosca: boolean[\s\S]*?MARKETPLACE_SECTION_ANCHORS[\s\S]*?rosca: "marketplace-rosca"[\s\S]*?if \(hash !== "marketplace-rosca"\) return;[\s\S]*?focusedMarketplaceSectionState\("rosca"\)[\s\S]*?scrollToMarketplaceSection\("marketplace-rosca"\)/,
+  /type SectionState = Record<MarketplaceSectionKey, boolean>;[\s\S]*?MARKETPLACE_SECTION_ANCHORS[\s\S]*?rosca: "marketplace-rosca"[\s\S]*?if \(hash !== "marketplace-rosca"\) return;[\s\S]*?focusedMarketplaceSectionState\("rosca"\)[\s\S]*?scrollToMarketplaceSection\("marketplace-rosca"\)/,
   "Marketplace ROSCA must be a first-class section with its own stable hash landing."
 );
 

@@ -1,3 +1,12 @@
+## 2026-07-29 - Local Marketplace Support shared type source
+- Status: Local only, not pushed/deployed. Builds on local commit `002512d7`; push/deploy only when the owner sends `2` or explicitly asks.
+- Moved the Marketplace Support split's shared UI handoff types into `frontend/src/pages/marketplace/MarketplaceSupportTypes.ts` so the parent and lazy child no longer keep duplicate `LoanSupportItem`, `LoanDraftSummary`, `SuggestedSupporter`, `SupportDeskMode`, section-key, and department-tone aliases.
+- `MarketplacePage.tsx` now imports the support-facing types from the route-local type file and keeps `SectionState` tied to `MarketplaceSectionKey` with `Record<MarketplaceSectionKey, boolean>`.
+- `MarketplaceSupportSection.tsx` now imports `MarketplaceSupportSectionData` from the shared type source while preserving the same lazy child rendering and parent-owned state/handler boundary.
+- Updated Marketplace audits that previously looked for inline page-local type aliases so they validate the new shared type source instead of stale source layout.
+- No app UI, backend API, route, permissions, action counts, state ownership, or runtime bundle sizes changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:marketplace-support-lane`; `npm --prefix frontend run audit:marketplace-button-inventory`; `npm --prefix frontend run audit:marketplace-actions`; `npm --prefix frontend run audit:marketplace-department-boundaries`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`.
+- Devil's advocate: this is still not a generated API schema and does not validate backend payloads at runtime. It only removes duplicated route-local UI types and tightens compile-time drift protection across the lazy Support split.
 ## 2026-07-29 - Local Marketplace Support data contract hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `ad9b3fb6`; push/deploy only when the owner sends `2` or explicitly asks.
 - Tightened the lazy Marketplace Support section split by replacing the child `Record<string, any>` data prop with exported `MarketplaceSupportSectionData` route-local UI value shapes.
