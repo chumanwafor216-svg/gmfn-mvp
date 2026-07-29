@@ -1,3 +1,11 @@
+## 2026-07-29 - Local Community Domain governance readiness type hardening
+- Status: Local only, not pushed/deployed. Builds on pushed commit `57a53ab5`; push/deploy only when the owner sends `push`, `2`, or explicitly asks.
+- Tightened `frontend/src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx` by replacing broad `any` props/helper arrays with route-local UI-facing surfaces for delegation maps, governance coverage maps, coverage gaps, primary next actions, and governance readiness lanes.
+- `readinessLanes`, `readyTotal`, and `governanceCoverageGaps` now return/accept typed governance readiness surfaces instead of `any` or `any[]`.
+- Cleaned the delegation lane fallback expression so unknown backend lane keys are converted through `cleanText` before they become visible fallback text.
+- No app UI, backend API, governance review behavior, delegation behavior, coverage behavior, permissions, action counts, button geometry, or user-facing Governance lane behavior changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this is compile-time hardening only. It does not add governance decisions, role assignment, policy creation, generated backend schema validation, or reduce the heavy Community Domain route.
 ## 2026-07-29 - Pushed local QA/type-hardening batch
 - Status: Pushed to `origin/main` at commit `7ec92087`; no Render deploy was triggered in this step because the owner asked for `push`, not `deploy`.
 - Pushed the local batch of 11 commits from `2f39cca8` through `7ec92087` covering Shop Control Spotlight lazy split/type hardening, Marketplace lazy split/audit/type cleanup, and Community Domain Billing/Member readiness type hardening.

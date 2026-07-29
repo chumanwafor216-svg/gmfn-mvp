@@ -2,14 +2,47 @@ import React, { useState } from "react";
 import { StableButton } from "../../components/StableButton";
 import { humanStatus } from "./statusLanguage";
 
+type UnknownRecord = Record<string, unknown>;
+
+type GovernanceReadinessLane = UnknownRecord & {
+  lane_key?: unknown;
+  label?: unknown;
+  ready?: unknown;
+  status?: unknown;
+  next_step?: unknown;
+};
+
+type GovernancePrimaryNextAction = UnknownRecord & {
+  label?: unknown;
+};
+
+type DelegationMapSurface = UnknownRecord & {
+  summary?: UnknownRecord;
+  primary_next_action?: GovernancePrimaryNextAction | null;
+  lanes?: unknown;
+  ready_total?: unknown;
+};
+
+type GovernanceCoverageGap = UnknownRecord & {
+  node?: (UnknownRecord & { id?: unknown; name?: unknown }) | null;
+  governance_status?: unknown;
+  next_step?: unknown;
+};
+
+type GovernanceCoverageSurface = UnknownRecord & {
+  counts?: UnknownRecord;
+  primary_next_action?: GovernancePrimaryNextAction | null;
+  flat_nodes?: unknown;
+};
+
 type GovernanceReadinessPanelsProps = {
   isAdmin?: boolean;
-  membershipAccessRequests?: any[];
+  membershipAccessRequests?: UnknownRecord[];
   governanceAttentionCount?: number;
   institutionalOpenReviewCount?: number;
   governanceApprovedCount?: number;
-  delegationMap?: any;
-  governanceCoverage?: any;
+  delegationMap?: DelegationMapSurface | null;
+  governanceCoverage?: GovernanceCoverageSurface | null;
 };
 
 type GovernanceDetailKey = "review" | "delegation" | "coverage";
@@ -49,21 +82,30 @@ function countValue(value: unknown): string {
   return Number.isFinite(numberValue) ? String(numberValue) : "0";
 }
 
-function readinessLanes(map: any): any[] {
-  return Array.isArray(map?.lanes) ? map.lanes : [];
+function isRecord(value: unknown): value is UnknownRecord {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
-function readyTotal(map: any, lanes: any[]): number {
+function readinessLanes(map: { lanes?: unknown } | null | undefined): GovernanceReadinessLane[] {
+  return Array.isArray(map?.lanes) ? map.lanes.filter(isRecord) : [];
+}
+
+function readyTotal(
+  map: { ready_total?: unknown } | null | undefined,
+  lanes: GovernanceReadinessLane[]
+): number {
   return typeof map?.ready_total === "number"
     ? map.ready_total
     : lanes.filter((lane) => lane.ready).length;
 }
 
-function governanceCoverageGaps(governanceCoverage: any): any[] {
+function governanceCoverageGaps(
+  governanceCoverage: GovernanceCoverageSurface | null | undefined
+): GovernanceCoverageGap[] {
   const nodes = Array.isArray(governanceCoverage?.flat_nodes)
-    ? governanceCoverage.flat_nodes
+    ? governanceCoverage.flat_nodes.filter(isRecord)
     : [];
-  return nodes.filter((item: any) => {
+  return nodes.filter((item) => {
     const statusText = cleanText(item.governance_status).toLowerCase();
     return statusText.includes("needs") || statusText.includes("inactive");
   });
@@ -421,7 +463,7 @@ export default function CommunityDomainGovernanceReadinessPanels({
             <strong>
               {blockedDelegationLanes
                 .slice(0, 3)
-                .map((lane) => cleanText(lane.label, lane.lane_key || "delegation check"))
+                .map((lane) => cleanText(lane.label, cleanText(lane.lane_key, "delegation check")))
                 .join(", ")}
             </strong>
             .
