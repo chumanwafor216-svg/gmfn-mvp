@@ -112,6 +112,7 @@ import {
 } from "../lib/communityMoney";
 import { humanStatus } from "./communityDomainDashboard/statusLanguage";
 import type { RealLifeRecordPanelData } from "./communityDomainDashboard/RealLifeRecordPanel";
+import type { BillingTaskPanelsData } from "./communityDomainDashboard/BillingTaskPanelsTypes";
 
 const CommunityDomainNodeProjectionGroups = lazy(
   () => import("./communityDomainDashboard/NodeProjectionGroups")
@@ -9952,7 +9953,7 @@ export default function CommunityDomainDashboardPage() {
                         statusBadge,
                         subscriptionStatusMode,
                         updateCommunityPayInDraft,
-                      }}
+                      } satisfies BillingTaskPanelsData}
                     />
                   </Suspense>
                 ) : null}

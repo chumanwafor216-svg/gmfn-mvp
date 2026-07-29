@@ -2,9 +2,10 @@ import React from "react";
 import { GsnRealisticIcon } from "../../components/GsnRealisticIcon";
 import PaymentProofSubmissionPanel from "../../components/PaymentProofSubmissionPanel";
 import { StableButton } from "../../components/StableButton";
+import type { BillingTaskPanelsData } from "./BillingTaskPanelsTypes";
 
 type BillingTaskPanelsProps = {
-  data: Record<string, any>;
+  data: BillingTaskPanelsData;
 };
 
 export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
@@ -211,7 +212,7 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
                             gap: 8,
                           }}
                         >
-                          {BILLING_TASK_OPTIONS.map((task: any) => (
+                          {BILLING_TASK_OPTIONS.map((task) => (
                             <StableButton
                               key={task.key}
                               type="button"
@@ -249,7 +250,7 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
                           marginTop: 12,
                         }}
                       >
-                        {billingSequenceSteps.map((item: any) =>
+                        {billingSequenceSteps.map((item) =>
                           billingStepCard(
                             item.step,
                             item.title,
@@ -340,7 +341,7 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
                             gap: 8,
                           }}
                         >
-                          {BILLING_ACCOUNT_TASK_OPTIONS.map((task: any) => {
+                          {BILLING_ACCOUNT_TASK_OPTIONS.map((task) => {
                             const selected = task.key === activeBillingAccountTask;
                             return (
                               <StableButton
@@ -402,7 +403,7 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
                               {communityPayInCountryLabel}
                             </div>
                           </div>
-                          {communityPayInRows.slice(0, 5).map(([label, value]: any[]) => (
+                          {communityPayInRows.slice(0, 5).map(([label, value]) => (
                             <div
                               key={label}
                               style={{
@@ -458,7 +459,7 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
                                 }
                                 style={billingInputStyle()}
                               >
-                                {SETTLEMENT_COUNTRY_OPTIONS.map((option: any) => (
+                                {SETTLEMENT_COUNTRY_OPTIONS.map((option) => (
                                   <option key={option.value} value={option.value}>
                                     {option.label} - {option.currency}
                                   </option>
@@ -700,7 +701,7 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
                             gap: 8,
                           }}
                         >
-                          {BILLING_PAYMENT_GROUP_OPTIONS.map((group: any) => {
+                          {BILLING_PAYMENT_GROUP_OPTIONS.map((group) => {
                             const selected = group.key === activeBillingPaymentGroup;
                             return (
                               <StableButton
@@ -778,7 +779,7 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
                                 gap: 8,
                               }}
                             >
-                              {activeBillingPaymentGroupTasks.map((task: any) => {
+                              {activeBillingPaymentGroupTasks.map((task) => {
                                 const selected = task.key === activeBillingPaymentTask;
                                 return (
                                   <StableButton
@@ -863,7 +864,7 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
                                 <option value="">
                                   Choose the dedicated marketplace community
                                 </option>
-                                {communityLinkClanRows.map((row: any) => (
+                                {communityLinkClanRows.map((row) => (
                                   <option key={row.id} value={String(row.id)}>
                                     {row.name}
                                     {row.communityCode ? ` - ${row.communityCode}` : ""}
@@ -934,7 +935,7 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
                               }}
                               style={billingInputStyle()}
                             >
-                              {SETTLEMENT_COUNTRY_OPTIONS.map((option: any) => (
+                              {SETTLEMENT_COUNTRY_OPTIONS.map((option) => (
                                 <option key={option.value} value={option.value}>
                                   {option.label} - {option.currency}
                                 </option>
@@ -1054,7 +1055,7 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
                                   cleanText(
                                     domainPaymentIntent?.domain_display_name,
                                     cleanText(
-                                      (dashboard?.community_domain as any)?.display_name,
+                                      dashboard?.community_domain?.display_name,
                                       "Community Domain"
                                     )
                                   ),
@@ -1063,10 +1064,10 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
                                   "Record",
                                   cleanText(
                                     domainPaymentIntent?.expected_payment_id,
-                                    domainPayment?.id
+                                    cleanText(domainPayment?.id)
                                   ),
                                 ],
-                              ].map(([label, value]: any[]) => (
+                              ].map(([label, value]) => (
                                 <div
                                   key={label}
                                   style={{
@@ -1124,7 +1125,7 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
                                   gap: 8,
                                 }}
                               >
-                                {domainPaymentSettlementRows.map(([label, value]: any[]) => (
+                                {domainPaymentSettlementRows.map(([label, value]) => (
                                   <div
                                     key={label}
                                     style={{

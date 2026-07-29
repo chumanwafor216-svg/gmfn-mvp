@@ -16,6 +16,10 @@ const dashboardSource = readFileSync(
   join(frontendRoot, "src", "pages", "CommunityDomainDashboardPage.tsx"),
   "utf8"
 );
+const billingTaskPanelsSource = readFileSync(
+  join(frontendRoot, "src", "pages", "communityDomainDashboard", "BillingTaskPanels.tsx"),
+  "utf8"
+);
 const billingPanelsSource = readFileSync(
   join(frontendRoot, "src", "pages", "communityDomainDashboard", "BillingReadinessPanels.tsx"),
   "utf8"
@@ -443,7 +447,7 @@ if (
 
 if (
   !/title="Community Domain payment proof"[\s\S]*?compact[\s\S]*?debugIdPrefix="community-domain-payment-proof"/.test(
-    dashboardSource
+    billingTaskPanelsSource
   )
 ) {
   findings.push(

@@ -1,3 +1,14 @@
+## 2026-07-29 - Local Community Domain billing task data contract hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `ac94f3af`; push/deploy only when the owner sends `2` or explicitly asks.
+- Replaced the lazy `BillingTaskPanels` component's broad `Record<string, any>` prop boundary with a route-local `BillingTaskPanelsData` contract in `frontend/src/pages/communityDomainDashboard/BillingTaskPanelsTypes.ts`.
+- `CommunityDomainDashboardPage.tsx` now checks the object passed into the lazy Billing task child with `satisfies BillingTaskPanelsData`, so missing, extra, or wrongly shaped handoff keys are caught during TypeScript build.
+- The contract reuses the existing `PaymentProofExpectedPayment` surface for proof upload compatibility and keeps Community Domain billing values as UI-facing route-local surfaces where backend payloads may carry extra fields.
+- Removed explicit `: any` map annotations inside `BillingTaskPanels.tsx` and removed the remaining dashboard display-name `as any` cast in that lazy child.
+- Updated `frontend/tools/audit-community-domain-billing-sequence.mjs` so its compact proof-upload source assertion checks the current lazy `BillingTaskPanels.tsx` source instead of the old pre-split dashboard source location.
+- No app UI, backend API, payment route, settlement behavior, permissions, action counts, button geometry, or user-facing Billing sequence behavior changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run audit:community-domain-billing-sequence`; `npm --prefix frontend run lint`; `git diff --check`.
+- Verification note: the Playwright billing-sequence audit required an escalated local Vite server on `127.0.0.1:5180` because sandboxed Chromium/esbuild spawn failed with `EPERM`; the rerun passed against that live server, and the audit-spawned Node processes were stopped afterward.
+- Devil's advocate: this is compile-time and audit-truth hardening, not a new runtime billing feature. It does not create a generated backend schema, and optional backend payment/settlement fields remain modeled as UI-facing surfaces with extra unknown fields.
 ## 2026-07-29 - Local Shop Control Spotlight workflow data contract hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `ba379525`; push/deploy only when the owner sends `2` or explicitly asks.
 - Replaced the lazy `ShopControlSpotlightWorkflow` component's broad `Record<string, any>` prop boundary with a route-local `ShopControlSpotlightWorkflowProps` contract in `frontend/src/pages/shopControl/ShopControlSpotlightWorkflowTypes.ts`.
