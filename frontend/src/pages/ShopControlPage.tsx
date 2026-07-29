@@ -57,6 +57,14 @@ import {
   ownerShopLayerForTarget,
   type ShopControlShortcutId,
 } from "../lib/ownerShopHandles";
+import type {
+  ShopControlSpotlightFeedback,
+  ShopControlSpotlightFlowStep,
+  ShopControlSpotlightMediaChoice,
+  ShopControlSpotlightPriorityMode,
+  ShopControlSpotlightStepBadge,
+  ShopControlSpotlightWorkflowProps,
+} from "./shopControl/ShopControlSpotlightWorkflowTypes";
 
 const ShopControlSpotlightWorkflow = React.lazy(() => import("./shopControl/ShopControlSpotlightWorkflow"));
 
@@ -227,7 +235,7 @@ type ContinuityReviewState = {
 
 type NoticeTone = "success" | "error" | "info";
 
-type SpotlightFeedbackState = { tone: NoticeTone; text: string } | null;
+type SpotlightFeedbackState = ShopControlSpotlightFeedback;
 
 const OWNER_PUBLIC_PRODUCT_VISIBILITY_MODES = new Set([
   "community_visible",
@@ -236,8 +244,8 @@ const OWNER_PUBLIC_PRODUCT_VISIBILITY_MODES = new Set([
   "public_gallery",
   "shop_gallery",
 ]);
-type SpotlightFlowStep = "setup" | "upload" | "preview";
-type SpotlightMediaChoice = "image" | "video" | "both";
+type SpotlightFlowStep = ShopControlSpotlightFlowStep;
+type SpotlightMediaChoice = ShopControlSpotlightMediaChoice;
 type ShopControlLayerKey =
   | "overview"
   | "products"
@@ -990,7 +998,7 @@ export default function ShopControlPage() {
   const [preparingSpotlightVideo, setPreparingSpotlightVideo] = useState(false);
   const [creatingSpotlight, setCreatingSpotlight] = useState(false);
   const [creatingSpotlightShop, setCreatingSpotlightShop] = useState(false);
-  const [spotlightPriorityMode, setSpotlightPriorityMode] = useState<"free" | "paid">("free");
+  const [spotlightPriorityMode, setSpotlightPriorityMode] = useState<ShopControlSpotlightPriorityMode>("free");
   const [spotlightPublishFeedback, setSpotlightPublishFeedback] =
     useState<SpotlightFeedbackState>(null);
   const [spotlightFlowStep, setSpotlightFlowStep] = useState<SpotlightFlowStep>("upload");
@@ -2895,10 +2903,85 @@ export default function ShopControlPage() {
   const spotlightStepBadges = [
     { key: "upload", label: "1. Product update" },
     { key: "preview", label: "2. Publish" },
-  ];
+  ] satisfies ShopControlSpotlightStepBadge[];
   const spotlightPreviewHasPicture = Boolean(spotlightImageFile || safeStr(spotlightImageUrl));
   const spotlightPreviewHasVideo = Boolean(spotlightVideoFile || safeStr(spotlightVideoUrl));
   const spotlightPreviewMessage = composeSpotlightMessage();
+  const spotlightWorkflowProps = {
+    isCompact,
+    pageCard,
+    spotlightLaneIcon,
+    sectionLabel,
+    spotlightPortalTitle,
+    helperText,
+    spotlightPortalSubtitle,
+    spotlightStepBadges,
+    spotlightFlowStep,
+    badge,
+    communityName,
+    spotlightFeatureOff,
+    noticeCard,
+    spotlightFeatureOffText,
+    marketplaceShopsFeatureOff,
+    shop,
+    marketplaceShopsFeatureOffText,
+    currentActiveSpotlight,
+    firstTruthy,
+    spotlightPublishFeedback,
+    innerCard,
+    labelWithIcon,
+    shopName,
+    setShopName,
+    inputStyle,
+    whatsApp,
+    setWhatsApp,
+    telegramHandle,
+    setTelegramHandle,
+    shopDescription,
+    setShopDescription,
+    textAreaStyle,
+    controlGrid,
+    ensureSpotlightShopRecord,
+    creatingSpotlightShop,
+    collapseSpotlightTools,
+    controlIconTile,
+    spotlightPriorityMode,
+    setSpotlightPriorityMode,
+    navigate,
+    routes,
+    location,
+    spotlightMediaChoice,
+    setSpotlightMediaChoice,
+    inlineIcon,
+    spotlightProductName,
+    setSpotlightProductName,
+    spotlightPriceNote,
+    setSpotlightPriceNote,
+    spotlightMessage,
+    setSpotlightMessage,
+    preparingSpotlightImage,
+    creatingSpotlight,
+    showNotice,
+    spotlightImageInputKey,
+    handleSpotlightImagePicked,
+    spotlightImageFile,
+    formatFileSize,
+    preparingSpotlightVideo,
+    spotlightVideoInputKey,
+    handleSpotlightVideoPicked,
+    spotlightVideoFile,
+    spotlightVideoDurationSeconds,
+    spotlightCanContinueToPreview,
+    setSpotlightFlowStep,
+    spotlightImagePreviewUrl,
+    spotlightVideoPreviewUrl,
+    spotlightPilotMaxVideoSeconds: SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+    spotlightPreviewMessage,
+    spotlightPreviewHasPicture,
+    spotlightPreviewHasVideo,
+    handleCreateSpotlight,
+    shopActionsLocked,
+  } satisfies ShopControlSpotlightWorkflowProps;
 
   const spotlightWorkflowSection = spotlightOpen ? (
     <React.Suspense
@@ -2914,81 +2997,7 @@ export default function ShopControlPage() {
         </section>
       }
     >
-      <ShopControlSpotlightWorkflow
-        isCompact={isCompact}
-        pageCard={pageCard}
-        spotlightLaneIcon={spotlightLaneIcon}
-        sectionLabel={sectionLabel}
-        spotlightPortalTitle={spotlightPortalTitle}
-        helperText={helperText}
-        spotlightPortalSubtitle={spotlightPortalSubtitle}
-        spotlightStepBadges={spotlightStepBadges}
-        spotlightFlowStep={spotlightFlowStep}
-        badge={badge}
-        communityName={communityName}
-        spotlightFeatureOff={spotlightFeatureOff}
-        noticeCard={noticeCard}
-        spotlightFeatureOffText={spotlightFeatureOffText}
-        marketplaceShopsFeatureOff={marketplaceShopsFeatureOff}
-        shop={shop}
-        marketplaceShopsFeatureOffText={marketplaceShopsFeatureOffText}
-        currentActiveSpotlight={currentActiveSpotlight}
-        firstTruthy={firstTruthy}
-        spotlightPublishFeedback={spotlightPublishFeedback}
-        innerCard={innerCard}
-        labelWithIcon={labelWithIcon}
-        shopName={shopName}
-        setShopName={setShopName}
-        inputStyle={inputStyle}
-        whatsApp={whatsApp}
-        setWhatsApp={setWhatsApp}
-        telegramHandle={telegramHandle}
-        setTelegramHandle={setTelegramHandle}
-        shopDescription={shopDescription}
-        setShopDescription={setShopDescription}
-        textAreaStyle={textAreaStyle}
-        controlGrid={controlGrid}
-        ensureSpotlightShopRecord={ensureSpotlightShopRecord}
-        creatingSpotlightShop={creatingSpotlightShop}
-        collapseSpotlightTools={collapseSpotlightTools}
-        controlIconTile={controlIconTile}
-        spotlightPriorityMode={spotlightPriorityMode}
-        setSpotlightPriorityMode={setSpotlightPriorityMode}
-        navigate={navigate}
-        routes={routes}
-        location={location}
-        spotlightMediaChoice={spotlightMediaChoice}
-        setSpotlightMediaChoice={setSpotlightMediaChoice}
-        inlineIcon={inlineIcon}
-        spotlightProductName={spotlightProductName}
-        setSpotlightProductName={setSpotlightProductName}
-        spotlightPriceNote={spotlightPriceNote}
-        setSpotlightPriceNote={setSpotlightPriceNote}
-        spotlightMessage={spotlightMessage}
-        setSpotlightMessage={setSpotlightMessage}
-        preparingSpotlightImage={preparingSpotlightImage}
-        creatingSpotlight={creatingSpotlight}
-        showNotice={showNotice}
-        spotlightImageInputKey={spotlightImageInputKey}
-        handleSpotlightImagePicked={handleSpotlightImagePicked}
-        spotlightImageFile={spotlightImageFile}
-        formatFileSize={formatFileSize}
-        preparingSpotlightVideo={preparingSpotlightVideo}
-        spotlightVideoInputKey={spotlightVideoInputKey}
-        handleSpotlightVideoPicked={handleSpotlightVideoPicked}
-        spotlightVideoFile={spotlightVideoFile}
-        spotlightVideoDurationSeconds={spotlightVideoDurationSeconds}
-        spotlightCanContinueToPreview={spotlightCanContinueToPreview}
-        setSpotlightFlowStep={setSpotlightFlowStep}
-        spotlightImagePreviewUrl={spotlightImagePreviewUrl}
-        spotlightVideoPreviewUrl={spotlightVideoPreviewUrl}
-        spotlightPilotMaxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
-        spotlightPreviewMessage={spotlightPreviewMessage}
-        spotlightPreviewHasPicture={spotlightPreviewHasPicture}
-        spotlightPreviewHasVideo={spotlightPreviewHasVideo}
-        handleCreateSpotlight={handleCreateSpotlight}
-        shopActionsLocked={shopActionsLocked}
-      />
+      <ShopControlSpotlightWorkflow {...spotlightWorkflowProps} />
     </React.Suspense>
   ) : null;
   if (loading) {

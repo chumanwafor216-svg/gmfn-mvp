@@ -7,8 +7,7 @@ import {
 } from "../../components/StableButton";
 import { GsnLegacyIcon } from "../../components/GsnLegacyIcon";
 import { navigateWithOrigin } from "../../lib/nav";
-
-type ShopControlSpotlightWorkflowProps = Record<string, any>;
+import type { ShopControlSpotlightWorkflowProps } from "./ShopControlSpotlightWorkflowTypes";
 
 export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlightWorkflowProps) {
   const {
@@ -138,7 +137,7 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
       </div>
 
       <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {spotlightStepBadges.map((item: any) => (
+        {spotlightStepBadges.map((item) => (
           <span key={item.key} style={badge(spotlightFlowStep === item.key)}>
             {item.label}
           </span>

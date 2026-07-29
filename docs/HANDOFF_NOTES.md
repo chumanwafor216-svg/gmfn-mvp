@@ -1,3 +1,13 @@
+## 2026-07-29 - Local Shop Control Spotlight workflow data contract hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `ba379525`; push/deploy only when the owner sends `2` or explicitly asks.
+- Replaced the lazy `ShopControlSpotlightWorkflow` component's broad `Record<string, any>` prop boundary with a route-local `ShopControlSpotlightWorkflowProps` contract in `frontend/src/pages/shopControl/ShopControlSpotlightWorkflowTypes.ts`.
+- `ShopControlPage.tsx` now builds one `spotlightWorkflowProps` object checked with `satisfies ShopControlSpotlightWorkflowProps`, so missing, extra, or wrongly shaped handoff keys are caught during TypeScript build.
+- Tied the parent Spotlight state aliases to the shared workflow types for feedback, flow step, media choice, priority mode, and step badges.
+- Removed the remaining explicit `: any` map annotation in the lazy Spotlight workflow child.
+- No app UI, backend API, route, permissions, action counts, button geometry, or Spotlight behavior changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:spotlight-controls`; `npm --prefix frontend run audit:community-shop-actions`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`.
+- Verification caveat: `node --check frontend/src/pages/shopControl/ShopControlSpotlightWorkflowTypes.ts` was attempted but Node cannot directly syntax-check `.ts` files in this project; `tsc` through the production build is the valid check.
+- Devil's advocate: this is compile-time safety only. It does not reduce bundle size or improve the visible Spotlight publisher; it closes the loose lazy-split prop boundary left by the earlier performance split.
 ## 2026-07-29 - Local Marketplace Support shared type source
 - Status: Local only, not pushed/deployed. Builds on local commit `002512d7`; push/deploy only when the owner sends `2` or explicitly asks.
 - Moved the Marketplace Support split's shared UI handoff types into `frontend/src/pages/marketplace/MarketplaceSupportTypes.ts` so the parent and lazy child no longer keep duplicate `LoanSupportItem`, `LoanDraftSummary`, `SuggestedSupporter`, `SupportDeskMode`, section-key, and department-tone aliases.
