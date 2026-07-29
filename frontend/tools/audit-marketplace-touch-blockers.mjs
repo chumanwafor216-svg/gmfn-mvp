@@ -6,8 +6,15 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
+const marketplaceBoardFile = "src/pages/marketplace/MarketplaceBoardSection.tsx";
+const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
 const mobileTapGuardFile = "src/lib/mobileTapGuard.ts";
-const marketplaceSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
+const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
+const marketplaceBoardSource = readFileSync(join(frontendRoot, marketplaceBoardFile), "utf8");
+const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
+const marketplaceSource = marketplacePageSource
+  .replace(/<MarketplaceBoardSection[\s\S]*?\/>/, marketplaceBoardSource)
+  .replace(/<MarketplaceMembersSection[\s\S]*?\/>/, marketplaceMembersSource);
 const tapGuardSource = readFileSync(join(frontendRoot, mobileTapGuardFile), "utf8");
 const findings = [];
 

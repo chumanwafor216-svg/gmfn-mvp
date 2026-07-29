@@ -6,11 +6,18 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
+const marketplaceBoardFile = "src/pages/marketplace/MarketplaceBoardSection.tsx";
+const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
 const appLayoutFile = "src/layout/AppLayout.tsx";
 const appRoutesFile = "src/lib/appRoutes.ts";
 const ctaTargetsFile = "src/lib/ctaTargets.ts";
 const actionTargetRoutesFile = "src/lib/actionTargetRoutes.ts";
-const source = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
+const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
+const marketplaceBoardSource = readFileSync(join(frontendRoot, marketplaceBoardFile), "utf8");
+const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
+const source = marketplacePageSource
+  .replace(/<MarketplaceBoardSection[\s\S]*?\/>/, marketplaceBoardSource)
+  .replace(/<MarketplaceMembersSection[\s\S]*?\/>/, marketplaceMembersSource);
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const appRoutesSource = readFileSync(join(frontendRoot, appRoutesFile), "utf8");
 const ctaTargetsSource = readFileSync(join(frontendRoot, ctaTargetsFile), "utf8");
@@ -19,11 +26,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 90;
+const expectedStableActionCount = 89;
 const expectedNativeFieldCount = 37;
 const expectedSourceBreakdown = {
   front: 13,
-  body: 77,
+  body: 76,
 };
 const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
@@ -631,15 +638,17 @@ if (!memberShopSection) {
     /\{visibleTradeShopCount\} public shop/,
     /\{marketplaceCommunityDomainRows\.length\} domain/,
     /Community-bound directory/,
-    /Community Domains[\s\S]*?Professional marketplace communities[\s\S]*?They sit with community members and shops\. Setup stays in[\s\S]*?the Community Domain dashboard\./,
+    /Community Domains[\s\S]*?Professional marketplace communities[\s\S]*?They sit with community members and shops\. Setup stays in[\s\S]*?the[\s\S]*?Community Domain dashboard\./,
     /debugId=\{`marketplace\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}/,
-    /debugId=\{`marketplace\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}[\s\S]*?openMarketplaceCommunityDomain\(event, row\)/,
+    /debugId=\{`marketplace\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}[\s\S]*?onOpenCommunityDomain\(event, row\)/,
     /Visible members/,
     /more tucked away/,
     /debugId="marketplace\.members\.more-visible\.summary"[\s\S]*?More visible members/,
     /Shop visible/,
     /No shop yet/,
     /debugId=\{`marketplace\.member\.\$\{row\.gmfnId[\s\S]{0,140}\}\.shop`\}/,
+    /visibleTradeMemberRows\.map\([\s\S]*?<MemberRowCard[\s\S]*?row=\{row\}[\s\S]*?isCompact=\{isCompact\}/,
+    /hiddenTradeMemberRows\.map\([\s\S]*?<MemberRowCard[\s\S]*?row=\{row\}[\s\S]*?isCompact=\{isCompact\}/,
   ].forEach((pattern) => {
     if (!pattern.test(memberShopSection)) {
       findings.push({
@@ -879,7 +888,7 @@ const expectedOrder = [
   exactDebugId("marketplace.board.toggle"),
   dynamicDebugId(
     "marketplace.board.sender-whatsapp.*",
-    /debugId=\{`marketplace\.board\.sender-whatsapp\.\$\{item\?\.notice_id \|\| index\}`\}/
+    /debugId=\{`marketplace\.board\.sender-whatsapp\.\$\{item\??\.notice_id \|\| index\}`\}/
   ),
   exactDebugId("marketplace.money.toggle"),
   exactDebugId("marketplace.money.pay-in-account"),

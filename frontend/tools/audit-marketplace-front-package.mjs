@@ -6,9 +6,11 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
+const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
 const packageFile = "package.json";
 const protocolFile = "../docs/GUIDED_WORK_SURFACE_PROTOCOL.md";
 const marketplaceSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
+const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
 const packageSource = readFileSync(join(frontendRoot, packageFile), "utf8");
 const protocolSource = readFileSync(join(frontendRoot, protocolFile), "utf8");
 const findings = [];
@@ -216,15 +218,15 @@ assertContains(
 );
 
 assertContains(
-  marketplaceFile,
-  marketplaceSource,
+  marketplaceMembersFile,
+  marketplaceMembersSource,
   /id="marketplace-members-shops"[\s\S]*?Community Members & Shops[\s\S]*?visible member[\s\S]*?public shop[\s\S]*?Community Domains[\s\S]*?Professional marketplace communities[\s\S]*?marketplace\.members\.visible-members-module[\s\S]*?Visible members/,
   "Community Members & Shops must render as a separate domain, visible member, and shop directory lane."
 );
 
 assertNotContains(
-  marketplaceFile,
-  marketplaceSource,
+  marketplaceMembersFile,
+  marketplaceMembersSource,
   /id="marketplace-members-shops"[\s\S]*?Trade Evidence Record/,
   "Trade Evidence Record must not be embedded inside the Members & Shops lane."
 );

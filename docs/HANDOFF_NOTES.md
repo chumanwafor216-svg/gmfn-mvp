@@ -1,3 +1,42 @@
+## CURRENT LOCAL STATE - 2026-07-29 - Marketplace secondary lane split
+
+Owner trigger:
+- Owner said "lets di it" after the remaining QA/polish caveat was identified as Marketplace route-size work.
+
+Unabated truth:
+- This completes a real Marketplace route split for two secondary lanes, not just dead-code polish.
+- The initial Marketplace route chunk dropped from the prior measured baseline of `219.87 kB / 55.53 kB gzip` to `207.94 kB / 53.81 kB gzip`.
+- New lazy child chunks are `MarketplaceBoardSection-DzdJDv-i.js` at `13.02 kB / 4.16 kB gzip` and `MarketplaceMembersSection-CFOrsMk7.js` at `15.92 kB / 4.62 kB gzip`.
+- Devil's advocate caveat: if a user opens both lanes, total JS can be higher because some local style helpers are duplicated intentionally to keep the initial route lower. Dashboard and CommunityDomainDashboardPage remain larger chunks and were not touched.
+
+Changed:
+- `frontend/src/pages/MarketplacePage.tsx`
+  - Lazy-loads Official Board and Community Members & Shops secondary lanes with `React.lazy`/`Suspense`.
+  - Keeps parent-owned Marketplace state, routing, and action handlers intact.
+- `frontend/src/pages/marketplace/MarketplaceBoardSection.tsx`
+  - New extracted Official Board lane with notice posting, policy toggles, notice list, and demand-signal preview actions.
+- `frontend/src/pages/marketplace/MarketplaceMembersSection.tsx`
+  - New extracted Community Members & Shops lane with Community Domain rows, visible member/shop cards, and compact hidden-member disclosure.
+- `frontend/tools/audit-marketplace-front-package.mjs`
+- `frontend/tools/audit-marketplace-button-inventory.mjs`
+- `frontend/tools/audit-marketplace-actions.mjs`
+- `frontend/tools/audit-marketplace-touch-blockers.mjs`
+  - Updated audits to inspect extracted lazy section source instead of assuming all Marketplace lane markup lives directly in `MarketplacePage.tsx`.
+  - Button inventory now counts 89 stable source action templates because duplicate visible/hidden member shop templates were consolidated into one shared `MemberRowCard`; the audit explicitly checks both visible and hidden member maps still render that card.
+
+Verification:
+- Passed `npm --prefix frontend run lint`.
+- Passed `npm --prefix frontend run audit:marketplace-front-package`.
+- Passed `npm --prefix frontend run audit:marketplace-button-inventory`.
+- Passed `npm --prefix frontend run audit:marketplace-actions`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build` with Marketplace at `207.94 kB / 53.81 kB gzip`.
+- Passed elevated `npm --prefix frontend run smoke:marketplace-hero` after sandbox Vite/esbuild `spawn EPERM`; screenshot saved to `frontend/screenshots/marketplace-hero-390x844.png`.
+- Passed elevated `npm --prefix frontend run smoke:marketplace-boundaries` after sandbox Vite/esbuild `spawn EPERM`; screenshots saved under `frontend/screenshots/marketplace-*-390x844.png`.
+- Smoke output still lists the intentionally off-canvas mobile navigation drawer as overflow JSON, but the script accepted it and exited 0.
+
+Deployment:
+- Local only at time of this note. Commit, push, and frontend Render deploy still pending.
 ## CURRENT LOCAL STATE - 2026-07-29 - Marketplace glyph dead-code polish
 
 Owner trigger:

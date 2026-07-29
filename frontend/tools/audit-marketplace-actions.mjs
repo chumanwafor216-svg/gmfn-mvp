@@ -6,8 +6,23 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-function read(relativePath) {
+function readRaw(relativePath) {
   return readFileSync(join(frontendRoot, relativePath), "utf8");
+}
+
+function read(relativePath) {
+  const text = readRaw(relativePath);
+  if (relativePath !== "src/pages/MarketplacePage.tsx") return text;
+
+  return text
+    .replace(
+      /<MarketplaceBoardSection[\s\S]*?\/>/,
+      readRaw("src/pages/marketplace/MarketplaceBoardSection.tsx")
+    )
+    .replace(
+      /<MarketplaceMembersSection[\s\S]*?\/>/,
+      readRaw("src/pages/marketplace/MarketplaceMembersSection.tsx")
+    );
 }
 
 const findings = [];
@@ -66,6 +81,8 @@ assertNotContains(
 
 [
   "src/pages/MarketplacePage.tsx",
+  "src/pages/marketplace/MarketplaceBoardSection.tsx",
+  "src/pages/marketplace/MarketplaceMembersSection.tsx",
   "src/pages/MarketplaceWorkspacePage.tsx",
   "src/pages/ShopGalleryPage.tsx",
 ].forEach(assertStableActionsHaveDebugIds);
