@@ -26,7 +26,13 @@ Verification:
 - Browser-backed visual/billing audits were not rerun for this pass because the generated runtime output and chunk sizes stayed unchanged; this was a compile-time contract-only change.
 
 Deployment:
-- Local verified change only. Not pushed/deployed yet because `docs/FREEZE_POLICY.md` currently says routine continuation work should be batched and pushed only when the owner explicitly says the batch is ready.
+- Owner explicitly requested `push/deploy=2`.
+- Pushed `fee77967 Tighten Community Domain real-life record data contract` to `origin/main`.
+- Triggered GitHub Actions `Trigger Render Deploy` run `30428334542` with `deploy_api=false`.
+- Workflow completed successfully in 2m14s.
+- Confirmed steps included frontend deploy hook, exact frontend Render API deploy, and public URL marker verification.
+- Render API response did not include a deploy id; workflow looked up recent `gmfn-frontend` deploys and still completed successfully.
+- Backend/API deploy skipped by workflow because `deploy_api=false`.
 
 ## CURRENT LOCAL STATE - 2026-07-29 - Community Domain real-life record type hardening
 
