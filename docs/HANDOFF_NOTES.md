@@ -157725,3 +157725,11 @@ Verification run locally:
 
 Deployment:
 - Local only. Push/deploy only when owner sends `2`.
+
+## 2026-07-29 - Local TrustSlip Holder Sender Confirmation Guide
+- Status: Local only, not pushed/deployed. Builds on local commit `91244b16`; push/deploy only when the owner sends `2` or explicitly asks.
+- Added a holder-side `Before you send` guide on `/app/trust-slip` immediately after `Verification scope`, guarded by `data-gsn-trustslip-sender-guide="decision-scope-confirmation"`.
+- The guide translates the selected Decision Pack and verification scope into three separate receiver checks: confirm membership, ask the selected community, and review witness/activity evidence.
+- No backend/API/schema/auth changes. No new share/open buttons were added, to avoid another duplicate action surface.
+- Added an audit guard in `frontend/tools/audit-trust-actions.mjs` so the sender guide keeps the membership/community/witness confirmation mapping.
+- Verified: `node frontend/tools/audit-trust-actions.mjs`; `node frontend/tools/audit-public-trustslip-first-viewport.mjs`; `node frontend/tools/audit-public-trustslip-verify-boundary.mjs`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `git diff --check`.

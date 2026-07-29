@@ -3677,6 +3677,26 @@ export default function TrustSlipPage() {
       icon: "public-globe" as GsnIconName,
     },
   ];
+  const trustSlipSenderConfirmationRows = [
+    {
+      label: "Confirm membership",
+      value: memberCredentialUrl
+        ? `Receiver can open the scoped member credential for ${communityName}.`
+        : "No scoped member credential is ready yet. Use the community answer or witness/activity evidence on the verify page.",
+      icon: "id" as GsnIconName,
+    },
+    {
+      label: "Ask community",
+      value: `Receiver can ask ${communityName} for the ${selectedPurposeOption.shortLabel} answer. The answer belongs to this selected community, not every community you belong to.`,
+      icon: "community" as GsnIconName,
+    },
+    {
+      label: "Review witnesses",
+      value:
+        "Receiver can read public witness and activity evidence before deciding. GSN presents evidence and limits, not a final approval.",
+      icon: "evidence" as GsnIconName,
+    },
+  ];
   const privateDecisionPackEvidenceCategories = (decisionPackEvidenceExtract?.categories || []).slice(0, 4);
   const privateDecisionPackDeclaredClaims = (decisionPackEvidenceExtract?.declaredClaims || []).slice(0, 3);
   const privateDecisionPackRecordPointers = (decisionPackEvidenceExtract?.recordPointers || []).slice(0, 3);
@@ -4447,6 +4467,98 @@ export default function TrustSlipPage() {
                 >
                   {verificationScopeBoundary}
                 </div>
+              </div>
+            </div>
+            <div
+              data-gsn-trustslip-sender-guide="decision-scope-confirmation"
+              style={{
+                borderRadius: 14,
+                border: "1px solid rgba(214,170,69,0.28)",
+                background: "linear-gradient(180deg, #FFFDF7 0%, #F8FBFF 100%)",
+                padding: isCompact ? "10px 11px" : "12px 13px",
+                display: "grid",
+                gap: 9,
+              }}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "30px minmax(0, 1fr)",
+                  gap: 8,
+                  alignItems: "center",
+                }}
+              >
+                <GsnLegacyIcon name="certificate-seal" size={28} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ ...sectionLabel(), fontSize: isCompact ? 9 : 10 }}>
+                    Before you send
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 2,
+                      color: "#07172C",
+                      fontSize: isCompact ? 13 : 15,
+                      fontWeight: 1000,
+                      lineHeight: 1.16,
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    This link carries {selectedPurposeOption.label} for {verificationScopeLabel}.
+                  </div>
+                </div>
+              </div>
+              <div
+                style={{
+                  color: "#526579",
+                  fontSize: isCompact ? 11 : 12,
+                  fontWeight: 850,
+                  lineHeight: 1.35,
+                }}
+              >
+                Ask the receiver to confirm the part that matters for their decision. Membership, the selected community answer, and witness/activity evidence are separate checks.
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "minmax(0, 1fr)" : "repeat(3, minmax(0, 1fr))",
+                  gap: 8,
+                }}
+              >
+                {trustSlipSenderConfirmationRows.map((row) => (
+                  <div
+                    key={row.label}
+                    style={{
+                      borderRadius: 13,
+                      border: "1px solid rgba(37,78,119,0.12)",
+                      background: "#FFFFFF",
+                      padding: isCompact ? "8px 9px" : "10px 11px",
+                      display: "grid",
+                      gridTemplateColumns: "28px minmax(0, 1fr)",
+                      gap: 7,
+                      alignItems: "start",
+                      minWidth: 0,
+                    }}
+                  >
+                    <GsnLegacyIcon name={row.icon} size={26} />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ ...sectionLabel(), fontSize: isCompact ? 9 : 10 }}>
+                        {row.label}
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 2,
+                          color: "#334155",
+                          fontSize: isCompact ? 10.5 : 11.5,
+                          fontWeight: 850,
+                          lineHeight: 1.3,
+                          overflowWrap: "anywhere",
+                        }}
+                      >
+                        {row.value}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
             {isCompact ? (

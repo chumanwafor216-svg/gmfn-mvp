@@ -2554,6 +2554,12 @@ assertContains(
   /const trustSlipHolderDecisionBoundaryRows: Array<\[string, string\]> = \[[\s\S]*?\["Verification scope", verificationScopeLabel\][\s\S]*?\["Scope boundary", verificationScopeBoundary\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Credit approval", "No"\][\s\S]*?\["Final decision", "Yours"\][\s\S]*?data-gsn-trustslip-holder-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?trustSlipHolderDecisionBoundaryRows\.map[\s\S]*?<CommunityProofPanel/,
   "Signed-in TrustSlip holder paper must show one compact decision boundary before deeper community proof details."
 );
+
+assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /const trustSlipSenderConfirmationRows = \[[\s\S]*?Confirm membership[\s\S]*?Ask community[\s\S]*?Review witnesses[\s\S]*?data-gsn-trustslip-sender-guide="decision-scope-confirmation"[\s\S]*?Before you send[\s\S]*?Membership, the selected community answer, and witness\/activity evidence are separate checks\./,
+  "TrustSlip holder sharing must show the sender how the selected Decision Pack and verification scope map to membership, community, and witness confirmation choices."
+);
 if (findings.length > 0) {
   console.error("Trust action audit failed:");
   for (const finding of findings) {
