@@ -1,3 +1,9 @@
+## 2026-07-29 - Pushed local QA/type-hardening batch
+- Status: Pushed to `origin/main` at commit `7ec92087`; no Render deploy was triggered in this step because the owner asked for `push`, not `deploy`.
+- Pushed the local batch of 11 commits from `2f39cca8` through `7ec92087` covering Shop Control Spotlight lazy split/type hardening, Marketplace lazy split/audit/type cleanup, and Community Domain Billing/Member readiness type hardening.
+- Confirmed `git status --short --branch` reported `main...origin/main` after the push.
+- Checked recent GitHub Actions runs with `gh run list --limit 8`; the visible `Trigger Render Deploy` runs were prior `workflow_dispatch` runs, not a new automatic deploy from this push.
+- Devil's advocate: code is now on GitHub, but this is not the same as production deployment. Do not claim Render has the `7ec92087` batch unless a deploy workflow is manually triggered and succeeds, or Render otherwise confirms a deploy for this commit.
 ## 2026-07-29 - Local Community Domain member readiness type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `b3355d3b`; push/deploy only when the owner sends `2` or explicitly asks.
 - Tightened `frontend/src/pages/communityDomainDashboard/MemberReadinessPanels.tsx` by replacing broad `any` props/helper arrays with route-local UI-facing surfaces for placement summaries, node placements, member verification maps, and member readiness lanes.
