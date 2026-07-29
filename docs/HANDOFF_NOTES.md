@@ -1,3 +1,11 @@
+## 2026-07-29 - Local Community Domain identity readiness type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `6092f16a`; push/deploy only when the owner sends `push`, `2`, or explicitly asks.
+- Tightened `frontend/src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx` by replacing broad `any`/`Record<string, any>` props/helper arrays with route-local UI-facing surfaces for domain/template/status data, institutional profile maps, social bridge maps, affiliation readiness maps, primary next actions, and identity readiness lanes.
+- `readinessLanes`, `blockedLanes`, and `readyTotal` now return/accept typed identity readiness lane surfaces instead of `any` or `any[]`.
+- Cleaned institutional, bridge, and affiliation fallback expressions so unknown backend lane keys are converted through `cleanText` before they become visible fallback text.
+- No app UI, backend API, identity behavior, institutional profile behavior, bridge behavior, affiliation behavior, permissions, action counts, button geometry, or user-facing Identity lane behavior changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this is compile-time hardening only. It does not add verification, public profile publishing, community bridging, domain affiliation, generated backend schema validation, or reduce the heavy Community Domain route.
 ## 2026-07-29 - Local Community Domain governance readiness type hardening
 - Status: Local only, not pushed/deployed. Builds on pushed commit `57a53ab5`; push/deploy only when the owner sends `push`, `2`, or explicitly asks.
 - Tightened `frontend/src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx` by replacing broad `any` props/helper arrays with route-local UI-facing surfaces for delegation maps, governance coverage maps, coverage gaps, primary next actions, and governance readiness lanes.

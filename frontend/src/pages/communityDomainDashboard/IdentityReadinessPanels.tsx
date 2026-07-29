@@ -2,14 +2,43 @@ import React, { useState } from "react";
 import { StableButton } from "../../components/StableButton";
 import { humanStatus } from "./statusLanguage";
 
+type UnknownRecord = Record<string, unknown>;
+
+type IdentityReadinessLane = UnknownRecord & {
+  lane_key?: unknown;
+  label?: unknown;
+  ready?: unknown;
+  status?: unknown;
+  next_step?: unknown;
+};
+
+type IdentityPrimaryNextAction = UnknownRecord & {
+  label?: unknown;
+};
+
+type IdentityReadinessMapSurface = UnknownRecord & {
+  summary?: UnknownRecord;
+  primary_next_action?: IdentityPrimaryNextAction | null;
+  lanes?: unknown;
+  ready_total?: unknown;
+};
+
+type InstitutionalProfileSurface = IdentityReadinessMapSurface & {
+  institutional_profile?: UnknownRecord;
+};
+
+type SocialBridgeSurface = IdentityReadinessMapSurface & {
+  linked_community?: UnknownRecord;
+};
+
 type IdentityReadinessPanelsProps = {
-  domain?: Record<string, any>;
-  template?: Record<string, any>;
-  status?: Record<string, unknown>;
+  domain?: UnknownRecord;
+  template?: UnknownRecord;
+  status?: UnknownRecord;
   renewalState?: unknown;
-  institutionalProfile?: any;
-  socialBridge?: any;
-  affiliationReadiness?: any;
+  institutionalProfile?: InstitutionalProfileSurface | null;
+  socialBridge?: SocialBridgeSurface | null;
+  affiliationReadiness?: IdentityReadinessMapSurface | null;
 };
 
 type IdentityDetailKey = "identity" | "profile" | "bridge" | "affiliation";
@@ -54,15 +83,22 @@ function countValue(value: unknown): string {
   return Number.isFinite(numberValue) ? String(numberValue) : "0";
 }
 
-function readinessLanes(map: any): any[] {
-  return Array.isArray(map?.lanes) ? map.lanes : [];
+function isRecord(value: unknown): value is UnknownRecord {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }
 
-function blockedLanes(lanes: any[]): any[] {
+function readinessLanes(map: { lanes?: unknown } | null | undefined): IdentityReadinessLane[] {
+  return Array.isArray(map?.lanes) ? map.lanes.filter(isRecord) : [];
+}
+
+function blockedLanes(lanes: IdentityReadinessLane[]): IdentityReadinessLane[] {
   return lanes.filter((lane) => !lane.ready);
 }
 
-function readyTotal(map: any, lanes: any[]): number {
+function readyTotal(
+  map: { ready_total?: unknown } | null | undefined,
+  lanes: IdentityReadinessLane[]
+): number {
   return typeof map?.ready_total === "number"
     ? map.ready_total
     : lanes.filter((lane) => lane.ready).length;
@@ -438,7 +474,7 @@ export default function CommunityDomainIdentityReadinessPanels({
               {blockedInstitutionalProfileLanes
                 .slice(0, 3)
                 .map((lane) =>
-                  cleanText(lane.label, lane.lane_key || "institutional check")
+                  cleanText(lane.label, cleanText(lane.lane_key, "institutional check"))
                 )
                 .join(", ")}
             </strong>
@@ -505,7 +541,7 @@ export default function CommunityDomainIdentityReadinessPanels({
             <strong>
               {blockedSocialBridgeLanes
                 .slice(0, 3)
-                .map((lane) => cleanText(lane.label, lane.lane_key || "bridge check"))
+                .map((lane) => cleanText(lane.label, cleanText(lane.lane_key, "bridge check")))
                 .join(", ")}
             </strong>
             .
@@ -577,7 +613,7 @@ export default function CommunityDomainIdentityReadinessPanels({
               {blockedAffiliationLanes
                 .slice(0, 3)
                 .map((lane) =>
-                  cleanText(lane.label, lane.lane_key || "affiliation check")
+                  cleanText(lane.label, cleanText(lane.lane_key, "affiliation check"))
                 )
                 .join(", ")}
             </strong>
