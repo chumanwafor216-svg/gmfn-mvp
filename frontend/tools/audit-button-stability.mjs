@@ -8,6 +8,7 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const marketplaceBoardFile = "src/pages/marketplace/MarketplaceBoardSection.tsx";
 const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
+const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
 const trustScoreFile = "src/pages/TrustScorePage.tsx";
 const trustScoreDocumentLaneFile = "src/pages/trustScore/TrustPassportDocumentLane.tsx";
 const trustScoreFinanceLaneFile = "src/pages/trustScore/TrustPassportFinanceLane.tsx";
@@ -32,6 +33,7 @@ function read(relativePath) {
     return composeLazySource(marketplaceFile, [
       [/<MarketplaceBoardSection[\s\S]*?\/>/, marketplaceBoardFile],
       [/<MarketplaceMembersSection[\s\S]*?\/>/, marketplaceMembersFile],
+      [/<MarketplaceSupportSection[\s\S]*?\/>/, marketplaceSupportFile],
     ]);
   }
 

@@ -8,6 +8,7 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const marketplaceBoardFile = "src/pages/marketplace/MarketplaceBoardSection.tsx";
 const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
+const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
 const appLayoutFile = "src/layout/AppLayout.tsx";
 const appRoutesFile = "src/lib/appRoutes.ts";
 const ctaTargetsFile = "src/lib/ctaTargets.ts";
@@ -15,9 +16,11 @@ const actionTargetRoutesFile = "src/lib/actionTargetRoutes.ts";
 const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const marketplaceBoardSource = readFileSync(join(frontendRoot, marketplaceBoardFile), "utf8");
 const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
+const marketplaceSupportSource = readFileSync(join(frontendRoot, marketplaceSupportFile), "utf8");
 const source = marketplacePageSource
   .replace(/<MarketplaceBoardSection[\s\S]*?\/>/, marketplaceBoardSource)
-  .replace(/<MarketplaceMembersSection[\s\S]*?\/>/, marketplaceMembersSource);
+  .replace(/<MarketplaceMembersSection[\s\S]*?\/>/, marketplaceMembersSource)
+  .replace(/<MarketplaceSupportSection[\s\S]*?\/>/, marketplaceSupportSource);
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const appRoutesSource = readFileSync(join(frontendRoot, appRoutesFile), "utf8");
 const ctaTargetsSource = readFileSync(join(frontendRoot, ctaTargetsFile), "utf8");

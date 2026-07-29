@@ -6,7 +6,13 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
-const source = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
+const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
+const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
+const marketplaceSupportSource = readFileSync(join(frontendRoot, marketplaceSupportFile), "utf8");
+const source = marketplacePageSource.replace(
+  /<MarketplaceSupportSection\b[\s\S]*?\n\s*\/>/,
+  marketplaceSupportSource
+);
 const findings = [];
 
 function lineAt(index) {
@@ -52,8 +58,8 @@ function sectionBetween(startPattern, endPattern) {
 }
 
 assertContains(
-  /case "support":[\s\S]*?<path d="M5\.5 13\.5h3\.3l2\.3 2\.2[\s\S]*?<path d="M8\.2 6\.9c0-1\.4/,
-  "Support must use the stable guided-help pictogram, not the old generic people mark."
+  /support: "repaymentSchedule"[\s\S]*?function MarketplaceGlyph[\s\S]*?<GsnLegacyIcon/,
+  "Support must use the stable GSN 3D repayment/support pictogram through the shared icon adapter."
 );
 
 assertContains(

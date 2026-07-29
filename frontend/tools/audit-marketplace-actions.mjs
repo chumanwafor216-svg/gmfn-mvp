@@ -22,6 +22,10 @@ function read(relativePath) {
     .replace(
       /<MarketplaceMembersSection[\s\S]*?\/>/,
       readRaw("src/pages/marketplace/MarketplaceMembersSection.tsx")
+    )
+    .replace(
+      /<MarketplaceSupportSection\b[\s\S]*?\n\s*\/>/,
+      readRaw("src/pages/marketplace/MarketplaceSupportSection.tsx")
     );
 }
 

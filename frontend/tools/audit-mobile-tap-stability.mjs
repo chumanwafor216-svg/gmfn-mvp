@@ -87,7 +87,17 @@ for (const filePath of listSourceFiles(sourceRoot)) {
 }
 
 const marketplacePagePath = join(sourceRoot, "pages", "MarketplacePage.tsx");
-const marketplaceLines = readFileSync(marketplacePagePath, "utf8").split(/\r?\n/);
+const marketplaceSupportPath = join(
+  sourceRoot,
+  "pages",
+  "marketplace",
+  "MarketplaceSupportSection.tsx"
+);
+const marketplaceRawSource = readFileSync(marketplacePagePath, "utf8").replace(
+  /<MarketplaceSupportSection\b[\s\S]*?\n\s*\/>/,
+  readFileSync(marketplaceSupportPath, "utf8")
+);
+const marketplaceLines = marketplaceRawSource.split(/\r?\n/);
 const marketplaceSource = marketplaceLines.join("\n");
 const financePagePath = join(sourceRoot, "pages", "FinancePage.tsx");
 const financePageSource = readFileSync(financePagePath, "utf8");
