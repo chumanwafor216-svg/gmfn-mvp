@@ -6360,7 +6360,7 @@ export async function uploadPaymentInstructionProofFile(
   file: File,
   clanId: number,
   reference: string
-): Promise<any> {
+): Promise<unknown> {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("clan_id", String(clanId));

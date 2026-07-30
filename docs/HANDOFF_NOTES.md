@@ -1,3 +1,11 @@
+## 2026-07-30 - Local payment-proof upload response boundary hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `1fa55d89`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/lib/api.ts` by changing only `uploadPaymentInstructionProofFile` from `Promise<any>` to `Promise<unknown>`; adjacent marketplace/community media upload helpers were left unchanged.
+- Tightened `frontend/src/components/PaymentProofSubmissionPanel.tsx` by adding a guarded upload-response coercion before invoking `onUploaded`, removing the previous direct `updated as PaymentProofExpectedPayment` cast.
+- No app UI, backend API route, request payload, upload endpoint path, auth gate, proof upload behavior for valid backend responses, WhatsApp fallback, action counts, button geometry, or visible payment-proof layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this only hardens one upload response boundary. The wider shared API client still has many `Promise<any>` contracts and should be reduced endpoint-by-endpoint, not with a broad mechanical sweep.
+
 ## 2026-07-30 - Local payment-proof meta type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `fbe0ab25`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/components/PaymentProofSubmissionPanel.tsx` by replacing payment `meta` / `meta_json` and upload error handling from permissive `any` access with `unknown` plus guarded object parsing.

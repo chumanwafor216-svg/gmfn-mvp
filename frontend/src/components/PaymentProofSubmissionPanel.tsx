@@ -75,6 +75,17 @@ function safeMeta(payment?: PaymentProofExpectedPayment | null): UnknownRecord {
   return isUnknownRecord(raw) ? raw : {};
 }
 
+function paymentProofExpectedPaymentOrNull(
+  value: unknown
+): PaymentProofExpectedPayment | null {
+  if (!isUnknownRecord(value)) return null;
+  return {
+    ...value,
+    meta: value.meta,
+    meta_json: value.meta_json,
+  };
+}
+
 function safeDateTime(value: unknown): string {
   const raw = safeStr(value);
   if (!raw) return "";
@@ -223,9 +234,12 @@ export default function PaymentProofSubmissionPanel({
         resolvedClanId,
         submittedReference
       );
+      const updatedPayment = paymentProofExpectedPaymentOrNull(updated);
       setFile(null);
       show("success", "Proof uploaded for finance review. This does not confirm payment yet.");
-      await onUploaded?.(updated as PaymentProofExpectedPayment);
+      if (updatedPayment) {
+        await onUploaded?.(updatedPayment);
+      }
     } catch (err: unknown) {
       const errorRecord = isUnknownRecord(err) ? err : {};
       const status = Number(errorRecord.status || 0);
