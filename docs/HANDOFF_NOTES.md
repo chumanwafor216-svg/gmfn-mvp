@@ -1,3 +1,11 @@
+## 2026-07-30 - Local Community Domain governance readiness map type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `3fb82cf5`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` governance readiness surfaces by replacing `governanceCoverage` and `delegationMap` from `any | null` with route-local object-surface types compatible with `GovernanceReadinessPanels`.
+- Added guarded coercion helpers for `governance_coverage` and `delegation_map`, including nested `counts`, `summary`, and `primary_next_action` shape checks before saving the payloads into state.
+- No app UI, backend API, route contract, authentication, permission gate, governance readiness behavior, delegation map display, action counts, button geometry, or visible dashboard layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this still leaves setup, capacity/billing, structure/node, trust/evidence, identity, and quote/payment state objects as broad `any | null`. Continue reducing them lane by lane.
+
 ## 2026-07-30 - Local Community Domain member readiness map type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `c190ee7c`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` member-readiness surfaces by replacing `placementSummary` and `memberVerificationMap` from `any | null` with route-local object-surface types compatible with `MemberReadinessPanels`.

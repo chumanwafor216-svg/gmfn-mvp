@@ -1425,6 +1425,23 @@ type MemberVerificationMapSurface = UnknownRecord & {
   ready_total?: unknown;
 };
 
+type GovernancePrimaryNextActionSurface = UnknownRecord & {
+  label?: unknown;
+};
+
+type DelegationMapSurface = UnknownRecord & {
+  summary?: UnknownRecord;
+  primary_next_action?: GovernancePrimaryNextActionSurface | null;
+  lanes?: unknown;
+  ready_total?: unknown;
+};
+
+type GovernanceCoverageSurface = UnknownRecord & {
+  counts?: UnknownRecord;
+  primary_next_action?: GovernancePrimaryNextActionSurface | null;
+  flat_nodes?: unknown;
+};
+
 type DashboardPayload = {
   community_domain?: UnknownRecord;
   template?: UnknownRecord;
@@ -2227,6 +2244,30 @@ function memberVerificationMapOrNull(value: unknown): MemberVerificationMapSurfa
   };
 }
 
+function governancePrimaryNextActionOrNull(
+  value: unknown
+): GovernancePrimaryNextActionSurface | null {
+  return isUnknownRecord(value) ? value : null;
+}
+
+function delegationMapOrNull(value: unknown): DelegationMapSurface | null {
+  if (!isUnknownRecord(value)) return null;
+  return {
+    ...value,
+    summary: isUnknownRecord(value.summary) ? value.summary : undefined,
+    primary_next_action: governancePrimaryNextActionOrNull(value.primary_next_action),
+  };
+}
+
+function governanceCoverageOrNull(value: unknown): GovernanceCoverageSurface | null {
+  if (!isUnknownRecord(value)) return null;
+  return {
+    ...value,
+    counts: isUnknownRecord(value.counts) ? value.counts : undefined,
+    primary_next_action: governancePrimaryNextActionOrNull(value.primary_next_action),
+  };
+}
+
 function pageShell(): React.CSSProperties {
   return {
     minHeight: "100%",
@@ -2851,8 +2892,8 @@ export default function CommunityDomainDashboardPage() {
   const [setupReadiness, setSetupReadiness] = useState<any | null>(null);
   const [setupPlan, setSetupPlan] = useState<any | null>(null);
   const [capacityPlan, setCapacityPlan] = useState<any | null>(null);
-  const [governanceCoverage, setGovernanceCoverage] = useState<any | null>(null);
-  const [delegationMap, setDelegationMap] = useState<any | null>(null);
+  const [governanceCoverage, setGovernanceCoverage] = useState<GovernanceCoverageSurface | null>(null);
+  const [delegationMap, setDelegationMap] = useState<DelegationMapSurface | null>(null);
   const [periodSummary, setPeriodSummary] = useState<UnknownRecord | null>(null);
   const [sponsorSummary, setSponsorSummary] = useState<UnknownRecord | null>(null);
   const [busySponsorExportCopy, setBusySponsorExportCopy] = useState(false);
@@ -4594,8 +4635,12 @@ export default function CommunityDomainDashboardPage() {
         beneficiaryOutcomeRowsPayload,
         beneficiaryCorrectionRowsPayload,
       ] = payloads;
-      setGovernanceCoverage(payloadValue(governanceCoveragePayload, "governance_coverage") || null);
-      setDelegationMap(payloadValue(delegationMapPayload, "delegation_map") || null);
+      setGovernanceCoverage(
+        governanceCoverageOrNull(payloadRecordOrNull(governanceCoveragePayload, "governance_coverage"))
+      );
+      setDelegationMap(
+        delegationMapOrNull(payloadRecordOrNull(delegationMapPayload, "delegation_map"))
+      );
       setPeriodSummary(isUnknownRecord(periodSummaryPayload) ? periodSummaryPayload : null);
       setSponsorSummary(isUnknownRecord(sponsorSummaryPayload) ? sponsorSummaryPayload : null);
       setActivityCatalogue(payloadRecordArray(activityCataloguePayload, "activity_catalogue"));
