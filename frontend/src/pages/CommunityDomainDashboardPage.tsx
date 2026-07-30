@@ -1410,6 +1410,21 @@ type RealLifeBeneficiaryOutcomeRow = RealLifeRecordPanelData["beneficiaryOutcome
 type RealLifeBeneficiaryOutcomeRelatedRecord =
   RealLifeRecordPanelData["beneficiaryDeliveryPackByOutcomeId"][string];
 
+type MemberPlacementSummarySurface = UnknownRecord & {
+  counts?: UnknownRecord;
+  domain_role?: unknown;
+  lanes?: unknown;
+  ready_total?: unknown;
+  node_placements?: unknown;
+};
+
+type MemberVerificationMapSurface = UnknownRecord & {
+  summary?: UnknownRecord;
+  primary_next_action?: (UnknownRecord & { label?: unknown }) | null;
+  lanes?: unknown;
+  ready_total?: unknown;
+};
+
 type DashboardPayload = {
   community_domain?: UnknownRecord;
   template?: UnknownRecord;
@@ -2188,6 +2203,30 @@ function payloadRecordArrayOrNull(payload: unknown, key: string): UnknownRecord[
   return Array.isArray(value) ? value.filter(isUnknownRecord) : null;
 }
 
+function payloadRecordOrNull(payload: unknown, key: string): UnknownRecord | null {
+  const value = payloadValue(payload, key);
+  return isUnknownRecord(value) ? value : null;
+}
+
+function memberPlacementSummaryOrNull(value: unknown): MemberPlacementSummarySurface | null {
+  if (!isUnknownRecord(value)) return null;
+  return {
+    ...value,
+    counts: isUnknownRecord(value.counts) ? value.counts : undefined,
+  };
+}
+
+function memberVerificationMapOrNull(value: unknown): MemberVerificationMapSurface | null {
+  if (!isUnknownRecord(value)) return null;
+  return {
+    ...value,
+    summary: isUnknownRecord(value.summary) ? value.summary : undefined,
+    primary_next_action: isUnknownRecord(value.primary_next_action)
+      ? value.primary_next_action
+      : null,
+  };
+}
+
 function pageShell(): React.CSSProperties {
   return {
     minHeight: "100%",
@@ -2805,7 +2844,7 @@ export default function CommunityDomainDashboardPage() {
   const [membershipRequestLineage, setMembershipRequestLineage] = useState<ActionReviewItem[]>([]);
   const [loadingMembershipRequestLineage, setLoadingMembershipRequestLineage] =
     useState(false);
-  const [placementSummary, setPlacementSummary] = useState<any | null>(null);
+  const [placementSummary, setPlacementSummary] = useState<MemberPlacementSummarySurface | null>(null);
   const [domainMemberRows, setDomainMemberRows] = useState<UnknownRecord[]>([]);
   const [nodeTree, setNodeTree] = useState<StructureNode[]>([]);
   const [moduleScopeReadiness, setModuleScopeReadiness] = useState<any | null>(null);
@@ -2828,7 +2867,7 @@ export default function CommunityDomainDashboardPage() {
   const [rolloutPlan, setRolloutPlan] = useState<any | null>(null);
   const [activityMap, setActivityMap] = useState<any | null>(null);
   const [activityGroupReadiness, setActivityGroupReadiness] = useState<any | null>(null);
-  const [memberVerificationMap, setMemberVerificationMap] = useState<any | null>(null);
+  const [memberVerificationMap, setMemberVerificationMap] = useState<MemberVerificationMapSurface | null>(null);
   const [networkExchangeMap, setNetworkExchangeMap] = useState<any | null>(null);
   const [recordPrivacyMap, setRecordPrivacyMap] = useState<any | null>(null);
   const [configurationMap, setConfigurationMap] = useState<any | null>(null);
@@ -4574,9 +4613,13 @@ export default function CommunityDomainDashboardPage() {
         placementPayload,
       ] = payloads;
       setDomainMemberRows(payloadRecordArray(memberListPayload, "items"));
-      setMemberVerificationMap(payloadValue(memberVerificationPayload, "member_verification_map") || null);
+      setMemberVerificationMap(
+        memberVerificationMapOrNull(payloadRecordOrNull(memberVerificationPayload, "member_verification_map"))
+      );
       setNodeParticipationMap(payloadValue(nodeParticipationPayload, "node_participation_map") || null);
-      setPlacementSummary(payloadValue(placementPayload, "placement_summary") || null);
+      setPlacementSummary(
+        memberPlacementSummaryOrNull(payloadRecordOrNull(placementPayload, "placement_summary"))
+      );
     }
   }, []);
 

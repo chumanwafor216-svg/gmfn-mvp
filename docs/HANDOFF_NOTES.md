@@ -1,3 +1,11 @@
+## 2026-07-30 - Local Community Domain member readiness map type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `c190ee7c`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` member-readiness surfaces by replacing `placementSummary` and `memberVerificationMap` from `any | null` with route-local object-surface types compatible with `MemberReadinessPanels`.
+- Added guarded object coercion helpers for `placement_summary` and `member_verification_map`, including nested `counts`, `summary`, and `primary_next_action` shape checks before saving the payloads into state.
+- No app UI, backend API, route contract, authentication, permission gate, member readiness behavior, placement summary display, action counts, button geometry, or visible dashboard layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this still leaves broad readiness/setup/capacity/node/billing states plus `quote` and `domainPayment` as `any | null`. Those are larger operational surfaces and should continue as separate verified slices.
+
 ## 2026-07-30 - Local Community Domain period/sponsor summary type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `19ee85e4`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` by replacing `periodSummary` and `sponsorSummary` state from `any | null` with guarded `UnknownRecord | null`.
