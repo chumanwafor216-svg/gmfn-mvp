@@ -1,3 +1,11 @@
+## 2026-07-30 - Local Community Domain node and trust map type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `a70359cd`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` node projection and trust/evidence readiness state by replacing all node projection maps plus `evidenceRecordReadiness`, `evidenceReleaseReadiness`, `trustRelayReadiness`, `notificationScopeReadiness`, and `trustMobility` from `any | null` with route-local object-surface types compatible with `NodeProjectionGroups` and `TrustEvidenceReadinessPanels`.
+- Added guarded coercion helpers for node projection maps and trust/evidence readiness maps before saving those payloads into state.
+- No app UI, backend API, route contract, authentication, permission gate, node projection behavior, trust/evidence readiness behavior, action counts, button geometry, or visible dashboard layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this still leaves setup, rollout/activity, capacity/billing, `subscriptionLifecycle`, `quote`, and `domainPayment` as broad `any | null`; those are the remaining Community Domain page state cleanup groups.
+
 ## 2026-07-30 - Local Community Domain service readiness map type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `9f29864c`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` service readiness/boundary surfaces by replacing `moduleScopeReadiness`, `serviceSettingsProjection`, `economicParticipation`, `networkPresence`, `networkExchangeMap`, `recordPrivacyMap`, `configurationMap`, `complianceMap`, and `appealReadiness` from `any | null` with route-local object-surface types compatible with `ServiceReadinessPanels` and `ServiceBoundaryPanels`.

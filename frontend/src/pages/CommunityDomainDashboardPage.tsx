@@ -1503,6 +1503,29 @@ type ServiceBoundaryMapSurface = UnknownRecord & {
   primary_next_action?: ServicePrimaryNextActionSurface | null;
 };
 
+type NodeProjectionPrimaryNextActionSurface = UnknownRecord & {
+  label?: unknown;
+};
+
+type NodeProjectionMapSurface = UnknownRecord & {
+  counts?: UnknownRecord;
+  flat_nodes?: unknown;
+  primary_next_action?: NodeProjectionPrimaryNextActionSurface | null;
+  template?: UnknownRecord | null;
+};
+
+type TrustEvidencePrimaryNextActionSurface = UnknownRecord & {
+  label?: unknown;
+};
+
+type TrustEvidenceReadinessMapSurface = UnknownRecord & {
+  summary?: UnknownRecord;
+  lanes?: unknown;
+  record_types?: unknown;
+  ready_total?: unknown;
+  primary_next_action?: TrustEvidencePrimaryNextActionSurface | null;
+};
+
 type DashboardPayload = {
   community_domain?: UnknownRecord;
   template?: UnknownRecord;
@@ -2429,6 +2452,42 @@ function serviceBoundaryMapOrNull(value: unknown): ServiceBoundaryMapSurface | n
   };
 }
 
+function nodeProjectionPrimaryNextActionOrNull(
+  value: unknown
+): NodeProjectionPrimaryNextActionSurface | null {
+  return isUnknownRecord(value) ? value : null;
+}
+
+function nodeProjectionMapOrNull(value: unknown): NodeProjectionMapSurface | null {
+  if (!isUnknownRecord(value)) return null;
+  return {
+    ...value,
+    counts: isUnknownRecord(value.counts) ? value.counts : undefined,
+    flat_nodes: Array.isArray(value.flat_nodes) ? value.flat_nodes : undefined,
+    template: isUnknownRecord(value.template) ? value.template : null,
+    primary_next_action: nodeProjectionPrimaryNextActionOrNull(value.primary_next_action),
+  };
+}
+
+function trustEvidencePrimaryNextActionOrNull(
+  value: unknown
+): TrustEvidencePrimaryNextActionSurface | null {
+  return isUnknownRecord(value) ? value : null;
+}
+
+function trustEvidenceReadinessMapOrNull(
+  value: unknown
+): TrustEvidenceReadinessMapSurface | null {
+  if (!isUnknownRecord(value)) return null;
+  return {
+    ...value,
+    summary: isUnknownRecord(value.summary) ? value.summary : undefined,
+    lanes: Array.isArray(value.lanes) ? value.lanes : undefined,
+    record_types: Array.isArray(value.record_types) ? value.record_types : undefined,
+    primary_next_action: trustEvidencePrimaryNextActionOrNull(value.primary_next_action),
+  };
+}
+
 function pageShell(): React.CSSProperties {
   return {
     minHeight: "100%",
@@ -3078,25 +3137,25 @@ export default function CommunityDomainDashboardPage() {
   const [serviceSettingsProjection, setServiceSettingsProjection] = useState<ServiceSettingsProjectionSurface | null>(null);
   const [economicParticipation, setEconomicParticipation] = useState<EconomicParticipationSurface | null>(null);
   const [networkPresence, setNetworkPresence] = useState<NetworkPresenceSurface | null>(null);
-  const [nodeAutonomyMap, setNodeAutonomyMap] = useState<any | null>(null);
-  const [nodeEconomicMap, setNodeEconomicMap] = useState<any | null>(null);
-  const [nodeActivityMap, setNodeActivityMap] = useState<any | null>(null);
-  const [nodeTrustMap, setNodeTrustMap] = useState<any | null>(null);
-  const [nodeParticipationMap, setNodeParticipationMap] = useState<any | null>(null);
-  const [nodeServiceMap, setNodeServiceMap] = useState<any | null>(null);
-  const [nodePrivacyMap, setNodePrivacyMap] = useState<any | null>(null);
-  const [nodeAnalyticsMap, setNodeAnalyticsMap] = useState<any | null>(null);
-  const [nodeDomainBoundaryMap, setNodeDomainBoundaryMap] = useState<any | null>(null);
-  const [nodeEvidenceAuthorityMap, setNodeEvidenceAuthorityMap] = useState<any | null>(null);
-  const [nodeCommunicationMap, setNodeCommunicationMap] = useState<any | null>(null);
-  const [nodeVaultMap, setNodeVaultMap] = useState<any | null>(null);
-  const [nodeScheduledActivityMap, setNodeScheduledActivityMap] = useState<any | null>(null);
-  const [nodePaidActivityMap, setNodePaidActivityMap] = useState<any | null>(null);
-  const [evidenceRecordReadiness, setEvidenceRecordReadiness] = useState<any | null>(null);
-  const [evidenceReleaseReadiness, setEvidenceReleaseReadiness] = useState<any | null>(null);
-  const [trustRelayReadiness, setTrustRelayReadiness] = useState<any | null>(null);
-  const [notificationScopeReadiness, setNotificationScopeReadiness] = useState<any | null>(null);
-  const [trustMobility, setTrustMobility] = useState<any | null>(null);
+  const [nodeAutonomyMap, setNodeAutonomyMap] = useState<NodeProjectionMapSurface | null>(null);
+  const [nodeEconomicMap, setNodeEconomicMap] = useState<NodeProjectionMapSurface | null>(null);
+  const [nodeActivityMap, setNodeActivityMap] = useState<NodeProjectionMapSurface | null>(null);
+  const [nodeTrustMap, setNodeTrustMap] = useState<NodeProjectionMapSurface | null>(null);
+  const [nodeParticipationMap, setNodeParticipationMap] = useState<NodeProjectionMapSurface | null>(null);
+  const [nodeServiceMap, setNodeServiceMap] = useState<NodeProjectionMapSurface | null>(null);
+  const [nodePrivacyMap, setNodePrivacyMap] = useState<NodeProjectionMapSurface | null>(null);
+  const [nodeAnalyticsMap, setNodeAnalyticsMap] = useState<NodeProjectionMapSurface | null>(null);
+  const [nodeDomainBoundaryMap, setNodeDomainBoundaryMap] = useState<NodeProjectionMapSurface | null>(null);
+  const [nodeEvidenceAuthorityMap, setNodeEvidenceAuthorityMap] = useState<NodeProjectionMapSurface | null>(null);
+  const [nodeCommunicationMap, setNodeCommunicationMap] = useState<NodeProjectionMapSurface | null>(null);
+  const [nodeVaultMap, setNodeVaultMap] = useState<NodeProjectionMapSurface | null>(null);
+  const [nodeScheduledActivityMap, setNodeScheduledActivityMap] = useState<NodeProjectionMapSurface | null>(null);
+  const [nodePaidActivityMap, setNodePaidActivityMap] = useState<NodeProjectionMapSurface | null>(null);
+  const [evidenceRecordReadiness, setEvidenceRecordReadiness] = useState<TrustEvidenceReadinessMapSurface | null>(null);
+  const [evidenceReleaseReadiness, setEvidenceReleaseReadiness] = useState<TrustEvidenceReadinessMapSurface | null>(null);
+  const [trustRelayReadiness, setTrustRelayReadiness] = useState<TrustEvidenceReadinessMapSurface | null>(null);
+  const [notificationScopeReadiness, setNotificationScopeReadiness] = useState<TrustEvidenceReadinessMapSurface | null>(null);
+  const [trustMobility, setTrustMobility] = useState<TrustEvidenceReadinessMapSurface | null>(null);
   const [institutionalProfile, setInstitutionalProfile] = useState<InstitutionalProfileSurface | null>(null);
   const [socialBridge, setSocialBridge] = useState<SocialBridgeSurface | null>(null);
   const [affiliationReadiness, setAffiliationReadiness] = useState<IdentityReadinessMapSurface | null>(null);
@@ -4728,12 +4787,12 @@ export default function CommunityDomainDashboardPage() {
       setRolloutPlan(payloadValue(rolloutPlanPayload, "rollout_plan") || null);
       setActivityMap(payloadValue(activityMapPayload, "activity_map") || null);
       setActivityGroupReadiness(payloadValue(activityGroupPayload, "activity_group_readiness") || null);
-      setNodeAutonomyMap(payloadValue(nodeAutonomyPayload, "node_autonomy_map") || null);
-      setNodeEconomicMap(payloadValue(nodeEconomicPayload, "node_economic_map") || null);
-      setNodeActivityMap(payloadValue(nodeActivityPayload, "node_activity_map") || null);
-      setNodeDomainBoundaryMap(payloadValue(nodeBoundaryPayload, "node_domain_boundary_map") || null);
-      setNodeScheduledActivityMap(payloadValue(nodeSchedulePayload, "node_scheduled_activity_map") || null);
-      setNodePaidActivityMap(payloadValue(nodePaidPayload, "node_paid_activity_map") || null);
+      setNodeAutonomyMap(nodeProjectionMapOrNull(payloadRecordOrNull(nodeAutonomyPayload, "node_autonomy_map")));
+      setNodeEconomicMap(nodeProjectionMapOrNull(payloadRecordOrNull(nodeEconomicPayload, "node_economic_map")));
+      setNodeActivityMap(nodeProjectionMapOrNull(payloadRecordOrNull(nodeActivityPayload, "node_activity_map")));
+      setNodeDomainBoundaryMap(nodeProjectionMapOrNull(payloadRecordOrNull(nodeBoundaryPayload, "node_domain_boundary_map")));
+      setNodeScheduledActivityMap(nodeProjectionMapOrNull(payloadRecordOrNull(nodeSchedulePayload, "node_scheduled_activity_map")));
+      setNodePaidActivityMap(nodeProjectionMapOrNull(payloadRecordOrNull(nodePaidPayload, "node_paid_activity_map")));
       return;
     }
 
@@ -4773,11 +4832,11 @@ export default function CommunityDomainDashboardPage() {
       setNetworkPresence(
         networkPresenceOrNull(payloadRecordOrNull(networkPresencePayload, "network_presence"))
       );
-      setNodeServiceMap(payloadValue(nodeServicePayload, "node_service_map") || null);
-      setNodePrivacyMap(payloadValue(nodePrivacyPayload, "node_privacy_map") || null);
-      setNodeAnalyticsMap(payloadValue(nodeAnalyticsPayload, "node_analytics_map") || null);
-      setNodeCommunicationMap(payloadValue(nodeCommunicationPayload, "node_communication_map") || null);
-      setNodeVaultMap(payloadValue(nodeVaultPayload, "node_vault_map") || null);
+      setNodeServiceMap(nodeProjectionMapOrNull(payloadRecordOrNull(nodeServicePayload, "node_service_map")));
+      setNodePrivacyMap(nodeProjectionMapOrNull(payloadRecordOrNull(nodePrivacyPayload, "node_privacy_map")));
+      setNodeAnalyticsMap(nodeProjectionMapOrNull(payloadRecordOrNull(nodeAnalyticsPayload, "node_analytics_map")));
+      setNodeCommunicationMap(nodeProjectionMapOrNull(payloadRecordOrNull(nodeCommunicationPayload, "node_communication_map")));
+      setNodeVaultMap(nodeProjectionMapOrNull(payloadRecordOrNull(nodeVaultPayload, "node_vault_map")));
       setNetworkExchangeMap(
         serviceBoundaryMapOrNull(payloadRecordOrNull(networkExchangePayload, "network_exchange_map"))
       );
@@ -4794,18 +4853,18 @@ export default function CommunityDomainDashboardPage() {
         serviceBoundaryMapOrNull(payloadRecordOrNull(appealPayload, "appeal_readiness"))
       );
       setNodeEvidenceAuthorityMap(
-        payloadValue(nodeEvidenceAuthorityPayload, "node_evidence_authority_map") || null
+        nodeProjectionMapOrNull(payloadRecordOrNull(nodeEvidenceAuthorityPayload, "node_evidence_authority_map"))
       );
-      setNodeTrustMap(payloadValue(nodeTrustPayload, "node_trust_map") || null);
-      setEvidenceRecordReadiness(payloadValue(evidenceReadinessPayload, "evidence_record_readiness") || null);
+      setNodeTrustMap(nodeProjectionMapOrNull(payloadRecordOrNull(nodeTrustPayload, "node_trust_map")));
+      setEvidenceRecordReadiness(trustEvidenceReadinessMapOrNull(payloadRecordOrNull(evidenceReadinessPayload, "evidence_record_readiness")));
       setEvidenceReleaseReadiness(
-        payloadValue(releaseReadinessPayload, "evidence_release_readiness") || null
+        trustEvidenceReadinessMapOrNull(payloadRecordOrNull(releaseReadinessPayload, "evidence_release_readiness"))
       );
-      setTrustRelayReadiness(payloadValue(relayReadinessPayload, "trust_relay_readiness") || null);
+      setTrustRelayReadiness(trustEvidenceReadinessMapOrNull(payloadRecordOrNull(relayReadinessPayload, "trust_relay_readiness")));
       setNotificationScopeReadiness(
-        payloadValue(notificationScopePayload, "notification_scope_readiness") || null
+        trustEvidenceReadinessMapOrNull(payloadRecordOrNull(notificationScopePayload, "notification_scope_readiness"))
       );
-      setTrustMobility(payloadValue(trustMobilityPayload, "trust_mobility") || null);
+      setTrustMobility(trustEvidenceReadinessMapOrNull(payloadRecordOrNull(trustMobilityPayload, "trust_mobility")));
       return;
     }
 
@@ -4846,7 +4905,7 @@ export default function CommunityDomainDashboardPage() {
       setMemberVerificationMap(
         memberVerificationMapOrNull(payloadRecordOrNull(memberVerificationPayload, "member_verification_map"))
       );
-      setNodeParticipationMap(payloadValue(nodeParticipationPayload, "node_participation_map") || null);
+      setNodeParticipationMap(nodeProjectionMapOrNull(payloadRecordOrNull(nodeParticipationPayload, "node_participation_map")));
       setPlacementSummary(
         memberPlacementSummaryOrNull(payloadRecordOrNull(placementPayload, "placement_summary"))
       );
