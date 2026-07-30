@@ -1,3 +1,11 @@
+## 2026-07-30 - Local Community Domain setup map type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `1873a1a0`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` setup state by replacing `setupReadiness` and `setupPlan` from `any | null` with route-local object-surface types compatible with `SetupIntelligenceCards` and the parent next-action lane chooser.
+- Added guarded coercion helpers for setup readiness, setup plan, and setup primary-next-action payloads before saving base readiness payloads into state.
+- No app UI, backend API, route contract, authentication, permission gate, setup readiness display, setup plan display, next-action lane routing, action counts, button geometry, or visible dashboard layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: the page-local broad `any | null` state cleanup is complete, but this is still route-local surface validation rather than generated backend API contracts; the payment-proof component still has its own permissive meta helper outside this page.
+
 ## 2026-07-30 - Local Community Domain billing and payment map type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `17e86141`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` billing/payment state by replacing `capacityPlan`, `subscriptionLifecycle`, `quote`, and `domainPayment` from `any | null` with guarded route-local or exported billing surface types.

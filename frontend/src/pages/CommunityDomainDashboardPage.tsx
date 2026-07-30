@@ -1579,6 +1579,28 @@ type SubscriptionLifecycleSurface = UnknownRecord & {
   primary_next_action?: BillingPrimaryNextActionSurface | null;
 };
 
+type SetupPrimaryNextActionSurface = UnknownRecord & {
+  action_key?: unknown;
+  label?: unknown;
+  route_hint?: unknown;
+  requires_admin?: unknown;
+};
+
+type SetupReadinessSurface = UnknownRecord & {
+  items?: unknown;
+  ready_total?: unknown;
+  total?: unknown;
+  blocked_total?: unknown;
+  primary_next_action?: SetupPrimaryNextActionSurface | null;
+};
+
+type SetupPlanSurface = UnknownRecord & {
+  steps?: unknown;
+  completed_steps?: unknown;
+  setup_phase?: unknown;
+  primary_next_action?: SetupPrimaryNextActionSurface | null;
+};
+
 type DashboardPayload = {
   community_domain?: UnknownRecord;
   template?: UnknownRecord;
@@ -2645,6 +2667,30 @@ function domainPaymentOrNull(value: unknown): DomainPaymentSurface | null {
   } as DomainPaymentSurface;
 }
 
+function setupPrimaryNextActionOrNull(
+  value: unknown
+): SetupPrimaryNextActionSurface | null {
+  return isUnknownRecord(value) ? value : null;
+}
+
+function setupReadinessOrNull(value: unknown): SetupReadinessSurface | null {
+  if (!isUnknownRecord(value)) return null;
+  return {
+    ...value,
+    items: Array.isArray(value.items) ? value.items : undefined,
+    primary_next_action: setupPrimaryNextActionOrNull(value.primary_next_action),
+  };
+}
+
+function setupPlanOrNull(value: unknown): SetupPlanSurface | null {
+  if (!isUnknownRecord(value)) return null;
+  return {
+    ...value,
+    steps: Array.isArray(value.steps) ? value.steps : undefined,
+    primary_next_action: setupPrimaryNextActionOrNull(value.primary_next_action),
+  };
+}
+
 function pageShell(): React.CSSProperties {
   return {
     minHeight: "100%",
@@ -3266,8 +3312,8 @@ export default function CommunityDomainDashboardPage() {
   const [domainMemberRows, setDomainMemberRows] = useState<UnknownRecord[]>([]);
   const [nodeTree, setNodeTree] = useState<StructureNode[]>([]);
   const [moduleScopeReadiness, setModuleScopeReadiness] = useState<ModuleScopeReadinessSurface | null>(null);
-  const [setupReadiness, setSetupReadiness] = useState<any | null>(null);
-  const [setupPlan, setSetupPlan] = useState<any | null>(null);
+  const [setupReadiness, setSetupReadiness] = useState<SetupReadinessSurface | null>(null);
+  const [setupPlan, setSetupPlan] = useState<SetupPlanSurface | null>(null);
   const [capacityPlan, setCapacityPlan] = useState<CapacityPlanSurface | null>(null);
   const [governanceCoverage, setGovernanceCoverage] = useState<GovernanceCoverageSurface | null>(null);
   const [delegationMap, setDelegationMap] = useState<DelegationMapSurface | null>(null);
@@ -5152,8 +5198,8 @@ export default function CommunityDomainDashboardPage() {
         if (!cancelled) {
           if (basePayloads) {
             const [readinessPayload, setupPlanPayload] = basePayloads;
-            setSetupReadiness(readinessPayload?.readiness || null);
-            setSetupPlan(setupPlanPayload?.setup_plan || null);
+            setSetupReadiness(setupReadinessOrNull(payloadRecordOrNull(readinessPayload, "readiness")));
+            setSetupPlan(setupPlanOrNull(payloadRecordOrNull(setupPlanPayload, "setup_plan")));
           }
 
           if (lanePayloads) {
