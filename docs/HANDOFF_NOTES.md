@@ -1,3 +1,10 @@
+## 2026-07-30 - Local payment instructions API helper cast cleanup
+- Status: Local only, not pushed/deployed. Builds on local commit `9fe4e77c`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/PaymentInstructionsPage.tsx` by removing the remaining `(api as any)` casts for already-exported API helpers: stored GMFN id, selected community id, selected-community storage, current member, current community, and stored GMFN id writes.
+- No app UI, backend API route, request payload, route selection behavior, selected-community fallback, stored GMFN id fallback, payment instruction generation, proof upload behavior, action counts, button geometry, or visible Payment Instructions layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run lint`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check`.
+- Devil's advocate: this removes Payment Instructions namespace casts only. The page still keeps broad `any` state for `me`, `currentClan`, and Community Domain policy payloads; those should be narrowed with route-local response guards in later slices, not guessed from UI usage.
+
 ## 2026-07-30 - Local payment instructions proof upload caller type cleanup
 - Status: Local only, not pushed/deployed. Builds on deployed `main` commit `7bb60ec1`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/PaymentInstructionsPage.tsx` by removing the stale `(api as any)` cast from the payment-proof upload call now that `uploadPaymentInstructionProofFile` has a typed module export returning `Promise<unknown>`.

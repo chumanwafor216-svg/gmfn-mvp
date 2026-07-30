@@ -113,7 +113,7 @@ function resolveMoneyInMemberGmfnId(me: any, currentClan: any): string {
     currentClan?.profile?.gmfn_id,
     currentClan?.user?.gmfn_id,
     currentClan?.gmfn_id,
-    (api as any).getStoredGmfnId?.()
+    api.getStoredGmfnId()
   );
 }
 
@@ -753,7 +753,7 @@ export default function PaymentInstructionsPage() {
     return normalizeCurrency(params.get("currency"));
   }, [location.search]);
   const selectedClanId =
-    routeClanId || Number((api as any).getSelectedClanId?.() || 0);
+    routeClanId || Number(api.getSelectedClanId() || 0);
   const routes = useMemo(
     () => ({
       dashboard: routeTarget("dashboard", selectedClanId, "money-in.route.dashboard"),
@@ -838,7 +838,7 @@ export default function PaymentInstructionsPage() {
 
   useEffect(() => {
     if (routeClanId > 0) {
-      (api as any).setSelectedClanId?.(routeClanId);
+      api.setSelectedClanId(routeClanId);
     }
   }, [routeClanId]);
 
@@ -918,11 +918,11 @@ export default function PaymentInstructionsPage() {
 
       try {
         const [meRes, clanRes, domainsRes] = await Promise.all([
-          typeof (api as any).getMe === "function"
-            ? (api as any).getMe().catch(() => null)
+          typeof api.getMe === "function"
+            ? api.getMe().catch(() => null)
             : Promise.resolve(null),
-          typeof (api as any).getCurrentClan === "function"
-            ? (api as any).getCurrentClan().catch(() => null)
+          typeof api.getCurrentClan === "function"
+            ? api.getCurrentClan().catch(() => null)
             : Promise.resolve(null),
           listMyCommunityDomains().catch(() => null),
         ]);
@@ -935,8 +935,8 @@ export default function PaymentInstructionsPage() {
 
         const gmfnId = resolveMoneyInMemberGmfnId(meRes, clanRes);
 
-        if (gmfnId && typeof (api as any).setStoredGmfnId === "function") {
-          (api as any).setStoredGmfnId(gmfnId);
+        if (gmfnId && typeof api.setStoredGmfnId === "function") {
+          api.setStoredGmfnId(gmfnId);
         }
 
         if (!selectedClanId || !gmfnId) {
