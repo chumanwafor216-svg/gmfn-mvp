@@ -6069,15 +6069,20 @@ export default function CommunityDomainDashboardPage() {
     })
       .then((payload) => {
         if (!alive || !isCurrentDomainRequest(requestDomainId)) return;
-        const items = Array.isArray(payload)
+        const rawItems = Array.isArray(payload)
           ? payload
-          : Array.isArray(payload?.items)
+          : isUnknownRecord(payload) && Array.isArray(payload.items)
           ? payload.items
           : [];
+        const items = rawItems.filter(isUnknownRecord);
         const match =
-          items.find((item: any) => {
-            const meta = item?.meta || item?.meta_json || {};
-            return Number(meta?.community_domain_id || 0) === numericDomainId;
+          items.find((item) => {
+            const meta = isUnknownRecord(item.meta)
+              ? item.meta
+              : isUnknownRecord(item.meta_json)
+              ? item.meta_json
+              : {};
+            return Number(meta.community_domain_id || 0) === numericDomainId;
           }) || null;
         setDomainPayment(match);
       })

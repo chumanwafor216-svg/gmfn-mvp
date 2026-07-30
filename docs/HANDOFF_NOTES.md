@@ -1,3 +1,11 @@
+## 2026-07-30 - Local Community Domain expected payment lookup type hardening
+- Status: Local only, not pushed/deployed. Builds on deployed `main` commit `1c132031`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` expected-payment matching by replacing the remaining `items.find((item: any) => ...)` payment-row callback with guarded `UnknownRecord` rows.
+- Expected-payment payloads now accept either array responses or object-shaped `{ items }` responses only after shape checks, and payment metadata is read from guarded `meta` / `meta_json` records before matching the active Community Domain id.
+- No app UI, backend API, route contract, authentication, permission gate, billing expected-payment behavior, action counts, button geometry, or visible dashboard layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this is one lookup boundary only. The remaining broad `any` surfaces are still the large readiness state objects, quote/domain-payment state, and real-life beneficiary record handlers; those should stay in narrow verified slices or move to generated API contracts.
+
 ## 2026-07-30 - Local Community Domain setup editor result type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `e0e195f1`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` by replacing the setup-editor result state from `any | null` with `UnknownRecord | null`.
