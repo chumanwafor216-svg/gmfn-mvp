@@ -1,3 +1,11 @@
+## 2026-07-30 - Local Community Domain service readiness map type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `9f29864c`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` service readiness/boundary surfaces by replacing `moduleScopeReadiness`, `serviceSettingsProjection`, `economicParticipation`, `networkPresence`, `networkExchangeMap`, `recordPrivacyMap`, `configurationMap`, `complianceMap`, and `appealReadiness` from `any | null` with route-local object-surface types compatible with `ServiceReadinessPanels` and `ServiceBoundaryPanels`.
+- Added guarded coercion helpers for module scope, service settings, economic participation, network presence, and service-boundary maps before saving those payloads into state.
+- No app UI, backend API, route contract, authentication, permission gate, service readiness behavior, service boundary display, action counts, button geometry, or visible dashboard layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this intentionally leaves node/service/evidence/trust maps, setup, capacity/billing, structure, and quote/payment state objects as broad `any | null`; those still need separate verified slices.
+
 ## 2026-07-30 - Local Community Domain identity readiness map type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `df62e0eb`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` identity readiness surfaces by replacing `institutionalProfile`, `socialBridge`, and `affiliationReadiness` from `any | null` with route-local object-surface types compatible with `IdentityReadinessPanels`.

@@ -1461,6 +1461,48 @@ type SocialBridgeSurface = IdentityReadinessMapSurface & {
   linked_community?: UnknownRecord;
 };
 
+type ServicePrimaryNextActionSurface = UnknownRecord & {
+  label?: unknown;
+};
+
+type ModuleScopeReadinessSurface = UnknownRecord & {
+  modules?: unknown;
+  primary_next_action?: ServicePrimaryNextActionSurface | null;
+};
+
+type ServiceSettingsProjectionSurface = UnknownRecord & {
+  items?: unknown;
+  enabled_total?: unknown;
+  optional_total?: unknown;
+  template_key?: unknown;
+  domain_type?: unknown;
+};
+
+type EconomicParticipationSurface = UnknownRecord & {
+  counts?: UnknownRecord;
+  template?: UnknownRecord;
+  lanes?: unknown;
+  ready_total?: unknown;
+  primary_next_action?: ServicePrimaryNextActionSurface | null;
+};
+
+type NetworkPresenceSurface = UnknownRecord & {
+  identity?: UnknownRecord;
+  status?: UnknownRecord;
+  lanes?: unknown;
+  ready_total?: unknown;
+  primary_next_action?: ServicePrimaryNextActionSurface | null;
+};
+
+type ServiceBoundaryMapSurface = UnknownRecord & {
+  summary?: UnknownRecord;
+  linked_social_community?: UnknownRecord;
+  blueprint?: UnknownRecord & { default_modules?: unknown[] };
+  lanes?: unknown;
+  ready_total?: unknown;
+  primary_next_action?: ServicePrimaryNextActionSurface | null;
+};
+
 type DashboardPayload = {
   community_domain?: UnknownRecord;
   template?: UnknownRecord;
@@ -2326,6 +2368,67 @@ function socialBridgeOrNull(value: unknown): SocialBridgeSurface | null {
     : null;
 }
 
+function servicePrimaryNextActionOrNull(
+  value: unknown
+): ServicePrimaryNextActionSurface | null {
+  return isUnknownRecord(value) ? value : null;
+}
+
+function moduleScopeReadinessOrNull(value: unknown): ModuleScopeReadinessSurface | null {
+  if (!isUnknownRecord(value)) return null;
+  return {
+    ...value,
+    primary_next_action: servicePrimaryNextActionOrNull(value.primary_next_action),
+  };
+}
+
+function serviceSettingsProjectionOrNull(
+  value: unknown
+): ServiceSettingsProjectionSurface | null {
+  return isUnknownRecord(value) ? value : null;
+}
+
+function economicParticipationOrNull(value: unknown): EconomicParticipationSurface | null {
+  if (!isUnknownRecord(value)) return null;
+  return {
+    ...value,
+    counts: isUnknownRecord(value.counts) ? value.counts : undefined,
+    template: isUnknownRecord(value.template) ? value.template : undefined,
+    primary_next_action: servicePrimaryNextActionOrNull(value.primary_next_action),
+  };
+}
+
+function networkPresenceOrNull(value: unknown): NetworkPresenceSurface | null {
+  if (!isUnknownRecord(value)) return null;
+  return {
+    ...value,
+    identity: isUnknownRecord(value.identity) ? value.identity : undefined,
+    status: isUnknownRecord(value.status) ? value.status : undefined,
+    primary_next_action: servicePrimaryNextActionOrNull(value.primary_next_action),
+  };
+}
+
+function serviceBoundaryMapOrNull(value: unknown): ServiceBoundaryMapSurface | null {
+  if (!isUnknownRecord(value)) return null;
+  const blueprint = isUnknownRecord(value.blueprint) ? value.blueprint : undefined;
+  return {
+    ...value,
+    summary: isUnknownRecord(value.summary) ? value.summary : undefined,
+    linked_social_community: isUnknownRecord(value.linked_social_community)
+      ? value.linked_social_community
+      : undefined,
+    blueprint: blueprint
+      ? {
+          ...blueprint,
+          default_modules: Array.isArray(blueprint.default_modules)
+            ? blueprint.default_modules
+            : undefined,
+        }
+      : undefined,
+    primary_next_action: servicePrimaryNextActionOrNull(value.primary_next_action),
+  };
+}
+
 function pageShell(): React.CSSProperties {
   return {
     minHeight: "100%",
@@ -2946,7 +3049,7 @@ export default function CommunityDomainDashboardPage() {
   const [placementSummary, setPlacementSummary] = useState<MemberPlacementSummarySurface | null>(null);
   const [domainMemberRows, setDomainMemberRows] = useState<UnknownRecord[]>([]);
   const [nodeTree, setNodeTree] = useState<StructureNode[]>([]);
-  const [moduleScopeReadiness, setModuleScopeReadiness] = useState<any | null>(null);
+  const [moduleScopeReadiness, setModuleScopeReadiness] = useState<ModuleScopeReadinessSurface | null>(null);
   const [setupReadiness, setSetupReadiness] = useState<any | null>(null);
   const [setupPlan, setSetupPlan] = useState<any | null>(null);
   const [capacityPlan, setCapacityPlan] = useState<any | null>(null);
@@ -2967,14 +3070,14 @@ export default function CommunityDomainDashboardPage() {
   const [activityMap, setActivityMap] = useState<any | null>(null);
   const [activityGroupReadiness, setActivityGroupReadiness] = useState<any | null>(null);
   const [memberVerificationMap, setMemberVerificationMap] = useState<MemberVerificationMapSurface | null>(null);
-  const [networkExchangeMap, setNetworkExchangeMap] = useState<any | null>(null);
-  const [recordPrivacyMap, setRecordPrivacyMap] = useState<any | null>(null);
-  const [configurationMap, setConfigurationMap] = useState<any | null>(null);
-  const [complianceMap, setComplianceMap] = useState<any | null>(null);
-  const [appealReadiness, setAppealReadiness] = useState<any | null>(null);
-  const [serviceSettingsProjection, setServiceSettingsProjection] = useState<any | null>(null);
-  const [economicParticipation, setEconomicParticipation] = useState<any | null>(null);
-  const [networkPresence, setNetworkPresence] = useState<any | null>(null);
+  const [networkExchangeMap, setNetworkExchangeMap] = useState<ServiceBoundaryMapSurface | null>(null);
+  const [recordPrivacyMap, setRecordPrivacyMap] = useState<ServiceBoundaryMapSurface | null>(null);
+  const [configurationMap, setConfigurationMap] = useState<ServiceBoundaryMapSurface | null>(null);
+  const [complianceMap, setComplianceMap] = useState<ServiceBoundaryMapSurface | null>(null);
+  const [appealReadiness, setAppealReadiness] = useState<ServiceBoundaryMapSurface | null>(null);
+  const [serviceSettingsProjection, setServiceSettingsProjection] = useState<ServiceSettingsProjectionSurface | null>(null);
+  const [economicParticipation, setEconomicParticipation] = useState<EconomicParticipationSurface | null>(null);
+  const [networkPresence, setNetworkPresence] = useState<NetworkPresenceSurface | null>(null);
   const [nodeAutonomyMap, setNodeAutonomyMap] = useState<any | null>(null);
   const [nodeEconomicMap, setNodeEconomicMap] = useState<any | null>(null);
   const [nodeActivityMap, setNodeActivityMap] = useState<any | null>(null);
@@ -4658,20 +4761,38 @@ export default function CommunityDomainDashboardPage() {
         notificationScopePayload,
         trustMobilityPayload,
       ] = payloads;
-      setModuleScopeReadiness(payloadValue(moduleScopePayload, "module_scope_readiness") || null);
-      setServiceSettingsProjection(payloadValue(serviceSettingsPayload, "service_settings") || null);
-      setEconomicParticipation(payloadValue(economicPayload, "economic_participation") || null);
-      setNetworkPresence(payloadValue(networkPresencePayload, "network_presence") || null);
+      setModuleScopeReadiness(
+        moduleScopeReadinessOrNull(payloadRecordOrNull(moduleScopePayload, "module_scope_readiness"))
+      );
+      setServiceSettingsProjection(
+        serviceSettingsProjectionOrNull(payloadRecordOrNull(serviceSettingsPayload, "service_settings"))
+      );
+      setEconomicParticipation(
+        economicParticipationOrNull(payloadRecordOrNull(economicPayload, "economic_participation"))
+      );
+      setNetworkPresence(
+        networkPresenceOrNull(payloadRecordOrNull(networkPresencePayload, "network_presence"))
+      );
       setNodeServiceMap(payloadValue(nodeServicePayload, "node_service_map") || null);
       setNodePrivacyMap(payloadValue(nodePrivacyPayload, "node_privacy_map") || null);
       setNodeAnalyticsMap(payloadValue(nodeAnalyticsPayload, "node_analytics_map") || null);
       setNodeCommunicationMap(payloadValue(nodeCommunicationPayload, "node_communication_map") || null);
       setNodeVaultMap(payloadValue(nodeVaultPayload, "node_vault_map") || null);
-      setNetworkExchangeMap(payloadValue(networkExchangePayload, "network_exchange_map") || null);
-      setRecordPrivacyMap(payloadValue(recordPrivacyPayload, "record_privacy_map") || null);
-      setConfigurationMap(payloadValue(configurationPayload, "configuration_map") || null);
-      setComplianceMap(payloadValue(compliancePayload, "compliance_map") || null);
-      setAppealReadiness(payloadValue(appealPayload, "appeal_readiness") || null);
+      setNetworkExchangeMap(
+        serviceBoundaryMapOrNull(payloadRecordOrNull(networkExchangePayload, "network_exchange_map"))
+      );
+      setRecordPrivacyMap(
+        serviceBoundaryMapOrNull(payloadRecordOrNull(recordPrivacyPayload, "record_privacy_map"))
+      );
+      setConfigurationMap(
+        serviceBoundaryMapOrNull(payloadRecordOrNull(configurationPayload, "configuration_map"))
+      );
+      setComplianceMap(
+        serviceBoundaryMapOrNull(payloadRecordOrNull(compliancePayload, "compliance_map"))
+      );
+      setAppealReadiness(
+        serviceBoundaryMapOrNull(payloadRecordOrNull(appealPayload, "appeal_readiness"))
+      );
       setNodeEvidenceAuthorityMap(
         payloadValue(nodeEvidenceAuthorityPayload, "node_evidence_authority_map") || null
       );
