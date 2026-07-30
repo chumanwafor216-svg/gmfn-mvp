@@ -1910,7 +1910,7 @@ function setupDraftBelongsToDomain(
 }
 
 function normalizePillarOfHopeSetupDraft(
-  domain: any,
+  domain: unknown,
   draft: CommunityDomainSetupDraft
 ): CommunityDomainSetupDraft {
   if (!isPillarOfHopeDomain(domain, draft)) return draft;
@@ -1935,10 +1935,8 @@ function readCommunityDomainSetupDraft(domainId: unknown): CommunityDomainSetupD
   try {
     const raw = window.localStorage.getItem(communityDomainSetupDraftKey(domainId));
     if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object"
-      ? (parsed as CommunityDomainSetupDraft)
-      : null;
+    const parsed = JSON.parse(raw) as unknown;
+    return isUnknownRecord(parsed) ? (parsed as CommunityDomainSetupDraft) : null;
   } catch {
     return null;
   }
@@ -2009,13 +2007,14 @@ function limitWords(value: unknown, maxWords: number): string {
 
 function setupDraftCompletion(
   draft: CommunityDomainSetupDraft,
-  domainPayment: any,
-  setupEvidenceItems: any[] = []
+  domainPayment: unknown,
+  setupEvidenceItems: unknown[] = []
 ): {
   ready: number;
   total: number;
   labels: Array<[string, boolean]>;
 } {
+  const paymentRecord = isUnknownRecord(domainPayment) ? domainPayment : {};
   const labels: Array<[string, boolean]> = [
     [
       "Identity",
@@ -2025,7 +2024,7 @@ function setupDraftCompletion(
           cleanText(draft.domain_type)
       ),
     ],
-    ["Payment code", Boolean(domainPayment?.id || domainPayment?.reference_display)],
+    ["Payment code", Boolean(paymentRecord.id || paymentRecord.reference_display)],
     [
       "Authority evidence",
       Boolean(
@@ -2645,7 +2644,7 @@ function setupStepForLane(laneKey: string): SetupStepKey {
 
 function setupStepPlaceholder(
   step: SetupStepKey,
-  domain: any,
+  domain: unknown,
   draft: CommunityDomainSetupDraft
 ): string {
   const pillar = isPillarOfHopeDomain(domain, draft);

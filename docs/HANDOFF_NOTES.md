@@ -1,3 +1,11 @@
+## 2026-07-30 - Local Community Domain setup helper type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `ad320b5a`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` by replacing broad setup-helper `any` boundaries for Pillar of Hope setup draft normalization, setup-step placeholder copy, setup draft local-storage parsing, and setup completion checks with `unknown` plus route-local record guards.
+- Local-storage setup draft parsing now treats `JSON.parse` output as `unknown` before accepting object-shaped draft data, and setup completion reads payment-code evidence through a guarded payment record.
+- No app UI, backend API, route contract, authentication, permission gate, setup flow behavior, action counts, button geometry, or visible dashboard layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this is still narrow helper hardening only. Larger dashboard/readiness state payloads and real-life record row workflows still carry broad `any` surfaces and should remain separate verified slices.
+
 ## 2026-07-30 - Local Community Domain operational lane helper type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `862d0490`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` by replacing broad `any` helper boundaries for capacity-plan lane lookup, lane display labels, setup-state detection, operational-state detection, and first available operational lane selection with `unknown` plus route-local record guards.
