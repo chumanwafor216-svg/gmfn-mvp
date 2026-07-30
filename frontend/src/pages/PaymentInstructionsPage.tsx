@@ -36,6 +36,8 @@ type CollapseState = {
   routes: boolean;
 };
 
+type UnknownRecord = Record<string, unknown>;
+
 type PersistedDepositTask = {
   amountInput: string;
   currency?: string;
@@ -75,6 +77,19 @@ function safeStr(x: unknown): string {
   return String(x ?? "").trim();
 }
 
+function isUnknownRecord(value: unknown): value is UnknownRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function nestedValue(value: unknown, ...keys: string[]): unknown {
+  let cursor = value;
+  for (const key of keys) {
+    if (!isUnknownRecord(cursor)) return undefined;
+    cursor = cursor[key];
+  }
+  return cursor;
+}
+
 function firstTruthy(...values: unknown[]): string {
   for (const value of values) {
     const text = safeStr(value);
@@ -97,22 +112,22 @@ function firstMemberGmfnId(...values: unknown[]): string {
   return "";
 }
 
-function resolveMoneyInMemberGmfnId(me: any, currentClan: any): string {
+function resolveMoneyInMemberGmfnId(me: unknown, currentClan: unknown): string {
   return firstMemberGmfnId(
-    me?.gmfn_id,
-    me?.gmfnId,
-    me?.profile?.gmfn_id,
-    currentClan?.current_member_gmfn_id,
-    currentClan?.currentUserGmfnId,
-    currentClan?.member_gmfn_id,
-    currentClan?.memberGmfnId,
-    currentClan?.membership?.gmfn_id,
-    currentClan?.membership?.member_gmfn_id,
-    currentClan?.member?.gmfn_id,
-    currentClan?.profile?.member_gmfn_id,
-    currentClan?.profile?.gmfn_id,
-    currentClan?.user?.gmfn_id,
-    currentClan?.gmfn_id,
+    nestedValue(me, "gmfn_id"),
+    nestedValue(me, "gmfnId"),
+    nestedValue(me, "profile", "gmfn_id"),
+    nestedValue(currentClan, "current_member_gmfn_id"),
+    nestedValue(currentClan, "currentUserGmfnId"),
+    nestedValue(currentClan, "member_gmfn_id"),
+    nestedValue(currentClan, "memberGmfnId"),
+    nestedValue(currentClan, "membership", "gmfn_id"),
+    nestedValue(currentClan, "membership", "member_gmfn_id"),
+    nestedValue(currentClan, "member", "gmfn_id"),
+    nestedValue(currentClan, "profile", "member_gmfn_id"),
+    nestedValue(currentClan, "profile", "gmfn_id"),
+    nestedValue(currentClan, "user", "gmfn_id"),
+    nestedValue(currentClan, "gmfn_id"),
     api.getStoredGmfnId()
   );
 }
@@ -414,35 +429,35 @@ function copyText(text: string) {
   api.safeCopy(value);
 }
 
-function getCommunityName(currentClan: any, clanId: number): string {
+function getCommunityName(currentClan: unknown, clanId: number): string {
   return (
     firstTruthy(
-      currentClan?.marketplace_name,
-      currentClan?.name,
-      currentClan?.display_name,
-      currentClan?.title
+      nestedValue(currentClan, "marketplace_name"),
+      nestedValue(currentClan, "name"),
+      nestedValue(currentClan, "display_name"),
+      nestedValue(currentClan, "title")
     ) || (clanId ? `Community ${clanId}` : "No current community")
   );
 }
 
-function getCommunityPublicId(currentClan: any): string {
+function getCommunityPublicId(currentClan: unknown): string {
   return (
     firstTruthy(
-      currentClan?.community_code,
-      currentClan?.community?.community_code,
-      currentClan?.profile?.community_code,
-      currentClan?.marketplace?.community_code
+      nestedValue(currentClan, "community_code"),
+      nestedValue(currentClan, "community", "community_code"),
+      nestedValue(currentClan, "profile", "community_code"),
+      nestedValue(currentClan, "marketplace", "community_code")
     ) || "No community ID yet"
   );
 }
 
-function getCommunityRole(currentClan: any): string {
+function getCommunityRole(currentClan: unknown): string {
   return (
     firstTruthy(
-      currentClan?.role,
-      currentClan?.member_role,
-      currentClan?.membership_role,
-      currentClan?.participant_role
+      nestedValue(currentClan, "role"),
+      nestedValue(currentClan, "member_role"),
+      nestedValue(currentClan, "membership_role"),
+      nestedValue(currentClan, "participant_role")
     ) || ""
   );
 }
@@ -544,21 +559,21 @@ function splitRouteLines(route: CommunityMoneyRoute | null): string[] {
     .filter(Boolean);
 }
 
-function findMatchingDepositEvent(reference: string, recentEvents: any[]): any | null {
+function findMatchingDepositEvent(reference: string, recentEvents: unknown[]): UnknownRecord | null {
   const target = safeStr(reference).toUpperCase();
   if (!target || !Array.isArray(recentEvents)) return null;
 
   for (const event of recentEvents) {
     const ref = firstTruthy(
-      event?.reference,
-      event?.payment_reference,
-      event?.code,
-      event?.meta?.reference,
-      event?.meta_json?.reference
+      nestedValue(event, "reference"),
+      nestedValue(event, "payment_reference"),
+      nestedValue(event, "code"),
+      nestedValue(event, "meta", "reference"),
+      nestedValue(event, "meta_json", "reference")
     ).toUpperCase();
 
     if (ref && ref === target) {
-      return event;
+      return isUnknownRecord(event) ? event : null;
     }
   }
 
@@ -798,8 +813,8 @@ export default function PaymentInstructionsPage() {
     text: string;
   } | null>(null);
 
-  const [me, setMe] = useState<any>(null);
-  const [currentClan, setCurrentClan] = useState<any>(null);
+  const [me, setMe] = useState<unknown | null>(null);
+  const [currentClan, setCurrentClan] = useState<unknown | null>(null);
   const [moneySurface, setMoneySurface] = useState<CommunityMoneySurface | null>(
     null
   );
@@ -807,7 +822,7 @@ export default function PaymentInstructionsPage() {
     null
   );
   const [communityDomainPolicyPayload, setCommunityDomainPolicyPayload] =
-    useState<any>(null);
+    useState<unknown | null>(null);
   const [amountInput, setAmountInput] = useState<string>("");
   const [contributionReason, setContributionReason] = useState<string>("");
   const [selectedCurrency, setSelectedCurrency] =
@@ -1023,11 +1038,11 @@ export default function PaymentInstructionsPage() {
   const memberName = useMemo(() => {
     return (
       firstTruthy(
-        me?.display_name,
-        me?.nickname,
-        me?.name,
-        me?.first_name,
-        me?.email
+        nestedValue(me, "display_name"),
+        nestedValue(me, "nickname"),
+        nestedValue(me, "name"),
+        nestedValue(me, "first_name"),
+        nestedValue(me, "email")
       ) || "Member"
     );
   }, [me]);
@@ -1344,11 +1359,11 @@ export default function PaymentInstructionsPage() {
       setProofUploaded(false);
 
       setNotice(null);
-    } catch (e: any) {
+    } catch (e: unknown) {
       setNotice({
         tone: "error",
         text:
-          safeStr(e?.message) ||
+          safeStr(nestedValue(e, "message")) ||
           "Payment code could not be created.",
       });
     } finally {

@@ -1,3 +1,10 @@
+## 2026-07-30 - Local payment instructions response shape cleanup
+- Status: Local only, not pushed/deployed. Builds on local commit `494d8b1a`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/PaymentInstructionsPage.tsx` by replacing the remaining broad `any` state/helpers with route-local `unknown`/record guards for current member, current community, Community Domain policy payload, matched deposit events, and payment-code error messages.
+- No app UI, backend API route, request payload, route selection behavior, member/community fallback order, Community Domain feature-policy check, matched-event display, payment instruction generation, proof upload behavior, action counts, button geometry, or visible Payment Instructions layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run lint`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check`.
+- Devil's advocate: this removes page-local `any` from Payment Instructions only. The shared `communityDomainFeaturePolicy` helper still accepts broad `any`, and shared API response contracts remain a separate endpoint-by-endpoint hardening stream.
+
 ## 2026-07-30 - Local payment instructions API helper cast cleanup
 - Status: Local only, not pushed/deployed. Builds on local commit `9fe4e77c`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/PaymentInstructionsPage.tsx` by removing the remaining `(api as any)` casts for already-exported API helpers: stored GMFN id, selected community id, selected-community storage, current member, current community, and stored GMFN id writes.
