@@ -2814,8 +2814,8 @@ export default function CommunityDomainDashboardPage() {
   const [capacityPlan, setCapacityPlan] = useState<any | null>(null);
   const [governanceCoverage, setGovernanceCoverage] = useState<any | null>(null);
   const [delegationMap, setDelegationMap] = useState<any | null>(null);
-  const [periodSummary, setPeriodSummary] = useState<any | null>(null);
-  const [sponsorSummary, setSponsorSummary] = useState<any | null>(null);
+  const [periodSummary, setPeriodSummary] = useState<UnknownRecord | null>(null);
+  const [sponsorSummary, setSponsorSummary] = useState<UnknownRecord | null>(null);
   const [busySponsorExportCopy, setBusySponsorExportCopy] = useState(false);
   const [activityCatalogue, setActivityCatalogue] = useState<RealLifeActivityCatalogueOption[]>([]);
   const [activityRows, setActivityRows] = useState<RealLifeActivityRecordRow[]>([]);
@@ -4182,8 +4182,10 @@ export default function CommunityDomainDashboardPage() {
   }
 
   async function copySponsorExportPack() {
-    const exportPack = sponsorSummary?.sponsor_export_pack || {};
-    const copyText = cleanText(exportPack?.copy_text);
+    const exportPack = isUnknownRecord(sponsorSummary?.sponsor_export_pack)
+      ? sponsorSummary.sponsor_export_pack
+      : {};
+    const copyText = cleanText(exportPack.copy_text);
     if (!copyText) {
       setMessage("No sponsor-safe export pack is available yet.");
       return;

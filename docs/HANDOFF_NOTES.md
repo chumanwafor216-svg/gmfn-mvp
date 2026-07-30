@@ -1,3 +1,11 @@
+## 2026-07-30 - Local Community Domain period/sponsor summary type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `19ee85e4`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` by replacing `periodSummary` and `sponsorSummary` state from `any | null` with guarded `UnknownRecord | null`.
+- Guarded the sponsor export-pack read in `copySponsorExportPack` before reading `copy_text`, while preserving the existing sponsor-safe copy behavior and fallback messages.
+- No app UI, backend API, route contract, authentication, permission gate, director/sponsor summary behavior, sponsor export copy behavior, action counts, button geometry, or visible dashboard layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this only tightens the summary surfaces. The wider readiness, setup, capacity, quote, and domain-payment objects still retain broad `any | null` and need separate lane-by-lane cleanup.
+
 ## 2026-07-30 - Local Community Domain beneficiary handler type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `8144ee59`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` beneficiary outcome action handlers by replacing the remaining `item: any` parameters with row types derived from `RealLifeRecordPanelData`.
