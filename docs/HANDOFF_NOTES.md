@@ -1,3 +1,10 @@
+## 2026-07-30 - Local withdrawal instructions result and error cleanup
+- Status: Local only, not pushed/deployed. Builds on local commit `a41fec05`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/WithdrawalInstructionsPage.tsx` by replacing the remaining broad `any` surfaces with `unknown` plus guarded reads for persisted/latest withdrawal result fields and destination-save / withdrawal-request error messages.
+- No app UI, backend API route, request payload, route selection behavior, withdrawal result fallback text, request-reference display, status/state display, amount/currency display, created-at display, destination-save error text, withdrawal-request error text, action counts, button geometry, or visible Withdrawal Instructions layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run lint`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check`.
+- Devil's advocate: `frontend/src/pages/WithdrawalInstructionsPage.tsx` is now clear of `any` and `(api as any)`, but this does not harden shared `communityMoney` or shared API response contracts. Continue endpoint-by-endpoint rather than doing a broad mechanical sweep.
+
 ## 2026-07-30 - Local withdrawal instructions response shape cleanup
 - Status: Local only, not pushed/deployed. Builds on local commit `249ab98d`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/WithdrawalInstructionsPage.tsx` by adding route-local `unknown`/record guards for current member, current community, destination country/phone hints, collapse-state JSON, generic string/number/date helpers, rail placeholder helpers, and local JSON writes.

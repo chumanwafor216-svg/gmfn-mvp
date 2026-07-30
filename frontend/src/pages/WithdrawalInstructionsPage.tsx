@@ -36,7 +36,7 @@ type UnknownRecord = Record<string, unknown>;
 type PersistedWithdrawalTask = {
   amountInput: string;
   noteInput: string;
-  latestWithdrawalResult: any | null;
+  latestWithdrawalResult: unknown | null;
   handoffMode?: string;
   supportGap?: string;
   updatedAt?: string | null;
@@ -60,6 +60,14 @@ function nestedValue(value: unknown, ...keys: string[]): unknown {
     cursor = cursor[key];
   }
   return cursor;
+}
+
+function withdrawalResultValue(result: unknown, key: string): unknown {
+  return nestedValue(result, key);
+}
+
+function errorMessageText(error: unknown): string {
+  return firstTruthy(nestedValue(error, "message"), nestedValue(error, "detail"), error);
 }
 
 function firstTruthy(...values: unknown[]): string {
@@ -778,7 +786,7 @@ export default function WithdrawalInstructionsPage() {
       api.setSelectedClanId(routeClanId);
     }
   }, [routeClanId]);
-  const [latestWithdrawalResult, setLatestWithdrawalResult] = useState<any | null>(
+  const [latestWithdrawalResult, setLatestWithdrawalResult] = useState<unknown | null>(
     null
   );
   const withdrawalMountedRef = useRef(false);
@@ -1218,7 +1226,7 @@ export default function WithdrawalInstructionsPage() {
         tone: "success",
         text: "Payout account saved here. GSN will use these details only after approval.",
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (
         !withdrawalMountedRef.current ||
         withdrawalActionContextRef.current !== actionContext
@@ -1227,7 +1235,7 @@ export default function WithdrawalInstructionsPage() {
       }
 
       const errorText =
-        safeStr(err?.message) ||
+        safeStr(nestedValue(err, "message")) ||
         "Personal payout account could not be saved right now.";
       showNotice(
         "error",
@@ -1321,8 +1329,8 @@ export default function WithdrawalInstructionsPage() {
         "success",
         "Withdrawal request reference created. Keep it visible; GSN finance reviews and reconciles before money moves."
       );
-    } catch (err: any) {
-      const message = safeStr(err?.message || err?.detail || err);
+    } catch (err: unknown) {
+      const message = errorMessageText(err);
       if (
         !withdrawalMountedRef.current ||
         withdrawalActionContextRef.current !== actionContext
@@ -1570,11 +1578,11 @@ export default function WithdrawalInstructionsPage() {
       : "Normal withdrawal";
   const latestResultText = latestWithdrawalResult
     ? firstTruthy(
-        latestWithdrawalResult?.reference
-          ? `Request reference: ${safeStr(latestWithdrawalResult.reference)}`
+        withdrawalResultValue(latestWithdrawalResult, "reference")
+          ? `Request reference: ${safeStr(withdrawalResultValue(latestWithdrawalResult, "reference"))}`
           : "",
-        latestWithdrawalResult?.status,
-        latestWithdrawalResult?.state,
+        withdrawalResultValue(latestWithdrawalResult, "status"),
+        withdrawalResultValue(latestWithdrawalResult, "state"),
         "Withdrawal request reference created"
       )
     : "Awaiting";
@@ -2974,24 +2982,24 @@ export default function WithdrawalInstructionsPage() {
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                       {[
                         firstTruthy(
-                          latestWithdrawalResult?.status,
-                          latestWithdrawalResult?.state
+                          withdrawalResultValue(latestWithdrawalResult, "status"),
+                          withdrawalResultValue(latestWithdrawalResult, "state")
                         )
                           ? `Status: ${firstTruthy(
-                              latestWithdrawalResult?.status,
-                              latestWithdrawalResult?.state
+                              withdrawalResultValue(latestWithdrawalResult, "status"),
+                              withdrawalResultValue(latestWithdrawalResult, "state")
                             )}`
                           : "",
-                        latestWithdrawalResult?.reference
-                          ? `Reference: ${safeStr(latestWithdrawalResult.reference)}`
+                        withdrawalResultValue(latestWithdrawalResult, "reference")
+                          ? `Reference: ${safeStr(withdrawalResultValue(latestWithdrawalResult, "reference"))}`
                           : "",
-                        latestWithdrawalResult?.amount
-                          ? `Amount: ${safeStr(latestWithdrawalResult.amount)} ${safeStr(
-                              latestWithdrawalResult?.currency || poolCurrency
+                        withdrawalResultValue(latestWithdrawalResult, "amount")
+                          ? `Amount: ${safeStr(withdrawalResultValue(latestWithdrawalResult, "amount"))} ${safeStr(
+                              withdrawalResultValue(latestWithdrawalResult, "currency") || poolCurrency
                             )}`
                           : "",
-                        latestWithdrawalResult?.created_at
-                          ? `Created: ${safeDateTime(latestWithdrawalResult.created_at)}`
+                        withdrawalResultValue(latestWithdrawalResult, "created_at")
+                          ? `Created: ${safeDateTime(withdrawalResultValue(latestWithdrawalResult, "created_at"))}`
                           : "",
                       ]
                         .filter(Boolean)
