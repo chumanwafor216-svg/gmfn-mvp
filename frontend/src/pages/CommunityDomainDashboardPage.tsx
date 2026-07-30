@@ -3048,7 +3048,7 @@ export default function CommunityDomainDashboardPage() {
   const [busySetupEditorDelegate, setBusySetupEditorDelegate] = useState(false);
   const [setupEditorSubject, setSetupEditorSubject] = useState("");
   const [setupEditorNote, setSetupEditorNote] = useState("");
-  const [setupEditorResult, setSetupEditorResult] = useState<any | null>(null);
+  const [setupEditorResult, setSetupEditorResult] = useState<UnknownRecord | null>(null);
   const [busyMembershipRequest, setBusyMembershipRequest] = useState(false);
   const [busyMemberStatusId, setBusyMemberStatusId] = useState<string | null>(null);
   const [busyActivityRecord, setBusyActivityRecord] = useState(false);
@@ -5526,10 +5526,11 @@ export default function CommunityDomainDashboardPage() {
         title: "Setup editor",
         note: setupEditorNote,
       });
-      setSetupEditorResult(payload || null);
+      const result = isUnknownRecord(payload) ? payload : null;
+      setSetupEditorResult(result);
       setMessage(
         cleanText(
-          payload?.message,
+          result?.message,
           action === "appoint"
             ? "Setup editor authority delegated."
             : action === "request"
@@ -6964,6 +6965,13 @@ export default function CommunityDomainDashboardPage() {
       }
     }
   }
+
+  const setupEditorMembership = isUnknownRecord(setupEditorResult?.membership)
+    ? setupEditorResult.membership
+    : null;
+  const setupEditorActionReview = isUnknownRecord(setupEditorResult?.action_review)
+    ? setupEditorResult.action_review
+    : null;
 
   const activityCatalogueOptions = activityCatalogue.length
     ? activityCatalogue
@@ -8705,14 +8713,14 @@ export default function CommunityDomainDashboardPage() {
                                 Remove editor
                               </StableButton>
                             </div>
-                            {setupEditorResult?.membership ? (
+                            {setupEditorMembership ? (
                               <div style={statusBadge("authority recorded")}>
                                 {cleanText(
-                                  setupEditorResult.membership.user_display_name ||
-                                    setupEditorResult.membership.user_email,
+                                  setupEditorMembership.user_display_name ||
+                                    setupEditorMembership.user_email,
                                   "Editor"
                                 )}
-                                : {compactStatus(setupEditorResult.membership.role)}
+                                : {compactStatus(setupEditorMembership.role)}
                               </div>
                             ) : null}
                           </div>
@@ -8758,9 +8766,9 @@ export default function CommunityDomainDashboardPage() {
                                 ? "Sending..."
                                 : "Ask owner to authorise editing"}
                             </StableButton>
-                            {setupEditorResult?.action_review ? (
+                            {setupEditorActionReview ? (
                               <div style={statusBadge("request sent")}>
-                                Request: {compactStatus(setupEditorResult.action_review.status)}
+                                Request: {compactStatus(setupEditorActionReview.status)}
                               </div>
                             ) : null}
                           </div>
