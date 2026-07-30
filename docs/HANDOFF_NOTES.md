@@ -1,3 +1,11 @@
+## 2026-07-30 - Local Community Domain identity readiness map type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `df62e0eb`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` identity readiness surfaces by replacing `institutionalProfile`, `socialBridge`, and `affiliationReadiness` from `any | null` with route-local object-surface types compatible with `IdentityReadinessPanels`.
+- Added guarded coercion helpers for `institutional_profile`, `social_bridge`, and `affiliation_readiness`, including nested `summary`, `primary_next_action`, `institutional_profile`, and `linked_community` shape checks before saving payloads into state.
+- No app UI, backend API, route contract, authentication, permission gate, identity readiness behavior, social bridge display, affiliation display, action counts, button geometry, or visible dashboard layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this still leaves setup, capacity/billing, structure/node, service/compliance, trust/evidence, and quote/payment state objects as broad `any | null`. Those are still real remaining cleanup work.
+
 ## 2026-07-30 - Local Community Domain governance readiness map type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `3fb82cf5`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` governance readiness surfaces by replacing `governanceCoverage` and `delegationMap` from `any | null` with route-local object-surface types compatible with `GovernanceReadinessPanels`.

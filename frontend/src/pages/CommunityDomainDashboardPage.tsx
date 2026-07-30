@@ -1442,6 +1442,25 @@ type GovernanceCoverageSurface = UnknownRecord & {
   flat_nodes?: unknown;
 };
 
+type IdentityPrimaryNextActionSurface = UnknownRecord & {
+  label?: unknown;
+};
+
+type IdentityReadinessMapSurface = UnknownRecord & {
+  summary?: UnknownRecord;
+  primary_next_action?: IdentityPrimaryNextActionSurface | null;
+  lanes?: unknown;
+  ready_total?: unknown;
+};
+
+type InstitutionalProfileSurface = IdentityReadinessMapSurface & {
+  institutional_profile?: UnknownRecord;
+};
+
+type SocialBridgeSurface = IdentityReadinessMapSurface & {
+  linked_community?: UnknownRecord;
+};
+
 type DashboardPayload = {
   community_domain?: UnknownRecord;
   template?: UnknownRecord;
@@ -2268,6 +2287,45 @@ function governanceCoverageOrNull(value: unknown): GovernanceCoverageSurface | n
   };
 }
 
+function identityPrimaryNextActionOrNull(
+  value: unknown
+): IdentityPrimaryNextActionSurface | null {
+  return isUnknownRecord(value) ? value : null;
+}
+
+function identityReadinessMapOrNull(value: unknown): IdentityReadinessMapSurface | null {
+  if (!isUnknownRecord(value)) return null;
+  return {
+    ...value,
+    summary: isUnknownRecord(value.summary) ? value.summary : undefined,
+    primary_next_action: identityPrimaryNextActionOrNull(value.primary_next_action),
+  };
+}
+
+function institutionalProfileOrNull(value: unknown): InstitutionalProfileSurface | null {
+  const map = identityReadinessMapOrNull(value);
+  return map
+    ? {
+        ...map,
+        institutional_profile: isUnknownRecord(map.institutional_profile)
+          ? map.institutional_profile
+          : undefined,
+      }
+    : null;
+}
+
+function socialBridgeOrNull(value: unknown): SocialBridgeSurface | null {
+  const map = identityReadinessMapOrNull(value);
+  return map
+    ? {
+        ...map,
+        linked_community: isUnknownRecord(map.linked_community)
+          ? map.linked_community
+          : undefined,
+      }
+    : null;
+}
+
 function pageShell(): React.CSSProperties {
   return {
     minHeight: "100%",
@@ -2936,9 +2994,9 @@ export default function CommunityDomainDashboardPage() {
   const [trustRelayReadiness, setTrustRelayReadiness] = useState<any | null>(null);
   const [notificationScopeReadiness, setNotificationScopeReadiness] = useState<any | null>(null);
   const [trustMobility, setTrustMobility] = useState<any | null>(null);
-  const [institutionalProfile, setInstitutionalProfile] = useState<any | null>(null);
-  const [socialBridge, setSocialBridge] = useState<any | null>(null);
-  const [affiliationReadiness, setAffiliationReadiness] = useState<any | null>(null);
+  const [institutionalProfile, setInstitutionalProfile] = useState<InstitutionalProfileSurface | null>(null);
+  const [socialBridge, setSocialBridge] = useState<SocialBridgeSurface | null>(null);
+  const [affiliationReadiness, setAffiliationReadiness] = useState<IdentityReadinessMapSurface | null>(null);
   const [subscriptionLifecycle, setSubscriptionLifecycle] = useState<any | null>(null);
   const [quote, setQuote] = useState<any | null>(null);
   const [domainPayment, setDomainPayment] = useState<any | null>(null);
@@ -4531,9 +4589,15 @@ export default function CommunityDomainDashboardPage() {
     if (laneKey === "identity") {
       const [institutionalProfilePayload, socialBridgePayload, affiliationReadinessPayload] =
         payloads;
-      setInstitutionalProfile(payloadValue(institutionalProfilePayload, "institutional_profile") || null);
-      setSocialBridge(payloadValue(socialBridgePayload, "social_bridge") || null);
-      setAffiliationReadiness(payloadValue(affiliationReadinessPayload, "affiliation_readiness") || null);
+      setInstitutionalProfile(
+        institutionalProfileOrNull(payloadRecordOrNull(institutionalProfilePayload, "institutional_profile"))
+      );
+      setSocialBridge(
+        socialBridgeOrNull(payloadRecordOrNull(socialBridgePayload, "social_bridge"))
+      );
+      setAffiliationReadiness(
+        identityReadinessMapOrNull(payloadRecordOrNull(affiliationReadinessPayload, "affiliation_readiness"))
+      );
       return;
     }
 
