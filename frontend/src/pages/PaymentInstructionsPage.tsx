@@ -1570,7 +1570,7 @@ export default function PaymentInstructionsPage() {
     const actionContext = moneyInActionContextRef.current;
     setUploadingProof(true);
     try {
-      await (api as any).uploadPaymentInstructionProofFile(
+      await api.uploadPaymentInstructionProofFile(
         expectedPaymentId,
         file,
         selectedClanId,

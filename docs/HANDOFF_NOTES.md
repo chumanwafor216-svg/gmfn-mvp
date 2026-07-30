@@ -1,3 +1,10 @@
+## 2026-07-30 - Local payment instructions proof upload caller type cleanup
+- Status: Local only, not pushed/deployed. Builds on deployed `main` commit `7bb60ec1`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/PaymentInstructionsPage.tsx` by removing the stale `(api as any)` cast from the payment-proof upload call now that `uploadPaymentInstructionProofFile` has a typed module export returning `Promise<unknown>`.
+- No app UI, backend API route, request payload, upload endpoint path, auth gate, proof upload behavior, local screenshot fallback, action counts, button geometry, or visible Payment Instructions layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run lint`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check`.
+- Devil's advocate: this removes one stale page-local cast only. Other `(api as any)` helper calls remain in Payment Instructions and should be reduced only after confirming their runtime exports and fallback behavior.
+
 ## 2026-07-30 - Local payment-proof upload response boundary hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `1fa55d89`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/lib/api.ts` by changing only `uploadPaymentInstructionProofFile` from `Promise<any>` to `Promise<unknown>`; adjacent marketplace/community media upload helpers were left unchanged.
