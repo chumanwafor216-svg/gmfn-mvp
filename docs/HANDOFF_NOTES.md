@@ -1,3 +1,12 @@
+## 2026-07-30 - Local Community Domain period sponsor summary type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `ff8312f0`; push/deploy only when the owner sends `push`, `2`, or explicitly asks.
+- Tightened `frontend/src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx` by replacing broad `any` summary/data/helper annotations with route-local UI-facing surfaces for director period summaries, sponsor-safe summaries, delivery evidence, provider delivery readiness, provider setup contracts, contact-consent gates, sponsor export packs, and top indicators.
+- `TagGroup`, `DeliveryEvidence`, and `ProviderDeliveryReadiness` now accept typed/unknown-normalized summary surfaces instead of `any`, and delivery/provider/top-indicator arrays no longer use `any` map callbacks.
+- Cleaned the director report boundary render so unknown backend boundary values are converted through `cleanText` before React rendering.
+- No app UI, backend API, director report behavior, sponsor summary behavior, delivery readiness behavior, export-pack behavior, permissions, action counts, button geometry, or user-facing Period/Sponsor Summary behavior changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this is compile-time and render-surface hardening only. It does not send provider messages, create delivery receipts, publish sponsor reports, add generated backend schema validation, or reduce the heavy Community Domain route.
+
 ## 2026-07-29 - Local Community Domain node projection type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `b014624b`; push/deploy only when the owner sends `push`, `2`, or explicitly asks.
 - Tightened `frontend/src/pages/communityDomainDashboard/NodeProjectionGroups.tsx` by replacing broad `any` props/helper annotations with one route-local UI-facing node projection map surface for all projection variants.

@@ -3,6 +3,8 @@ import { GsnRealisticIcon } from "../../components/GsnRealisticIcon";
 import { StableButton } from "../../components/StableButton";
 import { humanStatus } from "./statusLanguage";
 
+type UnknownRecord = Record<string, unknown>;
+
 type DirectorSummaryTaskKey = "overview" | "membership" | "evidence" | "delivery";
 type SponsorSummaryTaskKey = "overview" | "evidence" | "delivery" | "export";
 type GovernanceTaskKey = "director_summary" | "sponsor_summary";
@@ -11,6 +13,90 @@ type SummaryOption<Key extends string> = {
   key: Key;
   label: string;
   note: string;
+};
+
+type DeliveryEvidenceSurface = UnknownRecord & {
+  beneficiary_confirmation_delivery_prepared?: unknown;
+  confirmation_delivery_prepared_records?: unknown;
+  beneficiary_confirmation_delivery_receipts?: unknown;
+  confirmation_delivery_receipt_records?: unknown;
+  beneficiary_confirmation_delivery_receipts_current_uncorrected?: unknown;
+  confirmation_delivery_receipts_current_uncorrected?: unknown;
+  beneficiary_confirmation_delivery_receipt_corrections?: unknown;
+  confirmation_delivery_receipt_corrections?: unknown;
+  beneficiary_contact_consent_records?: unknown;
+  contact_consent_records?: unknown;
+  beneficiary_contact_consent_withdrawals?: unknown;
+  contact_consent_withdrawals?: unknown;
+  beneficiary_confirmation_delivery_receipts_current_by_status?: unknown;
+  confirmation_delivery_receipts_current_by_status?: unknown;
+  beneficiary_confirmation_delivery_receipts_by_status?: unknown;
+  confirmation_delivery_receipts_by_status?: unknown;
+  beneficiary_confirmation_delivery_receipts_by_consent_basis?: unknown;
+  confirmation_delivery_receipts_by_consent_basis?: unknown;
+  beneficiary_confirmation_delivery_receipt_corrections_by_decision?: unknown;
+  confirmation_delivery_receipt_corrections_by_decision?: unknown;
+  beneficiary_contact_consent_by_reference_status?: unknown;
+  contact_consent_by_reference_status?: unknown;
+  beneficiary_contact_consent_withdrawals_by_reason?: unknown;
+  contact_consent_withdrawals_by_reason?: unknown;
+};
+
+type ProviderSetupContractSurface = UnknownRecord & {
+  status?: unknown;
+  send_lift_conditions?: unknown;
+  truth_gate?: unknown;
+};
+
+type ContactConsentContractSurface = UnknownRecord & {
+  status?: unknown;
+  provider_send_blocker?: unknown;
+  active_contact_consent_status?: unknown;
+  active_contact_consent_boundary?: unknown;
+  minimum_send_rule?: unknown;
+  privacy_boundary?: unknown;
+};
+
+type ExternalDeliverySurface = UnknownRecord & {
+  status?: unknown;
+  external_channels_sent_by_gsn?: unknown;
+  provider_send_engine_status?: unknown;
+  missing_components?: unknown;
+  provider_setup_contract?: ProviderSetupContractSurface | null;
+  contact_consent_contract?: ContactConsentContractSurface | null;
+  boundary?: unknown;
+};
+
+type TopIndicatorSurface = UnknownRecord & {
+  label?: unknown;
+  count?: unknown;
+};
+
+type OutcomeSummarySurface = UnknownRecord & {
+  status?: unknown;
+  subject_count?: unknown;
+  top_indicators?: unknown;
+};
+
+type SponsorExportPackSurface = UnknownRecord & {
+  copy_text?: unknown;
+};
+
+type PeriodSponsorSummarySurface = UnknownRecord & {
+  membership_snapshot?: UnknownRecord;
+  member_movement?: UnknownRecord;
+  governance_summary?: UnknownRecord;
+  evidence_summary?: DeliveryEvidenceSurface;
+  confirmation_summary?: UnknownRecord;
+  activity_summary?: UnknownRecord;
+  beneficiary_outcome_summary?: OutcomeSummarySurface;
+  period?: UnknownRecord;
+  boundary?: unknown;
+  sponsor_export_pack?: SponsorExportPackSurface;
+  challenge_summary?: UnknownRecord;
+  external_delivery_readiness?: ExternalDeliverySurface;
+  sponsor_readiness?: unknown;
+  plain_language?: unknown;
 };
 
 type SummaryPanelsData = {
@@ -23,12 +109,12 @@ type SummaryPanelsData = {
   copySponsorExportPack: () => void | Promise<void>;
   directorSummaryTaskChooserOpen: boolean;
   DIRECTOR_SUMMARY_TASK_OPTIONS: SummaryOption<DirectorSummaryTaskKey>[];
-  periodSummary: any | null;
+  periodSummary: PeriodSponsorSummarySurface | null;
   setActiveDirectorSummaryTask: React.Dispatch<React.SetStateAction<DirectorSummaryTaskKey>>;
   setActiveSponsorSummaryTask: React.Dispatch<React.SetStateAction<SponsorSummaryTaskKey>>;
   setDirectorSummaryTaskChooserOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setSponsorSummaryTaskChooserOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  sponsorSummary: any | null;
+  sponsorSummary: PeriodSponsorSummarySurface | null;
   sponsorSummaryTaskChooserOpen: boolean;
   SPONSOR_SUMMARY_TASK_OPTIONS: SummaryOption<SponsorSummaryTaskKey>[];
 };
@@ -177,10 +263,11 @@ function SummaryTiles({ rows }: { rows: Array<[string, unknown]> }) {
   );
 }
 
-function TagGroup({ rows, prefix = "" }: { rows: Record<string, unknown>; prefix?: string }) {
+function TagGroup({ rows, prefix = "" }: { rows?: unknown; prefix?: string }) {
+  const entries = typeof rows === "object" && rows !== null ? Object.entries(rows) : [];
   return (
     <>
-      {Object.entries(rows || {}).map(([label, value]) => (
+      {entries.map(([label, value]) => (
         <span key={`${prefix}-${label}`} style={statusBadge(prefix || label)}>
           {prefix ? `${prefix} ` : ""}{compactStatus(label)}: {cleanText(value, "0")}
         </span>
@@ -189,7 +276,13 @@ function TagGroup({ rows, prefix = "" }: { rows: Record<string, unknown>; prefix
   );
 }
 
-function DeliveryEvidence({ evidence, sponsor = false }: { evidence: any; sponsor?: boolean }) {
+function DeliveryEvidence({
+  evidence,
+  sponsor = false,
+}: {
+  evidence: DeliveryEvidenceSurface;
+  sponsor?: boolean;
+}) {
   const hasDeliveryEvidence = Boolean(
     Number(evidence?.beneficiary_confirmation_delivery_prepared ?? evidence?.confirmation_delivery_prepared_records ?? 0) ||
       Number(evidence?.beneficiary_confirmation_delivery_receipts ?? evidence?.confirmation_delivery_receipt_records ?? 0) ||
@@ -405,7 +498,7 @@ function DirectorSummary({ data }: { data: SummaryPanelsData }) {
         <div style={{ display: "grid", gap: 8, borderRadius: 10, border: "1px solid rgba(9,27,46,0.1)", background: "#FFFFFF", padding: 12 }}>
           <div style={sectionLabel()}>Report boundary</div>
           <div style={{ ...helperText(), fontSize: 13 }}>Period: {periodStart || "default start"} to {periodEnd || "default end"}.</div>
-          <div style={{ ...helperText(), fontSize: 13 }}>{summary?.boundary || "Every number should trace back to source records."}</div>
+          <div style={{ ...helperText(), fontSize: 13 }}>{cleanText(summary?.boundary, "Every number should trace back to source records.")}</div>
         </div>
       ) : null}
       {data.activeDirectorSummaryTask === "membership" ? <SummaryTiles rows={membershipTiles} /> : null}
@@ -420,7 +513,11 @@ function DirectorSummary({ data }: { data: SummaryPanelsData }) {
   );
 }
 
-function ProviderDeliveryReadiness({ externalDelivery }: { externalDelivery: any }) {
+function ProviderDeliveryReadiness({
+  externalDelivery,
+}: {
+  externalDelivery: ExternalDeliverySurface;
+}) {
   if (!externalDelivery?.status) {
     return <div style={helperText()}>No provider delivery readiness details are loaded yet.</div>;
   }
@@ -435,7 +532,7 @@ function ProviderDeliveryReadiness({ externalDelivery }: { externalDelivery: any
       </div>
       {Array.isArray(externalDelivery.missing_components) && externalDelivery.missing_components.length ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {externalDelivery.missing_components.slice(0, 4).map((item: any) => (
+          {externalDelivery.missing_components.slice(0, 4).map((item: unknown) => (
             <span key={cleanText(item)} style={statusBadge("needed")}>{cleanText(item)}</span>
           ))}
         </div>
@@ -447,7 +544,10 @@ function ProviderDeliveryReadiness({ externalDelivery }: { externalDelivery: any
             <span style={statusBadge("not configured")}>
               {compactStatus(externalDelivery.provider_setup_contract?.status || "not_configured")}
             </span>
-            {(externalDelivery.provider_setup_contract?.send_lift_conditions || []).slice(0, 3).map((item: any) => (
+            {(Array.isArray(externalDelivery.provider_setup_contract?.send_lift_conditions)
+              ? externalDelivery.provider_setup_contract.send_lift_conditions
+              : []
+            ).slice(0, 3).map((item: unknown) => (
               <span key={cleanText(item)} style={statusBadge("required")}>{cleanText(item)}</span>
             ))}
           </div>
@@ -568,7 +668,7 @@ function SponsorSummary({ data }: { data: SummaryPanelsData }) {
             <div style={{ display: "grid", gap: 6 }}>
               <div style={sectionLabel()}>Top indicators</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {outcomes.top_indicators.slice(0, 4).map((item: any) => (
+                {(outcomes.top_indicators as TopIndicatorSurface[]).slice(0, 4).map((item) => (
                   <span key={cleanText(item?.label)} style={statusBadge("indicator")}>
                     {cleanText(item?.label)}: {cleanText(item?.count, "0")}
                   </span>
