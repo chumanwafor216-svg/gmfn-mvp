@@ -1526,6 +1526,32 @@ type TrustEvidenceReadinessMapSurface = UnknownRecord & {
   primary_next_action?: TrustEvidencePrimaryNextActionSurface | null;
 };
 
+type StructurePrimaryNextActionSurface = UnknownRecord & {
+  label?: unknown;
+};
+
+type RolloutPlanSurface = UnknownRecord & {
+  counts?: UnknownRecord;
+  phases?: unknown;
+  rollout_units?: unknown;
+  rollout_phase?: unknown;
+  primary_next_action?: StructurePrimaryNextActionSurface | null;
+};
+
+type ActivityMapSurface = UnknownRecord & {
+  summary?: UnknownRecord;
+  template?: UnknownRecord;
+  lanes?: unknown;
+  ready_total?: unknown;
+  primary_next_action?: StructurePrimaryNextActionSurface | null;
+};
+
+type ActivityGroupReadinessSurface = UnknownRecord & {
+  summary?: UnknownRecord;
+  flat_groups?: unknown;
+  primary_next_action?: StructurePrimaryNextActionSurface | null;
+};
+
 type DashboardPayload = {
   community_domain?: UnknownRecord;
   template?: UnknownRecord;
@@ -2488,6 +2514,46 @@ function trustEvidenceReadinessMapOrNull(
   };
 }
 
+function structurePrimaryNextActionOrNull(
+  value: unknown
+): StructurePrimaryNextActionSurface | null {
+  return isUnknownRecord(value) ? value : null;
+}
+
+function rolloutPlanOrNull(value: unknown): RolloutPlanSurface | null {
+  if (!isUnknownRecord(value)) return null;
+  return {
+    ...value,
+    counts: isUnknownRecord(value.counts) ? value.counts : undefined,
+    phases: Array.isArray(value.phases) ? value.phases : undefined,
+    rollout_units: Array.isArray(value.rollout_units) ? value.rollout_units : undefined,
+    primary_next_action: structurePrimaryNextActionOrNull(value.primary_next_action),
+  };
+}
+
+function activityMapOrNull(value: unknown): ActivityMapSurface | null {
+  if (!isUnknownRecord(value)) return null;
+  return {
+    ...value,
+    summary: isUnknownRecord(value.summary) ? value.summary : undefined,
+    template: isUnknownRecord(value.template) ? value.template : undefined,
+    lanes: Array.isArray(value.lanes) ? value.lanes : undefined,
+    primary_next_action: structurePrimaryNextActionOrNull(value.primary_next_action),
+  };
+}
+
+function activityGroupReadinessOrNull(
+  value: unknown
+): ActivityGroupReadinessSurface | null {
+  if (!isUnknownRecord(value)) return null;
+  return {
+    ...value,
+    summary: isUnknownRecord(value.summary) ? value.summary : undefined,
+    flat_groups: Array.isArray(value.flat_groups) ? value.flat_groups : undefined,
+    primary_next_action: structurePrimaryNextActionOrNull(value.primary_next_action),
+  };
+}
+
 function pageShell(): React.CSSProperties {
   return {
     minHeight: "100%",
@@ -3125,9 +3191,9 @@ export default function CommunityDomainDashboardPage() {
     useState<Record<string, string>>({});
   const [beneficiaryCorrectionNoteByOutcomeId, setBeneficiaryCorrectionNoteByOutcomeId] =
     useState<Record<string, string>>({});
-  const [rolloutPlan, setRolloutPlan] = useState<any | null>(null);
-  const [activityMap, setActivityMap] = useState<any | null>(null);
-  const [activityGroupReadiness, setActivityGroupReadiness] = useState<any | null>(null);
+  const [rolloutPlan, setRolloutPlan] = useState<RolloutPlanSurface | null>(null);
+  const [activityMap, setActivityMap] = useState<ActivityMapSurface | null>(null);
+  const [activityGroupReadiness, setActivityGroupReadiness] = useState<ActivityGroupReadinessSurface | null>(null);
   const [memberVerificationMap, setMemberVerificationMap] = useState<MemberVerificationMapSurface | null>(null);
   const [networkExchangeMap, setNetworkExchangeMap] = useState<ServiceBoundaryMapSurface | null>(null);
   const [recordPrivacyMap, setRecordPrivacyMap] = useState<ServiceBoundaryMapSurface | null>(null);
@@ -4784,9 +4850,9 @@ export default function CommunityDomainDashboardPage() {
         nodePaidPayload,
       ] = payloads;
       setNodeTree(payloadRecordArray(treePayload, "items") as StructureNode[]);
-      setRolloutPlan(payloadValue(rolloutPlanPayload, "rollout_plan") || null);
-      setActivityMap(payloadValue(activityMapPayload, "activity_map") || null);
-      setActivityGroupReadiness(payloadValue(activityGroupPayload, "activity_group_readiness") || null);
+      setRolloutPlan(rolloutPlanOrNull(payloadRecordOrNull(rolloutPlanPayload, "rollout_plan")));
+      setActivityMap(activityMapOrNull(payloadRecordOrNull(activityMapPayload, "activity_map")));
+      setActivityGroupReadiness(activityGroupReadinessOrNull(payloadRecordOrNull(activityGroupPayload, "activity_group_readiness")));
       setNodeAutonomyMap(nodeProjectionMapOrNull(payloadRecordOrNull(nodeAutonomyPayload, "node_autonomy_map")));
       setNodeEconomicMap(nodeProjectionMapOrNull(payloadRecordOrNull(nodeEconomicPayload, "node_economic_map")));
       setNodeActivityMap(nodeProjectionMapOrNull(payloadRecordOrNull(nodeActivityPayload, "node_activity_map")));

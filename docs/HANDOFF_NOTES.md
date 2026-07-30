@@ -1,3 +1,11 @@
+## 2026-07-30 - Local Community Domain structure planning map type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `84d48c77`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` structure-planning state by replacing `rolloutPlan`, `activityMap`, and `activityGroupReadiness` from `any | null` with route-local object-surface types compatible with `StructurePlanningPanels`.
+- Added guarded coercion helpers for rollout, activity, and activity-group readiness payloads before saving those maps into state.
+- No app UI, backend API, route contract, authentication, permission gate, structure planning behavior, activity readiness behavior, action counts, button geometry, or visible dashboard layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: setup readiness/setup plan plus capacity, subscription lifecycle, quote, and domain-payment state still remain broad `any | null`; those are more sensitive because setup and payment reads are used outside a single child-panel boundary.
+
 ## 2026-07-30 - Local Community Domain node and trust map type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `a70359cd`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` node projection and trust/evidence readiness state by replacing all node projection maps plus `evidenceRecordReadiness`, `evidenceReleaseReadiness`, `trustRelayReadiness`, `notificationScopeReadiness`, and `trustMobility` from `any | null` with route-local object-surface types compatible with `NodeProjectionGroups` and `TrustEvidenceReadinessPanels`.
