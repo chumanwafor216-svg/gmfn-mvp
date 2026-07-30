@@ -1,3 +1,11 @@
+## 2026-07-30 - Local Community Domain selector and roster row type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `6917d1e2`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` by replacing `domainItems` and `domainMemberRows` state arrays with `UnknownRecord[]` instead of `any[]`.
+- The signed-in Community Domain selector list now accepts API rows through the existing `payloadRecordArray(payload, "items")` guard, and member status changes now receive guarded row records instead of an unconstrained `any` row.
+- No app UI, backend API, route contract, authentication, permission gate, domain selector behavior, member roster behavior, action counts, button geometry, or visible dashboard layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this is intentionally narrow. Activity/beneficiary real-life record rows, quote/payment metadata, and broad readiness state objects still carry wider `any` surfaces and should stay separate verified slices.
+
 ## 2026-07-30 - Local Community Domain readiness loader payload type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `0ed3b183`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` readiness loading by changing lane payload application from `any[]` to `unknown[]`, adding route-local payload value/record-array guards, and changing the readiness promise cache from `Promise<any>` to `Promise<unknown>` with a generic reuse helper.

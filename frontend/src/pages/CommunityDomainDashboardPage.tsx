@@ -2788,14 +2788,14 @@ export default function CommunityDomainDashboardPage() {
   const communityDomainId = cleanText(params.communityDomainId || params.id);
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
   const [dashboardRouteId, setDashboardRouteId] = useState("");
-  const [domainItems, setDomainItems] = useState<any[]>([]);
+  const [domainItems, setDomainItems] = useState<UnknownRecord[]>([]);
   const [reviewerQueue, setReviewerQueue] = useState<ActionReviewItem[]>([]);
   const [ownMembershipRequests, setOwnMembershipRequests] = useState<ActionReviewItem[]>([]);
   const [membershipRequestLineage, setMembershipRequestLineage] = useState<ActionReviewItem[]>([]);
   const [loadingMembershipRequestLineage, setLoadingMembershipRequestLineage] =
     useState(false);
   const [placementSummary, setPlacementSummary] = useState<any | null>(null);
-  const [domainMemberRows, setDomainMemberRows] = useState<any[]>([]);
+  const [domainMemberRows, setDomainMemberRows] = useState<UnknownRecord[]>([]);
   const [nodeTree, setNodeTree] = useState<StructureNode[]>([]);
   const [moduleScopeReadiness, setModuleScopeReadiness] = useState<any | null>(null);
   const [setupReadiness, setSetupReadiness] = useState<any | null>(null);
@@ -3346,7 +3346,7 @@ export default function CommunityDomainDashboardPage() {
       try {
         const payload = await listMyCommunityDomains();
         if (canApply()) {
-          setDomainItems(Array.isArray(payload?.items) ? payload.items : []);
+          setDomainItems(payloadRecordArray(payload, "items"));
         }
       } catch (err) {
         if (canApply()) {
@@ -3543,7 +3543,7 @@ export default function CommunityDomainDashboardPage() {
   }
 
   async function changeDomainMemberStatus(
-    row: any,
+    row: UnknownRecord,
     nextStatus: "active" | "inactive"
   ) {
     const requestDomainId = cleanText(domain?.id || communityDomainId);
