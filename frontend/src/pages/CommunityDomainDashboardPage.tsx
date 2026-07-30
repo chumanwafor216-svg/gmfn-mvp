@@ -1398,6 +1398,12 @@ const BILLING_ACCOUNT_TASK_OPTIONS: Array<{
   },
 ];
 
+type UnknownRecord = Record<string, unknown>;
+
+function isUnknownRecord(value: unknown): value is UnknownRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 type DashboardPayload = {
   community_domain?: any;
   template?: any;
@@ -1485,39 +1491,44 @@ function cleanText(value: unknown, fallback = ""): string {
   return text || fallback;
 }
 
-function subjectReferenceLabel(item: any): string {
+function subjectReferenceLabel(item: unknown): string {
+  const row = isUnknownRecord(item) ? item : {};
+  const subjectProfile = isUnknownRecord(row.subject_profile) ? row.subject_profile : {};
   const safeReference = cleanText(
-    item?.subject_public_reference ||
-      item?.subject_reference ||
-      item?.subject_display_name ||
-      item?.subject_user_display_name ||
-      item?.subject_profile?.display_name ||
-      item?.subject_profile?.gmfn_id
+    row.subject_public_reference ||
+      row.subject_reference ||
+      row.subject_display_name ||
+      row.subject_user_display_name ||
+      subjectProfile.display_name ||
+      subjectProfile.gmfn_id
   );
   if (safeReference) return safeReference;
-  return `Subject ${cleanText(item?.subject_user_id, "not shown")}`;
+  return `Subject ${cleanText(row.subject_user_id, "not shown")}`;
 }
 
-function communityLinkClanId(row: any): number {
-  return Number(row?.id || row?.clan_id || row?.community_id || 0);
+function communityLinkClanId(row: unknown): number {
+  const record = isUnknownRecord(row) ? row : {};
+  return Number(record.id || record.clan_id || record.community_id || 0);
 }
 
-function normalizeCommunityLinkClanRow(row: any): CommunityLinkClanRow | null {
-  const id = communityLinkClanId(row);
+function normalizeCommunityLinkClanRow(row: unknown): CommunityLinkClanRow | null {
+  const record = isUnknownRecord(row) ? row : {};
+  const id = communityLinkClanId(record);
   if (!id) return null;
-  const name = cleanText(row?.name || row?.display_name || row?.clan_name, `Community ${id}`);
+  const name = cleanText(record.name || record.display_name || record.clan_name, `Community ${id}`);
   return {
     id,
     name,
-    marketplaceName: cleanText(row?.marketplace_name, `${name} Marketplace`),
-    description: cleanText(row?.description || row?.marketplace_description),
-    communityCode: cleanText(row?.community_code || row?.gmfn_id || row?.clan_code),
+    marketplaceName: cleanText(record.marketplace_name, `${name} Marketplace`),
+    description: cleanText(record.description || record.marketplace_description),
+    communityCode: cleanText(record.community_code || record.gmfn_id || record.clan_code),
   };
 }
 
-function normalizeCommunityLinkClanRows(payload: any): CommunityLinkClanRow[] {
-  const raw: any[] = Array.isArray(payload?.items)
-    ? payload.items
+function normalizeCommunityLinkClanRows(payload: unknown): CommunityLinkClanRow[] {
+  const record = isUnknownRecord(payload) ? payload : {};
+  const raw: unknown[] = Array.isArray(record.items)
+    ? record.items
     : Array.isArray(payload)
     ? payload
     : [];
@@ -1538,10 +1549,11 @@ function normalizedSetupText(value: unknown): string {
   return cleanText(value).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
-function isPillarOfHopeDomain(domain: any, draft?: Partial<CommunityDomainSetupDraft> | null): boolean {
+function isPillarOfHopeDomain(domain: unknown, draft?: Partial<CommunityDomainSetupDraft> | null): boolean {
+  const record = isUnknownRecord(domain) ? domain : {};
   const candidates = [
-    domain?.domain_name,
-    domain?.display_name,
+    record.domain_name,
+    record.display_name,
     draft?.domain_name,
     draft?.display_name,
   ].map(normalizedSetupText);
@@ -1578,19 +1590,20 @@ function boundedPositiveInt(value: unknown, fallback: number, max = 100): number
 
 function parseDomainFeaturePolicy(value: unknown): DomainFeaturePolicyConfig {
   const base = defaultDomainFeaturePolicyConfig();
-  let parsed: any = null;
+  let parsed: UnknownRecord | null = null;
   if (typeof value === "string" && value.trim()) {
     try {
-      parsed = JSON.parse(value);
+      const candidate = JSON.parse(value) as unknown;
+      parsed = isUnknownRecord(candidate) ? candidate : null;
     } catch {
       parsed = null;
     }
-  } else if (value && typeof value === "object") {
+  } else if (isUnknownRecord(value)) {
     parsed = value;
   }
 
-  const incomingFeatures =
-    parsed?.features && typeof parsed.features === "object" ? parsed.features : {};
+  const incomingFeatures = isUnknownRecord(parsed?.features) ? parsed.features : {};
+  const spotlight = isUnknownRecord(parsed?.spotlight) ? parsed.spotlight : {};
   const features = DOMAIN_FEATURE_POLICY_ROWS.reduce((next, row) => {
     const mode = incomingFeatures[row.key];
     next[row.key] = isFeaturePolicyMode(mode) ? mode : row.defaultMode;
@@ -1601,14 +1614,14 @@ function parseDomainFeaturePolicy(value: unknown): DomainFeaturePolicyConfig {
     version: 1,
     features,
     spotlight: {
-      free_slots: boundedPositiveInt(parsed?.spotlight?.free_slots, base.spotlight.free_slots, 20),
+      free_slots: boundedPositiveInt(spotlight.free_slots, base.spotlight.free_slots, 20),
       paid_after_slots: boundedPositiveInt(
-        parsed?.spotlight?.paid_after_slots,
+        spotlight.paid_after_slots,
         base.spotlight.paid_after_slots,
         50
       ),
       rotation_hours: boundedPositiveInt(
-        parsed?.spotlight?.rotation_hours,
+        spotlight.rotation_hours,
         base.spotlight.rotation_hours,
         168
       ),
@@ -1617,20 +1630,22 @@ function parseDomainFeaturePolicy(value: unknown): DomainFeaturePolicyConfig {
 }
 
 function lockedDomainFeaturePolicyFromPayload(
-  payload: any
+  payload: unknown
 ): { config: DomainFeaturePolicyConfig; loadedAt: string } | null {
-  const rows = Array.isArray(payload?.items)
-    ? payload.items
-    : Array.isArray(payload?.policies)
-    ? payload.policies
+  const record = isUnknownRecord(payload) ? payload : {};
+  const rows: unknown[] = Array.isArray(record.items)
+    ? record.items
+    : Array.isArray(record.policies)
+    ? record.policies
     : [];
-  const lockedRow = rows.find((row: any) => {
+  const lockedRow = rows.find((row) => {
+    const policy = isUnknownRecord(row) ? row : {};
     return (
-      cleanText(row?.policy_key) === "domain.feature_policy" &&
-      cleanText(row?.status, "active") === "active"
+      cleanText(policy.policy_key) === "domain.feature_policy" &&
+      cleanText(policy.status, "active") === "active"
     );
   });
-  if (!lockedRow) return null;
+  if (!isUnknownRecord(lockedRow)) return null;
   return {
     config: parseDomainFeaturePolicy(lockedRow.config),
     loadedAt: cleanText(lockedRow.updated_at || lockedRow.created_at),
@@ -1706,15 +1721,16 @@ function communityDomainSetupDraftKey(domainId: unknown): string {
   return `gsn.community-domain.setup-draft.${cleanText(domainId, "unknown")}`;
 }
 
-function setupDraftFromDomain(domain: any): CommunityDomainSetupDraft {
+function setupDraftFromDomain(domain: unknown): CommunityDomainSetupDraft {
+  const record = isUnknownRecord(domain) ? domain : {};
   return {
-    domain_name: cleanText(domain?.domain_name),
-    display_name: cleanText(domain?.display_name),
-    domain_type: cleanText(domain?.domain_type, "generic_association"),
-    template_key: cleanText(domain?.template_key || domain?.domain_type, "generic_association"),
-    country: cleanText(domain?.country),
-    state: cleanText(domain?.state),
-    public_profile: cleanText(domain?.public_profile),
+    domain_name: cleanText(record.domain_name),
+    display_name: cleanText(record.display_name),
+    domain_type: cleanText(record.domain_type, "generic_association"),
+    template_key: cleanText(record.template_key || record.domain_type, "generic_association"),
+    country: cleanText(record.country),
+    state: cleanText(record.state),
+    public_profile: cleanText(record.public_profile),
     authority_evidence_label: "",
     authority_evidence_reference: "",
     authority_evidence_note: "",
@@ -1805,12 +1821,13 @@ function settlementValueIsConfigured(value: unknown): boolean {
   return Boolean(text) && !["to be assigned", "not configured", "pending"].includes(text);
 }
 
-function settlementField(settlement: any, snakeKey: string, camelKey: string): string {
-  return cleanText(settlement?.[snakeKey] ?? settlement?.[camelKey]);
+function settlementField(settlement: unknown, snakeKey: string, camelKey: string): string {
+  const record = isUnknownRecord(settlement) ? settlement : {};
+  return cleanText(record[snakeKey] ?? record[camelKey]);
 }
 
-function settlementPaymentRows(settlement: any): Array<[string, string]> {
-  if (!settlement || typeof settlement !== "object") return [];
+function settlementPaymentRows(settlement: unknown): Array<[string, string]> {
+  if (!isUnknownRecord(settlement)) return [];
   return [
     ["Bank", settlementField(settlement, "bank_name", "bankName")],
     ["Account name", settlementField(settlement, "account_name", "accountName")],
@@ -2039,40 +2056,47 @@ function numericCount(value: unknown): number | null {
   return Math.floor(count);
 }
 
-function parsedErrorDetail(err: any): any {
-  if (err?.detail && typeof err.detail === "object") return err.detail;
-  const message = cleanText(err?.message);
+function parsedErrorDetail(err: unknown): UnknownRecord | null {
+  if (!isUnknownRecord(err)) return null;
+  if (isUnknownRecord(err.detail)) return err.detail;
+  const message = cleanText(err.message);
   if (!message) return null;
   try {
-    const parsed = JSON.parse(message);
-    return parsed && typeof parsed === "object" ? parsed : null;
+    const parsed = JSON.parse(message) as unknown;
+    return isUnknownRecord(parsed) ? parsed : null;
   } catch {
     return null;
   }
 }
 
-function errorDetailCode(err: any): string {
+function errorMessageText(err: unknown): string {
+  if (err instanceof Error) return cleanText(err.message);
+  if (isUnknownRecord(err)) return cleanText(err.message);
+  return "";
+}
+
+function errorDetailCode(err: unknown): string {
   const detail = parsedErrorDetail(err);
   const directCode = cleanText(detail?.code).toLowerCase();
   if (directCode) return directCode;
-  const message = cleanText(err?.message);
+  const message = errorMessageText(err);
   return message.includes("community_domain_member_review_stale")
     ? "community_domain_member_review_stale"
     : "";
 }
 
-function errorDetailMessage(err: any, fallback: string): string {
+function errorDetailMessage(err: unknown, fallback: string): string {
   const detail = parsedErrorDetail(err);
-  return cleanText(detail?.message || err?.message, fallback);
+  return cleanText(detail?.message || errorMessageText(err), fallback);
 }
 
-function errorDetailActionReview(err: any): ActionReviewItem | null {
+function errorDetailActionReview(err: unknown): ActionReviewItem | null {
   const detail = parsedErrorDetail(err);
   const review = detail?.action_review || detail?.existing_action_review;
-  return review && typeof review === "object" ? review : null;
+  return isUnknownRecord(review) ? (review as ActionReviewItem) : null;
 }
 
-function accessRequestApplyErrorMessage(err: any, fallback: string): string {
+function accessRequestApplyErrorMessage(err: unknown, fallback: string): string {
   if (errorDetailCode(err) === "community_domain_member_review_stale") {
     return (
       "This access request is already out of date because the person is now an "
@@ -3303,7 +3327,7 @@ export default function CommunityDomainDashboardPage() {
         if (canApply()) {
           setDomainItems(Array.isArray(payload?.items) ? payload.items : []);
         }
-      } catch (err: any) {
+      } catch (err) {
         if (canApply()) {
           setDomainItems([]);
           setMessage(
@@ -3392,7 +3416,7 @@ export default function CommunityDomainDashboardPage() {
           }
         }
       }
-    } catch (err: any) {
+    } catch (err) {
       if (!canApply()) return;
       setDashboard(null);
       setDashboardRouteId("");
@@ -3488,7 +3512,7 @@ export default function CommunityDomainDashboardPage() {
       await loadDomainNotices(requestDomainId);
       setDomainNoticeModalOpen(false);
       setMessage("Official notice posted to this Community Domain only.");
-    } catch (err: any) {
+    } catch (err) {
       setMessage(
         errorDetailMessage(err, "GSN could not post this Community Domain notice.")
       );
@@ -3542,7 +3566,7 @@ export default function CommunityDomainDashboardPage() {
           ? "Member deactivated. Public active-member proof will no longer pass for this domain."
           : "Member reactivated. Public active-member proof can pass again for this domain."
       );
-    } catch (err: any) {
+    } catch (err) {
       setMessage(
         errorDetailMessage(
           err,
@@ -3612,7 +3636,7 @@ export default function CommunityDomainDashboardPage() {
       setMessage(
         "Activity recorded as a person-first Community Domain Trust Event. Beneficiary outcome proof still needs follow-up records."
       );
-    } catch (err: any) {
+    } catch (err) {
       setMessage(
         errorDetailMessage(
           err,
@@ -3713,7 +3737,7 @@ export default function CommunityDomainDashboardPage() {
       setMessage(
         "Beneficiary outcome recorded. It is evidence of baseline-to-after movement, not a final public sponsor report."
       );
-    } catch (err: any) {
+    } catch (err) {
       setMessage(
         errorDetailMessage(
           err,
@@ -3776,7 +3800,7 @@ export default function CommunityDomainDashboardPage() {
           ? `Manual delivery pack prepared and copied if allowed. GSN did not send WhatsApp, SMS, or email: ${copyText}`
           : "Private confirmation link created. GSN did not send WhatsApp, SMS, or email."
       );
-    } catch (err: any) {
+    } catch (err) {
       setMessage(
         errorDetailMessage(
           err,
@@ -3834,7 +3858,7 @@ export default function CommunityDomainDashboardPage() {
           contactDraft.channel
         )}. GSN stored no raw destination, did not send WhatsApp, SMS, or email, and provider send is still not ready.`
       );
-    } catch (err: any) {
+    } catch (err) {
       setMessage(
         errorDetailMessage(
           err,
@@ -3893,7 +3917,7 @@ export default function CommunityDomainDashboardPage() {
           withdrawalDraft.withdrawal_reason
         )}. Provider send remains unavailable until a valid replacement attestation exists.`
       );
-    } catch (err: any) {
+    } catch (err) {
       setMessage(
         errorDetailMessage(
           err,
@@ -3960,7 +3984,7 @@ export default function CommunityDomainDashboardPage() {
           receiptDraft.consent_basis
         )}. GSN still did not send WhatsApp, SMS, or email; this is an admin-stated delivery record.`
       );
-    } catch (err: any) {
+    } catch (err) {
       setMessage(
         errorDetailMessage(
           err,
@@ -4023,7 +4047,7 @@ export default function CommunityDomainDashboardPage() {
           correctionDraft.decision
         )}. The original receipt remains in the audit trail; GSN still did not send WhatsApp, SMS, or email.`
       );
-    } catch (err: any) {
+    } catch (err) {
       setMessage(
         errorDetailMessage(
           err,
@@ -4069,20 +4093,24 @@ export default function CommunityDomainDashboardPage() {
           ? "Provider send returned as sent. Check delivery receipts before relying on it."
           : "Provider send is not recorded as sent. GSN did not send WhatsApp, SMS, or email."
       );
-    } catch (err: any) {
+    } catch (err) {
       const detail = parsedErrorDetail(err);
-      const readiness = detail?.provider_delivery_readiness || {};
-      const missing = Array.isArray(readiness?.missing_components)
-        ? readiness.missing_components.slice(0, 3).join(", ")
+      const readiness = isUnknownRecord(detail?.provider_delivery_readiness)
+        ? detail.provider_delivery_readiness
+        : {};
+      const missingComponents = readiness.missing_components;
+      const missing = Array.isArray(missingComponents)
+        ? missingComponents.slice(0, 3).map((item) => cleanText(item)).join(", ")
         : "";
-      const contactConsentContract =
-        readiness?.contact_consent_contract || {};
+      const contactConsentContract = isUnknownRecord(readiness.contact_consent_contract)
+        ? readiness.contact_consent_contract
+        : {};
       const activeContactStatus = compactStatus(
-        contactConsentContract?.active_contact_consent_status ||
+        contactConsentContract.active_contact_consent_status ||
           "not evaluated"
       );
       const contactConsentNote =
-        contactConsentContract?.active_contact_consent_satisfied === true
+        contactConsentContract.active_contact_consent_satisfied === true
           ? ` Contact/consent status: ${activeContactStatus}.`
           : ` Contact/consent is not provider-ready yet: ${activeContactStatus}.`;
       const blockedCheckNote = detail?.blocked_check_reused
@@ -4277,7 +4305,7 @@ export default function CommunityDomainDashboardPage() {
       setMessage(
         "Correction review recorded as a separate Trust Event. The original outcome and the challenge response remain in the audit trail."
       );
-    } catch (err: any) {
+    } catch (err) {
       setMessage(
         errorDetailMessage(
           err,
@@ -5339,9 +5367,9 @@ export default function CommunityDomainDashboardPage() {
       });
       setMessage(messageText);
       return ready;
-    } catch (err: any) {
+    } catch (err) {
       const messageText =
-        err?.message || "GSN could not check this domain code right now.";
+        errorMessageText(err) || "GSN could not check this domain code right now.";
       setSetupDomainNameCheck({
         status: "blocked",
         domainName: requestedName,
@@ -5399,7 +5427,7 @@ export default function CommunityDomainDashboardPage() {
       setSetupDraft(saved);
       setMessage("Official Community Domain profile saved. Payment and verification are still separate.");
       return true;
-    } catch (err: any) {
+    } catch (err) {
       setMessage(errorDetailMessage(err, "GSN could not save the Community Domain profile."));
       return false;
     } finally {
@@ -5459,7 +5487,7 @@ export default function CommunityDomainDashboardPage() {
       setMessage(
         "Community Domain setup evidence submitted for private review. This does not verify the domain yet."
       );
-    } catch (err: any) {
+    } catch (err) {
       setMessage(errorDetailMessage(err, "GSN could not submit the setup evidence."));
     } finally {
       setBusySetupEvidence(false);
@@ -5500,7 +5528,7 @@ export default function CommunityDomainDashboardPage() {
       );
       setSetupEditorNote("");
       await loadDashboard();
-    } catch (err: any) {
+    } catch (err) {
       setMessage(errorDetailMessage(err, "GSN could not update setup editor authority."));
     } finally {
       setBusySetupEditorDelegate(false);
@@ -5812,7 +5840,7 @@ export default function CommunityDomainDashboardPage() {
       setMessage(
         `${createdRow.name} marketplace community is ready. Generate the payment code to link this Community Domain to that marketplace.`
       );
-    } catch (err: any) {
+    } catch (err) {
       setMessage(
         errorDetailMessage(
           err,
@@ -5949,7 +5977,7 @@ export default function CommunityDomainDashboardPage() {
         message:
           "Setup saved and feature policy locked. Payment activation and verification still need their separate admin checks.",
       };
-    } catch (err: any) {
+    } catch (err) {
       return {
         locked: false,
         message: errorDetailMessage(
@@ -6164,7 +6192,7 @@ export default function CommunityDomainDashboardPage() {
       setMessage(
         "Community pay-in account saved. Generate the next payment code for this area so the bank details match this account."
       );
-    } catch (err: any) {
+    } catch (err) {
       setMessage(errorDetailMessage(err, "GSN could not save this Community pay-in account."));
     } finally {
       setCommunityPayInSaving(false);
@@ -6429,7 +6457,7 @@ export default function CommunityDomainDashboardPage() {
         ? approvedPayload.items
         : [];
       setReviewerQueue(mergeActionReviews(pendingItems, approvedItems));
-    } catch (err: any) {
+    } catch (err) {
       if (canApply()) {
         setMessage(
           errorDetailMessage(
@@ -6472,7 +6500,7 @@ export default function CommunityDomainDashboardPage() {
           ? "Package details refreshed. Billing is already shown as active here, but this refresh is still not payment confirmation, activation, or verification."
           : "Package quote refreshed. It is still not a payment instruction, payment confirmation, activation, or verification."
       );
-    } catch (err: any) {
+    } catch (err) {
       if (isCurrentDomainRequest(requestDomainId)) {
         setMessage(
           errorDetailMessage(err, "GSN could not refresh the package quote.")
@@ -6552,7 +6580,7 @@ export default function CommunityDomainDashboardPage() {
       setMessage(
         "Payment code generated. Use that exact code as the payment reference, then upload proof here for finance review."
       );
-    } catch (err: any) {
+    } catch (err) {
       if (isCurrentDomainRequest(requestDomainId)) {
         setMessage(
           errorDetailMessage(err, "GSN could not generate the Community Domain payment code.")
@@ -6571,7 +6599,7 @@ export default function CommunityDomainDashboardPage() {
 
   async function handleAccessRequestReviewError(
     requestDomainId: string,
-    err: any,
+    err: unknown,
     fallback: string,
     staleAware = false
   ) {
@@ -6640,7 +6668,7 @@ export default function CommunityDomainDashboardPage() {
             )}`
       );
       await refreshReviewerQueue();
-    } catch (err: any) {
+    } catch (err) {
       if (isCurrentDomainRequest(requestDomainId)) {
         await handleAccessRequestReviewError(
           requestDomainId,
@@ -6673,7 +6701,7 @@ export default function CommunityDomainDashboardPage() {
         `Access request ${reviewId} declined. No membership was added, and the request will no longer appear as pending.`
       );
       await refreshReviewerQueue();
-    } catch (err: any) {
+    } catch (err) {
       if (isCurrentDomainRequest(requestDomainId)) {
         await handleAccessRequestReviewError(
           requestDomainId,
@@ -6705,7 +6733,7 @@ export default function CommunityDomainDashboardPage() {
         `Access request ${reviewId} was sent back for updates. The applicant can revise it, and membership was not added.`
       );
       await refreshReviewerQueue();
-    } catch (err: any) {
+    } catch (err) {
       if (isCurrentDomainRequest(requestDomainId)) {
         await handleAccessRequestReviewError(
           requestDomainId,
@@ -6733,7 +6761,7 @@ export default function CommunityDomainDashboardPage() {
         `Approved access request ${reviewId} applied. The member was added only after the approved review was applied.`
       );
       await loadDashboard();
-    } catch (err: any) {
+    } catch (err) {
       if (isCurrentDomainRequest(requestDomainId)) {
         await handleAccessRequestReviewError(
           requestDomainId,
@@ -6771,7 +6799,7 @@ export default function CommunityDomainDashboardPage() {
           ? `Access request sent for owner/admin review. Review ${reviewId} must still be approved and applied before membership changes.`
           : "Access request sent for owner/admin review. It must still be approved and applied before membership changes."
       );
-    } catch (err: any) {
+    } catch (err) {
       const code = errorDetailCode(err);
       const text = errorDetailMessage(
         err,
@@ -6824,7 +6852,7 @@ export default function CommunityDomainDashboardPage() {
       setMessage(
         "Access request withdrawn. No membership was added, and you can send a fresh request when you are ready."
       );
-    } catch (err: any) {
+    } catch (err) {
       if (isCurrentDomainRequest(requestDomainId)) {
         const code = errorDetailCode(err);
         if (code === "community_domain_review_has_revision") {
@@ -6893,7 +6921,7 @@ export default function CommunityDomainDashboardPage() {
           ? `Updated access request sent for owner/admin review. Review ${revisionId} must still be approved and applied before membership changes.`
           : "Updated access request sent for owner/admin review. It must still be approved and applied before membership changes."
       );
-    } catch (err: any) {
+    } catch (err) {
       if (isCurrentDomainRequest(requestDomainId)) {
         const code = errorDetailCode(err);
         if (code === "community_domain_review_revision_exists") {

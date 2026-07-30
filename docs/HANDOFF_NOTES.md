@@ -1,3 +1,12 @@
+## 2026-07-30 - Local Community Domain parent helper/error type hardening
+- Status: Local only, not pushed/deployed. Builds on deployed `main` commit `0dafa85e`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` by adding a route-local `UnknownRecord` guard and replacing broad `any` helper boundaries in Community Domain row normalization, feature-policy parsing, locked policy payload parsing, setup draft hydration, settlement payment rows, and shared error-detail parsing.
+- Removed all `catch (err: any)` annotations in the Community Domain dashboard parent and moved error-message/error-detail reads through `unknown`-safe helpers.
+- Guarded provider delivery-readiness error details before reading missing components and contact-consent status, preserving the existing provider-send blocked message without assuming the backend detail shape is always an object.
+- No app UI, backend API, route contract, authentication, permission gate, Community Domain action behavior, action counts, button geometry, or visible dashboard layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this is still not full parent-page typing. `CommunityDomainDashboardPage.tsx` retains broader UI payload/state `any` surfaces for dashboard/readiness records and real-life record rows; those should be handled in smaller future slices or by generated API contracts, not guessed all at once.
+
 ## 2026-07-30 - Local Community Domain period sponsor summary type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `ff8312f0`; push/deploy only when the owner sends `push`, `2`, or explicitly asks.
 - Tightened `frontend/src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx` by replacing broad `any` summary/data/helper annotations with route-local UI-facing surfaces for director period summaries, sponsor-safe summaries, delivery evidence, provider delivery readiness, provider setup contracts, contact-consent gates, sponsor export packs, and top indicators.
