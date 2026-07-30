@@ -1,3 +1,10 @@
+## 2026-07-30 - Local withdrawal instructions API helper cast cleanup
+- Status: Local only, not pushed/deployed. Builds on local commit `5549be5e`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/WithdrawalInstructionsPage.tsx` by removing `(api as any)` casts for already-exported API helpers: stored GMFN id, selected community id, selected-community storage, current member, current community, and stored GMFN id writes.
+- No app UI, backend API route, request payload, route selection behavior, selected-community fallback, stored GMFN id fallback, withdrawal route loading, destination saving, withdrawal request behavior, action counts, button geometry, or visible Withdrawal Instructions layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run lint`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check`.
+- Devil's advocate: this removes Withdrawal Instructions namespace casts only. The page still keeps broad `any` state/helpers for member/community payloads, persisted withdrawal results, destination hints, local JSON writes, and request error handling; those should be narrowed in later route-local slices.
+
 ## 2026-07-30 - Local payment instructions response shape cleanup
 - Status: Local only, not pushed/deployed. Builds on local commit `494d8b1a`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/PaymentInstructionsPage.tsx` by replacing the remaining broad `any` state/helpers with route-local `unknown`/record guards for current member, current community, Community Domain policy payload, matched deposit events, and payment-code error messages.

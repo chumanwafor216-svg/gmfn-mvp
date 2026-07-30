@@ -85,7 +85,7 @@ function resolveMemberGmfnId(me: any, currentClan: any): string {
     currentClan?.profile?.gmfn_id,
     currentClan?.user?.gmfn_id,
     currentClan?.gmfn_id,
-    (api as any).getStoredGmfnId?.()
+    api.getStoredGmfnId()
   );
 }
 
@@ -688,7 +688,7 @@ export default function WithdrawalInstructionsPage() {
     [location.search]
   );
   const selectedClanId =
-    routeClanId || Number((api as any).getSelectedClanId?.() || 0);
+    routeClanId || Number(api.getSelectedClanId() || 0);
   const routes = useMemo(
     () => ({
       dashboard: routeTarget("dashboard", selectedClanId, "money-out.nav.dashboard"),
@@ -759,7 +759,7 @@ export default function WithdrawalInstructionsPage() {
 
   useEffect(() => {
     if (routeClanId > 0) {
-      (api as any).setSelectedClanId?.(routeClanId);
+      api.setSelectedClanId(routeClanId);
     }
   }, [routeClanId]);
   const [latestWithdrawalResult, setLatestWithdrawalResult] = useState<any | null>(
@@ -844,13 +844,13 @@ export default function WithdrawalInstructionsPage() {
 
     try {
       const meRes =
-        typeof (api as any).getMe === "function"
-          ? await (api as any).getMe().catch(() => null)
+        typeof api.getMe === "function"
+          ? await api.getMe().catch(() => null)
           : null;
 
       const clanRes =
-        typeof (api as any).getCurrentClan === "function"
-          ? await (api as any).getCurrentClan().catch(() => null)
+        typeof api.getCurrentClan === "function"
+          ? await api.getCurrentClan().catch(() => null)
           : null;
 
       if (!isCurrentWithdrawalLoad()) return;
@@ -860,8 +860,8 @@ export default function WithdrawalInstructionsPage() {
 
       const resolvedGmfnId = resolveMemberGmfnId(meRes, clanRes);
 
-      if (resolvedGmfnId && typeof (api as any).setStoredGmfnId === "function") {
-        (api as any).setStoredGmfnId(resolvedGmfnId);
+      if (resolvedGmfnId && typeof api.setStoredGmfnId === "function") {
+        api.setStoredGmfnId(resolvedGmfnId);
       }
 
       if (selectedClanId && resolvedGmfnId) {
