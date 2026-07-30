@@ -2,11 +2,28 @@ import React from "react";
 import { GsnRealisticIcon } from "../../components/GsnRealisticIcon";
 import PaymentProofSubmissionPanel from "../../components/PaymentProofSubmissionPanel";
 import { StableButton } from "../../components/StableButton";
-import type { BillingTaskPanelsData } from "./BillingTaskPanelsTypes";
+import type { BillingTaskPanelsData, DomainPaymentSurface } from "./BillingTaskPanelsTypes";
 
 type BillingTaskPanelsProps = {
   data: BillingTaskPanelsData;
 };
+
+type UnknownRecord = Record<string, unknown>;
+
+function isUnknownRecord(value: unknown): value is UnknownRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function domainPaymentSurfaceOrNull(value: unknown): DomainPaymentSurface | null {
+  if (!isUnknownRecord(value)) return null;
+  return {
+    ...value,
+    meta: isUnknownRecord(value.meta) ? value.meta : null,
+    meta_json: isUnknownRecord(value.meta_json) ? value.meta_json : null,
+    payment_intent: isUnknownRecord(value.payment_intent) ? value.payment_intent : null,
+    settlement: isUnknownRecord(value.settlement) ? value.settlement : null,
+  };
+}
 
 export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
   const {
@@ -1193,7 +1210,7 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
                                 compact
                                 debugIdPrefix="community-domain-payment-proof"
                                 onUploaded={(updated) => {
-                                  setDomainPayment({ ...domainPayment, ...updated });
+                                  setDomainPayment(domainPaymentSurfaceOrNull({ ...domainPayment, ...updated }));
                                   setMessage(
                                     "Community Domain payment proof uploaded for finance review. Activation still waits for reconciliation."
                                   );

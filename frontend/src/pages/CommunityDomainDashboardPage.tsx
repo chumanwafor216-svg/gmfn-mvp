@@ -6815,24 +6815,21 @@ export default function CommunityDomainDashboardPage() {
     : billingIsActive
     ? "Why package details are owner-only"
     : "Why quote review is owner-only";
-  const domainPaymentMeta =
-    domainPayment?.meta && typeof domainPayment.meta === "object"
-      ? domainPayment.meta
-      : domainPayment?.meta_json && typeof domainPayment.meta_json === "object"
-      ? domainPayment.meta_json
-      : {};
-  const domainPaymentIntent =
-    domainPayment?.payment_intent && typeof domainPayment.payment_intent === "object"
-      ? domainPayment.payment_intent
-      : domainPaymentMeta?.payment_intent && typeof domainPaymentMeta.payment_intent === "object"
-      ? domainPaymentMeta.payment_intent
-      : {};
-  const domainPaymentSettlement =
-    domainPayment?.settlement && typeof domainPayment.settlement === "object"
-      ? domainPayment.settlement
-      : domainPaymentMeta?.settlement && typeof domainPaymentMeta.settlement === "object"
-      ? domainPaymentMeta.settlement
-      : null;
+  const domainPaymentMeta: UnknownRecord = isUnknownRecord(domainPayment?.meta)
+    ? domainPayment.meta
+    : isUnknownRecord(domainPayment?.meta_json)
+    ? domainPayment.meta_json
+    : {};
+  const domainPaymentIntent: DomainPaymentIntentSurface = isUnknownRecord(domainPayment?.payment_intent)
+    ? domainPayment.payment_intent
+    : isUnknownRecord(domainPaymentMeta.payment_intent)
+    ? domainPaymentMeta.payment_intent
+    : {};
+  const domainPaymentSettlement: DomainPaymentSettlementSurface | null = isUnknownRecord(domainPayment?.settlement)
+    ? domainPayment.settlement
+    : isUnknownRecord(domainPaymentMeta.settlement)
+    ? domainPaymentMeta.settlement
+    : null;
   const domainPaymentSettlementCountry = normalizeSettlementCountryCode(
     domainPaymentSettlement?.country ||
       domainPaymentMeta?.settlement_country ||

@@ -1,3 +1,11 @@
+## 2026-07-30 - Local payment-proof meta type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `fbe0ab25`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/components/PaymentProofSubmissionPanel.tsx` by replacing payment `meta` / `meta_json` and upload error handling from permissive `any` access with `unknown` plus guarded object parsing.
+- Tightened the immediate Community Domain payment-proof caller by normalizing uploaded payment rows before saving them back into `DomainPaymentSurface` state, and guarded Community Domain payment meta, payment intent, and settlement derived reads.
+- No app UI, backend API, route contract, authentication, permission gate, payment-proof upload endpoint, proof submission behavior, WhatsApp fallback, action counts, button geometry, or visible payment-proof layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: the shared API client still returns `Promise<any>` for upload and many other endpoints; this slice only hardens the shared payment-proof component and its Community Domain payment-state boundary, not the whole API layer.
+
 ## 2026-07-30 - Local Community Domain setup map type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `1873a1a0`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` setup state by replacing `setupReadiness` and `setupPlan` from `any | null` with route-local object-surface types compatible with `SetupIntelligenceCards` and the parent next-action lane chooser.

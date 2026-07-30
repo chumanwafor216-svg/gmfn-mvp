@@ -13,6 +13,8 @@ import {
 
 type NoticeTone = "success" | "error" | "info";
 
+type UnknownRecord = Record<string, unknown>;
+
 export type PaymentProofExpectedPayment = {
   id?: number | string | null;
   clan_id?: number | string | null;
@@ -27,8 +29,8 @@ export type PaymentProofExpectedPayment = {
   confirmed_at?: string | null;
   matched_bank_event_id?: number | string | null;
   bank_event_id?: number | string | null;
-  meta?: any;
-  meta_json?: any;
+  meta?: unknown;
+  meta_json?: unknown;
 };
 
 type Props = {
@@ -55,20 +57,22 @@ function firstTruthy(...values: unknown[]): string {
   return "";
 }
 
-function safeMeta(payment?: PaymentProofExpectedPayment | null): Record<string, any> {
+function isUnknownRecord(value: unknown): value is UnknownRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function safeMeta(payment?: PaymentProofExpectedPayment | null): UnknownRecord {
   const raw = payment?.meta ?? payment?.meta_json ?? {};
   if (!raw) return {};
   if (typeof raw === "string") {
     try {
-      const parsed = JSON.parse(raw);
-      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-        ? parsed
-        : {};
+      const parsed = JSON.parse(raw) as unknown;
+      return isUnknownRecord(parsed) ? parsed : {};
     } catch {
       return {};
     }
   }
-  return raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+  return isUnknownRecord(raw) ? raw : {};
 }
 
 function safeDateTime(value: unknown): string {
@@ -151,7 +155,7 @@ export default function PaymentProofSubmissionPanel({
   const visibleAuthGuidance = compact
     ? "Complete any bank app, OTP, or biometric approval first. GSN confirms only after bank match or finance review."
     : authGuidance;
-  const latestProof = meta.latest_payment_proof || {};
+  const latestProof = isUnknownRecord(meta.latest_payment_proof) ? meta.latest_payment_proof : {};
   const latestProofName = firstTruthy(latestProof.original_filename, latestProof.stored_filename);
   const latestProofAt = safeDateTime(latestProof.submitted_at || meta.proof_submitted_at);
   const proofStatusText = firstTruthy(
@@ -222,13 +226,14 @@ export default function PaymentProofSubmissionPanel({
       setFile(null);
       show("success", "Proof uploaded for finance review. This does not confirm payment yet.");
       await onUploaded?.(updated as PaymentProofExpectedPayment);
-    } catch (err: any) {
-      const status = Number(err?.status || 0);
+    } catch (err: unknown) {
+      const errorRecord = isUnknownRecord(err) ? err : {};
+      const status = Number(errorRecord.status || 0);
       show(
         "error",
         status === 401
           ? "Your sign-in session was rejected. Sign in again, then submit the proof here, or send the receipt by WhatsApp with the payment code."
-          : safeStr(err?.message) ||
+          : safeStr(errorRecord.message) ||
           "Proof upload failed. The payment still needs finance review or a bank match."
       );
     } finally {
