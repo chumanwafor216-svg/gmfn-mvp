@@ -1,3 +1,11 @@
+## 2026-07-30 - Local Community Domain operational lane helper type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `862d0490`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` by replacing broad `any` helper boundaries for capacity-plan lane lookup, lane display labels, setup-state detection, operational-state detection, and first available operational lane selection with `unknown` plus route-local record guards.
+- Capacity plan lane lookup now normalizes `capacityPlan.lanes` before returning a guarded lane record, while status/domain helpers read only guarded status and domain records.
+- No app UI, backend API, route contract, authentication, permission gate, Community Domain navigation behavior, action counts, button geometry, or visible dashboard layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this is still parent-page helper hardening only. The large dashboard/readiness/real-life record state payloads still retain broader `any` surfaces and should be reduced in future narrow slices or replaced by generated API contracts.
+
 ## 2026-07-30 - Local Community Domain parent helper/error type hardening
 - Status: Local only, not pushed/deployed. Builds on deployed `main` commit `0dafa85e`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` by adding a route-local `UnknownRecord` guard and replacing broad `any` helper boundaries in Community Domain row normalization, feature-policy parsing, locked policy payload parsing, setup draft hydration, settlement payment rows, and shared error-detail parsing.

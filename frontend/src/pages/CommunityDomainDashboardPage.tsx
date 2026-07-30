@@ -2151,9 +2151,14 @@ function limitValue(value: unknown, fallback = "not set"): string {
   return Number.isFinite(numberValue) ? String(numberValue) : cleanText(value, fallback);
 }
 
-function capacityLaneByKey(capacityPlan: any, laneKey: string): any | null {
-  const lanes = Array.isArray(capacityPlan?.lanes) ? capacityPlan.lanes : [];
-  return lanes.find((lane: any) => cleanText(lane?.lane_key) === laneKey) || null;
+function capacityLaneByKey(capacityPlan: unknown, laneKey: string): UnknownRecord | null {
+  const record = isUnknownRecord(capacityPlan) ? capacityPlan : {};
+  const lanes: unknown[] = Array.isArray(record.lanes) ? record.lanes : [];
+  const found = lanes.find((lane) => {
+    const laneRecord = isUnknownRecord(lane) ? lane : {};
+    return cleanText(laneRecord.lane_key) === laneKey;
+  });
+  return isUnknownRecord(found) ? found : null;
 }
 
 async function readOptional<T>(loader: () => Promise<T>): Promise<T | null> {
@@ -2547,19 +2552,22 @@ function communityDomainOperatingStateCopy(status: {
   };
 }
 
-function laneDisplayLabel(lane: any, fallback = "Lane"): string {
-  const key = cleanText(lane?.lane_key).toLowerCase();
-  const label = cleanText(lane?.label, fallback);
+function laneDisplayLabel(lane: unknown, fallback = "Lane"): string {
+  const record = isUnknownRecord(lane) ? lane : {};
+  const key = cleanText(record.lane_key).toLowerCase();
+  const label = cleanText(record.label, fallback);
   if (key === "modules" || label.toLowerCase() === "modules") return "Services";
   if (key === "settings") return "Setup";
   return label;
 }
 
-function isCommunityDomainInSetup(status: any, domain: any): boolean {
-  const domainStatus = compactStatus(status?.domain_status || domain?.status).toLowerCase();
-  const billingStatus = compactStatus(status?.billing_status || domain?.billing_status).toLowerCase();
+function isCommunityDomainInSetup(status: unknown, domain: unknown): boolean {
+  const statusRecord = isUnknownRecord(status) ? status : {};
+  const domainRecord = isUnknownRecord(domain) ? domain : {};
+  const domainStatus = compactStatus(statusRecord.domain_status || domainRecord.status).toLowerCase();
+  const billingStatus = compactStatus(statusRecord.billing_status || domainRecord.billing_status).toLowerCase();
   const activationStatus = compactStatus(
-    status?.activation_status || domain?.activation_status
+    statusRecord.activation_status || domainRecord.activation_status
   ).toLowerCase();
   return (
     domainStatus.includes("draft") ||
@@ -2569,11 +2577,13 @@ function isCommunityDomainInSetup(status: any, domain: any): boolean {
   );
 }
 
-function isCommunityDomainOperational(status: any, domain: any): boolean {
-  const domainStatus = compactStatus(status?.domain_status || domain?.status).toLowerCase();
-  const billingStatus = compactStatus(status?.billing_status || domain?.billing_status).toLowerCase();
+function isCommunityDomainOperational(status: unknown, domain: unknown): boolean {
+  const statusRecord = isUnknownRecord(status) ? status : {};
+  const domainRecord = isUnknownRecord(domain) ? domain : {};
+  const domainStatus = compactStatus(statusRecord.domain_status || domainRecord.status).toLowerCase();
+  const billingStatus = compactStatus(statusRecord.billing_status || domainRecord.billing_status).toLowerCase();
   const activationStatus = compactStatus(
-    status?.activation_status || domain?.activation_status
+    statusRecord.activation_status || domainRecord.activation_status
   ).toLowerCase();
   const blockedDomain =
     domainStatus.includes("closed") ||
@@ -2605,13 +2615,16 @@ function isCommunityDomainOperational(status: any, domain: any): boolean {
   );
 }
 
-function firstAvailableOperationalLaneKey(lanes: any[], status: any): string {
-  const verificationStatus = compactStatus(status?.verification_status).toLowerCase();
+function firstAvailableOperationalLaneKey(lanes: unknown[], status: unknown): string {
+  const statusRecord = isUnknownRecord(status) ? status : {};
+  const verificationStatus = compactStatus(statusRecord.verification_status).toLowerCase();
   const preferredKeys =
     verificationStatus === "verified"
       ? ["members", "structure", "modules", "governance", "billing"]
       : ["modules", "members", "structure", "governance", "billing"];
-  const laneKeys = lanes.map((lane) => cleanText(lane?.lane_key)).filter(Boolean);
+  const laneKeys = lanes
+    .map((lane) => cleanText(isUnknownRecord(lane) ? lane.lane_key : ""))
+    .filter(Boolean);
   return (
     preferredKeys.find((key) => laneKeys.includes(key)) ||
     laneKeys.find((key) => key !== "settings") ||
