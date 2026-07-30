@@ -1,3 +1,11 @@
+## 2026-07-30 - Local Community Domain readiness loader payload type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `0ed3b183`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` readiness loading by changing lane payload application from `any[]` to `unknown[]`, adding route-local payload value/record-array guards, and changing the readiness promise cache from `Promise<any>` to `Promise<unknown>` with a generic reuse helper.
+- Readiness payload application now reads identity, billing, structure, module, governance, and member payload fields through guarded helper access instead of optional-chaining over unconstrained `any` backend responses. List rows loaded through this boundary are accepted only when object-shaped.
+- No app UI, backend API, route contract, authentication, permission gate, readiness lane order, loading-cache behavior, action counts, button geometry, or visible dashboard layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this still is not full generated-contract validation. Several readiness states remain typed as broad `any | null`, `StructureNode[]` still relies on the existing UI-facing shape, and quote/payment plus real-life record workflows remain separate future slices.
+
 ## 2026-07-30 - Local Community Domain dashboard payload evidence type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `8a26cca5`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` by replacing top-level dashboard payload `any` objects for `community_domain`, `template`, `status`, `counts`, and `package_quote` with guarded `UnknownRecord` surfaces.

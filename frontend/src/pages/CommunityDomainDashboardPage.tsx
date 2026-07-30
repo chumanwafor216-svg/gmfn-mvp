@@ -2168,6 +2168,15 @@ async function readOptional<T>(loader: () => Promise<T>): Promise<T | null> {
   }
 }
 
+function payloadValue(payload: unknown, key: string): unknown {
+  return isUnknownRecord(payload) ? payload[key] : undefined;
+}
+
+function payloadRecordArray(payload: unknown, key: string): UnknownRecord[] {
+  const value = payloadValue(payload, key);
+  return Array.isArray(value) ? value.filter(isUnknownRecord) : [];
+}
+
 function pageShell(): React.CSSProperties {
   return {
     minHeight: "100%",
@@ -3028,7 +3037,7 @@ export default function CommunityDomainDashboardPage() {
   const [loadingReadinessLanes, setLoadingReadinessLanes] = useState<Record<string, boolean>>({});
   const readinessLoadSequence = useRef(0);
   const readinessLoadIds = useRef<Record<string, number>>({});
-  const readinessLoadPromises = useRef<Record<string, Promise<any>>>({});
+  const readinessLoadPromises = useRef<Record<string, Promise<unknown>>>({});
   const [loading, setLoading] = useState(true);
   const [loadingQueue, setLoadingQueue] = useState(false);
   const [busyQuote, setBusyQuote] = useState(false);
@@ -4420,20 +4429,20 @@ export default function CommunityDomainDashboardPage() {
     []
   );
 
-  const applyReadinessPayloadsForLane = useCallback((laneKey: string, payloads: any[]) => {
+  const applyReadinessPayloadsForLane = useCallback((laneKey: string, payloads: unknown[]) => {
     if (laneKey === "identity") {
       const [institutionalProfilePayload, socialBridgePayload, affiliationReadinessPayload] =
         payloads;
-      setInstitutionalProfile(institutionalProfilePayload?.institutional_profile || null);
-      setSocialBridge(socialBridgePayload?.social_bridge || null);
-      setAffiliationReadiness(affiliationReadinessPayload?.affiliation_readiness || null);
+      setInstitutionalProfile(payloadValue(institutionalProfilePayload, "institutional_profile") || null);
+      setSocialBridge(payloadValue(socialBridgePayload, "social_bridge") || null);
+      setAffiliationReadiness(payloadValue(affiliationReadinessPayload, "affiliation_readiness") || null);
       return;
     }
 
     if (laneKey === "billing") {
       const [capacityPlanPayload, subscriptionPayload] = payloads;
-      setCapacityPlan(capacityPlanPayload?.capacity_plan || null);
-      setSubscriptionLifecycle(subscriptionPayload?.subscription_lifecycle || null);
+      setCapacityPlan(payloadValue(capacityPlanPayload, "capacity_plan") || null);
+      setSubscriptionLifecycle(payloadValue(subscriptionPayload, "subscription_lifecycle") || null);
       return;
     }
 
@@ -4450,16 +4459,16 @@ export default function CommunityDomainDashboardPage() {
         nodeSchedulePayload,
         nodePaidPayload,
       ] = payloads;
-      setNodeTree(Array.isArray(treePayload?.items) ? treePayload.items : []);
-      setRolloutPlan(rolloutPlanPayload?.rollout_plan || null);
-      setActivityMap(activityMapPayload?.activity_map || null);
-      setActivityGroupReadiness(activityGroupPayload?.activity_group_readiness || null);
-      setNodeAutonomyMap(nodeAutonomyPayload?.node_autonomy_map || null);
-      setNodeEconomicMap(nodeEconomicPayload?.node_economic_map || null);
-      setNodeActivityMap(nodeActivityPayload?.node_activity_map || null);
-      setNodeDomainBoundaryMap(nodeBoundaryPayload?.node_domain_boundary_map || null);
-      setNodeScheduledActivityMap(nodeSchedulePayload?.node_scheduled_activity_map || null);
-      setNodePaidActivityMap(nodePaidPayload?.node_paid_activity_map || null);
+      setNodeTree(payloadRecordArray(treePayload, "items") as StructureNode[]);
+      setRolloutPlan(payloadValue(rolloutPlanPayload, "rollout_plan") || null);
+      setActivityMap(payloadValue(activityMapPayload, "activity_map") || null);
+      setActivityGroupReadiness(payloadValue(activityGroupPayload, "activity_group_readiness") || null);
+      setNodeAutonomyMap(payloadValue(nodeAutonomyPayload, "node_autonomy_map") || null);
+      setNodeEconomicMap(payloadValue(nodeEconomicPayload, "node_economic_map") || null);
+      setNodeActivityMap(payloadValue(nodeActivityPayload, "node_activity_map") || null);
+      setNodeDomainBoundaryMap(payloadValue(nodeBoundaryPayload, "node_domain_boundary_map") || null);
+      setNodeScheduledActivityMap(payloadValue(nodeSchedulePayload, "node_scheduled_activity_map") || null);
+      setNodePaidActivityMap(payloadValue(nodePaidPayload, "node_paid_activity_map") || null);
       return;
     }
 
@@ -4487,33 +4496,33 @@ export default function CommunityDomainDashboardPage() {
         notificationScopePayload,
         trustMobilityPayload,
       ] = payloads;
-      setModuleScopeReadiness(moduleScopePayload?.module_scope_readiness || null);
-      setServiceSettingsProjection(serviceSettingsPayload?.service_settings || null);
-      setEconomicParticipation(economicPayload?.economic_participation || null);
-      setNetworkPresence(networkPresencePayload?.network_presence || null);
-      setNodeServiceMap(nodeServicePayload?.node_service_map || null);
-      setNodePrivacyMap(nodePrivacyPayload?.node_privacy_map || null);
-      setNodeAnalyticsMap(nodeAnalyticsPayload?.node_analytics_map || null);
-      setNodeCommunicationMap(nodeCommunicationPayload?.node_communication_map || null);
-      setNodeVaultMap(nodeVaultPayload?.node_vault_map || null);
-      setNetworkExchangeMap(networkExchangePayload?.network_exchange_map || null);
-      setRecordPrivacyMap(recordPrivacyPayload?.record_privacy_map || null);
-      setConfigurationMap(configurationPayload?.configuration_map || null);
-      setComplianceMap(compliancePayload?.compliance_map || null);
-      setAppealReadiness(appealPayload?.appeal_readiness || null);
+      setModuleScopeReadiness(payloadValue(moduleScopePayload, "module_scope_readiness") || null);
+      setServiceSettingsProjection(payloadValue(serviceSettingsPayload, "service_settings") || null);
+      setEconomicParticipation(payloadValue(economicPayload, "economic_participation") || null);
+      setNetworkPresence(payloadValue(networkPresencePayload, "network_presence") || null);
+      setNodeServiceMap(payloadValue(nodeServicePayload, "node_service_map") || null);
+      setNodePrivacyMap(payloadValue(nodePrivacyPayload, "node_privacy_map") || null);
+      setNodeAnalyticsMap(payloadValue(nodeAnalyticsPayload, "node_analytics_map") || null);
+      setNodeCommunicationMap(payloadValue(nodeCommunicationPayload, "node_communication_map") || null);
+      setNodeVaultMap(payloadValue(nodeVaultPayload, "node_vault_map") || null);
+      setNetworkExchangeMap(payloadValue(networkExchangePayload, "network_exchange_map") || null);
+      setRecordPrivacyMap(payloadValue(recordPrivacyPayload, "record_privacy_map") || null);
+      setConfigurationMap(payloadValue(configurationPayload, "configuration_map") || null);
+      setComplianceMap(payloadValue(compliancePayload, "compliance_map") || null);
+      setAppealReadiness(payloadValue(appealPayload, "appeal_readiness") || null);
       setNodeEvidenceAuthorityMap(
-        nodeEvidenceAuthorityPayload?.node_evidence_authority_map || null
+        payloadValue(nodeEvidenceAuthorityPayload, "node_evidence_authority_map") || null
       );
-      setNodeTrustMap(nodeTrustPayload?.node_trust_map || null);
-      setEvidenceRecordReadiness(evidenceReadinessPayload?.evidence_record_readiness || null);
+      setNodeTrustMap(payloadValue(nodeTrustPayload, "node_trust_map") || null);
+      setEvidenceRecordReadiness(payloadValue(evidenceReadinessPayload, "evidence_record_readiness") || null);
       setEvidenceReleaseReadiness(
-        releaseReadinessPayload?.evidence_release_readiness || null
+        payloadValue(releaseReadinessPayload, "evidence_release_readiness") || null
       );
-      setTrustRelayReadiness(relayReadinessPayload?.trust_relay_readiness || null);
+      setTrustRelayReadiness(payloadValue(relayReadinessPayload, "trust_relay_readiness") || null);
       setNotificationScopeReadiness(
-        notificationScopePayload?.notification_scope_readiness || null
+        payloadValue(notificationScopePayload, "notification_scope_readiness") || null
       );
-      setTrustMobility(trustMobilityPayload?.trust_mobility || null);
+      setTrustMobility(payloadValue(trustMobilityPayload, "trust_mobility") || null);
       return;
     }
 
@@ -4528,26 +4537,14 @@ export default function CommunityDomainDashboardPage() {
         beneficiaryOutcomeRowsPayload,
         beneficiaryCorrectionRowsPayload,
       ] = payloads;
-      setGovernanceCoverage(governanceCoveragePayload?.governance_coverage || null);
-      setDelegationMap(delegationMapPayload?.delegation_map || null);
-      setPeriodSummary(periodSummaryPayload || null);
-      setSponsorSummary(sponsorSummaryPayload || null);
-      setActivityCatalogue(
-        Array.isArray(activityCataloguePayload?.activity_catalogue)
-          ? activityCataloguePayload.activity_catalogue
-          : []
-      );
-      setActivityRows(Array.isArray(activityRowsPayload?.items) ? activityRowsPayload.items : []);
-      setBeneficiaryOutcomeRows(
-        Array.isArray(beneficiaryOutcomeRowsPayload?.items)
-          ? beneficiaryOutcomeRowsPayload.items
-          : []
-      );
-      setBeneficiaryCorrectionRows(
-        Array.isArray(beneficiaryCorrectionRowsPayload?.items)
-          ? beneficiaryCorrectionRowsPayload.items
-          : []
-      );
+      setGovernanceCoverage(payloadValue(governanceCoveragePayload, "governance_coverage") || null);
+      setDelegationMap(payloadValue(delegationMapPayload, "delegation_map") || null);
+      setPeriodSummary(isUnknownRecord(periodSummaryPayload) ? periodSummaryPayload : null);
+      setSponsorSummary(isUnknownRecord(sponsorSummaryPayload) ? sponsorSummaryPayload : null);
+      setActivityCatalogue(payloadRecordArray(activityCataloguePayload, "activity_catalogue"));
+      setActivityRows(payloadRecordArray(activityRowsPayload, "items"));
+      setBeneficiaryOutcomeRows(payloadRecordArray(beneficiaryOutcomeRowsPayload, "items"));
+      setBeneficiaryCorrectionRows(payloadRecordArray(beneficiaryCorrectionRowsPayload, "items"));
       return;
     }
 
@@ -4558,12 +4555,10 @@ export default function CommunityDomainDashboardPage() {
         nodeParticipationPayload,
         placementPayload,
       ] = payloads;
-      setDomainMemberRows(
-        Array.isArray(memberListPayload?.items) ? memberListPayload.items : []
-      );
-      setMemberVerificationMap(memberVerificationPayload?.member_verification_map || null);
-      setNodeParticipationMap(nodeParticipationPayload?.node_participation_map || null);
-      setPlacementSummary(placementPayload?.placement_summary || null);
+      setDomainMemberRows(payloadRecordArray(memberListPayload, "items"));
+      setMemberVerificationMap(payloadValue(memberVerificationPayload, "member_verification_map") || null);
+      setNodeParticipationMap(payloadValue(nodeParticipationPayload, "node_participation_map") || null);
+      setPlacementSummary(payloadValue(placementPayload, "placement_summary") || null);
     }
   }, []);
 
@@ -4603,15 +4598,15 @@ export default function CommunityDomainDashboardPage() {
     let cancelled = false;
 
     async function loadSelectedReadiness() {
-      function loadOrReuseReadiness(cacheKey: string, loader: () => Promise<any>) {
+      function loadOrReuseReadiness<T>(cacheKey: string, loader: () => Promise<T>): Promise<T> {
         const existing = readinessLoadPromises.current[cacheKey];
-        if (existing) return existing;
+        if (existing) return existing as Promise<T>;
         const next = loader().finally(() => {
           if (readinessLoadPromises.current[cacheKey] === next) {
             delete readinessLoadPromises.current[cacheKey];
           }
         });
-        readinessLoadPromises.current[cacheKey] = next;
+        readinessLoadPromises.current[cacheKey] = next as Promise<unknown>;
         return next;
       }
 
