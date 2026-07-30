@@ -31,6 +31,8 @@ type CollapseState = {
   routes: boolean;
 };
 
+type UnknownRecord = Record<string, unknown>;
+
 type PersistedWithdrawalTask = {
   amountInput: string;
   noteInput: string;
@@ -43,11 +45,24 @@ type PersistedWithdrawalTask = {
 const WITHDRAWAL_UI_STORAGE_KEY = "gmfn.withdrawal.sections.v7";
 const WITHDRAWAL_TASK_STORAGE_KEY_PREFIX = "gmfn.withdrawal.task.v5";
 
-function safeStr(x: any): string {
+function safeStr(x: unknown): string {
   return String(x ?? "").trim();
 }
 
-function firstTruthy(...values: any[]): string {
+function isUnknownRecord(value: unknown): value is UnknownRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function nestedValue(value: unknown, ...keys: string[]): unknown {
+  let cursor = value;
+  for (const key of keys) {
+    if (!isUnknownRecord(cursor)) return undefined;
+    cursor = cursor[key];
+  }
+  return cursor;
+}
+
+function firstTruthy(...values: unknown[]): string {
   for (const value of values) {
     const text = safeStr(value);
     if (text) return text;
@@ -55,13 +70,13 @@ function firstTruthy(...values: any[]): string {
   return "";
 }
 
-function normalizeMemberGmfnId(value: any): string {
+function normalizeMemberGmfnId(value: unknown): string {
   const raw = safeStr(value).toUpperCase().replace(/^GSN-/, "GMFN-");
   if (!/^GMFN-[A-Z]-[A-Z0-9-]+$/.test(raw)) return "";
   return raw.startsWith("GMFN-C-") ? "" : raw;
 }
 
-function firstMemberGmfnId(...values: any[]): string {
+function firstMemberGmfnId(...values: unknown[]): string {
   for (const value of values) {
     const gmfnId = normalizeMemberGmfnId(value);
     if (gmfnId) return gmfnId;
@@ -69,37 +84,37 @@ function firstMemberGmfnId(...values: any[]): string {
   return "";
 }
 
-function resolveMemberGmfnId(me: any, currentClan: any): string {
+function resolveMemberGmfnId(me: unknown, currentClan: unknown): string {
   return firstMemberGmfnId(
-    me?.gmfn_id,
-    me?.gmfnId,
-    me?.profile?.gmfn_id,
-    currentClan?.current_member_gmfn_id,
-    currentClan?.currentUserGmfnId,
-    currentClan?.member_gmfn_id,
-    currentClan?.memberGmfnId,
-    currentClan?.membership?.gmfn_id,
-    currentClan?.membership?.member_gmfn_id,
-    currentClan?.member?.gmfn_id,
-    currentClan?.profile?.member_gmfn_id,
-    currentClan?.profile?.gmfn_id,
-    currentClan?.user?.gmfn_id,
-    currentClan?.gmfn_id,
+    nestedValue(me, "gmfn_id"),
+    nestedValue(me, "gmfnId"),
+    nestedValue(me, "profile", "gmfn_id"),
+    nestedValue(currentClan, "current_member_gmfn_id"),
+    nestedValue(currentClan, "currentUserGmfnId"),
+    nestedValue(currentClan, "member_gmfn_id"),
+    nestedValue(currentClan, "memberGmfnId"),
+    nestedValue(currentClan, "membership", "gmfn_id"),
+    nestedValue(currentClan, "membership", "member_gmfn_id"),
+    nestedValue(currentClan, "member", "gmfn_id"),
+    nestedValue(currentClan, "profile", "member_gmfn_id"),
+    nestedValue(currentClan, "profile", "gmfn_id"),
+    nestedValue(currentClan, "user", "gmfn_id"),
+    nestedValue(currentClan, "gmfn_id"),
     api.getStoredGmfnId()
   );
 }
 
-function parseMoneyNumber(value: any): number {
+function parseMoneyNumber(value: unknown): number {
   const raw = safeStr(value).replace(/,/g, "");
   const n = Number(raw);
   return Number.isFinite(n) ? n : 0;
 }
 
-function fmtMoney(value: any): string {
+function fmtMoney(value: unknown): string {
   return parseMoneyNumber(value).toFixed(2);
 }
 
-function safeDateTime(x: any): string {
+function safeDateTime(x: unknown): string {
   const raw = safeStr(x);
   if (!raw) return "Not stated";
   const d = new Date(raw);
@@ -456,7 +471,7 @@ function readLocalJSON<T>(key: string, fallback: T): T {
   }
 }
 
-function writeLocalJSON(key: string, value: any) {
+function writeLocalJSON(key: string, value: unknown) {
   try {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(key, JSON.stringify(value));
@@ -476,16 +491,17 @@ function defaultCollapseState(): CollapseState {
   };
 }
 
-function normalizeCollapseState(raw: any): CollapseState {
+function normalizeCollapseState(raw: unknown): CollapseState {
   const base = defaultCollapseState();
+  const src = isUnknownRecord(raw) ? raw : {};
 
   return {
-    overview: Boolean(raw?.overview ?? base.overview),
-    request: Boolean(raw?.request ?? base.request),
-    destination: Boolean(raw?.destination ?? base.destination),
-    rail: Boolean(raw?.rail ?? base.rail),
-    result: Boolean(raw?.result ?? base.result),
-    routes: Boolean(raw?.routes ?? base.routes),
+    overview: Boolean(src.overview ?? base.overview),
+    request: Boolean(src.request ?? base.request),
+    destination: Boolean(src.destination ?? base.destination),
+    rail: Boolean(src.rail ?? base.rail),
+    result: Boolean(src.result ?? base.result),
+    routes: Boolean(src.routes ?? base.routes),
   };
 }
 
@@ -500,7 +516,7 @@ function withdrawalTaskStorageKey(clanId: number, gmfnId: string): string {
   return `${WITHDRAWAL_TASK_STORAGE_KEY_PREFIX}.${gmfnId || "me"}.${clanId || 0}`;
 }
 
-function isPlaceholderRailValue(value: any): boolean {
+function isPlaceholderRailValue(value: unknown): boolean {
   const text = safeStr(value).toLowerCase();
   return (
     !text ||
@@ -512,7 +528,7 @@ function isPlaceholderRailValue(value: any): boolean {
   );
 }
 
-function railValue(value: any): string {
+function railValue(value: unknown): string {
   return isPlaceholderRailValue(value) ? "" : safeStr(value);
 }
 
@@ -587,26 +603,26 @@ function destinationReady(
   );
 }
 
-function destinationCountryHint(destination: CommunitySettlementDestination, me: any): string {
+function destinationCountryHint(destination: CommunitySettlementDestination, me: unknown): string {
   return firstTruthy(
     destination.country,
-    me?.country,
-    me?.country_of_residence,
-    me?.residence_country,
-    me?.profile?.country,
-    me?.phone_country_hint,
-    me?.locale_country_hint
+    nestedValue(me, "country"),
+    nestedValue(me, "country_of_residence"),
+    nestedValue(me, "residence_country"),
+    nestedValue(me, "profile", "country"),
+    nestedValue(me, "phone_country_hint"),
+    nestedValue(me, "locale_country_hint")
   );
 }
 
 function needsUkSortCode(
   destination: CommunitySettlementDestination,
-  me: any,
+  me: unknown,
   currency: string
 ): boolean {
   const hint = destinationCountryHint(destination, me).toLowerCase();
   const normalizedCurrency = safeStr(destination.currency || currency).toUpperCase();
-  const phone = safeStr(destination.phoneNumber || me?.phone_e164 || me?.phone);
+  const phone = safeStr(destination.phoneNumber || nestedValue(me, "phone_e164") || nestedValue(me, "phone"));
   return (
     normalizedCurrency === "GBP" ||
     phone.startsWith("+44") ||
@@ -620,35 +636,35 @@ function needsUkSortCode(
   );
 }
 
-function communityName(currentClan: any, clanId: number): string {
+function communityName(currentClan: unknown, clanId: number): string {
   return (
     firstTruthy(
-      currentClan?.marketplace_name,
-      currentClan?.name,
-      currentClan?.display_name,
-      currentClan?.title
+      nestedValue(currentClan, "marketplace_name"),
+      nestedValue(currentClan, "name"),
+      nestedValue(currentClan, "display_name"),
+      nestedValue(currentClan, "title")
     ) || (clanId ? `Community ${clanId}` : "No current community")
   );
 }
 
-function communityPublicId(currentClan: any): string {
+function communityPublicId(currentClan: unknown): string {
   return (
     firstTruthy(
-      currentClan?.community_code,
-      currentClan?.community?.community_code,
-      currentClan?.profile?.community_code,
-      currentClan?.marketplace?.community_code
+      nestedValue(currentClan, "community_code"),
+      nestedValue(currentClan, "community", "community_code"),
+      nestedValue(currentClan, "profile", "community_code"),
+      nestedValue(currentClan, "marketplace", "community_code")
     ) || "No community ID yet"
   );
 }
 
-function communityRole(currentClan: any): string {
+function communityRole(currentClan: unknown): string {
   return (
     firstTruthy(
-      currentClan?.role,
-      currentClan?.member_role,
-      currentClan?.membership_role,
-      currentClan?.participant_role
+      nestedValue(currentClan, "role"),
+      nestedValue(currentClan, "member_role"),
+      nestedValue(currentClan, "membership_role"),
+      nestedValue(currentClan, "participant_role")
     ) || ""
   );
 }
@@ -741,8 +757,8 @@ export default function WithdrawalInstructionsPage() {
     text: string;
   } | null>(null);
 
-  const [me, setMe] = useState<any>(null);
-  const [currentClan, setCurrentClan] = useState<any>(null);
+  const [me, setMe] = useState<unknown | null>(null);
+  const [currentClan, setCurrentClan] = useState<unknown | null>(null);
   const [moneySurface, setMoneySurface] = useState<CommunityMoneySurface | null>(
     null
   );
@@ -880,12 +896,12 @@ export default function WithdrawalInstructionsPage() {
           ...nextDestination,
           country: firstTruthy(
             nextDestination.country,
-            meRes?.country,
-            meRes?.country_of_residence,
-            meRes?.residence_country,
-            meRes?.profile?.country,
-            meRes?.phone_country_hint,
-            meRes?.locale_country_hint
+            nestedValue(meRes, "country"),
+            nestedValue(meRes, "country_of_residence"),
+            nestedValue(meRes, "residence_country"),
+            nestedValue(meRes, "profile", "country"),
+            nestedValue(meRes, "phone_country_hint"),
+            nestedValue(meRes, "locale_country_hint")
           ),
           currency: firstTruthy(nextDestination.currency, surface?.poolCurrency),
         });
@@ -906,11 +922,11 @@ export default function WithdrawalInstructionsPage() {
   const memberName = useMemo(() => {
     return (
       firstTruthy(
-        me?.display_name,
-        me?.nickname,
-        me?.name,
-        me?.first_name,
-        me?.email
+        nestedValue(me, "display_name"),
+        nestedValue(me, "nickname"),
+        nestedValue(me, "name"),
+        nestedValue(me, "first_name"),
+        nestedValue(me, "email")
       ) || "Member"
     );
   }, [me]);

@@ -1,3 +1,10 @@
+## 2026-07-30 - Local withdrawal instructions response shape cleanup
+- Status: Local only, not pushed/deployed. Builds on local commit `249ab98d`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/WithdrawalInstructionsPage.tsx` by adding route-local `unknown`/record guards for current member, current community, destination country/phone hints, collapse-state JSON, generic string/number/date helpers, rail placeholder helpers, and local JSON writes.
+- No app UI, backend API route, request payload, route selection behavior, member/community fallback order, destination country fallback order, UK sort-code detection, withdrawal route loading, destination saving, withdrawal request behavior, action counts, button geometry, or visible Withdrawal Instructions layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run lint`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check`.
+- Devil's advocate: this is not a full Withdrawal Instructions type cleanup. `latestWithdrawalResult` and two request/save error catches still use broad `any`; handle those in a later route-local slice after tracing the result card and request error display.
+
 ## 2026-07-30 - Local withdrawal instructions API helper cast cleanup
 - Status: Local only, not pushed/deployed. Builds on local commit `5549be5e`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/WithdrawalInstructionsPage.tsx` by removing `(api as any)` casts for already-exported API helpers: stored GMFN id, selected community id, selected-community storage, current member, current community, and stored GMFN id writes.
