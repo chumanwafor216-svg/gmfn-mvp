@@ -2177,6 +2177,11 @@ function payloadRecordArray(payload: unknown, key: string): UnknownRecord[] {
   return Array.isArray(value) ? value.filter(isUnknownRecord) : [];
 }
 
+function payloadRecordArrayOrNull(payload: unknown, key: string): UnknownRecord[] | null {
+  const value = payloadValue(payload, key);
+  return Array.isArray(value) ? value.filter(isUnknownRecord) : null;
+}
+
 function pageShell(): React.CSSProperties {
   return {
     minHeight: "100%",
@@ -2806,10 +2811,10 @@ export default function CommunityDomainDashboardPage() {
   const [periodSummary, setPeriodSummary] = useState<any | null>(null);
   const [sponsorSummary, setSponsorSummary] = useState<any | null>(null);
   const [busySponsorExportCopy, setBusySponsorExportCopy] = useState(false);
-  const [activityCatalogue, setActivityCatalogue] = useState<any[]>([]);
-  const [activityRows, setActivityRows] = useState<any[]>([]);
-  const [beneficiaryOutcomeRows, setBeneficiaryOutcomeRows] = useState<any[]>([]);
-  const [beneficiaryCorrectionRows, setBeneficiaryCorrectionRows] = useState<any[]>([]);
+  const [activityCatalogue, setActivityCatalogue] = useState<UnknownRecord[]>([]);
+  const [activityRows, setActivityRows] = useState<UnknownRecord[]>([]);
+  const [beneficiaryOutcomeRows, setBeneficiaryOutcomeRows] = useState<UnknownRecord[]>([]);
+  const [beneficiaryCorrectionRows, setBeneficiaryCorrectionRows] = useState<UnknownRecord[]>([]);
   const [beneficiaryCorrectionDecisionByOutcomeId, setBeneficiaryCorrectionDecisionByOutcomeId] =
     useState<Record<string, string>>({});
   const [beneficiaryCorrectionNoteByOutcomeId, setBeneficiaryCorrectionNoteByOutcomeId] =
@@ -3644,12 +3649,15 @@ export default function CommunityDomainDashboardPage() {
       ]);
       setPeriodSummary(periodPayload || null);
       setSponsorSummary(sponsorPayload || null);
+      const refreshedActivityRows = payloadRecordArrayOrNull(activityPayload, "items");
+      const recordedActivity = isUnknownRecord(recorded?.activity)
+        ? recorded.activity
+        : null;
       setActivityRows(
-        Array.isArray(activityPayload?.items)
-          ? activityPayload.items
-          : recorded?.activity
-          ? [recorded.activity, ...activityRows].slice(0, 5)
-          : activityRows
+        refreshedActivityRows ??
+          (recordedActivity
+            ? [recordedActivity, ...activityRows].slice(0, 5)
+            : activityRows)
       );
       setActivityDraft(emptyCommunityDomainActivityDraft());
       setActiveActivityRecordStage("person");
@@ -3745,12 +3753,15 @@ export default function CommunityDomainDashboardPage() {
       ]);
       setPeriodSummary(periodPayload || null);
       setSponsorSummary(sponsorPayload || null);
+      const refreshedOutcomeRows = payloadRecordArrayOrNull(outcomePayload, "items");
+      const recordedOutcome = isUnknownRecord(recorded?.outcome)
+        ? recorded.outcome
+        : null;
       setBeneficiaryOutcomeRows(
-        Array.isArray(outcomePayload?.items)
-          ? outcomePayload.items
-          : recorded?.outcome
-          ? [recorded.outcome, ...beneficiaryOutcomeRows].slice(0, 5)
-          : beneficiaryOutcomeRows
+        refreshedOutcomeRows ??
+          (recordedOutcome
+            ? [recordedOutcome, ...beneficiaryOutcomeRows].slice(0, 5)
+            : beneficiaryOutcomeRows)
       );
       setBeneficiaryOutcomeDraft(emptyCommunityDomainOutcomeDraft());
       setActiveBeneficiaryOutcomeRecordStage("person");
@@ -3872,7 +3883,7 @@ export default function CommunityDomainDashboardPage() {
         { limit: 5 }
       );
       setBeneficiaryOutcomeRows(
-        Array.isArray(outcomePayload?.items) ? outcomePayload.items : beneficiaryOutcomeRows
+        payloadRecordArrayOrNull(outcomePayload, "items") ?? beneficiaryOutcomeRows
       );
       setMessage(
         `Contact/consent attestation recorded for ${compactStatus(
@@ -3931,7 +3942,7 @@ export default function CommunityDomainDashboardPage() {
         { limit: 5 }
       );
       setBeneficiaryOutcomeRows(
-        Array.isArray(outcomePayload?.items) ? outcomePayload.items : beneficiaryOutcomeRows
+        payloadRecordArrayOrNull(outcomePayload, "items") ?? beneficiaryOutcomeRows
       );
       setMessage(
         `Contact/consent withdrawal recorded as ${compactStatus(
@@ -3994,7 +4005,7 @@ export default function CommunityDomainDashboardPage() {
         { limit: 5 }
       );
       setBeneficiaryOutcomeRows(
-        Array.isArray(outcomePayload?.items) ? outcomePayload.items : beneficiaryOutcomeRows
+        payloadRecordArrayOrNull(outcomePayload, "items") ?? beneficiaryOutcomeRows
       );
       setMessage(
         `Manual delivery receipt recorded as ${compactStatus(
@@ -4061,7 +4072,7 @@ export default function CommunityDomainDashboardPage() {
         { limit: 5 }
       );
       setBeneficiaryOutcomeRows(
-        Array.isArray(outcomePayload?.items) ? outcomePayload.items : beneficiaryOutcomeRows
+        payloadRecordArrayOrNull(outcomePayload, "items") ?? beneficiaryOutcomeRows
       );
       setMessage(
         `Manual delivery receipt correction recorded as ${compactStatus(
@@ -4153,9 +4164,7 @@ export default function CommunityDomainDashboardPage() {
           { limit: 5 }
         );
         setBeneficiaryOutcomeRows(
-          Array.isArray(outcomePayload?.items)
-            ? outcomePayload.items
-            : beneficiaryOutcomeRows
+          payloadRecordArrayOrNull(outcomePayload, "items") ?? beneficiaryOutcomeRows
         );
       }
     } finally {
@@ -4312,12 +4321,10 @@ export default function CommunityDomainDashboardPage() {
       setPeriodSummary(periodPayload || null);
       setSponsorSummary(sponsorPayload || null);
       setBeneficiaryOutcomeRows(
-        Array.isArray(outcomePayload?.items) ? outcomePayload.items : beneficiaryOutcomeRows
+        payloadRecordArrayOrNull(outcomePayload, "items") ?? beneficiaryOutcomeRows
       );
       setBeneficiaryCorrectionRows(
-        Array.isArray(correctionPayload?.items)
-          ? correctionPayload.items
-          : beneficiaryCorrectionRows
+        payloadRecordArrayOrNull(correctionPayload, "items") ?? beneficiaryCorrectionRows
       );
       setBeneficiaryCorrectionNoteByOutcomeId((current) => ({
         ...current,

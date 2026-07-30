@@ -1,3 +1,11 @@
+## 2026-07-30 - Local Community Domain real-life row array type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `22556173`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` real-life record row state by replacing `activityCatalogue`, `activityRows`, `beneficiaryOutcomeRows`, and `beneficiaryCorrectionRows` from `any[]` to guarded `UnknownRecord[]`.
+- Added a route-local `payloadRecordArrayOrNull` helper so list refreshes still preserve backend `items: []` responses while rejecting non-object row entries, and guarded fallback inserted `recorded.activity` / `recorded.outcome` rows before adding them to local state.
+- No app UI, backend API, route contract, authentication, permission gate, real-life record behavior, contact-consent behavior, delivery-receipt behavior, action counts, button geometry, or visible dashboard layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this still does not type the beneficiary action handler `item` parameters or the delivery-pack cache. Those are still broad `any` and should be handled separately because they touch several nested audit/receipt fields.
+
 ## 2026-07-30 - Local Community Domain expected payment lookup type hardening
 - Status: Local only, not pushed/deployed. Builds on deployed `main` commit `1c132031`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` expected-payment matching by replacing the remaining `items.find((item: any) => ...)` payment-row callback with guarded `UnknownRecord` rows.
