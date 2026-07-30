@@ -1,3 +1,12 @@
+## 2026-07-30 - Local Community Domain beneficiary handler type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `8144ee59`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` beneficiary outcome action handlers by replacing the remaining `item: any` parameters with row types derived from `RealLifeRecordPanelData`.
+- Replaced the beneficiary delivery-pack cache from `Record<string, any>` with the panel-aligned related-record type, and guarded confirmation-link/provider-send response payload reads before using delivery-pack or provider-send fields.
+- Kept the parent-only `beneficiaryCorrectionRows` fallback cache as `UnknownRecord[]` because the child panel contract does not expose that row list as a prop.
+- No app UI, backend API, route contract, authentication, permission gate, beneficiary confirmation link behavior, contact-consent behavior, delivery-receipt behavior, provider-send messaging, action counts, button geometry, or visible dashboard layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this still leaves the large readiness and billing state objects typed as broad `any | null`. Those are the next major cleanup group and should be reduced lane by lane, not by guessing a giant all-purpose API shape.
+
 ## 2026-07-30 - Local Community Domain real-life row array type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `22556173`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` real-life record row state by replacing `activityCatalogue`, `activityRows`, `beneficiaryOutcomeRows`, and `beneficiaryCorrectionRows` from `any[]` to guarded `UnknownRecord[]`.
