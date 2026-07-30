@@ -1405,16 +1405,16 @@ function isUnknownRecord(value: unknown): value is UnknownRecord {
 }
 
 type DashboardPayload = {
-  community_domain?: any;
-  template?: any;
+  community_domain?: UnknownRecord;
+  template?: UnknownRecord;
   viewer?: {
     user_id?: number;
     can_admin?: boolean;
     can_setup_edit?: boolean;
     setup_authority?: string;
   };
-  status?: any;
-  counts?: any;
+  status?: UnknownRecord;
+  counts?: UnknownRecord;
   primary_next_action?: {
     action_key?: string;
     label?: string;
@@ -1422,7 +1422,7 @@ type DashboardPayload = {
     requires_admin?: boolean;
   };
   lanes?: DomainLane[];
-  package_quote?: any;
+  package_quote?: UnknownRecord;
   boundary?: string;
 };
 
@@ -2842,7 +2842,7 @@ export default function CommunityDomainDashboardPage() {
   const [subscriptionLifecycle, setSubscriptionLifecycle] = useState<any | null>(null);
   const [quote, setQuote] = useState<any | null>(null);
   const [domainPayment, setDomainPayment] = useState<any | null>(null);
-  const [setupEvidence, setSetupEvidence] = useState<any | null>(null);
+  const [setupEvidence, setSetupEvidence] = useState<UnknownRecord | null>(null);
   const [setupEvidenceFile, setSetupEvidenceFile] = useState<File | null>(null);
   const [communityLinkClanRows, setCommunityLinkClanRows] = useState<CommunityLinkClanRow[]>([]);
   const [paymentClanIdDraft, setPaymentClanIdDraft] = useState("");
@@ -4702,13 +4702,16 @@ export default function CommunityDomainDashboardPage() {
     loading,
   ]);
 
-  const domain = useMemo(
-    () => dashboard?.community_domain || {},
+  const domain = useMemo<UnknownRecord>(
+    () => (isUnknownRecord(dashboard?.community_domain) ? dashboard.community_domain : {}),
     [dashboard?.community_domain]
   );
-  const template = useMemo(() => dashboard?.template || {}, [dashboard?.template]);
-  const status = dashboard?.status || {};
-  const counts = dashboard?.counts || {};
+  const template = useMemo<UnknownRecord>(
+    () => (isUnknownRecord(dashboard?.template) ? dashboard.template : {}),
+    [dashboard?.template]
+  );
+  const status = isUnknownRecord(dashboard?.status) ? dashboard.status : {};
+  const counts = isUnknownRecord(dashboard?.counts) ? dashboard.counts : {};
   const lanes = useMemo(() => {
     const rawLanes = Array.isArray(dashboard?.lanes) ? dashboard?.lanes || [] : [];
     return [
@@ -5180,9 +5183,10 @@ export default function CommunityDomainDashboardPage() {
     activeBillingPaymentGroupOption.taskKeys.includes(task.key)
   );
   const setupDraftDomainId = cleanText(domain?.id || communityDomainId);
-  const setupEvidenceItems = Array.isArray(setupEvidence?.items)
-    ? setupEvidence.items
-    : [];
+  const setupEvidenceItems: UnknownRecord[] =
+    isUnknownRecord(setupEvidence) && Array.isArray(setupEvidence.items)
+      ? setupEvidence.items.filter(isUnknownRecord)
+      : [];
   const setupProgress = setupDraftCompletion(
     setupDraft,
     domainPayment,
@@ -6532,7 +6536,7 @@ export default function CommunityDomainDashboardPage() {
       setMessage("Only a Community Domain owner or domain admin can generate the payment code.");
       return;
     }
-    const clanId = Number((dashboard?.community_domain as any)?.clan_id || paymentClanIdDraft || 0);
+    const clanId = Number(domain.clan_id || paymentClanIdDraft || 0);
     const amount = Number(quoteAmount);
     if (!clanId) {
       setMessage(
@@ -9119,7 +9123,7 @@ export default function CommunityDomainDashboardPage() {
                               style={{ display: "grid", gap: 8 }}
                             >
                               {setupEvidenceItems.length ? (
-                                setupEvidenceItems.slice(0, 4).map((item: any) => (
+                                setupEvidenceItems.slice(0, 4).map((item: UnknownRecord) => (
                                   <div
                                     key={cleanText(item?.id || item?.storage_key || item?.title)}
                                     style={{

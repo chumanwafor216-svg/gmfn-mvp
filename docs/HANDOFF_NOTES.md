@@ -1,3 +1,11 @@
+## 2026-07-30 - Local Community Domain dashboard payload evidence type hardening
+- Status: Local only, not pushed/deployed. Builds on local commit `8a26cca5`; push/deploy only when the owner explicitly asks.
+- Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` by replacing top-level dashboard payload `any` objects for `community_domain`, `template`, `status`, `counts`, and `package_quote` with guarded `UnknownRecord` surfaces.
+- Guarded the memoized domain/template/status/counts records before reading UI fields, removed the dashboard `as any` clan-id escape from payment-instruction generation, and normalized setup evidence rows to `UnknownRecord[]` before rendering the submitted-evidence list.
+- No app UI, backend API, route contract, authentication, permission gate, setup evidence behavior, billing payment-code behavior, action counts, button geometry, or visible dashboard layout changed in this slice.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this is still boundary hardening only. The large readiness-state payloads, quote/payment metadata, and real-life record row workflows still retain broader `any` surfaces and should be handled in later narrow slices or replaced by generated API contracts.
+
 ## 2026-07-30 - Local Community Domain setup helper type hardening
 - Status: Local only, not pushed/deployed. Builds on local commit `ad320b5a`; push/deploy only when the owner explicitly asks.
 - Tightened `frontend/src/pages/CommunityDomainDashboardPage.tsx` by replacing broad setup-helper `any` boundaries for Pillar of Hope setup draft normalization, setup-step placeholder copy, setup draft local-storage parsing, and setup completion checks with `unknown` plus route-local record guards.
