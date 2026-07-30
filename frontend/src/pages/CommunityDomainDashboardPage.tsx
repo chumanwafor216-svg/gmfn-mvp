@@ -112,7 +112,13 @@ import {
 } from "../lib/communityMoney";
 import { humanStatus } from "./communityDomainDashboard/statusLanguage";
 import type { RealLifeRecordPanelData } from "./communityDomainDashboard/RealLifeRecordPanel";
-import type { BillingTaskPanelsData } from "./communityDomainDashboard/BillingTaskPanelsTypes";
+import type {
+  BillingQuoteSurface,
+  BillingTaskPanelsData,
+  DomainPaymentIntentSurface,
+  DomainPaymentSettlementSurface,
+  DomainPaymentSurface,
+} from "./communityDomainDashboard/BillingTaskPanelsTypes";
 
 const CommunityDomainNodeProjectionGroups = lazy(
   () => import("./communityDomainDashboard/NodeProjectionGroups")
@@ -1552,6 +1558,27 @@ type ActivityGroupReadinessSurface = UnknownRecord & {
   primary_next_action?: StructurePrimaryNextActionSurface | null;
 };
 
+type BillingPrimaryNextActionSurface = UnknownRecord & {
+  label?: unknown;
+};
+
+type CapacityPlanSurface = UnknownRecord & {
+  package_name?: unknown;
+  limits_source?: unknown;
+  billing_boundary?: UnknownRecord;
+  lanes?: unknown;
+  ready_total?: unknown;
+  primary_next_action?: BillingPrimaryNextActionSurface | null;
+};
+
+type SubscriptionLifecycleSurface = UnknownRecord & {
+  summary?: UnknownRecord;
+  package?: UnknownRecord;
+  lanes?: unknown;
+  ready_total?: unknown;
+  primary_next_action?: BillingPrimaryNextActionSurface | null;
+};
+
 type DashboardPayload = {
   community_domain?: UnknownRecord;
   template?: UnknownRecord;
@@ -2554,6 +2581,70 @@ function activityGroupReadinessOrNull(
   };
 }
 
+function billingPrimaryNextActionOrNull(
+  value: unknown
+): BillingPrimaryNextActionSurface | null {
+  return isUnknownRecord(value) ? value : null;
+}
+
+function capacityPlanOrNull(value: unknown): CapacityPlanSurface | null {
+  if (!isUnknownRecord(value)) return null;
+  return {
+    ...value,
+    billing_boundary: isUnknownRecord(value.billing_boundary)
+      ? value.billing_boundary
+      : undefined,
+    lanes: Array.isArray(value.lanes) ? value.lanes : undefined,
+    primary_next_action: billingPrimaryNextActionOrNull(value.primary_next_action),
+  };
+}
+
+function subscriptionLifecycleOrNull(
+  value: unknown
+): SubscriptionLifecycleSurface | null {
+  if (!isUnknownRecord(value)) return null;
+  return {
+    ...value,
+    summary: isUnknownRecord(value.summary) ? value.summary : undefined,
+    package: isUnknownRecord(value.package) ? value.package : undefined,
+    lanes: Array.isArray(value.lanes) ? value.lanes : undefined,
+    primary_next_action: billingPrimaryNextActionOrNull(value.primary_next_action),
+  };
+}
+
+function billingQuoteOrNull(value: unknown): BillingQuoteSurface | null {
+  if (!isUnknownRecord(value)) return null;
+  return {
+    ...value,
+    renewal_policy: isUnknownRecord(value.renewal_policy)
+      ? value.renewal_policy
+      : null,
+  };
+}
+
+function domainPaymentIntentOrNull(
+  value: unknown
+): DomainPaymentIntentSurface | null {
+  return isUnknownRecord(value) ? value : null;
+}
+
+function domainPaymentSettlementOrNull(
+  value: unknown
+): DomainPaymentSettlementSurface | null {
+  return isUnknownRecord(value) ? value : null;
+}
+
+function domainPaymentOrNull(value: unknown): DomainPaymentSurface | null {
+  if (!isUnknownRecord(value)) return null;
+  return {
+    ...value,
+    meta: isUnknownRecord(value.meta) ? value.meta : null,
+    meta_json: isUnknownRecord(value.meta_json) ? value.meta_json : null,
+    payment_intent: domainPaymentIntentOrNull(value.payment_intent),
+    settlement: domainPaymentSettlementOrNull(value.settlement),
+  } as DomainPaymentSurface;
+}
+
 function pageShell(): React.CSSProperties {
   return {
     minHeight: "100%",
@@ -3177,7 +3268,7 @@ export default function CommunityDomainDashboardPage() {
   const [moduleScopeReadiness, setModuleScopeReadiness] = useState<ModuleScopeReadinessSurface | null>(null);
   const [setupReadiness, setSetupReadiness] = useState<any | null>(null);
   const [setupPlan, setSetupPlan] = useState<any | null>(null);
-  const [capacityPlan, setCapacityPlan] = useState<any | null>(null);
+  const [capacityPlan, setCapacityPlan] = useState<CapacityPlanSurface | null>(null);
   const [governanceCoverage, setGovernanceCoverage] = useState<GovernanceCoverageSurface | null>(null);
   const [delegationMap, setDelegationMap] = useState<DelegationMapSurface | null>(null);
   const [periodSummary, setPeriodSummary] = useState<UnknownRecord | null>(null);
@@ -3225,9 +3316,9 @@ export default function CommunityDomainDashboardPage() {
   const [institutionalProfile, setInstitutionalProfile] = useState<InstitutionalProfileSurface | null>(null);
   const [socialBridge, setSocialBridge] = useState<SocialBridgeSurface | null>(null);
   const [affiliationReadiness, setAffiliationReadiness] = useState<IdentityReadinessMapSurface | null>(null);
-  const [subscriptionLifecycle, setSubscriptionLifecycle] = useState<any | null>(null);
-  const [quote, setQuote] = useState<any | null>(null);
-  const [domainPayment, setDomainPayment] = useState<any | null>(null);
+  const [subscriptionLifecycle, setSubscriptionLifecycle] = useState<SubscriptionLifecycleSurface | null>(null);
+  const [quote, setQuote] = useState<BillingQuoteSurface | null>(null);
+  const [domainPayment, setDomainPayment] = useState<DomainPaymentSurface | null>(null);
   const [setupEvidence, setSetupEvidence] = useState<UnknownRecord | null>(null);
   const [setupEvidenceFile, setSetupEvidenceFile] = useState<File | null>(null);
   const [communityLinkClanRows, setCommunityLinkClanRows] = useState<CommunityLinkClanRow[]>([]);
@@ -3778,7 +3869,7 @@ export default function CommunityDomainDashboardPage() {
       );
       setDashboard(nextDashboard);
       setDashboardRouteId(communityDomainId);
-      setQuote(nextDashboard?.package_quote || null);
+      setQuote(billingQuoteOrNull(nextDashboard?.package_quote));
       setBillingSettlementCountry(nextSettlementCountry);
       setQuoteCurrency(nextSettlementCountry === "NG" ? "NGN" : "GBP");
       setActiveLane("settings");
@@ -4831,8 +4922,8 @@ export default function CommunityDomainDashboardPage() {
 
     if (laneKey === "billing") {
       const [capacityPlanPayload, subscriptionPayload] = payloads;
-      setCapacityPlan(payloadValue(capacityPlanPayload, "capacity_plan") || null);
-      setSubscriptionLifecycle(payloadValue(subscriptionPayload, "subscription_lifecycle") || null);
+      setCapacityPlan(capacityPlanOrNull(payloadRecordOrNull(capacityPlanPayload, "capacity_plan")));
+      setSubscriptionLifecycle(subscriptionLifecycleOrNull(payloadRecordOrNull(subscriptionPayload, "subscription_lifecycle")));
       return;
     }
 
@@ -6500,7 +6591,7 @@ export default function CommunityDomainDashboardPage() {
               : {};
             return Number(meta.community_domain_id || 0) === numericDomainId;
           }) || null;
-        setDomainPayment(match);
+        setDomainPayment(domainPaymentOrNull(match));
       })
       .catch(() => {
         if (alive && isCurrentDomainRequest(requestDomainId)) {
@@ -6803,15 +6894,13 @@ export default function CommunityDomainDashboardPage() {
       : [];
     return Array.from(new Set([...included, ...templateModules])).slice(0, 8);
   }, [quote, template]);
-  const quoteLimits =
-    quote?.limits && typeof quote.limits === "object" ? quote.limits : {};
-  const packageBillingBoundary =
-    quote?.billing_boundary && typeof quote.billing_boundary === "object"
-      ? quote.billing_boundary
-      : capacityPlan?.billing_boundary && typeof capacityPlan.billing_boundary === "object"
-      ? capacityPlan.billing_boundary
-      : null;
-  const packageCapacityFacts = [
+  const quoteLimits: UnknownRecord = isUnknownRecord(quote?.limits) ? quote.limits : {};
+  const packageBillingBoundary: UnknownRecord | null = isUnknownRecord(quote?.billing_boundary)
+    ? quote.billing_boundary
+    : isUnknownRecord(capacityPlan?.billing_boundary)
+    ? capacityPlan.billing_boundary
+    : null;
+  const packageCapacityFacts: Array<[string, string]> = [
     [
       "Members",
       limitValue(
@@ -6842,13 +6931,16 @@ export default function CommunityDomainDashboardPage() {
       packageBillingBoundary?.plain_language,
       "Current pilot package allowance only. Extra member bands, paid feature tariffs, and per-domain pricing are not automated here yet; use Billing capacity review before selling or promising upgraded limits."
     );
-  const packageBillingStatusFacts = [
+  const packageBillingStatusFacts: Array<[string, string]> = ([
     ["Pricing", packageBillingBoundary?.pricing_model_status],
     ["Paid upgrades", packageBillingBoundary?.paid_upgrade_status],
     ["Member bands", packageBillingBoundary?.member_band_status],
     ["Feature tariffs", packageBillingBoundary?.feature_tariff_status],
     ["Domain tariffs", packageBillingBoundary?.domain_tariff_status],
-  ].map(([label, value]) => [label, compactStatus(value || "not_automated")]);
+  ] satisfies Array<[string, unknown]>).map(([label, value]) => [
+    label,
+    compactStatus(value || "not_automated"),
+  ]);
   const packageBillingAdminAction = cleanText(
     packageBillingBoundary?.admin_action_required,
     "Use manual finance and capacity review before promising upgraded limits."
@@ -6921,7 +7013,7 @@ export default function CommunityDomainDashboardPage() {
     try {
       const payload = await createCommunityDomainPackageQuote(requestDomainId);
       if (!isCurrentDomainRequest(requestDomainId)) return;
-      setQuote(payload?.quote || null);
+      setQuote(billingQuoteOrNull(payloadRecordOrNull(payload, "quote")));
       setActiveBillingTask("payment_code");
       setBillingPaymentGroupChooserOpen(false);
       setBillingPaymentStepChooserOpen(false);
@@ -6992,7 +7084,7 @@ export default function CommunityDomainDashboardPage() {
         meta: payload?.meta || {},
         meta_json: payload?.meta || {},
       };
-      setDomainPayment(payment);
+      setDomainPayment(domainPaymentOrNull(payment));
       setPaymentClanIdDraft(String(clanId));
       if (payload?.community_domain) {
         setDashboard((prev) =>
