@@ -1,12 +1,8 @@
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import CommunityNoticeModal from "../components/CommunityNoticeModal";
 import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
-import GsnSnapshotPaperCard from "../components/GsnSnapshotPaperCard";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
-import PaymentProofSubmissionPanel from "../components/PaymentProofSubmissionPanel";
-import SocialTagShareButton from "../components/SocialTagShareButton";
 import {
   compactJoinInviteUrl,
   normalizedJoinInviteUrl,
@@ -131,6 +127,22 @@ const MarketplaceSupportSection = lazy(
 
 const MarketplaceMoneySection = lazy(
   () => import("./marketplace/MarketplaceMoneySection")
+);
+
+const CommunityNoticeModal = lazy(
+  () => import("../components/CommunityNoticeModal")
+);
+
+const GsnSnapshotPaperCard = lazy(
+  () => import("../components/GsnSnapshotPaperCard")
+);
+
+const PaymentProofSubmissionPanel = lazy(
+  () => import("../components/PaymentProofSubmissionPanel")
+);
+
+const SocialTagShareButton = lazy(
+  () => import("../components/SocialTagShareButton")
 );
 
 type CommunityRow = {
@@ -8125,14 +8137,18 @@ export default function MarketplacePage() {
         />
       ) : null}
 
-      <CommunityNoticeModal
-        open={marketplaceNoticeModalOpen}
-        communityName={activeCommunityName}
-        busy={marketplaceNoticePosting}
-        postingPolicy={activeNoticePostingPolicy}
-        onClose={() => setMarketplaceNoticeModalOpen(false)}
-        onSubmit={submitMarketplaceNotice}
-      />
+      {marketplaceNoticeModalOpen ? (
+        <Suspense fallback={null}>
+          <CommunityNoticeModal
+            open
+            communityName={activeCommunityName}
+            busy={marketplaceNoticePosting}
+            postingPolicy={activeNoticePostingPolicy}
+            onClose={() => setMarketplaceNoticeModalOpen(false)}
+            onSubmit={submitMarketplaceNotice}
+          />
+        </Suspense>
+      ) : null}
 
       <section style={marketplaceOsSectionStyle(isCompact)}>
         <div style={marketplaceHeroShellStyle(isCompact)}>
@@ -9528,30 +9544,32 @@ export default function MarketplacePage() {
                 "ROSCA is tied to this selected community marketplace. Members must already belong to the community before they can be included in the cycle."}
             </div>
             {latestRoscaPackagePayment ? (
-              <PaymentProofSubmissionPanel
-                payment={latestRoscaPackagePayment}
-                title="ROSCA yearly service payment proof"
-                debugIdPrefix="marketplace-rosca-service-proof"
-                onUploaded={(payment) => {
-                  setCreatedRoscaPackageInstruction(
-                    payment as ExpectedPaymentRecord
-                  );
-                  setCommunityPackageItems((prev) =>
-                    prev.map((item) =>
-                      firstTruthy(item.package_code) === "rosca_cycle"
-                        ? {
-                            ...item,
-                            latest_payment: payment as ExpectedPaymentRecord,
-                          }
-                        : item
-                    )
-                  );
-                  showNotice(
-                    "success",
-                    "ROSCA yearly service payment proof uploaded for finance review."
-                  );
-                }}
-              />
+              <Suspense fallback={null}>
+                <PaymentProofSubmissionPanel
+                  payment={latestRoscaPackagePayment}
+                  title="ROSCA yearly service payment proof"
+                  debugIdPrefix="marketplace-rosca-service-proof"
+                  onUploaded={(payment) => {
+                    setCreatedRoscaPackageInstruction(
+                      payment as ExpectedPaymentRecord
+                    );
+                    setCommunityPackageItems((prev) =>
+                      prev.map((item) =>
+                        firstTruthy(item.package_code) === "rosca_cycle"
+                          ? {
+                              ...item,
+                              latest_payment: payment as ExpectedPaymentRecord,
+                            }
+                          : item
+                      )
+                    );
+                    showNotice(
+                      "success",
+                      "ROSCA yearly service payment proof uploaded for finance review."
+                    );
+                  }}
+                />
+              </Suspense>
             ) : null}
           </div>
         </div>
@@ -10157,23 +10175,25 @@ export default function MarketplacePage() {
                       WhatsApp
                     </StableButton>
                     {!isCompact ? (
-                      <SocialTagShareButton
-                        target={{
-                          title: joinEmailSubject,
-                          message: joinInviteDoorwayMessage,
-                          url: personalizedInviteLink,
-                        }}
-                        disabled={!joinInviteShareReady}
-                        buttonLabel="Share"
-                        stableHeight={58}
-                        debugId="marketplace.links.join.tag-social"
-                        style={marketplaceInlineActionStyle(
-                          "secondary",
-                          !joinInviteShareReady,
-                          isCompact
-                        )}
-                        onResult={showNotice}
-                      />
+                      <Suspense fallback={null}>
+                        <SocialTagShareButton
+                          target={{
+                            title: joinEmailSubject,
+                            message: joinInviteDoorwayMessage,
+                            url: personalizedInviteLink,
+                          }}
+                          disabled={!joinInviteShareReady}
+                          buttonLabel="Share"
+                          stableHeight={58}
+                          debugId="marketplace.links.join.tag-social"
+                          style={marketplaceInlineActionStyle(
+                            "secondary",
+                            !joinInviteShareReady,
+                            isCompact
+                          )}
+                          onResult={showNotice}
+                        />
+                      </Suspense>
                     ) : null}
                   </div>
                   {joinInviteManualCopyMessage ? (
@@ -10525,25 +10545,27 @@ export default function MarketplacePage() {
                       {isCompact ? "Email" : "Email Link"}
                     </StableButton>
                     {!isCompact ? (
-                      <SocialTagShareButton
-                        target={{
-                          title: shopEmailSubject,
-                          message: publicShopSocialPackage,
-                          socialMessage: `${firstPublicIdentity(publicShopRecord?.name) || "Public GSN Shop"} on GSN. Public shop record. Open the shop link.`,
-                          socialUrl: publicShopSocialPreviewLink,
-                          url: publicShopSocialLink,
-                        }}
-                        disabled={publicShopActionsLocked || !publicShopSocialLink}
-                        buttonLabel="Share"
-                        stableHeight={58}
-                        debugId="marketplace.public-shop.tag-social"
-                        style={marketplaceInlineActionStyle(
-                          "secondary",
-                          publicShopActionsLocked || !publicShopSocialLink,
-                          isCompact
-                        )}
-                        onResult={showNotice}
-                      />
+                      <Suspense fallback={null}>
+                        <SocialTagShareButton
+                          target={{
+                            title: shopEmailSubject,
+                            message: publicShopSocialPackage,
+                            socialMessage: `${firstPublicIdentity(publicShopRecord?.name) || "Public GSN Shop"} on GSN. Public shop record. Open the shop link.`,
+                            socialUrl: publicShopSocialPreviewLink,
+                            url: publicShopSocialLink,
+                          }}
+                          disabled={publicShopActionsLocked || !publicShopSocialLink}
+                          buttonLabel="Share"
+                          stableHeight={58}
+                          debugId="marketplace.public-shop.tag-social"
+                          style={marketplaceInlineActionStyle(
+                            "secondary",
+                            publicShopActionsLocked || !publicShopSocialLink,
+                            isCompact
+                          )}
+                          onResult={showNotice}
+                        />
+                      </Suspense>
                     ) : null}
                     <StableButton
                       type="button"
@@ -11393,42 +11415,44 @@ export default function MarketplacePage() {
                       </div>
                     )}
                     {latestRepostPayment ? (
-                      <PaymentProofSubmissionPanel
-                        payment={latestRepostPayment}
-                        title="Network Spotlight payment proof"
-                        debugIdPrefix="marketplace-network-repost-proof"
-                        onUploaded={(payment) => {
-                          setCreatedRepostInstruction(payment as ExpectedPaymentRecord);
-                          setRepostExpectedPayments((prev) => {
-                            const paymentId = String(payment.id || "");
-                            const reference = firstTruthy(
-                              payment.reference_display,
-                              payment.reference
-                            );
-                            let replaced = false;
-                            const next = prev.map((item) => {
-                              const sameId =
-                                paymentId && String(item.id || "") === paymentId;
-                              const sameReference =
-                                reference &&
-                                firstTruthy(item.reference_display, item.reference) ===
-                                  reference;
-                              if (sameId || sameReference) {
-                                replaced = true;
-                                return payment as ExpectedPaymentRecord;
-                              }
-                              return item;
+                      <Suspense fallback={null}>
+                        <PaymentProofSubmissionPanel
+                          payment={latestRepostPayment}
+                          title="Network Spotlight payment proof"
+                          debugIdPrefix="marketplace-network-repost-proof"
+                          onUploaded={(payment) => {
+                            setCreatedRepostInstruction(payment as ExpectedPaymentRecord);
+                            setRepostExpectedPayments((prev) => {
+                              const paymentId = String(payment.id || "");
+                              const reference = firstTruthy(
+                                payment.reference_display,
+                                payment.reference
+                              );
+                              let replaced = false;
+                              const next = prev.map((item) => {
+                                const sameId =
+                                  paymentId && String(item.id || "") === paymentId;
+                                const sameReference =
+                                  reference &&
+                                  firstTruthy(item.reference_display, item.reference) ===
+                                    reference;
+                                if (sameId || sameReference) {
+                                  replaced = true;
+                                  return payment as ExpectedPaymentRecord;
+                                }
+                                return item;
+                              });
+                              return replaced
+                                ? next
+                                : [payment as ExpectedPaymentRecord, ...prev];
                             });
-                            return replaced
-                              ? next
-                              : [payment as ExpectedPaymentRecord, ...prev];
-                          });
-                          showNotice(
-                            "success",
-                            "Network Spotlight payment proof uploaded for finance review."
-                          );
-                        }}
-                      />
+                            showNotice(
+                              "success",
+                              "Network Spotlight payment proof uploaded for finance review."
+                            );
+                          }}
+                        />
+                      </Suspense>
                     ) : null}
                   </details>
                     <div style={marketplaceInlineActionsStyle(isCompact)}>
@@ -12253,12 +12277,14 @@ export default function MarketplacePage() {
 
                     {protectedTradeEvidencePaperText ? (
                       <>
-                        <GsnSnapshotPaperCard
-                          paperText={protectedTradeEvidencePaperText}
-                          compact={isCompact}
-                          icon="document"
-                          maxBodyLines={isCompact ? 4 : 6}
-                        />
+                        <Suspense fallback={null}>
+                          <GsnSnapshotPaperCard
+                            paperText={protectedTradeEvidencePaperText}
+                            compact={isCompact}
+                            icon="document"
+                            maxBodyLines={isCompact ? 4 : 6}
+                          />
+                        </Suspense>
                         <div
                           style={{
                             borderRadius: 14,
