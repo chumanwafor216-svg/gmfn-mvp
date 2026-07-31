@@ -1556,7 +1556,8 @@ export default function TrustScorePage() {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  const fetchTrustScoreLoadResult = useCallback(async (): Promise<TrustScoreLoadResult> => {
+  const fetchTrustScoreLoadResult = useCallback(async (options: { includeSecondaryReadings?: boolean } = {}): Promise<TrustScoreLoadResult> => {
+    const includeSecondaryReadings = options.includeSecondaryReadings !== false;
     const clanHeaders: Record<string, string> = {};
     if (selectedClanId) {
       clanHeaders["X-Clan-Id"] = String(selectedClanId);
@@ -1589,60 +1590,64 @@ export default function TrustScorePage() {
         if (viaFn) return viaFn;
         return fetchFirstJson(["/clans/me"], ["GET"], clanHeaders);
       })(),
-      buildGuidanceSnapshot().catch(() => null),
+      includeSecondaryReadings ? buildGuidanceSnapshot().catch(() => null) : Promise.resolve(null),
     ]);
 
     const [explainRes, recomputeRes, trustSlipRes] = await Promise.all([
-      (async () => {
-        const viaFn = await callFirstAvailable(
-          [
-            "getMyTrustExplainability",
-            "getTrustExplainability",
-            "getTrustWhyMe",
-          ],
-          [[{ clan_id: selectedClanId || undefined }], []]
-        );
+      includeSecondaryReadings
+        ? (async () => {
+            const viaFn = await callFirstAvailable(
+              [
+                "getMyTrustExplainability",
+                "getTrustExplainability",
+                "getTrustWhyMe",
+              ],
+              [[{ clan_id: selectedClanId || undefined }], []]
+            );
 
-        if (viaFn) return viaFn;
+            if (viaFn) return viaFn;
 
-        return fetchFirstJson(
-          [
-            "/admin/trust-explainability/me",
-            "/admin/trust-explainability/my",
-            "/admin/trust-explainability/get-my-trust-explainability",
-            "/admin/trust_explainability/get_my_trust_explainability",
-            "/trust-explainability/me",
-            "/trust_explainability/me",
-          ],
-          ["GET"],
-          clanHeaders
-        );
-      })(),
-      (async () => {
-        const viaFn = await callFirstAvailable(
-          [
-            "recomputeMyTrust",
-            "recomputeTrustMe",
-            "recomputeMe",
-            "getRecomputeMe",
-          ],
-          [[{ clan_id: selectedClanId || undefined }], [], [selectedClanId || undefined]]
-        );
+            return fetchFirstJson(
+              [
+                "/admin/trust-explainability/me",
+                "/admin/trust-explainability/my",
+                "/admin/trust-explainability/get-my-trust-explainability",
+                "/admin/trust_explainability/get_my_trust_explainability",
+                "/trust-explainability/me",
+                "/trust_explainability/me",
+              ],
+              ["GET"],
+              clanHeaders
+            );
+          })()
+        : Promise.resolve(null),
+      includeSecondaryReadings
+        ? (async () => {
+            const viaFn = await callFirstAvailable(
+              [
+                "recomputeMyTrust",
+                "recomputeTrustMe",
+                "recomputeMe",
+                "getRecomputeMe",
+              ],
+              [[{ clan_id: selectedClanId || undefined }], [], [selectedClanId || undefined]]
+            );
 
-        if (viaFn) return viaFn;
+            if (viaFn) return viaFn;
 
-        return fetchFirstJson(
-          [
-            "/admin/trust-explainability/recompute-me",
-            "/admin/trust-explainability/recompute_me",
-            "/admin/trust_explainability/recompute_me",
-            "/trust-explainability/recompute-me",
-            "/trust_explainability/recompute_me",
-          ],
-          ["POST", "GET"],
-          clanHeaders
-        );
-      })(),
+            return fetchFirstJson(
+              [
+                "/admin/trust-explainability/recompute-me",
+                "/admin/trust-explainability/recompute_me",
+                "/admin/trust_explainability/recompute_me",
+                "/trust-explainability/recompute-me",
+                "/trust_explainability/recompute_me",
+              ],
+              ["POST", "GET"],
+              clanHeaders
+            );
+          })()
+        : Promise.resolve(null),
       (async () => {
         const direct = await fetchTrustSlipSummaryNetworkFirst();
         if (direct) return direct;
@@ -1686,7 +1691,7 @@ export default function TrustScorePage() {
       clearTrustScoreState();
 
       try {
-        const data = await fetchTrustScoreLoadResult();
+        const data = await fetchTrustScoreLoadResult({ includeSecondaryReadings: false });
         if (
           !alive ||
           loadSeq !== trustScoreLoadSeqRef.current ||
@@ -1695,6 +1700,23 @@ export default function TrustScorePage() {
           return;
         }
         applyTrustScoreLoadResult(data);
+        setLoading(false);
+
+        void (async () => {
+          try {
+            const secondaryData = await fetchTrustScoreLoadResult({ includeSecondaryReadings: true });
+            if (
+              !alive ||
+              loadSeq !== trustScoreLoadSeqRef.current ||
+              contextKey !== trustScoreContextRef.current
+            ) {
+              return;
+            }
+            applyTrustScoreLoadResult(secondaryData);
+          } catch {
+            // Keep the first Trust Passport surface visible if secondary readings fail.
+          }
+        })();
       } finally {
         if (
           alive &&

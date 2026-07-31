@@ -63,6 +63,7 @@ import {
   TRUST_BAND_SHORT_LABELS,
 } from "../lib/trustBandLanguage";
 
+
 const TrustSlipDecisionPackPrivatePreview = React.lazy(() => import("./trustSlip/TrustSlipDecisionPackPrivatePreview"));
 
 type NoticeTone = "success" | "error";
@@ -335,8 +336,6 @@ type TrustSlipPageData = {
   me: any | null;
   clan: any | null;
   summary: TrustSlipSummary | null;
-  decisionPackAccesses: TrustSlipDecisionPackAccessRow[];
-  decisionPackConsentShares: TrustSlipDecisionPackConsentShareRow[];
 };
 
 type TrustSlipDecisionPackAccessRow = {
@@ -1501,7 +1500,7 @@ function normalizeCollapseState(raw: any): CollapseState {
     summary: Boolean(raw?.summary ?? base.summary),
     reader: Boolean(raw?.reader ?? base.reader),
     decisionPackMechanics: Boolean(raw?.decisionPackMechanics ?? base.decisionPackMechanics),
-    decisionPackPrivatePreview: Boolean(raw?.decisionPackPrivatePreview ?? base.decisionPackPrivatePreview),
+    decisionPackPrivatePreview: base.decisionPackPrivatePreview,
     practicalEvidence: Boolean(raw?.practicalEvidence ?? base.practicalEvidence),
     merchantVerify: Boolean(raw?.merchantVerify ?? base.merchantVerify),
     merchantView: Boolean(raw?.merchantView ?? base.merchantView),
@@ -2065,7 +2064,7 @@ async function fetchTrustSlipPageData(
       clanHeaders
     );
 
-  const [meRes, clanRes, summaryRes, decisionPackAccessRes, decisionPackConsentShareRes] = await Promise.all([
+  const [meRes, clanRes, summaryRes] = await Promise.all([
     typeof (api as any).getMe === "function"
       ? (api as any).getMe().catch(() => null)
       : Promise.resolve(null),
@@ -2108,6 +2107,21 @@ async function fetchTrustSlipPageData(
 
       return fetchLegacySummaryFallback();
     })(),
+
+  ]);
+
+  return {
+    me: meRes || null,
+    clan: clanRes || null,
+    summary: normalizeTrustSlipSummary(summaryRes),
+  };
+}
+
+async function fetchTrustSlipDecisionPackHistory(): Promise<{
+  decisionPackAccesses: TrustSlipDecisionPackAccessRow[];
+  decisionPackConsentShares: TrustSlipDecisionPackConsentShareRow[];
+}> {
+  const [decisionPackAccessRes, decisionPackConsentShareRes] = await Promise.all([
     typeof (api as any).getMyTrustSlipDecisionPackAccesses === "function"
       ? (api as any).getMyTrustSlipDecisionPackAccesses(12).catch(() => null)
       : Promise.resolve(null),
@@ -2117,9 +2131,6 @@ async function fetchTrustSlipPageData(
   ]);
 
   return {
-    me: meRes || null,
-    clan: clanRes || null,
-    summary: normalizeTrustSlipSummary(summaryRes),
     decisionPackAccesses: normalizeTrustSlipDecisionPackAccesses(decisionPackAccessRes),
     decisionPackConsentShares: normalizeTrustSlipDecisionPackConsentShares(decisionPackConsentShareRes),
   };
@@ -2193,6 +2204,7 @@ export default function TrustSlipPage() {
   const communityPulseSeqRef = useRef(0);
   const merchantRailSeqRef = useRef(0);
   const decisionPackEvidenceSeqRef = useRef(0);
+  const decisionPackHistorySeqRef = useRef(0);
   trustSlipContextRef.current = trustSlipContextKey;
   const routes = useMemo(
     () => ({
@@ -2239,6 +2251,7 @@ export default function TrustSlipPage() {
   const [decisionPackEvidenceExtract, setDecisionPackEvidenceExtract] =
     useState<TrustSlipDecisionPackEvidenceExtract | null>(null);
   const [decisionPackEvidenceLoading, setDecisionPackEvidenceLoading] = useState(false);
+  const [decisionPackHistoryLoaded, setDecisionPackHistoryLoaded] = useState(false);
   const [housingExternalContactLabel, setHousingExternalContactLabel] = useState("");
   const [housingExternalContactChannel, setHousingExternalContactChannel] = useState("whatsapp");
   const [housingExternalContactValue, setHousingExternalContactValue] = useState("");
@@ -2275,6 +2288,11 @@ export default function TrustSlipPage() {
     setSummary(null);
     setDecisionPackAccesses([]);
     setDecisionPackConsentShares([]);
+    setDecisionPackHistoryLoaded(false);
+    setDecisionPackEvidenceExtract(null);
+    setDecisionPackEvidenceLoading(false);
+    decisionPackEvidenceSeqRef.current += 1;
+    decisionPackHistorySeqRef.current += 1;
     setConfirmationOutcome(null);
     setMerchantRailLink(null);
   }, []);
@@ -2283,8 +2301,6 @@ export default function TrustSlipPage() {
     setMe(data.me);
     setCurrentClan(data.clan);
     setSummary(data.summary);
-    setDecisionPackAccesses(data.decisionPackAccesses);
-    setDecisionPackConsentShares(data.decisionPackConsentShares);
   }, []);
 
   const guideItems = useMemo(() => buildTrustSlipGuideItems(), []);
@@ -2394,6 +2410,12 @@ export default function TrustSlipPage() {
   }, [applyTrustSlipPageData, clearTrustSlipState, selectedClanId, trustSlipContextKey]);
 
   useEffect(() => {
+    if (collapsed.decisionPackPrivatePreview) {
+      decisionPackEvidenceSeqRef.current += 1;
+      setDecisionPackEvidenceLoading(false);
+      return undefined;
+    }
+
     let alive = true;
     const evidenceSeq = decisionPackEvidenceSeqRef.current + 1;
     decisionPackEvidenceSeqRef.current = evidenceSeq;
@@ -2424,7 +2446,34 @@ export default function TrustSlipPage() {
     return () => {
       alive = false;
     };
-  }, [selectedPurposeOption.key]);
+  }, [collapsed.decisionPackPrivatePreview, selectedPurposeOption.key]);
+
+  useEffect(() => {
+    if (collapsed.decisionPackPrivatePreview || decisionPackHistoryLoaded) return undefined;
+
+    let alive = true;
+    const historySeq = decisionPackHistorySeqRef.current + 1;
+    decisionPackHistorySeqRef.current = historySeq;
+
+    (async () => {
+      try {
+        const data = await fetchTrustSlipDecisionPackHistory();
+        if (!alive || historySeq !== decisionPackHistorySeqRef.current) return;
+        setDecisionPackAccesses(data.decisionPackAccesses);
+        setDecisionPackConsentShares(data.decisionPackConsentShares);
+        setDecisionPackHistoryLoaded(true);
+      } catch {
+        if (!alive || historySeq !== decisionPackHistorySeqRef.current) return;
+        setDecisionPackAccesses([]);
+        setDecisionPackConsentShares([]);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [collapsed.decisionPackPrivatePreview, decisionPackHistoryLoaded]);
+
   useEffect(() => {
     let alive = true;
 
@@ -4827,7 +4876,7 @@ export default function TrustSlipPage() {
 
             </div>
 
-            {isCompact ? (
+            {(
               <div
                 data-gsn-trustslip-private-preview-drawer={
                   collapsed.decisionPackPrivatePreview ? "collapsed" : "open"
@@ -4868,9 +4917,9 @@ export default function TrustSlipPage() {
                   {collapsed.decisionPackPrivatePreview ? "Open" : "Hide"}
                 </SubtleButton>
               </div>
-            ) : null}
+            )}
 
-            {!isCompact || !collapsed.decisionPackPrivatePreview ? (
+            {!collapsed.decisionPackPrivatePreview ? (
               <React.Suspense
                 fallback={
                   <div

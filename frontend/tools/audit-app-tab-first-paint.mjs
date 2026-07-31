@@ -56,19 +56,52 @@ function slowEmpty(path) {
   if (/^\/marketplace\/shops/.test(path)) return { items: [], shops: [] };
   if (/^\/pool\/me/.test(path)) return { balance: 0, available_balance: 0, items: [] };
   if (/^\/loans/.test(path)) return { items: [], loans: [] };
+  if (path === "/trust/me/why") {
+    return {
+      user_id: 216,
+      current_score: 72,
+      score: 72,
+      band: "B",
+      latest_reason: "Recent community evidence remains current.",
+      recent_events: [],
+    };
+  }
+  if (/^\/trust-explainability/.test(path) || /^\/trust_explainability/.test(path)) {
+    return { user_id: 216, score: 72, band: "B", event_count: 4, breakdown: { computed_score: 72, computed_band: "B" } };
+  }
   if (/^\/trust/.test(path)) return { score: 72, band: "B", grade: "B", events: [] };
   if (/^\/payment-instructions\/community-package\/status/.test(path)) return { items: [] };
   if (/^\/rosca\/cycles/.test(path)) return { items: [], cycles: [] };
   if (/^\/protected-trades/.test(path)) return { items: [], records: [] };
   if (/^\/community-notices/.test(path)) return { notices: [], posting_policy: "members" };
   if (/^\/marketplace\/broadcasts/.test(path)) return { items: [], broadcasts: [] };
+  if (/^\/trust-slips\/me\/decision-pack/.test(path)) {
+    return { items: [], results: [], total: 0 };
+  }
   if (/^\/trust-slips\/me/.test(path)) {
     return {
+      verified: true,
+      active: true,
+      status: "active",
       code: "TS-SLOW-FIRST-PAINT",
+      verification_code: "TS-SLOW-FIRST-PAINT",
+      display_name: "Nwafor Chuma",
+      community: "Homeland isa Marketplace",
+      community_code: "GMFN-C-000008",
+      level: "B",
+      band: "B",
       open_trust_class: "B",
       open_trust_band: "B",
+      trust_score: 72,
+      standing_score: 72,
       cross_community_integrity_class: "B",
       cross_community_integrity_score: 72,
+      trust_slip_limit: "250000",
+      trust_limit: "250000",
+      currency: "NGN",
+      phone_recorded: true,
+      phone_verified: true,
+      public_verify_url: "/t/TS-SLOW-FIRST-PAINT",
     };
   }
   return { items: [], results: [], status: "ok" };
@@ -97,6 +130,18 @@ function shouldDelay(path, mode) {
     return /^\/trust/.test(path);
   }
 
+  if (mode === "trust") {
+    return (
+      path === "/trust/me/why" ||
+      /^\/trust-explainability/.test(path) ||
+      /^\/trust_explainability/.test(path)
+    );
+  }
+
+  if (mode === "trust-slip") {
+    return /^\/trust-slips\/me\/decision-pack/.test(path);
+  }
+
   return false;
 }
 
@@ -117,15 +162,7 @@ async function installApiMocks(page, mode) {
       return route.fulfill(json({ selected_clan_id: Number(clanSelectMatch[1]) }));
     }
     if (path === "/trust-slips/me" && mode !== "profile") {
-      return route.fulfill(
-        json({
-          code: "TS-FIRST-PAINT",
-          open_trust_class: "B",
-          open_trust_band: "B",
-          cross_community_integrity_class: "B",
-          cross_community_integrity_score: 72,
-        })
-      );
+      return route.fulfill(json(slowEmpty(path)));
     }
 
     if (shouldDelay(path, mode)) {
@@ -142,6 +179,12 @@ async function installApiMocks(page, mode) {
   });
 
   return delayed;
+}
+
+function delayedCallExpectationFailed(test, delayed) {
+  const delayedCount = Object.keys(delayed).length;
+  if (test.expectDelayed === false) return delayedCount > 0;
+  return delayedCount === 0;
 }
 
 async function measureRoute(browser, baseURL, test) {
@@ -214,6 +257,23 @@ async function run() {
       text: "My GSN Identity",
       loadingText: "Loading workspace settings",
     },
+    {
+      name: "Trust Passport",
+      mode: "trust",
+      path: "/app/trust?community=8",
+      selector: '[data-trust-passport-decision-first="one-answer-four-facts"]',
+      text: "Aggregate Passport reading",
+      loadingText: "Loading Trust Passport",
+    },
+    {
+      name: "TrustSlip Holder",
+      mode: "trust-slip",
+      path: "/app/trust-slip?community=8",
+      selector: '[data-gsn-trust-document-certificate="trustslip-holder"]',
+      text: "TrustSlip holder",
+      loadingText: "Loading TrustSlip",
+      expectDelayed: false,
+    },
   ];
 
   try {
@@ -238,7 +298,10 @@ async function run() {
       (result) =>
         result.firstSurfaceMs > MAX_FIRST_SURFACE_MS ||
         result.loadingTextStillVisible ||
-        Object.keys(result.delayed).length === 0
+        delayedCallExpectationFailed(
+          tests.find((test) => test.name === result.name),
+          result.delayed
+        )
     );
 
     if (failures.length) {

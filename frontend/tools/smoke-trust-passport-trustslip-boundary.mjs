@@ -280,6 +280,7 @@ function recomputePayload() {
 
 async function installApiMocks(page, requestLog, options = {}) {
   const trustSlipSummary = options.trustSlipSummary || trustSlipSummaryPayload();
+  const secondaryReadGate = options.secondaryReadGate || null;
 
   await page.route("**/*", async (route) => {
     const request = route.request();
@@ -322,6 +323,12 @@ async function installApiMocks(page, requestLog, options = {}) {
       return;
     }
 
+    if (method === "GET" && path === "/trust/me/why") {
+      if (secondaryReadGate) await secondaryReadGate.wait();
+      await route.fulfill(json(explainabilityPayload()));
+      return;
+    }
+
     if (
       method === "GET" &&
       [
@@ -333,6 +340,7 @@ async function installApiMocks(page, requestLog, options = {}) {
         "/trust_explainability/me",
       ].includes(path)
     ) {
+      if (secondaryReadGate) await secondaryReadGate.wait();
       await route.fulfill(json(explainabilityPayload()));
       return;
     }
@@ -347,6 +355,7 @@ async function installApiMocks(page, requestLog, options = {}) {
         "/trust_explainability/recompute_me",
       ].includes(path)
     ) {
+      if (secondaryReadGate) await secondaryReadGate.wait();
       await route.fulfill(json(recomputePayload()));
       return;
     }
@@ -369,6 +378,55 @@ async function waitForRequest(requestLog, predicate, label) {
     .map((entry) => `${entry.method} ${entry.path} auth=${entry.authPresent} clan=${entry.clanPresent}`)
     .join("; ");
   throw new Error(`${label} did not happen. Requests: ${summary || "none"}`);
+}
+
+function privateDecisionPackReadCount(requestLog) {
+  return requestLog.filter(
+    (entry) =>
+      entry.method === "GET" &&
+      [
+        "/trust-slips/me/decision-pack-accesses",
+        "/trust-slips/me/decision-pack-consent-shares",
+        "/trust-slips/me/decision-pack-evidence",
+      ].includes(entry.path)
+  ).length;
+}
+
+function isTrustPassportExplainabilityRead(entry) {
+  return (
+    entry.method === "GET" &&
+    (entry.path === "/trust/me/why" ||
+      entry.path.includes("/trust-explainability/") ||
+      entry.path.includes("/trust_explainability/")) &&
+    !entry.path.includes("recompute")
+  );
+}
+
+function isTrustPassportRecomputeRead(entry) {
+  return (
+    (entry.method === "GET" || entry.method === "POST") &&
+    (entry.path.includes("/trust-explainability/") || entry.path.includes("/trust_explainability/")) &&
+    entry.path.includes("recompute")
+  );
+}
+
+function trustPassportSecondaryReadCount(requestLog) {
+  return requestLog.filter((entry) => isTrustPassportExplainabilityRead(entry) || isTrustPassportRecomputeRead(entry)).length;
+}
+
+function createApiGate() {
+  let release;
+  const promise = new Promise((resolve) => {
+    release = resolve;
+  });
+  return {
+    async wait() {
+      await promise;
+    },
+    release() {
+      release();
+    },
+  };
 }
 
 async function newSignedInPage(browser, options = {}) {
@@ -493,13 +551,31 @@ function assertNoPublicVerifyRead(requestLog, label) {
 }
 
 async function runTrustPassportScenario(browser, baseURL) {
-  const state = await newSignedInPage(browser);
+  const secondaryReadGate = createApiGate();
+  const state = await newSignedInPage(browser, { secondaryReadGate });
   await state.page.goto(`${baseURL}/app/trust`, {
     waitUntil: "domcontentloaded",
     timeout: 60000,
   });
 
-  await expect(state.page.getByText("Aggregate Passport reading", { exact: true })).toBeVisible({ timeout: 30000 });
+  await expect(state.page.getByText("Aggregate Passport reading", { exact: true })).toBeVisible({ timeout: 7000 });
+  await waitForRequest(
+    state.requestLog,
+    isTrustPassportExplainabilityRead,
+    "Trust Passport background explainability request"
+  );
+  const secondaryReadsBeforeRelease = trustPassportSecondaryReadCount(state.requestLog);
+  if (secondaryReadsBeforeRelease < 1) {
+    throw new Error(
+      `Trust Passport did not start its secondary guidance/explainability read in the background before release: ${secondaryReadsBeforeRelease}`
+    );
+  }
+  secondaryReadGate.release();
+  await waitForRequest(
+    state.requestLog,
+    isTrustPassportRecomputeRead,
+    "Trust Passport background recompute request after secondary release"
+  );
   await expect(state.page.getByText("Aggregate reading", { exact: true })).toBeVisible();
   await expect(state.page.getByText("Primary anchor", { exact: true }).first()).toBeVisible();
   await expect(state.page.getByText("Community portfolio", { exact: true })).toBeVisible();
@@ -772,12 +848,33 @@ async function runTrustSlipScenario(browser, baseURL) {
   );
   await expect(state.page.locator('[data-gsn-holder-private-decision-pack-evidence="true"]')).toBeHidden();
   await expect(state.page.locator('[data-gsn-decision-pack-access-ledger="holder"]')).toBeHidden();
+  const privateReadsBeforeOpen = privateDecisionPackReadCount(state.requestLog);
+  if (privateReadsBeforeOpen !== 0) {
+    throw new Error(
+      `TrustSlip loaded private Decision Pack reads before the holder opened the drawer: ${privateReadsBeforeOpen}`
+    );
+  }
   await state.page.locator('[data-cta-id="trust-slip.toggle-private-decision-pack-preview"]').click();
   await expect(
     state.page.locator('[data-gsn-trustslip-private-preview-drawer="open"]')
   ).toHaveCount(1);
   await expect(state.page.locator('[data-gsn-holder-private-decision-pack-evidence="true"]')).toBeVisible();
   await expect(state.page.locator('[data-gsn-decision-pack-access-ledger="holder"]')).toBeVisible();
+  await waitForRequest(
+    state.requestLog,
+    (entry) => entry.method === "GET" && entry.path === "/trust-slips/me/decision-pack-evidence",
+    "TrustSlip private Decision Pack evidence request after drawer open"
+  );
+  await waitForRequest(
+    state.requestLog,
+    (entry) => entry.method === "GET" && entry.path === "/trust-slips/me/decision-pack-accesses",
+    "TrustSlip private Decision Pack access history request after drawer open"
+  );
+  await waitForRequest(
+    state.requestLog,
+    (entry) => entry.method === "GET" && entry.path === "/trust-slips/me/decision-pack-consent-shares",
+    "TrustSlip private Decision Pack consent history request after drawer open"
+  );
   await expect(state.page.getByText("This TrustSlip confirms", { exact: true })).toHaveCount(1);
   await expect(state.page.getByText("This TrustSlip does not confirm", { exact: true })).toHaveCount(1);
   await state.page.locator("summary").filter({ hasText: "More security details" }).first().click();
