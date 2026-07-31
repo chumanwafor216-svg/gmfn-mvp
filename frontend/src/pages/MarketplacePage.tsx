@@ -4493,6 +4493,7 @@ export default function MarketplacePage() {
   const routeHashLandingAppliedRef = useRef("");
   const withdrawalHandoffAppliedRef = useRef("");
   const publicShopPrepareInFlightRef = useRef(false);
+  const loadPageRequestRef = useRef(0);
   const marketplaceWisdomExposureKeyRef = useRef("");
 
   const routeSelectedClanId = useMemo(() => {
@@ -5621,6 +5622,8 @@ export default function MarketplacePage() {
   }
 
   const loadPage = useCallback(async () => {
+    const requestId = loadPageRequestRef.current + 1;
+    loadPageRequestRef.current = requestId;
     setLoading(true);
 
     try {
@@ -5642,6 +5645,8 @@ export default function MarketplacePage() {
         selectedClanId;
 
       const currentMemberGmfnId = safeStr(meRes?.gmfn_id || "");
+
+      if (requestId !== loadPageRequestRef.current) return;
 
       setMe(meRes || null);
       setSelectedCommunity(resolvedCommunity);
@@ -5717,20 +5722,22 @@ export default function MarketplacePage() {
             : Promise.resolve([]),
         ]);
 
-            const memberRows = rowsOf<ClanMember>(membersRes);
-            const shopRows = rowsOf<any>(shopsRes)
-              .map((row) => normalizeMarketplaceShop(row))
-              .filter(Boolean)
-              .filter(
-                (row) => normalizeMarketplaceShopVisibility(row) !== "vault_private"
-              ) as MarketplaceShop[];
+      if (requestId !== loadPageRequestRef.current) return;
 
-            const normalizedLoans = rowsOf<any>(loansRes)
-             .map((row) => normalizeLoan(row))
-             .filter(Boolean) as LoanSupportItem[];
+      const memberRows = rowsOf<ClanMember>(membersRes);
+      const shopRows = rowsOf<any>(shopsRes)
+        .map((row) => normalizeMarketplaceShop(row))
+        .filter(Boolean)
+        .filter(
+          (row) => normalizeMarketplaceShopVisibility(row) !== "vault_private"
+        ) as MarketplaceShop[];
 
-            const filteredLoans = normalizedLoans.filter((item) => {
-            const loanClanId = Number(item?.clan_id || 0);
+      const normalizedLoans = rowsOf<any>(loansRes)
+        .map((row) => normalizeLoan(row))
+        .filter(Boolean) as LoanSupportItem[];
+
+      const filteredLoans = normalizedLoans.filter((item) => {
+        const loanClanId = Number(item?.clan_id || 0);
         return loanClanId <= 0 || loanClanId === currentCommunityId;
       });
 
@@ -5765,7 +5772,9 @@ export default function MarketplacePage() {
           : []
       );
     } finally {
-      setLoading(false);
+      if (requestId === loadPageRequestRef.current) {
+        setLoading(false);
+      }
     }
   }, [selectedClanId]);
 
