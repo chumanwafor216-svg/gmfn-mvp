@@ -235,6 +235,9 @@ Check these first:
 5. `/health` returns `ok: true`
 6. admin command centre is reachable only for admin users
 7. `alembic upgrade head` completed successfully in deploy logs
+8. for Trust Passport / TrustSlip opening-speed work, run
+   `npm --prefix frontend run audit:live-trust-first-paint` against the deployed
+   frontend before asking for phone retesting
 
 ## 7. Important deployment assumptions
 

@@ -21,7 +21,9 @@ const files = {
   viewModel: "src/lib/trustPassportViewModel.ts",
   api: "src/lib/api.ts",
   backendBoundaryTests: "../gmfn_backend/tests/test_trust_slip_boundary_controls.py",
+  liveTrustFirstPaint: "tools/audit-live-trust-first-paint.mjs",
   package: "package.json",
+  deployRunbook: "../docs/DEPLOYMENT_RENDER.md",
   map: "../docs/GSN_EVIDENCE_DISPLAY_IMPLEMENTATION_MAP_DRAFT.md",
   protocol: "../docs/TRUST_DOCUMENT_LANGUAGE_PROTOCOL.md",
   decisionMatrix: "../docs/GSN_DECISION_PACK_EVIDENCE_MATRIX.md",
@@ -696,6 +698,42 @@ assertContains(
   "package",
   /"audit:trust-passport-trustslip-boundary": "node tools\/audit-trust-passport-trustslip-boundary\.mjs"/,
   "Trust Passport / TrustSlip boundary audit must stay registered in package scripts."
+);
+
+assertContains(
+  "package",
+  /"audit:live-trust-first-paint": "node tools\/audit-live-trust-first-paint\.mjs"/,
+  "Live Trust first-paint audit must stay registered in package scripts for post-deploy verification."
+);
+
+assertContains(
+  "deployRunbook",
+  /Trust Passport \/ TrustSlip opening-speed work[\s\S]*?npm --prefix frontend run audit:live-trust-first-paint[\s\S]*?deployed[\s\S]*?frontend before asking for phone retesting/,
+  "Render deployment runbook must keep the live Trust first-paint audit in the post-deploy checklist."
+);
+
+assertContains(
+  "liveTrustFirstPaint",
+  /const DEFAULT_FRONTEND_URL = "https:\/\/gmfn-frontend\.onrender\.com"[\s\S]*?const SECONDARY_DELAY_MS = 21000[\s\S]*?const MAX_FIRST_SURFACE_MS = 7000/,
+  "Live Trust first-paint audit must target the deployed frontend and keep the 21s secondary-delay / 7s first-surface thresholds."
+);
+
+assertContains(
+  "liveTrustFirstPaint",
+  /mode === "trust"[\s\S]*?path === "\/trust\/me\/why"[\s\S]*?trust-explainability[\s\S]*?trust_explainability/,
+  "Live Trust first-paint audit must delay Trust Passport guidance and explainability reads."
+);
+
+assertContains(
+  "liveTrustFirstPaint",
+  /mode === "trust-slip"[\s\S]*?trust-slips\\\/me\\\/decision-pack/,
+  "Live Trust first-paint audit must treat private Decision Pack reads as TrustSlip first-paint regressions."
+);
+
+assertContains(
+  "liveTrustFirstPaint",
+  /name: "Live production Trust Passport bundle"[\s\S]*?selector: '\[data-trust-passport-decision-first="one-answer-four-facts"\]'[\s\S]*?name: "Live production TrustSlip holder bundle"[\s\S]*?selector: '\[data-gsn-trust-document-certificate="trustslip-holder"\]'[\s\S]*?result\.name\.includes\("TrustSlip"\) && Object\.keys\(result\.delayed\)\.length > 0/,
+  "Live Trust first-paint audit must prove both deployed Trust routes render and TrustSlip has zero delayed private Decision Pack reads."
 );
 
 assertContains(
