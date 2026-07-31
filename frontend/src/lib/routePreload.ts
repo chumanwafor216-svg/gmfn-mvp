@@ -78,14 +78,14 @@ const ROUTE_LOADERS: Array<{
 ];
 
 const CORE_ROUTE_KEYS = [
-  "dashboard",
   "community-home",
   "marketplace",
+  "identity-home",
+  "dashboard",
   "shop-gallery",
   "trust-slip",
   "finance",
   "loans",
-  "identity-home",
 ];
 
 const SECONDARY_HEAVY_ROUTE_KEYS = [
