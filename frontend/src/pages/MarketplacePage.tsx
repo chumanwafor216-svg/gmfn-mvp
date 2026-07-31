@@ -129,6 +129,10 @@ const MarketplaceMoneySection = lazy(
   () => import("./marketplace/MarketplaceMoneySection")
 );
 
+const MarketplaceDemandSection = lazy(
+  () => import("./marketplace/MarketplaceDemandSection")
+);
+
 const CommunityNoticeModal = lazy(
   () => import("../components/CommunityNoticeModal")
 );
@@ -12425,122 +12429,18 @@ export default function MarketplacePage() {
         </Suspense>
       ) : null}
       {sectionsOpen.demand ? (
-      <section
-        id="marketplace-demand-box"
-        style={{ ...pageCard("#FFFDF7"), ...marketplaceSectionStyle(), order: 5 }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 14,
-              minWidth: 0,
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={marketplaceOsIconStyle(
-                "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)",
-                true
-              )}
-            >
-              <MarketplaceGlyph name="demand" size={26} />
-            </span>
-            <div style={{ minWidth: 0 }}>
-              <div
-                style={{
-                  color: "#08233A",
-                  fontSize: isCompact ? 20 : 24,
-                  fontWeight: 950,
-                  lineHeight: 1.08,
-                  overflowWrap: "break-word",
-                }}
-              >
-                Demand Box
-              </div>
-              <div style={{ marginTop: 6, ...helperText() }}>
-                Local needs and offers, separate from ROSCA savings and Support
-                requests.
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(true)}>Standalone lane</span>
-            <StableButton
-              debugId="marketplace.demand.toggle"
-              type="button"
-              onClick={(event) => toggleSectionFromButton(event, "demand")}
-              style={marketplaceActionStyle("soft")}
-            >
-              {sectionsOpen.demand ? "Collapse" : "Open"}
-            </StableButton>
-          </div>
-        </div>
-
-        {sectionsOpen.demand ? (
-          <div
-            {...marketplaceSurfaceTouchProps("marketplace.demand.module")}
-            style={marketplaceDepartmentShellStyle("demand", isCompact)}
-          >
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 190px",
-                gap: 12,
-                alignItems: "center",
-              }}
-            >
-              <div style={{ minWidth: 0 }}>
-                <div style={sectionLabel()}>Local needs and offers</div>
-                <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
-                  Use this when people here should see what is needed, wanted,
-                  available, or being sourced inside this community market.
-                </div>
-                <div
-                  style={{
-                    marginTop: 10,
-                    display: "flex",
-                    gap: 8,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <span style={stableStatusPillStyle(Boolean(activeCommunityName))}>
-                    {activeCommunityName || "Select marketplace"}
-                  </span>
-                  <span style={stableStatusPillStyle(Boolean(activeCommunityId))}>
-                    ID: {activeCommunityId || "not ready"}
-                  </span>
-                  <span style={stableStatusPillStyle(Boolean(currentGmfnId))}>
-                    GSN ID: {currentGmfnId || "not ready"}
-                  </span>
-                </div>
-              </div>
-
-              <StableButton
-                debugId="marketplace.demand.open"
-                type="button"
-                onClick={(event) => openMarketplaceCta(event, "demandBox")}
-                style={{
-                  ...marketplaceInlineActionStyle("primary", false, isCompact),
-                  gridColumn: isCompact ? "1 / -1" : undefined,
-                }}
-              >
-                Open Demand Box
-              </StableButton>
-            </div>
-          </div>
-        ) : null}
-      </section>
+        <Suspense fallback={null}>
+          <MarketplaceDemandSection
+            isCompact={isCompact}
+            isOpen={sectionsOpen.demand}
+            activeCommunityId={activeCommunityId}
+            activeCommunityName={activeCommunityName}
+            currentGmfnId={currentGmfnId}
+            marketplaceSurfaceTouchProps={marketplaceSurfaceTouchProps}
+            onToggleDemand={(event) => toggleSectionFromButton(event, "demand")}
+            openMarketplaceCta={openMarketplaceCta}
+          />
+        </Suspense>
       ) : null}
 
       {sectionsOpen.support ? (

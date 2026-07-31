@@ -9,14 +9,17 @@ const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const marketplaceBoardFile = "src/pages/marketplace/MarketplaceBoardSection.tsx";
 const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
 const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
+const marketplaceDemandFile = "src/pages/marketplace/MarketplaceDemandSection.tsx";
 const mobileTapGuardFile = "src/lib/mobileTapGuard.ts";
 const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const marketplaceBoardSource = readFileSync(join(frontendRoot, marketplaceBoardFile), "utf8");
 const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
 const marketplaceSupportSource = readFileSync(join(frontendRoot, marketplaceSupportFile), "utf8");
+const marketplaceDemandSource = readFileSync(join(frontendRoot, marketplaceDemandFile), "utf8");
 const marketplaceSource = marketplacePageSource
   .replace(/<MarketplaceBoardSection[\s\S]*?\/>/, marketplaceBoardSource)
   .replace(/<MarketplaceMembersSection[\s\S]*?\/>/, marketplaceMembersSource)
+  .replace(/<MarketplaceDemandSection[\s\S]*?\/>/, marketplaceDemandSource)
   .replace(/<MarketplaceSupportSection[\s\S]*?\/>/, marketplaceSupportSource);
 const tapGuardSource = readFileSync(join(frontendRoot, mobileTapGuardFile), "utf8");
 const findings = [];

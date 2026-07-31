@@ -8,11 +8,14 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
 const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
+const marketplaceDemandFile = "src/pages/marketplace/MarketplaceDemandSection.tsx";
 const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
 const marketplaceSupportSource = readFileSync(join(frontendRoot, marketplaceSupportFile), "utf8");
+const marketplaceDemandSource = readFileSync(join(frontendRoot, marketplaceDemandFile), "utf8");
 const source = marketplacePageSource
   .replace(/<MarketplaceMembersSection\b[\s\S]*?\n\s*\/>/, marketplaceMembersSource)
+  .replace(/<MarketplaceDemandSection\b[\s\S]*?\n\s*\/>/, marketplaceDemandSource)
   .replace(/<MarketplaceSupportSection\b[\s\S]*?\n\s*\/>/, marketplaceSupportSource);
 const findings = [];
 
@@ -124,7 +127,7 @@ assertContains(
 );
 
 assertContains(
-  /import GsnSnapshotPaperCard from "\.\.\/components\/GsnSnapshotPaperCard"/,
+  /const GsnSnapshotPaperCard = lazy\([\s\S]*?import\("\.\.\/components\/GsnSnapshotPaperCard"\)/,
   "Protected Trade evidence papers must use the shared GSN headed-paper card."
 );
 
