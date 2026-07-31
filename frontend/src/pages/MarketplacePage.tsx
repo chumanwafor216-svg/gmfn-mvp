@@ -5643,6 +5643,11 @@ export default function MarketplacePage() {
 
       const currentMemberGmfnId = safeStr(meRes?.gmfn_id || "");
 
+      setMe(meRes || null);
+      setSelectedCommunity(resolvedCommunity);
+      setTrustSlip(trustSlipRes || null);
+      setLoading(false);
+
       const [
         membersRes,
         shopsRes,

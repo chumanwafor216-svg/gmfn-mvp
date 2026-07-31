@@ -1551,10 +1551,9 @@ export default function CommunityHomePage() {
       setLoading(true);
 
       try {
-        const [meRes, clansRes, domainsRes] = await Promise.all([
+        const [meRes, clansRes] = await Promise.all([
           getMe().catch(() => null),
           listMyClans().catch(() => ({ items: [] })),
-          listMyCommunityDomains().catch(() => ({ items: null })),
         ]);
 
         const rows: ClanItem[] = Array.isArray(clansRes)
@@ -1562,28 +1561,38 @@ export default function CommunityHomePage() {
           : Array.isArray(clansRes?.items)
           ? clansRes.items
           : [];
+
+        const storedId = Number(getSelectedClanId() || 0);
+        const current =
+          rows.find((item) => getClanId(item) === storedId) || rows[0] || null;
+
+        if (!alive) return;
+
+        setMe(meRes || null);
+        setClans(rows);
+        setSelectedClan(current);
+        setLoading(false);
+
+        if (current) {
+          const currentId = getClanId(current);
+
+          if (currentId && currentId !== storedId) {
+            void selectClan(currentId).catch(() => null);
+          }
+        }
+
+        const domainsRes = await listMyCommunityDomains().catch(() => ({
+          items: null,
+        }));
+
+        if (!alive) return;
+
         const domainRows = Array.isArray(domainsRes)
           ? domainsRes
           : Array.isArray(domainsRes?.items)
           ? domainsRes.items
           : null;
 
-        const storedId = Number(getSelectedClanId() || 0);
-        const current =
-          rows.find((item) => getClanId(item) === storedId) || rows[0] || null;
-
-        if (current) {
-          const currentId = getClanId(current);
-
-          if (currentId && currentId !== storedId) {
-            await selectClan(currentId).catch(() => null);
-          }
-        }
-
-        if (!alive) return;
-
-        setMe(meRes || null);
-        setClans(rows);
         const normalizedDomainRows = Array.isArray(domainRows)
           ? domainRows
               .map(normalizeCommunityDomainListRow)
@@ -1592,7 +1601,6 @@ export default function CommunityHomePage() {
 
         setCommunityDomainRows(normalizedDomainRows);
         setCommunityDomainCount(Array.isArray(domainRows) ? normalizedDomainRows.length : null);
-        setSelectedClan(current);
       } finally {
         if (alive) {
           setLoading(false);

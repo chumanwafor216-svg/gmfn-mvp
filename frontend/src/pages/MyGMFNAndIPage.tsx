@@ -1623,9 +1623,26 @@ export default function MyGMFNAndIPage() {
       setLoading(true);
 
       try {
-        const [meRes, clanRes, settingsRes, trustSlipRes] = await Promise.all([
+        const [meRes, clanRes] = await Promise.all([
           getMe().catch(() => null),
           getCurrentClan().catch(() => null),
+        ]);
+
+        if (!alive) return;
+
+        setMe(meRes || null);
+        setProfileDisplayName(
+          firstTruthy(
+            meRes?.display_name,
+            meRes?.nickname,
+            meRes?.name,
+            meRes?.first_name
+          )
+        );
+        setCurrentClan(clanRes || null);
+        setLoading(false);
+
+        const [settingsRes, trustSlipRes] = await Promise.all([
           getMySettings().catch(() => null),
           callFirstAvailable(
             [
@@ -1642,16 +1659,6 @@ export default function MyGMFNAndIPage() {
 
         const localSettings = readLocalJSON(SETTINGS_STORAGE_KEY, DEFAULT_SETTINGS);
 
-        setMe(meRes || null);
-        setProfileDisplayName(
-          firstTruthy(
-            meRes?.display_name,
-            meRes?.nickname,
-            meRes?.name,
-            meRes?.first_name
-          )
-        );
-        setCurrentClan(clanRes || null);
         setTrustSlipSummary(normalizeIdentityTrustSlip(trustSlipRes));
         setSettings(
           settingsRes ? normalizeSettings(settingsRes) : normalizeSettings(localSettings)
