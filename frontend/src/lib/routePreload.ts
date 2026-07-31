@@ -77,16 +77,20 @@ const ROUTE_LOADERS: Array<{
   },
 ];
 
-const CORE_ROUTE_KEYS = [
+const PRIORITY_CORE_ROUTE_KEYS = [
   "community-home",
   "marketplace",
   "identity-home",
+];
+
+const STANDARD_CORE_ROUTE_KEYS = [
   "dashboard",
   "shop-gallery",
   "trust-slip",
   "finance",
   "loans",
 ];
+
 
 const SECONDARY_HEAVY_ROUTE_KEYS = [
   "trust-passport",
@@ -121,6 +125,11 @@ function shouldPreloadSecondaryHeavyRoutes(): boolean {
   return routeConnectionEffectiveType() !== "3g";
 }
 
+function scheduleSoon(task: () => void, delayMs: number): void {
+  if (typeof window === "undefined") return;
+  window.setTimeout(task, delayMs);
+}
+
 function scheduleIdle(task: () => void, delayMs: number): void {
   if (typeof window === "undefined") return;
   window.setTimeout(() => {
@@ -152,8 +161,12 @@ export function preloadRouteForPath(to: string): void {
 
 export function preloadCoreAppRoutes(): void {
   if (!shouldPreloadRouteChunks()) return;
-  CORE_ROUTE_KEYS.forEach((key, index) => {
-    scheduleIdle(() => preloadRouteByKey(key), 450 + index * 550);
+  PRIORITY_CORE_ROUTE_KEYS.forEach((key, index) => {
+    scheduleSoon(() => preloadRouteByKey(key), 250 + index * 400);
+  });
+
+  STANDARD_CORE_ROUTE_KEYS.forEach((key, index) => {
+    scheduleIdle(() => preloadRouteByKey(key), 1900 + index * 650);
   });
 
   if (!shouldPreloadSecondaryHeavyRoutes()) return;

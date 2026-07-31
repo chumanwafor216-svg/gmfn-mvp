@@ -124,6 +124,7 @@
     "audit:startup-root-boundary": "node tools/audit-startup-root-boundary.mjs",
     "audit:startup-timing": "node tools/audit-startup-timing.mjs",
     "audit:app-tab-first-paint": "node tools/audit-app-tab-first-paint.mjs",
+    "audit:slow-tab-preload-priority": "node tools/audit-slow-tab-preload-priority.mjs",
     "audit:global-action-debugids": "node tools/audit-global-action-debugids.mjs",
     "audit:global-raw-action-elements": "node tools/audit-global-raw-action-elements.mjs",
     "audit:icon-protocol": "node tools/audit-icon-protocol.mjs",
