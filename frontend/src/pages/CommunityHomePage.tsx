@@ -1369,6 +1369,21 @@ function writeLocalJSON(key: string, value: any) {
   }
 }
 
+function waitForCommunityHomeFirstPaint(): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
+
+  return new Promise((resolve) => {
+    const finish = () => window.setTimeout(resolve, 0);
+
+    if (typeof window.requestAnimationFrame === "function") {
+      window.requestAnimationFrame(finish);
+      return;
+    }
+
+    finish();
+  });
+}
+
 function defaultCollapseState(): CollapseState {
   return {
     communities: true,
@@ -1580,6 +1595,9 @@ export default function CommunityHomePage() {
             void selectClan(currentId).catch(() => null);
           }
         }
+
+        await waitForCommunityHomeFirstPaint();
+        if (!alive) return;
 
         const domainsRes = await listMyCommunityDomains().catch(() => ({
           items: null,
