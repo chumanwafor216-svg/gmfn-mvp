@@ -751,7 +751,7 @@ assertNotContains(
 );
 
 assertContains(
-  "frontend/src/pages/TrustScorePage.tsx",
+  "frontend/src/pages/trustScore/TrustPassportFinanceLane.tsx",
   /trustIconBadge\("financeInstitution", isCompact \? 46 : 54, "blue"\)[\s\S]*?Plain rule/,
   "Trust Passport finance plain-rule block must keep the 3D finance institution icon."
 );
