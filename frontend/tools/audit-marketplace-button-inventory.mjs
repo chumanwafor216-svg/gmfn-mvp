@@ -9,6 +9,7 @@ const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const marketplaceBoardFile = "src/pages/marketplace/MarketplaceBoardSection.tsx";
 const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
 const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
+const marketplaceMoneyFile = "src/pages/marketplace/MarketplaceMoneySection.tsx";
 const appLayoutFile = "src/layout/AppLayout.tsx";
 const appRoutesFile = "src/lib/appRoutes.ts";
 const ctaTargetsFile = "src/lib/ctaTargets.ts";
@@ -17,10 +18,12 @@ const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), 
 const marketplaceBoardSource = readFileSync(join(frontendRoot, marketplaceBoardFile), "utf8");
 const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
 const marketplaceSupportSource = readFileSync(join(frontendRoot, marketplaceSupportFile), "utf8");
+const marketplaceMoneySource = readFileSync(join(frontendRoot, marketplaceMoneyFile), "utf8");
 const source = marketplacePageSource
   .replace(/<MarketplaceBoardSection[\s\S]*?\/>/, marketplaceBoardSource)
   .replace(/<MarketplaceMembersSection[\s\S]*?\/>/, marketplaceMembersSource)
-  .replace(/<MarketplaceSupportSection[\s\S]*?\/>/, marketplaceSupportSource);
+  .replace(/<MarketplaceSupportSection[\s\S]*?\/>/, marketplaceSupportSource)
+  .replace(/<MarketplaceMoneySection[\s\S]*?\/>/, marketplaceMoneySource);
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const appRoutesSource = readFileSync(join(frontendRoot, appRoutesFile), "utf8");
 const ctaTargetsSource = readFileSync(join(frontendRoot, ctaTargetsFile), "utf8");
@@ -838,7 +841,7 @@ assertContains(
 );
 
 assertContains(
-  /Money In Rail[\s\S]{0,1500}Pay this account[\s\S]{0,1500}debugId="marketplace\.money\.pay-in-account"[\s\S]{0,1500}setPayInEditorOpen\(\(value\) => !value\)[\s\S]{0,1500}stableHeight=\{isCompact \? 38 : 42\}[\s\S]{0,1500}(Set rail|Open rail|Close rail)/,
+  /Money In Rail[\s\S]{0,1500}Pay this account[\s\S]{0,1500}debugId="marketplace\.money\.pay-in-account"[\s\S]{0,1500}onClick=\{onTogglePayInEditor\}[\s\S]{0,1500}stableHeight=\{isCompact \? 38 : 42\}[\s\S]{0,1500}(Set rail|Open rail|Close rail)/,
   "Marketplace Money In Rail card button must open the pay-in editor in the money section."
 );
 

@@ -6,7 +6,13 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
-const source = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
+const marketplaceMoneyFile = "src/pages/marketplace/MarketplaceMoneySection.tsx";
+const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
+const marketplaceMoneySource = readFileSync(join(frontendRoot, marketplaceMoneyFile), "utf8");
+const source = marketplacePageSource.replace(
+  /<MarketplaceMoneySection[\s\S]*?\/>/,
+  marketplaceMoneySource
+);
 const findings = [];
 
 function lineAt(index) {
@@ -69,7 +75,7 @@ assertContains(
 );
 
 assertContains(
-  /const \[sectionsTouched, setSectionsTouched\][\s\S]*?useState<SectionState>\(DEFAULT_SECTION_STATE\)[\s\S]*?\{sectionsOpen\.money \|\| sectionsTouched\.money \? \([\s\S]*?debugId="marketplace\.money\.toggle"[\s\S]*?\{sectionsOpen\.money \? "Collapse" : "Open"\}/,
+  /const \[sectionsTouched, setSectionsTouched\][\s\S]*?useState<SectionState>\(DEFAULT_SECTION_STATE\)[\s\S]*?\{sectionsOpen\.money \|\| sectionsTouched\.money \? \([\s\S]*?debugId="marketplace\.money\.toggle"[\s\S]*?\{isOpen \? "Collapse" : "Open"\}/,
   "Collapsed Money Pool must keep its local header and Open button after first use instead of removing its own reopen control."
 );
 

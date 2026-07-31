@@ -93,10 +93,21 @@ const marketplaceSupportPath = join(
   "marketplace",
   "MarketplaceSupportSection.tsx"
 );
-const marketplaceRawSource = readFileSync(marketplacePagePath, "utf8").replace(
-  /<MarketplaceSupportSection\b[\s\S]*?\n\s*\/>/,
-  readFileSync(marketplaceSupportPath, "utf8")
+const marketplaceMoneyPath = join(
+  sourceRoot,
+  "pages",
+  "marketplace",
+  "MarketplaceMoneySection.tsx"
 );
+const marketplaceRawSource = readFileSync(marketplacePagePath, "utf8")
+  .replace(
+    /<MarketplaceSupportSection\b[\s\S]*?\n\s*\/>/,
+    readFileSync(marketplaceSupportPath, "utf8")
+  )
+  .replace(
+    /<MarketplaceMoneySection\b[\s\S]*?\n\s*\/>/,
+    readFileSync(marketplaceMoneyPath, "utf8")
+  );
 const marketplaceLines = marketplaceRawSource.split(/\r?\n/);
 const marketplaceSource = marketplaceLines.join("\n");
 const financePagePath = join(sourceRoot, "pages", "FinancePage.tsx");
@@ -820,9 +831,9 @@ const marketplaceActionSystemChecks = [
   },
   {
     label:
-      "Marketplace inactive touched section shells must not render after another body is chosen",
+      "Marketplace body lanes must keep only one open detail body while Money keeps its audited touched header",
     pattern:
-      /\{sectionsOpen\.money \? \([\s\S]*?\{sectionsOpen\.tools \? \([\s\S]*?\{sectionsOpen\.members \? \([\s\S]*?\{sectionsOpen\.support \? \(/,
+      /\{sectionsOpen\.money \|\| sectionsTouched\.money \? \([\s\S]*?\{isOpen \? \([\s\S]*?\{sectionsOpen\.rosca \? \([\s\S]*?\{sectionsOpen\.tools \? \([\s\S]*?\{sectionsOpen\.members \? \([\s\S]*?\{sectionsOpen\.support \? \(/,
   },
   {
     label:
