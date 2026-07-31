@@ -9,14 +9,17 @@ const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
 const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
 const marketplaceDemandFile = "src/pages/marketplace/MarketplaceDemandSection.tsx";
+const marketplaceTradeEvidenceFile = "src/pages/marketplace/MarketplaceTradeEvidenceSection.tsx";
 const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
 const marketplaceSupportSource = readFileSync(join(frontendRoot, marketplaceSupportFile), "utf8");
 const marketplaceDemandSource = readFileSync(join(frontendRoot, marketplaceDemandFile), "utf8");
+const marketplaceTradeEvidenceSource = readFileSync(join(frontendRoot, marketplaceTradeEvidenceFile), "utf8");
 const source = marketplacePageSource
   .replace(/<MarketplaceMembersSection\b[\s\S]*?\n\s*\/>/, marketplaceMembersSource)
   .replace(/<MarketplaceDemandSection\b[\s\S]*?\n\s*\/>/, marketplaceDemandSource)
-  .replace(/<MarketplaceSupportSection\b[\s\S]*?\n\s*\/>/, marketplaceSupportSource);
+  .replace(/<MarketplaceSupportSection\b[\s\S]*?\n\s*\/>/, marketplaceSupportSource)
+  .replace(/<MarketplaceTradeEvidenceSection\b[\s\S]*?\n\s*\/>/, marketplaceTradeEvidenceSource);
 const findings = [];
 
 function lineAt(index) {
@@ -127,7 +130,7 @@ assertContains(
 );
 
 assertContains(
-  /const GsnSnapshotPaperCard = lazy\([\s\S]*?import\("\.\.\/components\/GsnSnapshotPaperCard"\)/,
+  /const GsnSnapshotPaperCard = lazy\([\s\S]*?import\("(?:\.\.\/components|\.\.\/\.\.\/components)\/GsnSnapshotPaperCard"\)/,
   "Protected Trade evidence papers must use the shared GSN headed-paper card."
 );
 

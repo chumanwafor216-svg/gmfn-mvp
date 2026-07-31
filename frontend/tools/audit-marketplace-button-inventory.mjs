@@ -12,6 +12,7 @@ const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.
 const marketplaceMoneyFile = "src/pages/marketplace/MarketplaceMoneySection.tsx";
 const marketplaceDemandFile = "src/pages/marketplace/MarketplaceDemandSection.tsx";
 const marketplaceRoscaFile = "src/pages/marketplace/MarketplaceRoscaSection.tsx";
+const marketplaceTradeEvidenceFile = "src/pages/marketplace/MarketplaceTradeEvidenceSection.tsx";
 const appLayoutFile = "src/layout/AppLayout.tsx";
 const appRoutesFile = "src/lib/appRoutes.ts";
 const ctaTargetsFile = "src/lib/ctaTargets.ts";
@@ -23,12 +24,14 @@ const marketplaceSupportSource = readFileSync(join(frontendRoot, marketplaceSupp
 const marketplaceMoneySource = readFileSync(join(frontendRoot, marketplaceMoneyFile), "utf8");
 const marketplaceDemandSource = readFileSync(join(frontendRoot, marketplaceDemandFile), "utf8");
 const marketplaceRoscaSource = readFileSync(join(frontendRoot, marketplaceRoscaFile), "utf8");
+const marketplaceTradeEvidenceSource = readFileSync(join(frontendRoot, marketplaceTradeEvidenceFile), "utf8");
 const source = marketplacePageSource
   .replace(/<MarketplaceBoardSection[\s\S]*?\/>/, marketplaceBoardSource)
   .replace(/<MarketplaceMembersSection[\s\S]*?\/>/, marketplaceMembersSource)
   .replace(/<MarketplaceSupportSection[\s\S]*?\/>/, marketplaceSupportSource)
   .replace(/<MarketplaceDemandSection[\s\S]*?\/>/, marketplaceDemandSource)
   .replace(/<MarketplaceRoscaSection[\s\S]*?\/>/, marketplaceRoscaSource)
+  .replace(/<MarketplaceTradeEvidenceSection[\s\S]*?\/>/, marketplaceTradeEvidenceSource)
   .replace(/<MarketplaceMoneySection[\s\S]*?\/>/, marketplaceMoneySource);
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const appRoutesSource = readFileSync(join(frontendRoot, appRoutesFile), "utf8");
