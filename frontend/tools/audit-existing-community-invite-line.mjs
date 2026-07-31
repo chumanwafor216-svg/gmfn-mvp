@@ -8,7 +8,16 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = join(frontendRoot, "..");
 
 function readFromRoot(relativePath) {
-  return readFileSync(join(repoRoot, relativePath), "utf8");
+  const text = readFileSync(join(repoRoot, relativePath), "utf8");
+  if (relativePath !== "frontend/src/pages/MarketplacePage.tsx") return text;
+
+  return text.replace(
+    /<MarketplaceToolsSection\b[\s\S]*?\n\s*\/>/,
+    readFileSync(
+      join(repoRoot, "frontend/src/pages/marketplace/MarketplaceToolsSection.tsx"),
+      "utf8"
+    )
+  );
 }
 
 function assertContains(file, pattern, message) {

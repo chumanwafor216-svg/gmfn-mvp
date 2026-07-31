@@ -11,6 +11,7 @@ const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.
 const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
 const marketplaceMoneyFile = "src/pages/marketplace/MarketplaceMoneySection.tsx";
 const marketplaceRoscaFile = "src/pages/marketplace/MarketplaceRoscaSection.tsx";
+const marketplaceToolsFile = "src/pages/marketplace/MarketplaceToolsSection.tsx";
 const marketplaceTradeEvidenceFile = "src/pages/marketplace/MarketplaceTradeEvidenceSection.tsx";
 const marketplaceDemandFile = "src/pages/marketplace/MarketplaceDemandSection.tsx";
 const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
@@ -19,6 +20,7 @@ const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMemb
 const marketplaceSupportSource = readFileSync(join(frontendRoot, marketplaceSupportFile), "utf8");
 const marketplaceMoneySource = readFileSync(join(frontendRoot, marketplaceMoneyFile), "utf8");
 const marketplaceRoscaSource = readFileSync(join(frontendRoot, marketplaceRoscaFile), "utf8");
+const marketplaceToolsSource = readFileSync(join(frontendRoot, marketplaceToolsFile), "utf8");
 const marketplaceTradeEvidenceSource = readFileSync(join(frontendRoot, marketplaceTradeEvidenceFile), "utf8");
 const marketplaceDemandSource = readFileSync(join(frontendRoot, marketplaceDemandFile), "utf8");
 const source = marketplacePageSource
@@ -27,6 +29,7 @@ const source = marketplacePageSource
   .replace(/<MarketplaceSupportSection\b[\s\S]*?\n\s*\/>/, marketplaceSupportSource)
   .replace(/<MarketplaceMoneySection\b[\s\S]*?\n\s*\/>/, marketplaceMoneySource)
   .replace(/<MarketplaceRoscaSection\b[\s\S]*?\n\s*\/>/, marketplaceRoscaSource)
+  .replace(/<MarketplaceToolsSection\b[\s\S]*?\n\s*\/>/, marketplaceToolsSource)
   .replace(/<MarketplaceTradeEvidenceSection\b[\s\S]*?\n\s*\/>/, marketplaceTradeEvidenceSource)
   .replace(/<MarketplaceDemandSection\b[\s\S]*?\n\s*\/>/, marketplaceDemandSource);
 const findings = [];

@@ -8,17 +8,21 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
 const marketplaceDemandFile = "src/pages/marketplace/MarketplaceDemandSection.tsx";
+const marketplaceToolsFile = "src/pages/marketplace/MarketplaceToolsSection.tsx";
+const marketplaceTradeEvidenceFile = "src/pages/marketplace/MarketplaceTradeEvidenceSection.tsx";
 const packageFile = "package.json";
 const protocolFile = "../docs/GUIDED_WORK_SURFACE_PROTOCOL.md";
 const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
 const marketplaceDemandSource = readFileSync(join(frontendRoot, marketplaceDemandFile), "utf8");
+const marketplaceToolsSource = readFileSync(join(frontendRoot, marketplaceToolsFile), "utf8");
+const marketplaceTradeEvidenceSource = readFileSync(join(frontendRoot, marketplaceTradeEvidenceFile), "utf8");
 const packageSource = readFileSync(join(frontendRoot, packageFile), "utf8");
 const protocolSource = readFileSync(join(frontendRoot, protocolFile), "utf8");
-const marketplaceSource = marketplacePageSource.replace(
-  /<MarketplaceDemandSection\b[\s\S]*?\n\s*\/>/,
-  marketplaceDemandSource
-);
+const marketplaceSource = marketplacePageSource
+  .replace(/<MarketplaceDemandSection\b[\s\S]*?\n\s*\/>/, marketplaceDemandSource)
+  .replace(/<MarketplaceToolsSection\b[\s\S]*?\n\s*\/>/, marketplaceToolsSource)
+  .replace(/<MarketplaceTradeEvidenceSection\b[\s\S]*?\n\s*\/>/, marketplaceTradeEvidenceSource);
 const findings = [];
 
 function lineAt(source, index) {

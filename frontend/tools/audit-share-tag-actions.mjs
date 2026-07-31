@@ -7,7 +7,16 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 function read(relativePath) {
-  return readFileSync(join(frontendRoot, relativePath), "utf8");
+  const text = readFileSync(join(frontendRoot, relativePath), "utf8");
+  if (relativePath !== "src/pages/MarketplacePage.tsx") return text;
+
+  return text.replace(
+    /<MarketplaceToolsSection\b[\s\S]*?\n\s*\/>/,
+    readFileSync(
+      join(frontendRoot, "src/pages/marketplace/MarketplaceToolsSection.tsx"),
+      "utf8"
+    )
+  );
 }
 
 const findings = [];

@@ -87,6 +87,18 @@ for (const filePath of listSourceFiles(sourceRoot)) {
 }
 
 const marketplacePagePath = join(sourceRoot, "pages", "MarketplacePage.tsx");
+const marketplaceBoardPath = join(
+  sourceRoot,
+  "pages",
+  "marketplace",
+  "MarketplaceBoardSection.tsx"
+);
+const marketplaceMembersPath = join(
+  sourceRoot,
+  "pages",
+  "marketplace",
+  "MarketplaceMembersSection.tsx"
+);
 const marketplaceSupportPath = join(
   sourceRoot,
   "pages",
@@ -105,7 +117,33 @@ const marketplaceRoscaPath = join(
   "marketplace",
   "MarketplaceRoscaSection.tsx"
 );
+const marketplaceDemandPath = join(
+  sourceRoot,
+  "pages",
+  "marketplace",
+  "MarketplaceDemandSection.tsx"
+);
+const marketplaceToolsPath = join(
+  sourceRoot,
+  "pages",
+  "marketplace",
+  "MarketplaceToolsSection.tsx"
+);
+const marketplaceTradeEvidencePath = join(
+  sourceRoot,
+  "pages",
+  "marketplace",
+  "MarketplaceTradeEvidenceSection.tsx"
+);
 const marketplaceRawSource = readFileSync(marketplacePagePath, "utf8")
+  .replace(
+    /<MarketplaceBoardSection\b[\s\S]*?\n\s*\/>/,
+    readFileSync(marketplaceBoardPath, "utf8")
+  )
+  .replace(
+    /<MarketplaceMembersSection\b[\s\S]*?\n\s*\/>/,
+    readFileSync(marketplaceMembersPath, "utf8")
+  )
   .replace(
     /<MarketplaceSupportSection\b[\s\S]*?\n\s*\/>/,
     readFileSync(marketplaceSupportPath, "utf8")
@@ -114,12 +152,28 @@ const marketplaceRawSource = readFileSync(marketplacePagePath, "utf8")
     /<MarketplaceMoneySection\b[\s\S]*?\n\s*\/>/,
     readFileSync(marketplaceMoneyPath, "utf8")
   )
-  .replace(
+.replace(
     /<MarketplaceRoscaSection\b[\s\S]*?\n\s*\/>/,
     readFileSync(marketplaceRoscaPath, "utf8")
+  )
+  .replace(
+    /<MarketplaceDemandSection\b[\s\S]*?\n\s*\/>/,
+    readFileSync(marketplaceDemandPath, "utf8")
+  )
+  .replace(
+    /<MarketplaceToolsSection\b[\s\S]*?\n\s*\/>/,
+    readFileSync(marketplaceToolsPath, "utf8")
+  )
+  .replace(
+    /<MarketplaceTradeEvidenceSection\b[\s\S]*?\n\s*\/>/,
+    readFileSync(marketplaceTradeEvidencePath, "utf8")
   );
 const marketplaceLines = marketplaceRawSource.split(/\r?\n/);
 const marketplaceSource = marketplaceLines.join("\n");
+const marketplaceHasStableButtonImport =
+  /import \{[^}]*\bStableButton\b[^}]*\} from "(?:\.\.\/|\.\.\/\.\.\/)components\/StableButton";/.test(
+    marketplaceSource
+  );
 const financePagePath = join(sourceRoot, "pages", "FinancePage.tsx");
 const financePageSource = readFileSync(financePagePath, "utf8");
 const shopControlPagePath = join(sourceRoot, "pages", "ShopControlPage.tsx");
@@ -214,7 +268,7 @@ marketplaceLines.forEach((line, index) => {
 
   if (
     line.trim().startsWith("disabled=") &&
-    !marketplaceSource.includes('import { StableButton, StableCtaLink } from "../components/StableButton";')
+    !marketplaceHasStableButtonImport
   ) {
     findings.push({
       file: relative(frontendRoot, marketplacePagePath),
@@ -245,7 +299,7 @@ marketplaceWorkspaceLines.forEach((line, index) => {
 marketplaceLines.forEach((line, index) => {
   if (!line.includes("<StableButton")) return;
   marketplaceButtonCount += 1;
-  if (!marketplaceSource.includes('import { StableButton, StableCtaLink } from "../components/StableButton";')) {
+  if (!marketplaceHasStableButtonImport) {
     findings.push({
       file: relative(frontendRoot, marketplacePagePath),
       line: index + 1,

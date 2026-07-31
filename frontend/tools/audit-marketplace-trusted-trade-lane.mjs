@@ -6,16 +6,19 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
+const marketplaceToolsFile = "src/pages/marketplace/MarketplaceToolsSection.tsx";
 const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
 const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
 const marketplaceDemandFile = "src/pages/marketplace/MarketplaceDemandSection.tsx";
 const marketplaceTradeEvidenceFile = "src/pages/marketplace/MarketplaceTradeEvidenceSection.tsx";
 const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
+const marketplaceToolsSource = readFileSync(join(frontendRoot, marketplaceToolsFile), "utf8");
 const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
 const marketplaceSupportSource = readFileSync(join(frontendRoot, marketplaceSupportFile), "utf8");
 const marketplaceDemandSource = readFileSync(join(frontendRoot, marketplaceDemandFile), "utf8");
 const marketplaceTradeEvidenceSource = readFileSync(join(frontendRoot, marketplaceTradeEvidenceFile), "utf8");
 const source = marketplacePageSource
+  .replace(/<MarketplaceToolsSection\b[\s\S]*?\n\s*\/>/, marketplaceToolsSource)
   .replace(/<MarketplaceMembersSection\b[\s\S]*?\n\s*\/>/, marketplaceMembersSource)
   .replace(/<MarketplaceDemandSection\b[\s\S]*?\n\s*\/>/, marketplaceDemandSource)
   .replace(/<MarketplaceSupportSection\b[\s\S]*?\n\s*\/>/, marketplaceSupportSource)

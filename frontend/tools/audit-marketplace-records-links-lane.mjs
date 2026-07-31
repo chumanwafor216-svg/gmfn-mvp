@@ -6,7 +6,11 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
-const source = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
+const marketplaceToolsFile = "src/pages/marketplace/MarketplaceToolsSection.tsx";
+const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
+const marketplaceToolsSource = readFileSync(join(frontendRoot, marketplaceToolsFile), "utf8");
+const source = marketplacePageSource
+  .replace(/<MarketplaceToolsSection\b[\s\S]*?\n\s*\/>/, marketplaceToolsSource);
 const findings = [];
 
 function lineAt(index) {
@@ -55,7 +59,7 @@ assertContains(
 
 const recordsLinksSection = sectionBetween(
   /id="marketplace-owned-links"/,
-  /<section[\s\S]*?id="marketplace-trade-evidence"/
+  /<MarketplaceTradeEvidenceSection\b/
 );
 
 if (!recordsLinksSection.text) {
