@@ -1,9 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import NextActionGuide, {
   type NextActionGuideItem,
 } from "../components/NextActionGuide";
-import CompanionSettingsPanel from "../components/CompanionSettingsPanel";
 import GsnInstallPrompt from "../components/GsnInstallPrompt";
 import PageTopNav from "../components/PageTopNav";
 import {
@@ -41,6 +40,9 @@ import { buildTrustPassportViewModel } from "../lib/trustPassportViewModel";
 import { isIosManualInstallTarget } from "../lib/pwaInstall";
 import * as api from "../lib/api";
 
+const CompanionSettingsPanel = lazy(
+  () => import("../components/CompanionSettingsPanel")
+);
 type SettingsState = {
   notificationsMode: "summary" | "detailed";
   unreadFirst: boolean;
@@ -3443,7 +3445,9 @@ export default function MyGMFNAndIPage() {
             </div>
           </section>
 
-          <CompanionSettingsPanel />
+          <Suspense fallback={null}>
+            <CompanionSettingsPanel />
+          </Suspense>
         </>
       )}
     </div>

@@ -1,3 +1,10 @@
+## 2026-07-31 - Local Profile companion settings lazy load
+- Status: Local only, not pushed/deployed. Owner returned to `1` after the previous deploy, so keep this slice local until explicitly asked to push.
+- Lazy-loaded `frontend/src/components/CompanionSettingsPanel.tsx` from `frontend/src/pages/MyGMFNAndIPage.tsx` because the panel renders at the bottom of the Profile / My GSN Identity route and should not add parse weight to the first identity surface.
+- Production build shows `MyGMFNAndIPage` route chunk reduced from about `80.07 kB` to `71.29 kB`; new `CompanionSettingsPanel` lazy chunk is about `9.56 kB`.
+- Verification passed: `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:member-entry-actions`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run audit:app-tab-first-paint`.
+- First-paint audit with `21000ms` delayed secondary calls passed locally after the split: Community Home `2899ms`, Marketplace `2570ms`, Profile / My GSN Identity `1775ms`.
+- Devil's advocate: this reduces Profile route parse size but does not prove a visible production speedup by itself; the Profile first-paint was already under target, so this is preventive polish rather than a fix for a failing local metric.
 ## 2026-07-31 - Local Marketplace money lane lazy split and slow-tab timing check
 - Status: Local only, not pushed/deployed. Builds on local commits ahead of `origin/main`; owner selected `1`, so do not push/deploy until explicitly asked.
 - Split the Marketplace Money In / Pool detail lane out of `frontend/src/pages/MarketplacePage.tsx` into lazy child `frontend/src/pages/marketplace/MarketplaceMoneySection.tsx`, preserving debug IDs, Money In local pay-in editor behavior, Money Out withdrawal route links, stable button geometry, and the audited touched/collapsed Money header.
