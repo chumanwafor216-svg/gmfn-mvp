@@ -66,7 +66,6 @@ import {
   getMyTrustSlip,
   getMarketplaceShops,
   getMe,
-  getPoolMe,
   getRoscaCycles,
   getSelectedClanId,
   getStoredGmfnId,
@@ -1344,34 +1343,6 @@ function getShopForMember(
   return null;
 }
 
-function getPoolAmountText(payload: any): string {
-  const candidates = [
-    payload?.available_balance,
-    payload?.balance,
-    payload?.pool_balance,
-    payload?.summary?.available_balance,
-    payload?.summary?.balance,
-    payload?.totals?.available_balance,
-    payload?.totals?.balance,
-    payload?.wallet_balance,
-  ];
-
-  for (const candidate of candidates) {
-    const text = safeStr(candidate);
-    if (text) return text;
-  }
-
-  return "—";
-}
-
-function getPoolCurrency(payload: any): string {
-  return firstTruthy(
-    payload?.currency,
-    payload?.summary?.currency,
-    payload?.totals?.currency,
-    "NGN"
-  );
-}
 
 function getInviteUrl(payload: any): string {
   return normalizedJoinInviteUrl(payload);
@@ -4325,7 +4296,6 @@ export default function MarketplacePage() {
   );
   const [members, setMembers] = useState<ClanMember[]>([]);
   const [shops, setShops] = useState<MarketplaceShop[]>([]);
-  const [poolInfo, setPoolInfo] = useState<any>(null);
   const [marketplaceTrust, setMarketplaceTrust] = useState<any>(null);
   const [trustSlip, setTrustSlip] = useState<any>(null);
   const [marketplaceWisdom, setMarketplaceWisdom] = useState<{
@@ -4494,6 +4464,10 @@ export default function MarketplacePage() {
   const withdrawalHandoffAppliedRef = useRef("");
   const publicShopPrepareInFlightRef = useRef(false);
   const loadPageRequestRef = useRef(0);
+  const moneySurfaceRequestRef = useRef<{
+    key: string;
+    promise: Promise<CommunityMoneySurface | null>;
+  } | null>(null);
   const marketplaceWisdomExposureKeyRef = useRef("");
 
   const routeSelectedClanId = useMemo(() => {
@@ -5657,7 +5631,6 @@ export default function MarketplacePage() {
         membersRes,
         shopsRes,
         ownerShopRes,
-        poolRes,
         inviteRes,
         loansRes,
         trustRes,
@@ -5690,11 +5663,7 @@ export default function MarketplacePage() {
                 )
                 .catch(() => null)
             : Promise.resolve(null),
-          currentCommunityId
-            ? getPoolMe("NGN", 20, { clan_id: currentCommunityId }).catch(
-                () => null
-              )
-            : Promise.resolve(null),
+
           currentCommunityId
             ? getClanInviteLink(currentCommunityId).catch(() => null)
             : Promise.resolve(null),
@@ -5755,7 +5724,6 @@ export default function MarketplacePage() {
       setMembers(memberRows);
       setShops(shopRows);
       setPublicShopRecord(normalizeMarketplaceShop(ownerShopRes));
-      setPoolInfo(poolRes);
       setMarketplaceTrust(trustRes || null);
       setTrustSlip(trustSlipRes || null);
       setInviteLink(getInviteUrl(inviteRes));
@@ -6117,13 +6085,21 @@ export default function MarketplacePage() {
     }
 
     (async () => {
-      const surface = await getCommunityMoneySurface(
-        activeCommunityId,
-        currentGmfnId,
-        "NGN"
-      ).catch(() => null);
+      const requestKey = `${activeCommunityId}:${currentGmfnId}:NGN`;
+      const cachedRequest = moneySurfaceRequestRef.current;
+      const promise =
+        cachedRequest?.key === requestKey
+          ? cachedRequest.promise
+          : getCommunityMoneySurface(
+              activeCommunityId,
+              currentGmfnId,
+              "NGN"
+            ).catch(() => null);
 
-      if (!alive) return;
+      moneySurfaceRequestRef.current = { key: requestKey, promise };
+      const surface = await promise;
+
+      if (!alive || moneySurfaceRequestRef.current?.key !== requestKey) return;
       setMoneySurface(surface);
     })();
 
@@ -6604,12 +6580,9 @@ export default function MarketplacePage() {
     publicShopSocialLink,
   ]);
 
-  const poolAmount = getPoolAmountText(poolInfo);
-  const poolCurrency = getPoolCurrency(poolInfo);
-  const visiblePoolAmount = safeStr(moneySurface?.poolAmount || poolAmount || "-");
-  const visiblePoolCurrency = safeStr(
-    moneySurface?.poolCurrency || poolCurrency || "NGN"
-  );
+  const poolCurrency = safeStr(moneySurface?.poolCurrency || "NGN");
+  const visiblePoolAmount = safeStr(moneySurface?.poolAmount || "-");
+  const visiblePoolCurrency = poolCurrency;
 
   const communitySettlementReady = communityPayInReady(
     moneySurface?.communitySettlement || null
@@ -7104,7 +7077,7 @@ export default function MarketplacePage() {
       return isBorrowerSide ? sum + moneyNumber(item?.amount) : sum;
     }, 0);
   }, [loans]);
-  const localPoolBalance = moneyNumber(moneySurface?.poolAmount || poolAmount);
+  const localPoolBalance = moneyNumber(moneySurface?.poolAmount);
   const localLockedGuaranteeTotal = moneyNumber(
     moneySurface?.guarantorExposure?.totalLocked
   );
