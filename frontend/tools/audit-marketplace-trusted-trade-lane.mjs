@@ -159,7 +159,7 @@ assertNotContains(
 );
 
 assertContains(
-  /type MarketplaceDepartmentTone[\s\S]*?marketplaceDepartmentShellStyle[\s\S]*?marketplaceDepartmentHeaderStyle/,
+  /MarketplaceDepartmentTone[\s\S]*?function marketplaceDepartmentShellStyle[\s\S]*?function marketplaceDepartmentHeaderStyle/,
   "Marketplace must keep a shared department shell so nested marketplace arms are visibly separated system-wide."
 );
 
