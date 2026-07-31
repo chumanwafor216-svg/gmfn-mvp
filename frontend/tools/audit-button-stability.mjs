@@ -11,6 +11,7 @@ const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.
 const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
 const marketplaceMoneyFile = "src/pages/marketplace/MarketplaceMoneySection.tsx";
 const marketplaceDemandFile = "src/pages/marketplace/MarketplaceDemandSection.tsx";
+const marketplaceRoscaFile = "src/pages/marketplace/MarketplaceRoscaSection.tsx";
 const trustScoreFile = "src/pages/TrustScorePage.tsx";
 const trustScoreDocumentLaneFile = "src/pages/trustScore/TrustPassportDocumentLane.tsx";
 const trustScoreFinanceLaneFile = "src/pages/trustScore/TrustPassportFinanceLane.tsx";
@@ -38,6 +39,7 @@ function read(relativePath) {
       [/<MarketplaceSupportSection[\s\S]*?\/>/, marketplaceSupportFile],
       [/<MarketplaceMoneySection[\s\S]*?\/>/, marketplaceMoneyFile],
       [/<MarketplaceDemandSection[\s\S]*?\/>/, marketplaceDemandFile],
+      [/<MarketplaceRoscaSection[\s\S]*?\/>/, marketplaceRoscaFile],
     ]);
   }
 

@@ -99,6 +99,12 @@ const marketplaceMoneyPath = join(
   "marketplace",
   "MarketplaceMoneySection.tsx"
 );
+const marketplaceRoscaPath = join(
+  sourceRoot,
+  "pages",
+  "marketplace",
+  "MarketplaceRoscaSection.tsx"
+);
 const marketplaceRawSource = readFileSync(marketplacePagePath, "utf8")
   .replace(
     /<MarketplaceSupportSection\b[\s\S]*?\n\s*\/>/,
@@ -107,6 +113,10 @@ const marketplaceRawSource = readFileSync(marketplacePagePath, "utf8")
   .replace(
     /<MarketplaceMoneySection\b[\s\S]*?\n\s*\/>/,
     readFileSync(marketplaceMoneyPath, "utf8")
+  )
+  .replace(
+    /<MarketplaceRoscaSection\b[\s\S]*?\n\s*\/>/,
+    readFileSync(marketplaceRoscaPath, "utf8")
   );
 const marketplaceLines = marketplaceRawSource.split(/\r?\n/);
 const marketplaceSource = marketplaceLines.join("\n");

@@ -7,12 +7,19 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
+const marketplaceRoscaFile = "src/pages/marketplace/MarketplaceRoscaSection.tsx";
 const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const marketplaceSupportSource = readFileSync(join(frontendRoot, marketplaceSupportFile), "utf8");
-const source = marketplacePageSource.replace(
-  /<MarketplaceSupportSection\b[\s\S]*?\n\s*\/>/,
-  marketplaceSupportSource
-);
+const marketplaceRoscaSource = readFileSync(join(frontendRoot, marketplaceRoscaFile), "utf8");
+const source = marketplacePageSource
+  .replace(
+    /<MarketplaceSupportSection\b[\s\S]*?\n\s*\/>/,
+    marketplaceSupportSource
+  )
+  .replace(
+    /<MarketplaceRoscaSection\b[\s\S]*?\n\s*\/>/,
+    marketplaceRoscaSource
+  );
 const findings = [];
 
 function lineAt(index) {

@@ -10,16 +10,22 @@ const marketplaceBoardFile = "src/pages/marketplace/MarketplaceBoardSection.tsx"
 const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
 const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
 const marketplaceMoneyFile = "src/pages/marketplace/MarketplaceMoneySection.tsx";
+const marketplaceRoscaFile = "src/pages/marketplace/MarketplaceRoscaSection.tsx";
+const marketplaceDemandFile = "src/pages/marketplace/MarketplaceDemandSection.tsx";
 const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const marketplaceBoardSource = readFileSync(join(frontendRoot, marketplaceBoardFile), "utf8");
 const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
 const marketplaceSupportSource = readFileSync(join(frontendRoot, marketplaceSupportFile), "utf8");
 const marketplaceMoneySource = readFileSync(join(frontendRoot, marketplaceMoneyFile), "utf8");
+const marketplaceRoscaSource = readFileSync(join(frontendRoot, marketplaceRoscaFile), "utf8");
+const marketplaceDemandSource = readFileSync(join(frontendRoot, marketplaceDemandFile), "utf8");
 const source = marketplacePageSource
   .replace(/<MarketplaceBoardSection\b[\s\S]*?\n\s*\/>/, marketplaceBoardSource)
   .replace(/<MarketplaceMembersSection\b[\s\S]*?\n\s*\/>/, marketplaceMembersSource)
   .replace(/<MarketplaceSupportSection\b[\s\S]*?\n\s*\/>/, marketplaceSupportSource)
-  .replace(/<MarketplaceMoneySection\b[\s\S]*?\n\s*\/>/, marketplaceMoneySource);
+  .replace(/<MarketplaceMoneySection\b[\s\S]*?\n\s*\/>/, marketplaceMoneySource)
+  .replace(/<MarketplaceRoscaSection\b[\s\S]*?\n\s*\/>/, marketplaceRoscaSource)
+  .replace(/<MarketplaceDemandSection\b[\s\S]*?\n\s*\/>/, marketplaceDemandSource);
 const findings = [];
 
 const expectedStableActionCount = 89;
