@@ -18,6 +18,11 @@ import {
   institutionalStatTile,
 } from "../../lib/institutionalSurface";
 import {
+  DEFAULT_DECISION_PACK,
+  buildDecisionPackDecisionReading,
+  findDecisionPack,
+} from "../../lib/decisionPacks";
+import {
   TrustDocumentBoundaryPanel,
   TrustDocumentConfidenceRibbon,
   TrustDocumentDisclosureSection,
@@ -1606,19 +1611,23 @@ export default function TrustSlipVerifyPublicPaper({
     : supportPurpose
       ? "Request live community confirmation before any guarantor or support decision."
       : "Use for low-risk decisions; request live confirmation before important decisions.";
-  const decisionDisplayAnswer = decisionFirstAnswer;
-  const decisionReasonLine = !validNow
-    ? "This public record is not current enough for a serious decision. Ask for a fresh TrustSlip before relying."
-    : supportPurpose && (!hasWitnessEvidence || !hasSupportOutcomeEvidence)
-      ? "Evidence is strong enough for community recognition, but not yet strong enough for financial guarantee. Request live community confirmation before relying."
-      : employmentPurpose
-        ? "The activity trail supports an employment conversation. Request live confirmation if the role carries serious trust, safety, or money risk."
-        : housingPurpose
-          ? "The activity trail supports community recognition and a cautious housing conversation. Ask for live confirmation before tenancy risk."
-          : tradePurpose
-            ? "The activity trail supports a low-risk trade check. Ask for live confirmation before larger work, home access, or money exposure."
-            : "The activity trail supports community recognition. Match the evidence to your risk, then request live confirmation for anything important.";
+  const decisionPackDefinition = findDecisionPack(decisionPackPurpose) || DEFAULT_DECISION_PACK;
+  const purposeDecisionReading = buildDecisionPackDecisionReading(decisionPackDefinition, {
+    holderName,
+    communityName: communityLabel,
+    verificationScopeLabel: requestedVerificationScopeLabel,
+    currentVisibleEvidence: visibleBandReading,
+    activityEvidence: communityActivityMeaningLead,
+    witnessEvidence: witnessCurrentnessFinding,
+    validNow,
+  });
+  const decisionDisplayAnswer = purposeDecisionReading.headline || decisionFirstAnswer;
+  const decisionReasonLine = purposeDecisionReading.conclusion;
+  const decisionBecauseRows: Array<[string, string]> = purposeDecisionReading.because
+    .slice(0, compact ? 3 : 5)
+    .map((reason, index): [string, string] => [`Because ${index + 1}`, reason]);
   const decisionTranslationRows: Array<[string, string]> = [
+    ...decisionBecauseRows,
     ["Active Community ID", communityConnectionFinding],
     ["Recorded activity", evidenceVolumeFinding],
     ["Community role", roleFinding],
@@ -2128,7 +2137,7 @@ export default function TrustSlipVerifyPublicPaper({
             }}
           >
             <div style={{ ...sectionLabel(), color: "#0B63D1" }}>Why this recommendation?</div>
-            <DecisionFactorTable rows={compact ? decisionTranslationRows.filter(([label]) => label === "Active Community ID" || label === (supportPurpose ? "Repayment/support evidence" : "Purpose evidence") || label === "Current witnesses" || label === "Recommended action") : decisionTranslationRows} compact={compact} />
+            <DecisionFactorTable rows={compact ? decisionTranslationRows.filter(([label]) => label === "Because 1" || label === "Because 2" || label === (supportPurpose ? "Repayment/support evidence" : "Purpose evidence") || label === "Current witnesses" || label === "Recommended action") : decisionTranslationRows} compact={compact} />
           </div>
           <div
             data-gsn-public-decision-first-facts="four-quick-facts"

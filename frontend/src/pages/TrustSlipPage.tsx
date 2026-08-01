@@ -35,6 +35,7 @@ import {
   compactDecisionPackEvidence,
   compactDecisionPackConfirmation,
   decisionPackConfirmationMechanics,
+  buildDecisionPackDecisionReading,
   compactDecisionPackMissingLinks,
   compactDecisionPackSources,
   DEFAULT_DECISION_PACK,
@@ -335,7 +336,14 @@ type TrustSlipSummary = {
 type TrustSlipPageData = {
   me: any | null;
   clan: any | null;
+  clans: TrustSlipCommunityOption[];
   summary: TrustSlipSummary | null;
+};
+
+type TrustSlipCommunityOption = {
+  id: string;
+  label: string;
+  ref: string;
 };
 
 type TrustSlipDecisionPackAccessRow = {
@@ -557,6 +565,56 @@ function firstTruthy(...values: any[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function rowsOf(raw: any): any[] {
+  if (Array.isArray(raw)) return raw;
+  if (Array.isArray(raw?.items)) return raw.items;
+  if (Array.isArray(raw?.rows)) return raw.rows;
+  if (Array.isArray(raw?.communities)) return raw.communities;
+  if (Array.isArray(raw?.clans)) return raw.clans;
+  return [];
+}
+
+function normalizeTrustSlipCommunityOption(row: any): TrustSlipCommunityOption | null {
+  if (!row || typeof row !== "object") return null;
+
+  const id = firstTruthy(row?.id, row?.clan_id, row?.community_id);
+  if (!id) return null;
+
+  const label = firstTruthy(
+    row?.label,
+    row?.marketplace_name,
+    row?.name,
+    row?.display_name,
+    row?.title,
+    row?.community_name,
+    `Community ${id}`
+  );
+  const ref = firstTruthy(
+    row?.ref,
+    row?.community_global_id,
+    row?.community_code,
+    row?.clan_code,
+    row?.code,
+    id
+  );
+
+  return { id, label, ref };
+}
+
+function uniqueTrustSlipCommunityOptions(rows: any[]): TrustSlipCommunityOption[] {
+  const seen = new Set<string>();
+  const options: TrustSlipCommunityOption[] = [];
+
+  rows.forEach((row) => {
+    const option = normalizeTrustSlipCommunityOption(row);
+    if (!option || seen.has(option.id)) return;
+    seen.add(option.id);
+    options.push(option);
+  });
+
+  return options;
 }
 
 function isMissingHolderName(value: any): boolean {
@@ -2064,13 +2122,16 @@ async function fetchTrustSlipPageData(
       clanHeaders
     );
 
-  const [meRes, clanRes, summaryRes] = await Promise.all([
+  const [meRes, clanRes, clansRes, summaryRes] = await Promise.all([
     typeof (api as any).getMe === "function"
       ? (api as any).getMe().catch(() => null)
       : Promise.resolve(null),
     typeof (api as any).getCurrentClan === "function"
       ? (api as any).getCurrentClan().catch(() => null)
       : Promise.resolve(null),
+    typeof (api as any).listMyClans === "function"
+      ? (api as any).listMyClans().catch(() => ({ items: [] }))
+      : Promise.resolve({ items: [] }),
     (async () => {
       if (options.networkFirst) {
         const direct = await fetchCanonicalTrustSlipSummary(
@@ -2113,6 +2174,7 @@ async function fetchTrustSlipPageData(
   return {
     me: meRes || null,
     clan: clanRes || null,
+    clans: uniqueTrustSlipCommunityOptions(rowsOf(clansRes)),
     summary: normalizeTrustSlipSummary(summaryRes),
   };
 }
@@ -2244,6 +2306,7 @@ export default function TrustSlipPage() {
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
+  const [memberCommunityOptions, setMemberCommunityOptions] = useState<TrustSlipCommunityOption[]>([]);
   const [summary, setSummary] = useState<TrustSlipSummary | null>(null);
   const [decisionPackAccesses, setDecisionPackAccesses] = useState<TrustSlipDecisionPackAccessRow[]>([]);
   const [decisionPackConsentShares, setDecisionPackConsentShares] =
@@ -2264,6 +2327,8 @@ export default function TrustSlipPage() {
     useState<DecisionPackKey>(DEFAULT_DECISION_PACK.key);
   const [selectedVerificationScope, setSelectedVerificationScope] =
     useState<TrustSlipVerificationScope>("community_specific");
+  const [selectedVerificationCommunityOptionId, setSelectedVerificationCommunityOptionId] =
+    useState("");
 
   useEffect(() => {
     const requestedPack = new URLSearchParams(location.search).get("decision_pack");
@@ -2285,6 +2350,7 @@ export default function TrustSlipPage() {
   const clearTrustSlipState = useCallback(() => {
     setMe(null);
     setCurrentClan(null);
+    setMemberCommunityOptions([]);
     setSummary(null);
     setDecisionPackAccesses([]);
     setDecisionPackConsentShares([]);
@@ -2300,6 +2366,7 @@ export default function TrustSlipPage() {
   const applyTrustSlipPageData = useCallback((data: TrustSlipPageData) => {
     setMe(data.me);
     setCurrentClan(data.clan);
+    setMemberCommunityOptions(data.clans);
     setSummary(data.summary);
   }, []);
 
@@ -2666,24 +2733,97 @@ export default function TrustSlipPage() {
     [communityRefValue]
   );
 
-  const selectedVerificationCommunityId = useMemo(
+  const fallbackVerificationCommunityId = useMemo(
     () =>
       firstTruthy(
         summary?.community_id,
         summary?.clan_id,
         currentClan?.id,
+        currentClan?.clan_id,
         selectedClanId
       ),
     [summary, currentClan, selectedClanId]
   );
+  const verificationCommunityOptions = useMemo(
+    () =>
+      uniqueTrustSlipCommunityOptions([
+        ...memberCommunityOptions,
+        {
+          id: fallbackVerificationCommunityId,
+          label: communityName,
+          ref: communityRefValue,
+        },
+      ]),
+    [memberCommunityOptions, fallbackVerificationCommunityId, communityName, communityRefValue]
+  );
+
+  useEffect(() => {
+    if (selectedVerificationScope !== "community_specific") return;
+
+    if (!verificationCommunityOptions.length) {
+      if (selectedVerificationCommunityOptionId) {
+        setSelectedVerificationCommunityOptionId("");
+      }
+      return;
+    }
+
+    const stillVisible = verificationCommunityOptions.some(
+      (option) => option.id === selectedVerificationCommunityOptionId
+    );
+    if (!stillVisible) {
+      const preferred =
+        verificationCommunityOptions.find(
+          (option) => option.id === fallbackVerificationCommunityId
+        ) || verificationCommunityOptions[0];
+      setSelectedVerificationCommunityOptionId(preferred.id);
+    }
+  }, [
+    fallbackVerificationCommunityId,
+    selectedVerificationCommunityOptionId,
+    selectedVerificationScope,
+    verificationCommunityOptions,
+  ]);
+
+  const selectedVerificationCommunityOption = useMemo(
+    () =>
+      verificationCommunityOptions.find(
+        (option) => option.id === selectedVerificationCommunityOptionId
+      ) ||
+      verificationCommunityOptions.find(
+        (option) => option.id === fallbackVerificationCommunityId
+      ) ||
+      verificationCommunityOptions[0] ||
+      null,
+    [
+      fallbackVerificationCommunityId,
+      selectedVerificationCommunityOptionId,
+      verificationCommunityOptions,
+    ]
+  );
+  const selectedVerificationCommunityId = firstTruthy(
+    selectedVerificationCommunityOption?.id,
+    fallbackVerificationCommunityId
+  );
+  const selectedVerificationCommunityName = firstTruthy(
+    selectedVerificationCommunityOption?.label,
+    communityName
+  );
+  const selectedVerificationCommunityRef = firstTruthy(
+    selectedVerificationCommunityOption?.ref,
+    communityRefValue
+  );
+  const verificationScopeSelectValue =
+    selectedVerificationScope === "all_visible_communities"
+      ? "all_visible_communities"
+      : `community:${selectedVerificationCommunityId}`;
   const verificationScopeLabel =
     selectedVerificationScope === "community_specific"
-      ? `This community: ${communityName}`
+      ? `This community: ${selectedVerificationCommunityName}`
       : "All visible community context";
   const verificationScopeBoundary =
     selectedVerificationScope === "community_specific"
-      ? `Live confirmation requests should be answered by ${communityName}. Other communities are not treated as giving the same judgement.`
-      : "This link may show wider visible community context, but it is not proof that every community gives the same judgement. Live confirmation still needs a selected community.";
+      ? `Live confirmation requests should be answered by ${selectedVerificationCommunityName}. Other communities are not treated as giving the same judgement.`
+      : "This link may show wider visible community context, but it is not proof that every community gives the same judgement. Choose one community when you need a live answer.";
   const publicDecisionPackQuery = useMemo(
     () => ({
       decision_pack: selectedPurposeOption.key,
@@ -2698,8 +2838,8 @@ export default function TrustSlipPage() {
         selectedVerificationScope === "community_specific"
           ? selectedVerificationCommunityId
           : "",
-      verification_community_label: communityName,
-      verification_community_ref: communityRefValue,
+      verification_community_label: selectedVerificationCommunityName,
+      verification_community_ref: selectedVerificationCommunityRef,
     }),
     [
       selectedPurposeOption,
@@ -2707,8 +2847,8 @@ export default function TrustSlipPage() {
       verificationScopeLabel,
       verificationScopeBoundary,
       selectedVerificationCommunityId,
-      communityName,
-      communityRefValue,
+      selectedVerificationCommunityName,
+      selectedVerificationCommunityRef,
     ]
   );
   const trustSlipCode = useMemo(() => {
@@ -3339,6 +3479,16 @@ export default function TrustSlipPage() {
     : ["D", "E"].includes(trustSlipBandLetter)
       ? "Use with caution but acceptable for low-risk support and trade decisions."
       : "Usable for low-risk checking, with normal judgement and verification.";
+  const decisionPackDecisionReading = buildDecisionPackDecisionReading(selectedPurposeOption, {
+    holderName,
+    communityName: selectedVerificationCommunityName,
+    verificationScopeLabel,
+    currentVisibleEvidence: `${merchantBandDisplay}; ${trustSlipEvidenceLanguage.label}; ${identityRecordSummary}`,
+    activityEvidence: communityActivitySignal,
+    witnessEvidence: memberWitnessSignal,
+    validNow: Boolean(trustSlipValidNow),
+  });
+  const decisionPackDecisionBecauseRows = decisionPackDecisionReading.because.slice(0, isCompact ? 3 : 5);
   const trustSlipReadingRows = [
     {
       icon: "shield" as GsnIconName,
@@ -3490,6 +3640,8 @@ export default function TrustSlipPage() {
   ];
   const communityConfirmation = summary?.community_confirmation || null;
   const communityVerifyKey = firstTruthy(
+    selectedVerificationScope === "community_specific" ? selectedVerificationCommunityRef : "",
+    selectedVerificationScope === "community_specific" ? selectedVerificationCommunityId : "",
     communityConfirmation?.community_code,
     communityConfirmation?.community_id,
     summary?.community_code,
@@ -3732,13 +3884,13 @@ export default function TrustSlipPage() {
     {
       label: "Confirm membership",
       value: memberCredentialUrl
-        ? `Receiver can open the scoped member credential for ${communityName}.`
+        ? `Receiver can open the scoped member credential for ${selectedVerificationCommunityName}.`
         : "No scoped member credential is ready yet. Use the community answer or witness/activity evidence on the verify page.",
       icon: "id" as GsnIconName,
     },
     {
       label: "Ask community",
-      value: `Receiver can ask ${communityName} for the ${selectedPurposeOption.shortLabel} answer. The answer belongs to this selected community, not every community you belong to.`,
+      value: `Receiver can ask ${selectedVerificationCommunityName} for the ${selectedPurposeOption.shortLabel} answer. The answer belongs to this selected community, not every community you belong to.`,
       icon: "community" as GsnIconName,
     },
     {
@@ -3984,6 +4136,10 @@ export default function TrustSlipPage() {
       `Decision Pack: ${selectedPurposeOption.label}`,
       `Recipient question: ${selectedPurposeOption.recipientQuestion}`,
       `Evidence focus: ${selectedPurposeOption.focus}`,
+      `Verification scope: ${verificationScopeLabel}`,
+      `Decision reading: ${decisionPackDecisionReading.headline}`,
+      decisionPackDecisionReading.conclusion,
+      ...decisionPackDecisionReading.because.slice(0, 3),
       `Public TrustSlip check: ${verifyUrl}`,
       housingExternalContact
         ? `Optional external follow-up contact: ${housingExternalContact.label} | ${housingExternalContact.channel} | ${housingExternalContact.contact}`
@@ -4474,10 +4630,17 @@ export default function TrustSlipPage() {
                 </span>
                 <select
                   aria-label="Choose TrustSlip verification scope"
-                  value={selectedVerificationScope}
-                  onChange={(event) =>
-                    setSelectedVerificationScope(event.target.value as TrustSlipVerificationScope)
-                  }
+                  value={verificationScopeSelectValue}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    if (value === "all_visible_communities") {
+                      setSelectedVerificationScope("all_visible_communities");
+                      return;
+                    }
+
+                    setSelectedVerificationScope("community_specific");
+                    setSelectedVerificationCommunityOptionId(value.replace(/^community:/, ""));
+                  }}
                   style={{
                     width: "100%",
                     minHeight: 46,
@@ -4490,7 +4653,11 @@ export default function TrustSlipPage() {
                     padding: "0 38px 0 11px",
                   }}
                 >
-                  <option value="community_specific">This community only</option>
+                  {verificationCommunityOptions.map((option) => (
+                    <option key={option.id} value={`community:${option.id}`}>
+                      {option.label}
+                    </option>
+                  ))}
                   <option value="all_visible_communities">All visible community context</option>
                 </select>
               </label>
@@ -4518,6 +4685,110 @@ export default function TrustSlipPage() {
                 >
                   {verificationScopeBoundary}
                 </div>
+              </div>
+            </div>
+            <div
+              data-gsn-trustslip-decision-reading="purpose-specific"
+              style={{
+                borderRadius: 14,
+                border: "1px solid rgba(37,78,119,0.14)",
+                background: "linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)",
+                padding: isCompact ? "10px 11px" : "12px 13px",
+                display: "grid",
+                gap: 9,
+              }}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "30px minmax(0, 1fr)",
+                  gap: 8,
+                  alignItems: "center",
+                }}
+              >
+                <GsnLegacyIcon name="evidence" size={28} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ ...sectionLabel(), fontSize: isCompact ? 9 : 10 }}>
+                    Decision reading
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 2,
+                      color: "#07172C",
+                      fontSize: isCompact ? 13 : 15,
+                      fontWeight: 1000,
+                      lineHeight: 1.16,
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {decisionPackDecisionReading.headline}
+                  </div>
+                </div>
+              </div>
+              <div
+                style={{
+                  color: "#334155",
+                  fontSize: isCompact ? 11 : 12.5,
+                  fontWeight: 900,
+                  lineHeight: 1.35,
+                  overflowWrap: "anywhere",
+                }}
+              >
+                {decisionPackDecisionReading.conclusion}
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "minmax(0, 1fr)" : "repeat(2, minmax(0, 1fr))",
+                  gap: 7,
+                }}
+              >
+                {decisionPackDecisionBecauseRows.map((reason, index) => (
+                  <div
+                    key={`${selectedPurposeOption.key}-because-${index}`}
+                    style={{
+                      borderRadius: 12,
+                      border: "1px solid rgba(37,78,119,0.1)",
+                      background: index === 0 ? "#FFFDF7" : "#FFFFFF",
+                      padding: "8px 9px",
+                      minWidth: 0,
+                    }}
+                  >
+                    <div
+                      style={{
+                        color: "#7A4A00",
+                        fontSize: isCompact ? 9 : 10,
+                        fontWeight: 1000,
+                        lineHeight: 1.1,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Because {index + 1}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 3,
+                        color: "#334155",
+                        fontSize: isCompact ? 10 : 11,
+                        fontWeight: 850,
+                        lineHeight: 1.3,
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {reason}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div
+                style={{
+                  color: "#526579",
+                  fontSize: isCompact ? 10.5 : 11.5,
+                  fontWeight: 850,
+                  lineHeight: 1.3,
+                }}
+              >
+                {decisionPackDecisionReading.caveat} Final decision stays with the receiver.
               </div>
             </div>
             <div

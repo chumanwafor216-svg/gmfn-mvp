@@ -309,6 +309,124 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
   },
 ];
 
+export type DecisionPackDecisionReadingContext = {
+  holderName?: unknown;
+  communityName?: unknown;
+  verificationScopeLabel?: unknown;
+  currentVisibleEvidence?: unknown;
+  activityEvidence?: unknown;
+  witnessEvidence?: unknown;
+  validNow?: boolean;
+};
+
+export type DecisionPackDecisionReading = {
+  headline: string;
+  because: string[];
+  conclusion: string;
+  caveat: string;
+};
+
+type DecisionPackDecisionTemplate = {
+  headline: string;
+  conclusion: string;
+  caveat: string;
+};
+
+const DECISION_PACK_DECISION_TEMPLATES: Record<DecisionPackKey, DecisionPackDecisionTemplate> = {
+  community_standing: {
+    headline: "Community-known evidence, not universal character proof",
+    conclusion: "use this as evidence that the person is known in the selected community, then ask for live confirmation before a serious decision.",
+    caveat: "It does not prove moral character, government identity, or future behaviour.",
+  },
+  referral_decision: {
+    headline: "Referral can continue as a cautious relationship introduction",
+    conclusion: "continue the referral conversation only if the relationship route and current witnesses fit the risk.",
+    caveat: "It does not transfer responsibility to GSN or guarantee that the referral will work out.",
+  },
+  guarantor_decision: {
+    headline: "Support risk needs live confirmation before anyone stands for them",
+    conclusion: "do not accept guarantor or support risk from the public slip alone; ask for live confirmation and support outcome evidence first.",
+    caveat: "It is not loan approval, a bank guarantee, money custody, or an automatic promise of repayment.",
+  },
+  employment_decision: {
+    headline: "Employment conversation can continue, but role proof is still separate",
+    conclusion: "continue the employment conversation and check role-specific witnesses, completed work, or employer/customer evidence before relying.",
+    caveat: "It does not prove a professional licence, right to work, future performance, or the employer's decision.",
+  },
+  housing_decision: {
+    headline: "Housing conversation can continue with caution",
+    conclusion: "continue a cautious housing conversation, then ask for live community confirmation before tenancy, rent, or property-access risk.",
+    caveat: "It does not prove affordability, right to rent, legal tenancy checks, guaranteed rent, or future conduct.",
+  },
+  trade_check: {
+    headline: "Low-risk trade check can continue; larger work needs confirmation",
+    conclusion: "use this for a low-risk trade or skilled-work conversation, then ask for completed-work or live community evidence before larger work.",
+    caveat: "It does not prove trade licence, insurance, home safety, work quality, or future performance.",
+  },
+  supplier_decision: {
+    headline: "Supplier screening can continue, not supplier approval",
+    conclusion: "continue supplier screening and ask for fulfilment, delivery, correction, or customer evidence before orders, payment, or release decisions.",
+    caveat: "It does not prove delivery guarantee, escrow, payment release authority, or automatic supplier approval.",
+  },
+  volunteer_decision: {
+    headline: "Volunteer screening can continue; sensitive roles need deeper checks",
+    conclusion: "continue volunteer screening when community participation fits, then require live confirmation or safeguarding review for sensitive placement.",
+    caveat: "It does not prove background checks, safeguarding clearance, legal eligibility, or future conduct.",
+  },
+  business_partnership: {
+    headline: "Partnership discussion can continue, but shared risk needs due diligence",
+    conclusion: "continue the partnership discussion only as a screening step; require deeper evidence before shared money, legal, or operating risk.",
+    caveat: "It does not prove company due diligence, legal authority, investment advice, or guaranteed profit.",
+  },
+  community_membership: {
+    headline: "Membership conversation can continue; admission remains governed",
+    conclusion: "continue the membership or admission conversation, then confirm the relationship route and community rules before accepting the person.",
+    caveat: "It does not prove citizenship, legal immigration status, automatic admission, or universal community endorsement.",
+  },
+};
+
+export function buildDecisionPackDecisionReading(
+  pack: DecisionPackDefinition,
+  context: DecisionPackDecisionReadingContext = {}
+): DecisionPackDecisionReading {
+  const template = DECISION_PACK_DECISION_TEMPLATES[pack.key] || DECISION_PACK_DECISION_TEMPLATES.community_standing;
+  const holder = cleanDecisionPackText(context.holderName) || "this person";
+  const community = cleanDecisionPackText(context.communityName) || "the selected community";
+  const scope = cleanDecisionPackText(context.verificationScopeLabel) || community;
+  const currentVisibleEvidence = cleanDecisionPackText(context.currentVisibleEvidence);
+  const activityEvidence = cleanDecisionPackText(context.activityEvidence);
+  const witnessEvidence = cleanDecisionPackText(context.witnessEvidence);
+  const firstExpectedEvidence = cleanDecisionPackText(pack.expectedEvidence[0]);
+  const firstMissingLink = cleanDecisionPackText(pack.missingLinks[0]);
+  const validNow = context.validNow !== false;
+
+  const because = [
+    `Because this pack is for ${pack.shortLabel.toLowerCase()}, GSN reads ${pack.focus}`,
+    `Because the selected scope is ${scope}, the judgement must stay tied to ${community}.`,
+    currentVisibleEvidence
+      ? `Because the current visible evidence says: ${currentVisibleEvidence}.`
+      : `Because no strong current visible evidence is shown for ${holder}, the reader should not treat the pack as complete.`,
+    activityEvidence
+      ? `Because the activity signal says: ${activityEvidence}.`
+      : firstExpectedEvidence
+        ? `Because this decision still needs: ${firstExpectedEvidence}.`
+        : "Because the purpose-specific evidence is not fully mapped yet.",
+    witnessEvidence
+      ? `Because the witness signal says: ${witnessEvidence}.`
+      : firstMissingLink
+        ? `Because the remaining gap is: ${firstMissingLink}.`
+        : "Because live community confirmation may still be needed before relying.",
+  ];
+
+  return {
+    headline: validNow ? template.headline : "Fresh TrustSlip required before this decision",
+    because,
+    conclusion: validNow
+      ? `GSN arrives at: ${template.conclusion}`
+      : "GSN arrives at: do not rely on this Decision Pack until the holder refreshes the TrustSlip and the public code checks as current.",
+    caveat: template.caveat,
+  };
+}
 export const DEFAULT_DECISION_PACK = GSN_DECISION_PACKS[0];
 
 function cleanDecisionPackText(value: unknown): string {

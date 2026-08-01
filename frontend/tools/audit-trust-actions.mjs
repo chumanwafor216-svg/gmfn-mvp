@@ -2568,6 +2568,34 @@ assertContains(
   /const trustSlipSenderConfirmationRows = \[[\s\S]*?Confirm membership[\s\S]*?Ask community[\s\S]*?Review witnesses[\s\S]*?data-gsn-trustslip-sender-guide="decision-scope-confirmation"[\s\S]*?Before you send[\s\S]*?Membership, the selected community answer, and witness\/activity evidence are separate checks\./,
   "TrustSlip holder sharing must show the sender how the selected Decision Pack and verification scope map to membership, community, and witness confirmation choices."
 );
+assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /listMyClans[\s\S]*?uniqueTrustSlipCommunityOptions[\s\S]*?verificationCommunityOptions\.map[\s\S]*?<option key=\{option\.id\} value=\{`community:\$\{option\.id\}`\}>[\s\S]*?All visible community context/,
+  "TrustSlip verification scope must list the signed-in member's communities before the all-visible context option."
+);
+
+assertNotContains(
+  "src/pages/TrustSlipPage.tsx",
+  /<option value="community_specific">This community only<\/option>/,
+  "TrustSlip verification scope must not regress to a vague hard-coded This community only option."
+);
+assertContains(
+  "src/lib/decisionPacks.ts",
+  /DECISION_PACK_DECISION_TEMPLATES[\s\S]*?guarantor_decision[\s\S]*?employment_decision[\s\S]*?housing_decision[\s\S]*?buildDecisionPackDecisionReading[\s\S]*?Because this pack is for[\s\S]*?GSN arrives at:/,
+  "Decision Pack definitions must keep a reusable purpose-specific decision reading with because/recommendation language."
+);
+
+assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /buildDecisionPackDecisionReading\(selectedPurposeOption[\s\S]*?data-gsn-trustslip-decision-reading="purpose-specific"[\s\S]*?Decision reading[\s\S]*?decisionPackDecisionReading\.conclusion[\s\S]*?Because \{index \+ 1\}/,
+  "TrustSlip holder Decision Pack area must show the actual purpose-specific decision reading and because reasons."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  /buildDecisionPackDecisionReading\(decisionPackDefinition[\s\S]*?decisionDisplayAnswer = purposeDecisionReading\.headline[\s\S]*?decisionReasonLine = purposeDecisionReading\.conclusion[\s\S]*?decisionBecauseRows[\s\S]*?\.\.\.decisionBecauseRows/,
+  "Public TrustSlip Verify must use the shared purpose-specific Decision Pack reading and show because rows."
+);
 if (findings.length > 0) {
   console.error("Trust action audit failed:");
   for (const finding of findings) {
