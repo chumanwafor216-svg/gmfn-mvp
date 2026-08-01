@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import CommunityProofPanel from "../components/CommunityProofPanel";
@@ -64,6 +63,11 @@ import {
   TRUST_BAND_SHORT_LABELS,
 } from "../lib/trustBandLanguage";
 
+
+const LazyQRCodeSVG = React.lazy(async () => {
+  const module = await import("qrcode.react");
+  return { default: module.QRCodeSVG };
+});
 
 const TrustSlipDecisionPackPrivatePreview = React.lazy(() => import("./trustSlip/TrustSlipDecisionPackPrivatePreview"));
 
@@ -1438,14 +1442,28 @@ function TrustSlipQrCode({
       aria-label="TrustSlip verify QR"
       style={qrBoxStyle(size + 12)}
     >
-      <QRCodeSVG
-        value={value}
-        size={size}
-        bgColor="#FFFFFF"
-        fgColor="#07172C"
-        level="M"
-        marginSize={1}
-      />
+      <React.Suspense
+        fallback={
+          <div
+            aria-hidden="true"
+            style={{
+              width: size,
+              height: size,
+              borderRadius: 10,
+              background: "#F8FAFC",
+            }}
+          />
+        }
+      >
+        <LazyQRCodeSVG
+          value={value}
+          size={size}
+          bgColor="#FFFFFF"
+          fgColor="#07172C"
+          level="M"
+          marginSize={1}
+        />
+      </React.Suspense>
     </div>
   );
 }
@@ -2103,7 +2121,12 @@ function normalizeTrustSlipDecisionPackEvidence(raw: any): TrustSlipDecisionPack
 }
 async function fetchTrustSlipPageData(
   selectedClanId: number,
-  options: { forceFresh?: boolean; networkFirst?: boolean } = {}
+  options: {
+    forceFresh?: boolean;
+    includeCommunities?: boolean;
+    includeSummary?: boolean;
+    networkFirst?: boolean;
+  } = {}
 ): Promise<TrustSlipPageData> {
   const clanHeaders: Record<string, string> = {};
   if (selectedClanId) {
@@ -2122,6 +2145,9 @@ async function fetchTrustSlipPageData(
       clanHeaders
     );
 
+  const includeCommunities = options.includeCommunities !== false;
+  const includeSummary = options.includeSummary !== false;
+
   const [meRes, clanRes, clansRes, summaryRes] = await Promise.all([
     typeof (api as any).getMe === "function"
       ? (api as any).getMe().catch(() => null)
@@ -2129,10 +2155,11 @@ async function fetchTrustSlipPageData(
     typeof (api as any).getCurrentClan === "function"
       ? (api as any).getCurrentClan().catch(() => null)
       : Promise.resolve(null),
-    typeof (api as any).listMyClans === "function"
+    includeCommunities && typeof (api as any).listMyClans === "function"
       ? (api as any).listMyClans().catch(() => ({ items: [] }))
       : Promise.resolve({ items: [] }),
-    (async () => {
+    includeSummary
+      ? (async () => {
       if (options.networkFirst) {
         const direct = await fetchCanonicalTrustSlipSummary(
           selectedClanId,
@@ -2167,7 +2194,8 @@ async function fetchTrustSlipPageData(
       if (viaFn) return viaFn;
 
       return fetchLegacySummaryFallback();
-    })(),
+    })()
+      : Promise.resolve(null),
 
   ]);
 
@@ -2298,6 +2326,7 @@ export default function TrustSlipPage() {
   );
 
   const [loading, setLoading] = useState(true);
+  const [trustSlipSummaryHydrating, setTrustSlipSummaryHydrating] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [notice, setNotice] = useState<{
     tone: NoticeTone;
@@ -2440,12 +2469,30 @@ export default function TrustSlipPage() {
 
     (async () => {
       setLoading(true);
+      setTrustSlipSummaryHydrating(true);
       setRefreshing(false);
       setConfirmationBusy(false);
       setMerchantRailBusy(false);
       clearTrustSlipState();
 
       try {
+        const initialData = await fetchTrustSlipPageData(selectedClanId, {
+          includeCommunities: false,
+          includeSummary: false,
+        });
+
+        if (
+          !alive ||
+          loadSeq !== trustSlipLoadSeqRef.current ||
+          contextKey !== trustSlipContextRef.current
+        ) {
+          return;
+        }
+
+        applyTrustSlipPageData(initialData);
+        setConfirmationOutcome(null);
+        setLoading(false);
+
         const data = await fetchTrustSlipPageData(selectedClanId, {
           networkFirst: true,
         });
@@ -2459,7 +2506,7 @@ export default function TrustSlipPage() {
         }
 
         applyTrustSlipPageData(data);
-        setConfirmationOutcome(null);
+        setTrustSlipSummaryHydrating(false);
       } finally {
         if (
           alive &&
@@ -2467,6 +2514,7 @@ export default function TrustSlipPage() {
           contextKey === trustSlipContextRef.current
         ) {
           setLoading(false);
+          setTrustSlipSummaryHydrating(false);
         }
       }
     })();
@@ -2863,6 +2911,7 @@ export default function TrustSlipPage() {
   const trustSlipCodeRef = useRef("");
   trustSlipCodeRef.current = trustSlipCode;
   const trustSlipIssueReason = safeStr(summary?.reason).toLowerCase();
+  const trustSlipSummaryLoading = trustSlipSummaryHydrating && !summary;
   const trustSlipBlockedByPhone =
     !trustSlipCode &&
     (trustSlipIssueReason === "phone_unverified" ||
@@ -2955,7 +3004,9 @@ export default function TrustSlipPage() {
     summary?.merchant_view?.expires_at || summary?.expires_at
   );
   const trustSlipPublicStatus =
-    trustSlipBlockedByPhone
+    trustSlipSummaryLoading
+      ? "Checking"
+      : trustSlipBlockedByPhone
       ? "Phone check needed"
       : rawTrustSlipStatus === "expired" || trustSlipExpiredByDate
       ? "Needs refresh"
@@ -2967,7 +3018,9 @@ export default function TrustSlipPage() {
       ? "Ready to verify"
       : "Preparing";
   const trustSlipStatusNote =
-    trustSlipBlockedByPhone
+    trustSlipSummaryLoading
+      ? "GSN is opening the TrustSlip now while the latest code and evidence summary are checked in the background."
+      : trustSlipBlockedByPhone
       ? trustSlipBlockDetail
       : rawTrustSlipStatus === "expired" || trustSlipExpiredByDate
       ? "This TrustSlip exists, but the current public record window has passed. Refresh or generate a current TrustSlip before asking anyone to rely on it."
@@ -3453,7 +3506,9 @@ export default function TrustSlipPage() {
         ? "Expired"
         : trustSlipSecurityTone === "blocked"
           ? trustSlipPublicStatus
-          : "Not issued yet";
+          : trustSlipSummaryLoading
+            ? "Checking"
+            : "Not issued yet";
   const trustSlipSecurityCaption =
     trustSlipSecurityTone === "active"
       ? "Current public verification window"
@@ -3461,15 +3516,25 @@ export default function TrustSlipPage() {
         ? "Refresh before anyone relies on it"
         : trustSlipSecurityTone === "blocked"
           ? "Do not rely until cleared"
-          : "Waiting for a public code";
-  const trustSlipCodeLabel = trustSlipCode || "Not issued yet";
+          : trustSlipSummaryLoading
+            ? "Opening while latest code is checked"
+            : "Waiting for a public code";
+  const trustSlipCodeLabel = trustSlipCode || (trustSlipSummaryLoading ? "Checking code" : "Not issued yet");
   const trustSlipIssuedLabel =
     safeDateTime(summary?.issued_at) ||
     safeDateTime(summary?.created_at) ||
-    (trustSlipCode ? "Issue time not shown" : "Not issued yet");
+    (trustSlipCode
+      ? "Issue time not shown"
+      : trustSlipSummaryLoading
+        ? "Checking issue time"
+        : "Not issued yet");
   const trustSlipExpiryLabel =
     safeDateTime(summary?.expires_at) ||
-    (trustSlipCode ? "No expiry stated yet" : "Not issued yet");
+    (trustSlipCode
+      ? "No expiry stated yet"
+      : trustSlipSummaryLoading
+        ? "Checking expiry"
+        : "Not issued yet");
   const merchantBandDisplay = normalizedMerchantBand
     ? merchantBandLabel
     : "Evidence not shown";
@@ -4308,36 +4373,6 @@ export default function TrustSlipPage() {
     if (copied) {
       await recordDecisionPackConsentShare("json");
     }
-  }
-
-  if (loading) {
-    return (
-      <div
-        ref={pageTopRef}
-        style={{
-          maxWidth: 1180,
-          margin: "0 auto",
-          paddingBottom: 40,
-          display: "grid",
-          gap: 18,
-        }}
-      >
-        <PageTopNav
-          sectionLabel="TrustSlip"
-          title="TrustSlip"
-          subtitle="Loading the TrustSlip summary..."
-          homeTo={routes.dashboard}
-          homeLabel="Dashboard"
-          backTo={routes.dashboard}
-        />
-
-        <section style={pageCard("#FFFFFF")}>
-          <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-            Loading TrustSlip...
-          </div>
-        </section>
-      </div>
-    );
   }
 
   const trustSlipPaperFrameEnabled = true;

@@ -142,7 +142,13 @@ function shouldDelay(path, mode) {
   }
 
   if (mode === "trust-slip") {
-    return /^\/trust-slips\/me\/decision-pack/.test(path);
+    return (
+      path === "/trust-slips/me" ||
+      path === "/trust-slips/me/summary" ||
+      path === "/trust-slips/me-summary" ||
+      path === "/trust-slips/summary/me" ||
+      /^\/trust-slips\/me\/decision-pack/.test(path)
+    );
   }
 
   return false;
@@ -164,7 +170,7 @@ async function installApiMocks(page, mode) {
     if (clanSelectMatch) {
       return route.fulfill(json({ selected_clan_id: Number(clanSelectMatch[1]) }));
     }
-    if (path === "/trust-slips/me" && mode !== "profile") {
+    if (path === "/trust-slips/me" && mode !== "profile" && mode !== "trust-slip") {
       return route.fulfill(json(slowEmpty(path)));
     }
 
@@ -279,7 +285,7 @@ async function run() {
       selector: '[data-gsn-trust-document-certificate="trustslip-holder"]',
       text: "TrustSlip holder",
       loadingText: "Loading TrustSlip",
-      expectDelayed: false,
+      expectDelayedPaths: ["/trust-slips/me/summary"],
     },
   ];
 

@@ -730,7 +730,7 @@ assertContains(
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
-  /const gmfnIdValue = useMemo[\s\S]*?const gmfnId = gmfnIdValue \|\| "Not issued yet"[\s\S]*?const communityRefValue = useMemo[\s\S]*?const communityRef = useMemo[\s\S]*?"No community ID yet"[\s\S]*?const trustSlipCodeLabel = trustSlipCode \|\| "Not issued yet"[\s\S]*?communityKey: communityVerifyKey \|\| communityRefValue[\s\S]*?memberKey: gmfnIdValue[\s\S]*?communityRefValue[\s\S]*?communityRef: communityRefValue[\s\S]*?void handleCopy\([\s\S]*?gmfnIdValue[\s\S]*?"GSN ID copied\."/,
+  /const gmfnIdValue = useMemo[\s\S]*?const gmfnId = gmfnIdValue \|\| "Not issued yet"[\s\S]*?const communityRefValue = useMemo[\s\S]*?const communityRef = useMemo[\s\S]*?"No community ID yet"[\s\S]*?const trustSlipCodeLabel = trustSlipCode \|\| \(trustSlipSummaryLoading \? "Checking code" : "Not issued yet"\)[\s\S]*?communityKey: communityVerifyKey \|\| communityRefValue[\s\S]*?memberKey: gmfnIdValue[\s\S]*?communityRefValue[\s\S]*?communityRef: communityRefValue[\s\S]*?void handleCopy\([\s\S]*?gmfnIdValue[\s\S]*?"GSN ID copied\."/,
   "Signed-in TrustSlip must separate actual GSN/community IDs from display fallbacks and must not copy fallback labels or use them in public credential paths."
 );
 

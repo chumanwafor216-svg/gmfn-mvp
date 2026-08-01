@@ -499,7 +499,7 @@ assertContains(
 );
 assertContains(
   "trustSlip",
-  /function TrustSlipQrCode[\s\S]*?data-gsn-trustslip-qr-value=\{value\}[\s\S]*?<QRCodeSVG[\s\S]*?value=\{value\}/,
+  /function TrustSlipQrCode[\s\S]*?data-gsn-trustslip-qr-value=\{value\}[\s\S]*?<LazyQRCodeSVG[\s\S]*?value=\{value\}/,
   "TrustSlip holder QR must expose a stable test hook proving the encoded public verification value."
 );
 assertContains(
