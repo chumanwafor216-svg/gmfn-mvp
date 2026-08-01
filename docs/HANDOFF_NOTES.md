@@ -1,5 +1,5 @@
 ## 2026-08-01 - Local TrustSlip Verify open-speed fast path
-- Status: Local only, not pushed/deployed. Owner reported TrustSlip verification takes a very long time to open.
+- Status: Pushed to `main` in commit `82c0c8e9` after owner approval and deployed to Render frontend by workflow run `30715767661`; Render deploy `dep-d9n4tlrqcrhc739gh0vg` reached `live`. Owner reported TrustSlip verification takes a very long time to open.
 - Confirmed a real frontend delay risk in `frontend/src/pages/TrustSlipVerifyPage.tsx`: signed-in `/app/trust-slip/verify?code=...` waited for app-only context (`getMe`, `getCurrentClan`, and `getMyTrustSlip`) before running the public TrustSlip verification request, even when the code was already supplied in the URL.
 - Changed TrustSlip Verify so supplied-code verification starts from the public code immediately, preloads the heavy public paper chunk while the API is in flight, and hydrates signed-in holder/private evidence context afterward. The no-code signed-in route still waits for the member TrustSlip only when it must derive the missing code.
 - Lazy-loaded `SocialTagShareButton` behind a same-size disabled placeholder so the Verify route chunk does not carry the share modal before the first paper appears.
