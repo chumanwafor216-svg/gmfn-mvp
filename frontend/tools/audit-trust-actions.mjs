@@ -416,6 +416,11 @@ assertContains(
   /onClick=\{\(\) => onOpenTrustRoute\(verifyAppPath\)\}[\s\S]*?debugId="trust-score\.verify"/,
   "Trust Passport document lane verify action must open the signed-in TrustSlip Verify page and carry the visible code when one is available."
 );
+assertContains(
+  "src/pages/trustScore/TrustPassportDocumentLane.tsx",
+  /@media print[\s\S]*?body \* \{ visibility: hidden !important; \}[\s\S]*?\.trust-passport-print-paper,[\s\S]*?\.trust-passport-print-paper \*[\s\S]*?visibility: visible !important[\s\S]*?data-trust-passport-print-document="official-paper"[\s\S]*?<GsnSnapshotPaperCard[\s\S]*?paperText=\{trustPassportPaper\}[\s\S]*?debugId="trust-score\.export"/,
+  "Trust Passport export must print the official GSN paper only, not the live app shell with menu, tools, bottom nav, or action controls."
+);
 
 assertContains(
   "src/pages/TrustScorePage.tsx",

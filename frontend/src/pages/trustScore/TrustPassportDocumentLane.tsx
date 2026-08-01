@@ -158,6 +158,53 @@ export default function TrustPassportDocumentLane({
         border: "1px solid rgba(216,227,238,0.9)",
       }}
     >
+      <style>{`
+        .trust-passport-print-paper { display: none; }
+        @page { margin: 14mm; }
+        @media print {
+          html, body { background: #ffffff !important; }
+          body * { visibility: hidden !important; }
+          .trust-passport-print-paper,
+          .trust-passport-print-paper * {
+            visibility: visible !important;
+          }
+          .trust-passport-print-paper {
+            display: block !important;
+            position: fixed !important;
+            inset: 0 auto auto 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            z-index: 2147483647 !important;
+          }
+          .trust-passport-print-paper .gsn-snapshot-paper-card {
+            box-shadow: none !important;
+            border: 1px solid rgba(148,163,184,0.34) !important;
+            background: #ffffff !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
+          }
+          .trust-passport-print-paper button {
+            display: none !important;
+          }
+        }
+      `}</style>
+      {trustPassportSnapshotReady ? (
+        <div
+          className="trust-passport-print-paper"
+          data-trust-passport-print-document="official-paper"
+          aria-hidden="true"
+        >
+          <GsnSnapshotPaperCard
+            paperText={trustPassportPaper}
+            compact={false}
+            icon="shield"
+            previewMode="full"
+            style={{ boxShadow: "none" }}
+          />
+        </div>
+      ) : null}
       <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
         7. Shareable trust tools
       </div>
@@ -402,8 +449,8 @@ export default function TrustPassportDocumentLane({
                   fontSize: isCompact ? 12 : 13,
                 }}
               >
-                Copy gives a short text summary. Use screenshot or print to share
-                the official GSN paper background.
+                Copy gives a short text summary. Export / print sends the official
+                GSN paper only, without the app menu, tools, or bottom navigation.
               </p>
             </div>
           ) : null}
