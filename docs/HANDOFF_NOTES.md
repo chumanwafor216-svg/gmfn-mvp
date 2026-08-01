@@ -1,5 +1,5 @@
 ## 2026-08-01 - Local Trust Passport export print isolation
-- Status: Local only, not pushed/deployed because the current freeze policy says routine continuation work should stay batched until the owner explicitly approves publishing.
+- Status: Pushed to `main` in commit `1ad7773d` after owner approval and deployed to Render frontend by workflow run `30714869176`; Render deploy `dep-d9n4i9m1abgc73853k6g` reached `live`.
 - Owner showed Android `Save as PDF` capturing the live Trust Passport app screen with Menu, Tools, bottom navigation, and Shareable trust tools instead of a proper Trust Passport paper.
 - Confirmed the bug in `frontend/src/pages/trustScore/TrustPassportDocumentLane.tsx`: `Export / print` called `window.print()` from the live app surface, while the official snapshot paper could be hidden behind `Document preview details`.
 - Changed `TrustPassportDocumentLane.tsx` to render a hidden print-only `data-trust-passport-print-document="official-paper"` using `GsnSnapshotPaperCard` and print CSS that hides the full app shell while printing only the official Trust Passport paper.
