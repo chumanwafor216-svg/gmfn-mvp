@@ -1,5 +1,5 @@
 ## 2026-08-01 - Local TrustSlip Decision Pack actual decision reading
-- Status: Local only, not pushed/deployed.
+- Status: Pushed to `main` in commit `2a8042c6` and deployed to Render frontend by workflow run `30714091879`; Render deploy `dep-d9n4821kcmdc73bmo1qg` reached `live`.
 - Owner challenged the TrustSlip / Decision Pack flow as missing the actual decision message: the plain `because of this, GSN arrives at this` reasoning for employment, housing, guarantor/support, trade, supplier, volunteer, partnership, membership, and community-standing decisions.
 - Confirmed the gap: public verify had partial decision-first wording, but the holder/share-prep Decision Pack model did not have a reusable purpose-specific decision reading, and the public reason text was still partly hard-coded instead of shared by pack purpose.
 - Added `buildDecisionPackDecisionReading` in `frontend/src/lib/decisionPacks.ts` with pack-specific headline, Because rows, `GSN arrives at:` conclusion, and caveat language for every existing Decision Pack key.
@@ -7,8 +7,9 @@
 - Changed public TrustSlip Verify in `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx` so `Decision First` and `Why this recommendation?` use the shared purpose-specific reading and show Because 1 / Because 2 before deeper evidence rows on phone.
 - Updated TrustSlip public/holder audits so the explicit decision-reading contract cannot regress to vague pack facts without the actual decision message.
 - Verification passed: `node --check frontend/tools/audit-public-trustslip-first-viewport.mjs`; `node --check frontend/tools/audit-public-trustslip-verify-boundary.mjs`; `npm --prefix frontend run audit:trust-actions`; `npm --prefix frontend run audit:public-trustslip-first-viewport`; `npm --prefix frontend run audit:public-trustslip-verify-boundary`; `npm exec -- tsc -b --pretty false` from `frontend`; `npm --prefix frontend run audit:trust-passport-trustslip-boundary`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `git diff --check`.
-- Devil's advocate: this now explains the reading and the reason chain, but it still interprets existing visible evidence only. It is not a backend approval engine, does not create new evidence, and does not replace the receiver's final decision or required external checks.## 2026-08-01 - Local TrustSlip community scope dropdown
-- Status: Local only, not pushed/deployed.
+- Devil's advocate: this now explains the reading and the reason chain, but it still interprets existing visible evidence only. It is not a backend approval engine, does not create new evidence, and does not replace the receiver's final decision or required external checks.
+## 2026-08-01 - Local TrustSlip community scope dropdown
+- Status: Pushed to `main` in commit `2a8042c6` and deployed to Render frontend by workflow run `30714091879`; Render deploy `dep-d9n4821kcmdc73bmo1qg` reached `live`.
 - Owner reported the TrustSlip holder `Verification scope` picker still showed a vague `This community only` option and asked that it dropdown all communities the member belongs to, then `All visible community context`.
 - Changed `frontend/src/pages/TrustSlipPage.tsx` so `/app/trust-slip` loads the signed-in member's cached `/clans/me` rows alongside the existing holder data, normalizes them into community options, and renders each community as an explicit native select option before the all-visible option.
 - The selected community now drives the TrustSlip public Decision Pack query fields, verification scope label/boundary, scoped member credential key, sender confirmation guide, public Decision Pack share note, and live community-confirmation request `community_id`.
