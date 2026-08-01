@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
-import SocialTagShareButton from "../components/SocialTagShareButton";
 import {
   PrimaryButton,
   SecondaryButton,
@@ -33,6 +32,10 @@ import { buildTrustSlipVerifyViewModel } from "./trustSlipVerify/trustSlipVerify
 
 const TrustSlipVerifyPublicPaper = React.lazy(
   () => import("./trustSlipVerify/TrustSlipVerifyPublicPaper")
+);
+
+const SocialTagShareButton = React.lazy(
+  () => import("../components/SocialTagShareButton")
 );
 
 const TrustSlipVerifyPrivateEvidence = React.lazy(
@@ -442,6 +445,43 @@ export default function TrustSlipVerifyPage() {
     verifyLoadSeqRef.current = loadSeq;
     confirmationSeqRef.current += 1;
     const contextKey = verifyContextKey;
+    const appContextPromise = isAppRoute
+      ? Promise.all([
+          (api as any).getMe?.().catch(() => null) ?? Promise.resolve(null),
+          (api as any).getCurrentClan?.().catch(() => null) ?? Promise.resolve(null),
+          typeof (api as any).getMyTrustSlip === "function"
+            ? (api as any).getMyTrustSlip().catch(() => null)
+            : Promise.resolve(null),
+        ])
+      : Promise.resolve<[any, any, any]>([null, null, null]);
+
+    const applyAppContext = (meRes: any, clanRes: any, mySlip: any, codeToUse: string) => {
+      if (
+        !alive ||
+        loadSeq !== verifyLoadSeqRef.current ||
+        contextKey !== verifyContextRef.current
+      ) {
+        return;
+      }
+
+      setMe(meRes || null);
+      setCurrentClan(clanRes || null);
+      const mySlipCode = firstTruthy(
+        mySlip?.code,
+        mySlip?.trust_slip_code,
+        mySlip?.token,
+        mySlip?.verification_code
+      );
+      setPrivateEvidenceRecord(
+        isAppRoute && mySlipCode && mySlipCode === codeToUse
+          ? normalizeTrustSlipVerification(mySlip, codeToUse)
+          : null
+      );
+    };
+
+    if (requestedCode) {
+      void import("./trustSlipVerify/TrustSlipVerifyPublicPaper");
+    }
 
     (async () => {
       setLoading(true);
@@ -457,36 +497,19 @@ export default function TrustSlipVerifyPage() {
       setPrivateEvidenceOpen(false);
 
       try {
-        const [meRes, clanRes] = isAppRoute
-          ? await Promise.all([
-              (api as any).getMe?.().catch(() => null) ?? Promise.resolve(null),
-              (api as any).getCurrentClan?.().catch(() => null) ?? Promise.resolve(null),
-            ])
-          : [null, null];
-
-        if (
-          !alive ||
-          loadSeq !== verifyLoadSeqRef.current ||
-          contextKey !== verifyContextRef.current
-        ) {
-          return;
-        }
-        setMe(meRes || null);
-        setCurrentClan(clanRes || null);
-
         let codeToUse = requestedCode;
-        let mySlip: any = null;
+        let appContext: [any, any, any] | null = null;
 
-        if (isAppRoute && typeof (api as any).getMyTrustSlip === "function") {
-          mySlip = await (api as any).getMyTrustSlip().catch(() => null);
-          if (!codeToUse) {
-            codeToUse = firstTruthy(
-              mySlip?.code,
-              mySlip?.trust_slip_code,
-              mySlip?.token,
-              mySlip?.verification_code
-            );
-          }
+        if (!codeToUse && isAppRoute) {
+          appContext = await appContextPromise;
+          const [, , mySlip] = appContext;
+          codeToUse = firstTruthy(
+            mySlip?.code,
+            mySlip?.trust_slip_code,
+            mySlip?.token,
+            mySlip?.verification_code
+          );
+          applyAppContext(appContext[0], appContext[1], mySlip, codeToUse);
           if (
             !alive ||
             loadSeq !== verifyLoadSeqRef.current ||
@@ -494,6 +517,15 @@ export default function TrustSlipVerifyPage() {
           ) {
             return;
           }
+        } else if (isAppRoute) {
+          appContextPromise.then(
+            ([meRes, clanRes, mySlip]) => {
+              applyAppContext(meRes, clanRes, mySlip, codeToUse);
+            },
+            () => {
+              applyAppContext(null, null, null, codeToUse);
+            }
+          );
         }
 
         setResolvedCode(codeToUse);
@@ -559,17 +591,11 @@ export default function TrustSlipVerifyPage() {
             : verifyResult;
         const normalized = normalizeTrustSlipVerification(mergedVerifyResult, codeToUse);
         setRecord(normalized);
-        const mySlipCode = firstTruthy(
-          mySlip?.code,
-          mySlip?.trust_slip_code,
-          mySlip?.token,
-          mySlip?.verification_code
-        );
-        const privateNormalized =
-          isAppRoute && mySlipCode && mySlipCode === codeToUse
-            ? normalizeTrustSlipVerification(mySlip, codeToUse)
-            : null;
-        setPrivateEvidenceRecord(privateNormalized);
+        if (!isAppRoute) {
+          setPrivateEvidenceRecord(null);
+        } else if (appContext) {
+          applyAppContext(appContext[0], appContext[1], appContext[2], codeToUse);
+        }
         setConfirmationOutcome(null);
 
         if (!normalized) {
@@ -1181,6 +1207,27 @@ export default function TrustSlipVerifyPage() {
           {labelWithIcon("trust-shield", "Request current TrustSlip")}
         </SecondaryButton>
       )}
+      <React.Suspense
+        fallback={
+          <SecondaryButton
+            type="button"
+            disabled
+            stableHeight={isCompact ? 52 : 58}
+            fullWidth={isCompact}
+            minWidth={isCompact ? undefined : 132}
+            debugId="trust-slip-verify.public.tag-social.loading"
+            style={{
+              borderRadius: 12,
+              fontWeight: 1000,
+              background: "#F8FBFF",
+              color: "#64748B",
+              border: "1px solid rgba(11,99,209,0.14)",
+            }}
+          >
+            Share paper
+          </SecondaryButton>
+        }
+      >
       <SocialTagShareButton
         target={{
           title: "TrustSlip Verify",
@@ -1219,6 +1266,7 @@ export default function TrustSlipVerifyPage() {
         }}
         onResult={showNotice}
       />
+      </React.Suspense>
       <div style={{ display: "none" }}>
         <SecondaryButton
           type="button"

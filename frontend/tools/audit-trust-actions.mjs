@@ -544,16 +544,15 @@ assertContains(
 
 assertContains(
   "src/pages/TrustSlipVerifyPage.tsx",
-  /if \(isAppRoute && typeof \(api as any\)\.getMyTrustSlip === "function"\) \{[\s\S]*?mySlip = await \(api as any\)\.getMyTrustSlip\(\)\.catch\(\(\) => null\);[\s\S]*?if \(!codeToUse\) \{[\s\S]*?codeToUse = firstTruthy\([\s\S]*?mySlip\?\.code[\s\S]*?mySlip\?\.verification_code[\s\S]*?\);/,
-  "Signed-in TrustSlip Verify must load the authenticated member TrustSlip before showing a missing-code state, while keeping public-code checks separate."
+  /const appContextPromise = isAppRoute[\s\S]*?getMe[\s\S]*?getCurrentClan[\s\S]*?getMyTrustSlip[\s\S]*?if \(!codeToUse && isAppRoute\)[\s\S]*?appContext = await appContextPromise[\s\S]*?codeToUse = firstTruthy\([\s\S]*?mySlip\?\.code[\s\S]*?mySlip\?\.verification_code/,
+  "Signed-in TrustSlip Verify must use authenticated member TrustSlip only when it needs to derive a missing code; supplied public-code checks must not wait for private app context."
 );
 
 assertContains(
   "src/pages/TrustSlipVerifyPage.tsx",
-  /const \[privateEvidenceRecord, setPrivateEvidenceRecord\][\s\S]*?let mySlip: any = null;[\s\S]*?if \(isAppRoute && typeof \(api as any\)\.getMyTrustSlip === "function"\) \{[\s\S]*?mySlip = await \(api as any\)\.getMyTrustSlip\(\)\.catch\(\(\) => null\);[\s\S]*?const mySlipCode = firstTruthy\([\s\S]*?mySlip\?\.code[\s\S]*?mySlip\?\.verification_code[\s\S]*?isAppRoute && mySlipCode && mySlipCode === codeToUse[\s\S]*?setPrivateEvidenceRecord\(privateNormalized\);[\s\S]*?const ownsVisibleTrustSlip =[\s\S]*?privateEvidenceCode === visibleRecordCode[\s\S]*?const canShowPrivateEvidence = ownsVisibleTrustSlip[\s\S]*?\{canShowPrivateEvidence \? \(/,
-  "Signed-in TrustSlip Verify private evidence must come from the authenticated member TrustSlip and only render when the visible code matches the signed-in member's own current TrustSlip."
+  /const \[privateEvidenceRecord, setPrivateEvidenceRecord\][\s\S]*?const applyAppContext[\s\S]*?const mySlipCode = firstTruthy\([\s\S]*?mySlip\?\.code[\s\S]*?mySlip\?\.verification_code[\s\S]*?setPrivateEvidenceRecord\([\s\S]*?isAppRoute && mySlipCode && mySlipCode === codeToUse[\s\S]*?normalizeTrustSlipVerification\(mySlip, codeToUse\)[\s\S]*?appContextPromise\.then[\s\S]*?const ownsVisibleTrustSlip =[\s\S]*?privateEvidenceCode === visibleRecordCode[\s\S]*?const canShowPrivateEvidence = ownsVisibleTrustSlip[\s\S]*?\{canShowPrivateEvidence \? \(/,
+  "Signed-in TrustSlip Verify private evidence must hydrate from the authenticated member TrustSlip and only render when the visible code matches the signed-in member's own current TrustSlip."
 );
-
 assertContains(
   "src/pages/TrustSlipVerifyPage.tsx",
   /buildTrustSlipVerifyViewModel\(\{[\s\S]*?record,[\s\S]*?me: ownsVisibleTrustSlip \? me : null,[\s\S]*?isAppRoute: ownsVisibleTrustSlip/,

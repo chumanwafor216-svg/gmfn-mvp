@@ -233,22 +233,15 @@ assertContains(
 
 assertContains(
   "verify",
-  /const \[meRes, clanRes\] = isAppRoute[\s\S]*?getMe[\s\S]*?getCurrentClan[\s\S]*?: \[null, null\];/,
-  "Signed-in user and community data must only load on app routes."
+  /const appContextPromise = isAppRoute[\s\S]*?getMe[\s\S]*?getCurrentClan[\s\S]*?getMyTrustSlip[\s\S]*?: Promise\.resolve<\[any, any, any\]>\(\[null, null, null\]\);/,
+  "Signed-in user, community data, and private holder TrustSlip lookup must only load through the app-route context promise."
 );
 
 assertContains(
   "verify",
-  /if \(isAppRoute && typeof \(api as any\)\.getMyTrustSlip === "function"\) \{[\s\S]*?mySlip = await \(api as any\)\.getMyTrustSlip\(\)/,
-  "Private holder TrustSlip lookup must stay gated to app routes."
-);
-
-assertContains(
-  "verify",
-  /const privateNormalized =[\s\S]*?isAppRoute && mySlipCode && mySlipCode === codeToUse[\s\S]*?\? normalizeTrustSlipVerification\(mySlip, codeToUse\)[\s\S]*?: null;/,
+  /setPrivateEvidenceRecord\([\s\S]*?isAppRoute && mySlipCode && mySlipCode === codeToUse[\s\S]*?\? normalizeTrustSlipVerification\(mySlip, codeToUse\)[\s\S]*?: null[\s\S]*?\);/,
   "Private evidence source must require app route and an exact visible-code match."
 );
-
 assertContains(
   "verify",
   /const ownsVisibleTrustSlip =[\s\S]*?isAppRoute &&[\s\S]*?Boolean\(privateEvidenceRecord\) &&[\s\S]*?Boolean\(privateEvidenceCode\) &&[\s\S]*?privateEvidenceCode === visibleRecordCode;/,
@@ -712,6 +705,11 @@ assertContains(
   "Backend minimal public TrustSlip level must continue suppressing profile image, identity, community, and detailed confirmation context."
 );
 
+assertContains(
+  "verify",
+  /const appContextPromise = isAppRoute[\s\S]*?getMyTrustSlip[\s\S]*?if \(requestedCode\) \{[\s\S]*?void import\("\.\/trustSlipVerify\/TrustSlipVerifyPublicPaper"\)[\s\S]*?let codeToUse = requestedCode;[\s\S]*?if \(!codeToUse && isAppRoute\)[\s\S]*?appContext = await appContextPromise[\s\S]*?\} else if \(isAppRoute\) \{[\s\S]*?appContextPromise\.then[\s\S]*?const verifyResult = await callFirstAvailable/,
+  "TrustSlip Verify must start public verification from a supplied code without waiting for signed-in holder context; private app context may hydrate afterward."
+);
 assertContains(
   "package",
   /"audit:public-trustslip-verify-boundary": "node tools\/audit-public-trustslip-verify-boundary\.mjs"/,
