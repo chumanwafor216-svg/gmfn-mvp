@@ -1512,6 +1512,8 @@ export default function TrustScorePage() {
   const [trustSlipSummary, setTrustSlipSummary] = useState<TrustSlipSummary | null>(
     null
   );
+  const [trustSlipSummaryHydrating, setTrustSlipSummaryHydrating] =
+    useState(true);
 
   const clearTrustScoreState = useCallback(() => {
     setMe(null);
@@ -1556,8 +1558,15 @@ export default function TrustScorePage() {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  const fetchTrustScoreLoadResult = useCallback(async (options: { includeSecondaryReadings?: boolean } = {}): Promise<TrustScoreLoadResult> => {
+  const fetchTrustScoreLoadResult = useCallback(
+    async (
+      options: {
+        includeSecondaryReadings?: boolean;
+        includeTrustSlipSummary?: boolean;
+      } = {}
+    ): Promise<TrustScoreLoadResult> => {
     const includeSecondaryReadings = options.includeSecondaryReadings !== false;
+    const includeTrustSlipSummary = options.includeTrustSlipSummary !== false;
     const clanHeaders: Record<string, string> = {};
     if (selectedClanId) {
       clanHeaders["X-Clan-Id"] = String(selectedClanId);
@@ -1575,7 +1584,28 @@ export default function TrustScorePage() {
         clanHeaders
       );
 
-    const [meRes, clanRes, clansRes, guidanceRes] = await Promise.all([
+    const trustSlipSummaryPromise = includeTrustSlipSummary
+      ? (async () => {
+          const direct = await fetchTrustSlipSummaryNetworkFirst();
+          if (direct) return direct;
+
+          const viaFn = await callFirstAvailable(
+            [
+              "getMyTrustSlipSummary",
+              "getTrustSlipSummary",
+              "getTrustSlipMeSummary",
+              "getMyTrustSlip",
+            ],
+            [[], [{ clan_id: selectedClanId || undefined }]]
+          );
+
+          if (viaFn) return viaFn;
+
+          return fetchTrustSlipSummaryNetworkFirst();
+        })()
+      : Promise.resolve(null);
+
+    const [meRes, clanRes, clansRes, guidanceRes, trustSlipRes] = await Promise.all([
       typeof (api as any).getMe === "function"
         ? (api as any).getMe().catch(() => null)
         : Promise.resolve(null),
@@ -1591,9 +1621,10 @@ export default function TrustScorePage() {
         return fetchFirstJson(["/clans/me"], ["GET"], clanHeaders);
       })(),
       includeSecondaryReadings ? buildGuidanceSnapshot().catch(() => null) : Promise.resolve(null),
+      trustSlipSummaryPromise,
     ]);
 
-    const [explainRes, recomputeRes, trustSlipRes] = await Promise.all([
+    const [explainRes, recomputeRes] = await Promise.all([
       includeSecondaryReadings
         ? (async () => {
             const viaFn = await callFirstAvailable(
@@ -1648,24 +1679,6 @@ export default function TrustScorePage() {
             );
           })()
         : Promise.resolve(null),
-      (async () => {
-        const direct = await fetchTrustSlipSummaryNetworkFirst();
-        if (direct) return direct;
-
-        const viaFn = await callFirstAvailable(
-          [
-            "getMyTrustSlipSummary",
-            "getTrustSlipSummary",
-            "getTrustSlipMeSummary",
-            "getMyTrustSlip",
-          ],
-          [[], [{ clan_id: selectedClanId || undefined }]]
-        );
-
-        if (viaFn) return viaFn;
-
-        return fetchTrustSlipSummaryNetworkFirst();
-      })(),
     ]);
 
     return {
@@ -1677,7 +1690,9 @@ export default function TrustScorePage() {
       recompute: normalizeRecompute(recomputeRes),
       trustSlipSummary: normalizeTrustSlipSummary(trustSlipRes),
     };
-  }, [selectedClanId]);
+    },
+    [selectedClanId]
+  );
 
   useEffect(() => {
     let alive = true;
@@ -1688,10 +1703,14 @@ export default function TrustScorePage() {
     (async () => {
       setLoading(true);
       setRefreshing(false);
+      setTrustSlipSummaryHydrating(true);
       clearTrustScoreState();
 
       try {
-        const data = await fetchTrustScoreLoadResult({ includeSecondaryReadings: false });
+        const data = await fetchTrustScoreLoadResult({
+          includeSecondaryReadings: false,
+          includeTrustSlipSummary: false,
+        });
         if (
           !alive ||
           loadSeq !== trustScoreLoadSeqRef.current ||
@@ -1702,21 +1721,40 @@ export default function TrustScorePage() {
         applyTrustScoreLoadResult(data);
         setLoading(false);
 
-        void (async () => {
-          try {
-            const secondaryData = await fetchTrustScoreLoadResult({ includeSecondaryReadings: true });
-            if (
-              !alive ||
-              loadSeq !== trustScoreLoadSeqRef.current ||
-              contextKey !== trustScoreContextRef.current
-            ) {
-              return;
+        const hydrateAfterFirstPaint = () => {
+          void (async () => {
+            try {
+              const secondaryData = await fetchTrustScoreLoadResult({
+                includeSecondaryReadings: true,
+                includeTrustSlipSummary: true,
+              });
+              if (
+                !alive ||
+                loadSeq !== trustScoreLoadSeqRef.current ||
+                contextKey !== trustScoreContextRef.current
+              ) {
+                return;
+              }
+              applyTrustScoreLoadResult(secondaryData);
+            } catch {
+              // Keep the first Trust Passport surface visible if summary/secondary readings fail.
+            } finally {
+              if (
+                alive &&
+                loadSeq === trustScoreLoadSeqRef.current &&
+                contextKey === trustScoreContextRef.current
+              ) {
+                setTrustSlipSummaryHydrating(false);
+              }
             }
-            applyTrustScoreLoadResult(secondaryData);
-          } catch {
-            // Keep the first Trust Passport surface visible if secondary readings fail.
-          }
-        })();
+          })();
+        };
+
+        if (typeof window !== "undefined" && typeof window.requestAnimationFrame === "function") {
+          window.requestAnimationFrame(() => window.setTimeout(hydrateAfterFirstPaint, 0));
+        } else {
+          hydrateAfterFirstPaint();
+        }
       } finally {
         if (
           alive &&
@@ -1743,7 +1781,7 @@ export default function TrustScorePage() {
 
     let refreshTimer: number | null = null;
     const scheduleFreshIdentityRead = () => {
-      if (document.visibilityState === "hidden") return;
+      if (document.visibilityState === "hidden" || loading) return;
       if (refreshTimer !== null) window.clearTimeout(refreshTimer);
       const loadSeq = trustScoreLoadSeqRef.current + 1;
       trustScoreLoadSeqRef.current = loadSeq;
@@ -1784,7 +1822,7 @@ export default function TrustScorePage() {
       window.removeEventListener("focus", scheduleFreshIdentityRead);
       document.removeEventListener("visibilitychange", scheduleFreshIdentityRead);
     };
-  }, [applyTrustScoreLoadResult, fetchTrustScoreLoadResult]);
+  }, [applyTrustScoreLoadResult, fetchTrustScoreLoadResult, loading]);
 
   async function handleRefreshTrust() {
     const loadSeq = trustScoreLoadSeqRef.current + 1;
@@ -1792,6 +1830,7 @@ export default function TrustScorePage() {
     const contextKey = trustScoreContextRef.current;
 
     setRefreshing(true);
+    setTrustSlipSummaryHydrating(true);
 
     try {
       const data = await fetchTrustScoreLoadResult();
@@ -1817,8 +1856,12 @@ export default function TrustScorePage() {
         });
       }
     } finally {
-      if (loadSeq === trustScoreLoadSeqRef.current) {
+      if (
+        loadSeq === trustScoreLoadSeqRef.current &&
+        contextKey === trustScoreContextRef.current
+      ) {
         setRefreshing(false);
+        setTrustSlipSummaryHydrating(false);
       }
     }
   }
@@ -1863,7 +1906,8 @@ export default function TrustScorePage() {
   const gmfnIdValue = useMemo(() => {
     return firstTruthy(trustSlipSummary?.gmfn_id, me?.gmfn_id);
   }, [trustSlipSummary, me]);
-  const gmfnId = gmfnIdValue || "Not issued yet";
+  const gmfnId =
+    gmfnIdValue || (trustSlipSummaryHydrating ? "Checking GSN ID" : "Not issued yet");
 
   const communityName = useMemo(() => {
     return (
@@ -2208,9 +2252,13 @@ export default function TrustScorePage() {
     trustSlipBlockedByPhone ? "Phone check needed" : trustSlipSummary?.status,
     trustSlipSummary?.active || trustSlipSummary?.verified || trustSlipCode
       ? "Ready"
-      : "Not issued yet"
+      : trustSlipSummaryHydrating
+        ? "Checking TrustSlip"
+        : "Not issued yet"
   );
-  const expiresText = safeDateTime(trustSlipSummary?.expires_at) || "Not stated";
+  const expiresText =
+    safeDateTime(trustSlipSummary?.expires_at) ||
+    (trustSlipSummaryHydrating ? "Checking" : "Not stated");
   const eventCount = safeStr(recompute?.event_count ?? "0");
   const visibleActiveClanCount =
     Number(trustSlipSummary?.active_clan_count || 0) ||
@@ -2732,6 +2780,7 @@ export default function TrustScorePage() {
     passportVm.technicalDetail.eventCount,
     passportVm.outputs.trustSlipCode
   );
+  const trustSlipEvidencePending = trustSlipSummaryHydrating && !trustSlipCode;
   const trustPassportConfidenceRibbonItems: TrustDocumentRibbonItem[] = [
     {
       label: "Passport view",
@@ -2771,8 +2820,12 @@ export default function TrustScorePage() {
     },
     {
       label: "Check path",
-      value: passportVm.outputs.trustSlipCode ? "TrustSlip available" : "TrustSlip pending",
-      tone: passportVm.outputs.trustSlipCode ? "good" : "warn",
+      value: passportVm.outputs.trustSlipCode
+        ? "TrustSlip available"
+        : trustSlipEvidencePending
+          ? "Checking TrustSlip"
+          : "TrustSlip pending",
+      tone: passportVm.outputs.trustSlipCode ? "good" : trustSlipEvidencePending ? "info" : "warn",
     },
   ];
   const trustPassportSecurityItems: TrustDocumentPanelItem[] = [
@@ -2848,32 +2901,44 @@ export default function TrustScorePage() {
       ? "Primary community anchor is not shown yet."
       : `${currentRoleSummary}; ${passportVm.identity.communityId}.`;
   const communityPortfolioDetail = passportVm.evidenceScope.summary;
-  const trustPassportDecisionAnswer = !trustSlipCode
-    ? "Evidence setup needed"
-    : aggregatePassportReading;
-  const trustPassportDecisionTone = !trustSlipCode
-    ? "warn"
-    : identityEvidence.score >= 60
-      ? "good"
-      : "info";
-  const trustPassportDecisionLine = !trustSlipCode
-    ? "Issue the public TrustSlip before sharing evidence."
-    : identityEvidence.score >= 60 && activeCommunityTotal > 0
-      ? "Aggregate reading first. Primary community is the anchor, not the whole judgement."
-      : "Build aggregate evidence before relying on this passport.";
+  const trustPassportDecisionAnswer = trustSlipEvidencePending
+    ? "Opening current Passport"
+    : !trustSlipCode
+      ? "Evidence setup needed"
+      : aggregatePassportReading;
+  const trustPassportDecisionTone = trustSlipEvidencePending
+    ? "info"
+    : !trustSlipCode
+      ? "warn"
+      : identityEvidence.score >= 60
+        ? "good"
+        : "info";
+  const trustPassportDecisionLine = trustSlipEvidencePending
+    ? "Opening the private Passport first. Current TrustSlip evidence is still checking."
+    : !trustSlipCode
+      ? "Issue the public TrustSlip before sharing evidence."
+      : identityEvidence.score >= 60 && activeCommunityTotal > 0
+        ? "Aggregate reading first. Primary community is the anchor, not the whole judgement."
+        : "Build aggregate evidence before relying on this passport.";
   const trustPassportPrimaryActionLabel =
     safeStr(nextStep.ctaLabel).length <= 24 ? nextStep.ctaLabel : "Open next step";
-  const trustPassportPrimaryAction = !trustSlipCode
+  const trustPassportPrimaryAction = trustSlipEvidencePending
     ? {
         icon: "document" as GsnIconName,
-        label: "Issue TrustSlip",
+        label: "Open TrustSlip",
         to: routes.trustSlip,
       }
-    : {
-        icon: "evidence" as GsnIconName,
-        label: trustPassportPrimaryActionLabel,
-        to: nextStep.ctaTo,
-      };
+    : !trustSlipCode
+      ? {
+          icon: "document" as GsnIconName,
+          label: "Issue TrustSlip",
+          to: routes.trustSlip,
+        }
+      : {
+          icon: "evidence" as GsnIconName,
+          label: trustPassportPrimaryActionLabel,
+          to: nextStep.ctaTo,
+        };
   const trustPassportDecisionFacts: Array<[
     GsnIconName,
     string,
@@ -2906,7 +2971,18 @@ export default function TrustScorePage() {
       activeCommunityTotal > 1,
       true,
     ],
-    ["evidence", "Next step", nextStep.ctaLabel, trustSlipCode ? "Use the evidence lanes below." : "Issue the public TrustSlip first.", Boolean(trustSlipCode), true],
+    [
+      "evidence",
+      "Next step",
+      trustSlipEvidencePending ? "Checking evidence" : nextStep.ctaLabel,
+      trustSlipEvidencePending
+        ? "Current TrustSlip evidence is still checking."
+        : trustSlipCode
+          ? "Use the evidence lanes below."
+          : "Issue the public TrustSlip first.",
+      Boolean(trustSlipCode),
+      true,
+    ],
   ];
   const trustPassportDecisionBoundaryRows: Array<[string, string]> = [
     [
@@ -3316,7 +3392,7 @@ export default function TrustScorePage() {
                 <span style={overviewBadge(Boolean(trustSlipCode), true)}>
                   <GsnLegacyIcon name="document" size={22} decorative />
                 </span>
-                TrustSlip {trustSlipCode ? "available" : "pending"}
+                TrustSlip {trustSlipCode ? "available" : trustSlipEvidencePending ? "checking" : "pending"}
               </span>
             ) : null}
           </div>

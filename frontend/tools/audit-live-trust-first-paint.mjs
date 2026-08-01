@@ -147,6 +147,9 @@ function shouldDelay(path, mode) {
   if (mode === "trust") {
     return (
       path === "/trust/me/why" ||
+      path === "/trust-slips/me/summary" ||
+      path === "/trust-slips/me-summary" ||
+      path === "/trust-slips/summary/me" ||
       /^\/trust-explainability/.test(path) ||
       /^\/trust_explainability/.test(path)
     );
@@ -285,7 +288,8 @@ async function run() {
         result.firstSurfaceMs > MAX_FIRST_SURFACE_MS ||
         result.loadingTextStillVisible ||
         result.errors.length ||
-        (result.name.includes("Trust Passport") && !result.delayed["/trust/me/why"]) ||
+        (result.name.includes("Trust Passport") &&
+          (!["/trust/me/why", "/trust-slips/me/summary"].every((path) => result.delayed[path]))) ||
         (result.name.includes("TrustSlip") && Object.keys(result.delayed).length > 0)
     );
 

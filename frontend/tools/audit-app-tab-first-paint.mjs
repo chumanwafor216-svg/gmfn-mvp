@@ -133,6 +133,9 @@ function shouldDelay(path, mode) {
   if (mode === "trust") {
     return (
       path === "/trust/me/why" ||
+      path === "/trust-slips/me/summary" ||
+      path === "/trust-slips/me-summary" ||
+      path === "/trust-slips/summary/me" ||
       /^\/trust-explainability/.test(path) ||
       /^\/trust_explainability/.test(path)
     );
@@ -184,6 +187,9 @@ async function installApiMocks(page, mode) {
 function delayedCallExpectationFailed(test, delayed) {
   const delayedCount = Object.keys(delayed).length;
   if (test.expectDelayed === false) return delayedCount > 0;
+  if (test.expectDelayedPaths) {
+    return test.expectDelayedPaths.some((path) => !delayed[path]);
+  }
   return delayedCount === 0;
 }
 
@@ -264,6 +270,7 @@ async function run() {
       selector: '[data-trust-passport-decision-first="one-answer-four-facts"]',
       text: "Aggregate Passport reading",
       loadingText: "Loading Trust Passport",
+      expectDelayedPaths: ["/trust/me/why", "/trust-slips/me/summary"],
     },
     {
       name: "TrustSlip Holder",

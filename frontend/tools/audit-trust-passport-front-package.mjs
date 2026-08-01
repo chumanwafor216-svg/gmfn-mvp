@@ -190,8 +190,8 @@ assertContains(
 
 assertContains(
   "trust",
-  /const trustPassportDecisionLine = !trustSlipCode[\s\S]*?Issue the public TrustSlip before sharing evidence\.[\s\S]*?Aggregate reading first\. Primary community is the anchor, not the whole judgement\.[\s\S]*?Build aggregate evidence before relying on this passport\.[\s\S]*?const trustPassportPrimaryActionLabel =[\s\S]*?safeStr\(nextStep\.ctaLabel\)\.length <= 24 \? nextStep\.ctaLabel : "Open next step"[\s\S]*?const trustPassportPrimaryAction = !trustSlipCode[\s\S]*?label: "Issue TrustSlip"[\s\S]*?to: routes\.trustSlip[\s\S]*?label: trustPassportPrimaryActionLabel[\s\S]*?to: nextStep\.ctaTo/,
-  "Trust Passport first answer must include aggregate-scope plain action language and a real primary next-step target."
+  /const trustSlipEvidencePending = trustSlipSummaryHydrating && !trustSlipCode[\s\S]*?const trustPassportDecisionLine = trustSlipEvidencePending[\s\S]*?Opening the private Passport first\. Current TrustSlip evidence is still checking\.[\s\S]*?!trustSlipCode[\s\S]*?Issue the public TrustSlip before sharing evidence\.[\s\S]*?Aggregate reading first\. Primary community is the anchor, not the whole judgement\.[\s\S]*?Build aggregate evidence before relying on this passport\.[\s\S]*?const trustPassportPrimaryActionLabel =[\s\S]*?safeStr\(nextStep\.ctaLabel\)\.length <= 24 \? nextStep\.ctaLabel : "Open next step"[\s\S]*?const trustPassportPrimaryAction = trustSlipEvidencePending[\s\S]*?label: "Open TrustSlip"[\s\S]*?to: routes\.trustSlip[\s\S]*?!trustSlipCode[\s\S]*?label: "Issue TrustSlip"[\s\S]*?to: routes\.trustSlip[\s\S]*?label: trustPassportPrimaryActionLabel[\s\S]*?to: nextStep\.ctaTo/,
+  "Trust Passport first answer must include aggregate-scope plain action language, a checking-evidence state, and a real primary next-step target."
 );
 
 assertContains(
@@ -364,7 +364,7 @@ assertContains(
 
 assertContains(
   "trust",
-  /const gmfnIdValue = useMemo[\s\S]*?const gmfnId = gmfnIdValue \|\| "Not issued yet"[\s\S]*?const communityCodeValue = useMemo[\s\S]*?const communityCode = communityCodeValue \|\| "No community ID yet"[\s\S]*?memberKey: gmfnIdValue/,
+  /const gmfnIdValue = useMemo[\s\S]*?const gmfnId =[\s\S]*?gmfnIdValue \|\| \(trustSlipSummaryHydrating \? "Checking GSN ID" : "Not issued yet"\)[\s\S]*?const communityCodeValue = useMemo[\s\S]*?const communityCode = communityCodeValue \|\| "No community ID yet"[\s\S]*?memberKey: gmfnIdValue/,
   "Trust Passport must separate actual GSN/community keys from display fallback labels before building public credential paths."
 );
 

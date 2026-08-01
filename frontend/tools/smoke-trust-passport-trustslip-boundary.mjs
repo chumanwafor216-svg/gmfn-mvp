@@ -281,6 +281,7 @@ function recomputePayload() {
 async function installApiMocks(page, requestLog, options = {}) {
   const trustSlipSummary = options.trustSlipSummary || trustSlipSummaryPayload();
   const secondaryReadGate = options.secondaryReadGate || null;
+  const trustSlipSummaryGate = options.trustSlipSummaryGate || null;
 
   await page.route("**/*", async (route) => {
     const request = route.request();
@@ -319,6 +320,7 @@ async function installApiMocks(page, requestLog, options = {}) {
         "/trust-slips/summary/me",
       ].includes(path)
     ) {
+      if (trustSlipSummaryGate) await trustSlipSummaryGate.wait();
       await route.fulfill(json(trustSlipSummary));
       return;
     }
@@ -390,6 +392,18 @@ function privateDecisionPackReadCount(requestLog) {
         "/trust-slips/me/decision-pack-evidence",
       ].includes(entry.path)
   ).length;
+}
+
+function isTrustPassportSummaryRead(entry) {
+  return (
+    entry.method === "GET" &&
+    [
+      "/trust-slips/me/summary",
+      "/trust-slips/me",
+      "/trust-slips/me-summary",
+      "/trust-slips/summary/me",
+    ].includes(entry.path)
+  );
 }
 
 function isTrustPassportExplainabilityRead(entry) {
@@ -552,13 +566,19 @@ function assertNoPublicVerifyRead(requestLog, label) {
 
 async function runTrustPassportScenario(browser, baseURL) {
   const secondaryReadGate = createApiGate();
-  const state = await newSignedInPage(browser, { secondaryReadGate });
+  const trustSlipSummaryGate = createApiGate();
+  const state = await newSignedInPage(browser, { secondaryReadGate, trustSlipSummaryGate });
   await state.page.goto(`${baseURL}/app/trust`, {
     waitUntil: "domcontentloaded",
     timeout: 60000,
   });
 
   await expect(state.page.getByText("Aggregate Passport reading", { exact: true })).toBeVisible({ timeout: 7000 });
+  await waitForRequest(
+    state.requestLog,
+    isTrustPassportSummaryRead,
+    "Trust Passport background TrustSlip summary request"
+  );
   await waitForRequest(
     state.requestLog,
     isTrustPassportExplainabilityRead,
@@ -570,12 +590,14 @@ async function runTrustPassportScenario(browser, baseURL) {
       `Trust Passport did not start its secondary guidance/explainability read in the background before release: ${secondaryReadsBeforeRelease}`
     );
   }
+  trustSlipSummaryGate.release();
   secondaryReadGate.release();
   await waitForRequest(
     state.requestLog,
     isTrustPassportRecomputeRead,
     "Trust Passport background recompute request after secondary release"
   );
+  await expect(state.page.getByText("TrustSlip available", { exact: true }).first()).toBeVisible({ timeout: 7000 });
   await expect(state.page.getByText("Aggregate reading", { exact: true })).toBeVisible();
   await expect(state.page.getByText("Primary anchor", { exact: true }).first()).toBeVisible();
   await expect(state.page.getByText("Community portfolio", { exact: true })).toBeVisible();
@@ -707,10 +729,12 @@ async function runTrustPassportScenario(browser, baseURL) {
   await state.page.getByText("Documents / TrustSlip", { exact: true }).first().click();
   await expect(state.page.getByText("7. Shareable trust tools", { exact: true })).toBeVisible();
   await state.page.locator('[data-cta-id="trust-score.documents-lane.preview-details.toggle"]').click();
-  const snapshotTitleMetrics = await state.page
-    .locator(".gsn-snapshot-paper-card h3")
+  const snapshotTitle = state.page
+    .locator(".gsn-snapshot-paper-card h3:visible")
     .filter({ hasText: "GSN Trust Passport Snapshot" })
-    .first()
+    .first();
+  await expect(snapshotTitle).toBeVisible({ timeout: 7000 });
+  const snapshotTitleMetrics = await snapshotTitle
     .evaluate((title) => {
       const rect = title.getBoundingClientRect();
       const styles = window.getComputedStyle(title);
