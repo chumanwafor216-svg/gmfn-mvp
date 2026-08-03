@@ -15,6 +15,7 @@ import { brandClampLines } from "../styles/gmfnBrand";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
+import { preloadRouteForPath } from "../lib/routePreload";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import {
   getMarketplaceBroadcasts,
@@ -1811,6 +1812,50 @@ export default function CommunityHomePage() {
     }),
     [selectedClanId]
   );
+  useEffect(() => {
+    if (!selectedClanId || typeof window === "undefined") return;
+
+    const actionRoutes = Array.from(
+      new Set(
+        [
+          routes.shop,
+          routes.freeSpotlight,
+          routes.subscriptionSpotlight,
+          routes.vaultControl,
+          routes.buildFirstCircle,
+          routes.joinRequests,
+          routes.marketplace,
+          routes.shopGalleryTools,
+          routes.merchantRelease,
+          routes.communityPackages,
+          routes.paidRepost,
+          routes.rosca,
+        ].filter((route): route is string => Boolean(route))
+      )
+    );
+
+    const timers = actionRoutes.map((route, index) =>
+      window.setTimeout(() => preloadRouteForPath(route), 120 + index * 140)
+    );
+
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, [
+    selectedClanId,
+    routes.shop,
+    routes.freeSpotlight,
+    routes.subscriptionSpotlight,
+    routes.vaultControl,
+    routes.buildFirstCircle,
+    routes.joinRequests,
+    routes.marketplace,
+    routes.shopGalleryTools,
+    routes.merchantRelease,
+    routes.communityPackages,
+    routes.paidRepost,
+    routes.rosca,
+  ]);
   const memberGlobalId = firstTruthy(
     me?.gmfn_id,
     me?.global_member_id,
@@ -2756,6 +2801,7 @@ export default function CommunityHomePage() {
         : targetId === "shop-control-spotlight"
         ? routes.shopSpotlight
         : routes.shop;
+    preloadRouteForPath(hash);
     navigateWithOrigin(navigate, hash, location);
   }
 
@@ -2810,6 +2856,7 @@ export default function CommunityHomePage() {
     to: string
   ) {
     consumeCommunityButtonEvent(event);
+    preloadRouteForPath(to);
     navigateWithOrigin(navigate, to, location);
   }
 
@@ -2829,6 +2876,7 @@ export default function CommunityHomePage() {
       );
       return;
     }
+    preloadRouteForPath(to);
     navigateWithOrigin(navigate, to, location);
   }
 
@@ -2849,6 +2897,7 @@ export default function CommunityHomePage() {
         setChangingClanId(0);
       }
     }
+    preloadRouteForPath(to);
     navigateWithOrigin(navigate, to, location);
   }
 

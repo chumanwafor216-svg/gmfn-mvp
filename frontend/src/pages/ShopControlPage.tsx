@@ -921,6 +921,7 @@ export default function ShopControlPage() {
   });
 
   const [loading, setLoading] = useState(true);
+  const [detailsLoading, setDetailsLoading] = useState(false);
   const [notice, setNotice] = useState<{ tone: NoticeTone; text: string } | null>(
     null
   );
@@ -1332,6 +1333,7 @@ export default function ShopControlPage() {
     const preferredClanId = Number(options?.preferredClanId || 0);
     if (!background) {
       setLoading(true);
+      setDetailsLoading(false);
     }
 
     try {
@@ -1404,7 +1406,12 @@ export default function ShopControlPage() {
         safeStr(current) ? current : firstTruthy(shopItem?.whatsapp_number)
       );
 
+      if (!background) {
+        setLoading(false);
+      }
+
       if (shopItem?.id) {
+        if (!background) setDetailsLoading(true);
         const expectedPaymentsPath =
           `/api/payment-instructions/my/expected?clan_id=${shopContextClanId || 0}&limit=100`;
 
@@ -1437,7 +1444,9 @@ export default function ShopControlPage() {
           apiJson<any>(packageStatusPath).catch(() => null),
           apiJson<any>(roscaCyclesPath).catch(() => null),
           apiJson<any>(communityMeetingsPath).catch(() => null),
-        ]);
+        ]).finally(() => {
+          if (!background) setDetailsLoading(false);
+        });
 
         const visibleSpotlights = Array.isArray(broadcastsRes?.items)
           ? (broadcastsRes.items as BroadcastRecord[]).filter(
@@ -1476,6 +1485,7 @@ export default function ShopControlPage() {
             : []
         );
       } else {
+        if (!background) setDetailsLoading(false);
         setSpotlights([]);
         setVaultLinks([]);
         setExpectedPayments([]);
@@ -3032,6 +3042,10 @@ export default function ShopControlPage() {
           backTo={routes.shop}
           backLabel="Shop Control"
         />
+
+        {detailsLoading ? (
+          <div style={noticeCard("info")}>Spotlight is open. Live status, payment, and capacity rows are still refreshing.</div>
+        ) : null}
         {identityLockNotice ? (
           <div style={noticeCard("info")}>
             Identity review is needed before protected shop actions can run. {identityLockNotice}
@@ -3055,6 +3069,10 @@ export default function ShopControlPage() {
         backTo={routes.marketplace}
         backLabel="Marketplace"
       />
+
+      {detailsLoading ? (
+        <div style={noticeCard("info")}>Shop Control is open. Live Spotlight, Vault, payment, and capacity rows are still refreshing.</div>
+      ) : null}
 
       {identityLockNotice ? (
         <div style={noticeCard("info")}>

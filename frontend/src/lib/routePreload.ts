@@ -13,6 +13,12 @@ const ROUTE_LOADERS: Array<{
     load: () => import("../pages/DashboardPage"),
   },
   {
+    key: "community-join-requests",
+    match: (pathname) =>
+      /^\/app\/community\/[^/]+\/join-requests$/.test(pathname),
+    load: () => import("../pages/CommunityJoinRequestsPage"),
+  },
+  {
     key: "community-home",
     match: (pathname) =>
       pathname === "/app/community" || pathname.startsWith("/app/community/"),
@@ -38,6 +44,21 @@ const ROUTE_LOADERS: Array<{
     key: "shop-control",
     match: (pathname) => pathname === "/app/shop-control",
     load: () => import("../pages/ShopControlPage"),
+  },
+  {
+    key: "subscription-spotlight",
+    match: (pathname) => pathname === "/app/shop-control/subscription-spotlight",
+    load: () => import("../pages/SubscriptionSpotlightPage"),
+  },
+  {
+    key: "vault-control",
+    match: (pathname) => pathname === "/app/vault-control",
+    load: () => import("../pages/VaultControlPage"),
+  },
+  {
+    key: "build-first-circle",
+    match: (pathname) => pathname === "/app/build-first-circle",
+    load: () => import("../pages/BuildFirstCirclePage"),
   },
   {
     key: "trust-passport",
