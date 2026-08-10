@@ -438,6 +438,87 @@ const placementSummary = {
   },
 };
 
+const periodSummary = {
+  period: { start: "2026-08-01", end: "2026-08-31" },
+  boundary: "Director summary counts admin-recorded Community Domain facts only.",
+  membership_snapshot: { active_total: 12 },
+  member_movement: { added: 2, removed_or_deactivated: 0 },
+  governance_summary: { total: 4 },
+  evidence_summary: {
+    total: 7,
+    beneficiary_confirmation_delivery_prepared: 2,
+    beneficiary_confirmation_delivery_receipts: 1,
+    beneficiary_confirmation_delivery_receipts_current_uncorrected: 1,
+    beneficiary_confirmation_delivery_receipt_corrections: 0,
+    beneficiary_confirmation_provider_send_blocked_checks: 2,
+    beneficiary_contact_consent_records: 2,
+    beneficiary_contact_consent_withdrawals: 0,
+    external_delivery_boundary:
+      "GSN prepared delivery packs for manual sharing; provider sending stays blocked in this audit fixture.",
+  },
+  confirmation_summary: { requests_total: 3 },
+  activity_summary: { status: "recorded" },
+  beneficiary_outcome_summary: { status: "needs_follow_up" },
+};
+
+const sponsorSummary = {
+  sponsor_readiness: "draft_ready",
+  plain_language: "Sponsor-safe summary aggregates recorded activities and beneficiary outcomes only.",
+  activity_summary: { status: "recorded" },
+  beneficiary_outcome_summary: {
+    status: "needs_follow_up",
+    subject_count: 4,
+    top_indicators: [{ label: "Training completion", count: 2 }],
+  },
+  challenge_summary: { status: "under_review" },
+  evidence_summary: {
+    activity_records: 3,
+    beneficiary_outcome_records: 4,
+    beneficiary_confirmed_outcomes: 2,
+    admin_recorded_or_unconfirmed_outcomes: 2,
+    challenged_or_under_review_outcomes: 1,
+    reviewed_challenge_outcomes: 1,
+    unresolved_challenge_outcomes: 0,
+    confirmation_delivery_prepared_records: 2,
+    confirmation_delivery_receipt_records: 1,
+    confirmation_delivery_receipts_current_uncorrected: 1,
+    confirmation_delivery_receipt_corrections: 0,
+    confirmation_provider_send_blocked_checks: 2,
+    contact_consent_records: 2,
+    contact_consent_withdrawals: 0,
+    privacy: "Private beneficiary details are omitted from sponsor-safe reports.",
+    external_delivery_boundary:
+      "Delivery evidence is prepared for manual sharing; provider sending is not connected.",
+  },
+  sponsor_export_pack: {
+    copy_text:
+      "GSN Demo Community A recorded 3 activities and 4 beneficiary outcomes for the current sponsor-safe period.",
+  },
+  external_delivery_readiness: {
+    status: "blocked_until_provider_ready",
+    external_channels_sent_by_gsn: false,
+    provider_send_engine_status: "not_configured",
+    missing_components: ["provider credentials", "webhook receipts"],
+    boundary: "GSN can prepare manual delivery text, but provider sending is not connected.",
+    provider_setup_contract: {
+      status: "not_configured",
+      send_lift_conditions: ["provider send tested", "webhook receipt mapped"],
+      truth_gate: "Provider sending may only be marked ready after provider send, webhook, consent, retry, and receipt mapping are tested.",
+    },
+    contact_consent_contract: {
+      status: "not_connected",
+      provider_send_blocker: "missing contact preference and consent gate",
+      active_contact_consent_status: "not_evaluated",
+      active_contact_consent_boundary:
+        "Provider sending must stay blocked unless the latest contact/consent status is active attestation.",
+      minimum_send_rule:
+        "Do not attempt provider delivery until the selected channel has a verified destination and an active consent or legal authority basis.",
+      privacy_boundary:
+        "This readiness view does not store beneficiary phone numbers, email addresses, provider destinations, or consent records.",
+    },
+  },
+};
+
 function pathPayload(pathname) {
   const dashboard = currentDashboardPayload();
 
@@ -667,6 +748,12 @@ function pathPayload(pathname) {
   }
   if (pathname.includes("/community-domains/13/placement-summary")) {
     return placementSummary;
+  }
+  if (pathname.includes("/community-domains/13/period-summary")) {
+    return periodSummary;
+  }
+  if (pathname.includes("/community-domains/13/sponsor-summary")) {
+    return sponsorSummary;
   }
   if (pathname.includes("/community-domains/13/beneficiary-outcomes")) {
     return {
@@ -1703,6 +1790,11 @@ try {
   await clickByDebugId(page, "community-domain-dashboard.governance-group-toggle");
   await clickByDebugId(page, "community-domain-dashboard.governance-group.reports");
   await page.getByText("Director period summary", { exact: true }).waitFor({ timeout: 10000 });
+  await page
+    .locator('[data-cta-id="community-domain-dashboard.director-summary-toggle"]')
+    .first()
+    .waitFor({ state: "visible", timeout: 10000 })
+    .catch(() => null);
   if (await isDebugVisible(page, "community-domain-dashboard.director-summary.membership")) {
     findings.push("Community Domain Director summary views are visible before Change report view is opened.");
   }
@@ -1724,6 +1816,11 @@ try {
     findings.push("Community Domain Governance report jobs stay visible after selecting a report job.");
   }
   await page.getByText("Sponsor-safe summary", { exact: true }).waitFor({ timeout: 10000 });
+  await page
+    .locator('[data-cta-id="community-domain-dashboard.sponsor-summary-toggle"]')
+    .first()
+    .waitFor({ state: "visible", timeout: 10000 })
+    .catch(() => null);
   if (await isDebugVisible(page, "community-domain-dashboard.sponsor-summary.evidence")) {
     findings.push("Community Domain Sponsor summary views are visible before Change sponsor view is opened.");
   }

@@ -33,16 +33,6 @@ function assertContains(pattern, message) {
   addFinding(-1, message);
 }
 
-function sectionBetween(startPattern, endPattern) {
-  const start = source.search(startPattern);
-  if (start === -1) return { text: "", start: -1 };
-  const rest = source.slice(start);
-  const end = rest.search(endPattern);
-  return {
-    text: end === -1 ? rest : rest.slice(0, end),
-    start,
-  };
-}
 
 assertContains(
   /pool: "financeInstitution"[\s\S]*?function MarketplaceGlyph[\s\S]*?<GsnLegacyIcon/,
@@ -79,10 +69,10 @@ assertContains(
   "Collapsed Money Pool must keep its local header and Open button after first use instead of removing its own reopen control."
 );
 
-const moneySection = sectionBetween(
-  /id="marketplace-money-routes"/,
-  /id="marketplace-rosca"/
-);
+const moneySection = {
+  text: marketplaceMoneySource,
+  start: source.search(/<MarketplaceMoneySection\b/),
+};
 
 if (!moneySection.text) {
   addFinding(-1, "Money Pool detail section must exist before ROSCA.");

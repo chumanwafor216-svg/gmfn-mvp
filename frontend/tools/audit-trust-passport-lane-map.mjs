@@ -196,7 +196,7 @@ assertContains(
 assertOrderedSnippets(
   "trust",
   [
-    "const institutionalRows = [",
+    "const institutionalRows",
     "\"Support limit signal\"",
     "\"Available support capacity\"",
     "\"Current support commitments\"",

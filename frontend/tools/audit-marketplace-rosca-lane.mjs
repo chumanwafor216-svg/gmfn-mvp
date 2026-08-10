@@ -40,16 +40,6 @@ function assertContains(pattern, message) {
   addFinding(-1, message);
 }
 
-function sectionBetween(startPattern, endPattern) {
-  const start = source.search(startPattern);
-  if (start === -1) return { text: "", start: -1 };
-  const rest = source.slice(start);
-  const end = rest.search(endPattern);
-  return {
-    text: end === -1 ? rest : rest.slice(0, end),
-    start,
-  };
-}
 
 assertContains(
   /rosca: "repaymentSchedule"[\s\S]*?function MarketplaceGlyph[\s\S]*?<GsnLegacyIcon/,
@@ -86,10 +76,10 @@ assertContains(
   "Starting a ROSCA cycle must require explicit selected members and send member_user_ids to the backend."
 );
 
-const roscaSection = sectionBetween(
-  /id="marketplace-rosca"/,
-  /id="marketplace-owned-links"/
-);
+const roscaSection = {
+  text: marketplaceRoscaSource,
+  start: source.search(/<MarketplaceRoscaSection\b/),
+};
 
 if (!roscaSection.text) {
   addFinding(-1, "ROSCA detail section must exist before owner links.");

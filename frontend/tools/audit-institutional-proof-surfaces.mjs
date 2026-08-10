@@ -106,7 +106,7 @@ function absolute(file) {
   return join(repoRoot, file);
 }
 
-function read(file) {
+function readRaw(file) {
   const path = absolute(file);
   if (!existsSync(path)) {
     findings.push({
@@ -118,6 +118,30 @@ function read(file) {
     return "";
   }
   return readFileSync(path, "utf8");
+}
+
+function composeLazySource(file, replacements) {
+  return replacements.reduce((source, [pattern, childFile]) => {
+    return source.replace(pattern, readRaw(childFile));
+  }, readRaw(file));
+}
+
+function read(file) {
+  if (file === files.marketplace) {
+    return composeLazySource(file, [
+      [/<MarketplaceToolsSection\b[\s\S]*?\n\s*\/>/, "frontend/src/pages/marketplace/MarketplaceToolsSection.tsx"],
+      [/<MarketplaceTradeEvidenceSection\b[\s\S]*?\n\s*\/>/, "frontend/src/pages/marketplace/MarketplaceTradeEvidenceSection.tsx"],
+    ]);
+  }
+
+  if (file === files.trustPassport) {
+    return composeLazySource(file, [
+      [/<TrustPassportDocumentLane\b[\s\S]*?\n\s*\/>/, "frontend/src/pages/trustScore/TrustPassportDocumentLane.tsx"],
+      [/<TrustPassportInstitutionalContext\b[\s\S]*?\n\s*\/>/, "frontend/src/pages/trustScore/TrustPassportInstitutionalContext.tsx"],
+    ]);
+  }
+
+  return readRaw(file);
 }
 
 const sourceByFile = Object.fromEntries(
@@ -2014,7 +2038,7 @@ assertOrdered(
 
 assertContains(
   "trustSlip",
-  /const trustSlipHolderDecisionBoundaryRows: Array<\[string, string\]> = \[[\s\S]*?\["Evidence scope", numericCount\(activeCommunityCount\) > 1 \? "Primary \+ wider" : "Primary shown"\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Credit approval", "No"\][\s\S]*?\["Final decision", "Yours"\][\s\S]*?data-gsn-trustslip-holder-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?trustSlipHolderDecisionBoundaryRows\.map/,
+  /const trustSlipHolderDecisionBoundaryRows: Array<\[string, string\]> = \[[\s\S]*?\["Verification scope", verificationScopeLabel\][\s\S]*?\["Scope boundary", verificationScopeBoundary\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Credit approval", "No"\][\s\S]*?\["Final decision", "Yours"\][\s\S]*?data-gsn-trustslip-holder-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?trustSlipHolderDecisionBoundaryRows\.map/,
   "Signed-in TrustSlip holder paper must compress repeated legal/evidence limits into a compact top boundary."
 );
 if (findings.length > 0) {

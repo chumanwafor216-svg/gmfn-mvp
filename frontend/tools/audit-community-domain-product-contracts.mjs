@@ -12,6 +12,8 @@ const findings = [];
 const communityDomainDashboardFile = "src/pages/CommunityDomainDashboardPage.tsx";
 const communityDomainRealLifeRecordFile =
   "src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx";
+const marketplaceFile = "src/pages/MarketplacePage.tsx";
+const marketplaceRoscaFile = "src/pages/marketplace/MarketplaceRoscaSection.tsx";
 
 function readFromRoot(relativePath) {
   return readFileSync(join(repoRoot, relativePath), "utf8");
@@ -30,9 +32,21 @@ function readCommunityDomainDashboardAuditSource() {
   );
 }
 
+function readMarketplaceAuditSource() {
+  const marketplaceSource = readRawFromFrontend(marketplaceFile);
+  const roscaSource = readRawFromFrontend(marketplaceRoscaFile);
+  return marketplaceSource.replace(
+    /<MarketplaceRoscaSection\b[\s\S]*?\n\s*\/>/,
+    roscaSource
+  );
+}
+
 function readFromFrontend(relativePath) {
   if (relativePath === communityDomainDashboardFile) {
     return readCommunityDomainDashboardAuditSource();
+  }
+  if (relativePath === marketplaceFile) {
+    return readMarketplaceAuditSource();
   }
   return readRawFromFrontend(relativePath);
 }

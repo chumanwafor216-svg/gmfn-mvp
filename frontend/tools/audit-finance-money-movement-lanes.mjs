@@ -136,7 +136,7 @@ assertContains(
 
 assertContains(
   "moneyOutPage",
-  /catch \(err: any\) \{[\s\S]*?insufficient \(withdrawable\|effective\) pool balance[\s\S]*?persistSupportHandoff\(\)[\s\S]*?navigateWithOrigin\(navigate, routes\.supportStart, location\)/,
+  /catch \(err: unknown\) \{[\s\S]*?insufficient \(withdrawable\|effective\) pool balance[\s\S]*?persistSupportHandoff\(\)[\s\S]*?navigateWithOrigin\(navigate, routes\.supportStart, location\)/,
   "Money Out must route stale backend insufficient-balance rejections into Support Requests."
 );
 

@@ -95,7 +95,7 @@ assertContains(
 
 assertContains(
   "trust",
-  /activeTrustPassportLane === "documents" \? "block" : "none"[\s\S]*?7\. Shareable trust tools/,
+  /activeTrustPassportLane === "documents" \? \([\s\S]*?<TrustPassportDocumentLane/,
   "Repair lane must not absorb Documents / TrustSlip actions."
 );
 

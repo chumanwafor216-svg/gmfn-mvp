@@ -27,14 +27,14 @@ for (const file of files) {
   assertContains(
     source,
     file,
-    /function normalizeMemberGmfnId\(value: any\): string \{[\s\S]*?replace\(\s*\/\^GSN-\/,\s*"GMFN-"[\s\S]*?\^GMFN-\[A-Z\]-\[A-Z0-9-\]\+\$[\s\S]*?raw\.startsWith\("GMFN-C-"\) \? "" : raw;/,
+    /function normalizeMemberGmfnId\(value: (?:any|unknown)\): string \{[\s\S]*?replace\(\s*\/\^GSN-\/,\s*"GMFN-"[\s\S]*?\^GMFN-\[A-Z\]-\[A-Z0-9-\]\+\$[\s\S]*?raw\.startsWith\("GMFN-C-"\) \? "" : raw;/,
     "Finance/support pages must normalize GSN/GMFN member IDs while rejecting Community IDs."
   );
 
   assertContains(
     source,
     file,
-    /function resolveMemberGmfnId\(me: any, currentClan: any\): string \{[\s\S]*?me\?\.gmfn_id[\s\S]*?currentClan\?\.current_member_gmfn_id[\s\S]*?currentClan\?\.member_gmfn_id[\s\S]*?currentClan\?\.membership\?\.gmfn_id[\s\S]*?\(api as any\)\.getStoredGmfnId\?\.\(\)/,
+    /function resolveMemberGmfnId\(me: (?:any|unknown), currentClan: (?:any|unknown)\): string \{[\s\S]*?(?:me\?\.gmfn_id|nestedValue\(me, "gmfn_id"\))[\s\S]*?(?:currentClan\?\.current_member_gmfn_id|nestedValue\(currentClan, "current_member_gmfn_id"\))[\s\S]*?(?:currentClan\?\.member_gmfn_id|nestedValue\(currentClan, "member_gmfn_id"\))[\s\S]*?(?:currentClan\?\.membership\?\.gmfn_id|nestedValue\(currentClan, "membership", "gmfn_id"\))[\s\S]*?(?:(?:\(api as any\)\.)?getStoredGmfnId\?\.\(\)|api\.getStoredGmfnId\(\))/,
     "Finance/support pages must reuse signed-in and selected-community member GSN ID fallbacks."
   );
 
@@ -62,7 +62,7 @@ for (const file of files) {
   assertContains(
     source,
     "src/pages/WithdrawalInstructionsPage.tsx",
-    /function communityPublicId\(currentClan: any\): string \{[\s\S]*?\|\| "No community ID yet"/,
+    /function communityPublicId\(currentClan: (?:any|unknown)\): string \{[\s\S]*?\|\| "No community ID yet"/,
     "Money Out must show honest missing-community-ID copy instead of stale issue-tracking language."
   );
 

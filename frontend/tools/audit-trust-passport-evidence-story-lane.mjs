@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
   trust: "src/pages/TrustScorePage.tsx",
+  documentLane: "src/pages/trustScore/TrustPassportDocumentLane.tsx",
+  institutionalContext: "src/pages/trustScore/TrustPassportInstitutionalContext.tsx",
   package: "package.json",
   protocol: "../docs/GUIDED_WORK_SURFACE_PROTOCOL.md",
 };
@@ -74,7 +76,7 @@ assertOrderedSnippets(
 
 assertContains(
   "trust",
-  /activeTrustPassportLane === "evidence"[\s\S]*?4\. Why the evidence reads this way[\s\S]*?6\. What changed in the evidence\?[\s\S]*?8\. Evidence & institutional context/,
+  /activeTrustPassportLane === "evidence"[\s\S]*?4\. Why the evidence reads this way[\s\S]*?6\. What changed in the evidence\?/,
   "Evidence Story lane must keep the support/pressure reasons, latest movement, recent events, and evidence context in the same lane."
 );
 
@@ -86,7 +88,7 @@ assertContains(
 
 assertContains(
   "trust",
-  /activeTrustPassportLane === "documents" \? "block" : "none"[\s\S]*?7\. Shareable trust tools/,
+  /activeTrustPassportLane === "documents" \? \([\s\S]*?<TrustPassportDocumentLane/,
   "Evidence Story lane must not absorb Documents / TrustSlip action responsibilities."
 );
 
