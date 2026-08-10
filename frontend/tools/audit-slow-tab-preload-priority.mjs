@@ -24,6 +24,30 @@ assertContains(
 );
 
 assertContains(
+  /key: "shop-assets"[\s\S]*?import\("\.\.\/pages\/ShopAssetsPage"\)/,
+  "Route preloading must know the Shop Assets interior page instead of leaving its warm calls as no-ops."
+);
+
+assertContains(
+  /key: "payment-instructions"[\s\S]*?key: "withdrawal-instructions"[\s\S]*?key: "loan-readiness"[\s\S]*?key: "community-confirmation-inbox"[\s\S]*?key: "notifications"/,
+  "Route preloading must know common finance, support, community confirmation, and notice pages instead of leaving warm calls as no-ops."
+);
+
+assertContains(
+  /const BRIDGE_ROUTE_KEYS = \[[\s\S]*?"notifications"[\s\S]*?"payment-instructions"[\s\S]*?"withdrawal-instructions"[\s\S]*?"loan-readiness"[\s\S]*?"community-confirmation-inbox"[\s\S]*?"shop-assets"[\s\S]*?"trust-timeline"[\s\S]*?\];/,
+  "Bridge route preload list must keep common interior Community, finance, support, shop, and trust pages warm after the top tabs."
+);
+
+assertContains(
+  /function shouldPreloadBridgeRoutes\(\): boolean \{[\s\S]*?return shouldPreloadSecondaryHeavyRoutes\(\);[\s\S]*?\}/,
+  "Bridge route preloading must respect the heavier-route network gate."
+);
+
+assertContains(
+  /BRIDGE_ROUTE_KEYS\.forEach\(\(key, index\) => \{[\s\S]*?scheduleIdle\(\(\) => preloadRouteByKey\(key\), 5000 \+ index \* 520\);[\s\S]*?\}\);/,
+  "Bridge route chunks must warm after the standard core routes instead of competing with first paint."
+);
+assertContains(
   /function scheduleSoon\(task: \(\) => void, delayMs: number\): void \{[\s\S]*?window\.setTimeout\(task, delayMs\);[\s\S]*?\}/,
   "Slow-tab chunks must use the short timer preload helper instead of waiting for idle callback."
 );
