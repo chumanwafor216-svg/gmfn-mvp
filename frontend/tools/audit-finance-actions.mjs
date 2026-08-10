@@ -167,7 +167,7 @@ assertContains(
 
 assertContains(
   "src/pages/PaymentInstructionsPage.tsx",
-  /function resolveMoneyInMemberGmfnId\(me: any, currentClan: any\): string \{[\s\S]*?me\?\.gmfn_id[\s\S]*?currentClan\?\.member_gmfn_id[\s\S]*?\(api as any\)\.getStoredGmfnId\?\.\(\)[\s\S]*?const currentGmfnId = useMemo\(\(\) => \{[\s\S]*?resolveMoneyInMemberGmfnId\(me, currentClan\)[\s\S]*?const gmfnId = resolveMoneyInMemberGmfnId\(meRes, clanRes\);/,
+  /function resolveMoneyInMemberGmfnId\(me: unknown, currentClan: unknown\): string \{[\s\S]*?nestedValue\(me, "gmfn_id"\)[\s\S]*?nestedValue\(currentClan, "member_gmfn_id"\)[\s\S]*?api\.getStoredGmfnId\(\)[\s\S]*?const currentGmfnId = useMemo\(\(\) => \{[\s\S]*?resolveMoneyInMemberGmfnId\(me, currentClan\)[\s\S]*?const gmfnId = resolveMoneyInMemberGmfnId\(meRes, clanRes\);/,
   "Money In must fall back to selected-community and stored member GSN IDs when the live profile response is partial, matching Marketplace identity parity."
 );
 
@@ -203,7 +203,7 @@ assertContains(
 
 assertContains(
   "src/pages/WithdrawalInstructionsPage.tsx",
-  /function defaultCollapseState\(\): CollapseState \{[\s\S]*?rail: true,[\s\S]*?\}[\s\S]*?function isPlaceholderRailValue\(value: any\): boolean \{[\s\S]*?to be assigned[\s\S]*?gsn settlement rail[\s\S]*?function settlementReady\(settlement: CommunityMoneySettlement \| null\): boolean \{[\s\S]*?hasBankAccount[\s\S]*?hasMobileMoney[\s\S]*?hasInternationalRail[\s\S]*?const communityRailReady = settlementReady\(communitySettlement\);[\s\S]*?\(\) => visibleSettlementLines\(communitySettlement\)/,
+  /function defaultCollapseState\(\): CollapseState \{[\s\S]*?rail: true,[\s\S]*?\}[\s\S]*?function isPlaceholderRailValue\(value: unknown\): boolean \{[\s\S]*?to be assigned[\s\S]*?gsn settlement rail[\s\S]*?function railValue\(value: unknown\): string \{[\s\S]*?isPlaceholderRailValue\(value\)[\s\S]*?function settlementReady\(settlement: CommunityMoneySettlement \| null\): boolean \{[\s\S]*?hasBankAccount[\s\S]*?hasMobileMoney[\s\S]*?hasInternationalRail[\s\S]*?const communityRailReady = settlementReady\(communitySettlement\);[\s\S]*?const communitySettlementLines = useMemo\([\s\S]*?\(\) => visibleSettlementLines\(communitySettlement\)/,
   "Money Out community rail must stay collapsed by default and must not treat placeholder GSN settlement labels as real filled bank details."
 );
 

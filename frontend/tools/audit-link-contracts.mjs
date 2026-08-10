@@ -8,9 +8,27 @@ const toolDir = dirname(fileURLToPath(import.meta.url));
 const frontendRoot = join(toolDir, "..");
 const sourceRoot = join(frontendRoot, "src");
 const allowedExtensions = new Set([".ts", ".tsx"]);
+const marketplaceFile = "src/pages/MarketplacePage.tsx";
+const marketplaceToolsFile = "src/pages/marketplace/MarketplaceToolsSection.tsx";
+
+function readRaw(relativePath) {
+  return readFileSync(join(frontendRoot, relativePath), "utf8");
+}
+
+function composeLazySource(parentPath, replacements) {
+  return replacements.reduce((source, [pattern, childPath]) => {
+    return source.replace(pattern, readRaw(childPath));
+  }, readRaw(parentPath));
+}
 
 function read(relativePath) {
-  return readFileSync(join(frontendRoot, relativePath), "utf8");
+  if (relativePath === marketplaceFile) {
+    return composeLazySource(marketplaceFile, [
+      [/<MarketplaceToolsSection\b[\s\S]*?\n\s*\/>/, marketplaceToolsFile],
+    ]);
+  }
+
+  return readRaw(relativePath);
 }
 
 function listSourceFiles(directory) {

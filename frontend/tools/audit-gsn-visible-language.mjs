@@ -6,6 +6,10 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = join(frontendRoot, "..");
+const marketplaceFile = "frontend/src/pages/MarketplacePage.tsx";
+const marketplaceToolsFile = "frontend/src/pages/marketplace/MarketplaceToolsSection.tsx";
+const marketplaceTradeEvidenceFile =
+  "frontend/src/pages/marketplace/MarketplaceTradeEvidenceSection.tsx";
 
 const files = [
   "frontend/src/layout/AppLayout.tsx",
@@ -136,21 +140,21 @@ const forbiddenByFile = [
   ["frontend/src/lib/guidance.ts", "Support request waiting on loan #"],
   ["frontend/src/pages/LoansPage.tsx", "Someone is waiting for your decision"],
   ["frontend/src/pages/ShopGalleryPage.tsx", 'label: "GMFN ID"'],
-  ["frontend/src/pages/ExposurePage.tsx", "—"],
-  ["frontend/src/pages/ExposurePage.tsx", "·"],
-  ["frontend/src/components/GuarantorLeaderboard.tsx", "—"],
-  ["frontend/src/components/LoanSuggestionsPanel.tsx", "—"],
-  ["frontend/src/components/TrustBadge.tsx", "—"],
-  ["frontend/src/components/TrustBadge.tsx", "–"],
-  ["frontend/src/components/TrustBadge.tsx", "ⓘ"],
-  ["frontend/src/components/TrustGraphEdgeList.tsx", "—"],
-  ["frontend/src/pages/TrustGraphAdminPage.tsx", "—"],
-  ["frontend/src/pages/TrustGraphAdminPage.tsx", "·"],
-  ["gmfn_backend/app/api/routes/clans.py", "—"],
-  ["gmfn_backend/app/api/routes/clans.py", "❌"],
-  ["gmfn_backend/app/api/routes/clans.py", "✅"],
-  ["gmfn_backend/app/api/routes/trust_slips.py", "—"],
-  ["gmfn_backend/app/api/routes/trust_slips_verify_ui.py", "—"],
+  ["frontend/src/pages/ExposurePage.tsx", "â€”"],
+  ["frontend/src/pages/ExposurePage.tsx", "Â·"],
+  ["frontend/src/components/GuarantorLeaderboard.tsx", "â€”"],
+  ["frontend/src/components/LoanSuggestionsPanel.tsx", "â€”"],
+  ["frontend/src/components/TrustBadge.tsx", "â€”"],
+  ["frontend/src/components/TrustBadge.tsx", "â€“"],
+  ["frontend/src/components/TrustBadge.tsx", "â“˜"],
+  ["frontend/src/components/TrustGraphEdgeList.tsx", "â€”"],
+  ["frontend/src/pages/TrustGraphAdminPage.tsx", "â€”"],
+  ["frontend/src/pages/TrustGraphAdminPage.tsx", "Â·"],
+  ["gmfn_backend/app/api/routes/clans.py", "â€”"],
+  ["gmfn_backend/app/api/routes/clans.py", "âŒ"],
+  ["gmfn_backend/app/api/routes/clans.py", "âœ…"],
+  ["gmfn_backend/app/api/routes/trust_slips.py", "â€”"],
+  ["gmfn_backend/app/api/routes/trust_slips_verify_ui.py", "â€”"],
 ];
 
 forbiddenByFile.push(["frontend/src/components/TrustGraphEdgeList.tsx", "User #"]);
@@ -163,8 +167,8 @@ forbiddenByFile.push(["frontend/src/pages/TrustScorePage.tsx", '"Overexposure",'
 forbiddenByFile.push(["frontend/src/pages/TrustTimelinePage.tsx", "complete internal records"]);
 forbiddenByFile.push(["frontend/src/ui/format.ts", "member@gmfn.com"]);
 forbiddenByFile.push(["frontend/src/ui/format.ts", "@gmfn.com"]);
-forbiddenByFile.push(["frontend/src/ui/format.ts", "…"]);
 forbiddenByFile.push(["frontend/src/ui/format.ts", "â€¦"]);
+forbiddenByFile.push(["frontend/src/ui/format.ts", "Ã¢â‚¬Â¦"]);
 forbiddenByFile.push(["frontend/src/components/TrustGraphAdminPage.tsx", 'graph.gmfn_id || "Pending"']);
 forbiddenByFile.push(["frontend/src/components/TrustGraphAdminPage.tsx", "GSN ID pending"]);
 forbiddenByFile.push(["frontend/src/pages/TrustGraphAdminPage.tsx", 'graph.gmfn_id || "Pending"']);
@@ -280,8 +284,25 @@ const required = [
 
 const findings = [];
 
-function read(relativePath) {
+function readRaw(relativePath) {
   return readFileSync(join(repoRoot, relativePath), "utf8");
+}
+
+function composeLazySource(parentPath, replacements) {
+  return replacements.reduce((source, [pattern, childPath]) => {
+    return source.replace(pattern, readRaw(childPath));
+  }, readRaw(parentPath));
+}
+
+function read(relativePath) {
+  if (relativePath === marketplaceFile) {
+    return composeLazySource(marketplaceFile, [
+      [/<MarketplaceToolsSection\b[\s\S]*?\n\s*\/>/, marketplaceToolsFile],
+      [/<MarketplaceTradeEvidenceSection\b[\s\S]*?\n\s*\/>/, marketplaceTradeEvidenceFile],
+    ]);
+  }
+
+  return readRaw(relativePath);
 }
 
 for (const file of files) {

@@ -5,11 +5,29 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const marketplaceFile = "src/pages/MarketplacePage.tsx";
+const marketplaceToolsFile = "src/pages/marketplace/MarketplaceToolsSection.tsx";
 const shopAssetsFile = "src/pages/ShopAssetsPage.tsx";
 const shopAssetsSource = read(shopAssetsFile);
 
-function read(relativePath) {
+function readRaw(relativePath) {
   return readFileSync(join(frontendRoot, relativePath), "utf8");
+}
+
+function composeLazySource(parentPath, replacements) {
+  return replacements.reduce((source, [pattern, childPath]) => {
+    return source.replace(pattern, readRaw(childPath));
+  }, readRaw(parentPath));
+}
+
+function read(relativePath) {
+  if (relativePath === marketplaceFile) {
+    return composeLazySource(marketplaceFile, [
+      [/<MarketplaceToolsSection\b[\s\S]*?\n\s*\/>/, marketplaceToolsFile],
+    ]);
+  }
+
+  return readRaw(relativePath);
 }
 
 const findings = [];
@@ -37,7 +55,7 @@ assertContains(
   "Shop Assets must unwrap public/authenticated product response rows before counting owner gallery blocks."
 );
 
-const forbiddenEmojiIconPattern = /[\u{1F300}-\u{1FAFF}]\uFE0F?|ð/gu;
+const forbiddenEmojiIconPattern = /[\u{1F300}-\u{1FAFF}]\uFE0F?|\u00F0/gu;
 let forbiddenEmojiMatch;
 while ((forbiddenEmojiMatch = forbiddenEmojiIconPattern.exec(shopAssetsSource))) {
   findings.push({
