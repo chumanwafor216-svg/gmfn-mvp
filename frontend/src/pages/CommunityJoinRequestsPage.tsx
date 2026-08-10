@@ -554,17 +554,6 @@ function approvalSuccessText(res: VoteResponse, fallback: string): string {
   return `${fallback} ${approvalProgressText(request)}. ${approvalNextStepText(request)}`;
 }
 
-function copyText(text: string) {
-  const safe = safeStr(text);
-  if (!safe) return;
-
-  safeCopy(safe);
-}
-
-function isExternalUrl(value: string): boolean {
-  return /^https?:\/\//i.test(value);
-}
-
 export default function CommunityJoinRequestsPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -580,6 +569,8 @@ export default function CommunityJoinRequestsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [activationPack, setActivationPack] = useState<ApprovalResult | null>(null);
+  const [activationPackDetailsOpen, setActivationPackDetailsOpen] = useState(false);
+  const [activationCopyStatus, setActivationCopyStatus] = useState("");
   const [activeRequestId, setActiveRequestId] = useState<number | null>(null);
   const [reviewerRole, setReviewerRole] = useState<string>("user");
   const [reviewerCanPilotApprove, setReviewerCanPilotApprove] = useState(false);
@@ -721,6 +712,8 @@ export default function CommunityJoinRequestsPage() {
       setError("");
       setSuccess("");
       setActivationPack(null);
+      setActivationPackDetailsOpen(false);
+      setActivationCopyStatus("");
 
       await selectClan(clanNum).catch(() => null);
 
@@ -762,6 +755,8 @@ export default function CommunityJoinRequestsPage() {
       setError("");
       setSuccess("");
       setActivationPack(null);
+      setActivationPackDetailsOpen(false);
+      setActivationCopyStatus("");
 
       await selectClan(clanNum).catch(() => null);
 
@@ -789,6 +784,21 @@ export default function CommunityJoinRequestsPage() {
 
   function goBack() {
     navigateToCta(navigate, location, communityHomeCta);
+  }
+
+  async function copyActivationText(text: string, successMessage: string) {
+    const safe = safeStr(text);
+    if (!safe) {
+      setActivationCopyStatus("Nothing is ready to copy yet.");
+      return;
+    }
+
+    const copied = await safeCopy(safe);
+    setActivationCopyStatus(
+      copied
+        ? successMessage
+        : "Clipboard copy was blocked. Open details and copy the text manually."
+    );
   }
 
   return (
@@ -1101,81 +1111,80 @@ export default function CommunityJoinRequestsPage() {
           style={{
             ...whitePanel(18),
           }}
+          data-gsn-activation-handoff="admin-share"
         >
           <div style={{ fontWeight: 1000, fontSize: 18, color: "#0B1F33" }}>
-            {iconText("approve", "Approval to activation package")}
+            {iconText("approve", "Approved member activation handoff")}
+          </div>
+
+          <div
+            style={{
+              marginTop: 8,
+              color: "#334155",
+              lineHeight: 1.55,
+              fontSize: 14,
+              fontWeight: 800,
+            }}
+          >
+            This package is for the approved member, not your own next step.
+            Send it to the person you approved so they can activate their GSN ID.
           </div>
 
           <div
             style={{
               marginTop: 12,
               display: "grid",
-              gap: 8,
-              color: "#334155",
-              lineHeight: 1.7,
-              fontSize: 14,
+              gridTemplateColumns: isCompact
+                ? "minmax(0, 1fr)"
+                : "repeat(3, minmax(0, 1fr))",
+              gap: 0,
+              overflow: "hidden",
+              borderRadius: 14,
+              border: "1px solid rgba(11,31,51,0.08)",
             }}
           >
-            <div>
-              <strong>GSN ID:</strong> {safeStr(activationPack.gmfn_id)}
-            </div>
-            <div>
-              <strong>Community:</strong> {safeStr(activationPack.community_name || "Not available yet")}
-            </div>
-            <div>
-              <strong>Community ID:</strong> {safeStr(activationPack.community_code || "No community ID yet")}
-            </div>
-            <div>
-              <strong>Invited by:</strong>{" "}
-              {safeStr(
-                activationPack.invited_by_display ||
-                  activationPack.invited_by_email ||
-                  "Not available yet"
-              )}
-            </div>
-            <div>
-              <strong>Activation link:</strong>{" "}
-              <span style={{ wordBreak: "break-word" }}>
-                {safeStr(activationPack.activation_link || "Not available yet")}
-              </span>
-            </div>
+            {[
+              ["Approved GSN ID", safeStr(activationPack.gmfn_id)],
+              ["Community", safeStr(activationPack.community_name || "Not available yet")],
+              ["Community ID", safeStr(activationPack.community_code || "No community ID yet")],
+            ].map(([label, value]) => (
+              <div key={String(label)} style={requestFactTile()}>
+                <div style={requestFactLabel()}>{label}</div>
+                <div style={requestFactValue()}>{value}</div>
+              </div>
+            ))}
           </div>
 
           <div
             style={{
               marginTop: 14,
               padding: 12,
-              background: "#FFFFFF",
-              borderRadius: 14,
+              background: "#F8FAFC",
+              borderRadius: 12,
               border: "1px solid rgba(11,31,51,0.08)",
+              color: "#475569",
+              fontSize: 13,
+              fontWeight: 800,
+              lineHeight: 1.5,
             }}
           >
+            GSN prepared this delivery text. This screen does not send WhatsApp,
+            SMS, or email by itself.
+          </div>
+
+          {activationCopyStatus ? (
             <div
               style={{
-                fontSize: 12,
-                fontWeight: 1000,
-                color: "#64748B",
-                marginBottom: 8,
-                letterSpacing: 0.35,
+                marginTop: 12,
+                color: activationCopyStatus.startsWith("Copied") ? "#065F46" : "#8A5A08",
+                fontWeight: 900,
+                fontSize: 13,
+                lineHeight: 1.45,
               }}
             >
-              ACTIVATION MESSAGE
+              {activationCopyStatus}
             </div>
-
-            <pre
-              style={{
-                margin: 0,
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                fontFamily: "inherit",
-                color: "#0B1F33",
-                lineHeight: 1.7,
-                fontSize: 14,
-              }}
-            >
-              {safeStr(activationPack.activation_message || "")}
-            </pre>
-          </div>
+          ) : null}
 
           <CardActionRow
             align="stretch"
@@ -1190,36 +1199,115 @@ export default function CommunityJoinRequestsPage() {
             <PrimaryButton
               type="button"
               disabled={!safeStr(activationPack.activation_message || "")}
-              onClick={() => copyText(safeStr(activationPack.activation_message || ""))}
+              onClick={() =>
+                void copyActivationText(
+                  safeStr(activationPack.activation_message || ""),
+                  "Copied activation message. Send it to the approved member."
+                )
+              }
               debugId="community-join-requests.copy-activation-message"
               fullWidth
             >
-              {iconText("copy", "Copy Activation Message")}
+              {iconText("copy", "Copy Message for Member")}
             </PrimaryButton>
 
             <SecondaryButton
               type="button"
               disabled={!safeStr(activationPack.activation_link || "")}
-              onClick={() => copyText(safeStr(activationPack.activation_link || ""))}
+              onClick={() =>
+                void copyActivationText(
+                  safeStr(activationPack.activation_link || ""),
+                  "Copied activation link. Send it to the approved member."
+                )
+              }
               debugId="community-join-requests.copy-activation-link"
               fullWidth
             >
               {iconText("copy", "Copy Activation Link")}
             </SecondaryButton>
 
-            {safeStr(activationPack.activation_link || "") ? (
-              <StableCtaLink
-                to={safeStr(activationPack.activation_link || "")}
-                kind="secondary"
-                target={isExternalUrl(safeStr(activationPack.activation_link || "")) ? "_blank" : undefined}
-                rel={isExternalUrl(safeStr(activationPack.activation_link || "")) ? "noopener noreferrer" : undefined}
-                debugId="community-join-requests.open-activation"
-                fullWidth
-              >
-                {iconText("review", "Open Activation Page")}
-              </StableCtaLink>
-            ) : null}
+            <SecondaryButton
+              type="button"
+              onClick={() => setActivationPackDetailsOpen((value) => !value)}
+              debugId="community-join-requests.toggle-activation-details"
+              fullWidth
+            >
+              {iconText(
+                "review",
+                activationPackDetailsOpen ? "Hide Message Details" : "Check Message Details"
+              )}
+            </SecondaryButton>
           </CardActionRow>
+
+          {activationPackDetailsOpen ? (
+            <div
+              style={{
+                marginTop: 14,
+                padding: 12,
+                background: "#FFFFFF",
+                borderRadius: 14,
+                border: "1px solid rgba(11,31,51,0.08)",
+              }}
+              data-gsn-activation-message-preview="collapsed-until-opened"
+            >
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 1000,
+                  color: "#64748B",
+                  marginBottom: 8,
+                  letterSpacing: 0.35,
+                }}
+              >
+                MESSAGE FOR APPROVED MEMBER
+              </div>
+
+              <div
+                style={{
+                  marginBottom: 10,
+                  color: "#334155",
+                  lineHeight: 1.5,
+                  fontSize: 13,
+                  fontWeight: 800,
+                }}
+              >
+                Invited by:{" "}
+                {safeStr(
+                  activationPack.invited_by_display ||
+                    activationPack.invited_by_email ||
+                    "Not available yet"
+                )}
+              </div>
+
+              <pre
+                style={{
+                  margin: 0,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  fontFamily: "inherit",
+                  color: "#0B1F33",
+                  lineHeight: 1.7,
+                  fontSize: 14,
+                }}
+              >
+                {safeStr(activationPack.activation_message || "")}
+              </pre>
+
+              <div
+                style={{
+                  marginTop: 12,
+                  color: "#475569",
+                  lineHeight: 1.5,
+                  fontSize: 13,
+                  fontWeight: 800,
+                  wordBreak: "break-word",
+                }}
+              >
+                Activation link:{" "}
+                {safeStr(activationPack.activation_link || "Not available yet")}
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -1648,5 +1736,3 @@ export default function CommunityJoinRequestsPage() {
     </div>
   );
 }
-
-

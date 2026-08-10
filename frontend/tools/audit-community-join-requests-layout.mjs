@@ -121,8 +121,23 @@ assertContains(
 );
 
 assertContains(
-  /<strong>Community ID:<\/strong> \{safeStr\(activationPack\.community_code \|\| "No community ID yet"\)\}/,
-  "Join Requests activation package must use honest missing-community-ID copy."
+  /\["Community ID", safeStr\(activationPack\.community_code \|\| "No community ID yet"\)\]/,
+  "Join Requests activation handoff must use honest missing-community-ID copy."
+);
+
+assertContains(
+  /data-gsn-activation-handoff="admin-share"[\s\S]*?Approved member activation handoff[\s\S]*?This package is for the approved member, not your own next step[\s\S]*?This screen does not send WhatsApp,[\s\S]*?SMS, or email by itself/,
+  "Join Requests admin approval response must frame activation as a member handoff, not the reviewer's own activation screen."
+);
+
+assertContains(
+  /const \[activationPackDetailsOpen, setActivationPackDetailsOpen\] = useState\(false\);[\s\S]*?debugId="community-join-requests\.toggle-activation-details"[\s\S]*?activationPackDetailsOpen \? "Hide Message Details" : "Check Message Details"[\s\S]*?data-gsn-activation-message-preview="collapsed-until-opened"[\s\S]*?<pre/,
+  "Join Requests must keep the receiver activation message collapsed until the reviewer asks to check details."
+);
+
+assertNotContains(
+  /Approval to activation package|Open Activation Page|debugId="community-join-requests\.open-activation"/g,
+  "Join Requests must not open the approved member activation package as a reviewer-facing next step."
 );
 
 assertNotContains(
