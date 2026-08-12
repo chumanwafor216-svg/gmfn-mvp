@@ -73,6 +73,7 @@ assertOrder(
     { label: "public decision pack hero", pattern: /<header style=\{publicVerifyHero\(compact\)\}>[\s\S]*?Public Decision Pack/ },
     { label: "decision first answer", pattern: /data-gsn-public-decision-first="one-answer-four-facts"/ },
     { label: "decision evidence translation", pattern: /data-gsn-public-evidence-translation="decision-why"/ },
+    { label: "visible evidence snapshot", pattern: /data-gsn-public-decision-evidence-snapshot="visible-public-safe-answers"/ },
     { label: "desktop quick facts", pattern: /data-gsn-public-decision-first-facts="four-quick-facts"/ },
     { label: "compact decision boundary", pattern: /data-gsn-public-decision-boundary="compact"/ },
     { label: "decision reading", pattern: /data-debug-id="trust-slip-verify\.public\.decision-pack-reading"/ },
@@ -138,8 +139,8 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /DecisionFactorTable rows=\{compact \? decisionTranslationRows\.filter\(\(\[label\]\) => label === "Because 1" \|\| label === "Because 2" \|\| label === \(supportPurpose \? "Repayment\/support evidence" : "Purpose evidence"\) \|\| label === "Current witnesses" \|\| label === "Recommended action"\) : decisionTranslationRows\}/,
-  "Public TrustSlip phone first viewport must show only the three essential decision factors before deeper evidence drawers."
+  /DecisionFactorTable rows=\{compact \? decisionTranslationRows\.filter\(\(\[label\]\) => label === "Because 1" \|\| label === "Because 2"\) : decisionTranslationRows\}/,
+  "Public TrustSlip phone first viewport must show only the immediate because rows before the visible evidence snapshot and deeper evidence drawer."
 );
 
 assertContains(
@@ -155,7 +156,7 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision First[\s\S]*?\{decisionDisplayAnswer\}[\s\S]*?\{decisionReasonLine\}[\s\S]*?data-gsn-public-evidence-translation="decision-why"[\s\S]*?Why this recommendation\?[\s\S]*?<DecisionFactorTable rows=\{compact \? decisionTranslationRows\.filter\(\(\[label\]\) => label === "Because 1" \|\| label === "Because 2" \|\| label === \(supportPurpose \? "Repayment\/support evidence" : "Purpose evidence"\) \|\| label === "Current witnesses" \|\| label === "Recommended action"\) : decisionTranslationRows\} compact=\{compact\} \/>[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?Quick Decision[\s\S]*?quickDecisionFacts\.map[\s\S]*?title="Full evidence and record details"[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"[\s\S]*?data-gsn-public-decision-support="meaning-next-action"[\s\S]*?What this means[\s\S]*?Next recommended action[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?GSN checked \{evidenceScopeIsWider \? "primary and wider community signals" : "the primary community signal"\}/,
+  /data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision First[\s\S]*?\{decisionDisplayAnswer\}[\s\S]*?\{decisionReasonLine\}[\s\S]*?data-gsn-public-evidence-translation="decision-why"[\s\S]*?Why this recommendation\?[\s\S]*?<DecisionFactorTable rows=\{compact \? decisionTranslationRows\.filter\(\(\[label\]\) => label === "Because 1" \|\| label === "Because 2"\) : decisionTranslationRows\} compact=\{compact\} \/>[\s\S]*?data-gsn-public-decision-evidence-snapshot="visible-public-safe-answers"[\s\S]*?Visible evidence for this decision[\s\S]*?<DecisionFactorTable rows=\{publicDecisionEvidenceSnapshotDisplayRows\} compact=\{compact\} \/>[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?Quick Decision[\s\S]*?quickDecisionFacts\.map[\s\S]*?title="Full evidence and record details"[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"[\s\S]*?data-gsn-public-decision-support="meaning-next-action"[\s\S]*?What this means[\s\S]*?Next recommended action[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?GSN checked \{evidenceScopeIsWider \? "primary and wider community signals" : "the primary community signal"\}/,
   "Public TrustSlip phone viewport must render the answer, reason, recommendation findings, desktop quick decision, collapsed supporting details, meaning/action strip, and compact boundary."
 );
 assertContains(

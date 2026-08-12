@@ -1611,6 +1611,75 @@ export default function TrustSlipVerifyPublicPaper({
     : supportPurpose
       ? "Request live community confirmation before any guarantor or support decision."
       : "Use for low-risk decisions; request live confirmation before important decisions.";
+  const purposeSpecificPointerRows: Array<[string, string]> = (
+    supportPurpose
+      ? [
+          ...decisionPackGuaranteeOutcomeRows,
+          ...decisionPackEvidenceRows,
+        ]
+      : housingPurpose
+        ? [
+            ...decisionPackHousingReferenceRows,
+            ...decisionPackEvidenceRows,
+            ...decisionPackRecordPointerRows,
+            ...decisionPackIssueResolutionRows,
+          ]
+        : employmentPurpose
+          ? [
+              ...decisionPackEvidenceRows,
+              ...decisionPackCompletedWorkRows,
+              ...decisionPackDeclaredClaimRows,
+              ...decisionPackDemandRequestOutcomeRows,
+              ...decisionPackConfirmationPointerRows,
+            ]
+          : tradePurpose
+            ? [
+                ...decisionPackFulfillmentOutcomeRows,
+                ...decisionPackEvidenceRows,
+                ...decisionPackCompletedWorkRows,
+                ...decisionPackDeclaredClaimRows,
+                ...decisionPackIssueResolutionRows,
+              ]
+            : [
+                ...decisionPackConfirmationPointerRows,
+                ...decisionPackEvidenceRows,
+                ...decisionPackRecordPointerRows,
+              ]
+  )
+    .filter(([, value]) => Boolean(safeText(value)))
+    .slice(0, 3);
+  const visibleSnapshotEvidenceRows: Array<[string, string]> = [];
+  if (purposeSpecificPointerRows.length) {
+    purposeSpecificPointerRows.forEach(([label, value]) => {
+      visibleSnapshotEvidenceRows.push([`Visible: ${label}`, value]);
+    });
+  } else {
+    visibleSnapshotEvidenceRows.push(["Visible public-safe evidence", relevantSupportFinding]);
+  }
+  const publicDecisionEvidenceSnapshotRows: Array<[string, string]> = [
+    ["Question", firstTruthy(decisionPackProfile.recipientQuestion, decisionPackPurpose)],
+  ];
+  visibleSnapshotEvidenceRows.forEach((row) => {
+    if (publicDecisionEvidenceSnapshotRows.length < 4) {
+      publicDecisionEvidenceSnapshotRows.push(row);
+    }
+  });
+  publicDecisionEvidenceSnapshotRows.push([
+    "Still missing",
+    firstTruthy(
+      decisionPackProfileGaps[0]?.nextStep,
+      witnessCurrentnessFinding,
+      "Ask for live confirmation or the fuller Trust Passport before relying."
+    ),
+  ]);
+  publicDecisionEvidenceSnapshotRows.push(["First safe next step", recommendedActionFinding]);
+  const publicDecisionEvidenceSnapshotDisplayRows = compact
+    ? publicDecisionEvidenceSnapshotRows.filter(([label], index) =>
+        index === 0 ||
+        index === 1 ||
+        label === "First safe next step"
+      )
+    : publicDecisionEvidenceSnapshotRows;
   const decisionPackDefinition = findDecisionPack(decisionPackPurpose) || DEFAULT_DECISION_PACK;
   const purposeDecisionReading = buildDecisionPackDecisionReading(decisionPackDefinition, {
     holderName,
@@ -2131,13 +2200,22 @@ export default function TrustSlipVerifyPublicPaper({
               borderRadius: compact ? 12 : 16,
               border: "1px solid rgba(37,78,119,0.12)",
               background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,251,255,0.96) 100%)",
-              padding: compact ? 9 : 12,
+              padding: compact ? 7 : 12,
               display: "grid",
               gap: compact ? 7 : 9,
             }}
           >
             <div style={{ ...sectionLabel(), color: "#0B63D1" }}>Why this recommendation?</div>
-            <DecisionFactorTable rows={compact ? decisionTranslationRows.filter(([label]) => label === "Because 1" || label === "Because 2" || label === (supportPurpose ? "Repayment/support evidence" : "Purpose evidence") || label === "Current witnesses" || label === "Recommended action") : decisionTranslationRows} compact={compact} />
+            <DecisionFactorTable rows={compact ? decisionTranslationRows.filter(([label]) => label === "Because 1" || label === "Because 2") : decisionTranslationRows} compact={compact} />
+            <div
+              data-gsn-public-decision-evidence-snapshot="visible-public-safe-answers"
+              style={{ display: "grid", gap: 7 }}
+            >
+              <div style={{ ...sectionLabel(), color: "#0B63D1" }}>
+                Visible evidence for this decision
+              </div>
+              <DecisionFactorTable rows={publicDecisionEvidenceSnapshotDisplayRows} compact={compact} />
+            </div>
           </div>
           <div
             data-gsn-public-decision-first-facts="four-quick-facts"

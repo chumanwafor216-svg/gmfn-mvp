@@ -979,8 +979,7 @@ function normalizeDecisionPackProfile(
   );
   const hasBlockingState =
     record?.is_current === false ||
-    record?.merchant_verify_active === false ||
-    ["expired", "revoked", "frozen", "merchant_verify_inactive"].includes(
+    ["expired", "revoked", "frozen"].includes(
       safeStr(firstTruthy(record?.verification_status, record?.status, record?.state)).toLowerCase()
     );
   const evidenceStatus =

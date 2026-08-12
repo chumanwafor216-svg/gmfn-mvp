@@ -68,8 +68,8 @@ const scenarios = {
     expires_at: "2035-07-05T12:00:00.000Z",
     visibility_level: "standard",
     expectedStatusText: "Valid now",
-    expectedReadingTitle: "Do not rely on this alone",
-    expectedText: ["Request a fresh TrustSlip"],
+    expectedReadingTitle: "Current public slip",
+    absentText: ["Request a fresh TrustSlip"],
   },
   lowDataMissingWindow: {
     code: "TS-LOW-DATA-BOUNDARY",
@@ -514,6 +514,17 @@ async function expectDecisionPackRecipientCard(page, { expectRedactedExtract = f
     '[data-debug-id="trust-slip-verify.public.recipient-access-record"]'
   );
   await expect(recipientCard).toBeHidden({ timeout: 30000 });
+
+  const firstReadEvidence = page.locator('[data-gsn-public-decision-evidence-snapshot="visible-public-safe-answers"]');
+  await expect(firstReadEvidence).toBeVisible({ timeout: 30000 });
+  await expect(firstReadEvidence).toContainText("Visible evidence for this decision");
+  await expect(firstReadEvidence).toContainText("Question");
+  if (expectRedactedExtract) {
+    await expect(firstReadEvidence).toContainText("Community participation evidence");
+    await expect(firstReadEvidence).toContainText("2 public-safe records");
+  }
+  await expect(firstReadEvidence).not.toContainText("SECRET-REF-SHOULD-NOT-RENDER");
+  await expect(firstReadEvidence).not.toContainText("Delivered to private address");
 
   const mobileFullEvidenceSummary = page.locator('summary[data-cta-id="trust-document.section.full-evidence-and-record-details"]');
   await expect(mobileFullEvidenceSummary).toBeVisible({ timeout: 30000 });
