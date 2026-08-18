@@ -278,6 +278,47 @@ def test_community_ownership_lookup_finds_stuck_intake_without_gsn_identity(
     assert body['owner_intakes'][0]['stage'] == 'ready_for_community'
 
 
+def test_community_ownership_lookup_and_preview_accept_hyphenated_community_record(
+    client: TestClient,
+    override_current_user,
+):
+    _seed_pillar_stuck_intake_case()
+    with SessionLocal() as db:
+        clan = db.get(Clan, 11)
+        assert clan is not None
+        clan.name = 'Pillar-of-hope'
+        clan.community_code = 'pillar-of-hope'
+        db.commit()
+
+    lookup_response = client.get(
+        '/admin/community-ownership/lookup',
+        params={
+            'community_name': 'Pillar of Hope',
+            'owner_query': '+447480608648',
+        },
+    )
+
+    assert lookup_response.status_code == 200, lookup_response.text
+    lookup_body = lookup_response.json()
+    assert lookup_body['communities'][0]['name'] == 'Pillar-of-hope'
+    assert lookup_body['owner_intakes'][0]['entry_verification_id'] == 31
+
+    preview_response = client.post(
+        '/admin/community-ownership/reconcile',
+        json={
+            'community_name': 'Pillar of Hope',
+            'entry_verification_id': 31,
+            'execute': False,
+        },
+    )
+
+    assert preview_response.status_code == 200, preview_response.text
+    preview_body = preview_response.json()
+    assert preview_body['mode'] == 'preview'
+    assert preview_body['community']['name'] == 'Pillar-of-hope'
+    assert preview_body['will_create_owner_identity'] is True
+
+
 def test_community_ownership_preview_from_intake_is_read_only(
     client: TestClient,
     override_current_user,

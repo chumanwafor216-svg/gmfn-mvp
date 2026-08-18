@@ -52,6 +52,29 @@ def _safe_str(x: Any) -> str:
     return str(x or "").strip()
 
 
+def _community_ownership_compact_key(value: Any) -> str:
+    return re.sub(r"[^a-z0-9]+", "", _safe_str(value).lower())
+
+
+def _community_ownership_text_keys(value: Any) -> list[str]:
+    raw = _safe_str(value)
+    if not raw:
+        return []
+    lowered = raw.lower()
+    spaced = re.sub(r"[-_]+", " ", lowered)
+    spaced = re.sub(r"\s+", " ", spaced).strip()
+    slugged = re.sub(r"\s+", "-", spaced)
+    return [item for item in dict.fromkeys([lowered, spaced, slugged]) if item]
+
+
+def _community_ownership_compact_expr(column: Any) -> Any:
+    lowered = func.lower(column)
+    without_hyphen = func.replace(lowered, "-", "")
+    without_underscore = func.replace(without_hyphen, "_", "")
+    without_space = func.replace(without_underscore, " ", "")
+    return func.replace(without_space, ".", "")
+
+
 def _reject_non_text_value(value: Any, field_name: str) -> Any:
     if value is None:
         return value
@@ -291,10 +314,59 @@ def _resolve_community_for_ownership(
     if not name:
         raise HTTPException(status_code=400, detail="Community name or community ID is required.")
 
-    clan = db.query(Clan).filter(func.lower(Clan.name) == name.lower()).first()
-    if clan is None:
+    text_keys = _community_ownership_text_keys(name)
+    compact_key = _community_ownership_compact_key(name)
+    filters = []
+    if text_keys:
+        filters.extend(
+            [
+                func.lower(Clan.name).in_(text_keys),
+                func.lower(Clan.community_code).in_(text_keys),
+            ]
+        )
+    if compact_key:
+        filters.extend(
+            [
+                _community_ownership_compact_expr(Clan.name) == compact_key,
+                _community_ownership_compact_expr(Clan.community_code) == compact_key,
+            ]
+        )
+
+    if not filters:
         raise HTTPException(status_code=404, detail="Community name was not found.")
-    return clan
+
+    candidates = (
+        db.query(Clan)
+        .filter(or_(*filters))
+        .order_by(Clan.id.asc())
+        .limit(10)
+        .all()
+    )
+    if not candidates:
+        raise HTTPException(status_code=404, detail="Community name was not found.")
+
+    exact_matches = [
+        clan
+        for clan in candidates
+        if _safe_str(clan.name).lower() in text_keys
+        or _safe_str(getattr(clan, "community_code", None)).lower() in text_keys
+    ]
+    if len(exact_matches) == 1:
+        return exact_matches[0]
+
+    compact_matches = [
+        clan
+        for clan in candidates
+        if _community_ownership_compact_key(clan.name) == compact_key
+        or _community_ownership_compact_key(getattr(clan, "community_code", None)) == compact_key
+    ]
+    if len(compact_matches) == 1:
+        return compact_matches[0]
+
+    raise HTTPException(
+        status_code=409,
+        detail="More than one community matched that name. Search records, then select the exact community before preview.",
+    )
 
 
 def _resolve_owner_for_ownership(db: Session, payload: CommunityOwnershipReconcileIn) -> User:
@@ -955,11 +1027,33 @@ def admin_community_ownership_lookup(
 
     if clean_name:
         name_like = f"%{clean_name.lower()}%"
+        text_keys = _community_ownership_text_keys(clean_name)
+        compact_key = _community_ownership_compact_key(clean_name)
+        community_filters = [
+            func.lower(Clan.name).like(name_like),
+            func.lower(Clan.community_code).like(name_like),
+        ]
+        if text_keys:
+            community_filters.extend(
+                [
+                    func.lower(Clan.name).in_(text_keys),
+                    func.lower(Clan.community_code).in_(text_keys),
+                ]
+            )
+        if compact_key:
+            community_filters.extend(
+                [
+                    _community_ownership_compact_expr(Clan.name) == compact_key,
+                    _community_ownership_compact_expr(Clan.community_code) == compact_key,
+                ]
+            )
         communities = (
             db.query(Clan)
-            .filter(func.lower(Clan.name).like(name_like))
+            .filter(or_(*community_filters))
             .order_by(
                 (func.lower(Clan.name) == clean_name.lower()).desc(),
+                (_community_ownership_compact_expr(Clan.name) == compact_key).desc(),
+                (_community_ownership_compact_expr(Clan.community_code) == compact_key).desc(),
                 Clan.id.asc(),
             )
             .limit(int(limit))
