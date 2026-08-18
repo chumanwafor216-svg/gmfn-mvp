@@ -994,4 +994,5 @@ Rules:
 - Preview must be read-only.
 - Execute must require proof confirmation and a reviewer note.
 - Successful execution records the selected user as `created_by_user_id`, ensures an active admin membership, and logs a trust event for audit.
+- If the rightful owner has a recorded onboarding intake but no GSN identity because the duplicate community name blocked account creation, lookup may show that intake as a repair source. Preview must remain read-only; execute must create the missing GSN identity from recorded intake evidence before assigning ownership.
 - Redirect aliases may preserve `community_name` and `owner_query` query parameters so Command Centre can open directly to a case such as Pillar of Hope/Felix.

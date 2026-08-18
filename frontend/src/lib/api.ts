@@ -4834,6 +4834,7 @@ export async function getAdminCommunityOwnershipLookup(params: {
 export async function postAdminCommunityOwnershipReconciliation(payload: {
   community_name?: string | null;
   clan_id?: number | null;
+  entry_verification_id?: number | null;
   owner_user_id?: number | null;
   owner_gmfn_id?: string | null;
   owner_email?: string | null;

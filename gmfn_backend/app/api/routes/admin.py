@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import or_, func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -28,6 +29,7 @@ from app.db.models import (
     UserPayoutDestination,
 )
 from app.db.verification_models import IdentityVerificationCheck
+from app.services.global_identity_service import generate_gmfn_id
 from app.services.trust_events_services import build_trust_meta, log_trust_event
 from app.services.trust_score_service import apply_trust_score
 
@@ -164,6 +166,7 @@ class IdentityVerificationCorrectionIn(BaseModel):
 class CommunityOwnershipReconcileIn(BaseModel):
     community_name: Optional[str] = Field(default=None, max_length=120)
     clan_id: Optional[int] = Field(default=None, ge=1)
+    entry_verification_id: Optional[int] = Field(default=None, ge=1)
     owner_user_id: Optional[int] = Field(default=None, ge=1)
     owner_gmfn_id: Optional[str] = Field(default=None, max_length=64)
     owner_email: Optional[str] = Field(default=None, max_length=240)
@@ -384,6 +387,436 @@ def _community_ownership_preview(
     }
 
 
+
+def _entry_user_for_intake(db: Session, row: EntryPhoneVerification) -> Optional[User]:
+    phone_filters = []
+    phone = _safe_str(getattr(row, "phone_e164", None))
+    if phone:
+        phone_candidates = _ownership_phone_candidates(phone)
+        if phone_candidates:
+            phone_filters.append(User.phone_e164.in_(phone_candidates))
+
+    email = _safe_str(getattr(row, "email", None)).lower()
+    filters = list(phone_filters)
+    if email:
+        filters.append(func.lower(User.email) == email)
+
+    if not filters:
+        return None
+    return db.query(User).filter(or_(*filters)).order_by(User.id.asc()).first()
+
+
+def _entry_intake_owner_label(
+    db: Session,
+    row: EntryPhoneVerification,
+    *,
+    now: Optional[datetime] = None,
+) -> dict[str, Any]:
+    existing_user = _entry_user_for_intake(db, row)
+    stage = _entry_stage(row, existing_user, now or datetime.now(timezone.utc))
+    return {
+        "source": "entry_intake",
+        "entry_verification_id": int(row.id),
+        "display_name": _safe_str(getattr(row, "display_name", None)) or None,
+        "email": _safe_str(getattr(row, "email", None)) or None,
+        "gmfn_id": _safe_str(getattr(existing_user, "gmfn_id", None)) if existing_user else None,
+        "phone_last4": _last4(getattr(row, "phone_e164", None)),
+        "stage": stage,
+        "next_action": _entry_next_action(stage),
+        "created_at": _dt_iso(getattr(row, "created_at", None)),
+        "expires_at": _dt_iso(getattr(row, "expires_at", None)),
+        "verified_at": _dt_iso(getattr(row, "verified_at", None)),
+        "bank_details_recorded_at": _dt_iso(getattr(row, "bank_details_recorded_at", None)),
+        "identity_evidence_count": int(
+            db.query(IdentityVerificationCheck)
+            .filter(IdentityVerificationCheck.entry_phone_verification_id == int(row.id))
+            .count()
+        ),
+        "has_gsn_identity": existing_user is not None,
+        "user": _user_label(existing_user),
+    }
+
+
+def _owner_intake_rows(
+    db: Session,
+    *,
+    owner_query: str,
+    limit: int,
+) -> list[dict[str, Any]]:
+    clean_owner = _safe_str(owner_query)
+    if not clean_owner:
+        return []
+
+    owner_like = f"%{clean_owner.lower()}%"
+    filters = [
+        func.lower(EntryPhoneVerification.display_name).like(owner_like),
+        func.lower(EntryPhoneVerification.email).like(owner_like),
+    ]
+    phone_candidates = _ownership_phone_candidates(clean_owner)
+    if phone_candidates:
+        filters.append(EntryPhoneVerification.phone_e164.in_(phone_candidates))
+        owner_digits = "".join(ch for ch in clean_owner if ch.isdigit())
+        if len(owner_digits) >= 6:
+            filters.append(EntryPhoneVerification.phone_e164.like(f"%{owner_digits[-8:]}%"))
+
+    rows = (
+        db.query(EntryPhoneVerification)
+        .filter(or_(*filters))
+        .order_by(EntryPhoneVerification.id.desc())
+        .limit(int(limit))
+        .all()
+    )
+    now = datetime.now(timezone.utc)
+    return [_entry_intake_owner_label(db, row, now=now) for row in rows]
+
+
+def _resolve_entry_intake_for_ownership(
+    db: Session,
+    entry_verification_id: int,
+) -> EntryPhoneVerification:
+    row = db.get(EntryPhoneVerification, int(entry_verification_id))
+    if row is None:
+        raise HTTPException(status_code=404, detail="Onboarding intake record was not found.")
+    return row
+
+
+def _entry_intake_has_owner_repair_evidence(db: Session, row: EntryPhoneVerification) -> bool:
+    if _safe_str(getattr(row, "phone_e164", None)) and getattr(row, "verified_at", None) is not None:
+        return True
+    if getattr(row, "bank_details_recorded_at", None) is not None:
+        return True
+    if getattr(row, "driver_licence_recorded_at", None) is not None:
+        return True
+    check_count = (
+        db.query(IdentityVerificationCheck)
+        .filter(IdentityVerificationCheck.entry_phone_verification_id == int(row.id))
+        .count()
+    )
+    return int(check_count or 0) > 0
+
+
+def _owner_repair_founder_email(row: EntryPhoneVerification) -> str:
+    email = _safe_str(getattr(row, "email", None)).lower()
+    if email:
+        return email
+    digits = "".join(ch for ch in _safe_str(getattr(row, "phone_e164", None)) if ch.isdigit())
+    if not digits:
+        raise HTTPException(status_code=400, detail="A usable phone number is required before creating the GSN identity.")
+    return f"{digits}@founder-entry.gsnmail.app"
+
+
+def _owner_repair_account_number(value: Any) -> str:
+    raw = _safe_str(value).replace(" ", "")
+    if len(raw) < 6:
+        raise HTTPException(status_code=400, detail="The recorded bank account number is too short for owner repair.")
+    return raw
+
+
+def _owner_repair_phone(value: Any, fallback: Any = None) -> Optional[str]:
+    raw = _safe_str(value) or _safe_str(fallback)
+    if not raw:
+        return None
+    compact = raw.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+    if compact.startswith("00") and len(compact) > 4:
+        return f"+{compact[2:]}"
+    return compact
+
+
+def _owner_repair_bank_status_note(region_status: Optional[str], phone_verified: bool) -> tuple[str, str]:
+    if not phone_verified:
+        return (
+            "phone_registered_bank_recorded_sms_suspended",
+            "Bank destination is recorded server-side and tied to a registered phone number. SMS phone ownership verification is suspended for controlled testing.",
+        )
+    if region_status == "matched":
+        return (
+            "phone_verified_bank_recorded_region_matched",
+            "Bank destination is recorded server-side, tied to a verified phone, and its declared region aligns with the phone region.",
+        )
+    if region_status == "explained_mismatch":
+        return (
+            "phone_verified_bank_recorded_region_explained",
+            "Bank destination is recorded server-side and tied to a verified phone. The phone and bank regions differ, and the explanation was recorded for trust review.",
+        )
+    if region_status == "partial":
+        return (
+            "phone_verified_bank_recorded_region_partial",
+            "Bank destination is recorded server-side and tied to a verified phone, but region evidence is still partial.",
+        )
+    return (
+        "phone_verified_bank_recorded",
+        "Bank destination is recorded server-side and tied to a verified phone.",
+    )
+
+
+def _owner_repair_verification_event_type(verification_type: Any) -> str:
+    vt = _safe_str(verification_type).lower()
+    if vt == "bank":
+        return "identity.bank_verification_checked"
+    if vt == "drivers_licence":
+        return "identity.drivers_licence_verification_checked"
+    if vt == "official_id":
+        return "identity.official_id_recorded"
+    if vt == "identity_photo":
+        return "identity.photo_evidence_checked"
+    return "identity.verification_checked"
+
+
+def _assign_gsn_id_no_commit(db: Session, user: User) -> User:
+    if _safe_str(getattr(user, "gmfn_id", None)):
+        return user
+    for _ in range(20):
+        candidate = generate_gmfn_id()
+        if db.query(User).filter(User.gmfn_id == candidate).first() is None:
+            user.gmfn_id = candidate
+            db.add(user)
+            db.flush()
+            return user
+    raise HTTPException(status_code=500, detail="Could not generate unique GSN ID")
+
+
+def _community_ownership_intake_preview(
+    db: Session,
+    *,
+    clan: Clan,
+    intake: EntryPhoneVerification,
+) -> dict[str, Any]:
+    current_owner = (
+        db.get(User, int(clan.created_by_user_id))
+        if getattr(clan, "created_by_user_id", None)
+        else None
+    )
+    return {
+        "community": _community_row(db, clan),
+        "requested_owner": _entry_intake_owner_label(db, intake),
+        "current_owner": _user_label(current_owner),
+        "membership_action": "create_identity_then_add_admin",
+        "will_create_owner_identity": True,
+        "will_set_created_by_user_id": None,
+        "will_preserve_community_code": True,
+        "will_preserve_history": True,
+        "will_remove_other_admins": False,
+        "boundary": (
+            "This will create the missing GSN identity from the recorded onboarding intake, "
+            "then record that identity as canonical owner/admin. It does not delete historical evidence or erase previous activity."
+        ),
+    }
+
+
+def _create_owner_identity_from_intake_no_commit(
+    db: Session,
+    *,
+    clan: Clan,
+    intake: EntryPhoneVerification,
+    admin_user: User,
+    reviewer_note: str,
+) -> User:
+    if getattr(intake, "consumed_at", None) is not None:
+        raise HTTPException(status_code=409, detail="This onboarding intake has already been used.")
+    if not _entry_intake_has_owner_repair_evidence(db, intake):
+        raise HTTPException(
+            status_code=400,
+            detail="This intake does not have enough recorded owner evidence to create a GSN identity.",
+        )
+
+    existing_user = _entry_user_for_intake(db, intake)
+    if existing_user is not None:
+        return existing_user
+
+    email = _owner_repair_founder_email(intake)
+    phone_e164 = _safe_str(getattr(intake, "phone_e164", None))
+    if not phone_e164:
+        raise HTTPException(status_code=400, detail="A phone number is required before creating the GSN identity.")
+
+    email_clash = db.query(User).filter(func.lower(User.email) == email.lower()).first()
+    if email_clash is not None:
+        raise HTTPException(status_code=409, detail="That intake email already belongs to a GSN identity. Use the existing owner identity instead.")
+    phone_clash = db.query(User).filter(User.phone_e164.in_(_ownership_phone_candidates(phone_e164))).first()
+    if phone_clash is not None:
+        raise HTTPException(status_code=409, detail="That intake phone already belongs to a GSN identity. Use the existing owner identity instead.")
+
+    user = User(
+        email=email,
+        hashed_password="PENDING_APPROVAL",
+        role="admin",
+        display_name=_safe_str(getattr(intake, "display_name", None)) or "Community owner",
+        phone_e164=phone_e164,
+        phone_verified_at=getattr(intake, "verified_at", None),
+    )
+    db.add(user)
+    try:
+        db.flush()
+        user = _assign_gsn_id_no_commit(db, user)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Founder identity already exists")
+
+    checks = (
+        db.query(IdentityVerificationCheck)
+        .filter(IdentityVerificationCheck.entry_phone_verification_id == int(intake.id))
+        .order_by(IdentityVerificationCheck.created_at.asc(), IdentityVerificationCheck.id.asc())
+        .all()
+    )
+
+    identity_photo_url: Optional[str] = None
+    for check in checks:
+        check.user_id = int(user.id)
+        db.add(check)
+        provider_response = _check_provider_response(check)
+        if _safe_str(check.verification_type).lower() == "identity_photo" and not identity_photo_url:
+            identity_photo_url = _safe_str(provider_response.get("evidence_url")) or None
+        log_trust_event(
+            db,
+            event_type=_owner_repair_verification_event_type(check.verification_type),
+            clan_id=int(clan.id),
+            actor_user_id=int(admin_user.id),
+            subject_user_id=int(user.id),
+            meta=build_trust_meta(
+                reason="identity_verification_check_attached_by_owner_repair",
+                note=_safe_str(check.explanation) or "Recorded intake evidence was attached during Command Centre owner repair.",
+                system=True,
+                extra={
+                    "entry_verification_id": int(intake.id),
+                    "verification_check_id": int(check.id),
+                    "verification_type": _safe_str(check.verification_type),
+                    "verification_status": _safe_str(check.status),
+                    "provider_key": _safe_str(check.provider_key) or None,
+                    "admin_repair": True,
+                },
+            ),
+            dedupe_key=f"admin-intake:{int(intake.id)}:check:{int(check.id)}",
+            commit=False,
+            refresh=False,
+        )
+
+    if identity_photo_url:
+        user.profile_image_url = identity_photo_url
+        db.add(user)
+        log_trust_event(
+            db,
+            event_type="identity.photo_evidence_recorded",
+            clan_id=int(clan.id),
+            actor_user_id=int(admin_user.id),
+            subject_user_id=int(user.id),
+            meta=build_trust_meta(
+                reason="identity_photo_attached_by_owner_repair",
+                note="Founder photo/selfie evidence from the stuck intake was attached during Command Centre owner repair.",
+                system=True,
+                extra={
+                    "entry_verification_id": int(intake.id),
+                    "profile_image_url": identity_photo_url,
+                    "provider_verified": False,
+                    "requires_review": True,
+                    "admin_repair": True,
+                },
+            ),
+            dedupe_key=f"admin-intake:{int(intake.id)}:photo",
+            commit=False,
+            refresh=False,
+        )
+
+    phone_verified = getattr(intake, "verified_at", None) is not None
+    log_trust_event(
+        db,
+        event_type="identity.phone_verified" if phone_verified else "identity.phone_registered",
+        clan_id=int(clan.id),
+        actor_user_id=int(admin_user.id),
+        subject_user_id=int(user.id),
+        meta=build_trust_meta(
+            reason="owner_repair_phone_attached_from_intake",
+            note=(
+                "Founder phone verification was attached from the stuck onboarding intake."
+                if phone_verified
+                else "Founder phone registration was attached from the stuck onboarding intake while SMS verification was suspended."
+            ),
+            system=True,
+            extra={
+                "entry_verification_id": int(intake.id),
+                "phone_e164": phone_e164,
+                "sms_suspended": not phone_verified,
+                "admin_repair": True,
+            },
+        ),
+        dedupe_key=f"admin-intake:{int(intake.id)}:phone",
+        commit=False,
+        refresh=False,
+    )
+
+    bank_recorded = getattr(intake, "bank_details_recorded_at", None) is not None
+    if bank_recorded and _safe_str(getattr(intake, "bank_name", None)) and _safe_str(getattr(intake, "bank_account_number", None)):
+        payout_status, payout_note = _owner_repair_bank_status_note(
+            _safe_str(getattr(intake, "region_consistency_status", None)),
+            phone_verified,
+        )
+        payout = UserPayoutDestination(
+            user_id=int(user.id),
+            destination_name=_safe_str(getattr(intake, "bank_account_name", None)) or user.display_name or "Community owner",
+            bank_name=_safe_str(getattr(intake, "bank_name", None)),
+            account_number=_owner_repair_account_number(getattr(intake, "bank_account_number", None)),
+            phone_number=_owner_repair_phone(getattr(intake, "bank_phone_number", None), phone_e164),
+            country=_safe_str(getattr(intake, "bank_country", None)) or None,
+            currency=_safe_str(getattr(intake, "bank_currency", None)).upper() or "NGN",
+            note=_safe_str(getattr(intake, "bank_note", None)) or None,
+            verification_status=payout_status,
+            verification_note=payout_note,
+            phone_country_hint=_safe_str(getattr(intake, "phone_country_hint", None)).upper() or None,
+            locale_country_hint=_safe_str(getattr(intake, "locale_country_hint", None)).upper() or None,
+            region_consistency_status=_safe_str(getattr(intake, "region_consistency_status", None)) or None,
+            region_consistency_note=_safe_str(getattr(intake, "region_consistency_note", None)) or None,
+            verified_at=None,
+        )
+        db.add(payout)
+        log_trust_event(
+            db,
+            event_type="identity.bank_destination_recorded",
+            clan_id=int(clan.id),
+            actor_user_id=int(admin_user.id),
+            subject_user_id=int(user.id),
+            meta=build_trust_meta(
+                reason="bank_destination_attached_by_owner_repair",
+                note="Founder bank destination from the stuck intake was attached during Command Centre owner repair.",
+                system=True,
+                extra={
+                    "entry_verification_id": int(intake.id),
+                    "bank_name": payout.bank_name,
+                    "currency": payout.currency,
+                    "verification_status": payout.verification_status,
+                    "admin_repair": True,
+                },
+            ),
+            dedupe_key=f"admin-intake:{int(intake.id)}:bank",
+            commit=False,
+            refresh=False,
+        )
+
+    if _safe_str(getattr(intake, "driver_licence_number", None)):
+        log_trust_event(
+            db,
+            event_type="identity.drivers_licence_recorded",
+            clan_id=int(clan.id),
+            actor_user_id=int(admin_user.id),
+            subject_user_id=int(user.id),
+            meta=build_trust_meta(
+                reason="drivers_licence_attached_by_owner_repair",
+                note="Founder driver's licence reference from the stuck intake was attached during Command Centre owner repair.",
+                system=True,
+                extra={
+                    "entry_verification_id": int(intake.id),
+                    "driver_licence_country": _safe_str(getattr(intake, "driver_licence_country", None)) or None,
+                    "driver_licence_last4": _safe_str(getattr(intake, "driver_licence_number", None))[-4:],
+                    "admin_repair": True,
+                },
+            ),
+            dedupe_key=f"admin-intake:{int(intake.id)}:licence",
+            commit=False,
+            refresh=False,
+        )
+
+    intake.consumed_at = datetime.now(timezone.utc)
+    db.add(intake)
+    db.add(user)
+    db.flush()
+    return user
 def _ensure_ownership_admin_membership_no_commit(
     db: Session,
     *,
@@ -518,6 +951,7 @@ def admin_community_ownership_lookup(
     clean_owner = _safe_str(owner_query)
     community_rows = []
     owner_rows = []
+    owner_intake_rows = []
 
     if clean_name:
         name_like = f"%{clean_name.lower()}%"
@@ -560,6 +994,7 @@ def admin_community_ownership_lookup(
             .all()
         )
         owner_rows = [_user_label(owner) for owner in owners]
+        owner_intake_rows = _owner_intake_rows(db, owner_query=clean_owner, limit=int(limit))
 
     return {
         "ok": True,
@@ -567,6 +1002,7 @@ def admin_community_ownership_lookup(
         "owner_query": clean_owner or None,
         "communities": community_rows,
         "owners": owner_rows,
+        "owner_intakes": owner_intake_rows,
         "boundary": (
             "Lookup is read-only. Use preview first, then execute only after the owner proof has been checked."
         ),
@@ -586,16 +1022,33 @@ def admin_community_ownership_reconcile(
         clan_id=payload.clan_id,
         community_name=payload.community_name,
     )
-    owner = _resolve_owner_for_ownership(db, payload)
-    preview = _community_ownership_preview(db, clan=clan, owner=owner)
+
+    intake: Optional[EntryPhoneVerification] = None
+    created_owner_identity = False
+    if payload.entry_verification_id:
+        intake = _resolve_entry_intake_for_ownership(db, int(payload.entry_verification_id))
+        owner = _entry_user_for_intake(db, intake)
+        preview = (
+            _community_ownership_preview(db, clan=clan, owner=owner)
+            if owner is not None
+            else _community_ownership_intake_preview(db, clan=clan, intake=intake)
+        )
+    else:
+        owner = _resolve_owner_for_ownership(db, payload)
+        preview = _community_ownership_preview(db, clan=clan, owner=owner)
 
     reviewer_note = _safe_str(payload.reviewer_note)
     if not payload.execute:
+        message = (
+            "Preview ready. This will create the missing GSN identity from the recorded intake, then record the canonical owner."
+            if preview.get("will_create_owner_identity")
+            else "Preview ready. Confirm owner proof before recording the canonical owner."
+        )
         return {
             "ok": True,
             "mode": "preview",
             "executed": False,
-            "message": "Preview ready. Confirm owner proof before recording the canonical owner.",
+            "message": message,
             **preview,
         }
 
@@ -609,6 +1062,17 @@ def admin_community_ownership_reconcile(
             status_code=400,
             detail="Reviewer note is required before changing community ownership.",
         )
+
+    if intake is not None and owner is None:
+        owner = _create_owner_identity_from_intake_no_commit(
+            db,
+            clan=clan,
+            intake=intake,
+            admin_user=current_user,
+            reviewer_note=reviewer_note,
+        )
+        created_owner_identity = True
+        preview = _community_ownership_preview(db, clan=clan, owner=owner)
 
     previous_owner_id = int(clan.created_by_user_id) if clan.created_by_user_id else None
     clan.created_by_user_id = int(owner.id)
@@ -627,6 +1091,8 @@ def admin_community_ownership_reconcile(
             "previous_created_by_user_id": previous_owner_id,
             "canonical_owner_user_id": int(owner.id),
             "canonical_owner_gmfn_id": _safe_str(getattr(owner, "gmfn_id", None)) or None,
+            "entry_verification_id": int(intake.id) if intake is not None else None,
+            "created_owner_identity": created_owner_identity,
             "owner_proof_confirmed": True,
             "admin_membership_id": int(membership.id),
             "membership_action": preview.get("membership_action"),
@@ -646,15 +1112,31 @@ def admin_community_ownership_reconcile(
     )
     db.commit()
     db.refresh(clan)
+    try:
+        apply_trust_score(db, user_id=int(owner.id))
+    except Exception:
+        pass
+
+    refreshed_owner = db.get(User, int(owner.id)) or owner
+    result_preview = _community_ownership_preview(db, clan=clan, owner=refreshed_owner)
+    result_preview["created_owner_identity"] = created_owner_identity
+    result_preview["entry_verification_id"] = int(intake.id) if intake is not None else None
+
+    if created_owner_identity:
+        message = (
+            f"{_safe_str(clan.name)} is repaired. The owner now has GSN ID "
+            f"{_safe_str(getattr(refreshed_owner, 'gmfn_id', None))} and is recorded as owner/admin."
+        )
+    else:
+        message = f"{_safe_str(clan.name)} now records this GSN identity as canonical owner/admin."
 
     return {
         "ok": True,
         "mode": "execute",
         "executed": True,
-        "message": f"{_safe_str(clan.name)} now records this GSN identity as canonical owner/admin.",
-        **_community_ownership_preview(db, clan=clan, owner=owner),
+        "message": message,
+        **result_preview,
     }
-
 
 @router.post("/identity-verification-checks/{check_id}/decision")
 def admin_identity_verification_decision(
