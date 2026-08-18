@@ -5,7 +5,8 @@ import json
 import mimetypes
 import os
 import re
-from datetime import datetime, timezone
+import secrets
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Optional
@@ -675,6 +676,81 @@ def _community_ownership_intake_preview(
     }
 
 
+def _community_ownership_missing_community_preview(
+    db: Session,
+    *,
+    community_name: str,
+    intake: EntryPhoneVerification,
+    owner: Optional[User] = None,
+) -> dict[str, Any]:
+    clean_name = _safe_str(community_name)
+    return {
+        "community": {
+            "clan_id": None,
+            "name": clean_name,
+            "description": None,
+            "community_code": "Will be created",
+            "status": "pending_creation",
+            "created_by_user_id": None,
+            "created_at": None,
+            "canonical_owner": None,
+            "admin_members": [],
+        },
+        "requested_owner": _user_label(owner) if owner is not None else _entry_intake_owner_label(db, intake),
+        "current_owner": None,
+        "membership_action": "create_community_and_add_admin" if owner is not None else "create_community_and_owner_identity",
+        "will_create_community": True,
+        "will_create_owner_identity": owner is None,
+        "will_set_created_by_user_id": None,
+        "will_preserve_community_code": False,
+        "will_preserve_history": True,
+        "will_remove_other_admins": False,
+        "boundary": (
+            "No existing normal GSN community matched that name. This will create the missing community from the typed name, "
+            "create or attach the owner identity from the stuck intake, and record the owner/admin after proof is checked."
+        ),
+    }
+
+
+def _create_missing_community_from_intake_no_commit(
+    db: Session,
+    *,
+    community_name: str,
+    intake: EntryPhoneVerification,
+) -> Clan:
+    clean_name = _safe_str(community_name)
+    if len(clean_name) < 2:
+        raise HTTPException(status_code=400, detail="Community name is required before creating the missing community.")
+    try:
+        return _resolve_community_for_ownership(db, community_name=clean_name)
+    except HTTPException as exc:
+        if exc.status_code not in (404,):
+            raise
+
+    now = datetime.now(timezone.utc)
+    clan = Clan(
+        name=clean_name,
+        description="Created from a stuck onboarding intake by Command Centre repair.",
+        invite_code=secrets.token_urlsafe(16),
+        invite_created_at=now,
+        invite_expires_at=now + timedelta(days=7),
+        invite_max_uses=None,
+        invite_uses=0,
+        status="active",
+    )
+    db.add(clan)
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Community name already exists. Search records and select the exact community before preview.")
+    if not _safe_str(getattr(clan, "community_code", None)):
+        clan.community_code = f"GSN-C-{int(clan.id):06d}"
+        db.add(clan)
+        db.flush()
+    return clan
+
+
 def _create_owner_identity_from_intake_no_commit(
     db: Session,
     *,
@@ -1111,33 +1187,56 @@ def admin_community_ownership_reconcile(
 ) -> dict[str, Any]:
     _require_platform_admin(current_user)
 
-    clan = _resolve_community_for_ownership(
-        db,
-        clan_id=payload.clan_id,
-        community_name=payload.community_name,
-    )
-
     intake: Optional[EntryPhoneVerification] = None
-    created_owner_identity = False
     if payload.entry_verification_id:
         intake = _resolve_entry_intake_for_ownership(db, int(payload.entry_verification_id))
-        owner = _entry_user_for_intake(db, intake)
-        preview = (
-            _community_ownership_preview(db, clan=clan, owner=owner)
-            if owner is not None
-            else _community_ownership_intake_preview(db, clan=clan, intake=intake)
+
+    created_community = False
+    clan: Optional[Clan] = None
+    try:
+        clan = _resolve_community_for_ownership(
+            db,
+            clan_id=payload.clan_id,
+            community_name=payload.community_name,
         )
+    except HTTPException as exc:
+        if exc.status_code == 404 and intake is not None and _safe_str(payload.community_name):
+            clan = None
+        else:
+            raise
+
+    created_owner_identity = False
+    if intake is not None:
+        owner = _entry_user_for_intake(db, intake)
+        if clan is None:
+            preview = _community_ownership_missing_community_preview(
+                db,
+                community_name=_safe_str(payload.community_name),
+                intake=intake,
+                owner=owner,
+            )
+        else:
+            preview = (
+                _community_ownership_preview(db, clan=clan, owner=owner)
+                if owner is not None
+                else _community_ownership_intake_preview(db, clan=clan, intake=intake)
+            )
     else:
         owner = _resolve_owner_for_ownership(db, payload)
+        if clan is None:
+            raise HTTPException(status_code=404, detail="Community name was not found.")
         preview = _community_ownership_preview(db, clan=clan, owner=owner)
 
     reviewer_note = _safe_str(payload.reviewer_note)
     if not payload.execute:
-        message = (
-            "Preview ready. This will create the missing GSN identity from the recorded intake, then record the canonical owner."
-            if preview.get("will_create_owner_identity")
-            else "Preview ready. Confirm owner proof before recording the canonical owner."
-        )
+        if preview.get("will_create_community") and preview.get("will_create_owner_identity"):
+            message = "Preview ready. This will create the missing community and the owner GSN ID from the recorded intake."
+        elif preview.get("will_create_community"):
+            message = "Preview ready. This will create the missing community and record the owner/admin."
+        elif preview.get("will_create_owner_identity"):
+            message = "Preview ready. This will create the missing GSN identity from the recorded intake, then record the canonical owner."
+        else:
+            message = "Preview ready. Confirm owner proof before recording the canonical owner."
         return {
             "ok": True,
             "mode": "preview",
@@ -1157,6 +1256,16 @@ def admin_community_ownership_reconcile(
             detail="Reviewer note is required before changing community ownership.",
         )
 
+    if clan is None:
+        if intake is None:
+            raise HTTPException(status_code=404, detail="Community name was not found.")
+        clan = _create_missing_community_from_intake_no_commit(
+            db,
+            community_name=_safe_str(payload.community_name),
+            intake=intake,
+        )
+        created_community = True
+
     if intake is not None and owner is None:
         owner = _create_owner_identity_from_intake_no_commit(
             db,
@@ -1173,6 +1282,32 @@ def admin_community_ownership_reconcile(
     db.add(clan)
     membership = _ensure_ownership_admin_membership_no_commit(db=db, clan=clan, owner=owner)
 
+    if created_community:
+        log_trust_event(
+            db,
+            event_type="community.created_from_stuck_intake",
+            clan_id=int(clan.id),
+            actor_user_id=int(current_user.id),
+            subject_user_id=int(owner.id),
+            meta=build_trust_meta(
+                reason="community_created_from_stuck_onboarding_intake",
+                note=reviewer_note,
+                trust_delta="0.00",
+                system=True,
+                extra={
+                    "community_id": int(clan.id),
+                    "community_name": _safe_str(clan.name),
+                    "community_code": _safe_str(getattr(clan, "community_code", None)) or f"GSN-C-{int(clan.id):06d}",
+                    "entry_verification_id": int(intake.id) if intake is not None else None,
+                    "created_owner_identity": created_owner_identity,
+                    "owner_proof_confirmed": True,
+                    "admin_repair": True,
+                },
+            ),
+            commit=False,
+            refresh=False,
+        )
+
     meta = build_trust_meta(
         reason="community_ownership_reconciled",
         note=reviewer_note,
@@ -1186,6 +1321,7 @@ def admin_community_ownership_reconcile(
             "canonical_owner_user_id": int(owner.id),
             "canonical_owner_gmfn_id": _safe_str(getattr(owner, "gmfn_id", None)) or None,
             "entry_verification_id": int(intake.id) if intake is not None else None,
+            "created_community": created_community,
             "created_owner_identity": created_owner_identity,
             "owner_proof_confirmed": True,
             "admin_membership_id": int(membership.id),
@@ -1213,10 +1349,18 @@ def admin_community_ownership_reconcile(
 
     refreshed_owner = db.get(User, int(owner.id)) or owner
     result_preview = _community_ownership_preview(db, clan=clan, owner=refreshed_owner)
+    result_preview["created_community"] = created_community
     result_preview["created_owner_identity"] = created_owner_identity
     result_preview["entry_verification_id"] = int(intake.id) if intake is not None else None
 
-    if created_owner_identity:
+    if created_community and created_owner_identity:
+        message = (
+            f"{_safe_str(clan.name)} is created and repaired. The owner now has GSN ID "
+            f"{_safe_str(getattr(refreshed_owner, 'gmfn_id', None))} and is recorded as owner/admin."
+        )
+    elif created_community:
+        message = f"{_safe_str(clan.name)} is created and now records this GSN identity as owner/admin."
+    elif created_owner_identity:
         message = (
             f"{_safe_str(clan.name)} is repaired. The owner now has GSN ID "
             f"{_safe_str(getattr(refreshed_owner, 'gmfn_id', None))} and is recorded as owner/admin."

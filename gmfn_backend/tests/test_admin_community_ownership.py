@@ -403,6 +403,77 @@ def test_community_ownership_execute_creates_gsn_identity_from_stuck_intake(
         assert 'identity.bank_destination_recorded' in event_types
         assert 'identity.photo_evidence_recorded' in event_types
         assert 'community.ownership_reconciled' in event_types
+
+def test_community_ownership_execute_can_create_missing_community_from_stuck_intake(
+    client: TestClient,
+    override_current_user,
+):
+    _seed_pillar_stuck_intake_case()
+    with SessionLocal() as db:
+        db.query(ClanMembership).filter(ClanMembership.clan_id == 11).delete()
+        db.query(Clan).filter(Clan.id == 11).delete()
+        db.commit()
+
+    preview_response = client.post(
+        '/admin/community-ownership/reconcile',
+        json={
+            'community_name': 'Pillar of Hope',
+            'entry_verification_id': 31,
+            'execute': False,
+        },
+    )
+
+    assert preview_response.status_code == 200, preview_response.text
+    preview_body = preview_response.json()
+    assert preview_body['mode'] == 'preview'
+    assert preview_body['will_create_community'] is True
+    assert preview_body['will_create_owner_identity'] is True
+    assert preview_body['community']['name'] == 'Pillar of Hope'
+    assert preview_body['community']['community_code'] == 'Will be created'
+    assert preview_body['membership_action'] == 'create_community_and_owner_identity'
+
+    response = client.post(
+        '/admin/community-ownership/reconcile',
+        json={
+            'community_name': 'Pillar of Hope',
+            'entry_verification_id': 31,
+            'execute': True,
+            'owner_proof_confirmed': True,
+            'reviewer_note': 'Felix confirmed as Pillar of Hope founder after missing-community onboarding block.',
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body['mode'] == 'execute'
+    assert body['executed'] is True
+    assert body['created_community'] is True
+    assert body['created_owner_identity'] is True
+    assert body['community']['name'] == 'Pillar of Hope'
+    assert body['community']['community_code'].startswith('GSN-C-')
+    assert body['requested_owner']['display_name'] == 'Mr Felix'
+    assert body['requested_owner']['gmfn_id'].startswith('GMFN-U-')
+
+    with SessionLocal() as db:
+        felix = db.query(User).filter(User.phone_e164 == '+447480608648').one()
+        clan = db.query(Clan).filter(Clan.name == 'Pillar of Hope').one()
+        assert clan.created_by_user_id == felix.id
+        assert clan.status == 'active'
+        assert clan.community_code.startswith('GSN-C-')
+        membership = (
+            db.query(ClanMembership)
+            .filter(ClanMembership.clan_id == clan.id, ClanMembership.user_id == felix.id)
+            .one()
+        )
+        assert membership.role == 'admin'
+        intake = db.get(EntryPhoneVerification, 31)
+        assert intake is not None
+        assert intake.consumed_at is not None
+        event_types = {row.event_type for row in db.query(TrustEvent).all()}
+        assert 'community.created_from_stuck_intake' in event_types
+        assert 'community.ownership_reconciled' in event_types
+
+
 def test_community_ownership_lookup_finds_owner_by_local_phone(
     client: TestClient,
     override_current_user,
