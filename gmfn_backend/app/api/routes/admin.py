@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import mimetypes
 import os
+import re
 from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -72,6 +73,45 @@ def _utc_dt(x: Any) -> Optional[datetime]:
         return x.replace(tzinfo=timezone.utc)
     return x.astimezone(timezone.utc)
 
+
+
+def _ownership_gsn_id_candidates(value: Any) -> list[str]:
+    raw = _safe_str(value).upper()
+    if not raw:
+        return []
+    candidates = [raw]
+    if raw.startswith("GMFN-"):
+        candidates.append(f"GSN-{raw[5:]}")
+    elif raw.startswith("GSN-"):
+        candidates.append(f"GMFN-{raw[4:]}")
+    return [
+        item
+        for index, item in enumerate(candidates)
+        if item and item not in candidates[:index]
+    ]
+
+
+def _ownership_phone_candidates(value: Any) -> list[str]:
+    raw = _safe_str(value)
+    if not raw:
+        return []
+
+    compact = re.sub(r"[\s().-]+", "", raw)
+    digits = re.sub(r"\D+", "", compact)
+    candidates = {raw, compact}
+
+    if compact.startswith("00") and len(compact) > 4:
+        candidates.add(f"+{compact[2:]}")
+    elif compact.startswith("+"):
+        candidates.add(compact)
+    elif digits:
+        candidates.add(f"+{digits}")
+        if digits.startswith("0") and len(digits) >= 10:
+            national = digits[1:]
+            candidates.add(f"+44{national}")
+            candidates.add(f"+234{national}")
+
+    return sorted(item for item in candidates if item)
 
 def _last4(x: Any) -> Optional[str]:
     digits = "".join(ch for ch in _safe_str(x) if ch.isdigit())
@@ -258,15 +298,17 @@ def _resolve_owner_for_ownership(db: Session, payload: CommunityOwnershipReconci
     filters = []
     if payload.owner_user_id:
         filters.append(User.id == int(payload.owner_user_id))
-    gmfn_id = _safe_str(payload.owner_gmfn_id)
-    if gmfn_id:
-        filters.append(func.lower(User.gmfn_id) == gmfn_id.lower())
+    gmfn_ids = _ownership_gsn_id_candidates(payload.owner_gmfn_id)
+    if gmfn_ids:
+        filters.append(
+            func.lower(User.gmfn_id).in_([item.lower() for item in gmfn_ids])
+        )
     email = _safe_str(payload.owner_email)
     if email:
         filters.append(func.lower(User.email) == email.lower())
-    phone = _safe_str(payload.owner_phone_e164)
-    if phone:
-        filters.append(User.phone_e164 == phone)
+    phone_candidates = _ownership_phone_candidates(payload.owner_phone_e164)
+    if phone_candidates:
+        filters.append(User.phone_e164.in_(phone_candidates))
 
     if not filters:
         raise HTTPException(
@@ -497,10 +539,18 @@ def admin_community_ownership_lookup(
             func.lower(User.email).like(owner_like),
             func.lower(User.display_name).like(owner_like),
         ]
-        if clean_owner.upper().startswith(("GMFN", "GSN")):
+        gsn_id_candidates = _ownership_gsn_id_candidates(clean_owner)
+        if gsn_id_candidates:
+            owner_filters.append(
+                func.lower(User.gmfn_id).in_([item.lower() for item in gsn_id_candidates])
+            )
             owner_filters.append(func.lower(User.gmfn_id).like(owner_like))
-        if any(ch.isdigit() for ch in clean_owner):
-            owner_filters.append(User.phone_e164.like(f"%{clean_owner}%"))
+        phone_candidates = _ownership_phone_candidates(clean_owner)
+        if phone_candidates:
+            owner_filters.append(User.phone_e164.in_(phone_candidates))
+            owner_digits = "".join(ch for ch in clean_owner if ch.isdigit())
+            if len(owner_digits) >= 6:
+                owner_filters.append(User.phone_e164.like(f"%{owner_digits[-8:]}%"))
 
         owners = (
             db.query(User)

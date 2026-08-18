@@ -171,3 +171,60 @@ def test_community_ownership_execute_records_canonical_owner_and_trust_event(
         assert event.meta['canonical_owner_user_id'] == 3
         assert event.meta['history_preserved'] is True
         assert event.meta['other_admins_removed'] is False
+
+def test_community_ownership_lookup_finds_owner_by_local_phone(
+    client: TestClient,
+    override_current_user,
+):
+    _seed_pillar_of_hope_case()
+
+    response = client.get(
+        '/admin/community-ownership/lookup',
+        params={
+            'community_name': 'Pillar of Hope',
+            'owner_query': '07700 900003',
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body['communities'][0]['name'] == 'Pillar of Hope'
+    assert body['owners'][0]['display_name'] == 'Mr Felix'
+    assert body['owners'][0]['gmfn_id'] == 'GSN-P-FELIX'
+    assert body['owners'][0]['phone_last4'] == '0003'
+
+
+def test_community_ownership_execute_accepts_local_phone_owner_signal(
+    client: TestClient,
+    override_current_user,
+):
+    _seed_pillar_of_hope_case()
+
+    response = client.post(
+        '/admin/community-ownership/reconcile',
+        json={
+            'community_name': 'Pillar of Hope',
+            'owner_phone_e164': '07700 900003',
+            'execute': True,
+            'owner_proof_confirmed': True,
+            'reviewer_note': 'Felix phone number confirmed during Pillar of Hope pilot review.',
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body['mode'] == 'execute'
+    assert body['executed'] is True
+    assert body['community']['created_by_user_id'] == 3
+    assert body['requested_owner']['gmfn_id'] == 'GSN-P-FELIX'
+
+    with SessionLocal() as db:
+        clan = db.get(Clan, 11)
+        assert clan is not None
+        assert clan.created_by_user_id == 3
+        felix_membership = (
+            db.query(ClanMembership)
+            .filter(ClanMembership.clan_id == 11, ClanMembership.user_id == 3)
+            .one()
+        )
+        assert felix_membership.role == 'admin'

@@ -53,7 +53,7 @@ function label(): React.CSSProperties {
     color: "#4E6680",
     fontSize: 12,
     fontWeight: 1000,
-    letterSpacing: 0.35,
+    letterSpacing: 0,
     textTransform: "uppercase",
   };
 }
@@ -89,6 +89,32 @@ function helper(): React.CSSProperties {
   };
 }
 
+function factGrid(minWidth = 140): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: `repeat(auto-fit, minmax(${minWidth}px, 1fr))`,
+    gap: 10,
+  };
+}
+
+function isLikelyPhoneQuery(value: string): boolean {
+  const compact = value.replace(/[\s().-]+/g, "");
+  const digits = compact.replace(/\D/g, "");
+  return digits.length >= 8;
+}
+
+function isLikelyGsnId(value: string): boolean {
+  return /^(GMFN|GSN)-/i.test(value.trim());
+}
+
+function directOwnerSignal(ownerQuery: string) {
+  const clean = safeStr(ownerQuery);
+  return {
+    owner_gmfn_id: isLikelyGsnId(clean) ? clean : undefined,
+    owner_email: clean.includes("@") ? clean : undefined,
+    owner_phone_e164: isLikelyPhoneQuery(clean) ? clean : undefined,
+  };
+}
 function iconLabel(icon: GsnIconName, text: React.ReactNode) {
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
@@ -100,9 +126,21 @@ function iconLabel(icon: GsnIconName, text: React.ReactNode) {
 
 function fact(labelText: string, value: React.ReactNode) {
   return (
-    <div style={institutionalInnerCard("#FFFFFF")}>
+    <div style={{ ...institutionalInnerCard("#FFFFFF"), minWidth: 0 }}>
       <div style={label()}>{labelText}</div>
-      <div style={{ marginTop: 6, color: "#0B1F33", fontWeight: 1000, lineHeight: 1.35 }}>
+      <div
+        style={{
+          marginTop: 6,
+          color: "#0B1F33",
+          fontSize: 18,
+          fontWeight: 1000,
+          lineHeight: 1.25,
+          minWidth: 0,
+          overflowWrap: "normal",
+          wordBreak: "normal",
+          hyphens: "none",
+        }}
+      >
         {value || "Not set"}
       </div>
     </div>
@@ -155,6 +193,14 @@ export default function AdminCommunityOwnershipPage() {
     () => owners.find((row: any) => toNum(row?.user_id) === selectedOwnerId) || null,
     [owners, selectedOwnerId]
   );
+  const directOwner = useMemo(() => directOwnerSignal(ownerQuery), [ownerQuery]);
+  const ownerIdentityReady = Boolean(
+    selectedOwnerId ||
+      safeStr(selectedOwnerGmfnId) ||
+      safeStr(directOwner.owner_gmfn_id) ||
+      safeStr(directOwner.owner_email) ||
+      safeStr(directOwner.owner_phone_e164)
+  );
 
   const runLookup = useCallback(async () => {
     setBusy("lookup");
@@ -171,12 +217,20 @@ export default function AdminCommunityOwnershipPage() {
       setLookup(out);
       const firstCommunity = Array.isArray(out?.communities) ? out.communities[0] : null;
       const firstOwner = Array.isArray(out?.owners) ? out.owners[0] : null;
-      if (firstCommunity) setSelectedClanId(toNum(firstCommunity.clan_id));
+      if (firstCommunity) {
+        setSelectedClanId(toNum(firstCommunity.clan_id));
+      } else {
+        setSelectedClanId(0);
+      }
       if (firstOwner) {
         setSelectedOwnerId(toNum(firstOwner.user_id));
         setSelectedOwnerGmfnId(safeStr(firstOwner.gmfn_id));
+        setMessage("Lookup ready. Choose the community and the owner identity before preview.");
+      } else {
+        setSelectedOwnerId(0);
+        setSelectedOwnerGmfnId("");
+        setMessage("Community lookup checked. Search Felix by phone, email, or exact GSN ID before preview.");
       }
-      setMessage("Lookup ready. Choose the community and the owner identity before preview.");
     } catch (err: any) {
       setError(safeStr(err?.message || err) || "Lookup failed.");
     } finally {
@@ -195,7 +249,9 @@ export default function AdminCommunityOwnershipPage() {
         clan_id: selectedClanId || undefined,
         community_name: selectedClanId ? undefined : communityNameInput,
         owner_user_id: selectedOwnerId || undefined,
-        owner_gmfn_id: selectedOwnerId ? undefined : selectedOwnerGmfnId,
+        owner_gmfn_id: selectedOwnerId ? undefined : selectedOwnerGmfnId || directOwner.owner_gmfn_id,
+        owner_email: selectedOwnerId ? undefined : directOwner.owner_email,
+        owner_phone_e164: selectedOwnerId ? undefined : directOwner.owner_phone_e164,
         execute: false,
       });
       setPreview(out);
@@ -217,7 +273,9 @@ export default function AdminCommunityOwnershipPage() {
         clan_id: selectedClanId || undefined,
         community_name: selectedClanId ? undefined : communityNameInput,
         owner_user_id: selectedOwnerId || undefined,
-        owner_gmfn_id: selectedOwnerId ? undefined : selectedOwnerGmfnId,
+        owner_gmfn_id: selectedOwnerId ? undefined : selectedOwnerGmfnId || directOwner.owner_gmfn_id,
+        owner_email: selectedOwnerId ? undefined : directOwner.owner_email,
+        owner_phone_e164: selectedOwnerId ? undefined : directOwner.owner_phone_e164,
         owner_proof_confirmed: proofConfirmed,
         execute: true,
         reviewer_note: note,
@@ -240,8 +298,25 @@ export default function AdminCommunityOwnershipPage() {
     }
   }, [runLookup, searchParams]);
 
-  const canPreview = Boolean(selectedClanId || safeStr(communityNameInput)) && Boolean(selectedOwnerId || safeStr(selectedOwnerGmfnId));
+  const canPreview = Boolean(selectedClanId || safeStr(communityNameInput)) && ownerIdentityReady;
   const canExecute = Boolean(preview) && proofConfirmed && safeStr(note).length >= 12 && !result;
+  const noOwnerMatches = Boolean(lookup && safeStr(ownerQuery) && owners.length === 0);
+  const repairState = result
+    ? "Resolved"
+    : preview
+      ? "Proof needed"
+      : selectedOwner || ownerIdentityReady
+        ? "Owner ready"
+        : lookup
+          ? "Search result"
+          : "Not repaired";
+  const nextAction = result
+    ? "Send Felix back"
+    : preview
+      ? "Confirm proof"
+      : selectedOwner || ownerIdentityReady
+        ? "Preview repair"
+        : "Search owner";
 
   return (
     <div style={pageShell()}>
@@ -274,16 +349,19 @@ export default function AdminCommunityOwnershipPage() {
             </span>
             <div>
               <div style={label()}>Owner repair</div>
-              <h1 style={{ margin: "6px 0 0", color: "#0B1F33", fontSize: 30, lineHeight: 1.1 }}>
-                Make the existing community canonical.
+              <h1 style={{ margin: "6px 0 0", color: "#0B1F33", fontSize: 28, lineHeight: 1.08 }}>
+                Repair ownership
               </h1>
+              <div style={{ marginTop: 6, ...helper() }}>
+                Select Pillar of Hope and Felix, preview, then record.
+              </div>
             </div>
           </div>
-          <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 10 }}>
+          <div style={{ marginTop: 14, ...factGrid(136) }}>
             {fact("Community", selectedCommunity ? communityName(selectedCommunity) : communityNameInput)}
-            {fact("Owner", selectedOwner ? userName(selectedOwner) : selectedOwnerGmfnId || ownerQuery)}
-            {fact("Action", preview?.membership_action || "Preview first")}
-            {fact("History", "Preserved")}
+            {fact("Owner", selectedOwner ? userName(selectedOwner) : selectedOwnerGmfnId || ownerQuery || "Not set")}
+            {fact("State", repairState)}
+            {fact("Next", nextAction)}
           </div>
         </section>
 
@@ -298,7 +376,7 @@ export default function AdminCommunityOwnershipPage() {
             </StableCtaLink>
           </div>
 
-          <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
             <div>
               <div style={fieldLabel()}>Community name</div>
               <input
@@ -312,8 +390,12 @@ export default function AdminCommunityOwnershipPage() {
               <div style={fieldLabel()}>Owner search</div>
               <input
                 value={ownerQuery}
-                onChange={(event) => setOwnerQuery(event.target.value)}
-                placeholder="Felix, GSN ID, email, or phone"
+                onChange={(event) => {
+                  setOwnerQuery(event.target.value);
+                  setSelectedOwnerId(0);
+                  setSelectedOwnerGmfnId("");
+                }}
+                placeholder="Felix, email, or phone number"
                 style={inputStyle()}
               />
             </div>
@@ -339,12 +421,27 @@ export default function AdminCommunityOwnershipPage() {
               {iconLabel("eye", "Preview repair")}
             </SecondaryButton>
           </div>
+          <div style={{ marginTop: 10, ...helper() }}>
+            If Felix has no GSN number yet, search with the phone number he used for onboarding.
+          </div>
         </section>
+
+        {noOwnerMatches ? (
+          <section style={card("#FFFBEB")}>
+            <div style={label()}>Owner not found</div>
+            <div style={{ marginTop: 6, color: "#92400E", fontSize: 18, fontWeight: 1000, lineHeight: 1.35 }}>
+              No GSN owner identity matched that search yet.
+            </div>
+            <div style={{ marginTop: 10, ...helper() }}>
+              Try Felix&apos;s exact phone number with the country code. If the owner still does not appear, his onboarding did not create a GSN identity yet, so the community is not repaired.
+            </div>
+          </section>
+        ) : null}
 
         {(communities.length || owners.length) ? (
           <section style={card()}>
             <div style={label()}>Choose exact records</div>
-            <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
               <div style={soft()}>
                 <div style={fieldLabel()}>Community</div>
                 <select value={selectedClanId || ""} onChange={(event) => setSelectedClanId(toNum(event.target.value))} style={inputStyle()}>
@@ -382,7 +479,7 @@ export default function AdminCommunityOwnershipPage() {
                   ))}
                 </select>
                 <div style={{ marginTop: 10, ...helper() }}>
-                  Use exact GSN ID if the name search finds more than one Felix.
+                  Use phone, email, or exact GSN ID if the name search finds more than one Felix.
                 </div>
               </div>
             </div>
@@ -395,7 +492,7 @@ export default function AdminCommunityOwnershipPage() {
             <h2 style={{ margin: "6px 0 0", color: result ? "#065F46" : "#92400E", fontSize: 22 }}>
               {result ? "Canonical owner recorded" : "Ready for proof confirmation"}
             </h2>
-            <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10 }}>
+            <div style={{ marginTop: 12, ...factGrid(142) }}>
               {fact("Community", communityName(preview.community))}
               {fact("New owner", userName(preview.requested_owner))}
               {fact("Membership", safeStr(preview.membership_action).replace(/_/g, " "))}
