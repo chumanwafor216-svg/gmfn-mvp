@@ -85,6 +85,21 @@ type IdentityPhotoSelection = {
 
 const MAX_IDENTITY_PHOTO_SELECTIONS = 5;
 const MAX_IDENTITY_PHOTO_BYTES = 5 * 1024 * 1024;
+const COMMUNITY_STORY_MAX_CHARS = 500;
+const COMMUNITY_STORY_PRESETS = [
+  {
+    label: "Use Pillar story",
+    text: "Pillar of Hope helps members support one another, share opportunities, and build a trusted community record on GSN.",
+  },
+  {
+    label: "Use support story",
+    text: "This community brings people together for mutual support, practical help, and trusted local growth.",
+  },
+  {
+    label: "Use project story",
+    text: "We support families, members, and community projects with care, accountability, and shared responsibility.",
+  },
+];
 
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -1260,6 +1275,25 @@ function resolveActivationRequestId(out: any): string {
   );
 }
 
+function communityStoryTooLongMessage(): string {
+  return "The community story is too long. Keep it short: about 2 or 3 sentences, no more than 500 letters and spaces. You can tap a ready-made story below and edit it.";
+}
+
+function humanEntryErrorMessage(err: any, fallback: string): string {
+  const raw = safeStr(err?.message || err?.detail || err);
+  const lower = raw.toLowerCase();
+
+  if (lower.includes("clan_description") || lower.includes("body.clan_description")) {
+    return communityStoryTooLongMessage();
+  }
+
+  if (lower.includes("string should have at most") && lower.includes("500")) {
+    return communityStoryTooLongMessage();
+  }
+
+  return raw || fallback;
+}
+
 const BANK_COUNTRY_OPTIONS = countryOptions();
 
 function currencyForBankCountry(country: string): string {
@@ -1555,6 +1589,9 @@ export default function CreateEntryPage() {
 
   const identityPhotoCount = identityPhotoItems.length;
   const identityPhotoReady = identityPhotoCount > 0 && !identityPhotoResult;
+  const communityStoryLength = safeStr(description).length;
+  const communityStoryTooLong = communityStoryLength > COMMUNITY_STORY_MAX_CHARS;
+  const communityStoryRemaining = Math.max(0, COMMUNITY_STORY_MAX_CHARS - communityStoryLength);
   const regionalEvidence = useMemo(
     () => evidenceRequirementForCountry(country || bankCountry || driverLicenceCountry),
     [bankCountry, country, driverLicenceCountry]
@@ -1577,11 +1614,13 @@ export default function CreateEntryPage() {
   const canRecordCommunityDetails =
     step === "community" &&
     Number(verificationId) > 0 &&
-    !!safeStr(communityName);
+    !!safeStr(communityName) &&
+    !communityStoryTooLong;
   const canFinishCommunityRegistration =
     Boolean(communityDetailsRecorded || createOutcome) &&
     Number(verificationId) > 0 &&
     !!safeStr(communityName) &&
+    !communityStoryTooLong &&
     canContinue;
   const phoneEvidenceRecorded = Boolean(
     phoneVerificationProof || (step === "community" && Number(verificationId) > 0)
@@ -1846,6 +1885,36 @@ export default function CreateEntryPage() {
     setError("");
     setSuccess("");
     setResumeNotice("");
+  }
+
+  function updateCommunityStory(value: string, target: FeedbackTarget = "community") {
+    const next = String(value || "");
+    if (next.length > COMMUNITY_STORY_MAX_CHARS) {
+      setDescription(next.slice(0, COMMUNITY_STORY_MAX_CHARS));
+      setCommunityDetailsRecorded(false);
+      setCreateOutcome(null);
+      showError(target, communityStoryTooLongMessage());
+      return;
+    }
+
+    setDescription(next);
+    setCommunityDetailsRecorded(false);
+    setCreateOutcome(null);
+    clearFeedback(target);
+  }
+
+  async function copyCommunityStory(textToCopy: string) {
+    const clean = safeStr(textToCopy);
+    if (!clean) return;
+
+    updateCommunityStory(clean);
+
+    try {
+      await navigator.clipboard?.writeText(clean);
+      showSuccess("community", "Ready-made story copied and placed in the box. You can edit it, then record community details.");
+    } catch {
+      showSuccess("community", "Ready-made story placed in the box. You can edit it, then record community details.");
+    }
   }
 
   useEffect(() => {
@@ -2881,8 +2950,10 @@ export default function CreateEntryPage() {
         } catch (retryErr: any) {
           showError(
             "bank",
-            retryErr?.message ||
+            humanEntryErrorMessage(
+              retryErr,
               "Your phone evidence session has timed out. Please start afresh so GSN can link the phone to your name again."
+            )
           );
         }
       } else {
@@ -3074,6 +3145,11 @@ export default function CreateEntryPage() {
   }
 
   async function handleRecordCommunityDetails() {
+    if (communityStoryTooLong) {
+      showError("community", communityStoryTooLongMessage());
+      return;
+    }
+
     if (!canRecordCommunityDetails || busy || createOutcome) return;
 
     beginAction("community");
@@ -3092,6 +3168,12 @@ export default function CreateEntryPage() {
   }
 
   async function handleFinishRegistration(feedbackTargetForFinish: FeedbackTarget = "community") {
+    if (communityStoryTooLong) {
+      showError(feedbackTargetForFinish, communityStoryTooLongMessage());
+      setOpenPanel("community");
+      return;
+    }
+
     if (!canFinishCommunityRegistration || busy || !verificationId || createOutcome) {
       if (createOutcome) {
         showSuccess(
@@ -3203,8 +3285,10 @@ export default function CreateEntryPage() {
 
           showError(
             feedbackTargetForFinish,
-            retryErr?.message ||
+            humanEntryErrorMessage(
+              retryErr,
               "Your phone evidence session has timed out. Please start afresh so GSN can link the phone to your name again."
+            )
           );
         }
       } else if (isCommunityNameTakenError(err)) {
@@ -3226,8 +3310,10 @@ export default function CreateEntryPage() {
       } else {
         showError(
           feedbackTargetForFinish,
-          err?.message ||
+          humanEntryErrorMessage(
+            err,
             "Founder entry could not be completed. Check the message above, then try Finish registration now again."
+          )
         );
       }
     } finally {
@@ -5689,18 +5775,84 @@ export default function CreateEntryPage() {
                   </div>
 
                   <div style={{ display: communityDecisionMode ? "none" : undefined }}>
-                    <div style={fieldLabel()}>Short description</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "baseline" }}>
+                      <div style={fieldLabel()}>Short community story</div>
+                      <div
+                        style={{
+                          color: communityStoryTooLong ? "#991B1B" : "#5D718A",
+                          fontSize: 12,
+                          fontWeight: 900,
+                        }}
+                      >
+                        {communityStoryRemaining} left
+                      </div>
+                    </div>
                     <textarea
                       value={description}
-                      onChange={(e) => {
-                        setDescription(e.target.value);
-                        setCommunityDetailsRecorded(false);
-                        setCreateOutcome(null);
-                        clearFeedback("community");
+                      maxLength={COMMUNITY_STORY_MAX_CHARS}
+                      onChange={(e) => updateCommunityStory(e.target.value)}
+                      placeholder="Example: Pillar of Hope helps members support one another and build a trusted community record on GSN."
+                      style={{
+                        ...textArea(),
+                        border: communityStoryTooLong
+                          ? "1px solid rgba(153,27,27,0.45)"
+                          : textArea().border,
                       }}
-                      placeholder="Describe what this community represents"
-                      style={textArea()}
                     />
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#B9D0E6",
+                        fontSize: 13,
+                        fontWeight: 760,
+                        lineHeight: 1.55,
+                      }}
+                    >
+                      Keep it short. Two or three simple sentences are enough.
+                    </div>
+                    <div
+                      style={{
+                        ...softCard("rgba(8,35,58,0.62)"),
+                        marginTop: 10,
+                        border: "1px solid rgba(214,170,69,0.22)",
+                        boxShadow: "none",
+                        display: "grid",
+                        gap: 10,
+                      }}
+                    >
+                      <div style={{ ...sectionLabel(), color: "#F2C766" }}>Ready-made story</div>
+                      <div
+                        style={{
+                          color: "#D7E3F1",
+                          fontSize: 13,
+                          lineHeight: 1.55,
+                          fontWeight: 760,
+                        }}
+                      >
+                        Tap one, then edit the words if needed. GSN will place it in the story box for you.
+                      </div>
+                      <div style={{ display: "grid", gap: 8 }}>
+                        {COMMUNITY_STORY_PRESETS.map((preset) => (
+                          <SecondaryButton
+                            key={preset.label}
+                            type="button"
+                            onClick={() => copyCommunityStory(preset.text)}
+                            minWidth={0}
+                            stableHeight={46}
+                            debugId={`create-entry.community.story-preset.${preset.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                            style={{
+                              ...secondaryBtn(),
+                              width: "100%",
+                              minWidth: 0,
+                              minHeight: 46,
+                              borderRadius: 14,
+                            }}
+                          >
+                            {preset.label}
+                          </SecondaryButton>
+                        ))}
+                      </div>
+                    </div>
                   </div>
 
                   <div

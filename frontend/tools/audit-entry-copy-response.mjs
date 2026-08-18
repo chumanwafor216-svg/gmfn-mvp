@@ -124,6 +124,24 @@ assertContains(
   "Create Community must explain blockers and show a success handoff before the next page."
 );
 
+assertVisibleStringsDoNotContain(
+  "src/pages/CreateEntryPage.tsx",
+  /body\.clan_description:\s*String should have at most 500 characters/i,
+  "Create Community must not show the raw backend community-story validation message."
+);
+
+assertContains(
+  "src/pages/CreateEntryPage.tsx",
+  /function communityStoryTooLongMessage[\s\S]*?ready-made story[\s\S]*?function humanEntryErrorMessage[\s\S]*?lower\.includes\("clan_description"\)[\s\S]*?return communityStoryTooLongMessage/,
+  "Create Community must translate community-story validation into human language."
+);
+
+assertContains(
+  "src/pages/CreateEntryPage.tsx",
+  /COMMUNITY_STORY_MAX_CHARS = 500[\s\S]*?COMMUNITY_STORY_PRESETS[\s\S]*?Short community story[\s\S]*?Ready-made story/,
+  "Create Community must keep the short-story limit and ready-made story options."
+);
+
 assertContains(
   "src/pages/CreateEntryPage.tsx",
   /secure sign-in step is no longer active[\s\S]*could not confirm the secure sign-in step/,
