@@ -2456,11 +2456,24 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /DOMAIN_PURCHASE_MOBILE_FACTS[\s\S]*Name check first[\s\S]*Draft only[\s\S]*Payment later[\s\S]*purchaseReviewMode[\s\S]*!purchaseReviewMode \?[\s\S]*DOMAIN_PURCHASE_MOBILE_FACTS\.map[\s\S]*DOMAIN_ENGINE_POINTS\.map[\s\S]*Requested domain name[\s\S]*debugId="community-domain-purchase\.check-domain"[\s\S]*Society type \/ template[\s\S]*display: purchaseReviewMode \? "grid" : "none"[\s\S]*2\. Availability[\s\S]*Domain details[\s\S]*3\. Draft & quote[\s\S]*community-domain-purchase\.create-draft[\s\S]*4\. Payment[\s\S]*community-domain-purchase\.check-another-name[\s\S]*community-domain-purchase\.other-paths[\s\S]*community-domain-purchase\.open-create-community[\s\S]*community-domain-purchase\.lookup-existing-domain/,
+  /DOMAIN_PURCHASE_MOBILE_FACTS[\s\S]*Community first[\s\S]*Domain after[\s\S]*Payment later[\s\S]*purchaseReviewMode[\s\S]*!purchaseReviewMode \?[\s\S]*DOMAIN_PURCHASE_MOBILE_FACTS\.map[\s\S]*DOMAIN_ENGINE_POINTS\.map[\s\S]*Requested domain name[\s\S]*debugId="community-domain-purchase\.check-domain"[\s\S]*Society type \/ template[\s\S]*display: purchaseReviewMode \? "grid" : "none"[\s\S]*2\. Availability[\s\S]*Domain details[\s\S]*3\. Draft & quote[\s\S]*community-domain-purchase\.create-draft[\s\S]*4\. Payment[\s\S]*community-domain-purchase\.check-another-name[\s\S]*community-domain-purchase\.other-paths[\s\S]*community-domain-purchase\.open-create-community[\s\S]*community-domain-purchase\.lookup-existing-domain/,
   "Community Domain purchase must split into a focused name-check state and a second availability/draft/payment review state while keeping alternate Committee/existing-domain paths collapsed.",
   { frontend: true }
 );
 
+assertContains(
+  "src/pages/CommunityDomainPurchasePage.tsx",
+  /DOMAIN_PURCHASE_MOBILE_FACTS[\s\S]*Community first[\s\S]*Domain after[\s\S]*Payment later[\s\S]*needsLocalCommunityFirst[\s\S]*Pillar of Hope needs the normal GSN community first[\s\S]*Create Domain draft[\s\S]*Local community first[\s\S]*Pillar of Hope needs its local community record and GSN number before the Domain layer is filled[\s\S]*community-domain-purchase\.open-create-community-first[\s\S]*Create GSN community first[\s\S]*Create the normal GSN community first/,
+  "Community Domain purchase must gate first-time domain setup behind the normal local GSN community anchor.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/ClansPage.tsx",
+  /follow_up_community_domain[\s\S]*followUpCommunityDomainPath[\s\S]*newId && followUpCommunityDomain[\s\S]*community_domain_anchor[\s\S]*community-domain-local-anchor-created/,
+  "Create Community must return to Domain filling when it was opened as the local anchor step for a Community Domain.",
+  { frontend: true }
+);
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
   /community-domain-purchase\.other-paths[\s\S]*gridTemplateColumns: isCompact[\s\S]*\? "1fr"[\s\S]*: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*community-domain-purchase\.open-create-community[\s\S]*community-domain-purchase\.lookup-existing-domain/,
@@ -3673,8 +3686,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /draftActionLabel[\s\S]*Check name first[\s\S]*Choose another name[\s\S]*Sign in to create draft[\s\S]*if \(!availability\)[\s\S]*Check an available domain name before creating a draft request[\s\S]*if \(!availability\.available\)[\s\S]*Choose an available domain name before creating a draft request[\s\S]*if \(!isSignedIn\)[\s\S]*\/login\?force=1/,
-  "Community Domain purchase draft action must explain missing availability before sending the owner to sign in.",
+  /draftActionLabel[\s\S]*Check name first[\s\S]*Choose another name[\s\S]*Create GSN community first[\s\S]*Create Domain draft[\s\S]*if \(!availability\)[\s\S]*Check an available domain name before creating a draft request[\s\S]*if \(!availability\.available\)[\s\S]*Choose an available domain name before creating a draft request[\s\S]*if \(!isSignedIn\)[\s\S]*saveDraftAndOpenLocalCommunityPath/,
+  "Community Domain purchase draft action must explain missing availability before sending a first-time owner to the local GSN community anchor.",
   { frontend: true }
 );
 
@@ -3687,8 +3700,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /PURCHASE_DRAFT_STORAGE_KEY[\s\S]*readPurchaseDraftSnapshot[\s\S]*savePurchaseDraftSnapshot[\s\S]*clearPurchaseDraftSnapshot[\s\S]*Your Community Domain draft was restored after sign-in[\s\S]*Check the name before creating the draft[\s\S]*if \(!isSignedIn\)[\s\S]*savePurchaseDraftSnapshot[\s\S]*\/login\?force=1[\s\S]*clearPurchaseDraftSnapshot/,
-  "Community Domain purchase sign-in handoff must restore form details without preserving stale availability.",
+  /PURCHASE_DRAFT_STORAGE_KEY[\s\S]*readPurchaseDraftSnapshot[\s\S]*savePurchaseDraftSnapshot[\s\S]*clearPurchaseDraftSnapshot[\s\S]*GSN will use your local community first[\s\S]*saveDraftAndOpenLocalCommunityPath[\s\S]*savePurchaseDraftSnapshot[\s\S]*\/create\?\$\{params\.toString\(\)\}[\s\S]*clearPurchaseDraftSnapshot/,
+  "Community Domain purchase local-community handoff must restore form details without preserving stale availability.",
   { frontend: true }
 );
 
@@ -3708,7 +3721,7 @@ assertContains(
 
 assertNotContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /Create Community|Create a free community|Free social\/community start|normal GSN community|paid institutional domain purchase path|live social Community/,
+  /Create a free community|Free social\/community start|paid institutional domain purchase path|live social Community/,
   "Community Domain purchase page must not blur the Committee/community compatibility path with the institutional Community Domain purchase path.",
   { frontend: true }
 );

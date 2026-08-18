@@ -11,6 +11,7 @@ import {
   createCommunityDomainDraft,
   createCommunityDomainPackageQuote,
   getAccessToken,
+  listMyClans,
   listCommunityDomainTemplates,
   lookupCommunityDomainByName,
 } from "../lib/api";
@@ -48,6 +49,14 @@ type PurchaseDraftSnapshot = {
   stateName?: string;
   templateKey?: string;
   publicProfile?: string;
+};
+
+type LocalCommunityAnchorState = {
+  checked: boolean;
+  loading: boolean;
+  count: number;
+  firstName: string;
+  error: string;
 };
 
 const PURCHASE_DRAFT_STORAGE_KEY = "gsn.communityDomainPurchaseDraft.v1";
@@ -136,8 +145,8 @@ const DOMAIN_ENGINE_POINTS = [
 ];
 
 const DOMAIN_PURCHASE_MOBILE_FACTS = [
-  "Name check first",
-  "Draft only",
+  "Community first",
+  "Domain after",
   "Payment later",
 ];
 
@@ -401,6 +410,17 @@ function domainDisplayCode(value: unknown): string {
   return clean ? `${clean}.gsn` : "Not returned";
 }
 
+function rowsOf(payload: any): any[] {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.clans)) return payload.clans;
+  return [];
+}
+
+function readableCommunityName(row: any): string {
+  return compactOptional(row?.name || row?.clan_name || row?.community_name);
+}
+
 function readPurchaseDraftSnapshot(): PurchaseDraftSnapshot | null {
   if (typeof window === "undefined" || !window.sessionStorage) return null;
   try {
@@ -534,6 +554,14 @@ export default function CommunityDomainPurchasePage() {
     "templates" | "availability" | "draft" | "lookup" | null
   >(null);
   const [message, setMessage] = useState("");
+  const [localCommunityAnchor, setLocalCommunityAnchor] =
+    useState<LocalCommunityAnchorState>({
+      checked: false,
+      loading: Boolean(getAccessToken()),
+      count: 0,
+      firstName: "",
+      error: "",
+    });
   const mountedRef = useRef(true);
   const busyRef = useRef<typeof busy>(null);
   const templateLoadSequence = useRef(0);
@@ -547,6 +575,9 @@ export default function CommunityDomainPurchasePage() {
   }, []);
 
   const isSignedIn = Boolean(getAccessToken());
+  const hasLocalCommunityAnchor = localCommunityAnchor.count > 0;
+  const needsLocalCommunityFirst =
+    !isSignedIn || (!localCommunityAnchor.loading && !hasLocalCommunityAnchor);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -580,6 +611,14 @@ export default function CommunityDomainPurchasePage() {
         "Pillar of Hope demo fields and profile are filled. GSN is checking the domain name."
       );
 
+
+      if (needsLocalCommunityFirst) {
+        setAvailability(null);
+        setMessage(
+          "Pillar of Hope needs the normal GSN community first. Create that local community, then continue Domain filling."
+        );
+        return;
+      }
       if (requestedDemoName.trim().length >= 2) {
         availabilityCheckSequence.current = requestId;
         const canApply = () =>
@@ -592,7 +631,7 @@ export default function CommunityDomainPurchasePage() {
             setAvailability(result);
             setMessage(
               result?.available
-                ? "Pillar of Hope domain name is available. You can create the draft request next."
+                ? "Pillar of Hope domain name is available. Create the normal GSN community first if it is not already under this owner."
                 : availabilityReasonText(result?.reason)
             );
           })
@@ -615,10 +654,10 @@ export default function CommunityDomainPurchasePage() {
 
     if (restoredDraft?.domainName || restoredDraft?.organizationName) {
       setMessage(
-        "Your Community Domain draft was restored after sign-in. Check the name before creating the draft."
+        "Your Community Domain draft was restored after sign-in. GSN will use your local community first, then continue Domain setup."
       );
     }
-  }, [demoDraft, restoredDraft, setBusyState]);
+  }, [demoDraft, restoredDraft, needsLocalCommunityFirst, setBusyState]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -631,6 +670,55 @@ export default function CommunityDomainPurchasePage() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, [setBusyState]);
+
+  useEffect(() => {
+    if (!isSignedIn) {
+      setLocalCommunityAnchor({
+        checked: true,
+        loading: false,
+        count: 0,
+        firstName: "",
+        error: "",
+      });
+      return;
+    }
+
+    let cancelled = false;
+    setLocalCommunityAnchor((current) => ({
+      ...current,
+      loading: true,
+      error: "",
+    }));
+
+    void listMyClans({ timeoutMs: 9000 })
+      .then((payload) => {
+        if (cancelled || !mountedRef.current) return;
+        const communities = rowsOf(payload);
+        setLocalCommunityAnchor({
+          checked: true,
+          loading: false,
+          count: communities.length,
+          firstName: readableCommunityName(communities[0]),
+          error: "",
+        });
+      })
+      .catch((err: any) => {
+        if (cancelled || !mountedRef.current) return;
+        setLocalCommunityAnchor({
+          checked: true,
+          loading: false,
+          count: 0,
+          firstName: "",
+          error:
+            err?.message ||
+            "GSN could not check whether this owner already has a local community.",
+        });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isSignedIn]);
 
   useEffect(() => {
     const requestId = templateLoadSequence.current + 1;
@@ -690,9 +778,11 @@ export default function CommunityDomainPurchasePage() {
     ? "Check name first"
     : !availability.available
     ? "Choose another name"
-    : isSignedIn
-    ? "Create draft request"
-    : "Sign in to create draft";
+    : needsLocalCommunityFirst
+    ? "Create GSN community first"
+    : localCommunityAnchor.loading
+    ? "Checking local community..."
+    : "Create Domain draft";
   const purchaseReviewMode = Boolean(availability);
   const checkedDomainCode = domainDisplayCode(
     availability?.normalized_domain_name || domainName
@@ -707,6 +797,50 @@ export default function CommunityDomainPurchasePage() {
   const locationLabel = [compactOptional(country), compactOptional(stateName)]
     .filter(Boolean)
     .join(" / ");
+
+  function saveDraftAndOpenLocalCommunityPath() {
+    const requestedOrganizationName = organizationName.trim();
+    const requestedPublicProfile =
+      compactOptional(demoDraft?.publicProfile) ||
+      `Local GSN community for ${requestedOrganizationName || "this organization"}.`;
+    savePurchaseDraftSnapshot({
+      organizationName,
+      domainName,
+      country,
+      stateName,
+      templateKey,
+      publicProfile: demoDraft?.publicProfile,
+    });
+
+    if (isSignedIn) {
+      navigate("/app/clans", {
+        state: {
+          create_community: {
+            name: requestedOrganizationName,
+            description: requestedPublicProfile,
+            follow_up_community_domain: true,
+            follow_up_path: "/community-domain/purchase",
+          },
+          source: "community-domain-local-anchor",
+        },
+      });
+      return;
+    }
+
+    const params = new URLSearchParams();
+    if (requestedOrganizationName) params.set("clan_name", requestedOrganizationName);
+    if (requestedPublicProfile) params.set("clan_description", requestedPublicProfile);
+    params.set("source", "community-domain-local-anchor");
+    navigate(`/create?${params.toString()}`, {
+      state: {
+        create_entry: {
+          clan_name: requestedOrganizationName,
+          clan_description: requestedPublicProfile,
+        },
+        source: "community-domain-local-anchor",
+      },
+    });
+  }
 
   function handleDomainNameChange(nextDomainName: string) {
     availabilityCheckSequence.current += 1;
@@ -760,7 +894,7 @@ export default function CommunityDomainPurchasePage() {
       setAvailability(result);
       setMessage(
         result?.available
-          ? "Name available. You can create a Community Domain draft next."
+          ? "Name available. Create the normal GSN community first, then continue the Community Domain draft."
           : availabilityReasonText(result?.reason)
       );
     } catch (err: any) {
@@ -805,15 +939,23 @@ export default function CommunityDomainPurchasePage() {
       mountedRef.current && draftCreateSequence.current === requestId;
 
     if (!isSignedIn) {
-      savePurchaseDraftSnapshot({
-        organizationName,
-        domainName,
-        country,
-        stateName,
-        templateKey,
-        publicProfile: demoDraft?.publicProfile,
-      });
-      navigate(`/login?force=1&next=${encodeURIComponent(location.pathname + location.search)}`);
+      setMessage(
+        "Create the normal GSN community first. That gives Pillar of Hope its local community record before Domain setup."
+      );
+      saveDraftAndOpenLocalCommunityPath();
+      return;
+    }
+
+    if (localCommunityAnchor.loading) {
+      setMessage("GSN is checking whether this owner already has a local community.");
+      return;
+    }
+
+    if (!hasLocalCommunityAnchor) {
+      setMessage(
+        "Create the normal GSN community first. The Domain draft comes after the local community exists under this GSN ID."
+      );
+      saveDraftAndOpenLocalCommunityPath();
       return;
     }
 
@@ -1049,7 +1191,87 @@ export default function CommunityDomainPurchasePage() {
               alignItems: "start",
             }}
           >
-            {!purchaseReviewMode ? (
+            {!purchaseReviewMode && needsLocalCommunityFirst ? (
+              <section style={whiteCard()}>
+                <div style={{ display: "grid", gap: 16 }}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isCompact ? "1fr" : "72px minmax(0, 1fr)",
+                      gap: 14,
+                      alignItems: "center",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 70,
+                        height: 70,
+                        borderRadius: 22,
+                        display: "grid",
+                        placeItems: "center",
+                        background:
+                          "linear-gradient(180deg, rgba(9,31,51,0.08) 0%, rgba(9,31,51,0.035) 100%)",
+                        border: "1px solid rgba(9,31,51,0.10)",
+                      }}
+                    >
+                      <GsnRealisticIcon name="community-building" size={58} decorative />
+                    </div>
+                    <div style={{ display: "grid", gap: 5 }}>
+                      <div style={labelText(false)}>Local community first</div>
+                      <div style={{ fontSize: 24, lineHeight: 1.08, fontWeight: 950 }}>
+                        Create the normal GSN community.
+                      </div>
+                      <div style={helperText(false)}>
+                        Pillar of Hope needs its local community record and GSN number before the Domain layer is filled. After that, Domain setup can protect the wider institutional name and governance.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                      gap: 10,
+                    }}
+                  >
+                    {[
+                      "GSN community",
+                      "Local ID / number",
+                      "Domain filling after",
+                    ].map((label) => (
+                      <div
+                        key={label}
+                        style={{
+                          minHeight: 42,
+                          borderRadius: 14,
+                          border: "1px solid rgba(9,31,51,0.10)",
+                          background: "rgba(9,31,51,0.04)",
+                          display: "grid",
+                          placeItems: "center",
+                          padding: "8px 6px",
+                          color: "#10253B",
+                          fontSize: 12,
+                          fontWeight: 900,
+                          textAlign: "center",
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {label}
+                      </div>
+                    ))}
+                  </div>
+
+                  <EntryActionButton
+                    type="button"
+                    onClick={saveDraftAndOpenLocalCommunityPath}
+                    debugId="community-domain-purchase.open-create-community-first"
+                    style={{ width: "100%" }}
+                  >
+                    Create GSN community first
+                  </EntryActionButton>
+                </div>
+              </section>
+            ) : !purchaseReviewMode ? (
             <form onSubmit={handleCheckAvailability} style={whiteCard()}>
               <div style={{ display: "grid", gap: 16 }}>
                 <div
@@ -1340,15 +1562,15 @@ export default function CommunityDomainPurchasePage() {
                       <div style={{ display: "grid", gap: 0 }}>
                         <div style={stepLine()}>
                           <span style={smallLineIcon()}>1</span>
-                          <span>Draft can be created after the name is available.</span>
+                          <span>Create the normal GSN community first.</span>
                         </div>
                         <div style={stepLine()}>
                           <span style={smallLineIcon()}>2</span>
-                          <span>Draft is not a live Committee or public record.</span>
+                          <span>Then continue Domain setup under that same owner.</span>
                         </div>
                         <div style={stepLine()}>
                           <span style={smallLineIcon()}>3</span>
-                          <span>You can proceed when you are ready.</span>
+                          <span>Draft is not active, paid, or verified yet.</span>
                         </div>
                       </div>
                     )}
@@ -1398,7 +1620,7 @@ export default function CommunityDomainPurchasePage() {
                       debugId="community-domain-purchase.create-draft"
                       style={{ width: "100%" }}
                     >
-                      {availability?.available ? "Create draft" : "Choose another name"}
+                      {availability?.available ? draftActionLabel : "Choose another name"}
                     </EntryActionButton>
                   </section>
 
@@ -1503,7 +1725,7 @@ export default function CommunityDomainPurchasePage() {
                         <strong>{draftResult.community_domain.verification_status}</strong>
                       </>
                     ) : (
-                      "Signed-in owners can create a draft after the name is available. Drafts do not create a live Committee or public record."
+                      "Signed-in owners create or choose the normal GSN community first. The Domain draft then follows that local community anchor."
                     )}
                   </div>
                   {quoteResult ? (
@@ -1788,7 +2010,7 @@ export default function CommunityDomainPurchasePage() {
               What happens after the draft?
             </StableDisclosureSummary>
             <div style={{ ...helperText(), marginTop: 10 }}>
-              The owner reviews the draft, requests a package quote, receives payment
+              The owner first creates the normal GSN community, then reviews the draft, requests a package quote, receives payment
               instructions only when that rail exists, and waits for payment confirmation
               plus admin activation. Public verification language should only appear after
               the live domain status confirms it.

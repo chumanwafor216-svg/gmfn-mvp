@@ -261,6 +261,7 @@ without confusing it with ordinary free community creation.
 Must show:
 - GSN / Community Domain identity
 - short difference between `Create Community` and `Purchase Community Domain`
+- normal GSN community / local marketplace anchor first when the owner does not already have one
 - organization name
 - requested domain name
 - society type/template choice such as school, church, union, market,
@@ -278,6 +279,8 @@ Must show:
 
 Rules:
 - This screen is an entry/provisioning screen, not the operating dashboard.
+- A first-time organization owner must create the normal GSN community/local marketplace first so the organization has a local community record and GSN number before Domain filling begins.
+- After that local community exists, Domain setup may protect the wider institutional name, governance, package, and rights.
 - It must not show bottom navigation before authentication is complete.
 - `Purchase Community Domain` must not create a live verified institution by
   itself. A draft, quote, or payment instruction is not activation.

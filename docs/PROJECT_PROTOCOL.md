@@ -620,6 +620,13 @@ Current implementation note:
 
 Product language rule:
 
+Local community first for Community Domains:
+
+- For a first-time organization owner, create the normal GSN community/local marketplace before Domain filling.
+- The normal community gives the owner the local GSN community record, local marketplace right, and GSN number.
+- The Community Domain then adds protected institutional name, governance, package, verification, and domain rights over that local spine.
+- Do not let a Community Domain draft pretend it replaces the local community anchor.
+
 - Directionally, use `Create Committee` for the free/self-created lightweight
   path once the rename is planned and implemented. Until then, existing
   `Create Community` routes may remain as compatibility surfaces.

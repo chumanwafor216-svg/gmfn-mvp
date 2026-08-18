@@ -157,6 +157,15 @@ Compatibility note: existing `Create Community` screens/routes may remain until
 the rename is planned. Do not casually rename backend contracts during
 Community Domain work.
 
+Local community first rule:
+
+```text
+Create normal GSN community / local marketplace
+-> Continue Community Domain filling
+```
+
+For Pillar of Hope and similar institutional pilots, the normal community is not optional decoration. It gives the owner a GSN member/community anchor, local community record, local marketplace right, and GSN number before the paid/protected Domain layer is filled. The Community Domain then adds protected name, governance, package, verification, and wider institutional rights over that local spine.
+
 Optional third entrance for later:
 
 ```text

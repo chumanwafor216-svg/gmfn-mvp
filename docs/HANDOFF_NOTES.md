@@ -1,3 +1,20 @@
+## 2026-08-18 - Pillar of Hope Community Domain local-anchor correction
+- Status: Local implementation verified; not pushed/deployed. Owner clarified that Pillar of Hope must first be registered as a normal GSN community/local marketplace before Domain filling, so Felix has a local community record, local GSN right/number, and then the Community Domain can sit on top as the wider institutional/protected layer.
+- Changed `frontend/src/pages/CommunityDomainPurchasePage.tsx` so first-time/no-anchor Domain setup opens with a `Local community first` prerequisite card and `Create GSN community first` action instead of encouraging Domain fields first. The Pillar of Hope demo no longer auto-checks the domain name before the local community anchor exists.
+- Changed the Domain draft action so unauthenticated owners or signed-in owners with no local community are sent to create the normal GSN community first, with the Domain draft details preserved in session storage for the follow-up.
+- Changed `frontend/src/pages/ClansPage.tsx` so when `/app/clans` is opened as the Domain local-anchor step, creating the community returns to `/community-domain/purchase` instead of defaulting into Build First Circle.
+- Updated `docs/PROJECT_PROTOCOL.md`, `docs/SCREEN_SPECS.md`, and `docs/COMMUNITY_DOMAIN_IMPLEMENTATION_PLAN_2026-06-28.md` with the local-community-first rule: normal GSN community/local marketplace first, then Domain filling/protected institutional rights.
+- Updated `frontend/tools/audit-community-domain-product-contracts.mjs` to cage the new contract and the `/app/clans` follow-up return path.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`; `npm exec -- tsc -b --pretty false` from `frontend`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check` with line-ending warnings only for existing/edited text files.
+- Devil's advocate: this is frontend UX/route correction and documentation. It does not add a backend hard requirement that `POST /community-domains/drafts` must include or link a `clan_id`; existing backend drafts can still be created directly by API and existing draft records without `clan_id` remain possible until a separate backend contract/migration is approved.
+## 2026-08-13 - Outreach Evidence Log Created
+- Status: Documentation-only local update.
+- Owner reported early Aberdeen outreach for GSN, including Mamacita Foundation where a director referred the owner to the secretary and the secretary requested an official written submission for possible board consideration.
+- Added `docs/GSN_OUTREACH_EVIDENCE_LOG.md` as the living place to document institutional outreach, referrals, submissions, follow-ups, responses, evidence available, evidence still needed, and devil's-advocate risks.
+- Seeded entries for Mamacita Foundation Aberdeen, Aberdeen DAS, and an Aberdeen umbrella organisation whose exact name still needs confirmation.
+- No app routes, backend, frontend, schemas, auth, deployment, or frozen UI areas were changed.
+- Next outreach update should be added directly to `docs/GSN_OUTREACH_EVIDENCE_LOG.md`, especially the date/channel/content of the Mamacita Foundation formal submission and any acknowledgement or board response.
+
 ## 2026-08-12 - TrustSlip public currentness and first-read evidence correction
 - Status: Locally verified and ready for owner-approved publish/deploy. Owner reported public TrustSlip/Trust verification kept telling readers the paper was not current or to ask for a newer one even after refreshing, and that the public paper felt too shallow compared with private/personal Trust evidence.
 - Deployment truth before this fix: local `main` matched `origin/main` at `3006cacc88ad2bd6f4b3a91696bdcadb9ced268c`; GitHub workflow run `31384263833` deployed that same commit. There was no pre-existing unpushed or undeployed local change before this work began.

@@ -362,8 +362,15 @@ export default function ClansPage() {
       create_community?: {
         name?: string | null;
         description?: string | null;
+        follow_up_community_domain?: boolean | null;
+        follow_up_path?: string | null;
       };
     } | null)?.create_community || null;
+  const followUpCommunityDomain = Boolean(
+    createCommunityState?.follow_up_community_domain
+  );
+  const followUpCommunityDomainPath =
+    safeStr(createCommunityState?.follow_up_path) || "/community-domain/purchase";
   const [isCompact, setIsCompact] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth <= 720 : false
   );
@@ -549,6 +556,19 @@ export default function ClansPage() {
       setCommunityDescriptionInput("");
       setInviteState(null);
 
+      if (newId && followUpCommunityDomain) {
+        navigateWithOrigin(navigate, followUpCommunityDomainPath, location, {
+          replace: false,
+          state: {
+            community_domain_anchor: {
+              clan_id: newId,
+              clan_name: createdCommunityName,
+            },
+            source: "community-domain-local-anchor-created",
+          },
+        });
+        return;
+      }
       if (newId) {
         navigateWithOrigin(navigate, routes.buildFirstCircle, location, {
           replace: false,
