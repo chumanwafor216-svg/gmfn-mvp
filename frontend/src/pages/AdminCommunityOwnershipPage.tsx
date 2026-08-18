@@ -485,50 +485,75 @@ export default function AdminCommunityOwnershipPage() {
 
         {(communities.length || owners.length || ownerIntakes.length) ? (
           <section style={card()}>
-            <div style={label()}>Choose exact records</div>
+            <div style={label()}>Confirm repair records</div>
             <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
               <div style={soft()}>
                 <div style={fieldLabel()}>Community</div>
-                <select value={selectedClanId || ""} onChange={(event) => setSelectedClanId(toNum(event.target.value))} style={inputStyle()}>
-                  <option value="">Select community</option>
-                  {communities.map((row: any) => (
-                    <option key={safeStr(row.clan_id)} value={safeStr(row.clan_id)}>
-                      {communityName(row)} - {safeStr(row.community_code) || `#${safeStr(row.clan_id)}`}
-                    </option>
-                  ))}
-                </select>
-                {selectedCommunity ? (
-                  <div style={{ marginTop: 10, ...helper() }}>
-                    Current owner: {userName(selectedCommunity.canonical_owner) || "Not recorded"}. Admins: {Array.isArray(selectedCommunity.admin_members) ? selectedCommunity.admin_members.length : 0}.
-                  </div>
-                ) : null}
+                {communities.length ? (
+                  <>
+                    <select value={selectedClanId || ""} onChange={(event) => setSelectedClanId(toNum(event.target.value))} style={inputStyle()}>
+                      <option value="">Select community</option>
+                      {communities.map((row: any) => (
+                        <option key={safeStr(row.clan_id)} value={safeStr(row.clan_id)}>
+                          {communityName(row)} - {safeStr(row.community_code) || `#${safeStr(row.clan_id)}`}
+                        </option>
+                      ))}
+                    </select>
+                    {selectedCommunity ? (
+                      <div style={{ marginTop: 10, ...helper() }}>
+                        Current owner: {userName(selectedCommunity.canonical_owner) || "Not recorded"}. Admins: {Array.isArray(selectedCommunity.admin_members) ? selectedCommunity.admin_members.length : 0}.
+                      </div>
+                    ) : null}
+                  </>
+                ) : (
+                  <>
+                    <div style={{ ...inputStyle(), background: "#F8FBFF", fontWeight: 900 }}>
+                      Use typed community: {safeStr(communityNameInput) || "Not set"}
+                    </div>
+                    <div style={{ marginTop: 10, ...helper() }}>
+                      No dropdown choice is needed here. Preview will use the community name typed in the search box above.
+                    </div>
+                  </>
+                )}
               </div>
 
               <div style={soft()}>
                 <div style={fieldLabel()}>Owner identity</div>
-                <select
-                  value={selectedOwnerId || ""}
-                  onChange={(event) => {
-                    const id = toNum(event.target.value);
-                    const row = owners.find((item: any) => toNum(item.user_id) === id);
-                    setSelectedOwnerId(id);
-                    setSelectedIntakeId(0);
-                    setSelectedOwnerGmfnId(safeStr(row?.gmfn_id));
-                  }}
-                  style={inputStyle()}
-                >
-                  <option value="">Select owner</option>
-                  {owners.map((row: any) => (
-                    <option key={safeStr(row.user_id)} value={safeStr(row.user_id)}>
-                      {userName(row)} - {safeStr(row.gmfn_id) || `User ${safeStr(row.user_id)}`}
-                    </option>
-                  ))}
-                </select>
-                <div style={{ marginTop: 10, ...helper() }}>
-                  Use phone, email, or exact GSN ID if the name search finds more than one Felix.
-                </div>
+                {owners.length ? (
+                  <>
+                    <select
+                      value={selectedOwnerId || ""}
+                      onChange={(event) => {
+                        const id = toNum(event.target.value);
+                        const row = owners.find((item: any) => toNum(item.user_id) === id);
+                        setSelectedOwnerId(id);
+                        setSelectedIntakeId(0);
+                        setSelectedOwnerGmfnId(safeStr(row?.gmfn_id));
+                      }}
+                      style={inputStyle()}
+                    >
+                      <option value="">Select owner</option>
+                      {owners.map((row: any) => (
+                        <option key={safeStr(row.user_id)} value={safeStr(row.user_id)}>
+                          {userName(row)} - {safeStr(row.gmfn_id) || `User ${safeStr(row.user_id)}`}
+                        </option>
+                      ))}
+                    </select>
+                    <div style={{ marginTop: 10, ...helper() }}>
+                      Use phone, email, or exact GSN ID if the name search finds more than one owner.
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ ...inputStyle(), background: "#FFFBEB", color: "#92400E", fontWeight: 900 }}>
+                      No GSN owner ID found yet
+                    </div>
+                    <div style={{ marginTop: 10, ...helper() }}>
+                      Use the stuck intake below. GSN will create the missing owner ID during the repair.
+                    </div>
+                  </>
+                )}
               </div>
-
               {ownerIntakes.length ? (
                 <div style={soft()}>
                   <div style={fieldLabel()}>Stuck intake</div>
