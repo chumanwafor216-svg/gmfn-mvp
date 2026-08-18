@@ -12,7 +12,7 @@ from typing import Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import func
+from sqlalchemy import or_, func
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -121,6 +121,30 @@ class IdentityVerificationCorrectionIn(BaseModel):
         return _reject_non_text_value(value, info.field_name)
 
 
+class CommunityOwnershipReconcileIn(BaseModel):
+    community_name: Optional[str] = Field(default=None, max_length=120)
+    clan_id: Optional[int] = Field(default=None, ge=1)
+    owner_user_id: Optional[int] = Field(default=None, ge=1)
+    owner_gmfn_id: Optional[str] = Field(default=None, max_length=64)
+    owner_email: Optional[str] = Field(default=None, max_length=240)
+    owner_phone_e164: Optional[str] = Field(default=None, max_length=40)
+    owner_proof_confirmed: bool = False
+    execute: bool = False
+    reviewer_note: Optional[str] = Field(default=None, max_length=800)
+
+    @field_validator(
+        "community_name",
+        "owner_gmfn_id",
+        "owner_email",
+        "owner_phone_e164",
+        "reviewer_note",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+
 def _json_text(data: Any) -> str:
     return json.dumps(data, ensure_ascii=False, sort_keys=True, default=str)
 
@@ -155,6 +179,217 @@ def _serialize_identity_check(check: IdentityVerificationCheck) -> dict[str, Any
         "reviewed_at": _safe_str(provider_response.get("reviewed_at")) or None,
         "provider_response": provider_response,
     }
+
+
+def _user_label(user: Optional[User]) -> Optional[dict[str, Any]]:
+    if user is None:
+        return None
+    return {
+        "user_id": int(user.id),
+        "display_name": _safe_str(getattr(user, "display_name", None)) or None,
+        "email": _safe_str(getattr(user, "email", None)) or None,
+        "gmfn_id": _safe_str(getattr(user, "gmfn_id", None)) or None,
+        "phone_last4": _last4(getattr(user, "phone_e164", None)),
+        "role": _safe_str(getattr(user, "role", None)) or None,
+    }
+
+
+def _community_admin_rows(db: Session, clan_id: int) -> list[dict[str, Any]]:
+    rows = (
+        db.query(ClanMembership, User)
+        .join(User, User.id == ClanMembership.user_id)
+        .filter(
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.left_at.is_(None),
+            ClanMembership.role == "admin",
+        )
+        .order_by(ClanMembership.id.asc())
+        .all()
+    )
+    return [
+        {
+            "membership_id": int(membership.id),
+            "role": _safe_str(getattr(membership, "role", None)) or "admin",
+            "created_at": _dt_iso(getattr(membership, "created_at", None)),
+            **(_user_label(user) or {}),
+        }
+        for membership, user in rows
+    ]
+
+
+def _community_row(db: Session, clan: Clan) -> dict[str, Any]:
+    creator = db.get(User, int(clan.created_by_user_id)) if clan.created_by_user_id else None
+    return {
+        "clan_id": int(clan.id),
+        "name": _safe_str(clan.name),
+        "description": _safe_str(getattr(clan, "description", None)) or None,
+        "community_code": _safe_str(getattr(clan, "community_code", None)) or f"GSN-C-{int(clan.id):06d}",
+        "status": _safe_str(getattr(clan, "status", None)) or "active",
+        "created_by_user_id": int(clan.created_by_user_id) if clan.created_by_user_id else None,
+        "created_at": _dt_iso(getattr(clan, "created_at", None)),
+        "canonical_owner": _user_label(creator),
+        "admin_members": _community_admin_rows(db, int(clan.id)),
+    }
+
+
+def _resolve_community_for_ownership(
+    db: Session,
+    *,
+    clan_id: Optional[int] = None,
+    community_name: Optional[str] = None,
+) -> Clan:
+    if clan_id:
+        clan = db.get(Clan, int(clan_id))
+        if clan is None:
+            raise HTTPException(status_code=404, detail="Community not found.")
+        return clan
+
+    name = _safe_str(community_name)
+    if not name:
+        raise HTTPException(status_code=400, detail="Community name or community ID is required.")
+
+    clan = db.query(Clan).filter(func.lower(Clan.name) == name.lower()).first()
+    if clan is None:
+        raise HTTPException(status_code=404, detail="Community name was not found.")
+    return clan
+
+
+def _resolve_owner_for_ownership(db: Session, payload: CommunityOwnershipReconcileIn) -> User:
+    filters = []
+    if payload.owner_user_id:
+        filters.append(User.id == int(payload.owner_user_id))
+    gmfn_id = _safe_str(payload.owner_gmfn_id)
+    if gmfn_id:
+        filters.append(func.lower(User.gmfn_id) == gmfn_id.lower())
+    email = _safe_str(payload.owner_email)
+    if email:
+        filters.append(func.lower(User.email) == email.lower())
+    phone = _safe_str(payload.owner_phone_e164)
+    if phone:
+        filters.append(User.phone_e164 == phone)
+
+    if not filters:
+        raise HTTPException(
+            status_code=400,
+            detail="Owner user ID, GSN ID, email, or phone is required.",
+        )
+
+    rows = db.query(User).filter(or_(*filters)).order_by(User.id.asc()).all()
+    if not rows:
+        raise HTTPException(status_code=404, detail="Owner identity was not found.")
+    if len(rows) > 1:
+        raise HTTPException(
+            status_code=409,
+            detail="More than one owner identity matched. Use exact user ID or GSN ID.",
+        )
+    return rows[0]
+
+
+def _community_ownership_preview(
+    db: Session,
+    *,
+    clan: Clan,
+    owner: User,
+) -> dict[str, Any]:
+    current_owner = (
+        db.get(User, int(clan.created_by_user_id))
+        if getattr(clan, "created_by_user_id", None)
+        else None
+    )
+    active_membership = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.clan_id == int(clan.id),
+            ClanMembership.user_id == int(owner.id),
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+    )
+    archived_membership = None
+    if active_membership is None:
+        archived_membership = (
+            db.query(ClanMembership)
+            .filter(
+                ClanMembership.clan_id == int(clan.id),
+                ClanMembership.user_id == int(owner.id),
+                ClanMembership.left_at.isnot(None),
+            )
+            .order_by(ClanMembership.id.desc())
+            .first()
+        )
+
+    membership_action = "already_admin"
+    if active_membership is None and archived_membership is not None:
+        membership_action = "reactivate_admin"
+    elif active_membership is None:
+        membership_action = "add_admin"
+    elif _safe_str(getattr(active_membership, "role", None)).lower() != "admin":
+        membership_action = "promote_to_admin"
+
+    return {
+        "community": _community_row(db, clan),
+        "requested_owner": _user_label(owner),
+        "current_owner": _user_label(current_owner),
+        "membership_action": membership_action,
+        "will_set_created_by_user_id": int(owner.id),
+        "will_preserve_community_code": True,
+        "will_preserve_history": True,
+        "will_remove_other_admins": False,
+        "boundary": (
+            "This records the canonical owner/admin for the existing community. "
+            "It does not delete historical evidence or erase previous activity."
+        ),
+    }
+
+
+def _ensure_ownership_admin_membership_no_commit(
+    db: Session,
+    *,
+    clan: Clan,
+    owner: User,
+) -> ClanMembership:
+    active = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.clan_id == int(clan.id),
+            ClanMembership.user_id == int(owner.id),
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+    )
+    if active is not None:
+        if _safe_str(getattr(active, "role", None)).lower() != "admin":
+            active.role = "admin"
+            db.add(active)
+            db.flush()
+        return active
+
+    archived = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.clan_id == int(clan.id),
+            ClanMembership.user_id == int(owner.id),
+            ClanMembership.left_at.isnot(None),
+        )
+        .order_by(ClanMembership.id.desc())
+        .first()
+    )
+    if archived is not None:
+        archived.left_at = None
+        archived.role = "admin"
+        db.add(archived)
+        db.flush()
+        return archived
+
+    membership = ClanMembership(
+        clan_id=int(clan.id),
+        user_id=int(owner.id),
+        role="admin",
+        personal_pool_balance=Decimal("0"),
+    )
+    db.add(membership)
+    db.flush()
+    return membership
 
 
 def _primary_membership_clan_id(db: Session, user_id: int) -> Optional[int]:
@@ -225,6 +460,150 @@ def _join_next_action(stage: str) -> str:
     if stage == "rejected":
         return "No action unless the community wants to invite this person again."
     return "Review this join request."
+
+
+@router.get("/community-ownership/lookup")
+def admin_community_ownership_lookup(
+    community_name: Optional[str] = Query(default=None, max_length=120),
+    owner_query: Optional[str] = Query(default=None, max_length=240),
+    limit: int = Query(default=10, ge=1, le=25),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_platform_admin(current_user)
+
+    clean_name = _safe_str(community_name)
+    clean_owner = _safe_str(owner_query)
+    community_rows = []
+    owner_rows = []
+
+    if clean_name:
+        name_like = f"%{clean_name.lower()}%"
+        communities = (
+            db.query(Clan)
+            .filter(func.lower(Clan.name).like(name_like))
+            .order_by(
+                (func.lower(Clan.name) == clean_name.lower()).desc(),
+                Clan.id.asc(),
+            )
+            .limit(int(limit))
+            .all()
+        )
+        community_rows = [_community_row(db, clan) for clan in communities]
+
+    if clean_owner:
+        owner_like = f"%{clean_owner.lower()}%"
+        owner_filters = [
+            func.lower(User.email).like(owner_like),
+            func.lower(User.display_name).like(owner_like),
+        ]
+        if clean_owner.upper().startswith(("GMFN", "GSN")):
+            owner_filters.append(func.lower(User.gmfn_id).like(owner_like))
+        if any(ch.isdigit() for ch in clean_owner):
+            owner_filters.append(User.phone_e164.like(f"%{clean_owner}%"))
+
+        owners = (
+            db.query(User)
+            .filter(or_(*owner_filters))
+            .order_by(User.id.asc())
+            .limit(int(limit))
+            .all()
+        )
+        owner_rows = [_user_label(owner) for owner in owners]
+
+    return {
+        "ok": True,
+        "community_name": clean_name or None,
+        "owner_query": clean_owner or None,
+        "communities": community_rows,
+        "owners": owner_rows,
+        "boundary": (
+            "Lookup is read-only. Use preview first, then execute only after the owner proof has been checked."
+        ),
+    }
+
+
+@router.post("/community-ownership/reconcile")
+def admin_community_ownership_reconcile(
+    payload: CommunityOwnershipReconcileIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_platform_admin(current_user)
+
+    clan = _resolve_community_for_ownership(
+        db,
+        clan_id=payload.clan_id,
+        community_name=payload.community_name,
+    )
+    owner = _resolve_owner_for_ownership(db, payload)
+    preview = _community_ownership_preview(db, clan=clan, owner=owner)
+
+    reviewer_note = _safe_str(payload.reviewer_note)
+    if not payload.execute:
+        return {
+            "ok": True,
+            "mode": "preview",
+            "executed": False,
+            "message": "Preview ready. Confirm owner proof before recording the canonical owner.",
+            **preview,
+        }
+
+    if not bool(payload.owner_proof_confirmed):
+        raise HTTPException(
+            status_code=400,
+            detail="Owner proof confirmation is required before changing community ownership.",
+        )
+    if len(reviewer_note) < 12:
+        raise HTTPException(
+            status_code=400,
+            detail="Reviewer note is required before changing community ownership.",
+        )
+
+    previous_owner_id = int(clan.created_by_user_id) if clan.created_by_user_id else None
+    clan.created_by_user_id = int(owner.id)
+    db.add(clan)
+    membership = _ensure_ownership_admin_membership_no_commit(db=db, clan=clan, owner=owner)
+
+    meta = build_trust_meta(
+        reason="community_ownership_reconciled",
+        note=reviewer_note,
+        trust_delta="0.00",
+        system=True,
+        extra={
+            "community_id": int(clan.id),
+            "community_name": _safe_str(clan.name),
+            "community_code": _safe_str(getattr(clan, "community_code", None)) or f"GSN-C-{int(clan.id):06d}",
+            "previous_created_by_user_id": previous_owner_id,
+            "canonical_owner_user_id": int(owner.id),
+            "canonical_owner_gmfn_id": _safe_str(getattr(owner, "gmfn_id", None)) or None,
+            "owner_proof_confirmed": True,
+            "admin_membership_id": int(membership.id),
+            "membership_action": preview.get("membership_action"),
+            "history_preserved": True,
+            "other_admins_removed": False,
+        },
+    )
+    log_trust_event(
+        db,
+        event_type="community.ownership_reconciled",
+        clan_id=int(clan.id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(owner.id),
+        meta=meta,
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+    db.refresh(clan)
+
+    return {
+        "ok": True,
+        "mode": "execute",
+        "executed": True,
+        "message": f"{_safe_str(clan.name)} now records this GSN identity as canonical owner/admin.",
+        **_community_ownership_preview(db, clan=clan, owner=owner),
+    }
 
 
 @router.post("/identity-verification-checks/{check_id}/decision")

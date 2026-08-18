@@ -4816,6 +4816,35 @@ export async function postAdminManualRecoveryReset(payload: {
   return httpJson("/identity-risk/admin/manual-recovery-reset", "POST", payload);
 }
 
+export async function getAdminCommunityOwnershipLookup(params: {
+  community_name?: string | null;
+  owner_query?: string | null;
+  limit?: number;
+}): Promise<any> {
+  return httpJson(
+    `/admin/community-ownership/lookup${buildQuery({
+      community_name: params.community_name || undefined,
+      owner_query: params.owner_query || undefined,
+      limit: params.limit || 10,
+    })}`,
+    "GET"
+  );
+}
+
+export async function postAdminCommunityOwnershipReconciliation(payload: {
+  community_name?: string | null;
+  clan_id?: number | null;
+  owner_user_id?: number | null;
+  owner_gmfn_id?: string | null;
+  owner_email?: string | null;
+  owner_phone_e164?: string | null;
+  owner_proof_confirmed?: boolean;
+  execute?: boolean;
+  reviewer_note?: string | null;
+}): Promise<any> {
+  return httpJson("/admin/community-ownership/reconcile", "POST", payload);
+}
+
 export async function getMyNotifications(
   limit: number = 50,
   unreadOnly: boolean = false

@@ -524,6 +524,7 @@ function routeIcon(label: string): GsnIconName {
   if (key.includes("operations")) return "shield";
   if (key.includes("graph")) return "community";
   if (key.includes("identity")) return "id";
+  if (key.includes("ownership") || key.includes("community")) return "community";
   if (key.includes("loan")) return "wallet";
   if (key.includes("exposure")) return "alert";
   if (key.includes("bank")) return "bank";
@@ -709,6 +710,7 @@ export default function TrustCommandCentrePage() {
       systemOperations: routeTarget("systemOperations", selectedClanId, "trust-command.route.system-operations"),
       trustGraph: routeTarget("trustGraph", selectedClanId, "trust-command.route.trust-graph"),
       identityRisk: routeTarget("identityRisk", selectedClanId, "trust-command.route.identity-risk"),
+      communityOwnership: "/app/command-center/community-ownership",
       incompleteLoans: routeTarget("incompleteLoans", selectedClanId, "trust-command.route.incomplete-loans"),
       exposure: routeTarget("exposureAdmin", selectedClanId, "trust-command.route.exposure"),
       bankConsole: routeTarget("bankConsole", selectedClanId, "trust-command.route.bank-console"),
@@ -1113,6 +1115,11 @@ export default function TrustCommandCentrePage() {
           detail: "Review device overlap, account clusters, and identity pressure.",
         },
         {
+          label: "Community Ownership",
+          to: routes.communityOwnership,
+          detail: "Resolve blocked community names and record canonical owners.",
+        },
+        {
           label: "Incomplete Support",
           to: routes.incompleteLoans,
           detail: "Inspect unresolved support items still in motion.",
@@ -1145,6 +1152,7 @@ export default function TrustCommandCentrePage() {
     routes.bankConsole,
     routes.exposure,
     routes.identityRisk,
+    routes.communityOwnership,
     routes.incompleteLoans,
     routes.revenueAllocation,
     routes.systemOperations,
@@ -1159,6 +1167,7 @@ export default function TrustCommandCentrePage() {
         { label: "Trust Analytics", to: routes.trustAnalytics, kind: "primary" as const },
         { label: "Trust Events", to: routes.trustEvents, kind: "secondary" as const },
         { label: "Identity Risk", to: routes.identityRisk, kind: "secondary" as const },
+        { label: "Community Ownership", to: routes.communityOwnership, kind: "secondary" as const },
         { label: "Incomplete Support", to: routes.incompleteLoans, kind: "secondary" as const },
         { label: "Bank Console", to: routes.bankConsole, kind: "secondary" as const },
         { label: "Revenue Allocation", to: routes.revenueAllocation, kind: "secondary" as const },
@@ -1178,6 +1187,7 @@ export default function TrustCommandCentrePage() {
     routes.bankConsole,
     routes.exposure,
     routes.identityRisk,
+    routes.communityOwnership,
     routes.incompleteLoans,
     routes.revenueAllocation,
     routes.systemOperations,

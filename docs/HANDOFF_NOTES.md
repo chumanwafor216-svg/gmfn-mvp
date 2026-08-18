@@ -1,3 +1,10 @@
+## 2026-08-18 - Local Command Centre community ownership repair
+- Status: Local implementation in progress for pilot repair. Owner reported Pillar of Hope may already exist from earlier setup/testing and asked for Command Centre to make Mr Felix the canonical owner so the duplicate-name block can be resolved without creating a second community.
+- Added backend platform-admin ownership repair endpoints: read-only lookup at `/admin/community-ownership/lookup` and preview/execute reconciliation at `/admin/community-ownership/reconcile`. Execute requires proof confirmation and reviewer note, records `clans.created_by_user_id`, ensures active admin membership, preserves the community code/history/other admins, and writes a `community.ownership_reconciled` trust event.
+- Added `AdminCommunityOwnershipPage` at `/app/command-center/community-ownership`, plus Command Centre card/action and redirect aliases that preserve query parameters such as `?community_name=Pillar%20of%20Hope&owner_query=Felix`.
+- Updated screen registry/specs with the admin ownership repair contract.
+- Devil's advocate: this repairs ownership of an existing normal GSN community; it does not prove Mr Felix's real production identity unless the admin checks proof first, and it does not merge/delete any separate duplicate communities or domain records automatically.
+
 ## 2026-08-18 - Pillar of Hope Community Domain local-anchor correction
 - Status: Local implementation verified; not pushed/deployed. Owner clarified that Pillar of Hope must first be registered as a normal GSN community/local marketplace before Domain filling, so Felix has a local community record, local GSN right/number, and then the Community Domain can sit on top as the wider institutional/protected layer.
 - Changed `frontend/src/pages/CommunityDomainPurchasePage.tsx` so first-time/no-anchor Domain setup opens with a `Local community first` prerequisite card and `Create GSN community first` action instead of encouraging Domain fields first. The Pillar of Hope demo no longer auto-checks the domain name before the local community anchor exists.

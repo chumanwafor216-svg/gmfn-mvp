@@ -972,3 +972,26 @@ Rules:
   should use that saved shop identity, quietly prepare the backend shop row if
   it is missing, and ask only for the product/update details, price note, media,
   and short instruction that belong to the current spotlight.
+
+## AdminCommunityOwnershipPage
+
+Purpose:
+Platform-admin Command Centre tool for resolving a blocked community name by assigning a verified canonical owner/admin to the existing community record.
+
+Must show:
+- community lookup by name
+- owner lookup by member identity signal
+- exact community and owner selection
+- preview before mutation
+- proof confirmation checkbox
+- reviewer note
+- final record action
+- history-preserved boundary language
+
+Rules:
+- Route is `/app/command-center/community-ownership` and must remain platform-admin only.
+- The tool must not delete the existing community, erase prior admins, or remove historical evidence.
+- Preview must be read-only.
+- Execute must require proof confirmation and a reviewer note.
+- Successful execution records the selected user as `created_by_user_id`, ensures an active admin membership, and logs a trust event for audit.
+- Redirect aliases may preserve `community_name` and `owner_query` query parameters so Command Centre can open directly to a case such as Pillar of Hope/Felix.

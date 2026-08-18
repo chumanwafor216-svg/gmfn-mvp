@@ -119,6 +119,9 @@ const AdminTrustEventsPage = React.lazy(
 const AdminIdentityRiskPage = React.lazy(
   () => import("./pages/AdminIdentityRiskPage")
 );
+const AdminCommunityOwnershipPage = React.lazy(
+  () => import("./pages/AdminCommunityOwnershipPage")
+);
 const AdminIncompleteLoansPage = React.lazy(
   () => import("./pages/AdminIncompleteLoansPage")
 );
@@ -1233,6 +1236,7 @@ export default function App() {
             <Route path="trust-analytics" element={<TrustAnalyticsPage />} />
             <Route path="trust-events" element={<AdminTrustEventsPage />} />
             <Route path="identity-risk" element={<AdminIdentityRiskPage />} />
+            <Route path="community-ownership" element={<AdminCommunityOwnershipPage />} />
             <Route path="incomplete-loans" element={<AdminIncompleteLoansPage />} />
             <Route path="system-operations" element={<SystemOperationsPage />} />
             <Route path="trust-graph" element={<AdminTrustGraphPage />} />
@@ -1254,6 +1258,10 @@ export default function App() {
         <Route
           path="identity-risk"
           element={<PreserveRedirect to="/app/command-center/identity-risk" />}
+        />
+        <Route
+          path="community-ownership"
+          element={<PreserveRedirect to="/app/command-center/community-ownership" />}
         />
         <Route
           path="incomplete-loans"
@@ -1282,6 +1290,10 @@ export default function App() {
         <Route
           path="admin/identity-risk"
           element={<PreserveRedirect to="/app/command-center/identity-risk" />}
+        />
+        <Route
+          path="admin/community-ownership"
+          element={<PreserveRedirect to="/app/command-center/community-ownership" />}
         />
         <Route
           path="admin/incomplete-loans"
