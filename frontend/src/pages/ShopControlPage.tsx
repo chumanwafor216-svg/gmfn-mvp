@@ -215,6 +215,14 @@ type CommunityMeetingRecord = {
   status?: string | null;
   reminder_event_id?: number | null;
   summary_event_id?: number | null;
+  interest_summary?: {
+    yes?: number | null;
+    no?: number | null;
+    maybe?: number | null;
+    total?: number | null;
+    own_response?: string | null;
+    planning_ready?: boolean | null;
+  } | null;
   created_at?: string | null;
 };
 
@@ -968,6 +976,7 @@ export default function ShopControlPage() {
   const [meetingDecisions, setMeetingDecisions] = useState("");
   const [meetingAttendanceCount, setMeetingAttendanceCount] = useState("");
   const [recordingMeetingSummary, setRecordingMeetingSummary] = useState(false);
+  const [recordingMeetingInterest, setRecordingMeetingInterest] = useState<string | null>(null);
   const [creatingVaultLink, setCreatingVaultLink] = useState(false);
   const [busyVaultLinkId, setBusyVaultLinkId] = useState<number | null>(null);
   const [busyVaultLinkAction, setBusyVaultLinkAction] = useState<"extend" | "revoke" | null>(
@@ -1791,6 +1800,9 @@ export default function ShopControlPage() {
     return communityMeetings[0] || null;
   }, [communityMeetings]);
 
+  const latestMeetingInterest = latestCommunityMeeting?.interest_summary || null;
+  const latestMeetingOwnInterest = safeStr(latestMeetingInterest?.own_response);
+
   const activePaidSpotlights = useMemo(
     () =>
       activeSpotlights.filter(
@@ -2410,6 +2422,42 @@ export default function ShopControlPage() {
     }
   }
 
+  async function recordMeetingInterest(response: "yes" | "maybe" | "no") {
+    const clanId = Number(shop?.clan_id || selectedClanId || 0);
+    const meetingId = firstTruthy(latestCommunityMeeting?.meeting_id);
+    if (!clanId || !meetingId) {
+      showNotice("error", "Create a meeting reminder before asking members to respond.");
+      return;
+    }
+
+    setRecordingMeetingInterest(response);
+    try {
+      const result = await apiJson<any>(
+        `/api/community-meetings/${encodeURIComponent(meetingId)}/interest`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            clan_id: clanId,
+            response,
+            note: "Recorded from Shop Control meeting planning.",
+          }),
+        }
+      );
+
+      await loadPage({ background: true });
+      showNotice(
+        "success",
+        firstTruthy(
+          result?.message,
+          "Meeting response recorded. The planning count is updated."
+        )
+      );
+    } catch (err: any) {
+      showNotice("error", safeStr(err?.message) || "Meeting response could not be recorded.");
+    } finally {
+      setRecordingMeetingInterest(null);
+    }
+  }
   function fallbackShopName(): string {
     return (
       safeStr(shopName) ||
@@ -4118,6 +4166,86 @@ export default function ShopControlPage() {
                   "One meeting pack unit creates one reminder evidence thread. The summary later uses the same thread and does not consume another unit."
                 )}
               </div>
+              {latestCommunityMeeting ? (
+                <div
+                  style={{
+                    marginTop: 12,
+                    borderRadius: 16,
+                    border: "1px solid rgba(13,95,168,0.10)",
+                    background: "rgba(255,255,255,0.74)",
+                    padding: 12,
+                  }}
+                >
+                  <div style={{ ...sectionLabel(), fontSize: 12 }}>
+                    Who is planning to attend?
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      display: "grid",
+                      gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                      gap: 8,
+                    }}
+                  >
+                    {[
+                      ["yes", "Yes", latestMeetingInterest?.yes],
+                      ["maybe", "Maybe", latestMeetingInterest?.maybe],
+                      ["no", "No", latestMeetingInterest?.no],
+                    ].map(([key, label, count]) => (
+                      <div
+                        key={String(key)}
+                        style={{
+                          borderRadius: 14,
+                          background: latestMeetingOwnInterest === key ? "#07172C" : "#F7FAFF",
+                          color: latestMeetingOwnInterest === key ? "#FFFFFF" : "#07172C",
+                          border: "1px solid rgba(13,95,168,0.12)",
+                          padding: "8px 10px",
+                          textAlign: "center",
+                          minWidth: 0,
+                        }}
+                      >
+                        <div style={{ fontSize: 12, fontWeight: 950 }}>{String(label)}</div>
+                        <div style={{ fontSize: 18, fontWeight: 950 }}>{safePositiveNumber(count, 0)}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: 10, ...controlGrid(isCompact, 112) }}>
+                    <SecondaryButton
+                      onClick={() => recordMeetingInterest("yes")}
+                      disabled={shopActionsLocked || Boolean(recordingMeetingInterest)}
+                      busy={recordingMeetingInterest === "yes"}
+                      busyLabel="Saving..."
+                      fullWidth
+                      debugId="shop-control.meeting.interest-yes"
+                    >
+                      Yes
+                    </SecondaryButton>
+                    <SecondaryButton
+                      onClick={() => recordMeetingInterest("maybe")}
+                      disabled={shopActionsLocked || Boolean(recordingMeetingInterest)}
+                      busy={recordingMeetingInterest === "maybe"}
+                      busyLabel="Saving..."
+                      fullWidth
+                      debugId="shop-control.meeting.interest-maybe"
+                    >
+                      Maybe
+                    </SecondaryButton>
+                    <SecondaryButton
+                      onClick={() => recordMeetingInterest("no")}
+                      disabled={shopActionsLocked || Boolean(recordingMeetingInterest)}
+                      busy={recordingMeetingInterest === "no"}
+                      busyLabel="Saving..."
+                      fullWidth
+                      debugId="shop-control.meeting.interest-no"
+                    >
+                      No
+                    </SecondaryButton>
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
+                    Planning count only. Final attendance is still recorded in the meeting summary.
+                  </div>
+                </div>
+              ) : null}
               <div
                 style={{
                   marginTop: 12,
@@ -4602,4 +4730,3 @@ export default function ShopControlPage() {
     </div>
   );
 }
-

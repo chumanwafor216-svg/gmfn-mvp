@@ -36,11 +36,11 @@ const findings = [];
 
 const expectedSourceActions = {
   PrimaryButton: 11,
-  SecondaryButton: 18,
+  SecondaryButton: 21,
   SubtleButton: 2,
   StableButton: 3,
   StableCtaLink: 7,
-  total: 41,
+  total: 44,
 };
 const expectedNativeFieldCount = 24;
 const expectedFileInputActionRoots = 2;
@@ -456,8 +456,8 @@ assertShopContains(
 );
 
 assertShopContains(
-  /debugId="shop-control\.package\.meeting-pack"[\s\S]*?debugId="shop-control\.meeting\.create-reminder"[\s\S]*?debugId="shop-control\.meeting\.share-whatsapp"[\s\S]*?debugId="shop-control\.meeting\.record-summary"/,
-  "Shop Control meeting/reminder controls must keep reminder, WhatsApp share, and summary action roots together."
+  /debugId="shop-control\.package\.meeting-pack"[\s\S]*?debugId="shop-control\.meeting\.create-reminder"[\s\S]*?debugId="shop-control\.meeting\.share-whatsapp"[\s\S]*?debugId="shop-control\.meeting\.interest-yes"[\s\S]*?debugId="shop-control\.meeting\.interest-maybe"[\s\S]*?debugId="shop-control\.meeting\.interest-no"[\s\S]*?debugId="shop-control\.meeting\.record-summary"/,
+  "Shop Control meeting/reminder controls must keep reminder, WhatsApp share, planning response, and summary action roots together."
 );
 
 assertLayoutContains(

@@ -13,6 +13,7 @@ from app.db.models import ClanMembership, User
 from app.services.community_meeting_service import (
     create_meeting_reminder,
     list_community_meetings,
+    record_meeting_interest,
     record_meeting_summary,
 )
 
@@ -91,6 +92,22 @@ class CommunityMeetingReminderIn(BaseModel):
     @classmethod
     def _reject_scheduled_at_boundary_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_datetime_string(value, info.field_name)
+
+
+class CommunityMeetingInterestIn(BaseModel):
+    clan_id: int = Field(..., ge=1)
+    response: str = Field(..., min_length=2, max_length=12)
+    note: Optional[str] = Field(default=None, max_length=300)
+
+    @field_validator("clan_id", mode="before")
+    @classmethod
+    def _reject_bool_ids(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "clan_id")
+
+    @field_validator("response", "note", mode="before")
+    @classmethod
+    def _reject_non_text_interest_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 class CommunityMeetingSummaryIn(BaseModel):
@@ -179,6 +196,7 @@ def list_meetings(
         db,
         clan_id=int(clan_id),
         limit=int(limit),
+        viewer_user_id=int(current_user.id),
     )
     return {
         "ok": True,
@@ -217,6 +235,34 @@ def create_reminder(
         **result,
     }
 
+
+
+@router.post("/{meeting_id}/interest")
+def record_interest(
+    meeting_id: str,
+    payload: CommunityMeetingInterestIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_clan_member(db, clan_id=int(payload.clan_id), current_user=current_user)
+    try:
+        result = record_meeting_interest(
+            db,
+            clan_id=int(payload.clan_id),
+            meeting_id=str(meeting_id),
+            actor_user_id=int(current_user.id),
+            response=payload.response,
+            note=payload.note,
+        )
+    except ValueError as exc:
+        status_code = 404 if "not found" in str(exc).lower() else 400
+        raise HTTPException(status_code=status_code, detail=str(exc))
+
+    return {
+        "ok": True,
+        "engine_ready": True,
+        **result,
+    }
 
 @router.post("/{meeting_id}/summary")
 def record_summary(

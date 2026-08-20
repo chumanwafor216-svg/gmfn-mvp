@@ -530,3 +530,167 @@ def test_community_ownership_execute_accepts_local_phone_owner_signal(
             .one()
         )
         assert felix_membership.role == 'admin'
+
+
+def _seed_pillar_domain_ownership_case() -> None:
+    with SessionLocal() as db:
+        db.execute(
+            text(
+                """
+                INSERT INTO users (id, email, hashed_password, display_name, role, gmfn_id, phone_e164)
+                VALUES
+                  (1, 'pytest@example.com', 'hashed', 'Platform Admin', 'admin', 'GSN-P-ADMIN', '+447700900001'),
+                  (2, 'domain-setup-owner@example.com', 'hashed', 'Earlier Domain Setup Owner', 'user', 'GSN-P-DOMAINSETUP', '+447700900002'),
+                  (3, 'felix-domain@example.com', 'hashed', 'Mr Felix', 'user', 'GSN-P-FELIX', '+447700900003')
+                """
+            )
+        )
+        db.execute(
+            text(
+                """
+                INSERT INTO community_domains (
+                    id, domain_name, display_name, domain_type, template_key,
+                    owner_user_id, status, verification_status, country, state, public_profile
+                )
+                VALUES (
+                    51, 'pillar-of-hope', 'Pillar of Hope', 'ngo_project_network',
+                    'ngo_project_network', 2, 'draft', 'unverified', 'United Kingdom',
+                    'Scotland / Aberdeen', 'Pilot domain bought during setup.'
+                )
+                """
+            )
+        )
+        db.execute(
+            text(
+                """
+                INSERT INTO community_domain_memberships (id, community_domain_id, user_id, role, status, title)
+                VALUES (61, 51, 2, 'owner', 'active', 'Earlier setup owner')
+                """
+            )
+        )
+        db.commit()
+
+
+def test_community_domain_ownership_preview_is_read_only(
+    client: TestClient,
+    override_current_user,
+):
+    _seed_pillar_domain_ownership_case()
+
+    response = client.post(
+        '/admin/community-domain-ownership/reconcile',
+        json={
+            'domain_name': 'pillar-of-hope',
+            'owner_gmfn_id': 'GSN-P-FELIX',
+            'execute': False,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body['mode'] == 'preview'
+    assert body['executed'] is False
+    assert body['community_domain']['domain_name'] == 'pillar-of-hope'
+    assert body['community_domain']['owner_user_id'] == 2
+    assert body['requested_owner']['gmfn_id'] == 'GSN-P-FELIX'
+    assert body['membership_action'] == 'add_owner'
+    assert body['will_delete_domain'] is False
+    assert body['will_preserve_history'] is True
+
+    with SessionLocal() as db:
+        owner_id = db.execute(text('SELECT owner_user_id FROM community_domains WHERE id = 51')).scalar_one()
+        felix_membership = db.execute(
+            text(
+                """
+                SELECT COUNT(*) FROM community_domain_memberships
+                WHERE community_domain_id = 51 AND user_id = 3
+                """
+            )
+        ).scalar_one()
+        assert owner_id == 2
+        assert felix_membership == 0
+        assert db.query(TrustEvent).count() == 0
+
+
+def test_community_domain_ownership_execute_requires_proof_before_mutation(
+    client: TestClient,
+    override_current_user,
+):
+    _seed_pillar_domain_ownership_case()
+
+    response = client.post(
+        '/admin/community-domain-ownership/reconcile',
+        json={
+            'domain_name': 'pillar-of-hope',
+            'owner_gmfn_id': 'GSN-P-FELIX',
+            'execute': True,
+            'owner_proof_confirmed': False,
+            'reviewer_note': 'Felix confirmed domain ownership during pilot review.',
+        },
+    )
+
+    assert response.status_code == 400, response.text
+    assert 'Owner proof confirmation is required' in response.text
+
+    with SessionLocal() as db:
+        owner_id = db.execute(text('SELECT owner_user_id FROM community_domains WHERE id = 51')).scalar_one()
+        assert owner_id == 2
+        assert db.query(TrustEvent).count() == 0
+
+
+def test_community_domain_ownership_execute_transfers_owner_and_keeps_history(
+    client: TestClient,
+    override_current_user,
+):
+    _seed_pillar_domain_ownership_case()
+
+    response = client.post(
+        '/admin/community-domain-ownership/reconcile',
+        json={
+            'domain_name': 'Pillar of Hope',
+            'owner_gmfn_id': 'GSN-P-FELIX',
+            'execute': True,
+            'owner_proof_confirmed': True,
+            'reviewer_note': 'Felix confirmed as Pillar of Hope domain owner during pilot review.',
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body['mode'] == 'execute'
+    assert body['executed'] is True
+    assert body['community_domain']['owner_user_id'] == 3
+    assert body['community_domain']['domain_name'] == 'pillar-of-hope'
+    assert body['requested_owner']['gmfn_id'] == 'GSN-P-FELIX'
+
+    with SessionLocal() as db:
+        owner_id = db.execute(text('SELECT owner_user_id FROM community_domains WHERE id = 51')).scalar_one()
+        assert owner_id == 3
+        previous_role = db.execute(
+            text(
+                """
+                SELECT role FROM community_domain_memberships
+                WHERE community_domain_id = 51 AND user_id = 2
+                """
+            )
+        ).scalar_one()
+        felix_role = db.execute(
+            text(
+                """
+                SELECT role FROM community_domain_memberships
+                WHERE community_domain_id = 51 AND user_id = 3
+                """
+            )
+        ).scalar_one()
+        assert previous_role == 'admin'
+        assert felix_role == 'owner'
+        event = db.query(TrustEvent).one()
+        assert event.event_type == 'community_domain.ownership_reconciled'
+        assert event.actor_user_id == 1
+        assert event.subject_user_id == 3
+        assert event.meta['domain_name'] == 'pillar-of-hope'
+        assert event.meta['previous_owner_user_id'] == 2
+        assert event.meta['canonical_owner_user_id'] == 3
+        assert event.meta['history_preserved'] is True
+        assert event.meta['domain_deleted'] is False
+        assert event.meta['duplicate_domain_created'] is False

@@ -24,6 +24,8 @@ from app.db.models import (
     Clan,
     ClanJoinRequest,
     ClanMembership,
+    CommunityDomain,
+    CommunityDomainMembership,
     EntryPhoneVerification,
     LoanGuarantor,
     User,
@@ -212,6 +214,30 @@ class CommunityOwnershipReconcileIn(BaseModel):
         return _reject_non_text_value(value, info.field_name)
 
 
+
+class CommunityDomainOwnershipReconcileIn(BaseModel):
+    domain_name: Optional[str] = Field(default=None, max_length=120)
+    community_domain_id: Optional[int] = Field(default=None, ge=1)
+    owner_user_id: Optional[int] = Field(default=None, ge=1)
+    owner_gmfn_id: Optional[str] = Field(default=None, max_length=64)
+    owner_email: Optional[str] = Field(default=None, max_length=240)
+    owner_phone_e164: Optional[str] = Field(default=None, max_length=40)
+    owner_proof_confirmed: bool = False
+    execute: bool = False
+    reviewer_note: Optional[str] = Field(default=None, max_length=800)
+
+    @field_validator(
+        "domain_name",
+        "owner_gmfn_id",
+        "owner_email",
+        "owner_phone_e164",
+        "reviewer_note",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 def _json_text(data: Any) -> str:
     return json.dumps(data, ensure_ascii=False, sort_keys=True, default=str)
 
@@ -370,7 +396,7 @@ def _resolve_community_for_ownership(
     )
 
 
-def _resolve_owner_for_ownership(db: Session, payload: CommunityOwnershipReconcileIn) -> User:
+def _resolve_owner_for_ownership(db: Session, payload: Any) -> User:
     filters = []
     if payload.owner_user_id:
         filters.append(User.id == int(payload.owner_user_id))
@@ -1179,6 +1205,124 @@ def admin_community_ownership_lookup(
     }
 
 
+
+def _domain_ownership_domain_row(db: Session, domain: CommunityDomain) -> dict[str, Any]:
+    owner = db.get(User, int(domain.owner_user_id)) if domain.owner_user_id else None
+    memberships = (
+        db.query(CommunityDomainMembership, User)
+        .join(User, User.id == CommunityDomainMembership.user_id)
+        .filter(CommunityDomainMembership.community_domain_id == int(domain.id))
+        .filter(CommunityDomainMembership.status == "active")
+        .order_by(CommunityDomainMembership.id.asc())
+        .all()
+    )
+    return {
+        "community_domain_id": int(domain.id),
+        "domain_name": _safe_str(domain.domain_name),
+        "display_name": _safe_str(domain.display_name),
+        "domain_type": _safe_str(domain.domain_type),
+        "template_key": _safe_str(domain.template_key),
+        "status": _safe_str(domain.status),
+        "verification_status": _safe_str(domain.verification_status),
+        "clan_id": int(domain.clan_id) if domain.clan_id is not None else None,
+        "owner_user_id": int(domain.owner_user_id),
+        "canonical_owner": _user_label(owner),
+        "active_members": [
+            {
+                "membership_id": int(membership.id),
+                "role": _safe_str(membership.role),
+                "status": _safe_str(membership.status),
+                **(_user_label(user) or {}),
+            }
+            for membership, user in memberships
+        ],
+    }
+
+
+def _resolve_domain_for_ownership(
+    db: Session,
+    *,
+    community_domain_id: Optional[int] = None,
+    domain_name: Optional[str] = None,
+) -> CommunityDomain:
+    if community_domain_id:
+        domain = db.get(CommunityDomain, int(community_domain_id))
+        if domain is None:
+            raise HTTPException(status_code=404, detail="Community Domain not found.")
+        return domain
+
+    name = _safe_str(domain_name)
+    if not name:
+        raise HTTPException(status_code=400, detail="Community Domain name or ID is required.")
+
+    text_keys = _community_ownership_text_keys(name)
+    compact_key = _community_ownership_compact_key(name)
+    filters = []
+    if text_keys:
+        filters.extend([
+            func.lower(CommunityDomain.domain_name).in_(text_keys),
+            func.lower(CommunityDomain.display_name).in_(text_keys),
+        ])
+    if compact_key:
+        filters.extend([
+            _community_ownership_compact_expr(CommunityDomain.domain_name) == compact_key,
+            _community_ownership_compact_expr(CommunityDomain.display_name) == compact_key,
+        ])
+    if not filters:
+        raise HTTPException(status_code=400, detail="Community Domain name is required.")
+
+    rows = db.query(CommunityDomain).filter(or_(*filters)).order_by(CommunityDomain.id.asc()).all()
+    if not rows:
+        raise HTTPException(status_code=404, detail="Community Domain name was not found.")
+    if len(rows) > 1:
+        raise HTTPException(status_code=409, detail="More than one Community Domain matched. Use the exact Community Domain ID.")
+    return rows[0]
+
+
+def _ensure_domain_owner_membership_no_commit(db: Session, *, domain: CommunityDomain, owner: User) -> CommunityDomainMembership:
+    membership = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == int(domain.id))
+        .filter(CommunityDomainMembership.user_id == int(owner.id))
+        .first()
+    )
+    if membership is None:
+        membership = CommunityDomainMembership(community_domain_id=int(domain.id), user_id=int(owner.id))
+        db.add(membership)
+    membership.role = "owner"
+    membership.status = "active"
+    db.flush()
+    return membership
+
+
+def _community_domain_ownership_preview(db: Session, *, domain: CommunityDomain, owner: User) -> dict[str, Any]:
+    current_owner = db.get(User, int(domain.owner_user_id)) if domain.owner_user_id else None
+    active_membership = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == int(domain.id))
+        .filter(CommunityDomainMembership.user_id == int(owner.id))
+        .filter(CommunityDomainMembership.status == "active")
+        .first()
+    )
+    if int(owner.id) == int(domain.owner_user_id):
+        membership_action = "already_owner"
+    elif active_membership is None:
+        membership_action = "add_owner"
+    else:
+        membership_action = "promote_to_owner"
+    return {
+        "community_domain": _domain_ownership_domain_row(db, domain),
+        "requested_owner": _user_label(owner),
+        "current_owner": _user_label(current_owner),
+        "membership_action": membership_action,
+        "will_set_owner_user_id": int(owner.id),
+        "will_preserve_domain_name": True,
+        "will_preserve_history": True,
+        "will_delete_domain": False,
+        "will_make_previous_owner_domain_admin": bool(current_owner and int(current_owner.id) != int(owner.id)),
+        "boundary": "This records the canonical owner for the existing Community Domain. It does not delete the domain, make a duplicate name, erase payment history, or verify ownership without proof.",
+    }
+
 @router.post("/community-ownership/reconcile")
 def admin_community_ownership_reconcile(
     payload: CommunityOwnershipReconcileIn,
@@ -1375,6 +1519,81 @@ def admin_community_ownership_reconcile(
         "message": message,
         **result_preview,
     }
+
+
+@router.post("/community-domain-ownership/reconcile")
+def admin_community_domain_ownership_reconcile(
+    payload: CommunityDomainOwnershipReconcileIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_platform_admin(current_user)
+    domain = _resolve_domain_for_ownership(db, community_domain_id=payload.community_domain_id, domain_name=payload.domain_name)
+    owner = _resolve_owner_for_ownership(db, payload)
+    preview = _community_domain_ownership_preview(db, domain=domain, owner=owner)
+
+    reviewer_note = _safe_str(payload.reviewer_note)
+    if not payload.execute:
+        return {"ok": True, "mode": "preview", "executed": False, "message": "Preview ready. Confirm owner proof before transferring the Community Domain owner.", **preview}
+
+    if not bool(payload.owner_proof_confirmed):
+        raise HTTPException(status_code=400, detail="Owner proof confirmation is required before changing Community Domain ownership.")
+    if len(reviewer_note) < 12:
+        raise HTTPException(status_code=400, detail="Reviewer note is required before changing Community Domain ownership.")
+
+    previous_owner_id = int(domain.owner_user_id)
+    previous_owner_membership = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == int(domain.id))
+        .filter(CommunityDomainMembership.user_id == previous_owner_id)
+        .first()
+    )
+    domain.owner_user_id = int(owner.id)
+    db.add(domain)
+    owner_membership = _ensure_domain_owner_membership_no_commit(db=db, domain=domain, owner=owner)
+
+    previous_owner_role_after = None
+    if previous_owner_id != int(owner.id) and previous_owner_membership is not None:
+        if _safe_str(previous_owner_membership.role).lower() == "owner":
+            previous_owner_membership.role = "admin"
+            previous_owner_membership.status = "active"
+            previous_owner_role_after = "admin"
+            db.add(previous_owner_membership)
+
+    log_trust_event(
+        db,
+        event_type="community_domain.ownership_reconciled",
+        clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(owner.id),
+        meta=build_trust_meta(
+            reason="community_domain_ownership_reconciled",
+            note=reviewer_note,
+            trust_delta="0.00",
+            system=True,
+            extra={
+                "community_domain_id": int(domain.id),
+                "domain_name": _safe_str(domain.domain_name),
+                "display_name": _safe_str(domain.display_name),
+                "previous_owner_user_id": previous_owner_id,
+                "canonical_owner_user_id": int(owner.id),
+                "canonical_owner_gmfn_id": _safe_str(getattr(owner, "gmfn_id", None)) or None,
+                "owner_membership_id": int(owner_membership.id),
+                "previous_owner_role_after": previous_owner_role_after,
+                "owner_proof_confirmed": True,
+                "history_preserved": True,
+                "domain_deleted": False,
+                "duplicate_domain_created": False,
+            },
+        ),
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+    db.refresh(domain)
+
+    result_preview = _community_domain_ownership_preview(db, domain=domain, owner=owner)
+    return {"ok": True, "mode": "execute", "executed": True, "message": f"{_safe_str(domain.display_name or domain.domain_name)} now records this GSN identity as Community Domain owner.", **result_preview}
 
 @router.post("/identity-verification-checks/{check_id}/decision")
 def admin_identity_verification_decision(

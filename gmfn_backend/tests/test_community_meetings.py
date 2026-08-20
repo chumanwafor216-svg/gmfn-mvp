@@ -342,3 +342,98 @@ def test_meeting_summary_rejects_malformed_boundary_fields(
         )
         assert rejected_attendee.status_code == 422, rejected_attendee.text
         assert expected in rejected_attendee.text
+
+
+def test_meeting_interest_records_latest_planning_response(
+    client,
+    override_current_user,
+    seed_user2_member_membership,
+):
+    _seed_meeting_entitlement()
+
+    reminder_res = client.post(
+        "/community-meetings/reminders",
+        json={
+            "clan_id": 1,
+            "title": "Friday planning meeting",
+            "purpose": "Estimate chairs and refreshments before Friday.",
+            "attendee_user_ids": [1, 2],
+        },
+    )
+    assert reminder_res.status_code == 200, reminder_res.text
+    meeting_id = reminder_res.json()["meeting"]["meeting_id"]
+
+    yes_res = client.post(
+        f"/community-meetings/{meeting_id}/interest",
+        json={"clan_id": 1, "response": "yes", "note": "I plan to attend."},
+    )
+    assert yes_res.status_code == 200, yes_res.text
+    assert yes_res.json()["meeting"]["interest_summary"]["yes"] == 1
+    assert yes_res.json()["meeting"]["interest_summary"]["own_response"] == "yes"
+
+    no_res = client.post(
+        f"/community-meetings/{meeting_id}/interest",
+        json={"clan_id": 1, "response": "no", "note": "I can no longer attend."},
+    )
+    assert no_res.status_code == 200, no_res.text
+
+    list_res = client.get("/community-meetings", params={"clan_id": 1})
+    assert list_res.status_code == 200, list_res.text
+    meeting = list_res.json()["meetings"][0]
+    assert meeting["meeting_id"] == meeting_id
+    assert meeting["interest_summary"] == {
+        "yes": 0,
+        "no": 1,
+        "maybe": 0,
+        "total": 1,
+        "own_response": "no",
+        "planning_ready": False,
+    }
+
+    with engine.begin() as conn:
+        interest_count = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM trust_events
+                WHERE event_type = 'community.meeting.interest_recorded'
+                  AND meta_json LIKE :meeting_like
+                """
+            ),
+            {"meeting_like": f"%{meeting_id}%"},
+        ).scalar_one()
+        usage_count = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM feature_usage_events
+                WHERE feature_code = 'community_meeting_pack'
+                """
+            )
+        ).scalar_one()
+
+    assert interest_count == 2
+    assert usage_count == 1
+
+
+def test_meeting_interest_rejects_invalid_response(
+    client,
+    override_current_user,
+    seed_user2_member_membership,
+):
+    _seed_meeting_entitlement()
+
+    reminder_res = client.post(
+        "/community-meetings/reminders",
+        json={"clan_id": 1, "title": "Invalid response planning"},
+    )
+    assert reminder_res.status_code == 200, reminder_res.text
+    meeting_id = reminder_res.json()["meeting"]["meeting_id"]
+
+    invalid_res = client.post(
+        f"/community-meetings/{meeting_id}/interest",
+        json={"clan_id": 1, "response": "thumbs_up"},
+    )
+
+    assert invalid_res.status_code == 400, invalid_res.text
+    assert "yes, no, or maybe" in invalid_res.text

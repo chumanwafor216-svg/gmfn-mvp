@@ -23,6 +23,8 @@ COMMUNITY_MEETING_ENGINE_VERSION = "community_meeting_evidence_engine_v1"
 COMMUNITY_MEETING_SOURCE = "community.meeting_pack"
 COMMUNITY_MEETING_REMINDER_EVENT = "community.meeting.reminder_created"
 COMMUNITY_MEETING_SUMMARY_EVENT = "community.meeting.summary_recorded"
+COMMUNITY_MEETING_INTEREST_EVENT = "community.meeting.interest_recorded"
+COMMUNITY_MEETING_INTEREST_RESPONSES = {"yes", "no", "maybe"}
 
 
 def _now_utc() -> datetime:
@@ -213,6 +215,9 @@ def _event_to_record(event: TrustEvent) -> Dict[str, Any]:
         "action_url": _safe_str(meta.get("action_url")),
         "package_feature_code": _safe_str(meta.get("package_feature_code")),
         "package_consumed": bool(meta.get("package_consumed")),
+        "interest_response": _safe_str(meta.get("interest_response")),
+        "interest_note": _safe_str(meta.get("interest_note")),
+        "responder_user_id": meta.get("responder_user_id"),
         "created_at": _iso(getattr(event, "created_at", None)),
     }
 
@@ -453,22 +458,97 @@ def record_meeting_summary(
     }
 
 
+
+def record_meeting_interest(
+    db: Session,
+    *,
+    clan_id: int,
+    meeting_id: str,
+    actor_user_id: int,
+    response: str,
+    note: Optional[str] = None,
+) -> Dict[str, Any]:
+    reminder = _find_reminder_event(
+        db,
+        clan_id=int(clan_id),
+        meeting_id=str(meeting_id),
+    )
+    if not reminder:
+        raise ValueError("Meeting reminder record was not found")
+
+    normalized_response = _safe_str(response).lower()
+    if normalized_response not in COMMUNITY_MEETING_INTEREST_RESPONSES:
+        raise ValueError("Meeting interest response must be yes, no, or maybe")
+
+    reminder_record = _event_to_record(reminder)
+    action_url = _meeting_action_url(clan_id=int(clan_id), meeting_id=str(meeting_id))
+    event = log_trust_event(
+        db,
+        event_type=COMMUNITY_MEETING_INTEREST_EVENT,
+        clan_id=int(clan_id),
+        actor_user_id=int(actor_user_id),
+        subject_user_id=int(actor_user_id),
+        meta={
+            "engine_version": COMMUNITY_MEETING_ENGINE_VERSION,
+            "source": COMMUNITY_MEETING_SOURCE,
+            "reason": "community_meeting_interest_recorded",
+            "meeting_id": str(meeting_id),
+            "title": reminder_record["title"],
+            "purpose": reminder_record["purpose"],
+            "scheduled_at": reminder_record["scheduled_at"],
+            "interest_response": normalized_response,
+            "interest_note": _safe_str(note),
+            "responder_user_id": int(actor_user_id),
+            "action_url": action_url,
+            "package_feature_code": FEATURE_COMMUNITY_MEETING_PACK,
+            "package_consumed": False,
+            "planning_signal": True,
+            "attendance_confirmation": False,
+            "trust_delta": "0.00",
+        },
+        commit=False,
+        refresh=False,
+    )
+
+    db.commit()
+    db.refresh(event)
+
+    meetings = list_community_meetings(
+        db,
+        clan_id=int(clan_id),
+        limit=20,
+        viewer_user_id=int(actor_user_id),
+    )
+    meeting = next(
+        (item for item in meetings if _safe_str(item.get("meeting_id")) == str(meeting_id)),
+        {**reminder_record, "meeting_id": str(meeting_id)},
+    )
+    return {
+        "meeting": meeting,
+        "message": "Meeting interest recorded. This helps the community plan; it is not final attendance.",
+    }
+
 def list_community_meetings(
     db: Session,
     *,
     clan_id: int,
     limit: int = 20,
+    viewer_user_id: Optional[int] = None,
 ) -> List[Dict[str, Any]]:
     rows = (
         db.query(TrustEvent)
         .filter(
             TrustEvent.clan_id == int(clan_id),
             TrustEvent.event_type.in_(
-                [COMMUNITY_MEETING_REMINDER_EVENT, COMMUNITY_MEETING_SUMMARY_EVENT]
+                [
+                    COMMUNITY_MEETING_REMINDER_EVENT,
+                    COMMUNITY_MEETING_SUMMARY_EVENT,
+                    COMMUNITY_MEETING_INTEREST_EVENT,
+                ]
             ),
         )
         .order_by(TrustEvent.id.desc())
-        .limit(max(1, int(limit or 20)) * 2)
+        .limit(max(1, int(limit or 20)) * 12)
         .all()
     )
 
@@ -490,8 +570,45 @@ def list_community_meetings(
             current.update({k: v for k, v in record.items() if v not in ("", None, [])})
             current["summary_event_id"] = int(row.id)
             current["status"] = "summary_recorded"
+        elif row.event_type == COMMUNITY_MEETING_INTEREST_EVENT:
+            responder_id = _safe_int(record.get("responder_user_id"), 0)
+            response = _safe_str(record.get("interest_response")).lower()
+            if responder_id > 0 and response in COMMUNITY_MEETING_INTEREST_RESPONSES:
+                latest_by_user = current.setdefault("_interest_latest_by_user", {})
+                existing = latest_by_user.get(responder_id)
+                existing_id = _safe_int(existing.get("event_id"), 0) if isinstance(existing, dict) else 0
+                if int(row.id) >= existing_id:
+                    latest_by_user[responder_id] = {
+                        "event_id": int(row.id),
+                        "response": response,
+                        "created_at": record.get("created_at"),
+                    }
         grouped[mid] = current
 
     meetings = list(grouped.values())
+    for item in meetings:
+        latest_by_user = item.pop("_interest_latest_by_user", {})
+        counts = {"yes": 0, "no": 0, "maybe": 0}
+        own_response = None
+        if isinstance(latest_by_user, dict):
+            for raw_user_id, response_record in latest_by_user.items():
+                response = (
+                    _safe_str(response_record.get("response")).lower()
+                    if isinstance(response_record, dict)
+                    else ""
+                )
+                if response not in counts:
+                    continue
+                counts[response] += 1
+                if viewer_user_id is not None and _safe_int(raw_user_id, 0) == int(viewer_user_id):
+                    own_response = response
+        item["interest_summary"] = {
+            "yes": counts["yes"],
+            "no": counts["no"],
+            "maybe": counts["maybe"],
+            "total": counts["yes"] + counts["no"] + counts["maybe"],
+            "own_response": own_response,
+            "planning_ready": counts["yes"] + counts["maybe"] > 0,
+        }
     meetings.sort(key=lambda item: _safe_int(item.get("summary_event_id") or item.get("reminder_event_id")), reverse=True)
     return meetings[: max(1, int(limit or 20))]
