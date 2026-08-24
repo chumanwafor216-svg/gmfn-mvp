@@ -10,13 +10,13 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 26;
+const expectedStableButtonTemplateCount = 27;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 4;
 const expectedSpotlightGuidedActionCount = 5;
 const expectedGroupedLaneRowCount = 22;
-const expectedExpandedRouteLocalActionTemplates = 39;
+const expectedExpandedRouteLocalActionTemplates = 40;
 const expectedMobileShellBreakdown = {
   top: 2,
   drawer: 25,
@@ -283,6 +283,10 @@ assertContains(
 assertContains(
   /Community Bulletin[\s\S]*?debugId="community-home\.notice\.post"[\s\S]*?debugId="community-home\.notice\.policy\.members"[\s\S]*?debugId="community-home\.notice\.policy\.admins"[\s\S]*?contactCommunityRowStyle\(isCompact\)[\s\S]*?Contact community[\s\S]*?debugId="community-home\.contact\.whatsapp-chat"[\s\S]*?>\s*WhatsApp\s*<\/StableButton>/,
   "Community Home communication block must keep the Notice Board controls and a compact single-button community WhatsApp contact row."
+);
+assertContains(
+  /function renderMeetingInterestShortcut[\s\S]*?\["yes", "Yes"\][\s\S]*?\["maybe", "Maybe"\][\s\S]*?\["no", "No"\][\s\S]*?debugId=\{`community-home\.bulletin\.meeting-interest-\$\{response\}`\}[\s\S]*?recordNoticeMeetingInterest\(buttonEvent, noticeItem, response\)/,
+  "Community Home bulletin meeting shortcut must keep the compact Yes/Maybe/No response controls only."
 );
 
 assertContains(

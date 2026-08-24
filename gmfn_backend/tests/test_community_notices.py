@@ -420,4 +420,5 @@ def test_community_notice_board_surfaces_meeting_interest_as_planning_notice(
     assert notice["interest_summary"]["no"] == 0
     assert notice["interest_summary"]["total"] == 2
     assert notice["interest_summary"]["planning_ready"] is True
+    assert notice["interest_summary"]["own_response"] == "yes"
     assert "not final attendance" in notice["board_hint"]

@@ -1405,6 +1405,22 @@ export async function createCommunityNotice(payload: {
   return httpJson("/community-notices", "POST", payload);
 }
 
+export async function recordCommunityMeetingInterest(
+  meetingId: number | string,
+  payload: {
+    clan_id: number;
+    response: "yes" | "maybe" | "no";
+    note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-meetings/${encodeURIComponent(String(meetingId))}/interest`,
+    "POST",
+    Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
+    )
+  );
+}
 export async function updateCommunityNoticeSettings(
   clanId: number,
   payload: { posting_policy: "members" | "admins" }

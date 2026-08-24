@@ -26,6 +26,7 @@ import {
   getSelectedClanId,
   createCommunityNotice,
   listCommunityNotices,
+  recordCommunityMeetingInterest,
   updateCommunityNoticeSettings,
   listMyCommunityDomains,
   listMyClans,
@@ -173,6 +174,8 @@ type CommunityNoticeItem = {
   planning_status?: string | null;
   board_hint?: string | null;
 };
+
+type MeetingInterestResponse = "yes" | "maybe" | "no";
 
 type CommunityIconMark = GsnIconName;
 
@@ -1374,6 +1377,11 @@ function meetingPlanningLine(item: CommunityNoticeItem | null | undefined): stri
   return status || "Waiting for member responses";
 }
 
+function meetingOwnInterest(item: CommunityNoticeItem | null | undefined): MeetingInterestResponse | "" {
+  const response = safeStr(item?.interest_summary?.own_response).toLowerCase();
+  return response === "yes" || response === "maybe" || response === "no" ? response : "";
+}
+
 function communityContactMessage(clan: ClanItem | null | undefined): string {
   const name = getClanName(clan);
   const code = firstTruthy(clan?.community_code, clan?.clan_code, clan?.code);
@@ -1475,6 +1483,7 @@ export default function CommunityHomePage() {
     useState(false);
   const [noticeModalOpen, setNoticeModalOpen] = useState(false);
   const [noticePosting, setNoticePosting] = useState(false);
+  const [noticeMeetingInterestBusy, setNoticeMeetingInterestBusy] = useState("");
   const [poolSummary, setPoolSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [changingClanId, setChangingClanId] = useState<number>(0);
@@ -2683,6 +2692,111 @@ export default function CommunityHomePage() {
     showNotice("success", "WhatsApp opened for this announcement sender.");
   }
 
+  async function recordNoticeMeetingInterest(
+    event: React.SyntheticEvent<HTMLElement>,
+    noticeItem: CommunityNoticeItem,
+    response: MeetingInterestResponse
+  ) {
+    consumeCommunityButtonEvent(event);
+    const clanId = getClanId(selectedClan);
+    const meetingId = firstTruthy(noticeItem?.meeting_id);
+
+    if (!clanId || !meetingId) {
+      showNotice("error", "This meeting response is not ready yet.");
+      return;
+    }
+
+    const busyKey = `${meetingId}:${response}`;
+    if (noticeMeetingInterestBusy) {
+      showNotice("success", "Saving your meeting response now.");
+      return;
+    }
+
+    setNoticeMeetingInterestBusy(busyKey);
+    try {
+      const result = await recordCommunityMeetingInterest(meetingId, {
+        clan_id: clanId,
+        response,
+        note: "Recorded from Community Bulletin meeting planning.",
+      });
+      const res = await listCommunityNotices({ clan_id: clanId, limit: 3 }).catch(() => null);
+      const rows = Array.isArray(res?.notices) ? res.notices : [];
+      setCommunityNotices(rows);
+      setCommunityNoticePostingPolicy(
+        normalizeNoticePostingPolicy(
+          firstTruthy(res?.posting_policy, selectedClan?.notice_posting_policy)
+        )
+      );
+      showNotice(
+        "success",
+        firstTruthy(result?.message, "Meeting response recorded. Planning count updated.")
+      );
+    } catch (error: any) {
+      showNotice(
+        "error",
+        error?.message || "Meeting response could not be recorded."
+      );
+    } finally {
+      setNoticeMeetingInterestBusy("");
+    }
+  }
+
+  function renderMeetingInterestShortcut(noticeItem: CommunityNoticeItem) {
+    if (!isMeetingNotice(noticeItem) || !firstTruthy(noticeItem?.meeting_id)) {
+      return null;
+    }
+
+    const meetingId = firstTruthy(noticeItem.meeting_id);
+    const ownInterest = meetingOwnInterest(noticeItem);
+    const options: Array<[MeetingInterestResponse, string]> = [
+      ["yes", "Yes"],
+      ["maybe", "Maybe"],
+      ["no", "No"],
+    ];
+
+    return (
+      <span
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gap: 6,
+          marginTop: 8,
+        }}
+      >
+        {options.map(([response, label]) => {
+          const busyKey = `${meetingId}:${response}`;
+          const selected = ownInterest === response;
+          return (
+            <StableButton
+              key={response}
+              type="button"
+              debugId={`community-home.bulletin.meeting-interest-${response}`}
+              onClick={(buttonEvent) =>
+                recordNoticeMeetingInterest(buttonEvent, noticeItem, response)
+              }
+              aria-disabled={noticeMeetingInterestBusy ? true : undefined}
+              busy={noticeMeetingInterestBusy === busyKey}
+              busyLabel="Saving"
+              style={{
+                ...communityActionStyle(selected ? "primary" : "soft", Boolean(noticeMeetingInterestBusy)),
+                minHeight: 38,
+                minWidth: 0,
+                width: "100%",
+                padding: "8px 9px",
+                borderRadius: 12,
+                fontSize: 12,
+                textTransform: "none",
+                boxShadow: "none",
+              }}
+            >
+              {label}
+            </StableButton>
+          );
+        })}
+      </span>
+    );
+  }
+
   async function submitCommunityNotice(
     body: string,
     options?: {
@@ -3856,6 +3970,7 @@ export default function CommunityHomePage() {
                               ))}
                             </span>
                           ) : null}
+                          {renderMeetingInterestShortcut(primaryCommunityNotice)}
                         </span>
                       </div>
                     </div>
@@ -4054,6 +4169,7 @@ export default function CommunityHomePage() {
                               ))}
                             </span>
                           ) : null}
+                          {renderMeetingInterestShortcut(item)}
                         </span>
                         {item?.sender_whatsapp_number ? (
                           <StableButton

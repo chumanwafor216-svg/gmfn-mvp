@@ -552,6 +552,7 @@ def list_notices(
             db,
             clan_id=int(clan_id),
             limit=max(1, int(limit) - len(notices)),
+            viewer_user_id=int(current_user.id),
         )
         notices.extend(_meeting_to_notice(row) for row in meetings)
 
