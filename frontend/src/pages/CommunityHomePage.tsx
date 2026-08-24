@@ -1484,6 +1484,7 @@ export default function CommunityHomePage() {
   const [noticeModalOpen, setNoticeModalOpen] = useState(false);
   const [noticePosting, setNoticePosting] = useState(false);
   const [noticeMeetingInterestBusy, setNoticeMeetingInterestBusy] = useState("");
+  const [communityBulletinSettingsOpen, setCommunityBulletinSettingsOpen] = useState(false);
   const [poolSummary, setPoolSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [changingClanId, setChangingClanId] = useState<number>(0);
@@ -1766,7 +1767,14 @@ export default function CommunityHomePage() {
   );
   const primaryCommunityNotice = communityNotices[0] || null;
   const communityNoticeLogItems = communityNotices.slice(1, 4);
+  const showCommunityBulletinSettings = Boolean(
+    canManageCommunityNoticeSettings || communityNoticeLogItems.length > 0
+  );
 
+
+  useEffect(() => {
+    setCommunityBulletinSettingsOpen(false);
+  }, [selectedClanId]);
   const routes = useMemo(
     () => ({
       dashboard: routeTarget(
@@ -4003,208 +4011,233 @@ export default function CommunityHomePage() {
               )}
             </div>
 
-            {canPostCommunityNotice || canManageCommunityNoticeSettings ? (
-            <div style={announcementComposerStyle(isCompact)}>
-              {canPostCommunityNotice ? (
-                <StableButton
-                  type="button"
-                  debugId="community-home.notice.post"
-                  onClick={(event) => {
-                    consumeCommunityButtonEvent(event);
-                    setNoticeModalOpen(true);
-                  }}
-                  style={{
-                    ...communityActionStyle("primary"),
-                    minHeight: 54,
-                    borderRadius: 16,
-                    width: "100%",
-                    gap: 10,
-                    textTransform: "uppercase",
-                    fontSize: 14,
-                  }}
-                >
-                  <GsnLegacyIcon name="navigation" size={24} />
-                  <span>Post Notice</span>
-                </StableButton>
-              ) : null}
+            {canPostCommunityNotice || showCommunityBulletinSettings ? (
+              <div style={announcementComposerStyle(isCompact)}>
+                {canPostCommunityNotice ? (
+                  <StableButton
+                    type="button"
+                    debugId="community-home.notice.post"
+                    onClick={(event) => {
+                      consumeCommunityButtonEvent(event);
+                      setNoticeModalOpen(true);
+                    }}
+                    style={{
+                      ...communityActionStyle("primary"),
+                      minHeight: 54,
+                      borderRadius: 16,
+                      width: "100%",
+                      gap: 10,
+                      textTransform: "uppercase",
+                      fontSize: 14,
+                    }}
+                  >
+                    <GsnLegacyIcon name="navigation" size={24} />
+                    <span>Post Notice</span>
+                  </StableButton>
+                ) : null}
 
-              {canManageCommunityNoticeSettings ? (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 8,
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                    justifyContent: isCompact ? "flex-start" : "flex-end",
-                  }}
-                >
+                {showCommunityBulletinSettings ? (
                   <StableButton
                     type="button"
-                    debugId="community-home.notice.policy.members"
-                    onClick={(event) => updateCommunityNoticePolicy(event, "members")}
-                    aria-disabled={
-                      communityNoticeSettingsSaving ||
-                      activeNoticePostingPolicy === "members"
-                        ? true
-                        : undefined
-                    }
-                    style={communityActionStyle(
-                      activeNoticePostingPolicy === "members" ? "primary" : "soft",
-                      communityNoticeSettingsSaving
-                    )}
+                    debugId="community-home.notice.settings-toggle"
+                    aria-expanded={communityBulletinSettingsOpen}
+                    aria-controls="community-home-notice-settings-panel"
+                    onClick={(event) => {
+                      consumeCommunityButtonEvent(event);
+                      setCommunityBulletinSettingsOpen((current) => !current);
+                    }}
+                    style={{
+                      ...communityActionStyle("soft"),
+                      minHeight: 46,
+                      justifyContent: "center",
+                      width: "100%",
+                    }}
                   >
-                    Members
+                    {communityBulletinSettingsOpen ? "Close settings" : "Bulletin settings"}
                   </StableButton>
-                  <StableButton
-                    type="button"
-                    debugId="community-home.notice.policy.admins"
-                    onClick={(event) => updateCommunityNoticePolicy(event, "admins")}
-                    aria-disabled={
-                      communityNoticeSettingsSaving ||
-                      activeNoticePostingPolicy === "admins"
-                        ? true
-                        : undefined
-                    }
-                    style={communityActionStyle(
-                      activeNoticePostingPolicy === "admins" ? "primary" : "soft",
-                      communityNoticeSettingsSaving
-                    )}
-                  >
-                    Admin
-                  </StableButton>
-                  <span style={badge(false)}>50 words</span>
-                </div>
-              ) : null}
-            </div>
+                ) : null}
+              </div>
             ) : null}
 
-            {communityNoticeLogItems.length > 0 ? (
+            {showCommunityBulletinSettings && communityBulletinSettingsOpen ? (
               <div
+                id="community-home-notice-settings-panel"
+                data-debug-id="community-home.notice.settings-panel"
                 style={{
+                  display: "grid",
+                  gap: 12,
                   padding: isCompact ? "0 16px 18px" : "0 28px 24px",
                   background: "#FFFFFF",
                 }}
               >
-                <div
-                  style={{
-                    borderRadius: 18,
-                    overflow: "hidden",
-                    background: "#FAFCFF",
-                    border: "1px solid rgba(16,37,59,0.08)",
-                  }}
-                >
-                  {communityNoticeLogItems.map((item, index) => {
-                    const title = wordLimit(
-                      firstTruthy(item?.title, item?.body, item?.purpose, "Community notice"),
-                      50
-                    );
-                    const when = compactDateLabel(
-                      firstTruthy(item?.scheduled_at, item?.created_at)
-                    );
-                    const expiry = noticeExpiryLabel(item);
-                    const senderLabel = firstTruthy(
-                      item?.sender_whatsapp_label,
-                      item?.source,
-                      "Community"
-                    );
-                    const kindLabel = noticeKindLabel(item);
-                    const planningLine = meetingPlanningLine(item);
-                    const interestParts = meetingInterestParts(item);
-                    const noticeIcons: GsnIconName[] = [
-                      "calendar",
-                      "home",
-                      "certificate",
-                    ];
+                {canManageCommunityNoticeSettings ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      flexWrap: "wrap",
+                      alignItems: "center",
+                    }}
+                  >
+                    <StableButton
+                      type="button"
+                      debugId="community-home.notice.policy.members"
+                      onClick={(event) => updateCommunityNoticePolicy(event, "members")}
+                      aria-disabled={
+                        communityNoticeSettingsSaving ||
+                        activeNoticePostingPolicy === "members"
+                          ? true
+                          : undefined
+                      }
+                      style={communityActionStyle(
+                        activeNoticePostingPolicy === "members" ? "primary" : "soft",
+                        communityNoticeSettingsSaving
+                      )}
+                    >
+                      Members
+                    </StableButton>
+                    <StableButton
+                      type="button"
+                      debugId="community-home.notice.policy.admins"
+                      onClick={(event) => updateCommunityNoticePolicy(event, "admins")}
+                      aria-disabled={
+                        communityNoticeSettingsSaving ||
+                        activeNoticePostingPolicy === "admins"
+                          ? true
+                          : undefined
+                      }
+                      style={communityActionStyle(
+                        activeNoticePostingPolicy === "admins" ? "primary" : "soft",
+                        communityNoticeSettingsSaving
+                      )}
+                    >
+                      Admin
+                    </StableButton>
+                    <span style={badge(false)}>50 words</span>
+                  </div>
+                ) : null}
 
-                    return (
-                      <div
-                        key={`${item?.notice_id || item?.meeting_id || index}`}
-                        style={announcementNoticeRowStyle()}
-                      >
-                        <span style={announcementNoticeIconStyle(index + 1)} aria-hidden="true">
-                          <GsnLegacyIcon name={noticeIcons[index % noticeIcons.length]} size={30} />
-                        </span>
-                        <span style={{ minWidth: 0 }}>
-                          <span
-                            style={{
-                              ...brandClampLines(2),
-                              color: "#07172C",
-                              fontSize: 15,
-                              fontWeight: 930,
-                              lineHeight: 1.25,
-                            }}
-                          >
-                            {title}
+                {communityNoticeLogItems.length > 0 ? (
+                  <div
+                    style={{
+                      borderRadius: 18,
+                      overflow: "hidden",
+                      background: "#FAFCFF",
+                      border: "1px solid rgba(16,37,59,0.08)",
+                    }}
+                  >
+                    {communityNoticeLogItems.map((item, index) => {
+                      const title = wordLimit(
+                        firstTruthy(item?.title, item?.body, item?.purpose, "Community notice"),
+                        50
+                      );
+                      const when = compactDateLabel(
+                        firstTruthy(item?.scheduled_at, item?.created_at)
+                      );
+                      const expiry = noticeExpiryLabel(item);
+                      const senderLabel = firstTruthy(
+                        item?.sender_whatsapp_label,
+                        item?.source,
+                        "Community"
+                      );
+                      const kindLabel = noticeKindLabel(item);
+                      const planningLine = meetingPlanningLine(item);
+                      const interestParts = meetingInterestParts(item);
+                      const noticeIcons: GsnIconName[] = [
+                        "calendar",
+                        "home",
+                        "certificate",
+                      ];
+
+                      return (
+                        <div
+                          key={`${item?.notice_id || item?.meeting_id || index}`}
+                          style={announcementNoticeRowStyle()}
+                        >
+                          <span style={announcementNoticeIconStyle(index + 1)} aria-hidden="true">
+                            <GsnLegacyIcon name={noticeIcons[index % noticeIcons.length]} size={30} />
                           </span>
-                          <span
-                            style={{
-                              ...brandClampLines(1),
-                              marginTop: 4,
-                              color: "#617085",
-                              fontSize: 12.5,
-                              fontWeight: 780,
-                            }}
-                          >
-                            {kindLabel} - {senderLabel}
-                            {when ? ` - ${when}` : ""}
-                            {expiry ? ` - ${expiry}` : ""}
-                          </span>
-                          {planningLine || interestParts.length > 0 ? (
+                          <span style={{ minWidth: 0 }}>
                             <span
                               style={{
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: 5,
-                                marginTop: 6,
-                                alignItems: "center",
+                                ...brandClampLines(2),
+                                color: "#07172C",
+                                fontSize: 15,
+                                fontWeight: 930,
+                                lineHeight: 1.25,
                               }}
                             >
-                              {planningLine ? (
-                                <span style={badge(true)}>{planningLine}</span>
-                              ) : null}
-                              {interestParts.map(([label, count]) => (
-                                <span key={label} style={badge(false)}>
-                                  {label}: {count}
-                                </span>
-                              ))}
+                              {title}
                             </span>
-                          ) : null}
-                          {renderMeetingInterestShortcut(item)}
-                        </span>
-                        {item?.sender_whatsapp_number ? (
-                          <StableButton
-                            type="button"
-                            aria-label={`Message ${senderLabel}`}
-                            debugId={`community-home.notice.sender-whatsapp.${item?.notice_id || index}`}
-                            onClick={(event) => openNoticeSenderWhatsApp(event, item)}
-                            style={{
-                              ...communityActionStyle("soft"),
-                              minWidth: 44,
-                              minHeight: 44,
-                              width: 44,
-                              height: 44,
-                              padding: 0,
-                              borderRadius: 14,
-                              fontSize: 22,
-                              color: "#48657D",
-                              boxShadow: "none",
-                            }}
-                          >
-                            {">"}
-                          </StableButton>
-                        ) : (
-                          <span aria-hidden="true" style={{ color: "#48657D", fontSize: 24 }}>
-                            {">"}
+                            <span
+                              style={{
+                                ...brandClampLines(1),
+                                marginTop: 4,
+                                color: "#617085",
+                                fontSize: 12.5,
+                                fontWeight: 780,
+                              }}
+                            >
+                              {kindLabel} - {senderLabel}
+                              {when ? ` - ${when}` : ""}
+                              {expiry ? ` - ${expiry}` : ""}
+                            </span>
+                            {planningLine || interestParts.length > 0 ? (
+                              <span
+                                style={{
+                                  display: "flex",
+                                  flexWrap: "wrap",
+                                  gap: 5,
+                                  marginTop: 6,
+                                  alignItems: "center",
+                                }}
+                              >
+                                {planningLine ? (
+                                  <span style={badge(true)}>{planningLine}</span>
+                                ) : null}
+                                {interestParts.map(([label, count]) => (
+                                  <span key={label} style={badge(false)}>
+                                    {label}: {count}
+                                  </span>
+                                ))}
+                              </span>
+                            ) : null}
+                            {renderMeetingInterestShortcut(item)}
                           </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                          {item?.sender_whatsapp_number ? (
+                            <StableButton
+                              type="button"
+                              aria-label={`Message ${senderLabel}`}
+                              debugId={`community-home.notice.sender-whatsapp.${item?.notice_id || index}`}
+                              onClick={(event) => openNoticeSenderWhatsApp(event, item)}
+                              style={{
+                                ...communityActionStyle("soft"),
+                                minWidth: 44,
+                                minHeight: 44,
+                                width: 44,
+                                height: 44,
+                                padding: 0,
+                                borderRadius: 14,
+                                fontSize: 22,
+                                color: "#48657D",
+                                boxShadow: "none",
+                              }}
+                            >
+                              {">"}
+                            </StableButton>
+                          ) : (
+                            <span aria-hidden="true" style={{ color: "#48657D", fontSize: 24 }}>
+                              {">"}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>
-
           <div style={contactCommunityCardStyle()}>
             <div style={contactCommunityRowStyle(isCompact)}>
               <span style={contactCommunityIconStyle(isCompact)} aria-hidden="true">

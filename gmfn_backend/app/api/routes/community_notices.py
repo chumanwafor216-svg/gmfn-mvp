@@ -411,6 +411,7 @@ def _meeting_to_notice(row: dict[str, Any]) -> dict[str, Any]:
         "posted_by_user_id": None,
         "meeting_id": row.get("meeting_id"),
         "scheduled_at": row.get("scheduled_at"),
+        "expires_at": row.get("scheduled_at"),
         "status": row.get("status"),
         "interest_summary": {
             "yes": yes_count,
@@ -423,6 +424,15 @@ def _meeting_to_notice(row: dict[str, Any]) -> dict[str, Any]:
         "planning_status": planning_status,
         "board_hint": "Meeting interest is a planning signal, not final attendance.",
     }
+
+
+
+def _meeting_notice_is_expired(row: dict[str, Any], *, now: Optional[datetime] = None) -> bool:
+    scheduled_at = _parse_datetime(row.get("scheduled_at"))
+    if scheduled_at is None:
+        return False
+    current = now or datetime.now(timezone.utc)
+    return scheduled_at <= current
 
 
 def _request_to_demand_signal(db: Session, row: MarketplaceRequest) -> dict[str, Any]:
@@ -548,13 +558,19 @@ def list_notices(
             break
 
     if len(notices) < int(limit):
-        meetings = list_community_meetings(
+        meeting_rows = list_community_meetings(
             db,
             clan_id=int(clan_id),
-            limit=max(1, int(limit) - len(notices)),
+            limit=max(6, (int(limit) - len(notices)) * 6),
             viewer_user_id=int(current_user.id),
         )
-        notices.extend(_meeting_to_notice(row) for row in meetings)
+        for row in meeting_rows:
+            if _meeting_notice_is_expired(row):
+                archived_notice_count += 1
+                continue
+            notices.append(_meeting_to_notice(row))
+            if len(notices) >= int(limit):
+                break
 
     demand_signals, demand_signal_count = _notice_board_demand_signals(
         db,

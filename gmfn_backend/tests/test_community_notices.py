@@ -422,3 +422,57 @@ def test_community_notice_board_surfaces_meeting_interest_as_planning_notice(
     assert notice["interest_summary"]["planning_ready"] is True
     assert notice["interest_summary"]["own_response"] == "yes"
     assert "not final attendance" in notice["board_hint"]
+
+def test_community_notice_board_hides_expired_meeting_reminders(
+    client, override_current_user
+):
+    _seed_notice_community()
+    past_scheduled_at = (datetime.now(timezone.utc) - timedelta(hours=2)).isoformat()
+    future_scheduled_at = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+
+    with SessionLocal() as db:
+        db.add(
+            TrustEvent(
+                event_type="community.meeting.reminder_created",
+                clan_id=1,
+                actor_user_id=1,
+                subject_user_id=1,
+                meta_json=json.dumps(
+                    {
+                        "meeting_id": "MTG-C1-OLD-NOTICE",
+                        "title": "Old planning meeting",
+                        "purpose": "This should leave the live bulletin.",
+                        "scheduled_at": past_scheduled_at,
+                    }
+                ),
+            )
+        )
+        db.add(
+            TrustEvent(
+                event_type="community.meeting.reminder_created",
+                clan_id=1,
+                actor_user_id=1,
+                subject_user_id=1,
+                meta_json=json.dumps(
+                    {
+                        "meeting_id": "MTG-C1-FUTURE-NOTICE",
+                        "title": "Future planning meeting",
+                        "purpose": "This should stay on the live bulletin.",
+                        "scheduled_at": future_scheduled_at,
+                    }
+                ),
+            )
+        )
+        db.commit()
+
+    list_res = client.get("/community-notices", params={"clan_id": 1, "limit": 5})
+
+    assert list_res.status_code == 200, list_res.text
+    payload = list_res.json()
+    meeting_ids = [item.get("meeting_id") for item in payload["notices"]]
+    titles = [item["title"] for item in payload["notices"]]
+    assert "MTG-C1-FUTURE-NOTICE" in meeting_ids
+    assert "Future planning meeting" in titles
+    assert "MTG-C1-OLD-NOTICE" not in meeting_ids
+    assert "Old planning meeting" not in titles
+    assert payload["archived_notice_count"] == 1
