@@ -1107,10 +1107,10 @@ function announcementBoardShellStyle(): React.CSSProperties {
 function announcementBoardHeaderStyle(isCompact: boolean): React.CSSProperties {
   return {
     display: "grid",
-    gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
-    gap: 10,
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    gap: isCompact ? 8 : 10,
     alignItems: "center",
-    padding: isCompact ? "16px 16px" : "18px 22px",
+    padding: isCompact ? "10px 14px" : "12px 18px",
     background:
       "linear-gradient(135deg, #0B2D4A 0%, #102F57 52%, #071E36 100%)",
     color: "#FFFFFF",
@@ -1128,13 +1128,13 @@ function announcementBoardTitleRowStyle(): React.CSSProperties {
 
 function announcementBoardIconStyle(): React.CSSProperties {
   return {
-    width: 46,
-    height: 46,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 13,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "rgba(16,98,181,0.52)",
+    background: "rgba(255,255,255,0.10)",
     border: "1px solid rgba(255,255,255,0.14)",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.14)",
     flex: "0 0 auto",
@@ -1146,13 +1146,13 @@ function announcementBoardPillStyle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 34,
+    minHeight: 28,
     borderRadius: 999,
-    padding: "7px 13px",
-    background: "rgba(255,255,255,0.12)",
-    border: "1px solid rgba(255,255,255,0.10)",
+    padding: "5px 10px",
+    background: "rgba(255,255,255,0.10)",
+    border: "1px solid rgba(255,255,255,0.09)",
     color: "#EAF3FF",
-    fontSize: 13,
+    fontSize: 11.5,
     fontWeight: 850,
     whiteSpace: "nowrap",
   };
@@ -1161,32 +1161,34 @@ function announcementBoardPillStyle(): React.CSSProperties {
 function announcementComposerStyle(isCompact: boolean): React.CSSProperties {
   return {
     display: "grid",
-    gridTemplateColumns: isCompact ? "1fr" : "minmax(154px, 190px) minmax(0, 1fr)",
-    gap: 12,
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: isCompact ? 8 : 10,
     alignItems: "center",
-    padding: isCompact ? "0 16px 16px" : "0 28px 20px",
+    padding: isCompact ? "0 16px 12px" : "0 28px 14px",
     background: "#FFFFFF",
   };
 }
 
-function announcementComposerPreviewStyle(): React.CSSProperties {
+function announcementComposerPreviewStyle(isCompact = false): React.CSSProperties {
   return {
-    borderRadius: 20,
+    minHeight: isCompact ? 205 : 245,
+    borderRadius: 22,
     border: "1px solid rgba(16,37,59,0.10)",
     background:
-      "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 58%, #EEF6FF 100%)",
-    padding: "16px",
+      "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 52%, #EEF6FF 100%)",
+    padding: isCompact ? "18px" : "22px",
     display: "grid",
-    gap: 12,
+    gap: 14,
+    alignItems: "center",
     color: "#07172C",
     boxShadow:
-      "0 14px 26px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.90)",
+      "0 16px 30px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.92)",
   };
 }
 
 function announcementListPanelStyle(isCompact: boolean): React.CSSProperties {
   return {
-    padding: isCompact ? "15px 16px 12px" : "20px 28px 14px",
+    padding: isCompact ? "14px 16px 10px" : "18px 28px 12px",
     background: "#FFFFFF",
   };
 }
@@ -1218,49 +1220,19 @@ function announcementNoticeIconStyle(index: number): React.CSSProperties {
   };
 }
 
-function contactCommunityCardStyle(): React.CSSProperties {
-  return {
-    borderRadius: 18,
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)",
-    border: "1px solid rgba(16,37,59,0.08)",
-    boxShadow: "0 10px 20px rgba(10,24,49,0.06)",
-    padding: "10px 12px",
-  };
-}
-
-function contactCommunityRowStyle(isCompact: boolean): React.CSSProperties {
-  return {
-    display: "grid",
-    gridTemplateColumns: isCompact ? "36px minmax(0, 1fr) auto" : "40px minmax(0, 1fr) auto",
-    gap: isCompact ? 8 : 10,
-    alignItems: "center",
-  };
-}
-
-function contactCommunityIconStyle(isCompact: boolean): React.CSSProperties {
-  return {
-    width: isCompact ? 36 : 40,
-    height: isCompact ? 36 : 40,
-    borderRadius: 14,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    background: "#DCFCE7",
-    border: "1px solid rgba(22,163,74,0.12)",
-    flex: "0 0 auto",
-  };
-}
 
 function contactCommunityButtonStyle(isCompact: boolean, ready: boolean): React.CSSProperties {
   return {
-    ...communityActionStyle(ready ? "primary" : "secondary", !ready),
-    minWidth: isCompact ? 82 : 118,
-    minHeight: isCompact ? 40 : 44,
-    borderRadius: 14,
-    padding: isCompact ? "0 12px" : "0 16px",
-    background: ready ? "linear-gradient(180deg, #18B66B 0%, #0E9855 100%)" : undefined,
-    color: ready ? "#FFFFFF" : undefined,
-    fontSize: isCompact ? 13 : 14,
+    ...communityActionStyle("soft", !ready),
+    minWidth: isCompact ? 74 : 96,
+    minHeight: 38,
+    borderRadius: 13,
+    padding: isCompact ? "0 10px" : "0 13px",
+    background: ready ? "#F0FDF4" : undefined,
+    border: ready ? "1px solid rgba(22,163,74,0.18)" : undefined,
+    color: ready ? "#087443" : undefined,
+    fontSize: isCompact ? 12.5 : 13,
+    boxShadow: "none",
   };
 }
 
@@ -1338,6 +1310,15 @@ function noticeExpiryLabel(item: CommunityNoticeItem): string {
   if (safeStr(item?.expiry_policy).toLowerCase() === "pinned") return "Pinned";
   const expiresAt = safeDateLabel(item?.expires_at);
   return expiresAt ? `Visible until ${expiresAt}` : "";
+}
+
+function isNoticeVisibleOnBoard(item: CommunityNoticeItem, nowMs = Date.now()): boolean {
+  if (safeStr(item?.expiry_policy).toLowerCase() === "pinned") return true;
+  const rawExpiresAt = safeStr(item?.expires_at);
+  if (!rawExpiresAt) return true;
+  const expiresAt = new Date(rawExpiresAt);
+  if (!Number.isFinite(expiresAt.getTime())) return true;
+  return expiresAt.getTime() > nowMs;
 }
 
 function noticeNumber(value: unknown): number {
@@ -1484,6 +1465,7 @@ export default function CommunityHomePage() {
   const [noticeModalOpen, setNoticeModalOpen] = useState(false);
   const [noticePosting, setNoticePosting] = useState(false);
   const [noticeMeetingInterestBusy, setNoticeMeetingInterestBusy] = useState("");
+  const [noticeExpiryNowMs, setNoticeExpiryNowMs] = useState(() => Date.now());
   const [communityBulletinSettingsOpen, setCommunityBulletinSettingsOpen] = useState(false);
   const [poolSummary, setPoolSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -1765,8 +1747,12 @@ export default function CommunityHomePage() {
   const canManageCommunityNoticeSettings = Boolean(
     selectedClanId && isCommunityNoticeOfficer
   );
-  const primaryCommunityNotice = communityNotices[0] || null;
-  const communityNoticeLogItems = communityNotices.slice(1, 4);
+  const activeCommunityNotices = useMemo(() => {
+    const nowMs = noticeExpiryNowMs;
+    return communityNotices.filter((item) => isNoticeVisibleOnBoard(item, nowMs));
+  }, [communityNotices, noticeExpiryNowMs]);
+  const primaryCommunityNotice = activeCommunityNotices[0] || null;
+  const communityNoticeLogItems = activeCommunityNotices.slice(1, 4);
   const showCommunityBulletinSettings = Boolean(
     canManageCommunityNoticeSettings || communityNoticeLogItems.length > 0
   );
@@ -1775,6 +1761,13 @@ export default function CommunityHomePage() {
   useEffect(() => {
     setCommunityBulletinSettingsOpen(false);
   }, [selectedClanId]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNoticeExpiryNowMs(Date.now());
+    }, 30000);
+    return () => window.clearInterval(timer);
+  }, []);
   const routes = useMemo(
     () => ({
       dashboard: routeTarget(
@@ -3865,18 +3858,18 @@ export default function CommunityHomePage() {
             >
               <div style={announcementBoardTitleRowStyle()}>
                 <span style={announcementBoardIconStyle()} aria-hidden="true">
-                  <GsnLegacyIcon name="megaphone" size={34} />
+                  <GsnLegacyIcon name="megaphone" size={24} />
                 </span>
                 <span
                   style={{
                     color: "#FFFFFF",
-                    fontSize: isCompact ? 20 : 24,
+                    fontSize: isCompact ? 14 : 16,
                     fontWeight: 950,
                     lineHeight: 1.08,
                     textTransform: "uppercase",
                   }}
                 >
-                  Community Bulletin
+                  Bulletin
                 </span>
               </div>
               <span style={announcementBoardPillStyle()}>
@@ -3888,7 +3881,7 @@ export default function CommunityHomePage() {
 
             <div style={announcementListPanelStyle(isCompact)}>
               {communityNoticesLoading ? (
-                <div style={announcementComposerPreviewStyle()}>
+                <div style={announcementComposerPreviewStyle(isCompact)}>
                   <span style={{ color: "#617085", fontWeight: 850 }}>
                     Loading board...
                   </span>
@@ -3921,7 +3914,7 @@ export default function CommunityHomePage() {
                   const interestParts = meetingInterestParts(primaryCommunityNotice);
 
                   return (
-                    <div style={announcementComposerPreviewStyle()}>
+                    <div style={announcementComposerPreviewStyle(isCompact)}>
                       <div
                         style={{
                           display: "grid",
@@ -3985,7 +3978,7 @@ export default function CommunityHomePage() {
                   );
                 })()
               ) : (
-                <div style={announcementComposerPreviewStyle()}>
+                <div style={announcementComposerPreviewStyle(isCompact)}>
                   <div
                     style={{
                       display: "grid",
@@ -4011,7 +4004,7 @@ export default function CommunityHomePage() {
               )}
             </div>
 
-            {canPostCommunityNotice || showCommunityBulletinSettings ? (
+            {canPostCommunityNotice || showCommunityBulletinSettings || selectedClan ? (
               <div style={announcementComposerStyle(isCompact)}>
                 {canPostCommunityNotice ? (
                   <StableButton
@@ -4023,16 +4016,33 @@ export default function CommunityHomePage() {
                     }}
                     style={{
                       ...communityActionStyle("primary"),
-                      minHeight: 54,
-                      borderRadius: 16,
+                      minHeight: 42,
+                      borderRadius: 13,
                       width: "100%",
-                      gap: 10,
-                      textTransform: "uppercase",
-                      fontSize: 14,
+                      gap: 6,
+                      fontSize: 13,
+                      boxShadow: "0 8px 14px rgba(10,24,49,0.10)",
                     }}
                   >
-                    <GsnLegacyIcon name="navigation" size={24} />
-                    <span>Post Notice</span>
+                    <span>Post</span>
+                  </StableButton>
+                ) : null}
+
+                {selectedClan ? (
+                  <StableButton
+                    type="button"
+                    aria-label="Message the official community contact on WhatsApp"
+                    debugId="community-home.contact.whatsapp-chat"
+                    onClick={openCommunityWhatsAppContact}
+                    style={{
+                      ...contactCommunityButtonStyle(
+                        isCompact,
+                        Boolean(firstTruthy(selectedClan?.official_whatsapp_number))
+                      ),
+                      width: "100%",
+                    }}
+                  >
+                    WhatsApp
                   </StableButton>
                 ) : null}
 
@@ -4048,12 +4058,15 @@ export default function CommunityHomePage() {
                     }}
                     style={{
                       ...communityActionStyle("soft"),
-                      minHeight: 46,
+                      minHeight: 42,
                       justifyContent: "center",
                       width: "100%",
+                      borderRadius: 13,
+                      fontSize: 13,
+                      boxShadow: "none",
                     }}
                   >
-                    {communityBulletinSettingsOpen ? "Close settings" : "Bulletin settings"}
+                    {communityBulletinSettingsOpen ? "Close" : "Settings"}
                   </StableButton>
                 ) : null}
               </div>
@@ -4238,53 +4251,7 @@ export default function CommunityHomePage() {
               </div>
             ) : null}
           </div>
-          <div style={contactCommunityCardStyle()}>
-            <div style={contactCommunityRowStyle(isCompact)}>
-              <span style={contactCommunityIconStyle(isCompact)} aria-hidden="true">
-                <GsnLegacyIcon name="phone" size={isCompact ? 23 : 25} />
-              </span>
-              <span style={{ minWidth: 0 }}>
-                <span
-                  style={{
-                    ...brandClampLines(1),
-                    color: "#07172C",
-                    fontSize: isCompact ? 14 : 15,
-                    fontWeight: 950,
-                    lineHeight: 1.15,
-                  }}
-                >
-                  {firstTruthy(selectedClan?.official_whatsapp_label, "Community contact")}
-                </span>
-                <span
-                  style={{
-                    ...brandClampLines(1),
-                    marginTop: 3,
-                    color: "#617085",
-                    fontSize: isCompact ? 12 : 12.5,
-                    fontWeight: 780,
-                    lineHeight: 1.2,
-                  }}
-                >
-                  Contact community
-                  {firstTruthy(selectedClan?.official_whatsapp_number)
-                    ? ` - ${firstTruthy(selectedClan?.official_whatsapp_number)}`
-                    : " - WhatsApp not published"}
-                </span>
-              </span>
-              <StableButton
-                type="button"
-                aria-label="Message the official community contact on WhatsApp"
-                debugId="community-home.contact.whatsapp-chat"
-                onClick={openCommunityWhatsAppContact}
-                style={contactCommunityButtonStyle(
-                  isCompact,
-                  Boolean(firstTruthy(selectedClan?.official_whatsapp_number))
-                )}
-              >
-                WhatsApp
-              </StableButton>
-            </div>
-          </div>
+
         </section>
       ) : null}
 
