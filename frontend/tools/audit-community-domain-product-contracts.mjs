@@ -20,6 +20,8 @@ const communityDomainStructureFocusFile =
   "src/pages/communityDomainDashboard/StructureFocusPanel.tsx";
 const communityDomainGovernanceFocusFile =
   "src/pages/communityDomainDashboard/GovernanceFocusPanel.tsx";
+const communityDomainBillingFocusFile =
+  "src/pages/communityDomainDashboard/BillingFocusPanel.tsx";
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const marketplaceRoscaFile = "src/pages/marketplace/MarketplaceRoscaSection.tsx";
 
@@ -38,10 +40,15 @@ function readCommunityDomainDashboardAuditSource() {
   const serviceFocusSource = readRawFromFrontend(communityDomainServiceFocusFile);
   const structureFocusSource = readRawFromFrontend(communityDomainStructureFocusFile);
   const governanceFocusSource = readRawFromFrontend(communityDomainGovernanceFocusFile);
+  const billingFocusSource = readRawFromFrontend(communityDomainBillingFocusFile);
   return dashboardSource
     .replace(
       /<CommunityDomainGovernanceFocusPanel[\s\S]*?\/>/,
       (match) => `${match}` + "\n" + governanceFocusSource
+    )
+    .replace(
+      /<CommunityDomainBillingFocusPanel[\s\S]*?\/>/,
+      (match) => `${match}` + "\n" + billingFocusSource
     )
     .replace(/<CommunityDomainRealLifeRecordPanel[\s\S]*?\/>/, realLifeRecordSource)
     .replace(/<CommunityDomainMemberRosterPanel[\s\S]*?\/>/, memberRosterSource)
@@ -1446,7 +1453,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type BillingTaskKey = "payment_code" | "account" | "steps" | "readiness"[\s\S]*BILLING_TASK_OPTIONS[\s\S]*key: "payment_code"[\s\S]*key: "account"[\s\S]*key: "steps"[\s\S]*key: "readiness"[\s\S]*activeBillingTask[\s\S]*billingTaskChooserOpen[\s\S]*activeBillingTaskOption[\s\S]*CommunityDomainBillingTaskPanels[\s\S]*BILLING_TASK_OPTIONS[\s\S]*activeLane === "billing" && activeBillingTask === "readiness"[\s\S]*Subscription readiness[\s\S]*CommunityDomainBillingReadinessPanels/,
+  /BillingTaskKey[\s\S]*CommunityDomainBillingFocusPanel[\s\S]*activeBillingTask[\s\S]*billingTaskChooserOpen[\s\S]*activeLane === "billing"[\s\S]*CommunityDomainBillingFocusPanel[\s\S]*activeBillingTask,[\s\S]*billingTaskChooserOpen,[\s\S]*BILLING_TASK_OPTIONS[\s\S]*key: "payment_code"[\s\S]*key: "account"[\s\S]*key: "steps"[\s\S]*key: "readiness"[\s\S]*activeBillingTaskOption[\s\S]*CommunityDomainBillingTaskPanels[\s\S]*BILLING_TASK_OPTIONS[\s\S]*data\.activeBillingTask === "readiness"[\s\S]*Subscription readiness[\s\S]*CommunityDomainBillingReadinessPanels/,
   "Community Domain dashboard must keep Billing task state, the lazy Billing task panel, and readiness diagnostics wired from the parent route.",
   { frontend: true }
 );
@@ -1525,7 +1532,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type BillingPaymentTaskKey =[\s\S]*"reference"[\s\S]*"generate"[\s\S]*"credit_link"[\s\S]*"pay_account"[\s\S]*"proof"[\s\S]*type BillingPaymentGroupKey = "code" \| "settlement" \| "proof"[\s\S]*BILLING_PAYMENT_TASK_OPTIONS[\s\S]*key: "reference"[\s\S]*key: "generate"[\s\S]*key: "credit_link"[\s\S]*key: "pay_account"[\s\S]*key: "proof"[\s\S]*BILLING_PAYMENT_GROUP_OPTIONS[\s\S]*key: "code"[\s\S]*taskKeys: \["reference", "generate"\][\s\S]*key: "settlement"[\s\S]*taskKeys: \["credit_link", "pay_account"\][\s\S]*key: "proof"[\s\S]*taskKeys: \["proof"\][\s\S]*billingPaymentGroupChooserOpen[\s\S]*billingPaymentStepChooserOpen[\s\S]*activeBillingPaymentTask[\s\S]*setActiveBillingPaymentTask\("reference"\)[\s\S]*activeBillingPaymentGroup[\s\S]*BILLING_PAYMENT_GROUP_OPTIONS\.find[\s\S]*activeBillingPaymentGroupTasks[\s\S]*CommunityDomainBillingTaskPanels[\s\S]*BILLING_PAYMENT_GROUP_OPTIONS/,
+  /BillingPaymentTaskKey[\s\S]*billingPaymentGroupChooserOpen[\s\S]*billingPaymentStepChooserOpen[\s\S]*activeBillingPaymentTask[\s\S]*setActiveBillingPaymentTask\("reference"\)[\s\S]*CommunityDomainBillingFocusPanel[\s\S]*BillingPaymentGroupKey[\s\S]*BILLING_PAYMENT_TASK_OPTIONS[\s\S]*key: "reference"[\s\S]*key: "generate"[\s\S]*key: "credit_link"[\s\S]*key: "pay_account"[\s\S]*key: "proof"[\s\S]*BILLING_PAYMENT_GROUP_OPTIONS[\s\S]*key: "code"[\s\S]*taskKeys: \["reference", "generate"\][\s\S]*key: "settlement"[\s\S]*taskKeys: \["credit_link", "pay_account"\][\s\S]*key: "proof"[\s\S]*taskKeys: \["proof"\][\s\S]*activeBillingPaymentGroup = useMemo[\s\S]*BILLING_PAYMENT_GROUP_OPTIONS\.find[\s\S]*activeBillingPaymentGroupTasks[\s\S]*CommunityDomainBillingTaskPanels[\s\S]*BILLING_PAYMENT_GROUP_OPTIONS/,
   "Community Domain dashboard must keep Billing payment task catalogues and selected payment steps wired into the lazy Billing task panel.",
   { frontend: true }
 );
@@ -1690,7 +1697,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /paymentsContributionsPolicyMode[\s\S]*paymentsContributionsOff[\s\S]*remains available even when domain activity[\s\S]*[Rr]egistrations, donations, event fees,[\s\S]*CommunityDomainBillingTaskPanels[\s\S]*paymentsContributionsOff[\s\S]*paymentsContributionsPolicyMode/,
+  /paymentsContributionsPolicyMode[\s\S]*paymentsContributionsOff[\s\S]*remains available even when domain activity[\s\S]*[Rr]egistrations, donations, event fees,[\s\S]*CommunityDomainBillingFocusPanel[\s\S]*paymentsContributionsOff[\s\S]*paymentsContributionsPolicyMode[\s\S]*CommunityDomainBillingTaskPanels/,
   "Community Domain dashboard must pass Payments and Contributions policy context into the lazy Billing task panel.",
   { frontend: true }
 );
@@ -2225,7 +2232,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /billingIsActive[\s\S]*packageReviewActionLabel[\s\S]*Review package details[\s\S]*Review package quote[\s\S]*CommunityDomainBillingTaskPanels[\s\S]*packageReviewActionLabel/,
+  /billingIsActive[\s\S]*packageReviewActionLabel[\s\S]*Review package details[\s\S]*Review package quote[\s\S]*CommunityDomainBillingFocusPanel[\s\S]*billingIsActive[\s\S]*packageReviewActionLabel[\s\S]*CommunityDomainBillingTaskPanels/,
   "Community Domain dashboard billing lane must pass active billing state and package review action copy into the lazy Billing task panel.",
   { frontend: true }
 );
@@ -2238,7 +2245,7 @@ assertContains(
 );
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/BillingReadinessPanels"\)[\s\S]*getCommunityDomainCapacityPlan[\s\S]*capacityPlan[\s\S]*CommunityDomainBillingReadinessPanels[\s\S]*subscriptionLifecycle=\{subscriptionLifecycle\}[\s\S]*capacityPlan=\{capacityPlan\}/,
+  /getCommunityDomainCapacityPlan[\s\S]*capacityPlan[\s\S]*CommunityDomainBillingFocusPanel[\s\S]*capacityPlan[\s\S]*subscriptionLifecycle[\s\S]*lazy\([\s\S]*import\("\.\/BillingReadinessPanels"\)[\s\S]*CommunityDomainBillingReadinessPanels[\s\S]*subscriptionLifecycle=\{data\.subscriptionLifecycle\}[\s\S]*capacityPlan=\{data\.capacityPlan\}/,
   "Community Domain dashboard Billing lane must lazy-load read-only billing readiness panels and pass only raw billing/capacity maps from the parent route.",
   { frontend: true }
 );

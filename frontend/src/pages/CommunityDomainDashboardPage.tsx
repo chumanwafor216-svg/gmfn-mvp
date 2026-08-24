@@ -126,8 +126,10 @@ import type {
   SponsorSummaryTaskKey,
 } from "./communityDomainDashboard/GovernanceFocusPanel";
 import type {
+  BillingAccountTaskKey,
+  BillingPaymentTaskKey,
   BillingQuoteSurface,
-  BillingTaskPanelsData,
+  BillingTaskKey,
   DomainPaymentIntentSurface,
   DomainPaymentSettlementSurface,
   DomainPaymentSurface,
@@ -148,11 +150,8 @@ const CommunityDomainServiceFocusPanel = lazy(
 const CommunityDomainGovernanceFocusPanel = lazy(
   () => import("./communityDomainDashboard/GovernanceFocusPanel")
 );
-const CommunityDomainBillingReadinessPanels = lazy(
-  () => import("./communityDomainDashboard/BillingReadinessPanels")
-);
-const CommunityDomainBillingTaskPanels = lazy(
-  () => import("./communityDomainDashboard/BillingTaskPanels")
+const CommunityDomainBillingFocusPanel = lazy(
+  () => import("./communityDomainDashboard/BillingFocusPanel")
 );
 const CommunityDomainIdentityReadinessPanels = lazy(
   () => import("./communityDomainDashboard/IdentityReadinessPanels")
@@ -182,15 +181,6 @@ type OperatingSummaryTaskKey = "next_action" | "status" | "allowance" | "permiss
 type SetupWorkbenchTaskKey = "step" | "access";
 type SetupAccessTaskKey = "summary" | "authority";
 type SetupEditGroupKey = "foundation" | "people" | "services";
-type BillingTaskKey = "payment_code" | "account" | "steps" | "readiness";
-type BillingAccountTaskKey = "summary" | "setup";
-type BillingPaymentTaskKey =
-  | "reference"
-  | "generate"
-  | "credit_link"
-  | "pay_account"
-  | "proof";
-type BillingPaymentGroupKey = "code" | "settlement" | "proof";
 type RealLifeRecordTask = "activity" | "beneficiary_outcome";
 type ActivityRecordTaskKey = "record" | "catalogue" | "recent";
 type ActivityRecordStageKey = "person" | "activity" | "evidence";
@@ -596,95 +586,6 @@ const DOMAIN_FEATURE_POLICY_ROWS: Array<{
   },
 ];
 
-const BILLING_PAYMENT_TASK_OPTIONS: Array<{
-  key: BillingPaymentTaskKey;
-  label: string;
-  note: string;
-}> = [
-  {
-    key: "reference",
-    label: "Reference",
-    note: "Review the latest exact payment code.",
-  },
-  {
-    key: "generate",
-    label: "Generate",
-    note: "Open payment-code generation only when a new code is needed.",
-  },
-  {
-    key: "credit_link",
-    label: "Credit link",
-    note: "Review the GSN record that connects this payment to the owner and domain.",
-  },
-  {
-    key: "pay_account",
-    label: "Pay account",
-    note: "Check the official GSN account before money leaves the payer.",
-  },
-  {
-    key: "proof",
-    label: "Proof",
-    note: "Upload payment proof after the bank or provider step is complete.",
-  },
-];
-
-const BILLING_TASK_OPTIONS: Array<{
-  key: BillingTaskKey;
-  label: string;
-  note: string;
-}> = [
-  {
-    key: "payment_code",
-    label: "Code & proof",
-    note: "Generate or review one payment code, then handle proof after payment.",
-  },
-  {
-    key: "account",
-    label: "Pay-in account",
-    note: "Review the official account before anyone sends money.",
-  },
-  {
-    key: "steps",
-    label: "Steps",
-    note: "Read the payment sequence without opening account or proof tools.",
-  },
-  {
-    key: "readiness",
-    label: "Readiness",
-    note: "Use this only when billing needs investigation.",
-  },
-];
-
-const BILLING_PAYMENT_GROUP_OPTIONS: Array<{
-  key: BillingPaymentGroupKey;
-  label: string;
-  note: string;
-  defaultTask: BillingPaymentTaskKey;
-  taskKeys: BillingPaymentTaskKey[];
-}> = [
-  {
-    key: "code",
-    label: "Code",
-    note: "Reference review and code generation.",
-    defaultTask: "reference",
-    taskKeys: ["reference", "generate"],
-  },
-  {
-    key: "settlement",
-    label: "Settlement",
-    note: "Credit identity and official pay account.",
-    defaultTask: "credit_link",
-    taskKeys: ["credit_link", "pay_account"],
-  },
-  {
-    key: "proof",
-    label: "Proof",
-    note: "Payment proof upload and review.",
-    defaultTask: "proof",
-    taskKeys: ["proof"],
-  },
-];
-
 const SETUP_WORKBENCH_TASK_OPTIONS: Array<{
   key: SetupWorkbenchTaskKey;
   label: string;
@@ -717,23 +618,6 @@ const SETUP_ACCESS_TASK_OPTIONS: Array<{
     key: "authority",
     label: "Authority",
     note: "Open delegation or access-request controls only when needed.",
-  },
-];
-
-const BILLING_ACCOUNT_TASK_OPTIONS: Array<{
-  key: BillingAccountTaskKey;
-  label: string;
-  note: string;
-}> = [
-  {
-    key: "summary",
-    label: "Summary",
-    note: "Review the saved pay-in account before anyone sends money.",
-  },
-  {
-    key: "setup",
-    label: "Setup",
-    note: "Open account setup only for the GSN platform admin editing step.",
   },
 ];
 
@@ -4886,34 +4770,6 @@ export default function CommunityDomainDashboardPage() {
       : "";
   const billingIsActive =
     cleanText(status.billing_status || selectedLane?.status).toLowerCase() === "active";
-  const activeBillingTaskOption =
-    BILLING_TASK_OPTIONS.find((task) => task.key === activeBillingTask) ||
-    BILLING_TASK_OPTIONS[0];
-  const subscriptionStatusMode = activeBillingTask === "readiness";
-  const activeBillingAccountTaskOption =
-    BILLING_ACCOUNT_TASK_OPTIONS.find((task) => task.key === activeBillingAccountTask) ||
-    BILLING_ACCOUNT_TASK_OPTIONS[0];
-  const activeBillingPaymentGroup = useMemo<BillingPaymentGroupKey>(() => {
-    if (activeBillingPaymentTask === "proof") {
-      return "proof";
-    }
-    if (
-      activeBillingPaymentTask === "credit_link" ||
-      activeBillingPaymentTask === "pay_account"
-    ) {
-      return "settlement";
-    }
-    return "code";
-  }, [activeBillingPaymentTask]);
-  const activeBillingPaymentGroupOption =
-    BILLING_PAYMENT_GROUP_OPTIONS.find((group) => group.key === activeBillingPaymentGroup) ||
-    BILLING_PAYMENT_GROUP_OPTIONS[0];
-  const activeBillingPaymentTaskOption =
-    BILLING_PAYMENT_TASK_OPTIONS.find((task) => task.key === activeBillingPaymentTask) ||
-    BILLING_PAYMENT_TASK_OPTIONS[0];
-  const activeBillingPaymentGroupTasks = BILLING_PAYMENT_TASK_OPTIONS.filter((task) =>
-    activeBillingPaymentGroupOption.taskKeys.includes(task.key)
-  );
   const setupDraftDomainId = cleanText(domain?.id || communityDomainId);
   const setupEvidenceItems: UnknownRecord[] =
     isUnknownRecord(setupEvidence) && Array.isArray(setupEvidence.items)
@@ -8911,22 +8767,16 @@ export default function CommunityDomainDashboardPage() {
                       <div style={{ ...softCard(), display: "grid", gap: 8 }}>
                         <div style={sectionLabel()}>Billing</div>
                         <div style={{ ...helperText(), marginTop: 2 }}>
-                          Loading billing job controls...
+                          Loading billing focus...
                         </div>
                       </div>
                     }
                   >
-                    <CommunityDomainBillingTaskPanels
+                    <CommunityDomainBillingFocusPanel
                       data={{
                         activeBillingAccountTask,
-                        activeBillingAccountTaskOption,
-                        activeBillingPaymentGroup,
-                        activeBillingPaymentGroupOption,
-                        activeBillingPaymentGroupTasks,
                         activeBillingPaymentTask,
-                        activeBillingPaymentTaskOption,
                         activeBillingTask,
-                        activeBillingTaskOption,
                         activeLane,
                         billingAccountTaskChooserOpen,
                         billingInputStyle,
@@ -8937,12 +8787,10 @@ export default function CommunityDomainDashboardPage() {
                         billingSettlementCountry,
                         billingStepCard,
                         billingTaskChooserOpen,
-                        BILLING_ACCOUNT_TASK_OPTIONS,
-                        BILLING_PAYMENT_GROUP_OPTIONS,
-                        BILLING_TASK_OPTIONS,
                         busyDomainPayment,
                         busyQuote,
                         canEditPayInAccount,
+                        capacityPlan,
                         cleanText,
                         communityLinkClanRows,
                         communityPayInCountryLabel,
@@ -9010,37 +8858,12 @@ export default function CommunityDomainDashboardPage() {
                         softCard,
                         status,
                         statusBadge,
-                        subscriptionStatusMode,
+                        subscriptionLifecycle,
                         updateCommunityPayInDraft,
-                      } satisfies BillingTaskPanelsData}
+                      }}
                     />
                   </Suspense>
                 ) : null}
-
-                {activeLane === "billing" && activeBillingTask === "readiness" ? (
-                  <div style={softCard()}>
-                    <div style={sectionLabel()}>Subscription readiness</div>
-                    <div style={{ ...helperText(), marginTop: 7 }}>
-                      Lifecycle and package capacity stay here. Payment code,
-                      account, proof, and steps stay behind Change billing job.
-                    </div>
-                    <div style={{ marginTop: 12 }}>
-                      <Suspense
-                        fallback={
-                          <div style={{ ...helperText(), marginTop: 4 }}>
-                            Loading billing readiness panels...
-                          </div>
-                        }
-                      >
-                        <CommunityDomainBillingReadinessPanels
-                          subscriptionLifecycle={subscriptionLifecycle}
-                          capacityPlan={capacityPlan}
-                        />
-                      </Suspense>
-                    </div>
-                  </div>
-                ) : null}
-
                 {!isActiveLaneReadinessLoading && activeLane === "modules" ? (
                   <Suspense
                     fallback={
