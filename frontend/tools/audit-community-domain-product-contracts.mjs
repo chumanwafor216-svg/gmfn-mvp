@@ -14,6 +14,8 @@ const communityDomainRealLifeRecordFile =
   "src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx";
 const communityDomainMemberRosterFile =
   "src/pages/communityDomainDashboard/MemberRosterPanel.tsx";
+const communityDomainServiceFocusFile =
+  "src/pages/communityDomainDashboard/ServiceFocusPanel.tsx";
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const marketplaceRoscaFile = "src/pages/marketplace/MarketplaceRoscaSection.tsx";
 
@@ -29,9 +31,11 @@ function readCommunityDomainDashboardAuditSource() {
   const dashboardSource = readRawFromFrontend(communityDomainDashboardFile);
   const realLifeRecordSource = readRawFromFrontend(communityDomainRealLifeRecordFile);
   const memberRosterSource = readRawFromFrontend(communityDomainMemberRosterFile);
+  const serviceFocusSource = readRawFromFrontend(communityDomainServiceFocusFile);
   return dashboardSource
     .replace(/<CommunityDomainRealLifeRecordPanel[\s\S]*?\/>/, realLifeRecordSource)
-    .replace(/<CommunityDomainMemberRosterPanel[\s\S]*?\/>/, memberRosterSource);
+    .replace(/<CommunityDomainMemberRosterPanel[\s\S]*?\/>/, memberRosterSource)
+    .replace(/<CommunityDomainServiceFocusPanel[\s\S]*?\/>/, serviceFocusSource);
 }
 
 function readMarketplaceAuditSource() {
@@ -2189,7 +2193,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /Check exchange, privacy, setup, compliance, and appeal rules[\s\S]*status: compactStatus\(quote\?\.pricing_status \|\| quote\?\.quote_status \|\| "quote required"\)/,
+  /status: compactStatus\(quote\?\.pricing_status \|\| quote\?\.quote_status \|\| "quote required"\)[\s\S]*Check exchange, privacy, setup, compliance, and appeal rules/,
   "Community Domain dashboard visible notes must use setup/rules wording for service controls and billing steps.",
   { frontend: true }
 );
@@ -2892,28 +2896,49 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/ServiceReadinessPanels"\)[\s\S]*listCommunityDomainServiceSettings[\s\S]*getCommunityDomainEconomicParticipation[\s\S]*getCommunityDomainNetworkPresence[\s\S]*CommunityDomainServiceReadinessPanels[\s\S]*moduleScopeReadiness=\{moduleScopeReadiness\}[\s\S]*moduleKeys=\{moduleKeys\}[\s\S]*billingStatus=\{status\.billing_status\}[\s\S]*quote=\{quote\}[\s\S]*serviceSettingsProjection=\{serviceSettingsProjection\}[\s\S]*economicParticipation=\{economicParticipation\}[\s\S]*networkPresence=\{networkPresence\}/,
-  "Community Domain dashboard Services lane must lazy-load the read-only service readiness panels and pass raw service maps plus billing/module context from the parent route.",
+  /listCommunityDomainServiceSettings[\s\S]*getCommunityDomainEconomicParticipation[\s\S]*getCommunityDomainNetworkPresence[\s\S]*CommunityDomainServiceFocusPanel[\s\S]*moduleScopeReadiness[\s\S]*serviceSettingsProjection[\s\S]*economicParticipation[\s\S]*networkPresence/,
+  "Community Domain dashboard Services lane must keep parent-owned service readiness data loading and pass raw service maps plus billing/module context through the lazy ServiceFocusPanel.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/ServiceFocusPanel.tsx",
+  /lazy\([\s\S]*import\("\.\/ServiceReadinessPanels"\)[\s\S]*CommunityDomainServiceReadinessPanels[\s\S]*moduleScopeReadiness=\{moduleScopeReadiness\}[\s\S]*moduleKeys=\{moduleKeys\}[\s\S]*billingStatus=\{billingStatus\}[\s\S]*quote=\{quote\}[\s\S]*serviceSettingsProjection=\{serviceSettingsProjection\}[\s\S]*economicParticipation=\{economicParticipation\}[\s\S]*networkPresence=\{networkPresence\}/,
+  "Lazy ServiceFocusPanel must lazy-load the read-only service readiness panels and pass raw service maps plus billing/module context from the parent route.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type ServiceDetailGroupKey = "readiness" \| "local" \| "trust"[\s\S]*SERVICE_DETAIL_OPTIONS[\s\S]*key: "readiness"[\s\S]*key: "local"[\s\S]*key: "boundaries"[\s\S]*key: "trust"[\s\S]*key: "evidence"[\s\S]*SERVICE_DETAIL_GROUP_OPTIONS[\s\S]*key: "readiness"[\s\S]*detailKeys: \["readiness"\][\s\S]*key: "local"[\s\S]*detailKeys: \["local", "boundaries"\][\s\S]*key: "trust"[\s\S]*detailKeys: \["trust", "evidence"\][\s\S]*serviceStageChooserOpen[\s\S]*servicePacketChooserOpen[\s\S]*activeServiceDetail[\s\S]*activeServiceDetailGroup[\s\S]*SERVICE_DETAIL_GROUP_OPTIONS\.find[\s\S]*activeServiceGroupDetails[\s\S]*Choose the service stage first[\s\S]*community-domain-dashboard\.service-stage-toggle[\s\S]*serviceStageChooserOpen \? "Close stages" : "Change stage"[\s\S]*serviceStageChooserOpen \? \([\s\S]*community-domain-dashboard\.service-group\.\$\{group\.key\}[\s\S]*setServiceStageChooserOpen\(false\)[\s\S]*setServicePacketChooserOpen\(false\)[\s\S]*community-domain-dashboard\.service-packet-toggle[\s\S]*servicePacketChooserOpen \? "Close views" : "Change view"[\s\S]*servicePacketChooserOpen \? \([\s\S]*community-domain-dashboard\.service-detail\.\$\{option\.key\}[\s\S]*setServicePacketChooserOpen\(false\)[\s\S]*activeServiceDetail === "readiness"[\s\S]*CommunityDomainServiceReadinessPanels[\s\S]*activeServiceDetail === "local"[\s\S]*variant="services"[\s\S]*activeServiceDetail === "boundaries"[\s\S]*CommunityDomainServiceBoundaryPanels[\s\S]*activeServiceDetail === "trust"[\s\S]*variant="trustEvidence"[\s\S]*activeServiceDetail === "evidence"[\s\S]*CommunityDomainTrustEvidenceReadinessPanels/,
-  "Community Domain dashboard Services lane must keep Readiness, Local rules, and Trust stages behind Change stage, then show one focused service view at a time instead of dumping readiness, local service maps, boundary panels, trust maps, and evidence readiness together.",
+  /import type \{ ServiceDetailKey \}[\s\S]*CommunityDomainServiceFocusPanel[\s\S]*activeServiceDetail[\s\S]*serviceStageChooserOpen[\s\S]*servicePacketChooserOpen[\s\S]*setActiveServiceDetail[\s\S]*setServiceStageChooserOpen[\s\S]*setServicePacketChooserOpen[\s\S]*setServiceRuleDetailsOpen/,
+  "Community Domain dashboard Services lane must keep parent-owned service focus state wired into the lazy ServiceFocusPanel.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/ServiceFocusPanel.tsx",
+  /type ServiceDetailGroupKey = "readiness" \| "local" \| "trust"[\s\S]*SERVICE_DETAIL_OPTIONS[\s\S]*key: "readiness"[\s\S]*key: "local"[\s\S]*key: "boundaries"[\s\S]*key: "trust"[\s\S]*key: "evidence"[\s\S]*SERVICE_DETAIL_GROUP_OPTIONS[\s\S]*activeServiceDetailGroup[\s\S]*closeServiceChoosers[\s\S]*selectServiceDetail[\s\S]*community-domain-dashboard\.service-stage-toggle[\s\S]*community-domain-dashboard\.service-group\.\$\{group\.key\}[\s\S]*selectServiceDetail\(group\.defaultDetail\)[\s\S]*community-domain-dashboard\.service-packet-toggle[\s\S]*community-domain-dashboard\.service-detail\.\$\{option\.key\}[\s\S]*selectServiceDetail\(option\.key\)[\s\S]*CommunityDomainServiceReadinessPanels[\s\S]*variant="services"[\s\S]*CommunityDomainServiceBoundaryPanels[\s\S]*variant="trustEvidence"[\s\S]*CommunityDomainTrustEvidenceReadinessPanels/,
+  "Lazy ServiceFocusPanel must keep Readiness, Local rules, and Trust stages behind Change stage, then show one focused service view at a time instead of dumping readiness, local service maps, boundary panels, trust maps, and evidence readiness together.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /serviceRuleDetailsOpen[\s\S]*packageCapacityFacts[\s\S]*included_members[\s\S]*included_nodes[\s\S]*included_admins[\s\S]*included_shops[\s\S]*included_storage_gb[\s\S]*packageTariffBoundaryText[\s\S]*Current pilot package allowance only[\s\S]*packageBillingStatusFacts[\s\S]*pricing_model_status[\s\S]*paid_upgrade_status[\s\S]*member_band_status[\s\S]*feature_tariff_status[\s\S]*domain_tariff_status[\s\S]*compactStatus\(value \|\| "not_automated"\)[\s\S]*packageBillingAdminAction[\s\S]*manual finance and capacity review[\s\S]*activeServiceDetail === "boundaries"[\s\S]*Marketplace rule[\s\S]*Shared services, governed here[\s\S]*community-domain-dashboard\.service-rule-details-toggle[\s\S]*serviceRuleDetailsOpen[\s\S]*Close rule details[\s\S]*View rule details[\s\S]*community-domain-dashboard\.service-rule-details-panel[\s\S]*manual review[\s\S]*Domain service rules control who\s+can use Spotlight, Demand Box, shops, Shop Diary, Vault,\s+ROSCA, invites, and contribution tools here/,
-  "Community Domain Services lane must keep package allowance, feature permission, and future tariff automation truth inside the Boundaries view behind the closed rule-details drawer instead of repeating it across every service view.",
+  /packageCapacityFacts[\s\S]*included_members[\s\S]*included_nodes[\s\S]*included_admins[\s\S]*included_shops[\s\S]*included_storage_gb[\s\S]*packageTariffBoundaryText[\s\S]*Current pilot package allowance only[\s\S]*packageBillingStatusFacts[\s\S]*pricing_model_status[\s\S]*paid_upgrade_status[\s\S]*member_band_status[\s\S]*feature_tariff_status[\s\S]*domain_tariff_status[\s\S]*compactStatus\(value \|\| "not_automated"\)[\s\S]*packageBillingAdminAction[\s\S]*manual finance and capacity review/,
+  "Community Domain dashboard parent must keep package allowance and future tariff automation facts parent-owned for Services handoff.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/ServiceFocusPanel.tsx",
+  /activeServiceDetail === "boundaries"[\s\S]*Marketplace rule[\s\S]*Shared services, governed here[\s\S]*community-domain-dashboard\.service-rule-details-toggle[\s\S]*serviceRuleDetailsOpen[\s\S]*community-domain-dashboard\.service-rule-details-panel[\s\S]*packageCapacityFacts\.map[\s\S]*packageTariffBoundaryText[\s\S]*packageBillingStatusFacts\.map[\s\S]*manual review[\s\S]*Domain service rules control who\s+can\s+use Spotlight, Demand Box, shops, Shop Diary, Vault,\s+ROSCA,\s+invites, and contribution tools here/,
+  "Lazy ServiceFocusPanel must keep package allowance, feature permission, and future tariff automation truth inside the Boundaries view behind the closed rule-details drawer instead of repeating it across every service view.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /professionalMarketplaceFacts[\s\S]*Governed professional marketplace[\s\S]*Domain owner\/admin decides what works here[\s\S]*Members use the normal marketplace tools this domain permits[\s\S]*Member identity and activity in other communities stay separate[\s\S]*Extra bands and paid features still need manual capacity review[\s\S]*community-domain-dashboard\.service-rule-details-toggle[\s\S]*serviceRuleDetailsOpen \? \([\s\S]*Professional marketplace rule[\s\S]*Ordinary GSN marketplace behaviours stay available, but\s+this domain decides who may use each one here/,
+  /professionalMarketplaceFacts[\s\S]*Governed professional marketplace[\s\S]*Domain owner\/admin decides what works here[\s\S]*Members use the normal marketplace tools this domain permits[\s\S]*Member identity and activity in other communities stay separate[\s\S]*Extra bands and paid features still need manual capacity review[\s\S]*CommunityDomainServiceFocusPanel[\s\S]*community-domain-dashboard\.service-rule-details-toggle[\s\S]*serviceRuleDetailsOpen \? \([\s\S]*Professional marketplace rule[\s\S]*Ordinary GSN marketplace behaviours stay available, but\s+this\s+domain decides who may use each one here/,
   "Community Domain Services lane must state the professional-marketplace rule behind the closed rule-details drawer without implying automated tariff, upgrade, membership, feature-switch, or cross-domain publishing behavior.",
   { frontend: true }
 );
@@ -2941,8 +2966,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/ServiceBoundaryPanels"\)[\s\S]*getCommunityDomainNetworkExchangeMap[\s\S]*getCommunityDomainRecordPrivacyMap[\s\S]*getCommunityDomainConfigurationMap[\s\S]*getCommunityDomainComplianceMap[\s\S]*getCommunityDomainAppealReadiness[\s\S]*CommunityDomainServiceBoundaryPanels[\s\S]*networkExchangeMap=\{networkExchangeMap\}[\s\S]*recordPrivacyMap=\{recordPrivacyMap\}[\s\S]*configurationMap=\{configurationMap\}[\s\S]*complianceMap=\{complianceMap\}[\s\S]*appealReadiness=\{appealReadiness\}/,
-  "Community Domain dashboard Services lane must lazy-load service boundary readiness panels and pass only raw boundary maps from the parent route.",
+  /readOptional\(\(\) => getCommunityDomainNetworkExchangeMap\(domainId\)\)[\s\S]*readOptional\(\(\) => getCommunityDomainRecordPrivacyMap\(domainId\)\)[\s\S]*readOptional\(\(\) => getCommunityDomainConfigurationMap\(domainId\)\)[\s\S]*readOptional\(\(\) => getCommunityDomainComplianceMap\(domainId\)\)[\s\S]*readOptional\(\(\) => getCommunityDomainAppealReadiness\(domainId\)\)/,
+  "Community Domain dashboard Services lane must keep parent-owned boundary readiness loading before handing raw maps to the lazy ServiceFocusPanel.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/ServiceFocusPanel.tsx",
+  /lazy\([\s\S]*import\("\.\/ServiceBoundaryPanels"\)[\s\S]*CommunityDomainServiceBoundaryPanels[\s\S]*networkExchangeMap=\{networkExchangeMap\}[\s\S]*recordPrivacyMap=\{recordPrivacyMap\}[\s\S]*configurationMap=\{configurationMap\}[\s\S]*complianceMap=\{complianceMap\}[\s\S]*appealReadiness=\{appealReadiness\}/,
+  "Lazy ServiceFocusPanel must lazy-load service boundary readiness panels and pass only raw boundary maps from the parent route.",
   { frontend: true }
 );
 
@@ -3312,8 +3344,15 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/TrustEvidenceReadinessPanels"\)[\s\S]*getCommunityDomainEvidenceRecordReadiness[\s\S]*getCommunityDomainEvidenceReleaseReadiness[\s\S]*getCommunityDomainTrustRelayReadiness[\s\S]*getCommunityDomainNotificationScopeReadiness[\s\S]*getCommunityDomainTrustMobility[\s\S]*CommunityDomainTrustEvidenceReadinessPanels[\s\S]*evidenceRecordReadiness=\{evidenceRecordReadiness\}[\s\S]*evidenceReleaseReadiness=\{evidenceReleaseReadiness\}[\s\S]*trustRelayReadiness=\{trustRelayReadiness\}[\s\S]*notificationScopeReadiness=\{notificationScopeReadiness\}[\s\S]*trustMobility=\{trustMobility\}/,
-  "Community Domain dashboard Services lane must lazy-load trust/evidence readiness panels and pass only raw readiness maps from the parent route.",
+  /readOptional\(\(\) => getCommunityDomainEvidenceRecordReadiness\(domainId\)\)[\s\S]*readOptional\(\(\) => getCommunityDomainEvidenceReleaseReadiness\(domainId\)\)[\s\S]*readOptional\(\(\) => getCommunityDomainTrustRelayReadiness\(domainId\)\)[\s\S]*readOptional\(\(\) => getCommunityDomainNotificationScopeReadiness\(domainId\)\)[\s\S]*readOptional\(\(\) => getCommunityDomainTrustMobility\(domainId\)\)/,
+  "Community Domain dashboard Services lane must keep parent-owned trust/evidence readiness loading before handing raw maps to the lazy ServiceFocusPanel.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/ServiceFocusPanel.tsx",
+  /lazy\([\s\S]*import\("\.\/TrustEvidenceReadinessPanels"\)[\s\S]*CommunityDomainTrustEvidenceReadinessPanels[\s\S]*evidenceRecordReadiness=\{evidenceRecordReadiness\}[\s\S]*evidenceReleaseReadiness=\{evidenceReleaseReadiness\}[\s\S]*trustRelayReadiness=\{trustRelayReadiness\}[\s\S]*notificationScopeReadiness=\{notificationScopeReadiness\}[\s\S]*trustMobility=\{trustMobility\}/,
+  "Lazy ServiceFocusPanel must lazy-load trust/evidence readiness panels and pass only raw readiness maps from the parent route.",
   { frontend: true }
 );
 
