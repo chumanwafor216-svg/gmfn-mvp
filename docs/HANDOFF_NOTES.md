@@ -1,3 +1,10 @@
+## 2026-08-24 - Local Community Domain Real-Life Option Lazy Split
+- Status: Local implementation verified; not pushed/deployed in this slice.
+- Split the real-life/beneficiary option catalogues out of `frontend/src/pages/CommunityDomainDashboardPage.tsx` and into the already-lazy `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`.
+- The parent Community Domain dashboard still owns the workflow state and handlers, but it no longer carries or passes the real-life task/stage/beneficiary option arrays or the active real-life task option objects in the first route chunk.
+- Build truth: the Community Domain route chunk moved from about `198.27 kB` / `48.60 kB gzip` to `192.89 kB` / `47.24 kB gzip`; the lazy RealLifeRecordPanel chunk is now about `45.83 kB` / `8.61 kB gzip`.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check` with line-ending warning only.
+- Devil's advocate: this is a real structural improvement, but not a major megabyte reduction. The route remains heavy because setup, billing, member, governance, operating-state, and many parent-owned handlers/constants still live in `CommunityDomainDashboardPage.tsx`. The next real gains should come from splitting another default-hidden lane or pushing more lane-local display-only catalogues into their lazy children.
 ## 2026-08-24 - Notice Board intelligence, Action Inbox routing, and Domain simplification pass
 - Status: Local implementation verified. This round upgrades underexposed communication surfaces without adding another tab or new chat surface.
 - Notice Board: `/community-notices` now exposes meeting rows as `meeting_planning` notices with purpose, scheduled time, yes/maybe/no `interest_summary`, a plain `planning_status`, and a boundary that meeting interest is planning only, not final attendance. Community Home shows those meeting-planning labels and response chips inside the existing Community Bulletin instead of creating a separate meeting module.

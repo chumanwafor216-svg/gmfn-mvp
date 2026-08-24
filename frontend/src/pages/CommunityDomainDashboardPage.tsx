@@ -472,103 +472,6 @@ function emptyBeneficiaryDeliveryReceiptCorrectionDraft(): BeneficiaryDeliveryRe
   };
 }
 
-const BENEFICIARY_OUTCOME_STATE_OPTIONS = [
-  { value: "not_enough_evidence", label: "Not enough evidence" },
-  { value: "baseline_only", label: "Baseline only" },
-  { value: "improved", label: "Improved" },
-  { value: "unchanged", label: "Unchanged" },
-  { value: "worsened", label: "Worsened" },
-  { value: "follow_up_needed", label: "Follow-up needed" },
-  { value: "challenged", label: "Challenged" },
-];
-
-const BENEFICIARY_FOLLOW_UP_STATE_OPTIONS = [
-  { value: "completed", label: "Completed" },
-  { value: "scheduled", label: "Scheduled" },
-  { value: "in_progress", label: "In progress" },
-  { value: "not_started", label: "Not started" },
-  { value: "missed", label: "Missed" },
-  { value: "not_required", label: "Not required" },
-];
-
-const BENEFICIARY_CONFIRMATION_OPTIONS = [
-  { value: "not_requested", label: "Not requested" },
-  { value: "admin_recorded", label: "Admin recorded" },
-  { value: "beneficiary_confirmed", label: "Beneficiary confirmed" },
-  { value: "witness_confirmed", label: "Witness confirmed" },
-  { value: "multi_party_confirmed", label: "Multi-party confirmed" },
-  { value: "declined", label: "Declined" },
-  { value: "disputed", label: "Disputed" },
-];
-
-const BENEFICIARY_CHALLENGE_STATUS_OPTIONS = [
-  { value: "none", label: "No challenge" },
-  { value: "challenged", label: "Challenged" },
-  { value: "under_review", label: "Under review" },
-  { value: "corrected", label: "Corrected" },
-  { value: "resolved", label: "Resolved" },
-  { value: "withdrawn", label: "Withdrawn" },
-];
-
-const BENEFICIARY_CORRECTION_DECISION_OPTIONS = [
-  { value: "mark_corrected", label: "Mark corrected" },
-  { value: "uphold_original", label: "Uphold original" },
-  { value: "withdraw_original", label: "Withdraw original" },
-  { value: "needs_follow_up", label: "Needs follow-up" },
-  { value: "no_action", label: "No action yet" },
-];
-
-const BENEFICIARY_DELIVERY_CHANNEL_OPTIONS = [
-  { value: "whatsapp", label: "WhatsApp" },
-  { value: "sms", label: "SMS" },
-  { value: "email", label: "Email" },
-  { value: "copy_link", label: "Copied link" },
-  { value: "other", label: "Other" },
-];
-
-const BENEFICIARY_DELIVERY_STATUS_OPTIONS = [
-  { value: "manual_sent", label: "Shared manually" },
-  { value: "manual_failed", label: "Manual share failed" },
-  { value: "received_reported", label: "Recipient reported received" },
-  { value: "opened_reported", label: "Recipient reported opened" },
-];
-
-const BENEFICIARY_DELIVERY_CONSENT_OPTIONS = [
-  { value: "existing_relationship", label: "Existing relationship" },
-  { value: "beneficiary_consented", label: "Beneficiary consented" },
-  { value: "guardian_or_authorized_contact", label: "Guardian or authorized contact" },
-  { value: "operational_notice", label: "Operational notice" },
-  { value: "not_recorded", label: "Not recorded" },
-];
-
-const BENEFICIARY_DELIVERY_RECEIPT_CORRECTION_OPTIONS = [
-  { value: "marked_incorrect", label: "Marked incorrect" },
-  { value: "superseded_by_new_receipt", label: "Superseded by new receipt" },
-  { value: "needs_follow_up", label: "Needs follow-up" },
-  { value: "no_action", label: "No action yet" },
-];
-
-const BENEFICIARY_CONTACT_REFERENCE_STATUS_OPTIONS = [
-  { value: "admin_verified_off_platform", label: "Admin verified offline" },
-  { value: "beneficiary_provided", label: "Beneficiary provided" },
-  {
-    value: "guardian_or_authorized_contact_provided",
-    label: "Authorized contact provided",
-  },
-  { value: "existing_relationship_record", label: "Existing relationship record" },
-  { value: "not_recorded", label: "Not recorded" },
-];
-
-const BENEFICIARY_CONTACT_CONSENT_WITHDRAWAL_REASON_OPTIONS = [
-  { value: "beneficiary_withdrew_consent", label: "Beneficiary withdrew consent" },
-  { value: "guardian_withdrew_authority", label: "Guardian withdrew authority" },
-  { value: "contact_no_longer_valid", label: "Contact no longer valid" },
-  { value: "wrong_recipient", label: "Wrong recipient" },
-  { value: "consent_expired", label: "Consent expired" },
-  { value: "replaced_by_new_attestation", label: "Replaced by new attestation" },
-  { value: "admin_error", label: "Admin error" },
-];
-
 const GOVERNANCE_TASK_OPTIONS: Array<{
   key: GovernanceTaskKey;
   label: string;
@@ -868,121 +771,6 @@ const MEMBER_ROSTER_TASK_OPTIONS: Array<{
     key: "members",
     label: "Members",
     note: "Open the member rows only when you need to deactivate or restore someone.",
-  },
-];
-
-const ACTIVITY_RECORD_TASK_OPTIONS: Array<{
-  key: ActivityRecordTaskKey;
-  label: string;
-  note: string;
-}> = [
-  {
-    key: "record",
-    label: "Record",
-    note: "Capture one real activity in staged steps.",
-  },
-  {
-    key: "catalogue",
-    label: "Catalogue",
-    note: "Review valid activity types before recording.",
-  },
-  {
-    key: "recent",
-    label: "Recent",
-    note: "Review the latest activity records only when needed.",
-  },
-];
-
-const BENEFICIARY_OUTCOME_TASK_OPTIONS: Array<{
-  key: BeneficiaryOutcomeTaskKey;
-  label: string;
-  note: string;
-}> = [
-  {
-    key: "record",
-    label: "Record",
-    note: "Capture one before-and-after beneficiary outcome.",
-  },
-  {
-    key: "recent",
-    label: "Recent",
-    note: "Review recent outcome records one view at a time.",
-  },
-];
-
-const ACTIVITY_RECORD_STAGE_OPTIONS: Array<{
-  key: ActivityRecordStageKey;
-  label: string;
-  note: string;
-}> = [
-  {
-    key: "person",
-    label: "Person",
-    note: "Identify the member or beneficiary and the activity type.",
-  },
-  {
-    key: "activity",
-    label: "Activity",
-    note: "Describe what happened and how much was recorded.",
-  },
-  {
-    key: "evidence",
-    label: "Evidence",
-    note: "Add the evidence reference and record the Trust Event.",
-  },
-];
-
-const BENEFICIARY_OUTCOME_RECORD_STAGE_OPTIONS: Array<{
-  key: BeneficiaryOutcomeRecordStageKey;
-  label: string;
-  note: string;
-}> = [
-  {
-    key: "person",
-    label: "Person",
-    note: "Identify the beneficiary, programme, or case.",
-  },
-  {
-    key: "change",
-    label: "Change",
-    note: "Capture the measured before-and-after outcome.",
-  },
-  {
-    key: "proof",
-    label: "Proof",
-    note: "Record confirmation, challenge, and evidence details.",
-  },
-];
-
-const BENEFICIARY_OUTCOME_RECENT_PACKET_OPTIONS: Array<{
-  key: BeneficiaryOutcomeRecentPacketKey;
-  label: string;
-  note: string;
-}> = [
-  {
-    key: "summary",
-    label: "Summary",
-    note: "Review the outcome, response, review, and delivery status first.",
-  },
-  {
-    key: "confirmation",
-    label: "Confirm",
-    note: "Create a beneficiary confirmation link or review a challenged response.",
-  },
-  {
-    key: "contact",
-    label: "Contact",
-    note: "Record contact/consent evidence or consent withdrawal.",
-  },
-  {
-    key: "delivery",
-    label: "Delivery",
-    note: "Review delivery readiness before any manual receipt is recorded.",
-  },
-  {
-    key: "receipt",
-    label: "Receipt",
-    note: "Record or correct a manual delivery receipt.",
   },
 ];
 
@@ -5601,13 +5389,6 @@ export default function CommunityDomainDashboardPage() {
   const activeMemberRosterTaskOption =
     MEMBER_ROSTER_TASK_OPTIONS.find((task) => task.key === activeMemberRosterTask) ||
     MEMBER_ROSTER_TASK_OPTIONS[0];
-  const activeActivityRecordTaskOption =
-    ACTIVITY_RECORD_TASK_OPTIONS.find((task) => task.key === activeActivityRecordTask) ||
-    ACTIVITY_RECORD_TASK_OPTIONS[0];
-  const activeBeneficiaryOutcomeTaskOption =
-    BENEFICIARY_OUTCOME_TASK_OPTIONS.find(
-      (task) => task.key === activeBeneficiaryOutcomeTask
-    ) || BENEFICIARY_OUTCOME_TASK_OPTIONS[0];
   const domainInSetup = isCommunityDomainInSetup(status, domain);
   const domainOperational = isCommunityDomainOperational(status, domain);
   const pageTitle = domainInSetup
@@ -11508,28 +11289,10 @@ export default function CommunityDomainDashboardPage() {
                       >
                         <CommunityDomainRealLifeRecordPanel
                           data={({
-                          ACTIVITY_RECORD_STAGE_OPTIONS,
-                          ACTIVITY_RECORD_TASK_OPTIONS,
-                          BENEFICIARY_CHALLENGE_STATUS_OPTIONS,
-                          BENEFICIARY_CONFIRMATION_OPTIONS,
-                          BENEFICIARY_CONTACT_CONSENT_WITHDRAWAL_REASON_OPTIONS,
-                          BENEFICIARY_CONTACT_REFERENCE_STATUS_OPTIONS,
-                          BENEFICIARY_CORRECTION_DECISION_OPTIONS,
-                          BENEFICIARY_DELIVERY_CHANNEL_OPTIONS,
-                          BENEFICIARY_DELIVERY_CONSENT_OPTIONS,
-                          BENEFICIARY_DELIVERY_RECEIPT_CORRECTION_OPTIONS,
-                          BENEFICIARY_DELIVERY_STATUS_OPTIONS,
-                          BENEFICIARY_FOLLOW_UP_STATE_OPTIONS,
-                          BENEFICIARY_OUTCOME_RECENT_PACKET_OPTIONS,
-                          BENEFICIARY_OUTCOME_RECORD_STAGE_OPTIONS,
-                          BENEFICIARY_OUTCOME_STATE_OPTIONS,
-                          BENEFICIARY_OUTCOME_TASK_OPTIONS,
                           activeActivityRecordStage,
                           activeActivityRecordTask,
-                          activeActivityRecordTaskOption,
                           activeBeneficiaryOutcomeRecordStage,
                           activeBeneficiaryOutcomeTask,
-                          activeBeneficiaryOutcomeTaskOption,
                           activeGovernanceTask,
                           activeRealLifeRecordTask,
                           activityCatalogueOptions,
