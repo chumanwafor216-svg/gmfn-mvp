@@ -207,6 +207,7 @@ function SupportPage() {
   const [newAttachment, setNewAttachment] = useState<File | null>(null);
   const [reply, setReply] = useState("");
   const [replyAttachment, setReplyAttachment] = useState<File | null>(null);
+  const [threadsOpen, setThreadsOpen] = useState(Boolean(queryCaseId));
 
   const loadCases = useCallback(async () => {
     setLoading(true);
@@ -215,7 +216,7 @@ function SupportPage() {
       const out = await getMySupportCases({ limit: 60 });
       const items = rowsFrom(out);
       setCases(items);
-      setSelectedId((current) => current || queryCaseId || items[0]?.id || null);
+      setSelectedId((current) => current || queryCaseId || null);
     } catch (err: any) {
       setError(err?.message || "Support cases could not be loaded.");
     } finally {
@@ -295,6 +296,7 @@ function SupportPage() {
       setMessage("");
       setNewAttachment(null);
       setSelectedId(created?.id || null);
+      setThreadsOpen(true);
       navigate(created?.id ? `/app/help?case_id=${created.id}` : "/app/help", { replace: true });
       await loadCases();
       setNotice("Support request sent. Admin can now reply from the queue.");
@@ -380,7 +382,7 @@ function SupportPage() {
         {error ? <div style={{ ...card("#FEF2F2"), color: "#991B1B", fontWeight: 800 }}>{error}</div> : null}
         {notice ? <div style={{ ...card("#ECFDF3"), color: "#167447", fontWeight: 800 }}>{notice}</div> : null}
 
-        <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))", gap: 18 }}>
+        <section style={{ display: "grid", gap: 14 }}>
           <form onSubmit={handleCreate} style={{ ...card(), display: "grid", gap: 14 }}>
             <div>
               <div style={sectionLabel()}>Ask for help</div>
@@ -411,7 +413,21 @@ function SupportPage() {
             </StableButton>
           </form>
 
-          <div style={{ ...card(), display: "grid", gap: 14 }}>
+          <StableButton
+            type="button"
+            kind="secondary"
+            debugId="support-page.threads-toggle"
+            aria-expanded={threadsOpen}
+            aria-controls="support-page-thread-drawer"
+            fullWidth
+            onClick={() => setThreadsOpen((current) => !current)}
+          >
+            {threadsOpen ? "Hide previous requests" : "View previous requests"}
+          </StableButton>
+
+          {threadsOpen ? (
+            <div id="support-page-thread-drawer" data-debug-id="support-page.thread-drawer" style={{ display: "grid", gap: 18 }}>
+              <div style={{ ...card(), display: "grid", gap: 14 }}>
             <div>
               <div style={sectionLabel()}>Recent cases</div>
               <h2 style={{ margin: "6px 0 0", color: "#0B1F33", fontSize: 24 }}>Your support threads</h2>
@@ -430,6 +446,7 @@ function SupportPage() {
                   fullWidth
                   onClick={() => {
                     setSelectedId(item.id);
+                    setThreadsOpen(true);
                     navigate(`/app/help?case_id=${item.id}`, { replace: true });
                   }}
                   style={{
@@ -454,10 +471,13 @@ function SupportPage() {
                 </StableButton>
               ))}
             </div>
-          </div>
+              </div>
+            </div>
+          ) : null}
         </section>
 
-        <section style={{ ...card(), display: "grid", gap: 14 }}>
+        {threadsOpen ? (
+          <section style={{ ...card(), display: "grid", gap: 14 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>
               <div style={sectionLabel()}>Thread</div>
@@ -517,7 +537,8 @@ function SupportPage() {
               )}
             </>
           ) : null}
-        </section>
+          </section>
+        ) : null}
       </div>
     </main>
   );

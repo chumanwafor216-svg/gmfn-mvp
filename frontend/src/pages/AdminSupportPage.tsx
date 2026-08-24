@@ -7,6 +7,7 @@ import {
   getAdminSupportCases,
   getSupportCase,
   updateAdminSupportCaseStatus,
+  uploadSupportCaseAttachment,
   type SupportCaseStatus,
 } from "../lib/api";
 
@@ -192,6 +193,8 @@ function AdminSupportPage() {
   const [threadLoading, setThreadLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [reply, setReply] = useState("");
+  const [replyAttachment, setReplyAttachment] = useState<File | null>(null);
+  const [statusControlsOpen, setStatusControlsOpen] = useState(false);
   const [nextStatus, setNextStatus] = useState<SupportCaseStatus>("waiting_user");
   const [statusNote, setStatusNote] = useState("");
   const [notice, setNotice] = useState("");
@@ -258,16 +261,22 @@ function AdminSupportPage() {
     event.preventDefault();
     if (!selectedId) return;
     const cleanReply = safeStr(reply);
-    if (!cleanReply) {
-      setError("Write a reply before sending.");
+    if (!cleanReply && !replyAttachment) {
+      setError("Write a reply or attach a picture/PDF first.");
       return;
     }
     setBusy(true);
     setError("");
     setNotice("");
     try {
-      await addSupportCaseMessage(selectedId, { body: cleanReply });
+      if (cleanReply) {
+        await addSupportCaseMessage(selectedId, { body: cleanReply });
+      }
+      if (replyAttachment) {
+        await uploadSupportCaseAttachment(selectedId, replyAttachment);
+      }
       setReply("");
+      setReplyAttachment(null);
       await refreshSelected(selectedId);
       await loadQueue();
       setNotice("Reply sent to the requester.");
@@ -290,6 +299,7 @@ function AdminSupportPage() {
         note: safeStr(statusNote) || undefined,
       });
       setStatusNote("");
+      setStatusControlsOpen(false);
       await refreshSelected(selectedId);
       await loadQueue();
       setNotice("Case status updated.");
@@ -463,29 +473,47 @@ function AdminSupportPage() {
                     Reply
                     <textarea value={reply} onChange={(event) => setReply(event.target.value)} maxLength={2000} style={inputStyle(true)} placeholder="Reply to the requester." />
                   </label>
+                  <label style={{ display: "grid", gap: 7, color: "#253B53", fontSize: 13, fontWeight: 900 }}>
+                    Add picture or PDF
+                    <input type="file" accept="image/*,.pdf,application/pdf" data-gmfn-action-root="true" data-cta-id="admin-support.reply-attachment" onChange={(event) => setReplyAttachment(event.target.files?.[0] || null)} />
+                  </label>
                   <StableButton type="submit" kind="primary" busy={busy} busyLabel="Sending" debugId="admin-support.reply" minWidth={140}>
                     Reply
                   </StableButton>
                 </form>
 
-                <form onSubmit={handleStatus} style={{ ...card("#F8FBFF"), boxShadow: "none", display: "grid", gap: 10 }}>
-                  <div style={sectionLabel()}>Status controls</div>
-                  <label style={{ display: "grid", gap: 7, color: "#253B53", fontSize: 13, fontWeight: 900 }}>
-                    Next status
-                    <select value={nextStatus} onChange={(event) => setNextStatus(event.target.value as SupportCaseStatus)} style={inputStyle()}>
-                      <option value="waiting_admin">Waiting admin</option>
-                      <option value="waiting_user">Waiting user</option>
-                      <option value="resolved">Resolved</option>
-                    </select>
-                  </label>
-                  <label style={{ display: "grid", gap: 7, color: "#253B53", fontSize: 13, fontWeight: 900 }}>
-                    Note
-                    <textarea value={statusNote} onChange={(event) => setStatusNote(event.target.value)} maxLength={1200} style={inputStyle(true)} placeholder="Optional note to add to the case thread." />
-                  </label>
-                  <StableButton type="submit" kind="secondary" busy={busy} busyLabel="Updating" debugId="admin-support.status" minWidth={160}>
-                    Update status
-                  </StableButton>
-                </form>
+                <StableButton
+                  type="button"
+                  kind="secondary"
+                  debugId="admin-support.status-toggle"
+                  aria-expanded={statusControlsOpen}
+                  aria-controls="admin-support-status-controls"
+                  onClick={() => setStatusControlsOpen((current) => !current)}
+                  minWidth={160}
+                >
+                  {statusControlsOpen ? "Hide status controls" : "Status controls"}
+                </StableButton>
+
+                {statusControlsOpen ? (
+                  <form id="admin-support-status-controls" onSubmit={handleStatus} style={{ ...card("#F8FBFF"), boxShadow: "none", display: "grid", gap: 10 }}>
+                    <div style={sectionLabel()}>Status controls</div>
+                    <label style={{ display: "grid", gap: 7, color: "#253B53", fontSize: 13, fontWeight: 900 }}>
+                      Next status
+                      <select value={nextStatus} onChange={(event) => setNextStatus(event.target.value as SupportCaseStatus)} style={inputStyle()}>
+                        <option value="waiting_admin">Waiting admin</option>
+                        <option value="waiting_user">Waiting user</option>
+                        <option value="resolved">Resolved</option>
+                      </select>
+                    </label>
+                    <label style={{ display: "grid", gap: 7, color: "#253B53", fontSize: 13, fontWeight: 900 }}>
+                      Note
+                      <textarea value={statusNote} onChange={(event) => setStatusNote(event.target.value)} maxLength={1200} style={inputStyle(true)} placeholder="Optional note to add to the case thread." />
+                    </label>
+                    <StableButton type="submit" kind="secondary" busy={busy} busyLabel="Updating" debugId="admin-support.status" minWidth={160}>
+                      Update status
+                    </StableButton>
+                  </form>
+                ) : null}
               </>
             ) : null}
           </div>
