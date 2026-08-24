@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter
+from fastapi import APIRouter
 
 # =========================
 # Core
@@ -94,6 +94,7 @@ from app.api.routes.withdrawal_destinations import router as withdrawal_destinat
 from app.api.routes.withdrawal_instructions import router as withdrawal_instructions_router
 from app.api.routes.settlement_config import router as settlement_config_router
 from app.api.routes.notifications import router as notifications_router
+from app.api.routes.support_cases import router as support_cases_router
 from app.api.routes.web_push import router as web_push_router
 from app.api.routes.identity_risk import router as identity_risk_router
 from app.api.routes.settings import router as settings_router
@@ -197,6 +198,7 @@ api_router.include_router(withdrawal_destinations_router)
 api_router.include_router(withdrawal_instructions_router)
 api_router.include_router(settlement_config_router)
 api_router.include_router(notifications_router)
+api_router.include_router(support_cases_router)
 api_router.include_router(web_push_router)
 api_router.include_router(identity_risk_router)
 api_router.include_router(settings_router)

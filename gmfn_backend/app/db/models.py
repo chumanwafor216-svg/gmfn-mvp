@@ -976,6 +976,164 @@ class CommunityDomainActionReviewEvidence(Base):
     submitter = relationship("User", foreign_keys=[submitted_by_user_id])
 
 
+
+class SupportCase(Base):
+    __tablename__ = "support_cases"
+
+    __table_args__ = (
+        Index("ix_support_cases_requester_status", "requester_user_id", "status"),
+        Index("ix_support_cases_status_updated", "status", "updated_at"),
+        Index("ix_support_cases_clan_status", "clan_id", "status"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    public_id: Mapped[str] = mapped_column(String(40), unique=True, nullable=False, index=True)
+    requester_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    clan_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("clans.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    assigned_admin_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    issue_type: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    subject: Mapped[str] = mapped_column(String(160), nullable=False)
+    status: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="waiting_admin",
+        server_default="waiting_admin",
+        index=True,
+    )
+    priority: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="normal",
+        server_default="normal",
+    )
+    source_path: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    last_message_preview: Mapped[Optional[str]] = mapped_column(String(220), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+    last_activity_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+    resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    requester = relationship("User", foreign_keys=[requester_user_id])
+    clan = relationship("Clan", foreign_keys=[clan_id])
+    assigned_admin = relationship("User", foreign_keys=[assigned_admin_user_id])
+    messages = relationship(
+        "SupportCaseMessage",
+        back_populates="support_case",
+        cascade="all, delete-orphan",
+        order_by="SupportCaseMessage.created_at",
+    )
+    attachments = relationship(
+        "SupportCaseAttachment",
+        back_populates="support_case",
+        cascade="all, delete-orphan",
+    )
+
+
+class SupportCaseMessage(Base):
+    __tablename__ = "support_case_messages"
+
+    __table_args__ = (
+        Index("ix_support_case_messages_case_created", "support_case_id", "created_at"),
+        Index("ix_support_case_messages_author", "author_user_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    support_case_id: Mapped[int] = mapped_column(
+        ForeignKey("support_cases.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    author_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    author_role: Mapped[str] = mapped_column(String(16), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+
+    support_case = relationship("SupportCase", foreign_keys=[support_case_id], back_populates="messages")
+    author = relationship("User", foreign_keys=[author_user_id])
+    attachments = relationship(
+        "SupportCaseAttachment",
+        back_populates="message",
+        cascade="all, delete-orphan",
+    )
+
+
+class SupportCaseAttachment(Base):
+    __tablename__ = "support_case_attachments"
+
+    __table_args__ = (
+        Index("ix_support_case_attachments_case", "support_case_id"),
+        Index("ix_support_case_attachments_message", "message_id"),
+        Index("ix_support_case_attachments_uploader", "uploaded_by_user_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    support_case_id: Mapped[int] = mapped_column(
+        ForeignKey("support_cases.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    message_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("support_case_messages.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    uploaded_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    file_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    content_type: Mapped[str] = mapped_column(String(120), nullable=False)
+    storage_key: Mapped[str] = mapped_column(String(512), nullable=False)
+    url: Mapped[str] = mapped_column(String(512), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+
+    support_case = relationship("SupportCase", foreign_keys=[support_case_id], back_populates="attachments")
+    message = relationship("SupportCaseMessage", foreign_keys=[message_id], back_populates="attachments")
+    uploader = relationship("User", foreign_keys=[uploaded_by_user_id])
+
 class CommunityMemberVerification(Base):
     __tablename__ = "community_member_verifications"
 

@@ -103,6 +103,7 @@ const COMMUNITY_CONTEXT_ROUTE_PREFIXES = [
   "/app/community-confirmations",
   "/app/vault-control",
   "/app/demand-box",
+  "/app/help",
 ];
 
 function shouldCarryCommunityContext(to: string): boolean {
@@ -334,6 +335,15 @@ function makeShopControlItem(): NavLinkItem {
   };
 }
 
+function makeHelpDeskItem(): NavLinkItem {
+  return {
+    label: "Help Desk",
+    to: "/app/help",
+    match: (pathname) =>
+      pathname === "/app/help" || pathname === "/app/support-desk",
+  };
+}
+
 function makeSettingsItem(): NavLinkItem {
   return {
     label: "Settings",
@@ -411,6 +421,7 @@ function buildIdentityItems(): NavLinkItem[] {
   return [
     { label: "Identity Integrity", to: "/app/identity" },
     { label: "Notifications", to: "/app/notifications" },
+    makeHelpDeskItem(),
     makeGuideItem(),
     makeSettingsItem(),
   ];
@@ -681,6 +692,13 @@ function getSpecialRouteMeta(
     };
   }
 
+  if (pathname === "/app/help" || pathname === "/app/support-desk") {
+    return {
+      section: "Identity & settings",
+      page: "Help Desk",
+    };
+  }
+
   if (pathname === "/app/notifications") {
     return {
       section: "Identity & settings",
@@ -737,6 +755,13 @@ function getSpecialRouteMeta(
       return {
         section: "Main movement",
         page: "Exposure Admin",
+      };
+    }
+
+    if (pathname.startsWith("/app/command-center/support")) {
+      return {
+        section: "Main movement",
+        page: "Support Queue",
       };
     }
 
@@ -814,6 +839,7 @@ function getPageActions(
       makeShopGalleryItem(myShopGalleryTo, myShopGalleryDisabled),
       { label: "Finance", to: "/app/finance" },
       { label: "Notifications", to: "/app/notifications" },
+      makeHelpDeskItem(),
       { label: "Trust Passport", to: "/app/trust" },
     ]);
   }
@@ -861,6 +887,7 @@ function getPageActions(
       { label: "Demand Box", to: "/app/demand-box" },
       { label: "Finance", to: "/app/finance" },
       { label: "Notifications", to: "/app/notifications" },
+      makeHelpDeskItem(),
     ]);
   }
 
@@ -907,6 +934,15 @@ function getPageActions(
     ]);
   }
 
+  if (pathname.startsWith("/app/help") || pathname.startsWith("/app/support-desk")) {
+    return uniqueNavItems([
+      makeDashboardItem(),
+      { label: "Action Inbox", to: "/app/notifications" },
+      makeCommunityItem(),
+      { label: "Loan Support", to: "/app/loans" },
+    ]);
+  }
+
   if (pathname.startsWith("/app/notifications")) {
     return uniqueNavItems([
       makeDashboardItem(),
@@ -914,6 +950,7 @@ function getPageActions(
       makeCommunityItem(),
       { label: "Loan Support", to: "/app/loans" },
       { label: "Demand Box", to: "/app/demand-box" },
+      makeHelpDeskItem(),
     ]);
   }
 
@@ -936,6 +973,7 @@ function getPageActions(
       makeCommunityItem(),
       makeMarketplaceItem(),
       { label: "Notifications", to: "/app/notifications" },
+      makeHelpDeskItem(),
     ]);
   }
 
@@ -944,6 +982,7 @@ function getPageActions(
       makeCommunityItem(),
       makeMarketplaceItem(),
       { label: "Notifications", to: "/app/notifications" },
+      makeHelpDeskItem(),
       { label: "Trust Passport", to: "/app/trust" },
     ]);
   }
@@ -962,6 +1001,7 @@ function getPageActions(
       makeDashboardItem(),
       makeCommunityItem(),
       { label: "Trust Events", to: "/app/command-center/trust-events" },
+      { label: "Support Queue", to: "/app/command-center/support" },
       makeMarketplaceItem(),
     ]);
   }
@@ -970,6 +1010,7 @@ function getPageActions(
     makeCommunityItem(),
     makeMarketplaceItem(),
     { label: "Notifications", to: "/app/notifications" },
+    makeHelpDeskItem(),
     { label: "Loan Support", to: "/app/loans" },
   ]);
 }

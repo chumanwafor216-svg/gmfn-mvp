@@ -37,6 +37,7 @@ export const APP_ROUTES = {
   COMMUNITY_CONFIRMATION_POLICY: "/app/community-confirmations/policy",
   GUARANTOR_EARNINGS: "/app/guarantor-earnings",
   NOTIFICATIONS: "/app/notifications",
+  HELP_DESK: "/app/help",
   BUILD_FIRST_CIRCLE: "/app/build-first-circle",
   PROFILE: "/app/my-gmfn-and-i",
   SETTINGS: "/app/my-gmfn-and-i?tab=settings",
@@ -51,6 +52,7 @@ export const APP_ROUTES = {
   TRUST_GRAPH: "/app/command-center/trust-graph",
   EXPOSURE_ADMIN: "/app/command-center/exposure",
   REVENUE_ALLOCATION: "/app/command-center/revenue-allocation",
+  ADMIN_SUPPORT: "/app/command-center/support",
   JOIN_PENDING: "/pending-approval",
   WELCOME: "/welcome",
   LOGIN: "/login",
@@ -136,6 +138,7 @@ export function appRoute(key: AppRouteKey, context: AppRouteContext = {}): strin
       "COMMUNITY_CONFIRMATION_INBOX",
       "GUARANTOR_EARNINGS",
       "NOTIFICATIONS",
+      "HELP_DESK",
       "BUILD_FIRST_CIRCLE",
       "SYSTEM_OPERATIONS",
       "BANK_CONSOLE",
@@ -146,6 +149,7 @@ export function appRoute(key: AppRouteKey, context: AppRouteContext = {}): strin
       "TRUST_GRAPH",
       "EXPOSURE_ADMIN",
       "REVENUE_ALLOCATION",
+      "ADMIN_SUPPORT",
     ].includes(key)
   ) {
     path = routeWithCommunity(path, context.communityId);

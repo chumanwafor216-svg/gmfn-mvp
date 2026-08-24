@@ -996,3 +996,75 @@ Rules:
 - Successful execution records the selected user as `created_by_user_id`, ensures an active admin membership, and logs a trust event for audit.
 - If the rightful owner has a recorded onboarding intake but no GSN identity because the duplicate community name blocked account creation, lookup may show that intake as a repair source. Preview must remain read-only; execute must create the missing GSN identity from recorded intake evidence before assigning ownership.
 - Redirect aliases may preserve `community_name` and `owner_query` query parameters so Command Centre can open directly to a case such as Pillar of Hope/Felix.
+## SupportPage
+
+Route: `/app/help` (`/app/support-desk` redirects here; `/app/support` remains Loans & Support).
+
+Purpose:
+Let a signed-in user ask GSN or their governed admin for help when the app is difficult, blocked, or confusing.
+
+Must show:
+- one clear state such as `Help desk`
+- Ask for help as the primary action
+- compact facts for open cases, waiting admin, waiting user, and resolved cases
+- issue type chooser
+- short message field
+- optional screenshot or picture attachment
+- user's recent support cases
+- selected case thread with user/admin messages
+- clear status and next action
+
+Rules:
+- This is app/user support, not Loans & Support, Community Notice Board, or Community Domain governance.
+- Do not expose policy, node, reviewer, lineage, or advanced governance language.
+- First version is async chat-style support, not live websocket chat.
+- Picture attachment is evidence for support review only; it must not become public proof, Trust Passport evidence, payment proof, or identity verification.
+- Keep WhatsApp/email support as a fallback only.
+- Action Inbox may notify users about replies or resolution, but the case thread remains the source of support conversation truth.
+
+Primary action:
+
+```text
+Ask for help
+```
+
+## AdminSupportPage
+
+Route: `/app/command-center/support`.
+
+Purpose:
+Give platform admins a simple queue for user support cases and replies.
+
+Must show:
+- open support queue
+- selected case details
+- requester reference, community context when available, issue type, status, and last update
+- message thread
+- attachment metadata and safe links where available
+- reply field
+- status controls: waiting admin, waiting user, resolved
+
+Rules:
+- This is a practical support queue, not a governance decision engine.
+- Do not use Community Domain action-review policy/node machinery for ordinary support.
+- Admin replies should notify the requester through Action Inbox.
+- Resolution should not delete the case or message history.
+- Admin can see all support cases; normal users can see only their own cases.
+
+Primary action:
+
+```text
+Reply
+```
+
+## Support And Simplification Direction
+
+Underused systems to surface carefully:
+- Sign-in WhatsApp/email support remains a pilot fallback, but support cases are the in-app source of truth after sign-in.
+- Community Notice Board should become the visible communication hub for announcements and meeting interest summaries, while meeting RSVP counts remain structured meeting data.
+- Action Inbox should stay the alert surface for support replies and resolution, not the place where support cases are authored.
+
+Overbuilt systems to simplify on the first surface:
+- Community Domain Action Reviews remain detailed governance infrastructure, but ordinary users should see simple labels: My requests, Waiting for admin, Needs changes, Resolved.
+- Policy, node, lineage, evidence metadata, and apply mechanics belong behind admin/advanced controls.
+- Do not delete heavy governance tools until route references, backend tests, and domain contracts prove they are unused.

@@ -4887,6 +4887,100 @@ export async function sendWebPushTestNotification(): Promise<any> {
   return httpJson("/web-push/test", "POST", undefined, { quiet: true });
 }
 
+
+/* =========================
+   HELP DESK / USER SUPPORT
+   ========================= */
+
+export type SupportCaseStatus = "waiting_admin" | "waiting_user" | "resolved";
+export type SupportCaseIssueType =
+  | "sign_in"
+  | "payment"
+  | "community"
+  | "shop"
+  | "marketplace"
+  | "trust"
+  | "technical"
+  | "other";
+
+export async function createSupportCase(payload: {
+  issue_type: SupportCaseIssueType;
+  subject: string;
+  message: string;
+  clan_id?: number | null;
+  source_path?: string | null;
+}): Promise<any> {
+  return httpJson("/support-cases", "POST", payload);
+}
+
+export async function getMySupportCases(params?: {
+  status?: SupportCaseStatus | "all" | "";
+  limit?: number;
+}): Promise<any> {
+  return httpJson(
+    `/support-cases/me${buildQuery({
+      status: params?.status && params.status !== "all" ? params.status : undefined,
+      limit: params?.limit || 50,
+    })}`,
+    "GET"
+  );
+}
+
+export async function getSupportCase(caseId: number | string): Promise<any> {
+  return httpJson(`/support-cases/${encodeURIComponent(String(caseId))}`, "GET");
+}
+
+export async function addSupportCaseMessage(
+  caseId: number | string,
+  payload: { body: string }
+): Promise<any> {
+  return httpJson(
+    `/support-cases/${encodeURIComponent(String(caseId))}/messages`,
+    "POST",
+    payload
+  );
+}
+
+export async function uploadSupportCaseAttachment(
+  caseId: number | string,
+  file: File
+): Promise<any> {
+  const fd = new FormData();
+  fd.set("file", file);
+  return httpMultipart(
+    `/support-cases/${encodeURIComponent(String(caseId))}/attachments`,
+    fd
+  );
+}
+
+export async function getAdminSupportCases(params?: {
+  status?: SupportCaseStatus | "all" | "";
+  q?: string;
+  clan_id?: number | null;
+  limit?: number;
+}): Promise<any> {
+  return httpJson(
+    `/support-cases/admin/queue${buildQuery({
+      status: params?.status && params.status !== "all" ? params.status : undefined,
+      q: params?.q || undefined,
+      clan_id: params?.clan_id || undefined,
+      limit: params?.limit || 80,
+    })}`,
+    "GET"
+  );
+}
+
+export async function updateAdminSupportCaseStatus(
+  caseId: number | string,
+  payload: { status: SupportCaseStatus; note?: string | null }
+): Promise<any> {
+  return httpJson(
+    `/support-cases/admin/${encodeURIComponent(String(caseId))}/status`,
+    "POST",
+    payload
+  );
+}
+
 /* =========================
    SETTINGS
    ========================= */

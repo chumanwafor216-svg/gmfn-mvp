@@ -97,6 +97,7 @@ const IdentityIntegrityPage = React.lazy(
 const NotificationsPage = React.lazy(
   () => import("./pages/NotificationsPage")
 );
+const SupportPage = React.lazy(() => import("./pages/SupportPage"));
 const SystemOperationsPage = React.lazy(
   () => import("./pages/SystemOperationsPage")
 );
@@ -125,6 +126,7 @@ const AdminCommunityOwnershipPage = React.lazy(
 const AdminIncompleteLoansPage = React.lazy(
   () => import("./pages/AdminIncompleteLoansPage")
 );
+const AdminSupportPage = React.lazy(() => import("./pages/AdminSupportPage"));
 const BankConsolePage = React.lazy(() => import("./pages/BankConsolePage"));
 const RevenueAllocationPage = React.lazy(
   () => import("./pages/RevenueAllocationPage")
@@ -734,6 +736,8 @@ export default function App() {
 
       <Route path="/dashboard" element={<PreserveRedirect to={APP_ROUTES.DASHBOARD} />} />
       <Route path="/notifications" element={<PreserveRedirect to={APP_ROUTES.NOTIFICATIONS} />} />
+      <Route path="/help" element={<PreserveRedirect to={APP_ROUTES.HELP_DESK} />} />
+      <Route path="/support-desk" element={<PreserveRedirect to={APP_ROUTES.HELP_DESK} />} />
       <Route path="/action-inbox" element={<PreserveRedirect to={APP_ROUTES.NOTIFICATIONS} />} />
       <Route path="/inbox" element={<PreserveRedirect to={APP_ROUTES.NOTIFICATIONS} />} />
       <Route path="/profile" element={<PreserveRedirect to={APP_ROUTES.PROFILE} />} />
@@ -1194,6 +1198,8 @@ export default function App() {
         />
 
         <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="help" element={<SupportPage />} />
+        <Route path="support-desk" element={<PreserveRedirect to={APP_ROUTES.HELP_DESK} />} />
         <Route
           path="action-inbox"
           element={<PreserveRedirect to={APP_ROUTES.NOTIFICATIONS} />}
@@ -1238,6 +1244,7 @@ export default function App() {
             <Route path="identity-risk" element={<AdminIdentityRiskPage />} />
             <Route path="community-ownership" element={<AdminCommunityOwnershipPage />} />
             <Route path="incomplete-loans" element={<AdminIncompleteLoansPage />} />
+            <Route path="support" element={<AdminSupportPage />} />
             <Route path="system-operations" element={<SystemOperationsPage />} />
             <Route path="trust-graph" element={<AdminTrustGraphPage />} />
           </Route>
@@ -1298,6 +1305,10 @@ export default function App() {
         <Route
           path="admin/incomplete-loans"
           element={<PreserveRedirect to="/app/command-center/incomplete-loans" />}
+        />
+        <Route
+          path="admin/support"
+          element={<PreserveRedirect to="/app/command-center/support" />}
         />
         <Route
           path="admin/revenue-allocation"
