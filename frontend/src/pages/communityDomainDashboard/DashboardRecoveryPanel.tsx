@@ -115,36 +115,49 @@ function textareaStyle(): React.CSSProperties {
 
 function membershipRequestStatusText(review: ActionReviewItem | null): string {
   const status = cleanText(review?.status, "pending").toLowerCase();
-  const reviewId = cleanText(review?.id);
-  const reviewLabel = reviewId ? ` Review ${reviewId}` : "";
   const approvalText = membershipApprovalProgressText(review);
   if (status === "pending" || status === "pending_review") {
-    return `${membershipRequestStatusLabel(status)}.${reviewLabel ? ` ${reviewLabel}.` : ""} An owner/admin still needs to approve and apply it before membership changes.${approvalText}`;
+    return `An owner/admin still needs to approve and apply this before membership changes.${approvalText}`;
   }
   if (status === "approved") {
-    return `${membershipRequestStatusLabel(status)}.${reviewLabel ? ` ${reviewLabel}.` : ""} Membership still has to be applied by an owner/admin before this dashboard opens.${approvalText} You can withdraw it before it is applied if you no longer want this access added.`;
+    return `An owner/admin has approved this, but membership still has to be applied before this dashboard opens.${approvalText} You can withdraw it before it is applied if you no longer want this access added.`;
   }
   if (status === "needs_changes") {
-    return `${membershipRequestStatusLabel(status)}.${reviewLabel ? ` ${reviewLabel}.` : ""} Add a clear member title, invite reference, department, class, or relationship proof and send it back to owner/admin review. You can also withdraw it if you want to restart later.`;
+    return "Add a clear member title, invite reference, department, class, or relationship proof and send it back to owner/admin review. You can also withdraw it if you want to restart later.";
   }
   if (
     (status === "cancelled" || status === "rejected") &&
     isRevisionContinuation(review)
   ) {
-    return `${reviewLabel} is ${compactStatus(status)}. The earlier request already has a follow-up record, so continue from this revision instead of starting over. Add a clearer member title, invite reference, department, class, or relationship proof and send it back to owner/admin review.`;
+    return "The earlier request already has a follow-up record, so continue from this update instead of starting over. Add a clearer member title, invite reference, department, class, or relationship proof and send it back to owner/admin review.";
   }
   if (status === "cancelled") {
-    return `${reviewLabel} was withdrawn before membership was added. You can request access again when you are ready.`;
+    return "This was withdrawn before membership was added. You can request access again when you are ready.";
   }
   if (status === "applied") {
-    return `${reviewLabel} was applied before. Try opening the dashboard again, or send a fresh access request if your current membership is no longer active.`;
+    return "This was applied before. Try opening the dashboard again, or send a fresh access request if your current membership is no longer active.";
   }
   if (status === "rejected") {
-    return `${reviewLabel} was declined. You can request again when you have clearer community proof or owner guidance.`;
+    return "This was declined. You can request again when you have clearer community proof or owner guidance.";
   }
-  return `${reviewLabel} is marked ${compactStatus(status)}. This status does not grant dashboard access by itself.`;
+  return "This status does not grant dashboard access by itself.";
 }
 
+function statusPillStyle(): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    width: "fit-content",
+    alignItems: "center",
+    minHeight: 30,
+    borderRadius: 999,
+    padding: "6px 10px",
+    border: "1px solid rgba(146,94,8,0.2)",
+    background: "rgba(255,255,255,0.76)",
+    color: "#8A5A00",
+    fontSize: 12,
+    fontWeight: 950,
+  };
+}
 function membershipApprovalProgressText(review: ActionReviewItem | null): string {
   const requiredApprovals = numericCount(review?.required_approvals);
   const approvalCount = numericCount(review?.approval_count) ?? 0;
@@ -202,6 +215,7 @@ export default function CommunityDomainDashboardRecoveryPanel({
 }: DashboardRecoveryPanelProps) {
   const [revisionTitle, setRevisionTitle] = useState("");
   const [revisionNote, setRevisionNote] = useState("");
+  const [requestHistoryOpen, setRequestHistoryOpen] = useState(false);
   const latestMembershipRequestId = cleanText(latestMembershipRequest?.id);
   const latestMembershipRequestStatus = cleanText(
     latestMembershipRequest?.status
@@ -232,6 +246,7 @@ export default function CommunityDomainDashboardRecoveryPanel({
   useEffect(() => {
     setRevisionTitle("");
     setRevisionNote("");
+    setRequestHistoryOpen(false);
   }, [latestMembershipRequestId]);
 
   return (
@@ -255,12 +270,33 @@ export default function CommunityDomainDashboardRecoveryPanel({
             padding: 12,
           }}
         >
-          <div style={sectionLabel()}>Your access request</div>
-          <div style={{ ...helperText(), marginTop: 6 }}>
+          <div style={sectionLabel()}>My requests</div>
+          <div style={{ marginTop: 8 }}>
+            <span style={statusPillStyle()}>
+              {membershipRequestStatusLabel(latestMembershipRequest.status)}
+            </span>
+          </div>
+          <div style={{ ...helperText(), marginTop: 8 }}>
             {membershipRequestStatusText(latestMembershipRequest)}
           </div>
           {hasMembershipRequestHistory ? (
+            <StableButton
+              type="button"
+              kind="secondary"
+              fullWidth
+              debugId="community-domain-dashboard.error.request-history-toggle"
+              aria-expanded={requestHistoryOpen}
+              aria-controls="community-domain-dashboard-request-history"
+              onClick={() => setRequestHistoryOpen((current) => !current)}
+              style={{ marginTop: 12 }}
+            >
+              {requestHistoryOpen ? "Hide request history" : "View request history"}
+            </StableButton>
+          ) : null}
+          {hasMembershipRequestHistory && requestHistoryOpen ? (
             <div
+              id="community-domain-dashboard-request-history"
+              data-debug-id="community-domain-dashboard.request-history"
               style={{
                 display: "grid",
                 gap: 8,
@@ -305,7 +341,7 @@ export default function CommunityDomainDashboardRecoveryPanel({
                           fontWeight: 850,
                         }}
                       >
-                        {reviewId ? `Review ${reviewId} - ` : ""}
+                        {reviewId ? `Request ${reviewId} - ` : ""}
                         {membershipRequestStatusLabel(item.status)}
                       </div>
                     </div>

@@ -158601,3 +158601,12 @@ Deployment:
 - Backend truth: no backend change was needed. `gmfn_backend/app/api/routes/support_cases.py` already supports requester/admin visibility, threaded messages, upload attachments, admin attachment notifications, and status movement back to the requester.
 - Verification passed: `node --check frontend/tools/audit-support-helpdesk.mjs`; `npm --prefix frontend run audit:support-helpdesk`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `git diff --check`.
 - Devil's advocate: this is not real-time WebSocket chat and it does not reduce app megabytes. It gives the highest-gain support behavior now by exposing an already-functional case/message/attachment system simply. Real-time chat would add operational complexity and should wait until pilot usage proves threaded support is too slow.
+
+## 2026-08-24 - Local Community Domain Member Request Simplification
+- Status: Local only, not pushed/deployed.
+- Continued the simplification round after support/help-desk commit `2485eb3d`.
+- Frontend change: the Community Domain denied-access recovery panel now shows the ordinary applicant surface as `My requests` with a compact visible status pill such as `Waiting for admin`, `Needs changes`, `Approved`, or `Resolved`. The main message no longer leads with internal review IDs.
+- Progressive disclosure change: applicant request history is now behind a `View request history` toggle and resets closed when the latest request changes. The history remains available for traceability but no longer crowds the first recovery view.
+- Guardrail change: updated `frontend/tools/audit-community-domain-product-contracts.mjs` so the Community Domain contract cages the simpler member-facing request state and the hidden request-history drawer.
+- Verification passed: `node --check frontend/tools/audit-community-domain-product-contracts.mjs`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `git diff --check`.
+- Devil's advocate: this is a clarity win for applicants, not a backend/governance simplification and not a megabyte reduction. The heavy review machinery still exists and is still needed for Community Domain governance; we are just exposing less of it to ordinary users at once.
