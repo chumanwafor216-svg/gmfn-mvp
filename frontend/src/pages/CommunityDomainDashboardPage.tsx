@@ -7781,9 +7781,9 @@ export default function CommunityDomainDashboardPage() {
                     data-debug-id="community-domain-dashboard.daily-work-card"
                     style={commandLaneCard("primary")}
                   >
-                    <div style={sectionLabel()}>Daily Work</div>
+                    <div style={sectionLabel()}>Start here</div>
                     <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                      Open one live area. Finish the action. Return here.
+                      Use Marketplace first. Open another area only when the next job needs it.
                     </div>
                     <StableButton
                       type="button"
@@ -7816,60 +7816,72 @@ export default function CommunityDomainDashboardPage() {
                       >
                         Open {operationalLaneLabel}
                       </StableButton>
-                      {isAdmin ? (
-                        <StableButton
-                          type="button"
-                          kind="secondary"
-                          fullWidth
-                          stableHeight={40}
-                          debugId="community-domain-dashboard.real-life-record-shortcut"
-                          onClick={() => openRealLifeRecordTask("activity")}
-                        >
-                          Record activity
-                        </StableButton>
-                      ) : null}
-                    </div>
-                  </div>
-                  <div style={commandLaneGrid()}>
-                    <div
-                      data-debug-id="community-domain-dashboard.governance-card"
-                      style={commandLaneCard()}
-                    >
-                      <div style={sectionLabel()}>Governance</div>
-                      <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                        Rules, approvals, and evidence checks.
-                      </div>
                       <StableButton
                         type="button"
                         kind="secondary"
                         fullWidth
-                        stableHeight={44}
-                        debugId="community-domain-dashboard.open-governance"
-                        onClick={openGovernanceLane}
+                        stableHeight={40}
+                        debugId="community-domain-dashboard.more-actions-toggle"
+                        aria-expanded={commandMoreActionsOpen}
+                        aria-controls="community-domain-command-more-actions"
+                        onClick={() =>
+                          setCommandMoreActionsOpen((current) => {
+                            if (current) setCommandGuidanceOpen(false);
+                            return !current;
+                          })
+                        }
+                        style={{ justifyContent: "center", fontSize: 13, textTransform: "none" }}
                       >
-                        Open Governance
+                        {commandMoreActionsOpen ? "Close more" : "More"}
                       </StableButton>
                     </div>
                   </div>
-                  <StableButton
-                    type="button"
-                    kind="secondary"
-                    fullWidth
-                    stableHeight={42}
-                    debugId="community-domain-dashboard.more-actions-toggle"
-                    aria-expanded={commandMoreActionsOpen}
-                    aria-controls="community-domain-command-more-actions"
-                    onClick={() => setCommandMoreActionsOpen((current) => !current)}
-                    style={{ justifyContent: "center", fontSize: 13, textTransform: "none" }}
-                  >
-                    {commandMoreActionsOpen ? "Close more actions" : "More domain actions"}
-                  </StableButton>
                   {commandMoreActionsOpen ? (
                     <div
                       id="community-domain-command-more-actions"
                       data-debug-id="community-domain-dashboard.more-actions-panel"
                       style={commandLaneGrid()}
                     >
+                      <div
+                        data-debug-id="community-domain-dashboard.governance-card"
+                        style={commandLaneCard()}
+                      >
+                        <div style={sectionLabel()}>Governance</div>
+                        <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
+                          Rules, approvals, and evidence checks.
+                        </div>
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          stableHeight={44}
+                          debugId="community-domain-dashboard.open-governance"
+                          onClick={openGovernanceLane}
+                        >
+                          Open Governance
+                        </StableButton>
+                      </div>
+                      {isAdmin ? (
+                        <div
+                          data-debug-id="community-domain-dashboard.real-life-record-card"
+                          style={commandLaneCard()}
+                        >
+                          <div style={sectionLabel()}>Records</div>
+                          <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
+                            Add a real activity only when you have the source facts ready.
+                          </div>
+                          <StableButton
+                            type="button"
+                            kind="secondary"
+                            fullWidth
+                            stableHeight={44}
+                            debugId="community-domain-dashboard.real-life-record-shortcut"
+                            onClick={() => openRealLifeRecordTask("activity")}
+                          >
+                            Record activity
+                          </StableButton>
+                        </div>
+                      ) : null}
                       <div
                         data-debug-id="community-domain-dashboard.subscription-card"
                         style={commandLaneCard()}
@@ -7889,6 +7901,27 @@ export default function CommunityDomainDashboardPage() {
                           Open Subscription
                         </StableButton>
                       </div>
+                      <div
+                        data-debug-id="community-domain-dashboard.guidance-card"
+                        style={commandLaneCard()}
+                      >
+                        <div style={sectionLabel()}>Guidance</div>
+                        <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
+                          Read the next safe step and the rule before changing deeper settings.
+                        </div>
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          stableHeight={44}
+                          debugId="community-domain-dashboard.command-guidance-toggle"
+                          aria-expanded={commandGuidanceOpen}
+                          aria-controls="community-domain-command-guidance"
+                          onClick={() => setCommandGuidanceOpen((current) => !current)}
+                        >
+                          {commandGuidanceOpen ? "Close guidance" : "Open guidance"}
+                        </StableButton>
+                      </div>
                     </div>
                   ) : null}
                 </div>
@@ -7903,18 +7936,20 @@ export default function CommunityDomainDashboardPage() {
                   Continue setup
                 </StableButton>
               )}
-              <StableButton
-                type="button"
-                kind="secondary"
-                fullWidth
-                stableHeight={44}
-                debugId="community-domain-dashboard.command-guidance-toggle"
-                aria-expanded={commandGuidanceOpen}
-                aria-controls="community-domain-command-guidance"
-                onClick={() => setCommandGuidanceOpen((current) => !current)}
-              >
-                {commandGuidanceOpen ? "Close guidance" : "Open guidance"}
-              </StableButton>
+              {!domainOperational ? (
+                <StableButton
+                  type="button"
+                  kind="secondary"
+                  fullWidth
+                  stableHeight={44}
+                  debugId="community-domain-dashboard.command-guidance-toggle"
+                  aria-expanded={commandGuidanceOpen}
+                  aria-controls="community-domain-command-guidance"
+                  onClick={() => setCommandGuidanceOpen((current) => !current)}
+                >
+                  {commandGuidanceOpen ? "Close guidance" : "Open guidance"}
+                </StableButton>
+              ) : null}
               {commandGuidanceOpen ? (
                 <div
                   id="community-domain-command-guidance"

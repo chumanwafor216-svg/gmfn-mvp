@@ -1280,24 +1280,11 @@ try {
   if (!commandText.includes("Run one operating area at a time")) {
     findings.push("Domain command does not show the focused operating-area guidance.");
   }
-  if (!(await isDebugVisible(page, "community-domain-dashboard.command-guidance-toggle"))) {
-    findings.push("Domain command does not expose an open-close guidance control.");
+  if (await isDebugVisible(page, "community-domain-dashboard.command-guidance-toggle")) {
+    findings.push("Active Community Domain dashboard exposes Guidance before More domain actions is opened.");
   }
   if (commandText.includes("Do first") || commandText.includes("Important rule")) {
     findings.push("Domain command shows read-only guidance before the user opens it.");
-  }
-  await clickByDebugId(page, "community-domain-dashboard.command-guidance-toggle");
-  audit = await page.evaluate(pageAudit);
-  commandText = normalized(audit.bodyText);
-  if (!commandText.includes("Do first") || !commandText.includes("Important rule")) {
-    findings.push("Domain command guidance does not open the first action and rule notes.");
-  }
-  await page.waitForTimeout(450);
-  await clickByDebugId(page, "community-domain-dashboard.command-guidance-toggle");
-  audit = await page.evaluate(pageAudit);
-  commandText = normalized(audit.bodyText);
-  if (commandText.includes("Do first") || commandText.includes("Important rule")) {
-    findings.push("Domain command guidance does not close after reading.");
   }
   const dashboardFirstAction = await firstViewportActionFinding(
     page,
@@ -1311,11 +1298,17 @@ try {
   if (!commandText.includes("Open Members")) {
     findings.push("Active Community Domain dashboard does not expose the deterministic Open Members live-area shortcut.");
   }
+  if (!commandText.includes("More")) {
+    findings.push("Active Community Domain dashboard does not expose the compact More drawer for secondary actions.");
+  }
   if (commandText.includes("Open operating areas")) {
     findings.push("Active Community Domain dashboard exposes broad Open operating areas wording on the first command surface.");
   }
-  if (!commandText.includes("Record activity")) {
-    findings.push("Active Community Domain dashboard does not expose the deterministic Record activity shortcut.");
+  if (commandText.includes("Record activity")) {
+    findings.push("Active Community Domain dashboard exposes Record activity before More domain actions is opened.");
+  }
+  if (await isDebugVisible(page, "community-domain-dashboard.open-governance")) {
+    findings.push("Active Community Domain dashboard exposes Governance before More domain actions is opened.");
   }
   if (commandText.includes("Record from real life")) {
     findings.push("Active Community Domain dashboard exposes broad Record from real life wording on the first command surface.");
@@ -1328,14 +1321,39 @@ try {
   }
   await clickByDebugId(page, "community-domain-dashboard.more-actions-toggle");
   await page.waitForTimeout(450);
+  if (!(await isDebugVisible(page, "community-domain-dashboard.open-governance"))) {
+    findings.push("More domain actions does not reveal the Governance action.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.real-life-record-shortcut"))) {
+    findings.push("More domain actions does not reveal the Record activity action for admins.");
+  }
   if (!(await isDebugVisible(page, "community-domain-dashboard.open-subscription"))) {
     findings.push("More domain actions does not reveal the Subscription action.");
   }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.command-guidance-toggle"))) {
+    findings.push("More domain actions does not reveal the Guidance control.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.command-guidance-toggle");
+  audit = await page.evaluate(pageAudit);
+  commandText = normalized(audit.bodyText);
+  if (!commandText.includes("Do first") || !commandText.includes("Important rule")) {
+    findings.push("Domain command guidance does not open the first action and rule notes from More domain actions.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.command-guidance-toggle");
   await page.waitForTimeout(450);
   await clickByDebugId(page, "community-domain-dashboard.more-actions-toggle");
   await page.waitForTimeout(450);
+  if (await isDebugVisible(page, "community-domain-dashboard.open-governance")) {
+    findings.push("Governance action stays visible after closing More domain actions.");
+  }
+  if (await isDebugVisible(page, "community-domain-dashboard.real-life-record-shortcut")) {
+    findings.push("Record activity action stays visible after closing More domain actions.");
+  }
   if (await isDebugVisible(page, "community-domain-dashboard.open-subscription")) {
     findings.push("Subscription action stays visible after closing More domain actions.");
+  }
+  if (await isDebugVisible(page, "community-domain-dashboard.command-guidance-toggle")) {
+    findings.push("Guidance control stays visible after closing More domain actions.");
   }
   if (!(await isDebugVisible(page, "community-domain-dashboard.nav.dashboard"))) {
     findings.push("Active Community Domain dashboard does not expose the Dashboard route escape.");
@@ -1365,8 +1383,7 @@ try {
   if (activeHeroFinding) findings.push(activeHeroFinding);
   const operatingProofFinding = await page.evaluate(() => {
     const proofTargets = [
-      ["Daily Work", '[data-debug-id="community-domain-dashboard.daily-work-card"]'],
-      ["Governance", '[data-debug-id="community-domain-dashboard.governance-card"]'],
+      ["Start here", '[data-debug-id="community-domain-dashboard.daily-work-card"]'],
     ];
     const missing = [];
     for (const [label, selector] of proofTargets) {
@@ -1394,7 +1411,7 @@ try {
   });
   await alignProductEvidenceCaptureBottom(
     page,
-    '[data-debug-id="community-domain-dashboard.governance-card"]'
+    '[data-debug-id="community-domain-dashboard.daily-work-card"]'
   );
   await captureProductEvidenceCandidate(
     page,
