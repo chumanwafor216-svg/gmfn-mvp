@@ -121,6 +121,11 @@ import type { MemberDetailKey } from "./communityDomainDashboard/MemberFocusPane
 import type { ServiceDetailKey } from "./communityDomainDashboard/ServiceFocusPanel";
 import type { StructureDetailKey } from "./communityDomainDashboard/StructureFocusPanel";
 import type {
+  DirectorSummaryTaskKey,
+  GovernanceTaskKey,
+  SponsorSummaryTaskKey,
+} from "./communityDomainDashboard/GovernanceFocusPanel";
+import type {
   BillingQuoteSurface,
   BillingTaskPanelsData,
   DomainPaymentIntentSurface,
@@ -140,8 +145,8 @@ const CommunityDomainStructureFocusPanel = lazy(
 const CommunityDomainServiceFocusPanel = lazy(
   () => import("./communityDomainDashboard/ServiceFocusPanel")
 );
-const CommunityDomainGovernanceReadinessPanels = lazy(
-  () => import("./communityDomainDashboard/GovernanceReadinessPanels")
+const CommunityDomainGovernanceFocusPanel = lazy(
+  () => import("./communityDomainDashboard/GovernanceFocusPanel")
 );
 const CommunityDomainBillingReadinessPanels = lazy(
   () => import("./communityDomainDashboard/BillingReadinessPanels")
@@ -151,12 +156,6 @@ const CommunityDomainBillingTaskPanels = lazy(
 );
 const CommunityDomainIdentityReadinessPanels = lazy(
   () => import("./communityDomainDashboard/IdentityReadinessPanels")
-);
-const CommunityDomainAccessRequestsPanel = lazy(
-  () => import("./communityDomainDashboard/AccessRequestsPanel")
-);
-const CommunityDomainRealLifeRecordPanel = lazy(
-  () => import("./communityDomainDashboard/RealLifeRecordPanel")
 );
 const CommunityDomainSelectorPanel = lazy(
   () => import("./communityDomainDashboard/DomainSelectorPanel")
@@ -170,9 +169,6 @@ const CommunityDomainLaneSelectorPanel = lazy(
 const CommunityDomainOperatingSummaryPanel = lazy(
   () => import("./communityDomainDashboard/OperatingSummaryPanel")
 );
-const CommunityDomainPeriodSponsorSummaryPanels = lazy(
-  () => import("./communityDomainDashboard/PeriodSponsorSummaryPanels")
-);
 
 type DomainLane = {
   lane_key?: string;
@@ -182,15 +178,6 @@ type DomainLane = {
 };
 
 type MemberRosterTaskKey = "summary" | "members";
-type GovernanceTaskKey =
-  | "readiness"
-  | "director_summary"
-  | "sponsor_summary"
-  | "real_life_record"
-  | "access_requests";
-type GovernanceTaskGroupKey = "readiness" | "reports" | "records";
-type DirectorSummaryTaskKey = "overview" | "membership" | "evidence" | "delivery";
-type SponsorSummaryTaskKey = "overview" | "evidence" | "delivery" | "export";
 type OperatingSummaryTaskKey = "next_action" | "status" | "allowance" | "permissions";
 type SetupWorkbenchTaskKey = "step" | "access";
 type SetupAccessTaskKey = "summary" | "authority";
@@ -447,122 +434,6 @@ function emptyBeneficiaryDeliveryReceiptCorrectionDraft(): BeneficiaryDeliveryRe
     note: "",
   };
 }
-
-const GOVERNANCE_TASK_OPTIONS: Array<{
-  key: GovernanceTaskKey;
-  label: string;
-  note: string;
-}> = [
-  {
-    key: "readiness",
-    label: "Readiness",
-    note: "Review governance blockers, approvals, and setup health.",
-  },
-  {
-    key: "director_summary",
-    label: "Director summary",
-    note: "Review owner/admin governance counts and action status.",
-  },
-  {
-    key: "sponsor_summary",
-    label: "Sponsor report",
-    note: "Review sponsor-safe evidence, delivery, and export material.",
-  },
-  {
-    key: "real_life_record",
-    label: "Record real life",
-    note: "Capture activity or beneficiary outcome evidence.",
-  },
-  {
-    key: "access_requests",
-    label: "Access requests",
-    note: "Review pending membership and access decisions.",
-  },
-];
-
-const GOVERNANCE_TASK_GROUP_OPTIONS: Array<{
-  key: GovernanceTaskGroupKey;
-  label: string;
-  note: string;
-  defaultTask: GovernanceTaskKey;
-  taskKeys: GovernanceTaskKey[];
-}> = [
-  {
-    key: "readiness",
-    label: "Readiness",
-    note: "Governance health and setup blockers.",
-    defaultTask: "readiness",
-    taskKeys: ["readiness"],
-  },
-  {
-    key: "reports",
-    label: "Reports",
-    note: "Director and sponsor-safe reporting.",
-    defaultTask: "director_summary",
-    taskKeys: ["director_summary", "sponsor_summary"],
-  },
-  {
-    key: "records",
-    label: "Records",
-    note: "Real-life evidence capture and access requests.",
-    defaultTask: "real_life_record",
-    taskKeys: ["real_life_record", "access_requests"],
-  },
-];
-
-const DIRECTOR_SUMMARY_TASK_OPTIONS: Array<{
-  key: DirectorSummaryTaskKey;
-  label: string;
-  note: string;
-}> = [
-  {
-    key: "overview",
-    label: "Overview",
-    note: "Read the period rule before using the report.",
-  },
-  {
-    key: "membership",
-    label: "Membership",
-    note: "Review active, added, removed, and governance action counts.",
-  },
-  {
-    key: "evidence",
-    label: "Evidence",
-    note: "Review evidence and confirmation totals already recorded.",
-  },
-  {
-    key: "delivery",
-    label: "Delivery",
-    note: "Review beneficiary confirmation delivery and receipt counts.",
-  },
-];
-
-const SPONSOR_SUMMARY_TASK_OPTIONS: Array<{
-  key: SponsorSummaryTaskKey;
-  label: string;
-  note: string;
-}> = [
-  {
-    key: "overview",
-    label: "Overview",
-    note: "Read the sponsor-safe rule first.",
-  },
-  {
-    key: "evidence",
-    label: "Evidence",
-    note: "Review sponsor-safe evidence and outcome totals.",
-  },
-  {
-    key: "delivery",
-    label: "Delivery",
-    note: "Review provider delivery readiness and receipts.",
-  },
-  {
-    key: "export",
-    label: "Export",
-    note: "Prepare sponsor-safe text for copying.",
-  },
-];
 
 const SETUP_STEP_OPTIONS: Array<{
   key: SetupStepKey;
@@ -5013,38 +4884,6 @@ export default function CommunityDomainDashboardPage() {
     !setupPrimaryActionHasLane && setupPrimaryActionLaneKey === "verification" && hasServicesLane
       ? "GSN opens Services because authority verification is shown there as a readiness row. Actual authority verification still needs its separate owner or admin path."
       : "";
-  const activeGovernanceTaskGroup = useMemo<GovernanceTaskGroupKey>(() => {
-    if (
-      activeGovernanceTask === "director_summary" ||
-      activeGovernanceTask === "sponsor_summary"
-    ) {
-      return "reports";
-    }
-    if (
-      activeGovernanceTask === "real_life_record" ||
-      activeGovernanceTask === "access_requests"
-    ) {
-      return "records";
-    }
-    return "readiness";
-  }, [activeGovernanceTask]);
-  const activeGovernanceTaskGroupOption =
-    GOVERNANCE_TASK_GROUP_OPTIONS.find((group) => group.key === activeGovernanceTaskGroup) ||
-    GOVERNANCE_TASK_GROUP_OPTIONS[0];
-  const activeGovernanceTaskOption =
-    GOVERNANCE_TASK_OPTIONS.find((task) => task.key === activeGovernanceTask) ||
-    GOVERNANCE_TASK_OPTIONS[0];
-  const activeGovernanceGroupTasks = GOVERNANCE_TASK_OPTIONS.filter((task) =>
-    activeGovernanceTaskGroupOption.taskKeys.includes(task.key)
-  );
-  const activeDirectorSummaryTaskOption =
-    DIRECTOR_SUMMARY_TASK_OPTIONS.find(
-      (task) => task.key === activeDirectorSummaryTask
-    ) || DIRECTOR_SUMMARY_TASK_OPTIONS[0];
-  const activeSponsorSummaryTaskOption =
-    SPONSOR_SUMMARY_TASK_OPTIONS.find(
-      (task) => task.key === activeSponsorSummaryTask
-    ) || SPONSOR_SUMMARY_TASK_OPTIONS[0];
   const billingIsActive =
     cleanText(status.billing_status || selectedLane?.status).toLowerCase() === "active";
   const activeBillingTaskOption =
@@ -9300,241 +9139,44 @@ export default function CommunityDomainDashboardPage() {
                   </Suspense>
                 ) : null}
                 {!isActiveLaneReadinessLoading && activeLane === "governance" ? (
-                  <>
-                    {isAdmin ? (
-                      <div
-                        style={{
-                          ...softCard(),
-                          display: "grid",
-                          gap: 12,
-                        }}
-                      >
-                        <div style={iconHeaderStyle()}>
-                          <div style={iconFrame(44)}>
-                            <GsnRealisticIcon name="records-folder" size={34} />
-                          </div>
-                          <div style={{ minWidth: 0 }}>
-                            <div style={sectionLabel()}>Governance jobs</div>
-                            <h3
-                              style={{
-                                margin: "3px 0 0",
-                                fontSize: 20,
-                                lineHeight: 1.16,
-                              }}
-                            >
-                              Choose the governance stage first.
-                            </h3>
-                            <div style={{ ...helperText(), marginTop: 6 }}>
-                              Readiness, reports, and records stay separate so
-                              the surface does not dump every control at once.
-                            </div>
-                          </div>
-                        </div>
-                        <div style={{ ...helperText(), fontSize: 13 }}>
-                          Current governance stage:{" "}
-                          <strong>{activeGovernanceTaskGroupOption.label}</strong>.{" "}
-                          {activeGovernanceTaskGroupOption.note}
-                        </div>
-                        <StableButton
-                          type="button"
-                          kind="secondary"
-                          fullWidth
-                          stableHeight={42}
-                          debugId="community-domain-dashboard.governance-group-toggle"
-                          aria-expanded={governanceGroupChooserOpen}
-                          aria-controls="community-domain-governance-stages"
-                          onClick={() =>
-                            setGovernanceGroupChooserOpen((current) => !current)
-                          }
-                          style={{
-                            justifyContent: "center",
-                            fontSize: 13,
-                            textTransform: "none",
-                          }}
-                        >
-                          {governanceGroupChooserOpen
-                            ? "Close governance stages"
-                            : "Change governance stage"}
-                        </StableButton>
-                        {governanceGroupChooserOpen ? (
-                          <div
-                            id="community-domain-governance-stages"
-                            data-debug-id="community-domain-dashboard.governance-group-panel"
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns:
-                                "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
-                              gap: 8,
-                            }}
-                          >
-                            {GOVERNANCE_TASK_GROUP_OPTIONS.map((group) => (
-                              <StableButton
-                                key={group.key}
-                                type="button"
-                                kind={
-                                  activeGovernanceTaskGroup === group.key
-                                    ? "primary"
-                                    : "secondary"
-                                }
-                                stableHeight={46}
-                                debugId={`community-domain-dashboard.governance-group.${group.key}`}
-                                onClick={() => selectGovernanceTask(group.defaultTask)}
-                              >
-                                {group.label}
-                              </StableButton>
-                            ))}
-                          </div>
-                        ) : null}
-                        {activeGovernanceGroupTasks.length > 1 ? (
-                          <div
-                            style={{
-                              borderTop: "1px solid rgba(9,27,46,0.08)",
-                              paddingTop: 10,
-                              display: "grid",
-                              gap: 8,
-                            }}
-                          >
-                            <StableButton
-                              type="button"
-                              kind="secondary"
-                              fullWidth
-                              stableHeight={42}
-                              debugId="community-domain-dashboard.governance-task-toggle"
-                              aria-expanded={governanceTaskChooserOpen}
-                              aria-controls="community-domain-governance-jobs"
-                              onClick={() =>
-                                setGovernanceTaskChooserOpen((current) => !current)
-                              }
-                              style={{
-                                justifyContent: "center",
-                                fontSize: 13,
-                                textTransform: "none",
-                              }}
-                            >
-                              {governanceTaskChooserOpen ? "Close jobs" : "Change job"}
-                            </StableButton>
-                            {governanceTaskChooserOpen ? (
-                              <div
-                                id="community-domain-governance-jobs"
-                                data-debug-id="community-domain-dashboard.governance-task-panel"
-                                style={{
-                                  display: "grid",
-                                  gap: 8,
-                                }}
-                              >
-                                <div style={sectionLabel()}>
-                                  {activeGovernanceTaskGroupOption.label} jobs
-                                </div>
-                                <div
-                                  style={{
-                                    display: "grid",
-                                    gridTemplateColumns:
-                                      "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
-                                    gap: 8,
-                                  }}
-                                >
-                                  {activeGovernanceGroupTasks.map((task) => (
-                                    <StableButton
-                                      key={task.key}
-                                      type="button"
-                                      kind={
-                                        activeGovernanceTask === task.key
-                                          ? "primary"
-                                          : "secondary"
-                                      }
-                                      stableHeight={42}
-                                      debugId={`community-domain-dashboard.governance-task.${task.key}`}
-                                      onClick={() => selectGovernanceTask(task.key)}
-                                    >
-                                      {task.label}
-                                    </StableButton>
-                                  ))}
-                                </div>
-                              </div>
-                            ) : null}
-                          </div>
-                        ) : null}
-                        <div style={{ ...helperText(), fontSize: 13 }}>
-                          {activeGovernanceTaskOption.note}
-                        </div>
+                  <Suspense
+                    fallback={
+                      <div style={{ ...softCard(), ...helperText() }}>
+                        Loading governance focus...
                       </div>
-                    ) : null}
-
-                    {activeGovernanceTask === "readiness" || !isAdmin ? (
-                    <Suspense
-                      fallback={
-                        <div style={{ ...helperText(), marginTop: 4 }}>
-                          Loading governance readiness panels...
-                        </div>
-                      }
-                    >
-                      <CommunityDomainGovernanceReadinessPanels
-                        isAdmin={isAdmin}
-                        membershipAccessRequests={membershipAccessRequests}
-                        governanceAttentionCount={governanceAttentionCount}
-                        institutionalOpenReviewCount={institutionalOpenReviewCount}
-                        governanceApprovedCount={governanceApprovedCount}
-                        delegationMap={delegationMap}
-                        governanceCoverage={governanceCoverage}
-                      />
-                    </Suspense>
-                    ) : null}
-
-                    {isAdmin &&
-                    (activeGovernanceTask === "director_summary" ||
-                      activeGovernanceTask === "sponsor_summary") ? (
-                      <Suspense
-                        fallback={
-                          <div style={{ ...softCard(), display: "grid", gap: 8 }}>
-                            <div style={sectionLabel()}>
-                              {activeGovernanceTask === "director_summary"
-                                ? "Director period summary"
-                                : "Sponsor-safe summary"}
-                            </div>
-                            <div style={{ ...helperText(), marginTop: 2 }}>
-                              Loading governance report controls...
-                            </div>
-                          </div>
-                        }
-                      >
-                        <CommunityDomainPeriodSponsorSummaryPanels
-                          data={{
-                            activeGovernanceTask: activeGovernanceTask as
-                              | "director_summary"
-                              | "sponsor_summary",
-                            activeDirectorSummaryTask,
-                            activeDirectorSummaryTaskOption,
-                            activeSponsorSummaryTask,
-                            activeSponsorSummaryTaskOption,
-                            busySponsorExportCopy,
-                            copySponsorExportPack,
-                            directorSummaryTaskChooserOpen,
-                            DIRECTOR_SUMMARY_TASK_OPTIONS,
-                            periodSummary,
-                            setActiveDirectorSummaryTask,
-                            setActiveSponsorSummaryTask,
-                            setDirectorSummaryTaskChooserOpen,
-                            setSponsorSummaryTaskChooserOpen,
-                            sponsorSummary,
-                            sponsorSummaryTaskChooserOpen,
-                            SPONSOR_SUMMARY_TASK_OPTIONS,
-                          }}
-                        />
-                      </Suspense>
-                    ) : null}
-                    {isAdmin && activeGovernanceTask === "real_life_record" ? (
-                      <Suspense
-                        fallback={
-                          <div style={{ ...softCard(), display: "grid", gap: 8 }}>
-                            <div style={sectionLabel()}>Record from real life</div>
-                            <div style={{ ...helperText(), marginTop: 2 }}>
-                              Loading record controls...
-                            </div>
-                          </div>
-                        }
-                      >
-                        <CommunityDomainRealLifeRecordPanel
-                          data={({
+                    }
+                  >
+                    <CommunityDomainGovernanceFocusPanel
+                      data={{
+                        isAdmin,
+                        activeGovernanceTask,
+                        activeDirectorSummaryTask,
+                        activeSponsorSummaryTask,
+                        governanceGroupChooserOpen,
+                        governanceTaskChooserOpen,
+                        directorSummaryTaskChooserOpen,
+                        sponsorSummaryTaskChooserOpen,
+                        governanceReadinessProps: {
+                          isAdmin,
+                          membershipAccessRequests,
+                          governanceAttentionCount,
+                          institutionalOpenReviewCount,
+                          governanceApprovedCount,
+                          delegationMap,
+                          governanceCoverage,
+                        },
+                        periodSummary,
+                        sponsorSummary,
+                        busySponsorExportCopy,
+                        copySponsorExportPack,
+                        setActiveDirectorSummaryTask,
+                        setActiveSponsorSummaryTask,
+                        setDirectorSummaryTaskChooserOpen,
+                        setSponsorSummaryTaskChooserOpen,
+                        setGovernanceGroupChooserOpen,
+                        setGovernanceTaskChooserOpen,
+                        selectGovernanceTask,
+                        realLifeRecordData: ({
                           activeActivityRecordStage,
                           activeActivityRecordTask,
                           activeBeneficiaryOutcomeRecordStage,
@@ -9632,40 +9274,24 @@ export default function CommunityDomainDashboardPage() {
                           updateBeneficiaryDeliveryReceiptDraft,
                           updateBeneficiaryOutcomeDraft,
                           withdrawBeneficiaryOutcomeContactConsent,
-                          } satisfies RealLifeRecordPanelData)}
-                        />
-                      </Suspense>
-                    ) : null}
-
-                    {isAdmin && activeGovernanceTask === "access_requests" ? (
-                      <Suspense
-                        fallback={
-                          <div style={{ ...softCard(), display: "grid", gap: 8 }}>
-                            <div style={sectionLabel()}>Access requests</div>
-                            <div style={{ ...helperText(), marginTop: 2 }}>
-                              Loading access request controls...
-                            </div>
-                          </div>
-                        }
-                      >
-                        <CommunityDomainAccessRequestsPanel
-                          embedded
-                          membershipAccessRequests={membershipAccessRequests}
-                          loadingQueue={loadingQueue}
-                          busyReviewId={busyReviewId}
-                          onApproveOnly={(review) => approveAccessRequest(review, false)}
-                          onRequestChanges={requestChangesForAccessRequest}
-                          onDecline={declineAccessRequest}
-                          onApproveAndApply={(review) => approveAccessRequest(review, true)}
-                          onApplyApproved={applyApprovedAccessRequest}
-                          onRefresh={refreshReviewerQueue}
-                          onOpenInvite={openSetupFirstCircle}
-                        />
-                      </Suspense>
-                    ) : null}
-                  </>
+                        } satisfies RealLifeRecordPanelData),
+                        accessRequestsPanelProps: {
+                          embedded: true,
+                          membershipAccessRequests,
+                          loadingQueue,
+                          busyReviewId,
+                          onApproveOnly: (review) => approveAccessRequest(review, false),
+                          onRequestChanges: requestChangesForAccessRequest,
+                          onDecline: declineAccessRequest,
+                          onApproveAndApply: (review) => approveAccessRequest(review, true),
+                          onApplyApproved: applyApprovedAccessRequest,
+                          onRefresh: refreshReviewerQueue,
+                          onOpenInvite: openSetupFirstCircle,
+                        },
+                      }}
+                    />
+                  </Suspense>
                 ) : null}
-
                 {!isActiveLaneReadinessLoading && activeLane === "members" ? (
                   <Suspense
                     fallback={
