@@ -1029,9 +1029,9 @@ async function firstViewportActionFinding(page, debugId, label) {
   );
 }
 
-async function viewportElementFinding(page, selector, label) {
+async function viewportElementFinding(page, selector, label, maxTopOverride = null) {
   return page.evaluate(
-    ({ targetSelector, targetLabel }) => {
+    ({ targetSelector, targetLabel, maxTop }) => {
       const element = document.querySelector(targetSelector);
       if (!element) {
         return `${targetLabel} is missing.`;
@@ -1046,14 +1046,15 @@ async function viewportElementFinding(page, selector, label) {
       if (!visible) {
         return `${targetLabel} is not visible after the action.`;
       }
-      if (rect.top < -2 || rect.top > Math.min(180, window.innerHeight * 0.24)) {
+      const allowedTop = typeof maxTop === "number" ? maxTop : Math.min(180, window.innerHeight * 0.24);
+      if (rect.top < -2 || rect.top > allowedTop) {
         return `${targetLabel} did not receive focus after the action: top ${Math.round(
           rect.top
         )}, viewport ${window.innerHeight}.`;
       }
       return "";
     },
-    { targetSelector: selector, targetLabel: label }
+    { targetSelector: selector, targetLabel: label, maxTop: maxTopOverride }
   );
 }
 
@@ -1082,25 +1083,36 @@ await page.route("**/*", mockApi);
 try {
   await page.goto(`${baseUrl}${purchaseRoutePath}`, { waitUntil: "networkidle", timeout: 15000 });
   await page.getByText("Purchase Community Domain", { exact: true }).waitFor({ timeout: 10000 });
-  await page.getByText("2. Availability", { exact: true }).waitFor({ timeout: 10000 });
+  await page.getByText("Local community first", { exact: true }).waitFor({ timeout: 10000 });
 
   let audit = await page.evaluate(pageAudit);
   if (await isDebugVisible(page, "community-domain-purchase.check-domain")) {
-    findings.push("Purchase page demo still exposes the pre-check form after availability is returned.");
+    findings.push("Purchase page local-community-first gate still exposes the pre-check form.");
   }
-  if (!(await isDebugVisible(page, "community-domain-purchase.create-draft"))) {
-    findings.push("Purchase page availability review does not show the Create draft action.");
+  if (!(await isDebugVisible(page, "community-domain-purchase.open-create-community-first"))) {
+    findings.push("Purchase page local-community-first gate does not show the Create GSN community first action.");
+  }
+  if (await isDebugVisible(page, "community-domain-purchase.create-draft")) {
+    findings.push("Purchase page local-community-first gate exposes a duplicate Domain draft action before the GSN community exists.");
   }
   const purchaseReviewAction = await firstViewportActionFinding(
     page,
-    "community-domain-purchase.create-draft",
-    "Purchase page availability review"
+    "community-domain-purchase.open-create-community-first",
+    "Purchase page local-community-first gate"
   );
   if (purchaseReviewAction) findings.push(purchaseReviewAction);
   const purchaseText = normalized(audit.bodyText);
-  for (const label of ["Available", "Domain details", "3. Draft & quote", "4. Payment"]) {
+  for (const label of [
+    "Local community first",
+    "Create the normal GSN community.",
+    "Availability result",
+    "Not checked",
+    "Draft and quote state",
+    "Waiting for owner",
+    "Create GSN community first",
+  ]) {
     if (!purchaseText.includes(label)) {
-      findings.push(`Purchase page availability review is missing ${label}.`);
+      findings.push(`Purchase page local-community-first gate is missing ${label}.`);
     }
   }
   const exposedEngineCards = await Promise.all(
@@ -1551,7 +1563,8 @@ try {
   const commandReturnFinding = await viewportElementFinding(
     page,
     "#community-domain-official-board",
-    "Community Domain command return"
+    "Community Domain command return",
+    320
   );
   if (commandReturnFinding) findings.push(commandReturnFinding);
   await clickByDebugId(page, "community-domain-dashboard.operational-focus");

@@ -2463,7 +2463,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /DOMAIN_PURCHASE_MOBILE_FACTS[\s\S]*Community first[\s\S]*Domain after[\s\S]*Payment later[\s\S]*needsLocalCommunityFirst[\s\S]*Pillar of Hope needs the normal GSN community first[\s\S]*Create Domain draft[\s\S]*Local community first[\s\S]*Pillar of Hope needs its local community record and GSN number before the Domain layer is filled[\s\S]*community-domain-purchase\.open-create-community-first[\s\S]*Create GSN community first[\s\S]*Create the normal GSN community first/,
+  /DOMAIN_PURCHASE_MOBILE_FACTS[\s\S]*Community first[\s\S]*Domain after[\s\S]*Payment later[\s\S]*needsLocalCommunityFirst[\s\S]*Pillar of Hope needs the normal GSN community first[\s\S]*Create Domain draft[\s\S]*Local community first[\s\S]*Pillar of Hope needs its local community record and GSN number before the Domain layer is filled[\s\S]*community-domain-purchase\.open-create-community-first[\s\S]*Create GSN community first[\s\S]*Create the normal GSN community first[\s\S]*Draft and quote state[\s\S]*!needsLocalCommunityFirst \? \([\s\S]*community-domain-purchase\.create-draft/,
   "Community Domain purchase must gate first-time domain setup behind the normal local GSN community anchor.",
   { frontend: true }
 );
@@ -2500,9 +2500,9 @@ assertContains(
       String.raw`/community-domains/availability`,
       String.raw`firstViewportActionFinding`,
       String.raw`viewportElementFinding`,
-      String.raw`2. Availability`,
-      String.raw`Purchase page demo still exposes the pre-check form after availability is returned`,
-      String.raw`community-domain-purchase\.create-draft`,
+      String.raw`Local community first`,
+      String.raw`Purchase page local-community-first gate still exposes the pre-check form`,
+      String.raw`community-domain-purchase\.open-create-community-first`,
       String.raw`Purchase page mobile hero still exposes the four engine explanation cards`,
       String.raw`community-domain-purchase\.other-paths`,
       String.raw`domainListScenario = "empty"`,

@@ -6331,6 +6331,29 @@ export default function CommunityDomainDashboardPage() {
     setMessage("Returned to Domain command. Choose Marketplace or open one operating area.");
     window.requestAnimationFrame(() => {
       commandSurfaceRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
+      window.requestAnimationFrame(() => {
+        const commandSurface = commandSurfaceRef.current;
+        if (!commandSurface) return;
+        let scrollParent = commandSurface.parentElement;
+        while (scrollParent && scrollParent !== document.body) {
+          const parentStyle = window.getComputedStyle(scrollParent);
+          const canScrollParent =
+            /(auto|scroll)/.test(parentStyle.overflowY) &&
+            scrollParent.scrollHeight > scrollParent.clientHeight;
+          if (canScrollParent) {
+            const parentRect = scrollParent.getBoundingClientRect();
+            const commandRect = commandSurface.getBoundingClientRect();
+            scrollParent.scrollTo({
+              top: Math.max(0, scrollParent.scrollTop + commandRect.top - parentRect.top - 12),
+              behavior: "auto",
+            });
+            return;
+          }
+          scrollParent = scrollParent.parentElement;
+        }
+        const commandTop = commandSurface.getBoundingClientRect().top + window.scrollY - 12;
+        window.scrollTo({ top: Math.max(0, commandTop), behavior: "auto" });
+      });
     });
   }
 

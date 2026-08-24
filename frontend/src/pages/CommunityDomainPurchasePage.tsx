@@ -1778,24 +1778,26 @@ export default function CommunityDomainPurchasePage() {
                       Open domain dashboard
                     </EntryActionButton>
                   ) : null}
-                  <EntryActionButton
-                    type="button"
-                    variant="secondary"
-                    onClick={handleCreateDraft}
-                    disabled={busy === "draft" || Boolean(draftResult)}
-                    debugId="community-domain-purchase.create-draft"
-                    style={{
-                      width: "100%",
-                      color: "#10253B",
-                      border: "1px solid rgba(16,37,59,0.14)",
-                      background:
-                        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(240,246,253,0.98) 100%)",
-                      boxShadow:
-                        "0 14px 28px rgba(7,20,36,0.07), inset 0 1px 0 rgba(255,255,255,0.86)",
-                    }}
-                  >
-                    {draftActionLabel}
-                  </EntryActionButton>
+                  {!needsLocalCommunityFirst ? (
+                    <EntryActionButton
+                      type="button"
+                      variant="secondary"
+                      onClick={handleCreateDraft}
+                      disabled={busy === "draft" || Boolean(draftResult)}
+                      debugId="community-domain-purchase.create-draft"
+                      style={{
+                        width: "100%",
+                        color: "#10253B",
+                        border: "1px solid rgba(16,37,59,0.14)",
+                        background:
+                          "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(240,246,253,0.98) 100%)",
+                        boxShadow:
+                          "0 14px 28px rgba(7,20,36,0.07), inset 0 1px 0 rgba(255,255,255,0.86)",
+                      }}
+                    >
+                      {draftActionLabel}
+                    </EntryActionButton>
+                  ) : null}
                 </div>
               </div>
 
