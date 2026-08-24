@@ -746,6 +746,38 @@ function resolveNoticeTarget(raw: any): string {
 
   if (
     containsAny(text, [
+      "support_case",
+      "help desk",
+      "support desk",
+      "support case",
+    ])
+  ) {
+    return GUIDANCE_TARGETS.HELP_DESK;
+  }
+
+  if (
+    containsAny(text, [
+      "community meeting",
+      "meeting reminder",
+      "meeting record",
+      "community.meeting",
+    ])
+  ) {
+    return GUIDANCE_TARGETS.COMMUNITY;
+  }
+
+  if (
+    containsAny(text, [
+      "official community notice",
+      "community.notice",
+      "notice board",
+      "official board",
+    ])
+  ) {
+    return GUIDANCE_TARGETS.COMMUNITY;
+  }
+  if (
+    containsAny(text, [
       "settings",
       "preference",
       "notifications mode",
@@ -797,6 +829,15 @@ function normalizeNoticeCtaLabel(ctaTo: string, rawLabel: any): string {
     return "Open Focus Commitments";
   }
 
+  if (targetPath === GUIDANCE_TARGETS.HELP_DESK) {
+    return "Open Help Desk";
+  }
+
+  if (targetPath === GUIDANCE_TARGETS.COMMUNITY) {
+    const context = [safeStr(rawLabel), normalizedTarget].join(" ").toLowerCase();
+    if (context.includes("meeting")) return "Open meeting notice";
+    if (context.includes("notice") || context.includes("official board")) return "Open Notice Board";
+  }
   if (targetPath === GUIDANCE_TARGETS.LOANS && (genericLabel || /finance/i.test(direct))) {
     return "Open Loan Support";
   }
@@ -874,6 +915,25 @@ function bucketFromNotification(raw: any): GuidanceInboxBucketKey {
     .join(" ")
     .toLowerCase();
 
+  if (text.includes("support_case.admin_reply") || text.includes("support_case.admin_attachment")) {
+    return "actNow";
+  }
+
+  if (text.includes("support_case.status_updated") || text.includes("support_case.opened")) {
+    return "watchAndWait";
+  }
+
+  if (
+    text.includes("community.meeting_reminder") ||
+    text.includes("community meeting reminder") ||
+    text.includes("meeting record")
+  ) {
+    return text.includes("recorded") ? "watchAndWait" : "dueSoon";
+  }
+
+  if (text.includes("community.notice.posted") || text.includes("official community notice")) {
+    return "generalUpdates";
+  }
   if (
     text.includes("community_confirmation.request_to_respond") ||
     text.includes("community_confirmation.outcome_updated") ||

@@ -161,6 +161,17 @@ type CommunityNoticeItem = {
   sender_whatsapp_number?: string | null;
   sender_whatsapp_label?: string | null;
   sender_contact_ready?: boolean;
+  notice_kind?: string | null;
+  interest_summary?: {
+    yes?: number | string | null;
+    maybe?: number | string | null;
+    no?: number | string | null;
+    total?: number | string | null;
+    planning_ready?: boolean | null;
+    own_response?: string | null;
+  } | null;
+  planning_status?: string | null;
+  board_hint?: string | null;
 };
 
 type CommunityIconMark = GsnIconName;
@@ -1324,6 +1335,43 @@ function noticeExpiryLabel(item: CommunityNoticeItem): string {
   if (safeStr(item?.expiry_policy).toLowerCase() === "pinned") return "Pinned";
   const expiresAt = safeDateLabel(item?.expires_at);
   return expiresAt ? `Visible until ${expiresAt}` : "";
+}
+
+function noticeNumber(value: unknown): number {
+  const amount = Number(value || 0);
+  return Number.isFinite(amount) && amount > 0 ? Math.floor(amount) : 0;
+}
+
+function isMeetingNotice(item: CommunityNoticeItem | null | undefined): boolean {
+  const source = safeStr(item?.source).toLowerCase();
+  const kind = safeStr(item?.notice_kind).toLowerCase();
+  return Boolean(item?.meeting_id || source === "community_meeting" || kind.includes("meeting"));
+}
+
+function noticeKindLabel(item: CommunityNoticeItem | null | undefined): string {
+  if (isMeetingNotice(item)) return "Meeting planning";
+  const source = safeStr(item?.source).toLowerCase();
+  if (source === "demand_box") return "Community need";
+  return "Official notice";
+}
+
+function meetingInterestParts(item: CommunityNoticeItem | null | undefined): Array<[string, number]> {
+  if (!isMeetingNotice(item)) return [];
+  const summary = item?.interest_summary || {};
+  return [
+    ["Yes", noticeNumber(summary.yes)],
+    ["Maybe", noticeNumber(summary.maybe)],
+    ["No", noticeNumber(summary.no)],
+  ];
+}
+
+function meetingPlanningLine(item: CommunityNoticeItem | null | undefined): string {
+  if (!isMeetingNotice(item)) return "";
+  const summary = item?.interest_summary || {};
+  const total = noticeNumber(summary.total);
+  const status = firstTruthy(item?.planning_status);
+  if (total > 0) return status || `${total} member${total === 1 ? "" : "s"} responded`;
+  return status || "Waiting for member responses";
 }
 
 function communityContactMessage(clan: ClanItem | null | undefined): string {
@@ -3710,7 +3758,9 @@ export default function CommunityHomePage() {
                 </span>
               </div>
               <span style={announcementBoardPillStyle()}>
-                Official announcements
+                {communityNoticesLoading
+                  ? "Checking board"
+                  : noticeKindLabel(primaryCommunityNotice)}
               </span>
             </div>
 
@@ -3744,6 +3794,9 @@ export default function CommunityHomePage() {
                     primaryCommunityNotice?.source,
                     "Community"
                   );
+                  const kindLabel = noticeKindLabel(primaryCommunityNotice);
+                  const planningLine = meetingPlanningLine(primaryCommunityNotice);
+                  const interestParts = meetingInterestParts(primaryCommunityNotice);
 
                   return (
                     <div style={announcementComposerPreviewStyle()}>
@@ -3779,10 +3832,30 @@ export default function CommunityHomePage() {
                               fontWeight: 820,
                             }}
                           >
-                            {senderLabel}
+                            {kindLabel} - {senderLabel}
                             {when ? ` - ${when}` : ""}
                             {expiry ? ` - ${expiry}` : ""}
                           </span>
+                          {planningLine || interestParts.length > 0 ? (
+                            <span
+                              style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: 6,
+                                marginTop: 8,
+                                alignItems: "center",
+                              }}
+                            >
+                              {planningLine ? (
+                                <span style={badge(true)}>{planningLine}</span>
+                              ) : null}
+                              {interestParts.map(([label, count]) => (
+                                <span key={label} style={badge(false)}>
+                                  {label}: {count}
+                                </span>
+                              ))}
+                            </span>
+                          ) : null}
                         </span>
                       </div>
                     </div>
@@ -3919,6 +3992,9 @@ export default function CommunityHomePage() {
                       item?.source,
                       "Community"
                     );
+                    const kindLabel = noticeKindLabel(item);
+                    const planningLine = meetingPlanningLine(item);
+                    const interestParts = meetingInterestParts(item);
                     const noticeIcons: GsnIconName[] = [
                       "calendar",
                       "home",
@@ -3954,10 +4030,30 @@ export default function CommunityHomePage() {
                               fontWeight: 780,
                             }}
                           >
-                            {senderLabel}
+                            {kindLabel} - {senderLabel}
                             {when ? ` - ${when}` : ""}
                             {expiry ? ` - ${expiry}` : ""}
                           </span>
+                          {planningLine || interestParts.length > 0 ? (
+                            <span
+                              style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: 5,
+                                marginTop: 6,
+                                alignItems: "center",
+                              }}
+                            >
+                              {planningLine ? (
+                                <span style={badge(true)}>{planningLine}</span>
+                              ) : null}
+                              {interestParts.map(([label, count]) => (
+                                <span key={label} style={badge(false)}>
+                                  {label}: {count}
+                                </span>
+                              ))}
+                            </span>
+                          ) : null}
                         </span>
                         {item?.sender_whatsapp_number ? (
                           <StableButton

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
-import { StableButton } from "../components/StableButton";
+import { StableButton, StableCtaLink } from "../components/StableButton";
 import {
   addSupportCaseMessage,
   createSupportCase,
@@ -404,7 +404,7 @@ function SupportPage() {
             </label>
             <label style={labelStyle()}>
               Picture or PDF
-              <input type="file" accept="image/*,.pdf,application/pdf" onChange={(event) => setNewAttachment(event.target.files?.[0] || null)} />
+              <input type="file" accept="image/*,.pdf,application/pdf" data-gmfn-action-root="true" data-cta-id="support-page.create-attachment" onChange={(event) => setNewAttachment(event.target.files?.[0] || null)} />
             </label>
             <StableButton type="submit" kind="primary" busy={busy} busyLabel="Sending" debugId="support-page.create" fullWidth>
               Ask for help
@@ -422,9 +422,12 @@ function SupportPage() {
             ) : null}
             <div style={{ display: "grid", gap: 10 }}>
               {cases.map((item) => (
-                <button
+                <StableButton
                   key={item.id}
                   type="button"
+                  kind="secondary"
+                  debugId={`support-page.case-row-${item.id}`}
+                  fullWidth
                   onClick={() => {
                     setSelectedId(item.id);
                     navigate(`/app/help?case_id=${item.id}`, { replace: true });
@@ -435,6 +438,9 @@ function SupportPage() {
                     textAlign: "left",
                     cursor: "pointer",
                     boxShadow: "none",
+                    display: "grid",
+                    alignItems: "stretch",
+                    justifyContent: "stretch",
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
@@ -445,7 +451,7 @@ function SupportPage() {
                     <span style={badgeStyle(item.status)}>{statusLabel(item.status)}</span>
                   </div>
                   {item.last_message_preview ? <div style={{ color: "#526579", fontSize: 13, marginTop: 8 }}>{item.last_message_preview}</div> : null}
-                </button>
+                </StableButton>
               ))}
             </div>
           </div>
@@ -480,9 +486,9 @@ function SupportPage() {
                         {Array.isArray(item.attachments) && item.attachments.length ? (
                           <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
                             {item.attachments.map((attachment) => (
-                              <a key={attachment.id} href={attachment.url || "#"} target="_blank" rel="noreferrer" style={{ color: admin ? "#0B63D1" : "#FFFFFF", fontWeight: 900 }}>
+                              <StableCtaLink key={attachment.id} to={attachment.url || "#"} target="_blank" rel="noreferrer" kind="secondary" debugId={`support-page.message-attachment-${attachment.id}`} style={{ color: admin ? "#0B63D1" : "#FFFFFF", fontWeight: 900, justifyContent: "flex-start" }}>
                                 {safeStr(attachment.file_name, "Attachment")}
-                              </a>
+                              </StableCtaLink>
                             ))}
                           </div>
                         ) : null}
@@ -502,7 +508,7 @@ function SupportPage() {
                   </label>
                   <label style={labelStyle()}>
                     Add picture or PDF
-                    <input type="file" accept="image/*,.pdf,application/pdf" onChange={(event) => setReplyAttachment(event.target.files?.[0] || null)} />
+                    <input type="file" accept="image/*,.pdf,application/pdf" data-gmfn-action-root="true" data-cta-id="support-page.reply-attachment" onChange={(event) => setReplyAttachment(event.target.files?.[0] || null)} />
                   </label>
                   <StableButton type="submit" kind="primary" busy={busy} busyLabel="Sending" debugId="support-page.reply" minWidth={140}>
                     Send reply

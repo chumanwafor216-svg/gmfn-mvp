@@ -47,6 +47,16 @@ function cleanText(value: unknown, fallback = ""): string {
 function compactStatus(value: unknown): string {
   return humanStatus(value);
 }
+function accessRequestStatusLabel(value: unknown): string {
+  const status = cleanText(value, "pending").toLowerCase().replace(/[-_]+/g, " ");
+  if (status === "pending" || status === "pending review") return "Waiting for admin";
+  if (status === "needs changes") return "Needs changes";
+  if (status === "approved") return "Approved";
+  if (status === "applied") return "Resolved";
+  if (status === "rejected") return "Declined";
+  if (status === "cancelled" || status === "canceled") return "Withdrawn";
+  return compactStatus(value);
+}
 
 function numericCount(value: unknown): number | null {
   const count = Number(value);
@@ -251,7 +261,7 @@ export default function CommunityDomainAccessRequestsPanel({
                       </strong>
                       . Status:{" "}
                       <strong style={{ textTransform: "capitalize" }}>
-                        {compactStatus(review.status)}
+                        {accessRequestStatusLabel(review.status)}
                       </strong>
                       .
                     </div>

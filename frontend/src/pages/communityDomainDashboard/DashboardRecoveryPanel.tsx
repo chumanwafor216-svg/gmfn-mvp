@@ -35,6 +35,16 @@ function cleanText(value: unknown, fallback = ""): string {
 function compactStatus(value: unknown): string {
   return humanStatus(value);
 }
+function membershipRequestStatusLabel(value: unknown): string {
+  const status = cleanText(value, "pending").toLowerCase().replace(/[-_]+/g, " ");
+  if (status === "pending" || status === "pending review") return "Waiting for admin";
+  if (status === "needs changes") return "Needs changes";
+  if (status === "approved") return "Approved";
+  if (status === "applied") return "Resolved";
+  if (status === "rejected") return "Declined";
+  if (status === "cancelled" || status === "canceled") return "Withdrawn";
+  return compactStatus(value);
+}
 
 function numericCount(value: unknown): number | null {
   const count = Number(value);
@@ -109,13 +119,13 @@ function membershipRequestStatusText(review: ActionReviewItem | null): string {
   const reviewLabel = reviewId ? ` Review ${reviewId}` : "";
   const approvalText = membershipApprovalProgressText(review);
   if (status === "pending" || status === "pending_review") {
-    return `${reviewLabel} is pending. An owner/admin still needs to approve and apply it before membership changes.${approvalText}`;
+    return `${membershipRequestStatusLabel(status)}.${reviewLabel ? ` ${reviewLabel}.` : ""} An owner/admin still needs to approve and apply it before membership changes.${approvalText}`;
   }
   if (status === "approved") {
-    return `${reviewLabel} is approved, but membership still has to be applied by an owner/admin before this dashboard opens.${approvalText} You can withdraw it before it is applied if you no longer want this access added.`;
+    return `${membershipRequestStatusLabel(status)}.${reviewLabel ? ` ${reviewLabel}.` : ""} Membership still has to be applied by an owner/admin before this dashboard opens.${approvalText} You can withdraw it before it is applied if you no longer want this access added.`;
   }
   if (status === "needs_changes") {
-    return `${reviewLabel} needs changes before an owner/admin can continue. Reviewer-private notes are not shown here, so add a clear member title, invite reference, department, class, or relationship proof and send it back to owner/admin review. You can also withdraw it if you want to restart later.`;
+    return `${membershipRequestStatusLabel(status)}.${reviewLabel ? ` ${reviewLabel}.` : ""} Add a clear member title, invite reference, department, class, or relationship proof and send it back to owner/admin review. You can also withdraw it if you want to restart later.`;
   }
   if (
     (status === "cancelled" || status === "rejected") &&
@@ -296,7 +306,7 @@ export default function CommunityDomainDashboardRecoveryPanel({
                         }}
                       >
                         {reviewId ? `Review ${reviewId} - ` : ""}
-                        {compactStatus(item.status)}
+                        {membershipRequestStatusLabel(item.status)}
                       </div>
                     </div>
                   );

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
-import { StableButton } from "../components/StableButton";
+import { StableButton, StableCtaLink } from "../components/StableButton";
 import {
   addSupportCaseMessage,
   getAdminSupportCases,
@@ -366,9 +366,12 @@ function AdminSupportPage() {
             {!loading && cases.length === 0 ? <div style={{ color: "#526579", lineHeight: 1.7 }}>No cases match this view.</div> : null}
             <div style={{ display: "grid", gap: 10 }}>
               {cases.map((item) => (
-                <button
+                <StableButton
                   key={item.id}
                   type="button"
+                  kind="secondary"
+                  debugId={`admin-support.case-row-${item.id}`}
+                  fullWidth
                   onClick={() => {
                     setSelectedId(item.id);
                     navigate(`/app/command-center/support?case_id=${item.id}`, { replace: true });
@@ -379,6 +382,9 @@ function AdminSupportPage() {
                     textAlign: "left",
                     cursor: "pointer",
                     boxShadow: "none",
+                    display: "grid",
+                    alignItems: "stretch",
+                    justifyContent: "stretch",
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
@@ -391,7 +397,7 @@ function AdminSupportPage() {
                     <span style={badgeStyle(item.status)}>{statusLabel(item.status)}</span>
                   </div>
                   <div style={{ color: "#526579", fontSize: 13, marginTop: 8 }}>{formatWhen(item.last_activity_at || item.created_at)}</div>
-                </button>
+                </StableButton>
               ))}
             </div>
           </div>
@@ -430,9 +436,9 @@ function AdminSupportPage() {
                         {Array.isArray(item.attachments) && item.attachments.length ? (
                           <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
                             {item.attachments.map((attachment) => (
-                              <a key={attachment.id} href={attachment.url || "#"} target="_blank" rel="noreferrer" style={{ color: "#0B63D1", fontWeight: 900 }}>
+                              <StableCtaLink key={attachment.id} to={attachment.url || "#"} target="_blank" rel="noreferrer" kind="secondary" debugId={`admin-support.message-attachment-${attachment.id}`} style={{ color: "#0B63D1", fontWeight: 900, justifyContent: "flex-start" }}>
                                 {safeStr(attachment.file_name, "Attachment")} ({safeStr(attachment.content_type, "file")})
-                              </a>
+                              </StableCtaLink>
                             ))}
                           </div>
                         ) : null}
@@ -445,9 +451,9 @@ function AdminSupportPage() {
                   <div style={{ ...card("#F8FBFF"), boxShadow: "none", display: "grid", gap: 8 }}>
                     <div style={sectionLabel()}>Attachments</div>
                     {attachments.map((attachment) => (
-                      <a key={attachment.id} href={attachment.url || "#"} target="_blank" rel="noreferrer" style={{ color: "#0B63D1", fontWeight: 900 }}>
+                      <StableCtaLink key={attachment.id} to={attachment.url || "#"} target="_blank" rel="noreferrer" kind="secondary" debugId={`admin-support.case-attachment-${attachment.id}`} style={{ color: "#0B63D1", fontWeight: 900, justifyContent: "flex-start" }}>
                         {safeStr(attachment.file_name, "Attachment")} | {safeStr(attachment.content_type, "file")} | {formatWhen(attachment.created_at)}
-                      </a>
+                      </StableCtaLink>
                     ))}
                   </div>
                 ) : null}

@@ -346,3 +346,78 @@ def test_community_notice_rejects_malformed_boundary_controls(
     )
     assert bad_body.status_code == 422, bad_body.text
     assert "body must be text" in bad_body.text
+
+
+def test_community_notice_board_surfaces_meeting_interest_as_planning_notice(
+    client, override_current_user
+):
+    _seed_notice_community()
+    scheduled_at = (datetime.now(timezone.utc) + timedelta(days=2)).isoformat()
+
+    with SessionLocal() as db:
+        db.add(
+            TrustEvent(
+                event_type="community.meeting.reminder_created",
+                clan_id=1,
+                actor_user_id=1,
+                subject_user_id=1,
+                meta_json=json.dumps(
+                    {
+                        "meeting_id": "MTG-C1-NOTICE-BOARD",
+                        "title": "Monthly planning meeting",
+                        "purpose": "Agree the next community support priorities.",
+                        "scheduled_at": scheduled_at,
+                    }
+                ),
+            )
+        )
+        db.add(
+            TrustEvent(
+                event_type="community.meeting.interest_recorded",
+                clan_id=1,
+                actor_user_id=1,
+                subject_user_id=1,
+                meta_json=json.dumps(
+                    {
+                        "meeting_id": "MTG-C1-NOTICE-BOARD",
+                        "interest_response": "yes",
+                        "responder_user_id": 1,
+                    }
+                ),
+            )
+        )
+        db.add(
+            TrustEvent(
+                event_type="community.meeting.interest_recorded",
+                clan_id=1,
+                actor_user_id=2,
+                subject_user_id=2,
+                meta_json=json.dumps(
+                    {
+                        "meeting_id": "MTG-C1-NOTICE-BOARD",
+                        "interest_response": "maybe",
+                        "responder_user_id": 2,
+                    }
+                ),
+            )
+        )
+        db.commit()
+
+    list_res = client.get("/community-notices", params={"clan_id": 1, "limit": 3})
+
+    assert list_res.status_code == 200, list_res.text
+    payload = list_res.json()
+    notice = payload["notices"][0]
+    assert notice["source"] == "community_meeting"
+    assert notice["notice_kind"] == "meeting_planning"
+    assert notice["meeting_id"] == "MTG-C1-NOTICE-BOARD"
+    assert notice["title"] == "Monthly planning meeting"
+    assert notice["purpose"] == "Agree the next community support priorities."
+    assert notice["scheduled_at"] == scheduled_at
+    assert notice["planning_status"] == "Members are already responding"
+    assert notice["interest_summary"]["yes"] == 1
+    assert notice["interest_summary"]["maybe"] == 1
+    assert notice["interest_summary"]["no"] == 0
+    assert notice["interest_summary"]["total"] == 2
+    assert notice["interest_summary"]["planning_ready"] is True
+    assert "not final attendance" in notice["board_hint"]

@@ -387,19 +387,41 @@ def _create_notice_notifications(
 
 def _meeting_to_notice(row: dict[str, Any]) -> dict[str, Any]:
     body = _safe_str(row.get("title") or row.get("purpose"), "Community meeting")
+    interest_summary = row.get("interest_summary") if isinstance(row.get("interest_summary"), dict) else {}
+    yes_count = int(interest_summary.get("yes") or 0)
+    maybe_count = int(interest_summary.get("maybe") or 0)
+    no_count = int(interest_summary.get("no") or 0)
+    interest_total = int(interest_summary.get("total") or (yes_count + maybe_count + no_count))
+    planning_status = (
+        "Members are already responding"
+        if interest_total > 0
+        else "Waiting for member responses"
+    )
     return {
         "notice_id": f"MTG-{_safe_str(row.get('meeting_id') or row.get('event_id'))}",
         "event_id": row.get("summary_event_id") or row.get("reminder_event_id") or row.get("event_id"),
         "source": "community_meeting",
+        "notice_kind": "meeting_planning",
         "clan_id": None,
         "body": body,
         "title": body,
+        "purpose": _safe_str(row.get("purpose")),
         "word_count": _word_count(body),
         "created_at": row.get("created_at") or row.get("scheduled_at"),
         "posted_by_user_id": None,
         "meeting_id": row.get("meeting_id"),
         "scheduled_at": row.get("scheduled_at"),
         "status": row.get("status"),
+        "interest_summary": {
+            "yes": yes_count,
+            "maybe": maybe_count,
+            "no": no_count,
+            "total": interest_total,
+            "planning_ready": bool(interest_summary.get("planning_ready") or yes_count + maybe_count > 0),
+            "own_response": interest_summary.get("own_response"),
+        },
+        "planning_status": planning_status,
+        "board_hint": "Meeting interest is a planning signal, not final attendance.",
     }
 
 
