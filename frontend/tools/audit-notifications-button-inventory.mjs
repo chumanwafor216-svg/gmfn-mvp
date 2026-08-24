@@ -384,7 +384,7 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /debugId="app-layout\.mobile\.close-navigation"[\s\S]*?debugId=\{`app-layout\.drawer\.\$\{group\.title[\s\S]*?debugId="app-layout\.drawer\.logout"/,
+  /debugId="app-layout\.mobile\.close-navigation"[\s\S]*?debugId=\{`app-layout\.drawer\.\$\{group\.debugKey\}[\s\S]*?debugId="app-layout\.drawer\.logout"/,
   "Notifications mobile drawer must keep close, grouped nav links, and logout as stable controls."
 );
 

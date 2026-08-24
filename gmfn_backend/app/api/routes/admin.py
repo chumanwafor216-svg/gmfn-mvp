@@ -19,6 +19,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
+from app.core.security import get_password_hash
 from app.db.database import get_db
 from app.db.models import (
     Clan,
@@ -237,6 +238,17 @@ class CommunityDomainOwnershipReconcileIn(BaseModel):
     @classmethod
     def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_text_value(value, info.field_name)
+
+
+class AdminActivateMembershipIn(BaseModel):
+    gmfn_id: str = Field(..., min_length=6, max_length=64)
+    password: str = Field(..., min_length=6)
+
+    @field_validator("gmfn_id", "password", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 
 def _json_text(data: Any) -> str:
     return json.dumps(data, ensure_ascii=False, sort_keys=True, default=str)
@@ -2236,18 +2248,35 @@ def admin_pilot_intake(
         "create_entries": create_items,
         "join_requests": join_items,
     }
-@router.post("/activate-membership")
-def activate(payload: dict):
-    db = SessionLocal()
 
-    user = db.query(models.User).filter_by(gmfn_id=payload["gmfn_id"]).first()
+@router.post("/activate-membership")
+def activate(
+    payload: AdminActivateMembershipIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Admin-only compatibility activation path.
+
+    Normal member activation must continue through /auth/activate-membership.
+    This endpoint exists only for governed admin repair/support cases.
+    """
+    _require_platform_admin(current_user)
+
+    gmfn_id = _safe_str(payload.gmfn_id).upper()
+    user = db.query(User).filter(User.gmfn_id == gmfn_id).first()
 
     if not user:
-        raise HTTPException(404, "Invalid ID")
+        raise HTTPException(status_code=404, detail="Invalid GSN ID")
 
-    user.hashed_password = payload["password"]
-    user.is_active = True
+    user.hashed_password = get_password_hash(payload.password)
 
+    db.add(user)
     db.commit()
+    db.refresh(user)
 
-    return {"status": "activated"}
+    return {
+        "status": "activated",
+        "gmfn_id": user.gmfn_id,
+        "activated_by_user_id": int(current_user.id),
+    }

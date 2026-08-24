@@ -32,6 +32,7 @@ type NavGroup = {
 
 type MobileDrawerGroup = {
   title: string;
+  debugKey: string;
   items: NavLinkItem[];
   variant?: "main" | "tools" | "quick";
 };
@@ -198,6 +199,11 @@ function readPayloadRole(source: any): string {
   )
     .trim()
     .toLowerCase();
+}
+
+function cachedNonAdminRole(): string {
+  const role = readRole();
+  return role === "admin" ? "" : role;
 }
 
 function pathOnly(to: string): string {
@@ -626,7 +632,7 @@ function getSpecialRouteMeta(
 ): RouteMeta | null {
   if (pathname.startsWith("/app/shop/")) {
     return {
-      section: "Main movement",
+      section: "Main",
       page: "Shop",
     };
   }
@@ -694,21 +700,21 @@ function getSpecialRouteMeta(
 
   if (pathname === "/app/help" || pathname === "/app/support-desk") {
     return {
-      section: "Identity & settings",
+      section: "Account",
       page: "Help Desk",
     };
   }
 
   if (pathname === "/app/notifications") {
     return {
-      section: "Identity & settings",
+      section: "Account",
       page: "Action Inbox",
     };
   }
 
   if (pathname === "/app/trust-slip" || pathname.startsWith("/app/trust-slip/")) {
     return {
-      section: "Trust detail",
+      section: "Trust",
       page: pathname.startsWith("/app/trust-slip/verify")
         ? "TrustSlip verify"
         : "TrustSlip",
@@ -717,14 +723,14 @@ function getSpecialRouteMeta(
 
   if (pathname === "/app/my-gmfn-and-i" && search.includes("tab=settings")) {
     return {
-      section: "Identity & settings",
+      section: "Account",
       page: "Settings",
     };
   }
 
   if (pathname === "/app/my-gmfn-and-i") {
     return {
-      section: "Identity & settings",
+      section: "Account",
       page: "My GSN Identity",
     };
   }
@@ -732,48 +738,48 @@ function getSpecialRouteMeta(
   if (canUseAdminTools && pathname.startsWith("/app/command-center")) {
     if (pathname.startsWith("/app/command-center/trust-analytics")) {
       return {
-        section: "Main movement",
+        section: "Main",
         page: "Trust Analytics",
       };
     }
 
     if (pathname.startsWith("/app/command-center/trust-events")) {
       return {
-        section: "Main movement",
+        section: "Main",
         page: "Trust Events",
       };
     }
 
     if (pathname.startsWith("/app/command-center/system-operations")) {
       return {
-        section: "Main movement",
+        section: "Main",
         page: "System Operations",
       };
     }
 
     if (pathname.startsWith("/app/command-center/exposure")) {
       return {
-        section: "Main movement",
+        section: "Main",
         page: "Exposure Admin",
       };
     }
 
     if (pathname.startsWith("/app/command-center/support")) {
       return {
-        section: "Main movement",
+        section: "Main",
         page: "Support Queue",
       };
     }
 
     if (pathname.startsWith("/app/command-center/trust-graph")) {
       return {
-        section: "Main movement",
+        section: "Main",
         page: "Trust Graph",
       };
     }
 
     return {
-      section: "Main movement",
+      section: "Main",
       page: "Admin Tools",
     };
   }
@@ -992,8 +998,7 @@ function getPageActions(
       return uniqueNavItems([
         makeDashboardItem(),
         makeCommunityItem(),
-        { label: "Exposure", to: "/app/command-center/exposure" },
-        { label: "Bank Console", to: "/app/command-center/bank-console" },
+        makeHelpDeskItem(),
       ]);
     }
 
@@ -1409,15 +1414,15 @@ function drawerLink(active = false, disabled = false): React.CSSProperties {
     alignItems: "center",
     justifyContent: "flex-start",
     gap: 10,
-    height: 56,
-    minHeight: 56,
-    maxHeight: 56,
-    padding: "8px 10px",
-    borderRadius: 16,
+    height: 48,
+    minHeight: 48,
+    maxHeight: 48,
+    padding: "0 14px",
+    borderRadius: 14,
     textDecoration: "none",
     fontWeight: 900,
-    fontSize: 13.6,
-    lineHeight: 1.12,
+    fontSize: 14.2,
+    lineHeight: 1.15,
     textAlign: "left",
     color: disabled ? "rgba(255,255,255,0.48)" : "#FFFFFF",
     background: active
@@ -1440,59 +1445,12 @@ function drawerLink(active = false, disabled = false): React.CSSProperties {
   };
 }
 
-function drawerLinkGrid(single = false): React.CSSProperties {
+function drawerLinkGrid(): React.CSSProperties {
   return {
     display: "grid",
-    gridTemplateColumns: single ? "1fr" : "repeat(2, minmax(0, 1fr))",
-    gap: 8,
-    alignItems: "stretch",
-  };
-}
-
-function drawerToolRail(): React.CSSProperties {
-  return {
-    display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gridTemplateColumns: "1fr",
     gap: 7,
-  };
-}
-
-function drawerToolLink(active = false, disabled = false): React.CSSProperties {
-  return {
-    ...drawerLink(active, disabled),
-    height: 48,
-    minHeight: 48,
-    maxHeight: 48,
-    borderRadius: 15,
-    padding: "7px 8px",
-    fontSize: 12.2,
-  };
-}
-
-function drawerIconTile(active = false): React.CSSProperties {
-  return {
-    width: 34,
-    height: 34,
-    minWidth: 34,
-    borderRadius: 13,
-    display: "grid",
-    placeItems: "center",
-    background: active
-      ? "rgba(255,255,255,0.13)"
-      : "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(232,243,255,0.96) 100%)",
-    boxShadow:
-      "0 10px 20px rgba(2,12,27,0.18), inset 0 1px 0 rgba(255,255,255,0.66)",
-    overflow: "hidden",
-  };
-}
-
-function drawerChevron(): React.CSSProperties {
-  return {
-    marginLeft: "auto",
-    color: "rgba(255,255,255,0.72)",
-    fontSize: 24,
-    lineHeight: 1,
-    fontWeight: 900,
+    alignItems: "stretch",
   };
 }
 
@@ -1772,22 +1730,23 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
     useState<TrustSlipSharePurposeKey>("work");
   const [trustSlipShareNotice, setTrustSlipShareNotice] = useState("");
   const [myGmfnId, setMyGmfnId] = useState<string>(() => getStoredGmfnId() || "");
-  const [myRole, setMyRole] = useState<string>(() => readRole());
+  const [myRole, setMyRole] = useState<string>(() => cachedNonAdminRole());
   const [myClanRole, setMyClanRole] = useState<string>("");
+  const [hasVerifiedAdminContext, setHasVerifiedAdminContext] = useState(false);
 
   const isAdmin = useMemo(() => {
     const role = String(myRole || "").trim().toLowerCase();
-    return role === "admin";
-  }, [myRole]);
+    return hasVerifiedAdminContext && role === "admin";
+  }, [hasVerifiedAdminContext, myRole]);
 
   const isClanAdmin = useMemo(() => {
     const role = String(myClanRole || "").trim().toLowerCase();
-    return role === "admin";
-  }, [myClanRole]);
+    return hasVerifiedAdminContext && role === "admin";
+  }, [hasVerifiedAdminContext, myClanRole]);
 
   const isPilotAdminIdentity = useMemo(
-    () => isPilotAdminGmfnId(myGmfnId),
-    [myGmfnId]
+    () => hasVerifiedAdminContext && isPilotAdminGmfnId(myGmfnId),
+    [hasVerifiedAdminContext, myGmfnId]
   );
 
   const canUseAdminTools = useMemo(
@@ -1797,7 +1756,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
 
   const refreshIdentityContext = useCallback(
     async (shouldApply: () => boolean = () => true) => {
-      const cachedRole = readRole();
+      const cachedRole = cachedNonAdminRole();
       if (cachedRole && shouldApply()) {
         setMyRole(cachedRole);
       }
@@ -1811,12 +1770,13 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
           ]);
       if (!shouldApply()) return;
 
-      const gmfnId = normalizeShellGmfnId(me?.gmfn_id || getStoredGmfnId());
+      const fetchedGmfnId = normalizeShellGmfnId(
+        me?.gmfn_id || me?.gmfnId || me?.gmfnID
+      );
+      const gmfnId = fetchedGmfnId || normalizeShellGmfnId(getStoredGmfnId());
       const fetchedRole = readPayloadRole(me);
-      const role =
-        fetchedRole ||
-        cachedRole ||
-        (isPilotAdminGmfnId(gmfnId) ? "admin" : "");
+      const verifiedPilotAdmin = isPilotAdminGmfnId(fetchedGmfnId);
+      const role = fetchedRole || (verifiedPilotAdmin ? "admin" : cachedRole);
       const clanRole = String(
         currentClan?.role ||
           currentClan?.member_role ||
@@ -1830,8 +1790,14 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
       setMyGmfnId(gmfnId);
       setMyRole(role);
       setMyClanRole(clanRole);
-      if (fetchedRole || role === "admin") {
+      setHasVerifiedAdminContext(
+        Boolean(me) &&
+          (fetchedRole === "admin" || clanRole === "admin" || verifiedPilotAdmin)
+      );
+      if (fetchedRole || verifiedPilotAdmin) {
         writeRole(role);
+      } else if (readRole() === "admin") {
+        writeRole("");
       }
     },
     [initialAuthContext]
@@ -1903,46 +1869,46 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
     return [
       {
         key: "primary",
-        label: "Main movement",
+        label: "Main",
         hint:
           canUseAdminTools
-            ? "The main pages stay simple: Dashboard, Community Home, Marketplace, Public Shop, Shop Control, Finance, Loan Support, Trust, and Admin."
-            : "The main pages stay simple: Dashboard, Community Home, Marketplace, Public Shop, Shop Control, Finance, Loan Support, and Trust.",
+            ? "Start with Dashboard, Community Home, Marketplace, Shop, Finance, Trust, and Support. Admin appears only when allowed."
+            : "Start with Dashboard, Community Home, Marketplace, Shop, Finance, Trust, and Support.",
         items: primaryItems,
       },
       {
         key: "commerce",
-        label: "Shop tools",
+        label: "Shop",
         hint:
-          "Shop Control is the owner workspace. Public Shop is the outward shop face shown in the main movement row.",
+          "Shop Control is the owner workspace. The public shop remains in the main area.",
         items: commerceItems,
       },
       {
         key: "finance-tools",
-        label: "Finance tools",
+        label: "Money",
         hint:
-          "Money In, Money Out, rails, and payout details stay grouped under the Finance workspace.",
+          "Money In, Money Out, rails, and payout details stay together.",
         items: financeToolsItems,
       },
       {
         key: "trust-passport",
-        label: "Trust detail",
+        label: "Trust",
         hint:
-          "TrustSlip stays grouped here while Trust Passport itself now sits in the main movement row.",
+          "TrustSlip and deeper trust records stay together.",
         items: trustPassportItems,
       },
       {
         key: "identity",
-        label: "Identity & settings",
+        label: "Account",
         hint:
-          "Identity integrity, notifications, profile help, and settings live here.",
+          "Identity, notifications, help, guide, and settings live here.",
         items: identityItems,
       },
       {
         key: "support",
-        label: "Loan Support",
+        label: "Support",
         hint:
-          "Open the guided support workspace first. Deeper tools stay inside the support flow.",
+          "Open support when money or account issues need attention.",
         items: loansItems,
       },
     ];
@@ -2040,17 +2006,13 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
   }
 
   function openDrawer() {
-    const cachedRole = readRole();
+    const cachedRole = cachedNonAdminRole();
     if (cachedRole) {
       setMyRole(cachedRole);
     }
     const cachedGmfnId = getStoredGmfnId();
     if (cachedGmfnId) {
       setMyGmfnId(cachedGmfnId);
-      if (isPilotAdminGmfnId(cachedGmfnId)) {
-        setMyRole("admin");
-        writeRole("admin");
-      }
     }
     void refreshIdentityContext();
     setIsActionsOpen(false);
@@ -2062,17 +2024,13 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
   }
 
   function openActions() {
-    const cachedRole = readRole();
+    const cachedRole = cachedNonAdminRole();
     if (cachedRole) {
       setMyRole(cachedRole);
     }
     const cachedGmfnId = getStoredGmfnId();
     if (cachedGmfnId) {
       setMyGmfnId(cachedGmfnId);
-      if (isPilotAdminGmfnId(cachedGmfnId)) {
-        setMyRole("admin");
-        writeRole("admin");
-      }
     }
     void refreshIdentityContext();
     setIsDrawerOpen(false);
@@ -2097,6 +2055,9 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
 
   function handleLogout() {
     logout();
+    setHasVerifiedAdminContext(false);
+    setMyRole("");
+    setMyClanRole("");
     setIsDrawerOpen(false);
     setIsActionsOpen(false);
     navigate("/login?force=1", { replace: true });
@@ -2129,7 +2090,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
             location.pathname,
             location.search,
             myShopGalleryTo,
-            isAdmin,
+            canUseAdminTools,
             myShopGalleryDisabled
           ),
     [
@@ -2137,7 +2098,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
       location.pathname,
       location.search,
       myShopGalleryTo,
-      isAdmin,
+      canUseAdminTools,
       myShopGalleryDisabled,
     ]
   );
@@ -2168,6 +2129,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
       return [
         {
           title: "Focused task",
+          debugKey: "focused-task",
           items: taskMode.actions,
           variant: "main",
         },
@@ -2176,32 +2138,38 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
 
     return [
       {
-        title: "Main movement",
+        title: "Main",
+        debugKey: "main-movement",
         items: primaryItems,
         variant: "main",
       },
       {
-        title: "Tools & resources",
+        title: "Shop",
+        debugKey: "tools-resources",
         items: commerceItems,
         variant: "tools",
       },
       {
-        title: "Finance tools",
+        title: "Money",
+        debugKey: "finance-tools",
         items: financeToolsItems,
         variant: "tools",
       },
       {
-        title: "Trust detail",
+        title: "Trust",
+        debugKey: "trust-detail",
         items: trustPassportItems,
         variant: "tools",
       },
       {
-        title: "Identity & settings",
+        title: "Account",
+        debugKey: "identity-settings",
         items: identityItems,
         variant: "tools",
       },
       {
-        title: "Quick actions",
+        title: "Support",
+        debugKey: "quick-actions",
         items: loansItems,
         variant: "quick",
       },
@@ -2476,18 +2444,11 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "40px minmax(0, 1fr) auto",
+                  gridTemplateColumns: "minmax(0, 1fr) auto",
                   gap: 12,
                   alignItems: "center",
                 }}
               >
-                <span style={drawerIconTile(true)}>
-                  <GsnRealisticIcon
-                    name={navIconForLabel(taskMode ? taskMode.title : routeMeta.page)}
-                    size={34}
-                    decorative
-                  />
-                </span>
                 <div style={{ minWidth: 0 }}>
                   <div style={brandEyebrow()}>
                     {taskMode ? "Focused task" : "You are here"}
@@ -2535,11 +2496,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
                 <div style={drawerSectionTitle()}>{group.title}</div>
 
                 <div
-                  style={
-                    group.variant === "tools"
-                      ? drawerToolRail()
-                      : drawerLinkGrid(group.items.length === 1)
-                  }
+                  style={drawerLinkGrid()}
                 >
                   {group.items.map((item) => (
                     <StableCtaLink
@@ -2554,31 +2511,12 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
                       onFocus={() => warmRouteBeforeNavigation(item.to)}
                       onPointerDown={() => warmRouteBeforeNavigation(item.to)}
                       onPointerEnter={() => warmRouteBeforeNavigation(item.to)}
-                      debugId={`app-layout.drawer.${group.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.${item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
-                      style={
-                        group.variant === "tools"
-                          ? drawerToolLink(
+                      debugId={`app-layout.drawer.${group.debugKey}.${item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                      style={drawerLink(
                               isItemActive(item, location.pathname, location.search),
                               !!item.disabled
-                            )
-                          : drawerLink(
-                              isItemActive(item, location.pathname, location.search),
-                              !!item.disabled
-                            )
-                      }
+                            )}
                     >
-                      <span
-                        aria-hidden="true"
-                        style={drawerIconTile(
-                          isItemActive(item, location.pathname, location.search)
-                        )}
-                      >
-                        <GsnRealisticIcon
-                          name={navIconForLabel(item.label)}
-                          size={group.variant === "tools" ? 30 : 34}
-                          decorative
-                        />
-                      </span>
                       <span
                         style={{
                           minWidth: 0,
@@ -2587,9 +2525,6 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
                         }}
                       >
                         {item.label}
-                      </span>
-                      <span aria-hidden="true" style={drawerChevron()}>
-                        &gt;
                       </span>
                     </StableCtaLink>
                   ))}

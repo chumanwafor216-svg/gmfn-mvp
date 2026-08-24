@@ -1,3 +1,27 @@
+## 2026-08-24 - Local backend Admin activation authorization hardening
+- Status: Local implementation verified; not pushed/deployed because the owner has not asked to publish this slice yet.
+- Audited 50 admin-like backend routes. The real gap found was legacy `POST /admin/activate-membership`, which had no signed-in admin dependency, referenced undefined legacy DB handles, accepted raw `dict` payloads, and assigned the submitted password directly into `hashed_password`.
+- Hardened `gmfn_backend/app/api/routes/admin.py`: `/admin/activate-membership` now uses a typed `AdminActivateMembershipIn` payload, requires `current_user: User = Depends(get_current_user)`, calls `_require_platform_admin(current_user)`, uses `get_db`, hashes the supplied password with `get_password_hash`, and returns the activating admin user id.
+- Added `gmfn_backend/tests/test_admin_activation_boundary.py` proving ordinary users get `403` and platform admins store a password hash rather than plain text.
+- Verified adjacent admin surfaces still pass: community ownership repair and support queue tests remain green.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\admin.py`; `python -m pytest gmfn_backend\tests\test_admin_activation_boundary.py gmfn_backend\tests\test_admin_community_ownership.py gmfn_backend\tests\test_support_cases.py -q`; admin-route static scan reported `adminish_routes=50 unchecked=0`; `git diff --check` with line-ending warnings only.
+- Devil's advocate: this closes the obvious open legacy admin activation endpoint. It does not mean every admin workflow is perfect; there are still older admin routes using local helper guards instead of one shared `require_admin` dependency, so a future cleanup should standardize the guard style for easier automated auditing.
+## 2026-08-24 - Local verified-admin-only shell visibility
+- Status: Local implementation verified; not pushed/deployed because the owner has not asked to publish this slice yet.
+- Tightened `frontend/src/layout/AppLayout.tsx` so the app shell no longer seeds Admin visibility from `localStorage.gmfn_role=admin`, and opening Menu/Tools no longer promotes a cached GSN/GMFN ID into Admin.
+- Admin Tools now appears only after a signed-in identity has been verified from the session/API path as platform admin, selected community admin, or the verified pilot admin identity. Logout clears the in-memory admin flag immediately.
+- Tightened `frontend/src/components/RequireAuth.tsx` so role-protected routes no longer admit access during a network-session error based only on cached `gmfn_role`; the guard now also recognises real API `is_admin` / `isAdmin` flags.
+- Updated `frontend/tools/audit-dashboard-button-inventory.mjs` to cage the verified-admin shell contract and the role-guard cached-role fallback ban.
+- Verification passed: `npm exec -- tsc -b --pretty false` from `frontend`; `npm --prefix frontend run audit:dashboard-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`.
+- Devil's advocate: this is frontend visibility and route-guard hardening, not a replacement for backend endpoint authorization. Backend admin endpoints must still enforce server-side admin/community-admin rules, and most already do through their route dependencies.
+## 2026-08-24 - Local text-first Menu drawer simplification
+- Status: Local implementation verified; not pushed/deployed because the owner has not asked to publish this slice yet.
+- Simplified the authenticated slide-out Menu in `frontend/src/layout/AppLayout.tsx`: drawer rows are now text-first, one-column, 48px high, without per-row 3D icons or chevrons; the current-location card also drops its drawer icon tile.
+- Kept the bottom navigation unchanged: Dashboard, Community Home, Marketplace, Shop, Profile.
+- Simplified visible menu section names to Main, Shop, Money, Trust, Account, and Support while preserving stable hidden drawer debug keys through a new `debugKey` field on mobile drawer groups.
+- Updated shell/button audits to expect the text-only drawer, stable debug keys, and 48px drawer row geometry.
+- Verification passed: `npm exec -- tsc -b --pretty false`; `npm --prefix frontend run audit:dashboard-button-inventory`; `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:marketplace-button-inventory`; `npm --prefix frontend run audit:notifications-button-inventory`; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:vault-control-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `git diff --check` with CRLF warnings only.
+- Devil's advocate: this makes the menu calmer and trims the app-shell chunk slightly, but it does not yet remove duplicate destinations from the menu. A deeper information-architecture cleanup should be a separate slice because it changes what users can reach from each section.
 ## 2026-08-24 - Local Community Bulletin source/contact/acknowledgement pass
 - Status: Local implementation verified; not pushed/deployed because active pilot protocol says batch publish only when the owner explicitly asks.
 - Community notices remain selected-community scoped: `/community-notices` list/create already requires `clan_id`; notice payloads now expose `source_community_id`, `source_community_name`, and `source_community_code` so Community Home can show exactly where each announcement came from.
@@ -158709,3 +158733,19 @@ Deployment:
 - Guardrail change: Community Home button inventory now cages the quieter utility-row shape and still confirms Members/Admin/log history remain behind Bulletin settings.
 - Verification passed: `npm --prefix frontend run lint`; `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:community-home-phone-buttons`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `git diff --check`.
 - Devil's advocate: this is a source-level UI polish and expiry-state fix, not a real phone screenshot review. It should reduce crowding, but the final judgement is still the live phone screenshot. This slice does not change backend expiry rules or add scheduled future start dates.
+## 2026-08-24 - Local Backend Admin Route Guardrail
+- Status: Local only, not pushed/deployed.
+- Continued the admin visibility/security hardening round after the verified-admin-only shell and membership activation fix.
+- Backend guardrail change: added `gmfn_backend/tests/test_admin_route_authorization_contract.py`, a static pytest contract that discovers admin-like FastAPI routes under `gmfn_backend/app/api/routes` and fails if any route lacks both authenticated-user dependency evidence and an explicit admin/admin-membership guard.
+- Coverage detail: the scanner catches routes under `/admin`, embedded `/admin/` paths inside non-admin routers, functions named like admin routes, and files with admin-prefixed names. It currently asserts at least 50 admin-like routes so the audit cannot silently stop seeing the route surface.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\admin.py gmfn_backend\tests\test_admin_route_authorization_contract.py gmfn_backend\tests\test_admin_activation_boundary.py`; `python -m pytest gmfn_backend\tests\test_admin_route_authorization_contract.py gmfn_backend\tests\test_admin_activation_boundary.py gmfn_backend\tests\test_admin_community_ownership.py gmfn_backend\tests\test_support_cases.py -q` with 19 passed.
+- Devil's advocate: this is a strong regression tripwire, not a mathematical proof of authorization correctness. It checks source patterns and must be updated if the backend introduces a new legitimate guard helper or route style.
+
+## 2026-08-24 - Local Frontend Admin Route Guardrail
+- Status: Local only, not pushed/deployed.
+- Continued the authorized-admin-only work after the backend admin-route guardrail.
+- Frontend route change: legacy `/app/admin/payment-rails` now redirects into `/app/command-center` instead of the ordinary `/app/payment-rails` page, so every `/app/admin/...` alias lands inside the protected Command Center tree.
+- Guardrail change: added `frontend/tools/audit-admin-route-guards.mjs` and `npm --prefix frontend run audit:admin-route-guards` to verify Command Center wrappers, sensitive admin sub-routes, legacy admin redirects, and the absence of cached-role fallback in `RequireAuth`.
+- Aggregate audit change: `frontend/tools/audit-protected-button-freeze.mjs` now runs the admin route guard audit as part of the protected button freeze suite.
+- Verification passed: `node --check frontend\tools\audit-admin-route-guards.mjs`; `node --check frontend\tools\audit-protected-button-freeze.mjs`; `npm --prefix frontend run audit:admin-route-guards`; `npm --prefix frontend run audit:protected-button-freeze`; `npm exec -- tsc -b --pretty false`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`.
+- Devil's advocate: this closes the direct-route/legacy-alias gap at the frontend layer, but backend authorization remains the real security boundary. The frontend guard is a usability and regression guard, not a substitute for backend checks.

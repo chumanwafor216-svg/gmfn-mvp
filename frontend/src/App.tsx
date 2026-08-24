@@ -1320,7 +1320,7 @@ export default function App() {
         />
         <Route
           path="admin/payment-rails"
-          element={<PreserveRedirect to="/app/payment-rails" />}
+          element={<PreserveRedirect to="/app/command-center" />}
         />
         <Route
           path="admin/trust-graph"

@@ -76,6 +76,10 @@ const protectedAudits = [
     script: "audit-entry-auth-contracts.mjs",
   },
   {
+    label: "admin route guards",
+    script: "audit-admin-route-guards.mjs",
+  },
+  {
     label: "member and entry actions",
     script: "audit-member-entry-actions.mjs",
   },
@@ -130,5 +134,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "\nProtected button freeze audit passed: Dashboard, Market Wisdom, Community Home, Shop Control, Marketplace touch blockers, existing-community invite line, Action Inbox, entry/auth, Trust/Admin mobile overflow, shared tap guard, and global stable-action hygiene are still caged."
+  "\nProtected button freeze audit passed: Dashboard, Market Wisdom, Community Home, Shop Control, Marketplace touch blockers, existing-community invite line, Action Inbox, entry/auth, admin route guards, Trust/Admin mobile overflow, shared tap guard, and global stable-action hygiene are still caged."
 );

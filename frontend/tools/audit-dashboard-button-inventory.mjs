@@ -8,9 +8,11 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dashboardFile = "src/pages/DashboardPage.tsx";
 const frameToolsFile = "src/components/PictureFrameToolsControl.tsx";
 const appLayoutFile = "src/layout/AppLayout.tsx";
+const requireAuthFile = "src/components/RequireAuth.tsx";
 const dashboardSource = readFileSync(join(frontendRoot, dashboardFile), "utf8");
 const frameToolsSource = readFileSync(join(frontendRoot, frameToolsFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
+const requireAuthSource = readFileSync(join(frontendRoot, requireAuthFile), "utf8");
 const findings = [];
 const expectedNativeFieldCount = 9;
 const expectedMobileShellBreakdown = {
@@ -58,6 +60,40 @@ function assertLayoutContains(
   if (pattern.test(appLayoutSource)) return;
   findings.push({
     file: appLayoutFile,
+    line: 1,
+    message,
+    text,
+  });
+}
+
+function assertLayoutDoesNotContain(pattern, message, text) {
+  if (!pattern.test(appLayoutSource)) return;
+  findings.push({
+    file: appLayoutFile,
+    line: 1,
+    message,
+    text,
+  });
+}
+
+function assertRequireAuthContains(
+  pattern,
+  message,
+  text = "Expected RequireAuth pattern was not found."
+) {
+  if (pattern.test(requireAuthSource)) return;
+  findings.push({
+    file: requireAuthFile,
+    line: 1,
+    message,
+    text,
+  });
+}
+
+function assertRequireAuthDoesNotContain(pattern, message, text) {
+  if (!pattern.test(requireAuthSource)) return;
+  findings.push({
+    file: requireAuthFile,
     line: 1,
     message,
     text,
@@ -294,8 +330,12 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /debugId="app-layout\.mobile\.close-navigation"[\s\S]*?mobileDrawerGroups\.map[\s\S]*?debugId=\{`app-layout\.drawer\.\$\{group\.title\.toLowerCase\(\)[\s\S]*?debugId="app-layout\.drawer\.logout"/,
+  /debugId="app-layout\.mobile\.close-navigation"[\s\S]*?mobileDrawerGroups\.map[\s\S]*?debugId=\{`app-layout\.drawer\.\$\{group\.debugKey\}[\s\S]*?debugId="app-layout\.drawer\.logout"/,
   "Dashboard mobile drawer must count close, grouped route links, and logout as part of the outer navigator surface."
+);
+assertLayoutContains(
+  /function drawerLinkGrid\(\): React\.CSSProperties[\s\S]*?gridTemplateColumns: "1fr"[\s\S]*?\{mobileDrawerGroups\.map[\s\S]*?style=\{drawerLinkGrid\(\)\}[\s\S]*?debugId=\{`app-layout\.drawer\.\$\{group\.debugKey\}/,
+  "Dashboard mobile drawer must stay as a simple one-column text menu with stable debug keys."
 );
 
 assertLayoutContains(
@@ -314,13 +354,45 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
+  /const \[myRole, setMyRole\] = useState<string>\(\(\) => cachedNonAdminRole\(\)\)/,
+  "App shell must not seed Admin visibility directly from the cached gmfn_role value."
+);
+
+assertLayoutContains(
+  /setHasVerifiedAdminContext\([\s\S]*?Boolean\(me\)[\s\S]*?fetchedRole === "admin"[\s\S]*?clanRole === "admin"[\s\S]*?verifiedPilotAdmin[\s\S]*?\)/,
+  "App shell Admin visibility must require a verified signed-in identity or selected community admin context."
+);
+
+assertLayoutDoesNotContain(
+  /isPilotAdminGmfnId\(cachedGmfnId\)[\s\S]*?writeRole\("admin"\)/,
+  "Opening the drawer or tools panel must not promote a cached GSN ID into Admin visibility.",
+  "Remove any cached-GSN-ID admin promotion from AppLayout."
+);
+
+assertRequireAuthContains(
+  /me\?\.is_admin === true \|\| me\?\.isAdmin === true \? "admin" : ""/,
+  "Route guard must accept real API admin booleans when deciding Admin access."
+);
+
+assertRequireAuthDoesNotContain(
+  /cachedRoleAllows|readCachedRole|if \(\s*requireRole\s*&&[\s\S]*?isNetworkSessionError\(meError\)/,
+  "Role-protected routes must not admit Admin access from cached localStorage role fallback.",
+  "Remove cached role fallback from RequireAuth role checks."
+);
+
+assertLayoutContains(
+  /if \(pathname\.startsWith\("\/app\/command-center"\)\) \{[\s\S]*?if \(!isPlatformAdmin\) \{[\s\S]*?makeDashboardItem\(\)[\s\S]*?makeCommunityItem\(\)[\s\S]*?makeHelpDeskItem\(\)[\s\S]*?\]\);[\s\S]*?\}/,
+  "Command-center page tools must not expose Admin destinations to users without verified Admin context."
+);
+
+assertLayoutContains(
   /function mobileIconButton\(\): React\.CSSProperties[\s\S]*?height: 44,[\s\S]*?minHeight: 44,[\s\S]*?maxHeight: 44[\s\S]*?overflow: "hidden"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?function MobileTopIcon/,
   "Dashboard mobile top Menu and Tools buttons must keep fixed 44px geometry."
 );
 
 assertLayoutContains(
-  /function drawerLink\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 56,[\s\S]*?minHeight: 56,[\s\S]*?maxHeight: 56[\s\S]*?pointerEvents: "auto"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"/,
-  "Dashboard mobile drawer buttons must keep fixed 56px geometry."
+  /function drawerLink\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 48,[\s\S]*?minHeight: 48,[\s\S]*?maxHeight: 48[\s\S]*?pointerEvents: "auto"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"/,
+  "Dashboard mobile drawer buttons must keep fixed 48px geometry."
 );
 
 assertLayoutContains(

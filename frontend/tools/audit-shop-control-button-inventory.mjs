@@ -476,7 +476,7 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /debugId="app-layout\.mobile\.close-navigation"[\s\S]*?mobileDrawerGroups\.map[\s\S]*?debugId=\{`app-layout\.drawer\.\$\{group\.title\.toLowerCase\(\)[\s\S]*?debugId="app-layout\.drawer\.logout"/,
+  /debugId="app-layout\.mobile\.close-navigation"[\s\S]*?mobileDrawerGroups\.map[\s\S]*?debugId=\{`app-layout\.drawer\.\$\{group\.debugKey\}[\s\S]*?debugId="app-layout\.drawer\.logout"/,
   "Shop Control mobile drawer must count close, three focused route links, and logout as part of the outer navigator surface."
 );
 
@@ -491,8 +491,8 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /function drawerLink\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 56,[\s\S]*?minHeight: 56,[\s\S]*?maxHeight: 56[\s\S]*?pointerEvents: "auto"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"/,
-  "Shop Control mobile drawer buttons must keep fixed 56px geometry."
+  /function drawerLink\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 48,[\s\S]*?minHeight: 48,[\s\S]*?maxHeight: 48[\s\S]*?pointerEvents: "auto"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"/,
+  "Shop Control mobile drawer buttons must keep fixed 48px geometry."
 );
 
 assertLayoutContains(
