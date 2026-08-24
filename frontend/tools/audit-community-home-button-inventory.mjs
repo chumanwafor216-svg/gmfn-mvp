@@ -281,19 +281,27 @@ assertContains(
 );
 
 assertContains(
-  /Bulletin[\s\S]*?debugId="community-home\.notice\.post"[\s\S]*?>\s*<span>Post<\/span>[\s\S]*?debugId="community-home\.contact\.whatsapp-chat"[\s\S]*?>\s*WhatsApp\s*<\/StableButton>[\s\S]*?debugId="community-home\.notice\.settings-toggle"[\s\S]*?communityBulletinSettingsOpen[\s\S]*?data-debug-id="community-home\.notice\.settings-panel"[\s\S]*?debugId="community-home\.notice\.policy\.members"[\s\S]*?debugId="community-home\.notice\.policy\.admins"[\s\S]*?communityNoticeLogItems\.map/,
-  "Community Home communication block must keep the live announcement dominant, use one quiet Post/WhatsApp/Settings utility row, and tuck Notice Board settings behind a toggle."
+  /Bulletin[\s\S]*?debugId="community-home\.notice\.post"[\s\S]*?>\s*<span>Post<\/span>[\s\S]*?debugId="community-home\.contact\.whatsapp-chat"[\s\S]*?>\s*Contact community\s*<\/StableButton>[\s\S]*?debugId="community-home\.notice\.settings-toggle"[\s\S]*?communityBulletinSettingsOpen[\s\S]*?data-debug-id="community-home\.notice\.settings-panel"[\s\S]*?debugId="community-home\.notice\.policy\.members"[\s\S]*?debugId="community-home\.notice\.policy\.admins"[\s\S]*?communityNoticeLogItems\.map/,
+  "Community Home communication block must keep the live announcement dominant, use one quiet Post/Contact community/Settings utility row, and tuck Notice Board settings behind a toggle."
 );
 assertContains(
   /function renderMeetingInterestShortcut[\s\S]*?\["yes", "Yes"\][\s\S]*?\["maybe", "Maybe"\][\s\S]*?\["no", "No"\][\s\S]*?debugId=\{`community-home\.bulletin\.meeting-interest-\$\{response\}`\}[\s\S]*?recordNoticeMeetingInterest\(buttonEvent, noticeItem, response\)/,
   "Community Home bulletin meeting shortcut must keep the compact Yes/Maybe/No response controls only."
 );
 assertContains(
-  /function renderNoticeAcknowledgementShortcut[\s\S]*?debugId=\{`community-home\.bulletin\.acknowledge\.\$\{eventId\}`\}[\s\S]*?recordNoticeAcknowledgement\(buttonEvent, noticeItem\)[\s\S]*?Acknowledged[\s\S]*?Acknowledge/,
+  /function renderNoticeAcknowledgementShortcut[\s\S]*?debugId=\{`community-home\.bulletin\.acknowledge\.\$\{eventId\}`\}[\s\S]*?recordNoticeAcknowledgement\(buttonEvent, noticeItem\)[\s\S]*?Acknowledged[\s\S]*?Acknowledge this/,
   "Community Home bulletin must expose a compact acknowledgement action for ordinary announcements."
 );
 assertContains(
-  /sourceLine = noticeSourceLine\(primaryCommunityNotice, selectedClanName\)[\s\S]*?\{sourceLine\} - \{kindLabel\}[\s\S]*?debugId=\{`community-home\.bulletin\.primary-sender-whatsapp\./,
+  /function renderNoticeAcknowledgementShortcut[\s\S]*?\{"\\u\{1F44D\}"\}[\s\S]*?Acknowledged[\s\S]*?Acknowledge this/,
+  "Community Home bulletin acknowledgement must use a visible thumb mark and clear acknowledge-this language instead of a shield-style security icon."
+);
+assertNotContains(
+  /function renderNoticeAcknowledgementShortcut[\s\S]*?<GsnLegacyIcon name="check" size=\{16\} \/>/,
+  "Community Home bulletin acknowledgement must not reuse the check icon because it maps to the trust shield."
+);
+assertContains(
+  /sourceLine = noticeSourceLine\(primaryCommunityNotice, selectedClanName\)[\s\S]*?\{sourceLine\} - \{kindLabel\}[\s\S]*?debugId=\{`community-home\.bulletin\.primary-sender-whatsapp\.[\s\S]*?Contact announcer/,
   "Community Home live bulletin notice must show the source community and keep the announcement sender WhatsApp contact attached to the notice."
 );
 

@@ -1788,6 +1788,9 @@ export default function CommunityHomePage() {
     return communityNotices.filter((item) => isNoticeVisibleOnBoard(item, nowMs));
   }, [communityNotices, noticeExpiryNowMs]);
   const primaryCommunityNotice = activeCommunityNotices[0] || null;
+  const primaryNoticeHasSenderWhatsApp = Boolean(
+    firstTruthy(primaryCommunityNotice?.sender_whatsapp_number)
+  );
   const communityNoticeLogItems = activeCommunityNotices.slice(1, 4);
   const showCommunityBulletinSettings = Boolean(
     canManageCommunityNoticeSettings || communityNoticeLogItems.length > 0
@@ -2786,6 +2789,7 @@ export default function CommunityHomePage() {
         type="button"
         debugId={`community-home.bulletin.acknowledge.${eventId}`}
         onClick={(buttonEvent) => recordNoticeAcknowledgement(buttonEvent, noticeItem)}
+        aria-label="Acknowledge this announcement"
         aria-disabled={noticeAcknowledgementBusy ? true : undefined}
         busy={busy}
         busyLabel="Saving"
@@ -2801,8 +2805,24 @@ export default function CommunityHomePage() {
         }}
       >
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-          <GsnLegacyIcon name="check" size={16} />
-          <span>{ownAcknowledged ? "Acknowledged" : "Acknowledge"}</span>
+          <span
+            aria-hidden="true"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 18,
+              height: 18,
+              borderRadius: 999,
+              background: ownAcknowledged ? "rgba(242,199,102,0.20)" : "rgba(8,35,58,0.08)",
+              fontSize: 13,
+              lineHeight: 1,
+              flex: "0 0 auto",
+            }}
+          >
+            {"\u{1F44D}"}
+          </span>
+          <span>{ownAcknowledged ? "Acknowledged" : "Acknowledge this"}</span>
           <span>{count}</span>
         </span>
       </StableButton>
@@ -4100,7 +4120,7 @@ export default function CommunityHomePage() {
                             {primaryCommunityNotice?.sender_whatsapp_number ? (
                               <StableButton
                                 type="button"
-                                aria-label={`Message ${senderLabel} about this announcement`}
+                                aria-label={`Contact ${senderLabel} about this announcement`}
                                 debugId={`community-home.bulletin.primary-sender-whatsapp.${primaryCommunityNotice?.notice_id || primaryCommunityNotice?.event_id || "active"}`}
                                 onClick={(event) => openNoticeSenderWhatsApp(event, primaryCommunityNotice)}
                                 style={{
@@ -4117,7 +4137,7 @@ export default function CommunityHomePage() {
                                   boxShadow: "none",
                                 }}
                               >
-                                WhatsApp contact
+                                Contact announcer
                               </StableButton>
                             ) : null}
                           </span>
@@ -4154,7 +4174,7 @@ export default function CommunityHomePage() {
               )}
             </div>
 
-            {canPostCommunityNotice || showCommunityBulletinSettings || selectedClan ? (
+            {canPostCommunityNotice || showCommunityBulletinSettings || (selectedClan && !primaryNoticeHasSenderWhatsApp) ? (
               <div style={announcementComposerStyle(isCompact)}>
                 {canPostCommunityNotice ? (
                   <StableButton
@@ -4178,10 +4198,10 @@ export default function CommunityHomePage() {
                   </StableButton>
                 ) : null}
 
-                {selectedClan ? (
+                {selectedClan && !primaryNoticeHasSenderWhatsApp ? (
                   <StableButton
                     type="button"
-                    aria-label="Message the official community contact on WhatsApp"
+                    aria-label="Contact the official community contact on WhatsApp"
                     debugId="community-home.contact.whatsapp-chat"
                     onClick={openCommunityWhatsAppContact}
                     style={{
@@ -4192,7 +4212,7 @@ export default function CommunityHomePage() {
                       width: "100%",
                     }}
                   >
-                    WhatsApp
+                    Contact community
                   </StableButton>
                 ) : null}
 
