@@ -129,6 +129,70 @@ def test_community_officer_can_post_and_members_can_read_notice(
         assert notifications[0].is_read is False
 
 
+def test_community_notice_source_and_acknowledgement_are_scoped_to_selected_community(
+    client, override_current_user
+):
+    _seed_notice_community()
+
+    post_res = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Saturday exercise by 9:40am.",
+        },
+    )
+    assert post_res.status_code == 200, post_res.text
+    posted_notice = post_res.json()["notice"]
+    assert posted_notice["source_community_id"] == 1
+    assert posted_notice["source_community_name"] == "Nigerian Society"
+    assert posted_notice["source_community_code"] == "notice-board-test"
+    assert posted_notice["acknowledgement_enabled"] is True
+    assert posted_notice["acknowledgement_summary"] == {
+        "acknowledged": 0,
+        "own_acknowledged": False,
+    }
+
+    ack_res = client.post(
+        f"/community-notices/{posted_notice['event_id']}/acknowledgements",
+        json={"clan_id": 1},
+    )
+    assert ack_res.status_code == 200, ack_res.text
+    assert ack_res.json()["acknowledgement_summary"] == {
+        "acknowledged": 1,
+        "own_acknowledged": True,
+    }
+
+    repeat_ack_res = client.post(
+        f"/community-notices/{posted_notice['event_id']}/acknowledgements",
+        json={"clan_id": 1},
+    )
+    assert repeat_ack_res.status_code == 200, repeat_ack_res.text
+    assert repeat_ack_res.json()["acknowledgement_summary"] == {
+        "acknowledged": 1,
+        "own_acknowledged": True,
+    }
+
+    list_res = client.get("/community-notices", params={"clan_id": 1})
+    assert list_res.status_code == 200, list_res.text
+    listed_notice = list_res.json()["notices"][0]
+    assert listed_notice["source_community_name"] == "Nigerian Society"
+    assert listed_notice["acknowledgement_summary"] == {
+        "acknowledged": 1,
+        "own_acknowledged": True,
+    }
+
+    with SessionLocal() as db:
+        ack_events = (
+            db.query(TrustEvent)
+            .filter(TrustEvent.event_type == "community.notice.acknowledged")
+            .all()
+        )
+        assert len(ack_events) == 1
+        meta = json.loads(ack_events[0].meta_json)
+        assert meta["notice_event_id"] == posted_notice["event_id"]
+        assert ack_events[0].clan_id == 1
+
+
 def test_community_notice_board_lists_demand_box_signals_without_response_thread(
     client, override_current_user
 ):

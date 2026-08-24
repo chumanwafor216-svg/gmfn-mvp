@@ -25,6 +25,7 @@ import {
   getPoolMeSummary,
   getSelectedClanId,
   createCommunityNotice,
+  acknowledgeCommunityNotice,
   listCommunityNotices,
   recordCommunityMeetingInterest,
   updateCommunityNoticeSettings,
@@ -148,6 +149,7 @@ type ActiveCommunitySpotlight = {
 
 type CommunityNoticeItem = {
   notice_id?: string | null;
+  event_id?: number | string | null;
   meeting_id?: string | null;
   body?: string | null;
   title?: string | null;
@@ -156,12 +158,21 @@ type CommunityNoticeItem = {
   status?: string | null;
   created_at?: string | null;
   source?: string | null;
+  source_community_id?: number | string | null;
+  source_community_name?: string | null;
+  source_community_code?: string | null;
   posting_policy?: string | null;
   expiry_policy?: string | null;
   expires_at?: string | null;
   sender_whatsapp_number?: string | null;
   sender_whatsapp_label?: string | null;
   sender_contact_ready?: boolean;
+  acknowledgement_enabled?: boolean;
+  acknowledgement_label?: string | null;
+  acknowledgement_summary?: {
+    acknowledged?: number | string | null;
+    own_acknowledged?: boolean | null;
+  } | null;
   notice_kind?: string | null;
   interest_summary?: {
     yes?: number | string | null;
@@ -1363,6 +1374,30 @@ function meetingOwnInterest(item: CommunityNoticeItem | null | undefined): Meeti
   return response === "yes" || response === "maybe" || response === "no" ? response : "";
 }
 
+function noticeSourceCommunityLabel(
+  item: CommunityNoticeItem | null | undefined,
+  fallbackName: string
+): string {
+  return firstTruthy(item?.source_community_name, fallbackName, "Selected community");
+}
+
+function noticeSourceLine(
+  item: CommunityNoticeItem | null | undefined,
+  fallbackName: string
+): string {
+  const name = noticeSourceCommunityLabel(item, fallbackName);
+  const code = firstTruthy(item?.source_community_code);
+  return code ? `From ${name} (${code})` : `From ${name}`;
+}
+
+function noticeAcknowledgedCount(item: CommunityNoticeItem | null | undefined): number {
+  return noticeNumber(item?.acknowledgement_summary?.acknowledged);
+}
+
+function noticeOwnAcknowledged(item: CommunityNoticeItem | null | undefined): boolean {
+  return Boolean(item?.acknowledgement_summary?.own_acknowledged);
+}
+
 function communityContactMessage(clan: ClanItem | null | undefined): string {
   const name = getClanName(clan);
   const code = firstTruthy(clan?.community_code, clan?.clan_code, clan?.code);
@@ -1464,6 +1499,7 @@ export default function CommunityHomePage() {
     useState(false);
   const [noticeModalOpen, setNoticeModalOpen] = useState(false);
   const [noticePosting, setNoticePosting] = useState(false);
+  const [noticeAcknowledgementBusy, setNoticeAcknowledgementBusy] = useState("");
   const [noticeMeetingInterestBusy, setNoticeMeetingInterestBusy] = useState("");
   const [noticeExpiryNowMs, setNoticeExpiryNowMs] = useState(() => Date.now());
   const [communityBulletinSettingsOpen, setCommunityBulletinSettingsOpen] = useState(false);
@@ -2693,6 +2729,86 @@ export default function CommunityHomePage() {
     showNotice("success", "WhatsApp opened for this announcement sender.");
   }
 
+  async function recordNoticeAcknowledgement(
+    event: React.SyntheticEvent<HTMLElement>,
+    noticeItem: CommunityNoticeItem
+  ) {
+    consumeCommunityButtonEvent(event);
+    const clanId = getClanId(selectedClan);
+    const eventId = firstTruthy(noticeItem?.event_id);
+
+    if (!clanId || !eventId) {
+      showNotice("error", "This announcement cannot be acknowledged yet.");
+      return;
+    }
+
+    const busyKey = String(eventId);
+    if (noticeAcknowledgementBusy) {
+      showNotice("success", "Saving your acknowledgement now.");
+      return;
+    }
+
+    setNoticeAcknowledgementBusy(busyKey);
+    try {
+      const result = await acknowledgeCommunityNotice(eventId, { clan_id: clanId });
+      const res = await listCommunityNotices({ clan_id: clanId, limit: 3 }).catch(() => null);
+      const rows = Array.isArray(res?.notices) ? res.notices : [];
+      setCommunityNotices(rows);
+      setCommunityNoticePostingPolicy(
+        normalizeNoticePostingPolicy(
+          firstTruthy(res?.posting_policy, selectedClan?.notice_posting_policy)
+        )
+      );
+      showNotice(
+        "success",
+        firstTruthy(result?.message, "Announcement acknowledged.")
+      );
+    } catch (error: any) {
+      showNotice(
+        "error",
+        error?.message || "This announcement could not be acknowledged."
+      );
+    } finally {
+      setNoticeAcknowledgementBusy("");
+    }
+  }
+
+  function renderNoticeAcknowledgementShortcut(noticeItem: CommunityNoticeItem) {
+    if (isMeetingNotice(noticeItem)) return null;
+    const eventId = firstTruthy(noticeItem?.event_id);
+    if (!eventId || noticeItem?.acknowledgement_enabled === false) return null;
+    const count = noticeAcknowledgedCount(noticeItem);
+    const ownAcknowledged = noticeOwnAcknowledged(noticeItem);
+    const busy = noticeAcknowledgementBusy === String(eventId);
+
+    return (
+      <StableButton
+        type="button"
+        debugId={`community-home.bulletin.acknowledge.${eventId}`}
+        onClick={(buttonEvent) => recordNoticeAcknowledgement(buttonEvent, noticeItem)}
+        aria-disabled={noticeAcknowledgementBusy ? true : undefined}
+        busy={busy}
+        busyLabel="Saving"
+        style={{
+          ...communityActionStyle(ownAcknowledged ? "primary" : "soft", Boolean(noticeAcknowledgementBusy)),
+          minHeight: 38,
+          minWidth: 0,
+          padding: "8px 10px",
+          borderRadius: 12,
+          fontSize: 12,
+          textTransform: "none",
+          boxShadow: "none",
+        }}
+      >
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+          <GsnLegacyIcon name="check" size={16} />
+          <span>{ownAcknowledged ? "Acknowledged" : "Acknowledge"}</span>
+          <span>{count}</span>
+        </span>
+      </StableButton>
+    );
+  }
+
   async function recordNoticeMeetingInterest(
     event: React.SyntheticEvent<HTMLElement>,
     noticeItem: CommunityNoticeItem,
@@ -3906,9 +4022,9 @@ export default function CommunityHomePage() {
                   const expiry = noticeExpiryLabel(primaryCommunityNotice);
                   const senderLabel = firstTruthy(
                     primaryCommunityNotice?.sender_whatsapp_label,
-                    primaryCommunityNotice?.source,
-                    "Community"
+                    "Community contact"
                   );
+                  const sourceLine = noticeSourceLine(primaryCommunityNotice, selectedClanName);
                   const kindLabel = noticeKindLabel(primaryCommunityNotice);
                   const planningLine = meetingPlanningLine(primaryCommunityNotice);
                   const interestParts = meetingInterestParts(primaryCommunityNotice);
@@ -3947,7 +4063,7 @@ export default function CommunityHomePage() {
                               fontWeight: 820,
                             }}
                           >
-                            {kindLabel} - {senderLabel}
+                            {sourceLine} - {kindLabel}
                             {when ? ` - ${when}` : ""}
                             {expiry ? ` - ${expiry}` : ""}
                           </span>
@@ -3971,6 +4087,40 @@ export default function CommunityHomePage() {
                               ))}
                             </span>
                           ) : null}
+                          <span
+                            style={{
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: 6,
+                              marginTop: 8,
+                              alignItems: "center",
+                            }}
+                          >
+                            {renderNoticeAcknowledgementShortcut(primaryCommunityNotice)}
+                            {primaryCommunityNotice?.sender_whatsapp_number ? (
+                              <StableButton
+                                type="button"
+                                aria-label={`Message ${senderLabel} about this announcement`}
+                                debugId={`community-home.bulletin.primary-sender-whatsapp.${primaryCommunityNotice?.notice_id || primaryCommunityNotice?.event_id || "active"}`}
+                                onClick={(event) => openNoticeSenderWhatsApp(event, primaryCommunityNotice)}
+                                style={{
+                                  ...communityActionStyle("soft"),
+                                  minHeight: 38,
+                                  minWidth: 0,
+                                  padding: "8px 10px",
+                                  borderRadius: 12,
+                                  fontSize: 12,
+                                  textTransform: "none",
+                                  color: "#087443",
+                                  background: "#F0FDF4",
+                                  border: "1px solid rgba(22,163,74,0.18)",
+                                  boxShadow: "none",
+                                }}
+                              >
+                                WhatsApp contact
+                              </StableButton>
+                            ) : null}
+                          </span>
                           {renderMeetingInterestShortcut(primaryCommunityNotice)}
                         </span>
                       </div>
@@ -3997,7 +4147,7 @@ export default function CommunityHomePage() {
                         fontWeight: 850,
                       }}
                     >
-                      No community announcement is visible yet.
+                      No announcement for {selectedClanName || "this community"} right now.
                     </span>
                   </div>
                 </div>
@@ -4150,9 +4300,9 @@ export default function CommunityHomePage() {
                       const expiry = noticeExpiryLabel(item);
                       const senderLabel = firstTruthy(
                         item?.sender_whatsapp_label,
-                        item?.source,
-                        "Community"
+                        "Community contact"
                       );
+                      const sourceLine = noticeSourceLine(item, selectedClanName);
                       const kindLabel = noticeKindLabel(item);
                       const planningLine = meetingPlanningLine(item);
                       const interestParts = meetingInterestParts(item);
@@ -4191,7 +4341,7 @@ export default function CommunityHomePage() {
                                 fontWeight: 780,
                               }}
                             >
-                              {kindLabel} - {senderLabel}
+                              {sourceLine} - {kindLabel}
                               {when ? ` - ${when}` : ""}
                               {expiry ? ` - ${expiry}` : ""}
                             </span>
@@ -4215,6 +4365,7 @@ export default function CommunityHomePage() {
                                 ))}
                               </span>
                             ) : null}
+                            {renderNoticeAcknowledgementShortcut(item)}
                             {renderMeetingInterestShortcut(item)}
                           </span>
                           {item?.sender_whatsapp_number ? (

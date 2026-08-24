@@ -1,3 +1,13 @@
+## 2026-08-24 - Local Community Bulletin source/contact/acknowledgement pass
+- Status: Local implementation verified; not pushed/deployed because active pilot protocol says batch publish only when the owner explicitly asks.
+- Community notices remain selected-community scoped: `/community-notices` list/create already requires `clan_id`; notice payloads now expose `source_community_id`, `source_community_name`, and `source_community_code` so Community Home can show exactly where each announcement came from.
+- Added ordinary announcement acknowledgement via `POST /community-notices/{notice_event_id}/acknowledgements`; this logs one deduped `community.notice.acknowledged` Trust Event per notice/member, rejects expired notices, and returns `acknowledgement_summary` with count plus the current member's own acknowledgement state.
+- Community Home Bulletin now shows `From {community}` on the active and log notices, shows a compact `Acknowledge` / `Acknowledged` action with count for ordinary notices, keeps meeting Yes/Maybe/No planning separate, and attaches the sender WhatsApp contact directly to the active notice when the sender has published one.
+- Empty state now says there is no announcement for the selected community right now; expired notices continue to leave the active board and stay in Community Memory.
+- Updated the Community Home button inventory audit to cage the new visible acknowledgement/contact controls.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\community_notices.py`; `python -m pytest gmfn_backend\tests\test_community_notices.py -q`; `npm exec -- tsc -b --pretty false` from `frontend`; `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:community-home-phone-buttons`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `git diff --check` with existing CRLF warnings only for backend notice files.
+- Devil's advocate: this is not live chat and not broadcast messaging. It is official notice visibility, contact routing, and acknowledgement evidence for the selected community only.
+
 ## 2026-08-24 - Local Community Domain Structure Focus Lazy Split
 - Status: Local implementation verified; not pushed/deployed yet in this slice because the active pilot freeze asks for batch publishing unless the owner explicitly says to push.
 - Split the Community Domain Structure lane wrapper out of `frontend/src/pages/CommunityDomainDashboardPage.tsx` into lazy-loaded `frontend/src/pages/communityDomainDashboard/StructureFocusPanel.tsx`.

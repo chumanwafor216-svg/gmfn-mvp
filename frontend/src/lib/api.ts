@@ -1405,6 +1405,17 @@ export async function createCommunityNotice(payload: {
   return httpJson("/community-notices", "POST", payload);
 }
 
+export async function acknowledgeCommunityNotice(
+  noticeEventId: number | string,
+  payload: { clan_id: number }
+): Promise<any> {
+  return httpJson(
+    `/community-notices/${encodeURIComponent(String(noticeEventId))}/acknowledgements`,
+    "POST",
+    payload
+  );
+}
+
 export async function recordCommunityMeetingInterest(
   meetingId: number | string,
   payload: {

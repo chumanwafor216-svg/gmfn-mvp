@@ -10,7 +10,7 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 28;
+const expectedStableButtonTemplateCount = 30;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 4;
@@ -287,6 +287,14 @@ assertContains(
 assertContains(
   /function renderMeetingInterestShortcut[\s\S]*?\["yes", "Yes"\][\s\S]*?\["maybe", "Maybe"\][\s\S]*?\["no", "No"\][\s\S]*?debugId=\{`community-home\.bulletin\.meeting-interest-\$\{response\}`\}[\s\S]*?recordNoticeMeetingInterest\(buttonEvent, noticeItem, response\)/,
   "Community Home bulletin meeting shortcut must keep the compact Yes/Maybe/No response controls only."
+);
+assertContains(
+  /function renderNoticeAcknowledgementShortcut[\s\S]*?debugId=\{`community-home\.bulletin\.acknowledge\.\$\{eventId\}`\}[\s\S]*?recordNoticeAcknowledgement\(buttonEvent, noticeItem\)[\s\S]*?Acknowledged[\s\S]*?Acknowledge/,
+  "Community Home bulletin must expose a compact acknowledgement action for ordinary announcements."
+);
+assertContains(
+  /sourceLine = noticeSourceLine\(primaryCommunityNotice, selectedClanName\)[\s\S]*?\{sourceLine\} - \{kindLabel\}[\s\S]*?debugId=\{`community-home\.bulletin\.primary-sender-whatsapp\./,
+  "Community Home live bulletin notice must show the source community and keep the announcement sender WhatsApp contact attached to the notice."
 );
 
 assertContains(
