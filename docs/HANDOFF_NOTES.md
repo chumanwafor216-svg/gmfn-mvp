@@ -1,10 +1,18 @@
+## 2026-08-24 - Local Community Domain Operating Summary Lazy Split
+- Status: Local implementation verified; not pushed/deployed because the active pilot freeze asks for batch publishing unless the owner explicitly says to push.
+- Split the active-domain Operating summary card out of `frontend/src/pages/CommunityDomainDashboardPage.tsx` into lazy-loaded `frontend/src/pages/communityDomainDashboard/OperatingSummaryPanel.tsx`.
+- The parent route still owns the selected operating-summary task, chooser state, live-lane focus callback, edit-setup callback, package facts, permission facts, and status data; the lazy child owns the Action/Reference and question selector catalogues plus the rendered next action/status/allowance/permissions views.
+- Updated `frontend/tools/audit-community-domain-product-contracts.mjs` so operating-summary guardrails check parent wiring and the lazy child controls separately.
+- Build truth: after the roster split the Community Domain route was about `189.31 kB` / `46.47 kB gzip`; after this operating-summary split it is about `183.70 kB` / `45.70 kB gzip`, with a new `OperatingSummaryPanel` chunk about `7.10 kB` / `2.15 kB gzip`.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this is the best reduction in this mini-batch, but Community Domain is still the largest app-owned route chunk. The next bigger cut is likely setup overview/workbench extraction, but that will touch many forms, notices, feature-policy controls, and audit patterns, so it should be done as its own careful slice.
 ## 2026-08-24 - Local Community Domain Member Roster Lazy Split
 - Status: Local implementation verified; not pushed/deployed because the active pilot freeze asks for batch publishing unless the owner explicitly says to push.
 - Split the Community Domain member roster control out of `frontend/src/pages/CommunityDomainDashboardPage.tsx` into lazy-loaded `frontend/src/pages/communityDomainDashboard/MemberRosterPanel.tsx`.
 - The parent route still owns member rows, status-change handlers, summary counts, busy state, and selected roster task; the lazy child owns the roster Summary/Members selector and member status row UI.
 - Updated `frontend/tools/audit-community-domain-product-contracts.mjs` so the roster guard composes/checks the lazy child instead of expecting the roster controls inline in the parent.
 - Build truth: after the previous real-life split, the Community Domain route was about `192.89 kB` / `47.24 kB gzip`; after this roster split it is about `189.31 kB` / `46.47 kB gzip`, with a new `MemberRosterPanel` chunk about `4.79 kB` / `1.92 kB gzip`.
-- Verification passed so far: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Verification passed: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
 - Devil's advocate: this is another real but small structural reduction. The Community Domain parent remains large because the setup overview/workbench, operating summary, service/structure/member/governance selectors, and many parent-owned handlers still live inline. The next larger cut is likely extracting a setup overview/workbench section, but that has more state and audit blast radius than this roster slice.
 ## 2026-08-24 - Local Community Domain Real-Life Option Lazy Split
 - Status: Verified, committed, pushed to `main`, and Render deploy workflow `32710527518` completed successfully after this slice.

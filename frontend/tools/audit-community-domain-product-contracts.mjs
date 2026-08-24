@@ -1563,10 +1563,18 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /OPERATING_SUMMARY_TASK_OPTIONS[\s\S]*key: "next_action"[\s\S]*key: "status"[\s\S]*key: "allowance"[\s\S]*key: "permissions"[\s\S]*OPERATING_SUMMARY_GROUP_OPTIONS[\s\S]*key: "action"[\s\S]*taskKeys: \["next_action", "status"\][\s\S]*key: "reference"[\s\S]*taskKeys: \["allowance", "permissions"\][\s\S]*operatingSummaryGroupChooserOpen[\s\S]*operatingSummaryTaskChooserOpen[\s\S]*activeOperatingSummaryGroup[\s\S]*activeOperatingSummaryGroupTasks[\s\S]*activeOperatingSummaryTaskOption[\s\S]*activeDomainPermissionFacts = DOMAIN_FEATURE_POLICY_ROWS\.map[\s\S]*showActiveDomainSettingsSummary[\s\S]*domainOperational && activeLane === "settings" && setupJourneyMode !== "edit"[\s\S]*Operating summary[\s\S]*Open one active-domain question[\s\S]*Current live stage[\s\S]*community-domain-dashboard\.operating-summary-group-toggle[\s\S]*Close live stages[\s\S]*Change live stage[\s\S]*operatingSummaryGroupChooserOpen \? \([\s\S]*community-domain-dashboard\.operating-summary-group\.\$\{group\.key\}[\s\S]*setOperatingSummaryGroupChooserOpen\(false\)[\s\S]*setOperatingSummaryTaskChooserOpen\(false\)[\s\S]*Current question[\s\S]*community-domain-dashboard\.operating-summary-task-toggle[\s\S]*Close questions[\s\S]*Change question[\s\S]*operatingSummaryTaskChooserOpen \? \([\s\S]*activeOperatingSummaryGroupTasks\.map[\s\S]*community-domain-dashboard\.operating-summary\.\$\{task\.key\}[\s\S]*setOperatingSummaryTaskChooserOpen\(false\)[\s\S]*activeOperatingSummaryTask === "next_action"[\s\S]*community-domain-dashboard\.settings-open-live-lane[\s\S]*community-domain-dashboard\.settings-edit-setup-details[\s\S]*Edit setup details[\s\S]*community-domain-dashboard\.operating-summary-notes-toggle[\s\S]*operatingSummaryNotesOpen \? "Close notes" : "Open notes"[\s\S]*operatingSummaryNotesOpen \? \([\s\S]*should use live\s+operating areas first after activation[\s\S]*Use setup\s+only when you need to correct saved details, add\s+authority evidence, or prepare verification[\s\S]*active does not mean verified[\s\S]*activeOperatingSummaryTask === "allowance"[\s\S]*Package allowance[\s\S]*packageCapacityFacts\.map[\s\S]*packageTariffBoundaryText[\s\S]*Summary only[\s\S]*does not add members, sell extra\s+bands, grant paid features, confirm payment, or verify\s+the organisation[\s\S]*activeOperatingSummaryTask === "permissions"[\s\S]*Domain permissions[\s\S]*activeDomainPermissionFacts\.map[\s\S]*Source: \{featurePolicySourceLabel\}[\s\S]*summary only\s+explains the current policy[\s\S]*change live behaviour\s+through Edit setup details/,
-  "Active Community Domains must keep next action, status, package allowance, and all domain permission boundaries on the settings lane, but expose them through closed Action/Reference and question selectors with setup editing behind an explicit edit action.",
+  /activeDomainPermissionFacts = DOMAIN_FEATURE_POLICY_ROWS\.map[\s\S]*showActiveDomainSettingsSummary[\s\S]*domainOperational && activeLane === "settings" && setupJourneyMode !== "edit"[\s\S]*CommunityDomainOperatingSummaryPanel[\s\S]*activeDomainPermissionFacts[\s\S]*activeOperatingSummaryTask[\s\S]*onEditSetupDetails: \(\) => openSetupJourney\("edit"\)[\s\S]*onOpenLiveLane: \(\) => \{[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*setActiveLane\(operationalLaneKey\)[\s\S]*operatingSummaryGroupChooserOpen[\s\S]*operatingSummaryTaskChooserOpen[\s\S]*packageCapacityFacts[\s\S]*packageTariffBoundaryText[\s\S]*setActiveOperatingSummaryTask/,
+  "Active Community Domains must keep settings-summary facts and live-lane/edit callbacks wired through the lazy OperatingSummaryPanel.",
   { frontend: true }
 );
+
+assertContains(
+  "src/pages/communityDomainDashboard/OperatingSummaryPanel.tsx",
+  /OPERATING_SUMMARY_TASK_OPTIONS[\s\S]*key: "next_action"[\s\S]*key: "status"[\s\S]*key: "allowance"[\s\S]*key: "permissions"[\s\S]*OPERATING_SUMMARY_GROUP_OPTIONS[\s\S]*key: "action"[\s\S]*taskKeys: \["next_action", "status"\][\s\S]*key: "reference"[\s\S]*taskKeys: \["allowance", "permissions"\][\s\S]*Operating summary[\s\S]*Open one active-domain question[\s\S]*community-domain-dashboard\.operating-summary-group-toggle[\s\S]*Close live stages[\s\S]*Change live stage[\s\S]*community-domain-dashboard\.operating-summary-group\.\$\{group\.key\}[\s\S]*setOperatingSummaryGroupChooserOpen\(false\)[\s\S]*setOperatingSummaryTaskChooserOpen\(false\)[\s\S]*community-domain-dashboard\.operating-summary-task-toggle[\s\S]*Close questions[\s\S]*Change question[\s\S]*community-domain-dashboard\.operating-summary\.\$\{task\.key\}[\s\S]*setOperatingSummaryTaskChooserOpen\(false\)[\s\S]*community-domain-dashboard\.settings-open-live-lane[\s\S]*community-domain-dashboard\.settings-edit-setup-details[\s\S]*community-domain-dashboard\.operating-summary-notes-toggle[\s\S]*active does not mean verified[\s\S]*Package allowance[\s\S]*packageCapacityFacts\.map[\s\S]*packageTariffBoundaryText[\s\S]*Summary only[\s\S]*Domain permissions[\s\S]*activeDomainPermissionFacts\.map[\s\S]*featurePolicySourceLabel/,
+  "Lazy OperatingSummaryPanel must keep next action, status, package allowance, and permission boundaries behind closed Action/Reference and question selectors.",
+  { frontend: true }
+);
+
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
@@ -2304,10 +2312,18 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /openSetupJourney[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.continue-setup[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.settings-open-live-lane[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.advanced-tools-toggle[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true/,
-  "Community Domain work-surface entry points must all request focus when they open setup or lanes.",
+  /openSetupJourney[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.continue-setup[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*CommunityDomainOperatingSummaryPanel[\s\S]*onOpenLiveLane: \(\) => \{[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.advanced-tools-toggle[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true/,
+  "Community Domain work-surface entry points must all request focus when they open setup or lanes, including the lazy operating-summary live-lane callback.",
   { frontend: true }
 );
+
+assertContains(
+  "src/pages/communityDomainDashboard/OperatingSummaryPanel.tsx",
+  /community-domain-dashboard\.settings-open-live-lane[\s\S]*onClick=\{onOpenLiveLane\}/,
+  "Lazy OperatingSummaryPanel must keep the settings live-lane button wired to the parent focus callback.",
+  { frontend: true }
+);
+
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
@@ -2367,10 +2383,18 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type OperatingSummaryTaskKey = "next_action" \| "status" \| "allowance" \| "permissions"[\s\S]*type OperatingSummaryGroupKey = "action" \| "reference"[\s\S]*OPERATING_SUMMARY_TASK_OPTIONS[\s\S]*key: "next_action"[\s\S]*key: "status"[\s\S]*key: "allowance"[\s\S]*key: "permissions"[\s\S]*OPERATING_SUMMARY_GROUP_OPTIONS[\s\S]*key: "action"[\s\S]*taskKeys: \["next_action", "status"\][\s\S]*key: "reference"[\s\S]*taskKeys: \["allowance", "permissions"\][\s\S]*activeOperatingSummaryTask[\s\S]*setActiveOperatingSummaryTask[\s\S]*operatingSummaryNotesOpen[\s\S]*operatingSummaryGroupChooserOpen[\s\S]*operatingSummaryTaskChooserOpen[\s\S]*activeOperatingSummaryGroup[\s\S]*activeOperatingSummaryGroupTasks[\s\S]*activeOperatingSummaryTaskOption[\s\S]*community-domain-dashboard\.operating-summary-group-toggle[\s\S]*operatingSummaryGroupChooserOpen \? \([\s\S]*community-domain-dashboard\.operating-summary-group\.\$\{group\.key\}[\s\S]*setOperatingSummaryGroupChooserOpen\(false\)[\s\S]*community-domain-dashboard\.operating-summary-task-toggle[\s\S]*operatingSummaryTaskChooserOpen \? \([\s\S]*activeOperatingSummaryGroupTasks\.map[\s\S]*community-domain-dashboard\.operating-summary\.\$\{task\.key\}[\s\S]*setOperatingSummaryTaskChooserOpen\(false\)[\s\S]*activeOperatingSummaryTask === "next_action"[\s\S]*community-domain-dashboard\.settings-open-live-lane[\s\S]*community-domain-dashboard\.operating-summary-notes-toggle[\s\S]*activeOperatingSummaryTask === "status"[\s\S]*Domain: \{compactStatus\(status\.domain_status\)\}[\s\S]*activeOperatingSummaryTask === "allowance"[\s\S]*Package allowance[\s\S]*activeOperatingSummaryTask === "permissions"[\s\S]*Domain permissions/,
-  "Active Community Domain settings must keep next action, status, package allowance, and permissions behind closed Action/Reference and question selectors instead of dumping the whole view at once.",
+  /type OperatingSummaryTaskKey = "next_action" \| "status" \| "allowance" \| "permissions"[\s\S]*activeOperatingSummaryTask[\s\S]*setActiveOperatingSummaryTask[\s\S]*operatingSummaryNotesOpen[\s\S]*operatingSummaryGroupChooserOpen[\s\S]*operatingSummaryTaskChooserOpen[\s\S]*showActiveDomainSettingsSummary[\s\S]*CommunityDomainOperatingSummaryPanel[\s\S]*activeOperatingSummaryTask[\s\S]*operatingSummaryGroupChooserOpen[\s\S]*operatingSummaryTaskChooserOpen[\s\S]*setActiveOperatingSummaryTask[\s\S]*setOperatingSummaryTaskChooserOpen/,
+  "Active Community Domain settings must keep parent-owned operating summary state wired into the lazy OperatingSummaryPanel.",
   { frontend: true }
 );
+
+assertContains(
+  "src/pages/communityDomainDashboard/OperatingSummaryPanel.tsx",
+  /type OperatingSummaryGroupKey = "action" \| "reference"[\s\S]*OPERATING_SUMMARY_TASK_OPTIONS[\s\S]*key: "next_action"[\s\S]*key: "status"[\s\S]*key: "allowance"[\s\S]*key: "permissions"[\s\S]*OPERATING_SUMMARY_GROUP_OPTIONS[\s\S]*key: "action"[\s\S]*taskKeys: \["next_action", "status"\][\s\S]*key: "reference"[\s\S]*taskKeys: \["allowance", "permissions"\][\s\S]*activeOperatingSummaryGroup[\s\S]*activeOperatingSummaryGroupTasks[\s\S]*activeOperatingSummaryTaskOption[\s\S]*community-domain-dashboard\.operating-summary-group-toggle[\s\S]*operatingSummaryGroupChooserOpen \? \([\s\S]*community-domain-dashboard\.operating-summary-group\.\$\{group\.key\}[\s\S]*setOperatingSummaryGroupChooserOpen\(false\)[\s\S]*community-domain-dashboard\.operating-summary-task-toggle[\s\S]*operatingSummaryTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.operating-summary\.\$\{task\.key\}[\s\S]*setOperatingSummaryTaskChooserOpen\(false\)[\s\S]*activeOperatingSummaryTask === "next_action"[\s\S]*community-domain-dashboard\.settings-open-live-lane[\s\S]*community-domain-dashboard\.operating-summary-notes-toggle[\s\S]*activeOperatingSummaryTask === "status"[\s\S]*Domain: \{compactStatus\(status\.domain_status\)\}[\s\S]*activeOperatingSummaryTask === "allowance"[\s\S]*Package allowance[\s\S]*activeOperatingSummaryTask === "permissions"[\s\S]*Domain permissions/,
+  "Lazy OperatingSummaryPanel must keep next action, status, package allowance, and permissions behind closed Action/Reference and question selectors instead of dumping the whole view at once.",
+  { frontend: true }
+);
+
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
