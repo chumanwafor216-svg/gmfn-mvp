@@ -3123,29 +3123,57 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /activeLane === "members"[\s\S]*CommunityDomainMemberFocusPanel[\s\S]*nodeParticipationMap/,
+  "Community Domain dashboard Members lane must hand raw node participation planning to the lazy member focus panel.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/MemberFocusPanel.tsx",
   /CommunityDomainNodeProjectionGroups[\s\S]*variant="memberParticipation"[\s\S]*nodeParticipationMap=\{nodeParticipationMap\}/,
-  "Community Domain dashboard Members lane must lazy-load node participation planning through the route-local node projection component.",
+  "Lazy MemberFocusPanel must lazy-load node participation planning through the route-local node projection component.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/MemberReadinessPanels"\)[\s\S]*activeLane === "members"[\s\S]*CommunityDomainMemberReadinessPanels[\s\S]*placementSummary=\{placementSummary\}[\s\S]*memberVerificationMap=\{memberVerificationMap\}[\s\S]*CommunityDomainNodeProjectionGroups[\s\S]*variant="memberParticipation"/,
-  "Community Domain dashboard Members lane must lazy-load placement and member-verification readiness panels, pass only raw placement/member verification maps from the parent route, and preserve the member participation projection order.",
+  /CommunityDomainMemberFocusPanel[\s\S]*placementSummary[\s\S]*memberVerificationMap[\s\S]*nodeParticipationMap/,
+  "Community Domain dashboard Members lane must pass only raw placement, member verification, and participation maps into the lazy member focus panel.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/MemberFocusPanel.tsx",
+  /lazy\([\s\S]*import\("\.\/MemberReadinessPanels"\)[\s\S]*lazy\([\s\S]*import\("\.\/MemberRosterPanel"\)[\s\S]*lazy\([\s\S]*import\("\.\/NodeProjectionGroups"\)[\s\S]*CommunityDomainMemberReadinessPanels[\s\S]*placementSummary=\{placementSummary\}[\s\S]*memberVerificationMap=\{memberVerificationMap\}[\s\S]*CommunityDomainNodeProjectionGroups[\s\S]*variant="memberParticipation"/,
+  "Lazy MemberFocusPanel must lazy-load placement/member-verification readiness panels and preserve the member participation projection order.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type MemberDetailKey = "readiness" \| "placement" \| "roster"[\s\S]*type MemberDetailGroupKey = "readiness" \| "roster"[\s\S]*MEMBER_DETAIL_OPTIONS[\s\S]*key: "readiness"[\s\S]*key: "placement"[\s\S]*key: "roster"[\s\S]*MEMBER_DETAIL_GROUP_OPTIONS[\s\S]*key: "readiness"[\s\S]*detailKeys: \["readiness", "placement"\][\s\S]*key: "roster"[\s\S]*detailKeys: \["roster"\][\s\S]*memberStageChooserOpen[\s\S]*memberPacketChooserOpen[\s\S]*activeMemberDetail[\s\S]*activeMemberDetailGroup[\s\S]*activeMemberGroupDetails[\s\S]*Choose the member stage first[\s\S]*community-domain-dashboard\.member-stage-toggle[\s\S]*memberStageChooserOpen \? "Close stages" : "Change stage"[\s\S]*memberStageChooserOpen \? \([\s\S]*community-domain-dashboard\.member-group\.\$\{group\.key\}[\s\S]*setMemberStageChooserOpen\(false\)[\s\S]*setMemberPacketChooserOpen\(false\)[\s\S]*community-domain-dashboard\.member-packet-toggle[\s\S]*memberPacketChooserOpen \? "Close views" : "Change view"[\s\S]*memberPacketChooserOpen \? \([\s\S]*activeMemberGroupDetails\.map[\s\S]*community-domain-dashboard\.member-detail\.\$\{option\.key\}[\s\S]*setMemberStageChooserOpen\(false\)[\s\S]*setMemberPacketChooserOpen\(false\)[\s\S]*activeMemberDetail === "readiness"[\s\S]*CommunityDomainMemberReadinessPanels[\s\S]*activeMemberDetail === "placement"[\s\S]*variant="memberParticipation"[\s\S]*activeMemberDetail === "roster"/,
-  "Community Domain dashboard Members lane must keep Readiness and Roster stages behind Change stage, hide second-level views behind Change view, and expose one focused member view at a time instead of dumping member readiness, placement, and roster control together.",
+  /CommunityDomainMemberFocusPanel[\s\S]*activeMemberDetail[\s\S]*memberPacketChooserOpen[\s\S]*memberStageChooserOpen[\s\S]*setActiveMemberDetail[\s\S]*setMemberPacketChooserOpen[\s\S]*setMemberStageChooserOpen/,
+  "Community Domain dashboard Members lane must keep parent-owned member focus state wired into the lazy MemberFocusPanel.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/MemberFocusPanel.tsx",
+  /type MemberDetailGroupKey = "readiness" \| "roster"[\s\S]*MEMBER_DETAIL_OPTIONS[\s\S]*key: "readiness"[\s\S]*key: "placement"[\s\S]*key: "roster"[\s\S]*MEMBER_DETAIL_GROUP_OPTIONS[\s\S]*key: "readiness"[\s\S]*detailKeys: \["readiness", "placement"\][\s\S]*key: "roster"[\s\S]*detailKeys: \["roster"\][\s\S]*closeMemberChoosers[\s\S]*setMemberStageChooserOpen\(false\)[\s\S]*setMemberPacketChooserOpen\(false\)[\s\S]*selectMemberDetail[\s\S]*setActiveMemberDetail\(detail\)[\s\S]*Choose the member stage first[\s\S]*community-domain-dashboard\.member-stage-toggle[\s\S]*memberStageChooserOpen \? "Close stages" : "Change stage"[\s\S]*memberStageChooserOpen \? \([\s\S]*community-domain-dashboard\.member-group\.\$\{group\.key\}[\s\S]*community-domain-dashboard\.member-packet-toggle[\s\S]*memberPacketChooserOpen \? "Close views" : "Change view"[\s\S]*memberPacketChooserOpen \? \([\s\S]*activeMemberGroupDetails\.map[\s\S]*community-domain-dashboard\.member-detail\.\$\{option\.key\}[\s\S]*activeMemberDetail === "readiness"[\s\S]*CommunityDomainMemberReadinessPanels[\s\S]*activeMemberDetail === "placement"[\s\S]*variant="memberParticipation"[\s\S]*activeMemberDetail === "roster"/,
+  "Lazy MemberFocusPanel must keep Readiness and Roster stages behind Change stage, hide second-level views behind Change view, and expose one focused member view at a time instead of dumping member readiness, placement, and roster control together.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type MemberRosterTaskKey = "summary" \| "members"[\s\S]*memberRosterTaskChooserOpen[\s\S]*activeMemberRosterTask[\s\S]*setActiveMemberRosterTask\("summary"\)[\s\S]*memberRosterSummaryRows[\s\S]*activeMemberDetail === "roster"[\s\S]*CommunityDomainMemberRosterPanel[\s\S]*activeMemberRosterTask[\s\S]*memberRosterTaskChooserOpen[\s\S]*setActiveMemberRosterTask[\s\S]*setMemberRosterTaskChooserOpen[\s\S]*changeDomainMemberStatus/,
-  "Community Domain dashboard roster control must keep parent-owned state, reset behavior, summary counts, and lazy MemberRosterPanel wiring.",
+  /CommunityDomainMemberFocusPanel[\s\S]*activeMemberRosterTask[\s\S]*changeDomainMemberStatus[\s\S]*memberRosterSummaryRows[\s\S]*memberRosterTaskChooserOpen[\s\S]*setActiveMemberRosterTask[\s\S]*setMemberRosterTaskChooserOpen/,
+  "Community Domain dashboard roster control must keep parent-owned state, reset behavior, summary counts, and lazy MemberFocusPanel wiring.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/MemberFocusPanel.tsx",
+  /CommunityDomainMemberRosterPanel[\s\S]*activeMemberRosterTask[\s\S]*memberRosterTaskChooserOpen[\s\S]*setActiveMemberRosterTask[\s\S]*setMemberRosterTaskChooserOpen[\s\S]*changeDomainMemberStatus/,
+  "Lazy MemberFocusPanel must pass parent-owned roster state and status-change behavior into the lazy roster control.",
   { frontend: true }
 );
 

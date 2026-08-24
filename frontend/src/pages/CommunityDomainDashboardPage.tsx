@@ -117,6 +117,7 @@ import type {
   SetupNoticeTaskKey,
   SetupOverviewTaskKey,
 } from "./communityDomainDashboard/SetupOverviewPanel";
+import type { MemberDetailKey } from "./communityDomainDashboard/MemberFocusPanel";
 import type {
   BillingQuoteSurface,
   BillingTaskPanelsData,
@@ -137,11 +138,8 @@ const CommunityDomainStructurePreviewPanel = lazy(
 const CommunityDomainSetupOverviewPanel = lazy(
   () => import("./communityDomainDashboard/SetupOverviewPanel")
 );
-const CommunityDomainMemberReadinessPanels = lazy(
-  () => import("./communityDomainDashboard/MemberReadinessPanels")
-);
-const CommunityDomainMemberRosterPanel = lazy(
-  () => import("./communityDomainDashboard/MemberRosterPanel")
+const CommunityDomainMemberFocusPanel = lazy(
+  () => import("./communityDomainDashboard/MemberFocusPanel")
 );
 const CommunityDomainGovernanceReadinessPanels = lazy(
   () => import("./communityDomainDashboard/GovernanceReadinessPanels")
@@ -197,8 +195,6 @@ type StructureDetailKey = "preview" | "foundation" | "boundary" | "activity" | "
 type StructureDetailGroupKey = "map" | "readiness" | "rollout";
 type ServiceDetailKey = "readiness" | "local" | "boundaries" | "trust" | "evidence";
 type ServiceDetailGroupKey = "readiness" | "local" | "trust";
-type MemberDetailKey = "readiness" | "placement" | "roster";
-type MemberDetailGroupKey = "readiness" | "roster";
 type MemberRosterTaskKey = "summary" | "members";
 type GovernanceTaskKey =
   | "readiness"
@@ -703,51 +699,6 @@ const SERVICE_DETAIL_GROUP_OPTIONS: Array<{
     note: "Review trust maps and evidence readiness.",
     defaultDetail: "trust",
     detailKeys: ["trust", "evidence"],
-  },
-];
-
-const MEMBER_DETAIL_OPTIONS: Array<{
-  key: MemberDetailKey;
-  label: string;
-  note: string;
-}> = [
-  {
-    key: "readiness",
-    label: "Member readiness",
-    note: "Review placement, member counts, and verification readiness.",
-  },
-  {
-    key: "placement",
-    label: "Unit placement",
-    note: "Inspect member participation readiness by operating unit.",
-  },
-  {
-    key: "roster",
-    label: "Roster control",
-    note: "Review active and inactive members, then deactivate or restore carefully.",
-  },
-];
-
-const MEMBER_DETAIL_GROUP_OPTIONS: Array<{
-  key: MemberDetailGroupKey;
-  label: string;
-  note: string;
-  defaultDetail: MemberDetailKey;
-  detailKeys: MemberDetailKey[];
-}> = [
-  {
-    key: "readiness",
-    label: "Readiness",
-    note: "Review member readiness and operating-unit placement before roster changes.",
-    defaultDetail: "readiness",
-    detailKeys: ["readiness", "placement"],
-  },
-  {
-    key: "roster",
-    label: "Roster",
-    note: "Open roster control only when you need to deactivate or restore members.",
-    defaultDetail: "roster",
-    detailKeys: ["roster"],
   },
 ];
 
@@ -5129,9 +5080,6 @@ export default function CommunityDomainDashboardPage() {
   const selectedServiceDetail =
     SERVICE_DETAIL_OPTIONS.find((option) => option.key === activeServiceDetail) ||
     SERVICE_DETAIL_OPTIONS[0];
-  const selectedMemberDetail =
-    MEMBER_DETAIL_OPTIONS.find((option) => option.key === activeMemberDetail) ||
-    MEMBER_DETAIL_OPTIONS[0];
   const activeSetupWorkbenchTaskOption =
     SETUP_WORKBENCH_TASK_OPTIONS.find((task) => task.key === activeSetupWorkbenchTask) ||
     SETUP_WORKBENCH_TASK_OPTIONS[0];
@@ -5168,18 +5116,6 @@ export default function CommunityDomainDashboardPage() {
     SERVICE_DETAIL_GROUP_OPTIONS[0];
   const activeServiceGroupDetails = SERVICE_DETAIL_OPTIONS.filter((option) =>
     activeServiceDetailGroupOption.detailKeys.includes(option.key)
-  );
-  const activeMemberDetailGroup = useMemo<MemberDetailGroupKey>(() => {
-    if (activeMemberDetail === "roster") {
-      return "roster";
-    }
-    return "readiness";
-  }, [activeMemberDetail]);
-  const activeMemberDetailGroupOption =
-    MEMBER_DETAIL_GROUP_OPTIONS.find((group) => group.key === activeMemberDetailGroup) ||
-    MEMBER_DETAIL_GROUP_OPTIONS[0];
-  const activeMemberGroupDetails = MEMBER_DETAIL_OPTIONS.filter((option) =>
-    activeMemberDetailGroupOption.detailKeys.includes(option.key)
   );
   const activeDomainMemberCount = domainMemberRows.filter(
     (row) => cleanText(row?.status, "inactive").toLowerCase() === "active"
@@ -10439,244 +10375,49 @@ export default function CommunityDomainDashboardPage() {
                 ) : null}
 
                 {!isActiveLaneReadinessLoading && activeLane === "members" ? (
-                  <>
-                    <div
-                      style={{
-                        ...softCard(),
-                        display: "grid",
-                        gap: 10,
+                  <Suspense
+                    fallback={
+                      <div style={{ ...softCard(), ...helperText() }}>
+                        Loading member focus...
+                      </div>
+                    }
+                  >
+                    <CommunityDomainMemberFocusPanel
+                      data={{
+                        activeMemberDetail,
+                        activeMemberRosterTask,
+                        busyMemberStatusId,
+                        changeDomainMemberStatus,
+                        cleanText,
+                        compactStatus,
+                        communityDomainId,
+                        counts,
+                        domain,
+                        domainMemberRows,
+                        helperText,
+                        iconFrame,
+                        iconHeaderStyle,
+                        isAdmin,
+                        memberPacketChooserOpen,
+                        memberRosterSummaryRows,
+                        memberRosterTaskChooserOpen,
+                        memberStageChooserOpen,
+                        memberVerificationMap,
+                        nodeParticipationMap,
+                        placementSummary,
+                        sectionLabel,
+                        setActiveMemberDetail,
+                        setActiveMemberRosterTask,
+                        setGovernanceTaskChooserOpen,
+                        setMemberPacketChooserOpen,
+                        setMemberRosterTaskChooserOpen,
+                        setMemberStageChooserOpen,
+                        setRealLifeRecordTypeChooserOpen,
+                        softCard,
                       }}
-                    >
-                      <div style={sectionLabel()}>Members focus</div>
-                      <div style={helperText()}>
-                        Choose the member stage first. Current view:{" "}
-                        <strong>{activeMemberDetailGroupOption.label}</strong>{" "}
-                        / <strong>{selectedMemberDetail.label}</strong>.
-                      </div>
-                      <StableButton
-                        type="button"
-                        kind="secondary"
-                        fullWidth
-                        stableHeight={42}
-                        debugId="community-domain-dashboard.member-stage-toggle"
-                        aria-expanded={memberStageChooserOpen}
-                        aria-controls="community-domain-member-stages"
-                        onClick={() =>
-                          setMemberStageChooserOpen((current) => !current)
-                        }
-                        style={{
-                          justifyContent: "center",
-                          fontSize: 13,
-                          textTransform: "none",
-                        }}
-                      >
-                        {memberStageChooserOpen ? "Close stages" : "Change stage"}
-                      </StableButton>
-                      {memberStageChooserOpen ? (
-                        <div
-                          id="community-domain-member-stages"
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
-                          gap: 8,
-                        }}
-                      >
-                        {MEMBER_DETAIL_GROUP_OPTIONS.map((group) => {
-                          const selected = group.key === activeMemberDetailGroup;
-                          return (
-                            <StableButton
-                              key={group.key}
-                              type="button"
-                              kind={selected ? "primary" : "secondary"}
-                              stableHeight={46}
-                              fullWidth
-                              aria-pressed={selected}
-                              title={group.note}
-                              debugId={`community-domain-dashboard.member-group.${group.key}`}
-                              onClick={() => {
-                                setActiveMemberDetail(group.defaultDetail);
-                                setMemberStageChooserOpen(false);
-                                setMemberPacketChooserOpen(false);
-                                setGovernanceTaskChooserOpen(false);
-                                setRealLifeRecordTypeChooserOpen(false);
-                                if (group.defaultDetail === "roster") {
-                                  setActiveMemberRosterTask("summary");
-                                  setMemberRosterTaskChooserOpen(false);
-                                }
-                              }}
-                              style={{
-                                justifyContent: "center",
-                                fontSize: 13,
-                                textTransform: "none",
-                              }}
-                            >
-                              {group.label}
-                            </StableButton>
-                          );
-                        })}
-                        </div>
-                      ) : null}
-                      <div style={{ ...helperText(), fontSize: 13 }}>
-                        {activeMemberDetailGroupOption.note}
-                      </div>
-                      {activeMemberGroupDetails.length > 1 ? (
-                        <div
-                          style={{
-                            borderTop: "1px solid rgba(9,27,46,0.08)",
-                            paddingTop: 10,
-                            display: "grid",
-                            gap: 8,
-                          }}
-                        >
-                          <StableButton
-                            type="button"
-                            kind="secondary"
-                            fullWidth
-                            stableHeight={42}
-                            debugId="community-domain-dashboard.member-packet-toggle"
-                            aria-expanded={memberPacketChooserOpen}
-                            aria-controls="community-domain-member-packets"
-                            onClick={() =>
-                              setMemberPacketChooserOpen((current) => !current)
-                            }
-                            style={{
-                              justifyContent: "center",
-                              fontSize: 13,
-                              textTransform: "none",
-                            }}
-                          >
-                            {memberPacketChooserOpen ? "Close views" : "Change view"}
-                          </StableButton>
-                          {memberPacketChooserOpen ? (
-                            <div
-                              id="community-domain-member-packets"
-                              data-debug-id="community-domain-dashboard.member-packet-panel"
-                              style={{
-                                display: "grid",
-                                gap: 8,
-                              }}
-                            >
-                              <div style={sectionLabel()}>
-                                {activeMemberDetailGroupOption.label} views
-                              </div>
-                              <div
-                                style={{
-                                  display: "grid",
-                                  gridTemplateColumns:
-                                    "repeat(auto-fit, minmax(min(100%, 148px), 1fr))",
-                                  gap: 8,
-                                }}
-                              >
-                                {activeMemberGroupDetails.map((option) => {
-                                  const selected = option.key === activeMemberDetail;
-                                  return (
-                                    <StableButton
-                                      key={option.key}
-                                      type="button"
-                                      kind={selected ? "primary" : "secondary"}
-                                      stableHeight={48}
-                                      fullWidth
-                                      aria-pressed={selected}
-                                      title={option.note}
-                                      debugId={`community-domain-dashboard.member-detail.${option.key}`}
-                                      onClick={() => {
-                                        setActiveMemberDetail(option.key);
-                                        setMemberStageChooserOpen(false);
-                                        setMemberPacketChooserOpen(false);
-                                        setGovernanceTaskChooserOpen(false);
-                                        setRealLifeRecordTypeChooserOpen(false);
-                                        if (option.key === "roster") {
-                                          setActiveMemberRosterTask("summary");
-                                          setMemberRosterTaskChooserOpen(false);
-                                        }
-                                      }}
-                                      style={{
-                                        justifyContent: "center",
-                                        fontSize: 13,
-                                        textTransform: "none",
-                                      }}
-                                    >
-                                      {option.label}
-                                    </StableButton>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          ) : null}
-                        </div>
-                      ) : null}
-                      <div style={{ ...helperText(), fontSize: 13 }}>
-                        {selectedMemberDetail.note}
-                      </div>
-                    </div>
-
-                    {activeMemberDetail === "readiness" ? (
-                      <Suspense
-                        fallback={
-                          <div style={{ ...helperText(), marginTop: 4 }}>
-                            Loading member readiness panels...
-                          </div>
-                        }
-                      >
-                        <CommunityDomainMemberReadinessPanels
-                          placementSummary={placementSummary}
-                          counts={counts}
-                          memberVerificationMap={memberVerificationMap}
-                        />
-                      </Suspense>
-                    ) : null}
-
-                    {activeMemberDetail === "placement" ? (
-                      <Suspense
-                        fallback={
-                          <div style={{ ...helperText(), marginTop: 4 }}>
-                            Loading member placement view...
-                          </div>
-                        }
-                      >
-                        <CommunityDomainNodeProjectionGroups
-                          variant="memberParticipation"
-                          nodeParticipationMap={nodeParticipationMap}
-                        />
-                      </Suspense>
-                    ) : null}
-
-                    {activeMemberDetail === "roster" ? (
-                      <Suspense
-                        fallback={
-                          <div style={{ ...softCard(), ...helperText() }}>
-                            Loading roster control...
-                          </div>
-                        }
-                      >
-                        <CommunityDomainMemberRosterPanel
-                          data={{
-                            activeMemberRosterTask,
-                            busyMemberStatusId,
-                            changeDomainMemberStatus,
-                            cleanText,
-                            compactStatus,
-                            communityDomainId,
-                            domain,
-                            domainMemberRows,
-                            helperText,
-                            iconFrame,
-                            iconHeaderStyle,
-                            isAdmin,
-                            memberRosterSummaryRows,
-                            memberRosterTaskChooserOpen,
-                            sectionLabel,
-                            setActiveMemberRosterTask,
-                            setMemberRosterTaskChooserOpen,
-                            softCard,
-                          }}
-                        />
-                      </Suspense>
-                    ) : null}
-                  </>
+                    />
+                  </Suspense>
                 ) : null}
-
               </div>
             </div>
           </section>
