@@ -878,8 +878,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type GovernanceTaskKey[\s\S]*"readiness"[\s\S]*"director_summary"[\s\S]*"sponsor_summary"[\s\S]*"real_life_record"[\s\S]*"access_requests"[\s\S]*type GovernanceTaskGroupKey = "readiness" \| "reports" \| "records"[\s\S]*type SetupOverviewTaskKey = "notices" \| "engine" \| "next_setup" \| "counts"[\s\S]*type SetupOverviewGroupKey = "action" \| "reference"[\s\S]*type RealLifeRecordTask = "activity" \| "beneficiary_outcome"[\s\S]*GOVERNANCE_TASK_OPTIONS[\s\S]*key: "readiness"[\s\S]*key: "director_summary"[\s\S]*key: "sponsor_summary"[\s\S]*key: "real_life_record"[\s\S]*key: "access_requests"[\s\S]*GOVERNANCE_TASK_GROUP_OPTIONS[\s\S]*key: "readiness"[\s\S]*taskKeys: \["readiness"\][\s\S]*key: "reports"[\s\S]*taskKeys: \["director_summary", "sponsor_summary"\][\s\S]*key: "records"[\s\S]*taskKeys: \["real_life_record", "access_requests"\][\s\S]*SETUP_OVERVIEW_TASK_OPTIONS[\s\S]*key: "next_setup"[\s\S]*key: "notices"[\s\S]*key: "engine"[\s\S]*key: "counts"[\s\S]*SETUP_OVERVIEW_GROUP_OPTIONS[\s\S]*key: "action"[\s\S]*taskKeys: \["next_setup", "notices"\][\s\S]*key: "reference"[\s\S]*taskKeys: \["engine", "counts"\][\s\S]*activeSetupOverviewTask[\s\S]*operatingAreaPickerOpen[\s\S]*governanceGroupChooserOpen[\s\S]*activeSetupOverviewGroup[\s\S]*activeSetupOverviewGroupTasks[\s\S]*showOtherDomainToolsEntry = setupJourneyMode === "edit"[\s\S]*activeGovernanceTaskGroup[\s\S]*GOVERNANCE_TASK_GROUP_OPTIONS\.find[\s\S]*activeGovernanceGroupTasks[\s\S]*selectGovernanceTask[\s\S]*setActiveGovernanceTask\(task\)[\s\S]*setGovernanceGroupChooserOpen\(false\)[\s\S]*setGovernanceTaskChooserOpen\(false\)[\s\S]*setActiveRealLifeRecordTask\(\(current\) => current \|\| "activity"\)[\s\S]*openRealLifeRecordTask[\s\S]*setActiveGovernanceTask\("real_life_record"\)[\s\S]*setShowAdvancedTools\(true\)[\s\S]*setOperatingAreaPickerOpen\(false\)[\s\S]*setActiveLane\("governance"\)[\s\S]*community-domain-dashboard\.real-life-record-shortcut[\s\S]*openRealLifeRecordTask\("activity"\)[\s\S]*community-domain-dashboard\.setup-overview-group\.\$\{group\.key\}[\s\S]*activeSetupOverviewGroupTasks\.map[\s\S]*community-domain-dashboard\.setup-overview\.\$\{task\.key\}[\s\S]*activeSetupOverviewTask === "notices"[\s\S]*activeSetupOverviewTask === "engine"[\s\S]*activeSetupOverviewTask === "next_setup"[\s\S]*activeSetupOverviewTask === "counts"[\s\S]*showAdvancedTools && operatingAreaPickerOpen[\s\S]*CommunityDomainLaneSelectorPanel[\s\S]*setOperatingAreaPickerOpen\(false\)[\s\S]*community-domain-dashboard\.work-surface\.back-to-command[\s\S]*community-domain-dashboard\.operating-area-picker-toggle[\s\S]*Governance jobs[\s\S]*Choose the governance stage first[\s\S]*Current governance stage[\s\S]*community-domain-dashboard\.governance-group-toggle[\s\S]*Close governance stages[\s\S]*Change governance stage[\s\S]*governanceGroupChooserOpen \? \([\s\S]*community-domain-dashboard\.governance-group\.\$\{group\.key\}[\s\S]*community-domain-dashboard\.governance-task-toggle[\s\S]*governanceTaskChooserOpen \? "Close jobs" : "Change job"[\s\S]*governanceTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.governance-task\.\$\{task\.key\}[\s\S]*activeGovernanceTask === "readiness"[\s\S]*activeGovernanceTask === "director_summary"[\s\S]*activeGovernanceTask === "sponsor_summary"[\s\S]*activeGovernanceTask === "real_life_record"[\s\S]*activeRealLifeRecordTask === "activity"[\s\S]*community-domain-dashboard\.activity-record[\s\S]*activeRealLifeRecordTask === "beneficiary_outcome"[\s\S]*community-domain-dashboard\.beneficiary-outcome-record[\s\S]*activeGovernanceTask === "access_requests"[\s\S]*CommunityDomainAccessRequestsPanel/,
-  "Community Domain dashboard must keep setup overview jobs, keep the operating-area picker collapsed until requested, keep owner/admin real-life record as a direct Governance shortcut, keep Governance stages behind Change governance stage before hiding second-level jobs behind Change job, gate access requests behind their selected job, and expose only the selected activity or beneficiary outcome form.",
+  /SetupNoticeTaskKey[\s\S]*SetupOverviewTaskKey[\s\S]*type GovernanceTaskKey[\s\S]*"real_life_record"[\s\S]*"access_requests"[\s\S]*GOVERNANCE_TASK_OPTIONS[\s\S]*key: "real_life_record"[\s\S]*key: "access_requests"[\s\S]*activeSetupOverviewTask[\s\S]*activeSetupNoticeTask[\s\S]*operatingAreaPickerOpen[\s\S]*governanceGroupChooserOpen[\s\S]*showOtherDomainToolsEntry = setupJourneyMode === "edit"[\s\S]*selectGovernanceTask[\s\S]*setActiveGovernanceTask\(task\)[\s\S]*openRealLifeRecordTask[\s\S]*setActiveGovernanceTask\("real_life_record"\)[\s\S]*community-domain-dashboard\.real-life-record-shortcut[\s\S]*openRealLifeRecordTask\("activity"\)[\s\S]*CommunityDomainSetupOverviewPanel[\s\S]*setActiveSetupNoticeTask[\s\S]*setActiveSetupOverviewTask[\s\S]*showAdvancedTools && operatingAreaPickerOpen[\s\S]*CommunityDomainLaneSelectorPanel[\s\S]*community-domain-dashboard\.operating-area-picker-toggle[\s\S]*Governance jobs[\s\S]*community-domain-dashboard\.governance-group-toggle[\s\S]*community-domain-dashboard\.governance-task-toggle[\s\S]*activeGovernanceTask === "real_life_record"[\s\S]*CommunityDomainAccessRequestsPanel/,
+  "Community Domain dashboard must keep setup overview state and data in the parent, lazy-render setup overview jobs, keep the operating-area picker collapsed until requested, keep owner/admin real-life record as a direct Governance shortcut, keep Governance stages behind Change governance stage before hiding second-level jobs behind Change job, gate access requests behind their selected job, and expose only the selected activity or beneficiary outcome form.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/SetupOverviewPanel.tsx",
+  /type SetupOverviewGroupKey = "action" \| "reference"[\s\S]*SETUP_OVERVIEW_TASK_OPTIONS[\s\S]*key: "next_setup"[\s\S]*key: "notices"[\s\S]*key: "engine"[\s\S]*key: "counts"[\s\S]*SETUP_OVERVIEW_GROUP_OPTIONS[\s\S]*key: "action"[\s\S]*taskKeys: \["next_setup", "notices"\][\s\S]*key: "reference"[\s\S]*taskKeys: \["engine", "counts"\][\s\S]*activeSetupOverviewGroup[\s\S]*activeSetupOverviewGroupTasks[\s\S]*community-domain-dashboard\.setup-overview-group\.\$\{group\.key\}[\s\S]*community-domain-dashboard\.setup-overview\.\$\{task\.key\}[\s\S]*activeSetupOverviewTask === "notices"[\s\S]*activeSetupOverviewTask === "engine"[\s\S]*activeSetupOverviewTask === "next_setup"[\s\S]*activeSetupOverviewTask === "counts"/,
+  "Lazy SetupOverviewPanel must keep setup overview jobs behind Action/Reference and view selectors while rendering only the selected setup overview surface.",
   { frontend: true }
 );
 
@@ -1626,8 +1633,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /domainNoticeFeatureMode[\s\S]*feature_policy_mode[\s\S]*Announcement Board is not used in this domain[\s\S]*Off in settings[\s\S]*Announcement Board is off/,
-  "Community Domain dashboard must show when Announcement Board is disabled by domain feature policy instead of offering a working-looking post action.",
+  /domainNoticeFeatureMode[\s\S]*feature_policy_mode[\s\S]*CommunityDomainSetupOverviewPanel[\s\S]*domainNoticeFeatureMode[\s\S]*domainNotices[\s\S]*onOpenNoticeModal/,
+  "Community Domain dashboard must pass Announcement Board feature-policy state into the lazy setup overview instead of hiding policy truth in local child state.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/SetupOverviewPanel.tsx",
+  /domainNoticeFeatureMode === "off"[\s\S]*Off in settings[\s\S]*Announcement Board is off[\s\S]*disabled=\{domainNoticeFeatureMode === "off"\}[\s\S]*Not used here/,
+  "Lazy SetupOverviewPanel must show when Announcement Board is disabled by domain feature policy instead of offering a working-looking post action.",
   { frontend: true }
 );
 
@@ -2081,8 +2095,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /primaryActionFallbackNote[\s\S]*authority verification is shown there as a readiness row[\s\S]*separate owner or admin path[\s\S]*Open the \{mainActionLaneLabel\} area[\s\S]*deeper[\s\S]*owner\/admin tools that check permissions/,
-  "Community Domain dashboard authority-verification fallback must explain why Services opens without pretending verification is complete.",
+  /primaryActionFallbackNote[\s\S]*authority verification is shown there as a readiness row[\s\S]*separate owner or admin path[\s\S]*CommunityDomainSetupOverviewPanel[\s\S]*mainActionCopy[\s\S]*mainActionLaneLabel[\s\S]*primaryActionFallbackNote/,
+  "Community Domain dashboard authority-verification fallback must be owned by the parent and passed into the lazy setup overview.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/SetupOverviewPanel.tsx",
+  /Open the \{mainActionLaneLabel\} area[\s\S]*mainActionCopy[\s\S]*deeper[\s\S]*owner\/admin tools that check permissions[\s\S]*primaryActionFallbackNote/,
+  "Lazy SetupOverviewPanel must explain why Services opens without pretending verification is complete.",
   { frontend: true }
 );
 
@@ -2277,8 +2298,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /isCommunityDomainInSetup[\s\S]*pageTitle[\s\S]*Community Domain setup[\s\S]*backLabel="Back"[\s\S]*Access", isAdmin \? "Owner\/admin" : "Member"[\s\S]*Domain", compactStatus\(status\.domain_status\)[\s\S]*Billing", compactStatus\(status\.billing_status\)[\s\S]*Activation", compactStatus\(status\.activation_status\)[\s\S]*Verification", compactStatus\(status\.verification_status\)[\s\S]*Community Domain facts[\s\S]*One institutional home for structure, rules, services, and trust[\s\S]*Structure[\s\S]*countValue\(counts\.nodes\)[\s\S]*Governance[\s\S]*countValue\(counts\.active_policies\)[\s\S]*Services[\s\S]*countValue\(moduleKeys\.length\)[\s\S]*Trust relay[\s\S]*compactStatus\(status\.verification_status\)[\s\S]*verification still depends on current status/,
-  "Community Domain dashboard must avoid raw owner ids, use a single Back escape, show setup-aware page naming, and keep operating-engine details behind advanced tools.",
+  /isCommunityDomainInSetup[\s\S]*pageTitle[\s\S]*Community Domain setup[\s\S]*backLabel="Back"[\s\S]*Access", isAdmin \? "Owner\/admin" : "Member"[\s\S]*Domain", compactStatus\(status\.domain_status\)[\s\S]*Billing", compactStatus\(status\.billing_status\)[\s\S]*Activation", compactStatus\(status\.activation_status\)[\s\S]*Verification", compactStatus\(status\.verification_status\)[\s\S]*CommunityDomainSetupOverviewPanel[\s\S]*counts[\s\S]*moduleCount: moduleKeys\.length[\s\S]*status[\s\S]*template/,
+  "Community Domain dashboard must avoid raw owner ids, use a single Back escape, show setup-aware page naming, and pass operating-engine facts into the lazy setup overview behind advanced tools.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/SetupOverviewPanel.tsx",
+  /Community Domain facts[\s\S]*One institutional home for structure, rules, services, and trust[\s\S]*Structure[\s\S]*countValue\(counts\.nodes\)[\s\S]*Governance[\s\S]*countValue\(counts\.active_policies\)[\s\S]*Services[\s\S]*countValue\(moduleCount\)[\s\S]*Trust relay[\s\S]*compactStatus\(status\.verification_status\)[\s\S]*verification still depends on current status/,
+  "Lazy SetupOverviewPanel must keep operating-engine fact details behind the setup overview Facts view.",
   { frontend: true }
 );
 
@@ -2312,8 +2340,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /openSetupJourney[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.continue-setup[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*CommunityDomainOperatingSummaryPanel[\s\S]*onOpenLiveLane: \(\) => \{[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.advanced-tools-toggle[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true/,
-  "Community Domain work-surface entry points must all request focus when they open setup or lanes, including the lazy operating-summary live-lane callback.",
+  /openSetupJourney[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*CommunityDomainSetupOverviewPanel[\s\S]*onOpenMainAction: \(\) => \{[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*CommunityDomainOperatingSummaryPanel[\s\S]*onOpenLiveLane: \(\) => \{[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.advanced-tools-toggle[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true/,
+  "Community Domain work-surface entry points must all request focus when they open setup or lanes, including lazy setup-overview and operating-summary callbacks.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/SetupOverviewPanel.tsx",
+  /community-domain-dashboard\.continue-setup[\s\S]*onClick=\{onOpenMainAction\}/,
+  "Lazy SetupOverviewPanel must keep the Continue setup action wired to the parent focus callback.",
   { frontend: true }
 );
 
@@ -2327,8 +2362,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /function pageShell\(\)[\s\S]*display: "grid"[\s\S]*alignContent: "start"[\s\S]*isCommunityDomainOperational[\s\S]*blockedDomain[\s\S]*billingReady[\s\S]*includes\("paid"\)[\s\S]*includes\("confirmed"\)[\s\S]*activationReady[\s\S]*activationBlocked[\s\S]*firstAvailableOperationalLaneKey[\s\S]*domainOperational[\s\S]*operationalLaneKey[\s\S]*operationalLaneLabel[\s\S]*mainActionLaneKey[\s\S]*domainOperational \? operationalLaneKey : primaryActionLaneKey[\s\S]*mainActionCopy[\s\S]*operatingStateCopy\.nextStep[\s\S]*otherToolsLaneKey[\s\S]*showDomainWorkSurface[\s\S]*setupWorkspaceOpen \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*openDomainMarketplace[\s\S]*routeWithCommunity\(APP_ROUTES\.MARKETPLACE, clanId\)[\s\S]*!domainOperational \? \([\s\S]*PageTopNav[\s\S]*Domain command[\s\S]*Run one operating area at a time[\s\S]*Start here[\s\S]*Use Marketplace first\. Open another area only when the next job needs it\.[\s\S]*community-domain-dashboard\.open-marketplace[\s\S]*Open Marketplace[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*setSetupWorkspaceOpen\(false\)[\s\S]*Open \{operationalLaneLabel\}[\s\S]*community-domain-dashboard\.more-actions-toggle[\s\S]*aria-expanded=\{commandMoreActionsOpen\}[\s\S]*commandMoreActionsOpen \? "Close more" : "More"[\s\S]*commandMoreActionsOpen \? \([\s\S]*community-domain-dashboard\.more-actions-panel[\s\S]*community-domain-dashboard\.governance-card[\s\S]*community-domain-dashboard\.open-governance[\s\S]*community-domain-dashboard\.real-life-record-card[\s\S]*community-domain-dashboard\.real-life-record-shortcut[\s\S]*openRealLifeRecordTask\("activity"\)[\s\S]*community-domain-dashboard\.subscription-card[\s\S]*community-domain-dashboard\.open-subscription[\s\S]*community-domain-dashboard\.guidance-card[\s\S]*community-domain-dashboard\.command-guidance-toggle[\s\S]*commandGuidanceOpen \? "Close guidance" : "Open guidance"[\s\S]*!domainOperational \? \([\s\S]*community-domain-dashboard\.command-guidance-toggle[\s\S]*commandGuidanceOpen \? \([\s\S]*commandGuidanceGrid[\s\S]*commandGuidanceTile\("next"\)[\s\S]*commandGuidanceTile\("risk"\)[\s\S]*Open the \{mainActionLaneLabel\} area[\s\S]*setActiveLane\(mainActionLaneKey\)[\s\S]*setSetupWorkspaceOpen\(true\)/,
+  /function pageShell\(\)[\s\S]*display: "grid"[\s\S]*alignContent: "start"[\s\S]*isCommunityDomainOperational[\s\S]*firstAvailableOperationalLaneKey[\s\S]*domainOperational[\s\S]*mainActionLaneKey[\s\S]*domainOperational \? operationalLaneKey : primaryActionLaneKey[\s\S]*mainActionCopy[\s\S]*showDomainWorkSurface[\s\S]*setupWorkspaceOpen \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*openDomainMarketplace[\s\S]*routeWithCommunity\(APP_ROUTES\.MARKETPLACE, clanId\)[\s\S]*!domainOperational \? \([\s\S]*PageTopNav[\s\S]*Domain command[\s\S]*Run one operating area at a time[\s\S]*Start here[\s\S]*Use Marketplace first\. Open another area only when the next job needs it\.[\s\S]*community-domain-dashboard\.open-marketplace[\s\S]*Open Marketplace[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*setSetupWorkspaceOpen\(false\)[\s\S]*Open \{operationalLaneLabel\}[\s\S]*community-domain-dashboard\.more-actions-toggle[\s\S]*aria-expanded=\{commandMoreActionsOpen\}[\s\S]*commandMoreActionsOpen \? "Close more" : "More"[\s\S]*community-domain-dashboard\.more-actions-panel[\s\S]*community-domain-dashboard\.governance-card[\s\S]*community-domain-dashboard\.real-life-record-card[\s\S]*community-domain-dashboard\.subscription-card[\s\S]*community-domain-dashboard\.guidance-card[\s\S]*CommunityDomainSetupOverviewPanel[\s\S]*onOpenMainAction: \(\) => \{[\s\S]*setActiveLane\(mainActionLaneKey\)[\s\S]*setSetupWorkspaceOpen\(true\)/,
   "Active Community Domains must hand off to Marketplace first, expose only one named live-area shortcut plus More, and keep Governance, Records, Subscription, and Guidance behind the More drawer while draft domains keep setup behind an explicit focused workbench.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/SetupOverviewPanel.tsx",
+  /activeSetupOverviewTask === "next_setup"[\s\S]*Open the \{mainActionLaneLabel\} area[\s\S]*community-domain-dashboard\.continue-setup[\s\S]*Open \{mainActionLaneLabel\}/,
+  "Lazy SetupOverviewPanel must keep the draft-domain setup workbench entry explicit and focused.",
   { frontend: true }
 );
 
@@ -2447,15 +2489,29 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /activeSetupOverviewTask[\s\S]*activeSetupNoticeTask[\s\S]*setupOverviewGroupChooserOpen[\s\S]*setupOverviewTaskChooserOpen[\s\S]*setupNoticeTaskChooserOpen[\s\S]*activeSetupOverviewTaskOption[\s\S]*activeSetupNoticeTaskOption[\s\S]*showAdvancedTools && activeLane === "settings" && setupWorkspaceOpen[\s\S]*Setup work[\s\S]*Choose the setup stage first[\s\S]*community-domain-dashboard\.setup-overview-group-toggle[\s\S]*setupOverviewGroupChooserOpen[\s\S]*Close setup stages[\s\S]*Change setup stage[\s\S]*setupOverviewGroupChooserOpen \? \([\s\S]*community-domain-dashboard\.setup-overview-group\.\$\{group\.key\}[\s\S]*setSetupOverviewGroupChooserOpen\(false\)[\s\S]*setSetupOverviewTaskChooserOpen\(false\)[\s\S]*community-domain-dashboard\.setup-overview-task-toggle[\s\S]*setupOverviewTaskChooserOpen[\s\S]*Close setup views[\s\S]*Change setup view[\s\S]*setupOverviewTaskChooserOpen \? \([\s\S]*activeSetupOverviewGroupTasks\.map[\s\S]*community-domain-dashboard\.setup-overview\.\$\{task\.key\}[\s\S]*setSetupOverviewTaskChooserOpen\(false\)[\s\S]*activeSetupOverviewTask === "notices"[\s\S]*Official Board[\s\S]*activeSetupOverviewTask === "engine"[\s\S]*Community Domain facts[\s\S]*activeSetupOverviewTask === "next_setup"[\s\S]*Open the \{mainActionLaneLabel\} area[\s\S]*activeSetupOverviewTask === "counts"[\s\S]*showAdvancedTools && operatingAreaPickerOpen[\s\S]*Operating areas[\s\S]*community-domain-dashboard\.operating-area-picker-toggle[\s\S]*showOtherDomainToolsEntry \? \([\s\S]*Other domain tools/,
-  "Community Domain dashboard must keep setup overview stages and views behind closed controls, while keeping notices, engine details, counts, and operating areas closed until the owner opens the matching secondary surface or edit mode.",
+  /activeSetupOverviewTask[\s\S]*activeSetupNoticeTask[\s\S]*setupOverviewGroupChooserOpen[\s\S]*setupOverviewTaskChooserOpen[\s\S]*setupNoticeTaskChooserOpen[\s\S]*showAdvancedTools && activeLane === "settings" && setupWorkspaceOpen[\s\S]*CommunityDomainSetupOverviewPanel[\s\S]*activeSetupNoticeTask[\s\S]*activeSetupOverviewTask[\s\S]*setActiveSetupNoticeTask[\s\S]*setActiveSetupOverviewTask[\s\S]*setSetupNoticeTaskChooserOpen[\s\S]*setSetupOverviewGroupChooserOpen[\s\S]*setSetupOverviewTaskChooserOpen[\s\S]*showAdvancedTools && operatingAreaPickerOpen[\s\S]*Operating areas[\s\S]*community-domain-dashboard\.operating-area-picker-toggle[\s\S]*showOtherDomainToolsEntry \? \([\s\S]*Other domain tools/,
+  "Community Domain dashboard must keep setup overview state and operating-area visibility in the parent while lazy-loading the selected setup overview surface.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/SetupOverviewPanel.tsx",
+  /Setup work[\s\S]*Choose the setup stage first[\s\S]*community-domain-dashboard\.setup-overview-group-toggle[\s\S]*setupOverviewGroupChooserOpen[\s\S]*Close setup stages[\s\S]*Change setup stage[\s\S]*setupOverviewGroupChooserOpen \? \([\s\S]*community-domain-dashboard\.setup-overview-group\.\$\{group\.key\}[\s\S]*setSetupOverviewGroupChooserOpen\(false\)[\s\S]*setSetupOverviewTaskChooserOpen\(false\)[\s\S]*community-domain-dashboard\.setup-overview-task-toggle[\s\S]*setupOverviewTaskChooserOpen[\s\S]*Close setup views[\s\S]*Change setup view[\s\S]*setupOverviewTaskChooserOpen \? \([\s\S]*activeSetupOverviewGroupTasks\.map[\s\S]*community-domain-dashboard\.setup-overview\.\$\{task\.key\}[\s\S]*setSetupOverviewTaskChooserOpen\(false\)[\s\S]*activeSetupOverviewTask === "notices"[\s\S]*Official Board[\s\S]*activeSetupOverviewTask === "engine"[\s\S]*Community Domain facts[\s\S]*activeSetupOverviewTask === "next_setup"[\s\S]*Open the \{mainActionLaneLabel\} area[\s\S]*activeSetupOverviewTask === "counts"/,
+  "Lazy SetupOverviewPanel must keep setup overview stages and views behind closed controls instead of dumping notices, facts, next action, and counts at once.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type SetupNoticeTaskKey = "recent" \| "post"[\s\S]*SETUP_NOTICE_TASK_OPTIONS[\s\S]*key: "recent"[\s\S]*key: "post"[\s\S]*activeSetupNoticeTask[\s\S]*setupNoticeTaskChooserOpen[\s\S]*setActiveSetupNoticeTask\("recent"\)[\s\S]*setSetupNoticeTaskChooserOpen\(false\)[\s\S]*Official Board[\s\S]*Current notice view[\s\S]*community-domain-dashboard\.setup-notice-toggle[\s\S]*setupNoticeTaskChooserOpen[\s\S]*Close notice views[\s\S]*Change notice view[\s\S]*setupNoticeTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.setup-notice\.\$\{task\.key\}[\s\S]*setSetupNoticeTaskChooserOpen\(false\)[\s\S]*activeSetupNoticeTask === "post"[\s\S]*community-domain-dashboard\.notice\.post[\s\S]*activeSetupNoticeTask === "recent"[\s\S]*domainNoticesLoading[\s\S]*domainNotices\.length/,
-  "Community Domain Official Board must keep recent notices and the post action behind an inner view selector instead of exposing the post control beside the notice list.",
+  /CommunityDomainSetupOverviewPanel[\s\S]*activeSetupNoticeTask[\s\S]*domainNotices[\s\S]*onOpenNoticeModal[\s\S]*setActiveSetupNoticeTask[\s\S]*setSetupNoticeTaskChooserOpen[\s\S]*setupNoticeTaskChooserOpen/,
+  "Community Domain dashboard must own Official Board notice view state and pass it into the lazy setup overview.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/SetupOverviewPanel.tsx",
+  /type SetupNoticeTaskKey = "recent" \| "post"[\s\S]*SETUP_NOTICE_TASK_OPTIONS[\s\S]*key: "recent"[\s\S]*key: "post"[\s\S]*Official Board[\s\S]*Current notice view[\s\S]*community-domain-dashboard\.setup-notice-toggle[\s\S]*setupNoticeTaskChooserOpen[\s\S]*Close notice views[\s\S]*Change notice view[\s\S]*setupNoticeTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.setup-notice\.\$\{task\.key\}[\s\S]*setSetupNoticeTaskChooserOpen\(false\)[\s\S]*activeSetupNoticeTask === "post"[\s\S]*community-domain-dashboard\.notice\.post[\s\S]*activeSetupNoticeTask === "recent"[\s\S]*domainNoticesLoading[\s\S]*domainNotices\.length/,
+  "Lazy SetupOverviewPanel must keep recent notices and the post action behind an inner view selector instead of exposing the post control beside the notice list.",
   { frontend: true }
 );
 
@@ -2773,8 +2829,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/SetupIntelligenceCards"\)[\s\S]*getCommunityDomainReadiness[\s\S]*getCommunityDomainSetupPlan[\s\S]*CommunityDomainSetupIntelligenceCards[\s\S]*setupReadiness=\{setupReadiness\}[\s\S]*setupPlan=\{setupPlan\}/,
-  "Community Domain dashboard must lazy-load setup intelligence cards and pass raw setup readiness and setup plan maps from the parent route.",
+  /getCommunityDomainReadiness[\s\S]*getCommunityDomainSetupPlan[\s\S]*CommunityDomainSetupOverviewPanel[\s\S]*setupReadiness[\s\S]*setupPlan/,
+  "Community Domain dashboard must lazy-load the setup overview panel and pass raw setup readiness and setup plan maps from the parent route.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/SetupOverviewPanel.tsx",
+  /lazy\([\s\S]*import\("\.\/SetupIntelligenceCards"\)[\s\S]*CommunityDomainSetupIntelligenceCards[\s\S]*isBaseReadinessLoading=\{isBaseReadinessLoading\}[\s\S]*setupReadiness=\{setupReadiness\}[\s\S]*setupPlan=\{setupPlan\}/,
+  "Lazy SetupOverviewPanel must keep setup intelligence cards lazy-loaded and pass raw setup readiness and setup plan maps through unchanged.",
   { frontend: true }
 );
 
