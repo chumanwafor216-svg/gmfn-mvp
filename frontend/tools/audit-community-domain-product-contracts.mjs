@@ -12,6 +12,8 @@ const findings = [];
 const communityDomainDashboardFile = "src/pages/CommunityDomainDashboardPage.tsx";
 const communityDomainRealLifeRecordFile =
   "src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx";
+const communityDomainMemberRosterFile =
+  "src/pages/communityDomainDashboard/MemberRosterPanel.tsx";
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const marketplaceRoscaFile = "src/pages/marketplace/MarketplaceRoscaSection.tsx";
 
@@ -26,10 +28,10 @@ function readRawFromFrontend(relativePath) {
 function readCommunityDomainDashboardAuditSource() {
   const dashboardSource = readRawFromFrontend(communityDomainDashboardFile);
   const realLifeRecordSource = readRawFromFrontend(communityDomainRealLifeRecordFile);
-  return dashboardSource.replace(
-    /<CommunityDomainRealLifeRecordPanel[\s\S]*?\/>/,
-    realLifeRecordSource
-  );
+  const memberRosterSource = readRawFromFrontend(communityDomainMemberRosterFile);
+  return dashboardSource
+    .replace(/<CommunityDomainRealLifeRecordPanel[\s\S]*?\/>/, realLifeRecordSource)
+    .replace(/<CommunityDomainMemberRosterPanel[\s\S]*?\/>/, memberRosterSource);
 }
 
 function readMarketplaceAuditSource() {
@@ -3055,8 +3057,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type MemberRosterTaskKey = "summary" \| "members"[\s\S]*MEMBER_ROSTER_TASK_OPTIONS[\s\S]*key: "summary"[\s\S]*key: "members"[\s\S]*memberRosterTaskChooserOpen[\s\S]*activeMemberRosterTask[\s\S]*setActiveMemberRosterTask\("summary"\)[\s\S]*memberRosterSummaryRows[\s\S]*activeMemberRosterTaskOption[\s\S]*Current roster view[\s\S]*community-domain-dashboard\.member-roster-toggle[\s\S]*Close roster views[\s\S]*Change roster view[\s\S]*memberRosterTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.member-roster\.\$\{task\.key\}[\s\S]*setMemberRosterTaskChooserOpen\(false\)[\s\S]*activeMemberRosterTask === "summary"[\s\S]*Active members can pass public active-member proof[\s\S]*activeMemberRosterTask === "members"[\s\S]*domainMemberRows\.length[\s\S]*community-domain-dashboard\.member-status\.\$\{rowKey\}/,
-  "Community Domain dashboard roster control must keep Summary and Members behind a closed Change roster view selector.",
+  /type MemberRosterTaskKey = "summary" \| "members"[\s\S]*memberRosterTaskChooserOpen[\s\S]*activeMemberRosterTask[\s\S]*setActiveMemberRosterTask\("summary"\)[\s\S]*memberRosterSummaryRows[\s\S]*activeMemberDetail === "roster"[\s\S]*CommunityDomainMemberRosterPanel[\s\S]*activeMemberRosterTask[\s\S]*memberRosterTaskChooserOpen[\s\S]*setActiveMemberRosterTask[\s\S]*setMemberRosterTaskChooserOpen[\s\S]*changeDomainMemberStatus/,
+  "Community Domain dashboard roster control must keep parent-owned state, reset behavior, summary counts, and lazy MemberRosterPanel wiring.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/MemberRosterPanel.tsx",
+  /MEMBER_ROSTER_TASK_OPTIONS[\s\S]*key: "summary"[\s\S]*key: "members"[\s\S]*activeMemberRosterTaskOption[\s\S]*Current roster view[\s\S]*community-domain-dashboard\.member-roster-toggle[\s\S]*Close roster views[\s\S]*Change roster view[\s\S]*memberRosterTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.member-roster\.\$\{task\.key\}[\s\S]*setMemberRosterTaskChooserOpen\(false\)[\s\S]*activeMemberRosterTask === "summary"[\s\S]*Active members can pass public active-member proof[\s\S]*activeMemberRosterTask === "members"[\s\S]*domainMemberRows\.length[\s\S]*community-domain-dashboard\.member-status\.\$\{rowKey\}/,
+  "Lazy Community Domain roster control must keep Summary and Members behind a closed Change roster view selector.",
   { frontend: true }
 );
 

@@ -1,5 +1,13 @@
+## 2026-08-24 - Local Community Domain Member Roster Lazy Split
+- Status: Local implementation verified; not pushed/deployed because the active pilot freeze asks for batch publishing unless the owner explicitly says to push.
+- Split the Community Domain member roster control out of `frontend/src/pages/CommunityDomainDashboardPage.tsx` into lazy-loaded `frontend/src/pages/communityDomainDashboard/MemberRosterPanel.tsx`.
+- The parent route still owns member rows, status-change handlers, summary counts, busy state, and selected roster task; the lazy child owns the roster Summary/Members selector and member status row UI.
+- Updated `frontend/tools/audit-community-domain-product-contracts.mjs` so the roster guard composes/checks the lazy child instead of expecting the roster controls inline in the parent.
+- Build truth: after the previous real-life split, the Community Domain route was about `192.89 kB` / `47.24 kB gzip`; after this roster split it is about `189.31 kB` / `46.47 kB gzip`, with a new `MemberRosterPanel` chunk about `4.79 kB` / `1.92 kB gzip`.
+- Verification passed so far: `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `git diff --check`.
+- Devil's advocate: this is another real but small structural reduction. The Community Domain parent remains large because the setup overview/workbench, operating summary, service/structure/member/governance selectors, and many parent-owned handlers still live inline. The next larger cut is likely extracting a setup overview/workbench section, but that has more state and audit blast radius than this roster slice.
 ## 2026-08-24 - Local Community Domain Real-Life Option Lazy Split
-- Status: Local implementation verified; not pushed/deployed in this slice.
+- Status: Verified, committed, pushed to `main`, and Render deploy workflow `32710527518` completed successfully after this slice.
 - Split the real-life/beneficiary option catalogues out of `frontend/src/pages/CommunityDomainDashboardPage.tsx` and into the already-lazy `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`.
 - The parent Community Domain dashboard still owns the workflow state and handlers, but it no longer carries or passes the real-life task/stage/beneficiary option arrays or the active real-life task option objects in the first route chunk.
 - Build truth: the Community Domain route chunk moved from about `198.27 kB` / `48.60 kB gzip` to `192.89 kB` / `47.24 kB gzip`; the lazy RealLifeRecordPanel chunk is now about `45.83 kB` / `8.61 kB gzip`.
