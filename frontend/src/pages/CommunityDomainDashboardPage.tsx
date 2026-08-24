@@ -119,6 +119,7 @@ import type {
 } from "./communityDomainDashboard/SetupOverviewPanel";
 import type { MemberDetailKey } from "./communityDomainDashboard/MemberFocusPanel";
 import type { ServiceDetailKey } from "./communityDomainDashboard/ServiceFocusPanel";
+import type { StructureDetailKey } from "./communityDomainDashboard/StructureFocusPanel";
 import type {
   BillingQuoteSurface,
   BillingTaskPanelsData,
@@ -127,20 +128,14 @@ import type {
   DomainPaymentSurface,
 } from "./communityDomainDashboard/BillingTaskPanelsTypes";
 
-const CommunityDomainNodeProjectionGroups = lazy(
-  () => import("./communityDomainDashboard/NodeProjectionGroups")
-);
-const CommunityDomainStructurePlanningPanels = lazy(
-  () => import("./communityDomainDashboard/StructurePlanningPanels")
-);
-const CommunityDomainStructurePreviewPanel = lazy(
-  () => import("./communityDomainDashboard/StructurePreviewPanel")
-);
 const CommunityDomainSetupOverviewPanel = lazy(
   () => import("./communityDomainDashboard/SetupOverviewPanel")
 );
 const CommunityDomainMemberFocusPanel = lazy(
   () => import("./communityDomainDashboard/MemberFocusPanel")
+);
+const CommunityDomainStructureFocusPanel = lazy(
+  () => import("./communityDomainDashboard/StructureFocusPanel")
 );
 const CommunityDomainServiceFocusPanel = lazy(
   () => import("./communityDomainDashboard/ServiceFocusPanel")
@@ -186,8 +181,6 @@ type DomainLane = {
   count?: number;
 };
 
-type StructureDetailKey = "preview" | "foundation" | "boundary" | "activity" | "planning";
-type StructureDetailGroupKey = "map" | "readiness" | "rollout";
 type MemberRosterTaskKey = "summary" | "members";
 type GovernanceTaskKey =
   | "readiness"
@@ -568,68 +561,6 @@ const SPONSOR_SUMMARY_TASK_OPTIONS: Array<{
     key: "export",
     label: "Export",
     note: "Prepare sponsor-safe text for copying.",
-  },
-];
-
-const STRUCTURE_DETAIL_OPTIONS: Array<{
-  key: StructureDetailKey;
-  label: string;
-  note: string;
-}> = [
-  {
-    key: "preview",
-    label: "Structure map",
-    note: "Show the operating-unit tree first.",
-  },
-  {
-    key: "foundation",
-    label: "Foundation",
-    note: "Review local authority, economy, and activity readiness.",
-  },
-  {
-    key: "boundary",
-    label: "Domain rules",
-    note: "Check child-domain and public rule readiness.",
-  },
-  {
-    key: "activity",
-    label: "Activities",
-    note: "Inspect scheduled and paid activity readiness.",
-  },
-  {
-    key: "planning",
-    label: "Rollout",
-    note: "Open rollout, activity map, and group planning.",
-  },
-];
-
-const STRUCTURE_DETAIL_GROUP_OPTIONS: Array<{
-  key: StructureDetailGroupKey;
-  label: string;
-  note: string;
-  defaultDetail: StructureDetailKey;
-  detailKeys: StructureDetailKey[];
-}> = [
-  {
-    key: "map",
-    label: "Map",
-    note: "Start with the operating-unit tree.",
-    defaultDetail: "preview",
-    detailKeys: ["preview"],
-  },
-  {
-    key: "readiness",
-    label: "Readiness",
-    note: "Review foundation and rule readiness.",
-    defaultDetail: "foundation",
-    detailKeys: ["foundation", "boundary"],
-  },
-  {
-    key: "rollout",
-    label: "Rollout",
-    note: "Review activity readiness and rollout planning.",
-    defaultDetail: "activity",
-    detailKeys: ["activity", "planning"],
   },
 ];
 
@@ -5004,31 +4935,12 @@ export default function CommunityDomainDashboardPage() {
     ? governancePendingCount
     : institutionalOpenReviewCount;
   const selectedLane = lanes.find((lane) => lane.lane_key === activeLane) || lanes[0];
-  const selectedStructureDetail =
-    STRUCTURE_DETAIL_OPTIONS.find((option) => option.key === activeStructureDetail) ||
-    STRUCTURE_DETAIL_OPTIONS[0];
   const activeSetupWorkbenchTaskOption =
     SETUP_WORKBENCH_TASK_OPTIONS.find((task) => task.key === activeSetupWorkbenchTask) ||
     SETUP_WORKBENCH_TASK_OPTIONS[0];
   const activeSetupAccessTaskOption =
     SETUP_ACCESS_TASK_OPTIONS.find((task) => task.key === activeSetupAccessTask) ||
     SETUP_ACCESS_TASK_OPTIONS[0];
-  const activeStructureDetailGroup = useMemo<StructureDetailGroupKey>(() => {
-    if (activeStructureDetail === "foundation" || activeStructureDetail === "boundary") {
-      return "readiness";
-    }
-    if (activeStructureDetail === "activity" || activeStructureDetail === "planning") {
-      return "rollout";
-    }
-    return "map";
-  }, [activeStructureDetail]);
-  const activeStructureDetailGroupOption =
-    STRUCTURE_DETAIL_GROUP_OPTIONS.find(
-      (group) => group.key === activeStructureDetailGroup
-    ) || STRUCTURE_DETAIL_GROUP_OPTIONS[0];
-  const activeStructureGroupDetails = STRUCTURE_DETAIL_OPTIONS.filter((option) =>
-    activeStructureDetailGroupOption.detailKeys.includes(option.key)
-  );
   const activeDomainMemberCount = domainMemberRows.filter(
     (row) => cleanText(row?.status, "inactive").toLowerCase() === "active"
   ).length;
@@ -9352,248 +9264,41 @@ export default function CommunityDomainDashboardPage() {
                   </Suspense>
                 ) : null}
                 {!isActiveLaneReadinessLoading && activeLane === "structure" ? (
-                  <>
-                    <div
-                      style={{
-                        ...softCard(),
-                        display: "grid",
-                        gap: 10,
+                  <Suspense
+                    fallback={
+                      <div style={{ ...helperText(), marginTop: 4 }}>
+                        Loading structure focus...
+                      </div>
+                    }
+                  >
+                    <CommunityDomainStructureFocusPanel
+                      data={{
+                        activeStructureDetail,
+                        activityGroupReadiness,
+                        activityMap,
+                        helperText,
+                        nodeActivityMap,
+                        nodeAutonomyMap,
+                        nodeDomainBoundaryMap,
+                        nodeEconomicMap,
+                        nodePaidActivityMap,
+                        nodeScheduledActivityMap,
+                        nodeTree,
+                        rolloutPlan,
+                        sectionLabel,
+                        setActiveStructureDetail,
+                        setGovernanceTaskChooserOpen,
+                        setMemberPacketChooserOpen,
+                        setRealLifeRecordTypeChooserOpen,
+                        setStructurePacketChooserOpen,
+                        setStructureStageChooserOpen,
+                        softCard,
+                        structurePacketChooserOpen,
+                        structureStageChooserOpen,
                       }}
-                    >
-                      <div style={sectionLabel()}>Structure focus</div>
-                      <div style={helperText()}>
-                        Choose the structure stage first. Current
-                        view: <strong>{selectedStructureDetail.label}</strong>.
-                      </div>
-                      <StableButton
-                        type="button"
-                        kind="secondary"
-                        fullWidth
-                        stableHeight={42}
-                        debugId="community-domain-dashboard.structure-stage-toggle"
-                        aria-expanded={structureStageChooserOpen}
-                        aria-controls="community-domain-structure-stages"
-                        onClick={() =>
-                          setStructureStageChooserOpen((current) => !current)
-                        }
-                        style={{
-                          justifyContent: "center",
-                          fontSize: 13,
-                          textTransform: "none",
-                        }}
-                      >
-                        {structureStageChooserOpen ? "Close stages" : "Change stage"}
-                      </StableButton>
-                      {structureStageChooserOpen ? (
-                        <div
-                          id="community-domain-structure-stages"
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns:
-                              "repeat(auto-fit, minmax(min(100%, 136px), 1fr))",
-                            gap: 8,
-                          }}
-                        >
-                          {STRUCTURE_DETAIL_GROUP_OPTIONS.map((group) => {
-                            const selected = group.key === activeStructureDetailGroup;
-                            return (
-                              <StableButton
-                                key={group.key}
-                                type="button"
-                                kind={selected ? "primary" : "secondary"}
-                                stableHeight={48}
-                                fullWidth
-                                aria-pressed={selected}
-                                title={group.note}
-                                debugId={`community-domain-dashboard.structure-group.${group.key}`}
-                                onClick={() => {
-                                  setActiveStructureDetail(group.defaultDetail);
-                                  setStructureStageChooserOpen(false);
-                                  setStructurePacketChooserOpen(false);
-                                  setMemberPacketChooserOpen(false);
-                                  setGovernanceTaskChooserOpen(false);
-                                  setRealLifeRecordTypeChooserOpen(false);
-                                }}
-                                style={{
-                                  justifyContent: "center",
-                                  fontSize: 13,
-                                  textTransform: "none",
-                                }}
-                              >
-                                {group.label}
-                              </StableButton>
-                            );
-                          })}
-                        </div>
-                      ) : null}
-                      {activeStructureGroupDetails.length > 1 ? (
-                        <div
-                          style={{
-                            borderTop: "1px solid rgba(9,27,46,0.08)",
-                            paddingTop: 10,
-                            display: "grid",
-                            gap: 8,
-                          }}
-                        >
-                          <StableButton
-                            type="button"
-                            kind="secondary"
-                            fullWidth
-                            stableHeight={42}
-                            debugId="community-domain-dashboard.structure-packet-toggle"
-                            aria-expanded={structurePacketChooserOpen}
-                            aria-controls="community-domain-structure-packets"
-                            onClick={() =>
-                              setStructurePacketChooserOpen((current) => !current)
-                            }
-                            style={{
-                              justifyContent: "center",
-                              fontSize: 13,
-                              textTransform: "none",
-                            }}
-                          >
-                            {structurePacketChooserOpen ? "Close views" : "Change view"}
-                          </StableButton>
-                          {structurePacketChooserOpen ? (
-                            <div
-                              id="community-domain-structure-packets"
-                              data-debug-id="community-domain-dashboard.structure-packet-panel"
-                              style={{
-                                display: "grid",
-                                gap: 8,
-                              }}
-                            >
-                              <div style={sectionLabel()}>
-                                {activeStructureDetailGroupOption.label} views
-                              </div>
-                              <div
-                                style={{
-                                  display: "grid",
-                                  gridTemplateColumns:
-                                    "repeat(auto-fit, minmax(min(100%, 136px), 1fr))",
-                                  gap: 8,
-                                }}
-                              >
-                                {activeStructureGroupDetails.map((option) => {
-                                  const selected = option.key === activeStructureDetail;
-                                  return (
-                                    <StableButton
-                                      key={option.key}
-                                      type="button"
-                                      kind={selected ? "primary" : "secondary"}
-                                      stableHeight={42}
-                                      fullWidth
-                                      aria-pressed={selected}
-                                      title={option.note}
-                                      debugId={`community-domain-dashboard.structure-detail.${option.key}`}
-                                      onClick={() => {
-                                        setActiveStructureDetail(option.key);
-                                        setStructureStageChooserOpen(false);
-                                        setStructurePacketChooserOpen(false);
-                                        setMemberPacketChooserOpen(false);
-                                        setGovernanceTaskChooserOpen(false);
-                                        setRealLifeRecordTypeChooserOpen(false);
-                                      }}
-                                      style={{
-                                        justifyContent: "center",
-                                        fontSize: 13,
-                                        textTransform: "none",
-                                      }}
-                                    >
-                                      {option.label}
-                                    </StableButton>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          ) : null}
-                        </div>
-                      ) : null}
-                      <div style={{ ...helperText(), fontSize: 13 }}>
-                        {selectedStructureDetail.note}
-                      </div>
-                    </div>
-
-                    {activeStructureDetail === "preview" ? (
-                      <Suspense
-                        fallback={
-                          <div style={{ ...helperText(), marginTop: 4 }}>
-                            Loading structure map...
-                          </div>
-                        }
-                      >
-                        <CommunityDomainStructurePreviewPanel
-                          nodeTree={nodeTree}
-                        />
-                      </Suspense>
-                    ) : null}
-
-                    {activeStructureDetail === "foundation" ? (
-                      <Suspense
-                        fallback={
-                          <div style={{ ...helperText(), marginTop: 4 }}>
-                            Loading foundation views...
-                          </div>
-                        }
-                      >
-                        <CommunityDomainNodeProjectionGroups
-                          variant="structureFoundation"
-                          nodeAutonomyMap={nodeAutonomyMap}
-                          nodeEconomicMap={nodeEconomicMap}
-                          nodeActivityMap={nodeActivityMap}
-                        />
-                      </Suspense>
-                    ) : null}
-
-                    {activeStructureDetail === "boundary" ? (
-                      <Suspense
-                        fallback={
-                          <div style={{ ...helperText(), marginTop: 4 }}>
-                            Loading structure rules...
-                          </div>
-                        }
-                      >
-                        <CommunityDomainNodeProjectionGroups
-                          variant="structureBoundary"
-                          nodeDomainBoundaryMap={nodeDomainBoundaryMap}
-                        />
-                      </Suspense>
-                    ) : null}
-
-                    {activeStructureDetail === "activity" ? (
-                      <Suspense
-                        fallback={
-                          <div style={{ ...helperText(), marginTop: 4 }}>
-                            Loading activity detail views...
-                          </div>
-                        }
-                      >
-                        <CommunityDomainNodeProjectionGroups
-                          variant="structureActivity"
-                          nodeScheduledActivityMap={nodeScheduledActivityMap}
-                          nodePaidActivityMap={nodePaidActivityMap}
-                        />
-                      </Suspense>
-                    ) : null}
-
-                    {activeStructureDetail === "planning" ? (
-                      <Suspense
-                        fallback={
-                          <div style={{ ...helperText(), marginTop: 4 }}>
-                            Loading rollout planning...
-                          </div>
-                        }
-                      >
-                        <CommunityDomainStructurePlanningPanels
-                          rolloutPlan={rolloutPlan}
-                          activityMap={activityMap}
-                          activityGroupReadiness={activityGroupReadiness}
-                        />
-                      </Suspense>
-                    ) : null}
-                  </>
+                    />
+                  </Suspense>
                 ) : null}
-
                 {!isActiveLaneReadinessLoading && activeLane === "governance" ? (
                   <>
                     {isAdmin ? (

@@ -16,6 +16,8 @@ const communityDomainMemberRosterFile =
   "src/pages/communityDomainDashboard/MemberRosterPanel.tsx";
 const communityDomainServiceFocusFile =
   "src/pages/communityDomainDashboard/ServiceFocusPanel.tsx";
+const communityDomainStructureFocusFile =
+  "src/pages/communityDomainDashboard/StructureFocusPanel.tsx";
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const marketplaceRoscaFile = "src/pages/marketplace/MarketplaceRoscaSection.tsx";
 
@@ -32,10 +34,12 @@ function readCommunityDomainDashboardAuditSource() {
   const realLifeRecordSource = readRawFromFrontend(communityDomainRealLifeRecordFile);
   const memberRosterSource = readRawFromFrontend(communityDomainMemberRosterFile);
   const serviceFocusSource = readRawFromFrontend(communityDomainServiceFocusFile);
+  const structureFocusSource = readRawFromFrontend(communityDomainStructureFocusFile);
   return dashboardSource
     .replace(/<CommunityDomainRealLifeRecordPanel[\s\S]*?\/>/, realLifeRecordSource)
     .replace(/<CommunityDomainMemberRosterPanel[\s\S]*?\/>/, memberRosterSource)
-    .replace(/<CommunityDomainServiceFocusPanel[\s\S]*?\/>/, serviceFocusSource);
+    .replace(/<CommunityDomainServiceFocusPanel[\s\S]*?\/>/, serviceFocusSource)
+    .replace(/<CommunityDomainStructureFocusPanel[\s\S]*?\/>/, structureFocusSource);
 }
 
 function readMarketplaceAuditSource() {
@@ -3077,9 +3081,9 @@ assertNotContains(
 );
 
 assertContains(
-  "src/pages/CommunityDomainDashboardPage.tsx",
-  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/NodeProjectionGroups"\)[\s\S]*CommunityDomainNodeProjectionGroups[\s\S]*variant="services"[\s\S]*nodeServiceMap=\{nodeServiceMap\}[\s\S]*nodePrivacyMap=\{nodePrivacyMap\}[\s\S]*nodeAnalyticsMap=\{nodeAnalyticsMap\}[\s\S]*nodeCommunicationMap=\{nodeCommunicationMap\}[\s\S]*nodeVaultMap=\{nodeVaultMap\}/,
-  "Community Domain dashboard Services lane must lazy-load the read-only service node projection group instead of carrying the full card dump in the main route chunk.",
+  "src/pages/communityDomainDashboard/ServiceFocusPanel.tsx",
+  /lazy\([\s\S]*import\("\.\/NodeProjectionGroups"\)[\s\S]*CommunityDomainNodeProjectionGroups[\s\S]*variant="services"[\s\S]*nodeServiceMap=\{nodeServiceMap\}[\s\S]*nodePrivacyMap=\{nodePrivacyMap\}[\s\S]*nodeAnalyticsMap=\{nodeAnalyticsMap\}[\s\S]*nodeCommunicationMap=\{nodeCommunicationMap\}[\s\S]*nodeVaultMap=\{nodeVaultMap\}/,
+  "Lazy ServiceFocusPanel must lazy-load the read-only service node projection group instead of carrying the full card dump in the main route chunk.",
   { frontend: true }
 );
 
@@ -3505,15 +3509,29 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/StructurePreviewPanel"\)[\s\S]*listCommunityDomainNodeTree[\s\S]*CommunityDomainStructurePreviewPanel[\s\S]*nodeTree=\{nodeTree\}/,
-  "Community Domain dashboard Structure lane must lazy-load the compact read-only node-tree preview and pass the raw node tree from the parent route.",
+  /listCommunityDomainNodeTree[\s\S]*CommunityDomainStructureFocusPanel[\s\S]*nodeTree/,
+  "Community Domain dashboard Structure lane must keep parent-owned node-tree loading and pass the raw tree through the lazy StructureFocusPanel.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/StructureFocusPanel.tsx",
+  /lazy\([\s\S]*import\("\.\/StructurePreviewPanel"\)[\s\S]*CommunityDomainStructurePreviewPanel[\s\S]*nodeTree=\{nodeTree\}/,
+  "Lazy StructureFocusPanel must lazy-load the compact read-only node-tree preview and pass the raw node tree from the parent route.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type StructureDetailGroupKey = "map" \| "readiness" \| "rollout"[\s\S]*STRUCTURE_DETAIL_OPTIONS[\s\S]*key: "preview"[\s\S]*key: "foundation"[\s\S]*key: "boundary"[\s\S]*key: "activity"[\s\S]*key: "planning"[\s\S]*STRUCTURE_DETAIL_GROUP_OPTIONS[\s\S]*key: "map"[\s\S]*detailKeys: \["preview"\][\s\S]*key: "readiness"[\s\S]*detailKeys: \["foundation", "boundary"\][\s\S]*key: "rollout"[\s\S]*detailKeys: \["activity", "planning"\][\s\S]*structureStageChooserOpen[\s\S]*structurePacketChooserOpen[\s\S]*activeStructureDetail[\s\S]*activeStructureDetailGroup[\s\S]*STRUCTURE_DETAIL_GROUP_OPTIONS\.find[\s\S]*activeStructureGroupDetails[\s\S]*Choose the structure stage first[\s\S]*community-domain-dashboard\.structure-stage-toggle[\s\S]*structureStageChooserOpen \? "Close stages" : "Change stage"[\s\S]*structureStageChooserOpen \? \([\s\S]*community-domain-dashboard\.structure-group\.\$\{group\.key\}[\s\S]*setStructureStageChooserOpen\(false\)[\s\S]*setStructurePacketChooserOpen\(false\)[\s\S]*community-domain-dashboard\.structure-packet-toggle[\s\S]*structurePacketChooserOpen \? "Close views" : "Change view"[\s\S]*structurePacketChooserOpen \? \([\s\S]*community-domain-dashboard\.structure-detail\.\$\{option\.key\}[\s\S]*setStructurePacketChooserOpen\(false\)[\s\S]*activeStructureDetail === "preview"[\s\S]*CommunityDomainStructurePreviewPanel[\s\S]*activeStructureDetail === "foundation"[\s\S]*variant="structureFoundation"[\s\S]*activeStructureDetail === "boundary"[\s\S]*variant="structureBoundary"[\s\S]*activeStructureDetail === "activity"[\s\S]*variant="structureActivity"[\s\S]*activeStructureDetail === "planning"[\s\S]*CommunityDomainStructurePlanningPanels/,
-  "Community Domain dashboard Structure lane must keep Map, Readiness, and Rollout stages behind Change stage, hide second-level views behind Change view, then show one focused institutional detail view at a time instead of dumping all Structure panels on first open.",
+  /import type \{ StructureDetailKey \}[\s\S]*CommunityDomainStructureFocusPanel[\s\S]*activeStructureDetail[\s\S]*structureStageChooserOpen[\s\S]*structurePacketChooserOpen[\s\S]*setActiveStructureDetail[\s\S]*setStructureStageChooserOpen[\s\S]*setStructurePacketChooserOpen/,
+  "Community Domain dashboard Structure lane must keep parent-owned structure focus state wired into the lazy StructureFocusPanel.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/StructureFocusPanel.tsx",
+  /type StructureDetailGroupKey = "map" \| "readiness" \| "rollout"[\s\S]*STRUCTURE_DETAIL_OPTIONS[\s\S]*key: "preview"[\s\S]*key: "foundation"[\s\S]*key: "boundary"[\s\S]*key: "activity"[\s\S]*key: "planning"[\s\S]*STRUCTURE_DETAIL_GROUP_OPTIONS[\s\S]*key: "map"[\s\S]*detailKeys: \["preview"\][\s\S]*key: "readiness"[\s\S]*detailKeys: \["foundation", "boundary"\][\s\S]*key: "rollout"[\s\S]*detailKeys: \["activity", "planning"\][\s\S]*structureDetailGroupFor[\s\S]*closeStructureChoosers[\s\S]*selectStructureDetail[\s\S]*community-domain-dashboard\.structure-stage-toggle[\s\S]*community-domain-dashboard\.structure-group\.\$\{group\.key\}[\s\S]*selectStructureDetail\(group\.defaultDetail\)[\s\S]*community-domain-dashboard\.structure-packet-toggle[\s\S]*community-domain-dashboard\.structure-detail\.\$\{option\.key\}[\s\S]*selectStructureDetail\(option\.key\)[\s\S]*CommunityDomainStructurePreviewPanel[\s\S]*variant="structureFoundation"[\s\S]*variant="structureBoundary"[\s\S]*variant="structureActivity"[\s\S]*CommunityDomainStructurePlanningPanels/,
+  "Lazy StructureFocusPanel must keep Map, Readiness, and Rollout stages behind Change stage, hide second-level views behind Change view, then show one focused institutional detail view at a time instead of dumping all Structure panels on first open.",
   { frontend: true }
 );
 
@@ -3540,8 +3558,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/StructurePlanningPanels"\)[\s\S]*CommunityDomainStructurePlanningPanels[\s\S]*rolloutPlan=\{rolloutPlan\}[\s\S]*activityMap=\{activityMap\}[\s\S]*activityGroupReadiness=\{activityGroupReadiness\}/,
-  "Community Domain dashboard Structure lane must lazy-load rollout, activity map, and activity-group readiness panels with raw maps from the parent route.",
+  /getCommunityDomainRolloutPlan[\s\S]*getCommunityDomainActivityMap[\s\S]*getCommunityDomainActivityGroupReadiness[\s\S]*CommunityDomainStructureFocusPanel[\s\S]*rolloutPlan[\s\S]*activityMap[\s\S]*activityGroupReadiness/,
+  "Community Domain dashboard Structure lane must keep parent-owned rollout/activity readiness loading and pass raw maps through the lazy StructureFocusPanel.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/StructureFocusPanel.tsx",
+  /lazy\([\s\S]*import\("\.\/StructurePlanningPanels"\)[\s\S]*CommunityDomainStructurePlanningPanels[\s\S]*rolloutPlan=\{rolloutPlan\}[\s\S]*activityMap=\{activityMap\}[\s\S]*activityGroupReadiness=\{activityGroupReadiness\}/,
+  "Lazy StructureFocusPanel must lazy-load rollout, activity map, and activity-group readiness panels with raw maps from the parent route.",
   { frontend: true }
 );
 
