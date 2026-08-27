@@ -21,6 +21,8 @@ export type GovernanceTaskKey =
 export type GovernanceTaskGroupKey = "readiness" | "reports" | "records";
 export type DirectorSummaryTaskKey = "overview" | "membership" | "evidence" | "delivery";
 export type SponsorSummaryTaskKey = "overview" | "evidence" | "delivery" | "export";
+export type CommunityValueReportPeriodKey = "last_7_days" | "this_month" | "last_30_days";
+export type CommunityValueReportAudienceKey = "sponsor_safe" | "director_admin";
 
 type StateSetter<T> = React.Dispatch<React.SetStateAction<T>>;
 type SummaryOption<Key extends string> = {
@@ -153,9 +155,15 @@ type GovernanceFocusPanelData = {
   periodSummary: UnknownRecord | null;
   sponsorSummary: UnknownRecord | null;
   busySponsorExportCopy: boolean;
+  busyCommunityValueReportPdf: boolean;
+  communityValueReportAudience: CommunityValueReportAudienceKey;
+  communityValueReportPeriod: CommunityValueReportPeriodKey;
   copySponsorExportPack: () => void | Promise<void>;
+  downloadCommunityValueReportPdf: () => void | Promise<void>;
   setActiveDirectorSummaryTask: StateSetter<DirectorSummaryTaskKey>;
   setActiveSponsorSummaryTask: StateSetter<SponsorSummaryTaskKey>;
+  setCommunityValueReportAudience: StateSetter<CommunityValueReportAudienceKey>;
+  setCommunityValueReportPeriod: StateSetter<CommunityValueReportPeriodKey>;
   setDirectorSummaryTaskChooserOpen: StateSetter<boolean>;
   setSponsorSummaryTaskChooserOpen: StateSetter<boolean>;
   setGovernanceGroupChooserOpen: StateSetter<boolean>;
@@ -455,12 +463,18 @@ export default function GovernanceFocusPanel({ data }: GovernanceFocusPanelProps
               activeSponsorSummaryTask: data.activeSponsorSummaryTask,
               activeSponsorSummaryTaskOption,
               busySponsorExportCopy: data.busySponsorExportCopy,
+              busyCommunityValueReportPdf: data.busyCommunityValueReportPdf,
+              communityValueReportAudience: data.communityValueReportAudience,
+              communityValueReportPeriod: data.communityValueReportPeriod,
               copySponsorExportPack: data.copySponsorExportPack,
+              downloadCommunityValueReportPdf: data.downloadCommunityValueReportPdf,
               directorSummaryTaskChooserOpen: data.directorSummaryTaskChooserOpen,
               DIRECTOR_SUMMARY_TASK_OPTIONS,
               periodSummary: data.periodSummary,
               setActiveDirectorSummaryTask: data.setActiveDirectorSummaryTask,
               setActiveSponsorSummaryTask: data.setActiveSponsorSummaryTask,
+              setCommunityValueReportAudience: data.setCommunityValueReportAudience,
+              setCommunityValueReportPeriod: data.setCommunityValueReportPeriod,
               setDirectorSummaryTaskChooserOpen:
                 data.setDirectorSummaryTaskChooserOpen,
               setSponsorSummaryTaskChooserOpen: data.setSponsorSummaryTaskChooserOpen,

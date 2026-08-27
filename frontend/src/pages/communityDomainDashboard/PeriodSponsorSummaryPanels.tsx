@@ -8,6 +8,8 @@ type UnknownRecord = Record<string, unknown>;
 type DirectorSummaryTaskKey = "overview" | "membership" | "evidence" | "delivery";
 type SponsorSummaryTaskKey = "overview" | "evidence" | "delivery" | "export";
 type GovernanceTaskKey = "director_summary" | "sponsor_summary";
+type CommunityValueReportPeriodKey = "last_7_days" | "this_month" | "last_30_days";
+type CommunityValueReportAudienceKey = "sponsor_safe" | "director_admin";
 
 type SummaryOption<Key extends string> = {
   key: Key;
@@ -106,12 +108,18 @@ type SummaryPanelsData = {
   activeSponsorSummaryTask: SponsorSummaryTaskKey;
   activeSponsorSummaryTaskOption: SummaryOption<SponsorSummaryTaskKey>;
   busySponsorExportCopy: boolean;
+  busyCommunityValueReportPdf: boolean;
+  communityValueReportAudience: CommunityValueReportAudienceKey;
+  communityValueReportPeriod: CommunityValueReportPeriodKey;
   copySponsorExportPack: () => void | Promise<void>;
+  downloadCommunityValueReportPdf: () => void | Promise<void>;
   directorSummaryTaskChooserOpen: boolean;
   DIRECTOR_SUMMARY_TASK_OPTIONS: SummaryOption<DirectorSummaryTaskKey>[];
   periodSummary: PeriodSponsorSummarySurface | null;
   setActiveDirectorSummaryTask: React.Dispatch<React.SetStateAction<DirectorSummaryTaskKey>>;
   setActiveSponsorSummaryTask: React.Dispatch<React.SetStateAction<SponsorSummaryTaskKey>>;
+  setCommunityValueReportAudience: React.Dispatch<React.SetStateAction<CommunityValueReportAudienceKey>>;
+  setCommunityValueReportPeriod: React.Dispatch<React.SetStateAction<CommunityValueReportPeriodKey>>;
   setDirectorSummaryTaskChooserOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setSponsorSummaryTaskChooserOpen: React.Dispatch<React.SetStateAction<boolean>>;
   sponsorSummary: PeriodSponsorSummarySurface | null;
@@ -437,6 +445,82 @@ function PanelHeader({ icon, label, title, detail }: { icon: "records-folder" | 
     </div>
   );
 }
+function ReportExportControls({ data }: { data: SummaryPanelsData }) {
+  const selectStyle: React.CSSProperties = {
+    width: "100%",
+    minHeight: 42,
+    borderRadius: 10,
+    border: "1px solid rgba(9,27,46,0.14)",
+    background: "#FFFFFF",
+    color: "#091B2E",
+    fontSize: 14,
+    fontWeight: 800,
+    padding: "0 10px",
+  };
+
+  return (
+    <div
+      data-debug-id="community-domain-dashboard.community-value-report-controls"
+      style={{
+        display: "grid",
+        gap: 10,
+        borderRadius: 12,
+        border: "1px solid rgba(191,147,62,0.24)",
+        background: "rgba(255,255,255,0.82)",
+        padding: 12,
+      }}
+    >
+      <div style={sectionLabel()}>Community Value PDF</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 170px), 1fr))", gap: 10 }}>
+        <label style={{ display: "grid", gap: 5 }}>
+          <span style={{ ...helperText(), fontSize: 12, fontWeight: 800 }}>Period</span>
+          <select
+            data-gmfn-field="community-value-report-period"
+            value={data.communityValueReportPeriod}
+            onChange={(event) => {
+              data.setCommunityValueReportPeriod(event.target.value as CommunityValueReportPeriodKey);
+            }}
+            style={selectStyle}
+          >
+            <option value="last_30_days">Last 30 days</option>
+            <option value="this_month">This month</option>
+            <option value="last_7_days">Last 7 days</option>
+          </select>
+        </label>
+        <label style={{ display: "grid", gap: 5 }}>
+          <span style={{ ...helperText(), fontSize: 12, fontWeight: 800 }}>Audience</span>
+          <select
+            data-gmfn-field="community-value-report-audience"
+            value={data.communityValueReportAudience}
+            onChange={(event) => {
+              data.setCommunityValueReportAudience(event.target.value as CommunityValueReportAudienceKey);
+            }}
+            style={selectStyle}
+          >
+            <option value="sponsor_safe">Sponsor-safe</option>
+            <option value="director_admin">Director/admin</option>
+          </select>
+        </label>
+      </div>
+      <StableButton
+        type="button"
+        kind="primary"
+        stableHeight={42}
+        disabled={data.busyCommunityValueReportPdf}
+        debugId="community-domain-dashboard.prepare-community-value-pdf"
+        onClick={() => {
+          void data.downloadCommunityValueReportPdf();
+        }}
+        style={{ justifyContent: "center", fontSize: 13, textTransform: "none" }}
+      >
+        {data.busyCommunityValueReportPdf ? "Preparing PDF..." : "Prepare Community Value PDF"}
+      </StableButton>
+      <div style={{ ...helperText(), fontSize: 13 }}>
+        Uses recorded facts only. Sponsor-safe PDFs omit private beneficiary and member-level detail.
+      </div>
+    </div>
+  );
+}
 
 function DirectorSummary({ data }: { data: SummaryPanelsData }) {
   const summary = data.periodSummary;
@@ -726,6 +810,7 @@ export default function PeriodSponsorSummaryPanels({ data }: PeriodSponsorSummar
             title="Recorded facts for this period."
             detail="This report only counts records already in GSN. Missing activity or beneficiary records stay marked as not recorded."
           />
+          <ReportExportControls data={data} />
           <DirectorSummary data={data} />
         </>
       ) : (
@@ -736,6 +821,7 @@ export default function PeriodSponsorSummaryPanels({ data }: PeriodSponsorSummar
             title="Aggregate evidence only."
             detail="This view separates recorded, confirmed, and challenged evidence without exposing private beneficiary details."
           />
+          <ReportExportControls data={data} />
           <SponsorSummary data={data} />
         </>
       )}

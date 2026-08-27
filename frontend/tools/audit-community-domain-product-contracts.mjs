@@ -5910,6 +5910,36 @@ assertNotContains(
   "Community Domain purchase screen must not imply verified status by default."
 );
 
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /@router\.get\("\/\{community_domain_id\}\/community-value-report\.pdf"\)[\s\S]*audience: Literal\["director_admin", "sponsor_safe"\][\s\S]*get_community_domain_period_summary[\s\S]*visibility_mode="director_safe"[\s\S]*get_community_domain_sponsor_summary[\s\S]*StreamingResponse[\s\S]*application\/pdf/,
+  "Backend must expose an admin-gated Community Domain Community Value PDF built from existing director-safe and sponsor-safe summaries."
+);
+
+assertContains(
+  "frontend/src/lib/api.ts",
+  /downloadCommunityDomainValueReportPdf[\s\S]*Accept: "application\/pdf"[\s\S]*getAccessToken[\s\S]*community-value-report\.pdf[\s\S]*res\.blob\(\)/,
+  "Frontend API must provide an authenticated Community Domain Community Value PDF download helper."
+);
+
+assertContains(
+  "frontend/src/pages/CommunityDomainDashboardPage.tsx",
+  /useState<CommunityValueReportPeriodKey>\("last_30_days"\)[\s\S]*communityValueReportPeriodBounds[\s\S]*this_month[\s\S]*last_7_days[\s\S]*downloadCommunityValueReportPdf[\s\S]*downloadCommunityDomainValueReportPdf[\s\S]*Community Value PDF prepared from recorded GSN facts only/,
+  "Community Domain dashboard must prepare Community Value PDFs from explicit weekly/monthly/30-day periods without claiming unrecorded impact."
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx",
+  /community-domain-dashboard\.prepare-community-value-pdf[\s\S]*Prepare Community Value PDF[\s\S]*Sponsor-safe PDFs omit private beneficiary and member-level detail/,
+  "Community Domain Governance reports must expose the Community Value PDF button with a visible sponsor-safe privacy boundary.",
+  { frontend: true }
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /community-value-report\.pdf[\s\S]*forbidden_pdf\.status_code == 403[\s\S]*sponsor_pdf\.content\.startswith\(b"%PDF-"\)[\s\S]*community-value-sponsor_safe[\s\S]*director_pdf\.content\.startswith\(b"%PDF-"\)[\s\S]*community-value-director_admin/,
+  "Backend tests must prove Community Value PDF exports are admin-gated and return real sponsor-safe and director/admin PDF bytes."
+);
 if (findings.length > 0) {
   console.error("Community Domain product contract audit failed:");
   for (const finding of findings) {

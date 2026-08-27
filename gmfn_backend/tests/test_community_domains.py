@@ -647,6 +647,8 @@ def test_community_domain_period_summary_is_admin_only_and_validates_period(
         app.dependency_overrides[get_current_user] = lambda: outsider
         forbidden = client.get("/community-domains/1/period-summary")
         assert forbidden.status_code == 403, forbidden.text
+        forbidden_pdf = client.get("/community-domains/1/community-value-report.pdf")
+        assert forbidden_pdf.status_code == 403, forbidden_pdf.text
 
         app.dependency_overrides[get_current_user] = lambda: owner
         invalid = client.get(
@@ -912,6 +914,35 @@ def test_community_domain_beneficiary_outcome_records_trust_event_and_period_cou
         assert "Attended all" not in sponsor.text
         assert '"subject_user_id":' not in sponsor.text
         assert "case-note-42" not in sponsor.text
+
+        sponsor_pdf = client.get(
+            "/community-domains/1/community-value-report.pdf",
+            params={
+                "period_start": (now - timedelta(days=1)).isoformat(),
+                "period_end": (now + timedelta(days=1)).isoformat(),
+                "audience": "sponsor_safe",
+            },
+        )
+        assert sponsor_pdf.status_code == 200, sponsor_pdf.text
+        assert sponsor_pdf.content.startswith(b"%PDF-")
+        assert sponsor_pdf.headers["content-type"].startswith("application/pdf")
+        assert "community-value-sponsor_safe" in sponsor_pdf.headers[
+            "content-disposition"
+        ]
+
+        director_pdf = client.get(
+            "/community-domains/1/community-value-report.pdf",
+            params={
+                "period_start": (now - timedelta(days=1)).isoformat(),
+                "period_end": (now + timedelta(days=1)).isoformat(),
+                "audience": "director_admin",
+            },
+        )
+        assert director_pdf.status_code == 200, director_pdf.text
+        assert director_pdf.content.startswith(b"%PDF-")
+        assert "community-value-director_admin" in director_pdf.headers[
+            "content-disposition"
+        ]
 
         link = client.post(
             "/community-domains/1/beneficiary-outcomes/"

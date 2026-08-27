@@ -5,6 +5,7 @@ import json
 import os
 import re
 import secrets
+from io import BytesIO
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -12,6 +13,7 @@ from typing import Any, Literal, Optional, Sequence
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
@@ -52,6 +54,9 @@ from app.services.settlement_config_service import (
     normalize_settlement_country,
 )
 from app.services.trust_events_services import log_trust_event
+from app.services.community_domain_value_pdf_service import (
+    build_community_domain_value_report_pdf,
+)
 
 
 router = APIRouter(prefix="/community-domains", tags=["community-domains"])
@@ -25901,6 +25906,60 @@ def get_community_domain_sponsor_summary(
         ),
     }
 
+@router.get("/{community_domain_id}/community-value-report.pdf")
+def download_community_domain_value_report_pdf(
+    community_domain_id: int,
+    period_start: Optional[datetime] = Query(default=None),
+    period_end: Optional[datetime] = Query(default=None),
+    community_node_id: Optional[int] = Query(default=None, ge=1),
+    include_descendants: bool = Query(default=True),
+    audience: Literal["director_admin", "sponsor_safe"] = Query(default="sponsor_safe"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> StreamingResponse:
+    domain = _get_domain_or_404(db, community_domain_id)
+    period_payload: dict[str, Any] | None = None
+    sponsor_payload: dict[str, Any] | None = None
+
+    if audience == "director_admin":
+        period_payload = get_community_domain_period_summary(
+            community_domain_id,
+            period_start=period_start,
+            period_end=period_end,
+            community_node_id=community_node_id,
+            include_descendants=include_descendants,
+            visibility_mode="director_safe",
+            db=db,
+            current_user=current_user,
+        )
+    else:
+        sponsor_payload = get_community_domain_sponsor_summary(
+            community_domain_id,
+            period_start=period_start,
+            period_end=period_end,
+            community_node_id=community_node_id,
+            include_descendants=include_descendants,
+            db=db,
+            current_user=current_user,
+        )
+
+    pdf_bytes = build_community_domain_value_report_pdf(
+        community_domain_id=int(domain.id),
+        domain_name=domain.display_name or domain.domain_name or f"Community Domain {domain.id}",
+        audience=audience,
+        period_summary=period_payload,
+        sponsor_summary=sponsor_payload,
+    )
+    generated_stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M")
+    filename = (
+        f"gsn-community-domain-{int(domain.id)}-community-value-"
+        f"{audience}-{generated_stamp}.pdf"
+    )
+    return StreamingResponse(
+        BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 @router.get("/{community_domain_id}/notices", response_model=dict[str, Any])
 def list_community_domain_notices(

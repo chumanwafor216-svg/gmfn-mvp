@@ -158780,3 +158780,20 @@ Deployment:
 - Aggregate audit change: `frontend/tools/audit-protected-button-freeze.mjs` now runs the admin route guard audit as part of the protected button freeze suite.
 - Verification passed: `node --check frontend\tools\audit-admin-route-guards.mjs`; `node --check frontend\tools\audit-protected-button-freeze.mjs`; `npm --prefix frontend run audit:admin-route-guards`; `npm --prefix frontend run audit:protected-button-freeze`; `npm exec -- tsc -b --pretty false`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`.
 - Devil's advocate: this closes the direct-route/legacy-alias gap at the frontend layer, but backend authorization remains the real security boundary. The frontend guard is a usability and regression guard, not a substitute for backend checks.
+## 2026-08-27 - Community Domain Community Value PDF
+
+- Added backend PDF service `gmfn_backend/app/services/community_domain_value_pdf_service.py` for a controlled GSN Community Value Report generated from recorded Community Domain summaries only.
+- Added admin-gated endpoint `GET /community-domains/{community_domain_id}/community-value-report.pdf` with `audience=sponsor_safe|director_admin`, optional period bounds, optional node scope, and PDF `Content-Disposition` download headers.
+- Sponsor-safe PDFs use the existing sponsor-safe aggregate summary and omit private beneficiary/member-level fields. Director/admin PDFs use the existing director-safe period summary.
+- Added Governance Reports UI controls on `CommunityDomainDashboardPage`: period selector (`last_30_days`, `this_month`, `last_7_days`), audience selector, and `Prepare Community Value PDF` action with debug id `community-domain-dashboard.prepare-community-value-pdf`.
+- Added product contract audit guards for the endpoint, API helper, dashboard handler, report-panel button, and backend PDF tests.
+- Verification passed:
+  - `python -m pytest gmfn_backend\tests\test_community_domains.py -k "period_summary_is_admin_only_and_validates_period or beneficiary_outcome_records_trust_event_and_period_count"`
+  - `npm --prefix frontend run audit:community-domain-product-contracts`
+  - `npm --prefix frontend run audit:protected-button-freeze`
+  - `python -m py_compile gmfn_backend\app\api\routes\community_domains.py gmfn_backend\app\services\community_domain_value_pdf_service.py`
+  - `npm --prefix frontend run build`
+  - `python -m pytest gmfn_backend\tests\test_community_domains.py`
+  - `npm --prefix frontend run smoke:community-home-domain-list`
+
+Devil's-advocate boundary: this completes the practical PDF/report button, but it does not create large picture/video archival, automatic meeting transcription, bank reconciliation, provider-sent sponsor emails, or proof for activity not recorded in GSN.

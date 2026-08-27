@@ -72,6 +72,7 @@ import {
   getCommunityDomainSetupEvidence,
   getCommunityDomainSocialBridge,
   getCommunityDomainSponsorSummary,
+  downloadCommunityDomainValueReportPdf,
   getCommunityDomainTrustRelayReadiness,
   getCommunityDomainTrustMobility,
   getCommunityDomainSubscriptionLifecycle,
@@ -121,6 +122,8 @@ import type { MemberDetailKey } from "./communityDomainDashboard/MemberFocusPane
 import type { ServiceDetailKey } from "./communityDomainDashboard/ServiceFocusPanel";
 import type { StructureDetailKey } from "./communityDomainDashboard/StructureFocusPanel";
 import type {
+  CommunityValueReportAudienceKey,
+  CommunityValueReportPeriodKey,
   DirectorSummaryTaskKey,
   GovernanceTaskKey,
   SponsorSummaryTaskKey,
@@ -2520,6 +2523,11 @@ export default function CommunityDomainDashboardPage() {
   const [periodSummary, setPeriodSummary] = useState<UnknownRecord | null>(null);
   const [sponsorSummary, setSponsorSummary] = useState<UnknownRecord | null>(null);
   const [busySponsorExportCopy, setBusySponsorExportCopy] = useState(false);
+  const [busyCommunityValueReportPdf, setBusyCommunityValueReportPdf] = useState(false);
+  const [communityValueReportAudience, setCommunityValueReportAudience] =
+    useState<CommunityValueReportAudienceKey>("sponsor_safe");
+  const [communityValueReportPeriod, setCommunityValueReportPeriod] =
+    useState<CommunityValueReportPeriodKey>("last_30_days");
   const [activityCatalogue, setActivityCatalogue] = useState<RealLifeActivityCatalogueOption[]>([]);
   const [activityRows, setActivityRows] = useState<RealLifeActivityRecordRow[]>([]);
   const [beneficiaryOutcomeRows, setBeneficiaryOutcomeRows] = useState<RealLifeBeneficiaryOutcomeRow[]>([]);
@@ -3881,6 +3889,72 @@ export default function CommunityDomainDashboardPage() {
       }
     } finally {
       setBusyOutcomeProviderSendId("");
+    }
+  }
+  function communityValueReportPeriodBounds(period: CommunityValueReportPeriodKey): {
+    period_start: string;
+    period_end: string;
+  } {
+    const end = new Date();
+    const start = new Date(end.getTime());
+    if (period === "this_month") {
+      start.setUTCDate(1);
+      start.setUTCHours(0, 0, 0, 0);
+    } else if (period === "last_7_days") {
+      start.setUTCDate(start.getUTCDate() - 7);
+    } else {
+      start.setUTCDate(start.getUTCDate() - 30);
+    }
+    return { period_start: start.toISOString(), period_end: end.toISOString() };
+  }
+
+  function saveBlobDownload(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function communityValueReportFilename(): string {
+    const cleanedDomain = cleanText(
+      dashboard?.community_domain?.domain_name || dashboard?.community_domain?.display_name || communityDomainId,
+      "community-domain"
+    )
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "community-domain";
+    const stamp = new Date().toISOString().slice(0, 10);
+    return `gsn-${cleanedDomain}-community-value-${communityValueReportAudience}-${stamp}.pdf`;
+  }
+
+  async function downloadCommunityValueReportPdf() {
+    if (!communityDomainId) {
+      setMessage("Choose a Community Domain before preparing a report.");
+      return;
+    }
+
+    setBusyCommunityValueReportPdf(true);
+    try {
+      const bounds = communityValueReportPeriodBounds(communityValueReportPeriod);
+      const pdfBlob = await downloadCommunityDomainValueReportPdf(communityDomainId, {
+        ...bounds,
+        audience: communityValueReportAudience,
+        include_descendants: true,
+      });
+      saveBlobDownload(pdfBlob, communityValueReportFilename());
+      setMessage(
+        "Community Value PDF prepared from recorded GSN facts only. Review it before sharing outside the association."
+      );
+    } catch (err) {
+      setMessage(
+        `Community Value PDF could not be prepared: ${err instanceof Error ? err.message : "please try again"}`
+      );
+    } finally {
+      setBusyCommunityValueReportPdf(false);
     }
   }
 
@@ -8991,9 +9065,15 @@ export default function CommunityDomainDashboardPage() {
                         periodSummary,
                         sponsorSummary,
                         busySponsorExportCopy,
+                        busyCommunityValueReportPdf,
+                        communityValueReportAudience,
+                        communityValueReportPeriod,
                         copySponsorExportPack,
+                        downloadCommunityValueReportPdf,
                         setActiveDirectorSummaryTask,
                         setActiveSponsorSummaryTask,
+                        setCommunityValueReportAudience,
+                        setCommunityValueReportPeriod,
                         setDirectorSummaryTaskChooserOpen,
                         setSponsorSummaryTaskChooserOpen,
                         setGovernanceGroupChooserOpen,

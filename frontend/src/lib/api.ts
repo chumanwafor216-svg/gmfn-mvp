@@ -3238,6 +3238,44 @@ export async function getCommunityDomainSponsorSummary(
     "GET"
   );
 }
+export type CommunityDomainValueReportAudience = "director_admin" | "sponsor_safe";
+
+export async function downloadCommunityDomainValueReportPdf(
+  communityDomainId: number | string,
+  params: {
+    period_start?: string | null;
+    period_end?: string | null;
+    community_node_id?: number | string | null;
+    include_descendants?: boolean | null;
+    audience?: CommunityDomainValueReportAudience | null;
+  } = {}
+): Promise<Blob> {
+  const headers: Record<string, string> = { Accept: "application/pdf" };
+  const tok = getAccessToken();
+  if (tok) headers.Authorization = `Bearer ${tok}`;
+
+  const res = await fetchWithTimeout(
+    buildUrl(
+      `${communityDomainPath(communityDomainId, "/community-value-report.pdf")}${buildQuery({
+        period_start: params.period_start || undefined,
+        period_end: params.period_end || undefined,
+        community_node_id: params.community_node_id || undefined,
+        include_descendants:
+          params.include_descendants == null ? undefined : params.include_descendants,
+        audience: params.audience || undefined,
+      })}`
+    ),
+    {
+      method: "GET",
+      headers,
+      cache: "no-store",
+    },
+    DEFAULT_JSON_TIMEOUT_MS
+  );
+
+  if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
+  return res.blob();
+}
 
 export async function createCommunityDomainOutcomeConfirmationLink(
   communityDomainId: number | string,
