@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 import GSNBrandMark from "../components/GSNBrandMark";
@@ -200,6 +201,36 @@ type RoscaCycleSummary = {
   rounds?: RoscaRoundSummary[];
 };
 
+type CommunityMeetingAttendanceSession = {
+  event_id?: number | null;
+  attendance_session_id?: string | null;
+  method?: string | null;
+  method_label?: string | null;
+  evidence_strength?: string | null;
+  checkin_url?: string | null;
+  attendance_token?: string | null;
+  expires_at?: string | null;
+  window_minutes?: number | null;
+  automatic_bluetooth_scan?: boolean | null;
+};
+
+type BrowserBluetoothDevice = {
+  id?: string | null;
+  name?: string | null;
+};
+
+type BrowserBluetoothApi = {
+  getAvailability?: () => Promise<boolean>;
+  requestDevice?: (options: {
+    acceptAllDevices: boolean;
+    optionalServices?: string[];
+  }) => Promise<BrowserBluetoothDevice>;
+};
+
+type NavigatorWithBluetooth = Navigator & {
+  bluetooth?: BrowserBluetoothApi;
+};
+
 type CommunityMeetingRecord = {
   meeting_id?: string | null;
   title?: string | null;
@@ -222,6 +253,14 @@ type CommunityMeetingRecord = {
     total?: number | null;
     own_response?: string | null;
     planning_ready?: boolean | null;
+  } | null;
+  attendance_summary?: {
+    checkin_count?: number | null;
+    checked_in_user_ids?: number[] | null;
+    latest_checkin_at?: string | null;
+    method_counts?: Record<string, number> | null;
+    active_session?: CommunityMeetingAttendanceSession | null;
+    presence_evidence_boundary?: string | null;
   } | null;
   created_at?: string | null;
 };
@@ -975,6 +1014,14 @@ export default function ShopControlPage() {
   const [meetingSummary, setMeetingSummary] = useState("");
   const [meetingDecisions, setMeetingDecisions] = useState("");
   const [meetingAttendanceCount, setMeetingAttendanceCount] = useState("");
+  const [meetingAttendanceMethod, setMeetingAttendanceMethod] = useState<"qr" | "bluetooth_proximity">("qr");
+  const [meetingAttendanceWindowMinutes, setMeetingAttendanceWindowMinutes] = useState("120");
+  const [openedAttendanceSession, setOpenedAttendanceSession] =
+    useState<CommunityMeetingAttendanceSession | null>(null);
+  const [openingAttendanceSession, setOpeningAttendanceSession] = useState(false);
+  const [recordingAttendanceCheckin, setRecordingAttendanceCheckin] = useState(false);
+  const [checkingBluetoothPresence, setCheckingBluetoothPresence] = useState(false);
+  const [bluetoothPresenceStatus, setBluetoothPresenceStatus] = useState("");
   const [recordingMeetingSummary, setRecordingMeetingSummary] = useState(false);
   const [recordingMeetingInterest, setRecordingMeetingInterest] = useState<string | null>(null);
   const [creatingVaultLink, setCreatingVaultLink] = useState(false);
@@ -1799,9 +1846,38 @@ export default function ShopControlPage() {
     if (!communityMeetings.length) return null;
     return communityMeetings[0] || null;
   }, [communityMeetings]);
+  const routeMeetingId = useMemo(
+    () => firstTruthy(new URLSearchParams(location.search).get("meeting_id")),
+    [location.search]
+  );
+  const routeAttendanceToken = useMemo(
+    () => firstTruthy(new URLSearchParams(location.search).get("attendance_token")),
+    [location.search]
+  );
+  const meetingForActions = useMemo(() => {
+    if (routeMeetingId) {
+      const match = communityMeetings.find(
+        (item) => firstTruthy(item?.meeting_id) === routeMeetingId
+      );
+      if (match) return match;
+    }
+    return latestCommunityMeeting;
+  }, [communityMeetings, latestCommunityMeeting, routeMeetingId]);
 
-  const latestMeetingInterest = latestCommunityMeeting?.interest_summary || null;
+  const latestMeetingInterest = meetingForActions?.interest_summary || null;
   const latestMeetingOwnInterest = safeStr(latestMeetingInterest?.own_response);
+  const latestAttendanceSummary = meetingForActions?.attendance_summary || null;
+  const activeAttendanceSession =
+    openedAttendanceSession || latestAttendanceSummary?.active_session || null;
+  const activeAttendanceCheckinUrl = firstTruthy(activeAttendanceSession?.checkin_url)
+    ? publicFrontendUrl(firstTruthy(activeAttendanceSession?.checkin_url))
+    : "";
+  const activeAttendanceIsBluetooth =
+    firstTruthy(activeAttendanceSession?.method, meetingAttendanceMethod) === "bluetooth_proximity";
+  const activeAttendanceToken = firstTruthy(
+    routeAttendanceToken,
+    activeAttendanceSession?.attendance_token
+  );
 
   const activePaidSpotlights = useMemo(
     () =>
@@ -2376,7 +2452,7 @@ export default function ShopControlPage() {
 
   async function recordMeetingSummary() {
     const clanId = Number(shop?.clan_id || selectedClanId || 0);
-    const meetingId = firstTruthy(latestCommunityMeeting?.meeting_id);
+    const meetingId = firstTruthy(meetingForActions?.meeting_id);
     if (!clanId || !meetingId) {
       showNotice("error", "Create a meeting reminder before adding the summary.");
       return;
@@ -2424,7 +2500,7 @@ export default function ShopControlPage() {
 
   async function recordMeetingInterest(response: "yes" | "maybe" | "no") {
     const clanId = Number(shop?.clan_id || selectedClanId || 0);
-    const meetingId = firstTruthy(latestCommunityMeeting?.meeting_id);
+    const meetingId = firstTruthy(meetingForActions?.meeting_id);
     if (!clanId || !meetingId) {
       showNotice("error", "Create a meeting reminder before asking members to respond.");
       return;
@@ -2456,6 +2532,146 @@ export default function ShopControlPage() {
       showNotice("error", safeStr(err?.message) || "Meeting response could not be recorded.");
     } finally {
       setRecordingMeetingInterest(null);
+    }
+  }
+
+
+  async function openMeetingAttendanceSession() {
+    const clanId = Number(shop?.clan_id || selectedClanId || 0);
+    const meetingId = firstTruthy(meetingForActions?.meeting_id, routeMeetingId);
+    if (!clanId || !meetingId) {
+      showNotice("error", "Create a meeting reminder before opening attendance.");
+      return;
+    }
+
+    const windowMinutes = Number(meetingAttendanceWindowMinutes || 120);
+    setOpeningAttendanceSession(true);
+    try {
+      const result = await apiJson<any>(
+        `/api/community-meetings/${encodeURIComponent(meetingId)}/attendance-sessions`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            clan_id: clanId,
+            method: meetingAttendanceMethod,
+            window_minutes:
+              Number.isFinite(windowMinutes) && windowMinutes >= 5
+                ? Math.min(720, Math.floor(windowMinutes))
+                : 120,
+            note:
+              meetingAttendanceMethod === "bluetooth_proximity"
+                ? "Opened as proximity evidence. Browser Bluetooth scan is not automatic in this slice."
+                : "Opened as QR meeting attendance evidence.",
+          }),
+        }
+      );
+
+      setOpenedAttendanceSession(result?.attendance_session || null);
+      await loadPage({ background: true });
+      showNotice(
+        "success",
+        firstTruthy(result?.message, "Attendance check-in is open.")
+      );
+    } catch (err: any) {
+      showNotice("error", safeStr(err?.message) || "Attendance check-in could not be opened.");
+    } finally {
+      setOpeningAttendanceSession(false);
+    }
+  }
+
+  async function recordMeetingAttendanceCheckin(
+    method: "qr" | "bluetooth_proximity" = "qr",
+    noteOverride = ""
+  ) {
+    const clanId = Number(shop?.clan_id || selectedClanId || 0);
+    const meetingId = firstTruthy(meetingForActions?.meeting_id, routeMeetingId);
+    const token = activeAttendanceToken;
+    if (!clanId || !meetingId || !token) {
+      showNotice("error", "Open or scan an active attendance QR before recording attendance.");
+      return false;
+    }
+
+    setRecordingAttendanceCheckin(true);
+    try {
+      const result = await apiJson<any>(
+        `/api/community-meetings/${encodeURIComponent(meetingId)}/attendance-check-ins`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            clan_id: clanId,
+            attendance_token: token,
+            method,
+            note: firstTruthy(
+              noteOverride,
+              method === "bluetooth_proximity"
+                ? "Recorded as proximity Presence Evidence. No automatic browser Bluetooth scan was performed."
+                : "Recorded from meeting attendance QR."
+            ),
+          }),
+        }
+      );
+
+      await loadPage({ background: true });
+      showNotice(
+        "success",
+        firstTruthy(result?.message, "Attendance recorded with check-in time.")
+      );
+      return true;
+    } catch (err: any) {
+      showNotice("error", safeStr(err?.message) || "Attendance could not be recorded.");
+      return false;
+    } finally {
+      setRecordingAttendanceCheckin(false);
+    }
+  }
+
+  async function recordBluetoothPresenceAttendance() {
+    if (!activeAttendanceToken) {
+      showNotice("error", "Scan or open an active attendance link before using Bluetooth presence.");
+      return;
+    }
+
+    const bluetooth = (navigator as NavigatorWithBluetooth).bluetooth;
+    if (!bluetooth?.requestDevice) {
+      const message = "This browser does not support Web Bluetooth. Use the QR check-in instead.";
+      setBluetoothPresenceStatus(message);
+      showNotice("error", message);
+      return;
+    }
+
+    if (typeof window !== "undefined" && !window.isSecureContext) {
+      const message = "Bluetooth check-in needs HTTPS or localhost. Use the QR check-in here.";
+      setBluetoothPresenceStatus(message);
+      showNotice("error", message);
+      return;
+    }
+
+    setCheckingBluetoothPresence(true);
+    setBluetoothPresenceStatus("Opening the Bluetooth chooser...");
+    try {
+      const device = await bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: ["battery_service"],
+      });
+      const deviceName = firstTruthy(device?.name, "nearby Bluetooth device");
+      setBluetoothPresenceStatus(`Bluetooth chooser confirmed ${deviceName}. Recording attendance...`);
+      const recorded = await recordMeetingAttendanceCheckin(
+        "bluetooth_proximity",
+        "Member completed an explicit browser Bluetooth chooser before attendance was recorded. Device identifier was not stored by GSN UI."
+      );
+      if (recorded) {
+        setBluetoothPresenceStatus(`Bluetooth presence check recorded for ${deviceName}.`);
+      }
+    } catch (err: any) {
+      const errorName = safeStr(err?.name);
+      const message =
+        errorName === "NotFoundError"
+          ? "Bluetooth check was cancelled or no nearby device was selected. QR check-in is still available."
+          : safeStr(err?.message) || "Bluetooth check-in could not be completed. Use the QR check-in instead.";
+      setBluetoothPresenceStatus(message);
+      showNotice("error", message);
+    } finally {
+      setCheckingBluetoothPresence(false);
     }
   }
   function fallbackShopName(): string {
@@ -4136,7 +4352,7 @@ export default function ShopControlPage() {
                 </PrimaryButton>
                 <SecondaryButton
                   onClick={() => {
-                    const shareUrl = firstTruthy(latestCommunityMeeting?.whatsapp_share_url);
+                    const shareUrl = firstTruthy(meetingForActions?.whatsapp_share_url);
                     if (!shareUrl) {
                       showNotice(
                         "info",
@@ -4146,7 +4362,7 @@ export default function ShopControlPage() {
                     }
                     window.location.href = shareUrl;
                   }}
-                  disabled={!firstTruthy(latestCommunityMeeting?.whatsapp_share_url)}
+                  disabled={!firstTruthy(meetingForActions?.whatsapp_share_url)}
                   fullWidth
                   debugId="shop-control.meeting.share-whatsapp"
                 >
@@ -4154,19 +4370,19 @@ export default function ShopControlPage() {
                 </SecondaryButton>
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 12 }}>
-                {latestCommunityMeeting ? (
+                {meetingForActions ? (
                   <>
-                    Latest meeting: {firstTruthy(latestCommunityMeeting.title, "Community meeting")} -{" "}
-                    {firstTruthy(latestCommunityMeeting.status, "reminder_created").replace(/_/g, " ")}
-                    {safeStr(latestCommunityMeeting.scheduled_at)
-                      ? ` - ${safeDateTime(latestCommunityMeeting.scheduled_at)}`
+                    Latest meeting: {firstTruthy(meetingForActions.title, "Community meeting")} -{" "}
+                    {firstTruthy(meetingForActions.status, "reminder_created").replace(/_/g, " ")}
+                    {safeStr(meetingForActions.scheduled_at)
+                      ? ` - ${safeDateTime(meetingForActions.scheduled_at)}`
                       : ""}
                   </>
                 ) : (
                   "One meeting pack unit creates one reminder evidence thread. The summary later uses the same thread and does not consume another unit."
                 )}
               </div>
-              {latestCommunityMeeting ? (
+              {meetingForActions ? (
                 <div
                   style={{
                     marginTop: 12,
@@ -4242,7 +4458,179 @@ export default function ShopControlPage() {
                     </SecondaryButton>
                   </div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
-                    Planning count only. Final attendance is still recorded in the meeting summary.
+                    Planning count only. Attendance check-in records who showed up and when.
+                  </div>
+                </div>
+              ) : null}
+              {meetingForActions ? (
+                <div
+                  style={{
+                    marginTop: 12,
+                    borderRadius: 16,
+                    border: "1px solid rgba(13,95,168,0.10)",
+                    background: "rgba(255,255,255,0.74)",
+                    padding: 12,
+                  }}
+                >
+                  <div style={{ ...sectionLabel(), fontSize: 12 }}>
+                    Attendance registry
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      display: "grid",
+                      gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                      gap: 8,
+                    }}
+                  >
+                    {[
+                      ["Checked in", safePositiveNumber(latestAttendanceSummary?.checkin_count, 0)],
+                      ["Method", firstTruthy(activeAttendanceSession?.method_label, "QR")],
+                      ["Latest", latestAttendanceSummary?.latest_checkin_at ? safeDateTime(latestAttendanceSummary.latest_checkin_at) : "None"],
+                    ].map(([label, value]) => (
+                      <div
+                        key={String(label)}
+                        style={{
+                          borderRadius: 14,
+                          background: "#F7FAFF",
+                          border: "1px solid rgba(13,95,168,0.12)",
+                          padding: "8px 10px",
+                          minWidth: 0,
+                        }}
+                      >
+                        <div style={{ ...helperText(), fontSize: 11, fontWeight: 900 }}>{String(label)}</div>
+                        <div style={{ fontSize: 13, fontWeight: 950, color: "#07172C", overflowWrap: "anywhere" }}>
+                          {String(value)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      display: "grid",
+                      gridTemplateColumns: isCompact ? "1fr" : "0.8fr 0.45fr 1fr",
+                      gap: 10,
+                      alignItems: "end",
+                    }}
+                  >
+                    <label style={{ display: "block" }}>
+                      <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                        Attendance method
+                      </div>
+                      <select
+                        value={meetingAttendanceMethod}
+                        onChange={(event) =>
+                          setMeetingAttendanceMethod(
+                            event.target.value === "bluetooth_proximity" ? "bluetooth_proximity" : "qr"
+                          )
+                        }
+                        style={{ ...inputStyle(), marginTop: 6 }}
+                      >
+                        <option value="qr">QR check-in</option>
+                        <option value="bluetooth_proximity">Proximity record</option>
+                      </select>
+                    </label>
+                    <label style={{ display: "block" }}>
+                      <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                        Minutes
+                      </div>
+                      <input
+                        value={meetingAttendanceWindowMinutes}
+                        onChange={(event) => setMeetingAttendanceWindowMinutes(event.target.value)}
+                        style={{ ...inputStyle(), marginTop: 6 }}
+                        inputMode="numeric"
+                        placeholder="120"
+                      />
+                    </label>
+                    <PrimaryButton
+                      onClick={openMeetingAttendanceSession}
+                      disabled={shopActionsLocked || openingAttendanceSession}
+                      busy={openingAttendanceSession}
+                      busyLabel="Opening..."
+                      fullWidth
+                      debugId="shop-control.meeting.open-attendance"
+                    >
+                      Open attendance
+                    </PrimaryButton>
+                  </div>
+                  {activeAttendanceCheckinUrl ? (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        display: "grid",
+                        gridTemplateColumns: isCompact ? "1fr" : "140px 1fr",
+                        gap: 12,
+                        alignItems: "center",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 128,
+                          height: 128,
+                          borderRadius: 18,
+                          background: "#FFFFFF",
+                          border: "1px solid rgba(13,95,168,0.14)",
+                          display: "grid",
+                          placeItems: "center",
+                          justifySelf: isCompact ? "center" : "start",
+                        }}
+                      >
+                        <QRCodeSVG value={activeAttendanceCheckinUrl} size={104} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 950, color: "#07172C" }}>
+                          Scan to record attendance time
+                        </div>
+                        <div style={{ marginTop: 5, ...helperText(), fontSize: 12 }}>
+                          {activeAttendanceIsBluetooth
+                            ? "Members confirm a nearby Bluetooth device first. QR stays available as a fallback."
+                            : "Members scan during the open window. GSN records member, method, and check-in time."}
+                        </div>
+                        <div style={{ marginTop: 10, ...controlGrid(isCompact, 138) }}>
+                          <SecondaryButton
+                            onClick={() => {
+                              safeCopy(activeAttendanceCheckinUrl);
+                              showNotice("success", "Attendance link copied.");
+                            }}
+                            fullWidth
+                            debugId="shop-control.meeting.copy-attendance-link"
+                          >
+                            Copy link
+                          </SecondaryButton>
+                          <SecondaryButton
+                            onClick={() => recordMeetingAttendanceCheckin("qr")}
+                            disabled={recordingAttendanceCheckin || !activeAttendanceToken}
+                            busy={recordingAttendanceCheckin}
+                            busyLabel="Recording..."
+                            fullWidth
+                            debugId="shop-control.meeting.record-attendance"
+                          >
+                            {activeAttendanceIsBluetooth ? "QR fallback" : "Record my attendance"}
+                          </SecondaryButton>
+                          {activeAttendanceIsBluetooth ? (
+                            <SecondaryButton
+                              onClick={recordBluetoothPresenceAttendance}
+                              disabled={checkingBluetoothPresence || recordingAttendanceCheckin || !activeAttendanceToken}
+                              busy={checkingBluetoothPresence}
+                              busyLabel="Checking..."
+                              fullWidth
+                              debugId="shop-control.meeting.bluetooth-check"
+                            >
+                              Bluetooth check
+                            </SecondaryButton>
+                          ) : null}
+                        </div>
+                        {bluetoothPresenceStatus ? (
+                          <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
+                            {bluetoothPresenceStatus}
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
+                    Attendance is Presence Evidence only. It records showing up, method, and time; it does not prove contribution or create a trust score.
                   </div>
                 </div>
               ) : null}
@@ -4306,7 +4694,7 @@ export default function ShopControlPage() {
                   disabled={
                     shopActionsLocked ||
                     recordingMeetingSummary ||
-                    !firstTruthy(latestCommunityMeeting?.meeting_id)
+                    !firstTruthy(meetingForActions?.meeting_id)
                   }
                   busy={recordingMeetingSummary}
                   busyLabel="Recording..."

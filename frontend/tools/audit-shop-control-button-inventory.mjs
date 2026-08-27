@@ -35,14 +35,14 @@ const ownerShopHandlesSource = readFileSync(
 const findings = [];
 
 const expectedSourceActions = {
-  PrimaryButton: 11,
-  SecondaryButton: 21,
+  PrimaryButton: 12,
+  SecondaryButton: 24,
   SubtleButton: 2,
   StableButton: 3,
   StableCtaLink: 7,
-  total: 44,
+  total: 48,
 };
-const expectedNativeFieldCount = 24;
+const expectedNativeFieldCount = 26;
 const expectedFileInputActionRoots = 2;
 const expectedMobileTaskShellBreakdown = {
   top: 2,
@@ -241,6 +241,10 @@ const expectedActionOrder = [
   "shop-control.rosca.record-payout",
   "shop-control.meeting.create-reminder",
   "shop-control.meeting.share-whatsapp",
+  "shop-control.meeting.open-attendance",
+  "shop-control.meeting.copy-attendance-link",
+  "shop-control.meeting.record-attendance",
+  "shop-control.meeting.bluetooth-check",
   "shop-control.meeting.record-summary",
   "shop-control.details.save",
   "shop-control.details.manage-products",
@@ -456,8 +460,23 @@ assertShopContains(
 );
 
 assertShopContains(
-  /debugId="shop-control\.package\.meeting-pack"[\s\S]*?debugId="shop-control\.meeting\.create-reminder"[\s\S]*?debugId="shop-control\.meeting\.share-whatsapp"[\s\S]*?debugId="shop-control\.meeting\.interest-yes"[\s\S]*?debugId="shop-control\.meeting\.interest-maybe"[\s\S]*?debugId="shop-control\.meeting\.interest-no"[\s\S]*?debugId="shop-control\.meeting\.record-summary"/,
-  "Shop Control meeting/reminder controls must keep reminder, WhatsApp share, planning response, and summary action roots together."
+  /debugId="shop-control\.package\.meeting-pack"[\s\S]*?debugId="shop-control\.meeting\.create-reminder"[\s\S]*?debugId="shop-control\.meeting\.share-whatsapp"[\s\S]*?debugId="shop-control\.meeting\.interest-yes"[\s\S]*?debugId="shop-control\.meeting\.interest-maybe"[\s\S]*?debugId="shop-control\.meeting\.interest-no"[\s\S]*?debugId="shop-control\.meeting\.open-attendance"[\s\S]*?debugId="shop-control\.meeting\.copy-attendance-link"[\s\S]*?debugId="shop-control\.meeting\.record-attendance"[\s\S]*?debugId="shop-control\.meeting\.bluetooth-check"[\s\S]*?debugId="shop-control\.meeting\.record-summary"/,
+  "Shop Control meeting/reminder controls must keep reminder, WhatsApp share, planning response, attendance check-in, and summary action roots together."
+);
+
+assertShopContains(
+  /Attendance registry[\s\S]*?QRCodeSVG[\s\S]*?Bluetooth check[\s\S]*?Presence Evidence only/,
+  "Shop Control meeting attendance must expose QR rendering, an explicit Bluetooth chooser action, and a Presence Evidence boundary."
+);
+
+assertShopContains(
+  /async function recordBluetoothPresenceAttendance[\s\S]*?navigator as NavigatorWithBluetooth[\s\S]*?requestDevice[\s\S]*?Device identifier was not stored by GSN UI/,
+  "Shop Control Bluetooth attendance must use an explicit browser chooser and keep device identifiers out of stored UI evidence."
+);
+
+assertShopContains(
+  /onClick=\{\(\) => recordMeetingAttendanceCheckin\("qr"\)\}[\s\S]*?activeAttendanceIsBluetooth \? "QR fallback" : "Record my attendance"/,
+  "Shop Control must not record proximity attendance from the ordinary attendance button; Bluetooth evidence requires the explicit chooser."
 );
 
 assertLayoutContains(

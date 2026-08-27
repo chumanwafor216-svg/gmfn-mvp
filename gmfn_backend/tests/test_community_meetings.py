@@ -437,3 +437,238 @@ def test_meeting_interest_rejects_invalid_response(
 
     assert invalid_res.status_code == 400, invalid_res.text
     assert "yes, no, or maybe" in invalid_res.text
+
+
+
+def test_meeting_qr_attendance_session_records_member_checkin_once(
+    client,
+    override_current_user,
+    seed_user2_member_membership,
+):
+    _seed_meeting_entitlement()
+
+    reminder_res = client.post(
+        "/community-meetings/reminders",
+        json={
+            "clan_id": 1,
+            "title": "Attendance registry meeting",
+            "purpose": "Record who showed up and when.",
+            "attendee_user_ids": [1, 2],
+        },
+    )
+    assert reminder_res.status_code == 200, reminder_res.text
+    meeting_id = reminder_res.json()["meeting"]["meeting_id"]
+
+    session_res = client.post(
+        f"/community-meetings/{meeting_id}/attendance-sessions",
+        json={"clan_id": 1, "method": "qr", "window_minutes": 45},
+    )
+    assert session_res.status_code == 200, session_res.text
+    session = session_res.json()["attendance_session"]
+    assert session["method"] == "qr"
+    assert session["evidence_strength"] == "moderate"
+    assert session["automatic_bluetooth_scan"] is False
+    assert "attendance_token=" in session["checkin_url"]
+
+    checkin_res = client.post(
+        f"/community-meetings/{meeting_id}/attendance-check-ins",
+        json={
+            "clan_id": 1,
+            "attendance_token": session["attendance_token"],
+            "method": "qr",
+        },
+    )
+    assert checkin_res.status_code == 200, checkin_res.text
+    checkin = checkin_res.json()["attendance_checkin"]
+    assert checkin_res.json()["already_recorded"] is False
+    assert checkin["checked_in_user_id"] == 1
+    assert checkin["attendance_method"] == "qr"
+    assert checkin["checked_in_at"]
+    assert checkin["evidence_strength"] == "moderate"
+    assert checkin["automatic_bluetooth_scan"] is False
+
+    duplicate_res = client.post(
+        f"/community-meetings/{meeting_id}/attendance-check-ins",
+        json={
+            "clan_id": 1,
+            "attendance_token": session["attendance_token"],
+            "method": "qr",
+        },
+    )
+    assert duplicate_res.status_code == 200, duplicate_res.text
+    assert duplicate_res.json()["already_recorded"] is True
+
+    list_res = client.get("/community-meetings", params={"clan_id": 1})
+    assert list_res.status_code == 200, list_res.text
+    meeting = list_res.json()["meetings"][0]
+    assert meeting["meeting_id"] == meeting_id
+    assert meeting["attendance_summary"]["checkin_count"] == 1
+    assert meeting["attendance_summary"]["checked_in_user_ids"] == [1]
+    assert meeting["attendance_summary"]["method_counts"] == {"qr": 1}
+    assert meeting["attendance_summary"]["active_session"]["method"] == "qr"
+    assert meeting["attendance_summary"]["active_session"]["attendance_token"] == session["attendance_token"]
+    assert "Presence Evidence only" in meeting["attendance_summary"]["presence_evidence_boundary"]
+
+    with engine.begin() as conn:
+        checkin_count = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM trust_events
+                WHERE event_type = 'community.meeting.attendance_checkin_recorded'
+                  AND meta_json LIKE :meeting_like
+                """
+            ),
+            {"meeting_like": f"%{meeting_id}%"},
+        ).scalar_one()
+
+    assert checkin_count == 1
+
+
+def test_meeting_attendance_rejects_invalid_token(
+    client,
+    override_current_user,
+    seed_clan_admin_membership,
+):
+    _seed_meeting_entitlement()
+
+    reminder_res = client.post(
+        "/community-meetings/reminders",
+        json={"clan_id": 1, "title": "Invalid attendance token"},
+    )
+    assert reminder_res.status_code == 200, reminder_res.text
+    meeting_id = reminder_res.json()["meeting"]["meeting_id"]
+
+    invalid_res = client.post(
+        f"/community-meetings/{meeting_id}/attendance-check-ins",
+        json={
+            "clan_id": 1,
+            "attendance_token": "not-the-active-token",
+            "method": "qr",
+        },
+    )
+
+    assert invalid_res.status_code == 409, invalid_res.text
+    assert "closed or invalid" in invalid_res.text
+
+
+def test_meeting_proximity_attendance_is_recorded_as_nonautomatic_presence_evidence(
+    client,
+    override_current_user,
+    seed_clan_admin_membership,
+):
+    _seed_meeting_entitlement()
+
+    reminder_res = client.post(
+        "/community-meetings/reminders",
+        json={"clan_id": 1, "title": "Proximity attendance boundary"},
+    )
+    assert reminder_res.status_code == 200, reminder_res.text
+    meeting_id = reminder_res.json()["meeting"]["meeting_id"]
+
+    session_res = client.post(
+        f"/community-meetings/{meeting_id}/attendance-sessions",
+        json={
+            "clan_id": 1,
+            "method": "bluetooth_proximity",
+            "window_minutes": 30,
+        },
+    )
+    assert session_res.status_code == 200, session_res.text
+    session = session_res.json()["attendance_session"]
+    assert session["method"] == "bluetooth_proximity"
+    assert session["automatic_bluetooth_scan"] is False
+
+    checkin_res = client.post(
+        f"/community-meetings/{meeting_id}/attendance-check-ins",
+        json={
+            "clan_id": 1,
+            "attendance_token": session["attendance_token"],
+            "method": "bluetooth_proximity",
+            "note": "Recorder confirmed proximity; browser Bluetooth scan is not connected.",
+        },
+    )
+    assert checkin_res.status_code == 200, checkin_res.text
+    checkin = checkin_res.json()["attendance_checkin"]
+    assert checkin["attendance_method"] == "bluetooth_proximity"
+    assert checkin["evidence_strength"] == "stronger_when_enabled"
+    assert checkin["automatic_bluetooth_scan"] is False
+
+
+def test_meeting_proximity_window_allows_qr_fallback_without_stronger_evidence(
+    client,
+    override_current_user,
+    seed_clan_admin_membership,
+):
+    _seed_meeting_entitlement()
+
+    reminder_res = client.post(
+        "/community-meetings/reminders",
+        json={"clan_id": 1, "title": "Proximity fallback attendance"},
+    )
+    assert reminder_res.status_code == 200, reminder_res.text
+    meeting_id = reminder_res.json()["meeting"]["meeting_id"]
+
+    session_res = client.post(
+        f"/community-meetings/{meeting_id}/attendance-sessions",
+        json={
+            "clan_id": 1,
+            "method": "bluetooth_proximity",
+            "window_minutes": 30,
+        },
+    )
+    assert session_res.status_code == 200, session_res.text
+    session = session_res.json()["attendance_session"]
+
+    checkin_res = client.post(
+        f"/community-meetings/{meeting_id}/attendance-check-ins",
+        json={
+            "clan_id": 1,
+            "attendance_token": session["attendance_token"],
+            "method": "qr",
+            "note": "Member used QR fallback because Bluetooth was not available.",
+        },
+    )
+    assert checkin_res.status_code == 200, checkin_res.text
+    checkin = checkin_res.json()["attendance_checkin"]
+    assert checkin["attendance_method"] == "qr"
+    assert checkin["evidence_strength"] == "moderate"
+    assert checkin["automatic_bluetooth_scan"] is False
+
+    list_res = client.get("/community-meetings", params={"clan_id": 1})
+    assert list_res.status_code == 200, list_res.text
+    meeting = list_res.json()["meetings"][0]
+    assert meeting["attendance_summary"]["method_counts"] == {"qr": 1}
+
+
+def test_meeting_qr_window_rejects_bluetooth_method_inflation(
+    client,
+    override_current_user,
+    seed_clan_admin_membership,
+):
+    _seed_meeting_entitlement()
+
+    reminder_res = client.post(
+        "/community-meetings/reminders",
+        json={"clan_id": 1, "title": "Reject inflated attendance method"},
+    )
+    assert reminder_res.status_code == 200, reminder_res.text
+    meeting_id = reminder_res.json()["meeting"]["meeting_id"]
+
+    session_res = client.post(
+        f"/community-meetings/{meeting_id}/attendance-sessions",
+        json={"clan_id": 1, "method": "qr", "window_minutes": 30},
+    )
+    assert session_res.status_code == 200, session_res.text
+    session = session_res.json()["attendance_session"]
+
+    checkin_res = client.post(
+        f"/community-meetings/{meeting_id}/attendance-check-ins",
+        json={
+            "clan_id": 1,
+            "attendance_token": session["attendance_token"],
+            "method": "bluetooth_proximity",
+        },
+    )
+    assert checkin_res.status_code == 400, checkin_res.text
+    assert "does not match the active attendance window" in checkin_res.text

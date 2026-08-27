@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Iterable, List, Optional
 from urllib.parse import quote
 
@@ -24,7 +24,25 @@ COMMUNITY_MEETING_SOURCE = "community.meeting_pack"
 COMMUNITY_MEETING_REMINDER_EVENT = "community.meeting.reminder_created"
 COMMUNITY_MEETING_SUMMARY_EVENT = "community.meeting.summary_recorded"
 COMMUNITY_MEETING_INTEREST_EVENT = "community.meeting.interest_recorded"
+COMMUNITY_MEETING_ATTENDANCE_SESSION_EVENT = "community.meeting.attendance_session_opened"
+COMMUNITY_MEETING_ATTENDANCE_CHECKIN_EVENT = "community.meeting.attendance_checkin_recorded"
 COMMUNITY_MEETING_INTEREST_RESPONSES = {"yes", "no", "maybe"}
+COMMUNITY_MEETING_ATTENDANCE_METHODS = {
+    "qr",
+    "rotating_qr",
+    "short_code",
+    "bluetooth_proximity",
+    "coordinator",
+    "member_self_claim",
+}
+COMMUNITY_MEETING_ATTENDANCE_STRENGTH = {
+    "qr": "moderate",
+    "rotating_qr": "moderate",
+    "short_code": "moderate",
+    "bluetooth_proximity": "stronger_when_enabled",
+    "coordinator": "stronger",
+    "member_self_claim": "provisional",
+}
 
 
 def _now_utc() -> datetime:
@@ -65,12 +83,49 @@ def _to_utc(value: Optional[datetime]) -> Optional[datetime]:
     return value.astimezone(timezone.utc)
 
 
+def _parse_iso_datetime(value: Any) -> Optional[datetime]:
+    raw = _safe_str(value)
+    if not raw:
+        return None
+    try:
+        parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except Exception:
+        return None
+    return _to_utc(parsed)
+
+
 def _meeting_token() -> str:
     return f"{_now_utc().strftime('%Y%m%d%H%M%S')}{secrets.token_hex(2).upper()}"
 
 
 def _meeting_id(*, clan_id: int, token: str) -> str:
     return f"MTG-C{int(clan_id)}-{token}"
+
+
+def _attendance_token() -> str:
+    return secrets.token_urlsafe(18)
+
+
+def _attendance_session_id(*, clan_id: int, token: str) -> str:
+    return f"ATT-C{int(clan_id)}-{_now_utc().strftime('%Y%m%d%H%M%S')}-{token[-6:].upper()}"
+
+
+def _normalize_attendance_method(value: Any) -> str:
+    method = _safe_str(value, "qr").lower()
+    return method if method in COMMUNITY_MEETING_ATTENDANCE_METHODS else "qr"
+
+
+def _attendance_strength(method: str) -> str:
+    return COMMUNITY_MEETING_ATTENDANCE_STRENGTH.get(_normalize_attendance_method(method), "moderate")
+
+
+def _meeting_attendance_checkin_url(*, clan_id: int, meeting_id: str, token: str) -> str:
+    return (
+        f"/app/shop-control?clan_id={int(clan_id)}"
+        f"&meeting_id={quote(str(meeting_id))}"
+        f"&attendance_token={quote(str(token))}"
+        "#shop-control-community-packages"
+    )
 
 
 def _active_member_ids(db: Session, *, clan_id: int) -> List[int]:
@@ -218,6 +273,21 @@ def _event_to_record(event: TrustEvent) -> Dict[str, Any]:
         "interest_response": _safe_str(meta.get("interest_response")),
         "interest_note": _safe_str(meta.get("interest_note")),
         "responder_user_id": meta.get("responder_user_id"),
+        "attendance_session_id": _safe_str(meta.get("attendance_session_id")),
+        "attendance_token": _safe_str(meta.get("attendance_token")),
+        "attendance_method": _safe_str(meta.get("attendance_method")),
+        "attendance_method_label": _safe_str(meta.get("attendance_method_label")),
+        "attendance_checkin_url": _safe_str(meta.get("attendance_checkin_url")),
+        "attendance_expires_at": meta.get("attendance_expires_at"),
+        "attendance_window_minutes": meta.get("attendance_window_minutes"),
+        "attendance_session_event_id": meta.get("attendance_session_event_id"),
+        "checked_in_at": meta.get("checked_in_at"),
+        "checked_in_user_id": meta.get("checked_in_user_id"),
+        "arrival_status": _safe_str(meta.get("arrival_status")),
+        "minutes_from_start": meta.get("minutes_from_start"),
+        "capture_method": _safe_str(meta.get("capture_method")),
+        "evidence_strength": _safe_str(meta.get("evidence_strength")),
+        "automatic_bluetooth_scan": bool(meta.get("automatic_bluetooth_scan")),
         "created_at": _iso(getattr(event, "created_at", None)),
     }
 
@@ -459,6 +529,268 @@ def record_meeting_summary(
 
 
 
+def _find_attendance_session_event(
+    db: Session,
+    *,
+    clan_id: int,
+    meeting_id: str,
+    attendance_token: Optional[str] = None,
+    active_only: bool = True,
+) -> Optional[TrustEvent]:
+    rows = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.clan_id == int(clan_id),
+            TrustEvent.event_type == COMMUNITY_MEETING_ATTENDANCE_SESSION_EVENT,
+        )
+        .order_by(TrustEvent.id.desc())
+        .limit(50)
+        .all()
+    )
+    now = _now_utc()
+    for row in rows:
+        meta = _safe_meta(getattr(row, "meta_json", None))
+        if _safe_str(meta.get("meeting_id")) != _safe_str(meeting_id):
+            continue
+        if attendance_token and _safe_str(meta.get("attendance_token")) != _safe_str(attendance_token):
+            continue
+        expires_at = _parse_iso_datetime(meta.get("attendance_expires_at"))
+        if active_only and expires_at is not None and expires_at <= now:
+            continue
+        return row
+    return None
+
+
+def _find_existing_attendance_checkin(
+    db: Session,
+    *,
+    clan_id: int,
+    meeting_id: str,
+    user_id: int,
+) -> Optional[TrustEvent]:
+    rows = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.clan_id == int(clan_id),
+            TrustEvent.event_type == COMMUNITY_MEETING_ATTENDANCE_CHECKIN_EVENT,
+            TrustEvent.subject_user_id == int(user_id),
+        )
+        .order_by(TrustEvent.id.asc())
+        .limit(50)
+        .all()
+    )
+    for row in rows:
+        if _safe_str(_safe_meta(row.meta_json).get("meeting_id")) == _safe_str(meeting_id):
+            return row
+    return None
+
+
+def _arrival_status(*, scheduled_at: Any, checked_in_at: datetime) -> Dict[str, Any]:
+    scheduled = _parse_iso_datetime(scheduled_at)
+    if scheduled is None:
+        return {"arrival_status": "time_recorded", "minutes_from_start": None}
+    minutes = int((checked_in_at - scheduled).total_seconds() // 60)
+    if minutes < -30:
+        status = "early"
+    elif minutes <= 15:
+        status = "on_time_window"
+    else:
+        status = "late"
+    return {"arrival_status": status, "minutes_from_start": minutes}
+
+
+def open_meeting_attendance_session(
+    db: Session,
+    *,
+    clan_id: int,
+    meeting_id: str,
+    actor_user_id: int,
+    method: str = "qr",
+    window_minutes: int = 120,
+    note: Optional[str] = None,
+) -> Dict[str, Any]:
+    reminder = _find_reminder_event(
+        db,
+        clan_id=int(clan_id),
+        meeting_id=str(meeting_id),
+    )
+    if not reminder:
+        raise ValueError("Meeting reminder record was not found")
+
+    reminder_record = _event_to_record(reminder)
+    normalized_method = _normalize_attendance_method(method)
+    bounded_window = min(720, max(5, _safe_int(window_minutes, 120)))
+    token = _attendance_token()
+    session_id = _attendance_session_id(clan_id=int(clan_id), token=token)
+    opened_at = _now_utc()
+    expires_at = opened_at + timedelta(minutes=bounded_window)
+    checkin_url = _meeting_attendance_checkin_url(
+        clan_id=int(clan_id),
+        meeting_id=str(meeting_id),
+        token=token,
+    )
+    method_label = normalized_method.replace("_", " ")
+    strength = _attendance_strength(normalized_method)
+
+    event = log_trust_event(
+        db,
+        event_type=COMMUNITY_MEETING_ATTENDANCE_SESSION_EVENT,
+        clan_id=int(clan_id),
+        actor_user_id=int(actor_user_id),
+        subject_user_id=int(actor_user_id),
+        meta={
+            "engine_version": COMMUNITY_MEETING_ENGINE_VERSION,
+            "source": COMMUNITY_MEETING_SOURCE,
+            "reason": "community_meeting_attendance_session_opened",
+            "meeting_id": str(meeting_id),
+            "title": reminder_record["title"],
+            "purpose": reminder_record["purpose"],
+            "scheduled_at": reminder_record["scheduled_at"],
+            "attendance_session_id": session_id,
+            "attendance_token": token,
+            "attendance_method": normalized_method,
+            "attendance_method_label": method_label,
+            "attendance_checkin_url": checkin_url,
+            "attendance_window_minutes": int(bounded_window),
+            "attendance_opened_at": _iso(opened_at),
+            "attendance_expires_at": _iso(expires_at),
+            "capture_method": normalized_method,
+            "evidence_strength": strength,
+            "presence_evidence": True,
+            "attendance_confirmation": False,
+            "automatic_bluetooth_scan": False,
+            "privacy_boundary": "Presence Evidence only. This is not a trust score, location tracker, or proof of contribution.",
+            "trust_delta": "0.00",
+            "note": _safe_str(note),
+        },
+        dedupe_key=f"community-meeting-attendance-session:{meeting_id}:{token}",
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+    db.refresh(event)
+    record = _event_to_record(event)
+    return {
+        "attendance_session": {
+            "event_id": int(event.id),
+            "meeting_id": str(meeting_id),
+            "attendance_session_id": record["attendance_session_id"],
+            "method": normalized_method,
+            "method_label": method_label,
+            "evidence_strength": strength,
+            "checkin_url": checkin_url,
+            "attendance_token": token,
+            "expires_at": _iso(expires_at),
+            "window_minutes": int(bounded_window),
+            "automatic_bluetooth_scan": False,
+        },
+        "message": "Attendance check-in is open. Members can scan the QR or use the link during the active window.",
+    }
+
+
+def record_meeting_attendance_checkin(
+    db: Session,
+    *,
+    clan_id: int,
+    meeting_id: str,
+    actor_user_id: int,
+    attendance_token: str,
+    method: str = "qr",
+    note: Optional[str] = None,
+) -> Dict[str, Any]:
+    reminder = _find_reminder_event(
+        db,
+        clan_id=int(clan_id),
+        meeting_id=str(meeting_id),
+    )
+    if not reminder:
+        raise ValueError("Meeting reminder record was not found")
+    if not _safe_str(attendance_token):
+        raise ValueError("Attendance token is required")
+
+    session = _find_attendance_session_event(
+        db,
+        clan_id=int(clan_id),
+        meeting_id=str(meeting_id),
+        attendance_token=str(attendance_token),
+        active_only=True,
+    )
+    if not session:
+        raise ValueError("Attendance check-in is closed or invalid")
+
+    existing = _find_existing_attendance_checkin(
+        db,
+        clan_id=int(clan_id),
+        meeting_id=str(meeting_id),
+        user_id=int(actor_user_id),
+    )
+    if existing:
+        return {
+            "attendance_checkin": _event_to_record(existing),
+            "already_recorded": True,
+            "message": "Attendance was already recorded for this meeting.",
+        }
+
+    reminder_record = _event_to_record(reminder)
+    session_record = _event_to_record(session)
+    session_method = _normalize_attendance_method(session_record.get("attendance_method"))
+    requested_method = _normalize_attendance_method(method)
+    if requested_method == session_method:
+        normalized_method = session_method
+    elif session_method == "bluetooth_proximity" and requested_method == "qr":
+        normalized_method = "qr"
+    else:
+        raise ValueError("Attendance method does not match the active attendance window")
+    checked_in_at = _now_utc()
+    arrival = _arrival_status(
+        scheduled_at=reminder_record.get("scheduled_at"),
+        checked_in_at=checked_in_at,
+    )
+    strength = _attendance_strength(normalized_method)
+
+    event = log_trust_event(
+        db,
+        event_type=COMMUNITY_MEETING_ATTENDANCE_CHECKIN_EVENT,
+        clan_id=int(clan_id),
+        actor_user_id=int(actor_user_id),
+        subject_user_id=int(actor_user_id),
+        meta={
+            "engine_version": COMMUNITY_MEETING_ENGINE_VERSION,
+            "source": COMMUNITY_MEETING_SOURCE,
+            "reason": "community_meeting_attendance_checkin_recorded",
+            "meeting_id": str(meeting_id),
+            "title": reminder_record["title"],
+            "purpose": reminder_record["purpose"],
+            "scheduled_at": reminder_record["scheduled_at"],
+            "attendance_session_event_id": int(session.id),
+            "attendance_session_id": session_record.get("attendance_session_id"),
+            "attendance_method": normalized_method,
+            "attendance_method_label": normalized_method.replace("_", " "),
+            "checked_in_at": _iso(checked_in_at),
+            "checked_in_user_id": int(actor_user_id),
+            "capture_method": normalized_method,
+            "evidence_strength": strength,
+            "presence_evidence": True,
+            "attendance_confirmation": True,
+            "automatic_bluetooth_scan": False,
+            "privacy_boundary": "Presence Evidence only. This is not a trust score, location tracker, or proof of contribution.",
+            "trust_delta": "0.00",
+            "note": _safe_str(note),
+            **arrival,
+        },
+        dedupe_key=f"community-meeting-attendance-checkin:{meeting_id}:{int(actor_user_id)}",
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+    db.refresh(event)
+    return {
+        "attendance_checkin": _event_to_record(event),
+        "already_recorded": False,
+        "message": "Attendance recorded with check-in time. This is Presence Evidence, not a trust score.",
+    }
+
+
 def record_meeting_interest(
     db: Session,
     *,
@@ -544,6 +876,8 @@ def list_community_meetings(
                     COMMUNITY_MEETING_REMINDER_EVENT,
                     COMMUNITY_MEETING_SUMMARY_EVENT,
                     COMMUNITY_MEETING_INTEREST_EVENT,
+                    COMMUNITY_MEETING_ATTENDANCE_SESSION_EVENT,
+                    COMMUNITY_MEETING_ATTENDANCE_CHECKIN_EVENT,
                 ]
             ),
         )
@@ -583,6 +917,17 @@ def list_community_meetings(
                         "response": response,
                         "created_at": record.get("created_at"),
                     }
+        elif row.event_type == COMMUNITY_MEETING_ATTENDANCE_SESSION_EVENT:
+            sessions = current.setdefault("_attendance_sessions", [])
+            sessions.append({**record, "event_id": int(row.id)})
+        elif row.event_type == COMMUNITY_MEETING_ATTENDANCE_CHECKIN_EVENT:
+            checked_user_id = _safe_int(record.get("checked_in_user_id"), 0)
+            if checked_user_id > 0:
+                checkins = current.setdefault("_attendance_checkins_by_user", {})
+                existing = checkins.get(checked_user_id)
+                existing_id = _safe_int(existing.get("event_id"), 0) if isinstance(existing, dict) else 0
+                if not existing or int(row.id) <= existing_id:
+                    checkins[checked_user_id] = {**record, "event_id": int(row.id)}
         grouped[mid] = current
 
     meetings = list(grouped.values())
@@ -610,5 +955,67 @@ def list_community_meetings(
             "own_response": own_response,
             "planning_ready": counts["yes"] + counts["maybe"] > 0,
         }
-    meetings.sort(key=lambda item: _safe_int(item.get("summary_event_id") or item.get("reminder_event_id")), reverse=True)
+
+        attendance_sessions = item.pop("_attendance_sessions", [])
+        attendance_checkins = item.pop("_attendance_checkins_by_user", {})
+        method_counts: Dict[str, int] = {}
+        checked_in_user_ids: List[int] = []
+        latest_checkin_at = ""
+        checkin_records: List[Dict[str, Any]] = []
+        if isinstance(attendance_checkins, dict):
+            for raw_user_id, checkin in attendance_checkins.items():
+                if not isinstance(checkin, dict):
+                    continue
+                checked_in_user_ids.append(_safe_int(raw_user_id, 0))
+                method = _normalize_attendance_method(checkin.get("attendance_method"))
+                method_counts[method] = method_counts.get(method, 0) + 1
+                checked_in_at = _safe_str(checkin.get("checked_in_at") or checkin.get("created_at"))
+                if checked_in_at and checked_in_at > latest_checkin_at:
+                    latest_checkin_at = checked_in_at
+                checkin_records.append(
+                    {
+                        "event_id": checkin.get("event_id"),
+                        "user_id": _safe_int(raw_user_id, 0),
+                        "checked_in_at": checked_in_at,
+                        "method": method,
+                        "arrival_status": _safe_str(checkin.get("arrival_status")),
+                        "minutes_from_start": checkin.get("minutes_from_start"),
+                        "evidence_strength": _safe_str(checkin.get("evidence_strength")),
+                    }
+                )
+        active_session = None
+        now = _now_utc()
+        if isinstance(attendance_sessions, list):
+            ordered_sessions = sorted(
+                [session for session in attendance_sessions if isinstance(session, dict)],
+                key=lambda session: _safe_int(session.get("event_id"), 0),
+                reverse=True,
+            )
+            for session in ordered_sessions:
+                expires_at = _parse_iso_datetime(session.get("attendance_expires_at"))
+                if expires_at is not None and expires_at <= now:
+                    continue
+                active_session = {
+                    "event_id": session.get("event_id"),
+                    "attendance_session_id": session.get("attendance_session_id"),
+                    "method": _normalize_attendance_method(session.get("attendance_method")),
+                    "method_label": _safe_str(session.get("attendance_method_label")),
+                    "evidence_strength": _safe_str(session.get("evidence_strength")),
+                    "checkin_url": _safe_str(session.get("attendance_checkin_url")),
+                    "attendance_token": _safe_str(session.get("attendance_token")),
+                    "expires_at": session.get("attendance_expires_at"),
+                    "window_minutes": session.get("attendance_window_minutes"),
+                    "automatic_bluetooth_scan": bool(session.get("automatic_bluetooth_scan")),
+                }
+                break
+        item["attendance_summary"] = {
+            "checkin_count": len([user_id for user_id in checked_in_user_ids if user_id > 0]),
+            "checked_in_user_ids": [user_id for user_id in checked_in_user_ids if user_id > 0],
+            "latest_checkin_at": latest_checkin_at or None,
+            "method_counts": method_counts,
+            "checkins": sorted(checkin_records, key=lambda row: _safe_str(row.get("checked_in_at"))),
+            "active_session": active_session,
+            "presence_evidence_boundary": "Attendance is Presence Evidence only. It records showing up, method, and time; it is not a trust score or proof of contribution.",
+        }
+    meetings.sort(key=lambda item: _safe_int(item.get("summary_event_id") or item.get("reminder_event_id") or item.get("event_id")), reverse=True)
     return meetings[: max(1, int(limit or 20))]

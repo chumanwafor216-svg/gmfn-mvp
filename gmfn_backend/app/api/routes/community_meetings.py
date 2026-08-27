@@ -11,8 +11,11 @@ from app.core.auth import get_current_user
 from app.db.database import get_db
 from app.db.models import ClanMembership, User
 from app.services.community_meeting_service import (
+    COMMUNITY_MEETING_ATTENDANCE_METHODS,
     create_meeting_reminder,
     list_community_meetings,
+    open_meeting_attendance_session,
+    record_meeting_attendance_checkin,
     record_meeting_interest,
     record_meeting_summary,
 )
@@ -136,6 +139,61 @@ class CommunityMeetingSummaryIn(BaseModel):
         return _reject_non_text_value(value, info.field_name)
 
 
+class CommunityMeetingAttendanceSessionIn(BaseModel):
+    clan_id: int = Field(..., ge=1)
+    method: str = Field(default="qr", min_length=2, max_length=40)
+    window_minutes: int = Field(default=120, ge=5, le=720)
+    note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("clan_id", mode="before")
+    @classmethod
+    def _reject_bool_ids(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "clan_id")
+
+    @field_validator("window_minutes", mode="before")
+    @classmethod
+    def _reject_bool_window(cls, value: Any) -> Any:
+        return _reject_bool_integer(value, "window_minutes")
+
+    @field_validator("method", "note", mode="before")
+    @classmethod
+    def _reject_non_text_attendance_session_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("method")
+    @classmethod
+    def _enforce_known_method(cls, value: str) -> str:
+        method = str(value or "").strip().lower()
+        if method not in COMMUNITY_MEETING_ATTENDANCE_METHODS:
+            raise ValueError("Attendance method is not supported for meeting evidence.")
+        return method
+
+
+class CommunityMeetingAttendanceCheckinIn(BaseModel):
+    clan_id: int = Field(..., ge=1)
+    attendance_token: str = Field(..., min_length=8, max_length=140)
+    method: str = Field(default="qr", min_length=2, max_length=40)
+    note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("clan_id", mode="before")
+    @classmethod
+    def _reject_bool_ids(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "clan_id")
+
+    @field_validator("attendance_token", "method", "note", mode="before")
+    @classmethod
+    def _reject_non_text_checkin_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("method")
+    @classmethod
+    def _enforce_known_method(cls, value: str) -> str:
+        method = str(value or "").strip().lower()
+        if method not in COMMUNITY_MEETING_ATTENDANCE_METHODS:
+            raise ValueError("Attendance method is not supported for meeting evidence.")
+        return method
+
+
 def _require_clan_member(
     db: Session,
     *,
@@ -235,6 +293,65 @@ def create_reminder(
         **result,
     }
 
+
+
+@router.post("/{meeting_id}/attendance-sessions")
+def open_attendance_session(
+    meeting_id: str,
+    payload: CommunityMeetingAttendanceSessionIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_clan_admin(db, clan_id=int(payload.clan_id), current_user=current_user)
+    try:
+        result = open_meeting_attendance_session(
+            db,
+            clan_id=int(payload.clan_id),
+            meeting_id=str(meeting_id),
+            actor_user_id=int(current_user.id),
+            method=payload.method,
+            window_minutes=int(payload.window_minutes),
+            note=payload.note,
+        )
+    except ValueError as exc:
+        status_code = 404 if "not found" in str(exc).lower() else 400
+        raise HTTPException(status_code=status_code, detail=str(exc))
+
+    return {
+        "ok": True,
+        "engine_ready": True,
+        **result,
+    }
+
+
+@router.post("/{meeting_id}/attendance-check-ins")
+def record_attendance_checkin(
+    meeting_id: str,
+    payload: CommunityMeetingAttendanceCheckinIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_clan_member(db, clan_id=int(payload.clan_id), current_user=current_user)
+    try:
+        result = record_meeting_attendance_checkin(
+            db,
+            clan_id=int(payload.clan_id),
+            meeting_id=str(meeting_id),
+            actor_user_id=int(current_user.id),
+            attendance_token=payload.attendance_token,
+            method=payload.method,
+            note=payload.note,
+        )
+    except ValueError as exc:
+        message = str(exc).lower()
+        status_code = 404 if "not found" in message else 409 if "closed" in message or "invalid" in message else 400
+        raise HTTPException(status_code=status_code, detail=str(exc))
+
+    return {
+        "ok": True,
+        "engine_ready": True,
+        **result,
+    }
 
 
 @router.post("/{meeting_id}/interest")
