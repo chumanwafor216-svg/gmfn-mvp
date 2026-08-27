@@ -35,7 +35,10 @@ stronger member support, stronger economic opportunity, and stronger community
 memory without changing the identity of the association?
 ```
 
-For this session, interrogate four possible ICA stories:
+For this session, interrogate four possible ICA stories. ICA is the worked
+example, but listen for language that would also fit churches, schools,
+professional bodies, alumni groups, NGOs, welfare groups, and project
+committees:
 
 ```text
 1. Administrative pain: meetings, notices, responses, decisions, attendance,
@@ -267,6 +270,11 @@ Possible answers:
 - verification of members and helpers.
 
 Force one priority. Do not accept "all of them".
+
+When they choose one, translate it into the same structure used in the take-home
+paper: what the workflow contains, what records GSN would keep, what can be
+counted in a weekly/monthly report, what belongs in Governance, and what must
+not be overclaimed.
 
 ### Question 5: Trust And Authority
 

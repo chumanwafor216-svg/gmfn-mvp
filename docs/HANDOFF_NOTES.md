@@ -26,6 +26,8 @@
 - Updated the 20-minute command pack to point participants to the fuller take-home comparison without turning the live session into a feature tour. Updated the participant feedback sheet to capture the one workflow they would actually test and which attractive automation ideas should remain future claims for now.
 - Follow-up owner critique handled: the ICA materials now use a four-story frame: Administrative Pain, Verification Pain, Economic Opportunity Pain, and Cultural Continuity / Community Memory Pain.
 - Added the honest grant/caseworker/sponsor reporting claim: if ICA records activity in GSN, GSN can support monthly aggregate community value summaries; however, a polished ICA-specific one-click grant pack and full large-scale picture/video archive remain scoped future capability, not something to overclaim as fully live today.
+- Follow-up owner critique handled: the participant paper now expands each of the four stories as a practical Governance/report block: what it contains, workflow steps, what can be quantified, how it differs from WhatsApp/manual systems, what fits inside Governance, and what does not fit or remains future.
+- Clarified ICA as the worked example for a reusable association/organisation pattern that can also fit churches, schools, professional bodies, alumni groups, charities, NGOs, welfare groups, and project committees.
 
 ## 2026-08-24 - Local backend Admin activation authorization hardening
 - Status: Local implementation verified; not pushed/deployed because the owner has not asked to publish this slice yet.

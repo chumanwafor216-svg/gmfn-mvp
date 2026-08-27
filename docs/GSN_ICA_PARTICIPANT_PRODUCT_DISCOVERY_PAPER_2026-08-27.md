@@ -100,10 +100,15 @@ Does this make ICA stronger without changing ICA's identity?
 
 ---
 
-## 3A. The Four ICA Stories We Are Testing
+## 3A. The Four Association Stories We Are Testing Through ICA
+
+ICA is the worked example. The same frame should also fit churches, schools,
+professional bodies, alumni groups, cultural unions, welfare associations,
+charities, clubs, project committees, and other organised communities.
 
 The 20-minute conversation should not try to prove every GSN feature. It should
-find which ICA pain is strongest.
+find which association pain is strongest, and then show the practical workload,
+records, evidence, counts, and governance boundary for that pain.
 
 ### Story 1: Administrative Pain
 
@@ -111,43 +116,100 @@ This is the pain of setting up a meeting, informing people, knowing who is
 coming, running the meeting, recording what was agreed, preserving attendance,
 and handing the record to the next leader without confusion.
 
-Current ICA reality may include chat messages, officer memory, paper lists,
-private notes, late reminders, repeated explanations, and members asking the
-same question in different places.
+What this story should contain:
 
-GSN can help by turning one meeting into a structured record:
+- official notice or meeting call;
+- meeting purpose, agenda, date, time, venue or link;
+- member Yes/Maybe/No responses before the meeting;
+- attendance method: officer record, QR check-in, or browser-limited
+  Bluetooth/proximity check-in where supported;
+- meeting summary, decisions, action owners, and follow-up dates;
+- acknowledgement or correction path if a record is wrong;
+- executive handover record.
+
+Workflow GSN should support:
 
 ```text
-Notice -> purpose/agenda -> Yes/Maybe/No response -> attendance check-in ->
-summary -> decisions -> association memory
+Notice -> purpose/agenda -> member response -> attendance check-in -> summary ->
+decisions -> action follow-up -> association memory -> monthly report count
 ```
 
-This is Community Value Maintenance. It protects the value ICA already creates
-by meeting, deciding, contributing, and organising.
+What can be quantified for a report or PDF:
+
+- number of meetings called;
+- number of members who responded Yes, Maybe, or No;
+- attendance count and check-in method counts;
+- decisions recorded;
+- actions assigned, completed, overdue, or carried forward;
+- notices acknowledged before expiry;
+- corrections or disputed records.
+
+How this differs from WhatsApp or ordinary documents:
+
+```text
+WhatsApp can announce a meeting.
+GSN can preserve the meeting lifecycle as governed evidence.
+```
+
+Governance fit:
+This belongs inside Governance because it deals with official association acts:
+who called the meeting, who could see it, who attended, who recorded the summary,
+who approved the decisions, and what becomes part of the permanent record.
+
+What does not fit:
+GSN should not turn every chat message into an official minute, silently track
+members, or treat attendance as proof that someone contributed meaningfully.
 
 ### Story 2: Verification Pain
 
 This is the pain of confirming who someone is, whether they are an active member,
-what ICA can honestly say about them, and how that evidence can help when the
-person moves, applies for support, seeks a reference, trades with another
-community, or needs trusted introduction.
+what the association can honestly say about them, and how that evidence can help
+when the person moves, applies for support, seeks a reference, trades with
+another community, or needs trusted introduction.
 
-Examples:
+What this story should contain:
 
-- a member moves from Aberdeen to another city and needs ICA standing recognised;
-- a new person wants to join and ICA needs a clean membership path;
-- a member seeks welfare, guarantor support, business trust, or a reference;
-- an outside person asks whether ICA can confirm a claim.
+- member identity and active membership status;
+- committee or officer confirmation;
+- membership history where appropriate;
+- contribution, service, attendance, or responsibility evidence;
+- reference purpose: welfare, movement, committee check, business trust,
+  professional introduction, or support application;
+- privacy boundary showing what is included and what is withheld;
+- correction path where a member disputes a record.
 
-GSN can help by separating evidence from gossip:
+Workflow GSN should support:
 
 ```text
-Member record -> community confirmation -> Trust Event -> Trust Passport or
-TrustSlip -> privacy-aware proof
+Member request -> association check -> confirmed Trust Event -> Trust Passport
+or TrustSlip -> privacy-aware verification -> monthly verification count
 ```
 
-This is Verification And Trust Transport. ICA does not need to expose private
-matters to help a member carry useful evidence.
+What can be quantified for a report or PDF:
+
+- verification requests received;
+- verifications approved, declined, corrected, or pending;
+- member movement/reference cases;
+- welfare/support confirmations;
+- business or professional trust confirmations;
+- committee confirmations completed;
+- disputes, corrections, or unresolved verification issues.
+
+How this differs from WhatsApp or ordinary references:
+
+```text
+WhatsApp can ask, "Does anyone know this person?"
+GSN can show what the association itself has confirmed, with privacy boundaries.
+```
+
+Governance fit:
+This belongs inside Governance because verification is an authority act. The
+association must decide who can confirm membership, who can issue a reference,
+what evidence is enough, and what must never be exposed.
+
+What does not fit:
+GSN should not create reputation scores, publish private welfare history, or let
+informal gossip become official proof.
 
 ### Story 3: Economic Opportunity Pain
 
@@ -156,62 +218,112 @@ businesses are not visible enough, skills are underused, demands are scattered,
 opportunities disappear, and trusted referrals depend on who happens to see a
 message first.
 
-Examples:
+What this story should contain:
 
-- a member needs a plumber, tutor, caterer, accountant, care worker, driver, or
-  designer and would prefer a trusted ICA route;
-- a member business needs visibility inside a trusted community;
-- a job, contract, grant, or referral appears but disappears quickly;
-- members want ICA to feel like a source of opportunity, not only dues and
-  meetings.
+- member needs and demand requests;
+- member businesses, skills, services, and professional profiles;
+- referral, job, grant, contract, or supplier opportunities;
+- Spotlight visibility for selected members, services, or opportunities;
+- response records showing who followed up;
+- simple status: open, matched, fulfilled, expired, or declined;
+- rules for what the association promotes and what it refuses.
 
-GSN can help by making demand and opportunity structured:
+Workflow GSN should support:
 
 ```text
-Member need -> Demand Box -> trusted response -> Spotlight or marketplace
-visibility -> useful record
+Member need -> Demand Box -> trusted response -> Spotlight or marketplace ->
+follow-up status -> useful opportunity record -> monthly opportunity count
 ```
 
-This is the Opportunity Engine. It asks whether ICA can turn community trust into
-practical support, trade, referrals, and economic resilience.
+What can be quantified for a report or PDF:
+
+- needs or requests posted;
+- member businesses/services listed;
+- opportunities shared;
+- referrals made;
+- matches or fulfilled requests;
+- grants, contracts, jobs, or supplier leads circulated;
+- internal trade or support signals recorded;
+- expired or unresolved opportunities.
+
+How this differs from WhatsApp or ordinary marketplaces:
+
+```text
+WhatsApp can spread an opportunity quickly.
+GSN can keep demand, response, trust, and outcome visible inside the association.
+```
+
+Governance fit:
+This belongs inside Governance where the opportunity affects association trust:
+who can post, who can promote, what counts as official, what requires review, and
+how complaints or corrections are handled.
+
+What does not fit:
+GSN should not guarantee business quality, repayment, employment, grants, or
+commercial success. It should record opportunity flow and confirmed outcomes, not
+pretend to prove results that were not recorded.
 
 ### Story 4: Cultural Continuity And Community Memory
 
-This is the pain of preserving ICA's identity, service, decisions, contribution,
-events, leadership memory, and the link between elders, current members, youth,
-and future leaders. A diaspora association can do valuable things for years, but
-if the memory lives only in phones, private photo galleries, old chat threads, or
-one officer's head, the next committee may have to start again.
+This is the pain of preserving the association's identity, service, decisions,
+contribution, events, leadership memory, and the link between elders, current
+members, youth, and future leaders. A diaspora association can do valuable things
+for years, but if the memory lives only in phones, private photo galleries, old
+chat threads, or one officer's head, the next committee may have to start again.
 
-Examples:
+What this story should contain:
 
-- a cultural event happens, but later it is difficult to show what ICA organised,
-  who served, what was decided, and what value was created;
-- a younger member wants to understand ICA's history but only hears fragments;
-- a grant, sponsor, council, or caseworker asks what ICA has actually done over
-  time;
-- an executive handover loses the story behind past decisions, support work, and
-  community contribution.
+- cultural events, services, meetings, ceremonies, programmes, and milestones;
+- volunteer service and member contribution;
+- notices, summaries, decisions, and outcomes;
+- leadership handover notes;
+- selected evidence attachments or references where the product supports them;
+- privacy and consent rules for member stories, children, welfare cases, photos,
+  videos, and sensitive material;
+- a future archive plan for larger picture/video storage.
 
-GSN can help by turning selected activity into structured community memory:
+Workflow GSN should support:
 
 ```text
-Notice -> meeting/event/support/opportunity record -> attendance or response ->
-summary -> decision or outcome -> privacy-safe community memory
+Event or activity -> record what happened -> attendance or response -> summary ->
+decision/outcome -> selected evidence -> community memory -> monthly story pack
 ```
 
-This is not yet a large-scale cultural photo and video archive. The honest claim
-is narrower and stronger: GSN can preserve structured memory now, and can keep
-selected media or evidence attachments only where the current product surfaces
-support them. A fuller picture/video archive can be planned later with storage,
-permission, consent, and moderation rules.
+What can be quantified for a report or PDF:
+
+- cultural events or programmes recorded;
+- volunteers or service acts recorded;
+- attendance or participation totals;
+- community memory records added;
+- leadership handover notes created;
+- selected evidence references attached;
+- grant/caseworker/sponsor-safe impact notes;
+- records withheld because of privacy or consent limits.
+
+How this differs from WhatsApp, photo folders, or old minutes:
+
+```text
+WhatsApp can preserve fragments.
+Photo folders can preserve media.
+GSN can preserve governed community memory with context, consent, and reporting value.
+```
+
+Governance fit:
+This belongs inside Governance because community memory affects identity,
+continuity, public claims, child/member privacy, cultural ownership, and what a
+future committee inherits.
+
+What does not fit:
+GSN is not yet a large-scale cultural photo/video archive. It can preserve
+structured memory now and selected attachments where supported, but a full media
+archive needs storage, consent, retention, moderation, and access rules.
 
 The decision is not `Which GSN feature is most impressive?`
 
 The decision is:
 
 ```text
-Which ICA pain is strong enough that members and executives would test it first?
+Which association pain is strong enough that members and executives would test it first?
 ```
 
 ---
@@ -251,47 +363,104 @@ Yes, GSN can support this direction, but the truth must be stated carefully.
 The strongest version is:
 
 ```text
-If ICA records its important activity inside GSN, GSN can help produce a monthly
-aggregate summary of community value with much less manual chasing.
+If an association records important activity inside GSN, GSN can help produce a
+weekly, monthly, or custom-period aggregate summary of community value with much
+less manual chasing.
 ```
 
-That is similar to the NGO-style reporting direction already used in the wider
-Community Domain work: collect structured activity during the month, then turn it
-into a sponsor-safe or grant-supporting summary. For ICA, the right pilot should
-define a specific `ICA Monthly Community Value Summary` template rather than
-promising that every grant report is already one-click finished.
+ICA is the example. The same reporting pattern can fit a church, school, PTA,
+professional body, cultural association, charity, NGO, alumni group, welfare
+committee, project committee, or local branch. The language and headings change,
+but the principle is the same: do not manufacture impact; summarise recorded
+activity.
 
-A monthly ICA summary could include:
+Where this belongs in GSN:
 
-- official notices posted, acknowledged, and completed;
-- meetings held, Yes/Maybe/No responses, attendance check-ins, summaries, and
-  decisions recorded;
-- welfare, support, or caseworker-facing activity counted without exposing
-  sensitive private stories;
-- member verification, references, movement, and committee confirmations;
-- Demand Box needs, useful responses, referrals, jobs, grants, contracts, or
-  trusted commerce opportunities;
-- member businesses, services, Spotlight activity, and internal trade visibility;
-- cultural events, volunteer service, community memory records, and leadership
-  handover notes;
-- privacy-safe impact notes that explain what changed, what was learned, and
-  what support ICA may need next.
+- Community Domain;
+- Governance;
+- Reports;
+- Director/Admin summary for internal review;
+- Sponsor-safe or grant-safe summary for external reading;
+- future `Prepare Community Value PDF` action for weekly, monthly, last-30-days,
+  or custom-date reports.
 
-What GSN must not do is equally important:
+What the PDF/report should contain:
 
-- it must not expose private welfare cases to ordinary members or funders;
-- it must not turn raw photos, videos, phone numbers, or private chats into a
-  public archive without consent;
-- it must not invent impact that ICA did not record;
-- it must not present attendance, presence, or acknowledgement as proof of
-  character, contribution, or need.
+- report title, association name, reporting period, prepared date, and audience;
+- record source boundary: only records captured in GSN are counted;
+- administrative activity: notices, meetings, responses, attendance, summaries,
+  decisions, actions, and handover notes;
+- verification activity: member confirmations, references, movement cases,
+  committee checks, corrections, and unresolved requests;
+- economic activity: Demand Box needs, referrals, member businesses, Spotlight,
+  jobs, grants, contracts, services, and fulfilled or unresolved opportunities;
+- cultural/community memory: events, volunteer service, programmes, contribution,
+  identity records, leadership memory, and selected evidence references;
+- support or caseworker-facing activity counted safely without exposing private
+  beneficiary details;
+- challenge/correction section showing disputed, corrected, or under-review
+  records;
+- next-month needs: resources, funding gaps, volunteer needs, partnership asks,
+  or unresolved governance work;
+- privacy and truth boundary at the end.
+
+What can be quantified:
+
+- meetings held;
+- attendance check-ins and method counts;
+- official notices posted and acknowledged;
+- decisions recorded;
+- action items completed or carried forward;
+- verification requests approved, pending, declined, or corrected;
+- member support/outcome records by safe category;
+- opportunities posted, matched, fulfilled, expired, or unresolved;
+- cultural events, service acts, and memory records;
+- sponsor-safe evidence strength: admin-recorded, member-confirmed,
+  beneficiary-confirmed, challenged, corrected, or unresolved.
+
+What fits inside Governance:
+
+- deciding who can prepare the report;
+- deciding who can see the admin version;
+- deciding what goes into the sponsor-safe version;
+- deciding which records are public-safe, sponsor-safe, director-safe, or
+  admin-only;
+- keeping correction and challenge paths;
+- preserving evidence without turning private stories into public material;
+- making the report reusable for grants, sponsors, councils, caseworkers, AGMs,
+  audits, and leadership handover.
+
+What does not fit or should remain future:
+
+- pretending GSN can summarise activities that were never recorded;
+- exposing private welfare cases, raw phone numbers, private notes, or member
+  stories without consent;
+- making automatic judgement about who deserves help, trust, credit, or status;
+- claiming large-scale picture/video archive support before the storage,
+  consent, moderation, and retention rules are built;
+- claiming a polished one-click PDF exists before the PDF endpoint and UI button
+  are implemented.
+
+The current product already has Community Domain period summaries and
+sponsor-safe copy-ready export text. The missing practical improvement is a
+clear Governance button:
+
+```text
+Prepare Community Value PDF
+```
+
+That button should let an authorised admin choose `This week`, `This month`,
+`Last 30 days`, or custom dates, then generate either an internal director/admin
+PDF or an external sponsor-safe PDF.
 
 Used properly, the monthly summary can help ICA support grant applications,
 council conversations, sponsor updates, caseworker reading, AGM reporting, and
-executive handover. It gives ICA a calmer way to say: `Here is what we did, who
-was reached in aggregate, what evidence exists, and what we need next.`
+executive handover. It gives the association a calmer way to say: `Here is what
+we did, who was reached in aggregate, what evidence exists, what remains private,
+and what we need next.`
 
 ---
+
 ## 4. Why This Matters For Diaspora Communities
 
 Many African and migrant families in the UK work hard, but work alone does not always create resilience.

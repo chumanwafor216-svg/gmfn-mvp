@@ -109,6 +109,11 @@ Use the participant paper as the take-home proof that GSN is not merely being
 compared with WhatsApp, but with the wider stack of chat, calendars, documents,
 spreadsheets, forms, project tools, finance notes, CRMs, and manual memory.
 
+The take-home paper now explains each of the four stories as a practical report
+block: what it contains, the workflow, what can be counted, how it differs from
+WhatsApp/manual systems, what fits inside Governance, and what must not be
+overclaimed.
+
 ---
 
 ## 5. What Makes It An Excellent Session
