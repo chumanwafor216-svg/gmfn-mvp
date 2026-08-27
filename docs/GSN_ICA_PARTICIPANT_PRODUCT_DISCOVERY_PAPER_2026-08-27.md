@@ -358,14 +358,14 @@ If the strongest pain is cultural continuity, use it for community memory.
 
 ## 3C. End-Of-Month Summary For Grants, Caseworkers, And Sponsors
 
-Yes, GSN can support this direction, but the truth must be stated carefully.
+Yes, GSN can now support this direction as a real Governance reporting action, but the truth must still be stated carefully.
 
 The strongest version is:
 
 ```text
-If an association records important activity inside GSN, GSN can help produce a
-weekly, monthly, or custom-period aggregate summary of community value with much
-less manual chasing.
+If an association records important activity inside GSN during the week or month,
+GSN can help produce an aggregate Community Value PDF with much less manual
+chasing.
 ```
 
 ICA is the example. The same reporting pattern can fit a church, school, PTA,
@@ -374,37 +374,34 @@ committee, project committee, or local branch. The language and headings change,
 but the principle is the same: do not manufacture impact; summarise recorded
 activity.
 
-Where this belongs in GSN:
+Where this now belongs in GSN:
 
 - Community Domain;
 - Governance;
 - Reports;
 - Director/Admin summary for internal review;
 - Sponsor-safe or grant-safe summary for external reading;
-- future `Prepare Community Value PDF` action for weekly, monthly, last-30-days,
-  or custom-date reports.
+- `Prepare Community Value PDF` action for `Last 7 days`, `This month`, and
+  `Last 30 days` reports;
+- API/report support for explicit period boundaries where a custom period is
+  needed later.
 
-What the PDF/report should contain:
+What the current deployed PDF contains:
 
-- report title, association name, reporting period, prepared date, and audience;
+- report title, Community Domain name, reporting period, prepared date, and
+  audience;
 - record source boundary: only records captured in GSN are counted;
-- administrative activity: notices, meetings, responses, attendance, summaries,
-  decisions, actions, and handover notes;
-- verification activity: member confirmations, references, movement cases,
-  committee checks, corrections, and unresolved requests;
-- economic activity: Demand Box needs, referrals, member businesses, Spotlight,
-  jobs, grants, contracts, services, and fulfilled or unresolved opportunities;
-- cultural/community memory: events, volunteer service, programmes, contribution,
-  identity records, leadership memory, and selected evidence references;
-- support or caseworker-facing activity counted safely without exposing private
-  beneficiary details;
-- challenge/correction section showing disputed, corrected, or under-review
-  records;
-- next-month needs: resources, funding gaps, volunteer needs, partnership asks,
-  or unresolved governance work;
-- privacy and truth boundary at the end.
+- privacy boundary: sponsor-safe PDFs omit private beneficiary and member-level
+  detail;
+- director/admin aggregate counts from the period summary;
+- sponsor-safe aggregate counts from the sponsor summary;
+- recorded activity, beneficiary outcome, confirmation, delivery, evidence, and
+  challenge/correction signals where those records exist;
+- the four association value lines: administration, verification, economic
+  opportunity, and cultural/community memory;
+- a clear section stating what the PDF does not count.
 
-What can be quantified:
+What can be quantified when those records exist in GSN:
 
 - meetings held;
 - attendance check-ins and method counts;
@@ -430,7 +427,7 @@ What fits inside Governance:
 - making the report reusable for grants, sponsors, councils, caseworkers, AGMs,
   audits, and leadership handover.
 
-What does not fit or should remain future:
+What remains roadmap or must not be overclaimed:
 
 - pretending GSN can summarise activities that were never recorded;
 - exposing private welfare cases, raw phone numbers, private notes, or member
@@ -438,26 +435,26 @@ What does not fit or should remain future:
 - making automatic judgement about who deserves help, trust, credit, or status;
 - claiming large-scale picture/video archive support before the storage,
   consent, moderation, and retention rules are built;
-- claiming a polished one-click PDF exists before the PDF endpoint and UI button
-  are implemented.
+- claiming automatic meeting transcription or automatic minutes ratification;
+- claiming the UI currently exposes custom date pickers; the deployed UI exposes
+  `Last 7 days`, `This month`, and `Last 30 days`.
 
-The current product already has Community Domain period summaries and
-sponsor-safe copy-ready export text. The missing practical improvement is a
-clear Governance button:
+The current product now has Community Domain period summaries, sponsor-safe
+copy-ready export text, and a clear Governance button:
 
 ```text
 Prepare Community Value PDF
 ```
 
-That button should let an authorised admin choose `This week`, `This month`,
-`Last 30 days`, or custom dates, then generate either an internal director/admin
-PDF or an external sponsor-safe PDF.
+That button lets an authorised admin choose `Last 7 days`, `This month`, or
+`Last 30 days`, then generate either an internal director/admin PDF or an
+external sponsor-safe PDF.
 
 Used properly, the monthly summary can help ICA support grant applications,
 council conversations, sponsor updates, caseworker reading, AGM reporting, and
 executive handover. It gives the association a calmer way to say: `Here is what
-we did, who was reached in aggregate, what evidence exists, what remains private,
-and what we need next.`
+we recorded, who was reached in aggregate, what evidence exists, what remains
+private, and what we need next.`
 
 ---
 
@@ -672,7 +669,8 @@ Can be shown or is already represented in the current product direction:
 - notice acknowledgements;
 - meeting reminders tied to a meeting record;
 - Yes/Maybe/No meeting interest responses;
-- meeting summary, decisions, attendance count, selected attendee records, active QR attendance links, and browser-limited Bluetooth/proximity check-ins;
+- meeting summary, decisions, attendance count, selected attendee records,
+  active QR attendance links, and browser-limited Bluetooth/proximity check-ins;
 - WhatsApp share links that let WhatsApp remain the conversation channel while
   GSN keeps the evidence;
 - contribution-purpose capture and payment-proof/review language;
@@ -685,8 +683,9 @@ Can be shown or is already represented in the current product direction:
 - admin/community evidence views and Community Memory direction;
 - structured community memory records and selected media/evidence attachment
   paths where existing product surfaces support them;
-- the reporting foundation for sponsor-safe, grant-supporting, or caseworker
-  summaries from captured community records.
+- Community Domain period summaries and sponsor-safe copy-ready export text;
+- the deployed Governance `Prepare Community Value PDF` action for sponsor-safe
+  and director/admin aggregate reports from captured community records.
 
 Should be described as roadmap, configurable future capture, or not fully live
 until separately implemented:
@@ -699,18 +698,20 @@ until separately implemented:
 - GSN sending WhatsApp/SMS/email directly as a provider-backed channel;
 - a full large-scale picture/video cultural archive with storage quotas,
   consent, moderation, and long-term retention rules;
-- a polished ICA-specific one-click monthly grant pack until the template and
-  report surface are scoped and wired to ICA activity records;
+- an ICA-specific grant narrative template beyond the generic Community Value
+  PDF;
+- custom-date UI controls beyond the deployed `Last 7 days`, `This month`, and
+  `Last 30 days` choices;
 - replacing ICA executives' judgement with automatic decisions;
 - guaranteeing trust, creditworthiness, repayment, or member behaviour.
 
 Unabated truth:
-
 ```text
 GSN is already strong enough to demonstrate the association operating-system
-story. But the media archive, automatic reporting, and some of the most exciting
-attendance and automation ideas must be sold as staged capability, not as if they
-are already complete.
+story, including a real Community Value PDF generated from recorded facts. But
+the media archive, automatic transcription, custom-date UI, and some of the most
+exciting attendance and automation ideas must still be sold as staged capability,
+not as if they are already complete.
 ```
 
 ---
@@ -833,15 +834,15 @@ Executives can reduce manual chasing, keep clearer records, plan better, route s
 
 ### Can GSN create monthly summaries for grants, caseworkers, or sponsors?
 
-Yes, if the underlying activity is recorded in GSN. The system can support a
-monthly aggregate summary that draws from notices, meetings, attendance evidence,
-decisions, support activity, verification, Demand Box, Spotlight, marketplace,
-and Community Memory records.
+Yes, if the underlying activity is recorded in GSN. Governance now includes a
+`Prepare Community Value PDF` action that can generate sponsor-safe or
+director/admin aggregate reports for `Last 7 days`, `This month`, or `Last 30
+days`.
 
-The honest limit is that ICA still needs a scoped monthly summary template and
-reporting surface for grant-ready output. GSN should not claim to generate
-credible grant evidence from activity that was never recorded, or expose private
-welfare details without consent and role control.
+The honest limit is that the PDF cannot create credible grant evidence from
+activity that was never recorded. It also does not expose private welfare details
+without consent and role control, does not send the report automatically, and is
+not yet an ICA-specific grant narrative template with custom date pickers.
 
 ### Can GSN take attendance with Bluetooth or QR?
 

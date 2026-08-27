@@ -158797,3 +158797,9 @@ Deployment:
   - `npm --prefix frontend run smoke:community-home-domain-list`
 
 Devil's-advocate boundary: this completes the practical PDF/report button, but it does not create large picture/video archival, automatic meeting transcription, bank reconciliation, provider-sent sponsor emails, or proof for activity not recorded in GSN.
+
+## 2026-08-27 - ICA Paper Updated For Live Community Value PDF
+
+- Updated `docs/GSN_ICA_PARTICIPANT_PRODUCT_DISCOVERY_PAPER_2026-08-27.md` so section 3C, section 10, and the FAQ now say the Governance `Prepare Community Value PDF` action is deployed.
+- The paper now states the current UI supports `Last 7 days`, `This month`, and `Last 30 days` sponsor-safe or director/admin PDFs.
+- Kept the honest boundary: no invented/unrecorded activity, no large media archive claim, no automatic meeting transcription, no provider-sent external messages, and no custom-date UI claim yet.
