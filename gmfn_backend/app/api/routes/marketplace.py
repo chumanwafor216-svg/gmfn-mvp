@@ -4168,6 +4168,8 @@ def update_marketplace_product(
         user_id=int(current_user.id),
         clan_id=int(product.clan_id),
     )
+    if int(resolved_clan_id) != int(product.clan_id):
+        raise HTTPException(status_code=409, detail="Selected community does not own this product")
     require_domain_shop_diary_enabled(db, clan_id=resolved_clan_id)
 
     provided = _provided_model_fields(payload)
@@ -4193,6 +4195,8 @@ def update_marketplace_product(
             raise HTTPException(status_code=404, detail="Target shop not found")
         if not _shop_owner_can_manage(current_user=current_user, shop=shop):
             raise HTTPException(status_code=403, detail="You cannot move this product to that shop")
+        if int(getattr(shop, "clan_id", 0) or 0) != int(product.clan_id):
+            raise HTTPException(status_code=409, detail="Target shop does not belong to this product's community")
         product.shop_id = int(payload.shop_id)
         target_shop_id = int(payload.shop_id)
         changed = True
@@ -4519,6 +4523,7 @@ def delete_marketplace_product(
         user_id=int(current_user.id),
         clan_id=int(product.clan_id),
     )
+
     require_domain_shop_diary_enabled(db, clan_id=resolved_clan_id)
 
     removed_reposts = _remove_product_reposts(db, product_id=int(product.id))

@@ -1,3 +1,12 @@
+## 2026-08-31 - Local Marketplace product update community boundary
+
+- Status: Local backend implementation verified; not pushed or deployed per owner instruction to avoid pipeline wastage.
+- Backend route affected: `PUT/PATCH /marketplace/products/{product_id}`.
+- Product updates now reject a selected `clan_id` that does not match the product's owning community, preventing update Trust Events and feature checks from being recorded under the wrong community context.
+- Product shop moves now reject target shops from another community, including platform-admin-managed moves, so a product cannot be silently attached to a cross-community shop.
+- Backend coverage added for wrong selected-community updates and cross-community target-shop moves; both prove the stored product remains unchanged.
+- Verification: `python -m py_compile gmfn_backend\app\api\routes\marketplace.py gmfn_backend\tests\test_marketplace_public_shop.py`; `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py -k "product_creation_rejects_shop_from_different_community or product_update_rejects_wrong_selected_community or product_update_rejects_target_shop_from_different_community or review_product_approval_rejects_shop_from_different_community" -q`; `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py -k "governance_listing_review_policy or marketplace_shop_creation_submits or marketplace_product_creation_submits or marketplace_listing_review_approval or marketplace_listing_review_rejection or marketplace_shop_creation_reuses_matching_pending_submission or marketplace_product_creation_reuses_matching_pending_submission or product_creation_rejects_shop_from_different_community or product_update_rejects_wrong_selected_community or product_update_rejects_target_shop_from_different_community or review_product_approval_rejects_shop_from_different_community or marketplace_product_creation_allows_member_when_listing_admin_approval_not_required" -q`; `git diff --check`.
+- Devil truth: this guards product update community ownership going forward. It does not scan or repair historical marketplace rows, and it does not prove every non-product Marketplace endpoint has equivalent clan/shop ownership checks.
 ## 2026-08-31 - Local Marketplace product shop/community boundary
 
 - Status: Local backend implementation verified; not pushed or deployed per owner instruction to avoid pipeline wastage.
