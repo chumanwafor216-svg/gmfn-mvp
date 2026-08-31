@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+import json
 from math import floor
 import os
 from pathlib import Path
@@ -24,6 +25,7 @@ from app.db.models import (
     MarketplaceReview,
     MarketplaceShop,
     ShopFollower,
+    TrustEvent,
     User,
 )
 from app.db.notification_models import Notification
@@ -50,6 +52,9 @@ from app.services.vault_domain_service import (
 )
 
 router = APIRouter(prefix="/marketplace", tags=["marketplace"])
+
+COMMUNITY_GOVERNANCE_PROFILE_SELECTED_EVENT = "community.governance_profile_selected"
+
 
 FREE_COMMUNITY_PRODUCT_SLOTS = 12
 
@@ -102,6 +107,115 @@ def _safe_str(value: Any, default: str = "") -> str:
     s = str(value).strip()
     return s if s else default
 
+
+def _json_load(value: Optional[str]) -> dict[str, Any]:
+    if not value:
+        return {}
+    try:
+        data = json.loads(value)
+    except Exception:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _community_governance_profile_for_clan(
+    db: Session,
+    *,
+    clan_id: int,
+) -> Optional[dict[str, Any]]:
+    event = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.clan_id == int(clan_id))
+        .filter(TrustEvent.event_type == COMMUNITY_GOVERNANCE_PROFILE_SELECTED_EVENT)
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+        .first()
+    )
+    if event is None:
+        return None
+
+    meta = _json_load(getattr(event, "meta_json", None))
+    profile = {
+        key: meta[key]
+        for key in (
+            "community_type",
+            "community_type_label",
+            "governance_weight",
+            "governance_weight_label",
+            "preset_key",
+            "preset_label",
+            "verification_mode",
+            "policies",
+            "requirements",
+            "truth_boundary",
+            "requested_preset_key",
+            "preset_correction",
+        )
+        if key in meta
+    }
+    if not profile:
+        return None
+
+    created_at = getattr(event, "created_at", None)
+    profile["source_event_id"] = int(event.id)
+    profile["recorded_at"] = created_at.isoformat() if created_at else None
+    return profile
+
+
+def _marketplace_governance_policy_for_clan(
+    db: Session,
+    *,
+    clan_id: int,
+) -> dict[str, Any]:
+    profile = _community_governance_profile_for_clan(db, clan_id=int(clan_id))
+    policies = (
+        profile.get("policies")
+        if isinstance(profile, dict) and isinstance(profile.get("policies"), dict)
+        else {}
+    )
+    profile_key = (
+        _safe_str(profile.get("preset_key"))
+        if isinstance(profile, dict)
+        else ""
+    )
+    enabled = bool(policies.get("enable_member_service_listings", True))
+    approval_required = bool(policies.get("require_admin_approval_for_listings", False))
+
+    return {
+        "has_governance_profile": profile is not None,
+        "governance_profile_key": profile_key or None,
+        "member_service_listings_enabled": enabled,
+        "admin_approval_required_for_listings": approval_required,
+        "truth_boundary": (
+            "This reflects the recorded community setup. It can block disabled "
+            "member listings and disclose review expectations, but it is not a "
+            "full listing approval queue yet."
+        ),
+    }
+
+
+def _require_member_service_listings_enabled(
+    db: Session,
+    *,
+    clan_id: int,
+) -> dict[str, Any]:
+    policy = _marketplace_governance_policy_for_clan(db, clan_id=int(clan_id))
+    if policy["member_service_listings_enabled"]:
+        return policy
+
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "community_member_service_listings_disabled",
+            "message": (
+                "This community setup has member service listings turned off. "
+                "Ask an admin to enable member service listings before creating "
+                "a shop or listing."
+            ),
+            "community_id": int(clan_id),
+            "governance_profile_key": policy.get("governance_profile_key"),
+            "marketplace_governance_policy": policy,
+        },
+    )
 
 def _public_identity_name(*values: Any, fallback: str) -> str:
     for value in values:
@@ -1822,11 +1936,16 @@ def list_marketplace_shops(
     visible = [
         row for row in rows if _shop_is_visible_in_clan(db, shop=row, clan_id=resolved_clan_id)
     ][: int(limit)]
+    marketplace_governance_policy = _marketplace_governance_policy_for_clan(
+        db,
+        clan_id=resolved_clan_id,
+    )
 
     return {
         "items": [_shop_out(db, x) for x in visible],
         "total": len(visible),
         "clan_id": resolved_clan_id,
+        "marketplace_governance_policy": marketplace_governance_policy,
     }
 
 
@@ -2168,6 +2287,10 @@ def create_marketplace_shop(
         clan_id=resolved_clan_id,
     )
     require_domain_marketplace_shops_enabled(db, clan_id=resolved_clan_id)
+    marketplace_governance_policy = _require_member_service_listings_enabled(
+        db,
+        clan_id=resolved_clan_id,
+    )
 
     existing_shop = _get_public_shop_identity_by_owner(
         db,
@@ -2231,6 +2354,7 @@ def create_marketplace_shop(
                     "shop_id": int(existing_shop.id),
                     "shop_name": getattr(existing_shop, "name", None),
                     "reason": "marketplace_shop_updated_via_upsert",
+                    "marketplace_governance_policy": marketplace_governance_policy,
                 },
                 commit=False,
                 refresh=False,
@@ -2241,6 +2365,7 @@ def create_marketplace_shop(
             "ok": True,
             "item": _shop_out(db, existing_shop),
             "detail": "Existing canonical shop returned.",
+            "marketplace_governance_policy": marketplace_governance_policy,
         }
 
     dormant_shop = (
@@ -2287,6 +2412,7 @@ def create_marketplace_shop(
                 "shop_id": int(dormant_shop.id),
                 "shop_name": getattr(dormant_shop, "name", None),
                 "reason": "marketplace_shop_reactivated_via_public_link_refresh",
+                "marketplace_governance_policy": marketplace_governance_policy,
             },
             commit=False,
             refresh=False,
@@ -2297,6 +2423,7 @@ def create_marketplace_shop(
             "ok": True,
             "item": _shop_out(db, dormant_shop),
             "detail": "Existing canonical shop reactivated.",
+            "marketplace_governance_policy": marketplace_governance_policy,
         }
 
     shop = MarketplaceShop(
@@ -2329,13 +2456,18 @@ def create_marketplace_shop(
             "shop_name": getattr(shop, "name", None),
             "canonical_shop": True,
             "reason": "marketplace_shop_created",
+            "marketplace_governance_policy": marketplace_governance_policy,
         },
         commit=False,
         refresh=False,
     )
     db.commit()
 
-    return {"ok": True, "item": _shop_out(db, shop)}
+    return {
+        "ok": True,
+        "item": _shop_out(db, shop),
+        "marketplace_governance_policy": marketplace_governance_policy,
+    }
 
 
 @router.put("/shops/{shop_id}")
@@ -2669,6 +2801,10 @@ def list_marketplace_products(
         explicit_clan_id=clan_id,
         header_clan_id=x_clan_id,
     )
+    marketplace_governance_policy = _marketplace_governance_policy_for_clan(
+        db,
+        clan_id=resolved_clan_id,
+    )
 
     if include_private_manage and shop_id and int(shop_id) > 0:
         shop = (
@@ -2723,6 +2859,7 @@ def list_marketplace_products(
             "clan_id": resolved_clan_id,
             "shop_id": int(shop_id),
             "include_private_manage": True,
+            "marketplace_governance_policy": marketplace_governance_policy,
         }
 
     q = db.query(MarketplaceProduct).filter(
@@ -2771,6 +2908,7 @@ def list_marketplace_products(
         ),
         "total": len(visible_items),
         "clan_id": resolved_clan_id,
+        "marketplace_governance_policy": marketplace_governance_policy,
     }
 
 
@@ -2808,6 +2946,10 @@ def create_marketplace_product(
         clan_id=resolved_clan_id,
     )
     require_domain_shop_diary_enabled(db, clan_id=resolved_clan_id)
+    marketplace_governance_policy = _require_member_service_listings_enabled(
+        db,
+        clan_id=resolved_clan_id,
+    )
 
     if not _safe_str(payload.name):
         raise HTTPException(status_code=400, detail="Product name is required")
@@ -2955,6 +3097,7 @@ def create_marketplace_product(
             "replaced_public_block_products": replaced_public_block_products,
             "replaced_public_block_reposts": replaced_public_block_reposts,
             "reason": "marketplace_product_created",
+            "marketplace_governance_policy": marketplace_governance_policy,
         },
         commit=False,
         refresh=False,
@@ -2982,6 +3125,7 @@ def create_marketplace_product(
         "item": _product_out(db, product),
         "replaced_public_block_products": replaced_public_block_products,
         "replaced_public_block_reposts": replaced_public_block_reposts,
+        "marketplace_governance_policy": marketplace_governance_policy,
     }
 
 

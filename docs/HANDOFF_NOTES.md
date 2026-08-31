@@ -1,3 +1,13 @@
+## 2026-08-31 - Local marketplace governance listing policy gate
+- Status: Local implementation verified; ready for the active pilot commit/push/deploy protocol.
+- Backend routes affected: `GET /marketplace/shops`, `GET /marketplace/products`, `POST /marketplace/shops`, and `POST /marketplace/products`.
+- Marketplace shop/product writes now read the latest recorded community governance profile and block new shop/product creation when `policies.enable_member_service_listings=false`.
+- Marketplace list/create responses now include `marketplace_governance_policy`, including whether admin approval is required for listings.
+- Trust Events for shop creation/upsert/reactivation and product creation record the marketplace policy snapshot in metadata.
+- Backend coverage added in `gmfn_backend/tests/test_marketplace_public_shop.py` for disabled shop creation, disabled product creation, and admin-review policy metadata disclosure.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\marketplace.py gmfn_backend\tests\test_marketplace_public_shop.py`; `git diff --check`; `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py -k "governance_listings_policy or governance_listing_review_policy" -q`; `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py -q -k "not public_shop_face and not shop_gallery_products_follow_owner_across_membership_communities"`.
+- Verification limitation: the full marketplace public-shop test file still cannot complete in this Windows sandbox because five tmp_path/media tests hit local temp-directory permission errors. The excluded tests are unrelated to the governance policy gate.
+- Devil's advocate truth: this still does not create a full listing approval queue, reviewer assignment workflow, expiry/review-date enforcement, or retroactive shutdown of existing listings. Existing update/deactivate paths are not blocked by this slice so owners/admins can still clean up existing listings.
 ## 2026-08-31 - Local join request governance acknowledgement enforcement
 - Status: Local implementation verified; ready for the active pilot commit/push/deploy protocol.
 - Backend route affected: `POST /clans/join-requests` now requires `rules_accepted=true` when the invited community's recorded governance profile has `requirements.rules_acceptance_required=true`; missing acknowledgement returns structured `422 community_rules_acceptance_required` with the community identity and whitelisted governance profile.

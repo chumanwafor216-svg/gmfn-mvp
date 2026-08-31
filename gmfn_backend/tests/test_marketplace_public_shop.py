@@ -132,6 +132,57 @@ def _scalar(sql: str) -> int:
     with engine.begin() as conn:
         return int(conn.execute(text(sql)).scalar() or 0)
 
+def _seed_marketplace_governance_profile_event(
+    *,
+    enable_member_service_listings: bool = True,
+    require_admin_approval_for_listings: bool = True,
+) -> None:
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO trust_events (
+                    event_type,
+                    clan_id,
+                    actor_user_id,
+                    subject_user_id,
+                    meta_json,
+                    created_at
+                )
+                VALUES (
+                    'community.governance_profile_selected',
+                    1,
+                    1,
+                    1,
+                    :meta_json,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "meta_json": json.dumps(
+                    {
+                        "community_type": "migrant_community",
+                        "community_type_label": "Migrant Community",
+                        "governance_weight": "light",
+                        "governance_weight_label": "Light",
+                        "preset_key": "light_migrant_support_network",
+                        "preset_label": "Light Migrant Support Network",
+                        "verification_mode": "light_member_recognition",
+                        "policies": {
+                            "enable_member_service_listings": enable_member_service_listings,
+                            "require_admin_approval_for_listings": require_admin_approval_for_listings,
+                        },
+                        "requirements": {
+                            "member_phone_required": True,
+                            "rules_acceptance_required": True,
+                        },
+                        "truth_boundary": "Recorded as setup evidence only.",
+                    }
+                )
+            },
+        )
+
 
 def test_spotlight_message_parser_keeps_two_part_price_detail():
     parts = marketplace_routes._spotlight_message_parts("Rice bag - N25k")
@@ -172,6 +223,142 @@ def test_marketplace_shop_creation_respects_disabled_community_domain_shop_polic
         == 0
     )
 
+
+def test_marketplace_shop_creation_respects_disabled_light_governance_listings_policy(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    _ensure_marketplace_tables()
+    _seed_marketplace_governance_profile_event(enable_member_service_listings=False)
+
+    response = client.post(
+        "/marketplace/shops",
+        json={
+            "clan_id": 1,
+            "name": "Pillar Community Shop",
+            "description": "A governed light community shop.",
+        },
+    )
+
+    assert response.status_code == 403, response.text
+    detail = response.json()["detail"]
+    assert detail["code"] == "community_member_service_listings_disabled"
+    assert detail["governance_profile_key"] == "light_migrant_support_network"
+    assert detail["marketplace_governance_policy"]["member_service_listings_enabled"] is False
+    assert _scalar("SELECT COUNT(*) FROM marketplace_shops") == 0
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM trust_events "
+            "WHERE event_type = 'marketplace.shop.created'"
+        )
+        == 0
+    )
+
+
+def test_marketplace_product_creation_respects_disabled_light_governance_listings_policy(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    _ensure_marketplace_tables()
+    _seed_marketplace_governance_profile_event(enable_member_service_listings=False)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id,
+                    clan_id,
+                    owner_user_id,
+                    shop_name,
+                    description,
+                    is_active,
+                    created_at
+                )
+                VALUES (
+                    982,
+                    1,
+                    1,
+                    'Pillar Existing Shop',
+                    'Shop exists before listings are disabled',
+                    1,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+
+    response = client.post(
+        "/marketplace/products",
+        json={
+            "clan_id": 1,
+            "shop_id": 982,
+            "name": "Community service listing",
+            "description": "Translation and settlement help",
+            "price": "Ask",
+            "currency": "GBP",
+            "image_url": "/uploads/test/service.jpg",
+        },
+    )
+
+    assert response.status_code == 403, response.text
+    detail = response.json()["detail"]
+    assert detail["code"] == "community_member_service_listings_disabled"
+    assert detail["marketplace_governance_policy"]["member_service_listings_enabled"] is False
+    assert _scalar("SELECT COUNT(*) FROM marketplace_products") == 0
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM trust_events "
+            "WHERE event_type = 'marketplace.product.created'"
+        )
+        == 0
+    )
+
+
+def test_marketplace_shop_creation_reports_light_governance_listing_review_policy(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    _ensure_marketplace_tables()
+    _seed_marketplace_governance_profile_event(
+        enable_member_service_listings=True,
+        require_admin_approval_for_listings=True,
+    )
+
+    response = client.post(
+        "/marketplace/shops",
+        json={
+            "clan_id": 1,
+            "name": "Pillar Community Shop",
+            "description": "A governed light community shop.",
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    policy = response.json()["marketplace_governance_policy"]
+    assert policy["governance_profile_key"] == "light_migrant_support_network"
+    assert policy["member_service_listings_enabled"] is True
+    assert policy["admin_approval_required_for_listings"] is True
+
+    with engine.begin() as conn:
+        meta_json = conn.execute(
+            text(
+                """
+                SELECT meta_json
+                FROM trust_events
+                WHERE event_type = 'marketplace.shop.created'
+                ORDER BY id DESC
+                LIMIT 1
+                """
+            )
+        ).scalar_one()
+
+    event_meta = json.loads(meta_json or "{}")
+    event_policy = event_meta["marketplace_governance_policy"]
+    assert event_policy["governance_profile_key"] == "light_migrant_support_network"
+    assert event_policy["admin_approval_required_for_listings"] is True
 
 def test_marketplace_product_creation_respects_disabled_community_domain_shop_diary_policy(
     client,
