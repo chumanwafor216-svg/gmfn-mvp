@@ -1,3 +1,11 @@
+## 2026-08-31 - Local Create Entry structured error hardening
+- Status: Local frontend implementation verified; ready for active pilot commit/push/deploy protocol.
+- Frontend route affected: `/create` / StartCommunityPage (`frontend/src/pages/CreateEntryPage.tsx`).
+- `humanEntryErrorMessage` now reads structured `detail.message`, `detail.error`, and `detail.reason` before falling back to raw Error text, while preserving the community-story length translation.
+- Phone verification, bank verification, official ID evidence, bank details, and photo/selfie evidence failures now use the human entry message helper instead of raw `err.message` fallbacks.
+- Verification: `npm --prefix frontend run audit:entry-auth`, `npm --prefix frontend run audit:member-entry-actions`, `npm --prefix frontend run audit:entry-flow-polish`, `npm --prefix frontend run audit:entry-copy-response`, `npm exec -- tsc -b --pretty false` from `frontend`, `npm --prefix frontend run lint`, `npm --prefix frontend run audit:protected-button-freeze`, `npm --prefix frontend run build`, and `git diff --check` all passed locally.
+- Devil truth: this improves creator-facing error clarity only. It does not change phone, identity, or bank verification rules, prove documents are genuine, create a paid Community Domain, or change community creation permissions.
+
 ## 2026-08-31 - Local Join Entry structured refusal hardening
 - Status: Local frontend implementation verified; ready for active pilot commit/push/deploy protocol.
 - Frontend route affected: `/start/join/:code` / JoinRequestMembershipPage (`frontend/src/pages/JoinEntryPage.tsx`).

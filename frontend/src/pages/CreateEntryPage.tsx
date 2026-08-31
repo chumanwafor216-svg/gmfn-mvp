@@ -1527,7 +1527,8 @@ function communityStoryTooLongMessage(): string {
 }
 
 function humanEntryErrorMessage(err: any, fallback: string): string {
-  const raw = safeStr(err?.message || err?.detail || err);
+  const detail = structuredErrorDetail(err);
+  const raw = safeStr(detail?.message || detail?.error || detail?.reason || err?.message || err?.detail || err);
   const lower = raw.toLowerCase();
 
   if (lower.includes("clan_description") || lower.includes("body.clan_description")) {
@@ -3097,7 +3098,7 @@ export default function CreateEntryPage() {
           "This phone number already belongs to a completed GSN account. Sign in with that GSN ID, phone, or email first, then create the new community from your existing account."
         );
       } else {
-        showError("details", err?.message || "Phone verification could not be started.");
+        showError("details", humanEntryErrorMessage(err, "Phone verification could not be started."));
       }
     } finally {
       finishAction();
@@ -3131,7 +3132,7 @@ export default function CreateEntryPage() {
           "Phone verified. Set up the community now. Optional founder checks can be added for stronger trust."
       );
     } catch (err: any) {
-      showError("phone", err?.message || "Phone verification could not be completed.");
+      showError("phone", humanEntryErrorMessage(err, "Phone verification could not be completed."));
     } finally {
       finishAction();
     }
@@ -3185,8 +3186,7 @@ export default function CreateEntryPage() {
       nextBankVerification = {
         status: "failed",
         explanation:
-          verificationErr?.message ||
-          "Bank verification could not be checked right now.",
+          humanEntryErrorMessage(verificationErr, "Bank verification could not be checked right now."),
       };
     }
 
@@ -3249,14 +3249,16 @@ export default function CreateEntryPage() {
         } catch (retryErr: any) {
           showError(
             "verification",
-            retryErr?.message ||
+            humanEntryErrorMessage(
+              retryErr,
               "Official ID evidence could not be recorded. Start the phone step again and retry."
+            )
           );
         }
       } else {
         showError(
           "verification",
-          err?.message || "Official ID evidence could not be recorded."
+          humanEntryErrorMessage(err, "Official ID evidence could not be recorded.")
         );
       }
     } finally {
@@ -3304,7 +3306,7 @@ export default function CreateEntryPage() {
           );
         }
       } else {
-        showError("bank", err?.message || "Bank details could not be recorded.");
+        showError("bank", humanEntryErrorMessage(err, "Bank details could not be recorded."));
       }
     } finally {
       finishAction();
@@ -3368,12 +3370,14 @@ export default function CreateEntryPage() {
         } catch (retryErr: any) {
           showError(
             "photo",
-            retryErr?.message ||
+            humanEntryErrorMessage(
+              retryErr,
               "Photo/selfie evidence could not be recorded. Start the phone step again and retry."
+            )
           );
         }
       } else {
-        showError("photo", err?.message || "Photo/selfie evidence could not be recorded.");
+        showError("photo", humanEntryErrorMessage(err, "Photo/selfie evidence could not be recorded."));
       }
     } finally {
       finishAction();
