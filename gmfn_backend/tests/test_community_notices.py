@@ -107,6 +107,28 @@ def _seed_notice_governance_profile_event(
         db.commit()
 
 
+def _seed_notice_reviewer() -> None:
+    with SessionLocal() as db:
+        db.add(
+            User(
+                id=2,
+                email="notice-reviewer@example.com",
+                hashed_password="hashed",
+                role="user",
+            )
+        )
+        db.flush()
+        db.add(
+            ClanMembership(
+                id=2,
+                clan_id=1,
+                user_id=2,
+                role="admin",
+                personal_pool_balance=0,
+            )
+        )
+        db.commit()
+
 def test_community_officer_can_post_and_members_can_read_notice(
     client, override_current_user
 ):
@@ -438,6 +460,7 @@ def test_member_record_submission_policy_routes_member_notice_to_review_queue(
     client, override_current_user_user
 ):
     _seed_notice_community(membership_role="member")
+    _seed_notice_reviewer()
     _seed_notice_governance_profile_event(
         enable_community_records=True,
         allow_member_record_submissions=True,
@@ -458,7 +481,18 @@ def test_member_record_submission_policy_routes_member_notice_to_review_queue(
     assert payload["submission"]["body"] == "Member record needs admin review first."
     assert payload["submission"]["review_status"] == "pending"
     assert payload["community_records_policy"]["admin_approval_required_for_records"] is True
+    assert payload["admin_notifications_created"] == 1
+    assert payload["notifications_created"] == 1
     assert "not visible" in payload["boundary"]
+
+    with SessionLocal() as db:
+        notification = db.query(Notification).filter(
+            Notification.kind == "community.notice.submitted"
+        ).one()
+        assert notification.user_id == 2
+        assert f"notice_review_submission_id={payload['submission']['submission_event_id']}" in notification.action_url
+        assert notification.action_label == "Review record"
+        assert notification.is_read is False
 
     list_res = client.get("/community-notices", params={"clan_id": 1})
     assert list_res.status_code == 200, list_res.text
@@ -493,6 +527,7 @@ def test_member_record_submission_policy_routes_member_notice_to_review_queue(
     assert approve_payload["notice"]["body"] == "Member record needs admin review first."
     assert approve_payload["notice"]["review_status"] == "approved"
     assert approve_payload["notice"]["approved_submission_event_id"] == submission["submission_event_id"]
+    assert approve_payload["review_notifications_retired"] == 1
 
     repeat_res = client.post(
         f"/community-notices/review-queue/{submission['submission_event_id']}/decision",
@@ -511,12 +546,18 @@ def test_member_record_submission_policy_routes_member_notice_to_review_queue(
         assert db.query(TrustEvent).filter(TrustEvent.event_type == "community.notice.submitted").count() == 1
         assert db.query(TrustEvent).filter(TrustEvent.event_type == "community.notice.review_decided").count() == 1
         assert db.query(TrustEvent).filter(TrustEvent.event_type == "community.notice.posted").count() == 1
+        notification = db.query(Notification).filter(
+            Notification.kind == "community.notice.submitted"
+        ).one()
+        assert notification.is_read is True
+        assert notification.read_at is not None
 
 
 def test_member_record_review_rejection_records_decision_without_publishing(
     client, override_current_user_user
 ):
     _seed_notice_community(membership_role="member")
+    _seed_notice_reviewer()
     _seed_notice_governance_profile_event(
         enable_community_records=True,
         allow_member_record_submissions=True,
@@ -528,7 +569,17 @@ def test_member_record_review_rejection_records_decision_without_publishing(
         json={"clan_id": 1, "body": "This record should not publish."},
     )
     assert submit_res.status_code == 200, submit_res.text
-    submission_id = submit_res.json()["submission"]["submission_event_id"]
+    submit_payload = submit_res.json()
+    assert submit_payload["admin_notifications_created"] == 1
+    submission_id = submit_payload["submission"]["submission_event_id"]
+
+    with SessionLocal() as db:
+        notification = db.query(Notification).filter(
+            Notification.kind == "community.notice.submitted"
+        ).one()
+        assert notification.user_id == 2
+        assert f"notice_review_submission_id={submission_id}" in notification.action_url
+        assert notification.is_read is False
 
     with SessionLocal() as db:
         membership = db.query(ClanMembership).filter(ClanMembership.user_id == 1).one()
@@ -547,6 +598,7 @@ def test_member_record_review_rejection_records_decision_without_publishing(
     reject_payload = reject_res.json()
     assert reject_payload["decision"] == "reject"
     assert reject_payload["notice"] is None
+    assert reject_payload["review_notifications_retired"] == 1
     assert "without publishing" in reject_payload["message"]
 
     final_list_res = client.get("/community-notices", params={"clan_id": 1})
@@ -560,6 +612,11 @@ def test_member_record_review_rejection_records_decision_without_publishing(
     with SessionLocal() as db:
         assert db.query(TrustEvent).filter(TrustEvent.event_type == "community.notice.review_decided").count() == 1
         assert db.query(TrustEvent).filter(TrustEvent.event_type == "community.notice.posted").count() == 0
+        notification = db.query(Notification).filter(
+            Notification.kind == "community.notice.submitted"
+        ).one()
+        assert notification.is_read is True
+        assert notification.read_at is not None
 
 
 def test_admin_notice_post_reports_light_governance_records_policy(

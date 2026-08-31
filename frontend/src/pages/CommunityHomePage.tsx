@@ -297,6 +297,22 @@ function positiveNumber(value: any): number {
   return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : 0;
 }
 
+const COMMUNITY_NOTICE_SETTINGS_PANEL_ID = "community-home-notice-settings-panel";
+const COMMUNITY_NOTICE_SETTINGS_PANEL_HASH = `#${COMMUNITY_NOTICE_SETTINGS_PANEL_ID}`;
+
+function parseNoticeReviewDeepLink(search: string, hash: string) {
+  const params = new URLSearchParams(search);
+  const submissionId = firstTruthy(params.get("notice_review_submission_id"));
+  const clanId = positiveNumber(
+    firstTruthy(params.get("clan_id"), params.get("community_id"))
+  );
+  const shouldOpen =
+    safeStr(hash).toLowerCase() === COMMUNITY_NOTICE_SETTINGS_PANEL_HASH ||
+    Boolean(submissionId);
+
+  return { clanId, shouldOpen, submissionId };
+}
+
 function communityDomainNeedsSetup(domain: any): boolean {
   const status = safeStr(domain?.status).toLowerCase();
   if (!positiveNumber(domain?.clan_id)) return true;
@@ -1856,11 +1872,73 @@ export default function CommunityHomePage() {
   const showCommunityBulletinSettings = Boolean(
     canManageCommunityNoticeSettings || communityNoticeLogItems.length > 0
   );
-
+  const noticeReviewDeepLink = useMemo(
+    () => parseNoticeReviewDeepLink(location.search, location.hash),
+    [location.search, location.hash]
+  );
 
   useEffect(() => {
+    const linkedClanId = noticeReviewDeepLink.clanId;
+    if (!linkedClanId || clans.length === 0) return;
+    if (selectedClanId === linkedClanId) return;
+
+    const linkedClan = clans.find((item) => getClanId(item) === linkedClanId);
+    if (!linkedClan) return;
+
+    let alive = true;
+    setChangingClanId(linkedClanId);
+
+    (async () => {
+      try {
+        await selectClan(linkedClanId);
+        if (!alive) return;
+        setSelectedClan(linkedClan);
+      } catch (error: any) {
+        if (!alive) return;
+        showNotice(
+          "error",
+          safeStr(error?.message) || "This community review link could not be opened."
+        );
+      } finally {
+        if (alive) {
+          setChangingClanId(0);
+        }
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [clans, noticeReviewDeepLink.clanId, selectedClanId]);
+
+  useEffect(() => {
+    if (
+      noticeReviewDeepLink.shouldOpen &&
+      (!noticeReviewDeepLink.clanId || selectedClanId === noticeReviewDeepLink.clanId)
+    ) {
+      return;
+    }
+
     setCommunityBulletinSettingsOpen(false);
-  }, [selectedClanId]);
+  }, [noticeReviewDeepLink.clanId, noticeReviewDeepLink.shouldOpen, selectedClanId]);
+
+  useEffect(() => {
+    if (!noticeReviewDeepLink.shouldOpen || !selectedClanId || !showCommunityBulletinSettings) {
+      return;
+    }
+    if (noticeReviewDeepLink.clanId && selectedClanId !== noticeReviewDeepLink.clanId) {
+      return;
+    }
+
+    setCommunityBulletinSettingsOpen(true);
+    revealCommunityTarget([COMMUNITY_NOTICE_SETTINGS_PANEL_ID]);
+  }, [
+    noticeReviewDeepLink.clanId,
+    noticeReviewDeepLink.shouldOpen,
+    selectedClanId,
+    showCommunityBulletinSettings,
+    revealCommunityTarget,
+  ]);
 
   useEffect(() => {
     let alive = true;
@@ -4356,7 +4434,7 @@ export default function CommunityHomePage() {
                     type="button"
                     debugId="community-home.notice.settings-toggle"
                     aria-expanded={communityBulletinSettingsOpen}
-                    aria-controls="community-home-notice-settings-panel"
+                    aria-controls={COMMUNITY_NOTICE_SETTINGS_PANEL_ID}
                     onClick={(event) => {
                       consumeCommunityButtonEvent(event);
                       setCommunityBulletinSettingsOpen((current) => !current);
@@ -4383,7 +4461,7 @@ export default function CommunityHomePage() {
 
             {showCommunityBulletinSettings && communityBulletinSettingsOpen ? (
               <div
-                id="community-home-notice-settings-panel"
+                id={COMMUNITY_NOTICE_SETTINGS_PANEL_ID}
                 data-debug-id="community-home.notice.settings-panel"
                 style={{
                   display: "grid",

@@ -19,6 +19,7 @@ from app.db.models import (
     User,
     UserSettings,
 )
+from app.db.notification_models import Notification
 from app.services.community_integrity_service import _user_settings_table_exists
 from app.services.notification_service import create_notification
 from app.services.web_push_service import dispatch_web_push_for_notifications
@@ -694,6 +695,108 @@ def _create_notice_notifications(
     return len(recipient_ids)
 
 
+def _notice_review_recipient_ids(
+    db: Session,
+    *,
+    clan_id: int,
+    submitter_user_id: int,
+) -> list[int]:
+    rows = (
+        db.query(ClanMembership.user_id)
+        .filter(
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.role == "admin",
+            ClanMembership.left_at.is_(None),
+        )
+        .order_by(ClanMembership.user_id.asc())
+        .all()
+    )
+    recipient_ids: list[int] = []
+    seen: set[int] = set()
+    for row in rows:
+        user_id = int(row[0])
+        if user_id == int(submitter_user_id) or user_id in seen:
+            continue
+        seen.add(user_id)
+        recipient_ids.append(user_id)
+    return recipient_ids
+
+
+def _create_notice_review_notifications(
+    db: Session,
+    *,
+    clan_id: int,
+    submission_event_id: int,
+    body: str,
+    submitter_user_id: int,
+) -> int:
+    recipient_ids = _notice_review_recipient_ids(
+        db,
+        clan_id=int(clan_id),
+        submitter_user_id=int(submitter_user_id),
+    )
+    if not recipient_ids:
+        return 0
+
+    action_url = (
+        f"/app/community?clan_id={int(clan_id)}"
+        f"&notice_review_submission_id={int(submission_event_id)}"
+        "#community-home-notice-settings-panel"
+    )
+    notification_rows = []
+    for user_id in recipient_ids:
+        notification_rows.append(
+            create_notification(
+                db,
+                user_id=int(user_id),
+                kind=COMMUNITY_NOTICE_SUBMISSION_EVENT,
+                title="Community record waiting for review",
+                message=body,
+                action_url=action_url,
+                action_label="Review record",
+                commit=False,
+                refresh=False,
+            )
+        )
+    db.commit()
+    try:
+        dispatch_web_push_for_notifications(db, notification_rows)
+    except Exception:
+        pass
+    return len(recipient_ids)
+
+
+def _retire_notice_review_notifications(
+    db: Session,
+    *,
+    clan_id: int,
+    submission_event_id: int,
+) -> int:
+    action_url = (
+        f"/app/community?clan_id={int(clan_id)}"
+        f"&notice_review_submission_id={int(submission_event_id)}"
+        "#community-home-notice-settings-panel"
+    )
+    rows = (
+        db.query(Notification)
+        .filter(
+            Notification.kind == COMMUNITY_NOTICE_SUBMISSION_EVENT,
+            Notification.action_url == action_url,
+            Notification.is_read == False,  # noqa: E712
+        )
+        .all()
+    )
+    if not rows:
+        return 0
+
+    now = datetime.now(timezone.utc)
+    for row in rows:
+        row.is_read = True
+        row.read_at = now
+        db.add(row)
+    db.commit()
+    return len(rows)
+
 def _meeting_to_notice(row: dict[str, Any], *, db: Optional[Session] = None, clan_id: int = 0) -> dict[str, Any]:
     body = _safe_str(row.get("title") or row.get("purpose"), "Community meeting")
     interest_summary = row.get("interest_summary") if isinstance(row.get("interest_summary"), dict) else {}
@@ -1001,6 +1104,13 @@ def create_notice(
                 **poster_contact,
             },
         )
+        admin_notifications_created = _create_notice_review_notifications(
+            db,
+            clan_id=int(payload.clan_id),
+            submission_event_id=int(submission.id),
+            body=body,
+            submitter_user_id=int(current_user.id),
+        )
         return {
             "ok": True,
             "engine_ready": True,
@@ -1009,7 +1119,8 @@ def create_notice(
             "posting_policy": posting_policy,
             "community_records_policy": records_policy,
             "notification_kind": COMMUNITY_NOTICE_SUBMISSION_EVENT,
-            "notifications_created": 0,
+            "notifications_created": int(admin_notifications_created),
+            "admin_notifications_created": int(admin_notifications_created),
             "message": "Community record submitted for admin review.",
             "expiry_policy": expiry_policy,
             "expires_at": _iso(expires_at),
@@ -1209,6 +1320,11 @@ def decide_notice_review_submission(
             "community_records_policy": records_policy,
         },
     )
+    review_notifications_retired = _retire_notice_review_notifications(
+        db,
+        clan_id=int(payload.clan_id),
+        submission_event_id=int(submission_event_id),
+    )
     return {
         "ok": True,
         "engine_ready": True,
@@ -1221,6 +1337,7 @@ def decide_notice_review_submission(
             else None
         ),
         "notifications_created": int(notifications_created),
+        "review_notifications_retired": int(review_notifications_retired),
         "community_records_policy": records_policy,
         "message": (
             "Community record approved and published to the Official Board."

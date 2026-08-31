@@ -380,8 +380,11 @@ Must show:
   - shows one live official notice or a compact empty state
   - member records that require admin approval use Submit, not Post
   - submitted member records stay hidden from the active board until an officer approves them
+  - officers receive Action Inbox/Web Push review prompts for member-submitted records when notification delivery is configured
+  - review prompts link back to `/app/community` with the selected `clan_id`, submitted record id, and Bulletin settings panel hash
   - officers see pending record count and approve/reject controls inside the existing Bulletin settings drawer
-  - approval publishes a new official notice; rejection records the decision without publishing- compact rows:
+  - approval publishes a new official notice; rejection records the decision without publishing
+- compact rows:
   - Owner Actions
   - Owner Shop Control
   - Marketplace Capacity
