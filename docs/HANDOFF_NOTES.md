@@ -1,3 +1,11 @@
+## 2026-08-31 - Local Join Entry structured refusal hardening
+- Status: Local frontend implementation verified; ready for active pilot commit/push/deploy protocol.
+- Frontend route affected: `/start/join/:code` / JoinRequestMembershipPage (`frontend/src/pages/JoinEntryPage.tsx`).
+- Join Entry now passes the full thrown error into `friendlyJoinError`, allowing structured `detail` objects and JSON-string messages to be read consistently.
+- `friendlyJoinError` now has explicit branches for `community_rules_acceptance_required`, `existing_gsn_id_not_found`, `existing_gsn_applicant_details_required`, and `new_applicant_details_required`, while preserving existing identity-match and invite-link guidance.
+- Verification: `npm --prefix frontend run audit:entry-auth`; `npm --prefix frontend run audit:member-entry-actions`; `npm --prefix frontend run audit:entry-flow-polish`; `npm --prefix frontend run audit:entry-copy-response`; `npm exec -- tsc -b --pretty false`; `npm --prefix frontend run lint`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `git diff --check`.
+- Devil truth: this improves join-refusal clarity only. It does not change backend admission rules, create approvals, verify identity, send notifications, or guarantee that community admins will act on a pending request.
+
 ## 2026-08-31 - Local Community Records governance error messages
 - Status: Local frontend implementation verified; ready for active pilot commit/push/deploy protocol.
 - Frontend routes affected: `/app/community`, `/app/marketplace`, and Community Domain notice-board audit coverage.

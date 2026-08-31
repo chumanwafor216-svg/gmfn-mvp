@@ -670,8 +670,8 @@ function buildWorkSummary(category: string, detail: string): string {
 }
 
 function friendlyJoinError(value: any): string {
-  const raw = cleanText(value);
-  const parsed = structuredErrorDetail(raw);
+  const parsed = structuredErrorDetail(value) || structuredErrorDetail(value?.message);
+  const raw = cleanText(value?.message || value);
   const parsedCode = cleanText(parsed?.code).toLowerCase();
   if (
     parsedCode === "existing_account_login_required" ||
@@ -687,6 +687,34 @@ function friendlyJoinError(value: any): string {
     return (
       cleanText(parsed?.message) ||
       "These details look like an existing GSN identity. Enter the existing GSN ID if it belongs to you, or ask the community helper to review it before creating another identity."
+    );
+  }
+
+  if (parsedCode === "community_rules_acceptance_required") {
+    return (
+      cleanText(parsed?.message) ||
+      "Accept the community rules and review boundary before sending this join request. Membership still needs community approval."
+    );
+  }
+
+  if (parsedCode === "existing_gsn_id_not_found") {
+    return (
+      cleanText(parsed?.message) ||
+      "GSN could not find an active identity with that GSN ID. Check the number, or continue as a new applicant."
+    );
+  }
+
+  if (parsedCode === "existing_gsn_applicant_details_required") {
+    return (
+      cleanText(parsed?.message) ||
+      "Add the applicant name and phone number with the GSN ID so the community can recognize who is asking to join."
+    );
+  }
+
+  if (parsedCode === "new_applicant_details_required") {
+    return (
+      cleanText(parsed?.message) ||
+      "Add the required join details before sending this request. The community still reviews membership before entry."
     );
   }
 
@@ -1880,7 +1908,7 @@ export default function JoinEntryPage() {
         return;
       }
     } catch (e: any) {
-      setErr(friendlyJoinError(e?.message));
+      setErr(friendlyJoinError(e));
     } finally {
       setBusy(false);
     }
@@ -1983,7 +2011,7 @@ export default function JoinEntryPage() {
         });
       }
     } catch (e: any) {
-      setErr(friendlyJoinError(e?.message));
+      setErr(friendlyJoinError(e));
     } finally {
       setBusy(false);
     }
@@ -2100,7 +2128,7 @@ export default function JoinEntryPage() {
         });
       }
     } catch (e: any) {
-      setErr(friendlyJoinError(e?.message));
+      setErr(friendlyJoinError(e));
     } finally {
       setBusy(false);
     }
