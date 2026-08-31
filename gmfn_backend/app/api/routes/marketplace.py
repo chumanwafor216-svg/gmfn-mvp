@@ -720,6 +720,75 @@ def _submission_to_marketplace_listing_review_item(event: TrustEvent) -> dict[st
     }
 
 
+def _marketplace_listing_submission_key(
+    listing_type: str,
+    listing_payload: dict[str, Any],
+) -> str:
+    payload = listing_payload if isinstance(listing_payload, dict) else {}
+    normalized_type = _safe_str(listing_type, "listing").lower()
+    if normalized_type == "shop":
+        return ":".join(
+            [
+                "shop",
+                _safe_str(payload.get("name")).lower(),
+                _safe_str(payload.get("whatsapp_number")).lower(),
+                _safe_str(payload.get("telegram_handle")).lower(),
+            ]
+        )
+    if normalized_type == "product":
+        return ":".join(
+            [
+                "product",
+                _safe_str(payload.get("shop_id")),
+                _safe_str(payload.get("name")).lower(),
+                _safe_str(payload.get("price")).lower(),
+                _safe_str(payload.get("currency")).upper(),
+            ]
+        )
+    return f"{normalized_type}:{_safe_str(payload.get('name')).lower()}"
+
+
+def _find_pending_marketplace_listing_submission(
+    db: Session,
+    *,
+    clan_id: int,
+    submitter_user_id: int,
+    listing_type: str,
+    listing_payload: dict[str, Any],
+) -> Optional[TrustEvent]:
+    decisions = _marketplace_listing_review_decisions_by_submission(
+        db,
+        clan_id=int(clan_id),
+    )
+    incoming_key = _marketplace_listing_submission_key(listing_type, listing_payload)
+    rows = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.clan_id == int(clan_id),
+            TrustEvent.event_type == MARKETPLACE_LISTING_SUBMISSION_EVENT,
+            TrustEvent.actor_user_id == int(submitter_user_id),
+        )
+        .order_by(TrustEvent.id.desc())
+        .limit(100)
+        .all()
+    )
+    for row in rows:
+        if int(row.id) in decisions:
+            continue
+        meta = _json_load(getattr(row, "meta_json", None))
+        existing_type = _safe_str(meta.get("listing_type"), "listing").lower()
+        if existing_type != _safe_str(listing_type, "listing").lower():
+            continue
+        existing_payload = meta.get("listing_payload") if isinstance(meta.get("listing_payload"), dict) else {}
+        existing_key = _safe_str(meta.get("submission_key")) or _marketplace_listing_submission_key(
+            existing_type,
+            existing_payload,
+        )
+        if existing_key == incoming_key:
+            return row
+    return None
+
+
 def _pending_marketplace_listing_submission_rows(
     db: Session,
     *,
@@ -757,6 +826,35 @@ def _submit_marketplace_listing_for_review(
     listing_payload: dict[str, Any],
     policy: dict[str, Any],
 ) -> JSONResponse:
+    submission_key = _marketplace_listing_submission_key(listing_type, listing_payload)
+    existing_submission = _find_pending_marketplace_listing_submission(
+        db,
+        clan_id=int(clan_id),
+        submitter_user_id=int(current_user.id),
+        listing_type=listing_type,
+        listing_payload=listing_payload,
+    )
+    if existing_submission is not None:
+        return JSONResponse(
+            status_code=202,
+            content={
+                "ok": True,
+                "submitted_for_review": True,
+                "duplicate_pending_submission": True,
+                "submission": _submission_to_marketplace_listing_review_item(existing_submission),
+                "item": None,
+                "marketplace_governance_policy": policy,
+                "notification_kind": MARKETPLACE_LISTING_SUBMISSION_EVENT,
+                "notifications_created": 0,
+                "admin_notifications_created": 0,
+                "message": "Marketplace listing is already waiting for admin review.",
+                "boundary": (
+                    "This member listing is not live yet. A community admin must approve it "
+                    "before it appears in the marketplace or public shop."
+                ),
+            },
+        )
+
     submission = log_trust_event(
         db,
         event_type=MARKETPLACE_LISTING_SUBMISSION_EVENT,
@@ -768,6 +866,7 @@ def _submit_marketplace_listing_for_review(
             "reason": "marketplace_listing_submitted_for_review",
             "listing_type": listing_type,
             "listing_payload": listing_payload,
+            "submission_key": submission_key,
             "review_status": "pending",
             "submitted_by_role": _safe_str(getattr(membership, "role", None), "member"),
             "marketplace_governance_policy": policy,

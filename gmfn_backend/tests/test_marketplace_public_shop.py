@@ -482,6 +482,51 @@ def test_marketplace_shop_creation_submits_member_listing_when_admin_approval_re
     assert "listing_review_submission_id=" in notification["action_url"]
     assert notification["action_label"] == "Review listing"
 
+
+def test_marketplace_shop_creation_reuses_matching_pending_submission(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    _ensure_marketplace_tables()
+    _seed_second_community_admin()
+    _seed_marketplace_governance_profile_event(
+        enable_member_service_listings=True,
+        require_admin_approval_for_listings=True,
+    )
+    payload = {
+        "clan_id": 1,
+        "name": "Member Service Shop",
+        "description": "Should wait for admin review.",
+    }
+
+    first_response = client.post("/marketplace/shops", json=payload)
+    second_response = client.post("/marketplace/shops", json=payload)
+
+    assert first_response.status_code == 202, first_response.text
+    assert second_response.status_code == 202, second_response.text
+    first_body = first_response.json()
+    second_body = second_response.json()
+    assert second_body["submitted_for_review"] is True
+    assert second_body["duplicate_pending_submission"] is True
+    assert second_body["submission"]["submission_event_id"] == first_body["submission"]["submission_event_id"]
+    assert second_body["admin_notifications_created"] == 0
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM trust_events "
+            "WHERE event_type = 'marketplace.listing.submitted'"
+        )
+        == 1
+    )
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM notifications "
+            "WHERE kind = 'marketplace.listing.submitted'"
+        )
+        == 1
+    )
+
+
 def test_marketplace_product_creation_submits_member_listing_when_admin_approval_required(
     client,
     override_current_user_user,
@@ -556,6 +601,68 @@ def test_marketplace_product_creation_submits_member_listing_when_admin_approval
         )
         == 1
     )
+
+
+def test_marketplace_product_creation_reuses_matching_pending_submission(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    _ensure_marketplace_tables()
+    _seed_second_community_admin()
+    _seed_marketplace_governance_profile_event(
+        enable_member_service_listings=True,
+        require_admin_approval_for_listings=True,
+    )
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active, created_at
+                ) VALUES (
+                    984, 1, 1, 'Pillar Existing Shop', 'Shop exists before approval gate', 1, CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+    payload = {
+        "clan_id": 1,
+        "shop_id": 984,
+        "name": "Community service listing",
+        "description": "Translation and settlement help",
+        "price": "Ask",
+        "currency": "GBP",
+        "image_url": "/uploads/test/service.jpg",
+    }
+
+    first_response = client.post("/marketplace/products", json=payload)
+    second_response = client.post("/marketplace/products", json=payload)
+
+    assert first_response.status_code == 202, first_response.text
+    assert second_response.status_code == 202, second_response.text
+    first_body = first_response.json()
+    second_body = second_response.json()
+    assert second_body["submitted_for_review"] is True
+    assert second_body["duplicate_pending_submission"] is True
+    assert second_body["submission"]["submission_event_id"] == first_body["submission"]["submission_event_id"]
+    assert second_body["admin_notifications_created"] == 0
+    assert _scalar("SELECT COUNT(*) FROM marketplace_products") == 0
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM trust_events "
+            "WHERE event_type = 'marketplace.listing.submitted'"
+        )
+        == 1
+    )
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM notifications "
+            "WHERE kind = 'marketplace.listing.submitted'"
+        )
+        == 1
+    )
+
 
 def test_marketplace_listing_review_approval_publishes_shop_and_notifies_submitter(
     client,

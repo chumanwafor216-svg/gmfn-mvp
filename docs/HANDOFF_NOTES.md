@@ -1,3 +1,13 @@
+## 2026-08-31 - Local Marketplace listing review duplicate guard
+
+- Status: Local backend implementation verified; not pushed or deployed per owner instruction to avoid pipeline wastage.
+- Backend route affected: `POST /marketplace/shops` and `POST /marketplace/products` when `require_admin_approval_for_listings=true` routes ordinary members into listing review.
+- Matching repeat submissions from the same member/community/listing type now reuse the existing pending `marketplace.listing.submitted` Trust Event instead of creating duplicate review events and duplicate admin notifications.
+- Shop dedupe key uses listing type, shop name, WhatsApp number, and Telegram handle; product dedupe key uses listing type, shop id, product name, price, and currency.
+- Response payloads for duplicate pending submissions return `submitted_for_review=true`, `duplicate_pending_submission=true`, the original submission, and zero new admin notifications.
+- Backend coverage added for duplicate pending shop and product submissions, proving one Trust Event and one admin notification remain after a double-submit/retry.
+- Verification: `python -m py_compile gmfn_backend\app\api\routes\marketplace.py gmfn_backend\tests\test_marketplace_public_shop.py`; `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py -k "governance_listing_review_policy or marketplace_shop_creation_submits or marketplace_product_creation_submits or marketplace_listing_review_approval or marketplace_shop_creation_reuses_matching_pending_submission or marketplace_product_creation_reuses_matching_pending_submission or marketplace_product_creation_allows_member_when_listing_admin_approval_not_required" -q`; `git diff --check`.
+- Devil truth: this is a retry/double-submit guard, not a full idempotency system. It does not reserve product slots, merge materially changed drafts, assign reviewers, enforce SLAs, or prevent a member from submitting genuinely different listings.
 ## 2026-08-31 - Local Web Push allow-list for Marketplace listing reviews
 
 - Status: Local backend/audit/runbook implementation verified; not pushed or deployed per owner instruction to avoid pipeline wastage.
