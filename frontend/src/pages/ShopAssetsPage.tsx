@@ -41,6 +41,7 @@ import {
 } from "../lib/publicLinks";
 import { createShopGalleryCoverFromVideo } from "../lib/shopGalleryMediaProtocol";
 import { rememberShopProductMedia } from "../lib/shopProductMediaCache";
+import { marketplaceGovernanceErrorMessage } from "../lib/structuredErrors";
 import {
   SPOTLIGHT_MAX_IMAGE_BYTES,
   SPOTLIGHT_MAX_VIDEO_BYTES,
@@ -435,8 +436,9 @@ function apiUrl(path: string): string {
   return `${apiBase()}${cleanPath}`;
 }
 
-function shopAssetsRequestErrorMessage(error: any): string {
-  const message = safeStr(error?.message || error);
+function shopAssetsRequestErrorMessage(error: any, fallback = ""): string {
+  const governedMessage = marketplaceGovernanceErrorMessage(error);
+  const message = safeStr(governedMessage || error?.message || error);
   const lower = message.toLowerCase();
   if (
     lower.includes("failed to fetch") ||
@@ -449,7 +451,7 @@ function shopAssetsRequestErrorMessage(error: any): string {
       "GSN could not save from this browser yet. Check your connection, reopen GSN if needed, then try again."
     );
   }
-  return message || "Shop Gallery Tools could not complete that request.";
+  return message || fallback || "Shop Gallery Tools could not complete that request.";
 }
 
 const SHOP_ASSETS_JSON_TIMEOUT_MS = 30000;
@@ -507,12 +509,18 @@ async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   const contentType = String(res.headers.get("content-type") || "").toLowerCase();
 
   if (!res.ok) {
+    let message = text || `HTTP ${res.status}`;
     try {
       const parsed = text ? JSON.parse(text) : {};
-      throw new Error(parsed?.detail || parsed?.message || text || `HTTP ${res.status}`);
+      const detail = parsed?.detail;
+      message =
+        detail && typeof detail === "object"
+          ? JSON.stringify(detail)
+          : detail || parsed?.message || message;
     } catch {
-      throw new Error(text || `HTTP ${res.status}`);
+      // Keep the original response text.
     }
+    throw new Error(String(message));
   }
 
   if (!text) return {} as T;
@@ -1541,7 +1549,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       showNotice("success", "Shop information saved. Shop info control closed.");
     } catch (err: any) {
       if (!mountedRef.current) return;
-      showNotice("error", safeStr(err?.message) || "Shop signboard could not be saved.");
+      showNotice("error", shopAssetsRequestErrorMessage(err, "Shop signboard could not be saved."));
     } finally {
       if (mountedRef.current) {
         setSavingShop(false);
@@ -1874,9 +1882,10 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       }));
     } catch (err: any) {
       if (!mountedRef.current) return;
-      const message =
-        safeStr(err?.message) ||
-        "Product could not be saved. Check the picture, video format, and file size.";
+      const message = shopAssetsRequestErrorMessage(
+        err,
+        "Product could not be saved. Check the picture, video format, and file size."
+      );
       showProductFormNotice("error", message);
       showGalleryActionNotice("error", message, selectedPublicSlot);
     } finally {

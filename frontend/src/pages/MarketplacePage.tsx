@@ -14,6 +14,7 @@ import {
   type CtaIntent,
 } from "../lib/ctaTargets";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
+import { marketplaceGovernanceErrorMessage } from "../lib/structuredErrors";
 import {
   buildGsnCommunityVerifyLinkMessage,
   buildGsnInviteLinkMessage,
@@ -1087,31 +1088,8 @@ function firstTruthy(...values: any[]): string {
 
 
 
-function parsedMarketplaceErrorDetail(err: any): Record<string, any> | null {
-  const detail = err?.detail ?? err?.response?.data?.detail;
-  if (detail && typeof detail === "object") return detail;
-
-  const message = safeStr(err?.message);
-  if (!message || !message.startsWith("{")) return null;
-
-  try {
-    const parsed = JSON.parse(message);
-    const parsedDetail = parsed?.detail ?? parsed;
-    return parsedDetail && typeof parsedDetail === "object" ? parsedDetail : null;
-  } catch {
-    return null;
-  }
-}
-
 function marketplaceErrorMessage(err: any, fallback: string): string {
-  const detail = parsedMarketplaceErrorDetail(err);
-  return firstTruthy(
-    detail?.message,
-    detail?.error,
-    detail?.reason,
-    err?.message,
-    fallback
-  );
+  return marketplaceGovernanceErrorMessage(err, fallback);
 }
 
 function normalizeIntentText(value: any): string {

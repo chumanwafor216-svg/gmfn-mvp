@@ -1,3 +1,13 @@
+## 2026-08-31 - Local marketplace governance error messages
+- Status: Local frontend implementation verified; ready for active pilot commit/push/deploy protocol.
+- Frontend routes affected: `/app/marketplace`, `/app/shop-control`, and `/app/shop-assets` / embedded Shop Gallery Tools.
+- Shared frontend helper `frontend/src/lib/structuredErrors.ts` now reads structured `detail` from direct Error-shaped objects, response-shaped objects, and JSON-string messages, then maps marketplace governance refusal codes to plain GSN guidance.
+- MarketplacePage now uses the shared marketplace governance formatter instead of a route-local parser.
+- Shop Control and Shop Assets now show plain member-listing disabled/admin-approval-required guidance when shop or listing creation is blocked by community setup, instead of raw JSON/stringified detail.
+- Local shop API wrappers preserve object `detail` as parseable JSON strings before throwing.
+- Verification: `npm exec -- tsc -b --pretty false`; `npm --prefix frontend run lint`; `npm --prefix frontend run audit:marketplace-actions`; `npm --prefix frontend run audit:marketplace-button-inventory`; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `git diff --check`.
+- Devil truth: this improves refusal clarity only. It does not add a listing approval queue, admin assignment, expiry enforcement, or any way for ordinary members to submit blocked listings for review.
+
 ## 2026-08-31 - Local Marketplace Members shop review marker visibility
 - Status: Local frontend implementation verified; ready for active pilot commit/push/deploy protocol.
 - Frontend route affected: `MarketplacePage` / `/app/marketplace` Community Members & Shops lane.

@@ -48,6 +48,7 @@ import {
 } from "../lib/spotlightPilot";
 import { publicFrontendUrl } from "../lib/publicLinks";
 import { institutionalBlueRailShell } from "../lib/institutionalSurface";
+import { marketplaceGovernanceErrorMessage } from "../lib/structuredErrors";
 import { rememberPublishRecovery } from "../lib/publishRecovery";
 import { navigateWithOrigin } from "../lib/nav";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
@@ -869,7 +870,8 @@ function apiUrl(path: string): string {
 }
 
 function shopControlRequestErrorMessage(error: any): string {
-  const message = safeStr(error?.message || error);
+  const governedMessage = marketplaceGovernanceErrorMessage(error);
+  const message = safeStr(governedMessage || error?.message || error);
   const lower = message.toLowerCase();
   if (
     lower.includes("failed to fetch") ||
@@ -940,12 +942,18 @@ async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   const contentType = String(res.headers.get("content-type") || "").toLowerCase();
 
   if (!res.ok) {
+    let message = text || `HTTP ${res.status}`;
     try {
       const parsed = text ? JSON.parse(text) : {};
-      throw new Error(parsed?.detail || parsed?.message || text || `HTTP ${res.status}`);
+      const detail = parsed?.detail;
+      message =
+        detail && typeof detail === "object"
+          ? JSON.stringify(detail)
+          : detail || parsed?.message || message;
     } catch {
-      throw new Error(text || `HTTP ${res.status}`);
+      // Keep the original response text.
     }
+    throw new Error(String(message));
   }
 
   if (!text) return {} as T;
@@ -2723,7 +2731,7 @@ export default function ShopControlPage() {
       setActiveOwnerLayer("shop-details");
       showNotice("success", "Shop billboard details saved on the system.");
     } catch (err: any) {
-      showNotice("error", safeStr(err?.message) || "Shop details could not be saved.");
+      showNotice("error", shopControlRequestErrorMessage(err) || "Shop details could not be saved.");
     } finally {
       setSavingShop(false);
     }
@@ -2790,7 +2798,7 @@ export default function ShopControlPage() {
       return created;
     } catch (err: any) {
       const errorMessage =
-        safeStr(err?.message) || "GSN could not create the shop record yet.";
+        shopControlRequestErrorMessage(err) || "GSN could not create the shop record yet.";
       setSpotlightPublishFeedback({ tone: "error", text: errorMessage });
       showNotice("error", errorMessage);
       return null;
