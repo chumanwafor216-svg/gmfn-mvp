@@ -15,6 +15,9 @@ export type CreateEntryDraft = {
   birthPlace?: string;
   countryOfOrigin?: string;
   residentialArea?: string;
+  communityType?: string;
+  governanceWeight?: string;
+  governanceToggles?: Record<string, boolean>;
   createCode?: string;
   step?: CreateEntryStep;
   openPanel?: CreateEntryPanel;
@@ -164,6 +167,9 @@ export function readCreateEntryDraft(createCode?: string | null): CreateEntryDra
       safeStr(parsed?.birthPlace) ||
       safeStr(parsed?.countryOfOrigin) ||
       safeStr(parsed?.residentialArea) ||
+      safeStr(parsed?.communityType) ||
+      safeStr(parsed?.governanceWeight) ||
+      parsed?.governanceToggles ||
       Number(parsed?.verificationId || 0) > 0 ||
         parsed?.phoneVerificationEvidence ||
         parsed?.phoneVerificationProof ||
@@ -198,6 +204,17 @@ export function readCreateEntryDraft(createCode?: string | null): CreateEntryDra
       birthPlace: safeStr(parsed?.birthPlace),
       countryOfOrigin: safeStr(parsed?.countryOfOrigin),
       residentialArea: safeStr(parsed?.residentialArea),
+      communityType: safeStr(parsed?.communityType),
+      governanceWeight: safeStr(parsed?.governanceWeight),
+      governanceToggles:
+        parsed?.governanceToggles && typeof parsed.governanceToggles === "object"
+          ? Object.fromEntries(
+              Object.entries(parsed.governanceToggles).map(([key, value]) => [
+                safeStr(key),
+                Boolean(value),
+              ])
+            )
+          : undefined,
       createCode: safeStr(parsed?.createCode),
       step,
       openPanel,
@@ -234,6 +251,17 @@ export function saveCreateEntryDraft(
     birthPlace: safeStr(draft.birthPlace),
     countryOfOrigin: safeStr(draft.countryOfOrigin),
     residentialArea: safeStr(draft.residentialArea),
+    communityType: safeStr(draft.communityType),
+    governanceWeight: safeStr(draft.governanceWeight),
+    governanceToggles:
+      draft.governanceToggles && typeof draft.governanceToggles === "object"
+        ? Object.fromEntries(
+            Object.entries(draft.governanceToggles).map(([key, value]) => [
+              safeStr(key),
+              Boolean(value),
+            ])
+          )
+        : undefined,
     createCode: safeStr(draft.createCode || createCode || ""),
     step: isValidStep(draft.step) ? draft.step : "details",
     openPanel: isValidPanel(draft.openPanel) ? draft.openPanel : null,
@@ -269,6 +297,9 @@ export function saveCreateEntryDraft(
       safeDraft.birthPlace ||
       safeDraft.countryOfOrigin ||
       safeDraft.residentialArea ||
+      safeDraft.communityType ||
+      safeDraft.governanceWeight ||
+      safeDraft.governanceToggles ||
       safeDraft.verificationId ||
       safeDraft.phoneVerificationEvidence ||
       safeDraft.phoneVerificationProof ||

@@ -863,6 +863,28 @@ function joinInviteHelpMessage(
   return raw;
 }
 
+function joinGovernanceRequirementText(profile: any): string {
+  const requirements =
+    profile?.requirements && typeof profile.requirements === "object"
+      ? profile.requirements
+      : {};
+  const strongerChecks = Boolean(
+    requirements.passport_required_by_default ||
+      requirements.brp_or_evisa_required_by_default ||
+      requirements.proof_of_address_required_by_default
+  );
+
+  if (strongerChecks) {
+    return "This community may ask for stronger member checks after your request is reviewed.";
+  }
+
+  if (requirements.member_phone_required || requirements.rules_acceptance_required) {
+    return "Expect name, phone, rules acceptance, and community review. Passport or BRP/eVisa is not required by default.";
+  }
+
+  return "Your request still goes through community review before membership.";
+}
+
 function looksLikeSystemId(value: string): boolean {
   const v = cleanText(value).toUpperCase();
   if (!v) return false;
@@ -1208,6 +1230,24 @@ export default function JoinEntryPage() {
     inviteMessage,
   ]);
 
+  const inviteGovernanceProfile = useMemo(() => {
+    const raw = invitePreview?.governance_profile;
+    return raw && typeof raw === "object" ? raw : null;
+  }, [invitePreview]);
+
+  const inviteGovernanceTitle = useMemo(() => {
+    if (!inviteGovernanceProfile) return "";
+    const preset = cleanText(inviteGovernanceProfile.preset_label);
+    const weight = cleanText(inviteGovernanceProfile.governance_weight_label);
+    const type = cleanText(inviteGovernanceProfile.community_type_label);
+    if (preset) return preset;
+    return cleanText(`${weight} ${type}`) || "Community review setup";
+  }, [inviteGovernanceProfile]);
+
+  const inviteGovernanceNote = useMemo(
+    () => joinGovernanceRequirementText(inviteGovernanceProfile),
+    [inviteGovernanceProfile]
+  );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [success, setSuccess] = useState<any>(null);
@@ -2268,6 +2308,39 @@ export default function JoinEntryPage() {
                 isCompact={isCompact}
               />
 
+              {inviteGovernanceProfile ? (
+                <div style={{ marginTop: 14, ...innerCard("#F8FBFF") }}>
+                  <div style={labelText()}>
+                    {joinEntryIconText("check", "Community setup", 20)}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B1F33",
+                      fontWeight: 1000,
+                      fontSize: 16,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {inviteGovernanceTitle}
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText() }}>
+                    {inviteGovernanceNote}
+                  </div>
+                  {cleanText(inviteGovernanceProfile?.truth_boundary) ? (
+                    <div
+                      style={{
+                        marginTop: 10,
+                        color: "#6B7F95",
+                        fontSize: 13,
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {cleanText(inviteGovernanceProfile?.truth_boundary)}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
               {!inviteAcknowledged ? (
                 <div style={{ marginTop: 18 }}>
                   <PrimaryButton

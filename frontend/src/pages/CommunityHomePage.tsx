@@ -91,6 +91,7 @@ type ClanItem = {
   official_whatsapp_label?: string | null;
   official_contact_ready?: boolean;
   notice_posting_policy?: string | null;
+  governance_profile?: any;
   community?: any;
   profile?: any;
   marketplace?: any;

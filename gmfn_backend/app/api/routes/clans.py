@@ -14,7 +14,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError, OperationalError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 from app.services.notification_service import create_notification
 from app.core.auth import get_current_user, is_user_activation_pending, oauth2_scheme
 from app.core.clan_auth import (
@@ -68,6 +68,7 @@ FEATURE_COMMUNITY_MEMBER_CAPACITY = "community_member_capacity"
 COMMUNITY_DOMAIN_FEATURE_POLICY_KEY = "domain.feature_policy"
 COMMUNITY_DOMAIN_FEATURE_MEMBER_INVITES = "member_invites"
 COMMUNITY_DOMAIN_FEATURE_MODE_OFF = "off"
+COMMUNITY_GOVERNANCE_PROFILE_SELECTED_EVENT = "community.governance_profile_selected"
 JOIN_INVITATION_NOT_FOUND = (
     "This invitation link is no longer valid or was not copied fully. "
     "Ask the person who invited you to send a fresh GSN invite link."
@@ -213,6 +214,7 @@ class ClanOut(BaseModel):
     official_whatsapp_label: Optional[str] = None
     official_contact_ready: bool = False
     notice_posting_policy: str = "members"
+    governance_profile: Optional[dict[str, Any]] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -484,6 +486,15 @@ def _invite_preview_payload(
     invite_id = None
     invite_code = None
 
+    governance_profile = None
+    if clan is not None:
+        db = object_session(clan)
+        if db is not None:
+            governance_profile = _community_governance_profile_for_clan(
+                db,
+                clan_id=int(clan.id),
+            )
+
     if invite_row is not None:
         invite_id = int(invite_row.id)
         invite_code = invite_row.code
@@ -513,6 +524,7 @@ def _invite_preview_payload(
         "community_code": _community_code(clan.id, clan=clan) if clan is not None else None,
         "community_name": getattr(clan, "name", None) if clan is not None else None,
         "marketplace_name": getattr(clan, "marketplace_name", None) if clan is not None else None,
+        "governance_profile": governance_profile,
         "invited_by_user_id": invited_by_user_id,
         "expires_at": expires_at,
         "uses": uses,
@@ -585,6 +597,49 @@ def _json_load(value: Optional[str]) -> dict[str, Any]:
     except Exception:
         return {}
     return data if isinstance(data, dict) else {}
+
+
+def _community_governance_profile_for_clan(
+    db: Session,
+    *,
+    clan_id: int,
+) -> Optional[dict[str, Any]]:
+    event = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.clan_id == int(clan_id))
+        .filter(TrustEvent.event_type == COMMUNITY_GOVERNANCE_PROFILE_SELECTED_EVENT)
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+        .first()
+    )
+    if event is None:
+        return None
+
+    meta = _json_load(getattr(event, "meta_json", None))
+    profile = {
+        key: meta[key]
+        for key in (
+            "community_type",
+            "community_type_label",
+            "governance_weight",
+            "governance_weight_label",
+            "preset_key",
+            "preset_label",
+            "verification_mode",
+            "policies",
+            "requirements",
+            "truth_boundary",
+            "requested_preset_key",
+            "preset_correction",
+        )
+        if key in meta
+    }
+    if not profile:
+        return None
+
+    created_at = getattr(event, "created_at", None)
+    profile["source_event_id"] = int(event.id)
+    profile["recorded_at"] = created_at.isoformat() if created_at else None
+    return profile
 
 
 def _community_domain_for_clan(db: Session, *, clan_id: int) -> Optional[CommunityDomain]:
@@ -2785,6 +2840,11 @@ def _clan_out(
         clan_id=int(clan.id),
         user_id=current_user_id,
     )
+    governance_profile = (
+        _community_governance_profile_for_clan(db, clan_id=int(clan.id))
+        if db is not None
+        else None
+    )
     return {
         "id": int(clan.id),
         "name": clan.name,
@@ -2796,6 +2856,7 @@ def _clan_out(
         "member_role": membership_role,
         "membership_role": membership_role,
         "notice_posting_policy": getattr(clan, "notice_posting_policy", None) or "members",
+        "governance_profile": governance_profile,
         **contact,
     }
 

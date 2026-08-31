@@ -1,3 +1,52 @@
+## 2026-08-31 - Local governance profile disclosure on join invite preview
+- Status: Local implementation verified; not pushed or deployed. This remains part of the current governance batch.
+- Backend route affected: `GET /clans/join-invite/preview` now includes optional `governance_profile` when the invited community has a recorded setup profile.
+- Frontend screen affected: `JoinRequestMembershipPage` / `/start/join/:code` now shows a compact Community setup note under the invitation letter when the invite preview provides a profile. Older communities without a profile keep the existing layout.
+- Backend implementation: the shared invite preview payload helper in `gmfn_backend/app/api/routes/clans.py` projects the same whitelisted event-sourced profile used by `/clans/me`.
+- Frontend implementation: `frontend/src/pages/JoinEntryPage.tsx` summarizes the recorded preset and requirements, including the light-community truth that passport/BRP/eVisa is not required by default when the profile says so.
+- Spec update: `docs/SCREEN_SPECS.md` now lists the recorded setup/governance note as part of JoinRequestMembershipPage when available.
+- Backend coverage: `gmfn_backend/tests/test_join_requests.py` verifies public invite preview exposes the recorded light migrant-support profile.
+- Devil's advocate truth: the join preview disclosure is informational. It does not approve membership, enforce admin decisions, or guarantee no community-specific follow-up evidence will ever be requested.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\entry.py gmfn_backend\app\api\routes\clans.py`; `python -m pytest -q gmfn_backend\tests\test_entry_create.py gmfn_backend\tests\test_community_communication_protocol.py gmfn_backend\tests\test_join_requests.py -q`; `npm exec -- tsc -b --pretty false` from `frontend`; `npm --prefix frontend run audit:entry-auth`; `npm --prefix frontend run audit:member-entry-actions`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `npm --prefix frontend run lint`.
+## 2026-08-31 - Local governance profile visibility on community list
+- Status: Local implementation verified; not pushed or deployed. This belongs to the current governance batch and should be pushed only when the batch is done.
+- Backend route affected: `GET /clans/me` now includes optional `governance_profile` on each community row when the community has a recorded `community.governance_profile_selected` Trust Event.
+- Backend implementation: `gmfn_backend/app/api/routes/clans.py` projects a whitelisted profile from the latest governance-selection event, adds `governance_profile` to `ClanOut`, and leaves legacy communities as `null` instead of inventing defaults.
+- Frontend implementation: `frontend/src/pages/CommunityHomePage.tsx` and `frontend/src/pages/ClansPage.tsx` local community row types now accept the optional `governance_profile` field. No Community Home visual/layout changes were made.
+- Backend coverage: `gmfn_backend/tests/test_community_communication_protocol.py` verifies `/clans/me` returns `null` for older communities, exposes the recorded light migrant-support profile, and does not leak non-whitelisted event metadata.
+- Devil's advocate truth: this is read visibility for setup evidence, not policy enforcement. It is event-sourced and may become stale if separate policy settings are later changed without writing a newer governance-profile event.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\clans.py gmfn_backend\tests\test_community_communication_protocol.py`; `python -m pytest -q gmfn_backend\tests\test_community_communication_protocol.py gmfn_backend\tests\test_entry_create.py -q`; `npm exec -- tsc -b --pretty false` from `frontend`.
+## 2026-08-31 - Local Light Community Governance profile entry slice
+- Status: Local implementation verified; not pushed or deployed under the active pilot batch-publish protocol.
+- Added the first Light Community Governance profile slice to ordinary community creation, not the paid Community Domain purchase path.
+- Frontend route affected: `/create` via `frontend/src/pages/CreateEntryPage.tsx` now asks for community type, governance weight, shows the recommended preset, shows a requirements summary, and records limited setup toggles inside the existing Community setup panel.
+- Backend route affected: `POST /entry/create` accepts bounded governance setup fields, recomputes the preset server-side, returns `governance_profile`, and logs `community.governance_profile_selected` as Trust Event metadata for the new community.
+- Draft persistence affected: `frontend/src/lib/entryDraft.ts` now preserves community type, governance weight, and setup toggles for unfinished create entries.
+- Added backend coverage in `gmfn_backend/tests/test_entry_create.py` for the Aberdeen Dads-style `migrant_community + light = light_migrant_support_network` path, including no default passport/BRP/eVisa collection.
+- Updated `docs/SCREEN_SPECS.md` so StartCommunityPage owns the governance profile choice without adding a new screen.
+- Devil's advocate truth: this is setup evidence and UI guidance only. It does not add database columns, enforce every policy across join/marketplace/records yet, create a paid Community Domain, verify the community, or collect/import WhatsApp data.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\entry.py`; `python -m pytest -q gmfn_backend\tests\test_entry_create.py -q`; `npm exec -- tsc -b --pretty false` from `frontend`; `npm --prefix frontend run audit:entry-auth`; `npm --prefix frontend run audit:member-entry-actions`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `npm --prefix frontend run lint`.
+
+## 2026-08-30 - Next work: Light Community Governance profiles
+- Status: Planning-only follow-up from Aberdeen Dads discovery; no app code, backend code, schema, auth, deployment, or frozen route files changed in this step.
+- Added `docs/GSN_LIGHT_COMMUNITY_GOVERNANCE_IMPLEMENTATION_PLAN_2026-08-30.md` as the build plan for the next session, targeted for 2026-08-31 evening.
+- Core decision: Community Domain should remain the powerful governance engine, but ordinary founders should start from a guided setup question: "What kind of community do you want to create?"
+- Planned governance profiles: Light Community, Standard Community, Structured Organisation, and Professional / High-Trust Community.
+- Aberdeen Dads target fit: `Migrant Community + Light = light_migrant_support_network`, with light member verification, stronger creator/admin verification, admin approval, rules acceptance, marketplace/service listings, selected Community Records, and no default passport/BRP/eVisa/proof-of-address collection for ordinary members.
+- Product simplification rule: expose a small guided wizard and hide the heavy Community Domain controls under Advanced Settings.
+- Tomorrow's first engineering question: identify the existing community creation/setup route and insert the governance-profile step with the least disruption.
+- Devil's advocate: do not overbuild WhatsApp automation, mass message import, heavy identity-document collection, or a 700-member rollout before the lightweight pilot proves adoption and admin capacity.
+## 2026-08-30 - Aberdeen Dads customer discovery record
+- Status: Documentation-only customer discovery record created from live workshop discussion; no app code, backend code, schema, auth, deployment, or frozen route files changed.
+- Added `docs/GSN_ABERDEEN_DADS_CUSTOMER_DISCOVERY_RECORD_2026-08-30.md` for the Aberdeen Dads discovery record, pilot scope, WhatsApp-to-GSN entry answer, governance needs, verified information workflow, member-services/directory opportunity, data-minimisation boundary, and timetable.
+- Correct community name: `Aberdeen Dads`.
+- Main discovery: Aberdeen Dads is an informal immigrant support/community network with more than 700 members. It began as urgent immigration and settlement information sharing, then evolved into social support, member adverts/services, and wider economic opportunity.
+- Product fit: preserve WhatsApp for live discussion while using GSN as structured memory, rules acceptance, lightweight membership recognition, verified current information, admin review, member services, and opportunity infrastructure.
+- Verification rule: ordinary members must not post directly into the verified information repository. Member reactions can flag a post for review; assigned verification admins promote only after checklist review. Likes mean "worth reviewing", not "true".
+- Membership rule: start with light community recognition using UK phone/referral/admin approval/rules acceptance/status. Avoid passport, BRP/eVisa, immigration-status, proof-of-address, or other sensitive document collection in the first pilot.
+- Pilot plan: begin with Greg/admins plus a small selected member group, then review before wider rollout.
+- Devil's advocate: 700+ members is potential, not adoption or revenue. Do not claim partnership, deployment, legal compliance, or whole-group onboarding until written admin approval and real pilot evidence exist.
+- Greg-facing copy created at deliverables/aberdeen_dads_discovery/Aberdeen_Dads_GSN_Customer_Discovery_Summary_for_Greg_2026-08-30.md and .docx; sent externally to the participant for review/correction. No private contact detail is recorded here.
 ## 2026-08-27 - Local meeting attendance QR/proximity Presence Evidence
 - Status: Local implementation verified; not pushed/deployed because the owner asked to complete the slice, not publish it yet.
 - Added backend attendance sessions and check-ins for community meetings: admins can open an attendance window, GSN generates an attendance token/check-in URL, and members can record one deduped check-in per meeting.

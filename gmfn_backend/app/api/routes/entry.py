@@ -37,6 +37,199 @@ from app.services.trust_score_service import apply_trust_score
 router = APIRouter(prefix="/entry", tags=["entry"])
 
 
+COMMUNITY_TYPE_LABELS: dict[str, str] = {
+    "informal_social": "Informal / Social Community",
+    "local_support": "Local Support Community",
+    "migrant_community": "Migrant Community",
+    "alumni_school": "Alumni / School Community",
+    "marketplace_community": "Marketplace Community",
+    "professional_community": "Professional Community",
+    "registered_organisation": "Registered Organisation",
+    "welfare_contribution": "Welfare / Contribution Community",
+    "other": "Other",
+}
+
+GOVERNANCE_WEIGHT_LABELS: dict[str, str] = {
+    "light": "Light",
+    "standard": "Standard",
+    "high": "High",
+}
+
+COMMUNITY_GOVERNANCE_PRESETS: dict[tuple[str, str], dict[str, Any]] = {
+    ("informal_social", "light"): {
+        "preset_key": "light_informal_social",
+        "label": "Light Informal Social Community",
+        "verification_mode": "light_member_verification",
+    },
+    ("local_support", "light"): {
+        "preset_key": "light_local_support_network",
+        "label": "Light Local Support Network",
+        "verification_mode": "light_member_verification",
+    },
+    ("migrant_community", "light"): {
+        "preset_key": "light_migrant_support_network",
+        "label": "Light Migrant Support Network",
+        "verification_mode": "light_member_verification",
+    },
+    ("alumni_school", "light"): {
+        "preset_key": "light_alumni_group",
+        "label": "Light Alumni Group",
+        "verification_mode": "light_member_verification",
+    },
+    ("marketplace_community", "standard"): {
+        "preset_key": "standard_marketplace_network",
+        "label": "Standard Marketplace Network",
+        "verification_mode": "standard_member_verification",
+    },
+    ("professional_community", "standard"): {
+        "preset_key": "standard_professional_network",
+        "label": "Standard Professional Network",
+        "verification_mode": "role_verification_available",
+    },
+    ("registered_organisation", "high"): {
+        "preset_key": "structured_registered_organisation",
+        "label": "Structured Registered Organisation",
+        "verification_mode": "stronger_admin_verification",
+    },
+    ("welfare_contribution", "high"): {
+        "preset_key": "high_trust_welfare_contribution",
+        "label": "High-Trust Welfare / Contribution Community",
+        "verification_mode": "full_member_verification_available",
+    },
+    ("other", "light"): {
+        "preset_key": "light_informal_social",
+        "label": "Light Informal Social Community",
+        "verification_mode": "light_member_verification",
+    },
+    ("other", "standard"): {
+        "preset_key": "standard_professional_network",
+        "label": "Standard Professional Network",
+        "verification_mode": "standard_member_verification",
+    },
+    ("other", "high"): {
+        "preset_key": "structured_registered_organisation",
+        "label": "Structured Registered Organisation",
+        "verification_mode": "stronger_admin_verification",
+    },
+}
+
+HIGH_TRUST_COMMUNITY_TYPES = {"registered_organisation", "welfare_contribution"}
+STANDARD_MINIMUM_COMMUNITY_TYPES = {"marketplace_community", "professional_community"}
+
+
+def _normalize_community_type(value: object) -> str:
+    raw = _clean_text(value)
+    key = raw.lower().replace("&", "and").replace("/", " ")
+    key = "_".join(part for part in key.replace("-", " ").split() if part)
+    aliases = {
+        "informal": "informal_social",
+        "informal_social_community": "informal_social",
+        "social": "informal_social",
+        "local_support_community": "local_support",
+        "migrant": "migrant_community",
+        "alumni": "alumni_school",
+        "school": "alumni_school",
+        "alumni_school_community": "alumni_school",
+        "marketplace": "marketplace_community",
+        "professional": "professional_community",
+        "registered": "registered_organisation",
+        "organisation": "registered_organisation",
+        "organization": "registered_organisation",
+        "registered_organization": "registered_organisation",
+        "welfare": "welfare_contribution",
+        "contribution": "welfare_contribution",
+        "welfare_contribution_community": "welfare_contribution",
+    }
+    key = aliases.get(key, key)
+    return key if key in COMMUNITY_TYPE_LABELS else "informal_social"
+
+
+def _normalize_governance_weight(value: object, *, community_type: str) -> str:
+    raw = _clean_text(value).lower()
+    weight = raw if raw in GOVERNANCE_WEIGHT_LABELS else "light"
+    if community_type in HIGH_TRUST_COMMUNITY_TYPES:
+        return "high"
+    if community_type in STANDARD_MINIMUM_COMMUNITY_TYPES and weight == "light":
+        return "standard"
+    return weight
+
+
+def _bool_or_default(value: Optional[bool], default: bool) -> bool:
+    return bool(default if value is None else value)
+
+
+def _entry_governance_profile_payload(payload: "CreateEntryIn") -> dict[str, Any]:
+    community_type = _normalize_community_type(payload.community_type)
+    governance_weight = _normalize_governance_weight(
+        payload.governance_weight,
+        community_type=community_type,
+    )
+    preset = COMMUNITY_GOVERNANCE_PRESETS.get(
+        (community_type, governance_weight),
+        COMMUNITY_GOVERNANCE_PRESETS[("informal_social", "light")],
+    )
+    require_full_member_verification = _bool_or_default(
+        payload.require_full_member_verification,
+        governance_weight == "high",
+    )
+    policies = {
+        "allow_public_invite_link": _bool_or_default(payload.allow_public_invite_link, True),
+        "require_admin_approval_after_invite": _bool_or_default(
+            payload.require_admin_approval_after_invite,
+            True,
+        ),
+        "enable_member_service_listings": _bool_or_default(
+            payload.enable_member_service_listings,
+            community_type
+            in {
+                "local_support",
+                "migrant_community",
+                "marketplace_community",
+                "professional_community",
+                "welfare_contribution",
+            },
+        ),
+        "require_admin_approval_for_listings": _bool_or_default(
+            payload.require_admin_approval_for_listings,
+            True,
+        ),
+        "enable_community_records": _bool_or_default(payload.enable_community_records, True),
+        "allow_member_record_submissions": _bool_or_default(
+            payload.allow_member_record_submissions,
+            False,
+        ),
+        "require_admin_approval_for_records": _bool_or_default(
+            payload.require_admin_approval_for_records,
+            True,
+        ),
+        "require_full_member_verification": require_full_member_verification,
+    }
+    return {
+        "community_type": community_type,
+        "community_type_label": COMMUNITY_TYPE_LABELS[community_type],
+        "governance_weight": governance_weight,
+        "governance_weight_label": GOVERNANCE_WEIGHT_LABELS[governance_weight],
+        "preset_key": preset["preset_key"],
+        "preset_label": preset["label"],
+        "verification_mode": preset["verification_mode"],
+        "policies": policies,
+        "requirements": {
+            "creator_admin_verification_required": True,
+            "member_name_required": True,
+            "member_phone_required": True,
+            "rules_acceptance_required": True,
+            "passport_required_by_default": require_full_member_verification,
+            "brp_or_evisa_required_by_default": False,
+            "proof_of_address_required_by_default": require_full_member_verification,
+        },
+        "truth_boundary": (
+            "Recorded as setup evidence only in this slice. It does not create a paid "
+            "Community Domain, verify the community, migrate schema, or enforce every "
+            "policy across the app yet."
+        ),
+    }
+
+
 def _reject_bool_float_integer(value: Any, field_name: str) -> Any:
     if value is None:
         return value
@@ -229,6 +422,17 @@ class CreateEntryIn(BaseModel):
     confirm_password: Optional[str] = Field(default=None, min_length=6, max_length=128)
     clan_name: str = Field(..., min_length=2, max_length=80)
     clan_description: Optional[str] = Field(default=None, max_length=500)
+    community_type: Optional[str] = Field(default=None, max_length=64)
+    governance_weight: Optional[str] = Field(default=None, max_length=32)
+    governance_preset_key: Optional[str] = Field(default=None, max_length=96)
+    allow_public_invite_link: Optional[bool] = None
+    require_admin_approval_after_invite: Optional[bool] = None
+    enable_member_service_listings: Optional[bool] = None
+    require_admin_approval_for_listings: Optional[bool] = None
+    enable_community_records: Optional[bool] = None
+    allow_member_record_submissions: Optional[bool] = None
+    require_admin_approval_for_records: Optional[bool] = None
+    require_full_member_verification: Optional[bool] = None
     create_code: Optional[str] = Field(default=None, max_length=128)
 
     @field_validator("verification_id", mode="before")
@@ -250,6 +454,9 @@ class CreateEntryIn(BaseModel):
         "confirm_password",
         "clan_name",
         "clan_description",
+        "community_type",
+        "governance_weight",
+        "governance_preset_key",
         "create_code",
         mode="before",
     )
@@ -270,6 +477,7 @@ class CreateEntryOut(BaseModel):
     clan_name: str
     membership_role: str
     next_step: str
+    governance_profile: dict[str, Any]
     access_token: Optional[str] = None
     token_type: Optional[str] = None
 
@@ -1841,6 +2049,32 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
         clan_description=_clean_text(payload.clan_description) or None,
     )
 
+    governance_profile = _entry_governance_profile_payload(payload)
+    requested_preset_key = _clean_text(payload.governance_preset_key)
+    if requested_preset_key and requested_preset_key != governance_profile["preset_key"]:
+        governance_profile["requested_preset_key"] = requested_preset_key
+        governance_profile["preset_correction"] = "server_recomputed_from_type_and_weight"
+
+    log_trust_event(
+        db,
+        event_type="community.governance_profile_selected",
+        clan_id=int(clan.id),
+        actor_user_id=int(user.id),
+        subject_user_id=int(user.id),
+        meta=build_trust_meta(
+            reason="entry_governance_profile_selected",
+            note=(
+                f"Founder selected {governance_profile['governance_weight_label']} governance "
+                f"for {governance_profile['community_type_label']} during community setup."
+            ),
+            system=True,
+            extra=governance_profile,
+        ),
+        dedupe_key=f"entry:{int(verification.id)}:clan:{int(clan.id)}:governance",
+        commit=False,
+        refresh=False,
+    )
+
     if invite is not None:
         invite.uses = int(invite.uses or 0) + 1
         if invite.max_uses is not None and invite.uses >= int(invite.max_uses):
@@ -2180,6 +2414,7 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
         "clan_name": clan.name,
         "membership_role": membership_role,
         "next_step": "build-first-circle" if access_token else "activate-membership",
+        "governance_profile": governance_profile,
         "access_token": access_token,
         "token_type": "bearer" if access_token else None,
     }

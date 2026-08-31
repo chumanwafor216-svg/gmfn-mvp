@@ -313,6 +313,11 @@ Must show:
 - 3-step wizard
 - Step 1: Your details
 - Step 2: Community setup
+- Community type choice
+- Governance weight choice
+- Recommended governance preset
+- Requirements summary
+- Limited setup controls before advanced settings
 - Step 3: Founder trust level / optional verification choices
 
 Rules:
@@ -339,6 +344,7 @@ Must show:
 - invite code or community code input
 - requester details
 - reason / short note
+- recorded community setup/governance note when the invite preview provides one
 - submit request button
 - privacy and approval note
 

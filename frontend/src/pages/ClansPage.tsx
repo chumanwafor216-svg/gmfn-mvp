@@ -42,6 +42,7 @@ type CommunityItem = {
   memberships?: any[];
   member_rows?: any[];
   created_at?: string | null;
+  governance_profile?: any;
 };
 
 type InviteState = {

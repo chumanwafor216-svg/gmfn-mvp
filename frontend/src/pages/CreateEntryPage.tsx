@@ -101,6 +101,253 @@ const COMMUNITY_STORY_PRESETS = [
   },
 ];
 
+type CommunityTypeKey =
+  | "informal_social"
+  | "local_support"
+  | "migrant_community"
+  | "alumni_school"
+  | "marketplace_community"
+  | "professional_community"
+  | "registered_organisation"
+  | "welfare_contribution"
+  | "other";
+
+type GovernanceWeightKey = "light" | "standard" | "high";
+
+type GovernanceToggleKey =
+  | "allow_public_invite_link"
+  | "require_admin_approval_after_invite"
+  | "enable_member_service_listings"
+  | "require_admin_approval_for_listings"
+  | "enable_community_records"
+  | "allow_member_record_submissions"
+  | "require_admin_approval_for_records"
+  | "require_full_member_verification";
+
+type GovernanceToggles = Record<GovernanceToggleKey, boolean>;
+
+const COMMUNITY_TYPE_OPTIONS: Array<{
+  key: CommunityTypeKey;
+  label: string;
+  summary: string;
+}> = [
+  {
+    key: "informal_social",
+    label: "Informal / Social Community",
+    summary: "Friends, local circles, school groups, or informal support.",
+  },
+  {
+    key: "local_support",
+    label: "Local Support Community",
+    summary: "People helping one another with practical local needs.",
+  },
+  {
+    key: "migrant_community",
+    label: "Migrant Community",
+    summary: "Settlement support, trusted information, services, and referrals.",
+  },
+  {
+    key: "alumni_school",
+    label: "Alumni / School Community",
+    summary: "Old students, school families, class groups, and alumni circles.",
+  },
+  {
+    key: "marketplace_community",
+    label: "Marketplace Community",
+    summary: "Member services, adverts, product listings, and demand matching.",
+  },
+  {
+    key: "professional_community",
+    label: "Professional Community",
+    summary: "Skilled members, referrals, credentials, and role-based trust.",
+  },
+  {
+    key: "registered_organisation",
+    label: "Registered Organisation",
+    summary: "An association, charity, church, union, NGO, school, or cooperative.",
+  },
+  {
+    key: "welfare_contribution",
+    label: "Welfare / Contribution Community",
+    summary: "Groups involving dues, welfare funds, contributions, or guarantees.",
+  },
+  {
+    key: "other",
+    label: "Other",
+    summary: "Start simple, then adjust the recommendation before saving.",
+  },
+];
+
+const GOVERNANCE_WEIGHT_OPTIONS: Array<{
+  key: GovernanceWeightKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "light",
+    label: "Light",
+    note: "Simple admin-approved community with low paperwork.",
+  },
+  {
+    key: "standard",
+    label: "Standard",
+    note: "Organised group with roles, records, rules, and member controls.",
+  },
+  {
+    key: "high",
+    label: "High",
+    note: "Stronger checks for money, credentials, or formal responsibility.",
+  },
+];
+
+const HIGH_TRUST_COMMUNITY_TYPES = new Set<CommunityTypeKey>([
+  "registered_organisation",
+  "welfare_contribution",
+]);
+
+const STANDARD_MINIMUM_COMMUNITY_TYPES = new Set<CommunityTypeKey>([
+  "marketplace_community",
+  "professional_community",
+]);
+
+const GOVERNANCE_TOGGLE_OPTIONS: Array<{
+  key: GovernanceToggleKey;
+  label: string;
+}> = [
+  { key: "allow_public_invite_link", label: "Allow public invite/share link" },
+  { key: "require_admin_approval_after_invite", label: "Require admin approval after invite" },
+  { key: "enable_member_service_listings", label: "Enable member service listings" },
+  { key: "require_admin_approval_for_listings", label: "Require admin approval for listings" },
+  { key: "enable_community_records", label: "Enable Community Records" },
+  { key: "allow_member_record_submissions", label: "Allow member record submissions" },
+  { key: "require_admin_approval_for_records", label: "Require admin approval for records" },
+  { key: "require_full_member_verification", label: "Require full member verification" },
+];
+
+const GOVERNANCE_PRESET_LABELS: Record<string, string> = {
+  light_informal_social: "Light Informal Social Community",
+  light_local_support_network: "Light Local Support Network",
+  light_migrant_support_network: "Light Migrant Support Network",
+  light_alumni_group: "Light Alumni Group",
+  standard_marketplace_network: "Standard Marketplace Network",
+  standard_professional_network: "Standard Professional Network",
+  structured_registered_organisation: "Structured Registered Organisation",
+  high_trust_welfare_contribution: "High-Trust Welfare / Contribution Community",
+};
+
+const GOVERNANCE_PRESET_MAP: Record<string, string> = {
+  "informal_social:light": "light_informal_social",
+  "local_support:light": "light_local_support_network",
+  "migrant_community:light": "light_migrant_support_network",
+  "alumni_school:light": "light_alumni_group",
+  "marketplace_community:standard": "standard_marketplace_network",
+  "professional_community:standard": "standard_professional_network",
+  "registered_organisation:high": "structured_registered_organisation",
+  "welfare_contribution:high": "high_trust_welfare_contribution",
+  "other:light": "light_informal_social",
+  "other:standard": "standard_professional_network",
+  "other:high": "structured_registered_organisation",
+};
+
+function isCommunityTypeKey(value: unknown): value is CommunityTypeKey {
+  return COMMUNITY_TYPE_OPTIONS.some((item) => item.key === value);
+}
+
+function isGovernanceWeightKey(value: unknown): value is GovernanceWeightKey {
+  return value === "light" || value === "standard" || value === "high";
+}
+
+function normalizeCommunityTypeKey(value: unknown): CommunityTypeKey {
+  const raw = safeStr(value).toLowerCase().replace(/[&/]/g, " ").replace(/-/g, " ");
+  const key = raw.split(/\s+/).filter(Boolean).join("_");
+  const aliases: Record<string, CommunityTypeKey> = {
+    informal: "informal_social",
+    informal_social_community: "informal_social",
+    social: "informal_social",
+    local_support_community: "local_support",
+    migrant: "migrant_community",
+    alumni: "alumni_school",
+    school: "alumni_school",
+    marketplace: "marketplace_community",
+    professional: "professional_community",
+    registered: "registered_organisation",
+    organisation: "registered_organisation",
+    organization: "registered_organisation",
+    registered_organization: "registered_organisation",
+    welfare: "welfare_contribution",
+    contribution: "welfare_contribution",
+    welfare_contribution_community: "welfare_contribution",
+  };
+  const normalized = aliases[key] || key;
+  return isCommunityTypeKey(normalized) ? normalized : "informal_social";
+}
+
+function defaultGovernanceWeightForType(type: CommunityTypeKey): GovernanceWeightKey {
+  if (HIGH_TRUST_COMMUNITY_TYPES.has(type)) return "high";
+  if (STANDARD_MINIMUM_COMMUNITY_TYPES.has(type)) return "standard";
+  return "light";
+}
+
+function normalizeGovernanceWeightForType(
+  type: CommunityTypeKey,
+  value: unknown
+): GovernanceWeightKey {
+  const requested = isGovernanceWeightKey(value) ? value : defaultGovernanceWeightForType(type);
+  if (HIGH_TRUST_COMMUNITY_TYPES.has(type)) return "high";
+  if (STANDARD_MINIMUM_COMMUNITY_TYPES.has(type) && requested === "light") return "standard";
+  return requested;
+}
+
+function governancePresetFor(type: CommunityTypeKey, weight: GovernanceWeightKey) {
+  const presetKey = GOVERNANCE_PRESET_MAP[`${type}:${weight}`] || "light_informal_social";
+  return {
+    presetKey,
+    presetLabel: GOVERNANCE_PRESET_LABELS[presetKey] || "Light Informal Social Community",
+  };
+}
+
+function defaultGovernanceToggles(
+  type: CommunityTypeKey,
+  weight: GovernanceWeightKey
+): GovernanceToggles {
+  const serviceListings = new Set<CommunityTypeKey>([
+    "local_support",
+    "migrant_community",
+    "marketplace_community",
+    "professional_community",
+    "welfare_contribution",
+  ]).has(type);
+  const fullVerification = weight === "high";
+  return {
+    allow_public_invite_link: true,
+    require_admin_approval_after_invite: true,
+    enable_member_service_listings: serviceListings,
+    require_admin_approval_for_listings: true,
+    enable_community_records: true,
+    allow_member_record_submissions: false,
+    require_admin_approval_for_records: true,
+    require_full_member_verification: fullVerification,
+  };
+}
+
+function normalizeGovernanceToggles(
+  value: unknown,
+  type: CommunityTypeKey,
+  weight: GovernanceWeightKey
+): GovernanceToggles {
+  const defaults = defaultGovernanceToggles(type, weight);
+  if (!value || typeof value !== "object") return defaults;
+  const record = value as Partial<Record<GovernanceToggleKey, unknown>>;
+  const next = { ...defaults };
+  GOVERNANCE_TOGGLE_OPTIONS.forEach((item) => {
+    if (Object.prototype.hasOwnProperty.call(record, item.key)) {
+      next[item.key] = Boolean(record[item.key]);
+    }
+  });
+  if (weight === "high") next.require_full_member_verification = true;
+  return next;
+}
+
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
@@ -1370,6 +1617,12 @@ export default function CreateEntryPage() {
         countryOfOrigin?: string;
         residential_area?: string;
         residentialArea?: string;
+        community_type?: string;
+        communityType?: string;
+        governance_weight?: string;
+        governanceWeight?: string;
+        governance_toggles?: Partial<GovernanceToggles>;
+        governanceToggles?: Partial<GovernanceToggles>;
         create_code?: string;
       };
     } | null)?.create_entry || null;
@@ -1389,6 +1642,9 @@ export default function CreateEntryPage() {
     restoredDraft &&
       (safeStr(restoredDraft.communityName) ||
         safeStr(restoredDraft.description) ||
+        safeStr(restoredDraft.communityType) ||
+        safeStr(restoredDraft.governanceWeight) ||
+        Boolean(restoredDraft.governanceToggles) ||
         safeStr(restoredDraft.displayName) ||
         safeStr(restoredDraft.phone) ||
         safeStr(restoredDraft.email) ||
@@ -1481,6 +1737,28 @@ export default function CreateEntryPage() {
       restoredDraft?.residentialArea ||
       ""
   );
+  const initialCommunityType = normalizeCommunityTypeKey(
+    stateCreateEntry?.community_type ||
+      stateCreateEntry?.communityType ||
+      search.get("community_type") ||
+      restoredDraft?.communityType ||
+      ""
+  );
+  const initialGovernanceWeight = normalizeGovernanceWeightForType(
+    initialCommunityType,
+    stateCreateEntry?.governance_weight ||
+      stateCreateEntry?.governanceWeight ||
+      search.get("governance_weight") ||
+      restoredDraft?.governanceWeight ||
+      defaultGovernanceWeightForType(initialCommunityType)
+  );
+  const initialGovernanceToggles = normalizeGovernanceToggles(
+    stateCreateEntry?.governance_toggles ||
+      stateCreateEntry?.governanceToggles ||
+      restoredDraft?.governanceToggles,
+    initialCommunityType,
+    initialGovernanceWeight
+  );
 
   const hasInitialCommunityContext = Boolean(
     initialCommunityName || initialDescription
@@ -1509,6 +1787,11 @@ export default function CreateEntryPage() {
   const [birthPlace, setBirthPlace] = useState(initialBirthPlace);
   const [countryOfOrigin, setCountryOfOrigin] = useState(initialCountryOfOrigin);
   const [residentialArea, setResidentialArea] = useState(initialResidentialArea);
+  const [communityType, setCommunityType] = useState<CommunityTypeKey>(initialCommunityType);
+  const [governanceWeight, setGovernanceWeight] =
+    useState<GovernanceWeightKey>(initialGovernanceWeight);
+  const [governanceToggles, setGovernanceToggles] =
+    useState<GovernanceToggles>(initialGovernanceToggles);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -1596,6 +1879,26 @@ export default function CreateEntryPage() {
     () => evidenceRequirementForCountry(country || bankCountry || driverLicenceCountry),
     [bankCountry, country, driverLicenceCountry]
   );
+  const governanceTypeOption = useMemo(
+    () =>
+      COMMUNITY_TYPE_OPTIONS.find((item) => item.key === communityType) ||
+      COMMUNITY_TYPE_OPTIONS[0],
+    [communityType]
+  );
+  const governanceWeightOption = useMemo(
+    () =>
+      GOVERNANCE_WEIGHT_OPTIONS.find((item) => item.key === governanceWeight) ||
+      GOVERNANCE_WEIGHT_OPTIONS[0],
+    [governanceWeight]
+  );
+  const governancePreset = useMemo(
+    () => governancePresetFor(communityType, governanceWeight),
+    [communityType, governanceWeight]
+  );
+  const fullMemberVerificationOn = Boolean(governanceToggles.require_full_member_verification);
+  const governanceRequirementSummary = fullMemberVerificationOn
+    ? "Creator verification, admin approval, rules acceptance, and stronger member checks."
+    : "Creator verification, admin approval, rules acceptance, member name and phone. No passport, BRP/eVisa, or proof of address by default.";
 
   const passwordReady =
     safeStr(password).length >= 6 && safeStr(password) === safeStr(confirmPassword);
@@ -1903,6 +2206,41 @@ export default function CreateEntryPage() {
     clearFeedback(target);
   }
 
+  function resetCommunityRecordedState(target: FeedbackTarget = "community") {
+    setCommunityDetailsRecorded(false);
+    setCreateOutcome(null);
+    clearFeedback(target);
+  }
+
+  function handleCommunityTypeChange(value: string) {
+    const nextType = normalizeCommunityTypeKey(value);
+    const nextWeight = normalizeGovernanceWeightForType(nextType, governanceWeight);
+    setCommunityType(nextType);
+    setGovernanceWeight(nextWeight);
+    setGovernanceToggles((current) =>
+      normalizeGovernanceToggles(current, nextType, nextWeight)
+    );
+    resetCommunityRecordedState();
+  }
+
+  function handleGovernanceWeightChange(value: string) {
+    const nextWeight = normalizeGovernanceWeightForType(communityType, value);
+    setGovernanceWeight(nextWeight);
+    setGovernanceToggles((current) =>
+      normalizeGovernanceToggles(current, communityType, nextWeight)
+    );
+    resetCommunityRecordedState();
+  }
+
+  function handleGovernanceToggleChange(key: GovernanceToggleKey, value: boolean) {
+    setGovernanceToggles((current) => {
+      const next = { ...current, [key]: value };
+      if (governanceWeight === "high") next.require_full_member_verification = true;
+      return next;
+    });
+    resetCommunityRecordedState();
+  }
+
   async function copyCommunityStory(textToCopy: string) {
     const clean = safeStr(textToCopy);
     if (!clean) return;
@@ -1944,6 +2282,9 @@ export default function CreateEntryPage() {
       birthPlace,
       countryOfOrigin,
       residentialArea,
+      communityType,
+      governanceWeight,
+      governanceToggles,
       createCode,
       step,
       openPanel,
@@ -1961,6 +2302,7 @@ export default function CreateEntryPage() {
     birthCountry,
     birthPlace,
     communityName,
+    communityType,
     countryOfOrigin,
     createCode,
     country,
@@ -1968,6 +2310,8 @@ export default function CreateEntryPage() {
     description,
     displayName,
     email,
+    governanceToggles,
+    governanceWeight,
     guideDone,
     identityPhotoResult,
     licenceVerificationResult,
@@ -2451,6 +2795,9 @@ export default function CreateEntryPage() {
   function clearCommunityBlock() {
     setCommunityName("");
     setDescription("");
+    setCommunityType("informal_social");
+    setGovernanceWeight("light");
+    setGovernanceToggles(defaultGovernanceToggles("informal_social", "light"));
     setCommunityDetailsRecorded(false);
     setCreateOutcome(null);
     setOptionalEvidenceStep("photo");
@@ -3038,6 +3385,20 @@ export default function CreateEntryPage() {
       verification_id: activeVerificationId,
       clan_name: safeStr(communityName),
       clan_description: safeStr(description) || undefined,
+      community_type: communityType,
+      governance_weight: governanceWeight,
+      governance_preset_key: governancePreset.presetKey,
+      allow_public_invite_link: governanceToggles.allow_public_invite_link,
+      require_admin_approval_after_invite:
+        governanceToggles.require_admin_approval_after_invite,
+      enable_member_service_listings: governanceToggles.enable_member_service_listings,
+      require_admin_approval_for_listings:
+        governanceToggles.require_admin_approval_for_listings,
+      enable_community_records: governanceToggles.enable_community_records,
+      allow_member_record_submissions: governanceToggles.allow_member_record_submissions,
+      require_admin_approval_for_records:
+        governanceToggles.require_admin_approval_for_records,
+      require_full_member_verification: governanceToggles.require_full_member_verification,
       password: safeStr(password),
       confirm_password: safeStr(confirmPassword),
       display_name: safeStr(displayName),
@@ -5774,6 +6135,164 @@ export default function CreateEntryPage() {
                     />
                   </div>
 
+                  <div
+                    style={{
+                      display: communityDecisionMode ? "none" : "grid",
+                      gap: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+                        gap: 12,
+                      }}
+                    >
+                      <div>
+                        <div style={fieldLabel()}>Community type</div>
+                        <select
+                          value={communityType}
+                          onChange={(e) => handleCommunityTypeChange(e.target.value)}
+                          style={input()}
+                        >
+                          {COMMUNITY_TYPE_OPTIONS.map((item) => (
+                            <option key={item.key} value={item.key}>
+                              {item.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <div style={fieldLabel()}>Governance weight</div>
+                        <select
+                          value={governanceWeight}
+                          onChange={(e) => handleGovernanceWeightChange(e.target.value)}
+                          style={input()}
+                        >
+                          {GOVERNANCE_WEIGHT_OPTIONS.map((item) => (
+                            <option
+                              key={item.key}
+                              value={item.key}
+                              disabled={
+                                (HIGH_TRUST_COMMUNITY_TYPES.has(communityType) &&
+                                  item.key !== "high") ||
+                                (STANDARD_MINIMUM_COMMUNITY_TYPES.has(communityType) &&
+                                  item.key === "light")
+                              }
+                            >
+                              {item.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        ...softCard("rgba(8,35,58,0.62)"),
+                        border: "1px solid rgba(214,170,69,0.22)",
+                        boxShadow: "none",
+                        display: "grid",
+                        gap: 10,
+                      }}
+                    >
+                      <div style={{ ...sectionLabel(), color: "#F2C766" }}>GSN recommends</div>
+                      <div
+                        style={{
+                          color: "#FFFFFF",
+                          fontSize: 18,
+                          fontWeight: 1000,
+                          lineHeight: 1.25,
+                        }}
+                      >
+                        {governancePreset.presetLabel}
+                      </div>
+                      <div
+                        style={{
+                          color: "#D7E3F1",
+                          fontSize: 13,
+                          lineHeight: 1.55,
+                          fontWeight: 760,
+                        }}
+                      >
+                        {governanceTypeOption.summary} {governanceWeightOption.note}
+                      </div>
+                      <div
+                        style={{
+                          color: "#F6E7B7",
+                          fontSize: 13,
+                          lineHeight: 1.55,
+                          fontWeight: 860,
+                        }}
+                      >
+                        {governanceRequirementSummary}
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        ...softCard("#F8FBFF"),
+                        display: "grid",
+                        gap: 10,
+                      }}
+                    >
+                      <div style={sectionLabel()}>Setup controls</div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+                          gap: 8,
+                        }}
+                      >
+                        {GOVERNANCE_TOGGLE_OPTIONS.map((item) => {
+                          const lockedHighFullVerification =
+                            item.key === "require_full_member_verification" &&
+                            governanceWeight === "high";
+                          return (
+                            <label
+                              key={item.key}
+                              style={{
+                                minHeight: 44,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 10,
+                                borderRadius: 14,
+                                border: "1px solid rgba(17,37,58,0.10)",
+                                background: "rgba(255,255,255,0.82)",
+                                color: "#0B1F33",
+                                fontSize: 12.5,
+                                fontWeight: 900,
+                                lineHeight: 1.3,
+                                padding: "9px 10px",
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={Boolean(governanceToggles[item.key])}
+                                disabled={lockedHighFullVerification}
+                                onChange={(e) =>
+                                  handleGovernanceToggleChange(item.key, e.target.checked)
+                                }
+                                style={{ width: 18, height: 18, flex: "0 0 auto" }}
+                              />
+                              <span>{item.label}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      <div
+                        style={{
+                          color: "#5D718A",
+                          fontSize: 12.5,
+                          lineHeight: 1.5,
+                          fontWeight: 760,
+                        }}
+                      >
+                        This records the setup choice now. Full policy enforcement can be deepened later without changing this entry path.
+                      </div>
+                    </div>
+                  </div>
+
                   <div style={{ display: communityDecisionMode ? "none" : undefined }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "baseline" }}>
                       <div style={fieldLabel()}>Short community story</div>
@@ -5928,6 +6447,21 @@ export default function CreateEntryPage() {
                           Done: Community details
                         </div>
                       ) : null}
+                      <div
+                        style={{
+                          justifySelf: "start",
+                          borderRadius: 999,
+                          border: "1px solid rgba(11,45,74,0.14)",
+                          background: "rgba(11,45,74,0.08)",
+                          color: createOutcome ? "#065F46" : "#0B2D4A",
+                          padding: "6px 10px",
+                          fontSize: 11,
+                          fontWeight: 1000,
+                          lineHeight: 1,
+                        }}
+                      >
+                        {governancePreset.presetLabel}
+                      </div>
                       <div
                         style={{
                           color: createOutcome ? "#065F46" : "#92400E",

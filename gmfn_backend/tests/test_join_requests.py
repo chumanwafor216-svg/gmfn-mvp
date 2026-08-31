@@ -46,6 +46,40 @@ def _seed_join_context(*, invite_code: str = "legacy-code") -> None:
         db.commit()
 
 
+def _seed_governance_profile_event() -> None:
+    with SessionLocal() as db:
+        db.add(
+            TrustEvent(
+                event_type="community.governance_profile_selected",
+                clan_id=1,
+                actor_user_id=1,
+                subject_user_id=1,
+                meta_json=json.dumps(
+                    {
+                        "reason": "entry_governance_profile_selected",
+                        "community_type": "migrant_community",
+                        "community_type_label": "Migrant Community",
+                        "governance_weight": "light",
+                        "governance_weight_label": "Light",
+                        "preset_key": "light_migrant_support_network",
+                        "preset_label": "Light Migrant Support Network",
+                        "verification_mode": "light_member_verification",
+                        "policies": {
+                            "allow_public_invite_link": True,
+                            "require_admin_approval_after_invite": True,
+                        },
+                        "requirements": {
+                            "member_phone_required": True,
+                            "passport_required_by_default": False,
+                        },
+                        "truth_boundary": "Recorded as setup evidence only.",
+                    }
+                ),
+                created_at=datetime(2026, 8, 31, 12, 0, tzinfo=timezone.utc),
+            )
+        )
+        db.commit()
+
 def _join_payload(invite_code: str) -> dict[str, str]:
     return {
         "invite_code": invite_code,
@@ -133,6 +167,36 @@ def test_public_join_invite_preview_reports_ready_invite(client):
     assert data["community_name"] == "Aberdeen City ICA"
     assert data["invite_id"] == 1
 
+
+def test_public_join_invite_preview_exposes_governance_profile(client):
+    _seed_join_context()
+    _seed_governance_profile_event()
+
+    with SessionLocal() as db:
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="package-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    res = client.get("/clans/join-invite/preview?code=package-code")
+
+    assert res.status_code == 200, res.text
+    profile = res.json()["governance_profile"]
+    assert profile["community_type"] == "migrant_community"
+    assert profile["governance_weight"] == "light"
+    assert profile["preset_key"] == "light_migrant_support_network"
+    assert profile["requirements"]["passport_required_by_default"] is False
+    assert profile["truth_boundary"].startswith("Recorded as setup evidence only")
 
 def test_public_join_invite_preview_reports_invalid_invite_without_throwing(client):
     _seed_join_context()

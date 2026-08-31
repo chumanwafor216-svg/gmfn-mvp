@@ -79,6 +79,69 @@ def test_entry_phone_default_registers_without_sms_for_controlled_testing(client
         assert event.subject_user_id == create_body["user_id"]
 
 
+def test_entry_create_records_light_governance_profile(client, monkeypatch):
+    monkeypatch.delenv("GMFN_DEV_MODE", raising=False)
+    monkeypatch.delenv("GMFN_ENTRY_PHONE_DELIVERY", raising=False)
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Greg Founder",
+            "phone_e164": "+447700900301",
+            "email": "greg-founder@example.com",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    start_body = start_res.json()
+
+    create_res = client.post(
+        "/entry/create",
+        json={
+            "verification_id": start_body["verification_id"],
+            "clan_name": "Aberdeen Dads Pilot",
+            "clan_description": "Informal migrant support and member services network.",
+            "community_type": "migrant_community",
+            "governance_weight": "light",
+            "governance_preset_key": "light_migrant_support_network",
+            "allow_public_invite_link": True,
+            "require_admin_approval_after_invite": True,
+            "enable_member_service_listings": True,
+            "require_admin_approval_for_listings": True,
+            "enable_community_records": True,
+            "allow_member_record_submissions": False,
+            "require_admin_approval_for_records": True,
+            "require_full_member_verification": False,
+        },
+    )
+    assert create_res.status_code == 201, create_res.text
+    create_body = create_res.json()
+    profile = create_body["governance_profile"]
+
+    assert profile["community_type"] == "migrant_community"
+    assert profile["governance_weight"] == "light"
+    assert profile["preset_key"] == "light_migrant_support_network"
+    assert profile["verification_mode"] == "light_member_verification"
+    assert profile["policies"]["enable_member_service_listings"] is True
+    assert profile["requirements"]["passport_required_by_default"] is False
+    assert profile["requirements"]["brp_or_evisa_required_by_default"] is False
+    assert profile["truth_boundary"].startswith("Recorded as setup evidence only")
+
+    with SessionLocal() as db:
+        event = (
+            db.query(TrustEvent)
+            .filter(
+                TrustEvent.event_type == "community.governance_profile_selected",
+                TrustEvent.clan_id == int(create_body["clan_id"]),
+            )
+            .one()
+        )
+        meta = json.loads(event.meta_json)
+        assert meta["reason"] == "entry_governance_profile_selected"
+        assert meta["preset_key"] == "light_migrant_support_network"
+        assert meta["policies"]["require_admin_approval_for_records"] is True
+        assert "does not create a paid Community Domain" in meta["truth_boundary"]
+
+
 def test_entry_phone_start_canonicalizes_local_number_and_blocks_existing_identity(client):
     with SessionLocal() as db:
         db.add(
