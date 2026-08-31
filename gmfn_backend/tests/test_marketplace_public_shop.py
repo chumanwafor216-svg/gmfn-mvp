@@ -550,7 +550,7 @@ def test_marketplace_shop_creation_reuses_matching_pending_submission(
     )
 
 
-def test_marketplace_product_creation_rejects_shop_from_different_community(
+def test_marketplace_product_creation_uses_selected_community_for_global_owner_shop(
     client,
     override_current_user_user,
     seed_clan_member_membership,
@@ -582,7 +582,7 @@ def test_marketplace_product_creation_rejects_shop_from_different_community(
                 INSERT INTO marketplace_shops (
                     id, clan_id, owner_user_id, shop_name, description, is_active, created_at
                 ) VALUES (
-                    982, 1, 1, 'Clan One Shop', 'Shop belongs to another community', 1, CURRENT_TIMESTAMP
+                    982, 1, 1, 'Clan One Shop', 'Global shop identity', 1, CURRENT_TIMESTAMP
                 )
                 """
             )
@@ -593,24 +593,27 @@ def test_marketplace_product_creation_rejects_shop_from_different_community(
         json={
             "clan_id": 2,
             "shop_id": 982,
-            "name": "Wrong community listing",
-            "description": "This should not cross community boundaries.",
+            "name": "Selected community listing",
+            "description": "This product belongs to the selected community shelf.",
             "price": "Ask",
             "currency": "GBP",
-            "image_url": "/uploads/test/wrong-community.jpg",
+            "image_url": "/uploads/test/selected-community.jpg",
         },
     )
 
-    assert response.status_code == 409, response.text
-    assert response.json()["detail"] == "Selected shop does not belong to this community"
-    assert _scalar("SELECT COUNT(*) FROM marketplace_products") == 0
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["item"]["clan_id"] == 2
+    assert body["item"]["shop_id"] == 982
+    assert _scalar("SELECT COUNT(*) FROM marketplace_products WHERE clan_id = 2 AND shop_id = 982") == 1
     assert (
         _scalar(
             "SELECT COUNT(*) FROM trust_events "
-            "WHERE event_type = 'marketplace.listing.submitted'"
+            "WHERE event_type = 'marketplace.product.created' AND clan_id = 2"
         )
-        == 0
+        == 1
     )
+
 
 
 def test_marketplace_shop_update_rejects_wrong_selected_community(
@@ -736,7 +739,7 @@ def test_marketplace_product_update_rejects_wrong_selected_community(
     assert price == "Ask"
 
 
-def test_marketplace_product_update_rejects_target_shop_from_different_community(
+def test_marketplace_product_update_rejects_target_shop_not_visible_in_product_community(
     client,
     override_current_user,
     seed_clan_admin_membership,
@@ -793,7 +796,7 @@ def test_marketplace_product_update_rejects_target_shop_from_different_community
     )
 
     assert response.status_code == 409, response.text
-    assert response.json()["detail"] == "Target shop does not belong to this product's community"
+    assert response.json()["detail"] == "Target shop is not visible in this product's community"
     with engine.begin() as conn:
         shop_id = conn.execute(
             text("SELECT shop_id FROM marketplace_products WHERE id = 989")
@@ -1297,7 +1300,7 @@ def test_marketplace_listing_review_rejection_records_decision_without_publishin
     assert duplicate_decision.status_code == 409, duplicate_decision.text
 
 
-def test_marketplace_listing_review_product_approval_rejects_shop_from_different_community(
+def test_marketplace_listing_review_product_approval_uses_selected_community_for_global_shop(
     client,
     override_current_user,
     seed_clan_admin_membership,
@@ -1326,7 +1329,7 @@ def test_marketplace_listing_review_product_approval_rejects_shop_from_different
                 INSERT INTO marketplace_shops (
                     id, clan_id, owner_user_id, shop_name, description, is_active, created_at
                 ) VALUES (
-                    992, 2, 2, 'Member Other Community Shop', 'Shop moved outside the review community', 1, CURRENT_TIMESTAMP
+                    992, 2, 2, 'Member Global Shop', 'Global shop row outside review community', 1, CURRENT_TIMESTAMP
                 )
                 """
             )
@@ -1349,11 +1352,11 @@ def test_marketplace_listing_review_product_approval_rejects_shop_from_different
                         "listing_type": "product",
                         "listing_payload": {
                             "shop_id": 992,
-                            "name": "Cross-community stale listing",
-                            "description": "Should not publish through the wrong community.",
+                            "name": "Selected community approved listing",
+                            "description": "Should publish into the review community under the global shop.",
                             "price": "Ask",
                             "currency": "GBP",
-                            "image_url": "/uploads/test/cross-community.jpg",
+                            "image_url": "/uploads/test/selected-community-review.jpg",
                             "visibility_mode": "community_visible",
                         },
                         "review_status": "pending",
@@ -1376,7 +1379,7 @@ def test_marketplace_listing_review_product_approval_rejects_shop_from_different
                     1,
                     'marketplace.listing.submitted',
                     'Marketplace listing waiting for review',
-                    'A member submitted Cross-community stale listing (product) for marketplace approval.',
+                    'A member submitted Selected community approved listing (product) for marketplace approval.',
                     :action_url,
                     'Review listing',
                     0,
@@ -1397,23 +1400,20 @@ def test_marketplace_listing_review_product_approval_rejects_shop_from_different
         json={"clan_id": 1, "decision": "approve"},
     )
 
-    assert decision.status_code == 409, decision.text
-    assert decision.json()["detail"] == "The submitted shop no longer belongs to this community."
-    assert _scalar("SELECT COUNT(*) FROM marketplace_products") == 0
+    assert decision.status_code == 200, decision.text
+    body = decision.json()
+    assert body["product"]["clan_id"] == 1
+    assert body["product"]["shop_id"] == 992
+    assert body["decision"] == "approve"
+    assert _scalar("SELECT COUNT(*) FROM marketplace_products WHERE clan_id = 1 AND shop_id = 992") == 1
     assert (
         _scalar(
             "SELECT COUNT(*) FROM trust_events "
             "WHERE event_type = 'marketplace.listing.review_decided'"
         )
-        == 0
-    )
-    assert (
-        _scalar(
-            "SELECT COUNT(*) FROM notifications "
-            "WHERE kind = 'marketplace.listing.submitted' AND is_read = 0"
-        )
         == 1
     )
+
 
 
 def test_marketplace_listing_review_approval_publishes_product_and_notifies_submitter(

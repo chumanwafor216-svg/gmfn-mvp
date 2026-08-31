@@ -998,8 +998,8 @@ def _publish_marketplace_product_submission(
         raise HTTPException(status_code=409, detail="The submitted shop is no longer available.")
     if int(shop.owner_user_id) != int(submitter_user_id):
         raise HTTPException(status_code=409, detail="The submitted shop no longer belongs to the submitting member.")
-    if int(getattr(shop, "clan_id", 0) or 0) != int(clan_id):
-        raise HTTPException(status_code=409, detail="The submitted shop no longer belongs to this community.")
+    if not _shop_is_visible_in_clan(db, shop=shop, clan_id=int(clan_id)):
+        raise HTTPException(status_code=409, detail="The submitted shop is not visible in this community.")
 
     if not _safe_str(payload.get("name")):
         raise HTTPException(status_code=422, detail="Product name is required")
@@ -3742,8 +3742,9 @@ def create_marketplace_product(
         user_id=int(current_user.id),
         clan_id=resolved_clan_id,
     )
-    if int(getattr(shop, "clan_id", 0) or 0) != int(resolved_clan_id):
-        raise HTTPException(status_code=409, detail="Selected shop does not belong to this community")
+    if not _shop_is_visible_in_clan(db, shop=shop, clan_id=int(resolved_clan_id)):
+        raise HTTPException(status_code=409, detail="Selected shop is not visible in this community")
+
     require_domain_shop_diary_enabled(db, clan_id=resolved_clan_id)
     marketplace_governance_policy = _require_member_service_listings_enabled(
         db,
@@ -4198,8 +4199,8 @@ def update_marketplace_product(
             raise HTTPException(status_code=404, detail="Target shop not found")
         if not _shop_owner_can_manage(current_user=current_user, shop=shop):
             raise HTTPException(status_code=403, detail="You cannot move this product to that shop")
-        if int(getattr(shop, "clan_id", 0) or 0) != int(product.clan_id):
-            raise HTTPException(status_code=409, detail="Target shop does not belong to this product's community")
+        if not _shop_is_visible_in_clan(db, shop=shop, clan_id=int(product.clan_id)):
+            raise HTTPException(status_code=409, detail="Target shop is not visible in this product's community")
         product.shop_id = int(payload.shop_id)
         target_shop_id = int(payload.shop_id)
         changed = True
