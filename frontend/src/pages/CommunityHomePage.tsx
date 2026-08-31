@@ -26,7 +26,9 @@ import {
   getPoolMeSummary,
   getSelectedClanId,
   createCommunityNotice,
+  decideCommunityNoticeReviewSubmission,
   acknowledgeCommunityNotice,
+  listCommunityNoticeReviewQueue,
   listCommunityNotices,
   recordCommunityMeetingInterest,
   updateCommunityNoticeSettings,
@@ -188,6 +190,20 @@ type CommunityNoticeItem = {
   board_hint?: string | null;
 };
 
+type CommunityNoticeReviewSubmission = {
+  submission_event_id?: number | string | null;
+  body?: string | null;
+  title?: string | null;
+  created_at?: string | null;
+  submitted_by_user_id?: number | string | null;
+  submitted_by_role?: string | null;
+  expiry_policy?: string | null;
+  expires_at?: string | null;
+  review_status?: string | null;
+  sender_whatsapp_number?: string | null;
+  sender_whatsapp_label?: string | null;
+  sender_contact_ready?: boolean;
+};
 type MeetingInterestResponse = "yes" | "maybe" | "no";
 
 type CommunityIconMark = GsnIconName;
@@ -1497,6 +1513,17 @@ export default function CommunityHomePage() {
   const [communityNoticesLoading, setCommunityNoticesLoading] = useState(false);
   const [communityNoticePostingPolicy, setCommunityNoticePostingPolicy] =
     useState<"members" | "admins">("members");
+  const [canPublishCommunityNotice, setCanPublishCommunityNotice] =
+    useState(false);
+  const [canSubmitCommunityNoticeForReview, setCanSubmitCommunityNoticeForReview] =
+    useState(false);
+  const [pendingCommunityNoticeReviewCount, setPendingCommunityNoticeReviewCount] =
+    useState(0);
+  const [communityNoticeReviewSubmissions, setCommunityNoticeReviewSubmissions] =
+    useState<CommunityNoticeReviewSubmission[]>([]);
+  const [communityNoticeReviewLoading, setCommunityNoticeReviewLoading] =
+    useState(false);
+  const [communityNoticeReviewBusy, setCommunityNoticeReviewBusy] = useState("");
   const [communityNoticeSettingsSaving, setCommunityNoticeSettingsSaving] =
     useState(false);
   const [noticeModalOpen, setNoticeModalOpen] = useState(false);
@@ -1528,6 +1555,36 @@ export default function CommunityHomePage() {
   const [activeCommunitySpotlightSyncIssue, setActiveCommunitySpotlightSyncIssue] =
     useState("");
   const activeCommunitySpotlightsRef = useRef<ActiveCommunitySpotlight[]>([]);
+
+  const applyCommunityNoticeListResponse = useCallback(
+    (res: any) => {
+      const rows = Array.isArray(res?.notices) ? res.notices : [];
+      setCommunityNotices(rows);
+      setCommunityNoticePostingPolicy(
+        normalizeNoticePostingPolicy(
+          firstTruthy(res?.posting_policy, selectedClan?.notice_posting_policy)
+        )
+      );
+      setCanPublishCommunityNotice(Boolean(res?.can_post_notice));
+      setCanSubmitCommunityNoticeForReview(Boolean(res?.can_submit_notice_for_review));
+      setPendingCommunityNoticeReviewCount(noticeNumber(res?.pending_notice_review_count));
+    },
+    [selectedClan?.notice_posting_policy]
+  );
+
+  const applyCommunityNoticeReviewQueueResponse = useCallback((res: any) => {
+    const rows = Array.isArray(res?.submissions) ? res.submissions : [];
+    setCommunityNoticeReviewSubmissions(rows);
+    setPendingCommunityNoticeReviewCount(
+      noticeNumber(firstTruthy(res?.pending_review_count, rows.length))
+    );
+  }, []);
+
+  async function refreshCommunityNoticeReviewQueue(clanId: number) {
+    const res = await listCommunityNoticeReviewQueue({ clan_id: clanId, limit: 10 });
+    applyCommunityNoticeReviewQueueResponse(res);
+    return res;
+  }
 
   const [collapsed, setCollapsed] = useState<CollapseState>(() =>
     normalizeCollapseState(
@@ -1747,6 +1804,12 @@ export default function CommunityHomePage() {
     if (!clanId) {
       setCommunityNotices([]);
       setCommunityNoticePostingPolicy("members");
+      setCanPublishCommunityNotice(false);
+      setCanSubmitCommunityNoticeForReview(false);
+      setPendingCommunityNoticeReviewCount(0);
+      setCommunityNoticeReviewSubmissions([]);
+      setCommunityNoticeReviewLoading(false);
+      setCommunityNoticeReviewBusy("");
       setCommunityNoticesLoading(false);
       return;
     }
@@ -1757,20 +1820,14 @@ export default function CommunityHomePage() {
       const res = await listCommunityNotices({ clan_id: clanId, limit: 3 }).catch(() => null);
       if (!alive) return;
 
-      const rows = Array.isArray(res?.notices) ? res.notices : [];
-      setCommunityNotices(rows);
-      setCommunityNoticePostingPolicy(
-        normalizeNoticePostingPolicy(
-          firstTruthy(res?.posting_policy, selectedClan?.notice_posting_policy)
-        )
-      );
+      applyCommunityNoticeListResponse(res);
       setCommunityNoticesLoading(false);
     })();
 
     return () => {
       alive = false;
     };
-  }, [selectedClan]);
+  }, [selectedClan, applyCommunityNoticeListResponse]);
 
   const selectedClanName = getClanName(selectedClan);
   const selectedClanId = getClanId(selectedClan);
@@ -1778,10 +1835,12 @@ export default function CommunityHomePage() {
   const activeNoticePostingPolicy = normalizeNoticePostingPolicy(
     firstTruthy(communityNoticePostingPolicy, selectedClan?.notice_posting_policy)
   );
-  const canPostCommunityNotice = Boolean(
-    selectedClanId &&
-      (activeNoticePostingPolicy === "members" || isCommunityNoticeOfficer)
+  const canPostCommunityNotice = Boolean(selectedClanId && canPublishCommunityNotice);
+  const canOpenCommunityNoticeComposer = Boolean(
+    selectedClanId && (canPostCommunityNotice || canSubmitCommunityNoticeForReview)
   );
+  const communityNoticeSubmitMode: "post" | "review" =
+    canSubmitCommunityNoticeForReview && !canPostCommunityNotice ? "review" : "post";
   const canManageCommunityNoticeSettings = Boolean(
     selectedClanId && isCommunityNoticeOfficer
   );
@@ -1803,6 +1862,38 @@ export default function CommunityHomePage() {
     setCommunityBulletinSettingsOpen(false);
   }, [selectedClanId]);
 
+  useEffect(() => {
+    let alive = true;
+
+    if (!selectedClanId || !communityBulletinSettingsOpen || !canManageCommunityNoticeSettings) {
+      if (!communityBulletinSettingsOpen) {
+        setCommunityNoticeReviewSubmissions([]);
+      }
+      setCommunityNoticeReviewLoading(false);
+      return;
+    }
+
+    setCommunityNoticeReviewLoading(true);
+    (async () => {
+      const res = await listCommunityNoticeReviewQueue({
+        clan_id: selectedClanId,
+        limit: 10,
+      }).catch(() => null);
+      if (!alive) return;
+      applyCommunityNoticeReviewQueueResponse(res);
+      setCommunityNoticeReviewLoading(false);
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [
+    selectedClanId,
+    communityBulletinSettingsOpen,
+    canManageCommunityNoticeSettings,
+    pendingCommunityNoticeReviewCount,
+    applyCommunityNoticeReviewQueueResponse,
+  ]);
   useEffect(() => {
     const timer = window.setInterval(() => {
       setNoticeExpiryNowMs(Date.now());
@@ -2757,13 +2848,7 @@ export default function CommunityHomePage() {
     try {
       const result = await acknowledgeCommunityNotice(eventId, { clan_id: clanId });
       const res = await listCommunityNotices({ clan_id: clanId, limit: 3 }).catch(() => null);
-      const rows = Array.isArray(res?.notices) ? res.notices : [];
-      setCommunityNotices(rows);
-      setCommunityNoticePostingPolicy(
-        normalizeNoticePostingPolicy(
-          firstTruthy(res?.posting_policy, selectedClan?.notice_posting_policy)
-        )
-      );
+      applyCommunityNoticeListResponse(res);
       showNotice(
         "success",
         firstTruthy(result?.message, "Announcement acknowledged.")
@@ -2859,13 +2944,7 @@ export default function CommunityHomePage() {
         note: "Recorded from Community Bulletin meeting planning.",
       });
       const res = await listCommunityNotices({ clan_id: clanId, limit: 3 }).catch(() => null);
-      const rows = Array.isArray(res?.notices) ? res.notices : [];
-      setCommunityNotices(rows);
-      setCommunityNoticePostingPolicy(
-        normalizeNoticePostingPolicy(
-          firstTruthy(res?.posting_policy, selectedClan?.notice_posting_policy)
-        )
-      );
+      applyCommunityNoticeListResponse(res);
       showNotice(
         "success",
         firstTruthy(result?.message, "Meeting response recorded. Planning count updated.")
@@ -2951,12 +3030,16 @@ export default function CommunityHomePage() {
 
     setNoticePosting(true);
     try {
-      await createCommunityNotice({ clan_id: clanId, body, ...options });
+      const result = await createCommunityNotice({ clan_id: clanId, body, ...options });
       const res = await listCommunityNotices({ clan_id: clanId, limit: 3 }).catch(() => null);
-      const rows = Array.isArray(res?.notices) ? res.notices : [];
-      setCommunityNotices(rows);
+      applyCommunityNoticeListResponse(res);
       setNoticeModalOpen(false);
-      showNotice("success", "Community announcement posted.");
+      showNotice(
+        "success",
+        result?.submitted_for_review
+          ? "Community record sent for admin review."
+          : "Community announcement posted."
+      );
     } catch (error: any) {
       showNotice(
         "error",
@@ -3002,6 +3085,8 @@ export default function CommunityHomePage() {
       });
       const nextPolicy = normalizeNoticePostingPolicy(res?.posting_policy);
       setCommunityNoticePostingPolicy(nextPolicy);
+      setCanPublishCommunityNotice(true);
+      setCanSubmitCommunityNoticeForReview(false);
       showNotice(
         "success",
         nextPolicy === "members"
@@ -3018,6 +3103,53 @@ export default function CommunityHomePage() {
     }
   }
 
+  async function reviewCommunityNoticeSubmission(
+    event: React.SyntheticEvent<HTMLElement>,
+    submission: CommunityNoticeReviewSubmission,
+    decision: "approve" | "reject"
+  ) {
+    consumeCommunityButtonEvent(event);
+    const clanId = getClanId(selectedClan);
+    const submissionId = firstTruthy(submission?.submission_event_id);
+
+    if (!clanId || !submissionId || !canManageCommunityNoticeSettings) {
+      showNotice("error", "Only a community officer can review this record.");
+      return;
+    }
+    if (communityNoticeReviewBusy) {
+      showNotice("success", "Review decision is already being saved.");
+      return;
+    }
+
+    const busyKey = `${decision}:${submissionId}`;
+    setCommunityNoticeReviewBusy(busyKey);
+    try {
+      await decideCommunityNoticeReviewSubmission(submissionId, {
+        clan_id: clanId,
+        decision,
+        reviewer_note:
+          decision === "approve"
+            ? "Approved from Community Home Bulletin."
+            : "Rejected from Community Home Bulletin.",
+      });
+      const res = await listCommunityNotices({ clan_id: clanId, limit: 3 }).catch(() => null);
+      applyCommunityNoticeListResponse(res);
+      await refreshCommunityNoticeReviewQueue(clanId).catch(() => null);
+      showNotice(
+        "success",
+        decision === "approve"
+          ? "Community record approved and posted."
+          : "Community record rejected without posting."
+      );
+    } catch (error: any) {
+      showNotice(
+        "error",
+        gsnGovernanceErrorMessage(error, "This community record review could not be saved.")
+      );
+    } finally {
+      setCommunityNoticeReviewBusy("");
+    }
+  }
   function toggleSection(key: CollapseKey) {
     setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
   }
@@ -3669,6 +3801,7 @@ export default function CommunityHomePage() {
         communityName={selectedClanName}
         busy={noticePosting}
         postingPolicy={activeNoticePostingPolicy}
+        submitMode={communityNoticeSubmitMode}
         onClose={() => setNoticeModalOpen(false)}
         onSubmit={submitCommunityNotice}
       />
@@ -4176,9 +4309,9 @@ export default function CommunityHomePage() {
               )}
             </div>
 
-            {canPostCommunityNotice || showCommunityBulletinSettings || (selectedClan && !primaryNoticeHasSenderWhatsApp) ? (
+            {canOpenCommunityNoticeComposer || showCommunityBulletinSettings || (selectedClan && !primaryNoticeHasSenderWhatsApp) ? (
               <div style={announcementComposerStyle(isCompact)}>
-                {canPostCommunityNotice ? (
+                {canOpenCommunityNoticeComposer ? (
                   <StableButton
                     type="button"
                     debugId="community-home.notice.post"
@@ -4196,7 +4329,7 @@ export default function CommunityHomePage() {
                       boxShadow: "0 8px 14px rgba(10,24,49,0.10)",
                     }}
                   >
-                    <span>Post</span>
+                    <span>{communityNoticeSubmitMode === "review" ? "Submit" : "Post"}</span>
                   </StableButton>
                 ) : null}
 
@@ -4238,7 +4371,11 @@ export default function CommunityHomePage() {
                       boxShadow: "none",
                     }}
                   >
-                    {communityBulletinSettingsOpen ? "Close" : "Settings"}
+                    {communityBulletinSettingsOpen
+                      ? "Close"
+                      : pendingCommunityNoticeReviewCount > 0
+                      ? `Settings (${pendingCommunityNoticeReviewCount})`
+                      : "Settings"}
                   </StableButton>
                 ) : null}
               </div>
@@ -4302,6 +4439,159 @@ export default function CommunityHomePage() {
                   </div>
                 ) : null}
 
+                {canManageCommunityNoticeSettings &&
+                (communityNoticeReviewLoading ||
+                  pendingCommunityNoticeReviewCount > 0 ||
+                  communityNoticeReviewSubmissions.length > 0) ? (
+                  <div
+                    style={{
+                      borderRadius: 18,
+                      overflow: "hidden",
+                      background: "#FAFCFF",
+                      border: "1px solid rgba(16,37,59,0.08)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 8,
+                        alignItems: "center",
+                        padding: "12px 10px",
+                        borderBottom: "1px solid rgba(16,37,59,0.08)",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: "#07172C",
+                          fontSize: 14,
+                          fontWeight: 930,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        Records waiting for admin review
+                      </span>
+                      <span style={badge(pendingCommunityNoticeReviewCount > 0)}>
+                        {communityNoticeReviewLoading
+                          ? "Checking"
+                          : `${pendingCommunityNoticeReviewCount} pending`}
+                      </span>
+                    </div>
+
+                    {communityNoticeReviewLoading ? (
+                      <div style={{ padding: 12, color: "#617085", fontSize: 13, fontWeight: 800 }}>
+                        Checking submitted records...
+                      </div>
+                    ) : communityNoticeReviewSubmissions.length > 0 ? (
+                      communityNoticeReviewSubmissions.map((submission, index) => {
+                        const submissionId = firstTruthy(submission?.submission_event_id, index);
+                        const title = wordLimit(
+                          firstTruthy(submission?.title, submission?.body, "Submitted community record"),
+                          50
+                        );
+                        const when = compactDateLabel(submission?.created_at || "");
+                        const approveBusy = communityNoticeReviewBusy === `approve:${submissionId}`;
+                        const rejectBusy = communityNoticeReviewBusy === `reject:${submissionId}`;
+
+                        return (
+                          <div
+                            key={`${submissionId}`}
+                            style={{
+                              ...announcementNoticeRowStyle(),
+                              gridTemplateColumns: isCompact
+                                ? "48px minmax(0, 1fr)"
+                                : "52px minmax(0, 1fr) auto",
+                            }}
+                          >
+                            <span style={announcementNoticeIconStyle(index + 2)} aria-hidden="true">
+                              <GsnLegacyIcon name="certificate" size={30} />
+                            </span>
+                            <span style={{ minWidth: 0 }}>
+                              <span
+                                style={{
+                                  ...brandClampLines(2),
+                                  color: "#07172C",
+                                  fontSize: 15,
+                                  fontWeight: 930,
+                                  lineHeight: 1.25,
+                                }}
+                              >
+                                {title}
+                              </span>
+                              <span
+                                style={{
+                                  ...brandClampLines(1),
+                                  marginTop: 4,
+                                  color: "#617085",
+                                  fontSize: 12.5,
+                                  fontWeight: 780,
+                                }}
+                              >
+                                Member submitted record{when ? ` - ${when}` : ""}
+                              </span>
+                            </span>
+                            <span
+                              style={{
+                                display: "flex",
+                                gap: 6,
+                                flexWrap: "wrap",
+                                justifyContent: isCompact ? "flex-start" : "flex-end",
+                                gridColumn: isCompact ? "1 / -1" : undefined,
+                              }}
+                            >
+                              <StableButton
+                                type="button"
+                                debugId={`community-home.notice.review.approve.${submissionId}`}
+                                onClick={(event) =>
+                                  reviewCommunityNoticeSubmission(event, submission, "approve")
+                                }
+                                busy={approveBusy}
+                                busyLabel="Approving"
+                                stableHeight={38}
+                                style={{
+                                  ...communityActionStyle("primary", Boolean(communityNoticeReviewBusy)),
+                                  minHeight: 38,
+                                  padding: "8px 10px",
+                                  borderRadius: 12,
+                                  fontSize: 12,
+                                  textTransform: "none",
+                                }}
+                              >
+                                Approve
+                              </StableButton>
+                              <StableButton
+                                type="button"
+                                debugId={`community-home.notice.review.reject.${submissionId}`}
+                                onClick={(event) =>
+                                  reviewCommunityNoticeSubmission(event, submission, "reject")
+                                }
+                                busy={rejectBusy}
+                                busyLabel="Rejecting"
+                                stableHeight={38}
+                                style={{
+                                  ...communityActionStyle("soft", Boolean(communityNoticeReviewBusy)),
+                                  minHeight: 38,
+                                  padding: "8px 10px",
+                                  borderRadius: 12,
+                                  fontSize: 12,
+                                  textTransform: "none",
+                                  boxShadow: "none",
+                                }}
+                              >
+                                Reject
+                              </StableButton>
+                            </span>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div style={{ padding: 12, color: "#617085", fontSize: 13, fontWeight: 800 }}>
+                        No member-submitted records are waiting.
+                      </div>
+                    )}
+                  </div>
+                ) : null}
                 {communityNoticeLogItems.length > 0 ? (
                   <div
                     style={{

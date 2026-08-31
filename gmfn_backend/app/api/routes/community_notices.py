@@ -29,6 +29,8 @@ from app.services.trust_events_services import log_trust_event
 router = APIRouter(prefix="/community-notices", tags=["community-notices"])
 
 COMMUNITY_NOTICE_EVENT = "community.notice.posted"
+COMMUNITY_NOTICE_SUBMISSION_EVENT = "community.notice.submitted"
+COMMUNITY_NOTICE_REVIEW_EVENT = "community.notice.review_decided"
 COMMUNITY_NOTICE_ACK_EVENT = "community.notice.acknowledged"
 COMMUNITY_GOVERNANCE_PROFILE_SELECTED_EVENT = "community.governance_profile_selected"
 COMMUNITY_NOTICE_SOURCE = "community_notice_board"
@@ -171,9 +173,9 @@ def _community_records_policy_for_clan(
         "admin_approval_required_for_records": approval_required,
         "truth_boundary": (
             "This reflects the recorded community setup. It can block disabled "
-            "Community Records and prevent ordinary members from publishing "
-            "directly when admin review is required, but it is not a full records "
-            "approval queue yet."
+            "Community Records, prevent ordinary members from publishing directly "
+            "when admin review is required, and route eligible member notices into "
+            "the Community Records review queue."
         ),
     }
 
@@ -215,6 +217,24 @@ def _can_create_notice_record(
     if bool(records_policy.get("admin_approval_required_for_records", True)):
         return False
     return True
+
+
+def _can_submit_notice_for_review(
+    membership: ClanMembership,
+    current_user: User,
+    *,
+    posting_policy: str,
+    records_policy: dict[str, Any],
+) -> bool:
+    if not bool(records_policy.get("community_records_enabled", True)):
+        return False
+    if _is_notice_officer(membership, current_user):
+        return False
+    if posting_policy == NOTICE_POSTING_POLICY_ADMINS:
+        return False
+    if not bool(records_policy.get("member_record_submissions_enabled", False)):
+        return False
+    return bool(records_policy.get("admin_approval_required_for_records", True))
 
 
 def _word_count(text: str) -> int:
@@ -391,19 +411,6 @@ def _require_notice_poster(
             clan_id=int(clan_id),
             policy=records_policy,
         )
-    if not is_officer and bool(
-        records_policy.get("admin_approval_required_for_records", True)
-    ):
-        raise _community_record_policy_error(
-            code="community_record_admin_approval_required",
-            message=(
-                "This community setup requires admin approval for member records. "
-                "GSN does not have a member-record approval queue here yet, so ask "
-                "an admin to post the notice."
-            ),
-            clan_id=int(clan_id),
-            policy=records_policy,
-        )
     return membership, posting_policy, records_policy
 
 
@@ -539,7 +546,88 @@ def _event_to_notice(
         "acknowledgement_enabled": True,
         "acknowledgement_label": "I acknowledge",
         "acknowledgement_summary": ack_summary,
+        "review_status": _safe_str(meta.get("review_status"), "published"),
+        "approved_submission_event_id": meta.get("approved_submission_event_id"),
     }
+
+
+def _notice_review_decisions_by_submission(
+    db: Session,
+    *,
+    clan_id: int,
+) -> dict[int, dict[str, Any]]:
+    rows = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.clan_id == int(clan_id),
+            TrustEvent.event_type == COMMUNITY_NOTICE_REVIEW_EVENT,
+        )
+        .order_by(TrustEvent.id.asc())
+        .all()
+    )
+    decisions: dict[int, dict[str, Any]] = {}
+    for row in rows:
+        meta = _safe_meta(getattr(row, "meta_json", None))
+        submission_id = int(meta.get("submission_event_id") or 0)
+        if submission_id:
+            decisions[submission_id] = {
+                "event_id": int(row.id),
+                "decision": _safe_str(meta.get("decision")),
+                "reviewed_at": _iso(getattr(row, "created_at", None)),
+                "reviewer_user_id": int(getattr(row, "actor_user_id", 0) or 0),
+                "resulting_notice_event_id": meta.get("resulting_notice_event_id"),
+                "reviewer_note": _safe_str(meta.get("reviewer_note")) or None,
+            }
+    return decisions
+
+
+def _submission_to_review_item(event: TrustEvent) -> dict[str, Any]:
+    meta = _safe_meta(getattr(event, "meta_json", None))
+    body = _safe_str(meta.get("body") or meta.get("title"))
+    return {
+        "submission_event_id": int(event.id),
+        "clan_id": int(getattr(event, "clan_id", 0) or 0),
+        "body": body,
+        "title": body,
+        "word_count": _word_count(body),
+        "created_at": _iso(getattr(event, "created_at", None)),
+        "submitted_by_user_id": int(getattr(event, "actor_user_id", 0) or 0),
+        "submitted_by_role": _safe_str(meta.get("submitted_by_role"), "member"),
+        "expiry_policy": _normalize_notice_expiry_policy(meta.get("expiry_policy")),
+        "expires_at": _safe_str(meta.get("expires_at")) or None,
+        "review_status": "pending",
+        "community_records_policy": meta.get("community_records_policy") if isinstance(meta.get("community_records_policy"), dict) else None,
+        "sender_contact_ready": bool(meta.get("sender_contact_ready")),
+        "sender_whatsapp_number": _safe_str(meta.get("sender_whatsapp_number")) or None,
+        "sender_whatsapp_label": _safe_str(meta.get("sender_whatsapp_label")) or None,
+    }
+
+
+def _pending_notice_submission_rows(
+    db: Session,
+    *,
+    clan_id: int,
+    limit: int = 20,
+) -> list[TrustEvent]:
+    decisions = _notice_review_decisions_by_submission(db, clan_id=int(clan_id))
+    rows = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.clan_id == int(clan_id),
+            TrustEvent.event_type == COMMUNITY_NOTICE_SUBMISSION_EVENT,
+        )
+        .order_by(TrustEvent.id.desc())
+        .limit(max(100, int(limit) * 5))
+        .all()
+    )
+    pending: list[TrustEvent] = []
+    for row in rows:
+        if int(row.id) in decisions:
+            continue
+        pending.append(row)
+        if len(pending) >= int(limit):
+            break
+    return pending
 
 
 def _active_notice_recipient_ids(
@@ -758,6 +846,22 @@ class CommunityNoticeAcknowledgementIn(BaseModel):
         return _reject_bool_identifier(value, "clan_id")
 
 
+class CommunityNoticeReviewDecisionIn(BaseModel):
+    clan_id: int = Field(..., ge=1)
+    decision: Literal["approve", "reject"]
+    reviewer_note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("clan_id", mode="before")
+    @classmethod
+    def _reject_bool_ids(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "clan_id")
+
+    @field_validator("decision", "reviewer_note", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+
 @router.get("")
 def list_notices(
     clan_id: int = Query(..., ge=1),
@@ -808,6 +912,11 @@ def list_notices(
         db,
         clan_id=int(clan_id),
     )
+    pending_review_count = (
+        len(_pending_notice_submission_rows(db, clan_id=int(clan_id), limit=50))
+        if _is_notice_officer(membership, current_user)
+        else 0
+    )
 
     return {
         "ok": True,
@@ -828,6 +937,13 @@ def list_notices(
             posting_policy=posting_policy,
             records_policy=records_policy,
         ),
+        "can_submit_notice_for_review": _can_submit_notice_for_review(
+            membership,
+            current_user,
+            posting_policy=posting_policy,
+            records_policy=records_policy,
+        ),
+        "pending_notice_review_count": pending_review_count,
         "community_records_policy": records_policy,
         "notices": notices[: int(limit)],
         "demand_signals_enabled": True,
@@ -859,6 +975,51 @@ def create_notice(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     poster_contact = _poster_contact_payload(db, current_user)
+    is_officer = _is_notice_officer(membership, current_user)
+    approval_required = bool(records_policy.get("admin_approval_required_for_records", True))
+    if not is_officer and approval_required:
+        submission = log_trust_event(
+            db,
+            event_type=COMMUNITY_NOTICE_SUBMISSION_EVENT,
+            clan_id=int(payload.clan_id),
+            actor_user_id=int(current_user.id),
+            subject_user_id=int(current_user.id),
+            meta={
+                "source": COMMUNITY_NOTICE_SOURCE,
+                "reason": "community_notice_submitted_for_review",
+                "body": body,
+                "word_count": _word_count(body),
+                "posting_policy": posting_policy,
+                "expiry_policy": expiry_policy,
+                "expires_at": _iso(expires_at),
+                "review_status": "pending",
+                "submitted_by_role": _safe_str(getattr(membership, "role", None), "member"),
+                "comments_enabled": False,
+                "reactions_enabled": False,
+                "thread_enabled": False,
+                "community_records_policy": records_policy,
+                **poster_contact,
+            },
+        )
+        return {
+            "ok": True,
+            "engine_ready": True,
+            "submitted_for_review": True,
+            "submission": _submission_to_review_item(submission),
+            "posting_policy": posting_policy,
+            "community_records_policy": records_policy,
+            "notification_kind": COMMUNITY_NOTICE_SUBMISSION_EVENT,
+            "notifications_created": 0,
+            "message": "Community record submitted for admin review.",
+            "expiry_policy": expiry_policy,
+            "expires_at": _iso(expires_at),
+            "boundary": (
+                "This member record is not visible on the active board yet. "
+                "A community officer must approve it before GSN publishes it as "
+                "an official community notice."
+            ),
+        }
+
     event = log_trust_event(
         db,
         event_type=COMMUNITY_NOTICE_EVENT,
@@ -874,6 +1035,7 @@ def create_notice(
             "expiry_policy": expiry_policy,
             "expires_at": _iso(expires_at),
             "active_board_status": "active",
+            "review_status": "published",
             "posted_by_role": _safe_str(getattr(membership, "role", None), "member"),
             "comments_enabled": False,
             "reactions_enabled": False,
@@ -906,6 +1068,164 @@ def create_notice(
             "community; it does not broadcast to other marketplaces, communities, "
             "domains, or public visitors. Expired notices leave the active board "
             "but remain in Community Memory."
+        ),
+    }
+
+
+@router.get("/review-queue")
+def list_notice_review_queue(
+    clan_id: int = Query(..., ge=1),
+    limit: int = Query(default=10, ge=1, le=50),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_notice_officer(db, clan_id=int(clan_id), current_user=current_user)
+    records_policy = _community_records_policy_for_clan(db, clan_id=int(clan_id))
+    if not bool(records_policy.get("community_records_enabled", True)):
+        raise _community_record_policy_error(
+            code="community_records_disabled",
+            message="This community setup has Community Records turned off.",
+            clan_id=int(clan_id),
+            policy=records_policy,
+        )
+    rows = _pending_notice_submission_rows(db, clan_id=int(clan_id), limit=int(limit))
+    return {
+        "ok": True,
+        "engine_ready": True,
+        "clan_id": int(clan_id),
+        "community_records_policy": records_policy,
+        "pending_review_count": len(rows),
+        "submissions": [_submission_to_review_item(row) for row in rows],
+        "boundary": (
+            "This queue contains member-submitted Community Records waiting for "
+            "a community officer. Approval publishes a new official notice; "
+            "rejection records the decision but does not publish the submission."
+        ),
+    }
+
+
+@router.post("/review-queue/{submission_event_id}/decision")
+def decide_notice_review_submission(
+    submission_event_id: int,
+    payload: CommunityNoticeReviewDecisionIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    membership = _require_notice_officer(
+        db, clan_id=int(payload.clan_id), current_user=current_user
+    )
+    records_policy = _community_records_policy_for_clan(db, clan_id=int(payload.clan_id))
+    if not bool(records_policy.get("community_records_enabled", True)):
+        raise _community_record_policy_error(
+            code="community_records_disabled",
+            message="This community setup has Community Records turned off.",
+            clan_id=int(payload.clan_id),
+            policy=records_policy,
+        )
+    submission = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.id == int(submission_event_id),
+            TrustEvent.clan_id == int(payload.clan_id),
+            TrustEvent.event_type == COMMUNITY_NOTICE_SUBMISSION_EVENT,
+        )
+        .first()
+    )
+    if not submission:
+        raise HTTPException(status_code=404, detail="Community record submission not found")
+
+    decisions = _notice_review_decisions_by_submission(db, clan_id=int(payload.clan_id))
+    if int(submission_event_id) in decisions:
+        raise HTTPException(status_code=409, detail="This community record submission has already been reviewed")
+
+    meta = _safe_meta(getattr(submission, "meta_json", None))
+    body = _safe_str(meta.get("body"))
+    expiry_policy = _normalize_notice_expiry_policy(meta.get("expiry_policy"))
+    if payload.decision == "approve":
+        try:
+            expires_at = _notice_expires_at(
+                expiry_policy,
+                meta.get("expires_at") if expiry_policy == NOTICE_EXPIRY_EVENT else None,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        poster_contact = {
+            "sender_whatsapp_number": _safe_str(meta.get("sender_whatsapp_number")) or None,
+            "sender_whatsapp_label": _safe_str(meta.get("sender_whatsapp_label")) or None,
+            "sender_contact_ready": bool(meta.get("sender_contact_ready")),
+        }
+        notice_event = log_trust_event(
+            db,
+            event_type=COMMUNITY_NOTICE_EVENT,
+            clan_id=int(payload.clan_id),
+            actor_user_id=int(current_user.id),
+            subject_user_id=int(getattr(submission, "actor_user_id", 0) or current_user.id),
+            meta={
+                "source": COMMUNITY_NOTICE_SOURCE,
+                "reason": "community_notice_review_approved",
+                "body": body,
+                "word_count": _word_count(body),
+                "posting_policy": _normalize_notice_posting_policy(meta.get("posting_policy")),
+                "expiry_policy": expiry_policy,
+                "expires_at": _iso(expires_at),
+                "active_board_status": "active",
+                "review_status": "approved",
+                "approved_submission_event_id": int(submission_event_id),
+                "reviewed_by_user_id": int(current_user.id),
+                "reviewer_note": _safe_str(payload.reviewer_note) or None,
+                "posted_by_role": _safe_str(getattr(membership, "role", None), "admin"),
+                "submitted_by_user_id": int(getattr(submission, "actor_user_id", 0) or 0),
+                "comments_enabled": False,
+                "reactions_enabled": False,
+                "thread_enabled": False,
+                "trust_delta": "0.00",
+                "community_records_policy": records_policy,
+                **poster_contact,
+            },
+        )
+        notifications_created = _create_notice_notifications(
+            db,
+            clan_id=int(payload.clan_id),
+            body=body,
+            poster_user_id=int(current_user.id),
+        )
+    else:
+        notice_event = None
+        notifications_created = 0
+
+    decision_event = log_trust_event(
+        db,
+        event_type=COMMUNITY_NOTICE_REVIEW_EVENT,
+        clan_id=int(payload.clan_id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(getattr(submission, "actor_user_id", 0) or current_user.id),
+        meta={
+            "source": COMMUNITY_NOTICE_SOURCE,
+            "reason": "community_notice_review_decided",
+            "submission_event_id": int(submission_event_id),
+            "decision": payload.decision,
+            "resulting_notice_event_id": int(notice_event.id) if notice_event else None,
+            "reviewer_note": _safe_str(payload.reviewer_note) or None,
+            "community_records_policy": records_policy,
+        },
+    )
+    return {
+        "ok": True,
+        "engine_ready": True,
+        "submission_event_id": int(submission_event_id),
+        "decision_event_id": int(decision_event.id),
+        "decision": payload.decision,
+        "notice": (
+            _event_to_notice(notice_event, db=db, viewer_user_id=int(current_user.id))
+            if notice_event
+            else None
+        ),
+        "notifications_created": int(notifications_created),
+        "community_records_policy": records_policy,
+        "message": (
+            "Community record approved and published to the Official Board."
+            if payload.decision == "approve"
+            else "Community record rejected. The decision was recorded without publishing it."
         ),
     }
 
@@ -991,6 +1311,17 @@ def get_notice_settings(
             current_user,
             posting_policy=posting_policy,
             records_policy=records_policy,
+        ),
+        "can_submit_notice_for_review": _can_submit_notice_for_review(
+            membership,
+            current_user,
+            posting_policy=posting_policy,
+            records_policy=records_policy,
+        ),
+        "pending_notice_review_count": (
+            len(_pending_notice_submission_rows(db, clan_id=int(clan_id), limit=50))
+            if _is_notice_officer(membership, current_user)
+            else 0
         ),
         "community_records_policy": records_policy,
         "can_manage_notice_settings": _is_notice_officer(membership, current_user),

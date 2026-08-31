@@ -6,6 +6,7 @@ type Props = {
   communityName: string;
   busy?: boolean;
   postingPolicy?: "members" | "admins" | string;
+  submitMode?: "post" | "review";
   onClose: () => void;
   onSubmit: (
     body: string,
@@ -24,6 +25,7 @@ export default function CommunityNoticeModal({
   communityName,
   busy = false,
   postingPolicy = "members",
+  submitMode = "post",
   onClose,
   onSubmit,
 }: Props) {
@@ -33,6 +35,7 @@ export default function CommunityNoticeModal({
   const words = useMemo(() => countWords(body), [body]);
   const eventExpiryMissing = expiryPolicy === "event" && !eventExpiresAt;
   const blocked = words > 50 || !body.trim() || eventExpiryMissing || busy;
+  const isReviewSubmission = submitMode === "review";
 
   if (!open) return null;
 
@@ -51,14 +54,21 @@ export default function CommunityNoticeModal({
   }
 
   return (
-    <div style={overlayStyle} role="dialog" aria-modal="true" aria-label="Post community notice">
+    <div
+      style={overlayStyle}
+      role="dialog"
+      aria-modal="true"
+      aria-label={isReviewSubmission ? "Submit community record" : "Post community notice"}
+    >
       <div style={modalStyle}>
         <div style={eyebrowStyle}>Community announcement</div>
-        <h3 style={titleStyle}>Post to {communityName || "this community"}</h3>
+        <h3 style={titleStyle}>
+          {isReviewSubmission ? "Submit for review" : "Post to"} {communityName || "this community"}
+        </h3>
         <p style={copyStyle}>
-          Keep it short. GSN records who posted it and links your verified public
-          WhatsApp contact when you have chosen to show one. Expired notices leave
-          the active board but stay in Community Memory.
+          {isReviewSubmission
+            ? "Keep it short. GSN records your submission, then a community officer approves it before it appears on the active board."
+            : "Keep it short. GSN records who posted it and links your verified public WhatsApp contact when you have chosen to show one. Expired notices leave the active board but stay in Community Memory."}
         </p>
 
         <textarea
@@ -104,7 +114,11 @@ export default function CommunityNoticeModal({
         <div style={metaRowStyle}>
           <span style={words > 50 ? warningStyle : chipStyle}>{words}/50 words</span>
           <span style={chipStyle}>
-            {postingPolicy === "admins" ? "Admin-only board" : "Members can post"}
+            {isReviewSubmission
+              ? "Admin review required"
+              : postingPolicy === "admins"
+              ? "Admin-only board"
+              : "Members can post"}
           </span>
           <span style={eventExpiryMissing ? warningStyle : chipStyle}>
             {expiryPolicy === "standard"
@@ -135,11 +149,11 @@ export default function CommunityNoticeModal({
             onClick={submitNotice}
             disabled={blocked}
             busy={busy}
-            busyLabel="Posting..."
+            busyLabel={isReviewSubmission ? "Submitting..." : "Posting..."}
             stableHeight={48}
             kind="primary"
           >
-            Post notice
+            {isReviewSubmission ? "Submit record" : "Post notice"}
           </StableButton>
         </div>
       </div>

@@ -1,3 +1,13 @@
+## 2026-08-31 - Local Community Records notice review queue
+- Status: Local implementation verified; not pushed or deployed per owner instruction to deploy only when explicitly requested.
+- Backend routes affected: `GET /community-notices`, `POST /community-notices`, `GET /community-notices/review-queue`, `POST /community-notices/review-queue/{submission_event_id}/decision`, and `GET /community-notices/settings`.
+- Community Notice Board now routes eligible ordinary-member records into a Trust Event review queue when the recorded governance profile enables Community Records, allows member record submissions, and requires admin approval.
+- Submitted member records are recorded as `community.notice.submitted` and stay hidden from the active board until a community officer approves them.
+- Officer approval logs a `community.notice.posted` event plus `community.notice.review_decided`; rejection logs the review decision without publishing a notice.
+- Frontend route affected: `/app/community` (`frontend/src/pages/CommunityHomePage.tsx`) now distinguishes `Submit` from `Post`, uses review-mode composer copy, and shows officer-only pending approve/reject controls inside the existing Bulletin settings drawer.
+- Audit cage updated: Community Home StableButton baseline is now 32 source templates / 42 expanded route-local templates, with the two new actions constrained to the officer review queue.
+- Verification: `python -m py_compile gmfn_backend\app\api\routes\community_notices.py gmfn_backend\tests\test_community_notices.py`; `python -m pytest -q gmfn_backend\tests\test_community_notices.py -q`; `npm exec -- tsc -b --pretty false` from `frontend`; `npm --prefix frontend run lint`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:community-home-phone-buttons`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `git diff --check`.
+- Devil truth: this is a lightweight Community Notice/selected-record approval queue only. It does not create file uploads, WhatsApp import, reviewer assignment, admin notifications, a general records repository, or retroactive moderation of old records.
 ## 2026-08-31 - Aberdeen Dads customer discovery resend sent
 - Status: Gmail resend sent from the prepared draft; no push or deployment was performed.
 - Original sent message from 2026-08-30 was found in Sent Mail and did leave the account, but the recipient reported the Word attachment would not open.

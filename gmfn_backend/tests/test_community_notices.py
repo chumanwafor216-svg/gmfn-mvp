@@ -434,7 +434,7 @@ def test_member_record_submission_policy_blocks_member_notice_when_closed(
     assert detail["community_records_policy"]["member_record_submissions_enabled"] is False
 
 
-def test_member_record_submission_policy_blocks_live_publish_when_admin_review_required(
+def test_member_record_submission_policy_routes_member_notice_to_review_queue(
     client, override_current_user_user
 ):
     _seed_notice_community(membership_role="member")
@@ -452,10 +452,114 @@ def test_member_record_submission_policy_blocks_live_publish_when_admin_review_r
         },
     )
 
-    assert res.status_code == 403, res.text
-    detail = res.json()["detail"]
-    assert detail["code"] == "community_record_admin_approval_required"
-    assert detail["community_records_policy"]["admin_approval_required_for_records"] is True
+    assert res.status_code == 200, res.text
+    payload = res.json()
+    assert payload["submitted_for_review"] is True
+    assert payload["submission"]["body"] == "Member record needs admin review first."
+    assert payload["submission"]["review_status"] == "pending"
+    assert payload["community_records_policy"]["admin_approval_required_for_records"] is True
+    assert "not visible" in payload["boundary"]
+
+    list_res = client.get("/community-notices", params={"clan_id": 1})
+    assert list_res.status_code == 200, list_res.text
+    list_payload = list_res.json()
+    assert list_payload["notices"] == []
+    assert list_payload["can_post_notice"] is False
+    assert list_payload["can_submit_notice_for_review"] is True
+
+    with SessionLocal() as db:
+        membership = db.query(ClanMembership).filter(ClanMembership.user_id == 1).one()
+        membership.role = "admin"
+        db.commit()
+
+    queue_res = client.get("/community-notices/review-queue", params={"clan_id": 1})
+    assert queue_res.status_code == 200, queue_res.text
+    queue_payload = queue_res.json()
+    assert queue_payload["pending_review_count"] == 1
+    submission = queue_payload["submissions"][0]
+    assert submission["body"] == "Member record needs admin review first."
+
+    approve_res = client.post(
+        f"/community-notices/review-queue/{submission['submission_event_id']}/decision",
+        json={
+            "clan_id": 1,
+            "decision": "approve",
+            "reviewer_note": "Approved from Community Records review.",
+        },
+    )
+    assert approve_res.status_code == 200, approve_res.text
+    approve_payload = approve_res.json()
+    assert approve_payload["decision"] == "approve"
+    assert approve_payload["notice"]["body"] == "Member record needs admin review first."
+    assert approve_payload["notice"]["review_status"] == "approved"
+    assert approve_payload["notice"]["approved_submission_event_id"] == submission["submission_event_id"]
+
+    repeat_res = client.post(
+        f"/community-notices/review-queue/{submission['submission_event_id']}/decision",
+        json={"clan_id": 1, "decision": "approve"},
+    )
+    assert repeat_res.status_code == 409, repeat_res.text
+
+    final_list_res = client.get("/community-notices", params={"clan_id": 1})
+    assert final_list_res.status_code == 200, final_list_res.text
+    final_payload = final_list_res.json()
+    assert len(final_payload["notices"]) == 1
+    assert final_payload["notices"][0]["body"] == "Member record needs admin review first."
+    assert final_payload["pending_notice_review_count"] == 0
+
+    with SessionLocal() as db:
+        assert db.query(TrustEvent).filter(TrustEvent.event_type == "community.notice.submitted").count() == 1
+        assert db.query(TrustEvent).filter(TrustEvent.event_type == "community.notice.review_decided").count() == 1
+        assert db.query(TrustEvent).filter(TrustEvent.event_type == "community.notice.posted").count() == 1
+
+
+def test_member_record_review_rejection_records_decision_without_publishing(
+    client, override_current_user_user
+):
+    _seed_notice_community(membership_role="member")
+    _seed_notice_governance_profile_event(
+        enable_community_records=True,
+        allow_member_record_submissions=True,
+        require_admin_approval_for_records=True,
+    )
+
+    submit_res = client.post(
+        "/community-notices",
+        json={"clan_id": 1, "body": "This record should not publish."},
+    )
+    assert submit_res.status_code == 200, submit_res.text
+    submission_id = submit_res.json()["submission"]["submission_event_id"]
+
+    with SessionLocal() as db:
+        membership = db.query(ClanMembership).filter(ClanMembership.user_id == 1).one()
+        membership.role = "admin"
+        db.commit()
+
+    reject_res = client.post(
+        f"/community-notices/review-queue/{submission_id}/decision",
+        json={
+            "clan_id": 1,
+            "decision": "reject",
+            "reviewer_note": "Rejected from Community Records review.",
+        },
+    )
+    assert reject_res.status_code == 200, reject_res.text
+    reject_payload = reject_res.json()
+    assert reject_payload["decision"] == "reject"
+    assert reject_payload["notice"] is None
+    assert "without publishing" in reject_payload["message"]
+
+    final_list_res = client.get("/community-notices", params={"clan_id": 1})
+    assert final_list_res.status_code == 200, final_list_res.text
+    assert final_list_res.json()["notices"] == []
+
+    queue_res = client.get("/community-notices/review-queue", params={"clan_id": 1})
+    assert queue_res.status_code == 200, queue_res.text
+    assert queue_res.json()["submissions"] == []
+
+    with SessionLocal() as db:
+        assert db.query(TrustEvent).filter(TrustEvent.event_type == "community.notice.review_decided").count() == 1
+        assert db.query(TrustEvent).filter(TrustEvent.event_type == "community.notice.posted").count() == 0
 
 
 def test_admin_notice_post_reports_light_governance_records_policy(

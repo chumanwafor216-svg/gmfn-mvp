@@ -376,7 +376,12 @@ Must show:
   - opens to one simple list for ordinary marketplace communities and institutional Community Domains
   - each opened ordinary community item shows community name, marketplace workspace context, and Open Marketplace
   - each opened Community Domain item shows domain name, setup/marketplace readiness, and opens Marketplace when active or setup/dashboard when not active
-- compact rows:
+- Community Bulletin:
+  - shows one live official notice or a compact empty state
+  - member records that require admin approval use Submit, not Post
+  - submitted member records stay hidden from the active board until an officer approves them
+  - officers see pending record count and approve/reject controls inside the existing Bulletin settings drawer
+  - approval publishes a new official notice; rejection records the decision without publishing- compact rows:
   - Owner Actions
   - Owner Shop Control
   - Marketplace Capacity

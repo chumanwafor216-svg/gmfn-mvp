@@ -1405,6 +1405,35 @@ export async function createCommunityNotice(payload: {
   return httpJson("/community-notices", "POST", payload);
 }
 
+export async function listCommunityNoticeReviewQueue(params: {
+  clan_id: number;
+  limit?: number;
+}): Promise<any> {
+  return httpJson(
+    `/community-notices/review-queue${buildQuery({
+      clan_id: params.clan_id,
+      limit: params.limit ?? 10,
+    })}`,
+    "GET"
+  );
+}
+
+export async function decideCommunityNoticeReviewSubmission(
+  submissionEventId: number | string,
+  payload: {
+    clan_id: number;
+    decision: "approve" | "reject";
+    reviewer_note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-notices/review-queue/${encodeURIComponent(String(submissionEventId))}/decision`,
+    "POST",
+    Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
+    )
+  );
+}
 export async function acknowledgeCommunityNotice(
   noticeEventId: number | string,
   payload: { clan_id: number }

@@ -10,13 +10,13 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 30;
+const expectedStableButtonTemplateCount = 32;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 4;
 const expectedSpotlightGuidedActionCount = 5;
 const expectedGroupedLaneRowCount = 22;
-const expectedExpandedRouteLocalActionTemplates = 40;
+const expectedExpandedRouteLocalActionTemplates = 42;
 const expectedMobileShellBreakdown = {
   top: 2,
   drawer: 25,
@@ -281,8 +281,8 @@ assertContains(
 );
 
 assertContains(
-  /Bulletin[\s\S]*?debugId="community-home\.notice\.post"[\s\S]*?>\s*<span>Post<\/span>[\s\S]*?debugId="community-home\.contact\.whatsapp-chat"[\s\S]*?>\s*Contact community\s*<\/StableButton>[\s\S]*?debugId="community-home\.notice\.settings-toggle"[\s\S]*?communityBulletinSettingsOpen[\s\S]*?data-debug-id="community-home\.notice\.settings-panel"[\s\S]*?debugId="community-home\.notice\.policy\.members"[\s\S]*?debugId="community-home\.notice\.policy\.admins"[\s\S]*?communityNoticeLogItems\.map/,
-  "Community Home communication block must keep the live announcement dominant, use one quiet Post/Contact community/Settings utility row, and tuck Notice Board settings behind a toggle."
+  /Bulletin[\s\S]*?debugId="community-home\.notice\.post"[\s\S]*?communityNoticeSubmitMode === "review"[\s\S]*?"Submit"[\s\S]*?"Post"[\s\S]*?debugId="community-home\.contact\.whatsapp-chat"[\s\S]*?>\s*Contact community\s*<\/StableButton>[\s\S]*?debugId="community-home\.notice\.settings-toggle"[\s\S]*?communityBulletinSettingsOpen[\s\S]*?data-debug-id="community-home\.notice\.settings-panel"[\s\S]*?debugId="community-home\.notice\.policy\.members"[\s\S]*?debugId="community-home\.notice\.policy\.admins"[\s\S]*?communityNoticeReviewSubmissions\.map[\s\S]*?debugId=\{`community-home\.notice\.review\.approve\.\$\{submissionId\}`\}[\s\S]*?debugId=\{`community-home\.notice\.review\.reject\.\$\{submissionId\}`\}[\s\S]*?communityNoticeLogItems\.map/,
+  "Community Home communication block must keep the live announcement dominant, use one quiet Post/Submit/Contact community/Settings utility row, and tuck officer record review behind the settings toggle."
 );
 assertContains(
   /function renderMeetingInterestShortcut[\s\S]*?\["yes", "Yes"\][\s\S]*?\["maybe", "Maybe"\][\s\S]*?\["no", "No"\][\s\S]*?debugId=\{`community-home\.bulletin\.meeting-interest-\$\{response\}`\}[\s\S]*?recordNoticeMeetingInterest\(buttonEvent, noticeItem, response\)/,
