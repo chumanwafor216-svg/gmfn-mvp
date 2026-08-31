@@ -241,6 +241,10 @@ type MarketplaceShop = {
   is_vault?: boolean | null;
   vault_private?: boolean | null;
   is_private?: boolean | null;
+  listing_review_required?: boolean | null;
+  listing_review_due_at?: string | null;
+  listing_review_status?: string | null;
+  listing_expiry_enforced?: boolean | null;
 };
 
 type RepostProductOption = {
@@ -1498,6 +1502,16 @@ function normalizeMarketplaceShop(raw: any): MarketplaceShop | null {
     is_vault: src?.is_vault ?? null,
     vault_private: src?.vault_private ?? null,
     is_private: src?.is_private ?? null,
+    listing_review_required: Boolean(src?.listing_review_required),
+    listing_review_due_at: firstTruthy(
+      src?.listing_review_due_at,
+      src?.listingReviewDueAt
+    ),
+    listing_review_status: firstTruthy(
+      src?.listing_review_status,
+      src?.listingReviewStatus
+    ),
+    listing_expiry_enforced: Boolean(src?.listing_expiry_enforced),
   };
 }
 
@@ -6419,6 +6433,10 @@ export default function MarketplacePage() {
         shopName: shop
           ? firstTruthy(visibleShopName, "Public shop active")
           : "Shop not visible yet",
+        listingReviewRequired: Boolean(shop?.listing_review_required),
+        listingReviewDueAt: firstTruthy(shop?.listing_review_due_at),
+        listingReviewStatus: firstTruthy(shop?.listing_review_status),
+        listingExpiryEnforced: Boolean(shop?.listing_expiry_enforced),
         shopTo:
           shop && gmfn
             ? publicShopSharePath({
@@ -9285,6 +9303,7 @@ export default function MarketplacePage() {
             visibleTradeShopCount={visibleTradeShopCount}
             marketplaceCommunityDomainRows={marketplaceCommunityDomainRows}
             marketplaceSurfaceTouchProps={marketplaceSurfaceTouchProps}
+            safeDateTime={safeDateTime}
             onToggleMembers={(event) => toggleSectionFromButton(event, "members")}
             onOpenCommunityDomain={openMarketplaceCommunityDomain}
           />

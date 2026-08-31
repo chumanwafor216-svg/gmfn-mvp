@@ -504,6 +504,7 @@ Must show:
   - Support Request
   - Trade Evidence
 - compact trust/status signal for this marketplace
+- compact shop review status when a community governance profile marks listings for review
 - a clear way to return to Community Home or Dashboard
 
 Rules:

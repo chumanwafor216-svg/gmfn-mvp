@@ -9,6 +9,10 @@ type MarketplaceMemberRow = {
   gmfnId?: string;
   userId?: number | string;
   shopTo?: string;
+  listingReviewRequired?: boolean | null;
+  listingReviewDueAt?: string | null;
+  listingReviewStatus?: string | null;
+  listingExpiryEnforced?: boolean | null;
 };
 
 type MarketplaceCommunityDomainRow = {
@@ -33,6 +37,7 @@ type Props = {
   visibleTradeShopCount: number;
   marketplaceCommunityDomainRows: MarketplaceCommunityDomainRow[];
   marketplaceSurfaceTouchProps: (debugId: string) => Record<string, unknown>;
+  safeDateTime: (value: unknown) => string;
   onToggleMembers: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onOpenCommunityDomain: (
     event: React.SyntheticEvent<HTMLElement> | undefined,
@@ -608,6 +613,19 @@ function memberIconStyle(
 }
 
 
+function listingReviewText(
+  row: MarketplaceMemberRow,
+  safeDateTime: (value: unknown) => string
+): string {
+  if (!row.shopTo) return "";
+  const dueAt = String(row.listingReviewDueAt || "").trim();
+  if (dueAt) {
+    return `Review due ${safeDateTime(dueAt) || dueAt}`;
+  }
+  if (row.listingReviewRequired) return "Review expected";
+  return "";
+}
+
 export default function MarketplaceMembersSection({
   isCompact,
   memberRows,
@@ -616,6 +634,7 @@ export default function MarketplaceMembersSection({
   visibleTradeShopCount,
   marketplaceCommunityDomainRows,
   marketplaceSurfaceTouchProps,
+  safeDateTime,
   onToggleMembers,
   onOpenCommunityDomain,
 }: Props) {
@@ -796,6 +815,7 @@ export default function MarketplaceMembersSection({
               key={`${row.gmfnId || row.userId || index}`}
               row={row}
               isCompact={isCompact}
+              safeDateTime={safeDateTime}
             />
           ))
         )}
@@ -841,6 +861,7 @@ export default function MarketplaceMembersSection({
                   }`}
                   row={row}
                   isCompact={isCompact}
+                  safeDateTime={safeDateTime}
                 />
               ))}
             </div>
@@ -854,10 +875,14 @@ export default function MarketplaceMembersSection({
 function MemberRowCard({
   row,
   isCompact,
+  safeDateTime,
 }: {
   row: MarketplaceMemberRow;
   isCompact: boolean;
+  safeDateTime: (value: unknown) => string;
 }) {
+  const reviewText = listingReviewText(row, safeDateTime);
+
   return (
     <div style={memberCardStyle(row, isCompact)}>
       <span aria-hidden="true" style={memberIconStyle(row, isCompact)}>
@@ -913,6 +938,20 @@ function MemberRowCard({
             {row.shopTo ? "Shop visible" : "No shop yet"}
           </span>
         </div>
+        {reviewText ? (
+          <span
+            style={{
+              ...stableStatusPillStyle(true),
+              height: "auto",
+              maxHeight: "none",
+              minHeight: 30,
+              whiteSpace: "normal",
+              overflowWrap: "anywhere",
+            }}
+          >
+            {reviewText}
+          </span>
+        ) : null}
       </div>
 
       {row.shopTo ? (

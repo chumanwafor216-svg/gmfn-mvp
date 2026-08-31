@@ -1,3 +1,11 @@
+## 2026-08-31 - Local Marketplace Members shop review marker visibility
+- Status: Local frontend implementation verified; ready for active pilot commit/push/deploy protocol.
+- Frontend route affected: `MarketplacePage` / `/app/marketplace` Community Members & Shops lane.
+- Frontend implementation: `frontend/src/pages/MarketplacePage.tsx` now preserves `listing_review_required`, `listing_review_due_at`, `listing_review_status`, and `listing_expiry_enforced` from marketplace shop payloads and carries them into member/shop rows.
+- UI implementation: `frontend/src/pages/marketplace/MarketplaceMembersSection.tsx` shows a compact `Review due ...` marker beside visible member shops when the backend supplies a listing review due date, or `Review expected` when review is required without a date.
+- Spec update: `docs/SCREEN_SPECS.md` documents compact shop review status as part of MarketplacePage.
+- Verification: `npm exec -- tsc -b --pretty false`; `npm --prefix frontend run audit:marketplace-actions`; `npm --prefix frontend run audit:marketplace-button-inventory`; `npm --prefix frontend run audit:marketplace-touch-blockers`; `npm --prefix frontend run audit:marketplace-button-lines`; `npm --prefix frontend run audit:link-contracts`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `git diff --check`.
+- Devil truth: this surfaces backend review markers only. It does not create reviewer assignment, member submission queues, listing expiry, stale-listing hiding, or admin decision workflow.
 ## 2026-08-31 - Local marketplace listing review-date disclosure
 - Status: Local implementation verified; ready for active pilot commit/push/deploy protocol.
 - Backend routes affected: `GET /marketplace/shops`, `GET /marketplace/products`, `POST /marketplace/shops`, `POST /marketplace/products`.
