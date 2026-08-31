@@ -384,6 +384,7 @@ Must show:
   - review prompts link back to `/app/community` with the selected `clan_id`, submitted record id, and Bulletin settings panel hash
   - officers see pending record count and approve/reject controls inside the existing Bulletin settings drawer
   - approval publishes a new official notice; rejection records the decision without publishing
+  - submitters receive an Action Inbox/Web Push result notification after approval or rejection when notification delivery is configured
 - compact rows:
   - Owner Actions
   - Owner Shop Control

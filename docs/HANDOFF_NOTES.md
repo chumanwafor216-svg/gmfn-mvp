@@ -1,3 +1,11 @@
+## 2026-08-31 - Local Community Records review result notifications
+- Status: Local backend implementation verified; not pushed or deployed per owner instruction to deploy only when explicitly requested.
+- Backend route affected: `POST /community-notices/review-queue/{submission_event_id}/decision`.
+- Officer approval or rejection now creates one `community.notice.review_decided` Action Inbox/Web Push notification for the original submitter, with `Open Community` linking back to the selected community and submitted record id.
+- Existing officer pending-review notifications are still retired on either decision, so stale admin prompts do not linger after the review is complete.
+- Tests updated so both approval and rejection prove submitter result notification creation, notification title/action URL, and pending admin notification retirement.
+- Verification: `python -m py_compile gmfn_backend\app\api\routes\community_notices.py gmfn_backend\tests\test_community_notices.py`; `python -m pytest -q gmfn_backend\tests\test_community_notices.py -q`.
+- Devil truth: this is still in-app/Web Push only. It does not send email or WhatsApp, assign a reviewer, create escalation timers, collect attachments, or turn the lightweight notice board into a full Community Records repository.
 ## 2026-08-31 - Local Community Records notice review queue
 - Status: Local implementation verified; not pushed or deployed per owner instruction to deploy only when explicitly requested.
 - Backend routes affected: `GET /community-notices`, `POST /community-notices`, `GET /community-notices/review-queue`, `POST /community-notices/review-queue/{submission_event_id}/decision`, and `GET /community-notices/settings`.

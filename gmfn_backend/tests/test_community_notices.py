@@ -528,6 +528,7 @@ def test_member_record_submission_policy_routes_member_notice_to_review_queue(
     assert approve_payload["notice"]["review_status"] == "approved"
     assert approve_payload["notice"]["approved_submission_event_id"] == submission["submission_event_id"]
     assert approve_payload["review_notifications_retired"] == 1
+    assert approve_payload["submitter_notification_created"] == 1
 
     repeat_res = client.post(
         f"/community-notices/review-queue/{submission['submission_event_id']}/decision",
@@ -551,6 +552,13 @@ def test_member_record_submission_policy_routes_member_notice_to_review_queue(
         ).one()
         assert notification.is_read is True
         assert notification.read_at is not None
+        result_notification = db.query(Notification).filter(
+            Notification.kind == "community.notice.review_decided"
+        ).one()
+        assert result_notification.user_id == 1
+        assert result_notification.title == "Community record approved"
+        assert result_notification.action_label == "Open Community"
+        assert f"notice_review_submission_id={submission['submission_event_id']}" in result_notification.action_url
 
 
 def test_member_record_review_rejection_records_decision_without_publishing(
@@ -599,6 +607,7 @@ def test_member_record_review_rejection_records_decision_without_publishing(
     assert reject_payload["decision"] == "reject"
     assert reject_payload["notice"] is None
     assert reject_payload["review_notifications_retired"] == 1
+    assert reject_payload["submitter_notification_created"] == 1
     assert "without publishing" in reject_payload["message"]
 
     final_list_res = client.get("/community-notices", params={"clan_id": 1})
@@ -617,6 +626,13 @@ def test_member_record_review_rejection_records_decision_without_publishing(
         ).one()
         assert notification.is_read is True
         assert notification.read_at is not None
+        result_notification = db.query(Notification).filter(
+            Notification.kind == "community.notice.review_decided"
+        ).one()
+        assert result_notification.user_id == 1
+        assert result_notification.title == "Community record was not posted"
+        assert result_notification.action_label == "Open Community"
+        assert f"notice_review_submission_id={submission_id}" in result_notification.action_url
 
 
 def test_admin_notice_post_reports_light_governance_records_policy(

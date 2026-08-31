@@ -797,6 +797,52 @@ def _retire_notice_review_notifications(
     db.commit()
     return len(rows)
 
+
+def _create_notice_review_result_notification(
+    db: Session,
+    *,
+    clan_id: int,
+    submission_event_id: int,
+    submitter_user_id: int,
+    decision: str,
+    body: str,
+) -> int:
+    user_id = int(submitter_user_id or 0)
+    if user_id <= 0:
+        return 0
+
+    approved = decision == "approve"
+    notification = create_notification(
+        db,
+        user_id=user_id,
+        kind=COMMUNITY_NOTICE_REVIEW_EVENT,
+        title=(
+            "Community record approved"
+            if approved
+            else "Community record was not posted"
+        ),
+        message=(
+            "Your community record was approved and posted on the Official Board."
+            if approved
+            else "Your community record was reviewed and was not posted on the Official Board."
+        ),
+        action_url=(
+            f"/app/community?clan_id={int(clan_id)}"
+            f"&notice_review_submission_id={int(submission_event_id)}"
+            "#community-home-notice-settings-panel"
+        ),
+        action_label="Open Community",
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+    try:
+        dispatch_web_push_for_notifications(db, [notification])
+    except Exception:
+        pass
+    return 1
+
+
 def _meeting_to_notice(row: dict[str, Any], *, db: Optional[Session] = None, clan_id: int = 0) -> dict[str, Any]:
     body = _safe_str(row.get("title") or row.get("purpose"), "Community meeting")
     interest_summary = row.get("interest_summary") if isinstance(row.get("interest_summary"), dict) else {}
@@ -1325,6 +1371,14 @@ def decide_notice_review_submission(
         clan_id=int(payload.clan_id),
         submission_event_id=int(submission_event_id),
     )
+    submitter_notification_created = _create_notice_review_result_notification(
+        db,
+        clan_id=int(payload.clan_id),
+        submission_event_id=int(submission_event_id),
+        submitter_user_id=int(getattr(submission, "actor_user_id", 0) or 0),
+        decision=payload.decision,
+        body=body,
+    )
     return {
         "ok": True,
         "engine_ready": True,
@@ -1338,6 +1392,7 @@ def decide_notice_review_submission(
         ),
         "notifications_created": int(notifications_created),
         "review_notifications_retired": int(review_notifications_retired),
+        "submitter_notification_created": int(submitter_notification_created),
         "community_records_policy": records_policy,
         "message": (
             "Community record approved and published to the Official Board."
