@@ -731,8 +731,10 @@ def _marketplace_listing_submission_key(
             [
                 "shop",
                 _safe_str(payload.get("name")).lower(),
+                _safe_str(payload.get("description")).lower(),
                 _safe_str(payload.get("whatsapp_number")).lower(),
                 _safe_str(payload.get("telegram_handle")).lower(),
+                _safe_str(payload.get("image_url")),
             ]
         )
     if normalized_type == "product":
@@ -741,8 +743,13 @@ def _marketplace_listing_submission_key(
                 "product",
                 _safe_str(payload.get("shop_id")),
                 _safe_str(payload.get("name")).lower(),
+                _safe_str(payload.get("description")).lower(),
                 _safe_str(payload.get("price")).lower(),
                 _safe_str(payload.get("currency")).upper(),
+                _safe_str(payload.get("image_url")),
+                _safe_str(payload.get("video_url")),
+                _safe_str(payload.get("visibility_mode")).lower(),
+                _safe_str(payload.get("vault_slot_number")),
             ]
         )
     return f"{normalized_type}:{_safe_str(payload.get('name')).lower()}"

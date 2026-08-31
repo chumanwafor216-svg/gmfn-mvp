@@ -526,6 +526,29 @@ def test_marketplace_shop_creation_reuses_matching_pending_submission(
         == 1
     )
 
+    changed_response = client.post(
+        "/marketplace/shops",
+        json={**payload, "description": "Updated detail for a separate review."},
+    )
+    assert changed_response.status_code == 202, changed_response.text
+    changed_body = changed_response.json()
+    assert changed_body.get("duplicate_pending_submission") is not True
+    assert changed_body["submission"]["submission_event_id"] != first_body["submission"]["submission_event_id"]
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM trust_events "
+            "WHERE event_type = 'marketplace.listing.submitted'"
+        )
+        == 2
+    )
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM notifications "
+            "WHERE kind = 'marketplace.listing.submitted'"
+        )
+        == 2
+    )
+
 
 def test_marketplace_product_creation_submits_member_listing_when_admin_approval_required(
     client,
@@ -661,6 +684,30 @@ def test_marketplace_product_creation_reuses_matching_pending_submission(
             "WHERE kind = 'marketplace.listing.submitted'"
         )
         == 1
+    )
+
+    changed_response = client.post(
+        "/marketplace/products",
+        json={**payload, "image_url": "/uploads/test/service-updated.jpg"},
+    )
+    assert changed_response.status_code == 202, changed_response.text
+    changed_body = changed_response.json()
+    assert changed_body.get("duplicate_pending_submission") is not True
+    assert changed_body["submission"]["submission_event_id"] != first_body["submission"]["submission_event_id"]
+    assert _scalar("SELECT COUNT(*) FROM marketplace_products") == 0
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM trust_events "
+            "WHERE event_type = 'marketplace.listing.submitted'"
+        )
+        == 2
+    )
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM notifications "
+            "WHERE kind = 'marketplace.listing.submitted'"
+        )
+        == 2
     )
 
 
