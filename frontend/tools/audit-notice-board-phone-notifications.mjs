@@ -302,8 +302,8 @@ assertContains(
 
 assertContains(
   files.webPushService,
-  /WEB_PUSH_NOTIFICATION_KINDS = \{[\s\S]*?"community\.notice\.posted"[\s\S]*?"community_domain\.notice\.posted"[\s\S]*?\}[\s\S]*?def dispatch_web_push_for_notification\([\s\S]*?kind not in WEB_PUSH_NOTIFICATION_KINDS[\s\S]*?web_push_runtime_status\(\)[\s\S]*?_send_web_push_payload/,
-  "Web Push delivery must stay limited to official notice-board notification kinds."
+  /WEB_PUSH_NOTIFICATION_KINDS = \{[\s\S]*?"community\.notice\.posted"[\s\S]*?"community\.notice\.submitted"[\s\S]*?"community\.notice\.review_decided"[\s\S]*?"community_domain\.notice\.posted"[\s\S]*?\}[\s\S]*?def dispatch_web_push_for_notification\([\s\S]*?kind not in WEB_PUSH_NOTIFICATION_KINDS[\s\S]*?web_push_runtime_status\(\)[\s\S]*?_send_web_push_payload/,
+  "Web Push delivery must stay limited to official notice-board and Community Records review notification kinds."
 );
 
 assertContains(

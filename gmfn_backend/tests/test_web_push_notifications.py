@@ -7,6 +7,7 @@ from app.main import app
 from app.db.database import SessionLocal
 from app.db.models import Clan, ClanMembership, User
 from app.db.notification_models import Notification, WebPushSubscription
+from app.services.web_push_service import dispatch_web_push_for_notification
 
 
 def _seed_push_notice_community() -> None:
@@ -256,6 +257,83 @@ def test_web_push_self_test_reports_missing_subscription(client, monkeypatch):
         assert "System notifications" in body["next_step"]
     finally:
         app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_notice_review_notifications_are_web_push_allowed(monkeypatch):
+    member = User(
+        id=2,
+        email="push-review-member@example.com",
+        hashed_password="hashed",
+        role="user",
+    )
+    sent_payloads: list[dict] = []
+
+    def fake_send(*, subscription_info, payload):
+        sent_payloads.append(
+            {
+                "endpoint": subscription_info["endpoint"],
+                "payload": payload,
+            }
+        )
+
+    monkeypatch.setenv("GSN_WEB_PUSH_PUBLIC_KEY", "BElocalPublicKey")
+    monkeypatch.setenv("GSN_WEB_PUSH_PRIVATE_KEY", "localPrivateKey")
+    monkeypatch.setattr("app.services.web_push_service.webpush", lambda **kwargs: None)
+    monkeypatch.setattr("app.services.web_push_service._send_web_push_payload", fake_send)
+
+    with SessionLocal() as db:
+        db.add(member)
+        db.add(
+            WebPushSubscription(
+                user_id=2,
+                endpoint_hash="test-review-endpoint-hash",
+                endpoint="https://push.example/subscription/review-member",
+                p256dh="p256dh-key-material",
+                auth="auth-secret",
+                permission_state="granted",
+                is_active=True,
+            )
+        )
+        notifications = [
+            Notification(
+                user_id=2,
+                kind="community.notice.submitted",
+                title="Community record waiting for review",
+                message="A member submitted a community record.",
+                action_url="/app/community?clan_id=1&notice_review_submission_id=10#community-home-notice-settings-panel",
+                action_label="Review record",
+            ),
+            Notification(
+                user_id=2,
+                kind="community.notice.review_decided",
+                title="Community record approved",
+                message="Your community record was approved.",
+                action_url="/app/community?clan_id=1&notice_review_submission_id=10#community-home-notice-settings-panel",
+                action_label="Open Community",
+            ),
+        ]
+        db.add_all(notifications)
+        db.commit()
+
+        results = []
+        for notification in notifications:
+            db.refresh(notification)
+            results.append(dispatch_web_push_for_notification(db, notification))
+
+        subscription = db.query(WebPushSubscription).one()
+        assert subscription.failure_count == 0
+        assert subscription.last_success_at is not None
+
+    assert results == [
+        {"attempted": 1, "sent": 1, "deactivated": 0},
+        {"attempted": 1, "sent": 1, "deactivated": 0},
+    ]
+    assert [item["payload"]["kind"] for item in sent_payloads] == [
+        "community.notice.submitted",
+        "community.notice.review_decided",
+    ]
+    assert sent_payloads[0]["payload"]["action_label"] == "Review record"
+    assert sent_payloads[1]["payload"]["action_label"] == "Open Community"
 
 
 def test_official_notice_dispatches_web_push_to_registered_member(

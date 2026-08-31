@@ -19,6 +19,8 @@ except Exception:  # pragma: no cover - pywebpush is optional until env is confi
 
 WEB_PUSH_NOTIFICATION_KINDS = {
     "community.notice.posted",
+    "community.notice.submitted",
+    "community.notice.review_decided",
     "community_domain.notice.posted",
 }
 

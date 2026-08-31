@@ -6,12 +6,14 @@ GSN Web Push is an additive delivery rail for important GSN notifications.
 It does not replace GSN notification records, Community Governance, Trust
 Events, WhatsApp contact actions, or any Trust Infrastructure logic.
 
-Current first batch:
+Current allowed production kinds:
 
 - `community.notice.posted`
+- `community.notice.submitted`
+- `community.notice.review_decided`
 - `community_domain.notice.posted`
 
-These are official board notice notifications only.
+These are official board notices plus Community Records review prompts/results only.
 
 ## Generate VAPID Keys
 
@@ -102,6 +104,8 @@ Expected configured response after secrets are present:
   "sender_available": true,
   "allowed_kinds": [
     "community.notice.posted",
+    "community.notice.submitted",
+    "community.notice.review_decided",
     "community_domain.notice.posted"
   ]
 }
