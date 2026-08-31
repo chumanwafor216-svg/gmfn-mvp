@@ -1,3 +1,10 @@
+## 2026-08-31 - Local Marketplace listing review rejection coverage
+
+- Status: Local backend test coverage verified; not pushed or deployed per owner instruction to avoid pipeline wastage.
+- Backend route covered: `POST /marketplace/listing-review-queue/{submission_event_id}/decision` for rejection and duplicate-decision refusal.
+- Added coverage proving a rejected Marketplace shop submission records `marketplace.listing.review_decided`, preserves reviewer note metadata, publishes no shop/product, retires the admin review prompt, creates the submitter result notification, clears the pending queue, and refuses a second decision with `409`.
+- Verification: `python -m py_compile gmfn_backend\app\api\routes\marketplace.py gmfn_backend\tests\test_marketplace_public_shop.py`; `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py -k "governance_listing_review_policy or marketplace_shop_creation_submits or marketplace_product_creation_submits or marketplace_listing_review_approval or marketplace_listing_review_rejection or marketplace_shop_creation_reuses_matching_pending_submission or marketplace_product_creation_reuses_matching_pending_submission or marketplace_product_creation_allows_member_when_listing_admin_approval_not_required" -q`; `git diff --check`.
+- Devil truth: this is coverage for the existing lightweight rejection behavior. It still does not add appeals, reviewer assignment, SLA timers, email/WhatsApp delivery, or richer moderation reasons beyond the optional reviewer note.
 ## 2026-08-31 - Local Marketplace listing review duplicate guard
 
 - Status: Local backend implementation verified; not pushed or deployed per owner instruction to avoid pipeline wastage.

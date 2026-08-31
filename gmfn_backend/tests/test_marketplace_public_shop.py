@@ -782,6 +782,145 @@ def test_marketplace_listing_review_approval_publishes_shop_and_notifies_submitt
     assert bool(retired) is True
 
 
+def test_marketplace_listing_review_rejection_records_decision_without_publishing(
+    client,
+    override_current_user,
+    seed_clan_admin_membership,
+):
+    _ensure_marketplace_tables()
+    _seed_second_marketplace_member()
+    _seed_marketplace_governance_profile_event(
+        enable_member_service_listings=True,
+        require_admin_approval_for_listings=True,
+    )
+    meta_json = json.dumps(
+        {
+            "source": "marketplace_listing_review",
+            "reason": "marketplace_listing_submitted_for_review",
+            "listing_type": "shop",
+            "listing_payload": {
+                "name": "Rejected Member Shop",
+                "description": "Admin should not publish this shop.",
+            },
+            "review_status": "pending",
+            "submitted_by_role": "member",
+            "marketplace_governance_policy": {
+                "admin_approval_required_for_listings": True,
+                "listing_review_required": True,
+            },
+        }
+    )
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO trust_events (
+                    event_type, clan_id, actor_user_id, subject_user_id, meta_json, created_at
+                ) VALUES (
+                    'marketplace.listing.submitted', 1, 2, 2, :meta_json, CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {"meta_json": meta_json},
+        )
+        submission_id = int(conn.execute(text("SELECT MAX(id) FROM trust_events")).scalar_one())
+        conn.execute(
+            text(
+                """
+                INSERT INTO notifications (
+                    user_id, kind, title, message, action_url, action_label, is_read, created_at
+                ) VALUES (
+                    1,
+                    'marketplace.listing.submitted',
+                    'Marketplace listing waiting for review',
+                    'A member submitted Rejected Member Shop (shop) for marketplace approval.',
+                    :action_url,
+                    'Review listing',
+                    0,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "action_url": (
+                    f"/app/marketplace?clan_id=1&listing_review_submission_id={submission_id}"
+                    "#marketplace-listing-review-panel"
+                )
+            },
+        )
+
+    decision = client.post(
+        f"/marketplace/listing-review-queue/{submission_id}/decision",
+        json={"clan_id": 1, "decision": "reject", "reviewer_note": "Missing contact detail"},
+    )
+
+    assert decision.status_code == 200, decision.text
+    body = decision.json()
+    assert body["decision"] == "reject"
+    assert body["listing_type"] == "shop"
+    assert body["shop"] is None
+    assert body["product"] is None
+    assert body["review_notifications_retired"] == 1
+    assert body["submitter_notification_created"] == 1
+    assert _scalar("SELECT COUNT(*) FROM marketplace_shops WHERE owner_user_id = 2") == 0
+    assert _scalar("SELECT COUNT(*) FROM marketplace_products") == 0
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM trust_events "
+            "WHERE event_type = 'marketplace.listing.review_decided'"
+        )
+        == 1
+    )
+
+    with engine.begin() as conn:
+        decision_meta = conn.execute(
+            text(
+                """
+                SELECT meta_json
+                FROM trust_events
+                WHERE event_type = 'marketplace.listing.review_decided'
+                """
+            )
+        ).scalar_one()
+        submitter_notification = conn.execute(
+            text(
+                """
+                SELECT user_id, title, action_label
+                FROM notifications
+                WHERE kind = 'marketplace.listing.review_decided'
+                """
+            )
+        ).mappings().one()
+        retired = conn.execute(
+            text(
+                """
+                SELECT is_read
+                FROM notifications
+                WHERE kind = 'marketplace.listing.submitted'
+                """
+            )
+        ).scalar_one()
+
+    meta = json.loads(decision_meta)
+    assert meta["decision"] == "reject"
+    assert meta["reviewer_note"] == "Missing contact detail"
+    assert meta["published_shop_id"] is None
+    assert submitter_notification["user_id"] == 2
+    assert submitter_notification["title"] == "Marketplace listing was not posted"
+    assert submitter_notification["action_label"] == "Open Marketplace"
+    assert bool(retired) is True
+
+    queue_response = client.get("/marketplace/listing-review-queue?clan_id=1")
+    assert queue_response.status_code == 200, queue_response.text
+    assert queue_response.json()["pending_review_count"] == 0
+
+    duplicate_decision = client.post(
+        f"/marketplace/listing-review-queue/{submission_id}/decision",
+        json={"clan_id": 1, "decision": "approve"},
+    )
+    assert duplicate_decision.status_code == 409, duplicate_decision.text
+
+
 def test_marketplace_listing_review_approval_publishes_product_and_notifies_submitter(
     client,
     override_current_user,
