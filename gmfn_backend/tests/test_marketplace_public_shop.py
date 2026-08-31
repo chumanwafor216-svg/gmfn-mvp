@@ -613,6 +613,64 @@ def test_marketplace_product_creation_rejects_shop_from_different_community(
     )
 
 
+def test_marketplace_shop_update_rejects_wrong_selected_community(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    _ensure_marketplace_tables()
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (
+                    id, name, invite_code, community_code, status, invite_uses, created_at
+                ) VALUES (
+                    2, 'Other Test Clan', 'test-invite-2', 'GMFN-C-000002', 'active', 0, CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (12, 2, 1, 'user', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active, created_at
+                ) VALUES (
+                    984, 1, 1, 'Clan One Shop', 'Original shop copy', 1, CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+
+    response = client.patch(
+        "/marketplace/shops/984",
+        json={"clan_id": 2, "description": "Wrong community update"},
+    )
+
+    assert response.status_code == 409, response.text
+    assert response.json()["detail"] == "Selected community does not own this shop"
+    with engine.begin() as conn:
+        description = conn.execute(
+            text("SELECT description FROM marketplace_shops WHERE id = 984")
+        ).scalar_one()
+    assert description == "Original shop copy"
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM trust_events "
+            "WHERE event_type = 'marketplace.shop.updated'"
+        )
+        == 0
+    )
+
 def test_marketplace_product_update_rejects_wrong_selected_community(
     client,
     override_current_user_user,
@@ -742,6 +800,84 @@ def test_marketplace_product_update_rejects_target_shop_from_different_community
         ).scalar_one()
     assert int(shop_id) == 987
 
+
+def test_marketplace_private_product_management_stays_in_selected_community(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'pytest@example.com', 'hashed', 'Private Manager', 'user', 'GMFN-U-PRIVATECTX'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES
+                    (1, 'Origin community', 'Origin Marketplace', 'PRIVATECTX1'),
+                    (2, 'Second community', 'Second Marketplace', 'PRIVATECTX2')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES
+                    (1, 1, 1, 'member', 0),
+                    (2, 2, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active, created_at
+                ) VALUES (
+                    990, 1, 1, 'Global Private Context Shop', 'One owner shelf', 1, CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_products (
+                    id, clan_id, shop_id, seller_user_id, title, description,
+                    price, currency, image_url, visibility_mode, is_active, created_at
+                ) VALUES
+                    (
+                        991, 1, 990, 1, 'Origin Private Item', 'Should stay out of clan two management',
+                        '1000', 'GBP', '/uploads/test/private-origin.jpg', 'vault_private', 1, CURRENT_TIMESTAMP
+                    ),
+                    (
+                        992, 2, 990, 1, 'Second Community Private Item', 'Selected management context',
+                        '2000', 'GBP', '/uploads/test/private-second.jpg', 'vault_private', 1, CURRENT_TIMESTAMP
+                    )
+                """
+            )
+        )
+
+    response = client.get(
+        "/marketplace/products?clan_id=2&shop_id=990&include_private_manage=true&only_active=false"
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    names = [item["name"] for item in body["items"]]
+    assert names == ["Second Community Private Item"]
+    assert body["clan_id"] == 2
+    assert body["include_private_manage"] is True
 
 def test_marketplace_product_creation_submits_member_listing_when_admin_approval_required(
     client,

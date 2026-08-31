@@ -3297,6 +3297,8 @@ def update_marketplace_shop(
         user_id=int(current_user.id),
         clan_id=resolved_clan_id,
     )
+    if int(resolved_clan_id) != int(shop.clan_id):
+        raise HTTPException(status_code=409, detail="Selected community does not own this shop")
     require_domain_marketplace_shops_enabled(db, clan_id=resolved_clan_id)
 
     provided = _provided_model_fields(payload)
@@ -3631,7 +3633,8 @@ def list_marketplace_products(
             owner_shop_ids = [int(shop_id)]
 
         q = db.query(MarketplaceProduct).filter(
-            MarketplaceProduct.shop_id.in_(owner_shop_ids)
+            MarketplaceProduct.shop_id.in_(owner_shop_ids),
+            MarketplaceProduct.clan_id == int(resolved_clan_id),
         )
 
         if only_active:
