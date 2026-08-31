@@ -108,6 +108,19 @@ const files = {
       "utf8"
     ),
   },
+  communityDomainSetupOverviewPanel: {
+    path: "frontend/src/pages/communityDomainDashboard/SetupOverviewPanel.tsx",
+    source: readFileSync(
+      join(
+        frontendRoot,
+        "src",
+        "pages",
+        "communityDomainDashboard",
+        "SetupOverviewPanel.tsx"
+      ),
+      "utf8"
+    ),
+  },
   api: {
     path: "frontend/src/lib/api.ts",
     source: readFileSync(join(frontendRoot, "src", "lib", "api.ts"), "utf8"),
@@ -149,6 +162,11 @@ files.communityDomainPage.source = files.communityDomainPage.source.replace(
     "utf8"
   )
 );
+
+const communityDomainNoticeSurface = {
+  path: `${files.communityDomainPage.path} + ${files.communityDomainSetupOverviewPanel.path}`,
+  source: `${files.communityDomainPage.source}\n${files.communityDomainSetupOverviewPanel.source}`,
+};
 
 const findings = [];
 
@@ -367,13 +385,13 @@ assertContains(
 );
 
 assertContains(
-  files.communityDomainPage,
-  /Official Board[\s\S]*?Notices for this Community Domain only\.[\s\S]*?limited to[\s\S]*?active members of this selected Community Domain/,
+  communityDomainNoticeSurface,
+  /Official Board[\s\S]*?Notices for this Community Domain only\.[\s\S]*?limited\s+to[\s\S]*?active members of this selected\s+Community Domain/,
   "Community Domain dashboard must state that notices stay inside the selected domain."
 );
 
 assertContains(
-  files.communityDomainPage,
+  communityDomainNoticeSurface,
   /function officialBoardHeaderStyle\(\)[\s\S]*?gridTemplateColumns:\s*"repeat\(auto-fit, minmax\(min\(100%, 260px\), 1fr\)\)"[\s\S]*?<div style=\{officialBoardHeaderStyle\(\)\}>[\s\S]*?Notices for this Community Domain only\./,
   "Community Domain Official Board header must keep the responsive grid that prevents phone text from collapsing into one-word columns."
 );

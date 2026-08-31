@@ -1,3 +1,13 @@
+## 2026-08-31 - Local Community Records governance error messages
+- Status: Local frontend implementation verified; ready for active pilot commit/push/deploy protocol.
+- Frontend routes affected: `/app/community`, `/app/marketplace`, and Community Domain notice-board audit coverage.
+- Shared frontend helper `frontend/src/lib/structuredErrors.ts` now maps Community Records governance refusal codes (`community_records_disabled`, `community_member_record_submissions_disabled`, `community_record_admin_approval_required`) to plain GSN guidance, alongside marketplace governance codes.
+- CommunityHomePage now uses the shared governance formatter for announcement acknowledgement, notice posting, and notice-board settings failures, so structured backend policy refusals do not surface as raw JSON/error text.
+- MarketplacePage now uses the generic GSN governance formatter, so its Official Board can also explain Community Records policy refusals while preserving marketplace listing refusal copy.
+- Notice-board audit updated to inspect the split Community Domain dashboard + lazy SetupOverviewPanel surface, where the Official Board copy now lives after component extraction.
+- Verification: `npm exec -- tsc -b --pretty false`; `npm --prefix frontend run lint`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:community-home-phone-buttons`; `npm --prefix frontend run audit:marketplace-actions`; `npm --prefix frontend run audit:marketplace-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `git diff --check`.
+- Devil truth: this only improves refusal clarity and audit coverage. It still does not create a Community Records repository, member-record approval queue, reviewer assignment workflow, admin notification, file upload store, WhatsApp import, or retroactive moderation of old records.
+
 ## 2026-08-31 - Local marketplace governance error messages
 - Status: Local frontend implementation verified; ready for active pilot commit/push/deploy protocol.
 - Frontend routes affected: `/app/marketplace`, `/app/shop-control`, and `/app/shop-assets` / embedded Shop Gallery Tools.

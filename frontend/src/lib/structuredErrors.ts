@@ -6,6 +6,11 @@ function asRecord(value: unknown): UnknownRecord | null {
     : null;
 }
 
+function structuredErrorCode(err: unknown): string {
+  const detail = structuredErrorDetail(err);
+  return String(detail?.code ?? "").trim().toLowerCase();
+}
+
 export function structuredErrorDetail(err: unknown): UnknownRecord | null {
   const direct = asRecord(err);
   const directDetail = asRecord(direct?.detail);
@@ -44,8 +49,7 @@ export function marketplaceGovernanceErrorMessage(
   err: unknown,
   fallback = ""
 ): string {
-  const detail = structuredErrorDetail(err);
-  const code = String(detail?.code ?? "").trim().toLowerCase();
+  const code = structuredErrorCode(err);
 
   if (code === "community_member_service_listings_disabled") {
     return (
@@ -57,6 +61,57 @@ export function marketplaceGovernanceErrorMessage(
     return (
       "This community requires admin approval before member listings go live. GSN does not have a listing approval queue here yet, so ask an admin to create or approve the listing."
     );
+  }
+
+  return structuredErrorMessage(err, fallback);
+}
+
+export function communityRecordsGovernanceErrorMessage(
+  err: unknown,
+  fallback = ""
+): string {
+  const code = structuredErrorCode(err);
+
+  if (code === "community_records_disabled") {
+    return (
+      "This community has Community Records turned off. Ask a community admin to enable Community Records before posting or acknowledging announcements."
+    );
+  }
+
+  if (code === "community_member_record_submissions_disabled") {
+    return (
+      "This community does not let ordinary members publish Community Records directly. Ask a community admin to post it or change Community Records settings."
+    );
+  }
+
+  if (code === "community_record_admin_approval_required") {
+    return (
+      "This community requires admin approval before member records go live. GSN does not have a member-record approval queue here yet, so ask an admin to post the notice."
+    );
+  }
+
+  return structuredErrorMessage(err, fallback);
+}
+
+export function gsnGovernanceErrorMessage(
+  err: unknown,
+  fallback = ""
+): string {
+  const code = structuredErrorCode(err);
+
+  if (
+    code === "community_member_service_listings_disabled" ||
+    code === "community_listing_admin_approval_required"
+  ) {
+    return marketplaceGovernanceErrorMessage(err, fallback);
+  }
+
+  if (
+    code === "community_records_disabled" ||
+    code === "community_member_record_submissions_disabled" ||
+    code === "community_record_admin_approval_required"
+  ) {
+    return communityRecordsGovernanceErrorMessage(err, fallback);
   }
 
   return structuredErrorMessage(err, fallback);

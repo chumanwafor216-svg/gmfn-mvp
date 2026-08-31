@@ -14,7 +14,7 @@ import {
   type CtaIntent,
 } from "../lib/ctaTargets";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
-import { marketplaceGovernanceErrorMessage } from "../lib/structuredErrors";
+import { gsnGovernanceErrorMessage } from "../lib/structuredErrors";
 import {
   buildGsnCommunityVerifyLinkMessage,
   buildGsnInviteLinkMessage,
@@ -1089,7 +1089,7 @@ function firstTruthy(...values: any[]): string {
 
 
 function marketplaceErrorMessage(err: any, fallback: string): string {
-  return marketplaceGovernanceErrorMessage(err, fallback);
+  return gsnGovernanceErrorMessage(err, fallback);
 }
 
 function normalizeIntentText(value: any): string {

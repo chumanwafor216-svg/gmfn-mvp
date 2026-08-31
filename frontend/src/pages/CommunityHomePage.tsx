@@ -17,6 +17,7 @@ import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
 import { preloadRouteForPath } from "../lib/routePreload";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
+import { gsnGovernanceErrorMessage } from "../lib/structuredErrors";
 import {
   getMarketplaceBroadcasts,
   getMyMarketplaceShop,
@@ -2770,7 +2771,7 @@ export default function CommunityHomePage() {
     } catch (error: any) {
       showNotice(
         "error",
-        error?.message || "This announcement could not be acknowledged."
+        gsnGovernanceErrorMessage(error, "This announcement could not be acknowledged.")
       );
     } finally {
       setNoticeAcknowledgementBusy("");
@@ -2959,7 +2960,7 @@ export default function CommunityHomePage() {
     } catch (error: any) {
       showNotice(
         "error",
-        error?.message || "This notice could not be posted. Check posting permission and length."
+        gsnGovernanceErrorMessage(error, "This notice could not be posted. Check posting permission and length.")
       );
     } finally {
       setNoticePosting(false);
@@ -3010,7 +3011,7 @@ export default function CommunityHomePage() {
     } catch (error: any) {
       showNotice(
         "error",
-        error?.message || "This notice board setting could not be saved."
+        gsnGovernanceErrorMessage(error, "This notice board setting could not be saved.")
       );
     } finally {
       setCommunityNoticeSettingsSaving(false);
