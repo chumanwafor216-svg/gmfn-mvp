@@ -12,8 +12,11 @@ Current allowed production kinds:
 - `community.notice.submitted`
 - `community.notice.review_decided`
 - `community_domain.notice.posted`
+- `marketplace.listing.submitted`
+- `marketplace.listing.review_decided`
 
-These are official board notices plus Community Records review prompts/results only.
+These are official board notices plus Community Records and Marketplace listing
+review prompts/results only.
 
 ## Generate VAPID Keys
 
@@ -106,7 +109,9 @@ Expected configured response after secrets are present:
     "community.notice.posted",
     "community.notice.submitted",
     "community.notice.review_decided",
-    "community_domain.notice.posted"
+    "community_domain.notice.posted",
+    "marketplace.listing.submitted",
+    "marketplace.listing.review_decided"
   ]
 }
 ```

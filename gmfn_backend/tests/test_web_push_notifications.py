@@ -336,6 +336,83 @@ def test_notice_review_notifications_are_web_push_allowed(monkeypatch):
     assert sent_payloads[1]["payload"]["action_label"] == "Open Community"
 
 
+def test_marketplace_listing_review_notifications_are_web_push_allowed(monkeypatch):
+    member = User(
+        id=2,
+        email="push-marketplace-member@example.com",
+        hashed_password="hashed",
+        role="user",
+    )
+    sent_payloads: list[dict] = []
+
+    def fake_send(*, subscription_info, payload):
+        sent_payloads.append(
+            {
+                "endpoint": subscription_info["endpoint"],
+                "payload": payload,
+            }
+        )
+
+    monkeypatch.setenv("GSN_WEB_PUSH_PUBLIC_KEY", "BElocalPublicKey")
+    monkeypatch.setenv("GSN_WEB_PUSH_PRIVATE_KEY", "localPrivateKey")
+    monkeypatch.setattr("app.services.web_push_service.webpush", lambda **kwargs: None)
+    monkeypatch.setattr("app.services.web_push_service._send_web_push_payload", fake_send)
+
+    with SessionLocal() as db:
+        db.add(member)
+        db.add(
+            WebPushSubscription(
+                user_id=2,
+                endpoint_hash="test-marketplace-review-endpoint-hash",
+                endpoint="https://push.example/subscription/marketplace-review-member",
+                p256dh="p256dh-key-material",
+                auth="auth-secret",
+                permission_state="granted",
+                is_active=True,
+            )
+        )
+        notifications = [
+            Notification(
+                user_id=2,
+                kind="marketplace.listing.submitted",
+                title="Marketplace listing waiting for review",
+                message="A member submitted a shop for marketplace approval.",
+                action_url="/app/marketplace?clan_id=1&listing_review_submission_id=10#marketplace-listing-review-panel",
+                action_label="Review listing",
+            ),
+            Notification(
+                user_id=2,
+                kind="marketplace.listing.review_decided",
+                title="Marketplace listing approved",
+                message="Your marketplace listing was approved and posted.",
+                action_url="/app/marketplace?clan_id=1&listing_review_submission_id=10#marketplace-listing-review-panel",
+                action_label="Open Marketplace",
+            ),
+        ]
+        db.add_all(notifications)
+        db.commit()
+
+        results = []
+        for notification in notifications:
+            db.refresh(notification)
+            results.append(dispatch_web_push_for_notification(db, notification))
+
+        subscription = db.query(WebPushSubscription).one()
+        assert subscription.failure_count == 0
+        assert subscription.last_success_at is not None
+
+    assert results == [
+        {"attempted": 1, "sent": 1, "deactivated": 0},
+        {"attempted": 1, "sent": 1, "deactivated": 0},
+    ]
+    assert [item["payload"]["kind"] for item in sent_payloads] == [
+        "marketplace.listing.submitted",
+        "marketplace.listing.review_decided",
+    ]
+    assert sent_payloads[0]["payload"]["action_label"] == "Review listing"
+    assert sent_payloads[1]["payload"]["action_label"] == "Open Marketplace"
+
+
 def test_official_notice_dispatches_web_push_to_registered_member(
     client,
     monkeypatch,

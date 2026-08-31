@@ -1,3 +1,12 @@
+## 2026-08-31 - Local Web Push allow-list for Marketplace listing reviews
+
+- Status: Local backend/audit/runbook implementation verified; not pushed or deployed per owner instruction to avoid pipeline wastage.
+- Backend service affected: `gmfn_backend/app/services/web_push_service.py`.
+- Web Push allow-list now includes `marketplace.listing.submitted` and `marketplace.listing.review_decided`, matching the Action Inbox rows created for Marketplace listing review prompts/results.
+- Backend coverage: `test_marketplace_listing_review_notifications_are_web_push_allowed` proves both Marketplace listing review kinds dispatch to an active subscription when Web Push is configured.
+- Audits/runbook updated: Web Push production readiness audit and `docs/WEB_PUSH_PRODUCTION_RUNBOOK.md` now list the six allowed production kinds.
+- Verification: `python -m py_compile gmfn_backend\app\services\web_push_service.py gmfn_backend\tests\test_web_push_notifications.py`; `python -m pytest -q gmfn_backend\tests\test_web_push_notifications.py -q`; `npm --prefix frontend run audit:web-push-production-readiness`; `git diff --check`.
+- Devil truth: this only makes Marketplace listing review prompts/results eligible for browser push when VAPID keys, an active subscription, browser permission, and device conditions are all present. It does not guarantee delivery, send email/WhatsApp, assign reviewers, or expand push to other notification kinds.
 ## 2026-08-31 - Local Marketplace listing review queue
 
 - Status: Local backend/frontend implementation verified; not pushed or deployed per owner instruction to avoid pipeline wastage.

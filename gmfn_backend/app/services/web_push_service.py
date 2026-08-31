@@ -22,6 +22,8 @@ WEB_PUSH_NOTIFICATION_KINDS = {
     "community.notice.submitted",
     "community.notice.review_decided",
     "community_domain.notice.posted",
+    "marketplace.listing.submitted",
+    "marketplace.listing.review_decided",
 }
 
 

@@ -60,8 +60,8 @@ assertContains(
 
 assertContains(
   "gmfn_backend/tests/test_web_push_notifications.py",
-  /test_web_push_status_reports_not_configured_without_vapid_keys[\s\S]*?configured"\] is False[\s\S]*?test_notice_review_notifications_are_web_push_allowed[\s\S]*?test_official_notice_dispatches_web_push_to_registered_member/,
-  "backend tests must prove not-configured truth, Community Records review-kind dispatch, and official-notice dispatch."
+  /test_web_push_status_reports_not_configured_without_vapid_keys[\s\S]*?configured"\] is False[\s\S]*?test_notice_review_notifications_are_web_push_allowed[\s\S]*?test_marketplace_listing_review_notifications_are_web_push_allowed[\s\S]*?test_official_notice_dispatches_web_push_to_registered_member/,
+  "backend tests must prove not-configured truth, Community Records review-kind dispatch, Marketplace listing review-kind dispatch, and official-notice dispatch."
 );
 
 assertContains(
@@ -72,7 +72,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/services/web_push_service.py",
-  /WEB_PUSH_NOTIFICATION_KINDS = \{[\s\S]*?"community\.notice\.posted"[\s\S]*?"community\.notice\.submitted"[\s\S]*?"community\.notice\.review_decided"[\s\S]*?"community_domain\.notice\.posted"[\s\S]*?\}[\s\S]*?"web_push_not_configured"/,
+  /WEB_PUSH_NOTIFICATION_KINDS = \{[\s\S]*?"community\.notice\.posted"[\s\S]*?"community\.notice\.submitted"[\s\S]*?"community\.notice\.review_decided"[\s\S]*?"community_domain\.notice\.posted"[\s\S]*?"marketplace\.listing\.submitted"[\s\S]*?"marketplace\.listing\.review_decided"[\s\S]*?\}[\s\S]*?"web_push_not_configured"/,
   "Web Push service must stay allowlisted and truthfully report missing configuration."
 );
 
