@@ -70,7 +70,7 @@ export function marketplaceGovernanceErrorMessage(
 
   if (code === "community_listing_admin_approval_required") {
     return (
-      "This community requires admin approval before member listings go live. GSN does not have a listing approval queue here yet, so ask an admin to create or approve the listing."
+      "This community requires admin approval before member listings go live. Submit the listing for community admin review, or ask an admin to publish it."
     );
   }
 

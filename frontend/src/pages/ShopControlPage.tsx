@@ -2721,6 +2721,14 @@ export default function ShopControlPage() {
         body: JSON.stringify(body),
       });
 
+      if (res?.submitted_for_review) {
+        const message =
+          safeStr(res?.message) || "Shop details were sent for community admin review.";
+        setActiveOwnerLayer("shop-details");
+        showNotice("success", message);
+        return;
+      }
+
       const updated = (res?.item || shop) as ShopRecord;
       setShop(updated);
       setShopName(firstTruthy(updated?.name));
@@ -2777,6 +2785,15 @@ export default function ShopControlPage() {
         whatsapp_number: safeStr(whatsApp) || null,
         telegram_handle: safeStr(telegramHandle) || null,
       });
+
+      if (res?.submitted_for_review) {
+        const message =
+          safeStr(res?.message) || "Shop details were sent for community admin review.";
+        setSpotlightPublishFeedback({ tone: "success", text: message });
+        showNotice("success", message);
+        await loadPage({ background: true, preferredClanId: clanId });
+        return null;
+      }
 
       const created = (res?.item || null) as ShopRecord | null;
       if (!created?.id) {

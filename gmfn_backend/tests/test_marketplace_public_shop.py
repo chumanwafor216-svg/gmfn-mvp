@@ -185,6 +185,46 @@ def _seed_marketplace_governance_profile_event(
         )
 
 
+def _seed_second_community_admin() -> None:
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO users (id, email, hashed_password, role)
+                VALUES (2, 'market-admin@example.com', 'hashed', 'user')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (2, 1, 2, 'admin', 0)
+                """
+            )
+        )
+
+
+def _seed_second_marketplace_member() -> None:
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO users (id, email, hashed_password, role, display_name)
+                VALUES (2, 'market-member@example.com', 'hashed', 'user', 'Market Member')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (2, 1, 2, 'user', 0)
+                """
+            )
+        )
+
+
 def test_spotlight_message_parser_keeps_two_part_price_detail():
     parts = marketplace_routes._spotlight_message_parts("Rice bag - N25k")
 
@@ -381,12 +421,13 @@ def test_marketplace_shop_creation_reports_light_governance_listing_review_polic
 
 
 
-def test_marketplace_shop_creation_blocks_member_when_listing_admin_approval_required(
+def test_marketplace_shop_creation_submits_member_listing_when_admin_approval_required(
     client,
     override_current_user_user,
     seed_clan_member_membership,
 ):
     _ensure_marketplace_tables()
+    _seed_second_community_admin()
     _seed_marketplace_governance_profile_event(
         enable_member_service_listings=True,
         require_admin_approval_for_listings=True,
@@ -401,11 +442,14 @@ def test_marketplace_shop_creation_blocks_member_when_listing_admin_approval_req
         },
     )
 
-    assert response.status_code == 403, response.text
-    detail = response.json()["detail"]
-    assert detail["code"] == "community_listing_admin_approval_required"
-    assert detail["governance_profile_key"] == "light_migrant_support_network"
-    assert detail["marketplace_governance_policy"]["admin_approval_required_for_listings"] is True
+    assert response.status_code == 202, response.text
+    body = response.json()
+    assert body["submitted_for_review"] is True
+    assert body["item"] is None
+    assert body["submission"]["listing_type"] == "shop"
+    assert body["submission"]["listing_payload"]["name"] == "Member Service Shop"
+    assert body["marketplace_governance_policy"]["admin_approval_required_for_listings"] is True
+    assert body["admin_notifications_created"] == 1
     assert _scalar("SELECT COUNT(*) FROM marketplace_shops") == 0
     assert (
         _scalar(
@@ -414,14 +458,37 @@ def test_marketplace_shop_creation_blocks_member_when_listing_admin_approval_req
         )
         == 0
     )
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM trust_events "
+            "WHERE event_type = 'marketplace.listing.submitted'"
+        )
+        == 1
+    )
 
+    with engine.begin() as conn:
+        notification = conn.execute(
+            text(
+                """
+                SELECT user_id, kind, title, action_url, action_label
+                FROM notifications
+                WHERE kind = 'marketplace.listing.submitted'
+                """
+            )
+        ).mappings().one()
 
-def test_marketplace_product_creation_blocks_member_when_listing_admin_approval_required(
+    assert notification["user_id"] == 2
+    assert notification["title"] == "Marketplace listing waiting for review"
+    assert "listing_review_submission_id=" in notification["action_url"]
+    assert notification["action_label"] == "Review listing"
+
+def test_marketplace_product_creation_submits_member_listing_when_admin_approval_required(
     client,
     override_current_user_user,
     seed_clan_member_membership,
 ):
     _ensure_marketplace_tables()
+    _seed_second_community_admin()
     _seed_marketplace_governance_profile_event(
         enable_member_service_listings=True,
         require_admin_approval_for_listings=True,
@@ -465,10 +532,15 @@ def test_marketplace_product_creation_blocks_member_when_listing_admin_approval_
         },
     )
 
-    assert response.status_code == 403, response.text
-    detail = response.json()["detail"]
-    assert detail["code"] == "community_listing_admin_approval_required"
-    assert detail["marketplace_governance_policy"]["admin_approval_required_for_listings"] is True
+    assert response.status_code == 202, response.text
+    body = response.json()
+    assert body["submitted_for_review"] is True
+    assert body["item"] is None
+    assert body["submission"]["listing_type"] == "product"
+    assert body["submission"]["listing_payload"]["shop_id"] == 983
+    assert body["submission"]["listing_payload"]["name"] == "Community service listing"
+    assert body["marketplace_governance_policy"]["admin_approval_required_for_listings"] is True
+    assert body["admin_notifications_created"] == 1
     assert _scalar("SELECT COUNT(*) FROM marketplace_products") == 0
     assert (
         _scalar(
@@ -477,7 +549,237 @@ def test_marketplace_product_creation_blocks_member_when_listing_admin_approval_
         )
         == 0
     )
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM trust_events "
+            "WHERE event_type = 'marketplace.listing.submitted'"
+        )
+        == 1
+    )
 
+def test_marketplace_listing_review_approval_publishes_shop_and_notifies_submitter(
+    client,
+    override_current_user,
+    seed_clan_admin_membership,
+):
+    _ensure_marketplace_tables()
+    _seed_second_marketplace_member()
+    _seed_marketplace_governance_profile_event(
+        enable_member_service_listings=True,
+        require_admin_approval_for_listings=True,
+    )
+    meta_json = json.dumps(
+        {
+            "source": "marketplace_listing_review",
+            "reason": "marketplace_listing_submitted_for_review",
+            "listing_type": "shop",
+            "listing_payload": {
+                "name": "Approved Member Shop",
+                "description": "Admin reviewed shop.",
+            },
+            "review_status": "pending",
+            "submitted_by_role": "member",
+            "marketplace_governance_policy": {
+                "admin_approval_required_for_listings": True,
+                "listing_review_required": True,
+            },
+        }
+    )
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO trust_events (
+                    event_type, clan_id, actor_user_id, subject_user_id, meta_json, created_at
+                ) VALUES (
+                    'marketplace.listing.submitted', 1, 2, 2, :meta_json, CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {"meta_json": meta_json},
+        )
+        submission_id = int(conn.execute(text("SELECT MAX(id) FROM trust_events")).scalar_one())
+        conn.execute(
+            text(
+                """
+                INSERT INTO notifications (
+                    user_id, kind, title, message, action_url, action_label, is_read, created_at
+                ) VALUES (
+                    1,
+                    'marketplace.listing.submitted',
+                    'Marketplace listing waiting for review',
+                    'A member submitted Approved Member Shop (shop) for marketplace approval.',
+                    :action_url,
+                    'Review listing',
+                    0,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "action_url": (
+                    f"/app/marketplace?clan_id=1&listing_review_submission_id={submission_id}"
+                    "#marketplace-listing-review-panel"
+                )
+            },
+        )
+
+    queue_response = client.get("/marketplace/listing-review-queue?clan_id=1")
+    assert queue_response.status_code == 200, queue_response.text
+    assert queue_response.json()["pending_review_count"] == 1
+
+    decision = client.post(
+        f"/marketplace/listing-review-queue/{submission_id}/decision",
+        json={"clan_id": 1, "decision": "approve"},
+    )
+
+    assert decision.status_code == 200, decision.text
+    body = decision.json()
+    assert body["decision"] == "approve"
+    assert body["listing_type"] == "shop"
+    assert body["shop"]["owner_user_id"] == 2
+    assert body["shop"]["name"] == "Approved Member Shop"
+    assert body["review_notifications_retired"] == 1
+    assert body["submitter_notification_created"] == 1
+    assert _scalar("SELECT COUNT(*) FROM marketplace_shops WHERE owner_user_id = 2") == 1
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM trust_events "
+            "WHERE event_type = 'marketplace.listing.review_decided'"
+        )
+        == 1
+    )
+
+    with engine.begin() as conn:
+        submitter_notification = conn.execute(
+            text(
+                """
+                SELECT user_id, kind, action_label
+                FROM notifications
+                WHERE kind = 'marketplace.listing.review_decided'
+                """
+            )
+        ).mappings().one()
+        retired = conn.execute(
+            text(
+                """
+                SELECT is_read
+                FROM notifications
+                WHERE kind = 'marketplace.listing.submitted'
+                """
+            )
+        ).scalar_one()
+
+    assert submitter_notification["user_id"] == 2
+    assert submitter_notification["action_label"] == "Open Marketplace"
+    assert bool(retired) is True
+
+
+def test_marketplace_listing_review_approval_publishes_product_and_notifies_submitter(
+    client,
+    override_current_user,
+    seed_clan_admin_membership,
+):
+    _ensure_marketplace_tables()
+    _seed_second_marketplace_member()
+    _seed_marketplace_governance_profile_event(
+        enable_member_service_listings=True,
+        require_admin_approval_for_listings=True,
+    )
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active, created_at
+                ) VALUES (
+                    991, 1, 2, 'Member Existing Shop', 'Shop exists before product approval', 1, CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO trust_events (
+                    event_type, clan_id, actor_user_id, subject_user_id, meta_json, created_at
+                ) VALUES (
+                    'marketplace.listing.submitted', 1, 2, 2, :meta_json, CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "meta_json": json.dumps(
+                    {
+                        "source": "marketplace_listing_review",
+                        "reason": "marketplace_listing_submitted_for_review",
+                        "listing_type": "product",
+                        "listing_payload": {
+                            "shop_id": 991,
+                            "name": "Approved service listing",
+                            "description": "Translation and settlement help",
+                            "price": "Ask",
+                            "currency": "GBP",
+                            "image_url": "/uploads/test/approved-service.jpg",
+                            "visibility_mode": "community_visible",
+                        },
+                        "review_status": "pending",
+                        "submitted_by_role": "member",
+                        "marketplace_governance_policy": {
+                            "admin_approval_required_for_listings": True,
+                            "listing_review_required": True,
+                        },
+                    }
+                )
+            },
+        )
+        submission_id = int(conn.execute(text("SELECT MAX(id) FROM trust_events")).scalar_one())
+        conn.execute(
+            text(
+                """
+                INSERT INTO notifications (
+                    user_id, kind, title, message, action_url, action_label, is_read, created_at
+                ) VALUES (
+                    1,
+                    'marketplace.listing.submitted',
+                    'Marketplace listing waiting for review',
+                    'A member submitted Approved service listing (product) for marketplace approval.',
+                    :action_url,
+                    'Review listing',
+                    0,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "action_url": (
+                    f"/app/marketplace?clan_id=1&listing_review_submission_id={submission_id}"
+                    "#marketplace-listing-review-panel"
+                )
+            },
+        )
+
+    decision = client.post(
+        f"/marketplace/listing-review-queue/{submission_id}/decision",
+        json={"clan_id": 1, "decision": "approve"},
+    )
+
+    assert decision.status_code == 200, decision.text
+    body = decision.json()
+    assert body["decision"] == "approve"
+    assert body["listing_type"] == "product"
+    assert body["product"]["seller_user_id"] == 2
+    assert body["product"]["name"] == "Approved service listing"
+    assert body["review_notifications_retired"] == 1
+    assert body["submitter_notification_created"] == 1
+    assert _scalar("SELECT COUNT(*) FROM marketplace_products WHERE seller_user_id = 2") == 1
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM trust_events "
+            "WHERE event_type = 'marketplace.product.created'"
+        )
+        == 1
+    )
 
 def test_marketplace_product_creation_allows_member_when_listing_admin_approval_not_required(
     client,

@@ -5788,6 +5788,38 @@ export async function createMarketplaceProduct(payload: {
   return httpJson("/marketplace/products", "POST", payload);
 }
 
+export async function listMarketplaceListingReviewQueue(params: {
+  clan_id: number;
+  limit?: number;
+}): Promise<any> {
+  return httpJson(
+    `/marketplace/listing-review-queue${buildQuery({
+      clan_id: params.clan_id,
+      limit: params.limit ?? 10,
+    })}`,
+    "GET",
+    undefined,
+    { header_clan_id: params.clan_id }
+  );
+}
+
+export async function decideMarketplaceListingReviewSubmission(
+  submissionEventId: number | string,
+  payload: {
+    clan_id: number;
+    decision: "approve" | "reject";
+    reviewer_note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/marketplace/listing-review-queue/${encodeURIComponent(
+      String(submissionEventId)
+    )}/decision`,
+    "POST",
+    payload,
+    { header_clan_id: payload.clan_id }
+  );
+}
 export async function getMarketplaceProducts(params?: {
   clan_id?: number | null;
   header_clan_id?: number | null;

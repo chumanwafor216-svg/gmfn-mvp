@@ -6,9 +6,10 @@ from math import floor
 import os
 from pathlib import Path
 import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session
@@ -54,6 +55,9 @@ from app.services.vault_domain_service import (
 router = APIRouter(prefix="/marketplace", tags=["marketplace"])
 
 COMMUNITY_GOVERNANCE_PROFILE_SELECTED_EVENT = "community.governance_profile_selected"
+MARKETPLACE_LISTING_SUBMISSION_EVENT = "marketplace.listing.submitted"
+MARKETPLACE_LISTING_REVIEW_EVENT = "marketplace.listing.review_decided"
+MARKETPLACE_LISTING_REVIEW_PANEL_HASH = "marketplace-listing-review-panel"
 
 
 FREE_COMMUNITY_PRODUCT_SLOTS = 12
@@ -493,8 +497,8 @@ def _require_marketplace_listing_publication_allowed(
             "code": "community_listing_admin_approval_required",
             "message": (
                 "This community setup requires admin approval before member "
-                "listings go live. GSN does not have a listing approval queue "
-                "here yet, so ask an admin to create or approve the listing."
+                "listings go live. Submit the listing for admin review, or "
+                "ask a community admin to publish it."
             ),
             "community_id": int(clan_id),
             "governance_profile_key": policy.get("governance_profile_key"),
@@ -502,6 +506,571 @@ def _require_marketplace_listing_publication_allowed(
         },
     )
 
+
+
+def _marketplace_listing_requires_review(
+    *,
+    membership: Optional[ClanMembership],
+    current_user: User,
+    policy: dict[str, Any],
+) -> bool:
+    return bool(policy.get("admin_approval_required_for_listings", False)) and not _is_marketplace_listing_officer(
+        membership,
+        current_user,
+    )
+
+
+def _marketplace_listing_review_action_url(
+    *,
+    clan_id: int,
+    submission_event_id: int,
+) -> str:
+    return (
+        f"/app/marketplace?clan_id={int(clan_id)}"
+        f"&listing_review_submission_id={int(submission_event_id)}"
+        f"#{MARKETPLACE_LISTING_REVIEW_PANEL_HASH}"
+    )
+
+
+def _marketplace_listing_review_recipient_ids(
+    db: Session,
+    *,
+    clan_id: int,
+    submitter_user_id: int,
+) -> list[int]:
+    rows = (
+        db.query(ClanMembership.user_id)
+        .filter(
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.role == "admin",
+            ClanMembership.left_at.is_(None),
+        )
+        .order_by(ClanMembership.user_id.asc())
+        .all()
+    )
+    recipient_ids: list[int] = []
+    seen: set[int] = set()
+    for row in rows:
+        user_id = int(row[0])
+        if user_id == int(submitter_user_id) or user_id in seen:
+            continue
+        seen.add(user_id)
+        recipient_ids.append(user_id)
+    return recipient_ids
+
+
+def _marketplace_listing_review_summary(meta: dict[str, Any]) -> str:
+    payload = meta.get("listing_payload") if isinstance(meta.get("listing_payload"), dict) else {}
+    listing_type = _safe_str(meta.get("listing_type"), "listing")
+    name = _safe_str(payload.get("name"), "Member listing")
+    return f"{name} ({listing_type})"
+
+
+def _create_marketplace_listing_review_notifications(
+    db: Session,
+    *,
+    clan_id: int,
+    submission_event_id: int,
+    submitter_user_id: int,
+    summary: str,
+) -> int:
+    recipient_ids = _marketplace_listing_review_recipient_ids(
+        db,
+        clan_id=int(clan_id),
+        submitter_user_id=int(submitter_user_id),
+    )
+    if not recipient_ids:
+        return 0
+
+    action_url = _marketplace_listing_review_action_url(
+        clan_id=int(clan_id),
+        submission_event_id=int(submission_event_id),
+    )
+    for user_id in recipient_ids:
+        create_notification(
+            db,
+            user_id=int(user_id),
+            kind=MARKETPLACE_LISTING_SUBMISSION_EVENT,
+            title="Marketplace listing waiting for review",
+            message=f"A member submitted {summary} for marketplace approval.",
+            action_url=action_url,
+            action_label="Review listing",
+            commit=False,
+            refresh=False,
+        )
+    db.commit()
+    return len(recipient_ids)
+
+
+def _retire_marketplace_listing_review_notifications(
+    db: Session,
+    *,
+    clan_id: int,
+    submission_event_id: int,
+) -> int:
+    action_url = _marketplace_listing_review_action_url(
+        clan_id=int(clan_id),
+        submission_event_id=int(submission_event_id),
+    )
+    rows = (
+        db.query(Notification)
+        .filter(
+            Notification.kind == MARKETPLACE_LISTING_SUBMISSION_EVENT,
+            Notification.action_url == action_url,
+            Notification.is_read == False,  # noqa: E712
+        )
+        .all()
+    )
+    if not rows:
+        return 0
+
+    now = _now_utc()
+    for row in rows:
+        row.is_read = True
+        row.read_at = now
+        db.add(row)
+    db.commit()
+    return len(rows)
+
+
+def _create_marketplace_listing_review_result_notification(
+    db: Session,
+    *,
+    clan_id: int,
+    submission_event_id: int,
+    submitter_user_id: int,
+    decision: str,
+    summary: str,
+) -> int:
+    if int(submitter_user_id or 0) <= 0:
+        return 0
+
+    approved = decision == "approve"
+    create_notification(
+        db,
+        user_id=int(submitter_user_id),
+        kind=MARKETPLACE_LISTING_REVIEW_EVENT,
+        title=(
+            "Marketplace listing approved"
+            if approved
+            else "Marketplace listing was not posted"
+        ),
+        message=(
+            f"Your marketplace listing {summary} was approved and posted."
+            if approved
+            else f"Your marketplace listing {summary} was reviewed and was not posted."
+        ),
+        action_url=_marketplace_listing_review_action_url(
+            clan_id=int(clan_id),
+            submission_event_id=int(submission_event_id),
+        ),
+        action_label="Open Marketplace",
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+    return 1
+
+
+def _marketplace_listing_review_decisions_by_submission(
+    db: Session,
+    *,
+    clan_id: int,
+) -> dict[int, dict[str, Any]]:
+    rows = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.clan_id == int(clan_id),
+            TrustEvent.event_type == MARKETPLACE_LISTING_REVIEW_EVENT,
+        )
+        .order_by(TrustEvent.id.asc())
+        .all()
+    )
+    decisions: dict[int, dict[str, Any]] = {}
+    for row in rows:
+        meta = _json_load(getattr(row, "meta_json", None))
+        submission_id = int(meta.get("submission_event_id") or 0)
+        if submission_id:
+            decisions[submission_id] = {
+                "event_id": int(row.id),
+                "decision": _safe_str(meta.get("decision")),
+                "reviewed_at": getattr(row, "created_at", None).isoformat() if getattr(row, "created_at", None) else None,
+                "reviewer_user_id": int(getattr(row, "actor_user_id", 0) or 0),
+                "published_shop_id": meta.get("published_shop_id"),
+                "published_product_id": meta.get("published_product_id"),
+                "reviewer_note": _safe_str(meta.get("reviewer_note")) or None,
+            }
+    return decisions
+
+
+def _submission_to_marketplace_listing_review_item(event: TrustEvent) -> dict[str, Any]:
+    meta = _json_load(getattr(event, "meta_json", None))
+    payload = meta.get("listing_payload") if isinstance(meta.get("listing_payload"), dict) else {}
+    return {
+        "submission_event_id": int(event.id),
+        "clan_id": int(getattr(event, "clan_id", 0) or 0),
+        "listing_type": _safe_str(meta.get("listing_type"), "listing"),
+        "listing_payload": payload,
+        "summary": _marketplace_listing_review_summary(meta),
+        "created_at": getattr(event, "created_at", None).isoformat() if getattr(event, "created_at", None) else None,
+        "submitted_by_user_id": int(getattr(event, "actor_user_id", 0) or 0),
+        "submitted_by_role": _safe_str(meta.get("submitted_by_role"), "member"),
+        "review_status": "pending",
+        "marketplace_governance_policy": meta.get("marketplace_governance_policy") if isinstance(meta.get("marketplace_governance_policy"), dict) else None,
+    }
+
+
+def _pending_marketplace_listing_submission_rows(
+    db: Session,
+    *,
+    clan_id: int,
+    limit: int = 20,
+) -> list[TrustEvent]:
+    decisions = _marketplace_listing_review_decisions_by_submission(db, clan_id=int(clan_id))
+    rows = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.clan_id == int(clan_id),
+            TrustEvent.event_type == MARKETPLACE_LISTING_SUBMISSION_EVENT,
+        )
+        .order_by(TrustEvent.id.desc())
+        .limit(max(100, int(limit) * 5))
+        .all()
+    )
+    pending: list[TrustEvent] = []
+    for row in rows:
+        if int(row.id) in decisions:
+            continue
+        pending.append(row)
+        if len(pending) >= int(limit):
+            break
+    return pending
+
+
+def _submit_marketplace_listing_for_review(
+    db: Session,
+    *,
+    clan_id: int,
+    current_user: User,
+    membership: ClanMembership,
+    listing_type: str,
+    listing_payload: dict[str, Any],
+    policy: dict[str, Any],
+) -> JSONResponse:
+    submission = log_trust_event(
+        db,
+        event_type=MARKETPLACE_LISTING_SUBMISSION_EVENT,
+        clan_id=int(clan_id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta={
+            "source": "marketplace_listing_review",
+            "reason": "marketplace_listing_submitted_for_review",
+            "listing_type": listing_type,
+            "listing_payload": listing_payload,
+            "review_status": "pending",
+            "submitted_by_role": _safe_str(getattr(membership, "role", None), "member"),
+            "marketplace_governance_policy": policy,
+        },
+    )
+    meta = _json_load(getattr(submission, "meta_json", None))
+    summary = _marketplace_listing_review_summary(meta)
+    admin_notifications_created = _create_marketplace_listing_review_notifications(
+        db,
+        clan_id=int(clan_id),
+        submission_event_id=int(submission.id),
+        submitter_user_id=int(current_user.id),
+        summary=summary,
+    )
+    return JSONResponse(
+        status_code=202,
+        content={
+            "ok": True,
+            "submitted_for_review": True,
+            "submission": _submission_to_marketplace_listing_review_item(submission),
+            "item": None,
+            "marketplace_governance_policy": policy,
+            "notification_kind": MARKETPLACE_LISTING_SUBMISSION_EVENT,
+            "notifications_created": int(admin_notifications_created),
+            "admin_notifications_created": int(admin_notifications_created),
+            "message": "Marketplace listing submitted for admin review.",
+            "boundary": (
+                "This member listing is not live yet. A community admin must approve it "
+                "before it appears in the marketplace or public shop."
+            ),
+        },
+    )
+
+
+def _publish_marketplace_shop_submission(
+    db: Session,
+    *,
+    clan_id: int,
+    reviewer_user_id: int,
+    submitter_user_id: int,
+    payload: dict[str, Any],
+    policy: dict[str, Any],
+    submission_event_id: int,
+) -> tuple[MarketplaceShop, TrustEvent]:
+    shop = _get_public_shop_identity_by_owner(
+        db,
+        owner_user_id=int(submitter_user_id),
+    )
+    event_type = "marketplace.shop.updated" if shop else "marketplace.shop.created"
+    reason = "marketplace_shop_review_approved_update" if shop else "marketplace_shop_review_approved_create"
+
+    if shop is None:
+        shop = MarketplaceShop(
+            clan_id=int(clan_id),
+            owner_user_id=int(submitter_user_id),
+            name=_safe_str(payload.get("name"), "GSN Shop"),
+            description=_safe_str(payload.get("description")) or None,
+            whatsapp_number=_safe_str(payload.get("whatsapp_number")) or None,
+            telegram_handle=_safe_str(payload.get("telegram_handle")) or None,
+            is_active=True,
+            created_at=_now_utc(),
+        )
+    else:
+        shop.is_active = True
+        shop.clan_id = int(clan_id)
+        if _safe_str(payload.get("name")):
+            shop.name = _safe_str(payload.get("name"))
+        if "description" in payload:
+            shop.description = _safe_str(payload.get("description")) or None
+        if "whatsapp_number" in payload:
+            shop.whatsapp_number = _safe_str(payload.get("whatsapp_number")) or None
+        if "telegram_handle" in payload:
+            shop.telegram_handle = _safe_str(payload.get("telegram_handle")) or None
+
+    if "image_url" in payload:
+        _set_shop_image_value(shop, _safe_str(payload.get("image_url")) or None)
+
+    db.add(shop)
+    db.commit()
+    db.refresh(shop)
+
+    event = log_trust_event(
+        db,
+        event_type=event_type,
+        clan_id=int(clan_id),
+        actor_user_id=int(reviewer_user_id),
+        subject_user_id=int(submitter_user_id),
+        loan_id=None,
+        guarantor_id=None,
+        meta={
+            "shop_id": int(shop.id),
+            "shop_name": getattr(shop, "name", None),
+            "canonical_shop": True,
+            "reason": reason,
+            "approved_submission_event_id": int(submission_event_id),
+            "marketplace_governance_policy": policy,
+        },
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+    db.refresh(event)
+    return shop, event
+
+
+def _publish_marketplace_product_submission(
+    db: Session,
+    *,
+    clan_id: int,
+    reviewer_user_id: int,
+    submitter_user_id: int,
+    payload: dict[str, Any],
+    policy: dict[str, Any],
+    submission_event_id: int,
+) -> tuple[MarketplaceProduct, TrustEvent, int, int, int]:
+    shop = (
+        db.query(MarketplaceShop)
+        .filter(MarketplaceShop.id == int(payload.get("shop_id") or 0))
+        .first()
+    )
+    if not shop:
+        raise HTTPException(status_code=409, detail="The submitted shop is no longer available.")
+    if int(shop.owner_user_id) != int(submitter_user_id):
+        raise HTTPException(status_code=409, detail="The submitted shop no longer belongs to the submitting member.")
+
+    if not _safe_str(payload.get("name")):
+        raise HTTPException(status_code=422, detail="Product name is required")
+    if not _safe_str(payload.get("price")):
+        raise HTTPException(status_code=422, detail="Product price is required")
+    if not _safe_str(payload.get("image_url")):
+        raise HTTPException(status_code=422, detail="Product image is required")
+
+    visibility_mode = _resolve_visibility_mode(payload.get("visibility_mode"))
+    if visibility_mode == VISIBILITY_VAULT:
+        require_domain_vault_enabled(db, clan_id=int(clan_id))
+
+    public_block_number = _public_product_block_number(payload.get("description"))
+    replaced_public_block_products = 0
+    replaced_public_block_reposts = 0
+
+    if visibility_mode == VISIBILITY_COMMUNITY:
+        public_product_slots_total = _shop_public_product_slots_total(db, shop=shop)
+        replaceable_products = (
+            _active_public_products_for_block(
+                db,
+                shop_id=int(shop.id),
+                block_number=int(public_block_number),
+            )
+            if public_block_number is not None
+            else []
+        )
+        active_product_count = _count_active_products_for_shop(
+            db,
+            shop_id=int(shop.id),
+            visibility_mode=VISIBILITY_COMMUNITY,
+        )
+        if active_product_count - len(replaceable_products) >= public_product_slots_total:
+            raise HTTPException(
+                status_code=409,
+                detail=_public_product_capacity_detail(public_product_slots_total),
+            )
+    else:
+        sync_legacy_entitlements_to_blocks(
+            db,
+            shop_id=int(shop.id),
+            owner_user_id=int(submitter_user_id),
+        )
+        expire_vault_blocks(db, shop_id=int(shop.id))
+        vault_blocks = ensure_vault_blocks(db, shop_id=int(shop.id))
+        requested_slot = _safe_int(payload.get("vault_slot_number"), 0)
+        active_empty_blocks = [
+            block
+            for block in vault_blocks
+            if str(getattr(block, "state", "") or "") == "active"
+            and getattr(block, "product_id", None) is None
+        ]
+        if requested_slot > 0:
+            requested = next(
+                (block for block in vault_blocks if int(block.slot_number) == int(requested_slot)),
+                None,
+            )
+            if requested is None or str(getattr(requested, "state", "") or "") != "active":
+                raise HTTPException(
+                    status_code=403,
+                    detail="Selected Vault block is not active. Activate a paid Vault slot first.",
+                )
+            if getattr(requested, "product_id", None) is not None:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Selected Vault block already has private content. Edit that block or choose an empty one.",
+                )
+            active_empty_blocks = [requested]
+
+        if not active_empty_blocks:
+            raise HTTPException(
+                status_code=403,
+                detail="No active empty Vault block is available for this shop.",
+            )
+
+    product = MarketplaceProduct(
+        clan_id=int(clan_id),
+        shop_id=int(shop.id),
+        seller_user_id=int(submitter_user_id),
+        name=_safe_str(payload.get("name")),
+        description=_safe_str(payload.get("description")) or None,
+        price=_safe_str(payload.get("price")) or None,
+        currency=_safe_str(payload.get("currency"), "NGN") or "NGN",
+        image_url=_safe_str(payload.get("image_url")) or None,
+        visibility_mode=visibility_mode,
+        is_active=True,
+        created_at=_now_utc(),
+    )
+    if hasattr(product, "video_url"):
+        setattr(product, "video_url", _safe_str(payload.get("video_url")) or None)
+
+    try:
+        db.add(product)
+        db.flush()
+        if visibility_mode == VISIBILITY_COMMUNITY and public_block_number is not None:
+            (
+                replaced_public_block_products,
+                replaced_public_block_reposts,
+            ) = _retire_replaced_public_block_products(
+                db,
+                shop_id=int(shop.id),
+                block_number=int(public_block_number),
+                keep_product_id=int(product.id),
+            )
+        if visibility_mode == VISIBILITY_VAULT:
+            requested_slot = _safe_int(payload.get("vault_slot_number"), 0)
+            attach_product_to_vault_block(
+                db,
+                shop_id=int(shop.id),
+                owner_user_id=int(submitter_user_id),
+                product=product,
+                slot_number=requested_slot if requested_slot > 0 else None,
+            )
+        db.commit()
+        db.refresh(product)
+    except ValueError as exc:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    event = log_trust_event(
+        db,
+        event_type="marketplace.product.created",
+        clan_id=int(clan_id),
+        actor_user_id=int(reviewer_user_id),
+        subject_user_id=int(submitter_user_id),
+        loan_id=None,
+        guarantor_id=None,
+        meta={
+            "product_id": int(product.id),
+            "shop_id": int(shop.id),
+            "name": getattr(product, "name", None),
+            "price": product.price,
+            "currency": product.currency,
+            "image_url": product.image_url,
+            "video_url": getattr(product, "video_url", None),
+            "visibility_mode": visibility_mode,
+            "distribution_slots_total": TOTAL_DISTRIBUTION_SLOTS,
+            "distribution_slots_reserved_for_origin_spotlight": ORIGIN_SPOTLIGHT_RESERVED_SLOTS,
+            "distribution_slots_remaining": _remaining_distribution_slots(
+                db,
+                product_id=int(product.id),
+            ),
+            "shop_product_slots_total": _shop_public_product_slots_total(db, shop=shop),
+            "replaced_public_block_products": replaced_public_block_products,
+            "replaced_public_block_reposts": replaced_public_block_reposts,
+            "reason": "marketplace_product_review_approved",
+            "approved_submission_event_id": int(submission_event_id),
+            "marketplace_governance_policy": policy,
+        },
+        commit=False,
+        refresh=False,
+    )
+
+    follower_notifications_created = 0
+    if visibility_mode == VISIBILITY_COMMUNITY:
+        shop_name = _public_identity_name(getattr(shop, "name", None), fallback="A shop you follow")
+        follower_notifications_created = _notify_shop_followers(
+            db,
+            shop=shop,
+            kind="marketplace.shop.product_created",
+            title="Shop update",
+            message=f"{shop_name} added a new product.",
+            action_url=_shop_public_action_url(
+                db,
+                shop=shop,
+                clan_id=int(clan_id),
+                product_id=int(product.id),
+            ),
+            clan_ids=[int(clan_id)],
+        )
+    db.commit()
+    db.refresh(event)
+    return (
+        product,
+        event,
+        replaced_public_block_products,
+        replaced_public_block_reposts,
+        follower_notifications_created,
+    )
 def _resolve_visibility_mode(value: Any) -> str:
     raw = _safe_str(value, VISIBILITY_COMMUNITY).lower()
 
@@ -1463,6 +2032,11 @@ class MarketplaceProductUpdateIn(BaseModel):
     status: Optional[str] = Field(default=None, max_length=40)
 
 
+class MarketplaceListingReviewDecisionIn(BaseModel):
+    clan_id: int = Field(..., ge=1)
+    decision: Literal["approve", "reject"]
+    reviewer_note: Optional[str] = Field(default=None, max_length=500)
+
 class MarketplaceBroadcastCreateIn(BaseModel):
     clan_id: Optional[int] = None
     shop_id: Optional[int] = Field(default=None, gt=0)
@@ -2377,6 +2951,27 @@ def create_marketplace_shop(
         db,
         clan_id=resolved_clan_id,
     )
+    if _marketplace_listing_requires_review(
+        membership=membership,
+        current_user=current_user,
+        policy=marketplace_governance_policy,
+    ):
+        return _submit_marketplace_listing_for_review(
+            db,
+            clan_id=resolved_clan_id,
+            current_user=current_user,
+            membership=membership,
+            listing_type="shop",
+            listing_payload={
+                "name": _safe_str(payload.name),
+                "description": _safe_str(payload.description) or None,
+                "whatsapp_number": _safe_str(payload.whatsapp_number) or None,
+                "telegram_handle": _safe_str(payload.telegram_handle) or None,
+                "image_url": _safe_str(payload.image_url) or None,
+            },
+            policy=marketplace_governance_policy,
+        )
+
     _require_marketplace_listing_publication_allowed(
         clan_id=resolved_clan_id,
         membership=membership,
@@ -3042,13 +3637,6 @@ def create_marketplace_product(
         db,
         clan_id=resolved_clan_id,
     )
-    _require_marketplace_listing_publication_allowed(
-        clan_id=resolved_clan_id,
-        membership=membership,
-        current_user=current_user,
-        policy=marketplace_governance_policy,
-    )
-
     if not _safe_str(payload.name):
         raise HTTPException(status_code=400, detail="Product name is required")
 
@@ -3061,6 +3649,39 @@ def create_marketplace_product(
     visibility_mode = _resolve_visibility_mode(payload.visibility_mode)
     if visibility_mode == VISIBILITY_VAULT:
         require_domain_vault_enabled(db, clan_id=resolved_clan_id)
+
+
+    if _marketplace_listing_requires_review(
+        membership=membership,
+        current_user=current_user,
+        policy=marketplace_governance_policy,
+    ):
+        return _submit_marketplace_listing_for_review(
+            db,
+            clan_id=resolved_clan_id,
+            current_user=current_user,
+            membership=membership,
+            listing_type="product",
+            listing_payload={
+                "shop_id": int(shop.id),
+                "name": _safe_str(payload.name),
+                "description": _safe_str(payload.description) or None,
+                "price": _safe_str(payload.price) or None,
+                "currency": _safe_str(payload.currency, "NGN") or "NGN",
+                "image_url": _safe_str(payload.image_url) or None,
+                "video_url": _safe_str(payload.video_url) or None,
+                "visibility_mode": visibility_mode,
+                "vault_slot_number": int(payload.vault_slot_number) if payload.vault_slot_number is not None else None,
+            },
+            policy=marketplace_governance_policy,
+        )
+
+    _require_marketplace_listing_publication_allowed(
+        clan_id=resolved_clan_id,
+        membership=membership,
+        current_user=current_user,
+        policy=marketplace_governance_policy,
+    )
 
     public_block_number = _public_product_block_number(payload.description)
 
@@ -3227,6 +3848,185 @@ def create_marketplace_product(
     }
 
 
+
+@router.get("/listing-review-queue")
+def list_marketplace_listing_review_queue(
+    clan_id: int = Query(..., ge=1),
+    limit: int = Query(default=10, ge=1, le=50),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    membership = _require_active_membership(
+        db=db,
+        user_id=int(current_user.id),
+        clan_id=int(clan_id),
+    )
+    if not _is_marketplace_listing_officer(membership, current_user):
+        raise HTTPException(
+            status_code=403,
+            detail="Only a community admin can review marketplace listings",
+        )
+
+    policy = _require_member_service_listings_enabled(db, clan_id=int(clan_id))
+    rows = _pending_marketplace_listing_submission_rows(
+        db,
+        clan_id=int(clan_id),
+        limit=int(limit),
+    )
+    return {
+        "ok": True,
+        "engine_ready": True,
+        "clan_id": int(clan_id),
+        "marketplace_governance_policy": policy,
+        "pending_review_count": len(rows),
+        "submissions": [
+            _submission_to_marketplace_listing_review_item(row) for row in rows
+        ],
+        "boundary": (
+            "This queue contains member-submitted marketplace listings waiting "
+            "for a community admin. Approval publishes the shop or product; "
+            "rejection records the decision without making it live."
+        ),
+    }
+
+
+@router.post("/listing-review-queue/{submission_event_id}/decision")
+def decide_marketplace_listing_review_submission(
+    submission_event_id: int,
+    payload: MarketplaceListingReviewDecisionIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    membership = _require_active_membership(
+        db=db,
+        user_id=int(current_user.id),
+        clan_id=int(payload.clan_id),
+    )
+    if not _is_marketplace_listing_officer(membership, current_user):
+        raise HTTPException(
+            status_code=403,
+            detail="Only a community admin can review marketplace listings",
+        )
+
+    submission = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.id == int(submission_event_id),
+            TrustEvent.clan_id == int(payload.clan_id),
+            TrustEvent.event_type == MARKETPLACE_LISTING_SUBMISSION_EVENT,
+        )
+        .first()
+    )
+    if not submission:
+        raise HTTPException(status_code=404, detail="Marketplace listing submission not found")
+
+    decisions = _marketplace_listing_review_decisions_by_submission(
+        db,
+        clan_id=int(payload.clan_id),
+    )
+    if int(submission_event_id) in decisions:
+        raise HTTPException(status_code=409, detail="This marketplace listing submission has already been reviewed")
+
+    policy = _require_member_service_listings_enabled(db, clan_id=int(payload.clan_id))
+    meta = _json_load(getattr(submission, "meta_json", None))
+    listing_type = _safe_str(meta.get("listing_type"), "listing")
+    listing_payload = meta.get("listing_payload") if isinstance(meta.get("listing_payload"), dict) else {}
+    submitter_user_id = int(getattr(submission, "actor_user_id", 0) or 0)
+    summary = _marketplace_listing_review_summary(meta)
+
+    published_shop = None
+    published_product = None
+    publish_event = None
+    replaced_public_block_products = 0
+    replaced_public_block_reposts = 0
+    follower_notifications_created = 0
+
+    if payload.decision == "approve":
+        if listing_type == "shop":
+            require_domain_marketplace_shops_enabled(db, clan_id=int(payload.clan_id))
+            published_shop, publish_event = _publish_marketplace_shop_submission(
+                db,
+                clan_id=int(payload.clan_id),
+                reviewer_user_id=int(current_user.id),
+                submitter_user_id=submitter_user_id,
+                payload=listing_payload,
+                policy=policy,
+                submission_event_id=int(submission_event_id),
+            )
+        elif listing_type == "product":
+            require_domain_shop_diary_enabled(db, clan_id=int(payload.clan_id))
+            (
+                published_product,
+                publish_event,
+                replaced_public_block_products,
+                replaced_public_block_reposts,
+                follower_notifications_created,
+            ) = _publish_marketplace_product_submission(
+                db,
+                clan_id=int(payload.clan_id),
+                reviewer_user_id=int(current_user.id),
+                submitter_user_id=submitter_user_id,
+                payload=listing_payload,
+                policy=policy,
+                submission_event_id=int(submission_event_id),
+            )
+        else:
+            raise HTTPException(status_code=422, detail="Unsupported marketplace listing submission type")
+
+    decision_event = log_trust_event(
+        db,
+        event_type=MARKETPLACE_LISTING_REVIEW_EVENT,
+        clan_id=int(payload.clan_id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=submitter_user_id or int(current_user.id),
+        meta={
+            "source": "marketplace_listing_review",
+            "reason": "marketplace_listing_review_decided",
+            "submission_event_id": int(submission_event_id),
+            "listing_type": listing_type,
+            "decision": payload.decision,
+            "published_shop_id": int(published_shop.id) if published_shop else None,
+            "published_product_id": int(published_product.id) if published_product else None,
+            "publish_event_id": int(publish_event.id) if publish_event else None,
+            "reviewer_note": _safe_str(payload.reviewer_note) or None,
+            "marketplace_governance_policy": policy,
+        },
+    )
+    review_notifications_retired = _retire_marketplace_listing_review_notifications(
+        db,
+        clan_id=int(payload.clan_id),
+        submission_event_id=int(submission_event_id),
+    )
+    submitter_notification_created = _create_marketplace_listing_review_result_notification(
+        db,
+        clan_id=int(payload.clan_id),
+        submission_event_id=int(submission_event_id),
+        submitter_user_id=submitter_user_id,
+        decision=payload.decision,
+        summary=summary,
+    )
+
+    return {
+        "ok": True,
+        "engine_ready": True,
+        "submission_event_id": int(submission_event_id),
+        "decision_event_id": int(decision_event.id),
+        "decision": payload.decision,
+        "listing_type": listing_type,
+        "shop": _shop_out(db, published_shop) if published_shop else None,
+        "product": _product_out(db, published_product) if published_product else None,
+        "notifications_created": int(follower_notifications_created),
+        "review_notifications_retired": int(review_notifications_retired),
+        "submitter_notification_created": int(submitter_notification_created),
+        "replaced_public_block_products": int(replaced_public_block_products),
+        "replaced_public_block_reposts": int(replaced_public_block_reposts),
+        "marketplace_governance_policy": policy,
+        "message": (
+            "Marketplace listing approved and published."
+            if payload.decision == "approve"
+            else "Marketplace listing rejected. The decision was recorded without publishing it."
+        ),
+    }
 @router.put("/products/{product_id}")
 @router.patch("/products/{product_id}")
 def update_marketplace_product(

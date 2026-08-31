@@ -19,6 +19,16 @@ type NoticeItem = {
   sender_whatsapp_label?: string | null;
 };
 
+type MarketplaceListingReviewSubmission = {
+  submission_event_id?: number | string | null;
+  listing_type?: string | null;
+  listing_payload?: Record<string, unknown> | null;
+  summary?: string | null;
+  created_at?: string | null;
+  submitted_by_user_id?: number | string | null;
+  submitted_by_role?: string | null;
+  review_status?: string | null;
+};
 type DemandSignal = {
   request_id?: number | string | null;
   title?: string | null;
@@ -43,6 +53,9 @@ type Props = {
   marketplaceNotices: NoticeItem[];
   marketplaceDemandSignalCount: number;
   marketplaceDemandSignals: DemandSignal[];
+  marketplaceListingReviewLoading: boolean;
+  marketplaceListingReviewSubmissions: MarketplaceListingReviewSubmission[];
+  marketplaceListingReviewBusyId?: string | null;
   marketplaceSurfaceTouchProps: (debugId: string) => Record<string, unknown>;
   onPostAnnouncement: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onUpdateNoticePolicy: (
@@ -54,6 +67,11 @@ type Props = {
     event: React.MouseEvent<HTMLButtonElement>,
     item: NoticeItem
   ) => void;
+  onDecideMarketplaceListingReview: (
+    event: React.MouseEvent<HTMLButtonElement>,
+    submissionEventId: number | string | null | undefined,
+    decision: "approve" | "reject"
+  ) => void | Promise<void>;
 };
 
 type MarketplaceGlyphName = "notice";
@@ -370,11 +388,15 @@ export default function MarketplaceBoardSection({
   marketplaceNotices,
   marketplaceDemandSignalCount,
   marketplaceDemandSignals,
+  marketplaceListingReviewLoading,
+  marketplaceListingReviewSubmissions,
+  marketplaceListingReviewBusyId,
   marketplaceSurfaceTouchProps,
   onPostAnnouncement,
   onUpdateNoticePolicy,
   onToggleBoard,
   onOpenNoticeSenderWhatsApp,
+  onDecideMarketplaceListingReview,
 }: Props) {
   return (
     <section
@@ -503,6 +525,123 @@ export default function MarketplaceBoardSection({
                 : `${marketplaceNotices.length} visible`}
             </span>
           </div>
+
+          {canManageMarketplaceNoticeSettings ? (
+            <div
+              id="marketplace-listing-review-panel"
+              style={{
+                marginTop: 12,
+                borderRadius: 14,
+                border: "1px solid rgba(15,55,86,0.12)",
+                background:
+                  "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(242,247,252,0.94) 100%)",
+                padding: isCompact ? 12 : 14,
+                display: "grid",
+                gap: 10,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={sectionLabel()}>Listing review</div>
+                  <div style={{ marginTop: 5, ...helperText(), fontSize: 13 }}>
+                    Member shops and products waiting for community admin approval.
+                  </div>
+                </div>
+                <span style={stableStatusPillStyle(Boolean(marketplaceListingReviewSubmissions.length))}>
+                  {marketplaceListingReviewLoading
+                    ? "Loading"
+                    : `${marketplaceListingReviewSubmissions.length} pending`}
+                </span>
+              </div>
+
+              {marketplaceListingReviewLoading ? (
+                <div style={{ ...helperText(), fontSize: 13 }}>
+                  Loading listing review requests.
+                </div>
+              ) : marketplaceListingReviewSubmissions.length ? (
+                <div style={{ display: "grid", gap: 10 }}>
+                  {marketplaceListingReviewSubmissions.map((item) => {
+                    const submissionId = item.submission_event_id;
+                    const payload = item.listing_payload || {};
+                    const title = firstTruthy(
+                      item.summary,
+                      payload.name,
+                      item.listing_type,
+                      "Marketplace listing"
+                    );
+                    const price = firstTruthy(payload.price, payload.currency);
+                    const busyApprove =
+                      marketplaceListingReviewBusyId === `${submissionId}:approve`;
+                    const busyReject =
+                      marketplaceListingReviewBusyId === `${submissionId}:reject`;
+                    return (
+                      <div
+                        key={String(submissionId || title)}
+                        style={{
+                          borderRadius: 13,
+                          border: "1px solid rgba(16,37,59,0.10)",
+                          background: "#FFFFFF",
+                          padding: 12,
+                          display: "grid",
+                          gap: 8,
+                        }}
+                      >
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <span style={badge(true)}>{firstTruthy(item.listing_type, "listing")}</span>
+                          <span style={badge(false)}>{safeDateLabel(item.created_at) || "Pending"}</span>
+                          {price ? <span style={badge(false)}>{price}</span> : null}
+                        </div>
+                        <div style={{ color: "#10253B", fontWeight: 900, lineHeight: 1.3 }}>
+                          {title}
+                        </div>
+                        {firstTruthy(payload.description) ? (
+                          <div style={{ ...helperText(), fontSize: 13 }}>
+                            {wordLimit(firstTruthy(payload.description), 26)}
+                          </div>
+                        ) : null}
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <StableButton
+                            debugId="marketplace.board.listing-review.approve"
+                            type="button"
+                            onClick={(event) =>
+                              onDecideMarketplaceListingReview(event, submissionId, "approve")
+                            }
+                            disabled={Boolean(marketplaceListingReviewBusyId)}
+                            style={marketplaceActionStyle("secondary", Boolean(marketplaceListingReviewBusyId))}
+                          >
+                            {busyApprove ? "Approving" : "Approve"}
+                          </StableButton>
+                          <StableButton
+                            debugId="marketplace.board.listing-review.reject"
+                            type="button"
+                            onClick={(event) =>
+                              onDecideMarketplaceListingReview(event, submissionId, "reject")
+                            }
+                            disabled={Boolean(marketplaceListingReviewBusyId)}
+                            style={marketplaceActionStyle("soft", Boolean(marketplaceListingReviewBusyId))}
+                          >
+                            {busyReject ? "Rejecting" : "Reject"}
+                          </StableButton>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ ...helperText(), fontSize: 13 }}>
+                  No member listing requests are waiting for review.
+                </div>
+              )}
+            </div>
+          ) : null}
 
           <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
             {marketplaceNoticesLoading ? (

@@ -1532,6 +1532,14 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       });
 
       if (!mountedRef.current) return;
+      if (res?.submitted_for_review) {
+        showNotice(
+          "success",
+          safeStr(res?.message) || "Shop details were sent for community admin review."
+        );
+        return;
+      }
+
       const updated = (res?.item || shop) as ShopRecord;
       setShop(updated);
       setShopName(firstTruthy(updated?.name));
@@ -1582,6 +1590,14 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     });
 
     if (!mountedRef.current) return null;
+    if (res?.submitted_for_review) {
+      const message =
+        safeStr(res?.message) || "Shop details were sent for community admin review.";
+      showProductFormNotice("success", message);
+      showGalleryActionNotice("success", message);
+      return null;
+    }
+
     const nextShop = (res?.item || null) as ShopRecord | null;
     if (!nextShop?.id) return null;
 
@@ -1829,6 +1845,18 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       });
 
       if (!mountedRef.current) return;
+      if (saveRes?.submitted_for_review) {
+        const message =
+          safeStr(saveRes?.message) || "Product listing was sent for community admin review.";
+        await loadPage();
+        if (!mountedRef.current) return;
+        showProductFormNotice("success", message);
+        showGalleryActionNotice("success", message, selectedPublicSlot);
+        resetProductForm();
+        setProductEditorOpen(false);
+        return;
+      }
+
       const savedId = Number(
         saveRes?.item?.id ||
           saveRes?.product?.id ||

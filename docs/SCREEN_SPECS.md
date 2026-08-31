@@ -514,6 +514,9 @@ Must show:
   - Trade Evidence
 - compact trust/status signal for this marketplace
 - compact shop review status when a community governance profile marks listings for review
+- member shops/products that require admin approval submit to a Marketplace listing review queue instead of going live immediately
+- community officers review pending Marketplace listings from the Official Board lane and can approve or reject each submission
+- Marketplace listing review prompts/results are Action Inbox notifications only unless Web Push support is separately allow-listed and tested
 - a clear way to return to Community Home or Dashboard
 
 Rules:

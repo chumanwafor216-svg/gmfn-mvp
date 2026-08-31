@@ -39,6 +39,7 @@ import {
   createCommunityPackagePaymentInstruction,
   createMarketplaceRepost,
   createMarketplaceShop,
+  decideMarketplaceListingReviewSubmission,
   createRoscaCycle,
   createSpotlightPaymentInstruction,
   createClanInvite,
@@ -56,6 +57,7 @@ import {
   getLoanGuarantorSuggestions,
   getLoanSummary,
   getMarketplaceProducts,
+  listMarketplaceListingReviewQueue,
   getProtectedTrade,
   getMarketplaceShopByGmfnId,
   getMyMarketplaceShop,
@@ -592,6 +594,16 @@ type MarketplaceNoticeItem = {
   sender_contact_ready?: boolean;
 };
 
+type MarketplaceListingReviewSubmission = {
+  submission_event_id?: number | string | null;
+  listing_type?: string | null;
+  listing_payload?: Record<string, unknown> | null;
+  summary?: string | null;
+  created_at?: string | null;
+  submitted_by_user_id?: number | string | null;
+  submitted_by_role?: string | null;
+  review_status?: string | null;
+};
 type MarketplaceDemandSignal = {
   request_id?: number | null;
   source?: string | null;
@@ -4110,6 +4122,11 @@ export default function MarketplacePage() {
     useState(false);
   const [marketplaceNoticeModalOpen, setMarketplaceNoticeModalOpen] = useState(false);
   const [marketplaceNoticePosting, setMarketplaceNoticePosting] = useState(false);
+  const [marketplaceListingReviewSubmissions, setMarketplaceListingReviewSubmissions] = useState<
+    MarketplaceListingReviewSubmission[]
+  >([]);
+  const [marketplaceListingReviewLoading, setMarketplaceListingReviewLoading] = useState(false);
+  const [marketplaceListingReviewBusyId, setMarketplaceListingReviewBusyId] = useState<string | null>(null);
   const [inviteLink, setInviteLink] = useState<string>("");
   const [joinSenderName, setJoinSenderName] = useState("");
   const [joinRecipientName, setJoinRecipientName] = useState("");
@@ -4987,6 +5004,46 @@ export default function MarketplacePage() {
     }
   }
 
+  async function decideMarketplaceListingReview(
+    event: React.SyntheticEvent<HTMLElement>,
+    submissionEventId: number | string | null | undefined,
+    decision: "approve" | "reject"
+  ) {
+    consumeMarketplaceButtonEvent(event);
+
+    const cleanSubmissionId = safeStr(submissionEventId);
+    if (!activeCommunityId || !cleanSubmissionId) {
+      showNotice("error", "Marketplace listing review is not ready yet.");
+      return;
+    }
+
+    setMarketplaceListingReviewBusyId(`${cleanSubmissionId}:${decision}`);
+    try {
+      const res = await decideMarketplaceListingReviewSubmission(cleanSubmissionId, {
+        clan_id: activeCommunityId,
+        decision,
+      });
+      setNotice({
+        tone: "success",
+        text:
+          safeStr(res?.message) ||
+          (decision === "approve"
+            ? "Marketplace listing approved."
+            : "Marketplace listing rejected."),
+      });
+      await loadPage();
+    } catch (err: any) {
+      setNotice({
+        tone: "error",
+        text: marketplaceErrorMessage(
+          err,
+          "Marketplace listing review decision could not be saved."
+        ),
+      });
+    } finally {
+      setMarketplaceListingReviewBusyId(null);
+    }
+  }
   async function updateMarketplaceNoticePolicy(
     event: React.SyntheticEvent<HTMLElement>,
     postingPolicy: "members" | "admins"
@@ -5393,6 +5450,7 @@ export default function MarketplacePage() {
     const requestId = loadPageRequestRef.current + 1;
     loadPageRequestRef.current = requestId;
     setLoading(true);
+    setMarketplaceListingReviewLoading(true);
 
     try {
       const [meRes, currentClanRes, clanListRes, trustSlipRes] = await Promise.all([
@@ -5431,6 +5489,7 @@ export default function MarketplacePage() {
         packageStatusRes,
         roscaCyclesRes,
         protectedTradesRes,
+        listingReviewRes,
       ] =
         await Promise.all([
           currentCommunityId
@@ -5483,6 +5542,12 @@ export default function MarketplacePage() {
           currentCommunityId
             ? listProtectedTrades({ limit: 30 }).catch(() => [])
             : Promise.resolve([]),
+          currentCommunityId
+            ? listMarketplaceListingReviewQueue({
+                clan_id: currentCommunityId,
+                limit: 20,
+              }).catch(() => null)
+            : Promise.resolve(null),
         ]);
 
       if (requestId !== loadPageRequestRef.current) return;
@@ -5504,6 +5569,10 @@ export default function MarketplacePage() {
         return loanClanId <= 0 || loanClanId === currentCommunityId;
       });
 
+      const listingReviewRows = rowsOf<MarketplaceListingReviewSubmission>(
+        (listingReviewRes as any)?.submissions || listingReviewRes
+      );
+
       const filteredProtectedTrades = rowsOf<ProtectedTradeRecord>(
         protectedTradesRes
       )
@@ -5523,6 +5592,8 @@ export default function MarketplacePage() {
       setInviteLink(getInviteUrl(inviteRes));
       setLoans(filteredLoans);
       setProtectedTrades(filteredProtectedTrades);
+      setMarketplaceListingReviewSubmissions(listingReviewRows);
+      setMarketplaceListingReviewLoading(false);
       setCommunityPackageItems(
         Array.isArray(packageStatusRes?.packages)
           ? (packageStatusRes.packages as CommunityPackageStatusItem[])
@@ -5536,6 +5607,7 @@ export default function MarketplacePage() {
     } finally {
       if (requestId === loadPageRequestRef.current) {
         setLoading(false);
+        setMarketplaceListingReviewLoading(false);
       }
     }
   }, [selectedClanId]);
@@ -5592,6 +5664,17 @@ export default function MarketplacePage() {
           publicShopRecord?.description ||
           "Public GSN shop face for the owner's active shop blocks.",
       });
+
+      if ((created as any)?.submitted_for_review) {
+        setNotice({
+          tone: "success",
+          text:
+            safeStr((created as any)?.message) ||
+            "Public shop details were sent for community admin review.",
+        });
+        await loadPage();
+        return "";
+      }
 
       const normalized = normalizeMarketplaceShop(created);
       setPublicShopRecord(normalized);
@@ -5943,6 +6026,29 @@ export default function MarketplacePage() {
     setSupportDeskMode("loan");
   }, [loanDraftId]);
 
+  useEffect(() => {
+    const hash = safeStr(location.hash).replace(/^#/, "");
+    if (hash !== "marketplace-listing-review-panel") return;
+    const landingToken = `${location.pathname}${location.search}#${hash}:${
+      activeCommunityId || ""
+    }`;
+    if (routeHashLandingAppliedRef.current === landingToken) return;
+    routeHashLandingAppliedRef.current = landingToken;
+
+    setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "board"));
+    setSectionsOpen(focusedMarketplaceSectionState("board"));
+
+    scheduleMarketplaceSectionScroll("marketplace-listing-review-panel", {
+      force: true,
+    });
+    clearMarketplaceHash();
+  }, [
+    location.hash,
+    location.pathname,
+    location.search,
+    activeCommunityId,
+    scheduleMarketplaceSectionScroll,
+  ]);
   useEffect(() => {
     const hash = safeStr(location.hash).replace(/^#/, "");
     if (hash !== "marketplace-money-routes") return;
@@ -8933,6 +9039,9 @@ export default function MarketplacePage() {
             marketplaceNotices={marketplaceNotices}
             marketplaceDemandSignalCount={marketplaceDemandSignalCount}
             marketplaceDemandSignals={marketplaceDemandSignals}
+            marketplaceListingReviewLoading={marketplaceListingReviewLoading}
+            marketplaceListingReviewSubmissions={marketplaceListingReviewSubmissions}
+            marketplaceListingReviewBusyId={marketplaceListingReviewBusyId}
             marketplaceSurfaceTouchProps={marketplaceSurfaceTouchProps}
             onPostAnnouncement={(event) =>
               runMarketplaceAction(event, () => setMarketplaceNoticeModalOpen(true))
@@ -8940,6 +9049,7 @@ export default function MarketplacePage() {
             onUpdateNoticePolicy={updateMarketplaceNoticePolicy}
             onToggleBoard={(event) => toggleSectionFromButton(event, "board")}
             onOpenNoticeSenderWhatsApp={openMarketplaceNoticeSenderWhatsApp}
+            onDecideMarketplaceListingReview={decideMarketplaceListingReview}
           />
         </Suspense>
       ) : null}

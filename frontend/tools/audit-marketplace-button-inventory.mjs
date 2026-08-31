@@ -44,11 +44,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 89;
+const expectedStableActionCount = 91;
 const expectedNativeFieldCount = 37;
 const expectedSourceBreakdown = {
   front: 13,
-  body: 76,
+  body: 78,
 };
 const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
