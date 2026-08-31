@@ -550,6 +550,69 @@ def test_marketplace_shop_creation_reuses_matching_pending_submission(
     )
 
 
+def test_marketplace_product_creation_rejects_shop_from_different_community(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    _ensure_marketplace_tables()
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (
+                    id, name, invite_code, community_code, status, invite_uses, created_at
+                ) VALUES (
+                    2, 'Other Test Clan', 'test-invite-2', 'GMFN-C-000002', 'active', 0, CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (12, 2, 1, 'user', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active, created_at
+                ) VALUES (
+                    982, 1, 1, 'Clan One Shop', 'Shop belongs to another community', 1, CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+
+    response = client.post(
+        "/marketplace/products",
+        json={
+            "clan_id": 2,
+            "shop_id": 982,
+            "name": "Wrong community listing",
+            "description": "This should not cross community boundaries.",
+            "price": "Ask",
+            "currency": "GBP",
+            "image_url": "/uploads/test/wrong-community.jpg",
+        },
+    )
+
+    assert response.status_code == 409, response.text
+    assert response.json()["detail"] == "Selected shop does not belong to this community"
+    assert _scalar("SELECT COUNT(*) FROM marketplace_products") == 0
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM trust_events "
+            "WHERE event_type = 'marketplace.listing.submitted'"
+        )
+        == 0
+    )
+
+
 def test_marketplace_product_creation_submits_member_listing_when_admin_approval_required(
     client,
     override_current_user_user,
@@ -966,6 +1029,125 @@ def test_marketplace_listing_review_rejection_records_decision_without_publishin
         json={"clan_id": 1, "decision": "approve"},
     )
     assert duplicate_decision.status_code == 409, duplicate_decision.text
+
+
+def test_marketplace_listing_review_product_approval_rejects_shop_from_different_community(
+    client,
+    override_current_user,
+    seed_clan_admin_membership,
+):
+    _ensure_marketplace_tables()
+    _seed_second_marketplace_member()
+    _seed_marketplace_governance_profile_event(
+        enable_member_service_listings=True,
+        require_admin_approval_for_listings=True,
+    )
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (
+                    id, name, invite_code, community_code, status, invite_uses, created_at
+                ) VALUES (
+                    2, 'Other Test Clan', 'test-invite-2', 'GMFN-C-000002', 'active', 0, CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active, created_at
+                ) VALUES (
+                    992, 2, 2, 'Member Other Community Shop', 'Shop moved outside the review community', 1, CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO trust_events (
+                    event_type, clan_id, actor_user_id, subject_user_id, meta_json, created_at
+                ) VALUES (
+                    'marketplace.listing.submitted', 1, 2, 2, :meta_json, CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "meta_json": json.dumps(
+                    {
+                        "source": "marketplace_listing_review",
+                        "reason": "marketplace_listing_submitted_for_review",
+                        "listing_type": "product",
+                        "listing_payload": {
+                            "shop_id": 992,
+                            "name": "Cross-community stale listing",
+                            "description": "Should not publish through the wrong community.",
+                            "price": "Ask",
+                            "currency": "GBP",
+                            "image_url": "/uploads/test/cross-community.jpg",
+                            "visibility_mode": "community_visible",
+                        },
+                        "review_status": "pending",
+                        "submitted_by_role": "member",
+                        "marketplace_governance_policy": {
+                            "admin_approval_required_for_listings": True,
+                            "listing_review_required": True,
+                        },
+                    }
+                )
+            },
+        )
+        submission_id = int(conn.execute(text("SELECT MAX(id) FROM trust_events")).scalar_one())
+        conn.execute(
+            text(
+                """
+                INSERT INTO notifications (
+                    user_id, kind, title, message, action_url, action_label, is_read, created_at
+                ) VALUES (
+                    1,
+                    'marketplace.listing.submitted',
+                    'Marketplace listing waiting for review',
+                    'A member submitted Cross-community stale listing (product) for marketplace approval.',
+                    :action_url,
+                    'Review listing',
+                    0,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "action_url": (
+                    f"/app/marketplace?clan_id=1&listing_review_submission_id={submission_id}"
+                    "#marketplace-listing-review-panel"
+                )
+            },
+        )
+
+    decision = client.post(
+        f"/marketplace/listing-review-queue/{submission_id}/decision",
+        json={"clan_id": 1, "decision": "approve"},
+    )
+
+    assert decision.status_code == 409, decision.text
+    assert decision.json()["detail"] == "The submitted shop no longer belongs to this community."
+    assert _scalar("SELECT COUNT(*) FROM marketplace_products") == 0
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM trust_events "
+            "WHERE event_type = 'marketplace.listing.review_decided'"
+        )
+        == 0
+    )
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM notifications "
+            "WHERE kind = 'marketplace.listing.submitted' AND is_read = 0"
+        )
+        == 1
+    )
 
 
 def test_marketplace_listing_review_approval_publishes_product_and_notifies_submitter(

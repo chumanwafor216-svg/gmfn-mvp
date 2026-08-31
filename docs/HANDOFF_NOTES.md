@@ -1,3 +1,12 @@
+## 2026-08-31 - Local Marketplace product shop/community boundary
+
+- Status: Local backend implementation verified; not pushed or deployed per owner instruction to avoid pipeline wastage.
+- Backend routes affected: `POST /marketplace/products` and `POST /marketplace/listing-review-queue/{submission_event_id}/decision` for product approvals.
+- Direct product creation now rejects a `shop_id` that belongs to a different community than the selected `clan_id`, after confirming the caller's membership in the selected community.
+- Marketplace listing review approval now rejects stale/cross-community product submissions when the submitted shop no longer belongs to the review community, and it does so before publishing a product or recording a decision.
+- Backend coverage added for direct product creation with a cross-community shop and for review approval of a stale product submission pointing at another community's shop.
+- Verification: `python -m py_compile gmfn_backend\app\api\routes\marketplace.py gmfn_backend\tests\test_marketplace_public_shop.py`; `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py -k "product_creation_rejects_shop_from_different_community or review_product_approval_rejects_shop_from_different_community or marketplace_product_creation_submits_member_listing or marketplace_listing_review_approval_publishes_product" -q`; `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py -k "governance_listing_review_policy or marketplace_shop_creation_submits or marketplace_product_creation_submits or marketplace_listing_review_approval or marketplace_listing_review_rejection or marketplace_shop_creation_reuses_matching_pending_submission or marketplace_product_creation_reuses_matching_pending_submission or product_creation_rejects_shop_from_different_community or review_product_approval_rejects_shop_from_different_community or marketplace_product_creation_allows_member_when_listing_admin_approval_not_required" -q`; `git diff --check`.
+- Devil truth: this closes the shop/community cross-link bug for product creation and review approval. It does not audit historical rows, migrate bad existing data, reserve pending product slots, assign reviewers, or prove every older Marketplace endpoint has the same community boundary.
 ## 2026-08-31 - Local Marketplace listing review rejection coverage
 
 - Status: Local backend test coverage verified; not pushed or deployed per owner instruction to avoid pipeline wastage.

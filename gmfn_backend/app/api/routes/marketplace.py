@@ -998,6 +998,8 @@ def _publish_marketplace_product_submission(
         raise HTTPException(status_code=409, detail="The submitted shop is no longer available.")
     if int(shop.owner_user_id) != int(submitter_user_id):
         raise HTTPException(status_code=409, detail="The submitted shop no longer belongs to the submitting member.")
+    if int(getattr(shop, "clan_id", 0) or 0) != int(clan_id):
+        raise HTTPException(status_code=409, detail="The submitted shop no longer belongs to this community.")
 
     if not _safe_str(payload.get("name")):
         raise HTTPException(status_code=422, detail="Product name is required")
@@ -3732,12 +3734,13 @@ def create_marketplace_product(
             status_code=403,
             detail="Only the shop owner can add products",
         )
-
     membership = _require_active_membership(
         db=db,
         user_id=int(current_user.id),
         clan_id=resolved_clan_id,
     )
+    if int(getattr(shop, "clan_id", 0) or 0) != int(resolved_clan_id):
+        raise HTTPException(status_code=409, detail="Selected shop does not belong to this community")
     require_domain_shop_diary_enabled(db, clan_id=resolved_clan_id)
     marketplace_governance_policy = _require_member_service_listings_enabled(
         db,
