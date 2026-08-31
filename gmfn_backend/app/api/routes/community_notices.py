@@ -30,6 +30,7 @@ router = APIRouter(prefix="/community-notices", tags=["community-notices"])
 
 COMMUNITY_NOTICE_EVENT = "community.notice.posted"
 COMMUNITY_NOTICE_ACK_EVENT = "community.notice.acknowledged"
+COMMUNITY_GOVERNANCE_PROFILE_SELECTED_EVENT = "community.governance_profile_selected"
 COMMUNITY_NOTICE_SOURCE = "community_notice_board"
 MAX_NOTICE_WORDS = 50
 NOTICE_POSTING_POLICY_MEMBERS = "members"
@@ -92,6 +93,128 @@ def _safe_meta(raw: Any) -> dict[str, Any]:
         return parsed if isinstance(parsed, dict) else {}
     except Exception:
         return {}
+
+
+def _community_governance_profile_for_clan(
+    db: Session,
+    *,
+    clan_id: int,
+) -> Optional[dict[str, Any]]:
+    event = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.clan_id == int(clan_id))
+        .filter(TrustEvent.event_type == COMMUNITY_GOVERNANCE_PROFILE_SELECTED_EVENT)
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+        .first()
+    )
+    if event is None:
+        return None
+
+    meta = _safe_meta(getattr(event, "meta_json", None))
+    profile = {
+        key: meta[key]
+        for key in (
+            "community_type",
+            "community_type_label",
+            "governance_weight",
+            "governance_weight_label",
+            "preset_key",
+            "preset_label",
+            "verification_mode",
+            "policies",
+            "requirements",
+            "truth_boundary",
+            "requested_preset_key",
+            "preset_correction",
+        )
+        if key in meta
+    }
+    if not profile:
+        return None
+
+    created_at = getattr(event, "created_at", None)
+    profile["source_event_id"] = int(event.id)
+    profile["recorded_at"] = created_at.isoformat() if created_at else None
+    return profile
+
+
+def _community_records_policy_for_clan(
+    db: Session,
+    *,
+    clan_id: int,
+) -> dict[str, Any]:
+    profile = _community_governance_profile_for_clan(db, clan_id=int(clan_id))
+    policies = (
+        profile.get("policies")
+        if isinstance(profile, dict) and isinstance(profile.get("policies"), dict)
+        else {}
+    )
+    profile_key = (
+        _safe_str(profile.get("preset_key"))
+        if isinstance(profile, dict)
+        else ""
+    )
+    has_profile = profile is not None
+    records_enabled = bool(policies.get("enable_community_records", True))
+    member_submissions_enabled = bool(
+        policies.get("allow_member_record_submissions", not has_profile)
+    )
+    approval_required = bool(
+        policies.get("require_admin_approval_for_records", has_profile)
+    )
+
+    return {
+        "has_governance_profile": has_profile,
+        "governance_profile_key": profile_key or None,
+        "community_records_enabled": records_enabled,
+        "member_record_submissions_enabled": member_submissions_enabled,
+        "admin_approval_required_for_records": approval_required,
+        "truth_boundary": (
+            "This reflects the recorded community setup. It can block disabled "
+            "Community Records and prevent ordinary members from publishing "
+            "directly when admin review is required, but it is not a full records "
+            "approval queue yet."
+        ),
+    }
+
+
+def _community_record_policy_error(
+    *,
+    code: str,
+    message: str,
+    clan_id: int,
+    policy: dict[str, Any],
+) -> HTTPException:
+    return HTTPException(
+        status_code=403,
+        detail={
+            "code": code,
+            "message": message,
+            "community_id": int(clan_id),
+            "governance_profile_key": policy.get("governance_profile_key"),
+            "community_records_policy": policy,
+        },
+    )
+
+
+def _can_create_notice_record(
+    membership: ClanMembership,
+    current_user: User,
+    *,
+    posting_policy: str,
+    records_policy: dict[str, Any],
+) -> bool:
+    if not bool(records_policy.get("community_records_enabled", True)):
+        return False
+    if _is_notice_officer(membership, current_user):
+        return True
+    if posting_policy == NOTICE_POSTING_POLICY_ADMINS:
+        return False
+    if not bool(records_policy.get("member_record_submissions_enabled", False)):
+        return False
+    if bool(records_policy.get("admin_approval_required_for_records", True)):
+        return False
+    return True
 
 
 def _word_count(text: str) -> int:
@@ -232,22 +355,56 @@ def _require_notice_poster(
     *,
     clan_id: int,
     current_user: User,
-) -> tuple[ClanMembership, str]:
+) -> tuple[ClanMembership, str, dict[str, Any]]:
     membership = _require_clan_member(
         db,
         clan_id=int(clan_id),
         current_user=current_user,
     )
     posting_policy = _notice_posting_policy_for_clan(db, clan_id=int(clan_id))
-    if (
-        posting_policy == NOTICE_POSTING_POLICY_ADMINS
-        and not _is_notice_officer(membership, current_user)
-    ):
+    records_policy = _community_records_policy_for_clan(db, clan_id=int(clan_id))
+    is_officer = _is_notice_officer(membership, current_user)
+    if not bool(records_policy.get("community_records_enabled", True)):
+        raise _community_record_policy_error(
+            code="community_records_disabled",
+            message=(
+                "This community setup has Community Records turned off. Ask an "
+                "admin to enable Community Records before posting a notice."
+            ),
+            clan_id=int(clan_id),
+            policy=records_policy,
+        )
+    if posting_policy == NOTICE_POSTING_POLICY_ADMINS and not is_officer:
         raise HTTPException(
             status_code=403,
             detail="This community notice board is admin-only right now",
         )
-    return membership, posting_policy
+    if not is_officer and not bool(
+        records_policy.get("member_record_submissions_enabled", False)
+    ):
+        raise _community_record_policy_error(
+            code="community_member_record_submissions_disabled",
+            message=(
+                "This community setup does not let ordinary members publish "
+                "Community Records directly. Ask an admin to post it."
+            ),
+            clan_id=int(clan_id),
+            policy=records_policy,
+        )
+    if not is_officer and bool(
+        records_policy.get("admin_approval_required_for_records", True)
+    ):
+        raise _community_record_policy_error(
+            code="community_record_admin_approval_required",
+            message=(
+                "This community setup requires admin approval for member records. "
+                "GSN does not have a member-record approval queue here yet, so ask "
+                "an admin to post the notice."
+            ),
+            clan_id=int(clan_id),
+            policy=records_policy,
+        )
+    return membership, posting_policy, records_policy
 
 
 def _public_whatsapp_contact_for_user(db: Session, user: Optional[User]) -> Optional[str]:
@@ -610,6 +767,7 @@ def list_notices(
 ) -> dict[str, Any]:
     membership = _require_clan_member(db, clan_id=int(clan_id), current_user=current_user)
     posting_policy = _notice_posting_policy_for_clan(db, clan_id=int(clan_id))
+    records_policy = _community_records_policy_for_clan(db, clan_id=int(clan_id))
     notice_rows = (
         db.query(TrustEvent)
         .filter(
@@ -664,8 +822,13 @@ def list_notices(
         "urgent_expires_after_hours": NOTICE_URGENT_VISIBLE_HOURS,
         "archived_notice_count": archived_notice_count,
         "posting_policy": posting_policy,
-        "can_post_notice": posting_policy == NOTICE_POSTING_POLICY_MEMBERS
-        or _is_notice_officer(membership, current_user),
+        "can_post_notice": _can_create_notice_record(
+            membership,
+            current_user,
+            posting_policy=posting_policy,
+            records_policy=records_policy,
+        ),
+        "community_records_policy": records_policy,
         "notices": notices[: int(limit)],
         "demand_signals_enabled": True,
         "demand_signal_count": int(demand_signal_count),
@@ -684,7 +847,7 @@ def create_notice(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
-    membership, posting_policy = _require_notice_poster(
+    membership, posting_policy, records_policy = _require_notice_poster(
         db,
         clan_id=int(payload.clan_id),
         current_user=current_user,
@@ -716,6 +879,7 @@ def create_notice(
             "reactions_enabled": False,
             "thread_enabled": False,
             "trust_delta": "0.00",
+            "community_records_policy": records_policy,
             **poster_contact,
         },
     )
@@ -730,6 +894,7 @@ def create_notice(
         "engine_ready": True,
         "notice": _event_to_notice(event, db=db, viewer_user_id=int(current_user.id)),
         "posting_policy": posting_policy,
+        "community_records_policy": records_policy,
         "notification_kind": COMMUNITY_NOTICE_EVENT,
         "notifications_created": int(notifications_created),
         "message": "Community announcement posted to the Community Notice Board.",
@@ -753,6 +918,14 @@ def acknowledge_notice(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     _require_clan_member(db, clan_id=int(payload.clan_id), current_user=current_user)
+    records_policy = _community_records_policy_for_clan(db, clan_id=int(payload.clan_id))
+    if not bool(records_policy.get("community_records_enabled", True)):
+        raise _community_record_policy_error(
+            code="community_records_disabled",
+            message="This community setup has Community Records turned off.",
+            clan_id=int(payload.clan_id),
+            policy=records_policy,
+        )
     notice_event = (
         db.query(TrustEvent)
         .filter(
@@ -780,6 +953,7 @@ def acknowledge_notice(
             "notice_event_id": int(notice_event_id),
             "notice_id": f"TE-{int(notice_event_id)}",
             "acknowledgement": "seen",
+            "community_records_policy": records_policy,
         },
         dedupe_key=f"community-notice-ack:{int(notice_event_id)}:{int(current_user.id)}",
     )
@@ -794,6 +968,7 @@ def acknowledge_notice(
         "event_id": int(event.id),
         "notice_event_id": int(notice_event_id),
         "acknowledgement_summary": summary,
+        "community_records_policy": records_policy,
         "message": "Announcement acknowledged.",
     }
 
@@ -806,12 +981,18 @@ def get_notice_settings(
 ) -> dict[str, Any]:
     membership = _require_clan_member(db, clan_id=int(clan_id), current_user=current_user)
     posting_policy = _notice_posting_policy_for_clan(db, clan_id=int(clan_id))
+    records_policy = _community_records_policy_for_clan(db, clan_id=int(clan_id))
     return {
         "ok": True,
         "clan_id": int(clan_id),
         "posting_policy": posting_policy,
-        "can_post_notice": posting_policy == NOTICE_POSTING_POLICY_MEMBERS
-        or _is_notice_officer(membership, current_user),
+        "can_post_notice": _can_create_notice_record(
+            membership,
+            current_user,
+            posting_policy=posting_policy,
+            records_policy=records_policy,
+        ),
+        "community_records_policy": records_policy,
         "can_manage_notice_settings": _is_notice_officer(membership, current_user),
         "boundary": (
             "Members mode lets active members post short announcements with any "
@@ -829,6 +1010,7 @@ def update_notice_settings(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     _require_notice_officer(db, clan_id=int(clan_id), current_user=current_user)
+    records_policy = _community_records_policy_for_clan(db, clan_id=int(clan_id))
     posting_policy = _set_notice_posting_policy_for_clan(
         db,
         clan_id=int(clan_id),
@@ -838,6 +1020,7 @@ def update_notice_settings(
         "ok": True,
         "clan_id": int(clan_id),
         "posting_policy": posting_policy,
+        "community_records_policy": records_policy,
         "message": (
             "Community Notice Board is open to active members."
             if posting_policy == NOTICE_POSTING_POLICY_MEMBERS

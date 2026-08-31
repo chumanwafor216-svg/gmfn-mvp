@@ -1,3 +1,14 @@
+## 2026-08-31 - Local Community Records governance policy gate for notices
+- Status: Local implementation verified; ready for the active pilot commit/push/deploy protocol.
+- Backend routes affected: `GET /community-notices`, `POST /community-notices`, `POST /community-notices/{notice_event_id}/acknowledgements`, `GET /community-notices/settings`, and `PATCH /community-notices/settings`.
+- Community Notice Board now reads the latest recorded community governance profile and returns `community_records_policy` so callers can see whether records are enabled, whether ordinary members may submit records, and whether admin approval is required.
+- New notice creation is blocked when `policies.enable_community_records=false`.
+- Ordinary member notice publishing is blocked when the profile disables member record submissions, or when admin approval is required but this lightweight notice board has no member-record approval queue.
+- Admin/officer notice posts remain allowed when records are enabled, and notice/acknowledgement Trust Events record the policy snapshot in metadata.
+- Legacy communities without a recorded governance profile keep the existing notice-board behavior: member-open boards still allow member posts according to `notice_posting_policy`.
+- Backend coverage added in `gmfn_backend/tests/test_community_notices.py` for disabled records, blocked member direct publish, blocked member publish when review is required, and admin policy disclosure.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\community_notices.py gmfn_backend\tests\test_community_notices.py`; `git diff --check`; `python -m pytest -q gmfn_backend\tests\test_community_notices.py -k "records_policy or member_record_submission_policy" -q`; `python -m pytest -q gmfn_backend\tests\test_community_notices.py -q`; `python -m pytest -q gmfn_backend\tests\test_community_notices.py gmfn_backend\tests\test_community_meetings.py -q`.
+- Devil's advocate truth: this is a policy gate on the existing lightweight notice/selected-record board. It does not create a general Community Records repository, file upload store, WhatsApp import, verified-information approval queue, record taxonomy UI, reviewer assignment workflow, or retroactive hiding of historical records.
 ## 2026-08-31 - Local marketplace governance listing policy gate
 - Status: Local implementation verified; ready for the active pilot commit/push/deploy protocol.
 - Backend routes affected: `GET /marketplace/shops`, `GET /marketplace/products`, `POST /marketplace/shops`, and `POST /marketplace/products`.

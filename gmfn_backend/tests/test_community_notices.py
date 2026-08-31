@@ -68,6 +68,45 @@ def _seed_notice_community(
         db.commit()
 
 
+def _seed_notice_governance_profile_event(
+    *,
+    enable_community_records: bool = True,
+    allow_member_record_submissions: bool = False,
+    require_admin_approval_for_records: bool = True,
+) -> None:
+    with SessionLocal() as db:
+        db.add(
+            TrustEvent(
+                event_type="community.governance_profile_selected",
+                clan_id=1,
+                actor_user_id=1,
+                subject_user_id=1,
+                meta_json=json.dumps(
+                    {
+                        "community_type": "migrant_community",
+                        "community_type_label": "Migrant Community",
+                        "governance_weight": "light",
+                        "governance_weight_label": "Light",
+                        "preset_key": "light_migrant_support_network",
+                        "preset_label": "Light Migrant Support Network",
+                        "verification_mode": "light_member_verification",
+                        "policies": {
+                            "enable_community_records": enable_community_records,
+                            "allow_member_record_submissions": allow_member_record_submissions,
+                            "require_admin_approval_for_records": require_admin_approval_for_records,
+                        },
+                        "requirements": {
+                            "member_phone_required": True,
+                            "rules_acceptance_required": True,
+                        },
+                        "truth_boundary": "Recorded as setup evidence only.",
+                    }
+                ),
+            )
+        )
+        db.commit()
+
+
 def test_community_officer_can_post_and_members_can_read_notice(
     client, override_current_user
 ):
@@ -335,6 +374,130 @@ def test_community_notice_archive_hides_expired_notice_but_keeps_memory(
             == 2
         )
 
+
+
+def test_community_notice_post_respects_disabled_light_governance_records_policy(
+    client, override_current_user
+):
+    _seed_notice_community()
+    _seed_notice_governance_profile_event(enable_community_records=False)
+
+    res = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Do not create this selected record.",
+        },
+    )
+
+    assert res.status_code == 403, res.text
+    detail = res.json()["detail"]
+    assert detail["code"] == "community_records_disabled"
+    assert detail["governance_profile_key"] == "light_migrant_support_network"
+    assert detail["community_records_policy"]["community_records_enabled"] is False
+    with SessionLocal() as db:
+        assert (
+            db.query(TrustEvent)
+            .filter(TrustEvent.event_type == "community.notice.posted")
+            .count()
+            == 0
+        )
+
+    list_res = client.get("/community-notices", params={"clan_id": 1})
+    assert list_res.status_code == 200, list_res.text
+    list_body = list_res.json()
+    assert list_body["can_post_notice"] is False
+    assert list_body["community_records_policy"]["community_records_enabled"] is False
+
+
+def test_member_record_submission_policy_blocks_member_notice_when_closed(
+    client, override_current_user_user
+):
+    _seed_notice_community(membership_role="member")
+    _seed_notice_governance_profile_event(
+        enable_community_records=True,
+        allow_member_record_submissions=False,
+        require_admin_approval_for_records=True,
+    )
+
+    res = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Member cannot publish this directly.",
+        },
+    )
+
+    assert res.status_code == 403, res.text
+    detail = res.json()["detail"]
+    assert detail["code"] == "community_member_record_submissions_disabled"
+    assert detail["community_records_policy"]["member_record_submissions_enabled"] is False
+
+
+def test_member_record_submission_policy_blocks_live_publish_when_admin_review_required(
+    client, override_current_user_user
+):
+    _seed_notice_community(membership_role="member")
+    _seed_notice_governance_profile_event(
+        enable_community_records=True,
+        allow_member_record_submissions=True,
+        require_admin_approval_for_records=True,
+    )
+
+    res = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Member record needs admin review first.",
+        },
+    )
+
+    assert res.status_code == 403, res.text
+    detail = res.json()["detail"]
+    assert detail["code"] == "community_record_admin_approval_required"
+    assert detail["community_records_policy"]["admin_approval_required_for_records"] is True
+
+
+def test_admin_notice_post_reports_light_governance_records_policy(
+    client, override_current_user
+):
+    _seed_notice_community()
+    _seed_notice_governance_profile_event(
+        enable_community_records=True,
+        allow_member_record_submissions=False,
+        require_admin_approval_for_records=True,
+    )
+
+    post_res = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Selected record preserved by admin.",
+        },
+    )
+
+    assert post_res.status_code == 200, post_res.text
+    policy = post_res.json()["community_records_policy"]
+    assert policy["governance_profile_key"] == "light_migrant_support_network"
+    assert policy["community_records_enabled"] is True
+    assert policy["member_record_submissions_enabled"] is False
+    assert policy["admin_approval_required_for_records"] is True
+
+    settings_res = client.get("/community-notices/settings", params={"clan_id": 1})
+    assert settings_res.status_code == 200, settings_res.text
+    assert settings_res.json()["community_records_policy"] == policy
+
+    with SessionLocal() as db:
+        event = (
+            db.query(TrustEvent)
+            .filter(TrustEvent.event_type == "community.notice.posted")
+            .order_by(TrustEvent.id.desc())
+            .first()
+        )
+        meta = json.loads(event.meta_json or "{}")
+        event_policy = meta["community_records_policy"]
+        assert event_policy["governance_profile_key"] == "light_migrant_support_network"
+        assert event_policy["admin_approval_required_for_records"] is True
 
 def test_member_can_post_when_notice_board_is_open(
     client, override_current_user_user
