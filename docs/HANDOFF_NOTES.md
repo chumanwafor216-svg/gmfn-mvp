@@ -1,3 +1,19 @@
+## 2026-08-31 - Aberdeen Dads customer discovery resend sent
+- Status: Gmail resend sent from the prepared draft; no push or deployment was performed.
+- Original sent message from 2026-08-30 was found in Sent Mail and did leave the account, but the recipient reported the Word attachment would not open.
+- Local inspection found the original DOCX ZIP/XML was parseable but very skeletal, which likely explains LibreOffice's repair/corruption warning. This is an attachment compatibility/corruption problem, not proof that the email itself failed.
+- Replacement deliverables created under `deliverables/aberdeen_dads_discovery/`: `Aberdeen_Dads_GSN_Customer_Discovery_Summary_for_Greg_SEND_READY_2026-08-31.docx` and `.pdf`.
+- Structural validation passed for the replacement DOCX: required Word parts are present and XML parses; PDF was generated locally as a fallback.
+- Gmail binary attachment upload via connector rejected the base64 payload, so the sent resend included the full customer discovery summary inline in plain text and CCed the sending account for a visible copy trail.
+- Devil truth: the replacement DOCX/PDF were structurally checked, but not visually opened in LibreOffice because local LibreOffice/pdf2image render dependencies were unavailable.
+
+## 2026-08-31 - Local Help Desk structured error hardening
+- Status: Local frontend implementation verified; not pushed or deployed per owner instruction to deploy only when explicitly requested.
+- Frontend routes affected: `/app/help` (`frontend/src/pages/SupportPage.tsx`) and `/app/command-center/support` (`frontend/src/pages/AdminSupportPage.tsx`).
+- Support Page and Admin Support Page now use `structuredErrorMessage` for case loading, thread opening, support request/reply submission, queue loading, and admin status-update failures instead of direct `err.message` fallbacks.
+- Verification: `npm --prefix frontend run audit:support-helpdesk`, `npm exec -- tsc -b --pretty false` from `frontend`, `npm --prefix frontend run lint`, `npm --prefix frontend run audit:protected-button-freeze`, `npm --prefix frontend run build`, and `git diff --check` all passed locally.
+- Devil truth: this only improves helpdesk error readability. It does not add live chat, guarantee admin response, prove attachments, change support permissions, or alter backend support-case rules.
+
 ## 2026-08-31 - Local Identity Integrity structured error hardening
 - Status: Local frontend implementation verified; ready for active pilot commit/push/deploy protocol.
 - Frontend route affected: `/app/identity-integrity` (`frontend/src/pages/IdentityIntegrityPage.tsx`).

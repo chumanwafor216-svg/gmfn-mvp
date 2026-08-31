@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 import { StableButton, StableCtaLink } from "../components/StableButton";
+import { structuredErrorMessage } from "../lib/structuredErrors";
 import {
   addSupportCaseMessage,
   createSupportCase,
@@ -218,7 +219,7 @@ function SupportPage() {
       setCases(items);
       setSelectedId((current) => current || queryCaseId || null);
     } catch (err: any) {
-      setError(err?.message || "Support cases could not be loaded.");
+      setError(structuredErrorMessage(err, "Support cases could not be loaded."));
     } finally {
       setLoading(false);
     }
@@ -243,7 +244,7 @@ function SupportPage() {
       })
       .catch((err: any) => {
         if (cancelled) return;
-        setError(err?.message || "This support thread could not be opened.");
+        setError(structuredErrorMessage(err, "This support thread could not be opened."));
       })
       .finally(() => {
         if (!cancelled) setThreadLoading(false);
@@ -301,7 +302,7 @@ function SupportPage() {
       await loadCases();
       setNotice("Support request sent. Admin can now reply from the queue.");
     } catch (err: any) {
-      setError(err?.message || "Support request could not be sent.");
+      setError(structuredErrorMessage(err, "Support request could not be sent."));
     } finally {
       setBusy(false);
     }
@@ -332,7 +333,7 @@ function SupportPage() {
       await loadCases();
       setNotice("Reply sent.");
     } catch (err: any) {
-      setError(err?.message || "Reply could not be sent.");
+      setError(structuredErrorMessage(err, "Reply could not be sent."));
     } finally {
       setBusy(false);
     }

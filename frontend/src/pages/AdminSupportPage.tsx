@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 import { StableButton, StableCtaLink } from "../components/StableButton";
+import { structuredErrorMessage } from "../lib/structuredErrors";
 import {
   addSupportCaseMessage,
   getAdminSupportCases,
@@ -214,7 +215,7 @@ function AdminSupportPage() {
       setCounts(countsFrom(out));
       setSelectedId((current) => current || queryCaseId || items[0]?.id || null);
     } catch (err: any) {
-      setError(err?.message || "Support queue could not be loaded.");
+      setError(structuredErrorMessage(err, "Support queue could not be loaded."));
     } finally {
       setLoading(false);
     }
@@ -241,7 +242,7 @@ function AdminSupportPage() {
       })
       .catch((err: any) => {
         if (cancelled) return;
-        setError(err?.message || "This support case could not be opened.");
+        setError(structuredErrorMessage(err, "This support case could not be opened."));
       })
       .finally(() => {
         if (!cancelled) setThreadLoading(false);
@@ -281,7 +282,7 @@ function AdminSupportPage() {
       await loadQueue();
       setNotice("Reply sent to the requester.");
     } catch (err: any) {
-      setError(err?.message || "Reply could not be sent.");
+      setError(structuredErrorMessage(err, "Reply could not be sent."));
     } finally {
       setBusy(false);
     }
@@ -304,7 +305,7 @@ function AdminSupportPage() {
       await loadQueue();
       setNotice("Case status updated.");
     } catch (err: any) {
-      setError(err?.message || "Case status could not be updated.");
+      setError(structuredErrorMessage(err, "Case status could not be updated."));
     } finally {
       setBusy(false);
     }
