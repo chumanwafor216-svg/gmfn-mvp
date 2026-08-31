@@ -217,6 +217,7 @@ def _require_member_service_listings_enabled(
         },
     )
 
+
 def _public_identity_name(*values: Any, fallback: str) -> str:
     for value in values:
         text = _safe_str(value)
@@ -440,6 +441,42 @@ def _match_repost_tokens(tokens: list[str], *values: Any) -> list[str]:
 def _is_admin(user: Any) -> bool:
     return str(getattr(user, "role", "")).lower() == "admin"
 
+
+
+def _is_marketplace_listing_officer(
+    membership: Optional[ClanMembership],
+    current_user: User,
+) -> bool:
+    if _is_admin(current_user):
+        return True
+    return str(getattr(membership, "role", "") or "").lower() == "admin"
+
+
+def _require_marketplace_listing_publication_allowed(
+    *,
+    clan_id: int,
+    membership: Optional[ClanMembership],
+    current_user: User,
+    policy: dict[str, Any],
+) -> None:
+    if not bool(policy.get("admin_approval_required_for_listings", False)):
+        return
+    if _is_marketplace_listing_officer(membership, current_user):
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "community_listing_admin_approval_required",
+            "message": (
+                "This community setup requires admin approval before member "
+                "listings go live. GSN does not have a listing approval queue "
+                "here yet, so ask an admin to create or approve the listing."
+            ),
+            "community_id": int(clan_id),
+            "governance_profile_key": policy.get("governance_profile_key"),
+            "marketplace_governance_policy": policy,
+        },
+    )
 
 def _resolve_visibility_mode(value: Any) -> str:
     raw = _safe_str(value, VISIBILITY_COMMUNITY).lower()
@@ -2281,7 +2318,7 @@ def create_marketplace_shop(
         header_clan_id=x_clan_id,
     )
 
-    _require_active_membership(
+    membership = _require_active_membership(
         db=db,
         user_id=int(current_user.id),
         clan_id=resolved_clan_id,
@@ -2290,6 +2327,12 @@ def create_marketplace_shop(
     marketplace_governance_policy = _require_member_service_listings_enabled(
         db,
         clan_id=resolved_clan_id,
+    )
+    _require_marketplace_listing_publication_allowed(
+        clan_id=resolved_clan_id,
+        membership=membership,
+        current_user=current_user,
+        policy=marketplace_governance_policy,
     )
 
     existing_shop = _get_public_shop_identity_by_owner(
@@ -2940,7 +2983,7 @@ def create_marketplace_product(
             detail="Only the shop owner can add products",
         )
 
-    _require_active_membership(
+    membership = _require_active_membership(
         db=db,
         user_id=int(current_user.id),
         clan_id=resolved_clan_id,
@@ -2949,6 +2992,12 @@ def create_marketplace_product(
     marketplace_governance_policy = _require_member_service_listings_enabled(
         db,
         clan_id=resolved_clan_id,
+    )
+    _require_marketplace_listing_publication_allowed(
+        clan_id=resolved_clan_id,
+        membership=membership,
+        current_user=current_user,
+        policy=marketplace_governance_policy,
     )
 
     if not _safe_str(payload.name):

@@ -1,3 +1,14 @@
+## 2026-08-31 - Local marketplace listing admin-approval gate
+- Status: Local implementation verified; ready for the active pilot commit/push/deploy protocol.
+- Backend routes affected: `POST /marketplace/shops` and `POST /marketplace/products`.
+- Marketplace create paths now enforce the recorded governance profile's `policies.require_admin_approval_for_listings=true` by blocking ordinary members from publishing live shops/products directly.
+- Community admins and platform admins may still create shops/products when listings are enabled, so admin-approved publication can continue without inventing a fake queue.
+- The structured `403 community_listing_admin_approval_required` response includes `marketplace_governance_policy` and tells the member that GSN does not have a listing approval queue here yet.
+- Legacy communities without a recorded governance profile keep existing marketplace behavior because approval defaults to false unless the profile says otherwise.
+- Backend coverage added in `gmfn_backend/tests/test_marketplace_public_shop.py` for ordinary-member shop/product blocks, admin publish allowance, and ordinary-member product creation when approval is not required.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\marketplace.py gmfn_backend\tests\test_marketplace_public_shop.py`; `git diff --check`; `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py -k "governance_listings_policy or governance_listing_review_policy or listing_admin_approval" -q`; `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py -q -k "not public_shop_face and not shop_gallery_products_follow_owner_across_membership_communities"`.
+- Verification limitation: the full marketplace public-shop test file is still not run end-to-end in this Windows sandbox because five existing tmp_path/media tests hit local temp-directory permission errors; the non-temp marketplace subset passed.
+- Devil's advocate truth: this still does not create a real listing submission queue, reviewer assignment, approval status, expiry/review-date enforcement, or retroactive moderation of existing live listings. It prevents pretending that admin approval exists while ordinary members can publish directly.
 ## 2026-08-31 - Local Community Records governance policy gate for notices
 - Status: Local implementation verified; ready for the active pilot commit/push/deploy protocol.
 - Backend routes affected: `GET /community-notices`, `POST /community-notices`, `POST /community-notices/{notice_event_id}/acknowledgements`, `GET /community-notices/settings`, and `PATCH /community-notices/settings`.

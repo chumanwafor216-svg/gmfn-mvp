@@ -132,6 +132,7 @@ def _scalar(sql: str) -> int:
     with engine.begin() as conn:
         return int(conn.execute(text(sql)).scalar() or 0)
 
+
 def _seed_marketplace_governance_profile_event(
     *,
     enable_member_service_listings: bool = True,
@@ -318,8 +319,8 @@ def test_marketplace_product_creation_respects_disabled_light_governance_listing
 
 def test_marketplace_shop_creation_reports_light_governance_listing_review_policy(
     client,
-    override_current_user_user,
-    seed_clan_member_membership,
+    override_current_user,
+    seed_clan_admin_membership,
 ):
     _ensure_marketplace_tables()
     _seed_marketplace_governance_profile_event(
@@ -359,6 +360,161 @@ def test_marketplace_shop_creation_reports_light_governance_listing_review_polic
     event_policy = event_meta["marketplace_governance_policy"]
     assert event_policy["governance_profile_key"] == "light_migrant_support_network"
     assert event_policy["admin_approval_required_for_listings"] is True
+
+
+
+def test_marketplace_shop_creation_blocks_member_when_listing_admin_approval_required(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    _ensure_marketplace_tables()
+    _seed_marketplace_governance_profile_event(
+        enable_member_service_listings=True,
+        require_admin_approval_for_listings=True,
+    )
+
+    response = client.post(
+        "/marketplace/shops",
+        json={
+            "clan_id": 1,
+            "name": "Member Service Shop",
+            "description": "Should wait for admin review.",
+        },
+    )
+
+    assert response.status_code == 403, response.text
+    detail = response.json()["detail"]
+    assert detail["code"] == "community_listing_admin_approval_required"
+    assert detail["governance_profile_key"] == "light_migrant_support_network"
+    assert detail["marketplace_governance_policy"]["admin_approval_required_for_listings"] is True
+    assert _scalar("SELECT COUNT(*) FROM marketplace_shops") == 0
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM trust_events "
+            "WHERE event_type = 'marketplace.shop.created'"
+        )
+        == 0
+    )
+
+
+def test_marketplace_product_creation_blocks_member_when_listing_admin_approval_required(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    _ensure_marketplace_tables()
+    _seed_marketplace_governance_profile_event(
+        enable_member_service_listings=True,
+        require_admin_approval_for_listings=True,
+    )
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id,
+                    clan_id,
+                    owner_user_id,
+                    shop_name,
+                    description,
+                    is_active,
+                    created_at
+                )
+                VALUES (
+                    983,
+                    1,
+                    1,
+                    'Pillar Existing Shop',
+                    'Shop exists before approval gate',
+                    1,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+
+    response = client.post(
+        "/marketplace/products",
+        json={
+            "clan_id": 1,
+            "shop_id": 983,
+            "name": "Community service listing",
+            "description": "Translation and settlement help",
+            "price": "Ask",
+            "currency": "GBP",
+            "image_url": "/uploads/test/service.jpg",
+        },
+    )
+
+    assert response.status_code == 403, response.text
+    detail = response.json()["detail"]
+    assert detail["code"] == "community_listing_admin_approval_required"
+    assert detail["marketplace_governance_policy"]["admin_approval_required_for_listings"] is True
+    assert _scalar("SELECT COUNT(*) FROM marketplace_products") == 0
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM trust_events "
+            "WHERE event_type = 'marketplace.product.created'"
+        )
+        == 0
+    )
+
+
+def test_marketplace_product_creation_allows_member_when_listing_admin_approval_not_required(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    _ensure_marketplace_tables()
+    _seed_marketplace_governance_profile_event(
+        enable_member_service_listings=True,
+        require_admin_approval_for_listings=False,
+    )
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id,
+                    clan_id,
+                    owner_user_id,
+                    shop_name,
+                    description,
+                    is_active,
+                    created_at
+                )
+                VALUES (
+                    984,
+                    1,
+                    1,
+                    'Member Existing Shop',
+                    'Shop exists before approval-free listing',
+                    1,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+
+    response = client.post(
+        "/marketplace/products",
+        json={
+            "clan_id": 1,
+            "shop_id": 984,
+            "name": "Community service listing",
+            "description": "Translation and settlement help",
+            "price": "Ask",
+            "currency": "GBP",
+            "image_url": "/uploads/test/service.jpg",
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    policy = response.json()["marketplace_governance_policy"]
+    assert policy["member_service_listings_enabled"] is True
+    assert policy["admin_approval_required_for_listings"] is False
+    assert _scalar("SELECT COUNT(*) FROM marketplace_products") == 1
 
 def test_marketplace_product_creation_respects_disabled_community_domain_shop_diary_policy(
     client,
