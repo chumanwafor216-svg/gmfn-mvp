@@ -36,7 +36,7 @@ import {
 } from "../lib/guidance";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
-import { structuredErrorDetail } from "../lib/structuredErrors";
+import { structuredErrorDetail, structuredErrorMessage } from "../lib/structuredErrors";
 import { buildIdentityActionGuide } from "../lib/trustDocumentActionGuide";
 import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
 import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
@@ -170,36 +170,37 @@ function firstTruthy(...values: any[]): string {
 }
 
 function parsePhoneTaskError(err: any): string {
-  const raw = safeStr(err?.message || err);
-  if (!raw) return "Phone verification could not start.";
+  const detail = structuredErrorDetail(err);
 
-  try {
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === "object") {
-      if (parsed.code === "phone_owned_by_another_identity") {
-        const accountState = safeStr(parsed.account_state);
-        const firstStep =
-          accountState === "pending_join_or_create"
-            ? "Open the original join/create activation path for that GSN ID."
-            : "Sign in to that GSN ID, or ask support/admin to merge after ownership check.";
-        return [
-          "This phone belongs to another GSN identity.",
-          "Why: phone verification unlocks TrustSlip code and QR.",
-          `First: ${firstStep}`,
-        ].join("\n");
-      }
-      const message = firstTruthy(parsed.message, parsed.detail, parsed.title);
-      const why = firstTruthy(parsed.why_it_matters, parsed.why);
-      const firstStep = firstTruthy(parsed.first_step, parsed.next_step);
-      return [message, why ? `Why it matters: ${why}` : "", firstStep ? `First step: ${firstStep}` : ""]
-        .filter(Boolean)
-        .join(" ");
-    }
-  } catch {
-    // Plain backend errors are already user-facing enough to show directly.
+  if (safeStr(detail?.code) === "phone_owned_by_another_identity") {
+    const accountState = safeStr(detail?.account_state);
+    const firstStep =
+      accountState === "pending_join_or_create"
+        ? "Open the original join/create activation path for that GSN ID."
+        : safeStr(detail?.first_step) ||
+          "Sign in to that GSN ID, or ask support/admin to merge after ownership check.";
+    return [
+      "This phone belongs to another GSN identity.",
+      "Why: phone verification unlocks TrustSlip code and QR.",
+      `First: ${firstStep}`,
+    ].join("\n");
   }
 
-  return raw;
+  if (detail) {
+    const message = firstTruthy(detail.message, detail.detail, detail.title);
+    const why = firstTruthy(detail.why_it_matters, detail.why);
+    const firstStep = firstTruthy(detail.first_step, detail.next_step);
+    const structuredMessage = [
+      message,
+      why ? `Why it matters: ${why}` : "",
+      firstStep ? `First step: ${firstStep}` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    if (structuredMessage) return structuredMessage;
+  }
+
+  return structuredErrorMessage(err, "Phone verification could not start.");
 }
 
 function parsePhoneTaskConflict(err: any): PhoneConflictState | null {
@@ -1894,7 +1895,7 @@ export default function IdentityIntegrityPage() {
         "Private recovery challenge saved. The app can now use it if identity continuity becomes doubtful."
       );
     } catch (err: any) {
-      setRecoveryError(err?.message || "Recovery challenge could not be saved.");
+      setRecoveryError(structuredErrorMessage(err, "Recovery challenge could not be saved."));
     } finally {
       setRecoveryBusy(false);
     }
@@ -1939,11 +1940,7 @@ export default function IdentityIntegrityPage() {
         "Recovery answers did not match. The app recorded the failed attempt and kept the account in its protected state."
       );
     } catch (err: any) {
-      const detail =
-        typeof err?.message === "string"
-          ? err.message
-          : "Recovery answers did not match.";
-      setRecoveryError(detail);
+      setRecoveryError(structuredErrorMessage(err, "Recovery answers did not match."));
     } finally {
       setRecoveryBusy(false);
     }
@@ -2223,7 +2220,7 @@ export default function IdentityIntegrityPage() {
           : out?.message || "Phone evidence is now connected."
       );
     } catch (err: any) {
-      const message = err?.message || "Phone code could not be confirmed.";
+      const message = structuredErrorMessage(err, "Phone code could not be confirmed.");
       setPhoneTaskMessage(message);
       setPhoneTaskTone("error");
       showNotice("error", message);
@@ -2282,10 +2279,9 @@ export default function IdentityIntegrityPage() {
         "Official ID evidence is recorded for review. It is not provider-verified yet."
       );
     } catch (err: any) {
-      setOfficialIdTaskMessage(
-        err?.message || "Official ID evidence could not be recorded."
-      );
-      showNotice("error", err?.message || "Official ID evidence could not be recorded.");
+      const message = structuredErrorMessage(err, "Official ID evidence could not be recorded.");
+      setOfficialIdTaskMessage(message);
+      showNotice("error", message);
     } finally {
       setOfficialIdBusy(false);
     }
@@ -2359,10 +2355,9 @@ export default function IdentityIntegrityPage() {
           : "ID photo evidence is recorded for review. It is not provider-verified yet."
       );
     } catch (err: any) {
-      setOfficialIdTaskMessage(
-        err?.message || "Photo evidence could not be recorded."
-      );
-      showNotice("error", err?.message || "Photo evidence could not be recorded.");
+      const message = structuredErrorMessage(err, "Photo evidence could not be recorded.");
+      setOfficialIdTaskMessage(message);
+      showNotice("error", message);
     } finally {
       setIdentityPhotoBusy(false);
     }

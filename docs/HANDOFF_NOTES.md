@@ -1,3 +1,13 @@
+## 2026-08-31 - Local Identity Integrity structured error hardening
+- Status: Local frontend implementation verified; ready for active pilot commit/push/deploy protocol.
+- Frontend route affected: `/app/identity-integrity` (`frontend/src/pages/IdentityIntegrityPage.tsx`).
+- Shared error helper `frontend/src/lib/structuredErrors.ts` now prefers structured `detail.message`, `detail.error`, `detail.reason`, `detail.title`, and string `detail.detail` before falling back to raw thrown Error text.
+- Identity Integrity phone verification, phone confirmation, recovery setup/check, official ID evidence, and photo/selfie evidence failures now use structured backend details instead of raw `err.message` branches.
+- `parsePhoneTaskError` now reads structured `detail` directly, preserving the special `phone_owned_by_another_identity` guidance even when the backend sends object-shaped detail instead of JSON text.
+- Doctrine repair: `docs/SCREEN_SPECS.md` changed three remaining blanket `proof` references to evidence/record language so `audit:trust-actions` passes again.
+- Verification: `npm exec -- tsc -b --pretty false` from `frontend`, `npm --prefix frontend run lint`, `npm --prefix frontend run audit:admin-route-guards`, `npm --prefix frontend run audit:protected-button-freeze`, `npm --prefix frontend run audit:identity-integrity-front-package`, `npm --prefix frontend run audit:trust-actions`, `npm --prefix frontend run build`, and `git diff --check` all passed locally.
+- Devil truth: this improves error readability and doctrine consistency only. It does not prove identity evidence, verify official documents, verify photos, prevent all duplicate identities, or create a human review workflow.
+
 ## 2026-08-31 - Local Create Entry structured error hardening
 - Status: Local frontend implementation verified; ready for active pilot commit/push/deploy protocol.
 - Frontend route affected: `/create` / StartCommunityPage (`frontend/src/pages/CreateEntryPage.tsx`).

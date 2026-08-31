@@ -34,14 +34,25 @@ export function structuredErrorDetail(err: unknown): UnknownRecord | null {
   }
 }
 
+function firstCleanString(...values: unknown[]): string {
+  for (const value of values) {
+    if (typeof value !== "string" && typeof value !== "number") continue;
+    const text = String(value).trim();
+    if (text) return text;
+  }
+  return "";
+}
+
 export function structuredErrorMessage(err: unknown, fallback = ""): string {
   const detail = structuredErrorDetail(err);
-  const message = String(detail?.message ?? "").trim();
-  return (
-    message ||
-    String(
-      (err as { message?: unknown } | null | undefined)?.message ?? fallback
-    ).trim()
+  return firstCleanString(
+    detail?.message,
+    detail?.error,
+    detail?.reason,
+    detail?.title,
+    detail?.detail,
+    (err as { message?: unknown } | null | undefined)?.message,
+    fallback
   );
 }
 

@@ -991,7 +991,7 @@ Must show:
 - owner lookup by member identity signal
 - exact community and owner selection
 - preview before mutation
-- proof confirmation checkbox
+- evidence confirmation checkbox
 - reviewer note
 - final record action
 - history-preserved boundary language
@@ -1000,7 +1000,7 @@ Rules:
 - Route is `/app/command-center/community-ownership` and must remain platform-admin only.
 - The tool must not delete the existing community, erase prior admins, or remove historical evidence.
 - Preview must be read-only.
-- Execute must require proof confirmation and a reviewer note.
+- Execute must require evidence confirmation and a reviewer note.
 - Successful execution records the selected user as `created_by_user_id`, ensures an active admin membership, and logs a trust event for audit.
 - If the rightful owner has a recorded onboarding intake but no GSN identity because the duplicate community name blocked account creation, lookup may show that intake as a repair source. Preview must remain read-only; execute must create the missing GSN identity from recorded intake evidence before assigning ownership.
 - Redirect aliases may preserve `community_name` and `owner_query` query parameters so Command Centre can open directly to a case such as Pillar of Hope/Felix.
@@ -1026,7 +1026,7 @@ Rules:
 - This is app/user support, not Loans & Support, Community Notice Board, or Community Domain governance.
 - Do not expose policy, node, reviewer, lineage, or advanced governance language.
 - First version is async chat-style support, not live websocket chat.
-- Picture attachment is evidence for support review only; it must not become public proof, Trust Passport evidence, payment proof, or identity verification.
+- Picture attachment is evidence for support review only; it must not become a public record, Trust Passport evidence, payment evidence, or identity verification.
 - Keep WhatsApp/email support as a fallback only.
 - Action Inbox may notify users about replies or resolution, but the case thread remains the source of support conversation truth.
 
