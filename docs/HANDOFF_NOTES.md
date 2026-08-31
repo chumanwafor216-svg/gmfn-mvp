@@ -1,3 +1,13 @@
+## 2026-08-31 - Local marketplace listing review-date disclosure
+- Status: Local implementation verified; ready for active pilot commit/push/deploy protocol.
+- Backend routes affected: `GET /marketplace/shops`, `GET /marketplace/products`, `POST /marketplace/shops`, `POST /marketplace/products`.
+- Marketplace governance policy now exposes `listing_review_required`, `listing_review_after_days`, and `listing_expiry_enforced=false`.
+- Shop/product payloads now include `listing_review_required`, `listing_review_due_at`, `listing_review_status`, and `listing_expiry_enforced` based on the recorded governance profile and listing creation time.
+- When admin approval is required and no custom review interval exists, GSN marks a default 30-day review due date.
+- Legacy/no-profile or approval-not-required listings show no due date and `not_required`.
+- Tests updated in `gmfn_backend/tests/test_marketplace_public_shop.py` for required-review shop creation and approval-free product creation.
+- Verification: `python -m py_compile gmfn_backend\app\api\routes\marketplace.py gmfn_backend\tests\test_marketplace_public_shop.py`; `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py -k "governance_listing_review_policy or listing_admin_approval"`; `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py -k "not public_shop_face and not shop_gallery_products_follow_owner_across_membership_communities"`.
+- Devil truth: this is a visible review marker only. It does not enforce expiry, hide stale listings, assign reviewers, create an approval queue, or mutate old rows.
 ## 2026-08-31 - Local marketplace listing admin-approval gate
 - Status: Local implementation verified; ready for the active pilot commit/push/deploy protocol.
 - Backend routes affected: `POST /marketplace/shops` and `POST /marketplace/products`.

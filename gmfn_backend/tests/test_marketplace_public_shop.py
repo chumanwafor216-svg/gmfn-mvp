@@ -338,10 +338,25 @@ def test_marketplace_shop_creation_reports_light_governance_listing_review_polic
     )
 
     assert response.status_code == 200, response.text
-    policy = response.json()["marketplace_governance_policy"]
+    body = response.json()
+    policy = body["marketplace_governance_policy"]
+    item = body["item"]
     assert policy["governance_profile_key"] == "light_migrant_support_network"
     assert policy["member_service_listings_enabled"] is True
     assert policy["admin_approval_required_for_listings"] is True
+    assert policy["listing_review_required"] is True
+    assert policy["listing_review_after_days"] == 30
+    assert policy["listing_expiry_enforced"] is False
+    assert item["listing_review_required"] is True
+    assert item["listing_review_status"] == "review_scheduled"
+    assert item["listing_expiry_enforced"] is False
+    created_at = datetime.fromisoformat(item["created_at"])
+    due_at = datetime.fromisoformat(item["listing_review_due_at"])
+    if created_at.tzinfo is None:
+        created_at = created_at.replace(tzinfo=timezone.utc)
+    if due_at.tzinfo is None:
+        due_at = due_at.replace(tzinfo=timezone.utc)
+    assert due_at == created_at + timedelta(days=30)
 
     with engine.begin() as conn:
         meta_json = conn.execute(
@@ -360,6 +375,9 @@ def test_marketplace_shop_creation_reports_light_governance_listing_review_polic
     event_policy = event_meta["marketplace_governance_policy"]
     assert event_policy["governance_profile_key"] == "light_migrant_support_network"
     assert event_policy["admin_approval_required_for_listings"] is True
+    assert event_policy["listing_review_required"] is True
+    assert event_policy["listing_review_after_days"] == 30
+    assert event_policy["listing_expiry_enforced"] is False
 
 
 
@@ -511,10 +529,20 @@ def test_marketplace_product_creation_allows_member_when_listing_admin_approval_
     )
 
     assert response.status_code == 200, response.text
-    policy = response.json()["marketplace_governance_policy"]
+    body = response.json()
+    policy = body["marketplace_governance_policy"]
+    item = body["item"]
     assert policy["member_service_listings_enabled"] is True
     assert policy["admin_approval_required_for_listings"] is False
+    assert policy["listing_review_required"] is False
+    assert policy["listing_review_after_days"] is None
+    assert policy["listing_expiry_enforced"] is False
+    assert item["listing_review_required"] is False
+    assert item["listing_review_due_at"] is None
+    assert item["listing_review_status"] == "not_required"
+    assert item["listing_expiry_enforced"] is False
     assert _scalar("SELECT COUNT(*) FROM marketplace_products") == 1
+
 
 def test_marketplace_product_creation_respects_disabled_community_domain_shop_diary_policy(
     client,

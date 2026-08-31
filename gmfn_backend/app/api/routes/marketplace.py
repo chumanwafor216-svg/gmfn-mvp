@@ -179,19 +179,43 @@ def _marketplace_governance_policy_for_clan(
     )
     enabled = bool(policies.get("enable_member_service_listings", True))
     approval_required = bool(policies.get("require_admin_approval_for_listings", False))
+    raw_review_days = _safe_int(policies.get("listing_review_after_days"), 0)
+    review_after_days = (
+        raw_review_days if raw_review_days > 0 else (30 if approval_required else None)
+    )
 
     return {
         "has_governance_profile": profile is not None,
         "governance_profile_key": profile_key or None,
         "member_service_listings_enabled": enabled,
         "admin_approval_required_for_listings": approval_required,
+        "listing_review_required": approval_required,
+        "listing_review_after_days": review_after_days,
+        "listing_expiry_enforced": False,
         "truth_boundary": (
             "This reflects the recorded community setup. It can block disabled "
-            "member listings and disclose review expectations, but it is not a "
-            "full listing approval queue yet."
+            "member listings, disclose review expectations, and mark a review "
+            "date when review is required, but it is not a full listing approval "
+            "queue or expiry engine yet."
         ),
     }
 
+
+def _listing_review_due_at(
+    created_at: Any,
+    policy: Optional[dict[str, Any]],
+) -> Optional[str]:
+    if not isinstance(policy, dict) or not bool(policy.get("listing_review_required")):
+        return None
+    review_days = _safe_int(policy.get("listing_review_after_days"), 0)
+    if review_days <= 0 or not isinstance(created_at, datetime):
+        return None
+    base = created_at
+    if base.tzinfo is None:
+        base = base.replace(tzinfo=timezone.utc)
+    else:
+        base = base.astimezone(timezone.utc)
+    return (base + timedelta(days=review_days)).isoformat()
 
 def _require_member_service_listings_enabled(
     db: Session,
@@ -1487,6 +1511,15 @@ def _shop_out(db: Session, shop: MarketplaceShop) -> Dict[str, Any]:
     image_url = _get_shop_image_value(shop)
     public_slots_total = _shop_public_product_slots_total(db, shop=shop)
     follower_count = _shop_follower_count(db, shop_id=int(shop.id))
+    governance_policy = (
+        _marketplace_governance_policy_for_clan(db, clan_id=int(shop.clan_id))
+        if shop.clan_id is not None
+        else _marketplace_governance_policy_for_clan(db, clan_id=0)
+    )
+    listing_review_due_at = _listing_review_due_at(
+        getattr(shop, "created_at", None),
+        governance_policy,
+    )
 
     return {
         "id": int(shop.id),
@@ -1515,6 +1548,10 @@ def _shop_out(db: Session, shop: MarketplaceShop) -> Dict[str, Any]:
         "community_name": clan_name,
         "is_active": bool(shop.is_active),
         "created_at": shop.created_at.isoformat() if shop.created_at else None,
+        "listing_review_required": bool(governance_policy.get("listing_review_required")),
+        "listing_review_due_at": listing_review_due_at,
+        "listing_review_status": "review_scheduled" if listing_review_due_at else "not_required",
+        "listing_expiry_enforced": bool(governance_policy.get("listing_expiry_enforced")),
         "shop_product_slots_free": FREE_COMMUNITY_PRODUCT_SLOTS,
         "shop_product_slots_extra": max(0, public_slots_total - FREE_COMMUNITY_PRODUCT_SLOTS),
         "shop_product_slots_total": public_slots_total,
@@ -1557,6 +1594,14 @@ def _product_out(
     vault_block = None
     if visibility_mode == VISIBILITY_VAULT:
         vault_block = find_vault_block_for_product(db, product_id=int(product.id))
+    governance_policy = _marketplace_governance_policy_for_clan(
+        db,
+        clan_id=int(product.clan_id),
+    )
+    listing_review_due_at = _listing_review_due_at(
+        getattr(product, "created_at", None),
+        governance_policy,
+    )
 
     return {
         "id": int(product.id),
@@ -1589,6 +1634,10 @@ def _product_out(
         ),
         "is_active": bool(product.is_active),
         "created_at": product.created_at.isoformat() if product.created_at else None,
+        "listing_review_required": bool(governance_policy.get("listing_review_required")),
+        "listing_review_due_at": listing_review_due_at,
+        "listing_review_status": "review_scheduled" if listing_review_due_at else "not_required",
+        "listing_expiry_enforced": bool(governance_policy.get("listing_expiry_enforced")),
         "origin_clan_id": int(product.clan_id),
         "origin_shop_id": int(product.shop_id),
         "origin_shop_name": (
