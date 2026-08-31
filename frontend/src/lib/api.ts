@@ -1564,6 +1564,8 @@ export async function submitJoinRequest(
     residential_area?: string | null;
     business_name?: string | null;
     note?: string | null;
+    rules_accepted?: boolean | null;
+    governance_preset_key_acknowledged?: string | null;
   },
   options?: { includeAuth?: boolean }
 ): Promise<any> {

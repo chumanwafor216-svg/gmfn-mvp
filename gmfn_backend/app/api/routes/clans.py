@@ -400,6 +400,8 @@ class JoinApplicationIn(BaseModel):
     residential_area: Optional[str] = Field(default=None, max_length=160)
     business_name: Optional[str] = Field(default=None, max_length=160)
     note: Optional[str] = Field(default=None, max_length=500)
+    rules_accepted: Optional[bool] = None
+    governance_preset_key_acknowledged: Optional[str] = Field(default=None, max_length=96)
 
     @field_validator(
         "invite_code",
@@ -415,6 +417,7 @@ class JoinApplicationIn(BaseModel):
         "residential_area",
         "business_name",
         "note",
+        "governance_preset_key_acknowledged",
         mode="before",
     )
     @classmethod
@@ -1789,6 +1792,11 @@ def _join_request_out(db: Session, req: ClanJoinRequest) -> dict[str, Any]:
         db.get(User, int(req.applicant_user_id)) if req.applicant_user_id else None
     )
     stats = _current_join_status(db, join_request=req)
+    governance_profile = (
+        _community_governance_profile_for_clan(db, clan_id=int(clan.id))
+        if clan is not None
+        else None
+    )
 
     return {
         "id": int(req.id),
@@ -1796,6 +1804,7 @@ def _join_request_out(db: Session, req: ClanJoinRequest) -> dict[str, Any]:
         "community_code": _community_code(req.clan_id),
         "clan_name": (clan.name if clan else None),
         "marketplace_name": (getattr(clan, "marketplace_name", None) if clan else None),
+        "governance_profile": governance_profile,
         "applicant_user_id": (
             int(req.applicant_user_id) if req.applicant_user_id is not None else None
         ),
@@ -2028,6 +2037,11 @@ def _join_request_status_payload(
         else None
     )
     stats = _current_join_status(db, join_request=req)
+    governance_profile = (
+        _community_governance_profile_for_clan(db, clan_id=int(clan.id))
+        if clan is not None
+        else None
+    )
 
     gmfn_id = getattr(applicant, "gmfn_id", None) if applicant else None
     safe_status = str(req.status).lower()
@@ -2084,6 +2098,7 @@ def _join_request_status_payload(
         "community_code": _community_code(req.clan_id, clan=clan),
         "community_name": (getattr(clan, "name", None) if clan else None),
         "marketplace_name": (getattr(clan, "marketplace_name", None) if clan else None),
+        "governance_profile": governance_profile,
         "invited_by_user_id": int(req.invited_by_user_id) if req.invited_by_user_id else None,
         "invited_by_email": (getattr(inviter, "email", None) if inviter else None),
         "invited_by_display": (_member_display(inviter) if inviter else None),
@@ -3764,6 +3779,34 @@ def create_join_request(
 
         invited_by_user_id = int(inviter_membership.user_id) if inviter_membership else None
 
+    governance_profile = _community_governance_profile_for_clan(
+        db,
+        clan_id=int(clan.id),
+    )
+    governance_requirements = (
+        governance_profile.get("requirements")
+        if isinstance(governance_profile, dict)
+        else {}
+    )
+    requires_rules_acceptance = bool(
+        isinstance(governance_requirements, dict)
+        and governance_requirements.get("rules_acceptance_required")
+    )
+    if requires_rules_acceptance and payload.rules_accepted is not True:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "community_rules_acceptance_required",
+                "message": (
+                    "Accept the community rules and review boundary before sending "
+                    "this join request."
+                ),
+                "community_id": int(clan.id),
+                "community_code": _community_code(clan.id, clan=clan),
+                "community_name": clan.name,
+                "governance_profile": governance_profile,
+            },
+        )
     submitted_existing_gmfn_id = _safe_str(payload.existing_gmfn_id).upper()
     claimed_existing_identity_user = None
     if submitted_existing_gmfn_id:
@@ -4068,6 +4111,15 @@ def create_join_request(
             "gmfn_id": _safe_str(getattr(applicant_user, "gmfn_id", None)) or None,
             "identity_reused": existing_identity_join,
             "community_admission_status": "pending",
+            "governance_profile_key": (
+                governance_profile.get("preset_key")
+                if isinstance(governance_profile, dict)
+                else None
+            ),
+            "rules_accepted": bool(payload.rules_accepted),
+            "governance_preset_key_acknowledged": (
+                _safe_str(payload.governance_preset_key_acknowledged) or None
+            ),
             "applicant_profile": {
                 "first_name": _safe_str(payload.first_name) or None,
                 "surname": _safe_str(payload.surname) or None,
@@ -4105,6 +4157,10 @@ def create_join_request(
             "residential_area": _safe_str(payload.residential_area) or None,
             "business_name": payload.business_name,
             "note": payload.note,
+            "rules_accepted": bool(payload.rules_accepted),
+            "governance_preset_key_acknowledged": (
+                _safe_str(payload.governance_preset_key_acknowledged) or None
+            ),
         },
         "lineage": {
             "origin_community_id": int(clan.id),

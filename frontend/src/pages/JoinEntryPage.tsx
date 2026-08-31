@@ -1174,6 +1174,9 @@ export default function JoinEntryPage() {
     () => restoredJoinDraft?.existingGsnId || ""
   );
   const [identityNoteOpen, setIdentityNoteOpen] = useState(false);
+  const [rulesAccepted, setRulesAccepted] = useState(() =>
+    Boolean(restoredJoinDraft?.rulesAccepted)
+  );
   const [inviteAcknowledged, setInviteAcknowledged] = useState<boolean>(() =>
     Boolean(restoredJoinDraft?.inviteAcknowledged)
   );
@@ -1247,6 +1250,10 @@ export default function JoinEntryPage() {
   const inviteGovernanceNote = useMemo(
     () => joinGovernanceRequirementText(inviteGovernanceProfile),
     [inviteGovernanceProfile]
+  );
+
+  const joinRequiresRulesAcceptance = Boolean(
+    inviteGovernanceProfile?.requirements?.rules_acceptance_required
   );
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -1372,6 +1379,7 @@ export default function JoinEntryPage() {
     !inviteBlocked &&
     !inviteChecking &&
     inviteAcknowledged &&
+    (!joinRequiresRulesAcceptance || rulesAccepted) &&
     !hasExistingGsnClaim &&
     !!cleanText(firstName) &&
     !!cleanText(surname) &&
@@ -1385,6 +1393,7 @@ export default function JoinEntryPage() {
     !inviteBlocked &&
     !inviteChecking &&
     inviteAcknowledged &&
+    (!joinRequiresRulesAcceptance || rulesAccepted) &&
     hasExistingGsnClaim &&
     !!cleanText(firstName) &&
     !!cleanText(surname) &&
@@ -1755,6 +1764,9 @@ export default function JoinEntryPage() {
       if (inviteBlocked) {
         throw new Error(invitePreviewMessage || "This invite link is not ready.");
       }
+      if (joinRequiresRulesAcceptance && !rulesAccepted) {
+        throw new Error("Accept the community rules and review boundary before sending this request.");
+      }
       if (inviteChecking) {
         throw new Error("The app is still checking this invite link. Please wait a moment.");
       }
@@ -1791,6 +1803,10 @@ export default function JoinEntryPage() {
           residential_area: safeResidentialArea || undefined,
           business_name: safeBusinessName || undefined,
           note: safeNote || undefined,
+          rules_accepted: joinRequiresRulesAcceptance ? rulesAccepted : undefined,
+          governance_preset_key_acknowledged: joinRequiresRulesAcceptance
+            ? cleanText(inviteGovernanceProfile?.preset_key) || undefined
+            : undefined,
         },
         {
           includeAuth: false,
@@ -1884,6 +1900,9 @@ export default function JoinEntryPage() {
       if (inviteBlocked) {
         throw new Error(invitePreviewMessage || "This invite link is not ready.");
       }
+      if (joinRequiresRulesAcceptance && !rulesAccepted) {
+        throw new Error("Accept the community rules and review boundary before sending this request.");
+      }
       if (inviteChecking) {
         throw new Error("The app is still checking this invite link. Please wait a moment.");
       }
@@ -1899,6 +1918,10 @@ export default function JoinEntryPage() {
         surname: restParts.join(" ") || "GSN member",
         phone_e164: cleanText(currentMember?.phone_e164 || "") || undefined,
         country: "Existing GSN identity",
+        rules_accepted: joinRequiresRulesAcceptance ? rulesAccepted : undefined,
+        governance_preset_key_acknowledged: joinRequiresRulesAcceptance
+          ? cleanText(inviteGovernanceProfile?.preset_key) || undefined
+          : undefined,
       });
 
       const existingRequest =
@@ -1981,6 +2004,9 @@ export default function JoinEntryPage() {
       if (inviteBlocked) {
         throw new Error(invitePreviewMessage || "This invite link is not ready.");
       }
+      if (joinRequiresRulesAcceptance && !rulesAccepted) {
+        throw new Error("Accept the community rules and review boundary before sending this request.");
+      }
       if (inviteChecking) {
         throw new Error("The app is still checking this invite link. Please wait a moment.");
       }
@@ -2007,6 +2033,10 @@ export default function JoinEntryPage() {
           phone_e164: safePhone,
           business_name: safeBusinessName || undefined,
           note: cleanText(note) || undefined,
+          rules_accepted: joinRequiresRulesAcceptance ? rulesAccepted : undefined,
+          governance_preset_key_acknowledged: joinRequiresRulesAcceptance
+            ? cleanText(inviteGovernanceProfile?.preset_key) || undefined
+            : undefined,
         },
         { includeAuth: false }
       );
@@ -2341,6 +2371,31 @@ export default function JoinEntryPage() {
                   ) : null}
                 </div>
               ) : null}
+              {joinRequiresRulesAcceptance ? (
+                <label
+                  style={{
+                    marginTop: 14,
+                    display: "grid",
+                    gridTemplateColumns: "22px minmax(0, 1fr)",
+                    gap: 10,
+                    alignItems: "start",
+                    color: "#334155",
+                    fontSize: 14,
+                    fontWeight: 800,
+                    lineHeight: 1.55,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={rulesAccepted}
+                    onChange={(event) => setRulesAccepted(event.target.checked)}
+                    style={{ width: 18, height: 18, marginTop: 2 }}
+                  />
+                  <span>
+                    I understand this community uses rules acceptance and admin review before membership is confirmed.
+                  </span>
+                </label>
+              ) : null}
               {!inviteAcknowledged ? (
                 <div style={{ marginTop: 18 }}>
                   <PrimaryButton
@@ -2476,7 +2531,13 @@ export default function JoinEntryPage() {
                 <div style={{ marginTop: 14 }}>
                   <PrimaryButton
                     type="button"
-                    disabled={!inviteReady || inviteBlocked || inviteChecking || busy}
+                    disabled={
+                      !inviteReady ||
+                      inviteBlocked ||
+                      inviteChecking ||
+                      (joinRequiresRulesAcceptance && !rulesAccepted) ||
+                      busy
+                    }
                     onClick={requestJoinWithExistingIdentity}
                     debugId="join-entry.existing-identity"
                     busy={busy}

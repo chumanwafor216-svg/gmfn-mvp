@@ -43,6 +43,7 @@ type JoinRequestItem = {
   active_member_count?: number;
   required_approvals?: number;
   threshold_ratio?: string;
+  governance_profile?: any;
 };
 
 type ApprovalResult = {
@@ -508,6 +509,38 @@ function friendlyStatus(value: any): string {
   if (raw === "approve" || raw === "approved") return "approved";
   if (raw === "reject" || raw === "rejected") return "rejected";
   return raw;
+}
+
+function governanceProfileTitle(profile: any): string {
+  if (!profile || typeof profile !== "object") return "";
+  const preset = safeStr(profile.preset_label);
+  const weight = safeStr(profile.governance_weight_label);
+  const type = safeStr(profile.community_type_label);
+  if (preset) return preset;
+  return safeStr(`${weight} ${type}`) || "Community setup profile";
+}
+
+function governanceProfileRequirementText(profile: any): string {
+  if (!profile || typeof profile !== "object") return "";
+  const requirements =
+    profile.requirements && typeof profile.requirements === "object"
+      ? profile.requirements
+      : {};
+  const strongerChecks = Boolean(
+    requirements.passport_required_by_default ||
+      requirements.brp_or_evisa_required_by_default ||
+      requirements.proof_of_address_required_by_default
+  );
+
+  if (strongerChecks) {
+    return "This setup allows stronger member evidence after review. Check the applicant before approval if the activity is high trust.";
+  }
+
+  if (requirements.member_phone_required || requirements.rules_acceptance_required) {
+    return "Light member entry: name, phone, rules acceptance, and community review. Passport or BRP/eVisa is not required by default.";
+  }
+
+  return "Use the recorded setup as review context; it does not replace your decision.";
 }
 
 function approvalProgress(item: JoinRequestItem | undefined | null): {
@@ -1352,6 +1385,10 @@ export default function CommunityJoinRequestsPage() {
               "Applicant"
           );
           const isActive = activeRequestId === item.id;
+          const governanceProfile =
+            item.governance_profile && typeof item.governance_profile === "object"
+              ? item.governance_profile
+              : null;
           const shouldCollapse = isCompact && activeRequestId !== null && !isActive;
 
           if (shouldCollapse) {
@@ -1507,6 +1544,41 @@ export default function CommunityJoinRequestsPage() {
                 </div>
               </div>
 
+              {governanceProfile ? (
+                <div
+                  style={{
+                    marginTop: 14,
+                    padding: 12,
+                    borderRadius: 12,
+                    border: "1px solid rgba(201,161,54,0.24)",
+                    background: "#FFF7E8",
+                  }}
+                >
+                  <div style={sectionLabel("#8A5A08")}>Community setup</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B1F33",
+                      fontWeight: 1000,
+                      fontSize: 15,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {governanceProfileTitle(governanceProfile)}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 6,
+                      color: "#5B4631",
+                      lineHeight: 1.65,
+                      fontSize: 14,
+                      fontWeight: 750,
+                    }}
+                  >
+                    {governanceProfileRequirementText(governanceProfile)}
+                  </div>
+                </div>
+              ) : null}
               {!isPending ? (
                 <div
                   style={{

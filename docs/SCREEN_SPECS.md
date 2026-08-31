@@ -345,6 +345,7 @@ Must show:
 - requester details
 - reason / short note
 - recorded community setup/governance note when the invite preview provides one
+- rules/admin-review acknowledgement before submit when the governance profile requires it
 - submit request button
 - privacy and approval note
 

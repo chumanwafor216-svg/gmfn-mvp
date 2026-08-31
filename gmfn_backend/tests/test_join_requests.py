@@ -70,6 +70,7 @@ def _seed_governance_profile_event() -> None:
                         },
                         "requirements": {
                             "member_phone_required": True,
+                            "rules_acceptance_required": True,
                             "passport_required_by_default": False,
                         },
                         "truth_boundary": "Recorded as setup evidence only.",
@@ -79,6 +80,7 @@ def _seed_governance_profile_event() -> None:
             )
         )
         db.commit()
+
 
 def _join_payload(invite_code: str) -> dict[str, str]:
     return {
@@ -137,6 +139,83 @@ def test_public_join_request_accepts_clan_invite_record_code(client):
         assert applicant is not None
         assert applicant.display_name == "Arinze Nnamani"
 
+
+def test_public_join_request_exposes_governance_profile_to_review_surfaces(
+    client,
+    override_clan_ctx_admin,
+):
+    _seed_join_context()
+    _seed_governance_profile_event()
+
+    with SessionLocal() as db:
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="package-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    payload = _join_payload("package-code")
+    payload["rules_accepted"] = True
+    payload["governance_preset_key_acknowledged"] = "light_migrant_support_network"
+    create_res = client.post("/clans/join-requests", json=payload)
+
+    assert create_res.status_code == 201, create_res.text
+    request_profile = create_res.json()["request"]["governance_profile"]
+    assert request_profile["preset_key"] == "light_migrant_support_network"
+    assert request_profile["requirements"]["passport_required_by_default"] is False
+
+    list_res = client.get("/clans/1/join-requests")
+
+    assert list_res.status_code == 200, list_res.text
+    listed_profile = list_res.json()["items"][0]["governance_profile"]
+    assert listed_profile["community_type"] == "migrant_community"
+    assert listed_profile["governance_weight"] == "light"
+    assert listed_profile["preset_key"] == "light_migrant_support_network"
+
+    status_res = client.get(
+        "/clans/join-invite/request-status?code=package-code&phone_e164=%2B2349071733533"
+    )
+
+    assert status_res.status_code == 200, status_res.text
+    status_profile = status_res.json()["governance_profile"]
+    assert status_profile["preset_key"] == "light_migrant_support_network"
+    assert status_profile["requirements"]["passport_required_by_default"] is False
+
+def test_public_join_request_requires_rules_acceptance_when_profile_requires_it(client):
+    _seed_join_context()
+    _seed_governance_profile_event()
+
+    with SessionLocal() as db:
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="package-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    res = client.post("/clans/join-requests", json=_join_payload("package-code"))
+
+    assert res.status_code == 422, res.text
+    detail = res.json()["detail"]
+    assert detail["code"] == "community_rules_acceptance_required"
+    assert detail["governance_profile"]["preset_key"] == "light_migrant_support_network"
 
 def test_public_join_invite_preview_reports_ready_invite(client):
     _seed_join_context()
@@ -197,6 +276,7 @@ def test_public_join_invite_preview_exposes_governance_profile(client):
     assert profile["preset_key"] == "light_migrant_support_network"
     assert profile["requirements"]["passport_required_by_default"] is False
     assert profile["truth_boundary"].startswith("Recorded as setup evidence only")
+
 
 def test_public_join_invite_preview_reports_invalid_invite_without_throwing(client):
     _seed_join_context()

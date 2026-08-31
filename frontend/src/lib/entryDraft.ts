@@ -48,6 +48,7 @@ export type JoinEntryDraft = {
   workDetail?: string;
   note?: string;
   inviteAcknowledged?: boolean;
+  rulesAccepted?: boolean;
   formOpen?: boolean;
   updatedAt?: number;
 };
@@ -369,6 +370,8 @@ export function readJoinEntryDraft(
         typeof parsed?.inviteAcknowledged === "boolean"
           ? parsed.inviteAcknowledged
           : undefined,
+      rulesAccepted:
+        typeof parsed?.rulesAccepted === "boolean" ? parsed.rulesAccepted : undefined,
       formOpen: typeof parsed?.formOpen === "boolean" ? parsed.formOpen : undefined,
       updatedAt,
     };
@@ -398,6 +401,7 @@ export function saveJoinEntryDraft(
     workDetail: safeStr(draft.workDetail),
     note: safeStr(draft.note),
     inviteAcknowledged: Boolean(draft.inviteAcknowledged),
+    rulesAccepted: Boolean(draft.rulesAccepted),
     formOpen: Boolean(draft.formOpen),
     updatedAt: Date.now(),
   };
@@ -416,6 +420,7 @@ export function saveJoinEntryDraft(
       safeDraft.workCategory ||
       safeDraft.workDetail ||
       safeDraft.inviteAcknowledged ||
+      safeDraft.rulesAccepted ||
       safeDraft.note
   );
 
