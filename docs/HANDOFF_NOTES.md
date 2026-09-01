@@ -1,3 +1,11 @@
+## 2026-09-01 - Production deploy a997f00d verified
+
+- Status: Deployed to `main` and verified through manual `render-deploy.yml` workflow run `33551514746` after the owner explicitly said `deploy`.
+- Deployed commit: `a997f00d4b5ba2e98e59beca9f8c7900c9b7e687`.
+- Frontend Render deploy: frontend deploy hook accepted `dep-dabinilcqm1c73dodsdg`; exact Render API deploy resolved to `dep-dabiniu66c7c73e8r3j0` and reached `live` on poll `7/36`; `https://gmfn-frontend.onrender.com` served the Decision Pack marker from `assets/TrustSlipVerifyPage-DOBhDtR0.js`.
+- Backend Render deploy: `dep-dabip30u01pc73b58nb0` reached `live` on poll `8/36`; live API identity/public verification passed on `https://gmfn-api.onrender.com` after attempt `1/18`.
+- Deployed work: Marketplace lazy-data/error-boundary fix plus the Community Domain Aberdeen/customer-discovery simplification batch, including setup recommendations, setup preference persistence, dashboard service-rule continuity, selector service-rule state, clearer setup switches, core choices first, and collapsed `/create` handoff setup controls.
+- Devil truth: this note is a local post-deploy record written after the deploy, so it is not part of deployed commit `a997f00d` until a future owner-approved push. The deploy proof is the GitHub Actions run plus Render live statuses above; it still does not replace real phone acceptance testing for the simplified Community Domain flow.
 ## 2026-09-01 - Local Community Domain create-entry setup simplification
 
 - Status: Local frontend handoff simplification verified; not pushed or deployed because the owner has not asked for deploy on this slice.
