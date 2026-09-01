@@ -1,3 +1,11 @@
+## 2026-09-01 - Local Community Domain profile setup-policy coverage
+
+- Status: Local backend regression coverage added; not pushed or deployed because the owner has not asked for another deploy.
+- Backend route covered: `PATCH /community-domains/{community_domain_id}/profile`.
+- Change: added a focused test proving profile updates can upsert Community Domain setup preferences into the existing `domain.feature_policy` row without duplicating policy rows, and that off choices keep Marketplace Shops, Payments/Contributions, ROSCA, and Demand Box off while Vault remains admin-controlled.
+- Verification: `python -m py_compile gmfn_backend\app\api\routes\community_domains.py gmfn_backend\tests\test_community_domains.py` passed; focused backend pytest slice covering draft create, profile update, notice policy, and invite policy passed (`4` tests).
+- Devil truth: this is coverage for the already-added backend path, not a new user-facing flow. It proves the profile route can preserve revised setup choices going forward; it does not migrate older domains or prove every Community Domain service route has a complete end-to-end browser journey.
+
 ## 2026-09-01 - Local Community Domain dashboard service-rule continuity
 
 - Status: Local frontend continuity fix verified; not pushed or deployed because the owner has not asked for another deploy.

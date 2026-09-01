@@ -3296,6 +3296,88 @@ def test_community_domain_draft_captures_setup_preferences_as_feature_policy(
         assert db.query(Clan).count() == 0
         assert db.query(ClanMembership).count() == 0
 
+
+def test_community_domain_profile_update_upserts_setup_preferences_policy(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        create_response = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Pillar Setup Update",
+                "display_name": "Pillar Setup Update",
+                "domain_type": "ngo_project_network",
+                "template_key": "ngo_project_network",
+                "setup_preferences": {
+                    "member_invites": True,
+                    "official_announcements": True,
+                    "member_shops": True,
+                    "contributions": True,
+                    "welfare_cycles": True,
+                    "demand_box": True,
+                    "private_records": True,
+                },
+            },
+        )
+        assert create_response.status_code == 201, create_response.text
+        domain_id = create_response.json()["community_domain"]["id"]
+
+        update_response = client.patch(
+            f"/community-domains/{domain_id}/profile",
+            json={
+                "domain_name": "Pillar Setup Update",
+                "display_name": "Pillar Setup Update Trust",
+                "domain_type": "ngo_project_network",
+                "template_key": "ngo_project_network",
+                "country": "United Kingdom",
+                "state": "Scotland / Aberdeen",
+                "public_profile": "Updated public-safe setup profile.",
+                "setup_preferences": {
+                    "member_invites": True,
+                    "official_announcements": True,
+                    "member_shops": False,
+                    "contributions": False,
+                    "welfare_cycles": False,
+                    "demand_box": False,
+                    "private_records": True,
+                },
+            },
+        )
+        assert update_response.status_code == 200, update_response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = update_response.json()
+    policy = payload["feature_policy"]
+    assert payload["community_domain"]["display_name"] == "Pillar Setup Update Trust"
+    assert policy["policy_key"] == "domain.feature_policy"
+    assert policy["config"]["setup_preferences"] == {
+        "member_invites": True,
+        "official_announcements": True,
+        "member_shops": False,
+        "contributions": False,
+        "welfare_cycles": False,
+        "demand_box": False,
+        "private_records": True,
+    }
+    assert policy["config"]["features"]["marketplace_shops"] == "off"
+    assert policy["config"]["features"]["payments_contributions"] == "off"
+    assert policy["config"]["features"]["rosca_cycles"] == "off"
+    assert policy["config"]["features"]["demand_box"] == "off"
+    assert policy["config"]["features"]["vault"] == "admin_only"
+
+    with SessionLocal() as db:
+        policies = db.query(CommunityDomainPolicy).all()
+        assert len(policies) == 1
+        stored_config = json.loads(policies[0].config_json or "{}")
+        assert stored_config["setup_preferences"]["member_shops"] is False
+        assert stored_config["features"]["marketplace_shops"] == "off"
+        assert db.query(CommunityDomain).one().display_name == "Pillar Setup Update Trust"
+
+
 def test_community_domain_draft_defaults_template_to_domain_type(
     client: TestClient,
 ):
