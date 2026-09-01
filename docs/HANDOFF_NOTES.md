@@ -1,3 +1,12 @@
+## 2026-09-01 - Local Community Domain feature-policy timestamp continuity
+
+- Status: Local frontend state correction verified; not pushed or deployed because the owner has not asked for another deploy.
+- Frontend route affected: `/app/community-domain/:id` (`CommunityDomainDashboardPage`), Settings/setup Services step.
+- Fix: when the active backend `domain.feature_policy` seeds the setup editor, the dashboard now preserves the loaded `Last locked` timestamp instead of clearing it during the same effect.
+- Audit cage: `audit-community-domain-product-contracts.mjs` now checks both backend-policy seeding and timestamp preservation in the setup editor contract.
+- Verification: `npm --prefix frontend run audit:community-domain-product-contracts` passed; `npm --prefix frontend run lint` passed; `npm --prefix frontend run build` passed; `npm --prefix frontend run audit:protected-button-freeze` passed.
+- Devil truth: this fixes a state-display bug introduced by the continuity bridge. It does not change backend policy data or prove real-user browser storage conflict handling beyond the existing source audit and build checks.
+
 ## 2026-09-01 - Local Community Domain profile setup-policy coverage
 
 - Status: Local backend regression coverage added; not pushed or deployed because the owner has not asked for another deploy.

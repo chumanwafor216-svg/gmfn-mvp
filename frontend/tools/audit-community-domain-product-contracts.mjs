@@ -1683,7 +1683,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /lockedFeaturePolicyJson = lockedFeaturePolicy[\s\S]*serializeDomainFeaturePolicy\(lockedFeaturePolicy\)[\s\S]*policyBackedDomainDraft[\s\S]*feature_policy_json: lockedFeaturePolicyJson[\s\S]*safeStored = setupDraftBelongsToDomain[\s\S]*\.\.\.policyBackedDomainDraft[\s\S]*\.\.\.\(safeStored \|\| \{\}\)/,
+  /lockedFeaturePolicyJson = lockedFeaturePolicy[\s\S]*serializeDomainFeaturePolicy\(lockedFeaturePolicy\)[\s\S]*policyBackedDomainDraft[\s\S]*feature_policy_json: lockedFeaturePolicyJson[\s\S]*safeStored = setupDraftBelongsToDomain[\s\S]*\.\.\.policyBackedDomainDraft[\s\S]*\.\.\.\(safeStored \|\| \{\}\)[\s\S]*setFeaturePolicyLockedAt\(lockedFeaturePolicyLoadedAt \|\| ""\)[\s\S]*lockedFeaturePolicyLoadedAt/,
   "Community Domain dashboard setup editor must seed service-rule choices from the active locked backend policy before falling back to local setup draft state.",
   { frontend: true }
 );

@@ -4943,8 +4943,14 @@ export default function CommunityDomainDashboardPage() {
       message: "Check the domain code before saving identity setup.",
     });
     setSetupCompletionSavedAt("");
-    setFeaturePolicyLockedAt("");
-  }, [communityDomainId, dashboard, domain, lockedFeaturePolicyJson]);
+    setFeaturePolicyLockedAt(lockedFeaturePolicyLoadedAt || "");
+  }, [
+    communityDomainId,
+    dashboard,
+    domain,
+    lockedFeaturePolicyJson,
+    lockedFeaturePolicyLoadedAt,
+  ]);
 
   function updateSetupDraftField(
     key: keyof CommunityDomainSetupDraft,
