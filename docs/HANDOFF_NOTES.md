@@ -159210,3 +159210,12 @@ Devil's-advocate boundary: this completes the practical PDF/report button, but i
 - Guardrail change: `frontend/tools/audit-community-domain-product-contracts.mjs` now cages that the selector surfaces service-rule state from the existing signed-in domain list without adding another API call.
 - Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run lint`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-mobile-visual` after rerunning Playwright with permission because sandboxed Chromium launch hit `spawn EPERM`.
 - Devil's advocate: this makes the saved setup choices visible before opening a domain, but it is not a domain purchase, payment, DNS/authority verification, public proof publication, or a migration for older domains without `feature_policy` rows.
+
+## 2026-09-01 - Local Purchase Setup Switch Clarity
+- Status: Local only, not pushed/deployed.
+- Continued the Aberdeen Dads/customer-discovery simplification after saved service-rule state became visible in owned-domain selector cards.
+- Frontend change: `frontend/src/pages/CommunityDomainPurchasePage.tsx` now gives every simple setup choice a short plain-language summary and a visible `On` / `Off` pill while preserving the checkbox control and the same `setup_preferences` payload.
+- UX detail: the cards now explain what GSN will prepare for member invites, official notices, member shops/services, contributions, welfare cycles, Demand Box, and private records before the owner creates the domain draft.
+- Guardrail change: `frontend/tools/audit-community-domain-product-contracts.mjs` now cages the setup-choice summaries, visible On/Off state, and draft API preference handoff.
+- Verification passed: `node --check frontend\tools\audit-community-domain-product-contracts.mjs`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run audit:community-domain-mobile-visual` after rerunning Playwright with permission because sandboxed Chromium launch hit `spawn EPERM`.
+- Devil's advocate: this improves comprehension at the exact setup decision point, but it does not reduce the underlying service count, activate services, bill the owner, verify authority, or publish public proof.

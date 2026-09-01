@@ -153,14 +153,43 @@ type CreateEntryGovernanceWeight = "light" | "standard" | "high";
 const DOMAIN_SETUP_TOGGLE_OPTIONS: Array<{
   key: DomainSetupToggleKey;
   label: string;
+  summary: string;
 }> = [
-  { key: "member_invites", label: "Member invites" },
-  { key: "official_announcements", label: "Official announcements" },
-  { key: "member_shops", label: "Member shops / services" },
-  { key: "contributions", label: "Payments / contributions" },
-  { key: "welfare_cycles", label: "Welfare cycles" },
-  { key: "demand_box", label: "Demand Box" },
-  { key: "private_records", label: "Private records" },
+  {
+    key: "member_invites",
+    label: "Member invites",
+    summary: "Prepare invite links and admin approval for new members.",
+  },
+  {
+    key: "official_announcements",
+    label: "Official announcements",
+    summary: "Prepare the notice board for official updates and meetings.",
+  },
+  {
+    key: "member_shops",
+    label: "Member shops / services",
+    summary: "Prepare member stalls, service listings, and shop control.",
+  },
+  {
+    key: "contributions",
+    label: "Payments / contributions",
+    summary: "Prepare contribution records without confirming payment yet.",
+  },
+  {
+    key: "welfare_cycles",
+    label: "Welfare cycles",
+    summary: "Prepare rotating support or contribution-cycle records.",
+  },
+  {
+    key: "demand_box",
+    label: "Demand Box",
+    summary: "Prepare a place to collect needs, requests, and supply gaps.",
+  },
+  {
+    key: "private_records",
+    label: "Private records",
+    summary: "Prepare a protected vault for evidence and admin records.",
+  },
 ];
 
 const DOMAIN_TEMPLATE_CREATE_ENTRY_MAP: Record<
@@ -1765,37 +1794,74 @@ export default function CommunityDomainPurchasePage() {
                         gap: 8,
                       }}
                     >
-                      {DOMAIN_SETUP_TOGGLE_OPTIONS.map((item) => (
-                        <label
-                          key={item.key}
-                          style={{
-                            minHeight: 44,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 10,
-                            borderRadius: 14,
-                            border: "1px solid rgba(17,37,58,0.10)",
-                            background: "rgba(255,255,255,0.82)",
-                            color: "#0B1F33",
-                            fontSize: 12.5,
-                            fontWeight: 900,
-                            lineHeight: 1.3,
-                            padding: "9px 10px",
-                            boxSizing: "border-box",
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={Boolean(domainSetupToggles[item.key])}
-                            disabled={draftFormLocked}
-                            onChange={(event) =>
-                              handleDomainSetupToggleChange(item.key, event.target.checked)
-                            }
-                            style={{ width: 18, height: 18, flex: "0 0 auto" }}
-                          />
-                          <span>{item.label}</span>
-                        </label>
-                      ))}
+                      {DOMAIN_SETUP_TOGGLE_OPTIONS.map((item) => {
+                        const isEnabled = Boolean(domainSetupToggles[item.key]);
+                        return (
+                          <label
+                            key={item.key}
+                            style={{
+                              minHeight: 72,
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: 10,
+                              borderRadius: 14,
+                              border: "1px solid rgba(17,37,58,0.10)",
+                              background: "rgba(255,255,255,0.82)",
+                              color: "#0B1F33",
+                              fontSize: 12.5,
+                              fontWeight: 900,
+                              lineHeight: 1.3,
+                              padding: "10px",
+                              boxSizing: "border-box",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isEnabled}
+                              disabled={draftFormLocked}
+                              onChange={(event) =>
+                                handleDomainSetupToggleChange(item.key, event.target.checked)
+                              }
+                              style={{ width: 18, height: 18, flex: "0 0 auto", marginTop: 2 }}
+                            />
+                            <span style={{ display: "grid", gap: 4, minWidth: 0, flex: "1 1 auto" }}>
+                              <span
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                  gap: 8,
+                                  minWidth: 0,
+                                }}
+                              >
+                                <span>{item.label}</span>
+                                <span
+                                  aria-hidden="true"
+                                  style={{
+                                    ...statusPill(isEnabled ? "ready" : "waiting"),
+                                    minHeight: 24,
+                                    padding: "3px 8px",
+                                    fontSize: 11,
+                                    flex: "0 0 auto",
+                                  }}
+                                >
+                                  {isEnabled ? "On" : "Off"}
+                                </span>
+                              </span>
+                              <span
+                                style={{
+                                  color: "#526B83",
+                                  fontSize: 11.5,
+                                  fontWeight: 750,
+                                  lineHeight: 1.35,
+                                }}
+                              >
+                                {item.summary}
+                              </span>
+                            </span>
+                          </label>
+                        );
+                      })}
                     </div>
                     <div style={{ ...helperText(false), fontSize: 12.5, lineHeight: 1.5 }}>
                       Selected now: {enabledSetupLabels.length ? enabledSetupLabels.join(", ") : "none"}. These are draft setup preferences; payment, verification, and service activation still happen later.

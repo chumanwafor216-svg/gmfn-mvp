@@ -1401,6 +1401,12 @@ assertContains(
   "Community Domain purchase placeholders must not make the pilot look like a Dominion Schools/Nigeria draft when the owner is rehearsing Pillar of Hope.",
   { frontend: true }
 );
+assertContains(
+  "src/pages/CommunityDomainPurchasePage.tsx",
+  /DOMAIN_SETUP_TOGGLE_OPTIONS[\s\S]*summary: "Prepare invite links and admin approval for new members\."[\s\S]*summary: "Prepare contribution records without confirming payment yet\."[\s\S]*summary: "Prepare a protected vault for evidence and admin records\."[\s\S]*setup_preferences: domainSetupToggles[\s\S]*Simple setup choices[\s\S]*const isEnabled = Boolean\(domainSetupToggles\[item\.key\]\)[\s\S]*isEnabled \? "On" : "Off"[\s\S]*\{item\.summary\}/,
+  "Community Domain purchase simple setup choices must explain each service switch, show visible On/Off state, and send the same preferences to the draft API.",
+  { frontend: true }
+);
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
