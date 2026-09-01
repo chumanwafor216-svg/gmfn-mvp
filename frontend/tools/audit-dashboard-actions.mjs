@@ -12,14 +12,21 @@ function read(relativePath) {
 
 const findings = [];
 const dashboardFile = "src/pages/DashboardPage.tsx";
+const dashboardSectionFiles = [
+  "src/components/dashboard/DashboardToolsSection.tsx",
+  "src/components/dashboard/DashboardInboxSection.tsx",
+];
 const attentionEngineFile = "src/lib/dashboardAttentionEngine.ts";
 const dashboardText = read(dashboardFile);
+const dashboardSectionTexts = dashboardSectionFiles.map((file) => [
+  file,
+  read(file),
+]);
+const dashboardCompositeText = [dashboardText, ...dashboardSectionTexts.map(([, text]) => text)].join("\n");
 const attentionEngineText = read(attentionEngineFile);
 
 function assertContains(pattern, message) {
-  const text = read(dashboardFile);
-
-  if (!pattern.test(text)) {
+  if (!pattern.test(dashboardCompositeText)) {
     findings.push({
       file: dashboardFile,
       line: 1,
@@ -50,9 +57,7 @@ function assertEngineNotContains(pattern, message) {
 }
 
 function assertNotContains(pattern, message) {
-  const text = read(dashboardFile);
-
-  if (pattern.test(text)) {
+  if (pattern.test(dashboardCompositeText)) {
     findings.push({
       file: dashboardFile,
       line: 1,
@@ -63,21 +68,23 @@ function assertNotContains(pattern, message) {
 }
 
 function assertStableActionsHaveDebugIds() {
-  const text = read(dashboardFile);
   const actionPattern =
     /<(?:PrimaryButton|SecondaryButton|SubtleButton|DangerButton|StableButton|StableCtaLink|StableDisclosureSummary)\b/g;
-  let match;
 
-  while ((match = actionPattern.exec(text))) {
-    const preview = text.slice(match.index, match.index + 1100);
-    if (!/debugId=/.test(preview)) {
-      findings.push({
-        file: dashboardFile,
-        line: text.slice(0, match.index).split(/\r?\n/).length,
-        message:
-          "Dashboard stable actions must have debugId so phone misroutes can be traced to the exact control.",
-        text: preview.replace(/\s+/g, " ").slice(0, 220),
-      });
+  for (const [file, text] of [[dashboardFile, dashboardText], ...dashboardSectionTexts]) {
+    let match;
+
+    while ((match = actionPattern.exec(text))) {
+      const preview = text.slice(match.index, match.index + 1100);
+      if (!/debugId=/.test(preview)) {
+        findings.push({
+          file,
+          line: text.slice(0, match.index).split(/\r?\n/).length,
+          message:
+            "Dashboard stable actions must have debugId so phone misroutes can be traced to the exact control.",
+          text: preview.replace(/\s+/g, " ").slice(0, 220),
+        });
+      }
     }
   }
 }
@@ -331,7 +338,7 @@ assertNotContains(
 );
 
 assertContains(
-  /debugId=\{`dashboard\.apps\.lane\.\$\{lane\.key\}`\}[\s\S]*?debugId=\{`dashboard\.apps\.tool\.\$\{activeToolsLane\.key\}\.\$\{item\.label/,
+  /debugId=\{`dashboard\.apps\.lane\.\$\{lane\.key\}`\}[\s\S]*?debugId=\{`dashboard\.apps\.tool\.\$\{(?:activeToolsLane|activeLane)\.key\}\.\$\{item\.label/,
   "Dashboard app launcher lanes and tool rows must keep dynamic debug IDs."
 );
 
@@ -351,7 +358,7 @@ assertContains(
 );
 
 assertContains(
-  /const dashboardLauncherHeight = isPhone \? 76 : 74;[\s\S]*?const dashboardLauncherButtonStyle: React\.CSSProperties = dashboardStableActionFrame\(\{[\s\S]*?height: dashboardLauncherHeight,[\s\S]*?maxHeight: dashboardLauncherHeight/,
+  /function dashboardLauncherButtonStyle\(isPhone: boolean\): React\.CSSProperties \{[\s\S]*?const height = isPhone \? 76 : 74;[\s\S]*?return dashboardStableActionFrame\(\{[\s\S]*?height,[\s\S]*?minHeight: height,[\s\S]*?maxHeight: height/,
   "Dashboard app launcher buttons must reserve fixed phone-safe heights."
 );
 

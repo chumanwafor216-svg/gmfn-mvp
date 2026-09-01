@@ -6,8 +6,19 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dashboardFile = "src/pages/DashboardPage.tsx";
+const dashboardSectionFiles = [
+  "src/components/dashboard/DashboardToolsSection.tsx",
+  "src/components/dashboard/DashboardInboxSection.tsx",
+];
 const frameToolsFile = "src/components/PictureFrameToolsControl.tsx";
 const dashboardSource = readFileSync(join(frontendRoot, dashboardFile), "utf8");
+const dashboardActionSources = [
+  { file: dashboardFile, source: dashboardSource },
+  ...dashboardSectionFiles.map((file) => ({
+    file,
+    source: readFileSync(join(frontendRoot, file), "utf8"),
+  })),
+];
 const frameToolsSource = readFileSync(join(frontendRoot, frameToolsFile), "utf8");
 const findings = [];
 
@@ -28,44 +39,48 @@ const actionPattern =
   /<(StableButton|StableDisclosureSummary)\b[\s\S]*?(?:\/>|<\/\1>)/g;
 let match;
 
-while ((match = actionPattern.exec(dashboardSource))) {
-  const tag = match[1];
-  const block = match[0];
-  const line = lineAt(dashboardSource, match.index);
-  const id = debugIdFrom(block);
+for (const { file, source } of dashboardActionSources) {
+  actionPattern.lastIndex = 0;
 
-  if (tag === "StableButton") {
-    if (!/onPointerDown=\{consumeDashboardPointerEvent\}/.test(block)) {
+  while ((match = actionPattern.exec(source))) {
+    const tag = match[1];
+    const block = match[0];
+    const line = lineAt(source, match.index);
+    const id = debugIdFrom(block);
+
+    if (tag === "StableButton") {
+      if (!/onPointerDown=\{(?:consumeDashboardPointerEvent|onPointerDown)\}/.test(block)) {
+        findings.push({
+          file,
+          line,
+          message:
+            "Dashboard StableButton must use the route-local pointer guard before phone click handling.",
+          text: id || block.replace(/\s+/g, " ").slice(0, 220),
+        });
+      }
+    }
+
+    if (tag === "StableDisclosureSummary") {
+      if (!/onPointerDown=\{stopDashboardPointerEvent\}/.test(block)) {
+        findings.push({
+          file,
+          line,
+          message:
+            "Dashboard disclosure summaries must stop pointer bubbling without preventing their native toggle.",
+          text: id || block.replace(/\s+/g, " ").slice(0, 220),
+        });
+      }
+    }
+
+    if (/(^|\s)disabled=/.test(block)) {
       findings.push({
-        file: dashboardFile,
+        file,
         line,
         message:
-          "Dashboard StableButton must use the route-local pointer guard before phone click handling.",
+          "Dashboard stable actions must avoid native disabled; use aria-disabled/soft-disabled patterns so taps cannot fall through.",
         text: id || block.replace(/\s+/g, " ").slice(0, 220),
       });
     }
-  }
-
-  if (tag === "StableDisclosureSummary") {
-    if (!/onPointerDown=\{stopDashboardPointerEvent\}/.test(block)) {
-      findings.push({
-        file: dashboardFile,
-        line,
-        message:
-          "Dashboard disclosure summaries must stop pointer bubbling without preventing their native toggle.",
-        text: id || block.replace(/\s+/g, " ").slice(0, 220),
-      });
-    }
-  }
-
-  if (/(^|\s)disabled=/.test(block)) {
-    findings.push({
-      file: dashboardFile,
-      line,
-      message:
-        "Dashboard stable actions must avoid native disabled; use aria-disabled/soft-disabled patterns so taps cannot fall through.",
-      text: id || block.replace(/\s+/g, " ").slice(0, 220),
-    });
   }
 }
 

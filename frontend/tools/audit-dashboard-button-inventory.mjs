@@ -6,10 +6,31 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dashboardFile = "src/pages/DashboardPage.tsx";
+const dashboardToolsSectionFile = "src/components/dashboard/DashboardToolsSection.tsx";
+const dashboardInboxSectionFile = "src/components/dashboard/DashboardInboxSection.tsx";
+const dashboardSectionFiles = [dashboardToolsSectionFile, dashboardInboxSectionFile];
 const frameToolsFile = "src/components/PictureFrameToolsControl.tsx";
 const appLayoutFile = "src/layout/AppLayout.tsx";
 const requireAuthFile = "src/components/RequireAuth.tsx";
 const dashboardSource = readFileSync(join(frontendRoot, dashboardFile), "utf8");
+const dashboardSectionSources = dashboardSectionFiles.map((file) => ({
+  file,
+  source: readFileSync(join(frontendRoot, file), "utf8"),
+}));
+const dashboardActionSources = [
+  { file: dashboardFile, source: dashboardSource, orderLineOffset: 0 },
+  ...dashboardSectionSources.map(({ file, source }) => ({
+    file,
+    source,
+    orderLineOffset:
+      file === dashboardToolsSectionFile
+        ? lineAt(dashboardSource, dashboardSource.indexOf("<DashboardToolsSection"))
+        : file === dashboardInboxSectionFile
+        ? lineAt(dashboardSource, dashboardSource.indexOf("<DashboardInboxSection"))
+        : 0,
+  })),
+];
+const dashboardCompositeSource = dashboardActionSources.map((item) => item.source).join("\n");
 const frameToolsSource = readFileSync(join(frontendRoot, frameToolsFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const requireAuthSource = readFileSync(join(frontendRoot, requireAuthFile), "utf8");
@@ -43,7 +64,7 @@ function assertContains(
   message,
   text = "Expected Dashboard pattern was not found."
 ) {
-  if (pattern.test(dashboardSource)) return;
+  if (pattern.test(dashboardCompositeSource)) return;
   findings.push({
     file: dashboardFile,
     line: 1,
@@ -105,16 +126,23 @@ const actionPattern =
 const actions = [];
 let match;
 
-while ((match = actionPattern.exec(dashboardSource))) {
-  const block = match[0];
-  const tag = match[1];
-  const id = debugIdFrom(block);
-  actions.push({
-    tag,
-    id,
-    line: lineAt(dashboardSource, match.index),
-    block,
-  });
+for (const { file, source, orderLineOffset } of dashboardActionSources) {
+  actionPattern.lastIndex = 0;
+
+  while ((match = actionPattern.exec(source))) {
+    const block = match[0];
+    const tag = match[1];
+    const id = debugIdFrom(block);
+    const line = lineAt(source, match.index);
+    actions.push({
+      file,
+      tag,
+      id,
+      line,
+      orderLine: orderLineOffset > 0 ? orderLineOffset : line,
+      block,
+    });
+  }
 }
 
 const counts = {
@@ -243,31 +271,35 @@ for (const section of frontToInnerOrder) {
     continue;
   }
 
-  if (previousSection && firstAction.line <= previousSection.line) {
+  if (previousSection && firstAction.orderLine <= previousSection.line) {
     findings.push({
       file: dashboardFile,
-      line: firstAction.line,
+      line: firstAction.orderLine,
       message:
         "Dashboard front-to-inner action order changed. Re-audit phone button flow before accepting this reorder.",
       text: `${previousSection.label} at line ${previousSection.line}; ${section.label} at line ${firstAction.line}`,
     });
   }
 
-  previousSection = { label: section.label, line: firstAction.line };
+  previousSection = { label: section.label, line: firstAction.orderLine };
 }
 
 const rawActionPattern =
   /<(button|a|summary)\b|role="button"|data-gmfn-action-root|data-cta-id/g;
-while ((match = rawActionPattern.exec(dashboardSource))) {
-  findings.push({
-    file: dashboardFile,
-    line: lineAt(dashboardSource, match.index),
-    message:
-      "Dashboard page must not bypass shared stable primitives with raw action roots.",
-    text: dashboardSource
-      .slice(match.index, match.index + 160)
-      .replace(/\s+/g, " "),
-  });
+for (const { file, source } of dashboardActionSources) {
+  rawActionPattern.lastIndex = 0;
+
+  while ((match = rawActionPattern.exec(source))) {
+    findings.push({
+      file,
+      line: lineAt(source, match.index),
+      message:
+        "Dashboard page must not bypass shared stable primitives with raw action roots.",
+      text: source
+        .slice(match.index, match.index + 160)
+        .replace(/\s+/g, " "),
+    });
+  }
 }
 
 if (

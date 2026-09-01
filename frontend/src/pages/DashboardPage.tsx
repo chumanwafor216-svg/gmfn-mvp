@@ -74,6 +74,13 @@ import {
 } from "../lib/spotlightPilot";
 import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
+const DashboardToolsSection = React.lazy(() =>
+  import("../components/dashboard/DashboardToolsSection")
+);
+const DashboardInboxSection = React.lazy(() =>
+  import("../components/dashboard/DashboardInboxSection")
+);
+
 type SpotlightItem = {
   id?: number;
   title?: string | null;
@@ -6554,31 +6561,6 @@ export default function DashboardPage() {
     lineHeight: 1.05,
     whiteSpace: "nowrap",
   });
-  const dashboardLauncherHeight = isPhone ? 76 : 74;
-  const dashboardLauncherButtonStyle: React.CSSProperties = dashboardStableActionFrame({
-    height: dashboardLauncherHeight,
-    minHeight: dashboardLauncherHeight,
-    maxHeight: dashboardLauncherHeight,
-    display: "grid",
-    gridTemplateColumns: "auto minmax(0, 1fr)",
-    alignItems: "center",
-    justifyContent: "stretch",
-    gap: isPhone ? 9 : 11,
-    padding: isPhone ? "10px 10px" : "12px 14px",
-    borderRadius: isPhone ? 17 : 18,
-    border: "1px solid rgba(15,59,116,0.16)",
-    background:
-      "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 48%, #EEF6FF 100%)",
-    color: DASHBOARD_BRAND.ink,
-    boxShadow:
-      "0 12px 24px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.94)",
-    fontSize: isPhone ? 12.6 : 14.2,
-    fontWeight: 900,
-    cursor: "pointer",
-    textAlign: "left",
-    overflow: "hidden",
-    fontFamily: "inherit",
-  });
   const attentionConnectionText = isPhone
     ? "Focus shows follow-through. Local evidence is how your community reads it. Wider consistency is how outsiders may read it. TrustSlip keeps later evidence."
     : trustAttentionCore.connectionText;
@@ -9062,175 +9044,40 @@ export default function DashboardPage() {
         </StableButton>
 
         {uiState.appsExpanded ? (
-          <div
-            style={{
-              marginTop: isPhone ? 10 : 12,
-              display: "grid",
-              gap: isPhone ? 10 : 12,
-            }}
+          <React.Suspense
+            fallback={
+              <div
+                style={{
+                  marginTop: isPhone ? 10 : 12,
+                  minHeight: isPhone ? 76 : 74,
+                  display: "grid",
+                  placeItems: "center",
+                  borderRadius: isPhone ? 16 : 18,
+                  border: "1px solid rgba(214,170,69,0.18)",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,251,255,0.98) 100%)",
+                  color: DASHBOARD_BRAND.helper,
+                  fontSize: isPhone ? 12 : 13,
+                  fontWeight: 800,
+                }}
+              >
+                Opening tools...
+              </div>
+            }
           >
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isPhone
-                  ? "1fr"
-                  : "repeat(3, minmax(0, 1fr))",
-                gap: isPhone ? 8 : 10,
-              }}
-            >
-              {dashboardToolsLanes.map((lane) => {
-                const selected = lane.key === activeToolsLane.key;
-
-                return (
-                  <StableButton
-                    key={lane.key}
-                    debugId={`dashboard.apps.lane.${lane.key}`}
-                    type="button"
-                    aria-pressed={selected}
-                    onClick={(event) =>
-                      runDashboardUiMutation(
-                        event,
-                        () => setToolsLane(lane.key),
-                        220
-                      )
-                    }
-                    onPointerDown={consumeDashboardPointerEvent}
-                    style={{
-                      ...dashboardLauncherButtonStyle,
-                      minHeight: isPhone ? 66 : 72,
-                      height: "auto",
-                      maxHeight: "none",
-                      gridTemplateColumns: "1fr",
-                      justifyContent: "start",
-                      alignItems: "start",
-                      textAlign: "left",
-                      gap: 8,
-                      background: selected
-                        ? "linear-gradient(180deg, #0B1F33 0%, #123A5A 100%)"
-                        : "linear-gradient(180deg, #FFFFFF 0%, #F6FAFF 100%)",
-                      color: selected ? "#FFF8DC" : "#0B1F33",
-                      border: selected
-                        ? "1px solid rgba(214,170,69,0.34)"
-                        : "1px solid rgba(11,99,209,0.12)",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: isPhone ? 13 : 14,
-                        fontWeight: 950,
-                        lineHeight: 1.15,
-                      }}
-                    >
-                      {lane.label}
-                    </span>
-                    <span
-                      style={{
-                        color: selected
-                          ? "rgba(255,248,220,0.78)"
-                          : DASHBOARD_BRAND.helper,
-                        fontSize: isPhone ? 11.5 : 12,
-                        fontWeight: 750,
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      {lane.detail}
-                    </span>
-                  </StableButton>
-                );
-              })}
-            </div>
-
-            <div
-              style={{
-                borderRadius: isPhone ? 16 : 18,
-                border: "1px solid rgba(214,170,69,0.18)",
-                background:
-                  "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,251,255,0.98) 100%)",
-                padding: isPhone ? 10 : 12,
-                display: "grid",
-                gap: isPhone ? 9 : 11,
-              }}
-            >
-              <div
-                style={{
-                  display: "grid",
-                  gap: 3,
-                }}
-              >
-                <span
-                  style={{
-                    color: DASHBOARD_BRAND.ink,
-                    fontSize: isPhone ? 14 : 15,
-                    fontWeight: 950,
-                    lineHeight: 1.15,
-                  }}
-                >
-                  {activeToolsLane.label}
-                </span>
-                <span
-                  style={{
-                    color: DASHBOARD_BRAND.helper,
-                    fontSize: isPhone ? 12 : 13,
-                    fontWeight: 750,
-                    lineHeight: 1.4,
-                  }}
-                >
-                  {activeToolsLane.detail}
-                </span>
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: isPhone
-                    ? "repeat(2, minmax(0, 1fr))"
-                    : "repeat(4, minmax(0, 1fr))",
-                  gap: isPhone ? 8 : 10,
-                }}
-              >
-                {activeToolsLane.items.map((item) => (
-                  <StableButton
-                    debugId={`dashboard.apps.tool.${activeToolsLane.key}.${item.label
-                      .toLowerCase()
-                      .replace(/[^a-z0-9]+/g, "-")
-                      .replace(/^-|-$/g, "")}`}
-                    key={`${activeToolsLane.key}-${item.label}`}
-                    type="button"
-                    onClick={(event) => openDashboardRoute(event, item.to)}
-                    onPointerDown={consumeDashboardPointerEvent}
-                    style={dashboardLauncherButtonStyle}
-                  >
-                    <span
-                      aria-hidden="true"
-                      style={dashboardAccordionIconStyle(
-                        "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(221,234,250,0.86) 100%)",
-                        "1px solid rgba(11,99,209,0.16)"
-                      )}
-                    >
-                      <DashboardSignalIcon
-                        name={dashboardActionSignal(item.label)}
-                        size={isPhone ? 18 : 20}
-                        strokeWidth={2.25}
-                      />
-                    </span>
-                    <span
-                      style={{
-                        minWidth: 0,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        lineHeight: 1.15,
-                      }}
-                    >
-                      {item.label}
-                    </span>
-                  </StableButton>
-                ))}
-              </div>
-            </div>
-          </div>
+            <DashboardToolsSection
+              isPhone={isPhone}
+              lanes={dashboardToolsLanes}
+              activeLane={activeToolsLane}
+              onSelectLane={(event, laneKey) =>
+                runDashboardUiMutation(event, () => setToolsLane(laneKey), 220)
+              }
+              onOpenRoute={openDashboardRoute}
+              onPointerDown={consumeDashboardPointerEvent}
+            />
+          </React.Suspense>
         ) : null}
       </section>
-
       <section
         style={{
           ...pageCard(
@@ -11313,255 +11160,49 @@ export default function DashboardPage() {
         </StableButton>
 
         {uiState.inboxExpanded ? (
-        <div
-          style={{
-            marginTop: isPhone ? 10 : 16,
-            ...innerCard(notificationSurfaceChrome.leadBg),
-            border: notificationSurfaceChrome.leadBorder,
-            padding: isPhone ? 9 : 16,
-            borderRadius: isPhone ? 16 : 18,
-            boxShadow: notificationSurfaceChrome.leadShadow,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 10,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
+          <React.Suspense
+            fallback={
+              <div
+                style={{
+                  marginTop: isPhone ? 10 : 16,
+                  minHeight: isPhone ? 76 : 86,
+                  display: "grid",
+                  placeItems: "center",
+                  borderRadius: isPhone ? 16 : 18,
+                  border: notificationSurfaceChrome.leadBorder,
+                  background: notificationSurfaceChrome.leadBg,
+                  color: DASHBOARD_BRAND.helper,
+                  fontSize: isPhone ? 12 : 13,
+                  fontWeight: 800,
+                }}
+              >
+                Opening alerts...
+              </div>
+            }
           >
-            <div
-              style={{
-                color: "#0B1F33",
-                fontWeight: 900,
-                fontSize: isPhone ? 15 : 18,
-                lineHeight: isPhone ? 1.24 : 1.32,
-                maxWidth: 760,
-              }}
-            >
-              {isPhone
-                ? dashboardNoticePhoneSummaryLine
-                : dashboardNoticeSummaryLine}
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                gap: isPhone ? 6 : 8,
-                flexWrap: "wrap",
-                alignItems: "center",
-              }}
-            >
-              {dashboardNoticeSourceGroups.length > 0 ? (
-                <span
-                  style={{
-                    ...badge(false),
-                    background: notificationSurfaceChrome.chipBg,
-                    border: notificationSurfaceChrome.chipBorder,
-                  }}
-                >
-                  {dashboardNoticeSourceGroups.length} screen
-                  {dashboardNoticeSourceGroups.length === 1 ? "" : "s"}
-                </span>
-              ) : null}
-              {dashboardNoticeSummary.counts.actNow > 0 ? (
-                <span
-                  style={{
-                    ...badge(true),
-                    background: notificationSurfaceChrome.statusBg,
-                    border: notificationSurfaceChrome.chipSelectedBorder,
-                    color: notificationSurfaceChrome.statusText,
-                  }}
-                >
-                  Act now {dashboardNoticeSummary.counts.actNow}
-                </span>
-              ) : null}
-              {dashboardNoticeSummary.counts.unread > 0 ? (
-                <span
-                  style={{
-                    ...badge(false),
-                    background: notificationSurfaceChrome.chipBg,
-                    border: notificationSurfaceChrome.chipBorder,
-                  }}
-                >
-                  Unread {dashboardNoticeSummary.counts.unread}
-                </span>
-              ) : null}
-            </div>
-          </div>
-
-          {guidanceError ? (
-            <div
-              style={{
-                marginTop: 12,
-                ...softCard("#FEF2F2"),
-                color: "#991B1B",
-                border: "1px solid rgba(239,68,68,0.16)",
-                fontWeight: 800,
-                padding: 12,
-              }}
-            >
-              {guidanceError}
-            </div>
-          ) : guidanceLoading && dashboardNoticeTotalCount === 0 ? (
-            <div style={{ marginTop: 12, color: "#64748B", lineHeight: 1.7 }}>
-              Preparing your dashboard alerts...
-            </div>
-          ) : null}
-
-          {dashboardNoticeLeadItem ? (
-            <div
-              style={{
-                marginTop: 12,
-                ...innerCard(notificationSurfaceChrome.itemBg),
-                border: notificationSurfaceChrome.itemBorder,
-                padding: isPhone ? 9 : isCompact ? 12 : 14,
-                borderRadius: isPhone ? 15 : 18,
-                boxShadow:
-                  "0 12px 28px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.84)",
-                display: "grid",
-                gap: isPhone ? 8 : 10,
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 8,
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                }}
-              >
-                <div
-                  style={{
-                    color: "#0B1F33",
-                    fontWeight: 800,
-                    fontSize: isPhone ? 14.5 : undefined,
-                    lineHeight: isPhone ? 1.24 : 1.3,
-                    flex: "1 1 240px",
-                  }}
-                >
-                  {dashboardNoticeLeadItem.title}
-                </div>
-
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  <span
-                    style={{
-                      ...badge(dashboardNoticeLeadItem.bucket === "actNow"),
-                      background:
-                        dashboardNoticeLeadItem.bucket === "actNow"
-                          ? notificationSurfaceChrome.statusBg
-                          : notificationSurfaceChrome.chipBg,
-                      border:
-                        dashboardNoticeLeadItem.bucket === "actNow"
-                          ? notificationSurfaceChrome.chipSelectedBorder
-                          : notificationSurfaceChrome.chipBorder,
-                      color:
-                        dashboardNoticeLeadItem.bucket === "actNow"
-                          ? notificationSurfaceChrome.statusText
-                          : undefined,
-                    }}
-                  >
-                    {dashboardNoticeLeadItem.bucket === "actNow"
-                      ? "Act now"
-                      : dashboardNoticeLeadItem.unread
-                      ? "Unread"
-                      : "Open"}
-                  </span>
-                  {dashboardNoticeLeadGroup ? (
-                    <span
-                      style={{
-                        ...badge(false),
-                        background: notificationSurfaceChrome.chipBg,
-                        border: notificationSurfaceChrome.chipBorder,
-                      }}
-                    >
-                      {dashboardNoticeLeadGroup.title}
-                    </span>
-                  ) : null}
-                  {dashboardNoticeTotalCount > 1 ? (
-                    <span
-                      style={{
-                        ...badge(false),
-                        background: notificationSurfaceChrome.chipBg,
-                        border: notificationSurfaceChrome.chipBorder,
-                      }}
-                    >
-                      {dashboardNoticeTotalCount - 1} more waiting
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  ...helperText(),
-                  fontSize: isPhone ? 12.2 : 13,
-                  lineHeight: isPhone ? 1.42 : 1.75,
-                }}
-              >
-                {dashboardNoticeLeadItem.detail}
-              </div>
-
-              {dashboardNoticeLeadGroup ? (
-                <div
-                  style={{
-                    ...helperText(),
-                    fontSize: isPhone ? 12 : 12.5,
-                    lineHeight: isPhone ? 1.38 : 1.75,
-                  }}
-                >
-                  {dashboardNoticeLeadGroup.detail}
-                </div>
-              ) : null}
-
-              <div style={{ ...dashboardActionGrid(isCompact ? 132 : 156) }}>
-                <StableButton
-                  debugId="dashboard.inbox.primary"
-                  type="button"
-                  onClick={(event) =>
-                    openDashboardRoute(event, dashboardNoticePrimaryActionTo)
-                  }
-                  onPointerDown={consumeDashboardPointerEvent}
-                  style={spotlightWhiteButton({
-                    minHeight: isPhone ? 46 : 40,
-                    padding: isPhone ? "10px 12px" : "8px 14px",
-                    borderRadius: isPhone ? 15 : 15,
-                    width: "100%",
-                  })}
-                >
-                  {dashboardNoticePrimaryActionLabel}
-                </StableButton>
-                <StableButton
-                  debugId="dashboard.inbox.open-alerts"
-                  type="button"
-                  onClick={(event) =>
-                    openDashboardRoute(event, DASHBOARD_TARGETS.WHAT_MATTERS_NOW)
-                  }
-                  onPointerDown={consumeDashboardPointerEvent}
-                  style={spotlightWhiteButton({
-                    minHeight: isPhone ? 46 : 40,
-                    padding: isPhone ? "10px 12px" : "8px 14px",
-                    borderRadius: isPhone ? 15 : 15,
-                    width: "100%",
-                  })}
-                >
-                  Open your alerts
-                </StableButton>
-              </div>
-            </div>
-          ) : noticesLoading && dashboardNoticeTotalCount === 0 ? (
-            <div style={{ marginTop: 12, color: "#64748B", lineHeight: 1.7 }}>
-              Loading your alerts...
-            </div>
-          ) : null}
-
-        </div>
+            <DashboardInboxSection
+              isPhone={isPhone}
+              isCompact={isCompact}
+              chrome={notificationSurfaceChrome}
+              totalCount={dashboardNoticeTotalCount}
+              sourceGroupCount={dashboardNoticeSourceGroups.length}
+              counts={dashboardNoticeSummary.counts}
+              summaryLine={dashboardNoticeSummaryLine}
+              phoneSummaryLine={dashboardNoticePhoneSummaryLine}
+              guidanceError={guidanceError}
+              guidanceLoading={guidanceLoading}
+              noticesLoading={noticesLoading}
+              leadItem={dashboardNoticeLeadItem}
+              leadGroup={dashboardNoticeLeadGroup}
+              primaryActionTo={dashboardNoticePrimaryActionTo}
+              primaryActionLabel={dashboardNoticePrimaryActionLabel}
+              alertsActionTo={DASHBOARD_TARGETS.WHAT_MATTERS_NOW}
+              onOpenRoute={openDashboardRoute}
+              onPointerDown={consumeDashboardPointerEvent}
+            />
+          </React.Suspense>
         ) : null}
       </section>
-
       <section
         style={{
           ...pageCard(
