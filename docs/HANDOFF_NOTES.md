@@ -1,3 +1,11 @@
+## 2026-09-01 - Local Render API deploy polling hardening
+
+- Status: Local workflow hardening only; not pushed or deployed after the completed `db975921` manual deploy because the owner has not asked for another deploy.
+- Frozen file touched: `.github/workflows/render-deploy.yml`, scoped to manual backend deploy verification only. The workflow remains `workflow_dispatch` only; no push trigger or automatic deploy path was restored.
+- Deploy behavior changed: when `deploy_api=true` and Render API credentials/service id are available, the gmfn-api step now captures the exact Render deploy id, falls back to recent deploy lookup by commit if needed, polls that deploy for `live`, and fails on terminal Render failure states or timeout.
+- Existing live deploy context: manual workflow run `33470233258` accepted frontend deploy `dep-dab5asqd0e5s73dcumfg`, reached frontend `live`, accepted backend deploy `dep-dab5biijobas73bdut10`, and passed the live API identity/public verification audit. The old workflow did not poll the backend deploy id to `live`.
+- Verification planned/completed locally: workflow text inspection confirms `workflow_dispatch` remains the only trigger and the API branch now includes exact deploy-id polling. This change should be proven during the next owner-approved manual deploy.
+- Devil truth: this closes an observability/proof gap in the pipeline, not an application bug. It cannot backfill certainty for the already-finished API deploy beyond the accepted deploy id and live API audit logs we already have.
 ## 2026-08-31 - Local Marketplace global-shop product context correction
 
 - Status: Local backend correction verified; not pushed or deployed per owner instruction to avoid pipeline wastage.
