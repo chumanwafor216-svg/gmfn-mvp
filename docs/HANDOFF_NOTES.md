@@ -1,3 +1,12 @@
+## 2026-09-01 - Production deploy bf94e198 verified
+
+- Status: Deployed to `main` and verified through manual `render-deploy.yml` workflow run `33475758581` after the owner explicitly said `deploy`.
+- Deployed commit: `bf94e19884e838ebc5146286c42ff0d864fc5685`.
+- Frontend Render deploy: deploy hook accepted `dep-dab6jss9v7es73c70aug`; exact Render API deploy `dep-dab6jsu34nkc73b16rbg` reached `live` on poll `8/36`; `https://gmfn-frontend.onrender.com` served the Decision Pack marker from `assets/TrustSlipVerifyPage-Bxp7ySDJ.js`.
+- Backend Render deploy: `dep-dab6l7k9v7es73c754cg` reached `live` on poll `9/36`; live API identity/public verification passed on `https://gmfn-api.onrender.com` after attempt `1/18`.
+- Deployed work: Marketplace existing-row header-context boundary fix, Dashboard closed-section lazy split, Community Home first-paint lazy split, and the prior local production-deploy record commit.
+- Devil truth: this handoff note is a local post-deploy record written after the deploy, so it is not part of deployed commit `bf94e198` until a future owner-approved push. The deploy proof is the GitHub Actions run plus Render live statuses above; this still does not replace real phone acceptance testing for the frontend performance changes.
+
 ## 2026-09-01 - Local Community Home first-paint lazy split
 
 - Status: Local frontend performance fix verified; not pushed or deployed because the owner has not asked for another deploy.
