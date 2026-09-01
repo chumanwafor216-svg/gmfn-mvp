@@ -2089,6 +2089,12 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/DomainSelectorPanel.tsx",
+  /type DomainFeaturePolicySurface[\s\S]*feature_policy\?: DomainFeaturePolicySurface[\s\S]*DOMAIN_SELECTOR_FEATURE_KEYS[\s\S]*marketplace_shops[\s\S]*payments_contributions[\s\S]*rosca_cycles[\s\S]*function serviceRuleBadgeLabel[\s\S]*Service rules: setup draft[\s\S]*Service rules: \$\{offCount\} off[\s\S]*Service rules: ready[\s\S]*serviceRuleLabel = serviceRuleBadgeLabel\(item\?\.feature_policy\)[\s\S]*statusBadge\(serviceRuleLabel\)[\s\S]*\{serviceRuleLabel\}/,
+  "Community Domain selector owned-domain cards must surface the saved service-rule state from the signed-in domain list without another API call.",
+  { frontend: true }
+);
+assertContains(
+  "src/pages/communityDomainDashboard/DomainSelectorPanel.tsx",
   /const quickPathRow[\s\S]*community-domain-dashboard\.selector\.setup-new-compact[\s\S]*Set up new domain[\s\S]*community-domain-dashboard\.selector\.edit-existing-compact[\s\S]*Find existing domain/,
   "Lazy Community Domain selector panel must keep compact alternate paths behind the owned-domain list instead of opening setup and edit panels by default.",
   { frontend: true }

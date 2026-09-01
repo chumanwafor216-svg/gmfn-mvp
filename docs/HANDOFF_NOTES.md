@@ -159201,3 +159201,12 @@ Devil's-advocate boundary: this completes the practical PDF/report button, but i
 - Structural verification passed: DOCX ZIP integrity, required Word parts, XML parsing, 233 paragraphs, 15 tables, and 13,992 text characters.
 - Render limitation: the Documents skill renderer could not run because `pdf2image` is missing; no `soffice`, `libreoffice`, `pdftoppm`, or `magick` was available on PATH; Word COM automation hung and the spawned WINWORD process was stopped. Visual PNG/PDF QA is therefore not completed in this environment.
 - Devil's advocate: this is a useful external pack, but it still needs visual review in Word/LibreOffice before sending as a final polished external attachment.
+
+## 2026-09-01 - Local Domain Selector Service Rule State
+- Status: Local only, not pushed/deployed.
+- Continued the Aberdeen Dads/customer-discovery simplification after the Community Domain setup recommendation and saved feature-policy work.
+- Frontend change: owned-domain cards in `frontend/src/pages/communityDomainDashboard/DomainSelectorPanel.tsx` now read the signed-in domain list `feature_policy` payload and show a compact `Service rules` badge: setup draft when no saved policy exists, ready when policy-backed features are present, or the number of switched-off services when the simple on/off choices disabled features.
+- UX detail: service-rule badges with switched-off features now use the warning badge treatment instead of appearing as green/ready.
+- Guardrail change: `frontend/tools/audit-community-domain-product-contracts.mjs` now cages that the selector surfaces service-rule state from the existing signed-in domain list without adding another API call.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run lint`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-mobile-visual` after rerunning Playwright with permission because sandboxed Chromium launch hit `spawn EPERM`.
+- Devil's advocate: this makes the saved setup choices visible before opening a domain, but it is not a domain purchase, payment, DNS/authority verification, public proof publication, or a migration for older domains without `feature_policy` rows.

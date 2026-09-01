@@ -30,10 +30,15 @@ type DomainViewerSurface = UnknownRecord & {
   can_admin?: unknown;
 };
 
+type DomainFeaturePolicySurface = UnknownRecord & {
+  features?: UnknownRecord | null;
+};
+
 type DomainSelectorItem = UnknownRecord & {
   community_domain?: DomainSurface | null;
   membership?: DomainMembershipSurface | null;
   viewer?: DomainViewerSurface | null;
+  feature_policy?: DomainFeaturePolicySurface | null;
   dashboard_path?: unknown;
 };
 
@@ -68,6 +73,30 @@ function isDraftDomain(domain: DomainSurface | null | undefined): boolean {
     activation.includes("not active") ||
     activation.includes("waiting")
   );
+}
+
+const DOMAIN_SELECTOR_FEATURE_KEYS = [
+  "announcement_board",
+  "demand_box",
+  "spotlight",
+  "shop_diary",
+  "vault",
+  "marketplace_shops",
+  "member_invites",
+  "payments_contributions",
+  "rosca_cycles",
+];
+
+function serviceRuleBadgeLabel(policy: DomainFeaturePolicySurface | null | undefined): string {
+  const features = policy?.features || null;
+  if (!features || typeof features !== "object") return "Service rules: setup draft";
+  const modes = DOMAIN_SELECTOR_FEATURE_KEYS.map((key) =>
+    cleanText((features as UnknownRecord)[key]).toLowerCase()
+  ).filter(Boolean);
+  const offCount = modes.filter((mode) => mode === "off").length;
+  if (offCount > 0) return `Service rules: ${offCount} off`;
+  if (modes.length > 0) return "Service rules: ready";
+  return "Service rules: setup draft";
 }
 
 function errorMessage(error: unknown): string {
@@ -246,6 +275,7 @@ function statusBadge(status: unknown): React.CSSProperties {
     text.includes("needs") ||
     text.includes("pending") ||
     text.includes("optional") ||
+    text.includes(" off") ||
     text.includes("read only");
   const danger = text.includes("suspended") || text.includes("expired") || text.includes("closed");
   const palette = danger
@@ -607,6 +637,7 @@ export default function CommunityDomainSelectorPanel({
           const itemDomain = item?.community_domain || {};
           const itemMembership = item?.membership || {};
           const draftDomain = isDraftDomain(itemDomain);
+          const serviceRuleLabel = serviceRuleBadgeLabel(item?.feature_policy);
           const path =
             cleanText(item?.dashboard_path) ||
             `/app/community-domain/${encodeURIComponent(String(itemDomain.id))}`;
@@ -651,6 +682,9 @@ export default function CommunityDomainSelectorPanel({
                   </span>
                   <span style={statusBadge(itemDomain.verification_status)}>
                     Verification: {compactStatus(itemDomain.verification_status)}
+                  </span>
+                  <span style={statusBadge(serviceRuleLabel)}>
+                    {serviceRuleLabel}
                   </span>
                 </div>
                 <StableCtaLink
