@@ -1,3 +1,11 @@
+## 2026-09-01 - Local Marketplace platform-admin membership boundary coverage
+
+- Status: Local backend coverage/documentation correction verified; not pushed or deployed because the owner has not asked for another deploy after the earlier `db975921` production deploy.
+- Backend routes covered: `POST /marketplace/shops` and `POST /marketplace/products`.
+- Boundary clarified: older handoff wording overstated platform-admin listing publication. Current safer route behavior requires an active membership/community context before publishing into a community Marketplace, while existing community-admin approval-bypass coverage remains intact.
+- Coverage added: platform admin without membership receives `403` and does not create a shop/product row when trying to publish into a community marketplace.
+- Verification: `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py -k "platform_admin_without_membership_cannot_publish_listing or platform_admin_without_membership_cannot_publish_product or shop_creation_reports_light_governance_listing_review_policy or product_creation_submits_member_listing_when_admin_approval_required" -q` passed; full `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py --basetemp C:\tmp\gmfn_pytest_marketplace_public_shop_platform_boundary -q` passed outside the restricted sandbox after the sandbox blocked pytest temp directory creation.
+- Devil truth: this is not a feature change; it codifies the current safer permission boundary and corrects earlier documentation drift. A deliberate platform-admin marketplace override would need a separate authorization design, audit trail, and product-owner approval.
 ## 2026-09-01 - Local Marketplace broadcast delete sibling scope
 
 - Status: Local backend fix verified; not pushed or deployed because the owner has not asked for another deploy after the earlier `db975921` production deploy.
@@ -202,7 +210,7 @@
 - Status: Local implementation verified; ready for the active pilot commit/push/deploy protocol.
 - Backend routes affected: `POST /marketplace/shops` and `POST /marketplace/products`.
 - Marketplace create paths now enforce the recorded governance profile's `policies.require_admin_approval_for_listings=true` by blocking ordinary members from publishing live shops/products directly.
-- Community admins and platform admins may still create shops/products when listings are enabled, so admin-approved publication can continue without inventing a fake queue.
+- Community admins, and platform admins with active community context, may still create shops/products when listings are enabled, so admin-approved publication can continue without inventing a fake queue.
 - The structured `403 community_listing_admin_approval_required` response includes `marketplace_governance_policy` and tells the member that GSN does not have a listing approval queue here yet.
 - Legacy communities without a recorded governance profile keep existing marketplace behavior because approval defaults to false unless the profile says otherwise.
 - Backend coverage added in `gmfn_backend/tests/test_marketplace_public_shop.py` for ordinary-member shop/product blocks, admin publish allowance, and ordinary-member product creation when approval is not required.

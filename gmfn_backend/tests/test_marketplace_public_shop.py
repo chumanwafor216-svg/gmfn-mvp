@@ -357,6 +357,103 @@ def test_marketplace_product_creation_respects_disabled_light_governance_listing
     )
 
 
+def test_marketplace_platform_admin_without_membership_cannot_publish_listing(
+    client,
+    monkeypatch,
+):
+    monkeypatch.setenv("SECRET_KEY", "pytest-platform-market-admin-secret")
+    _ensure_marketplace_tables()
+    _seed_marketplace_governance_profile_event(
+        enable_member_service_listings=True,
+        require_admin_approval_for_listings=True,
+    )
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (id, email, hashed_password, display_name, role, gmfn_id)
+                VALUES (
+                    22, 'platform-market-admin@example.com', 'hashed',
+                    'Platform Market Admin', 'admin', 'GMFN-U-PLATFORMMARKET'
+                )
+                """
+            )
+        )
+
+    token = create_access_token({"sub": "platform-market-admin@example.com"})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = client.post(
+        "/marketplace/shops",
+        headers=headers,
+        json={
+            "clan_id": 1,
+            "name": "Platform Admin Shop",
+            "description": "Published by platform admin oversight.",
+        },
+    )
+
+    assert response.status_code == 403, response.text
+    assert response.json()["detail"] == "You are not an active member of this community"
+    assert _scalar("SELECT COUNT(*) FROM marketplace_shops WHERE owner_user_id = 22") == 0
+
+
+def test_marketplace_platform_admin_without_membership_cannot_publish_product(
+    client,
+    monkeypatch,
+):
+    monkeypatch.setenv("SECRET_KEY", "pytest-platform-market-product-secret")
+    _ensure_marketplace_tables()
+    _seed_marketplace_governance_profile_event(
+        enable_member_service_listings=True,
+        require_admin_approval_for_listings=True,
+    )
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (id, email, hashed_password, display_name, role, gmfn_id)
+                VALUES
+                    (22, 'platform-product-admin@example.com', 'hashed',
+                     'Platform Product Admin', 'admin', 'GMFN-U-PLATFORMPRODUCT'),
+                    (23, 'seller-product-owner@example.com', 'hashed',
+                     'Seller Product Owner', 'user', 'GMFN-U-SELLERPRODUCT')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active, created_at
+                ) VALUES (
+                    983, 1, 23, 'Seller Product Shop', 'Existing community shop', 1, CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+
+    token = create_access_token({"sub": "platform-product-admin@example.com"})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = client.post(
+        "/marketplace/products",
+        headers=headers,
+        json={
+            "clan_id": 1,
+            "shop_id": 983,
+            "name": "Platform Admin Product",
+            "description": "Should not publish without community membership.",
+            "price": "Ask",
+            "currency": "GBP",
+            "image_url": "/uploads/test/platform-product.jpg",
+        },
+    )
+
+    assert response.status_code == 403, response.text
+    assert response.json()["detail"] == "You are not an active member of this community"
+    assert _scalar("SELECT COUNT(*) FROM marketplace_products WHERE shop_id = 983") == 0
+
 def test_marketplace_shop_creation_reports_light_governance_listing_review_policy(
     client,
     override_current_user,
