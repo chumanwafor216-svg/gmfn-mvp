@@ -1683,6 +1683,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /lockedFeaturePolicyJson = lockedFeaturePolicy[\s\S]*serializeDomainFeaturePolicy\(lockedFeaturePolicy\)[\s\S]*policyBackedDomainDraft[\s\S]*feature_policy_json: lockedFeaturePolicyJson[\s\S]*safeStored = setupDraftBelongsToDomain[\s\S]*\.\.\.policyBackedDomainDraft[\s\S]*\.\.\.\(safeStored \|\| \{\}\)/,
+  "Community Domain dashboard setup editor must seed service-rule choices from the active locked backend policy before falling back to local setup draft state.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /effectiveFeaturePolicy = lockedFeaturePolicy \|\| featurePolicyDraft[\s\S]*memberInvitesPolicyMode =[\s\S]*effectiveFeaturePolicy\.features\.member_invites[\s\S]*paymentsContributionsPolicyMode =[\s\S]*effectiveFeaturePolicy\.features\.payments_contributions/,
   "Community Domain dashboard action decisions must prefer the locked active feature policy over the local setup draft.",
   { frontend: true }

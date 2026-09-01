@@ -4915,16 +4915,25 @@ export default function CommunityDomainDashboardPage() {
   const showSetupAccessCard = setupJourneyMode === "edit" || setupEditingLocked;
   const showActiveDomainSettingsSummary =
     domainOperational && activeLane === "settings" && setupJourneyMode !== "edit";
+  const lockedFeaturePolicyJson = lockedFeaturePolicy
+    ? serializeDomainFeaturePolicy(lockedFeaturePolicy)
+    : "";
 
   useEffect(() => {
     const domainId = cleanText(domain?.id || communityDomainId);
     if (!domainId || !dashboard) return;
     const domainDraft = setupDraftFromDomain(domain);
+    const policyBackedDomainDraft = lockedFeaturePolicyJson
+      ? {
+          ...domainDraft,
+          feature_policy_json: lockedFeaturePolicyJson,
+        }
+      : domainDraft;
     const stored = readCommunityDomainSetupDraft(domainId);
     const safeStored = setupDraftBelongsToDomain(stored, domainDraft) ? stored : null;
     setSetupDraft(
       normalizePillarOfHopeSetupDraft(domain, {
-        ...domainDraft,
+        ...policyBackedDomainDraft,
         ...(safeStored || {}),
       })
     );
@@ -4935,7 +4944,7 @@ export default function CommunityDomainDashboardPage() {
     });
     setSetupCompletionSavedAt("");
     setFeaturePolicyLockedAt("");
-  }, [communityDomainId, dashboard, domain]);
+  }, [communityDomainId, dashboard, domain, lockedFeaturePolicyJson]);
 
   function updateSetupDraftField(
     key: keyof CommunityDomainSetupDraft,

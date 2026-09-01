@@ -1,3 +1,12 @@
+## 2026-09-01 - Local Community Domain dashboard service-rule continuity
+
+- Status: Local frontend continuity fix verified; not pushed or deployed because the owner has not asked for another deploy.
+- Frontend route affected: `/app/community-domain/:id` (`CommunityDomainDashboardPage`), specifically the Settings/setup Services step.
+- Change: when a Community Domain already has an active `domain.feature_policy` saved by the purchase/setup flow, the dashboard setup editor now seeds its service-rule draft from that backend policy before falling back to local browser setup draft state. This keeps purchase choices visible/editable when the owner later opens the Domain dashboard.
+- Audit cage: `audit-community-domain-product-contracts.mjs` now checks that the dashboard loads the active feature policy and uses it to seed the setup editor, so the service rules cannot silently drift back to generic defaults.
+- Verification: `npm --prefix frontend run audit:community-domain-product-contracts` passed; `npm --prefix frontend run lint` passed; `npm --prefix frontend run build` passed; `npm --prefix frontend run audit:protected-button-freeze` passed; `npm --prefix frontend run audit:community-domain-mobile-visual` passed against local Vite on `127.0.0.1:5180` with Playwright run outside the restricted sandbox.
+- Devil truth: this is continuity, not a new service engine. A user-saved local setup draft still takes precedence because it may contain newer unsent edits; old drafts with no backend `domain.feature_policy` still fall back to the existing generic setup defaults.
+
 ## 2026-09-01 - Local Community Domain simplified setup recommendations
 
 - Status: Local frontend/backend customer-discovery improvement verified; not pushed or deployed because the owner has not asked for another deploy.
