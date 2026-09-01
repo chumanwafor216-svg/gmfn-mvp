@@ -150,45 +150,55 @@ type CreateEntryCommunityType =
 
 type CreateEntryGovernanceWeight = "light" | "standard" | "high";
 
+type DomainSetupChoicePriority = "core" | "more";
+
 const DOMAIN_SETUP_TOGGLE_OPTIONS: Array<{
   key: DomainSetupToggleKey;
   label: string;
   summary: string;
+  priority: DomainSetupChoicePriority;
 }> = [
   {
     key: "member_invites",
     label: "Member invites",
     summary: "Prepare invite links and admin approval for new members.",
+    priority: "core",
   },
   {
     key: "official_announcements",
     label: "Official announcements",
     summary: "Prepare the notice board for official updates and meetings.",
-  },
-  {
-    key: "member_shops",
-    label: "Member shops / services",
-    summary: "Prepare member stalls, service listings, and shop control.",
-  },
-  {
-    key: "contributions",
-    label: "Payments / contributions",
-    summary: "Prepare contribution records without confirming payment yet.",
-  },
-  {
-    key: "welfare_cycles",
-    label: "Welfare cycles",
-    summary: "Prepare rotating support or contribution-cycle records.",
+    priority: "core",
   },
   {
     key: "demand_box",
     label: "Demand Box",
     summary: "Prepare a place to collect needs, requests, and supply gaps.",
+    priority: "core",
   },
   {
     key: "private_records",
     label: "Private records",
     summary: "Prepare a protected vault for evidence and admin records.",
+    priority: "core",
+  },
+  {
+    key: "member_shops",
+    label: "Member shops / services",
+    summary: "Prepare member stalls, service listings, and shop control.",
+    priority: "more",
+  },
+  {
+    key: "contributions",
+    label: "Payments / contributions",
+    summary: "Prepare contribution records without confirming payment yet.",
+    priority: "more",
+  },
+  {
+    key: "welfare_cycles",
+    label: "Welfare cycles",
+    summary: "Prepare rotating support or contribution-cycle records.",
+    priority: "more",
   },
 ];
 
@@ -1133,6 +1143,75 @@ export default function CommunityDomainPurchasePage() {
     setDraftResult(null);
     setQuoteResult(null);
   }
+
+  function renderDomainSetupChoice(
+    item: (typeof DOMAIN_SETUP_TOGGLE_OPTIONS)[number]
+  ): React.ReactElement {
+    const isEnabled = Boolean(domainSetupToggles[item.key]);
+    return (
+      <label
+        key={item.key}
+        style={{
+          minHeight: 72,
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 10,
+          borderRadius: 14,
+          border: "1px solid rgba(17,37,58,0.10)",
+          background: "rgba(255,255,255,0.82)",
+          color: "#0B1F33",
+          fontSize: 12.5,
+          fontWeight: 900,
+          lineHeight: 1.3,
+          padding: "10px",
+          boxSizing: "border-box",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={isEnabled}
+          disabled={draftFormLocked}
+          onChange={(event) => handleDomainSetupToggleChange(item.key, event.target.checked)}
+          style={{ width: 18, height: 18, flex: "0 0 auto", marginTop: 2 }}
+        />
+        <span style={{ display: "grid", gap: 4, minWidth: 0, flex: "1 1 auto" }}>
+          <span
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 8,
+              minWidth: 0,
+            }}
+          >
+            <span>{item.label}</span>
+            <span
+              aria-hidden="true"
+              style={{
+                ...statusPill(isEnabled ? "ready" : "waiting"),
+                minHeight: 24,
+                padding: "3px 8px",
+                fontSize: 11,
+                flex: "0 0 auto",
+              }}
+            >
+              {isEnabled ? "On" : "Off"}
+            </span>
+          </span>
+          <span
+            style={{
+              color: "#526B83",
+              fontSize: 11.5,
+              fontWeight: 750,
+              lineHeight: 1.35,
+            }}
+          >
+            {item.summary}
+          </span>
+        </span>
+      </label>
+    );
+  }
   function handleCheckAnotherName() {
     availabilityCheckSequence.current += 1;
     setAvailability(null);
@@ -1795,75 +1874,37 @@ export default function CommunityDomainPurchasePage() {
                         gap: 8,
                       }}
                     >
-                      {DOMAIN_SETUP_TOGGLE_OPTIONS.map((item) => {
-                        const isEnabled = Boolean(domainSetupToggles[item.key]);
-                        return (
-                          <label
-                            key={item.key}
-                            style={{
-                              minHeight: 72,
-                              display: "flex",
-                              alignItems: "flex-start",
-                              gap: 10,
-                              borderRadius: 14,
-                              border: "1px solid rgba(17,37,58,0.10)",
-                              background: "rgba(255,255,255,0.82)",
-                              color: "#0B1F33",
-                              fontSize: 12.5,
-                              fontWeight: 900,
-                              lineHeight: 1.3,
-                              padding: "10px",
-                              boxSizing: "border-box",
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isEnabled}
-                              disabled={draftFormLocked}
-                              onChange={(event) =>
-                                handleDomainSetupToggleChange(item.key, event.target.checked)
-                              }
-                              style={{ width: 18, height: 18, flex: "0 0 auto", marginTop: 2 }}
-                            />
-                            <span style={{ display: "grid", gap: 4, minWidth: 0, flex: "1 1 auto" }}>
-                              <span
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "space-between",
-                                  gap: 8,
-                                  minWidth: 0,
-                                }}
-                              >
-                                <span>{item.label}</span>
-                                <span
-                                  aria-hidden="true"
-                                  style={{
-                                    ...statusPill(isEnabled ? "ready" : "waiting"),
-                                    minHeight: 24,
-                                    padding: "3px 8px",
-                                    fontSize: 11,
-                                    flex: "0 0 auto",
-                                  }}
-                                >
-                                  {isEnabled ? "On" : "Off"}
-                                </span>
-                              </span>
-                              <span
-                                style={{
-                                  color: "#526B83",
-                                  fontSize: 11.5,
-                                  fontWeight: 750,
-                                  lineHeight: 1.35,
-                                }}
-                              >
-                                {item.summary}
-                              </span>
-                            </span>
-                          </label>
-                        );
-                      })}
+                      {DOMAIN_SETUP_TOGGLE_OPTIONS.filter((item) => item.priority === "core").map(
+                        renderDomainSetupChoice
+                      )}
                     </div>
+                    <details
+                      style={{
+                        borderRadius: 14,
+                        border: "1px solid rgba(17,37,58,0.10)",
+                        background: "rgba(255,255,255,0.62)",
+                        padding: 10,
+                      }}
+                    >
+                      <StableDisclosureSummary
+                        debugId="community-domain-purchase.more-service-choices"
+                        style={{ cursor: "pointer", color: "#0B1F33", fontWeight: 950 }}
+                      >
+                        More service choices
+                      </StableDisclosureSummary>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(185px, 1fr))",
+                          gap: 8,
+                          marginTop: 10,
+                        }}
+                      >
+                        {DOMAIN_SETUP_TOGGLE_OPTIONS.filter((item) => item.priority === "more").map(
+                          renderDomainSetupChoice
+                        )}
+                      </div>
+                    </details>
                     <div style={{ ...helperText(false), fontSize: 12.5, lineHeight: 1.5 }}>
                       Selected now: {enabledSetupLabels.length ? enabledSetupLabels.join(", ") : "none"}. These are draft setup preferences; payment, verification, and service activation still happen later.
                     </div>

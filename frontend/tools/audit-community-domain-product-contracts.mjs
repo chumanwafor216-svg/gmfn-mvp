@@ -1403,7 +1403,7 @@ assertContains(
 );
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /DOMAIN_SETUP_TOGGLE_OPTIONS[\s\S]*summary: "Prepare invite links and admin approval for new members\."[\s\S]*summary: "Prepare contribution records without confirming payment yet\."[\s\S]*summary: "Prepare a protected vault for evidence and admin records\."[\s\S]*setup_preferences: domainSetupToggles[\s\S]*Kind of community[\s\S]*GSN uses this[\s\S]*choice to recommend governance and service switches[\s\S]*Simple setup choices[\s\S]*const isEnabled = Boolean\(domainSetupToggles\[item\.key\]\)[\s\S]*isEnabled \? "On" : "Off"[\s\S]*\{item\.summary\}/,
+  /type DomainSetupChoicePriority = "core" \| "more"[\s\S]*DOMAIN_SETUP_TOGGLE_OPTIONS[\s\S]*priority: DomainSetupChoicePriority[\s\S]*key: "member_invites"[\s\S]*priority: "core"[\s\S]*key: "private_records"[\s\S]*priority: "core"[\s\S]*key: "member_shops"[\s\S]*priority: "more"[\s\S]*key: "welfare_cycles"[\s\S]*priority: "more"[\s\S]*function renderDomainSetupChoice[\s\S]*const isEnabled = Boolean\(domainSetupToggles\[item\.key\]\)[\s\S]*isEnabled \? "On" : "Off"[\s\S]*\{item\.summary\}[\s\S]*setup_preferences: domainSetupToggles[\s\S]*Kind of community[\s\S]*GSN uses this[\s\S]*choice to recommend governance and service switches[\s\S]*Simple setup choices[\s\S]*item\.priority === "core"[\s\S]*renderDomainSetupChoice[\s\S]*community-domain-purchase\.more-service-choices[\s\S]*More service choices[\s\S]*item\.priority === "more"[\s\S]*renderDomainSetupChoice/,
   "Community Domain purchase simple setup choices must explain each service switch, show visible On/Off state, and send the same preferences to the draft API.",
   { frontend: true }
 );
