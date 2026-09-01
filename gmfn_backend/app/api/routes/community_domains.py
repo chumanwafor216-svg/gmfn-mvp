@@ -113,6 +113,17 @@ COMMUNITY_DOMAIN_FEATURE_POLICY_KEY = "domain.feature_policy"
 COMMUNITY_DOMAIN_FEATURE_ANNOUNCEMENT_BOARD = "announcement_board"
 COMMUNITY_DOMAIN_FEATURE_MODE_OFF = "off"
 COMMUNITY_DOMAIN_FEATURE_MODE_ADMIN_ONLY = "admin_only"
+COMMUNITY_DOMAIN_FEATURE_MODE_MEMBERS_SUBMIT_ADMIN_APPROVES = (
+    "members_submit_admin_approves"
+)
+COMMUNITY_DOMAIN_FEATURE_SPOTLIGHT = "spotlight"
+COMMUNITY_DOMAIN_FEATURE_SHOP_DIARY = "shop_diary"
+COMMUNITY_DOMAIN_FEATURE_VAULT = "vault"
+COMMUNITY_DOMAIN_FEATURE_MARKETPLACE_SHOPS = "marketplace_shops"
+COMMUNITY_DOMAIN_FEATURE_MEMBER_INVITES = "member_invites"
+COMMUNITY_DOMAIN_FEATURE_PAYMENTS_CONTRIBUTIONS = "payments_contributions"
+COMMUNITY_DOMAIN_FEATURE_ROSCA_CYCLES = "rosca_cycles"
+COMMUNITY_DOMAIN_FEATURE_DEMAND_BOX = "demand_box"
 GENERIC_UPLOAD_CONTENT_TYPES = {
     "",
     "application/octet-stream",
@@ -3181,6 +3192,150 @@ def _community_domain_outcome_correction_reviews(
             continue
         filtered.append(row)
     return filtered
+
+
+def _community_domain_default_setup_preferences(template_key: str) -> dict[str, bool]:
+    key = _clean_template_key(template_key, "generic_association")
+    commerce_keys = {
+        "market_cooperative",
+        "family_town_union_diaspora",
+        "ngo_project_network",
+    }
+    private_record_keys = {
+        "school_multi_branch",
+        "hospital_health_body",
+        "ngo_project_network",
+    }
+    return {
+        "member_invites": True,
+        "official_announcements": True,
+        "member_shops": key in commerce_keys,
+        "contributions": key != "generic_association",
+        "welfare_cycles": key in {"market_cooperative", "family_town_union_diaspora"},
+        "demand_box": key in commerce_keys,
+        "private_records": key in private_record_keys,
+    }
+
+
+def _community_domain_setup_preferences_payload(
+    preferences: CommunityDomainSetupPreferencesIn,
+    *,
+    template_key: str,
+) -> dict[str, bool]:
+    defaults = _community_domain_default_setup_preferences(template_key)
+    provided = preferences.model_dump(exclude_none=True)
+    return {
+        key: bool(provided[key]) if key in provided else default
+        for key, default in defaults.items()
+    }
+
+
+def _feature_mode(enabled: bool, enabled_mode: str) -> str:
+    return enabled_mode if enabled else COMMUNITY_DOMAIN_FEATURE_MODE_OFF
+
+
+def _community_domain_setup_feature_policy_config(
+    preferences: CommunityDomainSetupPreferencesIn,
+    *,
+    template_key: str,
+) -> dict[str, Any]:
+    setup = _community_domain_setup_preferences_payload(
+        preferences,
+        template_key=template_key,
+    )
+    member_submit = COMMUNITY_DOMAIN_FEATURE_MODE_MEMBERS_SUBMIT_ADMIN_APPROVES
+    return {
+        "version": 1,
+        "source": "community_domain_purchase_setup_preferences",
+        "setup_preferences": setup,
+        "features": {
+            COMMUNITY_DOMAIN_FEATURE_ANNOUNCEMENT_BOARD: _feature_mode(
+                setup["official_announcements"],
+                COMMUNITY_DOMAIN_FEATURE_MODE_ADMIN_ONLY,
+            ),
+            COMMUNITY_DOMAIN_FEATURE_DEMAND_BOX: _feature_mode(
+                setup["demand_box"],
+                member_submit,
+            ),
+            COMMUNITY_DOMAIN_FEATURE_SPOTLIGHT: COMMUNITY_DOMAIN_FEATURE_MODE_ADMIN_ONLY,
+            COMMUNITY_DOMAIN_FEATURE_SHOP_DIARY: _feature_mode(
+                setup["member_shops"],
+                member_submit,
+            ),
+            COMMUNITY_DOMAIN_FEATURE_VAULT: _feature_mode(
+                setup["private_records"],
+                COMMUNITY_DOMAIN_FEATURE_MODE_ADMIN_ONLY,
+            ),
+            COMMUNITY_DOMAIN_FEATURE_MARKETPLACE_SHOPS: _feature_mode(
+                setup["member_shops"],
+                member_submit,
+            ),
+            COMMUNITY_DOMAIN_FEATURE_MEMBER_INVITES: _feature_mode(
+                setup["member_invites"],
+                COMMUNITY_DOMAIN_FEATURE_MODE_ADMIN_ONLY,
+            ),
+            COMMUNITY_DOMAIN_FEATURE_PAYMENTS_CONTRIBUTIONS: _feature_mode(
+                setup["contributions"],
+                COMMUNITY_DOMAIN_FEATURE_MODE_ADMIN_ONLY,
+            ),
+            COMMUNITY_DOMAIN_FEATURE_ROSCA_CYCLES: _feature_mode(
+                setup["welfare_cycles"],
+                member_submit,
+            ),
+        },
+        "spotlight": {
+            "free_slots": 3,
+            "paid_after_slots": 5,
+            "rotation_hours": 24,
+        },
+        "boundary": (
+            "Front-door setup preferences for a draft Community Domain. This "
+            "does not activate billing, verify authority, publish a public "
+            "proof page, or override later owner/admin policy review."
+        ),
+    }
+
+
+def _upsert_setup_feature_policy_from_preferences(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    preferences: Optional[CommunityDomainSetupPreferencesIn],
+) -> Optional[CommunityDomainPolicy]:
+    if preferences is None:
+        return None
+
+    config = _community_domain_setup_feature_policy_config(
+        preferences,
+        template_key=domain.template_key or domain.domain_type,
+    )
+    policy = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == int(domain.id))
+        .filter(CommunityDomainPolicy.policy_key == COMMUNITY_DOMAIN_FEATURE_POLICY_KEY)
+        .first()
+    )
+    if policy is None:
+        policy = CommunityDomainPolicy(
+            community_domain_id=int(domain.id),
+            policy_key=COMMUNITY_DOMAIN_FEATURE_POLICY_KEY,
+            created_by_user_id=int(current_user.id),
+        )
+        db.add(policy)
+
+    policy.action_key = "domain.features.configure"
+    policy.scope_type = "domain"
+    policy.review_mode = "domain_admin_review"
+    policy.required_role = "domain_admin"
+    policy.status = "active"
+    policy.policy_summary = (
+        "Community Domain setup preferences captured from purchase. "
+        "Off choices stay off until an owner/admin changes the domain feature policy."
+    )
+    policy.config_json = _json_dump(config)
+    policy.updated_by_user_id = int(current_user.id)
+    return policy
 
 
 def _community_domain_feature_policy_config(
@@ -19297,6 +19452,34 @@ def _policy_config_positive_int(
     return value
 
 
+class CommunityDomainSetupPreferencesIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    member_invites: Optional[bool] = None
+    official_announcements: Optional[bool] = None
+    member_shops: Optional[bool] = None
+    contributions: Optional[bool] = None
+    welfare_cycles: Optional[bool] = None
+    demand_box: Optional[bool] = None
+    private_records: Optional[bool] = None
+
+    @field_validator(
+        "member_invites",
+        "official_announcements",
+        "member_shops",
+        "contributions",
+        "welfare_cycles",
+        "demand_box",
+        "private_records",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_bool_setup_preferences(cls, value: Any, info: Any) -> Any:
+        if value is None:
+            return value
+        return _reject_non_bool(value, info.field_name)
+
+
 class CommunityDomainDraftIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -19307,6 +19490,7 @@ class CommunityDomainDraftIn(BaseModel):
     country: Optional[str] = Field(default=None, max_length=80)
     state: Optional[str] = Field(default=None, max_length=120)
     public_profile: Optional[str] = Field(default=None, max_length=1200)
+    setup_preferences: Optional[CommunityDomainSetupPreferencesIn] = None
 
     @field_validator(
         "domain_name",
@@ -21833,6 +22017,12 @@ def create_community_domain_draft(
                 title="Domain owner",
             )
         )
+        setup_policy = _upsert_setup_feature_policy_from_preferences(
+            db,
+            domain=domain,
+            current_user=current_user,
+            preferences=payload.setup_preferences,
+        )
         db.commit()
     except IntegrityError as exc:
         db.rollback()
@@ -21846,10 +22036,13 @@ def create_community_domain_draft(
 
     db.refresh(domain)
     db.refresh(root_node)
+    if setup_policy is not None:
+        db.refresh(setup_policy)
 
     return {
         "ok": True,
         "community_domain": _domain_payload(domain, root_node=root_node),
+        "feature_policy": _policy_payload(setup_policy) if setup_policy is not None else None,
     }
 
 
@@ -21912,6 +22105,12 @@ def update_community_domain_profile(
     root_node = _find_root_node(db, int(domain.id))
     if root_node is not None:
         root_node.name = domain.display_name
+    setup_policy = _upsert_setup_feature_policy_from_preferences(
+        db,
+        domain=domain,
+        current_user=current_user,
+        preferences=payload.setup_preferences,
+    )
 
     try:
         db.commit()
@@ -21928,10 +22127,13 @@ def update_community_domain_profile(
     db.refresh(domain)
     if root_node is not None:
         db.refresh(root_node)
+    if setup_policy is not None:
+        db.refresh(setup_policy)
 
     return {
         "ok": True,
         "community_domain": _domain_payload(domain, root_node=root_node),
+        "feature_policy": _policy_payload(setup_policy) if setup_policy is not None else None,
         "boundary": (
             "Profile update only. This does not confirm payment, activate billing, "
             "verify authority, upload evidence, create members, or launch a public "

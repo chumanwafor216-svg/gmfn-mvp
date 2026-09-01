@@ -3214,6 +3214,88 @@ def test_community_domain_draft_is_not_a_live_social_community(
         assert db.query(ClanMembership).count() == 0
 
 
+def test_community_domain_draft_captures_setup_preferences_as_feature_policy(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        rejected_bad_preference = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Bad Setup Preference Domain",
+                "display_name": "Bad Setup Preference Domain",
+                "domain_type": "ngo_project_network",
+                "template_key": "ngo_project_network",
+                "setup_preferences": {"member_invites": "yes"},
+            },
+        )
+        assert rejected_bad_preference.status_code == 422, rejected_bad_preference.text
+        assert "member_invites must be a boolean" in rejected_bad_preference.text
+
+        response = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Pillar Setup Policy",
+                "display_name": "Pillar Setup Policy",
+                "domain_type": "ngo_project_network",
+                "template_key": "ngo_project_network",
+                "country": "United Kingdom",
+                "state": "Scotland / Aberdeen",
+                "setup_preferences": {
+                    "member_invites": True,
+                    "official_announcements": True,
+                    "member_shops": False,
+                    "contributions": True,
+                    "welfare_cycles": False,
+                    "demand_box": True,
+                    "private_records": True,
+                },
+            },
+        )
+        assert response.status_code == 201, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    data = payload["community_domain"]
+    policy = payload["feature_policy"]
+    assert data["status"] == "draft"
+    assert data["verification_status"] == "unverified"
+    assert policy["policy_key"] == "domain.feature_policy"
+    assert policy["action_key"] == "domain.features.configure"
+    assert policy["status"] == "active"
+    assert policy["config"]["source"] == "community_domain_purchase_setup_preferences"
+    assert policy["config"]["setup_preferences"] == {
+        "member_invites": True,
+        "official_announcements": True,
+        "member_shops": False,
+        "contributions": True,
+        "welfare_cycles": False,
+        "demand_box": True,
+        "private_records": True,
+    }
+    assert policy["config"]["features"]["announcement_board"] == "admin_only"
+    assert policy["config"]["features"]["demand_box"] == (
+        "members_submit_admin_approves"
+    )
+    assert policy["config"]["features"]["marketplace_shops"] == "off"
+    assert policy["config"]["features"]["shop_diary"] == "off"
+    assert policy["config"]["features"]["rosca_cycles"] == "off"
+    assert policy["config"]["features"]["vault"] == "admin_only"
+    assert "does not activate billing" in policy["config"]["boundary"]
+
+    with SessionLocal() as db:
+        stored_policy = db.query(CommunityDomainPolicy).one()
+        stored_config = json.loads(stored_policy.config_json or "{}")
+        assert stored_policy.community_domain_id == data["id"]
+        assert stored_policy.policy_key == "domain.feature_policy"
+        assert stored_config["setup_preferences"]["member_shops"] is False
+        assert stored_config["features"]["marketplace_shops"] == "off"
+        assert db.query(Clan).count() == 0
+        assert db.query(ClanMembership).count() == 0
+
 def test_community_domain_draft_defaults_template_to_domain_type(
     client: TestClient,
 ):

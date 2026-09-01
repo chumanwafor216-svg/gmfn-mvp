@@ -49,6 +49,7 @@ type PurchaseDraftSnapshot = {
   stateName?: string;
   templateKey?: string;
   publicProfile?: string;
+  domainSetupToggles?: Partial<DomainSetupToggles>;
 };
 
 type LocalCommunityAnchorState = {
@@ -125,6 +126,92 @@ const FALLBACK_TEMPLATES: TemplateOption[] = [
   },
 ];
 
+type DomainSetupToggleKey =
+  | "member_invites"
+  | "official_announcements"
+  | "member_shops"
+  | "contributions"
+  | "welfare_cycles"
+  | "demand_box"
+  | "private_records";
+
+type DomainSetupToggles = Record<DomainSetupToggleKey, boolean>;
+
+type CreateEntryCommunityType =
+  | "informal_social"
+  | "local_support"
+  | "migrant_community"
+  | "alumni_school"
+  | "marketplace_community"
+  | "professional_community"
+  | "registered_organisation"
+  | "welfare_contribution"
+  | "other";
+
+type CreateEntryGovernanceWeight = "light" | "standard" | "high";
+
+const DOMAIN_SETUP_TOGGLE_OPTIONS: Array<{
+  key: DomainSetupToggleKey;
+  label: string;
+}> = [
+  { key: "member_invites", label: "Member invites" },
+  { key: "official_announcements", label: "Official announcements" },
+  { key: "member_shops", label: "Member shops / services" },
+  { key: "contributions", label: "Payments / contributions" },
+  { key: "welfare_cycles", label: "Welfare cycles" },
+  { key: "demand_box", label: "Demand Box" },
+  { key: "private_records", label: "Private records" },
+];
+
+const DOMAIN_TEMPLATE_CREATE_ENTRY_MAP: Record<
+  string,
+  {
+    communityType: CreateEntryCommunityType;
+    governanceWeight: CreateEntryGovernanceWeight;
+    governanceLabel: string;
+  }
+> = {
+  school_multi_branch: {
+    communityType: "alumni_school",
+    governanceWeight: "standard",
+    governanceLabel: "Standard school / alumni setup",
+  },
+  church_religious_body: {
+    communityType: "registered_organisation",
+    governanceWeight: "high",
+    governanceLabel: "Structured registered organisation",
+  },
+  union_professional_body: {
+    communityType: "professional_community",
+    governanceWeight: "standard",
+    governanceLabel: "Standard professional community",
+  },
+  market_cooperative: {
+    communityType: "marketplace_community",
+    governanceWeight: "standard",
+    governanceLabel: "Standard marketplace network",
+  },
+  family_town_union_diaspora: {
+    communityType: "migrant_community",
+    governanceWeight: "light",
+    governanceLabel: "Light migrant support network",
+  },
+  hospital_health_body: {
+    communityType: "registered_organisation",
+    governanceWeight: "high",
+    governanceLabel: "Structured health body",
+  },
+  ngo_project_network: {
+    communityType: "registered_organisation",
+    governanceWeight: "high",
+    governanceLabel: "Structured charity / nonprofit setup",
+  },
+  generic_association: {
+    communityType: "registered_organisation",
+    governanceWeight: "high",
+    governanceLabel: "Structured association setup",
+  },
+};
 const DOMAIN_ENGINE_POINTS = [
   {
     label: "Governance",
@@ -410,6 +497,108 @@ function domainDisplayCode(value: unknown): string {
   return clean ? `${clean}.gsn` : "Not returned";
 }
 
+function templateForKey(
+  templateKey: unknown,
+  options: TemplateOption[] = FALLBACK_TEMPLATES
+): TemplateOption {
+  const key = compactValue(templateKey, DEFAULT_COMMUNITY_DOMAIN_TEMPLATE_KEY);
+  return (
+    options.find((item) => item.template_key === key) ||
+    FALLBACK_TEMPLATES.find((item) => item.template_key === key) ||
+    FALLBACK_TEMPLATES.find(
+      (item) => item.template_key === DEFAULT_COMMUNITY_DOMAIN_TEMPLATE_KEY
+    ) ||
+    FALLBACK_TEMPLATES[0]
+  );
+}
+
+function createEntryProfileForTemplate(template: TemplateOption) {
+  return (
+    DOMAIN_TEMPLATE_CREATE_ENTRY_MAP[template.template_key] ||
+    DOMAIN_TEMPLATE_CREATE_ENTRY_MAP.generic_association
+  );
+}
+
+function defaultDomainSetupToggles(template: TemplateOption): DomainSetupToggles {
+  const key = template.template_key;
+  return {
+    member_invites: true,
+    official_announcements: true,
+    member_shops: [
+      "market_cooperative",
+      "family_town_union_diaspora",
+      "ngo_project_network",
+    ].includes(key),
+    contributions: key !== "generic_association",
+    welfare_cycles: ["market_cooperative", "family_town_union_diaspora"].includes(key),
+    demand_box: [
+      "market_cooperative",
+      "family_town_union_diaspora",
+      "ngo_project_network",
+    ].includes(key),
+    private_records: [
+      "school_multi_branch",
+      "hospital_health_body",
+      "ngo_project_network",
+    ].includes(key),
+  };
+}
+
+function normalizeDomainSetupToggles(
+  value: unknown,
+  template: TemplateOption
+): DomainSetupToggles {
+  const defaults = defaultDomainSetupToggles(template);
+  if (!value || typeof value !== "object") return defaults;
+  const record = value as Partial<Record<DomainSetupToggleKey, unknown>>;
+  return DOMAIN_SETUP_TOGGLE_OPTIONS.reduce<DomainSetupToggles>((next, item) => {
+    next[item.key] =
+      typeof record[item.key] === "boolean" ? Boolean(record[item.key]) : defaults[item.key];
+    return next;
+  }, { ...defaults });
+}
+
+function domainSetupRecommendationFor(template: TemplateOption) {
+  const profile = createEntryProfileForTemplate(template);
+  return {
+    governanceLabel: profile.governanceLabel,
+    summary:
+      profile.governanceWeight === "high"
+        ? "GSN recommends stronger owner/admin checks because this looks like a formal institution or registered body."
+        : "GSN recommends a lighter guided setup first, then lets the owner deepen controls as the community grows.",
+    requirements: [
+      "Create or choose the normal GSN community first",
+      "Keep owner/admin approval on for membership changes",
+      "Treat payment, verification, and activation as later steps",
+    ],
+  };
+}
+
+function enabledDomainSetupLabels(toggles: DomainSetupToggles): string[] {
+  return DOMAIN_SETUP_TOGGLE_OPTIONS.filter((item) => toggles[item.key]).map(
+    (item) => item.label
+  );
+}
+
+function createEntryGovernanceTogglesFromDomainSetup(
+  profile: { governanceWeight: CreateEntryGovernanceWeight },
+  toggles: DomainSetupToggles
+) {
+  const highTrust = profile.governanceWeight === "high";
+  return {
+    allow_public_invite_link: Boolean(toggles.member_invites),
+    require_admin_approval_after_invite: true,
+    enable_member_service_listings: Boolean(toggles.member_shops || toggles.demand_box),
+    require_admin_approval_for_listings: true,
+    enable_community_records: Boolean(
+      toggles.official_announcements || toggles.private_records
+    ),
+    allow_member_record_submissions: false,
+    require_admin_approval_for_records: true,
+    require_full_member_verification: highTrust,
+  };
+}
+
 function rowsOf(payload: any): any[] {
   if (Array.isArray(payload)) return payload;
   if (Array.isArray(payload?.items)) return payload.items;
@@ -427,13 +616,18 @@ function readPurchaseDraftSnapshot(): PurchaseDraftSnapshot | null {
     const raw = window.sessionStorage.getItem(PURCHASE_DRAFT_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as PurchaseDraftSnapshot;
+    const templateKey = compactOptional(parsed?.templateKey);
     return {
       organizationName: compactOptional(parsed?.organizationName),
       domainName: compactOptional(parsed?.domainName),
       country: compactOptional(parsed?.country),
       stateName: compactOptional(parsed?.stateName),
-      templateKey: compactOptional(parsed?.templateKey),
+      templateKey,
       publicProfile: compactOptional(parsed?.publicProfile),
+      domainSetupToggles: normalizeDomainSetupToggles(
+        parsed?.domainSetupToggles,
+        templateForKey(templateKey)
+      ),
     };
   } catch {
     return null;
@@ -442,13 +636,18 @@ function readPurchaseDraftSnapshot(): PurchaseDraftSnapshot | null {
 
 function savePurchaseDraftSnapshot(snapshot: PurchaseDraftSnapshot) {
   if (typeof window === "undefined" || !window.sessionStorage) return;
+  const templateKey = compactOptional(snapshot.templateKey);
   const safeSnapshot: PurchaseDraftSnapshot = {
     organizationName: compactOptional(snapshot.organizationName),
     domainName: compactOptional(snapshot.domainName),
     country: compactOptional(snapshot.country),
     stateName: compactOptional(snapshot.stateName),
-    templateKey: compactOptional(snapshot.templateKey),
+    templateKey,
     publicProfile: compactOptional(snapshot.publicProfile),
+    domainSetupToggles: normalizeDomainSetupToggles(
+      snapshot.domainSetupToggles,
+      templateForKey(templateKey)
+    ),
   };
   window.sessionStorage.setItem(PURCHASE_DRAFT_STORAGE_KEY, JSON.stringify(safeSnapshot));
 }
@@ -531,6 +730,9 @@ export default function CommunityDomainPurchasePage() {
   );
   const restoredDraft = useMemo(() => readPurchaseDraftSnapshot(), []);
   const initialDraft = demoDraft || restoredDraft;
+  const initialTemplateKey =
+    initialDraft?.templateKey || DEFAULT_COMMUNITY_DOMAIN_TEMPLATE_KEY;
+  const initialTemplate = templateForKey(initialTemplateKey);
   const [isCompact, setIsCompact] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= COMMUNITY_DOMAIN_PURCHASE_COMPACT_WIDTH;
@@ -541,8 +743,9 @@ export default function CommunityDomainPurchasePage() {
   const [domainName, setDomainName] = useState(initialDraft?.domainName || "");
   const [country, setCountry] = useState(initialDraft?.country || "");
   const [stateName, setStateName] = useState(initialDraft?.stateName || "");
-  const [templateKey, setTemplateKey] = useState(
-    initialDraft?.templateKey || DEFAULT_COMMUNITY_DOMAIN_TEMPLATE_KEY
+  const [templateKey, setTemplateKey] = useState(initialTemplateKey);
+  const [domainSetupToggles, setDomainSetupToggles] = useState<DomainSetupToggles>(
+    () => normalizeDomainSetupToggles(initialDraft?.domainSetupToggles, initialTemplate)
   );
   const [templates, setTemplates] = useState<TemplateOption[]>(FALLBACK_TEMPLATES);
   const [availability, setAvailability] = useState<AvailabilityResult | null>(null);
@@ -602,7 +805,14 @@ export default function CommunityDomainPurchasePage() {
       setDomainName(demoDraft.domainName || "");
       setCountry(demoDraft.country || "");
       setStateName(demoDraft.stateName || "");
-      setTemplateKey(demoDraft.templateKey || DEFAULT_COMMUNITY_DOMAIN_TEMPLATE_KEY);
+      const nextTemplateKey = demoDraft.templateKey || DEFAULT_COMMUNITY_DOMAIN_TEMPLATE_KEY;
+      setTemplateKey(nextTemplateKey);
+      setDomainSetupToggles(
+        normalizeDomainSetupToggles(
+          demoDraft.domainSetupToggles,
+          templateForKey(nextTemplateKey, templates)
+        )
+      );
       setExistingDomainName(demoDraft.domainName || "");
       setAvailability(null);
       setDraftResult(null);
@@ -657,7 +867,7 @@ export default function CommunityDomainPurchasePage() {
         "Your Community Domain draft was restored after sign-in. GSN will use your local community first, then continue Domain setup."
       );
     }
-  }, [demoDraft, restoredDraft, needsLocalCommunityFirst, setBusyState]);
+  }, [demoDraft, restoredDraft, needsLocalCommunityFirst, setBusyState, templates]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -733,15 +943,23 @@ export default function CommunityDomainPurchasePage() {
         if (!canApply()) return;
         const nextTemplates = normalizeTemplateItems(payload);
         setTemplates(nextTemplates);
-        setTemplateKey((currentTemplateKey) =>
-          nextTemplates.some((item) => item.template_key === currentTemplateKey)
+        setTemplateKey((currentTemplateKey) => {
+          const nextTemplateKey = nextTemplates.some(
+            (item) => item.template_key === currentTemplateKey
+          )
             ? currentTemplateKey
             : nextTemplates.some(
                 (item) => item.template_key === DEFAULT_COMMUNITY_DOMAIN_TEMPLATE_KEY
               )
             ? DEFAULT_COMMUNITY_DOMAIN_TEMPLATE_KEY
-            : nextTemplates[0]?.template_key || DEFAULT_COMMUNITY_DOMAIN_TEMPLATE_KEY
-        );
+            : nextTemplates[0]?.template_key || DEFAULT_COMMUNITY_DOMAIN_TEMPLATE_KEY;
+          if (nextTemplateKey !== currentTemplateKey) {
+            setDomainSetupToggles(
+              defaultDomainSetupToggles(templateForKey(nextTemplateKey, nextTemplates))
+            );
+          }
+          return nextTemplateKey;
+        });
       } catch {
         if (canApply()) {
           setTemplates(FALLBACK_TEMPLATES);
@@ -755,11 +973,20 @@ export default function CommunityDomainPurchasePage() {
   }, [setBusyState]);
 
   const selectedTemplate = useMemo(
-    () =>
-      templates.find((item) => item.template_key === templateKey) ||
-      templates[0] ||
-      FALLBACK_TEMPLATES[0],
+    () => templateForKey(templateKey, templates),
     [templateKey, templates]
+  );
+  const domainSetupRecommendation = useMemo(
+    () => domainSetupRecommendationFor(selectedTemplate),
+    [selectedTemplate]
+  );
+  const selectedCreateEntryProfile = useMemo(
+    () => createEntryProfileForTemplate(selectedTemplate),
+    [selectedTemplate]
+  );
+  const enabledSetupLabels = useMemo(
+    () => enabledDomainSetupLabels(domainSetupToggles),
+    [domainSetupToggles]
   );
   const demoProfile = compactOptional(demoDraft?.publicProfile);
 
@@ -803,6 +1030,10 @@ export default function CommunityDomainPurchasePage() {
     const requestedPublicProfile =
       compactOptional(demoDraft?.publicProfile) ||
       `Local GSN community for ${requestedOrganizationName || "this organization"}.`;
+    const createEntryGovernanceToggles = createEntryGovernanceTogglesFromDomainSetup(
+      selectedCreateEntryProfile,
+      domainSetupToggles
+    );
     savePurchaseDraftSnapshot({
       organizationName,
       domainName,
@@ -810,6 +1041,7 @@ export default function CommunityDomainPurchasePage() {
       stateName,
       templateKey,
       publicProfile: demoDraft?.publicProfile,
+      domainSetupToggles,
     });
 
     if (isSignedIn) {
@@ -818,6 +1050,9 @@ export default function CommunityDomainPurchasePage() {
           create_community: {
             name: requestedOrganizationName,
             description: requestedPublicProfile,
+            community_type: selectedCreateEntryProfile.communityType,
+            governance_weight: selectedCreateEntryProfile.governanceWeight,
+            governance_toggles: createEntryGovernanceToggles,
             follow_up_community_domain: true,
             follow_up_path: "/community-domain/purchase",
           },
@@ -830,12 +1065,17 @@ export default function CommunityDomainPurchasePage() {
     const params = new URLSearchParams();
     if (requestedOrganizationName) params.set("clan_name", requestedOrganizationName);
     if (requestedPublicProfile) params.set("clan_description", requestedPublicProfile);
+    params.set("community_type", selectedCreateEntryProfile.communityType);
+    params.set("governance_weight", selectedCreateEntryProfile.governanceWeight);
     params.set("source", "community-domain-local-anchor");
     navigate(`/create?${params.toString()}`, {
       state: {
         create_entry: {
           clan_name: requestedOrganizationName,
           clan_description: requestedPublicProfile,
+          community_type: selectedCreateEntryProfile.communityType,
+          governance_weight: selectedCreateEntryProfile.governanceWeight,
+          governance_toggles: createEntryGovernanceToggles,
         },
         source: "community-domain-local-anchor",
       },
@@ -851,6 +1091,19 @@ export default function CommunityDomainPurchasePage() {
     if (busyRef.current === "availability") setBusyState(null);
   }
 
+  function handleTemplateKeyChange(nextTemplateKey: string) {
+    const nextTemplate = templateForKey(nextTemplateKey, templates);
+    setTemplateKey(nextTemplate.template_key);
+    setDomainSetupToggles(defaultDomainSetupToggles(nextTemplate));
+    setDraftResult(null);
+    setQuoteResult(null);
+  }
+
+  function handleDomainSetupToggleChange(key: DomainSetupToggleKey, value: boolean) {
+    setDomainSetupToggles((current) => ({ ...current, [key]: value }));
+    setDraftResult(null);
+    setQuoteResult(null);
+  }
   function handleCheckAnotherName() {
     availabilityCheckSequence.current += 1;
     setAvailability(null);
@@ -969,6 +1222,7 @@ export default function CommunityDomainPurchasePage() {
         country: requestedCountry || null,
         state: requestedStateName || null,
         public_profile: requestedPublicProfile,
+        setup_preferences: domainSetupToggles,
       });
 
       if (!canApply()) return;
@@ -1365,7 +1619,7 @@ export default function CommunityDomainPurchasePage() {
                     <div style={fieldLabel()}>Society type / template</div>
                     <select
                       value={templateKey}
-                      onChange={(event) => setTemplateKey(event.target.value)}
+                      onChange={(event) => handleTemplateKeyChange(event.target.value)}
                       disabled={hasCreatedDraft || busy === "draft"}
                       style={inputStyle()}
                     >
@@ -1428,6 +1682,126 @@ export default function CommunityDomainPurchasePage() {
                   ) : null}
                 </div>
 
+                <div
+                  style={{
+                    borderRadius: 18,
+                    border: "1px solid rgba(9,31,51,0.10)",
+                    background:
+                      "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(239,246,253,0.94) 100%)",
+                    padding: 14,
+                    display: "grid",
+                    gap: 12,
+                    minWidth: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+                      gap: 10,
+                      alignItems: "start",
+                    }}
+                  >
+                    <div style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                      <div style={labelText(false)}>GSN recommends</div>
+                      <div
+                        style={{
+                          color: "#0B1F33",
+                          fontSize: 18,
+                          fontWeight: 950,
+                          lineHeight: 1.16,
+                        }}
+                      >
+                        {domainSetupRecommendation.governanceLabel}
+                      </div>
+                      <div style={helperText(false)}>
+                        {domainSetupRecommendation.summary}
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        ...statusPill("waiting"),
+                        justifySelf: isCompact ? "start" : "end",
+                      }}
+                    >
+                      Setup preferences
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                      gap: 8,
+                    }}
+                  >
+                    {domainSetupRecommendation.requirements.map((item) => (
+                      <div
+                        key={item}
+                        style={{
+                          minHeight: 42,
+                          borderRadius: 14,
+                          border: "1px solid rgba(17,37,58,0.10)",
+                          background: "rgba(255,255,255,0.78)",
+                          color: "#10253B",
+                          fontSize: 12.5,
+                          fontWeight: 850,
+                          lineHeight: 1.35,
+                          padding: "9px 10px",
+                          boxSizing: "border-box",
+                        }}
+                      >
+                        {item}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
+                    <div style={fieldLabel()}>Simple setup choices</div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(185px, 1fr))",
+                        gap: 8,
+                      }}
+                    >
+                      {DOMAIN_SETUP_TOGGLE_OPTIONS.map((item) => (
+                        <label
+                          key={item.key}
+                          style={{
+                            minHeight: 44,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            borderRadius: 14,
+                            border: "1px solid rgba(17,37,58,0.10)",
+                            background: "rgba(255,255,255,0.82)",
+                            color: "#0B1F33",
+                            fontSize: 12.5,
+                            fontWeight: 900,
+                            lineHeight: 1.3,
+                            padding: "9px 10px",
+                            boxSizing: "border-box",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={Boolean(domainSetupToggles[item.key])}
+                            disabled={draftFormLocked}
+                            onChange={(event) =>
+                              handleDomainSetupToggleChange(item.key, event.target.checked)
+                            }
+                            style={{ width: 18, height: 18, flex: "0 0 auto" }}
+                          />
+                          <span>{item.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <div style={{ ...helperText(false), fontSize: 12.5, lineHeight: 1.5 }}>
+                      Selected now: {enabledSetupLabels.length ? enabledSetupLabels.join(", ") : "none"}. These are draft setup preferences; payment, verification, and service activation still happen later.
+                    </div>
+                  </div>
+                </div>
                 {demoProfile ? (
                   <div
                     style={{
@@ -1511,6 +1885,18 @@ export default function CommunityDomainPurchasePage() {
                       <div style={detailRow()}>
                         <span>Type</span>
                         <strong style={detailValue()}>{selectedTemplate.label}</strong>
+                      </div>
+                      <div style={detailRow()}>
+                        <span>Recommended setup</span>
+                        <strong style={detailValue()}>
+                          {selectedCreateEntryProfile.governanceLabel}
+                        </strong>
+                      </div>
+                      <div style={detailRow()}>
+                        <span>Choices</span>
+                        <strong style={detailValue()}>
+                          {enabledSetupLabels.length} selected
+                        </strong>
                       </div>
                       <div style={detailRow()}>
                         <span>Location</span>

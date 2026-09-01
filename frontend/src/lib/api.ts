@@ -2628,6 +2628,7 @@ export type CommunityDomainDraftPayload = {
   country?: string | null;
   state?: string | null;
   public_profile?: string | null;
+  setup_preferences?: Record<string, boolean> | null;
 };
 
 export type CommunityDomainNodePayload = {
@@ -2775,6 +2776,7 @@ export async function createCommunityDomainDraft(
     country: payload.country || undefined,
     state: payload.state || undefined,
     public_profile: payload.public_profile || undefined,
+    setup_preferences: payload.setup_preferences || undefined,
   });
 }
 
@@ -2790,6 +2792,7 @@ export async function updateCommunityDomainProfile(
     country: payload.country || undefined,
     state: payload.state || undefined,
     public_profile: payload.public_profile || undefined,
+    setup_preferences: payload.setup_preferences || undefined,
   });
 }
 
