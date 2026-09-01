@@ -1,3 +1,11 @@
+## 2026-09-01 - Local Marketplace Trade Evidence lazy data and error boundary
+
+- Status: Local frontend crash fix, Marketplace lazy-data type hardening, and structured action-error handling, Marketplace/Public Shop evidence-boundary audit drift fix, and listing-review button busy-state hardening verified; not pushed or deployed because the owner has not asked for another deploy.
+- Frontend route affected: `/app/marketplace` Trade Evidence lane opened from Marketing Tools.
+- Fix: `MarketplacePage` now passes `textAreaStyle` into `MarketplaceTradeEvidenceSection`'s lazy data bundle, matching the child textarea controls and the existing Support section pattern. `MarketplaceTradeEvidenceSection` now exposes a concrete `MarketplaceTradeEvidenceSectionData` prop contract backed by the parent's exported Trade Evidence type names, so this class of missing helper is caught by TypeScript instead of waiting for a runtime click. `MarketplaceToolsSection` now has its own concrete `MarketplaceToolsSectionData` contract, with precise style/callback/setter types and intentionally broad API-shaped records where the parent page is already loose. `audit-marketplace-lazy-data-boundaries.mjs` also compares the parent lazy data bundles with the child destructures for Tools and Trade Evidence, requires both lazy children to avoid `data: any`, and the audit removed one stale unused Tools pass-through (`activeNoticePostingPolicy`). `MarketplacePage` now also has a local `parsedMarketplaceErrorDetail` boundary before high-touch Marketplace action failures fall back to plain route copy, keeping the Marketplace front-package audit aligned with structured backend error detail. `audit-marketplace-shop-evidence-boundary.mjs` now reads the lazy Trade Evidence child directly for the visible evidence-not-escrow copy, so the audit follows the current lazy file boundary instead of looking only in `MarketplacePage`. The Marketplace board listing-review approve/reject buttons now lock only their own active decision (`busyApprove`/`busyReject`), while the parent handler gives a tappable in-place wait message if another listing-review decision is already saving; `audit-marketplace-button-lines.mjs` was reviewed and updated to the current 91 stable Marketplace actions.
+- Verification: `npm exec -- eslint src/pages/MarketplacePage.tsx src/pages/marketplace/MarketplaceTradeEvidenceSection.tsx tools/smoke-marketplace-boundaries.mjs` passed from `frontend/`; `node_modules\.bin\tsc.cmd -b --pretty false` passed from `frontend/`; `npm --prefix frontend run smoke:marketplace-boundaries` passed and captured the Trade Evidence, Members, and Support boundary screenshots; `npm --prefix frontend run audit:marketplace-actions` passed; `npm --prefix frontend run audit:marketplace-button-lines` passed after the listing-review busy-state correction; `npm --prefix frontend run audit:marketplace-button-inventory` passed; `npm --prefix frontend run audit:marketplace-front-package` passed after restoring the structured error boundary; `npm --prefix frontend run audit:marketplace-shop-evidence-boundary` passed after pointing the audit at the lazy Trade Evidence child; `npm --prefix frontend run audit:marketplace-lazy-data-boundaries` passed; `npm --prefix frontend run audit:protected-button-freeze` passed with the new Marketplace lazy-data boundary step included; `npm --prefix frontend run build` passed with `MarketplaceToolsSection-CQ3rK-KJ.js` at `34.32 kB` raw / `8.71 kB` gzip, `MarketplaceTradeEvidenceSection-CCOJyRW1.js` at `15.89 kB` raw / `4.05 kB` gzip, `MarketplaceBoardSection-B_yZC-xS.js` at `15.09 kB` raw / `4.59 kB` gzip, and `MarketplacePage--KTPT7RE.js` at `138.87 kB` raw / `40.54 kB` gzip; `git diff --check` passed with only CRLF warnings on touched frontend files.
+- Devil truth: both Marketplace Tools and Trade Evidence lazy data props are typed now, and high-touch Marketplace errors parse structured detail locally before fallback, the evidence-boundary audit now follows the lazy child, and listing-review actions no longer broad-disable both decision buttons under one busy flag. This still does not make every nested API payload strongly typed. The Tools contract still uses broad record shapes for payment/shop-like data where the parent page itself remains permissive; a deeper domain-model cleanup would be a separate, higher-risk refactor.
+
 ## 2026-09-01 - Production deploy bf94e198 verified
 
 - Status: Deployed to `main` and verified through manual `render-deploy.yml` workflow run `33475758581` after the owner explicitly said `deploy`.
@@ -103723,7 +103731,7 @@ Complaint ledger:
 - Verification:
   - `npm --prefix frontend run audit:community-home-button-inventory` passed;
   - `npm --prefix frontend run audit:community-home-phone-buttons` passed;
-  - `npm --prefix frontend run audit:marketplace-button-inventory` passed;
+  - `npm --prefix frontend run audit:marketplace-button-lines` passed after the listing-review busy-state correction; `npm --prefix frontend run audit:marketplace-button-inventory` passed;
   - `npm --prefix frontend run audit:marketplace-actions` passed;
   - `npm --prefix frontend run audit:marketplace-button-lines` passed;
   - `npm --prefix frontend run audit:marketplace-front-package` passed;
@@ -106623,7 +106631,7 @@ Complaint ledger:
   - first lane selected: Money Pool.
 - Baseline confirmed before edits:
   - `npm --prefix frontend run audit:protected-button-freeze` passed;
-  - `npm --prefix frontend run audit:marketplace-button-inventory` passed;
+  - `npm --prefix frontend run audit:marketplace-button-lines` passed after the listing-review busy-state correction; `npm --prefix frontend run audit:marketplace-button-inventory` passed;
   - `npm --prefix frontend run audit:marketplace-button-lines` passed;
   - `npm --prefix frontend run audit:marketplace-actions` passed.
 - Confirmed source facts:

@@ -34,7 +34,7 @@ const source = marketplacePageSource
   .replace(/<MarketplaceDemandSection\b[\s\S]*?\n\s*\/>/, marketplaceDemandSource);
 const findings = [];
 
-const expectedStableActionCount = 89;
+const expectedStableActionCount = 91;
 const expectedNativeFieldCount = 37;
 const allowedBusyDisabledExpressions = new Set([
   "creatingRepostPaymentInstruction",
@@ -42,6 +42,8 @@ const allowedBusyDisabledExpressions = new Set([
   "savingMoneyOutDestination",
   "savingPayInAccount",
   "supportProcessBusy",
+  "busyApprove",
+  "busyReject",
 ]);
 
 function lineAt(index) {

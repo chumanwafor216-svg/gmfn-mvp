@@ -25,6 +25,7 @@
     "audit:spotlight-system-feed": "node tools/audit-spotlight-system-feed.mjs",
     "audit:action-surfaces": "node tools/audit-action-surface-contracts.mjs",
     "audit:marketplace-actions": "node tools/audit-marketplace-actions.mjs",
+    "audit:marketplace-lazy-data-boundaries": "node tools/audit-marketplace-lazy-data-boundaries.mjs",
     "audit:marketplace-button-inventory": "node tools/audit-marketplace-button-inventory.mjs",
     "audit:marketplace-button-lines": "node tools/audit-marketplace-button-lines.mjs",
     "audit:marketplace-touch-blockers": "node tools/audit-marketplace-touch-blockers.mjs",

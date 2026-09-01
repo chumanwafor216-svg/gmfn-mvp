@@ -1,13 +1,131 @@
-import React, { lazy, Suspense } from "react";
+import React, {
+  lazy,
+  Suspense,
+  type CSSProperties,
+  type Dispatch,
+  type SetStateAction,
+  type SyntheticEvent,
+} from "react";
 
 import { StableButton } from "../../components/StableButton";
+import type { ProtectedTradeEventRecord, ProtectedTradeRecord } from "../../lib/api";
+import type {
+  MarketplaceActionKind,
+  MarketplaceDepartmentTone,
+  MarketplaceFieldTouchProps,
+  MarketplaceSectionKey,
+  MarketplaceSurfaceTouchProps,
+} from "./MarketplaceSupportTypes";
+import type {
+  MarketplaceGlyphName,
+  NoticeTone,
+  ProtectedTradeDraft,
+  ProtectedTradeEventOption,
+  ProtectedTradeOutcomeAction,
+  ProtectedTradeUserSide,
+} from "../MarketplacePage";
 
 const GsnSnapshotPaperCard = lazy(
   () => import("../../components/GsnSnapshotPaperCard")
 );
 
+type MarketplaceGlyphComponent = (props: {
+  name: MarketplaceGlyphName;
+  size?: number;
+}) => React.ReactElement | null;
+
+type ProtectedTradeCounterpartOption = {
+  userId: number;
+  name: string;
+};
+
+export type MarketplaceTradeEvidenceSectionData = {
+  MarketplaceGlyph: MarketplaceGlyphComponent;
+  PROTECTED_TRADE_EVENT_OPTIONS: readonly ProtectedTradeEventOption[];
+  consumeMarketplaceButtonEvent: (
+    event?: SyntheticEvent<HTMLElement>
+  ) => void;
+  creatingProtectedTrade: boolean;
+  handleConfirmProtectedTradeOutcome: (
+    event: SyntheticEvent<HTMLElement> | undefined,
+    outcome: ProtectedTradeOutcomeAction
+  ) => Promise<void>;
+  handleCreateProtectedTrade: (
+    event?: SyntheticEvent<HTMLElement>
+  ) => Promise<void>;
+  handleRecordProtectedTradeEvent: (
+    event?: SyntheticEvent<HTMLElement>
+  ) => Promise<void>;
+  helperText: () => CSSProperties;
+  innerCard: (bg?: string) => CSSProperties;
+  inputStyle: () => CSSProperties;
+  isCompact: boolean;
+  loadingProtectedTradeDetail: boolean;
+  loadingProtectedTrades: boolean;
+  marketplaceDepartmentHeaderStyle: (isCompact: boolean) => CSSProperties;
+  marketplaceDepartmentShellStyle: (
+    tone: MarketplaceDepartmentTone,
+    isCompact: boolean
+  ) => CSSProperties;
+  marketplaceFieldTouchProps: (debugId: string) => MarketplaceFieldTouchProps;
+  marketplaceInlineActionStyle: (
+    kind: MarketplaceActionKind,
+    disabled: boolean,
+    isCompact: boolean
+  ) => CSSProperties;
+  marketplaceActionStyle: (
+    kind?: MarketplaceActionKind,
+    disabled?: boolean
+  ) => CSSProperties;
+  marketplaceOsIconStyle: (bg: string, isCompact?: boolean) => CSSProperties;
+  marketplaceSectionStyle: () => CSSProperties;
+  marketplaceSurfaceTouchProps: (debugId: string) => MarketplaceSurfaceTouchProps;
+  pageCard: (bg?: string) => CSSProperties;
+  positiveNumber: (value: unknown) => number;
+  protectedTradeCounterpartOptions: ProtectedTradeCounterpartOption[];
+  protectedTradeCreateOpen: boolean;
+  protectedTradeDraft: ProtectedTradeDraft;
+  protectedTradeEventLine: (event: ProtectedTradeEventRecord) => string;
+  protectedTradeEventNote: string;
+  protectedTradeEventType: string;
+  protectedTradeEvidencePaperText: string;
+  protectedTradeStatusLabel: (value: unknown, fallback?: string) => string;
+  protectedTrades: ProtectedTradeRecord[];
+  recentProtectedTradeEvents: ProtectedTradeEventRecord[];
+  recentProtectedTrades: ProtectedTradeRecord[];
+  recordingProtectedTradeEvent: boolean;
+  recordingProtectedTradeOutcome: ProtectedTradeOutcomeAction["key"] | null;
+  refreshProtectedTrades: () => Promise<void>;
+  safeCopy: (text: string) => Promise<boolean>;
+  safeStr: (value: unknown) => string;
+  sectionLabel: () => CSSProperties;
+  sectionsOpen: Record<MarketplaceSectionKey, boolean>;
+  selectedProtectedTrade: ProtectedTradeRecord | null;
+  selectedProtectedTradeEventOption: ProtectedTradeEventOption;
+  selectedProtectedTradeHasDetail: boolean;
+  selectedProtectedTradeId: string;
+  selectedProtectedTradeOutcomeActions: Record<
+    ProtectedTradeOutcomeAction["key"],
+    ProtectedTradeOutcomeAction
+  >;
+  selectedProtectedTradeUserSide: ProtectedTradeUserSide;
+  setProtectedTradeCreateOpen: Dispatch<SetStateAction<boolean>>;
+  setProtectedTradeDraft: Dispatch<SetStateAction<ProtectedTradeDraft>>;
+  setProtectedTradeEventNote: Dispatch<SetStateAction<string>>;
+  setProtectedTradeEventType: Dispatch<SetStateAction<string>>;
+  setSelectedProtectedTradeId: Dispatch<SetStateAction<string>>;
+  showNotice: (tone: NoticeTone, text: string) => void;
+  showProtectedTradeCreateForm: boolean;
+  stableStatusPillStyle: (primary?: boolean) => CSSProperties;
+  textAreaStyle: () => CSSProperties;
+  toggleSectionFromButton: (
+    event: SyntheticEvent<HTMLElement> | undefined,
+    key: MarketplaceSectionKey
+  ) => void;
+};
+
 type MarketplaceTradeEvidenceSectionProps = {
-  data: any;
+  data: MarketplaceTradeEvidenceSectionData;
 };
 
 export default function MarketplaceTradeEvidenceSection({
@@ -439,7 +557,7 @@ export default function MarketplaceTradeEvidenceSection({
                   {...marketplaceFieldTouchProps("marketplace.protected-trade.role")}
                   value={protectedTradeDraft.role}
                   onChange={(event) =>
-                    setProtectedTradeDraft((prev: any) => ({
+                    setProtectedTradeDraft((prev) => ({
                       ...prev,
                       role: event.target.value === "buyer" ? "buyer" : "seller",
                     }))
@@ -459,7 +577,7 @@ export default function MarketplaceTradeEvidenceSection({
                   {...marketplaceFieldTouchProps("marketplace.protected-trade.counterpart")}
                   value={protectedTradeDraft.counterpartUserId}
                   onChange={(event) =>
-                    setProtectedTradeDraft((prev: any) => ({
+                    setProtectedTradeDraft((prev) => ({
                       ...prev,
                       counterpartUserId: event.target.value,
                     }))
@@ -467,7 +585,7 @@ export default function MarketplaceTradeEvidenceSection({
                   style={{ ...inputStyle(), marginTop: 6 }}
                 >
                   <option value="">Choose member</option>
-                  {protectedTradeCounterpartOptions.map((row: any) => (
+                  {protectedTradeCounterpartOptions.map((row) => (
                     <option key={row.userId} value={row.userId}>
                       {row.name}
                     </option>
@@ -483,7 +601,7 @@ export default function MarketplaceTradeEvidenceSection({
                   {...marketplaceFieldTouchProps("marketplace.protected-trade.item")}
                   value={protectedTradeDraft.itemTitle}
                   onChange={(event) =>
-                    setProtectedTradeDraft((prev: any) => ({
+                    setProtectedTradeDraft((prev) => ({
                       ...prev,
                       itemTitle: event.target.value,
                     }))
@@ -502,7 +620,7 @@ export default function MarketplaceTradeEvidenceSection({
                   {...marketplaceFieldTouchProps("marketplace.protected-trade.amount")}
                   value={protectedTradeDraft.amount}
                   onChange={(event) =>
-                    setProtectedTradeDraft((prev: any) => ({
+                    setProtectedTradeDraft((prev) => ({
                       ...prev,
                       amount: event.target.value,
                     }))
@@ -521,7 +639,7 @@ export default function MarketplaceTradeEvidenceSection({
                   {...marketplaceFieldTouchProps("marketplace.protected-trade.currency")}
                   value={protectedTradeDraft.currency}
                   onChange={(event) =>
-                    setProtectedTradeDraft((prev: any) => ({
+                    setProtectedTradeDraft((prev) => ({
                       ...prev,
                       currency: event.target.value.toUpperCase(),
                     }))
@@ -541,7 +659,7 @@ export default function MarketplaceTradeEvidenceSection({
                 {...marketplaceFieldTouchProps("marketplace.protected-trade.terms")}
                 value={protectedTradeDraft.termsSummary}
                 onChange={(event) =>
-                  setProtectedTradeDraft((prev: any) => ({
+                  setProtectedTradeDraft((prev) => ({
                     ...prev,
                     termsSummary: event.target.value,
                   }))
@@ -560,7 +678,7 @@ export default function MarketplaceTradeEvidenceSection({
                 {...marketplaceFieldTouchProps("marketplace.protected-trade.packet")}
                 value={protectedTradeDraft.evidencePacketNote}
                 onChange={(event) =>
-                  setProtectedTradeDraft((prev: any) => ({
+                  setProtectedTradeDraft((prev) => ({
                     ...prev,
                     evidencePacketNote: event.target.value,
                   }))
@@ -611,7 +729,7 @@ export default function MarketplaceTradeEvidenceSection({
 
             {recentProtectedTrades.length ? (
               <div style={{ display: "grid", gap: 8 }}>
-                {recentProtectedTrades.map((trade: any) => (
+                {recentProtectedTrades.map((trade) => (
                   <div
                     key={trade.id || trade.trade_code || trade.item_title}
                     style={{
@@ -733,7 +851,7 @@ export default function MarketplaceTradeEvidenceSection({
                         }
                         style={{ ...inputStyle(), marginTop: 6 }}
                       >
-                        {recentProtectedTrades.map((trade: any) => (
+                        {recentProtectedTrades.map((trade) => (
                           <option
                             key={trade.id || trade.trade_code || trade.item_title}
                             value={positiveNumber(trade.id) || ""}
@@ -758,7 +876,7 @@ export default function MarketplaceTradeEvidenceSection({
                         }
                         style={{ ...inputStyle(), marginTop: 6 }}
                       >
-                        {PROTECTED_TRADE_EVENT_OPTIONS.map((option: any) => (
+                        {PROTECTED_TRADE_EVENT_OPTIONS.map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
                           </option>
@@ -892,7 +1010,7 @@ export default function MarketplaceTradeEvidenceSection({
 
                           {recentProtectedTradeEvents.length ? (
                             <div style={{ display: "grid", gap: 6 }}>
-                              {recentProtectedTradeEvents.map((event: any) => (
+                              {recentProtectedTradeEvents.map((event) => (
                                 <div
                                   key={event.id || `${event.event_type}-${event.created_at}`}
                                   style={{

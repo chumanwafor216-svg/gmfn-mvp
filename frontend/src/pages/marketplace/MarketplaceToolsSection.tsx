@@ -1,4 +1,12 @@
-import React, { lazy, Suspense } from "react";
+import React, {
+  lazy,
+  Suspense,
+  type CSSProperties,
+  type Dispatch,
+  type RefObject,
+  type SetStateAction,
+  type SyntheticEvent,
+} from "react";
 
 import {
   StableButton,
@@ -6,6 +14,21 @@ import {
   StableDisclosureSummary,
 } from "../../components/StableButton";
 import { APP_ROUTES, routeWithCommunity } from "../../lib/appRoutes";
+import type {
+  ExpectedPaymentRecord,
+  LinkCenterTool,
+  MarketplaceGlyphName,
+  MarketplaceShop,
+  NoticeTone,
+  RepostProductOption,
+  RepostTargetSuggestion,
+} from "../MarketplacePage";
+import type {
+  MarketplaceActionKind,
+  MarketplaceFieldTouchProps,
+  MarketplaceSectionKey,
+  MarketplaceSurfaceTouchProps,
+} from "./MarketplaceSupportTypes";
 
 const PaymentProofSubmissionPanel = lazy(
   () => import("../../components/PaymentProofSubmissionPanel")
@@ -15,8 +38,230 @@ const SocialTagShareButton = lazy(
   () => import("../../components/SocialTagShareButton")
 );
 
+type MarketplaceGlyphComponent = (props: {
+  name: MarketplaceGlyphName;
+  size?: number;
+}) => React.ReactElement | null;
+
+type MarketplaceChoiceOption = {
+  value: string;
+  label: string;
+};
+
+type MarketplaceAppRoute = (typeof APP_ROUTES)[keyof typeof APP_ROUTES];
+
+type MarketplaceLinkRowStatus = "ready" | "warn" | "idle";
+
+export type MarketplaceToolsSectionData = {
+  MarketplaceGlyph: MarketplaceGlyphComponent;
+  activeCommunityId: number;
+  activeLinkCenterTool: LinkCenterTool | null;
+  canManageMarketplaceLinks: boolean;
+  canPlaceMarketplaceRepost: boolean;
+  availableMarketplaceRepostCredits: number;
+  badge: (primary?: boolean) => CSSProperties;
+  creatingInviteLink: boolean;
+  displayGsnLabel: (value: unknown) => string;
+  emailFreshPublicShopLink: () => Promise<void>;
+  firstPublicIdentity: (...values: unknown[]) => string;
+  firstTruthy: (...values: unknown[]) => string;
+  handleCreateInviteLink: (opts?: {
+    quiet?: boolean;
+    force?: boolean;
+  }) => Promise<boolean>;
+  JOIN_KNOWN_DURATION_OPTIONS: readonly MarketplaceChoiceOption[];
+  JOIN_RELATIONSHIP_OPTIONS: readonly MarketplaceChoiceOption[];
+  joinRecipientReady: boolean;
+  joinRelationshipReady: boolean;
+  joinSenderReady: boolean;
+  joinShareMessageCardStyle: (isCompact: boolean) => CSSProperties;
+  loadMarketplaceRepostTargetSuggestions: (background?: boolean) => Promise<void>;
+  marketplaceJoinActionsStyle: (isCompact: boolean) => CSSProperties;
+  marketplaceJoinFieldLabelStyle: (isCompact: boolean) => CSSProperties;
+  marketplaceJoinFieldShellStyle: (isCompact: boolean) => CSSProperties;
+  marketplaceJoinLinkGuidance: string;
+  maskedMarketplaceFaceLabel: string;
+  openReadyPublicShopLink: () => void;
+  positiveNumber: (value: unknown) => number;
+  publicShopSocialPackage: string;
+  publicShopSocialPreviewLink: string;
+  repostProductLabel: (product: RepostProductOption | null) => string;
+  repostProductPriceLabel: (product: RepostProductOption | null) => string;
+  resolvedRepostDurationDays: number;
+  resolvedRepostTargetCommunityInput: string;
+  routeRepostBlockNumber: number;
+  routeRepostProductId: number;
+  safeCopy: (text: string) => Promise<boolean>;
+  setJoinRelationshipEvidenceRecordedKey: Dispatch<SetStateAction<string>>;
+  shopEmailSubject: string;
+  cancelMarketplaceSectionScroll: () => void;
+  compactStatusPillStyle: (primary?: boolean) => CSSProperties;
+  copyFreshPublicShopLink: () => Promise<void>;
+  copyJoinInviteMessage: () => Promise<void>;
+  copyMarketplaceLink: (
+    link: string,
+    successText: string,
+    missingText: string,
+    customMessage?: string
+  ) => Promise<void>;
+  createMarketplaceRepostPaymentInstruction: () => Promise<void>;
+  creatingRepostPaymentInstruction: boolean;
+  formatRailMoney: (amount: unknown, currency?: string) => string;
+  helperText: () => CSSProperties;
+  inputStyle: () => CSSProperties;
+  inviteLink: string;
+  isCompact: boolean;
+  joinEmailSubject: string;
+  joinInviteDoorwayMessage: string;
+  joinInviteManualCopyMessage: string;
+  joinInviteShareReady: boolean;
+  joinInviteTrustReady: boolean;
+  joinRelationshipStatusText: string;
+  latestRepostPayment: ExpectedPaymentRecord | null;
+  latestRepostPaymentAmount: string;
+  latestRepostPaymentReference: string;
+  latestRepostPaymentStatus: string;
+  linkReserveTextStyle: () => CSSProperties;
+  loadingRepostCredits: boolean;
+  loadingRepostProducts: boolean;
+  loadingRepostTargetSuggestions: boolean;
+  marketplaceActionStyle: (
+    kind?: MarketplaceActionKind,
+    disabled?: boolean
+  ) => CSSProperties;
+  marketplaceEmailMessage: string;
+  marketplaceEmailSubject: string;
+  marketplaceFieldTouchProps: (debugId: string) => MarketplaceFieldTouchProps;
+  marketplaceInlineActionStyle: (
+    kind: MarketplaceActionKind,
+    disabled: boolean,
+    isCompact: boolean
+  ) => CSSProperties;
+  marketplaceInlineActionsStyle: (isCompact: boolean) => CSSProperties;
+  marketplaceJoinFixedFieldStyle: (isCompact: boolean) => CSSProperties;
+  marketplaceJoinLinkMissingMessage: string;
+  marketplaceJoinPreviewPendingMessage: string;
+  marketplaceLinkActiveToolStackStyle: () => CSSProperties;
+  marketplaceLinkChooserButtonStyle: (
+    isCompact: boolean,
+    primary?: boolean
+  ) => CSSProperties;
+  marketplaceLinkChooserDetailStyle: (isCompact: boolean) => CSSProperties;
+  marketplaceLinkChooserGridStyle: (isCompact: boolean) => CSSProperties;
+  marketplaceLinkChooserTextStyle: () => CSSProperties;
+  marketplaceLinkChooserTitleStyle: (isCompact: boolean) => CSSProperties;
+  marketplaceLinkHeroBodyStyle: (isCompact: boolean) => CSSProperties;
+  marketplaceLinkHeroIconStyle: (isCompact: boolean) => CSSProperties;
+  marketplaceLinkHeroPillRowStyle: () => CSSProperties;
+  marketplaceLinkHeroPillStyle: () => CSSProperties;
+  marketplaceLinkHeroStyle: (isCompact: boolean) => CSSProperties;
+  marketplaceLinkHeroSubtitleStyle: (isCompact: boolean) => CSSProperties;
+  marketplaceLinkHeroTitleStyle: (isCompact: boolean) => CSSProperties;
+  marketplaceLinkMiniIconStyle: () => CSSProperties;
+  marketplaceLinkRowHeaderStyle: (isCompact: boolean) => CSSProperties;
+  marketplaceLinkRowIconStyle: (
+    tone: "blue" | "gold" | "green" | "navy" | "purple",
+    isCompact: boolean
+  ) => CSSProperties;
+  marketplaceLinkRowStatusStyle: (
+    status: MarketplaceLinkRowStatus,
+    isCompact: boolean
+  ) => CSSProperties;
+  marketplaceLinkRowStyle: (
+    isCompact: boolean,
+    expanded?: boolean
+  ) => CSSProperties;
+  marketplaceLinkRowSubStyle: (isCompact: boolean) => CSSProperties;
+  marketplaceLinkRowTitleStyle: (isCompact: boolean) => CSSProperties;
+  marketplaceLinkToolHeaderStyle: (isCompact: boolean) => CSSProperties;
+  marketplaceRepostLocked: boolean;
+  marketplaceSectionStyle: () => CSSProperties;
+  marketplaceSurfaceTouchProps: (debugId: string) => MarketplaceSurfaceTouchProps;
+  missingMarketplaceRepostCredits: number;
+  openMarketplaceEmail: (
+    subject: string,
+    body: string,
+    link: string,
+    missingText: string
+  ) => void;
+  openMarketplaceExternalLink: (url: string, missingText: string) => void;
+  openMarketplaceRoute: (
+    event: SyntheticEvent<HTMLElement> | undefined,
+    to: MarketplaceAppRoute
+  ) => void;
+  openMarketplaceSection: (
+    event: SyntheticEvent<HTMLElement> | undefined,
+    key: MarketplaceSectionKey,
+    sectionId: string
+  ) => void;
+  pageCard: (bg?: string) => CSSProperties;
+  pendingMarketplaceSectionRef: RefObject<string>;
+  personalizedInviteLink: string;
+  personalizedInviteMaskedLabel: string;
+  placingMarketplaceRepost: boolean;
+  preparePublicShopLink: () => Promise<string>;
+  preparingPublicShopLink: boolean;
+  publicCommunityWorkspaceLink: string;
+  publicShopActionUnavailableMessage: (
+    isPreparing: boolean,
+    fallbackText: string
+  ) => string;
+  publicShopActionsLocked: boolean;
+  publicShopRecord: MarketplaceShop | null;
+  publicShopSocialLink: string;
+  publicShopUnavailableText: string;
+  publicShopViewLink: string;
+  refreshMarketplaceRepostCredits: () => Promise<void>;
+  requiredMarketplaceRepostAmount: number;
+  requiredMarketplaceRepostCredits: number;
+  requireJoinInviteTrustEvidence: () => boolean;
+  repostDurationDays: string;
+  repostTargetMarketplaceId: string;
+  repostTargetSuggestionError: string;
+  repostTargetSuggestions: RepostTargetSuggestion[];
+  runMarketplaceAction: (
+    event: SyntheticEvent<HTMLElement> | undefined,
+    action: () => void
+  ) => void;
+  safeStr: (value: unknown) => string;
+  sectionLabel: () => CSSProperties;
+  sectionsOpen: Record<MarketplaceSectionKey, boolean>;
+  selectedRepostProduct: RepostProductOption | null;
+  selectedRepostProductImageSrc: string;
+  selectedRepostProductPublicLink: string;
+  selectedRepostProductVideoSrc: string;
+  setActiveLinkCenterTool: Dispatch<SetStateAction<LinkCenterTool | null>>;
+  setCreatedRepostInstruction: Dispatch<
+    SetStateAction<ExpectedPaymentRecord | null>
+  >;
+  setJoinInviteNote: Dispatch<SetStateAction<string>>;
+  setJoinKnownDuration: Dispatch<SetStateAction<string>>;
+  setJoinRecipientName: Dispatch<SetStateAction<string>>;
+  setJoinRelationshipContext: Dispatch<SetStateAction<string>>;
+  setJoinRelationshipType: Dispatch<SetStateAction<string>>;
+  setJoinSenderName: Dispatch<SetStateAction<string>>;
+  setRepostDurationDays: Dispatch<SetStateAction<string>>;
+  setRepostExpectedPayments: Dispatch<SetStateAction<ExpectedPaymentRecord[]>>;
+  setRepostTargetMarketplaceId: Dispatch<SetStateAction<string>>;
+  setSelectedRepostProductId: Dispatch<SetStateAction<number>>;
+  showNotice: (tone: NoticeTone, text: string) => void;
+  stableStatusPillStyle: (primary?: boolean) => CSSProperties;
+  submitMarketplaceRepost: () => Promise<void>;
+  toggleSectionFromButton: (
+    event: SyntheticEvent<HTMLElement> | undefined,
+    key: MarketplaceSectionKey
+  ) => void;
+  visibleRepostProducts: RepostProductOption[];
+  joinSenderName: string;
+  joinRecipientName: string;
+  joinInviteNote: string;
+  joinRelationshipType: string;
+  joinKnownDuration: string;
+  joinRelationshipContext: string;
+};
+
 type MarketplaceToolsSectionProps = {
-  data: any;
+  data: MarketplaceToolsSectionData;
 };
 
 export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectionProps) {
@@ -568,7 +813,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                         aria-label="How you know the person you are inviting"
                       >
                         <option value="">Choose one</option>
-                        {JOIN_RELATIONSHIP_OPTIONS.map((option: any) => (
+                        {JOIN_RELATIONSHIP_OPTIONS.map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
                           </option>
@@ -596,7 +841,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                         aria-label="How long you have known the person you are inviting"
                       >
                         <option value="">Choose one</option>
-                        {JOIN_KNOWN_DURATION_OPTIONS.map((option: any) => (
+                        {JOIN_KNOWN_DURATION_OPTIONS.map((option) => (
                           <option key={option.value} value={option.value}>
                             {option.label}
                           </option>
@@ -1586,7 +1831,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                               : "No public block is ready"}
                           </option>
                         ) : (
-                          visibleRepostProducts.map((product: any) => (
+                          visibleRepostProducts.map((product) => (
                             <option key={`marketplace-repost-product-${product.id}`} value={product.id}>
                               {repostProductLabel(product)}
                             </option>
@@ -1750,7 +1995,7 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                     ) : null}
                     {repostTargetSuggestions.length ? (
                       <div style={{ display: "grid", gap: 8 }}>
-                        {repostTargetSuggestions.slice(0, 3).map((item: any, index: number) => {
+                        {repostTargetSuggestions.slice(0, 3).map((item, index) => {
                           const code = safeStr(item.community_code);
                           const title = firstTruthy(
                             item.marketplace_name,
@@ -2024,15 +2269,15 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                           title="Network Spotlight payment proof"
                           debugIdPrefix="marketplace-network-repost-proof"
                           onUploaded={(payment) => {
-                            setCreatedRepostInstruction(payment as any);
-                            setRepostExpectedPayments((prev: any[]) => {
+                            setCreatedRepostInstruction(payment as ExpectedPaymentRecord);
+                            setRepostExpectedPayments((prev) => {
                               const paymentId = String(payment.id || "");
                               const reference = firstTruthy(
                                 payment.reference_display,
                                 payment.reference
                               );
                               let replaced = false;
-                              const next = prev.map((item: any) => {
+                              const next = prev.map((item) => {
                                 const sameId =
                                   paymentId && String(item.id || "") === paymentId;
                                 const sameReference =
@@ -2041,13 +2286,13 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
                                     reference;
                                 if (sameId || sameReference) {
                                   replaced = true;
-                                  return payment as any;
+                                  return payment as ExpectedPaymentRecord;
                                 }
                                 return item;
                               });
                               return replaced
                                 ? next
-                                : [payment as any, ...prev];
+                                : [payment as ExpectedPaymentRecord, ...prev];
                             });
                             showNotice(
                               "success",

@@ -614,8 +614,8 @@ export default function MarketplaceBoardSection({
                             onClick={(event) =>
                               onDecideMarketplaceListingReview(event, submissionId, "approve")
                             }
-                            disabled={Boolean(marketplaceListingReviewBusyId)}
-                            style={marketplaceActionStyle("secondary", Boolean(marketplaceListingReviewBusyId))}
+                            disabled={busyApprove}
+                            style={marketplaceActionStyle("secondary", busyApprove)}
                           >
                             {busyApprove ? "Approving" : "Approve"}
                           </StableButton>
@@ -625,8 +625,8 @@ export default function MarketplaceBoardSection({
                             onClick={(event) =>
                               onDecideMarketplaceListingReview(event, submissionId, "reject")
                             }
-                            disabled={Boolean(marketplaceListingReviewBusyId)}
-                            style={marketplaceActionStyle("soft", Boolean(marketplaceListingReviewBusyId))}
+                            disabled={busyReject}
+                            style={marketplaceActionStyle("soft", busyReject)}
                           >
                             {busyReject ? "Rejecting" : "Reject"}
                           </StableButton>

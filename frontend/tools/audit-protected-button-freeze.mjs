@@ -16,6 +16,10 @@ const protectedAudits = [
     script: "audit-marketplace-touch-blockers.mjs",
   },
   {
+    label: "marketplace lazy data boundaries",
+    script: "audit-marketplace-lazy-data-boundaries.mjs",
+  },
+  {
     label: "global action debug ids",
     script: "audit-global-action-debugids.mjs",
   },

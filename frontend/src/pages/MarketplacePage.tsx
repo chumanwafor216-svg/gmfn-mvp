@@ -82,6 +82,7 @@ import {
   recordMarketWisdomExposure,
   safeCopy,
   type ClanInviteRelationshipEvidencePayload,
+  type ProtectedTradeEventRecord,
   type ProtectedTradeRecord,
 } from "../lib/api";
 import { buildWhatsAppChatUrl } from "../lib/whatsappLinks";
@@ -223,7 +224,7 @@ type ClanMember = {
 
 type ShopVisibilityMode = "community_visible" | "vault_private";
 
-type MarketplaceShop = {
+export type MarketplaceShop = {
   id?: number;
   clan_id?: number | null;
   user_id?: number;
@@ -250,7 +251,7 @@ type MarketplaceShop = {
   listing_expiry_enforced?: boolean | null;
 };
 
-type RepostProductOption = {
+export type RepostProductOption = {
   id: number;
   originShopId: number;
   originCommunityId: number;
@@ -294,7 +295,7 @@ type PaidRepostHandoff = {
 
 const PAID_REPOST_HANDOFF_STORAGE_KEY = "gmfn_paid_repost_handoff_v1";
 
-type ProtectedTradeDraft = {
+export type ProtectedTradeDraft = {
   role: "seller" | "buyer";
   counterpartUserId: string;
   itemTitle: string;
@@ -304,9 +305,9 @@ type ProtectedTradeDraft = {
   evidencePacketNote: string;
 };
 
-type ProtectedTradeUserSide = "buyer" | "seller" | "participant";
+export type ProtectedTradeUserSide = "buyer" | "seller" | "participant";
 
-type ProtectedTradeOutcomeAction = {
+export type ProtectedTradeOutcomeAction = {
   key: "good" | "blocked" | "issue";
   eventType: string;
   label: string;
@@ -314,6 +315,12 @@ type ProtectedTradeOutcomeAction = {
   note: string;
   success: string;
   tone: "primary" | "secondary";
+};
+
+export type ProtectedTradeEventOption = {
+  value: string;
+  label: string;
+  detail: string;
 };
 
 const PROTECTED_TRADE_EVENT_OPTIONS = [
@@ -377,7 +384,7 @@ const PROTECTED_TRADE_EVENT_OPTIONS = [
     label: "Close record",
     detail: "Close the trade record after the parties are done.",
   },
-] as const;
+] as const satisfies readonly ProtectedTradeEventOption[];
 
 function protectedTradeUserSide(
   trade: ProtectedTradeRecord | null | undefined,
@@ -455,7 +462,7 @@ function protectedTradeOutcomeActions(
   };
 }
 
-type ExpectedPaymentRecord = {
+export type ExpectedPaymentRecord = {
   id?: number | string | null;
   expected_type?: string | null;
   amount?: string | number | null;
@@ -515,7 +522,7 @@ type RoscaCycleSummary = {
   rounds?: RoscaRoundSummary[];
 };
 
-type RepostTargetSuggestion = {
+export type RepostTargetSuggestion = {
   community_id?: number | string | null;
   community_code?: string | null;
   marketplace_name?: string | null;
@@ -542,7 +549,7 @@ type PayInAccountDraft = {
 };
 
 
-type NoticeTone = "success" | "error";
+export type NoticeTone = "success" | "error";
 
 type SectionState = Record<MarketplaceSectionKey, boolean>;
 
@@ -558,7 +565,7 @@ type MarketplaceWisdomAction = {
 
 type FrontDomainGroup = "supportMoney" | "boardMembers" | null;
 
-type LinkCenterTool =
+export type LinkCenterTool =
   | "join"
   | "verify"
   | "shopFace"
@@ -1095,13 +1102,47 @@ function firstTruthy(...values: any[]): string {
   return "";
 }
 
+type MarketplaceErrorDetail = Record<string, unknown>;
 
+function marketplaceErrorDetailRecord(value: unknown): MarketplaceErrorDetail | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as MarketplaceErrorDetail)
+    : null;
+}
 
+function parsedMarketplaceErrorDetail(err: any): MarketplaceErrorDetail | null {
+  const directDetail = marketplaceErrorDetailRecord(err?.detail);
+  if (directDetail) return directDetail;
 
+  const responseDetail = marketplaceErrorDetailRecord(err?.response?.data?.detail);
+  if (responseDetail) return responseDetail;
 
+  const message = safeStr(err?.message);
+  if (!message.startsWith("{") || !message.endsWith("}")) return null;
+
+  try {
+    const parsed = JSON.parse(message);
+    const parsedRecord = marketplaceErrorDetailRecord(parsed);
+    if (!parsedRecord) return null;
+    return marketplaceErrorDetailRecord(parsedRecord.detail) || parsedRecord;
+  } catch {
+    return null;
+  }
+}
 
 function marketplaceErrorMessage(err: any, fallback: string): string {
-  return gsnGovernanceErrorMessage(err, fallback);
+  const detail = parsedMarketplaceErrorDetail(err);
+
+  return firstTruthy(
+    gsnGovernanceErrorMessage(err, ""),
+    detail?.message,
+    detail?.error,
+    detail?.reason,
+    detail?.title,
+    detail?.detail,
+    err?.message,
+    fallback
+  );
 }
 
 function normalizeIntentText(value: any): string {
@@ -1798,7 +1839,7 @@ function communityIdentity(row: CommunityRow | null | undefined): string {
   return raw ? displayGsnLabel(raw) : "No community ID yet";
 }
 
-function protectedTradeStatusLabel(value: any, fallback = "not recorded"): string {
+function protectedTradeStatusLabel(value: unknown, fallback = "not recorded"): string {
   return (safeStr(value) || fallback).replace(/_/g, " ");
 }
 
@@ -1811,7 +1852,7 @@ function protectedTradeAmountLabel(
   return `${currency} ${amount}`;
 }
 
-function protectedTradeEventLabel(eventType: any): string {
+function protectedTradeEventLabel(eventType: unknown): string {
   const key = safeStr(eventType)
     .toLowerCase()
     .replace(/^protected_trade\./, "");
@@ -1821,7 +1862,7 @@ function protectedTradeEventLabel(eventType: any): string {
   return option?.label || protectedTradeStatusLabel(key, "Trade event");
 }
 
-function protectedTradeEventLine(event: any): string {
+function protectedTradeEventLine(event: ProtectedTradeEventRecord): string {
   const label = protectedTradeEventLabel(event?.event_type);
   const note = safeStr(event?.note);
   const createdAt = safeStr(event?.created_at);
@@ -3816,7 +3857,7 @@ function marketplaceOsArrowStyle(): React.CSSProperties {
   };
 }
 
-type MarketplaceGlyphName =
+export type MarketplaceGlyphName =
   | "bank"
   | "card"
   | "cash"
@@ -5014,6 +5055,14 @@ export default function MarketplacePage() {
     const cleanSubmissionId = safeStr(submissionEventId);
     if (!activeCommunityId || !cleanSubmissionId) {
       showNotice("error", "Marketplace listing review is not ready yet.");
+      return;
+    }
+
+    if (marketplaceListingReviewBusyId) {
+      showNotice(
+        "error",
+        "Marketplace listing review is already saving. Wait for that decision to finish."
+      );
       return;
     }
 
@@ -9161,7 +9210,6 @@ export default function MarketplacePage() {
               MarketplaceGlyph,
               activeCommunityId,
               activeLinkCenterTool,
-              activeNoticePostingPolicy,
               canManageMarketplaceLinks,
               canPlaceMarketplaceRepost,
               availableMarketplaceRepostCredits,
@@ -9317,7 +9365,8 @@ export default function MarketplacePage() {
             }}
           />
         </Suspense>
-      ) : null}      {sectionsOpen.trade ? (
+      ) : null}
+      {sectionsOpen.trade ? (
         <Suspense fallback={null}>
           <MarketplaceTradeEvidenceSection
             data={{
@@ -9331,6 +9380,7 @@ export default function MarketplacePage() {
               helperText,
               innerCard,
               inputStyle,
+              textAreaStyle,
               isCompact,
               loadingProtectedTradeDetail,
               loadingProtectedTrades,

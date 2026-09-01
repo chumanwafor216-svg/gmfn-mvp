@@ -10,6 +10,7 @@ const files = {
   routes: "src/lib/appRoutes.ts",
   targets: "src/lib/actionTargetRoutes.ts",
   marketplace: "src/pages/MarketplacePage.tsx",
+  marketplaceTradeEvidence: "src/pages/marketplace/MarketplaceTradeEvidenceSection.tsx",
   shopGallery: "src/pages/ShopGalleryPage.tsx",
   communityProofPanel: "src/components/CommunityProofPanel.tsx",
   communityProof: "src/lib/communityProof.ts",
@@ -241,7 +242,7 @@ assertContains(
 );
 
 assertContains(
-  "marketplace",
+  "marketplaceTradeEvidence",
   /This is evidence, not escrow[\s\S]*?This creates evidence, not escrow/,
   "Marketplace visible Trade Evidence guidance must keep evidence-not-escrow language."
 );
