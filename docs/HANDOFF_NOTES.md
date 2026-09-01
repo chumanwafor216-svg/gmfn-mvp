@@ -1,3 +1,11 @@
+## 2026-09-01 - Local Community Domain create-entry setup simplification
+
+- Status: Local frontend handoff simplification verified; not pushed or deployed because the owner has not asked for deploy on this slice.
+- Frontend route affected: `/create` (`CreateEntryPage`) when opened from `/community-domain/purchase` with `source=community-domain-local-anchor`.
+- Change: the Community Domain handoff now keeps the advanced governance toggle grid collapsed behind `Review setup controls`, with plain guidance that GSN already filled it from the selected Community Domain kind. Ordinary `/create` still shows the existing `Setup controls` card directly.
+- Audit cage: `audit-community-domain-product-contracts.mjs` now checks that the domain handoff path is collapsed while the ordinary create path keeps its normal controls.
+- Verification: `npm --prefix frontend run audit:community-domain-product-contracts` passed; `npm --prefix frontend run audit:entry-flow-polish` passed; `npm --prefix frontend run lint` passed; `npm --prefix frontend run build` passed; `npm --prefix frontend run audit:protected-button-freeze` passed; `npm --prefix frontend run audit:entry-copy-response` passed; `npm --prefix frontend run audit:entry-auth` passed; `git diff --check` passed with only CRLF warnings on touched frontend files.
+- Devil truth: this is a simplification of the local-community anchor after the Domain recommendation, not a new backend capability. The backend still relies on the setup preferences already saved through the draft/profile policy path, and real phone acceptance testing remains the final proof for whether the flow feels simple enough to Aberdeen-style users.
 ## 2026-09-01 - Local Community Domain feature-policy timestamp continuity
 
 - Status: Local frontend state correction verified; not pushed or deployed because the owner has not asked for another deploy.

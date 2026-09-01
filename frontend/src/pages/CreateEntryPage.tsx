@@ -2,7 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { EntryBackLink } from "../components/EntryControls";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
-import { PrimaryButton, SecondaryButton } from "../components/StableButton";
+import {
+  PrimaryButton,
+  SecondaryButton,
+  StableDisclosureSummary,
+} from "../components/StableButton";
 import {
   clearPublicEntryState,
   checkEntryCommunityName,
@@ -1627,6 +1631,13 @@ export default function CreateEntryPage() {
         create_code?: string;
       };
     } | null)?.create_entry || null;
+  const entrySource = safeStr(
+    ((location.state as { source?: unknown } | null)?.source) ||
+      search.get("source") ||
+      ""
+  );
+  const isCommunityDomainLocalAnchor =
+    entrySource === "community-domain-local-anchor";
 
   const createCode = safeStr(
     stateCreateEntry?.create_code ||
@@ -6232,69 +6243,145 @@ export default function CreateEntryPage() {
                         {governanceRequirementSummary}
                       </div>
                     </div>
-
-                    <div
-                      style={{
-                        ...softCard("#F8FBFF"),
-                        display: "grid",
-                        gap: 10,
-                      }}
-                    >
-                      <div style={sectionLabel()}>Setup controls</div>
-                      <div
+                    {isCommunityDomainLocalAnchor ? (
+                      <details
                         style={{
+                          ...softCard("#F8FBFF"),
                           display: "grid",
-                          gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
-                          gap: 8,
+                          gap: 10,
                         }}
                       >
-                        {GOVERNANCE_TOGGLE_OPTIONS.map((item) => {
-                          const lockedHighFullVerification =
-                            item.key === "require_full_member_verification" &&
-                            governanceWeight === "high";
-                          return (
-                            <label
-                              key={item.key}
-                              style={{
-                                minHeight: 44,
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 10,
-                                borderRadius: 14,
-                                border: "1px solid rgba(17,37,58,0.10)",
-                                background: "rgba(255,255,255,0.82)",
-                                color: "#0B1F33",
-                                fontSize: 12.5,
-                                fontWeight: 900,
-                                lineHeight: 1.3,
-                                padding: "9px 10px",
-                              }}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={Boolean(governanceToggles[item.key])}
-                                disabled={lockedHighFullVerification}
-                                onChange={(e) =>
-                                  handleGovernanceToggleChange(item.key, e.target.checked)
-                                }
-                                style={{ width: 18, height: 18, flex: "0 0 auto" }}
-                              />
-                              <span>{item.label}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
+                        <StableDisclosureSummary
+                          debugId="create-entry.community.review-setup-controls"
+                          style={{
+                            cursor: "pointer",
+                            color: "#0B1F33",
+                            fontWeight: 1000,
+                          }}
+                        >
+                          Review setup controls
+                        </StableDisclosureSummary>
+                        <div
+                          style={{
+                            color: "#5D718A",
+                            fontSize: 12.5,
+                            lineHeight: 1.5,
+                            fontWeight: 760,
+                            marginTop: 10,
+                          }}
+                        >
+                          GSN filled these from your Community Domain kind. Open this only if
+                          the local community needs a different setup before registration.
+                        </div>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+                            gap: 8,
+                            marginTop: 10,
+                          }}
+                        >
+                          {GOVERNANCE_TOGGLE_OPTIONS.map((item) => {
+                            const lockedHighFullVerification =
+                              item.key === "require_full_member_verification" &&
+                              governanceWeight === "high";
+                            return (
+                              <label
+                                key={item.key}
+                                style={{
+                                  minHeight: 44,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 10,
+                                  borderRadius: 14,
+                                  border: "1px solid rgba(17,37,58,0.10)",
+                                  background: "rgba(255,255,255,0.82)",
+                                  color: "#0B1F33",
+                                  fontSize: 12.5,
+                                  fontWeight: 900,
+                                  lineHeight: 1.3,
+                                  padding: "9px 10px",
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={Boolean(governanceToggles[item.key])}
+                                  disabled={lockedHighFullVerification}
+                                  onChange={(e) =>
+                                    handleGovernanceToggleChange(item.key, e.target.checked)
+                                  }
+                                  style={{ width: 18, height: 18, flex: "0 0 auto" }}
+                                />
+                                <span>{item.label}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </details>
+                    ) : (
                       <div
                         style={{
-                          color: "#5D718A",
-                          fontSize: 12.5,
-                          lineHeight: 1.5,
-                          fontWeight: 760,
+                          ...softCard("#F8FBFF"),
+                          display: "grid",
+                          gap: 10,
                         }}
                       >
-                        This records the setup choice now. Full policy enforcement can be deepened later without changing this entry path.
+                        <div style={sectionLabel()}>Setup controls</div>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          {GOVERNANCE_TOGGLE_OPTIONS.map((item) => {
+                            const lockedHighFullVerification =
+                              item.key === "require_full_member_verification" &&
+                              governanceWeight === "high";
+                            return (
+                              <label
+                                key={item.key}
+                                style={{
+                                  minHeight: 44,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 10,
+                                  borderRadius: 14,
+                                  border: "1px solid rgba(17,37,58,0.10)",
+                                  background: "rgba(255,255,255,0.82)",
+                                  color: "#0B1F33",
+                                  fontSize: 12.5,
+                                  fontWeight: 900,
+                                  lineHeight: 1.3,
+                                  padding: "9px 10px",
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={Boolean(governanceToggles[item.key])}
+                                  disabled={lockedHighFullVerification}
+                                  onChange={(e) =>
+                                    handleGovernanceToggleChange(item.key, e.target.checked)
+                                  }
+                                  style={{ width: 18, height: 18, flex: "0 0 auto" }}
+                                />
+                                <span>{item.label}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                        <div
+                          style={{
+                            color: "#5D718A",
+                            fontSize: 12.5,
+                            lineHeight: 1.5,
+                            fontWeight: 760,
+                          }}
+                        >
+                          This records the setup choice now. Full policy enforcement can be deepened later without changing this entry path.
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
 
                   <div style={{ display: communityDecisionMode ? "none" : undefined }}>

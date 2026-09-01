@@ -3927,6 +3927,12 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CreateEntryPage.tsx",
+  /StableDisclosureSummary[\s\S]*const entrySource = safeStr[\s\S]*search\.get\("source"\)[\s\S]*isCommunityDomainLocalAnchor =[\s\S]*community-domain-local-anchor[\s\S]*isCommunityDomainLocalAnchor \?[\s\S]*create-entry\.community\.review-setup-controls[\s\S]*Review setup controls[\s\S]*GSN filled these from your Community Domain kind[\s\S]*GOVERNANCE_TOGGLE_OPTIONS\.map[\s\S]*: \([\s\S]*<div style=\{sectionLabel\(\)\}>Setup controls<\/div>[\s\S]*GOVERNANCE_TOGGLE_OPTIONS\.map/,
+  "Create Community must keep Community Domain handoff governance controls collapsed while preserving ordinary create setup controls.",
+  { frontend: true }
+);
+assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
   /function availabilityReasonText[\s\S]*reserved by GSN[\s\S]*Use letters, numbers, spaces, or hyphens[\s\S]*already in use[\s\S]*availabilityReasonText\(result\?\.reason\)[\s\S]*Reason: <strong>\{availabilityReasonText\(availability\.reason\)\}<\/strong>/,
   "Community Domain purchase availability errors must translate backend reason codes into plain user guidance.",
