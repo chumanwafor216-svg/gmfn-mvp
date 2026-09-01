@@ -1252,6 +1252,28 @@ def _resolve_clan_id(
     return int(candidate)
 
 
+def _resolve_existing_marketplace_clan_id(
+    *,
+    current_user: User,
+    db: Session,
+    stored_clan_id: int,
+    explicit_clan_id: Optional[int] = None,
+    header_clan_id: Optional[str] = None,
+) -> int:
+    if _safe_int(explicit_clan_id, 0) > 0 or _safe_int(header_clan_id, 0) > 0:
+        return _resolve_clan_id(
+            current_user=current_user,
+            db=db,
+            explicit_clan_id=explicit_clan_id,
+            header_clan_id=header_clan_id,
+        )
+
+    stored_candidate = _safe_int(stored_clan_id, 0)
+    if stored_candidate <= 0:
+        raise HTTPException(status_code=400, detail="No active community selected")
+    return int(stored_candidate)
+
+
 def _require_active_membership(
     *,
     db: Session,
@@ -3285,10 +3307,11 @@ def update_marketplace_shop(
     if not _shop_owner_can_manage(current_user=current_user, shop=shop):
         raise HTTPException(status_code=403, detail="Only the shop owner can update this shop")
 
-    resolved_clan_id = _resolve_clan_id(
+    resolved_clan_id = _resolve_existing_marketplace_clan_id(
         current_user=current_user,
         db=db,
-        explicit_clan_id=payload.clan_id or int(shop.clan_id or 0),
+        stored_clan_id=int(shop.clan_id or 0),
+        explicit_clan_id=payload.clan_id,
         header_clan_id=x_clan_id,
     )
 
@@ -4160,10 +4183,11 @@ def update_marketplace_product(
     if not _product_owner_can_manage(db=db, current_user=current_user, product=product):
         raise HTTPException(status_code=403, detail="Only the shop owner can update this product")
 
-    resolved_clan_id = _resolve_clan_id(
+    resolved_clan_id = _resolve_existing_marketplace_clan_id(
         current_user=current_user,
         db=db,
-        explicit_clan_id=payload.clan_id or int(product.clan_id or 0),
+        stored_clan_id=int(product.clan_id or 0),
+        explicit_clan_id=payload.clan_id,
         header_clan_id=x_clan_id,
     )
 
@@ -4515,10 +4539,10 @@ def delete_marketplace_product(
     if not _product_owner_can_manage(db=db, current_user=current_user, product=product):
         raise HTTPException(status_code=403, detail="Only the shop owner can delete this product")
 
-    resolved_clan_id = _resolve_clan_id(
+    resolved_clan_id = _resolve_existing_marketplace_clan_id(
         current_user=current_user,
         db=db,
-        explicit_clan_id=int(product.clan_id or 0),
+        stored_clan_id=int(product.clan_id or 0),
         header_clan_id=x_clan_id,
     )
 
@@ -4527,6 +4551,9 @@ def delete_marketplace_product(
         user_id=int(current_user.id),
         clan_id=int(product.clan_id),
     )
+
+    if int(resolved_clan_id) != int(product.clan_id):
+        raise HTTPException(status_code=409, detail="Selected community does not own this product")
 
     require_domain_shop_diary_enabled(db, clan_id=resolved_clan_id)
 

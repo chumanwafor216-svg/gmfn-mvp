@@ -763,6 +763,19 @@ def test_marketplace_shop_update_rejects_wrong_selected_community(
             text("SELECT description FROM marketplace_shops WHERE id = 984")
         ).scalar_one()
     assert description == "Original shop copy"
+
+    header_response = client.patch(
+        "/marketplace/shops/984",
+        headers={"X-Clan-Id": "2"},
+        json={"description": "Wrong header update"},
+    )
+    assert header_response.status_code == 409, header_response.text
+    assert header_response.json()["detail"] == "Selected community does not own this shop"
+    with engine.begin() as conn:
+        description_after_header = conn.execute(
+            text("SELECT description FROM marketplace_shops WHERE id = 984")
+        ).scalar_one()
+    assert description_after_header == "Original shop copy"
     assert (
         _scalar(
             "SELECT COUNT(*) FROM trust_events "
@@ -771,7 +784,7 @@ def test_marketplace_shop_update_rejects_wrong_selected_community(
         == 0
     )
 
-def test_marketplace_product_update_rejects_wrong_selected_community(
+def test_marketplace_product_update_and_archive_reject_wrong_selected_community(
     client,
     override_current_user_user,
     seed_clan_member_membership,
@@ -835,6 +848,30 @@ def test_marketplace_product_update_rejects_wrong_selected_community(
         ).scalar_one()
     assert price == "Ask"
 
+    header_response = client.patch(
+        "/marketplace/products/986",
+        headers={"X-Clan-Id": "2"},
+        json={"price": "Header Updated"},
+    )
+    assert header_response.status_code == 409, header_response.text
+    assert header_response.json()["detail"] == "Selected community does not own this product"
+    with engine.begin() as conn:
+        price_after_header = conn.execute(
+            text("SELECT price FROM marketplace_products WHERE id = 986")
+        ).scalar_one()
+    assert price_after_header == "Ask"
+
+    archive_response = client.post(
+        "/marketplace/products/986/archive",
+        headers={"X-Clan-Id": "2"},
+    )
+    assert archive_response.status_code == 409, archive_response.text
+    assert archive_response.json()["detail"] == "Selected community does not own this product"
+    with engine.begin() as conn:
+        active_after_archive = conn.execute(
+            text("SELECT is_active FROM marketplace_products WHERE id = 986")
+        ).scalar_one()
+    assert int(active_after_archive) == 1
 
 def test_marketplace_product_update_rejects_target_shop_not_visible_in_product_community(
     client,

@@ -1,3 +1,13 @@
+## 2026-09-01 - Local Marketplace existing-row header context boundary
+
+- Status: Local backend fix verified; not pushed or deployed after production deploy `a40a6caa` because the owner has not asked for another deploy.
+- Backend routes affected: `PUT/PATCH /marketplace/shops/{shop_id}`, `PUT/PATCH /marketplace/products/{product_id}`, and `DELETE/POST archive/delete /marketplace/products/{product_id}`.
+- Fix: existing shop/product mutation routes now honor an explicit body `clan_id` or `X-Clan-Id` selected-community context before falling back to the stored row community. A wrong-but-valid selected community now returns `409` instead of silently using the row's stored clan and mutating under the wrong context.
+- Product delete/archive now uses the same existing-row resolver and rejects a selected community that does not own the product before deactivating it or removing reposts.
+- Coverage added: shop update header mismatch, product update header mismatch, and product archive header mismatch all prove the stored row stays unchanged.
+- Verification: `python -m py_compile gmfn_backend\app\api\routes\marketplace.py gmfn_backend\tests\test_marketplace_public_shop.py`; focused selected-community mismatch slice passed; broader selected-community Marketplace management slice passed; full `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py --basetemp C:\tmp\gmfn_pytest_marketplace_public_shop_header_context -q` passed outside the restricted sandbox after the sandbox blocked temp directory creation.
+- Devil truth: this closes the existing-row header-context mismatch for the audited shop/product mutation routes. It does not audit every Marketplace endpoint, migrate historical rows, or change the already-deployed production commit until the owner explicitly approves push/deploy.
+
 ## 2026-09-01 - Production deploy a40a6caa verified
 
 - Status: Deployed to `main` and verified through manual `render-deploy.yml` workflow run `33472442025` after the owner explicitly said `deploy`.
