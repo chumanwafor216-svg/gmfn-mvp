@@ -5424,9 +5424,14 @@ def delete_marketplace_broadcast(
             MarketplaceBroadcast.video_url == getattr(item, "video_url", None),
             MarketplaceBroadcast.expires_at == item.expires_at,
             MarketplaceBroadcast.priority_mode == item.priority_mode,
+            MarketplaceBroadcast.shop_id == item.shop_id,
+            MarketplaceBroadcast.visibility_scope == item.visibility_scope,
         )
+        .order_by(MarketplaceBroadcast.id.asc())
         .all()
     )
+    if all(int(row.id) != int(item.id) for row in sibling_rows):
+        sibling_rows.insert(0, item)
 
     deleted_snapshots = [_broadcast_out(db, row) for row in sibling_rows]
 

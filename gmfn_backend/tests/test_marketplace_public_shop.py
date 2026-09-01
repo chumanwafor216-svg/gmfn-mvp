@@ -4563,6 +4563,125 @@ def test_paid_spotlight_blocks_second_active_run_even_with_unused_credit(
     assert status_after.json()["can_publish_paid_spotlight"] is False
 
 
+def test_marketplace_broadcast_delete_only_removes_matching_propagated_siblings(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'pytest@example.com', 'hashed', 'Shop Owner', 'user', 'GMFN-U-BROADDEL'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES
+                    (1, 'Golden boys', 'Golden boys Marketplace', 'BDEL1'),
+                    (2, 'Aberdeen city ICA', 'Aberdeen city ICA Marketplace', 'BDEL2')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES
+                    (1, 1, 1, 'member', 0),
+                    (2, 2, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'BROADCAST DELETE SHOP', 'Broadcast sibling scope', 1
+                )
+                """
+            )
+        )
+
+    create = client.post(
+        "/marketplace/broadcasts",
+        json={
+            "clan_id": 1,
+            "shop_id": 1,
+            "message": "Same message",
+            "priority_mode": "free",
+            "visibility_scope": "direct_communities",
+        },
+    )
+    assert create.status_code == 200, create.text
+    created_ids = [int(item["id"]) for item in create.json()["items"]]
+    assert len(created_ids) == 2
+
+    primary_id = created_ids[0]
+    with engine.begin() as conn:
+        seed = conn.execute(
+            text(
+                """
+                SELECT created_at, expires_at
+                FROM marketplace_broadcasts
+                WHERE id = :id
+                """
+            ),
+            {"id": primary_id},
+        ).fetchone()
+        assert seed is not None
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_broadcasts (
+                    id, clan_id, author_user_id, shop_id, message, image_url,
+                    video_url, priority_mode, visibility_scope, expires_at, created_at
+                ) VALUES
+                    (991, 1, 1, NULL, 'Same message', NULL, NULL, 'free', 'direct_communities', :expires_at, :created_at),
+                    (992, 1, 1, 1, 'Same message', NULL, NULL, 'free', 'marketplace_repost', :expires_at, :created_at)
+                """
+            ),
+            {
+                "expires_at": seed[1],
+                "created_at": seed[0],
+            },
+        )
+
+    res = client.delete(f"/marketplace/broadcasts/{primary_id}")
+    assert res.status_code == 200, res.text
+    body = res.json()
+
+    assert body["deleted_count"] == 2
+    assert [item["id"] for item in body["deleted_items"]] == created_ids
+
+    with engine.begin() as conn:
+        remaining_ids = conn.execute(
+            text("SELECT id FROM marketplace_broadcasts ORDER BY id ASC")
+        ).fetchall()
+        deleted_event_count = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM trust_events
+                WHERE event_type = 'marketplace.broadcast.deleted'
+                """
+            )
+        ).scalar_one()
+
+    assert [int(row[0]) for row in remaining_ids] == [991, 992]
+    assert int(deleted_event_count) == 2
+
+
 def test_shop_follow_status_count_and_unfollow(client, monkeypatch):
     monkeypatch.setenv("SECRET_KEY", "pytest-shop-follow-secret")
     _ensure_marketplace_tables()

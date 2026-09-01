@@ -1,3 +1,11 @@
+## 2026-09-01 - Local Marketplace broadcast delete sibling scope
+
+- Status: Local backend fix verified; not pushed or deployed because the owner has not asked for another deploy after the earlier `db975921` production deploy.
+- Backend route affected: `DELETE /marketplace/broadcasts/{broadcast_id}`.
+- Fix: propagated Spotlight deletion now only removes sibling broadcasts that match the original author, creation time, message/media, expiry, priority mode, `shop_id`, and `visibility_scope`; the selected broadcast row is defensively included so a delete cannot report success with zero deleted rows if a fragile equality comparison misses it.
+- Coverage added: regression test proves deleting a two-community propagated shop Spotlight removes those two rows while preserving same-author/same-time/same-message collision rows with a different `shop_id` or `visibility_scope`, and records only two deletion Trust Events.
+- Verification: `python -m py_compile gmfn_backend\app\api\routes\marketplace.py gmfn_backend\tests\test_marketplace_public_shop.py`; focused Marketplace Spotlight/delete slice passed; full `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py --basetemp C:\tmp\gmfn_pytest_marketplace_public_shop_broadcast_delete -q` passed outside the restricted sandbox after the sandbox blocked pytest temp directory creation; `npm --prefix frontend run audit:spotlight-system-feed` passed.
+- Devil truth: this closes a quiet over-delete/no-delete edge in the Spotlight cleanup path. It does not add a true broadcast batch id, so sibling detection still depends on the legacy shared-field grouping until a schema-level batch identifier is introduced.
 ## 2026-09-01 - Local Render API deploy polling hardening
 
 - Status: Local workflow hardening only; not pushed or deployed after the completed `db975921` manual deploy because the owner has not asked for another deploy.
