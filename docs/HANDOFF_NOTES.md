@@ -1,6 +1,14 @@
+## 2026-09-01 - Production deploy a40a6caa verified
+
+- Status: Deployed to `main` and verified through manual `render-deploy.yml` workflow run `33472442025` after the owner explicitly said `deploy`.
+- Deployed commit: `a40a6caa985f3b2214a40470eef7bf11793e1d03`.
+- Frontend Render deploy: `dep-dab5rjn40ujc739tnngg` reached `live`; `https://gmfn-frontend.onrender.com` served the Decision Pack marker from `assets/TrustSlipVerifyPage-DxH5ugVm.js`.
+- Backend Render deploy: `dep-dab5s7qd0e5s73deeblg` reached `live` on poll `8/36`; live API identity/public verification passed on `https://gmfn-api.onrender.com` after attempt `1/18`.
+- Deployed work: Render API backend live-polling hardening, Marketplace broadcast-delete sibling scoping, and Marketplace platform-admin membership-boundary coverage.
+- Devil truth: this note is a local post-deploy record written after the deploy, so it is not part of deployed commit `a40a6caa` until the next owner-approved push. The deployed proof is the GitHub Actions run and Render live statuses above.
 ## 2026-09-01 - Local Marketplace platform-admin membership boundary coverage
 
-- Status: Local backend coverage/documentation correction verified; not pushed or deployed because the owner has not asked for another deploy after the earlier `db975921` production deploy.
+- Status: Deployed in `a40a6caa` through manual workflow run `33472442025`; post-deploy handoff wording updated locally afterward.
 - Backend routes covered: `POST /marketplace/shops` and `POST /marketplace/products`.
 - Boundary clarified: older handoff wording overstated platform-admin listing publication. Current safer route behavior requires an active membership/community context before publishing into a community Marketplace, while existing community-admin approval-bypass coverage remains intact.
 - Coverage added: platform admin without membership receives `403` and does not create a shop/product row when trying to publish into a community marketplace.
@@ -8,7 +16,7 @@
 - Devil truth: this is not a feature change; it codifies the current safer permission boundary and corrects earlier documentation drift. A deliberate platform-admin marketplace override would need a separate authorization design, audit trail, and product-owner approval.
 ## 2026-09-01 - Local Marketplace broadcast delete sibling scope
 
-- Status: Local backend fix verified; not pushed or deployed because the owner has not asked for another deploy after the earlier `db975921` production deploy.
+- Status: Deployed in `a40a6caa` through manual workflow run `33472442025`; post-deploy handoff wording updated locally afterward.
 - Backend route affected: `DELETE /marketplace/broadcasts/{broadcast_id}`.
 - Fix: propagated Spotlight deletion now only removes sibling broadcasts that match the original author, creation time, message/media, expiry, priority mode, `shop_id`, and `visibility_scope`; the selected broadcast row is defensively included so a delete cannot report success with zero deleted rows if a fragile equality comparison misses it.
 - Coverage added: regression test proves deleting a two-community propagated shop Spotlight removes those two rows while preserving same-author/same-time/same-message collision rows with a different `shop_id` or `visibility_scope`, and records only two deletion Trust Events.
@@ -16,12 +24,12 @@
 - Devil truth: this closes a quiet over-delete/no-delete edge in the Spotlight cleanup path. It does not add a true broadcast batch id, so sibling detection still depends on the legacy shared-field grouping until a schema-level batch identifier is introduced.
 ## 2026-09-01 - Local Render API deploy polling hardening
 
-- Status: Local workflow hardening only; not pushed or deployed after the completed `db975921` manual deploy because the owner has not asked for another deploy.
+- Status: Deployed in `a40a6caa` through manual workflow run `33472442025`; post-deploy handoff wording updated locally afterward.
 - Frozen file touched: `.github/workflows/render-deploy.yml`, scoped to manual backend deploy verification only. The workflow remains `workflow_dispatch` only; no push trigger or automatic deploy path was restored.
 - Deploy behavior changed: when `deploy_api=true` and Render API credentials/service id are available, the gmfn-api step now captures the exact Render deploy id, falls back to recent deploy lookup by commit if needed, polls that deploy for `live`, and fails on terminal Render failure states or timeout.
 - Existing live deploy context: manual workflow run `33470233258` accepted frontend deploy `dep-dab5asqd0e5s73dcumfg`, reached frontend `live`, accepted backend deploy `dep-dab5biijobas73bdut10`, and passed the live API identity/public verification audit. The old workflow did not poll the backend deploy id to `live`.
-- Verification planned/completed locally: workflow text inspection confirms `workflow_dispatch` remains the only trigger and the API branch now includes exact deploy-id polling. This change should be proven during the next owner-approved manual deploy.
-- Devil truth: this closes an observability/proof gap in the pipeline, not an application bug. It cannot backfill certainty for the already-finished API deploy beyond the accepted deploy id and live API audit logs we already have.
+- Verification planned/completed locally: workflow text inspection confirms `workflow_dispatch` remains the only trigger and the API branch now includes exact deploy-id polling. This change was proven during owner-approved manual workflow run `33472442025`: gmfn-api deploy `dep-dab5s7qd0e5s73deeblg` reached `live`.
+- Devil truth: this closes an observability/proof gap in the pipeline, not an application bug. It cannot backfill certainty for the earlier `db975921` API deploy beyond the accepted deploy id and live API audit logs, but it did prove the later `a40a6caa` API deploy reached `live`.
 ## 2026-08-31 - Local Marketplace global-shop product context correction
 
 - Status: Local backend correction verified; not pushed or deployed per owner instruction to avoid pipeline wastage.
