@@ -1403,7 +1403,7 @@ assertContains(
 );
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /DOMAIN_SETUP_TOGGLE_OPTIONS[\s\S]*summary: "Prepare invite links and admin approval for new members\."[\s\S]*summary: "Prepare contribution records without confirming payment yet\."[\s\S]*summary: "Prepare a protected vault for evidence and admin records\."[\s\S]*setup_preferences: domainSetupToggles[\s\S]*Simple setup choices[\s\S]*const isEnabled = Boolean\(domainSetupToggles\[item\.key\]\)[\s\S]*isEnabled \? "On" : "Off"[\s\S]*\{item\.summary\}/,
+  /DOMAIN_SETUP_TOGGLE_OPTIONS[\s\S]*summary: "Prepare invite links and admin approval for new members\."[\s\S]*summary: "Prepare contribution records without confirming payment yet\."[\s\S]*summary: "Prepare a protected vault for evidence and admin records\."[\s\S]*setup_preferences: domainSetupToggles[\s\S]*Kind of community[\s\S]*GSN uses this[\s\S]*choice to recommend governance and service switches[\s\S]*Simple setup choices[\s\S]*const isEnabled = Boolean\(domainSetupToggles\[item\.key\]\)[\s\S]*isEnabled \? "On" : "Off"[\s\S]*\{item\.summary\}/,
   "Community Domain purchase simple setup choices must explain each service switch, show visible On/Off state, and send the same preferences to the draft API.",
   { frontend: true }
 );
@@ -2579,7 +2579,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /DOMAIN_PURCHASE_MOBILE_FACTS[\s\S]*Community first[\s\S]*Domain after[\s\S]*Payment later[\s\S]*purchaseReviewMode[\s\S]*!purchaseReviewMode \?[\s\S]*DOMAIN_PURCHASE_MOBILE_FACTS\.map[\s\S]*DOMAIN_ENGINE_POINTS\.map[\s\S]*Requested domain name[\s\S]*debugId="community-domain-purchase\.check-domain"[\s\S]*Society type \/ template[\s\S]*display: purchaseReviewMode \? "grid" : "none"[\s\S]*2\. Availability[\s\S]*Domain details[\s\S]*3\. Draft & quote[\s\S]*community-domain-purchase\.create-draft[\s\S]*4\. Payment[\s\S]*community-domain-purchase\.check-another-name[\s\S]*community-domain-purchase\.other-paths[\s\S]*community-domain-purchase\.open-create-community[\s\S]*community-domain-purchase\.lookup-existing-domain/,
+  /DOMAIN_PURCHASE_MOBILE_FACTS[\s\S]*Community first[\s\S]*Domain after[\s\S]*Payment later[\s\S]*purchaseReviewMode[\s\S]*!purchaseReviewMode \?[\s\S]*DOMAIN_PURCHASE_MOBILE_FACTS\.map[\s\S]*DOMAIN_ENGINE_POINTS\.map[\s\S]*Requested domain name[\s\S]*debugId="community-domain-purchase\.check-domain"[\s\S]*Kind of community[\s\S]*display: purchaseReviewMode \? "grid" : "none"[\s\S]*2\. Availability[\s\S]*Domain details[\s\S]*3\. Draft & quote[\s\S]*community-domain-purchase\.create-draft[\s\S]*4\. Payment[\s\S]*community-domain-purchase\.check-another-name[\s\S]*community-domain-purchase\.other-paths[\s\S]*community-domain-purchase\.open-create-community[\s\S]*community-domain-purchase\.lookup-existing-domain/,
   "Community Domain purchase must split into a focused name-check state and a second availability/draft/payment review state while keeping alternate Committee/existing-domain paths collapsed.",
   { frontend: true }
 );

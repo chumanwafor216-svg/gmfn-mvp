@@ -159219,3 +159219,12 @@ Devil's-advocate boundary: this completes the practical PDF/report button, but i
 - Guardrail change: `frontend/tools/audit-community-domain-product-contracts.mjs` now cages the setup-choice summaries, visible On/Off state, and draft API preference handoff.
 - Verification passed: `node --check frontend\tools\audit-community-domain-product-contracts.mjs`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run audit:community-domain-mobile-visual` after rerunning Playwright with permission because sandboxed Chromium launch hit `spawn EPERM`.
 - Devil's advocate: this improves comprehension at the exact setup decision point, but it does not reduce the underlying service count, activate services, bill the owner, verify authority, or publish public proof.
+
+## 2026-09-01 - Local Community Kind Wording Cleanup
+- Status: Local only, not pushed/deployed.
+- Continued the Aberdeen Dads/customer-discovery simplification after clarifying setup switches.
+- Frontend change: `frontend/src/pages/CommunityDomainPurchasePage.tsx` now labels the institutional dropdown as `Kind of community` instead of `Society type / template`, and the review summary uses `Kind` instead of `Type`.
+- UX detail: the helper copy now says GSN uses the selected kind to recommend governance and service switches while keeping activation, verification, and billing as later steps.
+- Guardrail change: `frontend/tools/audit-community-domain-product-contracts.mjs` now expects the owner-facing `Kind of community` wording and the recommendation sentence.
+- Verification passed: `node --check frontend\tools\audit-community-domain-product-contracts.mjs`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run audit:community-domain-mobile-visual` after rerunning Playwright with permission because sandboxed Chromium launch hit `spawn EPERM`.
+- Devil's advocate: this removes template jargon from the visible flow, but internal template IDs and backend type contracts are unchanged by design.

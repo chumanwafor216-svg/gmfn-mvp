@@ -1645,7 +1645,7 @@ export default function CommunityDomainPurchasePage() {
                   }}
                 >
                   <label>
-                    <div style={fieldLabel()}>Society type / template</div>
+                    <div style={fieldLabel()}>Kind of community</div>
                     <select
                       value={templateKey}
                       onChange={(event) => handleTemplateKeyChange(event.target.value)}
@@ -1692,8 +1692,9 @@ export default function CommunityDomainPurchasePage() {
                   }}
                 >
                   <div style={helperText(false)}>
-                    {selectedTemplate.summary ||
-                      "Template is a planning preset only. Activation, verification, and billing happen later."}
+                    {selectedTemplate.summary || "Choose the closest match."} GSN uses this
+                    choice to recommend governance and service switches; activation,
+                    verification, and billing happen later.
                   </div>
                   {!isCompact ? (
                     <EntryActionButton
@@ -1949,7 +1950,7 @@ export default function CommunityDomainPurchasePage() {
                         </strong>
                       </div>
                       <div style={detailRow()}>
-                        <span>Type</span>
+                        <span>Kind</span>
                         <strong style={detailValue()}>{selectedTemplate.label}</strong>
                       </div>
                       <div style={detailRow()}>
