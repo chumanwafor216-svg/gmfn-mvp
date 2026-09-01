@@ -1,16 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import DomainIntroToggle from "../components/DomainIntroToggle";
-import CommunityNoticeModal from "../components/CommunityNoticeModal";
 import GSNBrandMark from "../components/GSNBrandMark";
-import NextActionGuide, {
-  type NextActionGuideItem,
-  type NextActionGuideResolution,
+import type {
+  NextActionGuideItem,
+  NextActionGuideResolution,
 } from "../components/NextActionGuide";
 import PageTopNav from "../components/PageTopNav";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { StableButton } from "../components/StableButton";
-import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { brandClampLines } from "../styles/gmfnBrand";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
@@ -50,6 +47,19 @@ import {
   ROSCA_MARKETPLACE_HASH,
   type OwnerShopHandleId,
 } from "../lib/ownerShopHandles";
+
+const DomainIntroToggle = React.lazy(() =>
+  import("../components/DomainIntroToggle")
+);
+const CommunityNoticeModal = React.lazy(() =>
+  import("../components/CommunityNoticeModal")
+);
+const NextActionGuide = React.lazy(() =>
+  import("../components/NextActionGuide")
+);
+const SpotlightMediaFrame = React.lazy(() =>
+  import("../components/SpotlightMediaFrame")
+);
 
 type ClanItem = {
   id?: number;
@@ -3768,27 +3778,31 @@ export default function CommunityHomePage() {
             backTo={routes.dashboard}
           />
 
-          <DomainIntroToggle
-            title="About Community Home"
-            body="Create or join first. Then choose the group you want to open."
-            bullets={[
-              "Create or join a marketplace community first.",
-              "Open one group at a time.",
-              "Marketplace and local activity stay inside that group.",
-            ]}
-            note="Simple rule: choose the group first, then work inside it."
-            tone="dark"
-          />
+          <React.Suspense fallback={null}>
+            <DomainIntroToggle
+              title="About Community Home"
+              body="Create or join first. Then choose the group you want to open."
+              bullets={[
+                "Create or join a marketplace community first.",
+                "Open one group at a time.",
+                "Marketplace and local activity stay inside that group.",
+              ]}
+              note="Simple rule: choose the group first, then work inside it."
+              tone="dark"
+            />
+          </React.Suspense>
 
-          <NextActionGuide
-            title="Verification tools"
-            storageKey="gmfn.communityHome.nextActionGuide.v1"
-            compact={isCompact}
-            items={communityNextActionItems}
-            resolveSelection={resolveCommunityNextAction}
-            onSelect={handleCommunityNextAction}
-            intro={communityNextActionIntro}
-          />
+          <React.Suspense fallback={null}>
+            <NextActionGuide
+              title="Verification tools"
+              storageKey="gmfn.communityHome.nextActionGuide.v1"
+              compact={isCompact}
+              items={communityNextActionItems}
+              resolveSelection={resolveCommunityNextAction}
+              onSelect={handleCommunityNextAction}
+              intro={communityNextActionIntro}
+            />
+          </React.Suspense>
 
           <section style={communityBlockCard("blue")}>
             <div style={sectionLabel()}>No marketplace communities yet</div>
@@ -3874,15 +3888,19 @@ export default function CommunityHomePage() {
       style={communityShellStyle(isCompact)}
     >
       <CommunityShellLayers isCompact={isCompact} />
-      <CommunityNoticeModal
-        open={noticeModalOpen}
-        communityName={selectedClanName}
-        busy={noticePosting}
-        postingPolicy={activeNoticePostingPolicy}
-        submitMode={communityNoticeSubmitMode}
-        onClose={() => setNoticeModalOpen(false)}
-        onSubmit={submitCommunityNotice}
-      />
+      {noticeModalOpen ? (
+        <React.Suspense fallback={null}>
+          <CommunityNoticeModal
+            open={noticeModalOpen}
+            communityName={selectedClanName}
+            busy={noticePosting}
+            postingPolicy={activeNoticePostingPolicy}
+            submitMode={communityNoticeSubmitMode}
+            onClose={() => setNoticeModalOpen(false)}
+            onSubmit={submitCommunityNotice}
+          />
+        </React.Suspense>
+      ) : null}
       <div style={communityContentStyle(isCompact)}>
       {!spotlightGuidanceSuspendedView ? (
       <section style={{ ...communityHeroStyle(isCompact), order: 8 }}>
@@ -5677,47 +5695,49 @@ export default function CommunityHomePage() {
               ) : activeCommunitySpotlight ? (
                 <>
                   <div style={{ marginTop: 12 }}>
-                    <SpotlightMediaFrame
-                      imageUrl={activeCommunitySpotlight.imageUrl}
-                      videoUrl={activeCommunitySpotlight.videoUrl}
-                      videoPoster={activeCommunitySpotlight.imageUrl}
-                      alt="Your live community spotlight"
-                      frameStyle={{
-                        minHeight: 180,
-                        maxHeight: 260,
-                        borderRadius: 18,
-                        border: "1px solid rgba(212,175,55,0.14)",
-                        background:
-                          "linear-gradient(180deg, rgba(24,58,88,0.98) 0%, rgba(38,84,122,0.98) 100%)",
-                      }}
-                      mediaStyle={{
-                        minHeight: 180,
-                        maxHeight: 260,
-                      }}
-                      showVideoControls={Boolean(
-                        activeCommunitySpotlight.videoUrl
-                      )}
-                      autoPlayVideo={Boolean(activeCommunitySpotlight.videoUrl)}
-                      mutedVideo={Boolean(activeCommunitySpotlight.videoUrl)}
-                      loopVideo={Boolean(activeCommunitySpotlight.videoUrl)}
-                      showAudioUnlock={Boolean(activeCommunitySpotlight.videoUrl)}
-                      audioUnlockLabel="Sound on"
-                      maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
-                      fallback={
-                        <div
-                          style={{
-                            padding: 20,
-                            textAlign: "center",
-                            color: "#D7E3F1",
-                            fontWeight: 800,
-                            fontSize: 14,
-                            lineHeight: 1.7,
-                          }}
-                        >
-                          Live spotlight has no media yet.
-                        </div>
-                      }
-                    />
+                    <React.Suspense fallback={null}>
+                      <SpotlightMediaFrame
+                        imageUrl={activeCommunitySpotlight.imageUrl}
+                        videoUrl={activeCommunitySpotlight.videoUrl}
+                        videoPoster={activeCommunitySpotlight.imageUrl}
+                        alt="Your live community spotlight"
+                        frameStyle={{
+                          minHeight: 180,
+                          maxHeight: 260,
+                          borderRadius: 18,
+                          border: "1px solid rgba(212,175,55,0.14)",
+                          background:
+                            "linear-gradient(180deg, rgba(24,58,88,0.98) 0%, rgba(38,84,122,0.98) 100%)",
+                        }}
+                        mediaStyle={{
+                          minHeight: 180,
+                          maxHeight: 260,
+                        }}
+                        showVideoControls={Boolean(
+                          activeCommunitySpotlight.videoUrl
+                        )}
+                        autoPlayVideo={Boolean(activeCommunitySpotlight.videoUrl)}
+                        mutedVideo={Boolean(activeCommunitySpotlight.videoUrl)}
+                        loopVideo={Boolean(activeCommunitySpotlight.videoUrl)}
+                        showAudioUnlock={Boolean(activeCommunitySpotlight.videoUrl)}
+                        audioUnlockLabel="Sound on"
+                        maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
+                        fallback={
+                          <div
+                            style={{
+                              padding: 20,
+                              textAlign: "center",
+                              color: "#D7E3F1",
+                              fontWeight: 800,
+                              fontSize: 14,
+                              lineHeight: 1.7,
+                            }}
+                          >
+                            Live spotlight has no media yet.
+                          </div>
+                        }
+                      />
+                    </React.Suspense>
                   </div>
                   <div
                     style={{

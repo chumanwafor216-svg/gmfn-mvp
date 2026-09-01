@@ -1,3 +1,13 @@
+## 2026-09-01 - Local Community Home first-paint lazy split
+
+- Status: Local frontend performance fix verified; not pushed or deployed because the owner has not asked for another deploy.
+- Frontend route affected: `/app/community` (`CommunityHomePage`).
+- Change: Community Home now lazy-loads `DomainIntroToggle`, `NextActionGuide`, `CommunityNoticeModal`, and `SpotlightMediaFrame`; the notice composer modal no longer mounts until it is opened, so the first community-selection surface is less likely to wait behind secondary UI modules.
+- First-paint behavior: `npm --prefix frontend run audit:app-tab-first-paint` passed outside the restricted sandbox with Community Home first surface at `2994ms` while `/community-domains/my` was intentionally delayed by `21000ms`; before this local fix the same audit had failed at `7426ms`.
+- Startup behavior: `npm --prefix frontend run audit:startup-timing` passed outside the restricted sandbox with warm shell `3152ms`, warm Dashboard `3437ms`, and auth-retry Dashboard `8426ms`.
+- Verification: `node_modules\.bin\tsc.cmd -b --pretty false` passed from `frontend/`; `npm exec -- eslint src/pages/CommunityHomePage.tsx` passed from `frontend/`; `npm --prefix frontend run build` passed; `npm --prefix frontend run audit:community-home-button-inventory` passed; `npm --prefix frontend run audit:community-home-phone-buttons` passed; `npm --prefix frontend run audit:protected-button-freeze` passed; `git diff --check` passed with only CRLF warnings.
+- Devil truth: this fixes the audited delayed-domain first-paint failure, but it does not prove every real phone/network condition is solved. The built `CommunityHomePage` route chunk is `94.35 kB` raw / `23.74 kB` gzip, slightly larger than before because dynamic import scaffolding adds overhead; the benefit is that secondary UI modules now load only when needed.
+
 ## 2026-09-01 - Local Dashboard closed-section lazy split
 
 - Status: Local frontend performance split verified; not pushed or deployed because the owner has not asked for another deploy.
@@ -6,6 +16,7 @@
 - Audit cage updated: Dashboard actions, button inventory, and phone-button audits now scan the lazy section files so moved buttons remain counted and pointer/debug-id guarded.
 - Verification: `npm --prefix frontend run build` passed with `DashboardPage-B2NQDwXR.js` at `224.53 kB` raw / `54.73 kB` gzip, `DashboardToolsSection-B5A0iUqx.js` at `5.03 kB` raw / `2.03 kB` gzip, and `DashboardInboxSection-ZhvHCoVa.js` at `6.50 kB` raw / `2.13 kB` gzip; `npm --prefix frontend run audit:market-wisdom-contracts` passed; `npm --prefix frontend run audit:dashboard-actions` passed; `npm --prefix frontend run audit:dashboard-button-inventory` passed; `npm --prefix frontend run audit:dashboard-phone-buttons` passed; `npm exec -- eslint src/pages/DashboardPage.tsx src/components/dashboard/DashboardToolsSection.tsx src/components/dashboard/DashboardInboxSection.tsx tools/audit-dashboard-actions.mjs tools/audit-dashboard-button-inventory.mjs tools/audit-dashboard-phone-buttons.mjs` passed from `frontend/`; `git diff --check` passed with only CRLF warnings.
 - Devil truth: this is a modest route-weight reduction, not a full Dashboard performance cure. Dashboard still remains `224.53 kB` raw and the heaviest page chunk; it does not prove production phone latency is fixed until owner-approved push/deploy and real phone review. Market Wisdom behavior was not intentionally changed and the frozen Market Wisdom audit passed.
+
 ## 2026-09-01 - Local Marketplace existing-row header context boundary
 
 - Status: Local backend fix verified; not pushed or deployed after production deploy `a40a6caa` because the owner has not asked for another deploy.
