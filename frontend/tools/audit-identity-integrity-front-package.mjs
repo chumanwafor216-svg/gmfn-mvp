@@ -237,6 +237,35 @@ assertContains(
   "Identity Integrity must route real bank/wallet and community tasks to real completion surfaces."
 );
 
+assertContains(
+  /listMyClans\(\{ timeoutMs: 6500 \}\)[\s\S]*?setCommunities\(rowsOf<IdentityCommunityRow>\(clansRes\)\)/,
+  "Identity Integrity must read the existing member community list before rendering the GSN Identity Card footprint."
+);
+
+assertContains(
+  /data-gsn-identity-card="true"[\s\S]*?data-gsn-identity-card-screenshot="true"[\s\S]*?data-gsn-identity-card-face="true"[\s\S]*?alt="GSN identity face"/,
+  "Identity Integrity must keep the GSN Identity Card as a screenshot-ready card with the holder face visible."
+);
+
+assertContains(
+  /data-gsn-identity-card-footprint="true"[\s\S]*?"Communities", communityFootprintLabel[\s\S]*?"Memberships", recognisedMembershipCount[\s\S]*?"Currentness", trustSlipExpiryLabel/,
+  "GSN Identity Card must show privacy-safe community footprint, recognised memberships, and TrustSlip currentness."
+);
+
+assertContains(
+  /publicCommunityMemberCredentialPath\([\s\S]*?memberCredentialUrl[\s\S]*?shareablePublicFrontendUrl\(memberCredentialPath\)/,
+  "GSN Identity Card must reuse existing public member credential links instead of inventing a new verification engine."
+);
+
+assertContains(
+  /trustSlipVerifyUrl[\s\S]*?data-gsn-identity-card-qr="true"[\s\S]*?LazyQRCodeSVG[\s\S]*?debugId="identity-integrity\.gsn-card\.share"[\s\S]*?Share card[\s\S]*?debugId="identity-integrity\.gsn-card\.copy"[\s\S]*?Copy card text[\s\S]*?debugId="identity-integrity\.gsn-card\.copy-verify-link"[\s\S]*?Copy verify link/,
+  "GSN Identity Card must support QR/live check, native share, copy text, and copy verify link actions."
+);
+
+assertContains(
+  /data-gsn-identity-card-boundary="true"[\s\S]*?Community names stay hidden on this card[\s\S]*?Not government ID, professional licence, credit approval, payment guarantee, or future behaviour proof/,
+  "GSN Identity Card must keep the privacy and no-overclaim boundary visible."
+);
 assertNotContains(
   /height: isCompact \? 240 : 270|<ExplainToggle[\s\S]*?What this screen does|Your stable GSN identity, your consistency across communities, what strengthened it, what weakened it/g,
   "Identity Integrity must not regress to the oversized photo hero or long explanation-first header."

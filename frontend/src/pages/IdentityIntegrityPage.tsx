@@ -21,6 +21,7 @@ import {
   getMyTrustSlip,
   getSelectedClanId,
   getTrustWhyMe,
+  listMyClans,
   listTrustEvents,
   confirmSignedInPhoneVerification,
   recordSignedInIdentityPhoto,
@@ -43,6 +44,10 @@ import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
 import { buildIdentityIntegrityGuideItems } from "../lib/trustDocumentGuide";
 import { buildIdentityIntegritySnapshot } from "../lib/trustDocumentSnapshots";
 import {
+  publicCommunityMemberCredentialPath,
+  shareablePublicFrontendUrl,
+} from "../lib/publicLinks";
+import {
   getContextualEvidencePosture,
   getTrustBandLanguage,
   getTrustBandShortLabel,
@@ -50,6 +55,11 @@ import {
 } from "../lib/trustBandLanguage";
 import { resolveProfileImageUrl } from "../lib/profileImage";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
+
+const LazyQRCodeSVG = React.lazy(async () => {
+  const module = await import("qrcode.react");
+  return { default: module.QRCodeSVG };
+});
 
 type TrustEventRow = {
   id?: number | string;
@@ -67,6 +77,15 @@ type TrustSlipRecord = {
   id?: number;
   code?: string | null;
   status?: string | null;
+  active?: boolean | null;
+  verified?: boolean | null;
+  public_verify_url?: string | null;
+  verification_code?: string | null;
+  verification_token?: string | null;
+  token?: string | null;
+  community_global_id?: string | null;
+  community_code?: string | null;
+  community_id?: string | number | null;
   phone_recorded?: boolean | null;
   phone_verified?: boolean | null;
   bank_details_recorded?: boolean | null;
@@ -74,6 +93,7 @@ type TrustSlipRecord = {
   official_id_recorded?: boolean | null;
   official_id_verified?: boolean | null;
   photo_recorded?: boolean | null;
+  photo_verified?: boolean | null;
   profile_image_url?: string | null;
   identity_context?: Record<string, any> | null;
   trust_band?: string | null;
@@ -89,6 +109,24 @@ type TrustSlipRecord = {
   expires_at?: string | null;
   holder_name?: string | null;
   gmfn_id?: string | null;
+};
+
+type IdentityCommunityRow = {
+  id?: number | string | null;
+  clan_id?: number | string | null;
+  name?: string | null;
+  display_name?: string | null;
+  marketplace_name?: string | null;
+  community_code?: string | null;
+  code?: string | null;
+  global_id?: string | null;
+  status?: string | null;
+  membership_status?: string | null;
+  member_status?: string | null;
+  role?: string | null;
+  member_role?: string | null;
+  membership_role?: string | null;
+  participant_role?: string | null;
 };
 
 type ReadingState = {
@@ -250,6 +288,55 @@ function safeDateTime(x: any): string {
   return d.toLocaleString();
 }
 
+function safeDate(x: any): string {
+  const raw = safeStr(x);
+  if (!raw) return "";
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) return raw;
+  return d.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function communityStatusOf(row: IdentityCommunityRow): string {
+  return safeStr(row.membership_status || row.member_status || row.status).toLowerCase();
+}
+
+function isActiveCommunityRow(row: IdentityCommunityRow): boolean {
+  const status = communityStatusOf(row);
+
+  if (!status) return false;
+  if (
+    [
+      "inactive",
+      "expired",
+      "removed",
+      "rejected",
+      "declined",
+      "suspended",
+      "left",
+      "pending",
+    ].some((blocked) => status.includes(blocked))
+  ) {
+    return false;
+  }
+
+  return ["active", "approved", "member", "joined", "current", "verified", "accepted"].some(
+    (ready) => status.includes(ready)
+  );
+}
+
+function communityRoleOf(row: IdentityCommunityRow): string {
+  return safeStr(
+    row.membership_role || row.member_role || row.participant_role || row.role
+  ).toLowerCase();
+}
+
+function countByRole(rows: IdentityCommunityRow[], target: string): number {
+  return rows.filter((row) => communityRoleOf(row).includes(target)).length;
+}
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
@@ -1333,6 +1420,7 @@ export default function IdentityIntegrityPage() {
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
+  const [communities, setCommunities] = useState<IdentityCommunityRow[]>([]);
   const [trustSlip, setTrustSlip] = useState<TrustSlipRecord | null>(null);
   const [guidance, setGuidance] = useState<GuidanceSnapshot | null>(null);
   const [trustWhyRaw, setTrustWhyRaw] = useState<any>(null);
@@ -1422,10 +1510,11 @@ export default function IdentityIntegrityPage() {
       setLoading(true);
 
       try {
-        const [meRes, clanRes, trustSlipRes, guidanceRes, whyRes, eventsRes, identityRiskRes, identityRecoveryRes] =
+        const [meRes, clanRes, clansRes, trustSlipRes, guidanceRes, whyRes, eventsRes, identityRiskRes, identityRecoveryRes] =
           await Promise.all([
             getMe().catch(() => null),
             getCurrentClan().catch(() => null),
+            listMyClans({ timeoutMs: 6500 }).catch(() => null),
             getMyTrustSlip().catch(() => null),
             buildGuidanceSnapshot().catch(() => null),
             getTrustWhyMe().catch(() => null),
@@ -1441,6 +1530,7 @@ export default function IdentityIntegrityPage() {
 
         setMe(meRes || null);
         setCurrentClan(clanRes || null);
+        setCommunities(rowsOf<IdentityCommunityRow>(clansRes));
         setTrustSlip(normalizeTrustSlipRecord(trustSlipRes));
         setGuidance(guidanceRes || null);
         setTrustWhyRaw(whyRes || null);
@@ -1730,6 +1820,106 @@ export default function IdentityIntegrityPage() {
       : identitySignals.missingCount <= 2
         ? "Needs attention"
         : "Incomplete";
+
+  const activeCommunityRows = useMemo(
+    () => communities.filter(isActiveCommunityRow),
+    [communities]
+  );
+  const visibleCommunityCount = communities.length;
+  const activeCommunityCount = activeCommunityRows.length;
+  const communityRowsForRole = activeCommunityCount ? activeCommunityRows : communities;
+  const adminCommunityCount = countByRole(communityRowsForRole, "admin");
+  const ownerCommunityCount = countByRole(communityRowsForRole, "owner");
+  const memberCommunityCount = Math.max(
+    communityRowsForRole.length - adminCommunityCount - ownerCommunityCount,
+    0
+  );
+  const recognisedMembershipCount = activeCommunityCount;
+  const communityFootprintLabel = activeCommunityCount
+    ? `${activeCommunityCount} active communit${activeCommunityCount === 1 ? "y" : "ies"}`
+    : visibleCommunityCount
+      ? `${visibleCommunityCount} visible community context${visibleCommunityCount === 1 ? "" : "s"}`
+      : "No community shown";
+  const roleFootprintLabel = [
+    ownerCommunityCount ? `Owner ${ownerCommunityCount}` : "",
+    adminCommunityCount ? `Admin ${adminCommunityCount}` : "",
+    memberCommunityCount ? `Member ${memberCommunityCount}` : "",
+  ].filter(Boolean).join(" / ") || "Roles not shown";
+  const identityContext = trustSlip?.identity_context || {};
+  const photoEvidenceVerified = Boolean(
+    me?.photo_verified ||
+      me?.photo_verified_at ||
+      trustSlip?.photo_verified ||
+      identityContext?.photo_verified ||
+      events.some((event) =>
+        safeStr(event.event_type || event.type || event.kind).toLowerCase() ===
+        "identity.photo_evidence_verified"
+      )
+  );
+  const photoEvidenceLabel = photoEvidenceVerified
+    ? "Photo verified"
+    : identitySignals.photoReady
+      ? "Photo recorded"
+      : avatarSrc
+        ? "Face shown"
+        : "Face not shown";
+  const trustSlipExpiresAt = safeStr(trustSlip?.expires_at);
+  const trustSlipExpired = trustSlipExpiresAt
+    ? new Date(trustSlipExpiresAt).getTime() < Date.now()
+    : false;
+  const trustSlipStatusText = trustSlipCode
+    ? trustSlipExpired
+      ? "Expired"
+      : "Active"
+    : "Not issued yet";
+  const trustSlipExpiryLabel = trustSlipCode
+    ? trustSlipExpiresAt
+      ? trustSlipExpired
+        ? `Expired ${safeDate(trustSlipExpiresAt)}`
+        : `Valid until ${safeDate(trustSlipExpiresAt)}`
+      : "Expiry not shown"
+    : "Verify phone to issue";
+  const trustSlipVerifyPath = trustSlipCode
+    ? `/t/${encodeURIComponent(trustSlipCode)}`
+    : "";
+  const trustSlipVerifyUrl = trustSlipCode
+    ? firstTruthy(
+        trustSlip?.public_verify_url,
+        shareablePublicFrontendUrl(trustSlipVerifyPath)
+      )
+    : "";
+  const selectedCommunityKey = firstTruthy(
+    currentClan?.community_code,
+    currentClan?.code,
+    currentClan?.global_id,
+    currentClan?.id,
+    trustSlip?.community_code,
+    trustSlip?.community_global_id,
+    trustSlip?.community_id
+  );
+  const memberCredentialPath = publicCommunityMemberCredentialPath({
+    communityKey: selectedCommunityKey,
+    memberKey: gmfnIdValue,
+  });
+  const memberCredentialUrl = memberCredentialPath
+    ? shareablePublicFrontendUrl(memberCredentialPath)
+    : "";
+  const gsnIdentityCardShareText = [
+    "My GSN Identity Card",
+    `Name: ${displayName}`,
+    `GSN ID: ${gmfnId}`,
+    `Identity status: ${identityHealthLabel}`,
+    `Photo evidence: ${photoEvidenceLabel}`,
+    `Community footprint: ${communityFootprintLabel}`,
+    recognisedMembershipCount ? `Recognised memberships: ${recognisedMembershipCount}` : "",
+    `Community roles: ${roleFootprintLabel}`,
+    `TrustSlip: ${trustSlipStatusText}`,
+    trustSlipCode ? `TrustSlip code: ${trustSlipCode}` : "",
+    trustSlipCode ? `Currentness: ${trustSlipExpiryLabel}` : "",
+    memberCredentialUrl ? `Member credential: ${memberCredentialUrl}` : "",
+    trustSlipVerifyUrl ? `Verify: ${trustSlipVerifyUrl}` : "",
+    "Boundary: This is public-safe GSN identity and community evidence. It is not government ID, professional licence, credit approval, payment guarantee, or a promise of future behaviour.",
+  ].filter(Boolean).join("\n");
 
   function identityTaskTarget(task: IdentityTaskKey): string {
     const separator = routes.identity.includes("?") ? "&" : "?";
@@ -2089,6 +2279,49 @@ export default function IdentityIntegrityPage() {
     showNotice("success", "Identity snapshot copied.");
   }
 
+  async function copyGsnIdentityCard() {
+    const copied = await safeCopy(gsnIdentityCardShareText);
+    showNotice(
+      copied ? "success" : "error",
+      copied
+        ? "GSN Identity Card copied for sharing."
+        : "Copy failed. Use the visible card details."
+    );
+  }
+
+  async function copyTrustSlipVerifyLink() {
+    if (!trustSlipVerifyUrl) {
+      showNotice("error", "TrustSlip Verify link is not ready yet. Verify phone or refresh TrustSlip first.");
+      return;
+    }
+
+    const copied = await safeCopy(trustSlipVerifyUrl);
+    showNotice(
+      copied ? "success" : "error",
+      copied ? "TrustSlip Verify link copied." : "Copy failed. Use the visible verify link."
+    );
+  }
+
+  async function shareGsnIdentityCard() {
+    const sharePayload = {
+      title: "GSN Identity Card",
+      text: gsnIdentityCardShareText,
+      url: trustSlipVerifyUrl || undefined,
+    };
+
+    const nativeShare = typeof navigator !== "undefined" ? navigator.share : undefined;
+    if (nativeShare) {
+      try {
+        await nativeShare.call(navigator, sharePayload);
+        showNotice("success", "Share sheet opened for your GSN Identity Card.");
+        return;
+      } catch (err: any) {
+        if (safeStr(err?.name) === "AbortError") return;
+      }
+    }
+
+    await copyGsnIdentityCard();
+  }
   function handleGuideSelect(item: { to?: string; disabled?: boolean }) {
     if (!item.to || item.disabled) return;
     navigateWithOrigin(navigate, item.to, location);
@@ -3282,6 +3515,281 @@ export default function IdentityIntegrityPage() {
             TrustSlip
           </StableCtaLink>
         </div>
+      </section>
+
+      <section
+        data-gsn-identity-card="true"
+        style={{
+          ...pageCard("#FFFFFF"),
+          padding: isCompact ? 12 : 18,
+          border: "1px solid rgba(214,170,69,0.26)",
+          boxShadow: "0 18px 42px rgba(7,23,44,0.10)",
+        }}
+      >
+        <div
+          data-gsn-identity-card-screenshot="true"
+          style={{
+            borderRadius: isCompact ? 22 : 26,
+            overflow: "hidden",
+            border: "1px solid rgba(7,23,44,0.14)",
+            background:
+              "linear-gradient(180deg, #061827 0%, #08233A 52%, #FFFFFF 52.1%, #F8FBFF 100%)",
+            boxShadow:
+              "0 18px 34px rgba(6,24,39,0.16), inset 0 1px 0 rgba(255,255,255,0.08)",
+          }}
+        >
+          <div
+            style={{
+              padding: isCompact ? 14 : 18,
+              color: "#FFFFFF",
+              display: "grid",
+              gridTemplateColumns: isCompact ? "84px minmax(0, 1fr)" : "112px minmax(0, 1fr) auto",
+              gap: isCompact ? 11 : 16,
+              alignItems: "center",
+            }}
+          >
+            <div
+              data-gsn-identity-card-face="true"
+              style={{
+                width: isCompact ? 84 : 112,
+                height: isCompact ? 84 : 112,
+                borderRadius: isCompact ? 24 : 30,
+                overflow: "hidden",
+                border: "2px solid rgba(242,199,102,0.62)",
+                background: "linear-gradient(180deg, #12314D 0%, #061827 100%)",
+                display: "grid",
+                placeItems: "center",
+                color: "#FFFFFF",
+                fontSize: isCompact ? 26 : 36,
+                fontWeight: 1000,
+                boxShadow: "0 16px 30px rgba(1,9,22,0.28)",
+              }}
+            >
+              {avatarSrc ? (
+                <img
+                  src={avatarSrc}
+                  alt="GSN identity face"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    display: "block",
+                    objectFit: "cover",
+                    objectPosition: "center 16%",
+                  }}
+                />
+              ) : (
+                profileInitials
+              )}
+            </div>
+
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                }}
+              >
+                <span style={{ ...compactStatusChip(identitySignals.phoneVerified ? "ready" : "pending"), background: "rgba(255,255,255,0.12)", color: "#F8FBFF", border: "1px solid rgba(242,199,102,0.28)" }}>
+                  <GsnLegacyIcon name="id" size={22} />
+                  GSN Identity Card
+                </span>
+                <span style={{ ...compactStatusChip(trustSlipCode && !trustSlipExpired ? "ready" : "pending"), background: trustSlipCode && !trustSlipExpired ? "rgba(46,155,98,0.18)" : "rgba(242,199,102,0.18)", color: "#FFFFFF", border: "1px solid rgba(255,255,255,0.18)" }}>
+                  {trustSlipStatusText}
+                </span>
+              </div>
+              <div
+                style={{
+                  marginTop: 8,
+                  fontSize: isCompact ? 25 : 34,
+                  lineHeight: 1.02,
+                  fontWeight: 1000,
+                  letterSpacing: 0,
+                  overflowWrap: "break-word",
+                }}
+              >
+                {displayName}
+              </div>
+              <div
+                style={{
+                  marginTop: 7,
+                  color: "rgba(248,251,255,0.82)",
+                  fontSize: isCompact ? 12.5 : 13.5,
+                  fontWeight: 850,
+                  lineHeight: 1.35,
+                  overflowWrap: "anywhere",
+                }}
+              >
+                GSN ID: {gmfnId}
+              </div>
+            </div>
+
+            {!isCompact && trustSlipVerifyUrl ? (
+              <div
+                data-gsn-identity-card-qr="true"
+                style={{
+                  width: 104,
+                  height: 104,
+                  borderRadius: 22,
+                  background: "#FFFFFF",
+                  display: "grid",
+                  placeItems: "center",
+                  padding: 8,
+                  boxSizing: "border-box",
+                  border: "1px solid rgba(242,199,102,0.42)",
+                }}
+              >
+                <React.Suspense fallback={<GsnLegacyIcon name="qr" size={54} />}>
+                  <LazyQRCodeSVG
+                    value={trustSlipVerifyUrl}
+                    size={84}
+                    bgColor="#FFFFFF"
+                    fgColor="#07172C"
+                    level="M"
+                    marginSize={1}
+                  />
+                </React.Suspense>
+              </div>
+            ) : null}
+          </div>
+
+          <div
+            style={{
+              padding: isCompact ? 12 : 16,
+              display: "grid",
+              gap: isCompact ? 10 : 12,
+            }}
+          >
+            <div
+              data-gsn-identity-card-footprint="true"
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
+                gap: 8,
+              }}
+            >
+              {[
+                ["Photo", photoEvidenceLabel, "user" as GsnIconName],
+                ["Communities", communityFootprintLabel, "community" as GsnIconName],
+                ["Memberships", recognisedMembershipCount ? String(recognisedMembershipCount) : "Not shown", "shield" as GsnIconName],
+                ["Currentness", trustSlipExpiryLabel, "qr" as GsnIconName],
+              ].map(([label, value, icon]) => (
+                <div
+                  key={label}
+                  style={{
+                    minHeight: isCompact ? 72 : 78,
+                    borderRadius: 16,
+                    background: "#FFFFFF",
+                    border: "1px solid rgba(37,78,119,0.12)",
+                    padding: 10,
+                    display: "grid",
+                    gridTemplateColumns: "38px minmax(0, 1fr)",
+                    gap: 8,
+                    alignItems: "center",
+                    boxShadow: "0 10px 22px rgba(7,23,44,0.05)",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <span style={{ ...iconTile("#07172C", "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"), width: 38, height: 38, borderRadius: 14, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.92)" }}>
+                    <GsnLegacyIcon name={icon as GsnIconName} size={28} />
+                  </span>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: "block", color: "#617085", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase", lineHeight: 1.1 }}>
+                      {label}
+                    </span>
+                    <span style={{ display: "block", marginTop: 4, color: "#07172C", fontSize: isCompact ? 12 : 13, fontWeight: 1000, lineHeight: 1.16, overflowWrap: "break-word" }}>
+                      {value}
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div
+              data-gsn-identity-card-boundary="true"
+              style={{
+                borderRadius: 16,
+                border: "1px solid rgba(214,170,69,0.22)",
+                background: "linear-gradient(180deg, #FFFBEF 0%, #FFFFFF 100%)",
+                padding: isCompact ? 10 : 12,
+                color: "#3B2504",
+                fontSize: isCompact ? 12 : 13,
+                fontWeight: 900,
+                lineHeight: 1.38,
+              }}
+            >
+              Community names stay hidden on this card. Use the TrustSlip link or member credential for public-safe details. Not government ID, professional licence, credit approval, payment guarantee, or future behaviour proof.
+            </div>
+
+            {isCompact && trustSlipVerifyUrl ? (
+              <div
+                data-gsn-identity-card-qr="true"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "88px minmax(0, 1fr)",
+                  gap: 12,
+                  alignItems: "center",
+                  borderRadius: 16,
+                  border: "1px solid rgba(37,78,119,0.12)",
+                  background: "#FFFFFF",
+                  padding: 10,
+                }}
+              >
+                <div style={{ width: 82, height: 82, display: "grid", placeItems: "center" }}>
+                  <React.Suspense fallback={<GsnLegacyIcon name="qr" size={52} />}>
+                    <LazyQRCodeSVG
+                      value={trustSlipVerifyUrl}
+                      size={76}
+                      bgColor="#FFFFFF"
+                      fgColor="#07172C"
+                      level="M"
+                      marginSize={1}
+                    />
+                  </React.Suspense>
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ color: "#07172C", fontSize: 14, fontWeight: 1000 }}>
+                    Live check path
+                  </div>
+                  <div style={{ marginTop: 5, color: "#617085", fontSize: 12, fontWeight: 850, lineHeight: 1.35, overflowWrap: "anywhere" }}>
+                    {trustSlipCode ? `TrustSlip ${trustSlipCode}` : "TrustSlip not issued yet"}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <CardActionRow style={{ marginTop: 12 }}>
+          <PrimaryButton
+            onClick={() => void shareGsnIdentityCard()}
+            stableHeight={isCompact ? 52 : 50}
+            fullWidth={isCompact}
+            minWidth={isCompact ? undefined : 172}
+            debugId="identity-integrity.gsn-card.share"
+          >
+            Share card
+          </PrimaryButton>
+          <SecondaryButton
+            onClick={() => void copyGsnIdentityCard()}
+            stableHeight={isCompact ? 52 : 50}
+            fullWidth={isCompact}
+            minWidth={isCompact ? undefined : 168}
+            debugId="identity-integrity.gsn-card.copy"
+          >
+            Copy card text
+          </SecondaryButton>
+          <SecondaryButton
+            onClick={() => void copyTrustSlipVerifyLink()}
+            stableHeight={isCompact ? 52 : 50}
+            fullWidth={isCompact}
+            minWidth={isCompact ? undefined : 168}
+            debugId="identity-integrity.gsn-card.copy-verify-link"
+          >
+            Copy verify link
+          </SecondaryButton>
+        </CardActionRow>
       </section>
 
       <section data-identity-integrity-secondary-section="readings" style={decongestedSectionCard(collapsed.summary, isCompact)}>
