@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import NextActionGuide from "../components/NextActionGuide";
 import PageTopNav from "../components/PageTopNav";
@@ -194,6 +194,17 @@ type IdentityRecoverySummary = {
   locked?: boolean;
 };
 
+type IdentityIntegrityDataSnapshot = {
+  me: any | null;
+  currentClan: any | null;
+  communities: IdentityCommunityRow[];
+  trustSlip: TrustSlipRecord | null;
+  guidance: GuidanceSnapshot | null;
+  trustWhyRaw: any | null;
+  events: TrustEventRow[];
+  identityRisk: IdentityRiskSummary | null;
+  identityRecovery: IdentityRecoverySummary | null;
+};
 const IDENTITY_PAGE_UI_STORAGE_KEY = "gmfn.identityPage.sections.v2";
 
 function safeStr(x: any): string {
@@ -909,6 +920,46 @@ function normalizeTrustSlipRecord(raw: any): TrustSlipRecord | null {
   };
 }
 
+async function fetchIdentityIntegrityData(
+  selectedClanId: number
+): Promise<IdentityIntegrityDataSnapshot> {
+  const [
+    meRes,
+    clanRes,
+    clansRes,
+    trustSlipRes,
+    guidanceRes,
+    whyRes,
+    eventsRes,
+    identityRiskRes,
+    identityRecoveryRes,
+  ] = await Promise.all([
+    getMe().catch(() => null),
+    getCurrentClan().catch(() => null),
+    listMyClans({ timeoutMs: 6500 }).catch(() => null),
+    getMyTrustSlip().catch(() => null),
+    buildGuidanceSnapshot().catch(() => null),
+    getTrustWhyMe().catch(() => null),
+    listTrustEvents({
+      clan_id: selectedClanId || undefined,
+      limit: 60,
+    }).catch(() => ({ items: [] })),
+    getMyIdentityRisk().catch(() => null),
+    getMyIdentityRecovery().catch(() => null),
+  ]);
+
+  return {
+    me: meRes || null,
+    currentClan: clanRes || null,
+    communities: rowsOf<IdentityCommunityRow>(clansRes),
+    trustSlip: normalizeTrustSlipRecord(trustSlipRes),
+    guidance: guidanceRes || null,
+    trustWhyRaw: whyRes || null,
+    events: rowsOf<TrustEventRow>(eventsRes),
+    identityRisk: identityRiskRes || null,
+    identityRecovery: identityRecoveryRes || null,
+  };
+}
 function initialsFromName(name: string): string {
   const parts = safeStr(name).split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "M";
@@ -1422,7 +1473,12 @@ export default function IdentityIntegrityPage() {
     useState<IdentityPackageView>(() =>
       completionMode || requestedIdentityTask ? "anchor" : "card"
     );
-  const [identityCardGeneratedAt] = useState(() => new Date().toISOString());
+  const [identityCardGeneratedAt, setIdentityCardGeneratedAt] = useState(() =>
+    new Date().toISOString()
+  );
+  const [identityCardRefreshing, setIdentityCardRefreshing] = useState(false);
+  const identityCardRefreshingRef = useRef(false);
+  const lastIdentityCardAutoRefreshAt = useRef(0);
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
@@ -1466,6 +1522,54 @@ export default function IdentityIntegrityPage() {
   const [identityPhotoBusy, setIdentityPhotoBusy] = useState(false);
   const selfiePhotoInputRef = useRef<HTMLInputElement | null>(null);
   const idPhotoInputRef = useRef<HTMLInputElement | null>(null);
+  const applyIdentityIntegrityData = useCallback(
+    (snapshot: IdentityIntegrityDataSnapshot, markGenerated = false) => {
+      setMe(snapshot.me);
+      setCurrentClan(snapshot.currentClan);
+      setCommunities(snapshot.communities);
+      setTrustSlip(snapshot.trustSlip);
+      setGuidance(snapshot.guidance);
+      setTrustWhyRaw(snapshot.trustWhyRaw);
+      setEvents(snapshot.events);
+      setIdentityRisk(snapshot.identityRisk);
+      setIdentityRecovery(snapshot.identityRecovery);
+
+      if (markGenerated) {
+        setIdentityCardGeneratedAt(new Date().toISOString());
+      }
+    },
+    []
+  );
+
+  const refreshGsnIdentityCard = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (identityCardRefreshingRef.current) return;
+
+      identityCardRefreshingRef.current = true;
+      setIdentityCardRefreshing(true);
+
+      try {
+        const snapshot = await fetchIdentityIntegrityData(selectedClanId);
+        applyIdentityIntegrityData(snapshot, true);
+        lastIdentityCardAutoRefreshAt.current = Date.now();
+
+        if (!options?.silent) {
+          showNotice(
+            "success",
+            "Identity Card refreshed. Community count and TrustSlip status are current."
+          );
+        }
+      } catch {
+        if (!options?.silent) {
+          showNotice("error", "Refresh failed. Reopen Identity Integrity and try again.");
+        }
+      } finally {
+        identityCardRefreshingRef.current = false;
+        setIdentityCardRefreshing(false);
+      }
+    },
+    [applyIdentityIntegrityData, selectedClanId]
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1519,33 +1623,10 @@ export default function IdentityIntegrityPage() {
       setLoading(true);
 
       try {
-        const [meRes, clanRes, clansRes, trustSlipRes, guidanceRes, whyRes, eventsRes, identityRiskRes, identityRecoveryRes] =
-          await Promise.all([
-            getMe().catch(() => null),
-            getCurrentClan().catch(() => null),
-            listMyClans({ timeoutMs: 6500 }).catch(() => null),
-            getMyTrustSlip().catch(() => null),
-            buildGuidanceSnapshot().catch(() => null),
-            getTrustWhyMe().catch(() => null),
-            listTrustEvents({
-              clan_id: selectedClanId || undefined,
-              limit: 60,
-            }).catch(() => ({ items: [] })),
-            getMyIdentityRisk().catch(() => null),
-            getMyIdentityRecovery().catch(() => null),
-          ]);
-
+        const snapshot = await fetchIdentityIntegrityData(selectedClanId);
         if (!alive) return;
-
-        setMe(meRes || null);
-        setCurrentClan(clanRes || null);
-        setCommunities(rowsOf<IdentityCommunityRow>(clansRes));
-        setTrustSlip(normalizeTrustSlipRecord(trustSlipRes));
-        setGuidance(guidanceRes || null);
-        setTrustWhyRaw(whyRes || null);
-        setEvents(rowsOf<TrustEventRow>(eventsRes));
-        setIdentityRisk(identityRiskRes || null);
-        setIdentityRecovery(identityRecoveryRes || null);
+        applyIdentityIntegrityData(snapshot, true);
+        lastIdentityCardAutoRefreshAt.current = Date.now();
       } finally {
         if (alive) setLoading(false);
       }
@@ -1554,7 +1635,28 @@ export default function IdentityIntegrityPage() {
     return () => {
       alive = false;
     };
-  }, [selectedClanId]);
+  }, [applyIdentityIntegrityData, selectedClanId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined") return;
+
+    function refreshWhenVisibleAgain() {
+      if (document.visibilityState === "hidden") return;
+
+      const now = Date.now();
+      if (now - lastIdentityCardAutoRefreshAt.current < 45000) return;
+      lastIdentityCardAutoRefreshAt.current = now;
+      void refreshGsnIdentityCard({ silent: true });
+    }
+
+    window.addEventListener("focus", refreshWhenVisibleAgain);
+    document.addEventListener("visibilitychange", refreshWhenVisibleAgain);
+
+    return () => {
+      window.removeEventListener("focus", refreshWhenVisibleAgain);
+      document.removeEventListener("visibilitychange", refreshWhenVisibleAgain);
+    };
+  }, [refreshGsnIdentityCard]);
 
   const displayName = useMemo(() => {
     return (
@@ -2496,6 +2598,7 @@ export default function IdentityIntegrityPage() {
     try {
       const nextTrustSlip = await getMyTrustSlip();
       setTrustSlip(normalizeTrustSlipRecord(nextTrustSlip));
+      setIdentityCardGeneratedAt(new Date().toISOString());
       return nextTrustSlip;
     } catch {
       return null;
@@ -2543,6 +2646,7 @@ export default function IdentityIntegrityPage() {
         phone_e164: out?.phone_e164 || phoneInput,
         phone_recorded: true,
       }));
+      setIdentityCardGeneratedAt(new Date().toISOString());
       setPhoneConflict(null);
       setPhoneTaskMessage(
         out?.otp_preview
@@ -2658,6 +2762,7 @@ export default function IdentityIntegrityPage() {
         official_id_recorded: true,
         official_id_verified_at: out?.verified_at || undefined,
       }));
+      setIdentityCardGeneratedAt(new Date().toISOString());
       setOfficialIdReference("");
       setOfficialIdTaskMessage(
         `${officialIdType} evidence recorded for review. Provider verification is still pending.`
@@ -2729,6 +2834,7 @@ export default function IdentityIntegrityPage() {
             ? true
             : prev?.official_id_recorded,
       }));
+      setIdentityCardGeneratedAt(new Date().toISOString());
       setIdentityPhotoFile(null);
       setIdentityPhotoPreview("");
       setOfficialIdTaskMessage(
@@ -4108,6 +4214,16 @@ export default function IdentityIntegrityPage() {
         </div>
 
         <CardActionRow style={{ marginTop: 12 }}>
+          <SecondaryButton
+            onClick={() => void refreshGsnIdentityCard()}
+            stableHeight={isCompact ? 52 : 50}
+            fullWidth={isCompact}
+            minWidth={isCompact ? undefined : 156}
+            disabled={identityCardRefreshing}
+            debugId="identity-integrity.gsn-card.refresh"
+          >
+            {identityCardRefreshing ? "Refreshing" : "Refresh card"}
+          </SecondaryButton>
           <PrimaryButton
             onClick={() => void shareGsnIdentityCard()}
             stableHeight={isCompact ? 52 : 50}

@@ -238,8 +238,13 @@ assertContains(
 );
 
 assertContains(
-  /listMyClans\(\{ timeoutMs: 6500 \}\)[\s\S]*?setCommunities\(rowsOf<IdentityCommunityRow>\(clansRes\)\)/,
-  "Identity Integrity must read the existing member community list before rendering the GSN Identity Card footprint."
+  /fetchIdentityIntegrityData[\s\S]*?listMyClans\(\{ timeoutMs: 6500 \}\)[\s\S]*?getMyTrustSlip\(\)[\s\S]*?communities: rowsOf<IdentityCommunityRow>\(clansRes\)[\s\S]*?trustSlip: normalizeTrustSlipRecord\(trustSlipRes\)/,
+  "Identity Integrity must read the existing member community list and TrustSlip through the shared refresh loader before rendering the GSN Identity Card footprint."
+);
+
+assertContains(
+  /identityCardRefreshing[\s\S]*?lastIdentityCardAutoRefreshAt[\s\S]*?refreshGsnIdentityCard[\s\S]*?fetchIdentityIntegrityData\(selectedClanId\)[\s\S]*?Community count and TrustSlip status are current[\s\S]*?window\.addEventListener\("focus", refreshWhenVisibleAgain\)[\s\S]*?document\.addEventListener\("visibilitychange", refreshWhenVisibleAgain\)/,
+  "GSN Identity Card must support manual refresh and quiet app-focus refresh so community-count/currentness changes can be reflected without reopening the route."
 );
 
 assertContains(
@@ -282,8 +287,8 @@ assertContains(
 );
 
 assertContains(
-  /trustSlipVerifyUrl[\s\S]*?canonicalPublicFrontendUrl[\s\S]*?trustSlipVerifyDisplay[\s\S]*?data-gsn-identity-card-verifier="true"[\s\S]*?Public verifier[\s\S]*?data-gsn-identity-card-qr="true"[\s\S]*?LazyQRCodeSVG[\s\S]*?debugId="identity-integrity\.gsn-card\.share"[\s\S]*?identityCardValid \? "Share card" : "Finish card"[\s\S]*?debugId="identity-integrity\.gsn-card\.copy"[\s\S]*?Copy card text[\s\S]*?debugId="identity-integrity\.gsn-card\.copy-verify-link"[\s\S]*?Copy verify link/,
-  "GSN Identity Card must support QR/live check, gated native share, copy text, and copy verify link actions."
+  /trustSlipVerifyUrl[\s\S]*?canonicalPublicFrontendUrl[\s\S]*?trustSlipVerifyDisplay[\s\S]*?data-gsn-identity-card-verifier="true"[\s\S]*?Public verifier[\s\S]*?data-gsn-identity-card-qr="true"[\s\S]*?LazyQRCodeSVG[\s\S]*?debugId="identity-integrity\.gsn-card\.refresh"[\s\S]*?Refresh card[\s\S]*?debugId="identity-integrity\.gsn-card\.share"[\s\S]*?identityCardValid \? "Share card" : "Finish card"[\s\S]*?debugId="identity-integrity\.gsn-card\.copy"[\s\S]*?Copy card text[\s\S]*?debugId="identity-integrity\.gsn-card\.copy-verify-link"[\s\S]*?Copy verify link/,
+  "GSN Identity Card must support QR/live check, manual refresh, gated native share, copy text, and copy verify link actions."
 );
 
 assertContains(
