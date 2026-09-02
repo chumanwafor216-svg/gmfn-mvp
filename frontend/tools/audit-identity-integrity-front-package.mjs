@@ -248,22 +248,32 @@ assertContains(
 );
 
 assertContains(
-  /data-gsn-identity-card-footprint="true"[\s\S]*?"Communities", communityFootprintLabel[\s\S]*?"Memberships", recognisedMembershipCount[\s\S]*?"Currentness", trustSlipExpiryLabel/,
-  "GSN Identity Card must show privacy-safe community footprint, recognised memberships, and TrustSlip currentness."
+  /data-identity-package-view-toggle="true"[\s\S]*?Identity Card[\s\S]*?Identity Anchor[\s\S]*?identity-integrity\.package-view\.\$\{item\.key\}/,
+  "Identity Integrity must show a two-choice switch for Identity Card and Identity Anchor."
 );
 
 assertContains(
-  /publicCommunityMemberCredentialPath\([\s\S]*?memberCredentialUrl[\s\S]*?shareablePublicFrontendUrl\(memberCredentialPath\)/,
+  /identityPackageView === "anchor"[\s\S]*?data-identity-integrity-front-package="true"[\s\S]*?\) : null\}[\s\S]*?identityPackageView === "card"[\s\S]*?data-gsn-identity-card="true"/,
+  "Identity Integrity must switch between Identity Anchor and GSN Identity Card instead of showing both at once."
+);
+
+assertContains(
+  /identityCardEvidenceRows[\s\S]*?label: "Phone"[\s\S]*?label: "Bank \/ wallet"[\s\S]*?label: "ID document"[\s\S]*?label: "Photo"[\s\S]*?label: "Communities"[\s\S]*?communityFootprintLabel[\s\S]*?label: "Memberships"[\s\S]*?recognisedMembershipLabel[\s\S]*?data-gsn-identity-card-footprint="true"[\s\S]*?identityCardEvidenceRows\.map/,
+  "GSN Identity Card must show an intelligent evidence stack: phone, bank/wallet, ID, photo, community footprint, and membership status."
+);
+
+assertContains(
+  /publicCommunityMemberCredentialPath\([\s\S]*?memberCredentialUrl[\s\S]*?canonicalPublicFrontendUrl\(memberCredentialPath\)/,
   "GSN Identity Card must reuse existing public member credential links instead of inventing a new verification engine."
 );
 
 assertContains(
-  /trustSlipVerifyUrl[\s\S]*?data-gsn-identity-card-qr="true"[\s\S]*?LazyQRCodeSVG[\s\S]*?debugId="identity-integrity\.gsn-card\.share"[\s\S]*?Share card[\s\S]*?debugId="identity-integrity\.gsn-card\.copy"[\s\S]*?Copy card text[\s\S]*?debugId="identity-integrity\.gsn-card\.copy-verify-link"[\s\S]*?Copy verify link/,
+  /trustSlipVerifyUrl[\s\S]*?canonicalPublicFrontendUrl[\s\S]*?trustSlipVerifyDisplay[\s\S]*?data-gsn-identity-card-verifier="true"[\s\S]*?Public verifier[\s\S]*?data-gsn-identity-card-qr="true"[\s\S]*?LazyQRCodeSVG[\s\S]*?debugId="identity-integrity\.gsn-card\.share"[\s\S]*?Share card[\s\S]*?debugId="identity-integrity\.gsn-card\.copy"[\s\S]*?Copy card text[\s\S]*?debugId="identity-integrity\.gsn-card\.copy-verify-link"[\s\S]*?Copy verify link/,
   "GSN Identity Card must support QR/live check, native share, copy text, and copy verify link actions."
 );
 
 assertContains(
-  /data-gsn-identity-card-boundary="true"[\s\S]*?Community names stay hidden on this card[\s\S]*?Not government ID, professional licence, credit approval, payment guarantee, or future behaviour proof/,
+  /data-gsn-identity-card-screenshot="true"[\s\S]*?<\/div>[\s\S]*?<CardActionRow[\s\S]*?data-gsn-identity-card-boundary="true"[\s\S]*?Public card hides community names and private documents[\s\S]*?not government ID, professional licence proof, credit approval, payment guarantee, or future behaviour proof/i,
   "GSN Identity Card must keep the privacy and no-overclaim boundary visible."
 );
 assertNotContains(

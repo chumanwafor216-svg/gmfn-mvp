@@ -44,8 +44,8 @@ import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
 import { buildIdentityIntegrityGuideItems } from "../lib/trustDocumentGuide";
 import { buildIdentityIntegritySnapshot } from "../lib/trustDocumentSnapshots";
 import {
+  canonicalPublicFrontendUrl,
   publicCommunityMemberCredentialPath,
-  shareablePublicFrontendUrl,
 } from "../lib/publicLinks";
 import {
   getContextualEvidencePosture,
@@ -157,6 +157,7 @@ type CollapseState = {
 };
 
 type IdentityTaskKey = "phone" | "community" | "bank" | "official_id" | "recovery";
+type IdentityPackageView = "card" | "anchor";
 
 const IDENTITY_TASK_KEYS: IdentityTaskKey[] = [
   "phone",
@@ -1417,6 +1418,10 @@ export default function IdentityIntegrityPage() {
   } | null>(null);
   const [activeIdentityTask, setActiveIdentityTask] =
     useState<IdentityTaskKey>("phone");
+  const [identityPackageView, setIdentityPackageView] =
+    useState<IdentityPackageView>(() =>
+      completionMode || requestedIdentityTask ? "anchor" : "card"
+    );
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
@@ -1481,6 +1486,9 @@ export default function IdentityIntegrityPage() {
   useEffect(() => {
     if (requestedIdentityTask) setActiveIdentityTask(requestedIdentityTask);
   }, [requestedIdentityTask]);
+  useEffect(() => {
+    if (requestedIdentityTask || completionMode) setIdentityPackageView("anchor");
+  }, [completionMode, requestedIdentityTask]);
 
   useEffect(() => {
     setPhoneInput((prev) => prev || safeStr(me?.phone_e164 || me?.phone || ""));
@@ -1834,7 +1842,6 @@ export default function IdentityIntegrityPage() {
     communityRowsForRole.length - adminCommunityCount - ownerCommunityCount,
     0
   );
-  const recognisedMembershipCount = activeCommunityCount;
   const communityFootprintLabel = activeCommunityCount
     ? `${activeCommunityCount} active communit${activeCommunityCount === 1 ? "y" : "ies"}`
     : visibleCommunityCount
@@ -1844,8 +1851,58 @@ export default function IdentityIntegrityPage() {
     ownerCommunityCount ? `Owner ${ownerCommunityCount}` : "",
     adminCommunityCount ? `Admin ${adminCommunityCount}` : "",
     memberCommunityCount ? `Member ${memberCommunityCount}` : "",
-  ].filter(Boolean).join(" / ") || "Roles not shown";
+  ].filter(Boolean).join(" / ") || "Roles private";
+  const recognisedMembershipLabel = activeCommunityCount
+    ? `${activeCommunityCount} active`
+    : visibleCommunityCount
+      ? `${visibleCommunityCount} linked`
+      : "None shown";
   const identityContext = trustSlip?.identity_context || {};
+  const phoneEvidenceLabel = identitySignals.phoneVerified
+    ? "Verified"
+    : identitySignals.phoneRecorded
+      ? "Recorded"
+      : "Missing";
+  const bankEvidenceVerified = Boolean(
+    me?.bank_verified ||
+      me?.bank_verified_at ||
+      trustSlip?.bank_verified ||
+      identityContext?.bank_verified
+  );
+  const bankEvidenceRecorded = Boolean(
+    bankEvidenceVerified ||
+      me?.bank_details_recorded ||
+      me?.payout_destination_id ||
+      me?.withdrawal_destination_id ||
+      trustSlip?.bank_details_recorded ||
+      identityContext?.bank_details_recorded ||
+      identitySignals.bankReady
+  );
+  const bankEvidenceLabel = bankEvidenceVerified
+    ? "Verified"
+    : bankEvidenceRecorded
+      ? "Recorded"
+      : "Missing";
+  const officialIdEvidenceVerified = Boolean(
+    me?.passport_verified ||
+      me?.passport_verified_at ||
+      me?.official_id_verified_at ||
+      trustSlip?.official_id_verified ||
+      identityContext?.official_id_verified
+  );
+  const officialIdEvidenceRecorded = Boolean(
+    officialIdEvidenceVerified ||
+      me?.official_id_recorded ||
+      me?.identity_document_recorded ||
+      trustSlip?.official_id_recorded ||
+      identityContext?.official_id_recorded ||
+      identitySignals.officialIdReady
+  );
+  const officialIdEvidenceLabel = officialIdEvidenceVerified
+    ? "Verified"
+    : officialIdEvidenceRecorded
+      ? "Recorded"
+      : "Missing";
   const photoEvidenceVerified = Boolean(
     me?.photo_verified ||
       me?.photo_verified_at ||
@@ -1857,12 +1914,63 @@ export default function IdentityIntegrityPage() {
       )
   );
   const photoEvidenceLabel = photoEvidenceVerified
-    ? "Photo verified"
+    ? "Verified"
     : identitySignals.photoReady
-      ? "Photo recorded"
+      ? "Recorded"
       : avatarSrc
         ? "Face shown"
-        : "Face not shown";
+        : "Missing";
+  const identityCardEvidenceRows: Array<{
+    label: string;
+    value: string;
+    icon: GsnIconName;
+    tone: "ready" | "pending" | "watch" | "neutral";
+  }> = [
+    {
+      label: "Phone",
+      value: phoneEvidenceLabel,
+      icon: "phone",
+      tone: identitySignals.phoneVerified
+        ? "ready"
+        : identitySignals.phoneRecorded
+          ? "watch"
+          : "pending",
+    },
+    {
+      label: "Bank / wallet",
+      value: bankEvidenceLabel,
+      icon: "bank",
+      tone: bankEvidenceVerified ? "ready" : bankEvidenceRecorded ? "watch" : "pending",
+    },
+    {
+      label: "ID document",
+      value: officialIdEvidenceLabel,
+      icon: "document",
+      tone: officialIdEvidenceVerified
+        ? "ready"
+        : officialIdEvidenceRecorded
+          ? "watch"
+          : "pending",
+    },
+    {
+      label: "Photo",
+      value: photoEvidenceLabel,
+      icon: "user",
+      tone: photoEvidenceVerified ? "ready" : identitySignals.photoReady ? "watch" : "pending",
+    },
+    {
+      label: "Communities",
+      value: communityFootprintLabel,
+      icon: "community",
+      tone: visibleCommunityCount ? "ready" : "neutral",
+    },
+    {
+      label: "Memberships",
+      value: recognisedMembershipLabel,
+      icon: "shield",
+      tone: activeCommunityCount ? "ready" : visibleCommunityCount ? "watch" : "neutral",
+    },
+  ];
   const trustSlipExpiresAt = safeStr(trustSlip?.expires_at);
   const trustSlipExpired = trustSlipExpiresAt
     ? new Date(trustSlipExpiresAt).getTime() < Date.now()
@@ -1883,11 +1991,13 @@ export default function IdentityIntegrityPage() {
     ? `/t/${encodeURIComponent(trustSlipCode)}`
     : "";
   const trustSlipVerifyUrl = trustSlipCode
-    ? firstTruthy(
-        trustSlip?.public_verify_url,
-        shareablePublicFrontendUrl(trustSlipVerifyPath)
+    ? canonicalPublicFrontendUrl(
+        firstTruthy(trustSlip?.public_verify_url, trustSlipVerifyPath)
       )
     : "";
+  const trustSlipVerifyDisplay = trustSlipVerifyUrl
+    ? trustSlipVerifyUrl.replace(/^https?:\/\//i, "")
+    : "Verify link not ready";
   const selectedCommunityKey = firstTruthy(
     currentClan?.community_code,
     currentClan?.code,
@@ -1902,7 +2012,7 @@ export default function IdentityIntegrityPage() {
     memberKey: gmfnIdValue,
   });
   const memberCredentialUrl = memberCredentialPath
-    ? shareablePublicFrontendUrl(memberCredentialPath)
+    ? canonicalPublicFrontendUrl(memberCredentialPath)
     : "";
   const gsnIdentityCardShareText = [
     "My GSN Identity Card",
@@ -1910,15 +2020,18 @@ export default function IdentityIntegrityPage() {
     `GSN ID: ${gmfnId}`,
     `Identity status: ${identityHealthLabel}`,
     `Photo evidence: ${photoEvidenceLabel}`,
+    `Phone evidence: ${phoneEvidenceLabel}`,
+    `Bank/wallet evidence: ${bankEvidenceLabel}`,
+    `Official ID evidence: ${officialIdEvidenceLabel}`,
     `Community footprint: ${communityFootprintLabel}`,
-    recognisedMembershipCount ? `Recognised memberships: ${recognisedMembershipCount}` : "",
+    `Memberships: ${recognisedMembershipLabel}`,
     `Community roles: ${roleFootprintLabel}`,
     `TrustSlip: ${trustSlipStatusText}`,
     trustSlipCode ? `TrustSlip code: ${trustSlipCode}` : "",
     trustSlipCode ? `Currentness: ${trustSlipExpiryLabel}` : "",
     memberCredentialUrl ? `Member credential: ${memberCredentialUrl}` : "",
     trustSlipVerifyUrl ? `Verify: ${trustSlipVerifyUrl}` : "",
-    "Boundary: This is public-safe GSN identity and community evidence. It is not government ID, professional licence, credit approval, payment guarantee, or a promise of future behaviour.",
+    "Privacy: community names and private documents are not exposed on this card. It is not government ID, professional licence proof, credit approval, payment guarantee, or a promise of future behaviour.",
   ].filter(Boolean).join("\n");
 
   function identityTaskTarget(task: IdentityTaskKey): string {
@@ -2646,6 +2759,52 @@ export default function IdentityIntegrityPage() {
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
+      <section
+        data-identity-package-view-toggle="true"
+        style={{
+          ...pageCard("#FFFFFF"),
+          padding: isCompact ? 10 : 12,
+          display: "grid",
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+          gap: 8,
+          border: "1px solid rgba(37,78,119,0.12)",
+        }}
+      >
+        {[
+          { key: "card" as IdentityPackageView, label: "Identity Card", icon: "id" as GsnIconName },
+          { key: "anchor" as IdentityPackageView, label: "Identity Anchor", icon: "shield" as GsnIconName },
+        ].map((item) => {
+          const selected = identityPackageView === item.key;
+          const ViewButton = selected ? PrimaryButton : SecondaryButton;
+          return (
+            <ViewButton
+              key={item.key}
+              type="button"
+              onClick={() => setIdentityPackageView(item.key)}
+              stableHeight={isCompact ? 52 : 50}
+              fullWidth
+              debugId={`identity-integrity.package-view.${item.key}`}
+              style={{
+                borderRadius: 16,
+                justifyContent: "center",
+                gap: 8,
+                background: selected
+                  ? "linear-gradient(180deg, #07172C 0%, #0B2D4A 100%)"
+                  : "#FFFFFF",
+                color: selected ? "#FFFFFF" : "#07172C",
+                border: selected
+                  ? "1px solid rgba(214,170,69,0.34)"
+                  : "1px solid rgba(37,78,119,0.14)",
+              }}
+            >
+              <GsnLegacyIcon name={item.icon} size={24} />
+              {item.label}
+            </ViewButton>
+          );
+        })}
+      </section>
+
+      {identityPackageView === "anchor" ? (
       <section
         data-identity-integrity-front-package="true"
         style={{
@@ -3516,7 +3675,9 @@ export default function IdentityIntegrityPage() {
           </StableCtaLink>
         </div>
       </section>
+      ) : null}
 
+      {identityPackageView === "card" ? (
       <section
         data-gsn-identity-card="true"
         style={{
@@ -3665,41 +3826,36 @@ export default function IdentityIntegrityPage() {
               data-gsn-identity-card-footprint="true"
               style={{
                 display: "grid",
-                gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
+                gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))",
                 gap: 8,
               }}
             >
-              {[
-                ["Photo", photoEvidenceLabel, "user" as GsnIconName],
-                ["Communities", communityFootprintLabel, "community" as GsnIconName],
-                ["Memberships", recognisedMembershipCount ? String(recognisedMembershipCount) : "Not shown", "shield" as GsnIconName],
-                ["Currentness", trustSlipExpiryLabel, "qr" as GsnIconName],
-              ].map(([label, value, icon]) => (
+              {identityCardEvidenceRows.map((item) => (
                 <div
-                  key={label}
+                  key={item.label}
                   style={{
-                    minHeight: isCompact ? 72 : 78,
-                    borderRadius: 16,
+                    minHeight: isCompact ? 62 : 66,
+                    borderRadius: 15,
                     background: "#FFFFFF",
                     border: "1px solid rgba(37,78,119,0.12)",
-                    padding: 10,
+                    padding: isCompact ? 8 : 10,
                     display: "grid",
-                    gridTemplateColumns: "38px minmax(0, 1fr)",
+                    gridTemplateColumns: "34px minmax(0, 1fr)",
                     gap: 8,
                     alignItems: "center",
-                    boxShadow: "0 10px 22px rgba(7,23,44,0.05)",
+                    boxShadow: "0 8px 18px rgba(7,23,44,0.045)",
                     boxSizing: "border-box",
                   }}
                 >
-                  <span style={{ ...iconTile("#07172C", "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"), width: 38, height: 38, borderRadius: 14, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.92)" }}>
-                    <GsnLegacyIcon name={icon as GsnIconName} size={28} />
+                  <span style={{ ...iconTile(identityIconTone(item.tone).color, identityIconTone(item.tone).bg), width: 34, height: 34, borderRadius: 12, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.92)" }}>
+                    <GsnLegacyIcon name={item.icon} size={25} />
                   </span>
                   <span style={{ minWidth: 0 }}>
-                    <span style={{ display: "block", color: "#617085", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase", lineHeight: 1.1 }}>
-                      {label}
+                    <span style={{ display: "block", color: "#617085", fontSize: 10, fontWeight: 1000, textTransform: "uppercase", lineHeight: 1.1 }}>
+                      {item.label}
                     </span>
-                    <span style={{ display: "block", marginTop: 4, color: "#07172C", fontSize: isCompact ? 12 : 13, fontWeight: 1000, lineHeight: 1.16, overflowWrap: "break-word" }}>
-                      {value}
+                    <span style={{ display: "block", marginTop: 3, color: "#07172C", fontSize: isCompact ? 11.5 : 12.5, fontWeight: 1000, lineHeight: 1.15, overflowWrap: "anywhere" }}>
+                      {item.value}
                     </span>
                   </span>
                 </div>
@@ -3707,21 +3863,23 @@ export default function IdentityIntegrityPage() {
             </div>
 
             <div
-              data-gsn-identity-card-boundary="true"
+              data-gsn-identity-card-verifier="true"
               style={{
-                borderRadius: 16,
-                border: "1px solid rgba(214,170,69,0.22)",
+                borderRadius: 15,
+                border: "1px solid rgba(214,170,69,0.28)",
                 background: "linear-gradient(180deg, #FFFBEF 0%, #FFFFFF 100%)",
                 padding: isCompact ? 10 : 12,
-                color: "#3B2504",
-                fontSize: isCompact ? 12 : 13,
-                fontWeight: 900,
-                lineHeight: 1.38,
+                display: "grid",
+                gap: 5,
               }}
             >
-              Community names stay hidden on this card. Use the TrustSlip link or member credential for public-safe details. Not government ID, professional licence, credit approval, payment guarantee, or future behaviour proof.
+              <div style={{ color: "#3B2504", fontSize: 12, fontWeight: 1000, textTransform: "uppercase" }}>
+                Public verifier
+              </div>
+              <div style={{ color: "#07172C", fontSize: isCompact ? 12 : 13, fontWeight: 950, lineHeight: 1.28, overflowWrap: "anywhere" }}>
+                {trustSlipVerifyDisplay}
+              </div>
             </div>
-
             {isCompact && trustSlipVerifyUrl ? (
               <div
                 data-gsn-identity-card-qr="true"
@@ -3750,10 +3908,10 @@ export default function IdentityIntegrityPage() {
                 </div>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ color: "#07172C", fontSize: 14, fontWeight: 1000 }}>
-                    Live check path
+                    Verify on web
                   </div>
                   <div style={{ marginTop: 5, color: "#617085", fontSize: 12, fontWeight: 850, lineHeight: 1.35, overflowWrap: "anywhere" }}>
-                    {trustSlipCode ? `TrustSlip ${trustSlipCode}` : "TrustSlip not issued yet"}
+                    {trustSlipCode ? `TrustSlip ${trustSlipCode} - ${trustSlipVerifyDisplay}` : trustSlipVerifyDisplay}
                   </div>
                 </div>
               </div>
@@ -3790,7 +3948,21 @@ export default function IdentityIntegrityPage() {
             Copy verify link
           </SecondaryButton>
         </CardActionRow>
+
+        <div
+          data-gsn-identity-card-boundary="true"
+          style={{
+            marginTop: 10,
+            color: "#617085",
+            fontSize: 12,
+            fontWeight: 820,
+            lineHeight: 1.35,
+          }}
+        >
+          Public card hides community names and private documents. It is not government ID, professional licence proof, credit approval, payment guarantee, or future behaviour proof.
+        </div>
       </section>
+      ) : null}
 
       <section data-identity-integrity-secondary-section="readings" style={decongestedSectionCard(collapsed.summary, isCompact)}>
         {sectionIconHeader(
