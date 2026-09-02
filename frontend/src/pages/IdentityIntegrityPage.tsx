@@ -3739,10 +3739,99 @@ export default function IdentityIntegrityPage() {
               "linear-gradient(180deg, #061827 0%, #08233A 52%, #FFFFFF 52.1%, #F8FBFF 100%)",
             boxShadow:
               "0 18px 34px rgba(6,24,39,0.16), inset 0 1px 0 rgba(255,255,255,0.08)",
+            position: "relative",
+            isolation: "isolate",
           }}
         >
           <div
+            data-gsn-identity-card-watermark-field="true"
+            aria-hidden="true"
             style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 0,
+              pointerEvents: "none",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              data-gsn-identity-card-watermark-horizontal="true"
+              style={{
+                position: "absolute",
+                top: isCompact ? 138 : 116,
+                left: isCompact ? -10 : 18,
+                right: isCompact ? -10 : 18,
+                color: "rgba(255,255,255,0.075)",
+                fontSize: isCompact ? 84 : 128,
+                lineHeight: 0.9,
+                fontWeight: 1000,
+                letterSpacing: 0,
+                textAlign: "center",
+                transform: "rotate(-8deg)",
+                textShadow: "0 1px 0 rgba(242,199,102,0.12)",
+              }}
+            >
+              GSN
+            </div>
+            <div
+              data-gsn-identity-card-watermark-vertical="true"
+              style={{
+                position: "absolute",
+                top: 18,
+                bottom: 18,
+                right: isCompact ? 7 : 12,
+                color: "rgba(214,170,69,0.105)",
+                fontSize: isCompact ? 42 : 54,
+                fontWeight: 1000,
+                letterSpacing: 0,
+                writingMode: "vertical-rl",
+                textOrientation: "mixed",
+                display: "grid",
+                placeItems: "center",
+              }}
+            >
+              GSN GSN
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                top: "49%",
+                left: "50%",
+                color: "rgba(7,23,44,0.065)",
+                fontSize: isCompact ? 118 : 168,
+                lineHeight: 0.8,
+                fontWeight: 1000,
+                letterSpacing: 0,
+                transform: "translate(-50%, -50%) rotate(-10deg)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              GSN
+            </div>
+            <div
+              data-gsn-identity-card-microtext="true"
+              style={{
+                position: "absolute",
+                left: -24,
+                right: -24,
+                bottom: isCompact ? 104 : 86,
+                color: "rgba(7,23,44,0.14)",
+                fontSize: 9,
+                lineHeight: 1,
+                fontWeight: 1000,
+                letterSpacing: 0,
+                whiteSpace: "nowrap",
+                transform: "rotate(-2deg)",
+              }}
+            >
+              GSN VERIFY • TRUSTSLIP • GENERATED • COMMUNITY INTEGRITY • GSN VERIFY • TRUSTSLIP • GENERATED • COMMUNITY INTEGRITY
+            </div>
+          </div>
+
+          <div
+            style={{
+              position: "relative",
+              zIndex: 1,
               padding: isCompact ? 14 : 18,
               color: "#FFFFFF",
               display: "grid",
@@ -3859,6 +3948,8 @@ export default function IdentityIntegrityPage() {
 
           <div
             style={{
+              position: "relative",
+              zIndex: 1,
               padding: isCompact ? 12 : 16,
               display: "grid",
               gap: isCompact ? 10 : 12,

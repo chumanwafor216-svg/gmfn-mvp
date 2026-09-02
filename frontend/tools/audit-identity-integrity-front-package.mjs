@@ -266,6 +266,10 @@ assertContains(
   /identityCardGeneratedAt[\s\S]*?identityCardGeneratedLabel[\s\S]*?identityCardSerial[\s\S]*?identityCardSecurityRows[\s\S]*?Serial[\s\S]*?Generated[\s\S]*?Status[\s\S]*?data-gsn-identity-card-security="true"[\s\S]*?Live verified[\s\S]*?Limited card/,
   "GSN Identity Card must show official security features: serial, generated timestamp, and live/limited status."
 );
+assertContains(
+  /data-gsn-identity-card-screenshot="true"[\s\S]*?position: "relative"[\s\S]*?isolation: "isolate"[\s\S]*?data-gsn-identity-card-watermark-field="true"[\s\S]*?zIndex: 0[\s\S]*?data-gsn-identity-card-watermark-horizontal="true"[\s\S]*?GSN[\s\S]*?data-gsn-identity-card-watermark-vertical="true"[\s\S]*?writingMode: "vertical-rl"[\s\S]*?data-gsn-identity-card-microtext="true"[\s\S]*?GSN VERIFY[\s\S]*?position: "relative"[\s\S]*?zIndex: 1/,
+  "GSN Identity Card must keep layered institutional watermarking: horizontal GSN, vertical GSN, microtext, and protected content stacking."
+);
 
 assertContains(
   /identityCardEvidenceRows[\s\S]*?label: "Phone"[\s\S]*?label: "Bank \/ wallet"[\s\S]*?label: "ID document"[\s\S]*?label: "Photo"[\s\S]*?label: "Communities"[\s\S]*?communityFootprintLabel[\s\S]*?label: "Memberships"[\s\S]*?recognisedMembershipLabel[\s\S]*?data-gsn-identity-card-footprint="true"[\s\S]*?identityCardEvidenceRows\.map/,
