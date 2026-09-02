@@ -258,6 +258,16 @@ assertContains(
 );
 
 assertContains(
+  /identityCardValid[\s\S]*?identitySignals\.phoneVerified[\s\S]*?trustSlipCode[\s\S]*?!trustSlipExpired[\s\S]*?identityCardStatusText[\s\S]*?Phone required[\s\S]*?TrustSlip pending/,
+  "GSN Identity Card validity must require verified phone evidence plus an active TrustSlip."
+);
+
+assertContains(
+  /identityCardGeneratedAt[\s\S]*?identityCardGeneratedLabel[\s\S]*?identityCardSerial[\s\S]*?identityCardSecurityRows[\s\S]*?Serial[\s\S]*?Generated[\s\S]*?Status[\s\S]*?data-gsn-identity-card-security="true"[\s\S]*?Live verified[\s\S]*?Limited card/,
+  "GSN Identity Card must show official security features: serial, generated timestamp, and live/limited status."
+);
+
+assertContains(
   /identityCardEvidenceRows[\s\S]*?label: "Phone"[\s\S]*?label: "Bank \/ wallet"[\s\S]*?label: "ID document"[\s\S]*?label: "Photo"[\s\S]*?label: "Communities"[\s\S]*?communityFootprintLabel[\s\S]*?label: "Memberships"[\s\S]*?recognisedMembershipLabel[\s\S]*?data-gsn-identity-card-footprint="true"[\s\S]*?identityCardEvidenceRows\.map/,
   "GSN Identity Card must show an intelligent evidence stack: phone, bank/wallet, ID, photo, community footprint, and membership status."
 );
@@ -268,8 +278,13 @@ assertContains(
 );
 
 assertContains(
-  /trustSlipVerifyUrl[\s\S]*?canonicalPublicFrontendUrl[\s\S]*?trustSlipVerifyDisplay[\s\S]*?data-gsn-identity-card-verifier="true"[\s\S]*?Public verifier[\s\S]*?data-gsn-identity-card-qr="true"[\s\S]*?LazyQRCodeSVG[\s\S]*?debugId="identity-integrity\.gsn-card\.share"[\s\S]*?Share card[\s\S]*?debugId="identity-integrity\.gsn-card\.copy"[\s\S]*?Copy card text[\s\S]*?debugId="identity-integrity\.gsn-card\.copy-verify-link"[\s\S]*?Copy verify link/,
-  "GSN Identity Card must support QR/live check, native share, copy text, and copy verify link actions."
+  /trustSlipVerifyUrl[\s\S]*?canonicalPublicFrontendUrl[\s\S]*?trustSlipVerifyDisplay[\s\S]*?data-gsn-identity-card-verifier="true"[\s\S]*?Public verifier[\s\S]*?data-gsn-identity-card-qr="true"[\s\S]*?LazyQRCodeSVG[\s\S]*?debugId="identity-integrity\.gsn-card\.share"[\s\S]*?identityCardValid \? "Share card" : "Finish card"[\s\S]*?debugId="identity-integrity\.gsn-card\.copy"[\s\S]*?Copy card text[\s\S]*?debugId="identity-integrity\.gsn-card\.copy-verify-link"[\s\S]*?Copy verify link/,
+  "GSN Identity Card must support QR/live check, gated native share, copy text, and copy verify link actions."
+);
+
+assertContains(
+  /async function shareGsnIdentityCard\(\)[\s\S]*?!identityCardValid[\s\S]*?setIdentityPackageView\("anchor"\)[\s\S]*?Verify phone first[\s\S]*?navigator\.share/,
+  "GSN Identity Card must not share as valid until the phone/TrustSlip gate is satisfied."
 );
 
 assertContains(

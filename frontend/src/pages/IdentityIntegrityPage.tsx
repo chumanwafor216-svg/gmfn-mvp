@@ -1422,6 +1422,7 @@ export default function IdentityIntegrityPage() {
     useState<IdentityPackageView>(() =>
       completionMode || requestedIdentityTask ? "anchor" : "card"
     );
+  const [identityCardGeneratedAt] = useState(() => new Date().toISOString());
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
@@ -1987,6 +1988,27 @@ export default function IdentityIntegrityPage() {
         : `Valid until ${safeDate(trustSlipExpiresAt)}`
       : "Expiry not shown"
     : "Verify phone to issue";
+  const identityCardValid = Boolean(
+    identitySignals.phoneVerified && trustSlipCode && !trustSlipExpired
+  );
+  const identityCardStatusText = identityCardValid
+    ? "Valid"
+    : !identitySignals.phoneVerified
+      ? "Phone required"
+      : trustSlipExpired
+        ? "Expired"
+        : "TrustSlip pending";
+  const identityCardStatusTone: "ready" | "pending" | "watch" = identityCardValid
+    ? "ready"
+    : identitySignals.phoneVerified
+      ? "watch"
+      : "pending";
+  const identityCardGeneratedLabel = safeDateTime(identityCardGeneratedAt);
+  const identityCardSerial = trustSlipCode
+    ? `GSN-ID-${trustSlipCode.slice(0, 4)}-${trustSlipCode.slice(-4)}`
+    : gmfnIdValue
+      ? `GSN-ID-${gmfnIdValue.slice(-8)}`
+      : "GSN-ID-PENDING";
   const trustSlipVerifyPath = trustSlipCode
     ? `/t/${encodeURIComponent(trustSlipCode)}`
     : "";
@@ -1998,6 +2020,12 @@ export default function IdentityIntegrityPage() {
   const trustSlipVerifyDisplay = trustSlipVerifyUrl
     ? trustSlipVerifyUrl.replace(/^https?:\/\//i, "")
     : "Verify link not ready";
+  const identityCardSecurityRows = [
+    { label: "Serial", value: identityCardSerial },
+    { label: "Generated", value: identityCardGeneratedLabel },
+    { label: "Status", value: identityCardStatusText },
+    { label: "Verify", value: trustSlipVerifyDisplay },
+  ];
   const selectedCommunityKey = firstTruthy(
     currentClan?.community_code,
     currentClan?.code,
@@ -2018,6 +2046,9 @@ export default function IdentityIntegrityPage() {
     "My GSN Identity Card",
     `Name: ${displayName}`,
     `GSN ID: ${gmfnId}`,
+    `Card status: ${identityCardStatusText}`,
+    `Generated: ${identityCardGeneratedLabel}`,
+    `Card serial: ${identityCardSerial}`,
     `Identity status: ${identityHealthLabel}`,
     `Photo evidence: ${photoEvidenceLabel}`,
     `Phone evidence: ${phoneEvidenceLabel}`,
@@ -2416,6 +2447,17 @@ export default function IdentityIntegrityPage() {
   }
 
   async function shareGsnIdentityCard() {
+    if (!identityCardValid) {
+      setIdentityPackageView("anchor");
+      showNotice(
+        "error",
+        identitySignals.phoneVerified
+          ? "Identity Card needs an active TrustSlip before sharing."
+          : "Verify phone first. A valid GSN Identity Card requires verified phone evidence."
+      );
+      return;
+    }
+
     const sharePayload = {
       title: "GSN Identity Card",
       text: gsnIdentityCardShareText,
@@ -3756,8 +3798,8 @@ export default function IdentityIntegrityPage() {
                   <GsnLegacyIcon name="id" size={22} />
                   GSN Identity Card
                 </span>
-                <span style={{ ...compactStatusChip(trustSlipCode && !trustSlipExpired ? "ready" : "pending"), background: trustSlipCode && !trustSlipExpired ? "rgba(46,155,98,0.18)" : "rgba(242,199,102,0.18)", color: "#FFFFFF", border: "1px solid rgba(255,255,255,0.18)" }}>
-                  {trustSlipStatusText}
+                <span style={{ ...compactStatusChip(identityCardStatusTone), background: identityCardValid ? "rgba(46,155,98,0.18)" : "rgba(242,199,102,0.18)", color: "#FFFFFF", border: "1px solid rgba(255,255,255,0.18)" }}>
+                  {identityCardStatusText}
                 </span>
               </div>
               <div
@@ -3822,6 +3864,61 @@ export default function IdentityIntegrityPage() {
               gap: isCompact ? 10 : 12,
             }}
           >
+            <div
+              data-gsn-identity-card-security="true"
+              style={{
+                borderRadius: 16,
+                border: "1px solid rgba(214,170,69,0.30)",
+                background:
+                  "linear-gradient(135deg, rgba(255,251,239,0.98) 0%, #FFFFFF 58%, rgba(234,243,255,0.90) 100%)",
+                padding: isCompact ? 10 : 12,
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 118px",
+                gap: 10,
+                alignItems: "center",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.86)",
+              }}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))",
+                  gap: 8,
+                }}
+              >
+                {identityCardSecurityRows.slice(0, 3).map((item) => (
+                  <div key={item.label} style={{ minWidth: 0 }}>
+                    <div style={{ color: "#617085", fontSize: 9.5, fontWeight: 1000, textTransform: "uppercase", lineHeight: 1.1 }}>
+                      {item.label}
+                    </div>
+                    <div style={{ marginTop: 3, color: "#07172C", fontSize: isCompact ? 11.5 : 12.5, fontWeight: 1000, lineHeight: 1.18, overflowWrap: "anywhere" }}>
+                      {item.value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div
+                style={{
+                  minHeight: 46,
+                  borderRadius: 15,
+                  border: "1px solid rgba(46,155,98,0.18)",
+                  background: identityCardValid
+                    ? "linear-gradient(180deg, rgba(46,155,98,0.12) 0%, #FFFFFF 100%)"
+                    : "linear-gradient(180deg, rgba(242,199,102,0.16) 0%, #FFFFFF 100%)",
+                  display: "grid",
+                  placeItems: "center",
+                  color: identityCardValid ? "#14532D" : "#713F12",
+                  fontSize: 11,
+                  fontWeight: 1000,
+                  textTransform: "uppercase",
+                  letterSpacing: 0,
+                  textAlign: "center",
+                  padding: "8px 10px",
+                }}
+              >
+                {identityCardValid ? "Live verified" : "Limited card"}
+              </div>
+            </div>
             <div
               data-gsn-identity-card-footprint="true"
               style={{
@@ -3927,7 +4024,7 @@ export default function IdentityIntegrityPage() {
             minWidth={isCompact ? undefined : 172}
             debugId="identity-integrity.gsn-card.share"
           >
-            Share card
+            {identityCardValid ? "Share card" : "Finish card"}
           </PrimaryButton>
           <SecondaryButton
             onClick={() => void copyGsnIdentityCard()}
