@@ -1,3 +1,10 @@
+## 2026-09-03 - Local GSN Identity Card duplicate status chip removal
+
+- Status: Local frontend follow-up verified; deploying after owner asked to remove the duplicate `Valid` near the picture.
+- Frontend route affected: signed-in `/app/identity` (`IdentityIntegrityPage`).
+- Change: removed the small header status chip beside the identity-card photo/title and removed the same duplicate status pill from the generated PNG card. The official status remains only in the serial/generated/status block as `Status / Valid / Live verified`.
+- Verification: `npm --prefix frontend run audit:identity-integrity-front-package` passed; `npm --prefix frontend run build` passed; `git diff --check` passed with only CRLF warnings.
+- Devil truth: this removes the duplicate status label but does not by itself prove the whole card fits every real phone screenshot; that still needs phone review after deploy.
 ## 2026-09-03 - Local GSN Identity Card picture share and lite verifier
 
 - Status: Local frontend fix verified; not pushed or deployed because the owner has not explicitly asked to publish this slice.

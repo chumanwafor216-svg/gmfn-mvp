@@ -665,13 +665,6 @@ async function buildGsnIdentityCardShareImage(
   drawIdentityCardRoundRect(ctx, avatarX, avatarY, avatarSize, avatarSize, 52);
   ctx.stroke();
 
-  ctx.fillStyle = params.valid ? "rgba(46,155,98,0.24)" : "rgba(242,199,102,0.20)";
-  drawIdentityCardRoundRect(ctx, 430, 204, 230, 64, 32);
-  ctx.fill();
-  ctx.fillStyle = "#FFFFFF";
-  ctx.font = "900 34px Arial, sans-serif";
-  ctx.fillText(params.cardStatus, 462, 248);
-
   ctx.fillStyle = "#FFFFFF";
   ctx.font = "900 84px Arial, sans-serif";
   drawIdentityCardCanvasText(ctx, params.displayName, 430, 352, 500, 88, 2);
@@ -4331,9 +4324,6 @@ export default function IdentityIntegrityPage() {
                 <span style={{ ...compactStatusChip(identitySignals.phoneVerified ? "ready" : "pending"), background: "rgba(255,255,255,0.12)", color: "#F8FBFF", border: "1px solid rgba(242,199,102,0.28)" }}>
                   <GsnLegacyIcon name="id" size={22} />
                   GSN Identity Card
-                </span>
-                <span style={{ ...compactStatusChip(identityCardStatusTone), background: identityCardValid ? "rgba(46,155,98,0.18)" : "rgba(242,199,102,0.18)", color: "#FFFFFF", border: "1px solid rgba(255,255,255,0.18)" }}>
-                  {identityCardStatusText}
                 </span>
               </div>
               <div
