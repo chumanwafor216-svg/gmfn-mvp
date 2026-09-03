@@ -202,8 +202,8 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /const publicVerifyUrl =[\s\S]*?<QRCodeSVG\s+value=\{publicVerifyUrl\}[\s\S]*?Verify record/,
-  "The card-only public identity surface must show a verification-record QR separate from the live card route."
+  /const publicVerifyUrl =[\s\S]*?\/card` : "";[\s\S]*?<QRCodeSVG\s+value=\{publicVerifyUrl\}[\s\S]*?Live ID card/,
+  "The card-only public identity surface must show a live-card QR/link that opens this same improved card route."
 );
 assertContains(
   "publicPaper",

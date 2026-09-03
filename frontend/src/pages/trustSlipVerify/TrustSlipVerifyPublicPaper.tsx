@@ -1960,10 +1960,10 @@ export default function TrustSlipVerifyPublicPaper({
     const cardSerial = resolvedCode
       ? `GSN-ID-${resolvedCode.slice(0, 4)}-${resolvedCode.slice(-4)}`
       : "GSN-ID-PUBLIC";
-    const publicVerifyUrl = verifyUrl ? `${verifyUrl.replace(/\/+$/, "")}/lite` : "";
+    const publicVerifyUrl = verifyUrl ? `${verifyUrl.replace(/\/+$/, "")}/card` : "";
     const publicVerifyDisplay = publicVerifyUrl
       ? publicVerifyUrl.replace(/^https?:\/\//i, "")
-      : verifyPath || "Verify link not available";
+      : verifyPath || "Live card link not available";
     const roleMix = roleMixLabel(communityConfirmationOptions, holderRole);
     const linkedCommunityFootprint = activeCommunityCountLabel
       ? `${activeCommunityCountLabel} visible${roleMix ? `; ${roleMix}` : ""}`
@@ -2188,7 +2188,7 @@ export default function TrustSlipVerifyPublicPaper({
             </div>
             <div style={{ minWidth: 0 }}>
               <div style={{ color: "#3B2504", fontSize: compact ? 13 : 15, fontWeight: 1000 }}>
-                Verify record
+                Live ID card
               </div>
               <div style={{ marginTop: 4, color: "#07172C", fontSize: compact ? 10.5 : 12, fontWeight: 900, lineHeight: 1.22, overflowWrap: "anywhere" }}>
                 {publicVerifyDisplay}
