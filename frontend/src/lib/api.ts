@@ -2535,7 +2535,7 @@ export async function verifyTrustSlip(
     })}`,
     "GET",
     undefined,
-    { includeAuth: false, header_clan_id: null, quiet: true }
+    { includeAuth: false, header_clan_id: null, quiet: true, timeoutMs: 65000 }
   );
 }
 

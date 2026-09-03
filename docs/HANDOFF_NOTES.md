@@ -1,3 +1,11 @@
+## 2026-09-03 - Local public TrustSlip card cold-start timeout fix
+
+- Status: Local frontend follow-up verified; deploying after browser verification of commit `3f4a7638` still showed `/t/LKFEZ8VBBU0/card` falling back while the correct API request was aborted twice.
+- Root cause refined: the production API returns the correct TrustSlip record and correct CORS headers, but the live public TrustSlip endpoint took about 31 seconds during cold/wake reads. The shared JSON timeout was 30 seconds, so the card could time out just before the valid record arrived and then render `Not issued yet` / `No usable TrustSlip record was found`.
+- Frontend API change: `verifyTrustSlip` now keeps the same unauthenticated, selected-community-free public request, but uses `timeoutMs: 65000` for this public verification call only. Other default API calls stay on the normal timeout.
+- Guardrail change: public TrustSlip audits now require the string-only verifier call and the longer public verifier timeout.
+- Verification to rerun before deploy: public TrustSlip first-viewport audit, public TrustSlip verify boundary audit, Identity Integrity audit, production build, and live browser check after Render deploy.
+- Devil truth: this solves the observed Render cold-start timeout window. It is not a backend speed improvement; if the endpoint regularly takes 30+ seconds when warm, the next real fix is backend performance, not larger frontend timeouts.
 ## 2026-09-03 - Local public TrustSlip card fallback retry fix
 
 - Status: Local frontend fix verified; deploying after phone retest showed `/t/LKFEZ8VBBU0/card` opened the right public card route but displayed fallback fields: `GSN ID: Not issued yet`, `Issued: Not stated`, and `No usable TrustSlip record was found`.

@@ -262,7 +262,7 @@ assertContains(
 
 assertContains(
   "api",
-  /export async function verifyTrustSlip\([\s\S]*?return httpJson\([\s\S]*?`\/trust-slips\/verify\/\$\{encodeURIComponent\(String\(code\)\)\}\$\{buildQuery\([\s\S]*?\)[\s\S]*?"GET",[\s\S]*?undefined,[\s\S]*?\{ includeAuth: false, header_clan_id: null, quiet: true \}/,
+  /export async function verifyTrustSlip\([\s\S]*?return httpJson\([\s\S]*?`\/trust-slips\/verify\/\$\{encodeURIComponent\(String\(code\)\)\}\$\{buildQuery\([\s\S]*?\)[\s\S]*?"GET",[\s\S]*?undefined,[\s\S]*?\{ includeAuth: false, header_clan_id: null, quiet: true, timeoutMs: 65000 \}/,
   "Public TrustSlip verify API calls must not inherit viewer auth or selected-community headers, and expected public not-found states should stay quiet."
 );
 
@@ -290,7 +290,7 @@ assertOrder(
   [
     { label: "public paper", pattern: /<TrustSlipVerifyPublicPaper/ },
     { label: "public sharing boundary", pattern: /<TrustSlipVerifyBoundary/ },
-    { label: "private evidence gate", pattern: /\{canShowPrivateEvidence \? \(/ },
+    { label: "private evidence gate", pattern: /\{canShowPrivateEvidence && !isCardRoute \? \(/ },
     { label: "private evidence disclosure", pattern: /debugId="trust-slip-verify\.full-evidence-toggle"/ },
     { label: "private evidence component", pattern: /<TrustSlipVerifyPrivateEvidence/ },
   ],

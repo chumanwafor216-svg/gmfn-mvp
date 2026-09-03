@@ -232,8 +232,8 @@ assertContains(
 
 assertContains(
   "api",
-  /import \{ configuredPublicApiOrigin, isPrivateFrontendHost \} from "\.\/publicLinks";[\s\S]*?normalized === "\/api"[\s\S]*?hostname && !isPrivateFrontendHost\(hostname\)[\s\S]*?return configuredPublicApiOrigin\(\)/,
-  "Production frontend API calls must resolve relative /api to the public API origin instead of the static frontend host."
+  /import \{ configuredPublicApiOrigin, isPrivateFrontendHost \} from "\.\/publicLinks";[\s\S]*?normalized === "\/api"[\s\S]*?hostname && !isPrivateFrontendHost\(hostname\)[\s\S]*?return configuredPublicApiOrigin\(\)[\s\S]*?timeoutMs: 65000/,
+  "Production frontend API calls must resolve relative /api to the public API origin and give public TrustSlip verification enough time for Render cold starts."
 );
 
 assertContains(
