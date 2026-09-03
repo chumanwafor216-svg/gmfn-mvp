@@ -1599,7 +1599,7 @@ export default function TrustSlipVerifyPage() {
           />
         </React.Suspense>
       )}
-      {noPublicCodeSupplied ? null : <TrustSlipVerifyBoundary compact={isCompact} />}
+      {noPublicCodeSupplied || isLiteRoute ? null : <TrustSlipVerifyBoundary compact={isCompact} />}
 
       {canShowPrivateEvidence ? (
         <details

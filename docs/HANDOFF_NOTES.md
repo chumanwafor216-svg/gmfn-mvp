@@ -1,3 +1,13 @@
+## 2026-09-03 - Local GSN Identity Card picture share and lite verifier
+
+- Status: Local frontend fix verified; not pushed or deployed because the owner has not explicitly asked to publish this slice.
+- Frontend routes affected: signed-in `/app/identity` (`IdentityIntegrityPage`) and public `/t/:code/lite` (`TrustSlipVerifyPage` + `TrustSlipVerifyPublicPaper`).
+- Change: the GSN Identity Card share action now builds a real `gsn-identity-card.png` from the card data and passes it to the native phone share sheet when browser support allows file sharing. The text fallback was shortened and now targets the lite public verifier route.
+- Compact card behavior: the signed-in mobile card is tightened so serial, generated time, status, evidence tiles, and verifier/QR take less height; the duplicate mobile public-verifier text block is hidden in favor of the compact QR verifier row.
+- Public verifier behavior: `/t/:code/lite` stays focused on the public TrustSlip/card paper by hiding the extra boundary support section and extra public action block that appear on the full verification page.
+- Verification: `npm --prefix frontend run audit:identity-integrity-front-package` passed; `npm --prefix frontend run audit:public-trustslip-first-viewport` passed; `npm --prefix frontend run build` passed; `git diff --check` passed with only CRLF warnings on touched frontend files.
+- Devil truth: WhatsApp link previews for a static SPA cannot reliably show a private, signed-in React identity card as the preview image. This fix shares the actual PNG card through native file sharing where supported, then falls back to link/text when the phone/browser blocks file sharing. Real Android/iOS WhatsApp testing is still required before claiming the exact WhatsApp output is solved in production.
+
 ## 2026-09-01 - Production deploy a997f00d verified
 
 - Status: Deployed to `main` and verified through manual `render-deploy.yml` workflow run `33551514746` after the owner explicitly said `deploy`.

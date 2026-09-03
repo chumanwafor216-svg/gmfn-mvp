@@ -205,6 +205,25 @@ type IdentityIntegrityDataSnapshot = {
   identityRisk: IdentityRiskSummary | null;
   identityRecovery: IdentityRecoverySummary | null;
 };
+
+type GsnIdentityCardShareImageParams = {
+  displayName: string;
+  initials: string;
+  avatarSrc: string;
+  gmfnId: string;
+  cardStatus: string;
+  serial: string;
+  generated: string;
+  phone: string;
+  bank: string;
+  officialId: string;
+  photo: string;
+  communities: string;
+  memberships: string;
+  trustSlipCode: string;
+  verifyDisplay: string;
+  valid: boolean;
+};
 const IDENTITY_PAGE_UI_STORAGE_KEY = "gmfn.identityPage.sections.v2";
 
 function safeStr(x: any): string {
@@ -298,6 +317,20 @@ function safeDateTime(x: any): string {
   const d = new Date(raw);
   if (!Number.isFinite(d.getTime())) return raw;
   return d.toLocaleString();
+}
+
+function safeCompactDateTime(x: any): string {
+  const raw = safeStr(x);
+  if (!raw) return "";
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) return raw;
+  return d.toLocaleString(undefined, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function safeDate(x: any): string {
@@ -469,6 +502,277 @@ function compactHelperText(): React.CSSProperties {
   };
 }
 
+function identityCardCanvasBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    try {
+      canvas.toBlob((blob) => resolve(blob), "image/png", 0.96);
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+function drawIdentityCardRoundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number
+) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + width, y, x + width, y + height, r);
+  ctx.arcTo(x + width, y + height, x, y + height, r);
+  ctx.arcTo(x, y + height, x, y, r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+function drawIdentityCardCanvasText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  lineHeight: number,
+  maxLines = 2
+): number {
+  const words = String(text || "").split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = "";
+
+  words.forEach((word) => {
+    const test = current ? `${current} ${word}` : word;
+    if (ctx.measureText(test).width <= maxWidth || !current) {
+      current = test;
+      return;
+    }
+    lines.push(current);
+    current = word;
+  });
+  if (current) lines.push(current);
+
+  lines.slice(0, maxLines).forEach((line, index) => {
+    let displayLine = line;
+    if (index === maxLines - 1 && lines.length > maxLines) {
+      while (displayLine && ctx.measureText(`${displayLine}...`).width > maxWidth) {
+        displayLine = displayLine.slice(0, -1);
+      }
+      displayLine = `${displayLine.trim()}...`;
+    }
+    ctx.fillText(displayLine, x, y + index * lineHeight);
+  });
+
+  return y + Math.min(lines.length, maxLines) * lineHeight;
+}
+
+async function loadIdentityCardImage(src: string): Promise<HTMLImageElement | null> {
+  const url = safeStr(src);
+  if (!url || typeof Image === "undefined") return null;
+
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => resolve(image);
+    image.onerror = () => resolve(null);
+    image.src = url;
+  });
+}
+
+async function buildGsnIdentityCardShareImage(
+  params: GsnIdentityCardShareImageParams,
+  includeAvatar = true
+): Promise<File | null> {
+  if (typeof document === "undefined") return null;
+
+  const width = 1080;
+  const height = 1540;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  const navy = "#061827";
+  const navy2 = "#08233A";
+  const gold = "#F2C766";
+  const textDark = "#07172C";
+  const muted = "#617085";
+  const green = "#0F7A4B";
+
+  ctx.fillStyle = "#EDF4FA";
+  ctx.fillRect(0, 0, width, height);
+
+  drawIdentityCardRoundRect(ctx, 58, 52, width - 116, height - 104, 56);
+  ctx.save();
+  ctx.clip();
+
+  const bg = ctx.createLinearGradient(0, 52, 0, height - 52);
+  bg.addColorStop(0, navy);
+  bg.addColorStop(0.46, navy2);
+  bg.addColorStop(0.461, "#F9FBFF");
+  bg.addColorStop(1, "#FFFFFF");
+  ctx.fillStyle = bg;
+  ctx.fillRect(58, 52, width - 116, height - 104);
+
+  ctx.fillStyle = "rgba(255,255,255,0.06)";
+  ctx.font = "900 260px Arial, sans-serif";
+  ctx.translate(540, 410);
+  ctx.rotate(-0.12);
+  ctx.fillText("GSN", -280, 80);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+  ctx.fillStyle = gold;
+  ctx.font = "900 27px Arial, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("GLOBAL SUPPORT NETWORK", width / 2, 112);
+  ctx.textAlign = "left";
+
+  const avatar = includeAvatar ? await loadIdentityCardImage(params.avatarSrc) : null;
+  const avatarX = 122;
+  const avatarY = 196;
+  const avatarSize = 250;
+  drawIdentityCardRoundRect(ctx, avatarX, avatarY, avatarSize, avatarSize, 52);
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = "#12314D";
+  ctx.fillRect(avatarX, avatarY, avatarSize, avatarSize);
+  if (avatar) {
+    const scale = Math.max(avatarSize / avatar.width, avatarSize / avatar.height);
+    const drawWidth = avatar.width * scale;
+    const drawHeight = avatar.height * scale;
+    ctx.drawImage(
+      avatar,
+      avatarX + (avatarSize - drawWidth) / 2,
+      avatarY + (avatarSize - drawHeight) / 2,
+      drawWidth,
+      drawHeight
+    );
+  } else {
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "900 82px Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(params.initials || "GSN", avatarX + avatarSize / 2, avatarY + avatarSize / 2);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+  }
+  ctx.restore();
+  ctx.strokeStyle = "rgba(242,199,102,0.72)";
+  ctx.lineWidth = 6;
+  drawIdentityCardRoundRect(ctx, avatarX, avatarY, avatarSize, avatarSize, 52);
+  ctx.stroke();
+
+  ctx.fillStyle = params.valid ? "rgba(46,155,98,0.24)" : "rgba(242,199,102,0.20)";
+  drawIdentityCardRoundRect(ctx, 430, 204, 230, 64, 32);
+  ctx.fill();
+  ctx.fillStyle = "#FFFFFF";
+  ctx.font = "900 34px Arial, sans-serif";
+  ctx.fillText(params.cardStatus, 462, 248);
+
+  ctx.fillStyle = "#FFFFFF";
+  ctx.font = "900 84px Arial, sans-serif";
+  drawIdentityCardCanvasText(ctx, params.displayName, 430, 352, 500, 88, 2);
+  ctx.fillStyle = "rgba(248,251,255,0.88)";
+  ctx.font = "900 38px Arial, sans-serif";
+  drawIdentityCardCanvasText(ctx, `GSN ID: ${params.gmfnId}`, 430, 450, 500, 46, 2);
+
+  const panelY = 560;
+  drawIdentityCardRoundRect(ctx, 122, panelY, 836, 260, 38);
+  const panelBg = ctx.createLinearGradient(122, panelY, 958, panelY + 260);
+  panelBg.addColorStop(0, "#FFFBEF");
+  panelBg.addColorStop(0.7, "#FFFFFF");
+  panelBg.addColorStop(1, "#EAF3FF");
+  ctx.fillStyle = panelBg;
+  ctx.fill();
+  ctx.strokeStyle = "rgba(214,170,69,0.36)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  const meta = [
+    ["SERIAL", params.serial],
+    ["GENERATED", params.generated],
+    ["STATUS", params.cardStatus],
+  ];
+  meta.forEach(([label, value], index) => {
+    const x = index === 1 ? 492 : 162;
+    const y = index === 2 ? panelY + 150 : panelY + 62;
+    ctx.fillStyle = muted;
+    ctx.font = "900 28px Arial, sans-serif";
+    ctx.fillText(label, x, y);
+    ctx.fillStyle = textDark;
+    ctx.font = "900 34px Arial, sans-serif";
+    drawIdentityCardCanvasText(ctx, value, x, y + 45, index === 1 ? 330 : 300, 40, 2);
+  });
+
+  drawIdentityCardRoundRect(ctx, 492, panelY + 150, 390, 72, 30);
+  ctx.fillStyle = params.valid ? "#ECFDF5" : "#FFF7ED";
+  ctx.fill();
+  ctx.strokeStyle = params.valid ? "rgba(46,155,98,0.30)" : "rgba(214,170,69,0.32)";
+  ctx.stroke();
+  ctx.fillStyle = params.valid ? green : "#92400E";
+  ctx.font = "900 30px Arial, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(params.valid ? "LIVE VERIFIED" : "LIMITED CARD", 687, panelY + 196);
+  ctx.textAlign = "left";
+
+  const evidence = [
+    ["PHONE", params.phone],
+    ["BANK / WALLET", params.bank],
+    ["ID DOCUMENT", params.officialId],
+    ["PHOTO", params.photo],
+    ["COMMUNITIES", params.communities],
+    ["MEMBERSHIPS", params.memberships],
+  ];
+  evidence.forEach(([label, value], index) => {
+    const col = index % 2;
+    const row = Math.floor(index / 2);
+    const x = 122 + col * 428;
+    const y = 866 + row * 150;
+    drawIdentityCardRoundRect(ctx, x, y, 408, 118, 34);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(37,78,119,0.14)";
+    ctx.stroke();
+    ctx.fillStyle = value.toLowerCase().includes("verified") ? green : "#0B63D1";
+    drawIdentityCardRoundRect(ctx, x + 28, y + 27, 66, 66, 20);
+    ctx.fill();
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "900 31px Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(label.slice(0, 1), x + 61, y + 70);
+    ctx.textAlign = "left";
+    ctx.fillStyle = muted;
+    ctx.font = "900 27px Arial, sans-serif";
+    drawIdentityCardCanvasText(ctx, label, x + 116, y + 45, 250, 29, 2);
+    ctx.fillStyle = textDark;
+    ctx.font = "900 32px Arial, sans-serif";
+    drawIdentityCardCanvasText(ctx, value, x + 116, y + 84, 250, 36, 2);
+  });
+
+  drawIdentityCardRoundRect(ctx, 122, 1330, 836, 130, 34);
+  ctx.fillStyle = "#FFFBEF";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(214,170,69,0.36)";
+  ctx.stroke();
+  ctx.fillStyle = "#3B2504";
+  ctx.font = "900 31px Arial, sans-serif";
+  ctx.fillText("PUBLIC VERIFIER", 162, 1376);
+  ctx.fillStyle = textDark;
+  ctx.font = "900 31px Arial, sans-serif";
+  drawIdentityCardCanvasText(ctx, params.verifyDisplay, 162, 1422, 720, 35, 2);
+
+  ctx.restore();
+
+  const blob = await identityCardCanvasBlob(canvas);
+  if (!blob && includeAvatar) return buildGsnIdentityCardShareImage(params, false);
+  if (!blob) return null;
+
+  return new File([blob], "gsn-identity-card.png", { type: "image/png" });
+}
+
 function iconTile(
   color = "#FFFFFF",
   bg = "linear-gradient(180deg, #0B3E78 0%, #061827 100%)"
@@ -572,7 +876,7 @@ function compactFactCard(): React.CSSProperties {
     borderRadius: 16,
     border: "1px solid rgba(37,78,119,0.12)",
     background: "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
-    padding: 10,
+    padding: 8,
     display: "grid",
     gridTemplateColumns: "46px minmax(0, 1fr)",
     gap: 10,
@@ -702,7 +1006,7 @@ function identityResponseSlotStyle(
     fontSize: 12,
     fontWeight: 950,
     lineHeight: 1.35,
-    padding: "8px 10px",
+    padding: compact ? "6px 8px" : "8px 10px",
     whiteSpace: "pre-line",
     overflowWrap: "anywhere",
     visibility: visible ? "visible" : "hidden",
@@ -1950,6 +2254,11 @@ export default function IdentityIntegrityPage() {
     : visibleCommunityCount
       ? `${visibleCommunityCount} visible community context${visibleCommunityCount === 1 ? "" : "s"}`
       : "No community shown";
+  const identityCardCommunityFootprintLabel = activeCommunityCount
+    ? `${activeCommunityCount} active`
+    : visibleCommunityCount
+      ? `${visibleCommunityCount} visible`
+      : "None shown";
   const roleFootprintLabel = [
     ownerCommunityCount ? `Owner ${ownerCommunityCount}` : "",
     adminCommunityCount ? `Admin ${adminCommunityCount}` : "",
@@ -1960,6 +2269,9 @@ export default function IdentityIntegrityPage() {
     : visibleCommunityCount
       ? `${visibleCommunityCount} linked`
       : "None shown";
+  const identityCardMembershipLabel = activeCommunityCount
+    ? `${activeCommunityCount} linked`
+    : recognisedMembershipLabel;
   const identityContext = trustSlip?.identity_context || {};
   const phoneEvidenceLabel = identitySignals.phoneVerified
     ? "Verified"
@@ -2063,13 +2375,13 @@ export default function IdentityIntegrityPage() {
     },
     {
       label: "Communities",
-      value: communityFootprintLabel,
+      value: identityCardCommunityFootprintLabel,
       icon: "community",
       tone: visibleCommunityCount ? "ready" : "neutral",
     },
     {
       label: "Memberships",
-      value: recognisedMembershipLabel,
+      value: identityCardMembershipLabel,
       icon: "shield",
       tone: activeCommunityCount ? "ready" : visibleCommunityCount ? "watch" : "neutral",
     },
@@ -2105,14 +2417,14 @@ export default function IdentityIntegrityPage() {
     : identitySignals.phoneVerified
       ? "watch"
       : "pending";
-  const identityCardGeneratedLabel = safeDateTime(identityCardGeneratedAt);
+  const identityCardGeneratedLabel = safeCompactDateTime(identityCardGeneratedAt);
   const identityCardSerial = trustSlipCode
     ? `GSN-ID-${trustSlipCode.slice(0, 4)}-${trustSlipCode.slice(-4)}`
     : gmfnIdValue
       ? `GSN-ID-${gmfnIdValue.slice(-8)}`
       : "GSN-ID-PENDING";
   const trustSlipVerifyPath = trustSlipCode
-    ? `/t/${encodeURIComponent(trustSlipCode)}`
+    ? `/t/${encodeURIComponent(trustSlipCode)}/lite`
     : "";
   const trustSlipVerifyUrl = trustSlipCode
     ? canonicalPublicFrontendUrl(
@@ -2145,26 +2457,13 @@ export default function IdentityIntegrityPage() {
     ? canonicalPublicFrontendUrl(memberCredentialPath)
     : "";
   const gsnIdentityCardShareText = [
-    "My GSN Identity Card",
-    `Name: ${displayName}`,
-    `GSN ID: ${gmfnId}`,
-    `Card status: ${identityCardStatusText}`,
-    `Generated: ${identityCardGeneratedLabel}`,
-    `Card serial: ${identityCardSerial}`,
-    `Identity status: ${identityHealthLabel}`,
-    `Photo evidence: ${photoEvidenceLabel}`,
-    `Phone evidence: ${phoneEvidenceLabel}`,
-    `Bank/wallet evidence: ${bankEvidenceLabel}`,
-    `Official ID evidence: ${officialIdEvidenceLabel}`,
-    `Community footprint: ${communityFootprintLabel}`,
-    `Memberships: ${recognisedMembershipLabel}`,
-    `Community roles: ${roleFootprintLabel}`,
-    `TrustSlip: ${trustSlipStatusText}`,
-    trustSlipCode ? `TrustSlip code: ${trustSlipCode}` : "",
-    trustSlipCode ? `Currentness: ${trustSlipExpiryLabel}` : "",
-    memberCredentialUrl ? `Member credential: ${memberCredentialUrl}` : "",
-    trustSlipVerifyUrl ? `Verify: ${trustSlipVerifyUrl}` : "",
-    "Privacy: community names and private documents are not exposed on this card. It is not government ID, professional licence proof, credit approval, payment guarantee, or a promise of future behaviour.",
+    "GSN Identity Card",
+    `${displayName} - ${gmfnId}`,
+    `Status: ${identityCardStatusText}`,
+    `Phone: ${phoneEvidenceLabel}. ID: ${officialIdEvidenceLabel}. Photo: ${photoEvidenceLabel}.`,
+    trustSlipCode ? `TrustSlip: ${trustSlipCode}` : "",
+    trustSlipVerifyUrl ? `Open this public GSN card: ${trustSlipVerifyUrl}` : "",
+    "Evidence only. Not government ID, credit approval, payment guarantee, or future behaviour proof.",
   ].filter(Boolean).join("\n");
 
   function identityTaskTarget(task: IdentityTaskKey): string {
@@ -2560,17 +2859,57 @@ export default function IdentityIntegrityPage() {
       return;
     }
 
-    const sharePayload = {
-      title: "GSN Identity Card",
-      text: gsnIdentityCardShareText,
-      url: trustSlipVerifyUrl || undefined,
-    };
-
     const nativeShare = typeof navigator !== "undefined" ? navigator.share : undefined;
+    const nativeCanShare =
+      typeof navigator !== "undefined" && typeof (navigator as any).canShare === "function"
+        ? (navigator as any).canShare.bind(navigator)
+        : null;
+    const cardImage = await buildGsnIdentityCardShareImage({
+      displayName,
+      initials: profileInitials,
+      avatarSrc,
+      gmfnId,
+      cardStatus: identityCardStatusText,
+      serial: identityCardSerial,
+      generated: identityCardGeneratedLabel,
+      phone: phoneEvidenceLabel,
+      bank: bankEvidenceLabel,
+      officialId: officialIdEvidenceLabel,
+      photo: photoEvidenceLabel,
+      communities: identityCardCommunityFootprintLabel,
+      memberships: identityCardMembershipLabel,
+      trustSlipCode,
+      verifyDisplay: trustSlipVerifyDisplay,
+      valid: identityCardValid,
+    });
+
+    if (nativeShare && cardImage) {
+      const imagePayload = {
+        title: "GSN Identity Card",
+        text: gsnIdentityCardShareText,
+        url: trustSlipVerifyUrl || undefined,
+        files: [cardImage],
+      };
+
+      if (!nativeCanShare || nativeCanShare({ files: [cardImage] })) {
+        try {
+          await nativeShare.call(navigator, imagePayload);
+          showNotice("success", "Share sheet opened with the GSN Identity Card picture.");
+          return;
+        } catch (err: any) {
+          if (safeStr(err?.name) === "AbortError") return;
+        }
+      }
+    }
+
     if (nativeShare) {
       try {
-        await nativeShare.call(navigator, sharePayload);
-        showNotice("success", "Share sheet opened for your GSN Identity Card.");
+        await nativeShare.call(navigator, {
+          title: "GSN Identity Card",
+          text: gsnIdentityCardShareText,
+          url: trustSlipVerifyUrl || undefined,
+        });
+        showNotice("success", "Share sheet opened with the GSN Identity Card link.");
         return;
       } catch (err: any) {
         if (safeStr(err?.name) === "AbortError") return;
@@ -2911,7 +3250,7 @@ export default function IdentityIntegrityPage() {
         data-identity-package-view-toggle="true"
         style={{
           ...pageCard("#FFFFFF"),
-          padding: isCompact ? 10 : 12,
+          padding: isCompact ? 8 : 12,
           display: "grid",
           gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
           gap: 8,
@@ -2957,7 +3296,7 @@ export default function IdentityIntegrityPage() {
         data-identity-integrity-front-package="true"
         style={{
           ...pageCard("#FFFFFF"),
-          padding: isCompact ? 12 : 18,
+          padding: isCompact ? 8 : 18,
           border: "1px solid rgba(37,78,119,0.14)",
           boxShadow: "0 16px 38px rgba(7,23,44,0.08)",
         }}
@@ -3084,7 +3423,7 @@ export default function IdentityIntegrityPage() {
                   style={{
                     display: "block",
                     color: "#617085",
-                    fontSize: 11,
+                    fontSize: isCompact ? 10 : 11,
                     fontWeight: 1000,
                     lineHeight: 1.1,
                     textTransform: "uppercase",
@@ -3226,7 +3565,7 @@ export default function IdentityIntegrityPage() {
                       display: "block",
                       marginTop: 2,
                       color: "#617085",
-                      fontSize: 11,
+                      fontSize: isCompact ? 10 : 11,
                       fontWeight: 900,
                       overflow: "hidden",
                       textOverflow: "ellipsis",
@@ -3330,7 +3669,7 @@ export default function IdentityIntegrityPage() {
               background: completionMode
                 ? "linear-gradient(180deg, #F2F8FF 0%, #FFFFFF 100%)"
                 : "#FFFFFF",
-              padding: isCompact ? 10 : 12,
+              padding: isCompact ? 8 : 12,
               display: "grid",
               gap: 8,
             }}
@@ -3402,7 +3741,7 @@ export default function IdentityIntegrityPage() {
                       borderRadius: 13,
                       border: "1px solid rgba(37,78,119,0.10)",
                       background: "#FFFFFF",
-                      padding: "8px 10px",
+                      padding: isCompact ? "6px 8px" : "8px 10px",
                       color: "#334155",
                       fontSize: 12.5,
                       lineHeight: 1.25,
@@ -3469,7 +3808,7 @@ export default function IdentityIntegrityPage() {
                       color: "#073E83",
                       fontSize: 12,
                       fontWeight: 1000,
-                      padding: "8px 10px",
+                      padding: isCompact ? "6px 8px" : "8px 10px",
                     }}
                   >
                     Pilot code: {phoneOtpPreview}
@@ -3495,7 +3834,7 @@ export default function IdentityIntegrityPage() {
                       borderRadius: 14,
                       border: "1px solid rgba(180,83,9,0.18)",
                       background: "#FFFBEB",
-                      padding: 10,
+                      padding: 8,
                     }}
                   >
                     <div style={{ color: "#713F12", fontSize: 12.5, fontWeight: 900, lineHeight: 1.35 }}>
@@ -3612,7 +3951,7 @@ export default function IdentityIntegrityPage() {
                     borderRadius: 15,
                     border: "1px solid rgba(37,78,119,0.12)",
                     background: "#FFFFFF",
-                    padding: 10,
+                    padding: 8,
                     display: "grid",
                     gap: 8,
                   }}
@@ -3830,7 +4169,7 @@ export default function IdentityIntegrityPage() {
         data-gsn-identity-card="true"
         style={{
           ...pageCard("#FFFFFF"),
-          padding: isCompact ? 12 : 18,
+          padding: isCompact ? 8 : 18,
           border: "1px solid rgba(214,170,69,0.26)",
           boxShadow: "0 18px 42px rgba(7,23,44,0.10)",
         }}
@@ -3838,11 +4177,11 @@ export default function IdentityIntegrityPage() {
         <div
           data-gsn-identity-card-screenshot="true"
           style={{
-            borderRadius: isCompact ? 22 : 26,
+            borderRadius: isCompact ? 18 : 26,
             overflow: "hidden",
             border: "1px solid rgba(7,23,44,0.14)",
             background:
-              "linear-gradient(180deg, #061827 0%, #08233A 52%, #FFFFFF 52.1%, #F8FBFF 100%)",
+              "linear-gradient(180deg, #061827 0%, #08233A 46%, #FFFFFF 46.1%, #F8FBFF 100%)",
             boxShadow:
               "0 18px 34px rgba(6,24,39,0.16), inset 0 1px 0 rgba(255,255,255,0.08)",
             position: "relative",
@@ -3864,11 +4203,11 @@ export default function IdentityIntegrityPage() {
               data-gsn-identity-card-watermark-horizontal="true"
               style={{
                 position: "absolute",
-                top: isCompact ? 138 : 116,
+                top: isCompact ? 116 : 116,
                 left: isCompact ? -10 : 18,
                 right: isCompact ? -10 : 18,
                 color: "rgba(255,255,255,0.075)",
-                fontSize: isCompact ? 84 : 128,
+                fontSize: isCompact ? 72 : 128,
                 lineHeight: 0.9,
                 fontWeight: 1000,
                 letterSpacing: 0,
@@ -3920,7 +4259,7 @@ export default function IdentityIntegrityPage() {
                 position: "absolute",
                 left: -24,
                 right: -24,
-                bottom: isCompact ? 104 : 86,
+                bottom: isCompact ? 78 : 86,
                 color: "rgba(7,23,44,0.14)",
                 fontSize: 9,
                 lineHeight: 1,
@@ -3938,27 +4277,27 @@ export default function IdentityIntegrityPage() {
             style={{
               position: "relative",
               zIndex: 1,
-              padding: isCompact ? 14 : 18,
+              padding: isCompact ? 10 : 18,
               color: "#FFFFFF",
               display: "grid",
-              gridTemplateColumns: isCompact ? "84px minmax(0, 1fr)" : "112px minmax(0, 1fr) auto",
-              gap: isCompact ? 11 : 16,
+              gridTemplateColumns: isCompact ? "72px minmax(0, 1fr)" : "112px minmax(0, 1fr) auto",
+              gap: isCompact ? 9 : 16,
               alignItems: "center",
             }}
           >
             <div
               data-gsn-identity-card-face="true"
               style={{
-                width: isCompact ? 84 : 112,
-                height: isCompact ? 84 : 112,
-                borderRadius: isCompact ? 24 : 30,
+                width: isCompact ? 72 : 112,
+                height: isCompact ? 72 : 112,
+                borderRadius: isCompact ? 20 : 30,
                 overflow: "hidden",
                 border: "2px solid rgba(242,199,102,0.62)",
                 background: "linear-gradient(180deg, #12314D 0%, #061827 100%)",
                 display: "grid",
                 placeItems: "center",
                 color: "#FFFFFF",
-                fontSize: isCompact ? 26 : 36,
+                fontSize: isCompact ? 22 : 36,
                 fontWeight: 1000,
                 boxShadow: "0 16px 30px rgba(1,9,22,0.28)",
               }}
@@ -4000,7 +4339,7 @@ export default function IdentityIntegrityPage() {
               <div
                 style={{
                   marginTop: 8,
-                  fontSize: isCompact ? 25 : 34,
+                  fontSize: isCompact ? 22 : 34,
                   lineHeight: 1.02,
                   fontWeight: 1000,
                   letterSpacing: 0,
@@ -4013,7 +4352,7 @@ export default function IdentityIntegrityPage() {
                 style={{
                   marginTop: 7,
                   color: "rgba(248,251,255,0.82)",
-                  fontSize: isCompact ? 12.5 : 13.5,
+                  fontSize: isCompact ? 11.5 : 13.5,
                   fontWeight: 850,
                   lineHeight: 1.35,
                   overflowWrap: "anywhere",
@@ -4056,9 +4395,9 @@ export default function IdentityIntegrityPage() {
             style={{
               position: "relative",
               zIndex: 1,
-              padding: isCompact ? 12 : 16,
+              padding: isCompact ? 9 : 16,
               display: "grid",
-              gap: isCompact ? 10 : 12,
+              gap: isCompact ? 7 : 12,
             }}
           >
             <div
@@ -4068,9 +4407,9 @@ export default function IdentityIntegrityPage() {
                 border: "1px solid rgba(214,170,69,0.30)",
                 background:
                   "linear-gradient(135deg, rgba(255,251,239,0.98) 0%, #FFFFFF 58%, rgba(234,243,255,0.90) 100%)",
-                padding: isCompact ? 10 : 12,
+                padding: isCompact ? 8 : 12,
                 display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 118px",
+                gridTemplateColumns: isCompact ? "minmax(0, 1fr) minmax(96px, 0.72fr)" : "minmax(0, 1fr) 118px",
                 gap: 10,
                 alignItems: "center",
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.86)",
@@ -4083,12 +4422,12 @@ export default function IdentityIntegrityPage() {
                   gap: 8,
                 }}
               >
-                {identityCardSecurityRows.slice(0, 3).map((item) => (
+                {identityCardSecurityRows.slice(0, isCompact ? 2 : 3).map((item) => (
                   <div key={item.label} style={{ minWidth: 0 }}>
                     <div style={{ color: "#617085", fontSize: 9.5, fontWeight: 1000, textTransform: "uppercase", lineHeight: 1.1 }}>
                       {item.label}
                     </div>
-                    <div style={{ marginTop: 3, color: "#07172C", fontSize: isCompact ? 11.5 : 12.5, fontWeight: 1000, lineHeight: 1.18, overflowWrap: "anywhere" }}>
+                    <div style={{ marginTop: 3, color: "#07172C", fontSize: isCompact ? 10.5 : 12.5, fontWeight: 1000, lineHeight: 1.18, overflowWrap: "anywhere" }}>
                       {item.value}
                     </div>
                   </div>
@@ -4096,7 +4435,7 @@ export default function IdentityIntegrityPage() {
               </div>
               <div
                 style={{
-                  minHeight: 46,
+                  minHeight: isCompact ? 42 : 46,
                   borderRadius: 15,
                   border: "1px solid rgba(46,155,98,0.18)",
                   background: identityCardValid
@@ -4105,15 +4444,23 @@ export default function IdentityIntegrityPage() {
                   display: "grid",
                   placeItems: "center",
                   color: identityCardValid ? "#14532D" : "#713F12",
-                  fontSize: 11,
+                  fontSize: isCompact ? 10 : 11,
                   fontWeight: 1000,
                   textTransform: "uppercase",
                   letterSpacing: 0,
                   textAlign: "center",
-                  padding: "8px 10px",
+                  padding: isCompact ? "6px 8px" : "8px 10px",
                 }}
               >
-                {identityCardValid ? "Live verified" : "Limited card"}
+                <span style={{ display: "block", color: "#617085", fontSize: 8.5, lineHeight: 1, marginBottom: 2 }}>
+                  Status
+                </span>
+                <span style={{ display: "block", lineHeight: 1.05 }}>
+                  {identityCardStatusText}
+                </span>
+                <span style={{ display: "block", marginTop: 2, fontSize: isCompact ? 8.5 : 10, lineHeight: 1 }}>
+                  {identityCardValid ? "Live verified" : "Limited card"}
+                </span>
               </div>
             </div>
             <div
@@ -4128,27 +4475,27 @@ export default function IdentityIntegrityPage() {
                 <div
                   key={item.label}
                   style={{
-                    minHeight: isCompact ? 62 : 66,
+                    minHeight: isCompact ? 52 : 66,
                     borderRadius: 15,
                     background: "#FFFFFF",
                     border: "1px solid rgba(37,78,119,0.12)",
-                    padding: isCompact ? 8 : 10,
+                    padding: isCompact ? 6 : 10,
                     display: "grid",
-                    gridTemplateColumns: "34px minmax(0, 1fr)",
+                    gridTemplateColumns: isCompact ? "30px minmax(0, 1fr)" : "34px minmax(0, 1fr)",
                     gap: 8,
                     alignItems: "center",
                     boxShadow: "0 8px 18px rgba(7,23,44,0.045)",
                     boxSizing: "border-box",
                   }}
                 >
-                  <span style={{ ...iconTile(identityIconTone(item.tone).color, identityIconTone(item.tone).bg), width: 34, height: 34, borderRadius: 12, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.92)" }}>
-                    <GsnLegacyIcon name={item.icon} size={25} />
+                  <span style={{ ...iconTile(identityIconTone(item.tone).color, identityIconTone(item.tone).bg), width: isCompact ? 30 : 34, height: isCompact ? 30 : 34, borderRadius: isCompact ? 11 : 12, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.92)" }}>
+                    <GsnLegacyIcon name={item.icon} size={isCompact ? 22 : 25} />
                   </span>
                   <span style={{ minWidth: 0 }}>
-                    <span style={{ display: "block", color: "#617085", fontSize: 10, fontWeight: 1000, textTransform: "uppercase", lineHeight: 1.1 }}>
+                    <span style={{ display: "block", color: "#617085", fontSize: isCompact ? 9 : 10, fontWeight: 1000, textTransform: "uppercase", lineHeight: 1.1 }}>
                       {item.label}
                     </span>
-                    <span style={{ display: "block", marginTop: 3, color: "#07172C", fontSize: isCompact ? 11.5 : 12.5, fontWeight: 1000, lineHeight: 1.15, overflowWrap: "anywhere" }}>
+                    <span style={{ display: "block", marginTop: 3, color: "#07172C", fontSize: isCompact ? 10.5 : 12.5, fontWeight: 1000, lineHeight: 1.15, overflowWrap: "anywhere" }}>
                       {item.value}
                     </span>
                   </span>
@@ -4162,8 +4509,8 @@ export default function IdentityIntegrityPage() {
                 borderRadius: 15,
                 border: "1px solid rgba(214,170,69,0.28)",
                 background: "linear-gradient(180deg, #FFFBEF 0%, #FFFFFF 100%)",
-                padding: isCompact ? 10 : 12,
-                display: "grid",
+                padding: isCompact ? 8 : 12,
+                display: isCompact ? "none" : "grid",
                 gap: 5,
               }}
             >
@@ -4179,20 +4526,20 @@ export default function IdentityIntegrityPage() {
                 data-gsn-identity-card-qr="true"
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "88px minmax(0, 1fr)",
+                  gridTemplateColumns: "64px minmax(0, 1fr)",
                   gap: 12,
                   alignItems: "center",
                   borderRadius: 16,
                   border: "1px solid rgba(37,78,119,0.12)",
                   background: "#FFFFFF",
-                  padding: 10,
+                  padding: 8,
                 }}
               >
-                <div style={{ width: 82, height: 82, display: "grid", placeItems: "center" }}>
+                <div style={{ width: 58, height: 58, display: "grid", placeItems: "center" }}>
                   <React.Suspense fallback={<GsnLegacyIcon name="qr" size={52} />}>
                     <LazyQRCodeSVG
                       value={trustSlipVerifyUrl}
-                      size={76}
+                      size={56}
                       bgColor="#FFFFFF"
                       fgColor="#07172C"
                       level="M"
@@ -4201,10 +4548,10 @@ export default function IdentityIntegrityPage() {
                   </React.Suspense>
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ color: "#07172C", fontSize: 14, fontWeight: 1000 }}>
+                  <div style={{ color: "#07172C", fontSize: 13, fontWeight: 1000 }}>
                     Verify on web
                   </div>
-                  <div style={{ marginTop: 5, color: "#617085", fontSize: 12, fontWeight: 850, lineHeight: 1.35, overflowWrap: "anywhere" }}>
+                  <div style={{ marginTop: 5, color: "#617085", fontSize: 11, fontWeight: 850, lineHeight: 1.22, overflowWrap: "anywhere" }}>
                     {trustSlipCode ? `TrustSlip ${trustSlipCode} - ${trustSlipVerifyDisplay}` : trustSlipVerifyDisplay}
                   </div>
                 </div>

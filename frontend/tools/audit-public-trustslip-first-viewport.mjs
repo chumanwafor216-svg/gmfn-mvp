@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
   publicPaper: "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  routePage: "src/pages/TrustSlipVerifyPage.tsx",
   package: "package.json",
 };
 
@@ -153,6 +154,17 @@ assertContains(
   "publicPaper",
   /title="Verification paper details"[\s\S]*?summary="Open for holder, public reading, community evidence, QR, and confirmation request\."[\s\S]*?defaultOpen=\{!compact\}[\s\S]*?publicVerifyShell\("#F8FBFF", compact\)/,
   "Legacy verification paper details must sit behind a phone drawer instead of exposing the whole paper at once."
+);
+assertContains(
+  "routePage",
+  /const isLiteRoute =[\s\S]*?endsWith\("\/lite"\)[\s\S]*?noPublicCodeSupplied \|\| isLiteRoute \? null : <TrustSlipVerifyBoundary compact=\{isCompact\} \/>/,
+  "The public lite TrustSlip route must open as a focused card/paper without the extra boundary support section."
+);
+
+assertContains(
+  "publicPaper",
+  /const isLite = variant === "lite"[\s\S]*?!isLite \? publicActions : null/,
+  "The public lite TrustSlip paper must not expose the extra public action block under the card."
 );
 assertContains(
   "publicPaper",

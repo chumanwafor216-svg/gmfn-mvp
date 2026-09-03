@@ -3593,7 +3593,7 @@ export default function TrustSlipVerifyPublicPaper({
             </div>
           ) : null}
 
-          {publicActions}
+          {!isLite ? publicActions : null}
         </div>
         </TrustDocumentDisclosureSection>
       </div>
