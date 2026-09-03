@@ -90,6 +90,7 @@ type TrustSlipVerifyPublicPaperProps = {
   gsnId: string;
   communityLabel: string;
   holderRole?: string | null;
+  phoneVerified?: string | null;
   memberWitnessCount?: string | number | null;
   membershipStrengthLabel?: string | null;
   membershipRenewalStatusLabel?: string | null;
@@ -109,6 +110,7 @@ type TrustSlipVerifyPublicPaperProps = {
   evidenceScopeSummary?: string | null;
   evidenceScopeBoundary?: string | null;
   evidenceScopeReadingScope?: string | null;
+  identityContext?: Record<string, any> | null;
   relationshipEvidenceSummary?: Record<string, any> | null;
   visibleBand: string;
   visibleBandLabel: string;
@@ -304,6 +306,65 @@ function firstTruthy(...values: unknown[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function firstKnownBoolean(...values: unknown[]): boolean | null {
+  for (const value of values) {
+    if (typeof value === "boolean") return value;
+    const text = safeText(value).toLowerCase();
+    if (["true", "yes", "verified", "recorded", "shown"].includes(text)) return true;
+    if (["false", "no", "not verified", "not recorded", "not shown"].includes(text)) return false;
+  }
+  return null;
+}
+
+function identityEvidenceLabel({
+  verified,
+  recorded,
+  shown,
+  shownLabel = "Shown",
+}: {
+  verified?: boolean | null;
+  recorded?: boolean | null;
+  shown?: boolean | null;
+  shownLabel?: string;
+}): string {
+  if (verified === true) return "Verified";
+  if (shown === true) return shownLabel;
+  if (recorded === true) return "Recorded";
+  return "Not shown";
+}
+
+function publicRoleName(value: unknown): string {
+  const role = safeText(value).toLowerCase();
+  if (!role) return "";
+  if (/owner|founder|admin|administrator|lead|leader|officer|steward|chair|moderator/.test(role)) {
+    return "Admin";
+  }
+  return "Membership";
+}
+
+function roleMixLabel(options: CommunityConfirmationOption[], fallbackRole?: string | null): string {
+  const counts = new Map<string, number>();
+  const seen = new Set<string>();
+  options.forEach((item, index) => {
+    const key = firstTruthy(item.community_id, item.clan_id, item.community_code, `row-${index}`);
+    if (seen.has(key)) return;
+    seen.add(key);
+    const label = publicRoleName(firstTruthy(item.holder_role, item.role));
+    if (!label) return;
+    counts.set(label, (counts.get(label) || 0) + 1);
+  });
+
+  if (!counts.size) {
+    const fallback = publicRoleName(fallbackRole);
+    if (fallback) counts.set(fallback, 1);
+  }
+
+  return ["Membership", "Admin"]
+    .filter((label) => counts.has(label))
+    .map((label) => `${label} ${counts.get(label)}`)
+    .join(" / ");
 }
 
 function referenceFingerprint(...values: unknown[]): string {
@@ -1062,6 +1123,7 @@ export default function TrustSlipVerifyPublicPaper({
   gsnId,
   communityLabel,
   holderRole,
+  phoneVerified,
   memberWitnessCount,
   membershipStrengthLabel,
   membershipRenewalStatusLabel,
@@ -1081,6 +1143,7 @@ export default function TrustSlipVerifyPublicPaper({
   evidenceScopeSummary,
   evidenceScopeBoundary,
   evidenceScopeReadingScope,
+  identityContext,
   relationshipEvidenceSummary,
   visibleBand,
   visibleBandLabel,
@@ -1895,13 +1958,39 @@ export default function TrustSlipVerifyPublicPaper({
     const publicVerifyDisplay = publicVerifyUrl
       ? publicVerifyUrl.replace(/^https?:\/\//i, "")
       : verifyPath || "Verify link not available";
+    const roleMix = roleMixLabel(communityConfirmationOptions, holderRole);
+    const linkedCommunityFootprint = activeCommunityCountLabel
+      ? `${activeCommunityCountLabel} visible${roleMix ? `; ${roleMix}` : ""}`
+      : roleMix || "Public count not shown";
+    const phoneEvidence = identityEvidenceLabel({
+      verified: firstKnownBoolean(identityContext?.phone_verified, phoneVerified),
+      recorded: firstKnownBoolean(identityContext?.phone_recorded, identityContext?.phone_verified, phoneVerified),
+    });
+    const photoEvidence = identityEvidenceLabel({
+      verified: firstKnownBoolean(identityContext?.photo_verified),
+      recorded: firstKnownBoolean(identityContext?.photo_recorded),
+      shown: Boolean(profileImageUrl),
+      shownLabel: "Shown",
+    });
+    const idEvidence = identityEvidenceLabel({
+      verified: firstKnownBoolean(identityContext?.official_id_verified, identityContext?.passport_verified),
+      recorded: firstKnownBoolean(
+        identityContext?.official_id_recorded,
+        identityContext?.passport_recorded,
+        identityContext?.driver_licence_recorded
+      ),
+    });
+    const bankEvidence = identityEvidenceLabel({
+      verified: firstKnownBoolean(identityContext?.bank_verified, identityContext?.bank_details_verified),
+      recorded: firstKnownBoolean(identityContext?.bank_details_recorded, identityContext?.wallet_recorded),
+    });
     const publicCardRows: Array<{ label: string; value: string; icon: Gsn3DIconKey; good: boolean }> = [
       { label: "Status", value: validNow ? "Valid" : publicValidityLabel, icon: "trust-shield", good: validNow },
-      { label: "Photo", value: profileImageUrl ? "Shown" : "Not shown", icon: "identity-card", good: Boolean(profileImageUrl) },
-      { label: "Community", value: communityLabel || "Not shown", icon: "community-building", good: Boolean(communityLabel) },
-      { label: "Role", value: holderRoleLabel, icon: "certificate-seal", good: Boolean(holderRoleLabel) },
-      { label: "Currentness", value: membershipCurrentnessLabel || expiresAtLabel || "Check record", icon: "records-folder", good: validNow },
-      { label: "Linked contexts", value: activeCommunityCountLabel ? `${activeCommunityCountLabel} visible` : "Public only", icon: "public-globe", good: activeCommunityContexts > 0 },
+      { label: "Phone", value: phoneEvidence, icon: "phone-contact", good: phoneEvidence !== "Not shown" },
+      { label: "ID document", value: idEvidence, icon: "certificate-seal", good: idEvidence !== "Not shown" },
+      { label: "Photo", value: photoEvidence, icon: "identity-card", good: photoEvidence !== "Not shown" },
+      { label: "Bank / wallet", value: bankEvidence, icon: "finance-bank-building", good: bankEvidence !== "Not shown" },
+      { label: "Linked communities", value: linkedCommunityFootprint, icon: "public-globe", good: activeCommunityContexts > 0 || Boolean(roleMix) },
     ];
 
     return (

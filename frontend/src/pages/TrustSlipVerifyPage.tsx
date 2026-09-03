@@ -762,6 +762,7 @@ export default function TrustSlipVerifyPage() {
     membershipCurrentnessScope,
     communityEvidenceCurrentnessLabel,
     communityEvidenceCurrentnessScope,
+    identityContext,
     relationshipEvidenceSummary,
     communityActivityCount,
     communityActivityLatestAt,
@@ -782,6 +783,7 @@ export default function TrustSlipVerifyPage() {
     visibleEvidenceLabel,
     validNow,
     publicValidityLabel,
+    phoneVerified,
     quickTrustAnswers,
     communityConfirmation,
     communityVerifyPath,
@@ -1550,6 +1552,7 @@ export default function TrustSlipVerifyPage() {
             gsnId={gmfnId}
             communityLabel={communityLabel}
             holderRole={holderRole}
+            phoneVerified={phoneVerified}
             memberWitnessCount={memberWitnessCount}
             membershipStrengthLabel={membershipStrengthLabel}
             membershipRenewalStatusLabel={membershipRenewalStatusLabel}
@@ -1570,6 +1573,7 @@ export default function TrustSlipVerifyPage() {
             evidenceScopeSummary={evidenceScopeSummary}
             evidenceScopeBoundary={evidenceScopeBoundary}
             evidenceScopeReadingScope={evidenceScopeReadingScope}
+            identityContext={identityContext}
             visibleBand={visibleBand}
             visibleBandLabel={visibleBandLabel}
             visibleBandMeaning={visibleBandMeaning}

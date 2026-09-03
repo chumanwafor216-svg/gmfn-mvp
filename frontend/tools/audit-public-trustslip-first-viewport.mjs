@@ -43,6 +43,13 @@ function assertContains(key, pattern, message, text) {
   addFinding(key, -1, message, text || pattern.toString());
 }
 
+function assertNotContains(key, pattern, message) {
+  const source = sourceByKey[key];
+  const match = source.match(pattern);
+  if (!match || match.index === undefined) return;
+  addFinding(key, match.index, message, match[0]);
+}
+
 function assertOrder(key, orderedPatterns, message) {
   const source = sourceByKey[key];
   let cursor = -1;
@@ -197,6 +204,29 @@ assertContains(
   "publicPaper",
   /const publicVerifyUrl =[\s\S]*?<QRCodeSVG\s+value=\{publicVerifyUrl\}[\s\S]*?Verify record/,
   "The card-only public identity surface must show a verification-record QR separate from the live card route."
+);
+assertContains(
+  "publicPaper",
+  /const roleMix = roleMixLabel\(communityConfirmationOptions, holderRole\)[\s\S]*?const linkedCommunityFootprint =[\s\S]*?activeCommunityCountLabel[\s\S]*?roleMix[\s\S]*?label: "Linked communities"/,
+  "The card-only public identity surface must show aggregate linked community and role counts without exposing community names."
+);
+
+assertContains(
+  "publicPaper",
+  /label: "Phone"[\s\S]*?label: "ID document"[\s\S]*?label: "Photo"[\s\S]*?label: "Bank \/ wallet"[\s\S]*?label: "Linked communities"/,
+  "The card-only public identity surface must show truthful identity evidence facts before deeper verification."
+);
+
+assertNotContains(
+  "publicPaper",
+  /label: "Community",\s*value: communityLabel/,
+  "The card-only public identity card must not expose a named community tile. Use aggregate linked-community and role counts instead."
+);
+
+assertNotContains(
+  "publicPaper",
+  /label: "Role",\s*value: holderRoleLabel/,
+  "The card-only public identity card must not expose only the primary community role. Use aggregate role counts instead."
 );
 
 assertContains(

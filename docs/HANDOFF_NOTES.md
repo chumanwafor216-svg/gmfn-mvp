@@ -1,3 +1,12 @@
+## 2026-09-03 - Local public GSN identity card privacy evidence refresh
+
+- Status: Local frontend fix verified; not deployed in this slice because the owner's latest message clarified the card content rather than giving a fresh deploy instruction.
+- Frontend route affected: public card-only TrustSlip identity route `/t/:code/card` through `TrustSlipVerifyPage` and `TrustSlipVerifyPublicPaper`.
+- Change: the public GSN Identity Card no longer shows the named primary community tile or a single primary-role tile. It now keeps the card to six compact tiles: Status, Phone, ID document, Photo, Bank / wallet, and Linked communities.
+- Privacy/evidence behavior: `Linked communities` shows an aggregate footprint such as `5 visible; Admin 2 / Member 3` using public-safe community confirmation options, without naming the communities. Phone, ID document, photo, and bank/wallet now use existing public identity-context fields and preserve the difference between `Verified`, `Recorded`, `Shown`, and `Not shown`.
+- Guardrail change: `frontend/tools/audit-public-trustslip-first-viewport.mjs` now rejects restoring the named Community tile or the single primary Role tile on the card-only public ID surface, and requires the truthful evidence tiles.
+- Verification passed: `npm --prefix frontend run audit:public-trustslip-first-viewport`; `npm --prefix frontend run audit:identity-integrity-front-package`; `npm --prefix frontend run build`.
+- Devil truth: this is a privacy/content correction for the public card face. It does not change backend TrustSlip evidence policy and does not prove the final WhatsApp phone rendering until the updated frontend is deployed and retested on a real phone.
 ## 2026-09-03 - Local public TrustSlip card cold-start timeout fix
 
 - Status: Local frontend follow-up verified; deploying after browser verification of commit `3f4a7638` still showed `/t/LKFEZ8VBBU0/card` falling back while the correct API request was aborted twice.
