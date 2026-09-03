@@ -345,26 +345,32 @@ function publicRoleName(value: unknown): string {
 }
 
 function roleMixLabel(options: CommunityConfirmationOption[], fallbackRole?: string | null): string {
-  const counts = new Map<string, number>();
+  const counts = new Map<string, number>([
+    ["Membership", 0],
+    ["Admin", 0],
+  ]);
   const seen = new Set<string>();
+  let hasRoleEvidence = false;
   options.forEach((item, index) => {
     const key = firstTruthy(item.community_id, item.clan_id, item.community_code, `row-${index}`);
     if (seen.has(key)) return;
     seen.add(key);
     const label = publicRoleName(firstTruthy(item.holder_role, item.role));
     if (!label) return;
+    hasRoleEvidence = true;
     counts.set(label, (counts.get(label) || 0) + 1);
   });
 
-  if (!counts.size) {
+  if (!hasRoleEvidence) {
     const fallback = publicRoleName(fallbackRole);
-    if (fallback) counts.set(fallback, 1);
+    if (!fallback) return "";
+    hasRoleEvidence = true;
+    counts.set(fallback, (counts.get(fallback) || 0) + 1);
   }
 
-  return ["Membership", "Admin"]
-    .filter((label) => counts.has(label))
-    .map((label) => `${label} ${counts.get(label)}`)
-    .join(" / ");
+  return hasRoleEvidence
+    ? ["Membership", "Admin"].map((label) => `${label} ${counts.get(label) || 0}`).join(" / ")
+    : "";
 }
 
 function referenceFingerprint(...values: unknown[]): string {
