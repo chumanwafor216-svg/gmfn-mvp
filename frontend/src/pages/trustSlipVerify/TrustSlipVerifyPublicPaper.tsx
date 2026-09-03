@@ -291,7 +291,7 @@ type TrustSlipVerifyPublicPaperProps = {
     note: string;
     focus: string;
   };
-  variant?: "full" | "lite";
+  variant?: "full" | "lite" | "card";
 };
 
 function safeText(value: unknown): string {
@@ -1797,6 +1797,7 @@ export default function TrustSlipVerifyPublicPaper({
     ],
   ];
   const isLite = variant === "lite";
+  const isCard = variant === "card";
   const recordFingerprint = referenceFingerprint(
     resolvedCode,
     verifyPath,
@@ -1886,6 +1887,227 @@ export default function TrustSlipVerifyPublicPaper({
     "Every community member, shop, transaction, or dispute",
     "Future behaviour or guaranteed performance",
   ];
+  if (isCard) {
+    const cardSerial = resolvedCode
+      ? `GSN-ID-${resolvedCode.slice(0, 4)}-${resolvedCode.slice(-4)}`
+      : "GSN-ID-PUBLIC";
+    const publicVerifyUrl = verifyUrl ? `${verifyUrl.replace(/\/+$/, "")}/lite` : "";
+    const publicVerifyDisplay = publicVerifyUrl
+      ? publicVerifyUrl.replace(/^https?:\/\//i, "")
+      : verifyPath || "Verify link not available";
+    const publicCardRows: Array<{ label: string; value: string; icon: Gsn3DIconKey; good: boolean }> = [
+      { label: "Status", value: validNow ? "Valid" : publicValidityLabel, icon: "trust-shield", good: validNow },
+      { label: "Photo", value: profileImageUrl ? "Shown" : "Not shown", icon: "identity-card", good: Boolean(profileImageUrl) },
+      { label: "Community", value: communityLabel || "Not shown", icon: "community-building", good: Boolean(communityLabel) },
+      { label: "Role", value: holderRoleLabel, icon: "certificate-seal", good: Boolean(holderRoleLabel) },
+      { label: "Currentness", value: membershipCurrentnessLabel || expiresAtLabel || "Check record", icon: "records-folder", good: validNow },
+      { label: "Linked contexts", value: activeCommunityCountLabel ? `${activeCommunityCountLabel} visible` : "Public only", icon: "public-globe", good: activeCommunityContexts > 0 },
+    ];
+
+    return (
+      <section
+        data-gsn-public-identity-card-only="true"
+        className="print-trust-document"
+        style={{
+          maxWidth: compact ? 430 : 520,
+          margin: compact ? "8px auto 18px" : "24px auto 42px",
+          borderRadius: compact ? 24 : 30,
+          overflow: "hidden",
+          background: "linear-gradient(180deg, #061827 0%, #08233A 44%, #F8FBFF 44.1%, #FFFFFF 100%)",
+          border: "1px solid rgba(214,170,69,0.32)",
+          boxShadow: compact ? "0 14px 30px rgba(7,23,44,0.14)" : "0 22px 54px rgba(7,23,44,0.18)",
+          position: "relative",
+        }}
+      >
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            overflow: "hidden",
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: compact ? 124 : 150,
+              left: "50%",
+              transform: "translateX(-50%) rotate(-8deg)",
+              color: "rgba(255,255,255,0.07)",
+              fontSize: compact ? 120 : 156,
+              fontWeight: 1000,
+              lineHeight: 0.8,
+              letterSpacing: 0,
+              whiteSpace: "nowrap",
+            }}
+          >
+            GSN
+          </div>
+        </div>
+
+        <div
+          style={{
+            position: "relative",
+            zIndex: 1,
+            padding: compact ? 14 : 20,
+            display: "grid",
+            gridTemplateColumns: compact ? "92px minmax(0, 1fr)" : "124px minmax(0, 1fr)",
+            gap: compact ? 12 : 18,
+            alignItems: "center",
+            color: "#FFFFFF",
+          }}
+        >
+          <div
+            style={{
+              width: compact ? 92 : 124,
+              height: compact ? 92 : 124,
+              borderRadius: compact ? 22 : 30,
+              overflow: "hidden",
+              background: "#12314D",
+              border: "2px solid rgba(242,199,102,0.72)",
+              display: "grid",
+              placeItems: "center",
+              color: "#FFFFFF",
+              fontSize: compact ? 28 : 36,
+              fontWeight: 1000,
+            }}
+          >
+            {profileImageUrl ? (
+              <img
+                src={profileImageUrl}
+                alt={`${holderName} public GSN identity`}
+                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 16%" }}
+              />
+            ) : (
+              holderName.slice(0, 2).toUpperCase()
+            )}
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ color: "#F2C766", fontSize: 10, fontWeight: 1000, textTransform: "uppercase" }}>
+              Global Support Network
+            </div>
+            <div style={{ marginTop: 4, color: "#FFFFFF", fontSize: compact ? 24 : 32, fontWeight: 1000, lineHeight: 1.02, overflowWrap: "break-word" }}>
+              {holderName}
+            </div>
+            <div style={{ marginTop: 7, color: "rgba(248,251,255,0.88)", fontSize: compact ? 12 : 14, fontWeight: 900, lineHeight: 1.28, overflowWrap: "anywhere" }}>
+              GSN ID: {gsnId || "Not shown"}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ position: "relative", zIndex: 1, padding: compact ? "8px 14px 16px" : "10px 20px 22px", display: "grid", gap: compact ? 9 : 12 }}>
+          <div
+            style={{
+              borderRadius: 18,
+              border: "1px solid rgba(214,170,69,0.32)",
+              background: "linear-gradient(135deg, rgba(255,251,239,0.98) 0%, #FFFFFF 62%, rgba(234,243,255,0.94) 100%)",
+              padding: compact ? 10 : 14,
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1fr) minmax(112px, 0.75fr)",
+              gap: 10,
+              alignItems: "center",
+            }}
+          >
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ ...sectionLabel(), fontSize: 9.5 }}>Serial</div>
+                <div style={{ color: "#07172C", fontSize: compact ? 11 : 13, fontWeight: 1000, lineHeight: 1.16, overflowWrap: "anywhere" }}>
+                  {cardSerial}
+                </div>
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ ...sectionLabel(), fontSize: 9.5 }}>Issued</div>
+                <div style={{ color: "#07172C", fontSize: compact ? 11 : 13, fontWeight: 1000, lineHeight: 1.16 }}>
+                  {issuedAtLabel || "Not shown"}
+                </div>
+              </div>
+            </div>
+            <div
+              style={{
+                minHeight: 46,
+                borderRadius: 15,
+                background: validNow ? "#ECFDF5" : "#FFF7ED",
+                border: validNow ? "1px solid rgba(46,155,98,0.25)" : "1px solid rgba(214,170,69,0.32)",
+                color: validNow ? "#14532D" : "#713F12",
+                display: "grid",
+                placeItems: "center",
+                textAlign: "center",
+                fontSize: compact ? 11 : 12,
+                fontWeight: 1000,
+                textTransform: "uppercase",
+              }}
+            >
+              <span>{validNow ? "Live verified" : publicValidityLabel}</span>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: compact ? 8 : 10 }}>
+            {publicCardRows.map((item) => (
+              <div
+                key={item.label}
+                style={{
+                  minHeight: compact ? 54 : 66,
+                  borderRadius: 16,
+                  background: "#FFFFFF",
+                  border: "1px solid rgba(37,78,119,0.12)",
+                  padding: compact ? 7 : 10,
+                  display: "grid",
+                  gridTemplateColumns: compact ? "32px minmax(0, 1fr)" : "38px minmax(0, 1fr)",
+                  gap: 8,
+                  alignItems: "center",
+                  boxShadow: "0 8px 18px rgba(7,23,44,0.045)",
+                }}
+              >
+                {paperIconBadge(item.icon, item.good ? "trust" : "neutral", compact ? 32 : 38)}
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: "block", color: "#617085", fontSize: compact ? 9 : 10, fontWeight: 1000, textTransform: "uppercase", lineHeight: 1.1 }}>
+                    {item.label}
+                  </span>
+                  <span style={{ display: "block", marginTop: 3, color: "#07172C", fontSize: compact ? 11 : 13, fontWeight: 1000, lineHeight: 1.15, overflowWrap: "anywhere" }}>
+                    {item.value}
+                  </span>
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div
+            style={{
+              borderRadius: 18,
+              background: "#FFFBEF",
+              border: "1px solid rgba(214,170,69,0.34)",
+              padding: compact ? 10 : 12,
+              display: "grid",
+              gridTemplateColumns: compact ? "72px minmax(0, 1fr)" : "90px minmax(0, 1fr)",
+              gap: 12,
+              alignItems: "center",
+            }}
+          >
+            <div style={{ width: compact ? 68 : 82, height: compact ? 68 : 82, display: "grid", placeItems: "center", background: "#FFFFFF", borderRadius: 12 }}>
+              {publicVerifyUrl ? (
+                <QRCodeSVG value={publicVerifyUrl} size={compact ? 60 : 74} bgColor="#FFFFFF" fgColor="#07172C" level="M" marginSize={1} />
+              ) : (
+                <GsnRealisticIcon name="qr-record" size={compact ? 52 : 64} decorative />
+              )}
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ color: "#3B2504", fontSize: compact ? 13 : 15, fontWeight: 1000 }}>
+                Verify record
+              </div>
+              <div style={{ marginTop: 4, color: "#07172C", fontSize: compact ? 10.5 : 12, fontWeight: 900, lineHeight: 1.22, overflowWrap: "anywhere" }}>
+                {publicVerifyDisplay}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ color: "#617085", fontSize: compact ? 10.5 : 12, fontWeight: 850, lineHeight: 1.25 }}>
+            Public GSN identity card only. Not government ID, credit approval, payment guarantee, or future behaviour proof.
+          </div>
+        </div>
+      </section>
+    );
+  }
   const evidenceResults: EvidenceResult[] = [
     {
       icon: "certificate-seal",

@@ -287,8 +287,13 @@ assertContains(
 );
 
 assertContains(
-  /trustSlipVerifyPath[\s\S]*?`\/t\/\$\{encodeURIComponent\(trustSlipCode\)\}\/lite`[\s\S]*?trustSlipVerifyUrl[\s\S]*?canonicalPublicFrontendUrl[\s\S]*?trustSlipVerifyDisplay[\s\S]*?data-gsn-identity-card-verifier="true"[\s\S]*?Public verifier[\s\S]*?data-gsn-identity-card-qr="true"[\s\S]*?LazyQRCodeSVG[\s\S]*?debugId="identity-integrity\.gsn-card\.refresh"[\s\S]*?Refresh card[\s\S]*?debugId="identity-integrity\.gsn-card\.share"[\s\S]*?identityCardValid \? "Share card" : "Finish card"[\s\S]*?debugId="identity-integrity\.gsn-card\.copy"[\s\S]*?Copy card text[\s\S]*?debugId="identity-integrity\.gsn-card\.copy-verify-link"[\s\S]*?Copy verify link/,
-  "GSN Identity Card must support QR/live check, manual refresh, gated native share, copy text, copy verify link actions, and a lite public verifier target."
+  /identityCardLivePath[\s\S]*?`\/t\/\$\{encodeURIComponent\(trustSlipCode\)\}\/card`[\s\S]*?trustSlipVerifyPath[\s\S]*?`\/t\/\$\{encodeURIComponent\(trustSlipCode\)\}\/lite`[\s\S]*?identityCardLiveUrl[\s\S]*?trustSlipVerifyUrl[\s\S]*?Live ID card:[\s\S]*?Verify record:[\s\S]*?data-gsn-identity-card-qr="true"[\s\S]*?value=\{identityCardLiveUrl\}[\s\S]*?debugId="identity-integrity\.gsn-card\.copy-verify-link"[\s\S]*?Copy verify link/,
+  "GSN Identity Card must keep separate live-card and verification targets: QR/live card to /card, copy verify link to /lite."
+);
+
+assertContains(
+  /const imagePayload = \{[\s\S]*?text: gsnIdentityCardShareText,[\s\S]*?files: \[cardImage\],[\s\S]*?\};[\s\S]*?nativeShare\.call\(navigator, \{[\s\S]*?title: "GSN Identity Card",[\s\S]*?text: gsnIdentityCardShareText,[\s\S]*?\}\)/,
+  "GSN Identity Card share must avoid a separate Web Share url field so WhatsApp does not append a duplicate verifier link."
 );
 
 assertContains(

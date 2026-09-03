@@ -752,7 +752,7 @@ async function buildGsnIdentityCardShareImage(
   ctx.stroke();
   ctx.fillStyle = "#3B2504";
   ctx.font = "900 31px Arial, sans-serif";
-  ctx.fillText("PUBLIC VERIFIER", 162, 1376);
+  ctx.fillText("LIVE ID CARD", 162, 1376);
   ctx.fillStyle = textDark;
   ctx.font = "900 31px Arial, sans-serif";
   drawIdentityCardCanvasText(ctx, params.verifyDisplay, 162, 1422, 720, 35, 2);
@@ -2416,14 +2416,21 @@ export default function IdentityIntegrityPage() {
     : gmfnIdValue
       ? `GSN-ID-${gmfnIdValue.slice(-8)}`
       : "GSN-ID-PENDING";
+  const identityCardLivePath = trustSlipCode
+    ? `/t/${encodeURIComponent(trustSlipCode)}/card`
+    : "";
   const trustSlipVerifyPath = trustSlipCode
     ? `/t/${encodeURIComponent(trustSlipCode)}/lite`
     : "";
-  const trustSlipVerifyUrl = trustSlipCode
-    ? canonicalPublicFrontendUrl(
-        firstTruthy(trustSlip?.public_verify_url, trustSlipVerifyPath)
-      )
+  const identityCardLiveUrl = identityCardLivePath
+    ? canonicalPublicFrontendUrl(identityCardLivePath)
     : "";
+  const trustSlipVerifyUrl = trustSlipVerifyPath
+    ? canonicalPublicFrontendUrl(trustSlipVerifyPath)
+    : "";
+  const identityCardLiveDisplay = identityCardLiveUrl
+    ? identityCardLiveUrl.replace(/^https?:\/\//i, "")
+    : "Live card link not ready";
   const trustSlipVerifyDisplay = trustSlipVerifyUrl
     ? trustSlipVerifyUrl.replace(/^https?:\/\//i, "")
     : "Verify link not ready";
@@ -2431,7 +2438,7 @@ export default function IdentityIntegrityPage() {
     { label: "Serial", value: identityCardSerial },
     { label: "Generated", value: identityCardGeneratedLabel },
     { label: "Status", value: identityCardStatusText },
-    { label: "Verify", value: trustSlipVerifyDisplay },
+    { label: "Live card", value: identityCardLiveDisplay },
   ];
   const selectedCommunityKey = firstTruthy(
     currentClan?.community_code,
@@ -2455,7 +2462,8 @@ export default function IdentityIntegrityPage() {
     `Status: ${identityCardStatusText}`,
     `Phone: ${phoneEvidenceLabel}. ID: ${officialIdEvidenceLabel}. Photo: ${photoEvidenceLabel}.`,
     trustSlipCode ? `TrustSlip: ${trustSlipCode}` : "",
-    trustSlipVerifyUrl ? `Open this public GSN card: ${trustSlipVerifyUrl}` : "",
+    identityCardLiveUrl ? `Live ID card: ${identityCardLiveUrl}` : "",
+    trustSlipVerifyUrl ? `Verify record: ${trustSlipVerifyUrl}` : "",
     "Evidence only. Not government ID, credit approval, payment guarantee, or future behaviour proof.",
   ].filter(Boolean).join("\n");
 
@@ -2872,7 +2880,7 @@ export default function IdentityIntegrityPage() {
       communities: identityCardCommunityFootprintLabel,
       memberships: identityCardMembershipLabel,
       trustSlipCode,
-      verifyDisplay: trustSlipVerifyDisplay,
+      verifyDisplay: identityCardLiveDisplay,
       valid: identityCardValid,
     });
 
@@ -2880,7 +2888,6 @@ export default function IdentityIntegrityPage() {
       const imagePayload = {
         title: "GSN Identity Card",
         text: gsnIdentityCardShareText,
-        url: trustSlipVerifyUrl || undefined,
         files: [cardImage],
       };
 
@@ -2900,7 +2907,6 @@ export default function IdentityIntegrityPage() {
         await nativeShare.call(navigator, {
           title: "GSN Identity Card",
           text: gsnIdentityCardShareText,
-          url: trustSlipVerifyUrl || undefined,
         });
         showNotice("success", "Share sheet opened with the GSN Identity Card link.");
         return;
@@ -4352,7 +4358,7 @@ export default function IdentityIntegrityPage() {
               </div>
             </div>
 
-            {!isCompact && trustSlipVerifyUrl ? (
+            {!isCompact && identityCardLiveUrl ? (
               <div
                 data-gsn-identity-card-qr="true"
                 style={{
@@ -4369,7 +4375,7 @@ export default function IdentityIntegrityPage() {
               >
                 <React.Suspense fallback={<GsnLegacyIcon name="qr" size={54} />}>
                   <LazyQRCodeSVG
-                    value={trustSlipVerifyUrl}
+                    value={identityCardLiveUrl}
                     size={84}
                     bgColor="#FFFFFF"
                     fgColor="#07172C"
@@ -4505,13 +4511,13 @@ export default function IdentityIntegrityPage() {
               }}
             >
               <div style={{ color: "#3B2504", fontSize: 12, fontWeight: 1000, textTransform: "uppercase" }}>
-                Public verifier
+                Live ID card
               </div>
               <div style={{ color: "#07172C", fontSize: isCompact ? 12 : 13, fontWeight: 950, lineHeight: 1.28, overflowWrap: "anywhere" }}>
-                {trustSlipVerifyDisplay}
+                {identityCardLiveDisplay}
               </div>
             </div>
-            {isCompact && trustSlipVerifyUrl ? (
+            {isCompact && identityCardLiveUrl ? (
               <div
                 data-gsn-identity-card-qr="true"
                 style={{
@@ -4528,7 +4534,7 @@ export default function IdentityIntegrityPage() {
                 <div style={{ width: 58, height: 58, display: "grid", placeItems: "center" }}>
                   <React.Suspense fallback={<GsnLegacyIcon name="qr" size={52} />}>
                     <LazyQRCodeSVG
-                      value={trustSlipVerifyUrl}
+                      value={identityCardLiveUrl}
                       size={56}
                       bgColor="#FFFFFF"
                       fgColor="#07172C"
@@ -4542,7 +4548,7 @@ export default function IdentityIntegrityPage() {
                     Verify on web
                   </div>
                   <div style={{ marginTop: 5, color: "#617085", fontSize: 11, fontWeight: 850, lineHeight: 1.22, overflowWrap: "anywhere" }}>
-                    {trustSlipCode ? `TrustSlip ${trustSlipCode} - ${trustSlipVerifyDisplay}` : trustSlipVerifyDisplay}
+                    {trustSlipCode ? `Live card ${trustSlipCode} - ${identityCardLiveDisplay}` : identityCardLiveDisplay}
                   </div>
                 </div>
               </div>

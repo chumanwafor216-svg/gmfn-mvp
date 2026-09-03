@@ -8,6 +8,7 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
   publicPaper: "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
   routePage: "src/pages/TrustSlipVerifyPage.tsx",
+  app: "src/App.tsx",
   package: "package.json",
 };
 
@@ -157,7 +158,7 @@ assertContains(
 );
 assertContains(
   "routePage",
-  /const isLiteRoute =[\s\S]*?endsWith\("\/lite"\)[\s\S]*?noPublicCodeSupplied \|\| isLiteRoute \? null : <TrustSlipVerifyBoundary compact=\{isCompact\} \/>/,
+  /const isLiteRoute =[\s\S]*?endsWith\("\/lite"\)[\s\S]*?noPublicCodeSupplied \|\| isLiteRoute \|\| isCardRoute \? null : <TrustSlipVerifyBoundary compact=\{isCompact\} \/>/,
   "The public lite TrustSlip route must open as a focused card/paper without the extra boundary support section."
 );
 
@@ -166,6 +167,36 @@ assertContains(
   /const isLite = variant === "lite"[\s\S]*?!isLite \? publicActions : null/,
   "The public lite TrustSlip paper must not expose the extra public action block under the card."
 );
+assertContains(
+  "app",
+  /<Route path="\/t\/:code\/card" element=\{<TrustSlipVerifyPage \/>\} \/>[\s\S]*?<Route path="\/trust-slips\/verify\/:code\/card" element=\{<TrustSlipVerifyPage \/>\} \/>/,
+  "The public route table must include a card-only TrustSlip identity route for live QR checks."
+);
+
+assertContains(
+  "routePage",
+  /const isCardRoute =[\s\S]*?endsWith\("\/card"\)[\s\S]*?variant=\{isCardRoute \? "card" : isLiteRoute \? "lite" : "full"\}[\s\S]*?noPublicCodeSupplied \|\| isLiteRoute \|\| isCardRoute \? null : <TrustSlipVerifyBoundary compact=\{isCompact\} \/>/,
+  "The TrustSlip verify page must render /card as a focused card-only public view without the extra boundary support section."
+);
+
+assertContains(
+  "publicPaper",
+  /variant\?: "full" \| "lite" \| "card"[\s\S]*?const isCard = variant === "card"[\s\S]*?data-gsn-public-identity-card-only="true"/,
+  "The public paper must support a card-only public identity surface."
+);
+
+assertContains(
+  "publicPaper",
+  /data-gsn-public-identity-card-only="true"[\s\S]*?profileImageUrl[\s\S]*?alt=\{`\$\{holderName\} public GSN identity`\}/,
+  "The card-only public identity surface must render the holder photo when a public profile image is available."
+);
+
+assertContains(
+  "publicPaper",
+  /const publicVerifyUrl =[\s\S]*?<QRCodeSVG\s+value=\{publicVerifyUrl\}[\s\S]*?Verify record/,
+  "The card-only public identity surface must show a verification-record QR separate from the live card route."
+);
+
 assertContains(
   "publicPaper",
   /data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision First[\s\S]*?\{decisionDisplayAnswer\}[\s\S]*?\{decisionReasonLine\}[\s\S]*?data-gsn-public-evidence-translation="decision-why"[\s\S]*?Why this recommendation\?[\s\S]*?<DecisionFactorTable rows=\{compact \? decisionTranslationRows\.filter\(\(\[label\]\) => label === "Because 1" \|\| label === "Because 2"\) : decisionTranslationRows\} compact=\{compact\} \/>[\s\S]*?data-gsn-public-decision-evidence-snapshot="visible-public-safe-answers"[\s\S]*?Visible evidence for this decision[\s\S]*?<DecisionFactorTable rows=\{publicDecisionEvidenceSnapshotDisplayRows\} compact=\{compact\} \/>[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?display: compact \? "none" : "grid"[\s\S]*?Quick Decision[\s\S]*?quickDecisionFacts\.map[\s\S]*?title="Full evidence and record details"[\s\S]*?data-gsn-public-mobile-full-evidence="collapsed-summary"[\s\S]*?data-gsn-public-decision-support="meaning-next-action"[\s\S]*?What this means[\s\S]*?Next recommended action[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?GSN checked \{evidenceScopeIsWider \? "primary and wider community signals" : "the primary community signal"\}/,

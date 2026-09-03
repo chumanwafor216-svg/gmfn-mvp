@@ -413,6 +413,13 @@ export default function TrustSlipVerifyPage() {
       safeStr(params.get("view")).toLowerCase() === "lite"
     );
   }, [location.pathname, location.search]);
+  const isCardRoute = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return (
+      location.pathname.replace(/\/+$/, "").endsWith("/card") ||
+      safeStr(params.get("view")).toLowerCase() === "card"
+    );
+  }, [location.pathname, location.search]);
 
   const noPublicCodeSupplied = !isAppRoute && !requestedCode;
 
@@ -1595,13 +1602,13 @@ export default function TrustSlipVerifyPage() {
             publicActions={publicTrustSlipActions}
             decisionPackProfile={decisionPackProfile}
             recipientAccessRecord={recipientAccessRecord}
-            variant={isLiteRoute ? "lite" : "full"}
+            variant={isCardRoute ? "card" : isLiteRoute ? "lite" : "full"}
           />
         </React.Suspense>
       )}
-      {noPublicCodeSupplied || isLiteRoute ? null : <TrustSlipVerifyBoundary compact={isCompact} />}
+      {noPublicCodeSupplied || isLiteRoute || isCardRoute ? null : <TrustSlipVerifyBoundary compact={isCompact} />}
 
-      {canShowPrivateEvidence ? (
+      {canShowPrivateEvidence && !isCardRoute ? (
         <details
           className="print-trust-support"
           open={privateEvidenceOpen}

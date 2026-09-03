@@ -925,12 +925,14 @@ export default function App() {
       <Route path="/activate-membership" element={<MemberActivationPage />} />
 
       <Route path="/t/:code" element={<TrustSlipVerifyPage />} />
+      <Route path="/t/:code/card" element={<TrustSlipVerifyPage />} />
       <Route path="/t/:code/lite" element={<TrustSlipVerifyPage />} />
       <Route path="/verify/trust-slip" element={<TrustSlipVerifyPage />} />
       <Route path="/verify/trustslip" element={<TrustSlipVerifyPage />} />
       <Route path="/trust-slips/verify/:code" element={<TrustSlipVerifyPage />} />
       <Route path="/trust-slips/verify/:code/page" element={<TrustSlipVerifyPage />} />
       <Route path="/trust-slips/verify/:code/lite" element={<TrustSlipVerifyPage />} />
+      <Route path="/trust-slips/verify/:code/card" element={<TrustSlipVerifyPage />} />
       <Route path="/trust-slips/verify/:code/print" element={<TrustSlipVerifyPage />} />
       <Route path="/merchant-release/:token" element={<MerchantReleasePage />} />
       <Route

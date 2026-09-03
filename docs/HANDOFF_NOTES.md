@@ -1,3 +1,12 @@
+## 2026-09-03 - Local GSN Identity Card live card route and split verifier links
+
+- Status: Local frontend follow-up verified; deploying after owner clarified that the WhatsApp share must not send two links to the same verification page.
+- Frontend routes affected: signed-in `/app/identity`, public live-card `/t/:code/card`, public focused verifier `/t/:code/lite`, and alias `/trust-slips/verify/:code/card`.
+- Change: the Identity Integrity share now separates the two public targets. `Live ID card` opens the card-only public route, while `Verify record` opens the lite verification route. The native Web Share payload no longer passes a separate `url` field, which prevents WhatsApp from appending a duplicate copy of the same link after the message text.
+- Public card behavior: `/t/:code/card` renders only the public GSN Identity Card surface with no app navigation, private evidence panels, or extra verifier page sections. Its QR/link points to the lite verifier so someone can check the public record from the live card.
+- Signed-in card behavior: the visible QR and live-card row now point to `/t/:code/card`; the copy/open verifier action still uses `/t/:code/lite`.
+- Verification: `npm --prefix frontend run audit:identity-integrity-front-package` passed; `npm --prefix frontend run audit:public-trustslip-first-viewport` passed; `npm --prefix frontend run build` passed; `git diff --check` passed with only CRLF warnings.
+- Devil truth: the live card route can display the holder photo through a normal public image URL when the TrustSlip exposes one, but the shared PNG can still lose the face if the browser blocks canvas export of a cross-origin or protected photo. The real WhatsApp phone retest is still the final proof.
 ## 2026-09-03 - Local GSN Identity Card duplicate status chip removal
 
 - Status: Local frontend follow-up verified; deploying after owner asked to remove the duplicate `Valid` near the picture.
