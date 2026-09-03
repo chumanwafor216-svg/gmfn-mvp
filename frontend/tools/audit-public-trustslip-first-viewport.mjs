@@ -247,6 +247,11 @@ assertContains(
   /getTrustSlipVerify[\s\S]*?getTrustSlipVerification[\s\S]*?getTrustSlipByCode[\s\S]*?getTrustSlipPublic[\s\S]*?getTrustSlipPublicByCode/,
   "Public TrustSlip loading must keep API fallback names after the canonical verifyTrustSlip call."
 );
+assertContains(
+  "routePage",
+  /const verifyResult = await callFirstAvailable\([\s\S]*?\[\[codeToUse\]\][\s\S]*?\);/,
+  "Public TrustSlip loading must pass the TrustSlip code as a string only, so fallback attempts do not call /verify/[object Object] or append object query params."
+);
 if (findings.length) {
   findings.forEach((finding) => {
     console.error(

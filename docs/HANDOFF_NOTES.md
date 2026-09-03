@@ -1,3 +1,12 @@
+## 2026-09-03 - Local public TrustSlip card fallback retry fix
+
+- Status: Local frontend fix verified; deploying after phone retest showed `/t/LKFEZ8VBBU0/card` opened the right public card route but displayed fallback fields: `GSN ID: Not issued yet`, `Issued: Not stated`, and `No usable TrustSlip record was found`.
+- Confirmed backend truth: live `https://gmfn-api.onrender.com/trust-slips/verify/LKFEZ8VBBU0` returns the real record, including `holder_name: Chuma`, `gmfn_id: GMFN-U-63655DE6`, `issued_at`, profile photo, phone verified, ID recorded, community context, and current TrustSlip data. With `Origin: https://gmfn-frontend.onrender.com`, the live API returns `access-control-allow-origin: https://gmfn-frontend.onrender.com` after the service is warm.
+- Frontend route affected: public TrustSlip live-card and verifier loading in `frontend/src/pages/TrustSlipVerifyPage.tsx`, covering `/t/:code/card`, `/t/:code/lite`, and `/trust-slips/verify/:code/*`.
+- Change: the public TrustSlip loader now calls verifier fallbacks with the TrustSlip code string only. It no longer retries with `{ code }` or `[code, { code }]`, which produced bad requests like `/trust-slips/verify/[object Object]` and `?level=[object Object]` after an aborted first request.
+- Guardrail change: `frontend/tools/audit-public-trustslip-first-viewport.mjs` now cages the string-only verify call so this fallback bug cannot return silently.
+- Verification passed: `node --check frontend/tools/audit-public-trustslip-first-viewport.mjs`; `npm --prefix frontend run audit:public-trustslip-first-viewport`; `npm --prefix frontend run audit:identity-integrity-front-package`; `npm --prefix frontend run build`.
+- Devil truth: this fixes the proven bad retry path. The live Render API can still take roughly 30 seconds on a cold request, so phone retest should allow the card to finish loading once. If it still falls back after deployment, the next target is a visible loading/error state for slow public-card API calls, not pretending the TrustSlip data is missing.
 ## 2026-09-03 - Local public TrustSlip card API-origin fix
 
 - Status: Local frontend fix verified; deploying after phone retest showed `/t/:code/card` opens but displays `GSN ID: Not issued yet`, `Issued: Not stated`, and `No usable TrustSlip record was found`.
