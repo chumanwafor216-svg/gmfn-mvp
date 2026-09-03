@@ -9,6 +9,8 @@ const files = {
   publicPaper: "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
   routePage: "src/pages/TrustSlipVerifyPage.tsx",
   app: "src/App.tsx",
+  api: "src/lib/api.ts",
+  profileImage: "src/lib/profileImage.ts",
   package: "package.json",
 };
 
@@ -228,6 +230,23 @@ assertContains(
   "Decision Pack reading must show the actual community activity meaning and decision evidence summary before source-map details stay collapsed."
 );
 
+assertContains(
+  "api",
+  /import \{ configuredPublicApiOrigin, isPrivateFrontendHost \} from "\.\/publicLinks";[\s\S]*?normalized === "\/api"[\s\S]*?hostname && !isPrivateFrontendHost\(hostname\)[\s\S]*?return configuredPublicApiOrigin\(\)/,
+  "Production frontend API calls must resolve relative /api to the public API origin instead of the static frontend host."
+);
+
+assertContains(
+  "profileImage",
+  /import \{ isPrivateFrontendHost, publicApiOrigin \} from "\.\/publicLinks";[\s\S]*?!hostname \|\| isPrivateFrontendHost\(hostname\)[\s\S]*?return origin[\s\S]*?return publicApiOrigin\(\)/,
+  "Production public profile images returned as relative /uploads paths must resolve against the API origin, while local dev can keep the Vite proxy origin."
+);
+
+assertContains(
+  "routePage",
+  /getTrustSlipVerify[\s\S]*?getTrustSlipVerification[\s\S]*?getTrustSlipByCode[\s\S]*?getTrustSlipPublic[\s\S]*?getTrustSlipPublicByCode/,
+  "Public TrustSlip loading must keep API fallback names after the canonical verifyTrustSlip call."
+);
 if (findings.length) {
   findings.forEach((finding) => {
     console.error(

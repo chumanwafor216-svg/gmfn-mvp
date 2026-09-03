@@ -1,3 +1,5 @@
+import { configuredPublicApiOrigin, isPrivateFrontendHost } from "./publicLinks";
+
 const API_BASE_URL_RAW: string =
   (typeof import.meta !== "undefined" &&
     (import.meta as any)?.env &&
@@ -50,8 +52,14 @@ function resolveApiBaseUrl(raw: unknown): string {
 
   if (normalized === "/api" && typeof window !== "undefined") {
     const port = String(window.location?.port || "").trim();
+    const hostname = String(window.location?.hostname || "").trim().toLowerCase();
+
     if (port && port !== "5173") {
       return localBackendOrigin() || normalized;
+    }
+
+    if (hostname && !isPrivateFrontendHost(hostname)) {
+      return configuredPublicApiOrigin();
     }
   }
 

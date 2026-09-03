@@ -238,7 +238,7 @@ export function normalizeTrustSlipVerification(
   raw: any,
   fallbackCode: string
 ): TrustSlipVerifyRecord | null {
-  if (!raw) return null;
+  if (!raw || typeof raw !== "object") return null;
 
   const src = raw?.item || raw?.trust_slip || raw?.verification || raw;
   const merchantView = src?.merchant_view || {};

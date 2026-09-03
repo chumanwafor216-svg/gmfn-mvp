@@ -1,3 +1,11 @@
+## 2026-09-03 - Local public TrustSlip card API-origin fix
+
+- Status: Local frontend fix verified; deploying after phone retest showed `/t/:code/card` opens but displays `GSN ID: Not issued yet`, `Issued: Not stated`, and `No usable TrustSlip record was found`.
+- Root cause confirmed: the live API has the correct TrustSlip data for `LKFEZ8VBBU0`, including `holder_name: Chuma`, `gmfn_id: GMFN-U-63655DE6`, `issued_at`, community context, and profile photo. The production frontend was still resolving relative `/api` calls against `https://gmfn-frontend.onrender.com`, which serves the React shell HTML rather than TrustSlip JSON.
+- Frontend routes affected: public `/t/:code/card`, `/t/:code/lite`, `/trust-slips/verify/:code/*`, and any production frontend call using the shared `api.ts` relative `/api` base.
+- Change: `src/lib/api.ts` now sends production relative `/api` requests to the configured public API origin. `src/lib/profileImage.ts` now resolves relative `/uploads` profile-image paths to the API origin on public frontend hosts while keeping local Vite proxy behavior for private/local hosts. TrustSlip verification normalization now rejects non-object responses instead of treating HTML/text as a partial record.
+- Verification: live API checked for `https://gmfn-api.onrender.com/trust-slips/verify/LKFEZ8VBBU0`; frontend-host `/api/trust-slips/verify/LKFEZ8VBBU0` confirmed to return React HTML before the fix; `npm --prefix frontend run audit:public-trustslip-first-viewport` passed; `npm --prefix frontend run audit:identity-integrity-front-package` passed; `npm --prefix frontend run build` passed; `git diff --check` passed with only CRLF warnings.
+- Devil truth: this fixes the proven frontend/API-origin bug. It does not change backend TrustSlip policy, and the card still needs phone retest after deploy to confirm the browser has picked up the new JS bundle rather than a cached one.
 ## 2026-09-03 - Local GSN Identity Card live card route and split verifier links
 
 - Status: Local frontend follow-up verified; deploying after owner clarified that the WhatsApp share must not send two links to the same verification page.

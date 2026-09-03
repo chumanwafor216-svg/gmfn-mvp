@@ -1,3 +1,5 @@
+import { isPrivateFrontendHost, publicApiOrigin } from "./publicLinks";
+
 const DASHBOARD_AVATAR_STORAGE_KEY = "gmfn.member.avatar";
 
 function safeStr(value: unknown): string {
@@ -27,9 +29,14 @@ function apiOrigin(): string {
     }
   }
 
-  return typeof window !== "undefined"
-    ? String(window.location.origin || "").trim().replace(/\/+$/, "")
-    : "";
+  if (typeof window !== "undefined") {
+    const hostname = String(window.location?.hostname || "").trim().toLowerCase();
+    const origin = String(window.location.origin || "").trim().replace(/\/+$/, "");
+
+    if (!hostname || isPrivateFrontendHost(hostname)) return origin;
+  }
+
+  return publicApiOrigin();
 }
 
 function storageIdentitySegment(value: unknown): string {
