@@ -204,6 +204,12 @@ type BeneficiaryOutcomeRecentPacketKey =
   | "receipt";
 type BeneficiaryOutcomeConfirmationActionKey = "link" | "review";
 type BeneficiaryOutcomeContactActionKey = "record" | "withdraw";
+type ServiceFlowGuideStepKey =
+  | "message"
+  | "attendance"
+  | "offering"
+  | "response"
+  | "summary";
 type SetupStepKey =
   | "identity"
   | "payment"
@@ -982,6 +988,60 @@ function communityCollectionPublicUrl(publicPath: unknown): string {
   if (/^https?:\/\//i.test(path)) return path;
   if (typeof window === "undefined") return path;
   return `${window.location.origin}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+function currentServiceFlowGuideMonthKey(): string {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  return `${now.getFullYear()}-${month}`;
+}
+
+function serviceFlowGuideDismissalKey(domainId: string, monthKey: string): string {
+  return domainId ? `gsn.service-flow-guide.dismissed.${domainId}.${monthKey}` : "";
+}
+
+function isServiceFlowMonthEndWindow(): boolean {
+  return new Date().getDate() >= 25;
+}
+
+function isChurchServiceDomain(domain: unknown): boolean {
+  const record = isUnknownRecord(domain) ? domain : {};
+  const typeKey = cleanText(record.template_key || record.domain_type).toLowerCase();
+  return ["church_religious_body", "religious_body", "church"].includes(typeKey);
+}
+
+function serviceFlowGuideActionLabel(step: ServiceFlowGuideStepKey): string {
+  switch (step) {
+    case "message":
+      return "Create message QR";
+    case "attendance":
+      return "Open attendance QR";
+    case "offering":
+      return "Open offering QR";
+    case "response":
+      return "Open Response QR";
+    case "summary":
+      return "Prepare Church Summary";
+    default:
+      return "Open next step";
+  }
+}
+
+function serviceFlowGuideStepTitle(step: ServiceFlowGuideStepKey): string {
+  switch (step) {
+    case "message":
+      return "Message";
+    case "attendance":
+      return "Attendance";
+    case "offering":
+      return "Offering";
+    case "response":
+      return "Response";
+    case "summary":
+      return "Summary";
+    default:
+      return "Next step";
+  }
 }
 
 function subjectReferenceLabel(item: unknown): string {
@@ -2911,6 +2971,9 @@ export default function CommunityDomainDashboardPage() {
   const [domainNoticesLoading, setDomainNoticesLoading] = useState(false);
   const [domainNoticeModalOpen, setDomainNoticeModalOpen] = useState(false);
   const [domainNoticePosting, setDomainNoticePosting] = useState(false);
+  const [serviceFlowGuideOpen, setServiceFlowGuideOpen] = useState(false);
+  const [serviceFlowGuideDismissed, setServiceFlowGuideDismissed] = useState(false);
+  const [serviceFlowGuidePromptReason, setServiceFlowGuidePromptReason] = useState("");
   const mountedRef = useRef(true);
   const activeCommunityDomainIdRef = useRef(communityDomainId);
   const commandSurfaceRef = useRef<HTMLElement | null>(null);
@@ -3429,6 +3492,11 @@ export default function CommunityDomainDashboardPage() {
         posted?.public_path
           ? "Official notice posted with a public GSN message QR."
           : "Official notice posted to this Community Domain only."
+      );
+      promptServiceFlowGuide(
+        posted?.public_path
+          ? "Message QR is ready. Open the next service step."
+          : "Notice is posted. Add public QR only when the message should be shared."
       );
     } catch (err) {
       setMessage(
@@ -5022,6 +5090,74 @@ export default function CommunityDomainDashboardPage() {
   const showDomainWorkSurface =
     setupWorkspaceOpen || showAdvancedTools || setupJourneyMode === "edit";
   const showOtherDomainToolsEntry = setupJourneyMode === "edit";
+  const serviceFlowGuideDomainId = cleanText(domain?.id || communityDomainId);
+  const serviceFlowGuideMonthKey = currentServiceFlowGuideMonthKey();
+  const serviceFlowGuideDismissalStorageKey = serviceFlowGuideDismissalKey(
+    serviceFlowGuideDomainId,
+    serviceFlowGuideMonthKey
+  );
+  const serviceFlowMonthEndPrompt = isServiceFlowMonthEndWindow();
+  const churchServiceFlowDomain = isChurchServiceDomain(domain);
+  const serviceFlowHasMessageQr = domainNotices.some((item) =>
+    Boolean(cleanText(item.public_path))
+  );
+  const serviceFlowHasCollectionQr = Boolean(
+    latestCollectionPublicUrl || collectionInstructionRows.length
+  );
+  const serviceFlowHasAttendanceQr = Boolean(
+    latestAttendancePublicUrl || attendanceSessionRows.length
+  );
+  const serviceFlowHasResponseQr = Boolean(
+    latestResponsePublicUrl || responseChannelRows.length
+  );
+  const serviceFlowNextStep: ServiceFlowGuideStepKey = !serviceFlowHasMessageQr
+    ? "message"
+    : !serviceFlowHasAttendanceQr
+    ? "attendance"
+    : !serviceFlowHasCollectionQr
+    ? "offering"
+    : !serviceFlowHasResponseQr
+    ? "response"
+    : "summary";
+  const serviceFlowPromptVisible = Boolean(
+    isAdmin &&
+      domainOperational &&
+      churchServiceFlowDomain &&
+      (serviceFlowGuidePromptReason || serviceFlowGuideOpen || !serviceFlowGuideDismissed)
+  );
+  const serviceFlowPromptTitle = serviceFlowGuidePromptReason
+    ? serviceFlowGuidePromptReason
+    : serviceFlowMonthEndPrompt
+    ? "Prepare this month's church memory."
+    : "Let GSN guide the next service step.";
+  const serviceFlowPromptKicker = serviceFlowGuidePromptReason
+    ? "Next step prompt"
+    : serviceFlowMonthEndPrompt
+    ? "Month-end prompt"
+    : "Service guide";
+  const serviceFlowGuideRows: Array<[
+    ServiceFlowGuideStepKey,
+    string,
+    string
+  ]> = [
+    ["message", serviceFlowHasMessageQr ? "QR ready" : "Next", "Create a short public-safe service message."],
+    ["attendance", serviceFlowHasAttendanceQr ? "Opened" : "Live", "Show a live QR so members mark themselves present."],
+    ["offering", serviceFlowHasCollectionQr ? "Ready" : "Prepare", "Publish the approved offering or donation QR."],
+    ["response", serviceFlowHasResponseQr ? "Open" : "After service", "Collect questions, needs, comments, and follow-up requests."],
+    ["summary", "Review", "Prepare the Church Summary from recorded facts."],
+  ];
+  useEffect(() => {
+    if (!serviceFlowGuideDismissalStorageKey || typeof window === "undefined") {
+      setServiceFlowGuideDismissed(false);
+      setServiceFlowGuidePromptReason("");
+      return;
+    }
+    setServiceFlowGuideDismissed(
+      window.localStorage.getItem(serviceFlowGuideDismissalStorageKey) === "dismissed"
+    );
+    setServiceFlowGuidePromptReason("");
+    setServiceFlowGuideOpen(false);
+  }, [serviceFlowGuideDismissalStorageKey]);
   useEffect(() => {
     if (!showDomainWorkSurface || !focusWorkSurfaceAfterOpenRef.current) {
       return;
@@ -5615,6 +5751,94 @@ export default function CommunityDomainDashboardPage() {
     setActiveBillingAccountTask("summary");
     setActiveLane("billing");
     setMessage("");
+  }
+
+  function dismissServiceFlowGuide() {
+    setServiceFlowGuideDismissed(true);
+    setServiceFlowGuideOpen(false);
+    setServiceFlowGuidePromptReason("");
+    if (serviceFlowGuideDismissalStorageKey && typeof window !== "undefined") {
+      window.localStorage.setItem(serviceFlowGuideDismissalStorageKey, "dismissed");
+    }
+    setMessage("GSN will remind this Community Domain again next month.");
+  }
+
+  function promptServiceFlowGuide(reason: string) {
+    if (!churchServiceFlowDomain || !domainOperational || !isAdmin) return;
+    setServiceFlowGuideOpen(true);
+    setServiceFlowGuidePromptReason(reason);
+  }
+
+  function openServiceFlowNoticeStep() {
+    setDomainNoticeModalOpen(true);
+    setServiceFlowGuideOpen(false);
+    setServiceFlowGuidePromptReason("");
+    setMessage("Create the service message. Turn on public QR only when the message is safe for public reading.");
+  }
+
+  function openServiceFlowOfferingStep() {
+    focusWorkSurfaceAfterOpenRef.current = true;
+    setSetupJourneyMode("setup");
+    setSetupWorkspaceOpen(false);
+    setShowAdvancedTools(true);
+    closeDomainCommandDrawers();
+    setActiveLane("billing");
+    setActiveBillingTask("payment_code");
+    setActiveBillingPaymentTask("reference");
+    setActiveBillingAccountTask("summary");
+    setCollectionInstructionPanelOpen(true);
+    setServiceFlowGuideOpen(false);
+    setServiceFlowGuidePromptReason("");
+    setMessage("Collection QR is open. Use it for offerings, donations, levies, or support appeals only after the church approves the receiving route.");
+  }
+
+  function openServiceFlowRecordStep(kind: "attendance" | "response") {
+    openRealLifeRecordTask("activity");
+    setServiceFlowGuideOpen(false);
+    setServiceFlowGuidePromptReason("");
+    setMessage(
+      kind === "attendance"
+        ? "Records are open. Use Live attendance QR in the Church workflow packet so members scan during the service."
+        : "Records are open. Use Response QR in the Church workflow packet after the service for questions, needs, comments, and follow-up requests."
+    );
+  }
+
+  function openServiceFlowSummaryStep() {
+    focusWorkSurfaceAfterOpenRef.current = true;
+    setSetupJourneyMode("setup");
+    setSetupWorkspaceOpen(false);
+    setShowAdvancedTools(true);
+    closeDomainCommandDrawers();
+    setActiveLane("governance");
+    setActiveGovernanceTask("director_summary");
+    setActiveDirectorSummaryTask("overview");
+    setCommunityValueReportAudience("church_memory");
+    setCommunityValueReportPeriod(serviceFlowMonthEndPrompt ? "this_month" : "last_30_days");
+    setServiceFlowGuideOpen(false);
+    setServiceFlowGuidePromptReason("");
+    setMessage("Church Summary is selected. Prepare the PDF when the month, week, or year is ready for review.");
+  }
+
+  function runServiceFlowGuideStep(step: ServiceFlowGuideStepKey) {
+    switch (step) {
+      case "message":
+        openServiceFlowNoticeStep();
+        return;
+      case "attendance":
+        openServiceFlowRecordStep("attendance");
+        return;
+      case "offering":
+        openServiceFlowOfferingStep();
+        return;
+      case "response":
+        openServiceFlowRecordStep("response");
+        return;
+      case "summary":
+        openServiceFlowSummaryStep();
+        return;
+      default:
+        openServiceFlowSummaryStep();
+    }
   }
 
   function returnToDomainCommand() {
@@ -6568,6 +6792,7 @@ export default function CommunityDomainDashboardPage() {
       setMessage(
         "Collection QR published. It opens a GSN instruction page; GSN still does not hold or confirm the offering money."
       );
+      promptServiceFlowGuide("Collection QR is ready. Open the next service step.");
     } catch (err) {
       if (isCurrentDomainRequest(requestDomainId)) {
         setMessage(
@@ -6631,6 +6856,7 @@ export default function CommunityDomainDashboardPage() {
       setMessage(
         "Live attendance QR opened. Display it on the phone or screen; members scan to mark themselves present."
       );
+      promptServiceFlowGuide("Attendance QR is live. Open the next service step.");
     } catch (err) {
       if (isCurrentDomainRequest(requestDomainId)) {
         setMessage(
@@ -6697,6 +6923,7 @@ export default function CommunityDomainDashboardPage() {
       setMessage(
         "Response QR opened. Share it by QR or WhatsApp link so members can send questions, needs, comments, and follow-up signals."
       );
+      promptServiceFlowGuide("Response QR is open. Prepare the follow-up summary when ready.");
     } catch (err) {
       if (isCurrentDomainRequest(requestDomainId)) {
         setMessage(
@@ -7557,6 +7784,156 @@ export default function CommunityDomainDashboardPage() {
               ) : null}
             </div>
           </section>
+
+          {serviceFlowPromptVisible ? (
+            <section
+              data-debug-id="community-domain-dashboard.service-flow-nudge"
+              style={{
+                ...whiteCard(),
+                border: "1px solid rgba(214,170,69,0.28)",
+                boxShadow:
+                  "0 18px 42px rgba(7,20,36,0.08), 0 0 0 1px rgba(214,170,69,0.08)",
+              }}
+            >
+              <div style={{ display: "grid", gap: 12 }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0, 1fr) minmax(min(100%, 138px), auto)",
+                    gap: 10,
+                    alignItems: "start",
+                  }}
+                >
+                  <div style={iconHeaderStyle()}>
+                    <span style={iconFrame(46)}>
+                      <GsnRealisticIcon name="qr-record" size={36} decorative />
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={sectionLabel()}>{serviceFlowPromptKicker}</div>
+                      <h2 style={{ margin: "4px 0 0", fontSize: 22, lineHeight: 1.08 }}>
+                        {serviceFlowPromptTitle}
+                      </h2>
+                      <div style={{ ...helperText(), marginTop: 6, fontSize: 13, lineHeight: 1.45 }}>
+                        GSN can guide this church service from message to attendance, offering, response, and monthly memory.
+                      </div>
+                    </div>
+                  </div>
+                  <StableButton
+                    type="button"
+                    kind="secondary"
+                    stableHeight={38}
+                    minWidth={138}
+                    debugId="community-domain-dashboard.service-flow-dismiss"
+                    onClick={dismissServiceFlowGuide}
+                    style={{ fontSize: 13 }}
+                  >
+                    Later this month
+                  </StableButton>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 136px), 1fr))",
+                    gap: 8,
+                  }}
+                >
+                  {serviceFlowGuideRows.map(([step, statusLabel, note]) => (
+                    <div
+                      key={step}
+                      data-debug-id={`community-domain-dashboard.service-flow-step.${step}`}
+                      style={commandGuidanceTile(step === serviceFlowNextStep ? "next" : "risk")}
+                    >
+                      <div style={{ ...sectionLabel(), color: step === serviceFlowNextStep ? "#0B4C8B" : "#7A5A13" }}>
+                        {statusLabel}
+                      </div>
+                      <div style={{ fontWeight: 950, fontSize: 14 }}>
+                        {serviceFlowGuideStepTitle(step)}
+                      </div>
+                      <div style={{ ...helperText(), fontSize: 12.5, lineHeight: 1.35 }}>
+                        {note}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                    gap: 8,
+                  }}
+                >
+                  <StableButton
+                    type="button"
+                    kind="primary"
+                    fullWidth
+                    stableHeight={44}
+                    debugId="community-domain-dashboard.service-flow-next"
+                    onClick={() => runServiceFlowGuideStep(serviceFlowNextStep)}
+                  >
+                    {serviceFlowGuideActionLabel(serviceFlowNextStep)}
+                  </StableButton>
+                  <StableButton
+                    type="button"
+                    kind="secondary"
+                    fullWidth
+                    stableHeight={44}
+                    debugId="community-domain-dashboard.service-flow-toggle"
+                    aria-expanded={serviceFlowGuideOpen}
+                    aria-controls="community-domain-service-flow-guide"
+                    onClick={() => setServiceFlowGuideOpen((current) => !current)}
+                  >
+                    {serviceFlowGuideOpen ? "Close guide" : "Open guide"}
+                  </StableButton>
+                  <StableButton
+                    type="button"
+                    kind="secondary"
+                    fullWidth
+                    stableHeight={44}
+                    debugId="community-domain-dashboard.service-flow-summary"
+                    onClick={openServiceFlowSummaryStep}
+                  >
+                    Month summary
+                  </StableButton>
+                </div>
+
+                {serviceFlowGuideOpen ? (
+                  <div
+                    id="community-domain-service-flow-guide"
+                    data-debug-id="community-domain-dashboard.service-flow-panel"
+                    style={{ ...softCard(), display: "grid", gap: 10 }}
+                  >
+                    <div style={sectionLabel()}>Choose a service step</div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 146px), 1fr))",
+                        gap: 8,
+                      }}
+                    >
+                      {serviceFlowGuideRows.map(([step]) => (
+                        <StableButton
+                          key={step}
+                          type="button"
+                          kind={step === serviceFlowNextStep ? "primary" : "secondary"}
+                          stableHeight={42}
+                          debugId={`community-domain-dashboard.service-flow-open.${step}`}
+                          onClick={() => runServiceFlowGuideStep(step)}
+                          style={{ justifyContent: "center", fontSize: 13, textTransform: "none" }}
+                        >
+                          {serviceFlowGuideActionLabel(step)}
+                        </StableButton>
+                      ))}
+                    </div>
+                    <div style={{ ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>
+                      This is operational guidance only. It does not judge doctrine, prove attendance, confirm offering payment, or expose private pastoral notes.
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </section>
+          ) : null}
 
           {message ? (
             <section style={whiteCard()}>

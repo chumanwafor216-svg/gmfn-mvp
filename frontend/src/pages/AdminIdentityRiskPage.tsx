@@ -239,6 +239,11 @@ export default function AdminIdentityRiskPage() {
   const phoneLookupFromQuery = safeStr(
     searchParams.get("phone_e164") || searchParams.get("phone")
   ).trim();
+  const gsnLookupFromQuery = safeStr(
+    searchParams.get("gmfn_id") || searchParams.get("gsn_id")
+  )
+    .trim()
+    .toUpperCase();
   const [data, setData] = useState<any>(null);
   const [err, setErr] = useState("");
   const [phoneLookup, setPhoneLookup] = useState(phoneLookupFromQuery);
@@ -358,13 +363,19 @@ export default function AdminIdentityRiskPage() {
     setManualRecoveryCopyStatus("");
   }
 
+  function requestedGsnIdMatches(row: any): boolean {
+    if (!gsnLookupFromQuery) return true;
+    return safeStr(row?.gmfn_id).toUpperCase() === gsnLookupFromQuery;
+  }
+
   function canManualRecoveryReset(row: any): boolean {
     return Boolean(
       row?.gmfn_id &&
         row?.phone_e164 &&
         row?.phone_verified &&
         !row?.activation_pending &&
-        row?.private_recovery?.configured === false
+        row?.private_recovery?.configured === false &&
+        requestedGsnIdMatches(row)
     );
   }
 
@@ -557,6 +568,20 @@ export default function AdminIdentityRiskPage() {
           GSN ID, then read phone verification and private recovery status before
           any manual account action.
         </div>
+        {gsnLookupFromQuery ? (
+          <div
+            style={{
+              marginTop: 12,
+              ...institutionalInnerCard("#F0FDF4"),
+              border: "1px solid rgba(22,101,52,0.16)",
+              color: "#166534",
+              fontWeight: 900,
+            }}
+          >
+            Recovery review opened for: {gsnLookupFromQuery}. Match this
+            GSN ID against the phone result before issuing any temporary password.
+          </div>
+        ) : null}
         <form
           onSubmit={handlePhoneLineageLookup}
           style={{
@@ -661,6 +686,19 @@ export default function AdminIdentityRiskPage() {
                       </div>
                       <div>First step: {safeStr(row?.recommended_first_step || "Review manually.")}</div>
                     </div>
+                    {!requestedGsnIdMatches(row) ? (
+                      <div
+                        style={{
+                          marginTop: 12,
+                          ...institutionalInnerCard("#FEF2F2"),
+                          color: "#991B1B",
+                          fontWeight: 900,
+                        }}
+                      >
+                        This row does not match the GSN ID from the recovery
+                        request. Do not issue a temporary password from this row.
+                      </div>
+                    ) : null}
                     {canManualRecoveryReset(row) ? (
                       <div
                         style={{

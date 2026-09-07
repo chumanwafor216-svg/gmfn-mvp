@@ -283,6 +283,12 @@ assertContains(
 
 assertContains(
   "src/pages/AdminIdentityRiskPage.tsx",
+  /gsnLookupFromQuery[\s\S]*?searchParams\.get\("gmfn_id"\)[\s\S]*?requestedGsnIdMatches[\s\S]*?canManualRecoveryReset[\s\S]*?requestedGsnIdMatches\(row\)[\s\S]*?Recovery review opened for:[\s\S]*?does not match the GSN ID from the recovery/,
+  "Admin Identity Risk manual recovery must respect the GSN ID carried by a password-recovery review link."
+);
+
+assertContains(
+  "src/pages/AdminIdentityRiskPage.tsx",
   /postAdminIdentityReconciliation[\s\S]*?owner_confirmed: reconcileOwnerConfirmed[\s\S]*?execute,/,
   "Admin Identity Risk reconciliation must send owner confirmation and execute mode to the backend."
 );

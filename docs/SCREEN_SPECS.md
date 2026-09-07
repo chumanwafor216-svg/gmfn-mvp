@@ -214,6 +214,8 @@ Must show:
 - Start a new community link
 - Request to join a community link
 - privacy note
+- blocked password recovery must expose an owner/support review packet without revealing or requesting any password
+- owner/admin recovery review must route to Identity Risk with the typed phone and GSN ID so the admin can confirm ownership before issuing a temporary password
 
 Must not show:
 - bottom navigation
@@ -476,6 +478,10 @@ Must show:
 - for church/religious-body domains, a governed Church Summary PDF option that
   summarizes recorded official messages and programme workflow records for a
   month, year, or selected period
+- for church/religious-body domains, a compact dismissible Service guide nudge
+  that can prompt the next step after message QR, live attendance QR, offering
+  QR, response QR, and month-end summary activity without exposing every tool
+  at once
 - clear route back to Dashboard or Community Home
 - empty states for draft, pending activation, active, expired, suspended, and
   closed domains

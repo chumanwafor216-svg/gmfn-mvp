@@ -155,6 +155,12 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/LoginPage.tsx",
+  /buildSignInSupportMessage[\s\S]*?recoveryAdminReviewPath[\s\S]*?APP_ROUTES\.IDENTITY_RISK[\s\S]*?recoverySupportMessage[\s\S]*?copyRecoveryReviewPacket[\s\S]*?Owner\/support review:[\s\S]*?debugId="login\.password-recovery\.copy-review-packet"[\s\S]*?debugId="login\.password-recovery\.admin-review"/,
+  "Login blocked password recovery must produce an owner/support review packet and route admins into Identity Risk with the typed phone and GSN ID."
+);
+
+assertContains(
   "src/lib/gsnSupportContacts.ts",
   /GSN_SIGN_IN_SUPPORT_WHATSAPP_NUMBER = "\+44 7903 165266"[\s\S]*GSN_SIGN_IN_SUPPORT_EMAIL = "support_gsn@GMFN-GSN\.uk\.co"[\s\S]*buildWhatsAppChatUrl[\s\S]*signInSupportEmailUrl/,
   "The pre-auth sign-in support contact values must stay centralized in the shared support contact helper."

@@ -1,3 +1,14 @@
+## 2026-09-07 - Local church Service guide nudge for Community Domain dashboard
+
+- Status: Local frontend tightening complete and verified; not committed, pushed, or deployed in this slice.
+- Owner trigger: owner asked for GSN to gently prompt church admins after activity and around month-end, like a phone assistant, so users do not need to master every service-flow tool immediately.
+- Frontend route affected: `/app/community-domain/:id` through `frontend/src/pages/CommunityDomainDashboardPage.tsx`.
+- Change: active church/religious-body Community Domains now show a compact dismissible `Service guide` / `Month-end prompt` card for owner/admin users. The card recommends the next practical service step across message QR, live attendance QR, offering QR, response QR, and Church Summary.
+- Guidance behavior: the prompt can be dismissed with `Later this month`; dismissal is stored per Community Domain and month in local browser storage, so the prompt can return next month without adding a backend table. Successful message QR, collection QR, live attendance QR, and response QR actions reopen the guide with a next-step prompt.
+- Routing behavior: `Create message QR` opens the existing official notice modal; `Open offering QR` opens the existing Billing collection QR panel; `Open attendance QR` and `Open Response QR` open the existing Records church workflow packet; `Prepare Church Summary` opens Governance reports with `church_memory` selected.
+- Docs/audit updated: `docs/SCREEN_SPECS.md` now requires a compact dismissible Service guide nudge for church/religious-body domains, and `frontend/tools/audit-community-domain-product-contracts.mjs` guards the prompt, monthly dismissal key, action labels, success-action prompts, and the operational truth boundary.
+- Verification passed: `npm --prefix frontend run build`; `node frontend\tools\audit-community-domain-product-contracts.mjs`; `git diff --check` with only line-ending normalization warnings.
+- Devil truth: this is a frontend guidance layer, not a backend notification scheduler, push notification system, Android-style OS notification, email/WhatsApp sender, or durable server-side reminder engine. It guides users when they are already in the Community Domain dashboard and after successful in-page QR actions. Real push reminders, timed jobs, and cross-device dismissal would need a small backend notification/reminder model later.
 ## 2026-09-07 - Community Domain pilot payment suspension and lifecycle close control
 
 - Status: Local implementation completed and verified. Not committed, pushed, or deployed in this slice.
@@ -159518,3 +159529,13 @@ Devil's-advocate boundary: this completes the practical PDF/report button, but i
 - Guardrail change: `frontend/tools/audit-identity-integrity-front-package.mjs` now cages the shared data loader, community/TrustSlip refresh source, manual refresh button, focus/visibility refresh hooks, and the existing share/copy/verifier actions.
 - Verification passed: `node --check frontend\tools\audit-identity-integrity-front-package.mjs`; `node tools\audit-identity-integrity-front-package.mjs`; `git diff --check -- frontend/src/pages/IdentityIntegrityPage.tsx frontend/tools/audit-identity-integrity-front-package.mjs`; `npm exec -- eslint src/pages/IdentityIntegrityPage.tsx tools/audit-identity-integrity-front-package.mjs`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`.
 - Devil's advocate: this is not server-push/live websocket freshness. It is refresh-on-load, refresh-on-demand, and refresh-on-app-resume. A community count moves from 5 to 6 only after the backend returns the sixth community from `listMyClans`.
+
+## 2026-09-07 - Local Password Recovery Owner/Admin Review Handoff
+- Status: Local only, not pushed/deployed.
+- Owner incident: a real member changed phone/device, forgot the password, and reached the `Owner review needed` password-recovery state on Sign In.
+- Product truth: do not restore access from a screenshot, GSN ID, or phone number alone. The existing safe path is the audited admin manual recovery reset at `/app/command-center/identity-risk`, which checks phone lineage, requires owner proof confirmation, requires a reviewer note, refuses pending/unverified/self-service-ready accounts, and issues a one-time temporary password without revealing the old password.
+- Frontend change: `frontend/src/pages/LoginPage.tsx` now builds a filled owner/support recovery packet from the typed GSN ID, recorded phone, and error message; the blocked recovery state shows `Copy review packet` and `Owner/admin review`, routing admins to Identity Risk with `phone_e164`, `gmfn_id`, and `source=password_recovery` query context.
+- Admin guard change: `frontend/src/pages/AdminIdentityRiskPage.tsx` now reads the requested `gmfn_id`/`gsn_id` query value, displays the recovery-review context, and disables manual recovery reset for any phone-lineage row whose GSN ID does not match the requested identity.
+- Shared helper change: `frontend/src/lib/gsnSupportContacts.ts` now supports a filled sign-in support message while keeping the existing centralized WhatsApp/email support contact values.
+- Guardrail change: updated `frontend/tools/audit-entry-auth-contracts.mjs` and `frontend/tools/audit-admin-ops-actions.mjs` to cage the recovery review packet, Identity Risk handoff, and requested-GSN-ID match guard.
+- Devil's advocate: this still does not let Codex or the public recovery page reset the member directly. An authenticated admin/support operator must open Identity Risk, confirm owner proof, write the reviewer note, issue the temporary password, and give it only to the verified account owner.

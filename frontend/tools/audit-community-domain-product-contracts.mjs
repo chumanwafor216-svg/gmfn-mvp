@@ -215,8 +215,22 @@ assertContains(
 
 assertContains(
   communityDomainDashboardFile,
-  /community-domain-dashboard\.collection-instructions[\s\S]*Offering and donation QR[\s\S]*GSN does not hold the money or expose the church account details[\s\S]*Publish Collection QR/,
-  "Community Domain dashboard billing lane must expose the compact governed offering/donation QR panel with the non-custodial boundary.",
+  /service-flow-guide\.dismissed[\s\S]*community-domain-dashboard\.service-flow-nudge[\s\S]*Later this month[\s\S]*community-domain-dashboard\.service-flow-panel[\s\S]*does not judge doctrine, prove attendance, confirm offering payment, or expose private pastoral notes/,
+  "Community Domain dashboard must keep the dismissible church Service guide nudge that leads message, attendance, offering, response, and summary without overclaiming evidence.",
+  { frontend: true }
+);
+
+assertContains(
+  communityDomainDashboardFile,
+  /promptServiceFlowGuide[\s\S]*Message QR is ready[\s\S]*Collection QR is ready[\s\S]*Attendance QR is live[\s\S]*Response QR is open/,
+  "Church service QR actions must prompt the next-step guide after successful message, collection, attendance, and response actions.",
+  { frontend: true }
+);
+
+assertContains(
+  communityDomainDashboardFile,
+  /serviceFlowGuideActionLabel[\s\S]*Create message QR[\s\S]*Open attendance QR[\s\S]*Open offering QR[\s\S]*Open Response QR[\s\S]*Prepare Church Summary/,
+  "Church service guide actions must route to existing GSN message, attendance, offering, response, and Church Summary surfaces.",
   { frontend: true }
 );
 

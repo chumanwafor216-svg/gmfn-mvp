@@ -23,11 +23,13 @@ import {
   publishRecoveryTarget,
 } from "../lib/publishRecovery";
 import {
+  buildSignInSupportMessage,
   GSN_SIGN_IN_SUPPORT_EMAIL,
   GSN_SIGN_IN_SUPPORT_WHATSAPP_NUMBER,
   signInSupportEmailUrl,
   signInSupportWhatsAppUrl,
 } from "../lib/gsnSupportContacts";
+import { APP_ROUTES } from "../lib/appRoutes";
 import { structuredErrorDetail } from "../lib/structuredErrors";
 
 function pageShell(compact = false): React.CSSProperties {
@@ -385,6 +387,17 @@ function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
 
+function recoveryAdminReviewPath(gsnId: string, phone: string): string {
+  const params = new URLSearchParams();
+  const cleanPhone = safeStr(phone);
+  const cleanGsnId = safeStr(gsnId).toUpperCase();
+  if (cleanPhone) params.set("phone_e164", cleanPhone);
+  if (cleanGsnId) params.set("gmfn_id", cleanGsnId);
+  params.set("source", "password_recovery");
+  const query = params.toString();
+  return query ? `${APP_ROUTES.IDENTITY_RISK}?${query}` : APP_ROUTES.IDENTITY_RISK;
+}
+
 function isNetworkSessionError(error: unknown): boolean {
   const message = safeStr((error as any)?.message || error).toLowerCase();
   return (
@@ -544,11 +557,29 @@ export default function LoginPage() {
   const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const [recoveryReviewCopyStatus, setRecoveryReviewCopyStatus] = useState("");
   const [recoveryManualReview, setRecoveryManualReview] = useState<{
     title: string;
     message: string;
     firstStep: string;
   } | null>(null);
+  const recoverySupportMessage = useMemo(
+    () =>
+      buildSignInSupportMessage({
+        gmfn_id: safeStr(recoveryGsnId).toUpperCase(),
+        phone_e164: safeStr(recoveryPhone),
+        error:
+          recoveryManualReview?.message ||
+          recoveryError ||
+          "Password recovery is blocked.",
+      }),
+    [recoveryError, recoveryGsnId, recoveryManualReview?.message, recoveryPhone]
+  );
+  const recoveryAdminPath = useMemo(
+    () => recoveryAdminReviewPath(recoveryGsnId, recoveryPhone),
+    [recoveryGsnId, recoveryPhone]
+  );
+
   const innerRailWidth = "min(100%, 760px)";
 
   useEffect(() => {
@@ -692,8 +723,24 @@ export default function LoginPage() {
     setRecoveryError(null);
     setRecoveryMessage(null);
     setRecoveryManualReview(null);
+    setRecoveryReviewCopyStatus("");
     if (!recoveryGsnId && safeStr(email).toUpperCase().includes("-U-")) {
       setRecoveryGsnId(safeStr(email).toUpperCase());
+    }
+  }
+
+  async function copyRecoveryReviewPacket() {
+    const packet = [
+      recoverySupportMessage,
+      `Owner/admin review: ${recoveryAdminPath}`,
+      "Safe steps: open Identity Risk, check phone lineage, match the GSN ID, confirm owner proof, then issue a temporary password only from the audited admin control.",
+    ].join("\n");
+
+    try {
+      await navigator.clipboard.writeText(packet);
+      setRecoveryReviewCopyStatus("Recovery review packet copied.");
+    } catch {
+      setRecoveryReviewCopyStatus("Copy was blocked. Select and send the GSN ID, recorded phone, and screenshot to support.");
     }
   }
 
@@ -702,6 +749,7 @@ export default function LoginPage() {
     setRecoveryError(null);
     setRecoveryMessage(null);
     setRecoveryManualReview(null);
+    setRecoveryReviewCopyStatus("");
     setErr(null);
     setMsg(null);
 
@@ -1473,7 +1521,7 @@ export default function LoginPage() {
                   }}
                 >
                   <StableCtaLink
-                    to={signInSupportWhatsAppUrl()}
+                    to={signInSupportWhatsAppUrl(recoverySupportMessage)}
                     target="_blank"
                     rel="noreferrer"
                     stableHeight={50}
@@ -1489,7 +1537,7 @@ export default function LoginPage() {
                     {loginIconText("community", "WhatsApp support", 22)}
                   </StableCtaLink>
                   <StableCtaLink
-                    to={signInSupportEmailUrl()}
+                    to={signInSupportEmailUrl(recoverySupportMessage)}
                     stableHeight={50}
                     debugId="login.support.email"
                     style={{
@@ -1550,6 +1598,56 @@ export default function LoginPage() {
                     <div style={{ marginTop: 8 }}>
                       <strong>First step:</strong> {recoveryManualReview.firstStep}
                     </div>
+                    <div style={{ marginTop: 8 }}>
+                      <strong>Owner/support review:</strong> Open Identity Risk,
+                      check the phone lineage, match the GSN ID, confirm owner
+                      proof, then issue a temporary password from the admin control.
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 12,
+                        display: "grid",
+                        gridTemplateColumns: isCompact
+                          ? "1fr"
+                          : "repeat(2, minmax(0, 1fr))",
+                        gap: 10,
+                      }}
+                    >
+                      <SecondaryButton
+                        type="button"
+                        stableHeight={48}
+                        debugId="login.password-recovery.copy-review-packet"
+                        style={{
+                          ...supportBtn(),
+                          background:
+                            "linear-gradient(180deg, #FFFFFF 0%, #F9FBFF 100%)",
+                          border: "1px solid rgba(146,64,14,0.20)",
+                          color: "#7C2D12",
+                        }}
+                        onClick={() => void copyRecoveryReviewPacket()}
+                      >
+                        {loginIconText("document", "Copy review packet", 21)}
+                      </SecondaryButton>
+                      <StableCtaLink
+                        to={recoveryAdminPath}
+                        stableHeight={48}
+                        debugId="login.password-recovery.admin-review"
+                        style={{
+                          ...supportBtn(),
+                          background:
+                            "linear-gradient(180deg, #F0FDF4 0%, #DCFCE7 100%)",
+                          border: "1px solid rgba(22,101,52,0.20)",
+                          color: "#166534",
+                        }}
+                      >
+                        {loginIconText("shield", "Owner/admin review", 21)}
+                      </StableCtaLink>
+                    </div>
+                    {recoveryReviewCopyStatus ? (
+                      <div style={{ marginTop: 8, fontWeight: 900 }}>
+                        {recoveryReviewCopyStatus}
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
                 {recoveryMessage ? (
@@ -1560,7 +1658,10 @@ export default function LoginPage() {
                   <div style={{ display: "grid", gap: 10 }}>
                     <input
                       value={recoveryGsnId}
-                      onChange={(event) => setRecoveryGsnId(event.target.value)}
+                      onChange={(event) => {
+                        setRecoveryGsnId(event.target.value);
+                        setRecoveryReviewCopyStatus("");
+                      }}
                       aria-label="GSN ID for password recovery"
                       placeholder="GSN ID, for example GSN-U-B7AC7BC0"
                       autoComplete="username"
@@ -1568,7 +1669,10 @@ export default function LoginPage() {
                     />
                     <input
                       value={recoveryPhone}
-                      onChange={(event) => setRecoveryPhone(event.target.value)}
+                      onChange={(event) => {
+                        setRecoveryPhone(event.target.value);
+                        setRecoveryReviewCopyStatus("");
+                      }}
                       aria-label="Phone number for password recovery"
                       placeholder="Phone number on the account"
                       autoComplete="tel"
