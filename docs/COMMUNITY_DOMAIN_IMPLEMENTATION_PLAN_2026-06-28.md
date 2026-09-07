@@ -128,10 +128,11 @@ The distinction is governance and branding, not feature availability:
 Everything that a normal marketplace/community can do should be available to a
 Community Domain unless the domain owner/admin turns it off or limits it by
 policy. This includes money in/out, donations, registrations, event fees,
-member contributions, Demand Box, Spotlight, Shop Diary, marketplace/shop
-visibility, ROSCA/rotating contribution cycles, invites, QR/share links,
-TrustEvents, evidence records, and member participation signals. The domain
-does not lose marketplace behaviour; it gains institutional control over it.
+member contributions, standing or event-specific donation/offering QR
+instructions, Demand Box, Spotlight, Shop Diary, marketplace/shop visibility,
+ROSCA/rotating contribution cycles, invites, QR/share links, TrustEvents,
+evidence records, and member participation signals. The domain does not lose
+marketplace behaviour; it gains institutional control over it.
 
 It supports:
 
@@ -743,7 +744,7 @@ layer around the useful structures already present.
 | `CommunityDomainAffiliation` | Parent/affiliate acknowledgement spine. | Link affiliation to Community Domains once the durable domain object exists. |
 | `CommunityMemberVerification` | Member witness/currentness evidence. | Domain evidence records and role/node-specific evidence. |
 | `FeatureEntitlement` | Paid feature units/credits. | Community Domain subscription lifecycle and module entitlement status. |
-| `/payment-instructions/community-package` | Current package payment rail. | New Community Domain package quote/payment flow that does not activate until confirmed. |
+| `/payment-instructions/community-package` | Current package payment rail. | Community Domain package payment is suspended during early pilot; name reservation and setup continue without creating payment instructions. |
 | Marketplace shop/spotlight/vault routes | Existing commerce and visibility tools. | Domain-aware visibility tables and trust relay paths. |
 | TrustSlip / Trust Passport | Portable member evidence. | Domain-scoped evidence summaries and currentness signals. |
 
@@ -922,6 +923,9 @@ The framework should support:
 - welfare funds and support activities;
 - registrations, donations, event fees, seminar fees, picnic fees, and other
   money-in/money-out records that can become participation evidence;
+- standing or event-specific QR codes for offerings, donations, levies,
+  support appeals, registrations, or other governed collections, especially for
+  cashless church or religious-body services;
 - trusted procurement;
 - paid spotlight or external reach;
 - demand/request matching inside the domain;
@@ -938,6 +942,16 @@ Payments and contributions are evidence of activity, registration, participation
 or engagement. They are not automatic proof of life-change impact. Impact still
 requires programme context, beneficiary/member evidence, follow-up, testimony,
 or domain-admin/evaluator confirmation.
+
+For church and religious-body governance, an offering or donation QR code is a
+standard Community Domain collection instruction, not a separate church-only
+engine. It may be a standing QR code for ordinary recurring offerings or an
+event/campaign-specific QR code where the domain wants separate records. The QR
+should hide raw bank account details on public/member surfaces where possible
+and point to a governed payment instruction or approved external transfer path.
+GSN records the instruction, purpose, authority, approval, visibility, and
+confirmation evidence; the church or organization remains responsible for its
+own receiving account and cash/bank reconciliation.
 
 ### GSN Carries Existing Trust
 
@@ -1039,7 +1053,7 @@ Recommended route family:
 POST   /community-domains/drafts
 GET    /community-domains/availability?domain_name=
 POST   /community-domains/{id}/package-quote
-POST   /community-domains/{id}/payment-instruction
+POST   /community-domains/{id}/payment-instruction   # suspended during early pilot
 POST   /community-domains/{id}/activate
 GET    /community-domains/{domain_name}
 GET    /community-domains/{id}/dashboard
@@ -1089,6 +1103,8 @@ the rename is planned and safely implemented.
 `Purchase Community Domain` opens an institutional purchase/provisioning flow.
 
 ### Community Domain Purchase Flow
+
+Current pilot billing rule: Community Domain name check and reservation remain enabled, but payment instruction creation is suspended during early pilot/customer discovery. A pilot reservation keeps the name reserved and lets setup continue; it does not verify ownership, create paid continuation, move money, or promise the domain after pilot review. Command Centre can later mark the domain active, suspended, or closed while preserving history and keeping the name reserved unless GSN intentionally releases it.
 
 Screens:
 
@@ -1173,7 +1189,7 @@ the engine.
 | Society type | Typical nodes | Core modules | Marketplace role |
 | --- | --- | --- | --- |
 | School | campus, class, department, PTA, alumni, staff unit | members, structure, events, vault, verification, analytics | optional: uniforms, books, parent vendors, alumni support |
-| Church / religious body | branch, ministry, choir, youth, welfare, usher, cell group | members, structure, events, trust centre, welfare evidence, announcements | optional: member businesses, welfare fundraising, approved vendors |
+| Church / religious body | branch, ministry, choir, youth, welfare, usher, cell group | members, structure, events, trust centre, welfare evidence, announcements, governed offering/donation QR instructions | optional: member businesses, welfare fundraising, approved vendors, standing or event-specific cashless collections |
 | Union / professional body | branch, chapter, committee, profession grade, welfare unit | members, roles, credential evidence, verification, announcements, analytics | useful: job referrals, member services, trusted vendors |
 | Market / cooperative | section, line, product group, stall cluster, ROSCA group | shops, spotlight, demand, verification, ROSCA, trust relay, analytics | central |
 | Family / town union / diaspora | family branch, village unit, project committee, welfare group | members, vault, events, contributions evidence, trust centre | optional: member businesses and project sourcing |
@@ -1267,7 +1283,7 @@ Deliverables:
 - draft intent route;
 - domain availability route;
 - package quote route;
-- payment instruction route wired to existing payment infrastructure;
+- payment instruction route guarded during pilot so no Community Domain expected-payment row is created;
 - activation/provisioning route that creates default roles/settings/root node;
 - backend tests proving payment instruction is not activation.
 

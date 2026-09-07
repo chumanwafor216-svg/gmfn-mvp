@@ -10,7 +10,7 @@ type Props = {
   onClose: () => void;
   onSubmit: (
     body: string,
-    options?: { expiry_policy?: NoticeExpiryPolicy; expires_at?: string }
+    options?: { expiry_policy?: NoticeExpiryPolicy; expires_at?: string; public_qr_enabled?: boolean }
   ) => Promise<void> | void;
 };
 
@@ -32,6 +32,7 @@ export default function CommunityNoticeModal({
   const [body, setBody] = useState("");
   const [expiryPolicy, setExpiryPolicy] = useState<NoticeExpiryPolicy>("standard");
   const [eventExpiresAt, setEventExpiresAt] = useState("");
+  const [publicQrEnabled, setPublicQrEnabled] = useState(false);
   const words = useMemo(() => countWords(body), [body]);
   const eventExpiryMissing = expiryPolicy === "event" && !eventExpiresAt;
   const blocked = words > 50 || !body.trim() || eventExpiryMissing || busy;
@@ -47,10 +48,12 @@ export default function CommunityNoticeModal({
         expiryPolicy === "event" && eventExpiresAt
           ? new Date(eventExpiresAt).toISOString()
           : undefined,
+      public_qr_enabled: publicQrEnabled,
     });
     setBody("");
     setExpiryPolicy("standard");
     setEventExpiresAt("");
+    setPublicQrEnabled(false);
   }
 
   return (
@@ -109,6 +112,18 @@ export default function CommunityNoticeModal({
               style={fieldStyle}
             />
           </div>
+        ) : null}
+
+        {!isReviewSubmission ? (
+          <label style={checkboxRowStyle}>
+            <input
+              type="checkbox"
+              checked={publicQrEnabled}
+              onChange={(event) => setPublicQrEnabled(event.target.checked)}
+              disabled={busy}
+            />
+            <span>Create public QR for this message</span>
+          </label>
         ) : null}
 
         <div style={metaRowStyle}>
@@ -244,6 +259,15 @@ const fieldStyle: React.CSSProperties = {
   outline: "none",
 };
 
+const checkboxRowStyle: React.CSSProperties = {
+  marginTop: 10,
+  display: "flex",
+  alignItems: "center",
+  gap: 8,
+  color: "#48657D",
+  fontSize: 13,
+  fontWeight: 850,
+};
 const metaRowStyle: React.CSSProperties = {
   marginTop: 10,
   display: "flex",

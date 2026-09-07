@@ -1,4 +1,5 @@
 import React, { lazy, Suspense } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../../components/GsnRealisticIcon";
 import { StableButton } from "../../components/StableButton";
 
@@ -34,6 +35,9 @@ export type CommunityDomainNoticeItem = {
   active_board_status?: string | null;
   is_archived?: boolean | null;
   posted_by_user_id?: string | number | null;
+  public_qr_enabled?: boolean | null;
+  public_code?: string | number | null;
+  public_path?: string | null;
 };
 
 export type SetupOverviewPanelData = {
@@ -192,6 +196,18 @@ function noticeDateLabel(value: unknown): string {
   });
 }
 
+function publicNoticeUrl(item: CommunityDomainNoticeItem): string {
+  const path = String(item.public_path || "").trim();
+  if (!path) return "";
+  if (typeof window === "undefined") return path;
+  return `${window.location.origin}${path}`;
+}
+
+async function copyText(value: string): Promise<boolean> {
+  if (!value || typeof navigator === "undefined" || !navigator.clipboard) return false;
+  await navigator.clipboard.writeText(value);
+  return true;
+}
 function noticeExpiryLabel(item: CommunityDomainNoticeItem): string {
   if (cleanText(item?.expiry_policy).toLowerCase() === "until_replaced") {
     return "Until replaced";
@@ -205,6 +221,7 @@ type Props = {
 };
 
 export default function CommunityDomainSetupOverviewPanel({ data }: Props) {
+  const [copiedNoticePath, setCopiedNoticePath] = React.useState("");
   const {
     activeSetupNoticeTask,
     activeSetupOverviewTask,
@@ -564,6 +581,7 @@ export default function CommunityDomainSetupOverviewPanel({ data }: Props) {
                     item.notice_id || item.event_id || item.created_at || index,
                     String(index)
                   );
+                  const publicUrl = publicNoticeUrl(item);
 
                   return (
                     <div key={key} style={softCard()}>
@@ -592,6 +610,68 @@ export default function CommunityDomainSetupOverviewPanel({ data }: Props) {
                           <span style={statusBadge("active")}>{expiry}</span>
                         ) : null}
                       </div>
+                      {publicUrl ? (
+                        <div
+                          data-debug-id="community-domain-dashboard.notice-public-qr"
+                          style={{
+                            marginTop: 10,
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                            gap: 10,
+                            alignItems: "center",
+                          }}
+                        >
+                          <div
+                            style={{
+                              justifySelf: "start",
+                              borderRadius: 14,
+                              background: "#FFFFFF",
+                              border: "1px solid rgba(9,27,46,0.12)",
+                              padding: 8,
+                            }}
+                          >
+                            <QRCodeSVG
+                              value={publicUrl}
+                              size={96}
+                              bgColor="#FFFFFF"
+                              fgColor="#07172C"
+                              level="M"
+                              marginSize={1}
+                            />
+                          </div>
+                          <div style={{ display: "grid", gap: 6 }}>
+                            <div style={{ ...helperText(), fontSize: 13 }}>
+                              Public message QR is enabled for this notice. Use it for a sermon topic, message of the day, or public programme note.
+                            </div>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                              <StableButton
+                                type="button"
+                                kind="secondary"
+                                stableHeight={40}
+                                debugId="community-domain-dashboard.notice-public-qr.copy"
+                                onClick={async () => {
+                                  if (await copyText(publicUrl)) {
+                                    setCopiedNoticePath(publicUrl);
+                                    window.setTimeout(() => setCopiedNoticePath(""), 1500);
+                                  }
+                                }}
+                              >
+                                {copiedNoticePath === publicUrl ? "Copied" : "Copy QR Link"}
+                              </StableButton>
+                              <StableButton
+                                type="button"
+                                kind="secondary"
+                                stableHeight={40}
+                                debugId="community-domain-dashboard.notice-public-qr.open"
+                                onClick={() => window.open(publicUrl, "_blank", "noopener,noreferrer")}
+                              >
+                                Open QR Page
+                              </StableButton>
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   );
                 })

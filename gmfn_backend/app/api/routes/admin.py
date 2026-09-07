@@ -240,6 +240,20 @@ class CommunityDomainOwnershipReconcileIn(BaseModel):
         return _reject_non_text_value(value, info.field_name)
 
 
+class CommunityDomainLifecycleIn(BaseModel):
+    domain_name: Optional[str] = Field(default=None, max_length=120)
+    community_domain_id: Optional[int] = Field(default=None, ge=1)
+    status: str = Field(..., min_length=3, max_length=24)
+    lifecycle_confirmed: bool = False
+    execute: bool = False
+    reviewer_note: Optional[str] = Field(default=None, max_length=800)
+
+    @field_validator("domain_name", "status", "reviewer_note", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+
 class AdminActivateMembershipIn(BaseModel):
     gmfn_id: str = Field(..., min_length=6, max_length=64)
     password: str = Field(..., min_length=6)
@@ -1307,6 +1321,65 @@ def _ensure_domain_owner_membership_no_commit(db: Session, *, domain: CommunityD
     return membership
 
 
+COMMUNITY_DOMAIN_LIFECYCLE_STATUSES = {"active", "suspended", "closed"}
+
+
+def _normalize_domain_lifecycle_status(value: Any) -> str:
+    status = _safe_str(value).lower().replace("-", "_")
+    aliases = {
+        "reactivate": "active",
+        "reactivated": "active",
+        "reopen": "active",
+        "opened": "active",
+        "pause": "suspended",
+        "paused": "suspended",
+        "suspend": "suspended",
+        "shut": "closed",
+        "shutdown": "closed",
+        "close": "closed",
+    }
+    status = aliases.get(status, status)
+    if status not in COMMUNITY_DOMAIN_LIFECYCLE_STATUSES:
+        raise HTTPException(
+            status_code=400,
+            detail="Community Domain lifecycle status must be active, suspended, or closed.",
+        )
+    return status
+
+
+def _community_domain_lifecycle_preview(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    requested_status: str,
+) -> dict[str, Any]:
+    current_status = _safe_str(domain.status) or "draft"
+    closed_or_suspended = requested_status in {"closed", "suspended"}
+    return {
+        "community_domain": _domain_ownership_domain_row(db, domain),
+        "current_status": current_status,
+        "requested_status": requested_status,
+        "will_change_status": current_status != requested_status,
+        "will_block_normal_operation": closed_or_suspended,
+        "will_stop_public_lookup": closed_or_suspended,
+        "will_keep_domain_name_reserved": True,
+        "will_preserve_history": True,
+        "will_delete_domain": False,
+        "will_globally_ban_owner": False,
+        "payment_policy": {
+            "pilot_payment_suspended": True,
+            "payment_instruction_created": False,
+            "paid_continuation_review_required": requested_status == "active",
+        },
+        "boundary": (
+            "This changes the Community Domain lifecycle only. It keeps the name "
+            "reserved and preserves history; it does not delete evidence, erase "
+            "members, create a payment instruction, verify ownership, or globally "
+            "ban the owner identity."
+        ),
+    }
+
+
 def _community_domain_ownership_preview(db: Session, *, domain: CommunityDomain, owner: User) -> dict[str, Any]:
     current_owner = db.get(User, int(domain.owner_user_id)) if domain.owner_user_id else None
     active_membership = (
@@ -1606,6 +1679,93 @@ def admin_community_domain_ownership_reconcile(
 
     result_preview = _community_domain_ownership_preview(db, domain=domain, owner=owner)
     return {"ok": True, "mode": "execute", "executed": True, "message": f"{_safe_str(domain.display_name or domain.domain_name)} now records this GSN identity as Community Domain owner.", **result_preview}
+
+@router.post("/community-domain-lifecycle")
+def admin_community_domain_lifecycle(
+    payload: CommunityDomainLifecycleIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_platform_admin(current_user)
+    requested_status = _normalize_domain_lifecycle_status(payload.status)
+    domain = _resolve_domain_for_ownership(
+        db,
+        community_domain_id=payload.community_domain_id,
+        domain_name=payload.domain_name,
+    )
+    preview = _community_domain_lifecycle_preview(
+        db,
+        domain=domain,
+        requested_status=requested_status,
+    )
+    reviewer_note = _safe_str(payload.reviewer_note)
+
+    if not payload.execute:
+        return {
+            "ok": True,
+            "mode": "preview",
+            "executed": False,
+            "message": "Preview ready. Confirm the lifecycle decision before changing this Community Domain.",
+            **preview,
+        }
+
+    if not bool(payload.lifecycle_confirmed):
+        raise HTTPException(
+            status_code=400,
+            detail="Lifecycle confirmation is required before changing Community Domain status.",
+        )
+    if len(reviewer_note) < 12:
+        raise HTTPException(
+            status_code=400,
+            detail="Reviewer note is required before changing Community Domain status.",
+        )
+
+    previous_status = _safe_str(domain.status) or "draft"
+    domain.status = requested_status
+    db.add(domain)
+    log_trust_event(
+        db,
+        event_type="community_domain.lifecycle_changed",
+        clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(domain.owner_user_id) if domain.owner_user_id else None,
+        meta=build_trust_meta(
+            reason="community_domain_lifecycle_changed",
+            note=reviewer_note,
+            trust_delta="0.00",
+            system=True,
+            extra={
+                "community_domain_id": int(domain.id),
+                "domain_name": _safe_str(domain.domain_name),
+                "display_name": _safe_str(domain.display_name),
+                "previous_status": previous_status,
+                "requested_status": requested_status,
+                "payment_required_now": False,
+                "payment_instruction_created": False,
+                "name_reserved": True,
+                "history_preserved": True,
+                "domain_deleted": False,
+                "owner_globally_banned": False,
+                "admin_lifecycle_confirmation": True,
+            },
+        ),
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+    db.refresh(domain)
+    result_preview = _community_domain_lifecycle_preview(
+        db,
+        domain=domain,
+        requested_status=requested_status,
+    )
+    return {
+        "ok": True,
+        "mode": "execute",
+        "executed": True,
+        "message": f"{_safe_str(domain.display_name or domain.domain_name)} is now {requested_status}.",
+        **result_preview,
+    }
 
 @router.post("/identity-verification-checks/{check_id}/decision")
 def admin_identity_verification_decision(

@@ -33,6 +33,10 @@ development-finance explanation work, also read
 `docs/GSN_ENDORSEMENT_READINESS_AUDIT.md` first, then
 `docs/INNOVATION_POLICY_LOGIC_2026-04-20.md`.
 
+For customer discovery conversations, customer discovery workshops, pilot
+interviews, pastor/community meetings, or AI-assisted live discovery, also read
+`docs/GSN_CUSTOMER_DISCOVERY_LISTENING_ASSISTANT_PROTOCOL_2026-09-07.md`.
+
 For Trust Event, Trust Passport, TrustSlip, Community Domain settings,
 governance, delegated authority, onboarding, identity, membership,
 verification, Trust Graph, relationship intelligence, behaviour evidence,

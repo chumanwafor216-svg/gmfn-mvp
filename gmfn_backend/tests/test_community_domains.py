@@ -144,6 +144,89 @@ def test_community_domain_availability_reports_available_and_taken(
     }
 
 
+def test_admin_can_close_pilot_community_domain_without_deleting_history(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    admin = _seed_user(9, "domain-lifecycle-admin@example.com", role="admin")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Pilot Close Domain",
+                "display_name": "Pilot Close Domain",
+                "domain_type": "ngo_project_network",
+                "template_key": "ngo_project_network",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        app.dependency_overrides[get_current_user] = lambda: admin
+        preview = client.post(
+            "/admin/community-domain-lifecycle",
+            json={
+                "community_domain_id": domain_id,
+                "status": "closed",
+                "execute": False,
+            },
+        )
+        assert preview.status_code == 200, preview.text
+        assert preview.json()["requested_status"] == "closed"
+        assert preview.json()["will_keep_domain_name_reserved"] is True
+        assert preview.json()["will_delete_domain"] is False
+        assert preview.json()["will_globally_ban_owner"] is False
+
+        executed = client.post(
+            "/admin/community-domain-lifecycle",
+            json={
+                "community_domain_id": domain_id,
+                "status": "closed",
+                "lifecycle_confirmed": True,
+                "execute": True,
+                "reviewer_note": "Pilot owner did not continue after review.",
+            },
+        )
+        assert executed.status_code == 200, executed.text
+        assert executed.json()["executed"] is True
+        assert executed.json()["current_status"] == "closed"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    lookup = client.get(
+        "/community-domains/lookup",
+        params={"domain_name": "pilot-close-domain"},
+    )
+    assert lookup.status_code == 404, lookup.text
+    assert lookup.json()["detail"]["code"] == "community_domain_not_available"
+
+    availability = client.get(
+        "/community-domains/availability",
+        params={"domain_name": "pilot-close-domain"},
+    )
+    assert availability.status_code == 200, availability.text
+    assert availability.json()["available"] is False
+    assert availability.json()["reason"] == "domain_name_taken"
+    assert availability.json()["existing_status"] == "closed"
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        blocked = client.get(f"/community-domains/{domain_id}")
+        assert blocked.status_code == 403, blocked.text
+        assert blocked.json()["detail"]["code"] == "community_domain_closed"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        domain = db.get(CommunityDomain, int(domain_id))
+        assert domain is not None
+        assert domain.status == "closed"
+        assert db.query(CommunityDomain).count() == 1
+        assert db.query(CommunityDomainMembership).count() == 1
+        assert db.query(TrustEvent).filter(TrustEvent.event_type == "community_domain.lifecycle_changed").count() == 1
+
 def test_public_domain_lookup_returns_safe_entry_without_membership(
     client: TestClient,
 ):
@@ -3795,16 +3878,16 @@ def test_owner_can_preview_community_domain_package_quote_without_activation(
     payload = response.json()
     assert payload["ok"] is True
     assert payload["community_domain_id"] == domain_id
-    assert "does not create a payment instruction" in payload["boundary"]
-    assert "activate a Community Domain" in payload["boundary"]
+    assert "payment instructions are suspended" in payload["boundary"]
+    assert "activate paid billing" in payload["boundary"]
     assert "verify ownership" in payload["boundary"]
 
     quote = payload["quote"]
     assert quote["package_code"] == "community_domain_starter"
     assert quote["package_name"] == "Community Domain Starter"
-    assert quote["quote_status"] == "draft_quote"
-    assert quote["pricing_status"] == "pilot_quote_required"
-    assert quote["billing_cycle"] == "manual_quote"
+    assert quote["quote_status"] == "pilot_reservation_active"
+    assert quote["pricing_status"] == "pilot_payment_suspended"
+    assert quote["billing_cycle"] == "pilot_no_charge"
     assert quote["price_amount"] is None
     assert quote["currency"] is None
     assert quote["template_key"] == "school_multi_branch"
@@ -3814,16 +3897,16 @@ def test_owner_can_preview_community_domain_package_quote_without_activation(
     assert quote["limits"]["included_nodes"] == 50
     assert quote["limits"]["included_members"] == 500
     assert quote["billing_boundary"]["pricing_model_status"] == (
-        "manual_pilot_quote_only"
+        "pilot_payment_suspended"
     )
     assert quote["billing_boundary"]["paid_upgrade_status"] == "not_automated"
     assert quote["billing_boundary"]["member_band_status"] == "not_automated"
     assert quote["billing_boundary"]["feature_tariff_status"] == "not_automated"
     assert quote["billing_boundary"]["domain_tariff_status"] == "not_automated"
-    assert "current pilot allowance only" in quote["billing_boundary"]["plain_language"]
-    assert quote["renewal_policy"]["status"] == "not_configured"
+    assert "payment is suspended" in quote["billing_boundary"]["plain_language"]
+    assert quote["renewal_policy"]["status"] == "pilot_review_later"
     assert "does not create a payment instruction" in quote["boundary"]
-    assert "activate billing" in quote["boundary"]
+    assert "activate paid billing" in quote["boundary"]
     assert "verify ownership" in quote["boundary"]
 
     with SessionLocal() as db:
@@ -3897,27 +3980,20 @@ def test_community_domain_payment_instruction_uses_selected_settlement_country(
                 "settlement_country": "GB",
             },
         )
-        assert response.status_code == 200, response.text
+        assert response.status_code == 409, response.text
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
-    payload = response.json()
-    assert payload["instruction_type"] == "community_domain_subscription"
-    assert payload["settlement"]["country"] == "GB"
-    assert payload["settlement"]["country_label"] == "United Kingdom"
-    assert payload["settlement"]["bank_name"] == "Pilot UK Bank"
-    assert payload["settlement"]["account_name"] == "GSN UK Pilot Account"
-    assert payload["settlement"]["account_number"] == "12345678"
-    assert payload["settlement"]["sort_code"] == "12-34-56"
-    assert payload["settlement"]["configured"] is True
-    assert payload["meta"]["payment_method"] == "bank_transfer"
-    assert payload["meta"]["settlement_country"] == "GB"
-    assert payload["meta"]["settlement"]["account_number"] == "12345678"
+    detail = response.json()["detail"]
+    assert detail["code"] == "community_domain_pilot_billing_suspended"
+    assert detail["payment_required_now"] is False
+    assert detail["pilot_months"] == 6
 
     with SessionLocal() as db:
         domain = db.get(CommunityDomain, int(domain_id))
         assert domain is not None
-        assert int(domain.clan_id) == clan_id
+        assert domain.clan_id is None
+        assert db.query(ExpectedPayment).count() == 0
 
 
 def test_community_domain_payment_instruction_links_payer_and_saved_community_rail(
@@ -3995,38 +4071,20 @@ def test_community_domain_payment_instruction_links_payer_and_saved_community_ra
                 "settlement_country": "NG",
             },
         )
-        assert response.status_code == 200, response.text
+        assert response.status_code == 409, response.text
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
-    payload = response.json()
-    assert payload["settlement"]["source"] == "community_pay_in_account"
-    assert payload["settlement"]["bank_name"] == "Monsoon Pilot Bank"
-    assert payload["settlement"]["account_name"] == "Monsoon Community Account"
-    assert payload["settlement"]["account_number"] == "9988776655"
-    assert payload["settlement"]["country"] == "NG"
-    assert payload["settlement"]["country_label"] == "Nigeria"
-
-    intent = payload["payment_intent"]
-    assert intent["payer_gmfn_id"] == "GMFN-U-PAYER001"
-    assert intent["clan_id"] == clan_id
-    assert intent["community_name"] == "Monsoon Community"
-    assert intent["community_code"] == "GMFN-C-MONSOON"
-    assert intent["domain_display_name"] == "Monsoon Domain"
-    assert intent["payment_reference"] == payload["reference_display"]
-    assert intent["settlement_source"] == "community_pay_in_account"
+    detail = response.json()["detail"]
+    assert detail["code"] == "community_domain_pilot_billing_suspended"
+    assert detail["payment_required_now"] is False
+    assert detail["pilot_months"] == 6
 
     with SessionLocal() as db:
-        expected = db.get(ExpectedPayment, int(payload["expected_payment_id"]))
-        assert expected is not None
-        assert int(expected.user_id) == int(owner.id)
-        assert int(expected.clan_id) == clan_id
-        assert expected.reference_display == payload["reference_display"]
-        meta = json.loads(expected.meta_json)
-        assert meta["payment_intent"]["payer_gmfn_id"] == "GMFN-U-PAYER001"
-        assert meta["payment_intent"]["community_name"] == "Monsoon Community"
-        assert meta["payment_intent"]["community_domain_id"] == int(domain_id)
-        assert meta["settlement"]["account_number"] == "9988776655"
+        domain = db.get(CommunityDomain, int(domain_id))
+        assert domain is not None
+        assert domain.clan_id is None
+        assert db.query(ExpectedPayment).count() == 0
 
 
 def test_outsider_cannot_preview_community_domain_package_quote(
@@ -4327,7 +4385,7 @@ def test_domain_admin_dashboard_summary_guides_next_action_without_activation(
     assert dashboard["primary_next_action"]["action_key"] == "package_quote"
     assert dashboard["primary_next_action"]["requires_admin"] is True
     assert "package_quote" in dashboard
-    assert dashboard["package_quote"]["pricing_status"] == "pilot_quote_required"
+    assert dashboard["package_quote"]["pricing_status"] == "pilot_payment_suspended"
     assert dashboard["package_quote"]["price_amount"] is None
     lanes = {lane["lane_key"]: lane for lane in dashboard["lanes"]}
     assert lanes["identity"]["status"] == "draft"
@@ -5200,12 +5258,12 @@ def test_capacity_plan_projects_package_usage_without_writes(
     assert capacity_plan["package_code"] == "community_domain_starter"
     assert capacity_plan["limits_source"] == "pilot_package_quote_defaults"
     assert capacity_plan["billing_boundary"]["pricing_model_status"] == (
-        "manual_pilot_quote_only"
+        "pilot_payment_suspended"
     )
     assert capacity_plan["billing_boundary"]["paid_upgrade_status"] == "not_automated"
     assert capacity_plan["billing_boundary"]["member_band_status"] == "not_automated"
     assert capacity_plan["billing_boundary"]["feature_tariff_status"] == "not_automated"
-    assert "current pilot allowance only" in capacity_plan["billing_boundary"]["plain_language"]
+    assert "payment is suspended" in capacity_plan["billing_boundary"]["plain_language"]
     assert capacity_plan["counts"] == {
         "nodes": 40,
         "active_members": 3,
@@ -13004,11 +13062,11 @@ def test_subscription_lifecycle_projects_billing_plan_without_payment_writes(
     assert subscription["editable"] is False
     assert subscription["viewer"] == {"user_id": owner.id, "can_admin": True}
     assert subscription["package"]["package_code"] == "community_domain_starter"
-    assert subscription["package"]["pricing_status"] == "pilot_quote_required"
-    assert subscription["package"]["billing_cycle"] == "manual_quote"
+    assert subscription["package"]["pricing_status"] == "pilot_payment_suspended"
+    assert subscription["package"]["billing_cycle"] == "pilot_no_charge"
     assert subscription["package"]["price_amount"] is None
     assert subscription["package"]["billing_boundary"]["pricing_model_status"] == (
-        "manual_pilot_quote_only"
+        "pilot_payment_suspended"
     )
     assert subscription["package"]["billing_boundary"]["paid_upgrade_status"] == (
         "not_automated"
@@ -13026,7 +13084,7 @@ def test_subscription_lifecycle_projects_billing_plan_without_payment_writes(
         "subscription_status": "not_configured",
         "payment_instruction_status": "not_created_in_this_slice",
         "payment_confirmation_status": "not_recorded_in_this_slice",
-        "renewal_status": "not_configured",
+        "renewal_status": "pilot_review_later",
         "next_billing_at": None,
         "subscription_started_at": None,
         "subscription_expires_at": None,
@@ -13050,14 +13108,14 @@ def test_subscription_lifecycle_projects_billing_plan_without_payment_writes(
     }
 
     lanes = {item["lane_key"]: item for item in subscription["lanes"]}
-    assert lanes["quote_preview"]["status"] == "draft_quote"
+    assert lanes["quote_preview"]["status"] == "pilot_reservation_active"
     assert lanes["quote_preview"]["ready"] is True
-    assert lanes["pricing_confirmation"]["status"] == "pilot_quote_required"
+    assert lanes["pricing_confirmation"]["status"] == "pilot_payment_suspended"
     assert lanes["payment_instruction"]["status"] == "not_created_in_this_slice"
     assert lanes["payment_confirmation"]["status"] == "not_recorded_in_this_slice"
     assert lanes["billing_activation"]["status"] == "not_active"
     assert lanes["subscription_period"]["status"] == "not_configured"
-    assert lanes["renewal_policy"]["status"] == "not_configured"
+    assert lanes["renewal_policy"]["status"] == "pilot_review_later"
     assert lanes["suspension_reactivation"]["status"] == "not_enforced_in_this_slice"
     assert "does not create a quote acceptance" in subscription["boundary"]
     assert "create a payment instruction" in subscription["boundary"]
@@ -17949,7 +18007,7 @@ def test_activation_requirements_project_setup_blockers_without_activation(
 
     by_key = {item["requirement_key"]: item for item in requirements["items"]}
     assert by_key["package_quote"]["status"] == "manual_quote_required"
-    assert by_key["pricing_confirmation"]["status"] == "pilot_quote_required"
+    assert by_key["pricing_confirmation"]["status"] == "pilot_payment_suspended"
     assert by_key["payment_instruction"]["status"] == "not_created"
     assert by_key["billing_activation"]["status"] == "inactive"
     assert by_key["authority_verification"]["status"] == "unverified"

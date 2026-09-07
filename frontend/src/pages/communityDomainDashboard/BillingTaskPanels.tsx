@@ -123,6 +123,11 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
     updateCommunityPayInDraft,
   } = data;
 
+  const pilotPaymentSuspended =
+    cleanText(quote?.pricing_status || quote?.quote_status).toLowerCase().includes("pilot_payment_suspended") ||
+    cleanText((quote?.billing_boundary as UnknownRecord | undefined)?.payment_instruction_status).toLowerCase() === "suspended_during_pilot" ||
+    (quote?.billing_boundary as UnknownRecord | undefined)?.payment_required_now === false;
+
   return (
     <>
 {activeLane === "billing" ? (
@@ -143,6 +148,8 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
                         <div style={{ ...helperText(), marginTop: 7, fontSize: 13 }}>
                           {subscriptionStatusMode
                             ? "Status only. Payment code, account, and proof stay in Billing jobs."
+                            : pilotPaymentSuspended
+                            ? "Payment is suspended for pilot use. Paid continuation is reviewed later."
                             : "Generate one code, pay the shown account, then upload proof."}
                         </div>
                       </div>
@@ -175,8 +182,8 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
                           <span style={statusBadge(quote?.pricing_status || quote?.quote_status)}>
                             Quote: {compactStatus(quote?.pricing_status || quote?.quote_status)}
                           </span>
-                          <span style={statusBadge(domainPaymentReference ? "code ready" : "code needed")}>
-                            {domainPaymentReference ? "Code ready" : "Code needed"}
+                          <span style={statusBadge(pilotPaymentSuspended ? "payment suspended" : domainPaymentReference ? "code ready" : "code needed")}>
+                            {pilotPaymentSuspended ? "Payment suspended" : domainPaymentReference ? "Code ready" : "Code needed"}
                           </span>
                         </>
                       )}
@@ -901,9 +908,9 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
                                     fontWeight: 860,
                                   }}
                                 >
-                                  Payment code will link{" "}
-                                  {cleanText(domain?.display_name, "this Community Domain")}{" "}
-                                  to {paymentClanRow.name}.
+                                  {pilotPaymentSuspended
+                                    ? `Pilot payment is suspended for ${cleanText(domain?.display_name, "this Community Domain")} during testing.`
+                                    : <>Payment code will link {cleanText(domain?.display_name, "this Community Domain")} to {paymentClanRow.name}.</>}
                                 </div>
                               ) : null}
                               <StableButton
@@ -930,12 +937,12 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
                           }}
                         >
                           <label style={{ display: "grid", gap: 6 }}>
-                            <span style={sectionLabel()}>Amount</span>
+                            <span style={sectionLabel()}>{pilotPaymentSuspended ? "Pilot amount" : "Amount"}</span>
                             <input
                               value={quoteAmount}
                               onChange={(event) => setQuoteAmount(event.target.value)}
                               inputMode="decimal"
-                              placeholder="Agreed quote"
+                              placeholder={pilotPaymentSuspended ? "No payment during pilot" : "Agreed quote"}
                               style={billingInputStyle()}
                             />
                           </label>
@@ -959,7 +966,7 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
                               ))}
                             </select>
                             <span style={{ ...helperText(), fontSize: 12 }}>
-                              Currency follows the selected area. Bank details appear after code generation.
+                              {pilotPaymentSuspended ? "No Community Domain billing code is created during the pilot." : "Currency follows the selected area. Bank details appear after code generation."}
                             </span>
                           </label>
                           <label style={{ display: "grid", gap: 6 }}>
@@ -986,12 +993,12 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
                           type="button"
                           kind="primary"
                           fullWidth
-                          disabled={busyDomainPayment}
+                          disabled={busyDomainPayment || pilotPaymentSuspended}
                           debugId="community-domain-dashboard.generate-payment-code"
                           onClick={generateDomainPaymentInstruction}
                           style={{ marginTop: 12 }}
                         >
-                          {busyDomainPayment ? "Generating code..." : "Generate payment code"}
+                          {pilotPaymentSuspended ? "Payment suspended for pilot" : busyDomainPayment ? "Generating code..." : "Generate payment code"}
                         </StableButton>
                       </div>
                     ) : null}

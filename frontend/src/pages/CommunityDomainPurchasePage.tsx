@@ -273,7 +273,7 @@ const DOMAIN_ENGINE_POINTS = [
 const DOMAIN_PURCHASE_MOBILE_FACTS = [
   "Community first",
   "Domain after",
-  "Payment later",
+  "Pilot no payment",
 ];
 
 const COMMUNITY_DOMAIN_PURCHASE_COMPACT_WIDTH = 980;
@@ -1037,7 +1037,7 @@ export default function CommunityDomainPurchasePage() {
   const hasCreatedDraft = Boolean(draftResult?.community_domain?.id);
   const draftFormLocked = hasCreatedDraft || busy === "draft";
   const draftActionLabel = draftResult
-    ? "Draft request created"
+    ? "Pilot domain reserved"
     : busy === "draft"
     ? "Creating draft..."
     : !availability
@@ -1354,7 +1354,7 @@ export default function CommunityDomainPurchasePage() {
 
       if (!canApply()) return;
       setMessage(
-        "Draft request created. It is not active, paid, or verified until payment instruction, confirmation, and admin activation happen."
+        "Pilot Community Domain reserved. Payment is suspended for now; the name is reserved for pilot testing but still not ownership verification or paid continuation."
       );
     } catch (err: any) {
       if (canApply()) {
@@ -2016,7 +2016,7 @@ export default function CommunityDomainPurchasePage() {
                   </section>
 
                   <section style={stepCard()}>
-                    <div style={labelText()}>3. Draft & quote</div>
+                    <div style={labelText()}>3. Pilot reservation</div>
                     <div
                       style={{
                         ...statusPill(
@@ -2029,12 +2029,12 @@ export default function CommunityDomainPurchasePage() {
                         justifySelf: "start",
                       }}
                     >
-                      {draftResult ? "Draft created" : "Waiting for owner"}
+                      {draftResult ? "Pilot reserved" : "Waiting for owner"}
                     </div>
                     {draftResult?.community_domain ? (
                       <div style={{ display: "grid", gap: 8 }}>
                         <div style={detailRow()}>
-                          <span>Draft ID</span>
+                          <span>Domain ID</span>
                           <strong style={detailValue()}>
                             {draftResult.community_domain.id}
                           </strong>
@@ -2064,7 +2064,7 @@ export default function CommunityDomainPurchasePage() {
                         </div>
                         <div style={stepLine()}>
                           <span style={smallLineIcon()}>3</span>
-                          <span>Draft is not active, paid, or verified yet.</span>
+                          <span>Pilot name reservation is active. Payment is suspended; ownership verification is still separate.</span>
                         </div>
                       </div>
                     )}
@@ -2119,18 +2119,18 @@ export default function CommunityDomainPurchasePage() {
                   </section>
 
                   <section style={stepCard()}>
-                    <div style={labelText()}>4. Payment</div>
+                    <div style={labelText()}>4. Pilot payment</div>
                     <div style={{ ...statusPill("waiting"), justifySelf: "start" }}>
-                      Not generated
+                      Suspended
                     </div>
                     <div style={{ display: "grid", gap: 0 }}>
                       <div style={stepLine()}>
                         <span style={smallLineIcon()}>1</span>
-                        <span>Payment instructions appear in the draft.</span>
+                        <span>Payment instructions are suspended during pilot testing.</span>
                       </div>
                       <div style={stepLine()}>
                         <span style={smallLineIcon()}>2</span>
-                        <span>Confirmation and activation are separate.</span>
+                        <span>Paid continuation, suspension, or closure is reviewed later.</span>
                       </div>
                       <div style={stepLine()}>
                         <span style={smallLineIcon()}>3</span>
@@ -2196,9 +2196,9 @@ export default function CommunityDomainPurchasePage() {
 
               <div style={whiteCard()}>
                 <div style={{ display: "grid", gap: 10, minWidth: 0 }}>
-                  <div style={labelText(false)}>Draft and quote state</div>
+                  <div style={labelText(false)}>Pilot reservation state</div>
                   <div style={statusPill(draftResult ? "ready" : "waiting")}>
-                    {draftResult ? "Draft created" : "Waiting for owner"}
+                    {draftResult ? "Pilot reserved" : "Waiting for owner"}
                   </div>
                   <div
                     style={{
@@ -2506,10 +2506,9 @@ export default function CommunityDomainPurchasePage() {
               What happens after the draft?
             </StableDisclosureSummary>
             <div style={{ ...helperText(), marginTop: 10 }}>
-              The owner first creates the normal GSN community, then reviews the draft, requests a package quote, receives payment
-              instructions only when that rail exists, and waits for payment confirmation
-              plus admin activation. Public verification language should only appear after
-              the live domain status confirms it.
+              The owner first creates the normal GSN community, then reserves the Community Domain for pilot use.
+              Payment is suspended during the pilot, so GSN should not ask for a Community Domain payment code yet.
+              Public verification language should only appear after the domain verification status confirms it.
             </div>
           </details>
         </div>

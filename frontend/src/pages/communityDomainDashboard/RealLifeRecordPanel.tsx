@@ -1,5 +1,6 @@
 // Lazy UI shell receives parent-owned workflow state through one data prop; parent and audits keep behavioral coverage.
 import React from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { GsnRealisticIcon } from "../../components/GsnRealisticIcon";
 import { StableButton } from "../../components/StableButton";
 
@@ -148,6 +149,55 @@ const ACTIVITY_RECORD_TASK_OPTIONS: Array<{
   },
 ];
 
+const CHURCH_ACTIVITY_PRESET_PACK: Array<{
+  key: string;
+  label: string;
+  activityType: string;
+  activityLabel: string;
+  unit: string;
+  note: string;
+}> = [
+  {
+    key: "programme_attendance",
+    label: "Programme attendance",
+    activityType: "church_programme_attendance",
+    activityLabel: "Church programme attendance",
+    unit: "attendance",
+    note: "Record that attendance happened for a service, programme, fellowship, class, or ministry meeting. Keep spiritual or counselling details outside GSN.",
+  },
+  {
+    key: "pastoral_follow_up",
+    label: "Pastoral follow-up",
+    activityType: "pastoral_follow_up",
+    activityLabel: "Pastoral or welfare follow-up",
+    unit: "follow-up",
+    note: "Record that an appointed pastor, minister, or welfare officer followed up. GSN preserves the workflow memory; the church keeps pastoral judgement.",
+  },
+  {
+    key: "member_belonging",
+    label: "Member belonging",
+    activityType: "member_belonging_check",
+    activityLabel: "Member belonging check",
+    unit: "check",
+    note: "Record a belonging, department, fellowship, or participation check without exposing private member history publicly.",
+  },
+  {
+    key: "department_service",
+    label: "Department service",
+    activityType: "department_service",
+    activityLabel: "Department or ministry service",
+    unit: "duty",
+    note: "Record service-team duty for ministry order, handover, and department coordination.",
+  },
+  {
+    key: "contribution_memory",
+    label: "Contribution memory",
+    activityType: "contribution_memory",
+    activityLabel: "Contribution memory",
+    unit: "record",
+    note: "Record church-held contribution memory only. This is not GSN payment confirmation, settlement proof, or impact proof.",
+  },
+];
 const BENEFICIARY_OUTCOME_TASK_OPTIONS: Array<{
   key: BeneficiaryOutcomeTaskKey;
   label: string;
@@ -251,6 +301,46 @@ type CommunityDomainActivityDraft = {
   evidence_reference: string;
 };
 
+type CommunityDomainAttendanceSessionDraft = {
+  programme_label: string;
+  method: "qr" | "bluetooth_proximity";
+  window_minutes: string;
+  note: string;
+};
+
+type CommunityDomainResponseChannelDraft = {
+  title: string;
+  source_kind: "meeting" | "church_service" | "programme" | "workshop" | "announcement" | "demand_box" | "other";
+  prompt: string;
+  related_label: string;
+  window_days: string;
+  allow_private_follow_up: boolean;
+  note: string;
+};
+
+type ResponseChannelRow = {
+  event_id?: string | number | null;
+  title?: string | number | null;
+  public_path?: string | number | null;
+  response_count?: string | number | null;
+  by_type?: Record<string, number>;
+  private_follow_up_count?: string | number | null;
+  active?: boolean | null;
+  boundary?: string | number | null;
+  [key: string]: unknown;
+};
+
+type AttendanceSessionRow = {
+  event_id?: string | number | null;
+  programme_label?: string | number | null;
+  public_path?: string | number | null;
+  checkin_count?: string | number | null;
+  attendance_method?: string | number | null;
+  attendance_expires_at?: string | number | null;
+  active?: boolean | null;
+  boundary?: string | number | null;
+  [key: string]: unknown;
+};
 type CommunityDomainOutcomeDraft = {
   subject_user_id: string;
   programme_label: string;
@@ -367,6 +457,12 @@ export type RealLifeRecordPanelData = {
   activityRecordStageChooserOpen: boolean;
   activityRecordTaskChooserOpen: boolean;
   activityRows: ActivityRecordRow[];
+  attendanceSessionCopied: boolean;
+  attendanceSessionDraft: CommunityDomainAttendanceSessionDraft;
+  attendanceSessionRows: AttendanceSessionRow[];
+  responseChannelCopied: boolean;
+  responseChannelDraft: CommunityDomainResponseChannelDraft;
+  responseChannelRows: ResponseChannelRow[];
   beneficiaryContactConsentDraftByOutcomeId: Record<string, BeneficiaryContactConsentDraft>;
   beneficiaryContactConsentWithdrawalDraftByOutcomeId: Record<string, BeneficiaryContactConsentWithdrawalDraft>;
   beneficiaryCorrectionDecisionByOutcomeId: Record<string, string>;
@@ -390,7 +486,10 @@ export type RealLifeRecordPanelData = {
   beneficiaryOutcomeSummaryDetailsOpenById: Record<string, boolean>;
   beneficiaryOutcomeTaskChooserOpen: boolean;
   billingInputStyle: () => React.CSSProperties;
+  domainType: string;
+  templateKey: string;
   busyActivityRecord: boolean;
+  busyAttendanceSession: boolean;
   busyBeneficiaryOutcomeRecord: boolean;
   busyOutcomeConfirmationLinkId: string;
   busyOutcomeContactConsentId: string;
@@ -399,10 +498,13 @@ export type RealLifeRecordPanelData = {
   busyOutcomeDeliveryReceiptCorrectionId: string;
   busyOutcomeDeliveryReceiptId: string;
   busyOutcomeProviderSendId: string;
+  busyResponseChannel: boolean;
   checkBeneficiaryOutcomeProviderSend: RowAction<BeneficiaryOutcomeRow>;
   cleanText: (value: unknown, fallback?: string) => string;
   compactStatus: (value: unknown) => string;
   correctBeneficiaryOutcomeDeliveryReceipt: RowAction<BeneficiaryOutcomeRow>;
+  copyLatestAttendanceLink: AsyncAction;
+  copyLatestResponseLink: AsyncAction;
   createBeneficiaryOutcomeConfirmationLink: (outcomeEventId: string) => void | Promise<void>;
   emptyBeneficiaryContactConsentDraft: () => BeneficiaryContactConsentDraft;
   emptyBeneficiaryContactConsentWithdrawalDraft: () => BeneficiaryContactConsentWithdrawalDraft;
@@ -412,11 +514,16 @@ export type RealLifeRecordPanelData = {
   iconFrame: (size?: number) => React.CSSProperties;
   iconHeaderStyle: PanelStyleFactory;
   isAdmin: boolean;
+  latestAttendancePublicUrl: string;
+  latestResponsePublicUrl: string;
   noticeDateLabel: (value: unknown) => string;
   realLifeRecordTypeChooserOpen: boolean;
   recordBeneficiaryOutcomeContactConsent: RowAction<BeneficiaryOutcomeRow>;
   recordBeneficiaryOutcomeDeliveryReceipt: RowAction<BeneficiaryOutcomeRow>;
   sectionLabel: PanelStyleFactory;
+  generateAttendanceSession: AsyncAction;
+  generateResponseChannel: AsyncAction;
+  shareLatestResponseViaWhatsApp: AsyncAction;
   setActiveActivityRecordStage: StateSetter<ActivityRecordStageKey>;
   setActiveActivityRecordTask: StateSetter<ActivityRecordTaskKey>;
   setActiveBeneficiaryOutcomeRecordStage: StateSetter<BeneficiaryOutcomeRecordStageKey>;
@@ -446,6 +553,14 @@ export type RealLifeRecordPanelData = {
   submitCommunityDomainActivityRecord: AsyncAction;
   submitCommunityDomainBeneficiaryOutcomeRecord: AsyncAction;
   updateActivityDraft: (key: keyof CommunityDomainActivityDraft, value: string) => void;
+  updateAttendanceSessionDraft: (
+    key: keyof CommunityDomainAttendanceSessionDraft,
+    value: string
+  ) => void;
+  updateResponseChannelDraft: (
+    key: keyof CommunityDomainResponseChannelDraft,
+    value: string | boolean
+  ) => void;
   updateBeneficiaryContactConsentDraft: (
     outcomeEventId: string,
     key: keyof BeneficiaryContactConsentDraft,
@@ -484,6 +599,12 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     activityRecordStageChooserOpen,
     activityRecordTaskChooserOpen,
     activityRows,
+    attendanceSessionCopied,
+    attendanceSessionDraft,
+    attendanceSessionRows,
+    responseChannelCopied,
+    responseChannelDraft,
+    responseChannelRows,
     beneficiaryContactConsentDraftByOutcomeId,
     beneficiaryContactConsentWithdrawalDraftByOutcomeId,
     beneficiaryCorrectionDecisionByOutcomeId,
@@ -507,7 +628,10 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     beneficiaryOutcomeSummaryDetailsOpenById,
     beneficiaryOutcomeTaskChooserOpen,
     billingInputStyle,
+    domainType,
+    templateKey,
     busyActivityRecord,
+    busyAttendanceSession,
     busyBeneficiaryOutcomeRecord,
     busyOutcomeConfirmationLinkId,
     busyOutcomeContactConsentId,
@@ -516,10 +640,13 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     busyOutcomeDeliveryReceiptCorrectionId,
     busyOutcomeDeliveryReceiptId,
     busyOutcomeProviderSendId,
+    busyResponseChannel,
     checkBeneficiaryOutcomeProviderSend,
     cleanText,
     compactStatus,
     correctBeneficiaryOutcomeDeliveryReceipt,
+    copyLatestAttendanceLink,
+    copyLatestResponseLink,
     createBeneficiaryOutcomeConfirmationLink,
     emptyBeneficiaryContactConsentDraft,
     emptyBeneficiaryContactConsentWithdrawalDraft,
@@ -529,11 +656,16 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     iconFrame,
     iconHeaderStyle,
     isAdmin,
+    latestAttendancePublicUrl,
+    latestResponsePublicUrl,
     noticeDateLabel,
     realLifeRecordTypeChooserOpen,
     recordBeneficiaryOutcomeContactConsent,
     recordBeneficiaryOutcomeDeliveryReceipt,
     sectionLabel,
+    generateAttendanceSession,
+    generateResponseChannel,
+    shareLatestResponseViaWhatsApp,
     setActiveActivityRecordStage,
     setActiveActivityRecordTask,
     setActiveBeneficiaryOutcomeRecordStage,
@@ -563,6 +695,8 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     submitCommunityDomainActivityRecord,
     submitCommunityDomainBeneficiaryOutcomeRecord,
     updateActivityDraft,
+    updateAttendanceSessionDraft,
+    updateResponseChannelDraft,
     updateBeneficiaryContactConsentDraft,
     updateBeneficiaryContactConsentWithdrawalDraft,
     updateBeneficiaryCorrectionDecision,
@@ -579,6 +713,30 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     BENEFICIARY_OUTCOME_TASK_OPTIONS.find(
       (task) => task.key === activeBeneficiaryOutcomeTask
     ) || BENEFICIARY_OUTCOME_TASK_OPTIONS[0];
+  const domainWorkflowKey = cleanText(templateKey || domainType).toLowerCase();
+  const isChurchWorkflow =
+    domainWorkflowKey === "church_religious_body" || domainWorkflowKey === "religious_body";
+  const latestAttendanceSession = attendanceSessionRows[0] || null;
+  const latestAttendanceActive = Boolean(latestAttendanceSession?.active);
+  const latestAttendanceCount = cleanText(latestAttendanceSession?.checkin_count, "0");
+  const latestResponseChannel = responseChannelRows[0] || null;
+  const latestResponseActive = Boolean(latestResponseChannel?.active);
+  const latestResponseCount = cleanText(latestResponseChannel?.response_count, "0");
+  const latestResponseFollowUpCount = cleanText(latestResponseChannel?.private_follow_up_count, "0");
+
+  function applyChurchActivityPreset(
+    preset: (typeof CHURCH_ACTIVITY_PRESET_PACK)[number]
+  ) {
+    updateActivityDraft("activity_type", preset.activityType);
+    updateActivityDraft("activity_label", preset.activityLabel);
+    updateActivityDraft("measurement_unit", preset.unit);
+    updateActivityDraft("note", preset.note);
+    setActiveRealLifeRecordTask("activity");
+    setActiveActivityRecordTask("record");
+    setActiveActivityRecordStage("person");
+    setActivityRecordTaskChooserOpen(false);
+    setActivityRecordStageChooserOpen(false);
+  }
 
   return (
     <>
@@ -782,6 +940,350 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                           </div>
                         ) : null}
 
+
+                        {isChurchWorkflow ? (
+                          <div
+                            data-debug-id="community-domain-dashboard.church-workflow-packet"
+                            style={{
+                              display: "grid",
+                              gap: 8,
+                              borderRadius: 12,
+                              border: "1px solid rgba(199,164,74,0.28)",
+                              background: "rgba(199,164,74,0.08)",
+                              padding: 12,
+                            }}
+                          >
+                            <div style={sectionLabel()}>Church workflow packet</div>
+                            <div style={{ ...helperText(), fontSize: 13 }}>
+                              Use these presets for pastoral care, welfare follow-up, member belonging, department handover, programme attendance, and contribution memory. GSN records the workflow memory only; the church keeps authority, privacy, and pastoral judgement.
+                            </div>
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns:
+                                  "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                                gap: 8,
+                              }}
+                            >
+                              {CHURCH_ACTIVITY_PRESET_PACK.map((preset) => (
+                                <StableButton
+                                  key={preset.key}
+                                  type="button"
+                                  kind={
+                                    activityDraft.activity_type === preset.activityType
+                                      ? "primary"
+                                      : "secondary"
+                                  }
+                                  stableHeight={44}
+                                  disabled={busyActivityRecord}
+                                  debugId={`community-domain-dashboard.church-workflow.${preset.key}`}
+                                  onClick={() => applyChurchActivityPreset(preset)}
+                                  style={{
+                                    justifyContent: "center",
+                                    fontSize: 12,
+                                    textTransform: "none",
+                                  }}
+                                >
+                                  {preset.label}
+                                </StableButton>
+                              ))}
+                            </div>
+                            <div
+                              data-debug-id="community-domain-dashboard.church-live-attendance-qr"
+                              style={{
+                                display: "grid",
+                                gap: 10,
+                                borderRadius: 12,
+                                border: "1px solid rgba(9,27,46,0.1)",
+                                background: "#FFFFFF",
+                                padding: 12,
+                              }}
+                            >
+                              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                                <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
+                                  <div style={sectionLabel()}>Live attendance QR</div>
+                                  <div style={{ ...helperText(), fontSize: 13 }}>
+                                    Open attendance for the current service or programme. Members scan the QR from a phone or screen and GSN records one signed-in presence check-in per member.
+                                  </div>
+                                </div>
+                                {latestAttendanceSession ? (
+                                  <span style={statusBadge(latestAttendanceActive ? "active" : "closed")}>
+                                    {latestAttendanceActive ? "Open" : "Closed"} - {latestAttendanceCount} checked in
+                                  </span>
+                                ) : null}
+                              </div>
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 160px), 1fr))",
+                                  gap: 8,
+                                }}
+                              >
+                                <input
+                                  value={attendanceSessionDraft.programme_label}
+                                  disabled={busyAttendanceSession}
+                                  onChange={(event) =>
+                                    updateAttendanceSessionDraft("programme_label", event.target.value)
+                                  }
+                                  placeholder="Service or programme name"
+                                  style={billingInputStyle()}
+                                />
+                                <select
+                                  value={attendanceSessionDraft.method}
+                                  disabled={busyAttendanceSession}
+                                  onChange={(event) =>
+                                    updateAttendanceSessionDraft(
+                                      "method",
+                                      event.target.value === "bluetooth_proximity" ? "bluetooth_proximity" : "qr"
+                                    )
+                                  }
+                                  style={billingInputStyle()}
+                                >
+                                  <option value="qr">QR check-in</option>
+                                  <option value="bluetooth_proximity">Proximity record</option>
+                                </select>
+                                <input
+                                  value={attendanceSessionDraft.window_minutes}
+                                  disabled={busyAttendanceSession}
+                                  onChange={(event) =>
+                                    updateAttendanceSessionDraft("window_minutes", event.target.value)
+                                  }
+                                  placeholder="Window minutes"
+                                  inputMode="numeric"
+                                  style={billingInputStyle()}
+                                />
+                              </div>
+                              <textarea
+                                value={attendanceSessionDraft.note}
+                                disabled={busyAttendanceSession}
+                                onChange={(event) =>
+                                  updateAttendanceSessionDraft("note", event.target.value)
+                                }
+                                placeholder="Internal note"
+                                rows={2}
+                                style={{ ...billingInputStyle(), resize: "vertical", minHeight: 70 }}
+                              />
+                              <StableButton
+                                type="button"
+                                kind="primary"
+                                stableHeight={44}
+                                disabled={busyAttendanceSession}
+                                busy={busyAttendanceSession}
+                                busyLabel="Opening..."
+                                debugId="community-domain-dashboard.church-live-attendance-open"
+                                onClick={generateAttendanceSession}
+                                style={{ justifyContent: "center", fontSize: 13, textTransform: "none" }}
+                              >
+                                Open Live Attendance QR
+                              </StableButton>
+                              {latestAttendanceSession && latestAttendancePublicUrl ? (
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns: "minmax(0, 1fr) auto",
+                                    gap: 10,
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  <div style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                                    <div style={{ ...sectionLabel(), fontSize: 10 }}>
+                                      Latest scan link
+                                    </div>
+                                    <div style={{ ...helperText(), fontSize: 12, overflowWrap: "anywhere" }}>
+                                      {latestAttendancePublicUrl}
+                                    </div>
+                                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                      <StableButton
+                                        type="button"
+                                        kind="secondary"
+                                        stableHeight={38}
+                                        debugId="community-domain-dashboard.church-live-attendance-copy"
+                                        onClick={copyLatestAttendanceLink}
+                                        style={{ fontSize: 12, textTransform: "none" }}
+                                      >
+                                        {attendanceSessionCopied ? "Copied" : "Copy Link"}
+                                      </StableButton>
+                                      <StableButton
+                                        type="button"
+                                        kind="secondary"
+                                        stableHeight={38}
+                                        debugId="community-domain-dashboard.church-live-attendance-open-page"
+                                        onClick={() => window.open(latestAttendancePublicUrl, "_blank", "noopener,noreferrer")}
+                                        style={{ fontSize: 12, textTransform: "none" }}
+                                      >
+                                        Open Page
+                                      </StableButton>
+                                    </div>
+                                  </div>
+                                  <div style={{ borderRadius: 14, border: "1px solid rgba(9,27,46,0.1)", padding: 8, background: "#FFFFFF" }}>
+                                    <QRCodeSVG value={latestAttendancePublicUrl} size={104} bgColor="#FFFFFF" fgColor="#07172C" level="M" marginSize={1} />
+                                  </div>
+                                </div>
+                              ) : null}
+                              <div style={{ ...helperText(), fontSize: 12 }}>
+                                Bluetooth is only an explicit proximity record when the browser supports it. QR remains the standard live attendance path.
+                              </div>
+                            </div>
+                            <div
+                              data-debug-id="community-domain-dashboard.church-response-qr"
+                              style={{
+                                display: "grid",
+                                gap: 10,
+                                borderRadius: 12,
+                                border: "1px solid rgba(9,27,46,0.1)",
+                                background: "#FFFFFF",
+                                padding: 12,
+                              }}
+                            >
+                              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                                <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
+                                  <div style={sectionLabel()}>Response QR</div>
+                                  <div style={{ ...helperText(), fontSize: 13 }}>
+                                    Open a QR after a service, meeting, or announcement so members can send questions, comments, needs, suggestions, and private follow-up requests into GSN.
+                                  </div>
+                                </div>
+                                {latestResponseChannel ? (
+                                  <span style={statusBadge(latestResponseActive ? "active" : "closed")}>
+                                    {latestResponseActive ? "Open" : "Closed"} - {latestResponseCount} responses
+                                  </span>
+                                ) : null}
+                              </div>
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 160px), 1fr))",
+                                  gap: 8,
+                                }}
+                              >
+                                <input
+                                  value={responseChannelDraft.title}
+                                  disabled={busyResponseChannel}
+                                  onChange={(event) =>
+                                    updateResponseChannelDraft("title", event.target.value)
+                                  }
+                                  placeholder="Response box name"
+                                  style={billingInputStyle()}
+                                />
+                                <select
+                                  value={responseChannelDraft.source_kind}
+                                  disabled={busyResponseChannel}
+                                  onChange={(event) =>
+                                    updateResponseChannelDraft("source_kind", event.target.value)
+                                  }
+                                  style={billingInputStyle()}
+                                >
+                                  <option value="church_service">Church service</option>
+                                  <option value="meeting">Meeting</option>
+                                  <option value="programme">Programme</option>
+                                  <option value="workshop">Workshop</option>
+                                  <option value="announcement">Announcement</option>
+                                  <option value="demand_box">Demand Box</option>
+                                </select>
+                                <input
+                                  value={responseChannelDraft.window_days}
+                                  disabled={busyResponseChannel}
+                                  onChange={(event) =>
+                                    updateResponseChannelDraft("window_days", event.target.value)
+                                  }
+                                  placeholder="Open days"
+                                  inputMode="numeric"
+                                  style={billingInputStyle()}
+                                />
+                              </div>
+                              <textarea
+                                value={responseChannelDraft.prompt}
+                                disabled={busyResponseChannel}
+                                onChange={(event) =>
+                                  updateResponseChannelDraft("prompt", event.target.value)
+                                }
+                                placeholder="Prompt shown to members"
+                                rows={2}
+                                style={{ ...billingInputStyle(), resize: "vertical", minHeight: 70 }}
+                              />
+                              <label style={{ display: "flex", gap: 10, alignItems: "flex-start", fontSize: 13, color: "#24364A", lineHeight: 1.35 }}>
+                                <input
+                                  type="checkbox"
+                                  checked={Boolean(responseChannelDraft.allow_private_follow_up)}
+                                  disabled={busyResponseChannel}
+                                  onChange={(event) =>
+                                    updateResponseChannelDraft("allow_private_follow_up", event.target.checked)
+                                  }
+                                />
+                                Allow members to request private organiser follow-up.
+                              </label>
+                              <StableButton
+                                type="button"
+                                kind="primary"
+                                stableHeight={44}
+                                disabled={busyResponseChannel}
+                                busy={busyResponseChannel}
+                                busyLabel="Opening..."
+                                debugId="community-domain-dashboard.church-response-open"
+                                onClick={generateResponseChannel}
+                                style={{ justifyContent: "center", fontSize: 13, textTransform: "none" }}
+                              >
+                                Open Response QR
+                              </StableButton>
+                              {latestResponseChannel && latestResponsePublicUrl ? (
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns: "minmax(0, 1fr) auto",
+                                    gap: 10,
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  <div style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                                    <div style={{ ...sectionLabel(), fontSize: 10 }}>
+                                      Latest response link
+                                    </div>
+                                    <div style={{ ...helperText(), fontSize: 12, overflowWrap: "anywhere" }}>
+                                      {latestResponsePublicUrl}
+                                    </div>
+                                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                      <StableButton
+                                        type="button"
+                                        kind="secondary"
+                                        stableHeight={38}
+                                        debugId="community-domain-dashboard.church-response-copy"
+                                        onClick={copyLatestResponseLink}
+                                        style={{ fontSize: 12, textTransform: "none" }}
+                                      >
+                                        {responseChannelCopied ? "Copied" : "Copy Link"}
+                                      </StableButton>
+                                      <StableButton
+                                        type="button"
+                                        kind="secondary"
+                                        stableHeight={38}
+                                        debugId="community-domain-dashboard.church-response-whatsapp"
+                                        onClick={shareLatestResponseViaWhatsApp}
+                                        style={{ fontSize: 12, textTransform: "none" }}
+                                      >
+                                        WhatsApp Link
+                                      </StableButton>
+                                      <StableButton
+                                        type="button"
+                                        kind="secondary"
+                                        stableHeight={38}
+                                        debugId="community-domain-dashboard.church-response-open-page"
+                                        onClick={() => window.open(latestResponsePublicUrl, "_blank", "noopener,noreferrer")}
+                                        style={{ fontSize: 12, textTransform: "none" }}
+                                      >
+                                        Open Page
+                                      </StableButton>
+                                    </div>
+                                  </div>
+                                  <div style={{ borderRadius: 14, border: "1px solid rgba(9,27,46,0.1)", padding: 8, background: "#FFFFFF" }}>
+                                    <QRCodeSVG value={latestResponsePublicUrl} size={104} bgColor="#FFFFFF" fgColor="#07172C" level="M" marginSize={1} />
+                                  </div>
+                                </div>
+                              ) : null}
+                              <div style={{ ...helperText(), fontSize: 12 }}>
+                                Latest private follow-up requests: {latestResponseFollowUpCount}. WhatsApp carries the link only; GSN keeps the official response record.
+                              </div>
+                            </div>
+                          </div>
+                        ) : null}
 
                         <div style={{ ...helperText(), fontSize: 13 }}>
                           Current activity view:{" "}

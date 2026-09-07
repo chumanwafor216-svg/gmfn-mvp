@@ -1,3 +1,160 @@
+## 2026-09-07 - Community Domain pilot payment suspension and lifecycle close control
+
+- Status: Local implementation completed and verified. Not committed, pushed, or deployed in this slice.
+- Product decision implemented: Community Domain name checking and reservation remain enabled during early pilot/customer discovery, but the Community Domain payment-instruction rail is suspended. This avoids asking pilot churches/NGOs/associations to pay for the domain name before the pilot terms and paid continuation policy are settled.
+- Backend route changes:
+  - `POST /community-domains/drafts` still creates a draft/pilot reservation, owner membership, root node, setup policy, and now records `community_domain.pilot_reservation_started`. It does not mark the domain verified or paid.
+  - `POST /community-domains/{id}/package-quote` now returns `pricing_status: pilot_payment_suspended`, `quote_status: pilot_reservation_active`, `billing_cycle: pilot_no_charge`, `payment_required_now: false`, and `pilot_months: 6`.
+  - `POST /community-domains/{id}/payment-instruction` now returns `409` with code `community_domain_pilot_billing_suspended` before creating any `ExpectedPayment` row.
+  - Public lookup/QR paths now block `suspended` and `closed` Community Domains from normal public network use while preserving history and name reservation.
+  - New platform-admin route `POST /admin/community-domain-lifecycle` previews/executes `active`, `suspended`, or `closed`, requires confirmation plus reviewer note for execution, logs `community_domain.lifecycle_changed`, and explicitly does not globally ban the owner identity.
+- Frontend route changes:
+  - `/community-domain/purchase` now says `Pilot no payment`, `Pilot reservation`, and `Pilot payment`; success copy says the domain name is reserved for pilot testing but not verified or paid continuation.
+  - `/app/community-domain/:id` Billing lane now detects pilot payment suspension, changes the billing sequence to `Payment suspended for pilot`, disables the payment-code button, and explains paid continuation review later.
+  - `/app/command-center/community-ownership` now includes a Community Domain lifecycle panel for platform admins to preview and record suspend/close/reactivate decisions without deleting history or globally banning the owner.
+- Docs/audits updated: `docs/SCREEN_SPECS.md`, `docs/COMMUNITY_DOMAIN_IMPLEMENTATION_PLAN_2026-06-28.md`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and `frontend/tools/audit-community-domain-billing-sequence.mjs` now reflect pilot payment suspension.
+- Verification passed:
+  - `python -m py_compile gmfn_backend\app\api\routes\community_domains.py gmfn_backend\app\api\routes\admin.py gmfn_backend\tests\test_community_domains.py`
+  - `python -m pytest gmfn_backend\tests\test_community_domains.py -q -k "availability_reports_available_and_taken or admin_can_close_pilot_community_domain or package_quote or payment_instruction_uses_selected_settlement_country or payment_instruction_links_payer or subscription_lifecycle_projects_billing_plan_without_payment_writes or domain_admin_dashboard_summary_guides_next_action_without_activation or activation_requirements"` -> 10 passed, 223 deselected.
+  - `npm --prefix frontend run build`
+  - `node frontend\tools\audit-community-domain-product-contracts.mjs`
+  - `node frontend\tools\audit-community-domain-billing-sequence.mjs` after starting temporary Vite server on `127.0.0.1:5180` with escalation; server was stopped afterward.
+- Devil's advocate: this is not a full billing/trial subscription system. There are still no dedicated DB columns for pilot start/end dates, paid conversion, or automatic expiry. The six-month value is returned as policy metadata only. Global user banning remains deliberately unimplemented because it is an account-governance/auth decision, not the same as closing a Community Domain.
+## 2026-09-07 - Meeting/service Response QR implementation
+
+- Status: Local implementation complete and verified; not committed, pushed, deployed, or live-tested on Render in this slice.
+- Owner trigger: owner clarified that after services, meetings, programmes, announcements, and summaries, members should be able to send questions, comments, needs, suggestions, testimony/benefit notes, and private follow-up requests back to the organisers. Owner also emphasized using the existing Demand Box/meeting evidence engines instead of duplicating engines.
+- Backend routes affected: `POST /community-domains/{community_domain_id}/response-channels`, `GET /community-domains/{community_domain_id}/response-channels`, public-safe `GET /community-domains/public/response-channels/{public_code}`, and authenticated `POST /community-domains/public/response-channels/{public_code}/responses` in `gmfn_backend/app/api/routes/community_domains.py`.
+- Backend behavior: owner/admin opens a response QR window with title, source kind, prompt, optional related label/node, 1-90 day active window, and private-follow-up option. GSN stores the window as `community_domain.response_channel.opened` and each signed-in member response as `community_domain.response.recorded`; public QR reads show counts and boundary text but never expose responder IDs or response lists. Admin lists show recent responses, response type counts, and private follow-up counts.
+- Feature policy boundary: Response QR is governed by the existing Demand Box feature policy. If `demand_box` is off, GSN blocks new response QR creation and public response QR access.
+- Frontend routes/screens affected: new public `/community-responses/:publicCode` route renders the response QR landing page without bottom nav; Community Domain Governance -> Records -> Real-life record now includes a `Response QR` card in the church workflow packet with source kind, prompt, open days, private-follow-up option, copy/open/WhatsApp link actions, QR preview, response count, and private follow-up count.
+- Church Summary behavior: `GSN Church Summary Report` now includes response QR windows, total responses, questions, needs/requests, private follow-up counts, WhatsApp preference counts, recent response windows, and recent response previews so leadership can measure monthly progress and grant/reporting evidence without exposing private member lists publicly.
+- WhatsApp boundary: WhatsApp carries only the share link or preferred follow-up channel. GSN does not claim to send WhatsApp messages and no provider-backed WhatsApp sender exists in this slice.
+- Docs/audit/tests: updated `docs/SCREEN_REGISTRY.md`, `docs/SCREEN_SPECS.md`, Community Settings protocol, Delegated Authority protocol, PDF service, frontend product audit, and mobile visual audit expectations. Backend tests now prove a signed-in member response can be recorded privately and that disabled Demand Box blocks response QR creation.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\community_domains.py gmfn_backend\app\services\community_domain_value_pdf_service.py`; `python -m pytest gmfn_backend\tests\test_community_domain_collection_instructions.py -q`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run build`; `node --check frontend\tools\audit-community-domain-product-contracts.mjs`; `node --check frontend\tools\audit-community-domain-mobile-visual.mjs`.
+- Devil truth: this is now a governed response/evidence channel, not AI theme analysis, moderation workflow, anonymous public forum, counselling/safeguarding system, emergency line, WhatsApp sending engine, or proof that every question/need was resolved. It reuses TrustEvent/Demand Box governance but the response helpers still live route-locally instead of being extracted into one shared meeting-response service.
+## 2026-09-07 - Church live attendance QR implementation
+
+- Status: Local implementation complete and verified; not committed, pushed, deployed, or live-tested on Render in this slice.
+- Owner trigger: owner clarified that manual attendance is not acceptable for church services/programmes. GSN must generate a live attendance QR that can be shown on a phone or screen so signed-in members scan and mark themselves present. Owner also clarified that Bluetooth may be tried only as an explicit optional proximity method, and that GSN must not duplicate engines already used for NGO/meeting evidence.
+- Backend routes affected: `POST /community-domains/{community_domain_id}/attendance-sessions`, `GET /community-domains/{community_domain_id}/attendance-sessions`, public-safe `GET /community-domains/public/attendance-sessions/{public_code}`, and authenticated `POST /community-domains/public/attendance-sessions/{public_code}/check-ins` in `gmfn_backend/app/api/routes/community_domains.py`.
+- Backend behavior: domain owner/admin opens a live attendance window with programme label, method, optional node, note, and 5-720 minute active window. GSN creates an opaque public QR path, records the session as a TrustEvent, allows only active domain members/admins to check in, prevents duplicate check-ins for the same member/window, rejects expired/invalid windows, and stores member check-ins as separate Presence Evidence TrustEvents.
+- Frontend routes/screens affected: new public `/community-attendance/:publicCode` route renders the scan landing page without bottom nav; Community Domain Governance -> Records -> Real-life record now includes a `Live attendance QR` card for church/religious-body workflows with programme label, method, duration, optional note, copy/open QR link, QR preview, open/closed state, and recorded check-in count.
+- Church Summary behavior: `GSN Church Summary Report` now includes live QR attendance windows and live QR check-in counts alongside sermon/message notices and church workflow records. The report remains leadership memory, not final attendance proof.
+- Bluetooth boundary: supported only as an explicit selected attendance method label. No silent background Bluetooth scanning, no automatic phone discovery, no hidden proximity tracking, and QR remains the standard live attendance mechanism.
+- Sermon/message storage boundary: current message QR supports short public-safe text only. Long sermon attachment upload/download is not implemented yet. Docs now require a future hard upload cap, recommended default `10 MB`, with no silent durable phone storage; large audio/video should use external links or a separately governed media/storage product.
+- Docs/audit/tests: updated `docs/SCREEN_REGISTRY.md`, `docs/SCREEN_SPECS.md`, Community Settings protocol, Delegated Authority protocol, PDF service, frontend product audit, and mobile visual audit expectations. Backend tests now prove live attendance QR creates one member check-in only once and that Church Summary PDF accepts live attendance QR counts.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\community_domains.py gmfn_backend\app\services\community_domain_value_pdf_service.py`; `python -m pytest gmfn_backend\tests\test_community_domain_collection_instructions.py -q`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run build`.
+- Devil truth: this reuses the same TrustEvent/evidence model and live QR semantics already used elsewhere, but the meeting-service helper code has not yet been refactored into one shared attendance service. QR attendance proves that a signed-in active member scanned during the active window; it does not prove everyone physically present scanned, does not cover visitors/nonmembers yet, does not reconcile offering payments, and does not store or distribute sermon attachments yet.
+## 2026-09-07 - Church Summary PDF report implementation
+
+- Status: Local implementation complete and verified; not committed, pushed, deployed, or live-tested on Render in this slice.
+- Owner trigger: owner clarified that church programme records and monthly/yearly sermon/message history should reuse the existing Community Value PDF/report engine where possible, so pastors can see what messages/programmes were treated over time.
+- Backend route affected: `GET /community-domains/{community_domain_id}/community-value-report.pdf` now accepts `audience=church_memory` in addition to `sponsor_safe` and `director_admin`.
+- Backend behavior: `get_community_domain_church_memory_summary` builds an admin-gated report payload from recorded `community_domain.notice.posted` TrustEvents and church workflow `community_domain.activity_recorded` TrustEvents. It counts official messages, public QR messages, programme attendance, pastoral follow-up, department service, and contribution memory, and includes recent recorded messages/programme records for leadership review.
+- PDF behavior: `build_community_domain_value_report_pdf` now renders `GSN Church Summary Report` for the Church summary display over the `church_memory` audience with message/programme metrics, recent message lines, recent programme records, leadership review prompts, and an explicit truth boundary.
+- Frontend behavior: Community Domain Governance report controls now include `Church summary` as an audience and `This year` as a period option. The report button changes to `Prepare Church Summary PDF` when that audience is selected, and downloaded filenames use `church-summary`.
+- Docs/audit/tests: `docs/SCREEN_SPECS.md`, Community Settings protocol, and Delegated Authority protocol now document Church Summary reports. `frontend/tools/audit-community-domain-product-contracts.mjs` guards the backend audience, PDF service, frontend controls, and new test. `gmfn_backend/tests/test_community_domain_collection_instructions.py` now proves a Church Summary PDF can be generated after a message QR and programme attendance record exist.
+- Devil truth: this is a recorded-memory/reporting feature, not AI sermon analysis, doctrinal judgement, spiritual-growth measurement, attendance proof, payment proof, contribution reconciliation, bulk CSV import, or private pastoral-note export. Bulk import remains a separate convenience layer if the pilot demands fast historical entry.
+## 2026-09-07 - Community Domain public message QR implementation
+
+- Status: Local implementation complete and verified; not committed, pushed, deployed, or live-tested on Render in this slice.
+- Owner trigger: owner clarified two separate QR needs for churches/religious bodies: offering/payment QR and public message QR for sermon topic, preaching/message of the day, programme theme, or similar short public communication. Owner also asked whether these should be governed by turn-on/turn-off settings.
+- Truth on payment QR: the current local payment/offering QR is a governed GSN collection-instruction page with optional external `https://` payment link. It is not a direct bank/provider QR rail, does not collect money inside GSN, does not confirm payment, and does not reconcile settlement. Direct scan-and-pay into a church bank account remains future provider/bank integration work.
+- Backend routes affected: `POST /community-domains/{community_domain_id}/notices` now accepts `public_qr_enabled`; `GET /community-domains/{community_domain_id}/notices` now returns public QR fields where enabled; new unauthenticated `GET /community-domains/public/notices/{public_code}` returns only public-safe message data.
+- Backend behavior: public notice QR uses an opaque bearer code stored on the notice TrustEvent only when the admin opts in. The public route rejects missing/non-public/expired notices and stops serving the QR when the domain `announcement_board` feature policy is turned `off`.
+- Frontend routes/screens affected: new public `/community-notices/:publicCode` page renders the public message QR landing page without bottom nav; authenticated Community Domain Official Board now shows QR/copy/open controls for notices where public QR is enabled; `CommunityNoticeModal` now has an explicit `Create public QR for this message` checkbox.
+- Governance/docs: `docs/SCREEN_SPECS.md` now separates public message QR from offering/payment QR. `docs/GSN_COMMUNITY_SETTINGS_ENGINE_PROTOCOL_2026-06-30.md` and `docs/GSN_COMMUNITY_GOVERNANCE_DELEGATED_AUTHORITY_PROTOCOL_2026-06-30.md` now state public message QR belongs to announcement/communication authority, not finance authority.
+- Guardrails/tests: `gmfn_backend/tests/test_community_domain_collection_instructions.py` now proves public message QR is opt-in, does not expose `posted_by_user_id` publicly, and turns off when Announcement Board is off. `frontend/tools/audit-community-domain-product-contracts.mjs` now guards the route, API helper, modal checkbox, notice-board QR controls, public page boundary, backend route, and tests.
+- Verification passed: `python -m pytest gmfn_backend\tests\test_community_domain_collection_instructions.py -q`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run build`.
+- Devil truth: this solves the simple QR dissemination need for short public-safe messages. It does not yet support long sermon documents, file uploads/download attachments, rich media, recurring sermon archive, attendance check-in, or direct payment-provider QR settlement.
+## 2026-09-07 - Church pastor/Mrs workflow packet implementation
+
+- Status: Local implementation complete and verified; not committed, pushed, deployed, or live-tested on Render in this slice.
+- Owner trigger: owner asked to continue implementing all pastor/Mrs recommendations so GSN, not GSM, can handle the church/religious-body demands.
+- Recommendation mapping confirmed: offering/donation QR is now a governed collection instruction route/screen; member belonging maps to Community Domain membership and public active-member verification; branches/ministries/departments map to CommunityNodes; Demand Box already exists; welfare/follow-up maps to real-life activity and beneficiary outcome records.
+- Backend change: `gmfn_backend/app/api/routes/community_domains.py` now adds pastor-discovery activity types for `pastoral_follow_up`, `member_belonging_check`, `department_service`, `church_programme_attendance`, and `contribution_memory`, then prioritizes the church/religious-body catalogue with `workflow_context: church_pastor_discovery`.
+- Frontend change: `/app/community-domain` and `/app/community-domain/:communityDomainId` real-life record lane now receives domain type/template and shows a compact `Church workflow packet` only for church/religious-body domains. Presets prefill programme attendance, pastoral/welfare follow-up, member belonging, department service/handover, and contribution memory while keeping the normal subject/evidence form.
+- Docs/audits: `docs/SCREEN_SPECS.md` now requires the church workflow packet and states the pastoral/privacy/payment boundary. `frontend/tools/audit-community-domain-product-contracts.mjs` now guards the backend catalogue, tests, and frontend packet.
+- Tests added: `gmfn_backend/tests/test_community_domain_collection_instructions.py` now proves church catalogue priority and private pastoral follow-up recording with zero trust delta and no payment/outcome claim.
+- Verification passed: `python -m pytest gmfn_backend\tests\test_community_domain_collection_instructions.py -q`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run build`.
+- Devil truth: this moves the pastor/Mrs recommendations from generic capability into explicit GSN workflow support, but it is not a full church operating system. It does not send pastoral messages, import attendance sheets, reconcile offerings, prove payment settlement, replace safeguarding/counselling duties, or automate beneficiary confirmation. Those remain separate gaps if the pilot demands them.
+## 2026-09-07 - Church offering and donation QR implementation
+
+- Status: Local implementation complete and verified; not committed, pushed, deployed, or live-tested on Render in this slice.
+- Owner trigger: owner said to implement the required governance update for church/religious-body cashless offerings and donations with QR code support.
+- Backend routes affected: `POST /community-domains/{community_domain_id}/collection-instructions`, `GET /community-domains/{community_domain_id}/collection-instructions`, and public `GET /community-domains/public/collection-instructions/{public_code}` in `gmfn_backend/app/api/routes/community_domains.py`.
+- Backend behavior: domain owner/admin can publish a governed collection instruction when `payments_contributions` is enabled; the record is stored as additive `community_domain.collection_instruction` TrustEvent metadata with a bearer-style public code and non-custodial boundary text. The public endpoint returns purpose, type/mode, amount label, currency, and approved external payment URL only; it does not expose the receiving account label.
+- Frontend routes/screens affected: authenticated `/app/community-domain` and `/app/community-domain/:communityDomainId` billing lane now include a compact `Offering and donation QR` panel; new public `/community-collections/:publicCode` renders the scannable QR landing page without bottom nav.
+- Frontend behavior: admin can publish a public standing/event-specific offering, donation, tithe, levy, welfare/project support, registration, or event-fee QR instruction from the Community Domain billing lane. The QR opens the GSN collection page and can hand off to an approved external `https://` payment page. The first slice intentionally publishes public QR only; member-only/department-only QR landing pages need a separate authenticated route before UI exposure.
+- Guardrails/tests: added `gmfn_backend/tests/test_community_domain_collection_instructions.py` and updated `frontend/tools/audit-community-domain-product-contracts.mjs` to guard the route, dashboard panel, public page, feature gate, and public account-detail boundary.
+- Verification passed: `python -m pytest gmfn_backend\tests\test_community_domain_collection_instructions.py -q`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-domain-product-contracts`; `git diff --check` passed with only line-ending warnings.
+- Devil truth: this is not a bank integration or payment confirmation system. The QR links to a GSN governed instruction page and optional external payment URL; settlement, reconciliation, payment proof review, provider integration, and real church-bank QR standards remain future work before claiming end-to-end offering payment automation.
+## 2026-09-07 - Church offering and donation QR governance requirement
+
+- Status: Documentation-only requirement update; no app code, backend code, schema, auth, payment rail, ledger, deployment, or frozen route files changed.
+- Owner trigger: after a pastor/customer discovery conversation, owner clarified that churches and religious bodies need a standard cashless offering/donation provision, preferably a QR code that members can scan without exposing church account details.
+- Updated `docs/GSN_COMMUNITY_FINANCE_ENGINE_PROTOCOL_2026-06-30.md` to add Donation and Offering Instructions, including standing QR codes for ordinary offerings and optional event/campaign-specific QR codes.
+- Updated `docs/GSN_COMMUNITY_GOVERNANCE_DELEGATED_AUTHORITY_PROTOCOL_2026-06-30.md` to require delegated financial collection authority and audit trails for creating, approving, publishing, changing, retiring, or correcting offering/donation QR instructions.
+- Updated `docs/GSN_COMMUNITY_SETTINGS_ENGINE_PROTOCOL_2026-06-30.md` so Community Domains can configure whether donation/offering QR instructions are disabled, standing-only, event-specific, both, and which visibility/approval rules apply.
+- Updated `docs/COMMUNITY_DOMAIN_IMPLEMENTATION_PLAN_2026-06-28.md` and `docs/SCREEN_SPECS.md` to make this a generic Community Domain collection-instruction capability, especially relevant to churches/religious bodies, without creating a separate church-only engine.
+- Devil truth: this is a requirement and governance update, not a working payment product. The future implementation must still define the QR target, payment provider/bank-transfer path, permissions, proof/reconciliation workflow, and privacy policy before claiming members can actually pay offerings through GSN.
+
+## 2026-09-07 - Customer discovery listening assistant protocol
+
+- Status: Documentation-only protocol added; no app code, backend code, schema, auth, deployment, or frozen route files changed.
+- Owner trigger: owner identified that Jason/AI must be framed as a listening assistant during pastor/customer discovery, not as the product or an impress-the-room demo.
+- Added `docs/GSN_CUSTOMER_DISCOVERY_LISTENING_ASSISTANT_PROTOCOL_2026-09-07.md` as the standard for future GSN discovery conversations, CDWs, pilot interviews, pastor/community meetings, and AI-assisted live discovery.
+- README now points customer discovery and AI-assisted live discovery work to this protocol.
+- Core rule: listen first, map the real workflow, protect authority and privacy, show only relevant GSN material, end with one safe pilot candidate, and record truth rather than applause.
+- Devil truth: AI-generated enthusiasm, polite agreement, or a good live assistant moment is not validation. A discovery conversation only becomes meaningful evidence when the participant names a real repeated workflow, authority/privacy boundaries, refusal risks, and a small test they would actually allow.
+
+## 2026-09-06 - Local Ndi Imo complete audience explainer final consolidation
+
+- Status: One complete audience explainer generated locally; not emailed, committed, pushed, or deployed.
+- Owner correction: the side-by-side explainer was useful but still too economical on the three highest-value areas: executive governance relief, ordinary member economic/social value, and whole-community evidence readiness for grants, travel/event verification, partner/funder conversations and projects.
+- Source chain checked: recent sent Gmail packs from 2026-09-04 and 2026-09-06, local `GSN_Ndi_Imo_Missing_Details_Addendum.pdf`, `export-ndi-imo-addendum-pdf.mjs`, local/downloaded `GSN_Diaspora_Community_Presenter_Read_Through_Guide.pdf`, and the corrected 17-page side-by-side audience explainer.
+- Final artifacts: `outputs/manual-20260906/presentations/ndi-imo-final/complete-explainer/GSN_Ndi_Imo_Complete_Audience_Explainer_Collapsible.html`, `outputs/manual-20260906/presentations/ndi-imo-final/complete-explainer/GSN_Ndi_Imo_Complete_Audience_Explainer_Print_Copy.pdf`, and `outputs/manual-20260906/presentations/ndi-imo-final/complete-explainer/GSN_Ndi_Imo_Complete_Audience_Explainer_Package.zip`.
+- Content structure: 24 pages. Starts with attention questions, then preserves the accepted slide visuals with explanations, adds the three stakeholder value tests, explicit executive/member/community benefit pages, a three-engines-to-three-audiences map, a governance-protection page, a grant/support/travel evidence-readiness page, QR access, appendix explanations and a self-answering Q&A page.
+- Verification: Playwright layout check passed with zero overflow across all 24 pages after tightening the Q&A page. PyMuPDF confirmed 24 pages, size 2,782,220 bytes, no blank text pages, and key terms present: executive, members, community, governance, grant, travel, verification, three, engines, Economic Strength, Diaspora Bridge, WhatsApp and QR code. ZIP contains the final PDF, final HTML and slide image assets.
+- Devil truth: this is the strongest read-through/paper version so far, but it is still HTML/PDF, not a new editable PPTX. The grant/funding language is intentionally framed as evidence-readiness, not a promise of grants, approvals or money.
+## 2026-09-06 - Local Ndi Imo audience side-by-side explainer
+
+- Status: Corrected side-by-side audience explainer generated locally; not emailed, committed, pushed, or deployed.
+- Owner correction: the compact/read-through paper version was too economical for the current need. The owner wanted the visible graph/slide material kept, with fuller explanation attached beside it, preferably collapsible for reading.
+- Source used: `outputs/manual-20260906/presentations/ndi-imo-final/source-qr-enabled-presentation.pdf` for the slide/graph visuals, `C:\Users\chukwuma pc\Downloads\GSN_Diaspora_Community_Presenter_Read_Through_Guide.pdf` for the fuller explanations, and the previously recovered public QR/Drive access context for the QR page.
+- Corrected artifacts: `outputs/manual-20260906/presentations/ndi-imo-final/side-explainer/GSN_Ndi_Imo_Audience_Side_By_Side_Explainer_Collapsible.html`, `outputs/manual-20260906/presentations/ndi-imo-final/side-explainer/GSN_Ndi_Imo_Audience_Side_By_Side_Explainer_Print_Copy.pdf`, and `outputs/manual-20260906/presentations/ndi-imo-final/side-explainer/GSN_Ndi_Imo_Audience_Side_By_Side_Explainer_Package.zip`.
+- Format: each page keeps the original slide visual on the left and the audience-facing explanation on the right. The HTML uses open/close `<details>` blocks with Open all / Close all controls; the PDF keeps explanations open for paper/print reading.
+- Alignment note: the QR-enabled audience deck has the QR/access slide inserted at visual page 13, so guide explanations map to deck pages 1-12, QR page 13, and guide appendix explanations on deck pages 14-17.
+- Verification: corrected PDF has 17 pages, every page has text and one slide image, and page 13 includes the QR/access explanation. Public-facing labels were checked so `Presenter cue` and `PURPOSE OF THIS SLIDE` are not present in the corrected audience HTML.
+- Devil truth: an earlier first attempt in the same folder has an extra starter page and should be ignored. Use only the files whose names begin `GSN_Ndi_Imo_Audience_Side_By_Side_Explainer`.
+## 2026-09-06 - Local Ndi Imo final read-through presentation pack
+
+- Status: Local final read-through pack generated for immediate owner review/use; not emailed, committed, pushed, or deployed.
+- Owner correction: the prior plain speech draft was the wrong direction. The owner wanted the existing demo/QR-enabled presentation pack and the later human/value + Ndi Imo additions merged into one flowing downloadable/readable package, not a fresh standalone talk.
+- Source recovered from Gmail: sent email `GSN QR-Enabled Community Presentation Pack`, 2026-09-04 10:10 UTC, confirmed attachments included editable PPTX, audience PDF, WhatsApp access card, standalone QR, ZIP pack, and Google Drive folder `https://drive.google.com/drive/folders/1FjMuWoIKYkFnN215_-2hHHYfWBJDjjpm`.
+- Source recovered locally: `outputs/manual-20260904/presentations/deck-review/GSN_Diaspora_Community_Value_Human_Draft.pdf`, compact PDF, HTML source, `assets/source.pptx`, and `GSN_Ndi_Imo_Missing_Details_Addendum.pdf`.
+- New artifacts: `outputs/manual-20260906/presentations/ndi-imo-final/GSN_Ndi_Imo_Customer_Discovery_Final_Read_Through_Pack.html` and `outputs/manual-20260906/presentations/ndi-imo-final/GSN_Ndi_Imo_Customer_Discovery_Final_Read_Through_Pack.pdf`.
+- QR handling: downloaded the prior QR-enabled audience PDF from the Gmail connector file URL into `outputs/manual-20260906/presentations/ndi-imo-final/source-qr-enabled-presentation.pdf`; extracted the embedded QR/access image from page 13 into `assets/previous-pack-qr.png`.
+- Final pack content: 17 PDF pages covering cover, opening, existing value, scattered-value problem, WhatsApp reality, GSN structured layer, three connected engines, Community Structure, Economic Strength, home-and-abroad bridge, shared benefit for parents/youths/members/leaders, trust architecture, start-small options, controlled next step, QR access page, and two appendix pages for deeper read-at-home detail.
+- Verification: exported via Playwright/Chromium after sandboxed Chromium launch hit `spawn EPERM` and was rerun with permission; PyMuPDF confirmed 17 pages, non-empty output size 472,986 bytes, no blank text pages, and one image embedded on the QR page.
+- Devil truth: this is a merged PDF/HTML read-through pack, not an editable merged PPTX. The original editable PPTX still exists locally as `outputs/manual-20260904/presentations/deck-review/assets/source.pptx`; creating a new editable merged PPTX would be a separate pass.
+## 2026-09-04 - Local Ndi Imo Missing Details Addendum
+
+- Status: Local presentation review addendum generated; not pushed/deployed and not emailed unless the owner requests it.
+- Source reviewed: `C:\Users\chukwuma pc\AppData\Roaming\Microsoft\Windows\Network Shortcuts\GSN_Diaspora_Community_Presenter_Read_Through_Guide.pdf` (17 pages, 1,765,378 bytes, last modified 2026-09-04 20:21:55). PyMuPDF extracted 30,508 bytes of text into `outputs/manual-20260904/presentations/deck-review/ndi-imo-guide-review/extracted-text.txt`; first six page previews were rendered into the same folder.
+- Generated artifacts: `outputs/manual-20260904/presentations/deck-review/ndi-imo-missing-details-addendum.html` and `outputs/manual-20260904/presentations/deck-review/GSN_Ndi_Imo_Missing_Details_Addendum.pdf`.
+- Addendum content: 8 slides covering the missing human/value details from the presenter guide: respect the community's existing value, scattered-value problem framing, three understandable engines, richer governance details, member opportunity details, diaspora bridge, and a one-action CDW close.
+- Devil truth: the visible Ndi Imo deck should not only list GSN features. It needs the presenter guide's emotional logic: GSN does not create the community's value from zero; it helps preserve and organise value already present. Without that, the presentation risks sounding like a mechanical app demo.
+## 2026-09-04 - Local Pastor CDW Review Deck Draft
+
+- Status: Local presentation artifacts generated for review; not pushed/deployed.
+- User context: owner spoke with a pastor and wants a similar human/value-led GSN presentation for a CDW (customer discovery workshop). User said "Monday 9th"; calendar truth as of Friday 2026-09-04 is that Monday is 2026-09-07, while 2026-09-09 is Wednesday. Draft intentionally phrases date as needing confirmation.
+- Generated artifacts: `outputs/manual-20260904/presentations/pastor-cdw/gsn-pastor-cdw-review-draft.html`, `outputs/manual-20260904/presentations/pastor-cdw/GSN_Pastor_Customer_Discovery_Workshop_Review_Draft.pdf`, and `outputs/manual-20260904/presentations/pastor-cdw/GSN_Pastor_Customer_Discovery_Workshop_Review_Draft_Compact.pdf`.
+- Narrative change from diaspora/executive deck: pastor version leads with ministry order, pastoral care, privacy, welfare follow-up, member belonging, church leadership handover, department coordination, live digital ID, contribution memory, member opportunity, Demand Box, and a safe one-workflow CDW pilot.
+- Support wording preserved: customer discovery with the support of Robert Gordon University; business-development/adviser support from Business Gateway Aberdeen City & Shire. It does not claim certification, sponsorship, formal endorsement, or partnership beyond available email evidence.
+- Verification: compact PDF exported via local Node script; designed PDF exported via Playwright/Chromium after sandboxed Chromium launch hit `spawn EPERM` and was rerun with permission. Files are non-empty: designed PDF 267,294 bytes; compact PDF 32,590 bytes; source HTML contains 18 slides.
+- Devil truth: this is a strong review draft, but it still has placeholders. Before sending externally, confirm the pastor's name/title, church name, exact workshop date/time, whether "church" should be replaced with the denomination/ministry name, and whether QR/read-later material exists.
 ## 2026-09-03 - Local public GSN identity card privacy evidence refresh
 
 - Status: Local frontend fix verified; not deployed in this slice because the owner's latest message clarified the card content rather than giving a fresh deploy instruction.
@@ -11693,7 +11850,7 @@ Published baseline:
 - No commit, push, deploy, backend change, schema change, or permission change
   has been done for this latest local slice.
 - Historical local notes below are retained for continuity, but their older
-  â€œlocal onlyâ€ baseline statements were superseded by the `19315f90` push.
+  ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œlocal onlyÃƒÂ¢Ã¢â€šÂ¬Ã‚Â baseline statements were superseded by the `19315f90` push.
 
 Unabated truth:
 - The Receipt, Contact, and Recent packet chooser work had reduced clutter, but
@@ -38947,7 +39104,7 @@ Verification:
   `status` strings directly.
 
 Unabated truth / remaining boundary:
-- This should reduce the â€œthin column / one-word stackâ€ issue in Community
+- This should reduce the ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œthin column / one-word stackÃƒÂ¢Ã¢â€šÂ¬Ã‚Â issue in Community
   Domain readiness cards. It does not prove every Community Domain lane is now
   screenshot-perfect because no browser/phone screenshot sweep was run in this
   slice.
@@ -59585,7 +59742,7 @@ What changed locally:
 - While optional readiness/map reads are still loading:
   - the Setup readiness card says readiness checks are loading instead of falsely saying the checklist could not load;
   - the Setup plan card says the setup plan is loading instead of falsely saying the plan could not load;
-  - the opened-lane detail area shows a read-only â€œLoading setup intelligenceâ€ card instead of rendering lane panels against null optional data.
+  - the opened-lane detail area shows a read-only ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œLoading setup intelligenceÃƒÂ¢Ã¢â€šÂ¬Ã‚Â card instead of rendering lane panels against null optional data.
 - Once the optional reads complete, the existing lane panels render with the same state fields as before.
 - Existing write actions, owner/admin review actions, membership request actions, quote refresh, permission checks, route contracts, and navigation model were not changed.
 
@@ -69711,7 +69868,7 @@ Publish/deploy status:
 Unabated truth:
 - This is not identity reconciliation. It does not create, repair, or merge
   member IDs.
-- It is useful because it makes the â€œone person, many communities/domainsâ€
+- It is useful because it makes the ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œone person, many communities/domainsÃƒÂ¢Ã¢â€šÂ¬Ã‚Â
   doctrine visible without leaking other domain names or private member records.
 - The rest of this handoff file still contains repeated older sections. Treat
   this top block as the freshest state before reading older entries.
@@ -81972,7 +82129,7 @@ Complaint ledger:
 
 - Trigger:
   - continued the urgent phone drag/jumpy-button cleanup after the first
-    `scrollIntoView` pass. The ownerâ€™s complaint is still that phone dragging
+    `scrollIntoView` pass. The ownerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s complaint is still that phone dragging
     can feel glued/hanging and buttons can appear to jump after taps.
 - Changed:
   - `frontend/src/pages/DemandBoxPage.tsx`
@@ -82015,7 +82172,7 @@ Complaint ledger:
   - remaining page-local raw `window.scrollTo` is only the TrustSlip no-hash
     top restore; the other `scrollTo` hits are shared stability/clipboard
     helpers;
-  - this is a broad code-side fix for route reveal jumpiness, but the ownerâ€™s
+  - this is a broad code-side fix for route reveal jumpiness, but the ownerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s
     real Android phone still needs to verify the tactile drag improvement;
   - `npm run audit:trust-actions` still fails on older unrelated wording/route
     expectations in TrustSlip, Guarantor Inbox, Loan Summary, and Money In;
@@ -83010,7 +83167,7 @@ Complaint ledger:
     - added a low-opacity GSN page watermark and seal-style background mark to
       the active TrustSlip paper frame.
     - changed the active hero from a plain app header into a document masthead:
-      TrustSlip wordmark, 3D GSN shield icon, `GSN Â· Public View`, record
+      TrustSlip wordmark, 3D GSN shield icon, `GSN Ãƒâ€šÃ‚Â· Public View`, record
       anchor, and holder/community/GSN ID context.
     - added a truth-bound security mark driven by the actual TrustSlip state:
       `Active`, `Expired`, `Revoked`/`Frozen`, or `Pending`.
@@ -83302,7 +83459,7 @@ Complaint ledger:
     passed: 16 tests.
 - Unabated truth:
   - this repair fixes the stale Trust Passport read path. It does not prove the
-    ownerâ€™s live phone/browser session has the expected backend rows yet; if the
+    ownerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s live phone/browser session has the expected backend rows yet; if the
     live user record still does not show recorded states after this build, the
     next check should inspect the actual `/trust-slips/me` JSON for that account
     and confirm whether the save requests are returning success or errors.
@@ -93378,7 +93535,7 @@ Complaint ledger:
       - save/contribute with clearer records and fewer disputes;
       - do not start from zero; take your trust with you.
     - changed the marketplace/community line to
-      `ðŸ›ï¸ Community: {marketplaceName}`.
+      `ÃƒÂ°Ã…Â¸Ã‚ÂÃ¢â‚¬ÂºÃƒÂ¯Ã‚Â¸Ã‚Â Community: {marketplaceName}`.
     - kept the copied-message top invite URL, tap hint, sender name, personal
       note, expiry, request-access instruction, and review boundary.
   - `frontend/tools/audit-existing-community-invite-line.mjs`
@@ -93399,7 +93556,7 @@ Complaint ledger:
     - tap hint;
     - sender line;
     - six serial benefit lines;
-    - `ðŸ›ï¸ Community: {marketplaceName}`;
+    - `ÃƒÂ°Ã…Â¸Ã‚ÂÃ¢â‚¬ÂºÃƒÂ¯Ã‚Â¸Ã‚Â Community: {marketplaceName}`;
     - personal note and review boundary.
 - Unabated truth:
   - this is copy-only in the shared invite message builder and source audits;
@@ -93412,7 +93569,7 @@ Complaint ledger:
     the link preview/text area is the place to tap.
 - Changed:
   - `frontend/src/lib/joinInviteMessaging.ts`
-    - adds `â¬†ï¸ Tap the GSN Link preview above to open the invitation.` directly
+    - adds `ÃƒÂ¢Ã‚Â¬Ã¢â‚¬Â ÃƒÂ¯Ã‚Â¸Ã‚Â Tap the GSN Link preview above to open the invitation.` directly
       after the top invite URL in copied/WhatsApp doorway messages.
     - keeps the compact link first so WhatsApp can still generate the hero
       preview card.
@@ -93434,7 +93591,7 @@ Complaint ledger:
     sandboxed Vite/esbuild process hits Windows `spawn EPERM`.
   - Confirmed generated copied-message text starts with:
     - invite URL;
-    - `â¬†ï¸ Tap the GSN Link preview above to open the invitation.`
+    - `ÃƒÂ¢Ã‚Â¬Ã¢â‚¬Â ÃƒÂ¯Ã‚Â¸Ã‚Â Tap the GSN Link preview above to open the invitation.`
   - Confirmed lower copied-message instruction now says:
     - `After it opens, request access from the invitation page.`
 - Unabated truth:
@@ -94041,8 +94198,8 @@ Complaint ledger:
   - Passed `npm run build` from `frontend`.
 - Unabated truth:
   - the private GSN relationship note is not for the invitee. It is for extra
-    relationship evidence such as â€œknown from Alaba market for 5 yearsâ€ or â€œmy
-    schoolmate and trading contact.â€ It stays out of the WhatsApp message.
+    relationship evidence such as ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œknown from Alaba market for 5 yearsÃƒÂ¢Ã¢â€šÂ¬Ã‚Â or ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œmy
+    schoolmate and trading contact.ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â It stays out of the WhatsApp message.
 
 ### Join invite messages now carry explicit sender and receiver names (2026-06-14)
 
@@ -102550,7 +102707,7 @@ Complaint ledger:
   - `npm exec -- eslint src/pages/ShopGalleryPage.tsx
     src/components/TrustGraphAdminPage.tsx` passed from `frontend`;
   - focused scan found no remaining `TrustGraph Command`, `CCI remains`,
-    `internal metric name`, `Explainability`, `Ã‚`, `Ã¢`, em-dash fallback, or
+    `internal metric name`, `Explainability`, `ÃƒÆ’Ã¢â‚¬Å¡`, `ÃƒÆ’Ã‚Â¢`, em-dash fallback, or
     circled-info glyph matches in the touched public shop / duplicate Trust
     Graph files;
   - `npm run audit:shop-gallery-button-inventory` passed from `frontend`;
@@ -103118,7 +103275,7 @@ Complaint ledger:
   - focused scan found no visible emoji/mojibake scars in the touched files;
   - broad `rg` scan found no remaining visible emoji marks in
     `frontend/src/pages` or `frontend/src/components`;
-  - broad `rg` scan found no remaining `Ã¢`, `Ãƒ`, or `Ã‚` broken-character scars
+  - broad `rg` scan found no remaining `ÃƒÆ’Ã‚Â¢`, `ÃƒÆ’Ã†â€™`, or `ÃƒÆ’Ã¢â‚¬Å¡` broken-character scars
     in `frontend/src/pages` or `frontend/src/components`;
   - `npm --prefix frontend run audit:button-stability` passed;
   - `npm --prefix frontend run audit:tap-stability` passed;
@@ -103189,8 +103346,8 @@ Complaint ledger:
 - Verification:
   - `npm exec -- eslint src/pages/SubscriptionSpotlightPage.tsx` passed from
     `frontend`;
-  - quick scan found no remaining visible `â­`, `âœ…`, `âš™ï¸`, `â³`, or mojibake
-    `Ã¢` scars in `SubscriptionSpotlightPage.tsx`;
+  - quick scan found no remaining visible `ÃƒÂ¢Ã‚Â­Ã‚Â`, `ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦`, `ÃƒÂ¢Ã…Â¡Ã¢â€žÂ¢ÃƒÂ¯Ã‚Â¸Ã‚Â`, `ÃƒÂ¢Ã‚ÂÃ‚Â³`, or mojibake
+    `ÃƒÆ’Ã‚Â¢` scars in `SubscriptionSpotlightPage.tsx`;
   - `npm --prefix frontend run audit:marketplace-actions` passed;
   - `npm --prefix frontend run audit:button-stability` passed;
   - `npm --prefix frontend run audit:tap-stability` passed;
@@ -103890,7 +104047,7 @@ Complaint ledger:
     - Dashboard Spotlight audio labels only;
   - shortened `PayoutDetailsPage.tsx` copy so the page says what the user needs
     to do without repeating custody explanations;
-  - removed a `Workingâ€¦` mojibake/display issue in the confirm modal;
+  - removed a `WorkingÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦` mojibake/display issue in the confirm modal;
   - updated the related audits so they protect the new SVG/audio-label shape.
 - Verification:
   - frontend source emoji/mojibake scan over `frontend/src/pages`,
@@ -104489,7 +104646,7 @@ Complaint ledger:
     or shared tap-guard behavior changed.
 - Fix:
   - removed the top `ExplainToggle`, the separate `Why this matters` section,
-    and the duplicated long â€œGSN does not hold fundsâ€ paragraph;
+    and the duplicated long ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œGSN does not hold fundsÃƒÂ¢Ã¢â€šÂ¬Ã‚Â paragraph;
   - added app-native SVG bank pictogram support to `TrustPaperIcon`;
   - rebuilt the payout form as a lighter, icon-led card with stronger contrast;
   - added a visible `UK sort code` field, normalizing six digits to
@@ -104695,7 +104852,7 @@ Complaint ledger:
     changed.
 - Fix:
   - shortened the Demand Box hero to a community-specific request prompt;
-  - replaced the old â€œhow demand worksâ€ explainer/stat shape with a compact
+  - replaced the old ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œhow demand worksÃƒÂ¢Ã¢â€šÂ¬Ã‚Â explainer/stat shape with a compact
     current-state card showing mine, community, next step, and optional GSN ID;
   - made the create action span the first phone row while Return and Dashboard
     sit as stable secondary escapes;
@@ -108294,9 +108451,9 @@ Complaint ledger:
   - repair must be system-level, not only a page repaint.
 - Backend repair:
   - added a shared `_owner_public_shop_payload(...)` helper that gathers the
-    signed-in ownerâ€™s active shops and active public/community-visible products
+    signed-in ownerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s active shops and active public/community-visible products
     across the owner shop identity;
-  - `GET /marketplace/shops/me` now returns the signed-in ownerâ€™s shop face and
+  - `GET /marketplace/shops/me` now returns the signed-in ownerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s shop face and
     public block products directly from backend truth;
   - `GET /marketplace/shops/by-gmfn/{gmfn_id}` now uses the same helper, so
     authenticated GMFN lookup and owner lookup share the same product scope;
@@ -109211,7 +109368,7 @@ Complaint ledger:
   - no raw buttons or links were introduced;
   - existing stable debug IDs remain for shop shortcuts, hero actions, vault
     actions, product toggle/share, and remaining product controls;
-  - the button-stability audit now protects the softer `ðŸ”¼` close sign instead
+  - the button-stability audit now protects the softer `ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â¼` close sign instead
     of the older red X.
 - Verification:
   - `npm run audit:button-stability` passed;
@@ -109745,10 +109902,10 @@ Complaint ledger:
   - the requested meaning of "emoji" here is compact real-life signs that use
     less space and are easier for low-literacy users to understand.
 - Frontend change:
-  - product-card video sound now shows compact speaker signs: `ðŸ”Š`, `ðŸ”‡`, and
-    `â–¶ï¸` for the fallback retry state;
-  - product-card open/close now shows compact signs: `ðŸ‘ï¸` and `âŒ`;
-  - product-card share now shows `ðŸ“¤`;
+  - product-card video sound now shows compact speaker signs: `ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ…Â `, `ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Â¡`, and
+    `ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¶ÃƒÂ¯Ã‚Â¸Ã‚Â` for the fallback retry state;
+  - product-card open/close now shows compact signs: `ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚ÂÃƒÂ¯Ã‚Â¸Ã‚Â` and `ÃƒÂ¢Ã‚ÂÃ…â€™`;
+  - product-card share now shows `ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¤`;
   - all compact sign buttons keep text `aria-label` and `title` values for
     accessibility and traceability;
   - product-card action buttons are fixed-size round controls instead of wide
@@ -114262,7 +114419,7 @@ Complaint ledger:
   - Drafts expire locally after 24 hours.
 - `CreateEntryPage` now:
   - restores the safe draft on load;
-  - shows a compact â€œContinue unfinished entryâ€ card with Continue and Start
+  - shows a compact ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œContinue unfinished entryÃƒÂ¢Ã¢â€šÂ¬Ã‚Â card with Continue and Start
     again actions;
   - clears the draft after successful account/community handoff or when the
     user chooses Existing Member sign-in.
@@ -114830,8 +114987,8 @@ Complaint ledger:
   - `npm run build` first hit the known sandbox Vite/esbuild `spawn EPERM`,
     then passed with approved escalation.
 - Remaining truth:
-  - This changes the meaning of the TrustSlip page refresh button from â€œreload
-    current slipâ€ to â€œissue a fresh public slip for a new sharing session.â€
+  - This changes the meaning of the TrustSlip page refresh button from ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œreload
+    current slipÃƒÂ¢Ã¢â€šÂ¬Ã‚Â to ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œissue a fresh public slip for a new sharing session.ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â
   - Existing already-shared old QR links will still show their original issue
     date by design; new refresh produces the new QR/code/date.
 
@@ -115475,7 +115632,7 @@ Complaint ledger:
   - `npm run build` still hits sandbox Vite/esbuild `spawn EPERM` inside the
     sandbox, then passed with approved escalation.
 - Remaining truth:
-  - This is now a stronger system-level fix, but it still needs the ownerâ€™s
+  - This is now a stronger system-level fix, but it still needs the ownerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s
     real phone retest before declaring the Dashboard safe for the school test.
   - If a wrong landing remains, the next move is a runtime geometry audit that
     samples each Dashboard CTA with `elementFromPoint()` on phone viewport.
@@ -122543,7 +122700,7 @@ Marketplace picture-tools click-barrier cleanup pass.
 
 #### Open risks or unknowns
 - This is another safe checkpoint, not a final freeze.
-- Other small tool bubbles or nested action surfaces may still carry the same â€œpointer guard plus extra click stopâ€ pattern and can be cleaned in later passes.
+- Other small tool bubbles or nested action surfaces may still carry the same ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œpointer guard plus extra click stopÃƒÂ¢Ã¢â€šÂ¬Ã‚Â pattern and can be cleaned in later passes.
 
 #### Next recommended step
 - Continue targeting nested tool surfaces where pointer/touch guards already exist but extra click-time propagation stops are still layered on top.
@@ -124249,7 +124406,7 @@ Money-out decision-lane simplification pass for `WithdrawalInstructionsPage`.
   - build passed
 
 #### Open risks or unknowns
-- `PaymentInstructionsPage.tsx` still has dense action bands and may need the same style of â€œone clear decision pointâ€ simplification if live testing says Money In still feels physically heavy.
+- `PaymentInstructionsPage.tsx` still has dense action bands and may need the same style of ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œone clear decision pointÃƒÂ¢Ã¢â€šÂ¬Ã‚Â simplification if live testing says Money In still feels physically heavy.
 - Other routes may still keep older local button-guard patterns, but this pass was specifically about removing a duplicate route-action band rather than guard stacking.
 - Marketplace, Dashboard, Community Home, Shop-family routes, and the money-side routes should still be treated as safe checkpoints rather than final freeze states until the broader live phone testing round is complete.
 
@@ -124260,7 +124417,7 @@ Money-out decision-lane simplification pass for `WithdrawalInstructionsPage`.
   - direct withdrawal decision
   - support-backed continuation decision
   - result section after the decision
-- If Money Out now feels materially calmer, inspect `PaymentInstructionsPage.tsx` for the same â€œtoo many action bands for one taskâ€ pattern.
+- If Money Out now feels materially calmer, inspect `PaymentInstructionsPage.tsx` for the same ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œtoo many action bands for one taskÃƒÂ¢Ã¢â€šÂ¬Ã‚Â pattern.
 
 #### Date
 2026-04-26 15:05
@@ -125655,7 +125812,7 @@ Dashboard friction cleanup plus Marketplace link-lane separation and button tigh
 #### Open risks or unknowns
 - This pass improves local/frontend behavior but does not itself fix already-issued stale join links on live Render. Fresh links still need to be generated after the invite-link backend fix is live.
 - The broader request to make other domains visually match the more institutional dashboard profile block is still open.
-- Wider shop/vault/view link auditing across every outward path is still incomplete; this pass focused on Marketplaceâ€™s public/tester-facing link desk first.
+- Wider shop/vault/view link auditing across every outward path is still incomplete; this pass focused on MarketplaceÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s public/tester-facing link desk first.
 
 #### Next recommended step
 - Retest Marketplace on phone first: section toggles, join/create/public-marketplace/public-shop buttons, and WhatsApp send buttons.
@@ -125983,7 +126140,7 @@ Community Home vs Marketplace strategic separation pass, with read-only parallel
   - `One-shop owner work`
   - `Open Selected Community Marketplace`
 - Marketplace copy was tightened to reinforce that Community Home chooses the group first and Marketplace runs one-community work after that.
-- Marketplaceâ€™s no-community-selected state was reduced to the correct handoff surface instead of acting like a generic app launcher. It now mainly sends the user back to Community Home or Dashboard rather than offering multiple unrelated domain jumps before a community is chosen.
+- MarketplaceÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s no-community-selected state was reduced to the correct handoff surface instead of acting like a generic app launcher. It now mainly sends the user back to Community Home or Dashboard rather than offering multiple unrelated domain jumps before a community is chosen.
 - Two read-only parallel audits agreed that the main remaining blur is wording/launcher overlap, not backend business logic confusion.
 
 #### Open risks or unknowns
@@ -127362,7 +127519,7 @@ Dashboard attention surface and shared next-action guide tap containment.
 2026-04-21
 
 #### Workstream
-Install reusable â€œWhat do you want to do next?â€ guide on Community Home and
+Install reusable ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œWhat do you want to do next?ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â guide on Community Home and
 Dashboard.
 
 #### Routes/screens affected
@@ -127379,8 +127536,8 @@ Dashboard.
 - `docs/HANDOFF_NOTES.md`
 
 #### Confirmed facts
-- Product owner asked to bring the Marketplace-style â€œWhat do you want to do
-  next?â€ helper into Community Home and Dashboard.
+- Product owner asked to bring the Marketplace-style ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œWhat do you want to do
+  next?ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â helper into Community Home and Dashboard.
 - Added a shared route-neutral `NextActionGuide` component with collapsed/open
   state, simple keyword matching, search input, quick choices, and tap-event
   containment.
@@ -130450,7 +130607,7 @@ Dashboard branding pass corrected to the real visual benchmark:
   dashboard itself, what is wrong and the first action to take in simple
   language before the user opens the follow-through page.
 - The shared guidance module was then tightened one step further to follow the
-  ownerâ€™s exact pattern for low-literacy / low-time users: `Problem`, `Why it
+  ownerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s exact pattern for low-literacy / low-time users: `Problem`, `Why it
   matters`, and `Do this`. The dashboard helper now shows those three parts on
   the card itself, and the shared translator also softens some technical words
   from trust/identity guidance into simpler language before the user sees them.
@@ -132962,8 +133119,8 @@ GSN-branded invite composer and invite-entry continuity.
   - It did not stop the final click event from bubbling into surrounding cards,
     drawers, overlays, or parent link-like blocks.
   - That can make a correctly tapped link still trigger a parent surface after
-    the link receives the tap, which matches the reported â€œbutton falls
-    somewhere elseâ€ behaviour.
+    the link receives the tap, which matches the reported ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œbutton falls
+    somewhere elseÃƒÂ¢Ã¢â€šÂ¬Ã‚Â behaviour.
 - Updated `frontend/src/components/OriginLink.tsx`:
   - Link and external-anchor clicks now stop propagation before calling their
     own supplied `onClick` handler.
@@ -134549,12 +134706,12 @@ GSN-branded invite composer and invite-entry continuity.
   - Finance utility links and support CTAs now consistently use the
     `Loans & Support` label.
   - Loan readiness, suggestions, workbench, summary, repayment, and revenue
-    allocation now use the same â€œThis page is one step inside Loans & Supportâ€
+    allocation now use the same ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œThis page is one step inside Loans & SupportÃƒÂ¢Ã¢â€šÂ¬Ã‚Â
     framing or equivalent route-local support wording.
   - Cross-links from loan pages back into finance were softened from action
     language like `Open Finance` to evidence language like `See this in
     Finance` where appropriate.
-  - Remaining â€œsupport continuation routesâ€ wording was normalized into
+  - Remaining ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œsupport continuation routesÃƒÂ¢Ã¢â€šÂ¬Ã‚Â wording was normalized into
     `Next support routes` so the loans stack no longer mixes three route-label
     styles.
 - Mobile polish / button tightening:
@@ -134842,7 +134999,7 @@ GSN-branded invite composer and invite-entry continuity.
     - masked outward link codes / labels
     - short GSN share-message text
   - Join-link card now shows a humanized label like:
-    - `Secure GSN join link for <community> â€¢ code <shortened>`
+    - `Secure GSN join link for <community> ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ code <shortened>`
   - Create-link area now shows a short message preview and a masked founder
     entry label.
   - Public marketplace face and public shop face now show short masked labels
@@ -135517,7 +135674,7 @@ GSN-branded invite composer and invite-entry continuity.
 - Important remaining product note:
   - the lane is now steadier and more app-led, but the user-facing copy can
     still be simplified further if the product owner wants an even stronger
-    â€œthe app leads every next stepâ€ tone before freezing this route
+    ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œthe app leads every next stepÃƒÂ¢Ã¢â€šÂ¬Ã‚Â tone before freezing this route
 ### Public shop / gallery now reads through a true public route (2026-04-25)
 
 - Product-owner concern:
@@ -138043,11 +138200,11 @@ GSN-branded invite composer and invite-entry continuity.
       - `created_at`
 - Verification:
   - `python -m pytest tests/test_clan_members.py tests/test_clan_pool.py -q`
-    â†’ `7 passed`
+    ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ `7 passed`
   - `python -m pytest -q tests`
-    â†’ `94 passed`
+    ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ `94 passed`
   - `python -m py_compile app/api/routes/clans.py tests/conftest.py tests/test_join_requests.py`
-    â†’ passed
+    ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ passed
 - Routes impacted:
   - backend member-management + pool-adjustment routes listed above
 - Shared logic impact:
@@ -138087,9 +138244,9 @@ GSN-branded invite composer and invite-entry continuity.
       institutional blue baseline
 - Verification:
   - `npm exec -- eslint src/styles/gmfnBrand.ts src/lib/institutionalSurface.ts src/ui/styles.ts src/components/WorkspaceSettingsBridge.tsx src/components/PageTopNav.tsx`
-    â†’ passed
+    ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ passed
   - `npm run build`
-    â†’ passed
+    ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ passed
 - Routes / screen families most affected:
   - app shell / layout-driven surfaces using `gmfnBrand` and the shared page
     wash
@@ -139614,7 +139771,7 @@ GSN-branded invite composer and invite-entry continuity.
   - `python -m py_compile gmfn_backend\app\api\routes\marketplace.py gmfn_backend\app\services\vault_access_service.py` passed.
   - targeted scans found no remaining plain `OriginLink to="/app/marketplace"`, no plain `navigateWithOrigin(navigate, "/app/marketplace")`, no `publicFrontendUrl(location.pathname)` shop-share pattern, and consistent Vault `api_view_url` values.
 - Remaining risks:
-  - The repo still contains two invite systems (`/invites` direct membership and `/clans` join requests). This pass kept todayâ€™s Marketplace/community join links on the richer `/clans` path, but merging or retiring `/invites` requires an explicit product/governance decision.
+  - The repo still contains two invite systems (`/invites` direct membership and `/clans` join requests). This pass kept todayÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s Marketplace/community join links on the richer `/clans` path, but merging or retiring `/invites` requires an explicit product/governance decision.
   - Some global nav/legacy shortcuts remain intentionally context-agnostic where no concrete community row is being selected.
 
 ### Borrowing/support route-context audit (2026-05-08)
@@ -140436,12 +140593,12 @@ GSN-branded invite composer and invite-entry continuity.
   - repeated pending requests return `pending_request_exists`;
   - approval for existing identities creates membership and does not create an activation package.
 - Updated `frontend/src/pages/JoinEntryPage.tsx`:
-  - logged-in users with an existing GMFN ID see â€œJoin this community with your existing GMFN identityâ€ and submit the invite as an existing-user join request;
-  - logged-out users now see the explicit branch â€œI already have a GMFN IDâ€ versus â€œI am new to GSNâ€;
+  - logged-in users with an existing GMFN ID see ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œJoin this community with your existing GMFN identityÃƒÂ¢Ã¢â€šÂ¬Ã‚Â and submit the invite as an existing-user join request;
+  - logged-out users now see the explicit branch ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œI already have a GMFN IDÃƒÂ¢Ã¢â€šÂ¬Ã‚Â versus ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œI am new to GSNÃƒÂ¢Ã¢â€šÂ¬Ã‚Â;
   - the new-person form is only available to logged-out users who choose the new-member path;
   - logged-in users with unclear identity state are blocked from falling through to new-person signup copy.
 - Updated `gmfn_backend/app/api/routes/clans.py` direct `/clans/{clan_id}/join` route:
-  - reuses/ensures the authenticated userâ€™s GMFN ID before creating membership;
+  - reuses/ensures the authenticated userÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s GMFN ID before creating membership;
   - returns `joined_successfully` with `user_id`, `gmfn_id`, `existing_identity`, and `identity_reused`;
   - repeated clicks now return `already_member` with the same identity/membership instead of a hard duplicate-membership error;
   - logs direct existing-user join and already-member outcomes through `log_trust_event`.

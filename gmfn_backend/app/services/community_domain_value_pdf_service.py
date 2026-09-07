@@ -53,11 +53,16 @@ def build_community_domain_value_report_pdf(
     audience: str,
     period_summary: dict[str, Any] | None = None,
     sponsor_summary: dict[str, Any] | None = None,
+    church_memory_summary: dict[str, Any] | None = None,
 ) -> bytes:
     """Build a controlled Community Domain value PDF from existing summaries."""
 
     is_sponsor = audience == "sponsor_safe"
-    payload = _record(sponsor_summary if is_sponsor else period_summary)
+    is_church_memory = audience == "church_memory"
+    if is_church_memory:
+        payload = _record(church_memory_summary)
+    else:
+        payload = _record(sponsor_summary if is_sponsor else period_summary)
     period_label = _period_label(payload)
     generated_at = utc_generated_label()
     reference = f"GSN-CD-{int(community_domain_id)}-VALUE"
@@ -70,15 +75,24 @@ def build_community_domain_value_report_pdf(
     bottom = 24 * mm
     line_width = right - left
 
-    title = "GSN Community Value Report"
+    title = "GSN Church Summary Report" if is_church_memory else "GSN Community Value Report"
     subtitle = (
-        "Sponsor-safe aggregate evidence from recorded Community Domain facts."
-        if is_sponsor
-        else "Internal governance summary from recorded Community Domain facts."
+        "Sermon/message and programme summary for church leadership review."
+        if is_church_memory
+        else (
+            "Sponsor-safe aggregate evidence from recorded Community Domain facts."
+            if is_sponsor
+            else "Internal governance summary from recorded Community Domain facts."
+        )
     )
     footer = (
-        "GSN Community Value Report - generated from recorded Community Domain facts only. "
-        "It does not certify unrecorded activity or replace association judgement."
+        "GSN Church Summary Report - generated from recorded notices and church workflow records only. "
+        "It does not judge doctrine, prove payment, or replace church leadership."
+        if is_church_memory
+        else (
+            "GSN Community Value Report - generated from recorded Community Domain facts only. "
+            "It does not certify unrecorded activity or replace association judgement."
+        )
     )
 
     y = draw_institutional_header(
@@ -173,22 +187,119 @@ def build_community_domain_value_report_pdf(
     metric_box(
         [
             ("Community Domain", domain_name),
-            ("Audience", "Sponsor-safe" if is_sponsor else "Director/admin"),
+            ("Audience", "Church summary" if is_church_memory else ("Sponsor-safe" if is_sponsor else "Director/admin")),
             ("Period", period_label),
             ("Report status", payload.get("report_status") or payload.get("sponsor_readiness") or "prepared"),
         ]
     )
 
     heading("Truth Boundary")
-    for line in (
-        "This PDF is generated only from records already captured inside GSN.",
-        "It does not prove unrecorded activity, certify impact, send external messages, or replace the judgement of the association leadership.",
-        "Sponsor-safe mode omits beneficiary names, user IDs, private notes, baseline text, after-value text, evidence references, and source record IDs.",
-    ):
+    truth_lines = (
+        (
+            "This PDF is generated only from official notices, church workflow records, and live QR attendance check-ins already captured inside GSN.",
+            "It can support leadership review of message and programme patterns, but it does not judge doctrine or replace pastoral authority.",
+            "It does not expose private pastoral notes, member lists, bank details, payment proof, safeguarding details, or unrecorded activity.",
+        )
+        if is_church_memory
+        else (
+            "This PDF is generated only from records already captured inside GSN.",
+            "It does not prove unrecorded activity, certify impact, send external messages, or replace the judgement of the association leadership.",
+            "Sponsor-safe mode omits beneficiary names, user IDs, private notes, baseline text, after-value text, evidence references, and source record IDs.",
+        )
+    )
+    for line in truth_lines:
         bullet(line)
     y -= 2 * mm
 
-    if is_sponsor:
+    if is_church_memory:
+        messages = _record(payload.get("message_summary"))
+        programmes = _record(payload.get("programme_summary"))
+        responses = _record(payload.get("response_summary"))
+        recent_messages = [
+            _record(item)
+            for item in _list(messages.get("recent_messages"))
+            if _record(item).get("body")
+        ]
+        recent_programmes = [
+            _record(item)
+            for item in _list(programmes.get("recent_programme_records"))
+        ]
+        recent_live_attendance = [
+            _record(item)
+            for item in _list(programmes.get("recent_live_attendance_sessions"))
+        ]
+        recent_response_channels = [
+            _record(item)
+            for item in _list(responses.get("recent_response_channels"))
+        ]
+        recent_responses = [
+            _record(item)
+            for item in _list(responses.get("recent_responses"))
+        ]
+        prompts = [safe_pdf_text(item, fallback="") for item in _list(payload.get("review_prompts")) if safe_pdf_text(item, fallback="")]
+
+        heading("Sermon And Programme Summary")
+        metric_box(
+            [
+                ("Official messages", messages.get("total", 0)),
+                ("Public QR messages", messages.get("public_qr_total", 0)),
+                ("Church workflow records", programmes.get("total", 0)),
+                ("Programme attendance", programmes.get("programme_attendance_total", 0)),
+                ("Live QR windows", programmes.get("live_attendance_session_total", 0)),
+                ("Live QR check-ins", programmes.get("live_attendance_checkin_total", 0)),
+                ("Response QR windows", responses.get("response_channel_total", 0)),
+                ("Responses received", responses.get("response_total", 0)),
+                ("Questions raised", responses.get("question_total", 0)),
+                ("Needs / requests", responses.get("need_request_total", 0)),
+                ("Private follow-up", responses.get("private_follow_up_total", 0)),
+                ("Pastoral follow-up", programmes.get("pastoral_follow_up_total", 0)),
+                ("Department service", programmes.get("department_service_total", 0)),
+                ("Contribution memory", programmes.get("contribution_memory_total", 0)),
+            ]
+        )
+        if recent_messages:
+            heading("Recent Recorded Messages")
+            for item in recent_messages[:12]:
+                marker = "QR" if item.get("public_qr_enabled") else "member"
+                bullet(f"{safe_pdf_text(item.get('posted_at'), fallback='Recorded')}: [{marker}] {safe_pdf_text(item.get('body'), fallback='Recorded message')}")
+            y -= 2 * mm
+        if recent_programmes:
+            heading("Recent Programme Records")
+            for item in recent_programmes[:12]:
+                label = safe_pdf_text(item.get("activity_label"), fallback=safe_pdf_text(item.get("activity_type"), fallback="Activity"))
+                quantity = safe_pdf_text(item.get("quantity"), fallback="")
+                unit = safe_pdf_text(item.get("measurement_unit"), fallback="")
+                suffix = f" - {quantity} {unit}".rstrip() if quantity or unit else ""
+                bullet(f"{safe_pdf_text(item.get('occurred_at'), fallback='Recorded')}: {label}{suffix}")
+            y -= 2 * mm
+        if recent_live_attendance:
+            heading("Recent Live Attendance QR Windows")
+            for item in recent_live_attendance[:12]:
+                label = safe_pdf_text(item.get("programme_label"), fallback="Live attendance")
+                count = safe_pdf_text(item.get("checkin_count"), fallback="0")
+                method = safe_pdf_text(item.get("method"), fallback="qr")
+                bullet(f"{safe_pdf_text(item.get('opened_at'), fallback='Opened')}: {label} - {count} check-in(s) by {method}")
+            y -= 2 * mm
+        if recent_response_channels:
+            heading("Recent Response QR Windows")
+            for item in recent_response_channels[:8]:
+                label = safe_pdf_text(item.get("title"), fallback="Response Box")
+                count = safe_pdf_text(item.get("response_count"), fallback="0")
+                bullet(f"{safe_pdf_text(item.get('opened_at'), fallback='Opened')}: {label} - {count} response(s)")
+            y -= 2 * mm
+        if recent_responses:
+            heading("Recent Questions And Follow-Up Signals")
+            for item in recent_responses[:10]:
+                label = safe_pdf_text(item.get("response_type_label"), fallback="Response")
+                preview = safe_pdf_text(item.get("body_preview"), fallback="Recorded response")
+                bullet(f"{safe_pdf_text(item.get('responded_at'), fallback='Recorded')}: {label} - {preview}")
+            y -= 2 * mm
+        if prompts:
+            heading("Leadership Review Prompts")
+            for prompt in prompts[:6]:
+                bullet(prompt)
+            y -= 2 * mm
+    elif is_sponsor:
         activity = _record(payload.get("activity_summary"))
         outcomes = _record(payload.get("beneficiary_outcome_summary"))
         evidence = _record(payload.get("evidence_summary"))

@@ -65,6 +65,7 @@ The engine supports:
 - Guarantor-backed Loans;
 - Contribution History;
 - Repayment History;
+- Donation and Offering Instructions;
 - Financial Trust Events.
 
 The engine must never become a banking ledger.
@@ -217,6 +218,43 @@ The objective is transparency and accountability.
 
 ---
 
+## 10.1 Donations and Offering QR Instructions
+
+Community Domains may support donation, offering, levy, appeal, or collection
+instructions for organizations that collect support during meetings, services,
+events, or campaigns.
+
+For churches and religious bodies, this includes:
+
+- a standing offering QR code for ordinary services;
+- a donation QR code for welfare, building, mission, outreach, thanksgiving, or
+  special support appeals;
+- optional event-specific QR codes where the community wants each meeting,
+  programme, or campaign to have its own reference;
+- bank-transfer guidance where QR payment is not available or not suitable.
+
+The QR code should point to a governed payment instruction, payment page, or
+approved external transfer route. It should not expose raw church bank account
+details on public or member-facing surfaces unless the community has
+deliberately enabled a formal payment-instruction surface for that purpose.
+
+GSN must treat these collections as non-custodial coordination and evidence:
+
+- the church or organization owns the receiving account;
+- delegated church leaders decide who may create, edit, publish, or retire an
+  offering or donation instruction;
+- GSN records the instruction, purpose, creator, approval status, timestamps,
+  visibility scope, and confirmation evidence where available;
+- GSN does not hold the offering, guarantee settlement, or prove impact merely
+  because a QR code exists.
+
+Standing QR codes are appropriate for stable recurring collections such as
+ordinary offerings. Event-specific QR codes are appropriate when the church
+needs a separate record for a particular service, department, campaign, or
+appeal.
+
+---
+
 ## 11. Financial Verification
 
 Financial verification supports:
@@ -251,6 +289,10 @@ Examples include:
 
 - Contribution Paid;
 - Contribution Missed;
+- Donation Instruction Published;
+- Offering Instruction Published;
+- Donation Confirmed;
+- Offering Confirmed;
 - Welfare Contribution;
 - Welfare Received;
 - Loan Agreement;

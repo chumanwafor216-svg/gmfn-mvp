@@ -21,8 +21,8 @@ export type GovernanceTaskKey =
 export type GovernanceTaskGroupKey = "readiness" | "reports" | "records";
 export type DirectorSummaryTaskKey = "overview" | "membership" | "evidence" | "delivery";
 export type SponsorSummaryTaskKey = "overview" | "evidence" | "delivery" | "export";
-export type CommunityValueReportPeriodKey = "last_7_days" | "this_month" | "last_30_days";
-export type CommunityValueReportAudienceKey = "sponsor_safe" | "director_admin";
+export type CommunityValueReportPeriodKey = "last_7_days" | "this_month" | "last_30_days" | "this_year";
+export type CommunityValueReportAudienceKey = "sponsor_safe" | "director_admin" | "church_memory";
 
 type StateSetter<T> = React.Dispatch<React.SetStateAction<T>>;
 type SummaryOption<Key extends string> = {

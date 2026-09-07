@@ -255,8 +255,7 @@ Rules:
 ## CommunityDomainPurchasePage
 
 Purpose:
-Let an organization owner start the paid institutional Community Domain path
-without confusing it with ordinary free community creation.
+Let an organization owner start the institutional Community Domain path without confusing it with ordinary free community creation. During early pilot/customer discovery, Community Domain payment is suspended while name checking and reservation remain active.
 
 Must show:
 - GSN / Community Domain identity
@@ -268,8 +267,8 @@ Must show:
   cooperative, town union, NGO, health body, or generic association
 - domain name availability result
 - package or quote state
-- payment-instruction state when that rail exists
-- pending activation state after payment instruction is generated
+- pilot payment state: payment is suspended for now; no Community Domain payment instruction should be created during pilot
+- pending paid-continuation / verification state after pilot reservation
 - clear path back to `Create Community` for users who only need a lightweight
   social community
 - clear sign-in or existing-member recovery when purchase requires an
@@ -282,8 +281,7 @@ Rules:
 - A first-time organization owner must create the normal GSN community/local marketplace first so the organization has a local community record and GSN number before Domain filling begins.
 - After that local community exists, Domain setup may protect the wider institutional name, governance, package, and rights.
 - It must not show bottom navigation before authentication is complete.
-- `Purchase Community Domain` must not create a live verified institution by
-  itself. A draft, quote, or payment instruction is not activation.
+- `Purchase Community Domain` must not create a live verified institution by itself. A pilot reservation, draft, quote, or suspended payment rail is not verification, paid continuation, or final public proof.
 - Do not call the object `Community Package`. The owned institutional object is
   `Community Domain`; the paid bundle may be called a package only when talking
   about pricing, allowance, or renewal.
@@ -461,6 +459,23 @@ Must show:
 - compact governance/action-review summary
 - compact operating-area status rows for Shops, Spotlight, Vault, Verification,
   Trust Centre, Analytics, Billing, and Settings
+- where Community Finance collections are enabled, a compact governed QR or
+  payment-instruction row for offerings, donations, levies, registrations, or
+  support appeals
+- for church/religious-body domains, a compact real-life record workflow packet
+  for programme attendance, live QR attendance, after-meeting response QR,
+  pastoral/welfare follow-up, member belonging, department service/handover,
+  and contribution memory
+- where Announcement Board is enabled, an explicit public message QR option
+  for public-safe sermon topics, message of the day, programme themes, or
+  short preaching notes
+- where Demand Box is enabled, a governed Response QR option for questions,
+  feedback, needs, suggestions, concerns, testimony/benefit notes, and
+  private follow-up requests after meetings, church services, programmes,
+  workshops, or announcements
+- for church/religious-body domains, a governed Church Summary PDF option that
+  summarizes recorded official messages and programme workflow records for a
+  month, year, or selected period
 - clear route back to Dashboard or Community Home
 - empty states for draft, pending activation, active, expired, suspended, and
   closed domains
@@ -482,10 +497,47 @@ Rules:
   see only the work their role can handle.
 - `needs_changes` reviews are requester follow-up, not pending reviewer work.
 - Payment, package quote, and renewal status must not be shown as verification.
+- Offering, donation, levy, or registration QR codes must be shown as governed
+  collection instructions only. They must not imply GSN custody, payment
+  confirmation, bank approval, or impact proof.
+- Church real-life records may preserve pastoral care, welfare follow-up,
+  member belonging, programme attendance, department service, and contribution
+  memory, but must remain workflow/evidence records. They must not replace
+  pastoral counselling, safeguarding duties, spiritual authority, payment proof,
+  or beneficiary outcome confirmation.
+- Message QR pages must not expose member lists, open public comments,
+  collect money, prove attendance, or replace the pastor/domain leader as
+  the authority over the message.
+- Response QR pages must require signed-in GSN identity, must not expose the
+  responder list publicly, and must treat WhatsApp as a share/follow-up
+  preference only. GSN remains the official response record.
+- Response QR is governed by the Demand Box feature policy. If Demand Box is
+  off for the domain, response QR creation and public response access must be
+  blocked.
+- Church Summary PDFs may summarize recorded sermon-topic/message notices,
+  public QR message counts, programme attendance, live QR attendance,
+  after-meeting response/question/need/follow-up counts, pastoral follow-up,
+  department service, and contribution-memory records. They must not judge
+  doctrine, expose private pastoral notes, prove attendance, prove payment,
+  or certify unrecorded activity.
 - Expired or suspended domains may keep readable history for authorized users,
   but paid operating actions should explain the renewal or suspension blocker.
 - Public-safe information must stay separate from private member lists, node
   membership, finance records, evidence attachments, and action-review details.
+- Public/member QR surfaces should avoid exposing raw receiving account details
+  where a scannable instruction can carry the payment route safely.
+
+Sermon/message attachment guardrail:
+- Current public message QR supports short public-safe text, not durable sermon
+  file upload/download.
+- Future sermon attachment QR may support PDF/DOCX/TXT or image attachments,
+  but each attachment must have a hard size cap, recommended default `10 MB`,
+  and the UI must show the cap before upload.
+- GSN must not silently cache sermon files into permanent phone storage. A
+  member may download/open the file on their device and delete it later; the
+  app should avoid offline auto-save unless the member explicitly chooses it.
+- Large audio/video sermons should be external links or a separately governed
+  media/storage product, not hidden inside the notice QR feature.
 - Do not label the domain verified unless backend verification status proves it.
 - Do not expose legal, payment, loan, or transaction authority beyond what the
   backend route and policy state actually allow.
@@ -992,6 +1044,14 @@ Rules:
   should use that saved shop identity, quietly prepare the backend shop row if
   it is missing, and ask only for the product/update details, price note, media,
   and short instruction that belong to the current spotlight.
+
+
+Additional Community Domain lifecycle responsibility:
+- Same Command Centre page may preview and record Community Domain lifecycle decisions for pilot administration.
+- Allowed lifecycle outcomes are `active`, `suspended`, and `closed`.
+- Closing or suspending a Community Domain blocks normal operation and public lookup while preserving history and keeping the name reserved.
+- This is not a global user ban. Banning/removing a person from GSN identity should remain a separate high-risk account-governance workflow.
+- No Community Domain billing/payment instruction should be created by this lifecycle action.
 
 ## AdminCommunityOwnershipPage
 

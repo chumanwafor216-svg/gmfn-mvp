@@ -1500,6 +1500,7 @@ export async function createCommunityDomainNotice(
     body: string;
     expiry_policy?: "standard" | "urgent" | "event" | "pinned";
     expires_at?: string;
+    public_qr_enabled?: boolean;
   }
 ): Promise<any> {
   return httpJson(
@@ -1509,6 +1510,158 @@ export async function createCommunityDomainNotice(
   );
 }
 
+export async function getPublicCommunityDomainNotice(publicCode: number | string): Promise<any> {
+  return httpJson(
+    `/community-domains/public/notices/${encodeURIComponent(String(publicCode))}`,
+    "GET",
+    undefined,
+    { includeAuth: false }
+  );
+}
+export type CommunityDomainAttendanceMethod = "qr" | "rotating_qr" | "short_code" | "bluetooth_proximity";
+
+export async function listCommunityDomainAttendanceSessions(
+  communityDomainId: number | string,
+  params: { limit?: number } = {}
+): Promise<any> {
+  return httpJson(
+    `/community-domains/${encodeURIComponent(
+      String(communityDomainId)
+    )}/attendance-sessions${buildQuery({
+      limit: params.limit ?? 10,
+    })}`,
+    "GET"
+  );
+}
+
+export async function createCommunityDomainAttendanceSession(
+  communityDomainId: number | string,
+  payload: {
+    programme_label: string;
+    scheduled_at?: string | null;
+    community_node_id?: number | null;
+    method?: CommunityDomainAttendanceMethod;
+    window_minutes?: number;
+    note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-domains/${encodeURIComponent(String(communityDomainId))}/attendance-sessions`,
+    "POST",
+    Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
+    )
+  );
+}
+
+export async function getPublicCommunityDomainAttendanceSession(publicCode: number | string): Promise<any> {
+  return httpJson(
+    `/community-domains/public/attendance-sessions/${encodeURIComponent(String(publicCode))}`,
+    "GET",
+    undefined,
+    { includeAuth: false }
+  );
+}
+
+export async function recordPublicCommunityDomainAttendanceCheckin(
+  publicCode: number | string,
+  payload: {
+    method?: CommunityDomainAttendanceMethod;
+    note?: string | null;
+  } = {}
+): Promise<any> {
+  return httpJson(
+    `/community-domains/public/attendance-sessions/${encodeURIComponent(String(publicCode))}/check-ins`,
+    "POST",
+    Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
+    )
+  );
+}
+
+export type CommunityDomainResponseSourceKind =
+  | "meeting"
+  | "church_service"
+  | "programme"
+  | "workshop"
+  | "announcement"
+  | "demand_box"
+  | "other";
+
+export type CommunityDomainResponseType =
+  | "question"
+  | "comment"
+  | "need_request"
+  | "pastoral_follow_up"
+  | "suggestion"
+  | "concern"
+  | "testimony_benefit"
+  | "meeting_feedback"
+  | "other";
+
+export async function listCommunityDomainResponseChannels(
+  communityDomainId: number | string,
+  params: { limit?: number } = {}
+): Promise<any> {
+  return httpJson(
+    `/community-domains/${encodeURIComponent(
+      String(communityDomainId)
+    )}/response-channels${buildQuery({
+      limit: params.limit ?? 10,
+    })}`,
+    "GET"
+  );
+}
+
+export async function createCommunityDomainResponseChannel(
+  communityDomainId: number | string,
+  payload: {
+    title: string;
+    source_kind?: CommunityDomainResponseSourceKind;
+    prompt?: string | null;
+    related_label?: string | null;
+    related_public_code?: string | null;
+    community_node_id?: number | null;
+    window_days?: number;
+    allow_private_follow_up?: boolean;
+    note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-domains/${encodeURIComponent(String(communityDomainId))}/response-channels`,
+    "POST",
+    Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
+    )
+  );
+}
+
+export async function getPublicCommunityDomainResponseChannel(publicCode: number | string): Promise<any> {
+  return httpJson(
+    `/community-domains/public/response-channels/${encodeURIComponent(String(publicCode))}`,
+    "GET",
+    undefined,
+    { includeAuth: false }
+  );
+}
+
+export async function recordPublicCommunityDomainResponse(
+  publicCode: number | string,
+  payload: {
+    response_type: CommunityDomainResponseType;
+    body: string;
+    wants_private_follow_up?: boolean;
+    preferred_follow_up_channel?: "gsn" | "whatsapp" | "phone" | "none";
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-domains/public/response-channels/${encodeURIComponent(String(publicCode))}/responses`,
+    "POST",
+    Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
+    )
+  );
+}
 function normalizeVisibleMyClans(rows: any[]): any[] {
   if (!Array.isArray(rows)) return [];
 
@@ -2639,6 +2792,19 @@ export type CommunityDomainDraftPayload = {
   setup_preferences?: Record<string, boolean> | null;
 };
 
+export type CommunityDomainCollectionInstructionPayload = {
+  collection_type?: string | null;
+  collection_mode?: string | null;
+  purpose_label: string;
+  amount_label?: string | null;
+  currency?: string | null;
+  external_payment_url?: string | null;
+  receiving_account_label?: string | null;
+  visibility_scope?: string | null;
+  approval_status?: string | null;
+  note?: string | null;
+};
+
 export type CommunityDomainNodePayload = {
   parent_node_id?: number | string | null;
   name: string;
@@ -2851,6 +3017,50 @@ export async function createCommunityDomainPaymentInstruction(
     "POST",
     payload,
     { header_clan_id: payload.clan_id }
+  );
+}
+
+export async function listCommunityDomainCollectionInstructions(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/collection-instructions"),
+    "GET"
+  );
+}
+
+export async function createCommunityDomainCollectionInstruction(
+  communityDomainId: number | string,
+  payload: CommunityDomainCollectionInstructionPayload
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/collection-instructions"),
+    "POST",
+    {
+      collection_type: payload.collection_type || undefined,
+      collection_mode: payload.collection_mode || undefined,
+      purpose_label: payload.purpose_label,
+      amount_label: payload.amount_label || undefined,
+      currency: payload.currency || undefined,
+      external_payment_url: payload.external_payment_url || undefined,
+      receiving_account_label: payload.receiving_account_label || undefined,
+      visibility_scope: payload.visibility_scope || undefined,
+      approval_status: payload.approval_status || undefined,
+      note: payload.note || undefined,
+    }
+  );
+}
+
+export async function getPublicCommunityDomainCollectionInstruction(
+  publicCode: string
+): Promise<any> {
+  return httpJson(
+    `/community-domains/public/collection-instructions/${encodeURIComponent(
+      String(publicCode)
+    )}`,
+    "GET",
+    undefined,
+    { includeAuth: false }
   );
 }
 
@@ -3280,7 +3490,7 @@ export async function getCommunityDomainSponsorSummary(
     "GET"
   );
 }
-export type CommunityDomainValueReportAudience = "director_admin" | "sponsor_safe";
+export type CommunityDomainValueReportAudience = "director_admin" | "sponsor_safe" | "church_memory";
 
 export async function downloadCommunityDomainValueReportPdf(
   communityDomainId: number | string,
@@ -4951,6 +5161,16 @@ export async function postAdminCommunityOwnershipReconciliation(payload: {
   reviewer_note?: string | null;
 }): Promise<any> {
   return httpJson("/admin/community-ownership/reconcile", "POST", payload);
+}
+export async function postAdminCommunityDomainLifecycle(payload: {
+  domain_name?: string | null;
+  community_domain_id?: number | null;
+  status: "active" | "suspended" | "closed" | string;
+  lifecycle_confirmed?: boolean;
+  execute?: boolean;
+  reviewer_note?: string | null;
+}): Promise<any> {
+  return httpJson("/admin/community-domain-lifecycle", "POST", payload);
 }
 
 export async function getMyNotifications(

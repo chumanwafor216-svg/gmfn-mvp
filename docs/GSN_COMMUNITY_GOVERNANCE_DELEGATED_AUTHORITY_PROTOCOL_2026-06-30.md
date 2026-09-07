@@ -425,9 +425,37 @@ Examples include:
 - Leader appointed;
 - Leader removed;
 - Verification responded;
-- Department created.
+- Department created;
+- Offering or donation QR instruction created, changed, approved, published, or
+  retired.
 
 No governance action should occur without an audit record.
+
+---
+
+## 16.1 Financial Collection Authority
+
+Where a Community Domain uses standing or event-specific donation, offering,
+levy, or collection QR instructions, authority must follow the same delegated
+governance tree as every other institutional action.
+
+For a church or religious body, the Community Owner or authorized executive may
+delegate collection-administration rights to trusted roles such as finance
+committee, treasurer, parish/branch administrator, welfare leader, or event
+coordinator.
+
+Collection authority must define:
+
+- who may add or change the receiving account reference;
+- who may create a standing offering QR code;
+- who may create event-specific or campaign-specific donation QR codes;
+- who approves publication before members see the QR code;
+- who may retire, replace, or correct a QR instruction;
+- what evidence is required when a collection is confirmed.
+
+GSN must not allow an ordinary member, unauthorised department leader, or
+platform administrator to replace a church's offering QR instruction outside
+that church's governance policy.
 
 ---
 
@@ -477,3 +505,57 @@ preserve trust.
 
 This principle allows GSN to scale from ten members to ten million members
 without changing the underlying architecture.
+
+## Public message QR governance
+
+A church, religious body, school, union, NGO, or other Community Domain may use
+public QR links for short public-safe messages such as sermon topics, message of
+the day, programme themes, meeting prompts, workshop notes, or public reading
+instructions.
+
+The delegated authority record should say who may create, approve, publish,
+replace, or retire public message QR links. Message QR authority is separate
+from offering/donation QR authority. A person trusted to publish a sermon-topic
+QR is not automatically trusted to create a collection/payment QR, and a finance
+admin is not automatically a pastoral or communications authority.
+
+A public message QR is an announcement surface only. It must not expose private
+member records, pastoral counselling notes, safeguarding details, raw attendance
+lists, bank details, payment confirmation, or public comment threads.
+
+## Live attendance QR governance
+
+A church, religious body, NGO, school, union, or association may delegate authority to open live attendance QR windows for services, programmes, fellowships, meetings, classes, or workshops.
+
+The delegated authority record should say who may open the attendance window, how long the QR remains valid, whether Bluetooth proximity is allowed as an explicit optional record, and who may review the resulting check-in counts. Members must scan and check in with their own signed-in GSN identity; public QR pages must not collect raw phone numbers or expose member lists.
+
+Live attendance QR is Presence Evidence only. It must not be treated as payment proof, contribution proof, trust scoring, surveillance, spiritual judgement, or a complete attendance audit where members did not scan.
+
+## Meeting/service response QR governance
+
+A church, religious body, NGO, school, union, association, or other Community Domain may delegate authority to open meeting/service response QR windows after services, meetings, programmes, workshops, announcements, or Demand Box follow-up.
+
+The delegated authority record should say who may open or close the response QR, what response categories are allowed, who may review responses, who may handle private follow-up requests, and how long the QR remains active. Allowed response categories should stay controlled, such as question, comment, need/request, private follow-up, suggestion, concern, testimony/benefit, meeting feedback, or other.
+
+Response QR belongs to the Demand Box / response-intake family. If Demand Box is turned off for the Community Domain, GSN must block new response QR creation and must stop old public response QR links from accepting responses.
+
+Members must use their signed-in GSN identity before a response is recorded. Public QR pages must not expose responder lists, member IDs, phone numbers, private follow-up notes, or public accusation/comment threads. WhatsApp may carry the link or record a preferred follow-up channel, but GSN remains the official response record unless a provider-backed sender is separately connected and recorded.
+
+---
+
+## Church summary report governance
+
+A church or religious-body Community Domain may allow a pastor, secretary,
+communications lead, or delegated admin to prepare a Church Summary report for a
+month, year, or selected period.
+
+The authority to prepare this report is separate from the authority to publish a
+public message QR and separate from the authority to create offering/donation QR
+instructions. Church Summary reports are leadership review records built from
+already-recorded notices, church workflow records, live QR attendance check-ins, and meeting/service response records.
+
+The report may help leadership see recurring message themes, programme cadence,
+pastoral follow-up coverage, response questions and needs, private follow-up signals, department handover records, and contribution
+memory. It must not claim GSN has judged doctrine, measured spiritual growth,
+proved final attendance beyond recorded Presence Evidence, reconciled offerings, or certified anything not recorded in
+GSN.

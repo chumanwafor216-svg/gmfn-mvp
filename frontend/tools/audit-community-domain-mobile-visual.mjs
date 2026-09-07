@@ -1887,6 +1887,12 @@ try {
     .getByTestId("community-domain-dashboard.work-surface")
     .getByText("Record from real life", { exact: true })
     .waitFor({ timeout: 10000 });
+  if (!(await isDebugVisible(page, "community-domain-dashboard.church-live-attendance-qr"))) {
+    findings.push("Community Domain real-life record view is missing the church live attendance QR card.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.church-response-qr"))) {
+    findings.push("Community Domain real-life record view is missing the church response QR card.");
+  }
   await clickByDebugId(page, "community-domain-dashboard.activity-record-next.activity");
   await page.getByPlaceholder("Activity label").fill("Community Support Activity 001");
   await page.getByPlaceholder("Quantity").fill("1");

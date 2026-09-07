@@ -8,8 +8,8 @@ type UnknownRecord = Record<string, unknown>;
 type DirectorSummaryTaskKey = "overview" | "membership" | "evidence" | "delivery";
 type SponsorSummaryTaskKey = "overview" | "evidence" | "delivery" | "export";
 type GovernanceTaskKey = "director_summary" | "sponsor_summary";
-type CommunityValueReportPeriodKey = "last_7_days" | "this_month" | "last_30_days";
-type CommunityValueReportAudienceKey = "sponsor_safe" | "director_admin";
+type CommunityValueReportPeriodKey = "last_7_days" | "this_month" | "last_30_days" | "this_year";
+type CommunityValueReportAudienceKey = "sponsor_safe" | "director_admin" | "church_memory";
 
 type SummaryOption<Key extends string> = {
   key: Key;
@@ -484,6 +484,7 @@ function ReportExportControls({ data }: { data: SummaryPanelsData }) {
           >
             <option value="last_30_days">Last 30 days</option>
             <option value="this_month">This month</option>
+            <option value="this_year">This year</option>
             <option value="last_7_days">Last 7 days</option>
           </select>
         </label>
@@ -499,6 +500,7 @@ function ReportExportControls({ data }: { data: SummaryPanelsData }) {
           >
             <option value="sponsor_safe">Sponsor-safe</option>
             <option value="director_admin">Director/admin</option>
+            <option value="church_memory">Church summary</option>
           </select>
         </label>
       </div>
@@ -513,10 +515,14 @@ function ReportExportControls({ data }: { data: SummaryPanelsData }) {
         }}
         style={{ justifyContent: "center", fontSize: 13, textTransform: "none" }}
       >
-        {data.busyCommunityValueReportPdf ? "Preparing PDF..." : "Prepare Community Value PDF"}
+        {data.busyCommunityValueReportPdf
+          ? "Preparing PDF..."
+          : data.communityValueReportAudience === "church_memory"
+            ? "Prepare Church Summary PDF"
+            : "Prepare Community Value PDF"}
       </StableButton>
       <div style={{ ...helperText(), fontSize: 13 }}>
-        Uses recorded facts only. Sponsor-safe PDFs omit private beneficiary and member-level detail.
+        Uses recorded facts only. Church summary PDFs summarize sermon messages, programme records, attendance QR counts, and response QR signals without judging doctrine or exposing private pastoral notes.
       </div>
     </div>
   );

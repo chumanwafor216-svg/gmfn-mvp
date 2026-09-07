@@ -29,6 +29,18 @@ const CommunityDomainPurchasePage = React.lazy(
 const CommunityDomainDashboardPage = React.lazy(
   () => import("./pages/CommunityDomainDashboardPage")
 );
+const CommunityCollectionPage = React.lazy(
+  () => import("./pages/CommunityCollectionPage")
+);
+const CommunityAttendancePage = React.lazy(
+  () => import("./pages/CommunityAttendancePage")
+);
+const CommunityResponsePage = React.lazy(
+  () => import("./pages/CommunityResponsePage")
+);
+const CommunityNoticePage = React.lazy(
+  () => import("./pages/CommunityNoticePage")
+);
 const WelcomePage = React.lazy(() => import("./pages/WelcomePage"));
 const LoginPage = React.lazy(() => import("./pages/LoginPage"));
 const JoinEntryPage = React.lazy(() => import("./pages/JoinEntryPage"));
@@ -935,6 +947,10 @@ export default function App() {
       <Route path="/trust-slips/verify/:code/card" element={<TrustSlipVerifyPage />} />
       <Route path="/trust-slips/verify/:code/print" element={<TrustSlipVerifyPage />} />
       <Route path="/merchant-release/:token" element={<MerchantReleasePage />} />
+      <Route path="/community-collections/:publicCode" element={<CommunityCollectionPage />} />
+      <Route path="/community-attendance/:publicCode" element={<CommunityAttendancePage />} />
+      <Route path="/community-responses/:publicCode" element={<CommunityResponsePage />} />
+      <Route path="/community-notices/:publicCode" element={<CommunityNoticePage />} />
       <Route
         path="/community-confirmations/public/:token"
         element={<CommunityConfirmationOutcomePage />}

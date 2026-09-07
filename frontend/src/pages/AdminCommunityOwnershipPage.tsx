@@ -10,6 +10,7 @@ import {
 } from "../lib/institutionalSurface";
 import {
   getAdminCommunityOwnershipLookup,
+  postAdminCommunityDomainLifecycle,
   postAdminCommunityOwnershipReconciliation,
 } from "../lib/api";
 
@@ -177,6 +178,16 @@ export default function AdminCommunityOwnershipPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<"lookup" | "preview" | "execute" | "">("");
+  const [domainLifecycleName, setDomainLifecycleName] = useState(safeStr(searchParams.get("domain_name")));
+  const [domainLifecycleId, setDomainLifecycleId] = useState(0);
+  const [domainLifecycleStatus, setDomainLifecycleStatus] = useState<"active" | "suspended" | "closed">("suspended");
+  const [domainLifecycleNote, setDomainLifecycleNote] = useState("");
+  const [domainLifecycleConfirmed, setDomainLifecycleConfirmed] = useState(false);
+  const [domainLifecyclePreview, setDomainLifecyclePreview] = useState<any>(null);
+  const [domainLifecycleResult, setDomainLifecycleResult] = useState<any>(null);
+  const [domainLifecycleMessage, setDomainLifecycleMessage] = useState("");
+  const [domainLifecycleError, setDomainLifecycleError] = useState("");
+  const [domainLifecycleBusy, setDomainLifecycleBusy] = useState<"preview" | "execute" | "">("");
   const didInitialLookupRef = useRef(false);
 
   const communities = useMemo(() => {
@@ -315,6 +326,52 @@ export default function AdminCommunityOwnershipPage() {
     }
   }
 
+
+  async function runDomainLifecyclePreview() {
+    setDomainLifecycleBusy("preview");
+    setDomainLifecycleError("");
+    setDomainLifecycleMessage("");
+    setDomainLifecyclePreview(null);
+    setDomainLifecycleResult(null);
+    try {
+      const out = await postAdminCommunityDomainLifecycle({
+        community_domain_id: domainLifecycleId || undefined,
+        domain_name: domainLifecycleId ? undefined : domainLifecycleName,
+        status: domainLifecycleStatus,
+        execute: false,
+      });
+      setDomainLifecyclePreview(out);
+      setDomainLifecycleMessage(safeStr(out?.message) || "Lifecycle preview ready.");
+    } catch (err: any) {
+      setDomainLifecycleError(safeStr(err?.message || err) || "Lifecycle preview failed.");
+    } finally {
+      setDomainLifecycleBusy("");
+    }
+  }
+
+  async function runDomainLifecycleExecute() {
+    setDomainLifecycleBusy("execute");
+    setDomainLifecycleError("");
+    setDomainLifecycleMessage("");
+    setDomainLifecycleResult(null);
+    try {
+      const out = await postAdminCommunityDomainLifecycle({
+        community_domain_id: domainLifecycleId || undefined,
+        domain_name: domainLifecycleId ? undefined : domainLifecycleName,
+        status: domainLifecycleStatus,
+        lifecycle_confirmed: domainLifecycleConfirmed,
+        execute: true,
+        reviewer_note: domainLifecycleNote,
+      });
+      setDomainLifecycleResult(out);
+      setDomainLifecyclePreview(out);
+      setDomainLifecycleMessage(safeStr(out?.message) || "Community Domain lifecycle recorded.");
+    } catch (err: any) {
+      setDomainLifecycleError(safeStr(err?.message || err) || "Lifecycle update failed.");
+    } finally {
+      setDomainLifecycleBusy("");
+    }
+  }
   useEffect(() => {
     if (didInitialLookupRef.current) return;
     if (safeStr(searchParams.get("community_name")) || safeStr(searchParams.get("owner_query"))) {
@@ -325,6 +382,8 @@ export default function AdminCommunityOwnershipPage() {
 
   const canPreview = Boolean(selectedClanId || safeStr(communityNameInput)) && ownerIdentityReady;
   const canExecute = Boolean(preview) && proofConfirmed && safeStr(note).length >= 12 && !result;
+  const canLifecyclePreview = Boolean(domainLifecycleId || safeStr(domainLifecycleName));
+  const canLifecycleExecute = Boolean(domainLifecyclePreview) && domainLifecycleConfirmed && safeStr(domainLifecycleNote).length >= 12 && !domainLifecycleResult;
   const hasStuckIntake = Boolean(selectedIntake || ownerIntakes.length > 0);
   const noOwnerMatches = Boolean(lookup && safeStr(ownerQuery) && owners.length === 0 && ownerIntakes.length === 0);
   const repairState = result
@@ -397,6 +456,130 @@ export default function AdminCommunityOwnershipPage() {
           </div>
         </section>
 
+        <section style={card()}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <div style={label()}>Community Domain lifecycle</div>
+              <h2 style={{ margin: "6px 0 0", color: "#0B1F33", fontSize: 22 }}>Suspend, close, or reactivate a pilot domain</h2>
+            </div>
+            <div style={{ ...helper(), maxWidth: 420 }}>
+              Pilot billing is suspended. Closing a domain blocks normal operation and public lookup while keeping the name and history reserved.
+            </div>
+          </div>
+
+          <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+            <div>
+              <div style={fieldLabel()}>Domain name</div>
+              <input
+                value={domainLifecycleName}
+                onChange={(event) => {
+                  setDomainLifecycleName(event.target.value);
+                  setDomainLifecycleId(0);
+                  setDomainLifecyclePreview(null);
+                  setDomainLifecycleResult(null);
+                }}
+                placeholder="pillar-of-hope"
+                style={inputStyle()}
+              />
+            </div>
+            <div>
+              <div style={fieldLabel()}>Or domain ID</div>
+              <input
+                value={domainLifecycleId || ""}
+                onChange={(event) => {
+                  setDomainLifecycleId(toNum(event.target.value));
+                  setDomainLifecyclePreview(null);
+                  setDomainLifecycleResult(null);
+                }}
+                placeholder="123"
+                inputMode="numeric"
+                style={inputStyle()}
+              />
+            </div>
+            <div>
+              <div style={fieldLabel()}>Lifecycle decision</div>
+              <select
+                value={domainLifecycleStatus}
+                onChange={(event) => {
+                  setDomainLifecycleStatus(event.target.value as "active" | "suspended" | "closed");
+                  setDomainLifecyclePreview(null);
+                  setDomainLifecycleResult(null);
+                }}
+                style={inputStyle()}
+              >
+                <option value="suspended">Suspend pilot use</option>
+                <option value="closed">Close domain</option>
+                <option value="active">Reactivate pilot use</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <SecondaryButton
+              onClick={runDomainLifecyclePreview}
+              busy={domainLifecycleBusy === "preview"}
+              busyLabel="Previewing..."
+              disabled={domainLifecycleBusy !== "" || !canLifecyclePreview}
+              debugId="admin-community-domain-lifecycle.preview"
+            >
+              {iconLabel("eye", "Preview lifecycle")}
+            </SecondaryButton>
+          </div>
+
+          {domainLifecyclePreview ? (
+            <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+              <div style={{ ...factGrid(142) }}>
+                {fact("Domain", safeStr(domainLifecyclePreview?.community_domain?.display_name) || safeStr(domainLifecyclePreview?.community_domain?.domain_name))}
+                {fact("Current", safeStr(domainLifecyclePreview?.current_status))}
+                {fact("Requested", safeStr(domainLifecyclePreview?.requested_status))}
+                {fact("Payment", "Suspended")}
+              </div>
+              <div style={{ ...institutionalInnerCard("#FFFFFF"), ...helper() }}>
+                {safeStr(domainLifecyclePreview?.boundary) || "The domain name and history stay reserved. This is not a global user ban."}
+              </div>
+              {!domainLifecycleResult ? (
+                <div style={{ display: "grid", gap: 12 }}>
+                  <label style={{ display: "flex", gap: 10, alignItems: "flex-start", color: "#0B1F33", fontWeight: 900 }}>
+                    <input
+                      type="checkbox"
+                      checked={domainLifecycleConfirmed}
+                      onChange={(event) => setDomainLifecycleConfirmed(event.target.checked)}
+                      style={{ marginTop: 3 }}
+                    />
+                    I confirm this Community Domain lifecycle decision. I understand it preserves history and does not globally ban the owner identity.
+                  </label>
+                  <div>
+                    <div style={fieldLabel()}>Reviewer note</div>
+                    <textarea
+                      value={domainLifecycleNote}
+                      onChange={(event) => setDomainLifecycleNote(event.target.value)}
+                      placeholder="Example: Pilot owner did not continue after review; close domain but preserve audit history and name reservation."
+                      rows={4}
+                      style={{ ...inputStyle(), resize: "vertical", minHeight: 92 }}
+                    />
+                  </div>
+                  <PrimaryButton
+                    onClick={runDomainLifecycleExecute}
+                    busy={domainLifecycleBusy === "execute"}
+                    busyLabel="Recording..."
+                    disabled={domainLifecycleBusy !== "" || !canLifecycleExecute}
+                    debugId="admin-community-domain-lifecycle.execute"
+                  >
+                    {iconLabel("check", "Record lifecycle decision")}
+                  </PrimaryButton>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {(domainLifecycleMessage || domainLifecycleError) ? (
+            <div style={{ marginTop: 12, ...institutionalInnerCard(domainLifecycleError ? "#FEF2F2" : "#ECFDF5") }}>
+              <div style={{ color: domainLifecycleError ? "#991B1B" : "#065F46", fontWeight: 1000 }}>
+                {iconLabel(domainLifecycleError ? "alert" : "check", domainLifecycleError || domainLifecycleMessage)}
+              </div>
+            </div>
+          ) : null}
+        </section>
         <section style={card()}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>

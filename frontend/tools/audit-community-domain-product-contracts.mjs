@@ -22,6 +22,10 @@ const communityDomainGovernanceFocusFile =
   "src/pages/communityDomainDashboard/GovernanceFocusPanel.tsx";
 const communityDomainBillingFocusFile =
   "src/pages/communityDomainDashboard/BillingFocusPanel.tsx";
+const communityCollectionPageFile = "src/pages/CommunityCollectionPage.tsx";
+const communityNoticePageFile = "src/pages/CommunityNoticePage.tsx";
+const communityAttendancePageFile = "src/pages/CommunityAttendancePage.tsx";
+const communityResponsePageFile = "src/pages/CommunityResponsePage.tsx";
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const marketplaceRoscaFile = "src/pages/marketplace/MarketplaceRoscaSection.tsx";
 
@@ -192,6 +196,205 @@ assertContains(
   "src/lib/api.ts",
   /getPublicBeneficiaryOutcomeConfirmation[\s\S]*includeAuth: false[\s\S]*respondPublicBeneficiaryOutcomeConfirmation[\s\S]*includeAuth: false/,
   "Frontend API helpers for public beneficiary outcome confirmation must stay unauthenticated bearer-link calls.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/App.tsx",
+  /CommunityCollectionPage[\s\S]*path="\/community-collections\/:publicCode"[\s\S]*<CommunityCollectionPage \/>/,
+  "App routes must expose the public Community Domain collection QR page by bearer code.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /listCommunityDomainCollectionInstructions[\s\S]*\/collection-instructions[\s\S]*createCommunityDomainCollectionInstruction[\s\S]*\/collection-instructions[\s\S]*getPublicCommunityDomainCollectionInstruction[\s\S]*includeAuth: false/,
+  "Frontend API helpers must keep governed collection instruction list/create and unauthenticated public lookup calls.",
+  { frontend: true }
+);
+
+assertContains(
+  communityDomainDashboardFile,
+  /community-domain-dashboard\.collection-instructions[\s\S]*Offering and donation QR[\s\S]*GSN does not hold the money or expose the church account details[\s\S]*Publish Collection QR/,
+  "Community Domain dashboard billing lane must expose the compact governed offering/donation QR panel with the non-custodial boundary.",
+  { frontend: true }
+);
+
+assertContains(
+  communityCollectionPageFile,
+  /QRCodeSVG[\s\S]*getPublicCommunityDomainCollectionInstruction[\s\S]*receiving account remains controlled by the community[\s\S]*Open Payment Page[\s\S]*does not hold this money, confirm payment, expose church bank details/,
+  "Public Community Collection page must render the QR/payment handoff without exposing bank details or implying GSN custody/confirmation.",
+  { frontend: true }
+);
+assertContains(
+  "src/App.tsx",
+  /CommunityNoticePage[\s\S]*path="\/community-notices\/:publicCode"[\s\S]*<CommunityNoticePage \/>/,
+  "App routes must expose the public Community Domain message QR page by bearer code.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /createCommunityDomainNotice[\s\S]*public_qr_enabled\?: boolean[\s\S]*getPublicCommunityDomainNotice[\s\S]*\/community-domains\/public\/notices\/\$\{encodeURIComponent\(String\(publicCode\)\)\}[\s\S]*includeAuth: false/,
+  "Frontend API helpers must post the public notice QR opt-in and keep public message lookup unauthenticated.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/components/CommunityNoticeModal.tsx",
+  /public_qr_enabled\?: boolean[\s\S]*publicQrEnabled[\s\S]*Create public QR for this message/,
+  "Community notice modal must expose an explicit public QR opt-in instead of making all notices public.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/SetupOverviewPanel.tsx",
+  /QRCodeSVG[\s\S]*community-domain-dashboard\.notice-public-qr[\s\S]*sermon topic, message of the day, or public programme note[\s\S]*Copy QR Link[\s\S]*Open QR Page/,
+  "Community Domain notice board must show QR/copy/open controls only for QR-enabled public messages.",
+  { frontend: true }
+);
+
+assertContains(
+  communityNoticePageFile,
+  /QRCodeSVG[\s\S]*getPublicCommunityDomainNotice[\s\S]*sermon topic, programme theme, reading note, or message of the day[\s\S]*does not expose member lists, open comments, prove attendance, collect money/,
+  "Public Community Notice page must render the message QR without exposing private membership, comments, payment, or attendance proof.",
+  { frontend: true }
+);
+assertContains(
+  "src/App.tsx",
+  /CommunityAttendancePage[\s\S]*path="\/community-attendance\/:publicCode"[\s\S]*<CommunityAttendancePage \/>/,
+  "App routes must expose the public Community Domain live attendance QR page by bearer code.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /createCommunityDomainAttendanceSession[\s\S]*\/community-domains\/\$\{encodeURIComponent\(String\(communityDomainId\)\)\}\/attendance-sessions[\s\S]*getPublicCommunityDomainAttendanceSession[\s\S]*includeAuth: false[\s\S]*recordPublicCommunityDomainAttendanceCheckin/,
+  "Frontend API helpers must support admin-created attendance sessions, unauthenticated public QR lookup, and signed-in check-in posts.",
+  { frontend: true }
+);
+
+assertContains(
+  communityAttendancePageFile,
+  /QRCodeSVG[\s\S]*getPublicCommunityDomainAttendanceSession[\s\S]*recordPublicCommunityDomainAttendanceCheckin[\s\S]*Mark Me Present[\s\S]*Presence Evidence only/,
+  "Public Community Attendance page must render the QR scan page and record signed-in Presence Evidence without collecting raw phone numbers.",
+  { frontend: true }
+);
+
+assertContains(
+  communityDomainDashboardFile,
+  /community-domain-dashboard\.church-live-attendance-qr[\s\S]*Live attendance QR[\s\S]*Open Live Attendance QR[\s\S]*QRCodeSVG[\s\S]*Bluetooth is only an explicit proximity record/,
+  "Community Domain church workflow packet must expose live QR attendance controls without making Bluetooth automatic.",
+  { frontend: true }
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /COMMUNITY_DOMAIN_ATTENDANCE_SESSION_EVENT[\s\S]*community_domain\.attendance_session\.opened[\s\S]*CommunityDomainAttendanceSessionIn[\s\S]*\/\{community_domain_id\}\/attendance-sessions[\s\S]*\/public\/attendance-sessions\/\{public_code\}[\s\S]*\/check-ins[\s\S]*COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY/,
+  "Backend must expose Community Domain live attendance QR sessions and signed-in check-ins with a Presence Evidence boundary."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domain_collection_instructions.py",
+  /test_church_live_attendance_qr_records_member_checkin_once[\s\S]*\/community-domains\/819\/attendance-sessions[\s\S]*\/check-ins[\s\S]*already_recorded[\s\S]*community_domain\.attendance_checkin\.recorded/,
+  "Backend tests must prove church live attendance QR records one signed-in member check-in and prevents duplicate scan counts."
+);
+
+assertContains(
+  "src/App.tsx",
+  /CommunityResponsePage[\s\S]*path="\/community-responses\/:publicCode"[\s\S]*<CommunityResponsePage \/>/,
+  "App routes must expose the public Community Domain response QR page by bearer code.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /listCommunityDomainResponseChannels[\s\S]*\/response-channels[\s\S]*createCommunityDomainResponseChannel[\s\S]*\/response-channels[\s\S]*getPublicCommunityDomainResponseChannel[\s\S]*includeAuth: false[\s\S]*recordPublicCommunityDomainResponse/,
+  "Frontend API helpers must support admin-created response QR windows, unauthenticated public lookup, and signed-in response posts.",
+  { frontend: true }
+);
+
+assertContains(
+  communityResponsePageFile,
+  /recordPublicCommunityDomainResponse[\s\S]*community-response\.public-page[\s\S]*GSN response QR[\s\S]*Sign In To Respond[\s\S]*not an anonymous public comment wall/,
+  "Public Community Response page must require signed-in response submission and keep the official-record/privacy boundary visible.",
+  { frontend: true }
+);
+
+assertContains(
+  communityDomainDashboardFile,
+  /community-domain-dashboard\.church-response-qr[\s\S]*Response QR[\s\S]*Open Response QR[\s\S]*WhatsApp Link[\s\S]*QRCodeSVG[\s\S]*GSN keeps the official response record/,
+  "Community Domain church workflow packet must expose response QR controls and keep WhatsApp as link/preference only.",
+  { frontend: true }
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /COMMUNITY_DOMAIN_RESPONSE_CHANNEL_EVENT[\s\S]*community_domain\.response_channel\.opened[\s\S]*COMMUNITY_DOMAIN_RESPONSE_EVENT[\s\S]*community_domain\.response\.recorded[\s\S]*CommunityDomainResponseChannelIn[\s\S]*\/\{community_domain_id\}\/response-channels[\s\S]*\/public\/response-channels\/\{public_code\}[\s\S]*\/responses[\s\S]*COMMUNITY_DOMAIN_FEATURE_DEMAND_BOX[\s\S]*COMMUNITY_DOMAIN_RESPONSE_BOUNDARY/,
+  "Backend must expose Demand Box-governed Community Domain response QR windows and signed-in member responses with privacy boundaries."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domain_collection_instructions.py",
+  /test_church_response_qr_records_member_question_and_follow_up_preference[\s\S]*\/community-domains\/821\/response-channels[\s\S]*\/responses[\s\S]*preferred_follow_up_channel[\s\S]*whatsapp[\s\S]*responder_user_id[\s\S]*not in body[\s\S]*test_church_response_qr_respects_disabled_demand_box_policy[\s\S]*demand_box/,
+  "Backend tests must prove response QR records signed-in member questions privately and respects the Demand Box feature gate."
+);
+
+assertContains(
+  "docs/SCREEN_REGISTRY.md",
+  /Public Verification Screens[\s\S]*CommunityCollectionPage[\s\S]*CommunityNoticePage[\s\S]*CommunityAttendancePage[\s\S]*CommunityResponsePage/,
+  "CommunityResponsePage must remain registered as a no-bottom-nav public response screen."
+);
+
+assertContains(
+  "docs/SCREEN_REGISTRY.md",
+  /Public Verification Screens[\s\S]*CommunityCollectionPage/,
+  "CommunityCollectionPage must remain registered as a no-bottom-nav public screen."
+);
+assertContains(
+  "docs/SCREEN_REGISTRY.md",
+  /Public Verification Screens[\s\S]*CommunityCollectionPage[\s\S]*CommunityNoticePage/,
+  "CommunityNoticePage must remain registered as a no-bottom-nav public message screen."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /COMMUNITY_DOMAIN_COLLECTION_INSTRUCTION_EVENT[\s\S]*community_domain\.collection_instruction[\s\S]*CommunityDomainCollectionInstructionIn[\s\S]*\/\{community_domain_id\}\/collection-instructions[\s\S]*\/public\/collection-instructions\/\{public_code\}[\s\S]*COMMUNITY_DOMAIN_COLLECTION_PUBLIC_BOUNDARY/,
+  "Backend must keep governed Community Domain collection instruction routes and the non-custodial public boundary."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domain_collection_instructions.py",
+  /test_domain_admin_can_publish_public_collection_qr_without_public_account_details[\s\S]*receiving_account_label[\s\S]*not in public_instruction[\s\S]*test_collection_qr_respects_disabled_payments_contributions_policy/,
+  "Backend tests must prove collection QR creation keeps account labels off public responses and respects the payments/contributions feature gate."
+);
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /COMMUNITY_DOMAIN_NOTICE_PUBLIC_BOUNDARY[\s\S]*public_qr_enabled[\s\S]*_community_notice_public_path[\s\S]*\/community-notices\/\{public_code\}[\s\S]*\/public\/notices\/\{public_code\}[\s\S]*community_domain_notice_feature_off/,
+  "Backend must keep explicit public message QR opt-in, public route, and announcement-board shutoff boundary."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domain_collection_instructions.py",
+  /test_public_notice_qr_requires_explicit_public_qr_opt_in[\s\S]*public_qr_enabled[\s\S]*posted_by_user_id[\s\S]*not in notice[\s\S]*test_public_notice_qr_stops_when_announcement_board_is_turned_off[\s\S]*community_domain_notice_feature_off/,
+  "Backend tests must prove public message QR is opt-in, public-safe, and disabled when Announcement Board is off."
+);
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /pastoral_follow_up[\s\S]*member_belonging_check[\s\S]*department_service[\s\S]*church_programme_attendance[\s\S]*contribution_memory[\s\S]*COMMUNITY_DOMAIN_TEMPLATE_ACTIVITY_PRIORITY[\s\S]*church_pastor_discovery/,
+  "Backend activity catalogue must keep the pastor/Mrs church workflow packet as explicit religious-body presets."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domain_collection_instructions.py",
+  /test_church_domain_activity_catalogue_prioritizes_pastor_discovery_workflows[\s\S]*church_programme_attendance[\s\S]*pastoral_follow_up[\s\S]*contribution_memory[\s\S]*test_church_domain_can_record_private_pastoral_follow_up_without_payment_or_outcome_claim[\s\S]*trust_delta[\s\S]*0\.00/,
+  "Backend tests must prove church workflow catalogue priority and private pastoral follow-up recording without payment or outcome claims."
+);
+
+assertContains(
+  communityDomainRealLifeRecordFile,
+  /CHURCH_ACTIVITY_PRESET_PACK[\s\S]*pastoral_follow_up[\s\S]*member_belonging_check[\s\S]*department_service[\s\S]*contribution_memory[\s\S]*community-domain-dashboard\.church-workflow-packet[\s\S]*church keeps authority, privacy, and pastoral judgement/,
+  "Frontend real-life record lane must expose the church workflow packet without replacing church authority or privacy boundaries.",
   { frontend: true }
 );
 
@@ -1745,13 +1948,13 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /COMMUNITY_DOMAIN_PACKAGE_BILLING_BOUNDARY[\s\S]*pricing_model_status[\s\S]*manual_pilot_quote_only[\s\S]*paid_upgrade_status[\s\S]*not_automated[\s\S]*member_band_status[\s\S]*not_automated[\s\S]*feature_tariff_status[\s\S]*not_automated[\s\S]*domain_tariff_status[\s\S]*not_automated[\s\S]*_community_domain_package_quote_payload[\s\S]*"billing_boundary": dict\(COMMUNITY_DOMAIN_PACKAGE_BILLING_BOUNDARY\)[\s\S]*_community_domain_capacity_plan_payload[\s\S]*"billing_boundary": dict\(COMMUNITY_DOMAIN_PACKAGE_BILLING_BOUNDARY\)[\s\S]*_community_domain_subscription_lifecycle_payload[\s\S]*"billing_boundary": dict\(COMMUNITY_DOMAIN_PACKAGE_BILLING_BOUNDARY\)/,
+  /COMMUNITY_DOMAIN_PACKAGE_BILLING_BOUNDARY[\s\S]*pricing_model_status[\s\S]*pilot_payment_suspended[\s\S]*paid_upgrade_status[\s\S]*not_automated[\s\S]*member_band_status[\s\S]*not_automated[\s\S]*feature_tariff_status[\s\S]*not_automated[\s\S]*domain_tariff_status[\s\S]*not_automated[\s\S]*_community_domain_package_quote_payload[\s\S]*"billing_boundary": dict\(COMMUNITY_DOMAIN_PACKAGE_BILLING_BOUNDARY\)[\s\S]*_community_domain_capacity_plan_payload[\s\S]*"billing_boundary": dict\(COMMUNITY_DOMAIN_PACKAGE_BILLING_BOUNDARY\)[\s\S]*_community_domain_subscription_lifecycle_payload[\s\S]*"billing_boundary": dict\(COMMUNITY_DOMAIN_PACKAGE_BILLING_BOUNDARY\)/,
   "Community Domain package quote, capacity plan, and subscription lifecycle must return the same honest billing boundary instead of implying automated tariffs or member bands."
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /packageBillingBoundary[\s\S]*quote\?\.billing_boundary[\s\S]*capacityPlan\?\.billing_boundary[\s\S]*packageTariffBoundaryText[\s\S]*packageBillingBoundary\?\.plain_language[\s\S]*Current pilot package allowance only/,
+  /packageBillingBoundary[\s\S]*quote\?\.billing_boundary[\s\S]*capacityPlan\?\.billing_boundary[\s\S]*packageTariffBoundaryText[\s\S]*packageBillingBoundary\?\.plain_language[\s\S]*Community Domain name reservation and setup are open for the pilot/,
   "Community Domain dashboard package/tariff card must use backend billing_boundary plain language when available.",
   { frontend: true }
 );
@@ -2579,14 +2782,14 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /DOMAIN_PURCHASE_MOBILE_FACTS[\s\S]*Community first[\s\S]*Domain after[\s\S]*Payment later[\s\S]*purchaseReviewMode[\s\S]*!purchaseReviewMode \?[\s\S]*DOMAIN_PURCHASE_MOBILE_FACTS\.map[\s\S]*DOMAIN_ENGINE_POINTS\.map[\s\S]*Requested domain name[\s\S]*debugId="community-domain-purchase\.check-domain"[\s\S]*Kind of community[\s\S]*display: purchaseReviewMode \? "grid" : "none"[\s\S]*2\. Availability[\s\S]*Domain details[\s\S]*3\. Draft & quote[\s\S]*community-domain-purchase\.create-draft[\s\S]*4\. Payment[\s\S]*community-domain-purchase\.check-another-name[\s\S]*community-domain-purchase\.other-paths[\s\S]*community-domain-purchase\.open-create-community[\s\S]*community-domain-purchase\.lookup-existing-domain/,
+  /DOMAIN_PURCHASE_MOBILE_FACTS[\s\S]*Community first[\s\S]*Domain after[\s\S]*Pilot no payment[\s\S]*purchaseReviewMode[\s\S]*!purchaseReviewMode \?[\s\S]*DOMAIN_PURCHASE_MOBILE_FACTS\.map[\s\S]*DOMAIN_ENGINE_POINTS\.map[\s\S]*Requested domain name[\s\S]*debugId="community-domain-purchase\.check-domain"[\s\S]*Kind of community[\s\S]*display: purchaseReviewMode \? "grid" : "none"[\s\S]*2\. Availability[\s\S]*Domain details[\s\S]*3\. Pilot reservation[\s\S]*community-domain-purchase\.create-draft[\s\S]*4\. Pilot payment[\s\S]*community-domain-purchase\.check-another-name[\s\S]*community-domain-purchase\.other-paths[\s\S]*community-domain-purchase\.open-create-community[\s\S]*community-domain-purchase\.lookup-existing-domain/,
   "Community Domain purchase must split into a focused name-check state and a second availability/draft/payment review state while keeping alternate Committee/existing-domain paths collapsed.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /DOMAIN_PURCHASE_MOBILE_FACTS[\s\S]*Community first[\s\S]*Domain after[\s\S]*Payment later[\s\S]*needsLocalCommunityFirst[\s\S]*Pillar of Hope needs the normal GSN community first[\s\S]*Create Domain draft[\s\S]*Local community first[\s\S]*Pillar of Hope needs its local community record and GSN number before the Domain layer is filled[\s\S]*community-domain-purchase\.open-create-community-first[\s\S]*Create GSN community first[\s\S]*Create the normal GSN community first[\s\S]*Draft and quote state[\s\S]*!needsLocalCommunityFirst \? \([\s\S]*community-domain-purchase\.create-draft/,
+  /DOMAIN_PURCHASE_MOBILE_FACTS[\s\S]*Community first[\s\S]*Domain after[\s\S]*Pilot no payment[\s\S]*needsLocalCommunityFirst[\s\S]*Pillar of Hope needs the normal GSN community first[\s\S]*Create Domain draft[\s\S]*Local community first[\s\S]*Pillar of Hope needs its local community record and GSN number before the Domain layer is filled[\s\S]*community-domain-purchase\.open-create-community-first[\s\S]*Create GSN community first[\s\S]*Create the normal GSN community first[\s\S]*Pilot reservation state[\s\S]*!needsLocalCommunityFirst \? \([\s\S]*community-domain-purchase\.create-draft/,
   "Community Domain purchase must gate first-time domain setup behind the normal local GSN community anchor.",
   { frontend: true }
 );
@@ -2800,6 +3003,7 @@ assertContains(
       String.raw`Governance multi-job groups do not expose a Change job control`,
       String.raw`community-domain-dashboard\.governance-task\.real_life_record`,
       String.raw`Governance job buttons stay visible after a job is selected`,
+      String.raw`community-domain-dashboard\.church-live-attendance-qr`,
       String.raw`real-life record types are visible before Change record type is opened`,
       String.raw`community-domain-dashboard\.real-life-record\.type-toggle`,
       String.raw`Activity record steps are visible before Change step is opened`,
@@ -2843,7 +3047,7 @@ assertContains(
       String.raw`lowContrast`,
     ].join("[\\s\\S]*")
   ),
-  "Community Domain mobile visual audit must exercise purchase first-job compaction, selector one-path state, active-domain summary grouping, focused identity/service/structure/member views, staged Governance record capture, Recent outcome view capture, dead-block regression, overflow, and contrast checks.",
+  "Community Domain mobile visual audit must exercise purchase first-job compaction, selector one-path state, active-domain summary grouping, focused identity/service/structure/member views, staged Governance record capture, live attendance QR capture, Recent outcome view capture, dead-block regression, overflow, and contrast checks.",
   { frontend: true }
 );
 
@@ -2961,7 +3165,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /packageCapacityFacts[\s\S]*included_members[\s\S]*included_nodes[\s\S]*included_admins[\s\S]*included_shops[\s\S]*included_storage_gb[\s\S]*packageTariffBoundaryText[\s\S]*Current pilot package allowance only[\s\S]*packageBillingStatusFacts[\s\S]*pricing_model_status[\s\S]*paid_upgrade_status[\s\S]*member_band_status[\s\S]*feature_tariff_status[\s\S]*domain_tariff_status[\s\S]*compactStatus\(value \|\| "not_automated"\)[\s\S]*packageBillingAdminAction[\s\S]*manual finance and capacity review/,
+  /packageCapacityFacts[\s\S]*included_members[\s\S]*included_nodes[\s\S]*included_admins[\s\S]*included_shops[\s\S]*included_storage_gb[\s\S]*packageTariffBoundaryText[\s\S]*Community Domain name reservation and setup are open for the pilot[\s\S]*packageBillingStatusFacts[\s\S]*pricing_model_status[\s\S]*paid_upgrade_status[\s\S]*member_band_status[\s\S]*feature_tariff_status[\s\S]*domain_tariff_status[\s\S]*compactStatus\(value \|\| "not_automated"\)[\s\S]*packageBillingAdminAction[\s\S]*manual finance and capacity review/,
   "Community Domain dashboard parent must keep package allowance and future tariff automation facts parent-owned for Services handoff.",
   { frontend: true }
 );
@@ -3893,14 +4097,14 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /draftActionLabel[\s\S]*Draft request created[\s\S]*\/app\/community-domain\/[\s\S]*Open domain dashboard/,
+  /draftActionLabel[\s\S]*Pilot domain reserved[\s\S]*\/app\/community-domain\/[\s\S]*Open domain dashboard/,
   "Community Domain purchase page must hand signed-in owners to the authenticated domain dashboard after draft creation.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /hasCreatedDraft[\s\S]*draftFormLocked[\s\S]*hasCreatedDraft \|\| busy === "draft"[\s\S]*disabled=\{hasCreatedDraft \|\| busy === "draft"\}[\s\S]*disabled=\{hasCreatedDraft \|\| busy === "draft"\}[\s\S]*disabled=\{hasCreatedDraft \|\| busy === "draft"\}[\s\S]*disabled=\{busy === "availability" \|\| draftFormLocked\}[\s\S]*Draft created/,
+  /hasCreatedDraft[\s\S]*draftFormLocked[\s\S]*hasCreatedDraft \|\| busy === "draft"[\s\S]*disabled=\{hasCreatedDraft \|\| busy === "draft"\}[\s\S]*disabled=\{hasCreatedDraft \|\| busy === "draft"\}[\s\S]*disabled=\{hasCreatedDraft \|\| busy === "draft"\}[\s\S]*disabled=\{busy === "availability" \|\| draftFormLocked\}[\s\S]*Pilot reserved/,
   "Community Domain purchase page must lock form inputs after draft creation or while the draft request is being created so the visible form cannot drift away from the created draft.",
   { frontend: true }
 );
@@ -3990,7 +4194,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /aside[\s\S]*display: purchaseReviewMode \? "grid" : "none"[\s\S]*overflowWrap: "normal"[\s\S]*wordBreak: "normal"[\s\S]*hyphens: "none"[\s\S]*Confirmation and activation are separate/,
+  /aside[\s\S]*display: purchaseReviewMode \? "grid" : "none"[\s\S]*overflowWrap: "normal"[\s\S]*wordBreak: "normal"[\s\S]*hyphens: "none"[\s\S]*Paid continuation, suspension, or closure is reviewed later/,
   "Community Domain purchase payment/draft review cards must stay hidden until availability exists and remain readable without narrow word-stacking.",
   { frontend: true }
 );
@@ -4224,13 +4428,13 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /@router\.post\("\/\{community_domain_id\}\/package-quote"[\s\S]*def create_community_domain_package_quote[\s\S]*_require_domain_admin_scope[\s\S]*does not create a payment instruction[\s\S]*verify ownership/,
+  /@router\.post\("\/\{community_domain_id\}\/package-quote"[\s\S]*def create_community_domain_package_quote[\s\S]*_require_domain_admin_scope[\s\S]*Pilot package status only[\s\S]*verify ownership/,
   "Backend route must expose a scoped Community Domain package quote without payment, activation, or verification side effects."
 );
 
 assertContains(
   "gmfn_backend/tests/test_community_domains.py",
-  /test_owner_can_preview_community_domain_package_quote_without_activation[\s\S]*\/package-quote[\s\S]*pilot_quote_required[\s\S]*price_amount"\] is None[\s\S]*domain\.status == "draft"/,
+  /test_owner_can_preview_community_domain_package_quote_without_activation[\s\S]*\/package-quote[\s\S]*pilot_payment_suspended[\s\S]*price_amount"\] is None[\s\S]*domain\.status == "draft"/,
   "Backend tests must prove package quote preview is not payment, activation, or verification."
 );
 
@@ -4238,6 +4442,11 @@ assertContains(
   "gmfn_backend/tests/test_community_domains.py",
   /test_outsider_cannot_preview_community_domain_package_quote[\s\S]*\/package-quote[\s\S]*response\.status_code == 403[\s\S]*owner or domain admin/,
   "Backend tests must prove package quote preview is owner/admin scoped."
+);
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /@router\.post\("\/\{community_domain_id\}\/payment-instruction"[\s\S]*COMMUNITY_DOMAIN_PILOT_PAYMENT_SUSPENDED[\s\S]*community_domain_pilot_billing_suspended[\s\S]*payment_required_now[\s\S]*False/,
+  "Backend Community Domain payment instruction route must be suspended during pilot so no expected payment is created."
 );
 
 assertContains(
@@ -4248,7 +4457,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/tests/test_community_domains.py",
-  /test_domain_admin_dashboard_summary_guides_next_action_without_activation[\s\S]*\/dashboard[\s\S]*package_quote[\s\S]*pilot_quote_required[\s\S]*domain_row\.status == "draft"/,
+  /test_domain_admin_dashboard_summary_guides_next_action_without_activation[\s\S]*\/dashboard[\s\S]*package_quote[\s\S]*pilot_payment_suspended[\s\S]*domain_row\.status == "draft"/,
   "Backend tests must prove admin dashboard summary includes quote guidance without activation."
 );
 
@@ -5937,7 +6146,7 @@ assertNotContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /@router\.get\("\/\{community_domain_id\}\/community-value-report\.pdf"\)[\s\S]*audience: Literal\["director_admin", "sponsor_safe"\][\s\S]*get_community_domain_period_summary[\s\S]*visibility_mode="director_safe"[\s\S]*get_community_domain_sponsor_summary[\s\S]*StreamingResponse[\s\S]*application\/pdf/,
+  /@router\.get\("\/\{community_domain_id\}\/community-value-report\.pdf"\)[\s\S]*audience: Literal\["director_admin", "sponsor_safe", "church_memory"\][\s\S]*get_community_domain_period_summary[\s\S]*visibility_mode="director_safe"[\s\S]*get_community_domain_church_memory_summary[\s\S]*get_community_domain_sponsor_summary[\s\S]*StreamingResponse[\s\S]*application\/pdf/,
   "Backend must expose an admin-gated Community Domain Community Value PDF built from existing director-safe and sponsor-safe summaries."
 );
 
@@ -5949,13 +6158,13 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/CommunityDomainDashboardPage.tsx",
-  /useState<CommunityValueReportPeriodKey>\("last_30_days"\)[\s\S]*communityValueReportPeriodBounds[\s\S]*this_month[\s\S]*last_7_days[\s\S]*downloadCommunityValueReportPdf[\s\S]*downloadCommunityDomainValueReportPdf[\s\S]*Community Value PDF prepared from recorded GSN facts only/,
+  /useState<CommunityValueReportPeriodKey>\("last_30_days"\)[\s\S]*communityValueReportPeriodBounds[\s\S]*this_month[\s\S]*this_year[\s\S]*last_7_days[\s\S]*downloadCommunityValueReportPdf[\s\S]*downloadCommunityDomainValueReportPdf[\s\S]*Church Summary PDF prepared from recorded sermon messages, programme records, live QR attendance check-ins, and response QR signals only/,
   "Community Domain dashboard must prepare Community Value PDFs from explicit weekly/monthly/30-day periods without claiming unrecorded impact."
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx",
-  /community-domain-dashboard\.prepare-community-value-pdf[\s\S]*Prepare Community Value PDF[\s\S]*Sponsor-safe PDFs omit private beneficiary and member-level detail/,
+  /This year[\s\S]*Church summary[\s\S]*community-domain-dashboard\.prepare-community-value-pdf[\s\S]*Prepare Church Summary PDF[\s\S]*without judging doctrine/,
   "Community Domain Governance reports must expose the Community Value PDF button with a visible sponsor-safe privacy boundary.",
   { frontend: true }
 );
@@ -5964,6 +6173,17 @@ assertContains(
   "gmfn_backend/tests/test_community_domains.py",
   /community-value-report\.pdf[\s\S]*forbidden_pdf\.status_code == 403[\s\S]*sponsor_pdf\.content\.startswith\(b"%PDF-"\)[\s\S]*community-value-sponsor_safe[\s\S]*director_pdf\.content\.startswith\(b"%PDF-"\)[\s\S]*community-value-director_admin/,
   "Backend tests must prove Community Value PDF exports are admin-gated and return real sponsor-safe and director/admin PDF bytes."
+);
+assertContains(
+  "gmfn_backend/app/services/community_domain_value_pdf_service.py",
+  /GSN Church Summary Report[\s\S]*does not judge doctrine[\s\S]*Sermon And Programme Summary[\s\S]*Live QR check-ins[\s\S]*Response QR windows[\s\S]*Recent Response QR Windows[\s\S]*Recent Questions And Follow-Up Signals[\s\S]*Leadership Review Prompts/,
+  "Community Value PDF service must render a bounded Church Summary report for recorded messages, programme records, live QR attendance windows, and response QR signals."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domain_collection_instructions.py",
+  /test_church_summary_pdf_summarizes_message_qr_and_programme_records[\s\S]*public_qr_enabled[\s\S]*church_programme_attendance[\s\S]*test_church_summary_pdf_accepts_live_attendance_qr_counts[\s\S]*\/attendance-sessions[\s\S]*\/check-ins[\s\S]*\/response-channels[\s\S]*need_request[\s\S]*church-summary-church_memory/,
+  "Backend tests must prove Church Summary PDF generation from public message QR, programme records, live attendance QR check-ins, and response QR records."
 );
 if (findings.length > 0) {
   console.error("Community Domain product contract audit failed:");

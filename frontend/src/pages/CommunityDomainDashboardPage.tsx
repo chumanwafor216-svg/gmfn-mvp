@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import CommunityNoticeModal from "../components/CommunityNoticeModal";
 import PageTopNav from "../components/PageTopNav";
@@ -21,6 +22,9 @@ import {
   createClan,
   createCommunityDomainOutcomeConfirmationLink,
   createCommunityDomainNotice,
+  createCommunityDomainResponseChannel,
+  createCommunityDomainAttendanceSession,
+  createCommunityDomainCollectionInstruction,
   createCommunityDomainPaymentInstruction,
   createCommunityDomainPackageQuote,
   deactivateCommunityDomainMember,
@@ -83,6 +87,9 @@ import {
   listCommunityDomainServiceSettings,
   listCommunityDomainActionReviews,
   listCommunityDomainActivities,
+  listCommunityDomainAttendanceSessions,
+  listCommunityDomainCollectionInstructions,
+  listCommunityDomainResponseChannels,
   listCommunityDomainMembers,
   listCommunityDomainNodeTree,
   listCommunityDomainNotices,
@@ -626,6 +633,67 @@ const SETUP_ACCESS_TASK_OPTIONS: Array<{
 
 type UnknownRecord = Record<string, unknown>;
 
+type CollectionInstructionDraft = {
+  collection_type: string;
+  collection_mode: string;
+  purpose_label: string;
+  amount_label: string;
+  currency: string;
+  external_payment_url: string;
+  receiving_account_label: string;
+  visibility_scope: string;
+  note: string;
+};
+
+type AttendanceSessionDraft = {
+  programme_label: string;
+  method: "qr" | "bluetooth_proximity";
+  window_minutes: string;
+  note: string;
+};
+
+type ResponseChannelDraft = {
+  title: string;
+  source_kind: "meeting" | "church_service" | "programme" | "workshop" | "announcement" | "demand_box" | "other";
+  prompt: string;
+  related_label: string;
+  window_days: string;
+  allow_private_follow_up: boolean;
+  note: string;
+};
+function emptyCollectionInstructionDraft(): CollectionInstructionDraft {
+  return {
+    collection_type: "offering",
+    collection_mode: "standing",
+    purpose_label: "Sunday Offering",
+    amount_label: "Open amount",
+    currency: "GBP",
+    external_payment_url: "",
+    receiving_account_label: "Church approved receiving account",
+    visibility_scope: "public",
+    note: "",
+  };
+}
+function emptyAttendanceSessionDraft(): AttendanceSessionDraft {
+  return {
+    programme_label: "Sunday service attendance",
+    method: "qr",
+    window_minutes: "120",
+    note: "Live QR attendance window for this church programme.",
+  };
+}
+
+function emptyResponseChannelDraft(): ResponseChannelDraft {
+  return {
+    title: "After-service Response Box",
+    source_kind: "church_service",
+    prompt: "Send your question, comment, need, suggestion, or follow-up request after this service.",
+    related_label: "Sunday service",
+    window_days: "14",
+    allow_private_follow_up: true,
+    note: "Response QR for questions, comments, needs, and follow-up after this church programme.",
+  };
+}
 function isUnknownRecord(value: unknown): value is UnknownRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -906,6 +974,14 @@ const PILLAR_OF_HOPE_SETUP_PROFILE =
 function cleanText(value: unknown, fallback = ""): string {
   const text = String(value ?? "").trim();
   return text || fallback;
+}
+
+function communityCollectionPublicUrl(publicPath: unknown): string {
+  const path = cleanText(publicPath);
+  if (!path) return "";
+  if (/^https?:\/\//i.test(path)) return path;
+  if (typeof window === "undefined") return path;
+  return `${window.location.origin}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
 function subjectReferenceLabel(item: unknown): string {
@@ -2573,6 +2649,22 @@ export default function CommunityDomainDashboardPage() {
   const [subscriptionLifecycle, setSubscriptionLifecycle] = useState<SubscriptionLifecycleSurface | null>(null);
   const [quote, setQuote] = useState<BillingQuoteSurface | null>(null);
   const [domainPayment, setDomainPayment] = useState<DomainPaymentSurface | null>(null);
+  const [collectionInstructionRows, setCollectionInstructionRows] = useState<UnknownRecord[]>([]);
+  const [collectionInstructionDraft, setCollectionInstructionDraft] =
+    useState<CollectionInstructionDraft>(() => emptyCollectionInstructionDraft());
+  const [collectionInstructionPanelOpen, setCollectionInstructionPanelOpen] = useState(false);
+  const [busyCollectionInstruction, setBusyCollectionInstruction] = useState(false);
+  const [collectionInstructionCopied, setCollectionInstructionCopied] = useState(false);
+  const [attendanceSessionRows, setAttendanceSessionRows] = useState<UnknownRecord[]>([]);
+  const [attendanceSessionDraft, setAttendanceSessionDraft] =
+    useState<AttendanceSessionDraft>(() => emptyAttendanceSessionDraft());
+  const [busyAttendanceSession, setBusyAttendanceSession] = useState(false);
+  const [attendanceSessionCopied, setAttendanceSessionCopied] = useState(false);
+  const [responseChannelRows, setResponseChannelRows] = useState<UnknownRecord[]>([]);
+  const [responseChannelDraft, setResponseChannelDraft] =
+    useState<ResponseChannelDraft>(() => emptyResponseChannelDraft());
+  const [busyResponseChannel, setBusyResponseChannel] = useState(false);
+  const [responseChannelCopied, setResponseChannelCopied] = useState(false);
   const [setupEvidence, setSetupEvidence] = useState<UnknownRecord | null>(null);
   const [setupEvidenceFile, setSetupEvidenceFile] = useState<File | null>(null);
   const [communityLinkClanRows, setCommunityLinkClanRows] = useState<CommunityLinkClanRow[]>([]);
@@ -3057,6 +3149,8 @@ export default function CommunityDomainDashboardPage() {
       setMembershipRequestLineage([]);
       setLoadingMembershipRequestLineage(false);
       setDomainNotices([]);
+      setCollectionInstructionRows([]);
+      setCollectionInstructionPanelOpen(false);
       setDomainNoticeFeatureMode("admin_only");
       setDomainNoticesLoading(false);
       setDomainNoticeModalOpen(false);
@@ -3106,6 +3200,8 @@ export default function CommunityDomainDashboardPage() {
     setMembershipRequestLineage([]);
     setLoadingMembershipRequestLineage(false);
     setDomainNotices([]);
+    setCollectionInstructionRows([]);
+    setCollectionInstructionPanelOpen(false);
     setDomainNoticeFeatureMode("admin_only");
     setDomainNoticesLoading(false);
     setDomainNoticeModalOpen(false);
@@ -3226,11 +3322,86 @@ export default function CommunityDomainDashboardPage() {
     void loadDomainNotices(communityDomainId);
   }, [communityDomainId, dashboard, loadDomainNotices]);
 
+  const loadCollectionInstructions = useCallback(
+    async (domainId = communityDomainId) => {
+      const requestDomainId = cleanText(domainId);
+      if (!requestDomainId || !dashboard) {
+        setCollectionInstructionRows([]);
+        return;
+      }
+      try {
+        const payload = await listCommunityDomainCollectionInstructions(requestDomainId).catch(
+          () => null
+        );
+        if (!isCurrentDomainRequest(requestDomainId)) return;
+        setCollectionInstructionRows(payloadRecordArray(payload, "items"));
+      } catch {
+        if (isCurrentDomainRequest(requestDomainId)) setCollectionInstructionRows([]);
+      }
+    },
+    [communityDomainId, dashboard, isCurrentDomainRequest]
+  );
+
+  useEffect(() => {
+    if (!dashboard || !communityDomainId || activeLane !== "billing") return;
+    void loadCollectionInstructions(communityDomainId);
+  }, [activeLane, communityDomainId, dashboard, loadCollectionInstructions]);
+
+  const loadAttendanceSessions = useCallback(
+    async (domainId = communityDomainId) => {
+      const requestDomainId = cleanText(domainId);
+      if (!requestDomainId || !dashboard) {
+        setAttendanceSessionRows([]);
+        return;
+      }
+      try {
+        const payload = await listCommunityDomainAttendanceSessions(requestDomainId, {
+          limit: 6,
+        }).catch(() => null);
+        if (!isCurrentDomainRequest(requestDomainId)) return;
+        setAttendanceSessionRows(payloadRecordArray(payload, "items"));
+      } catch {
+        if (isCurrentDomainRequest(requestDomainId)) setAttendanceSessionRows([]);
+      }
+    },
+    [communityDomainId, dashboard, isCurrentDomainRequest]
+  );
+
+  useEffect(() => {
+    if (!dashboard || !communityDomainId || activeLane !== "governance") return;
+    void loadAttendanceSessions(communityDomainId);
+  }, [activeLane, communityDomainId, dashboard, loadAttendanceSessions]);
+
+  const loadResponseChannels = useCallback(
+    async (domainId = communityDomainId) => {
+      const requestDomainId = cleanText(domainId);
+      if (!requestDomainId || !dashboard) {
+        setResponseChannelRows([]);
+        return;
+      }
+      try {
+        const payload = await listCommunityDomainResponseChannels(requestDomainId, {
+          limit: 6,
+        }).catch(() => null);
+        if (!isCurrentDomainRequest(requestDomainId)) return;
+        setResponseChannelRows(payloadRecordArray(payload, "items"));
+      } catch {
+        if (isCurrentDomainRequest(requestDomainId)) setResponseChannelRows([]);
+      }
+    },
+    [communityDomainId, dashboard, isCurrentDomainRequest]
+  );
+
+  useEffect(() => {
+    if (!dashboard || !communityDomainId || activeLane !== "governance") return;
+    void loadResponseChannels(communityDomainId);
+  }, [activeLane, communityDomainId, dashboard, loadResponseChannels]);
   async function submitDomainNotice(
     body: string,
     options?: {
       expiry_policy?: "standard" | "urgent" | "event" | "pinned";
       expires_at?: string;
+      public_qr_enabled?: boolean;
     }
   ) {
     const requestDomainId = cleanText(domain?.id || communityDomainId);
@@ -3251,10 +3422,14 @@ export default function CommunityDomainDashboardPage() {
 
     setDomainNoticePosting(true);
     try {
-      await createCommunityDomainNotice(requestDomainId, { body, ...options });
+      const posted = await createCommunityDomainNotice(requestDomainId, { body, ...options });
       await loadDomainNotices(requestDomainId);
       setDomainNoticeModalOpen(false);
-      setMessage("Official notice posted to this Community Domain only.");
+      setMessage(
+        posted?.public_path
+          ? "Official notice posted with a public GSN message QR."
+          : "Official notice posted to this Community Domain only."
+      );
     } catch (err) {
       setMessage(
         errorDetailMessage(err, "GSN could not post this Community Domain notice.")
@@ -3900,6 +4075,9 @@ export default function CommunityDomainDashboardPage() {
     if (period === "this_month") {
       start.setUTCDate(1);
       start.setUTCHours(0, 0, 0, 0);
+    } else if (period === "this_year") {
+      start.setUTCMonth(0, 1);
+      start.setUTCHours(0, 0, 0, 0);
     } else if (period === "last_7_days") {
       start.setUTCDate(start.getUTCDate() - 7);
     } else {
@@ -3928,7 +4106,8 @@ export default function CommunityDomainDashboardPage() {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "") || "community-domain";
     const stamp = new Date().toISOString().slice(0, 10);
-    return `gsn-${cleanedDomain}-community-value-${communityValueReportAudience}-${stamp}.pdf`;
+    const reportSlug = communityValueReportAudience === "church_memory" ? "church-summary" : "community-value";
+    return `gsn-${cleanedDomain}-${reportSlug}-${communityValueReportAudience}-${stamp}.pdf`;
   }
 
   async function downloadCommunityValueReportPdf() {
@@ -3947,11 +4126,13 @@ export default function CommunityDomainDashboardPage() {
       });
       saveBlobDownload(pdfBlob, communityValueReportFilename());
       setMessage(
-        "Community Value PDF prepared from recorded GSN facts only. Review it before sharing outside the association."
+        communityValueReportAudience === "church_memory"
+          ? "Church Summary PDF prepared from recorded sermon messages, programme records, live QR attendance check-ins, and response QR signals only."
+          : "Community Value PDF prepared from recorded GSN facts only. Review it before sharing outside the association."
       );
     } catch (err) {
       setMessage(
-        `Community Value PDF could not be prepared: ${err instanceof Error ? err.message : "please try again"}`
+        `${communityValueReportAudience === "church_memory" ? "Church Summary PDF" : "Community Value PDF"} could not be prepared: ${err instanceof Error ? err.message : "please try again"}`
       );
     } finally {
       setBusyCommunityValueReportPdf(false);
@@ -4556,6 +4737,18 @@ export default function CommunityDomainDashboardPage() {
     communityLinkClanRows.find((row) => row.id === linkedDomainClanId) || null;
   const paymentClanRow =
     communityLinkClanRows.find((row) => row.id === paymentClanId) || null;
+  const latestCollectionInstruction = collectionInstructionRows[0] || null;
+  const latestCollectionPublicUrl = communityCollectionPublicUrl(
+    latestCollectionInstruction?.public_path
+  );
+  const latestAttendanceSession = attendanceSessionRows[0] || null;
+  const latestAttendancePublicUrl = communityCollectionPublicUrl(
+    latestAttendanceSession?.public_path
+  );
+  const latestResponseChannel = responseChannelRows[0] || null;
+  const latestResponsePublicUrl = communityCollectionPublicUrl(
+    latestResponseChannel?.public_path
+  );
   const requestedLane = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return cleanText(
@@ -6043,7 +6236,13 @@ export default function CommunityDomainDashboardPage() {
   const communityPayInCountryLabel = settlementCountryLabel(
     communityPayInSettlement?.country || communityPayInDraft.country || billingSettlementCountry
   );
-  const billingSequenceSteps = [
+  const quoteBillingBoundaryForPilot: UnknownRecord | null = isUnknownRecord(quote?.billing_boundary)
+    ? quote.billing_boundary
+    : null;
+  const communityDomainPilotPaymentSuspended =
+    cleanText(quote?.pricing_status || quote?.quote_status).toLowerCase().includes("pilot_payment_suspended") ||
+    cleanText(quoteBillingBoundaryForPilot?.payment_instruction_status).toLowerCase() === "suspended_during_pilot" ||
+    quoteBillingBoundaryForPilot?.payment_required_now === false;  const billingSequenceSteps = [
     {
       step: "1",
       title: "Review quote",
@@ -6053,10 +6252,12 @@ export default function CommunityDomainDashboardPage() {
     },
     {
       step: "2",
-      title: "Generate payment code",
-      detail: "Create one reference code for the agreed Community Domain quote. The code is not bank account details.",
-      status: domainPaymentReference ? "Code generated" : "Code needed",
-      active: !domainPaymentReference,
+      title: communityDomainPilotPaymentSuspended ? "Payment suspended for pilot" : "Generate payment code",
+      detail: communityDomainPilotPaymentSuspended
+        ? "Use the Community Domain during pilot testing without creating a payment instruction. GSN reviews paid continuation later."
+        : "Create one reference code for the agreed Community Domain quote. The code is not bank account details.",
+      status: communityDomainPilotPaymentSuspended ? "Suspended" : domainPaymentReference ? "Code generated" : "Code needed",
+      active: !communityDomainPilotPaymentSuspended && !domainPaymentReference,
     },
     {
       step: "3",
@@ -6095,6 +6296,7 @@ export default function CommunityDomainDashboardPage() {
     : isUnknownRecord(capacityPlan?.billing_boundary)
     ? capacityPlan.billing_boundary
     : null;
+
   const packageCapacityFacts: Array<[string, string]> = [
     [
       "Members",
@@ -6124,7 +6326,7 @@ export default function CommunityDomainDashboardPage() {
   const packageTariffBoundaryText =
     cleanText(
       packageBillingBoundary?.plain_language,
-      "Current pilot package allowance only. Extra member bands, paid feature tariffs, and per-domain pricing are not automated here yet; use Billing capacity review before selling or promising upgraded limits."
+      "Community Domain name reservation and setup are open for the pilot, but payment is suspended for now. Review paid continuation, suspension, or closure after testing."
     );
   const packageBillingStatusFacts: Array<[string, string]> = ([
     ["Pricing", packageBillingBoundary?.pricing_model_status],
@@ -6218,6 +6420,8 @@ export default function CommunityDomainDashboardPage() {
       setMessage(
         billingIsActive
           ? "Package details refreshed. Billing is already shown as active here, but this refresh is still not payment confirmation, activation, or verification."
+          : communityDomainPilotPaymentSuspended
+          ? "Pilot package refreshed. Payment is suspended; the domain can be used for pilot testing but is still not ownership verification or paid continuation."
           : "Package quote refreshed. It is still not a payment instruction, payment confirmation, activation, or verification."
       );
     } catch (err) {
@@ -6238,6 +6442,12 @@ export default function CommunityDomainDashboardPage() {
     if (!requestDomainId) return;
     if (!isAdmin) {
       setMessage("Only a Community Domain owner or domain admin can generate the payment code.");
+      return;
+    }
+    if (communityDomainPilotPaymentSuspended) {
+      setMessage(
+        "Community Domain payment is suspended during the pilot. Use the reserved domain now; GSN will review paid continuation, suspension, or closure later."
+      );
       return;
     }
     const clanId = Number(domain.clan_id || paymentClanIdDraft || 0);
@@ -6313,6 +6523,209 @@ export default function CommunityDomainDashboardPage() {
     }
   }
 
+  function updateCollectionInstructionDraft(
+    field: keyof CollectionInstructionDraft,
+    value: string
+  ) {
+    setCollectionInstructionDraft((current) => ({ ...current, [field]: value }));
+  }
+
+  async function generateCollectionInstruction() {
+    const requestDomainId = cleanText(communityDomainId);
+    if (!requestDomainId) return;
+    if (!isAdmin) {
+      setMessage("Only a Community Domain owner or domain admin can publish a collection QR.");
+      return;
+    }
+    if (paymentsContributionsOff) {
+      setMessage(
+        "Payments and Contributions are off for this Community Domain. Change Domain feature policy before publishing offering or donation QR instructions."
+      );
+      return;
+    }
+    if (!cleanText(collectionInstructionDraft.purpose_label)) {
+      setMessage("Name the offering, donation, levy, or collection purpose before publishing the QR.");
+      return;
+    }
+
+    setBusyCollectionInstruction(true);
+    setMessage("");
+    try {
+      const payload = await createCommunityDomainCollectionInstruction(requestDomainId, {
+        ...collectionInstructionDraft,
+        currency: cleanText(collectionInstructionDraft.currency).toUpperCase(),
+        approval_status: "published",
+        visibility_scope: "public",
+      });
+      if (!isCurrentDomainRequest(requestDomainId)) return;
+      const item = payload?.collection_instruction;
+      if (isUnknownRecord(item)) {
+        setCollectionInstructionRows((current) => [item, ...current]);
+      } else {
+        await loadCollectionInstructions(requestDomainId);
+      }
+      setCollectionInstructionPanelOpen(true);
+      setMessage(
+        "Collection QR published. It opens a GSN instruction page; GSN still does not hold or confirm the offering money."
+      );
+    } catch (err) {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setMessage(
+          errorDetailMessage(err, "GSN could not publish this collection QR instruction.")
+        );
+      }
+    } finally {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setBusyCollectionInstruction(false);
+      }
+    }
+  }
+
+  async function copyLatestCollectionLink() {
+    const value = latestCollectionPublicUrl;
+    if (!value || typeof navigator === "undefined" || !navigator.clipboard) return;
+    await navigator.clipboard.writeText(value);
+    setCollectionInstructionCopied(true);
+    window.setTimeout(() => setCollectionInstructionCopied(false), 1600);
+  }
+
+  function updateAttendanceSessionDraft(
+    field: keyof AttendanceSessionDraft,
+    value: string
+  ) {
+    setAttendanceSessionDraft((current) => ({ ...current, [field]: value }));
+  }
+
+  async function generateAttendanceSession() {
+    const requestDomainId = cleanText(communityDomainId);
+    if (!requestDomainId) return;
+    if (!isAdmin) {
+      setMessage("Only a Community Domain owner or domain admin can open a live attendance QR.");
+      return;
+    }
+    if (!cleanText(attendanceSessionDraft.programme_label)) {
+      setMessage("Name the service, programme, fellowship, or class before opening attendance.");
+      return;
+    }
+
+    const windowMinutes = Number(attendanceSessionDraft.window_minutes || 120);
+    setBusyAttendanceSession(true);
+    setMessage("");
+    try {
+      const payload = await createCommunityDomainAttendanceSession(requestDomainId, {
+        programme_label: cleanText(attendanceSessionDraft.programme_label),
+        method: attendanceSessionDraft.method,
+        window_minutes:
+          Number.isFinite(windowMinutes) && windowMinutes >= 5
+            ? Math.min(720, Math.floor(windowMinutes))
+            : 120,
+        note: cleanText(attendanceSessionDraft.note) || null,
+      });
+      if (!isCurrentDomainRequest(requestDomainId)) return;
+      const item = payload?.attendance_session;
+      if (isUnknownRecord(item)) {
+        setAttendanceSessionRows((current) => [item, ...current]);
+      } else {
+        await loadAttendanceSessions(requestDomainId);
+      }
+      setMessage(
+        "Live attendance QR opened. Display it on the phone or screen; members scan to mark themselves present."
+      );
+    } catch (err) {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setMessage(
+          errorDetailMessage(err, "GSN could not open this live attendance QR.")
+        );
+      }
+    } finally {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setBusyAttendanceSession(false);
+      }
+    }
+  }
+
+  async function copyLatestAttendanceLink() {
+    const value = latestAttendancePublicUrl;
+    if (!value || typeof navigator === "undefined" || !navigator.clipboard) return;
+    await navigator.clipboard.writeText(value);
+    setAttendanceSessionCopied(true);
+    window.setTimeout(() => setAttendanceSessionCopied(false), 1600);
+  }
+
+  function updateResponseChannelDraft(
+    field: keyof ResponseChannelDraft,
+    value: string | boolean
+  ) {
+    setResponseChannelDraft((current) => ({ ...current, [field]: value }));
+  }
+
+  async function generateResponseChannel() {
+    const requestDomainId = cleanText(communityDomainId);
+    if (!requestDomainId) return;
+    if (!isAdmin) {
+      setMessage("Only a Community Domain owner or domain admin can open a response QR.");
+      return;
+    }
+    if (!cleanText(responseChannelDraft.title)) {
+      setMessage("Name the meeting, service, or programme response box before opening the QR.");
+      return;
+    }
+
+    const windowDays = Number(responseChannelDraft.window_days || 14);
+    setBusyResponseChannel(true);
+    setMessage("");
+    try {
+      const payload = await createCommunityDomainResponseChannel(requestDomainId, {
+        title: cleanText(responseChannelDraft.title),
+        source_kind: responseChannelDraft.source_kind,
+        prompt: cleanText(responseChannelDraft.prompt) || null,
+        related_label: cleanText(responseChannelDraft.related_label) || null,
+        window_days:
+          Number.isFinite(windowDays) && windowDays >= 1
+            ? Math.min(90, Math.floor(windowDays))
+            : 14,
+        allow_private_follow_up: Boolean(responseChannelDraft.allow_private_follow_up),
+        note: cleanText(responseChannelDraft.note) || null,
+      });
+      if (!isCurrentDomainRequest(requestDomainId)) return;
+      const item = payload?.response_channel;
+      if (isUnknownRecord(item)) {
+        setResponseChannelRows((current) => [item, ...current]);
+      } else {
+        await loadResponseChannels(requestDomainId);
+      }
+      setMessage(
+        "Response QR opened. Share it by QR or WhatsApp link so members can send questions, needs, comments, and follow-up signals."
+      );
+    } catch (err) {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setMessage(
+          errorDetailMessage(err, "GSN could not open this response QR.")
+        );
+      }
+    } finally {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setBusyResponseChannel(false);
+      }
+    }
+  }
+
+  async function copyLatestResponseLink() {
+    const value = latestResponsePublicUrl;
+    if (!value || typeof navigator === "undefined" || !navigator.clipboard) return;
+    await navigator.clipboard.writeText(value);
+    setResponseChannelCopied(true);
+    window.setTimeout(() => setResponseChannelCopied(false), 1600);
+  }
+
+  function shareLatestResponseViaWhatsApp() {
+    const value = latestResponsePublicUrl;
+    if (!value || typeof window === "undefined") return;
+    const text = encodeURIComponent(
+      `Please send your question, feedback, need, or follow-up for this GSN meeting/service here: ${value}`
+    );
+    window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
+  }
   async function refreshReviewerQueue() {
     await loadAccessReviewItems(true);
   }
@@ -6696,6 +7109,26 @@ export default function CommunityDomainDashboardPage() {
         {
           activity_type: "follow_up_completed",
           label: "Follow-up completed",
+        },
+        {
+          activity_type: "pastoral_follow_up",
+          label: "Pastoral follow-up",
+        },
+        {
+          activity_type: "member_belonging_check",
+          label: "Member belonging check",
+        },
+        {
+          activity_type: "department_service",
+          label: "Department service",
+        },
+        {
+          activity_type: "church_programme_attendance",
+          label: "Church programme attendance",
+        },
+        {
+          activity_type: "contribution_memory",
+          label: "Contribution memory",
         },
       ];
 
@@ -8851,6 +9284,7 @@ export default function CommunityDomainDashboardPage() {
                 ) : null}
 
                 {activeLane === "billing" ? (
+                  <>
                   <Suspense
                     fallback={
                       <div style={{ ...softCard(), display: "grid", gap: 8 }}>
@@ -8952,6 +9386,203 @@ export default function CommunityDomainDashboardPage() {
                       }}
                     />
                   </Suspense>
+                  <div
+                    data-debug-id="community-domain-dashboard.collection-instructions"
+                    style={{ ...softCard(), display: "grid", gap: 12 }}
+                  >
+                    <div style={iconHeaderStyle()}>
+                      <span style={iconFrame(44)}>
+                        <GsnRealisticIcon name="finance-wallet-card" size={34} decorative />
+                      </span>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={sectionLabel()}>Collections</div>
+                        <h3 style={{ margin: 0, fontSize: 20, lineHeight: 1.12 }}>
+                          Offering and donation QR
+                        </h3>
+                      </div>
+                    </div>
+                    <div style={{ ...helperText(), fontSize: 13.5 }}>
+                      Publish a standing or event-specific collection QR for offerings, donations, levies, or support appeals. The QR opens a governed GSN instruction page; GSN does not hold the money or expose the church account details.
+                    </div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                      <span style={statusBadge(paymentsContributionsOff ? "off" : "enabled")}>
+                        {paymentsContributionsOff ? "Payments off" : "Governed finance enabled"}
+                      </span>
+                      {latestCollectionInstruction ? (
+                        <span style={statusBadge("published")}>QR published</span>
+                      ) : (
+                        <span style={statusBadge("needed")}>No QR yet</span>
+                      )}
+                    </div>
+                    <StableButton
+                      type="button"
+                      kind={collectionInstructionPanelOpen ? "secondary" : "primary"}
+                      fullWidth
+                      stableHeight={42}
+                      debugId="community-domain-dashboard.collection-instructions-toggle"
+                      aria-expanded={collectionInstructionPanelOpen}
+                      aria-controls="community-domain-collection-instructions-panel"
+                      onClick={() => setCollectionInstructionPanelOpen((current) => !current)}
+                      style={{ fontSize: 13 }}
+                    >
+                      {collectionInstructionPanelOpen ? "Close Collection QR" : "Open Collection QR"}
+                    </StableButton>
+                    {collectionInstructionPanelOpen ? (
+                      <div
+                        id="community-domain-collection-instructions-panel"
+                        style={{ display: "grid", gap: 12 }}
+                      >
+                        {latestCollectionInstruction && latestCollectionPublicUrl ? (
+                          <div
+                            style={{
+                              ...softCard(),
+                              display: "grid",
+                              gridTemplateColumns: "minmax(0, 1fr) auto",
+                              gap: 12,
+                              alignItems: "center",
+                            }}
+                          >
+                            <div style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                              <div style={sectionLabel()}>Latest public QR</div>
+                              <strong>{cleanText(latestCollectionInstruction.purpose_label, "Collection")}</strong>
+                              <span style={{ ...helperText(), fontSize: 12.5 }}>
+                                {latestCollectionPublicUrl}
+                              </span>
+                              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                <StableButton
+                                  type="button"
+                                  kind="secondary"
+                                  stableHeight={38}
+                                  debugId="community-domain-dashboard.collection-copy-link"
+                                  onClick={copyLatestCollectionLink}
+                                >
+                                  {collectionInstructionCopied ? "Copied" : "Copy Link"}
+                                </StableButton>
+                                <StableButton
+                                  type="button"
+                                  kind="secondary"
+                                  stableHeight={38}
+                                  debugId="community-domain-dashboard.collection-open-public-link"
+                                  onClick={() => window.open(latestCollectionPublicUrl, "_blank", "noopener,noreferrer")}
+                                >
+                                  Open Page
+                                </StableButton>
+                              </div>
+                            </div>
+                            <div style={{ borderRadius: 16, background: "#FFFFFF", border: "1px solid rgba(9,27,46,0.12)", padding: 8 }}>
+                              <QRCodeSVG value={latestCollectionPublicUrl} size={104} bgColor="#FFFFFF" fgColor="#07172C" level="M" marginSize={1} />
+                            </div>
+                          </div>
+                        ) : null}
+
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
+                            gap: 10,
+                          }}
+                        >
+                          <label style={{ display: "grid", gap: 6 }}>
+                            <span style={sectionLabel()}>Purpose</span>
+                            <input
+                              style={billingInputStyle()}
+                              value={collectionInstructionDraft.purpose_label}
+                              onChange={(event) => updateCollectionInstructionDraft("purpose_label", event.target.value)}
+                              placeholder="Sunday Offering"
+                            />
+                          </label>
+                          <label style={{ display: "grid", gap: 6 }}>
+                            <span style={sectionLabel()}>Collection Type</span>
+                            <select
+                              style={billingInputStyle()}
+                              value={collectionInstructionDraft.collection_type}
+                              onChange={(event) => updateCollectionInstructionDraft("collection_type", event.target.value)}
+                            >
+                              <option value="offering">Offering</option>
+                              <option value="donation">Donation</option>
+                              <option value="tithe">Tithe</option>
+                              <option value="levy">Levy</option>
+                              <option value="support_appeal">Support appeal</option>
+                              <option value="welfare_collection">Welfare collection</option>
+                              <option value="project_support">Project support</option>
+                              <option value="registration_fee">Registration fee</option>
+                              <option value="event_fee">Event fee</option>
+                              <option value="other">Other</option>
+                            </select>
+                          </label>
+                          <label style={{ display: "grid", gap: 6 }}>
+                            <span style={sectionLabel()}>Mode</span>
+                            <select
+                              style={billingInputStyle()}
+                              value={collectionInstructionDraft.collection_mode}
+                              onChange={(event) => updateCollectionInstructionDraft("collection_mode", event.target.value)}
+                            >
+                              <option value="standing">Standing</option>
+                              <option value="event_specific">Event specific</option>
+                            </select>
+                          </label>
+                          <label style={{ display: "grid", gap: 6 }}>
+                            <span style={sectionLabel()}>Amount</span>
+                            <input
+                              style={billingInputStyle()}
+                              value={collectionInstructionDraft.amount_label}
+                              onChange={(event) => updateCollectionInstructionDraft("amount_label", event.target.value)}
+                              placeholder="Open amount"
+                            />
+                          </label>
+                          <label style={{ display: "grid", gap: 6 }}>
+                            <span style={sectionLabel()}>Currency</span>
+                            <input
+                              style={billingInputStyle()}
+                              value={collectionInstructionDraft.currency}
+                              onChange={(event) => updateCollectionInstructionDraft("currency", event.target.value)}
+                              placeholder="GBP"
+                            />
+                          </label>
+                          <div style={{ display: "grid", gap: 6 }}>
+                            <span style={sectionLabel()}>Visibility</span>
+                            <div style={{ ...billingInputStyle(), display: "flex", alignItems: "center" }}>
+                              Public QR
+                            </div>
+                          </div>
+                        </div>
+                        <label style={{ display: "grid", gap: 6 }}>
+                          <span style={sectionLabel()}>Approved payment page</span>
+                          <input
+                            style={billingInputStyle()}
+                            value={collectionInstructionDraft.external_payment_url}
+                            onChange={(event) => updateCollectionInstructionDraft("external_payment_url", event.target.value)}
+                            placeholder="https://..."
+                          />
+                        </label>
+                        <label style={{ display: "grid", gap: 6 }}>
+                          <span style={sectionLabel()}>Receiving account label</span>
+                          <input
+                            style={billingInputStyle()}
+                            value={collectionInstructionDraft.receiving_account_label}
+                            onChange={(event) => updateCollectionInstructionDraft("receiving_account_label", event.target.value)}
+                            placeholder="Church approved receiving account"
+                          />
+                        </label>
+                        <div style={{ ...helperText(), fontSize: 12.5 }}>
+                          Receiving account label is for admin context only. Public QR pages do not expose raw account details; attach an approved payment page when the church has one.
+                        </div>
+                        <StableButton
+                          type="button"
+                          kind="primary"
+                          fullWidth
+                          stableHeight={44}
+                          debugId="community-domain-dashboard.collection-publish"
+                          busy={busyCollectionInstruction}
+                          disabled={!isAdmin || paymentsContributionsOff || busyCollectionInstruction}
+                          onClick={generateCollectionInstruction}
+                        >
+                          Publish Collection QR
+                        </StableButton>
+                      </div>
+                    ) : null}
+                  </div>
+                  </>
                 ) : null}
                 {!isActiveLaneReadinessLoading && activeLane === "modules" ? (
                   <Suspense
@@ -9106,6 +9737,12 @@ export default function CommunityDomainDashboardPage() {
                           activityRecordStageChooserOpen,
                           activityRecordTaskChooserOpen,
                           activityRows,
+                          attendanceSessionCopied,
+                          attendanceSessionDraft,
+                          attendanceSessionRows,
+                          responseChannelCopied,
+                          responseChannelDraft,
+                          responseChannelRows,
                           beneficiaryContactConsentDraftByOutcomeId,
                           beneficiaryContactConsentWithdrawalDraftByOutcomeId,
                           beneficiaryCorrectionDecisionByOutcomeId,
@@ -9129,7 +9766,10 @@ export default function CommunityDomainDashboardPage() {
                           beneficiaryOutcomeSummaryDetailsOpenById,
                           beneficiaryOutcomeTaskChooserOpen,
                           billingInputStyle,
+                          domainType: cleanText(domain?.domain_type),
+                          templateKey: cleanText(domain?.template_key || domain?.domain_type),
                           busyActivityRecord,
+                          busyAttendanceSession,
                           busyBeneficiaryOutcomeRecord,
                           busyOutcomeConfirmationLinkId,
                           busyOutcomeContactConsentId,
@@ -9138,10 +9778,13 @@ export default function CommunityDomainDashboardPage() {
                           busyOutcomeDeliveryReceiptCorrectionId,
                           busyOutcomeDeliveryReceiptId,
                           busyOutcomeProviderSendId,
+                          busyResponseChannel,
                           checkBeneficiaryOutcomeProviderSend,
                           cleanText,
                           compactStatus,
                           correctBeneficiaryOutcomeDeliveryReceipt,
+                          copyLatestAttendanceLink,
+                          copyLatestResponseLink,
                           createBeneficiaryOutcomeConfirmationLink,
                           emptyBeneficiaryContactConsentDraft,
                           emptyBeneficiaryContactConsentWithdrawalDraft,
@@ -9151,11 +9794,16 @@ export default function CommunityDomainDashboardPage() {
                           iconFrame,
                           iconHeaderStyle,
                           isAdmin,
+                          latestAttendancePublicUrl,
+                          latestResponsePublicUrl,
                           noticeDateLabel,
                           realLifeRecordTypeChooserOpen,
                           recordBeneficiaryOutcomeContactConsent,
                           recordBeneficiaryOutcomeDeliveryReceipt,
                           sectionLabel,
+                          generateAttendanceSession,
+                          generateResponseChannel,
+                          shareLatestResponseViaWhatsApp,
                           setActiveActivityRecordStage,
                           setActiveActivityRecordTask,
                           setActiveBeneficiaryOutcomeRecordStage,
@@ -9185,6 +9833,8 @@ export default function CommunityDomainDashboardPage() {
                           submitCommunityDomainActivityRecord,
                           submitCommunityDomainBeneficiaryOutcomeRecord,
                           updateActivityDraft,
+                          updateAttendanceSessionDraft,
+                          updateResponseChannelDraft,
                           updateBeneficiaryContactConsentDraft,
                           updateBeneficiaryContactConsentWithdrawalDraft,
                           updateBeneficiaryCorrectionDecision,

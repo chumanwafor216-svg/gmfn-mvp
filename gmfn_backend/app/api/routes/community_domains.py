@@ -95,6 +95,11 @@ COMMUNITY_DOMAIN_EVIDENCE_CONTENT_TYPES = {
 COMMUNITY_DOMAIN_NOTICE_EVENT = "community_domain.notice.posted"
 COMMUNITY_DOMAIN_NOTICE_SOURCE = "community_domain_notice_board"
 COMMUNITY_DOMAIN_NOTICE_MAX_WORDS = 50
+COMMUNITY_DOMAIN_NOTICE_PUBLIC_BOUNDARY = (
+    "GSN shows a public-safe Community Domain message only. It does not expose "
+    "member lists, open comments, prove attendance, collect money, or replace "
+    "the pastor's or domain leader's authority."
+)
 COMMUNITY_DOMAIN_INVITE_TEMPLATE_EVENT = "community_domain.invite.template"
 COMMUNITY_DOMAIN_INVITE_TEMPLATE_MAX_CHARS = 1800
 COMMUNITY_DOMAIN_NOTICE_EXPIRY_STANDARD = "standard"
@@ -178,6 +183,73 @@ COMMUNITY_DOMAIN_OUTCOME_PROVIDER_SEND_BLOCKED_EVENT = (
 )
 COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_RECORDED_EVENT = (
     "community_domain.beneficiary_outcome_contact_consent_recorded"
+)
+COMMUNITY_DOMAIN_COLLECTION_INSTRUCTION_EVENT = "community_domain.collection_instruction"
+COMMUNITY_DOMAIN_ATTENDANCE_SESSION_EVENT = "community_domain.attendance_session.opened"
+COMMUNITY_DOMAIN_ATTENDANCE_CHECKIN_EVENT = "community_domain.attendance_checkin.recorded"
+COMMUNITY_DOMAIN_ATTENDANCE_METHODS = {
+    "qr",
+    "rotating_qr",
+    "short_code",
+    "bluetooth_proximity",
+}
+COMMUNITY_DOMAIN_ATTENDANCE_STRENGTH = {
+    "qr": "moderate",
+    "rotating_qr": "moderate",
+    "short_code": "moderate",
+    "bluetooth_proximity": "stronger_when_enabled",
+}
+COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY = (
+    "GSN records live Presence Evidence only. This is not a trust score, "
+    "location tracker, manual attendance sheet, contribution proof, or spiritual judgement."
+)
+COMMUNITY_DOMAIN_RESPONSE_CHANNEL_EVENT = "community_domain.response_channel.opened"
+COMMUNITY_DOMAIN_RESPONSE_EVENT = "community_domain.response.recorded"
+COMMUNITY_DOMAIN_RESPONSE_TYPES = {
+    "question",
+    "comment",
+    "need_request",
+    "pastoral_follow_up",
+    "suggestion",
+    "concern",
+    "testimony_benefit",
+    "meeting_feedback",
+    "other",
+}
+COMMUNITY_DOMAIN_RESPONSE_SOURCE_KINDS = {
+    "meeting",
+    "church_service",
+    "programme",
+    "workshop",
+    "announcement",
+    "demand_box",
+    "other",
+}
+COMMUNITY_DOMAIN_RESPONSE_FOLLOW_UP_CHANNELS = {"gsn", "whatsapp", "phone", "none"}
+COMMUNITY_DOMAIN_RESPONSE_BOUNDARY = (
+    "GSN records governed response evidence after a meeting, service, programme, "
+    "or announcement. This is not an anonymous public comment wall, not a public "
+    "accusation channel, not pastoral counselling, not emergency support, and not "
+    "proof that every issue was resolved."
+)
+COMMUNITY_DOMAIN_COLLECTION_TYPES = {
+    "offering",
+    "donation",
+    "tithe",
+    "levy",
+    "support_appeal",
+    "welfare_collection",
+    "project_support",
+    "registration_fee",
+    "event_fee",
+    "other",
+}
+COMMUNITY_DOMAIN_COLLECTION_MODES = {"standing", "event_specific"}
+COMMUNITY_DOMAIN_COLLECTION_VISIBILITY = {"public", "members", "department", "admin"}
+COMMUNITY_DOMAIN_COLLECTION_STATUSES = {"published", "retired"}
+COMMUNITY_DOMAIN_COLLECTION_PUBLIC_BOUNDARY = (
+    "GSN shows a governed collection instruction only. GSN does not hold this money, "
+    "confirm payment, expose church bank details, guarantee settlement, or prove impact."
 )
 COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_WITHDRAWN_EVENT = (
     "community_domain.beneficiary_outcome_contact_consent_withdrawn"
@@ -280,6 +352,31 @@ COMMUNITY_DOMAIN_ACTIVITY_TYPES: dict[str, dict[str, str]] = {
         "evidence_dimension": "care",
         "summary": "Welfare, pastoral care, community care, or safe support was provided.",
     },
+    "pastoral_follow_up": {
+        "label": "Pastoral follow-up",
+        "evidence_dimension": "care_follow_up",
+        "summary": "A pastor, minister, welfare officer, or appointed leader completed a private follow-up check.",
+    },
+    "member_belonging_check": {
+        "label": "Member belonging check",
+        "evidence_dimension": "belonging",
+        "summary": "A member's belonging, group placement, or participation status was checked by an appointed leader.",
+    },
+    "department_service": {
+        "label": "Department service",
+        "evidence_dimension": "department_service",
+        "summary": "A department, ministry, or service team duty was recorded for coordination and handover.",
+    },
+    "church_programme_attendance": {
+        "label": "Church programme attendance",
+        "evidence_dimension": "participation",
+        "summary": "Attendance at a service, programme, fellowship, class, or ministry meeting was recorded.",
+    },
+    "contribution_memory": {
+        "label": "Contribution memory",
+        "evidence_dimension": "contribution_memory",
+        "summary": "A contribution, pledge, offering support, or duty was remembered as internal context, not GSN payment proof.",
+    },
     "training_completion": {
         "label": "Training completion",
         "evidence_dimension": "learning",
@@ -290,6 +387,28 @@ COMMUNITY_DOMAIN_ACTIVITY_TYPES: dict[str, dict[str, str]] = {
         "evidence_dimension": "project_work",
         "summary": "A member or beneficiary participated in a project or programme.",
     },
+}
+COMMUNITY_DOMAIN_TEMPLATE_ACTIVITY_PRIORITY: dict[str, list[str]] = {
+    "church_religious_body": [
+        "church_programme_attendance",
+        "pastoral_follow_up",
+        "welfare_support",
+        "member_belonging_check",
+        "department_service",
+        "leadership_duty",
+        "contribution_memory",
+        "volunteer_service",
+    ],
+    "religious_body": [
+        "church_programme_attendance",
+        "pastoral_follow_up",
+        "welfare_support",
+        "member_belonging_check",
+        "department_service",
+        "leadership_duty",
+        "contribution_memory",
+        "volunteer_service",
+    ],
 }
 COMMUNITY_DOMAIN_ACTIVITY_EVIDENCE_STRENGTHS = {
     "self_reported",
@@ -890,22 +1009,29 @@ COMMUNITY_DOMAIN_PACKAGE_LIMITS = {
     "included_shops": 100,
     "included_storage_gb": 5,
 }
+COMMUNITY_DOMAIN_PILOT_MONTHS = 6
+COMMUNITY_DOMAIN_PILOT_PAYMENT_SUSPENDED = True
+COMMUNITY_DOMAIN_OPERATION_BLOCKED_STATUSES = {"suspended", "closed"}
 COMMUNITY_DOMAIN_PACKAGE_BILLING_BOUNDARY = {
-    "pricing_model_status": "manual_pilot_quote_only",
+    "pricing_model_status": "pilot_payment_suspended",
     "current_allowance_status": "pilot_package_allowance",
+    "pilot_months": COMMUNITY_DOMAIN_PILOT_MONTHS,
+    "payment_required_now": False,
+    "payment_instruction_status": "suspended_during_pilot",
     "paid_upgrade_status": "not_automated",
     "member_band_status": "not_automated",
     "feature_tariff_status": "not_automated",
     "domain_tariff_status": "not_automated",
     "metering_status": "partial_read_only_capacity_projection",
     "admin_action_required": (
-        "Use manual finance and capacity review before promising extra member "
-        "bands, paid feature tariffs, or per-domain pricing."
+        "Reserve the Community Domain for pilot use without creating a payment "
+        "instruction. Review continuation, pricing, suspension, or closure after "
+        "the pilot period."
     ),
     "plain_language": (
-        "This is the current pilot allowance only. Extra member bands, paid "
-        "feature tariffs, per-domain pricing, renewal, and suspension are not "
-        "automated yet."
+        "Community Domain name reservation and setup are open for the pilot, "
+        "but payment is suspended for now. The name stays reserved during pilot "
+        "testing; GSN can later review paid continuation, suspension, or closure."
     ),
 }
 COMMUNITY_DOMAIN_MODULE_PRESETS: dict[str, dict[str, str]] = {
@@ -1586,11 +1712,17 @@ def _domain_available_payload(db: Session, raw_domain_name: str) -> dict[str, An
         .first()
     )
     if existing:
+        status = _clean_role(getattr(existing, "status", None), "draft")
         return {
             "domain_name": raw_domain_name,
             "normalized_domain_name": normalized,
             "available": False,
             "reason": "domain_name_taken",
+            "existing_status": status,
+            "reservation_policy": (
+                "Community Domain names remain reserved during pilot testing "
+                "and after closure unless GSN manually releases them."
+            ),
         }
 
     return {
@@ -1697,6 +1829,20 @@ def _community_domain_activity_catalogue_items(
     domain: CommunityDomain,
 ) -> list[dict[str, Any]]:
     template_key = _clean_template_key(domain.template_key, domain.domain_type)
+    domain_type = _clean_template_key(domain.domain_type, template_key)
+    priority = COMMUNITY_DOMAIN_TEMPLATE_ACTIVITY_PRIORITY.get(
+        template_key,
+        COMMUNITY_DOMAIN_TEMPLATE_ACTIVITY_PRIORITY.get(domain_type, []),
+    )
+    priority_index = {key: index for index, key in enumerate(priority)}
+    ordered_items = sorted(
+        COMMUNITY_DOMAIN_ACTIVITY_TYPES.items(),
+        key=lambda row: (
+            priority_index.get(row[0], len(priority_index) + 1),
+            row[0] not in priority_index,
+            row[0],
+        ),
+    )
     return [
         {
             "activity_type": key,
@@ -1704,9 +1850,14 @@ def _community_domain_activity_catalogue_items(
             "summary": item["summary"],
             "evidence_dimension": item["evidence_dimension"],
             "template_key": template_key,
+            "domain_type": domain_type,
             "recording_mode": "manual_admin_record",
+            "pilot_recommended": key in priority_index,
+            "workflow_context": (
+                "church_pastor_discovery" if key in priority_index else "standard"
+            ),
         }
-        for key, item in COMMUNITY_DOMAIN_ACTIVITY_TYPES.items()
+        for key, item in ordered_items
     ]
 
 
@@ -3501,6 +3652,7 @@ class CommunityDomainNoticeIn(BaseModel):
         COMMUNITY_DOMAIN_NOTICE_EXPIRY_STANDARD
     )
     expires_at: Optional[datetime] = None
+    public_qr_enabled: bool = False
 
     @field_validator("body", mode="before")
     @classmethod
@@ -4058,14 +4210,36 @@ def _domain_payload(
         "created_at": _iso(domain.created_at),
         "updated_at": _iso(domain.updated_at),
         "root_node": _node_payload(root_node),
+        "pilot_billing": dict(COMMUNITY_DOMAIN_PACKAGE_BILLING_BOUNDARY),
+        "pilot_terms": {
+            "payment_required_now": False,
+            "pilot_months": COMMUNITY_DOMAIN_PILOT_MONTHS,
+            "name_reserved": True,
+            "paid_continuation_review_required": True,
+            "closure_preserves_history": True,
+        },
         "boundary": (
-            "Draft only. This does not create a social Community, activate billing, "
-            "verify ownership, or launch a public institutional domain."
+            "Pilot Community Domain reservation. This keeps the name reserved and "
+            "opens setup during customer discovery, but payment is suspended for now. "
+            "It does not verify ownership, confirm paid continuation, move money, "
+            "or create a final public proof of authority."
         ),
     }
 
 
-def _community_domain_notice_payload(event: TrustEvent) -> dict[str, Any]:
+def _community_notice_public_path(public_code: str) -> str:
+    return f"/community-notices/{public_code}"
+
+
+def _community_notice_public_api_path(public_code: str) -> str:
+    return f"/community-domains/public/notices/{public_code}"
+
+
+def _community_domain_notice_payload(
+    event: TrustEvent,
+    *,
+    include_private: bool = True,
+) -> dict[str, Any]:
     meta = _json_load(event.meta_json)
     body = _clean_str(meta.get("body") or meta.get("title"))
     expiry_policy = _normalize_community_domain_notice_expiry_policy(
@@ -4078,8 +4252,10 @@ def _community_domain_notice_payload(event: TrustEvent) -> dict[str, Any]:
         community_domain_id: Optional[int] = int(raw_domain_id)
     except (TypeError, ValueError):
         community_domain_id = None
+    public_code = _clean_str(meta.get("public_code"))
+    public_qr_enabled = bool(meta.get("public_qr_enabled")) and bool(public_code)
 
-    return {
+    payload = {
         "notice_id": f"TE-{int(event.id)}",
         "event_id": int(event.id),
         "source": _clean_str(meta.get("source"), COMMUNITY_DOMAIN_NOTICE_SOURCE),
@@ -4093,8 +4269,38 @@ def _community_domain_notice_payload(event: TrustEvent) -> dict[str, Any]:
         "expiry_policy": expiry_policy,
         "active_board_status": "archived" if expired else "active",
         "is_archived": expired,
-        "posted_by_user_id": int(event.actor_user_id),
+        "public_qr_enabled": public_qr_enabled,
+        "public_code": public_code if public_qr_enabled else None,
+        "public_path": _community_notice_public_path(public_code) if public_qr_enabled else None,
+        "public_api_path": _community_notice_public_api_path(public_code) if public_qr_enabled else None,
+        "boundary": COMMUNITY_DOMAIN_NOTICE_PUBLIC_BOUNDARY if public_qr_enabled else None,
     }
+    if include_private:
+        payload["posted_by_user_id"] = int(event.actor_user_id)
+    return payload
+
+
+def _community_notice_by_public_code(
+    db: Session,
+    *,
+    public_code: str,
+) -> Optional[TrustEvent]:
+    code = _clean_str(public_code)
+    if not code:
+        return None
+    code_hash = hashlib.sha256(code.encode("utf-8")).hexdigest()
+    rows = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == COMMUNITY_DOMAIN_NOTICE_EVENT)
+        .order_by(TrustEvent.id.desc())
+        .limit(1000)
+        .all()
+    )
+    for row in rows:
+        meta = _json_load(row.meta_json)
+        if meta.get("public_code_hash") == code_hash or meta.get("public_code") == code:
+            return row
+    return None
 
 
 def _community_domain_invite_template_payload(
@@ -4332,6 +4538,7 @@ def _public_domain_entry_payload(domain: CommunityDomain) -> dict[str, Any]:
         "public_profile": domain.public_profile,
         "dashboard_path": f"/app/community-domain/{int(domain.id)}",
         "membership_request_route": f"/community-domains/{int(domain.id)}/membership-requests",
+        "pilot_billing": dict(COMMUNITY_DOMAIN_PACKAGE_BILLING_BOUNDARY),
         "boundary": (
             "Public-safe Community Domain lookup only. This does not show "
             "member lists, private evidence, finance records, payment "
@@ -4467,11 +4674,13 @@ def _community_domain_package_quote_payload(
     return {
         "package_code": "community_domain_starter",
         "package_name": "Community Domain Starter",
-        "quote_status": "draft_quote",
-        "pricing_status": "pilot_quote_required",
-        "billing_cycle": "manual_quote",
+        "quote_status": "pilot_reservation_active",
+        "pricing_status": "pilot_payment_suspended",
+        "billing_cycle": "pilot_no_charge",
         "price_amount": None,
         "currency": None,
+        "payment_required_now": False,
+        "pilot_months": COMMUNITY_DOMAIN_PILOT_MONTHS,
         "template_key": template["template_key"],
         "domain_type": template["domain_type"],
         "included_modules": included_modules,
@@ -4479,14 +4688,17 @@ def _community_domain_package_quote_payload(
         "limits": COMMUNITY_DOMAIN_PACKAGE_LIMITS,
         "billing_boundary": dict(COMMUNITY_DOMAIN_PACKAGE_BILLING_BOUNDARY),
         "renewal_policy": {
-            "status": "not_configured",
-            "message": "Renewal period and price must be confirmed before payment instruction.",
+            "status": "pilot_review_later",
+            "message": (
+                "Payment and renewal are suspended during pilot testing. GSN must "
+                "review paid continuation, suspension, or closure after the pilot."
+            ),
         },
-        "next_step": "Generate a payment instruction only after the owner accepts a confirmed quote.",
+        "next_step": "Use the Community Domain in pilot mode. Do not generate a payment instruction during the pilot.",
         "boundary": (
-            "Quote preview only. This does not create a payment instruction, "
-            "confirm payment, activate billing, activate the Community Domain, "
-            "or verify ownership."
+            "Pilot package reservation only. This does not create a payment "
+            "instruction, confirm payment, activate paid billing, verify ownership, "
+            "or promise continuation after the pilot."
         ),
     }
 
@@ -5767,7 +5979,7 @@ def _community_domain_activation_requirements_payload(
         "pricing_confirmation": (
             "confirmed_for_active_domain"
             if domain_status == "active"
-            else "pilot_quote_required"
+            else "pilot_payment_suspended"
         ),
         "payment_instruction": (
             "outside_this_slice" if domain_status == "active" else "not_created"
@@ -19550,6 +19762,212 @@ class CommunityDomainPaymentInstructionIn(BaseModel):
         return _reject_non_text_value(value, info.field_name)
 
 
+class CommunityDomainCollectionInstructionIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    collection_type: str = Field(default="offering", min_length=2, max_length=40)
+    collection_mode: str = Field(default="standing", min_length=2, max_length=40)
+    purpose_label: str = Field(default="Offering", min_length=2, max_length=120)
+    amount_label: Optional[str] = Field(default=None, max_length=80)
+    currency: Optional[str] = Field(default=None, min_length=3, max_length=3)
+    external_payment_url: Optional[str] = Field(default=None, max_length=500)
+    receiving_account_label: Optional[str] = Field(default=None, max_length=160)
+    visibility_scope: str = Field(default="public", min_length=2, max_length=40)
+    approval_status: str = Field(default="published", min_length=2, max_length=40)
+    note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator(
+        "collection_type",
+        "collection_mode",
+        "purpose_label",
+        "amount_label",
+        "currency",
+        "external_payment_url",
+        "receiving_account_label",
+        "visibility_scope",
+        "approval_status",
+        "note",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_collection_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("collection_type")
+    @classmethod
+    def _normalize_collection_type(cls, value: str) -> str:
+        normalized = _clean_role(value, "offering")
+        if normalized not in COMMUNITY_DOMAIN_COLLECTION_TYPES:
+            raise ValueError("Unsupported collection type")
+        return normalized
+
+    @field_validator("collection_mode")
+    @classmethod
+    def _normalize_collection_mode(cls, value: str) -> str:
+        normalized = _clean_role(value, "standing")
+        if normalized not in COMMUNITY_DOMAIN_COLLECTION_MODES:
+            raise ValueError("Unsupported collection mode")
+        return normalized
+
+    @field_validator("visibility_scope")
+    @classmethod
+    def _normalize_visibility_scope(cls, value: str) -> str:
+        normalized = _clean_role(value, "public")
+        if normalized not in COMMUNITY_DOMAIN_COLLECTION_VISIBILITY:
+            raise ValueError("Unsupported collection visibility")
+        return normalized
+
+    @field_validator("approval_status")
+    @classmethod
+    def _normalize_approval_status(cls, value: str) -> str:
+        normalized = _clean_role(value, "published")
+        if normalized not in COMMUNITY_DOMAIN_COLLECTION_STATUSES:
+            raise ValueError("Unsupported collection status")
+        return normalized
+
+    @field_validator("currency")
+    @classmethod
+    def _normalize_currency(cls, value: Optional[str]) -> Optional[str]:
+        raw = _clean_str(value).upper()
+        return raw or None
+
+    @field_validator("external_payment_url")
+    @classmethod
+    def _validate_external_payment_url(cls, value: Optional[str]) -> Optional[str]:
+        raw = _clean_str(value)
+        if not raw:
+            return None
+        if not raw.startswith("https://"):
+            raise ValueError("Collection payment links must use https://")
+        return raw
+
+class CommunityDomainAttendanceSessionIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    programme_label: str = Field(default="Church service attendance", min_length=2, max_length=160)
+    scheduled_at: Optional[datetime] = None
+    community_node_id: Optional[int] = Field(default=None, ge=1)
+    method: str = Field(default="qr", min_length=2, max_length=40)
+    window_minutes: int = Field(default=120, ge=5, le=720)
+    note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("community_node_id", mode="before")
+    @classmethod
+    def _reject_bool_community_node_id(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "community_node_id")
+
+    @field_validator("window_minutes", mode="before")
+    @classmethod
+    def _reject_bool_window_minutes(cls, value: Any) -> Any:
+        return _reject_bool_integer(value, "window_minutes")
+
+    @field_validator("programme_label", "method", "note", mode="before")
+    @classmethod
+    def _reject_non_text_attendance_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("method")
+    @classmethod
+    def _normalize_attendance_method(cls, value: str) -> str:
+        method = _clean_role(value, "qr")
+        if method not in COMMUNITY_DOMAIN_ATTENDANCE_METHODS:
+            raise ValueError("Attendance method is not supported for Community Domain evidence.")
+        return method
+
+    @field_validator("scheduled_at")
+    @classmethod
+    def _normalize_scheduled_at(cls, value: Optional[datetime]) -> Optional[datetime]:
+        if value is None:
+            return None
+        return _as_aware_utc(value)
+
+
+class CommunityDomainAttendanceCheckinIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    method: str = Field(default="qr", min_length=2, max_length=40)
+    note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("method", "note", mode="before")
+    @classmethod
+    def _reject_non_text_checkin_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("method")
+    @classmethod
+    def _normalize_attendance_method(cls, value: str) -> str:
+        method = _clean_role(value, "qr")
+        if method not in COMMUNITY_DOMAIN_ATTENDANCE_METHODS:
+            raise ValueError("Attendance method is not supported for Community Domain evidence.")
+        return method
+
+
+class CommunityDomainResponseChannelIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    title: str = Field(default="Meeting Response Box", min_length=2, max_length=160)
+    source_kind: str = Field(default="meeting", min_length=2, max_length=40)
+    prompt: Optional[str] = Field(default=None, max_length=240)
+    related_label: Optional[str] = Field(default=None, max_length=160)
+    related_public_code: Optional[str] = Field(default=None, max_length=120)
+    community_node_id: Optional[int] = Field(default=None, ge=1)
+    window_days: int = Field(default=14, ge=1, le=90)
+    allow_private_follow_up: bool = True
+    note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("community_node_id", mode="before")
+    @classmethod
+    def _reject_bool_community_node_id(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "community_node_id")
+
+    @field_validator("window_days", mode="before")
+    @classmethod
+    def _reject_bool_window_days(cls, value: Any) -> Any:
+        return _reject_bool_integer(value, "window_days")
+
+    @field_validator("title", "source_kind", "prompt", "related_label", "related_public_code", "note", mode="before")
+    @classmethod
+    def _reject_non_text_response_channel_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("source_kind")
+    @classmethod
+    def _normalize_source_kind(cls, value: str) -> str:
+        source_kind = _clean_role(value, "meeting")
+        if source_kind not in COMMUNITY_DOMAIN_RESPONSE_SOURCE_KINDS:
+            raise ValueError("Response source is not supported for Community Domain evidence.")
+        return source_kind
+
+
+class CommunityDomainResponseIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    response_type: str = Field(default="question", min_length=2, max_length=40)
+    body: str = Field(..., min_length=2, max_length=1000)
+    wants_private_follow_up: bool = False
+    preferred_follow_up_channel: str = Field(default="gsn", min_length=2, max_length=40)
+
+    @field_validator("response_type", "body", "preferred_follow_up_channel", mode="before")
+    @classmethod
+    def _reject_non_text_response_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("response_type")
+    @classmethod
+    def _normalize_response_type(cls, value: str) -> str:
+        response_type = _clean_role(value, "question")
+        if response_type not in COMMUNITY_DOMAIN_RESPONSE_TYPES:
+            raise ValueError("Response type is not supported for Community Domain evidence.")
+        return response_type
+
+    @field_validator("preferred_follow_up_channel")
+    @classmethod
+    def _normalize_follow_up_channel(cls, value: str) -> str:
+        channel = _clean_role(value, "gsn")
+        if channel not in COMMUNITY_DOMAIN_RESPONSE_FOLLOW_UP_CHANNELS:
+            raise ValueError("Follow-up channel is not supported for Community Domain responses.")
+        return channel
+
 class CommunityNodeCreateIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -21189,12 +21607,58 @@ def _has_domain_setup_edit_scope(
     return membership is not None and _clean_role(membership.role) == SETUP_EDITOR_ROLE
 
 
+
+
+def _community_domain_operation_block_detail(
+    domain: CommunityDomain,
+    *,
+    current_user: User,
+) -> Optional[dict[str, Any]]:
+    status = _clean_role(getattr(domain, "status", None), "draft")
+    if status not in COMMUNITY_DOMAIN_OPERATION_BLOCKED_STATUSES:
+        return None
+    if _clean_role(getattr(current_user, "role", "")) == "admin":
+        return None
+    return {
+        "code": f"community_domain_{status}",
+        "message": (
+            "This Community Domain has been suspended or closed by GSN Command Centre. "
+            "Its name and history are preserved, but normal operation is blocked."
+        ),
+        "status": status,
+        "history_preserved": True,
+        "name_reserved": True,
+    }
+
+
+def _raise_if_domain_publicly_blocked(domain: Optional[CommunityDomain]) -> None:
+    if domain is None:
+        return
+    status = _clean_role(getattr(domain, "status", None), "draft")
+    if status not in COMMUNITY_DOMAIN_OPERATION_BLOCKED_STATUSES:
+        return
+    raise HTTPException(
+        status_code=404,
+        detail={
+            "code": "community_domain_not_available",
+            "message": "This Community Domain is not available on the public GSN network right now.",
+            "status": status,
+            "history_preserved": True,
+            "name_reserved": True,
+        },
+    )
 def _require_domain_admin_scope(
     db: Session,
     *,
     domain: CommunityDomain,
     current_user: User,
 ) -> None:
+    blocked_status = _community_domain_operation_block_detail(
+        domain,
+        current_user=current_user,
+    )
+    if blocked_status is not None:
+        raise HTTPException(status_code=403, detail=blocked_status)
     if _has_domain_admin_scope(db, domain=domain, current_user=current_user):
         return
     raise HTTPException(
@@ -21209,6 +21673,12 @@ def _require_domain_setup_edit_scope(
     domain: CommunityDomain,
     current_user: User,
 ) -> None:
+    blocked_status = _community_domain_operation_block_detail(
+        domain,
+        current_user=current_user,
+    )
+    if blocked_status is not None:
+        raise HTTPException(status_code=403, detail=blocked_status)
     if _has_domain_setup_edit_scope(db, domain=domain, current_user=current_user):
         return
     raise HTTPException(
@@ -21267,6 +21737,12 @@ def _require_domain_member_scope(
     domain: CommunityDomain,
     current_user: User,
 ) -> None:
+    blocked_status = _community_domain_operation_block_detail(
+        domain,
+        current_user=current_user,
+    )
+    if blocked_status is not None:
+        raise HTTPException(status_code=403, detail=blocked_status)
     if _has_domain_admin_scope(db, domain=domain, current_user=current_user):
         return
     membership = _active_domain_membership_for_user(
@@ -22023,6 +22499,30 @@ def create_community_domain_draft(
             current_user=current_user,
             preferences=payload.setup_preferences,
         )
+        log_trust_event(
+            db,
+            event_type="community_domain.pilot_reservation_started",
+            clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+            actor_user_id=int(current_user.id),
+            subject_user_id=int(current_user.id),
+            meta={
+                "source": "community_domain_pilot_reservation",
+                "community_domain_id": int(domain.id),
+                "domain_name": domain.domain_name,
+                "display_name": domain.display_name,
+                "status": domain.status,
+                "verification_status": domain.verification_status,
+                "payment_required_now": False,
+                "payment_instruction_status": "suspended_during_pilot",
+                "pilot_months": COMMUNITY_DOMAIN_PILOT_MONTHS,
+                "name_reserved": True,
+                "paid_continuation_review_required": True,
+                "history_preserved": True,
+                "trust_delta": "0.00",
+            },
+            commit=False,
+            refresh=False,
+        )
         db.commit()
     except IntegrityError as exc:
         db.rollback()
@@ -22641,9 +23141,9 @@ def create_community_domain_package_quote(
         "community_domain_id": int(domain.id),
         "quote": _community_domain_package_quote_payload(domain),
         "boundary": (
-            "Package quote only. This route does not create a payment instruction, "
-            "record payment, activate billing, activate a Community Domain, or "
-            "verify ownership."
+            "Pilot package status only. Community Domain billing and payment "
+            "instructions are suspended during pilot testing; this does not record "
+            "payment, activate paid billing, verify ownership, or promise paid continuation."
         ),
     }
 
@@ -22684,6 +23184,1338 @@ def _safe_expected_payment_meta(row: ExpectedPayment) -> dict[str, Any]:
         return {}
 
 
+def _community_collection_public_path(public_code: str) -> str:
+    return f"/community-collections/{public_code}"
+
+
+def _community_collection_public_api_path(public_code: str) -> str:
+    return f"/community-domains/public/collection-instructions/{public_code}"
+
+
+def _collection_instruction_payload(
+    event: TrustEvent,
+    *,
+    domain: Optional[CommunityDomain] = None,
+    include_private: bool = False,
+) -> dict[str, Any]:
+    meta = event.meta or {}
+    public_code = _clean_str(meta.get("public_code"))
+    payload = {
+        "event_id": int(event.id),
+        "community_domain_id": int(meta.get("community_domain_id") or 0) or None,
+        "community_domain_name": meta.get("community_domain_name"),
+        "domain_name": meta.get("domain_name"),
+        "collection_type": meta.get("collection_type") or "offering",
+        "collection_mode": meta.get("collection_mode") or "standing",
+        "purpose_label": meta.get("purpose_label") or "Offering",
+        "amount_label": meta.get("amount_label"),
+        "currency": meta.get("currency"),
+        "visibility_scope": meta.get("visibility_scope") or "public",
+        "approval_status": meta.get("approval_status") or "published",
+        "external_payment_url": meta.get("external_payment_url"),
+        "public_code": public_code or None,
+        "public_path": _community_collection_public_path(public_code) if public_code else None,
+        "public_api_path": _community_collection_public_api_path(public_code) if public_code else None,
+        "created_by_user_id": int(event.actor_user_id) if event.actor_user_id else None,
+        "created_at": event.created_at.isoformat() if event.created_at else None,
+        "boundary": COMMUNITY_DOMAIN_COLLECTION_PUBLIC_BOUNDARY,
+    }
+    if domain is not None:
+        payload["community_domain"] = {
+            "id": int(domain.id),
+            "display_name": domain.display_name,
+            "domain_name": domain.domain_name,
+        }
+    if include_private:
+        payload["receiving_account_label"] = meta.get("receiving_account_label")
+        payload["note"] = meta.get("note")
+    return payload
+
+
+def _community_collection_instruction_events(
+    db: Session,
+    *,
+    community_domain_id: int,
+    limit: int = 20,
+) -> list[TrustEvent]:
+    rows = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == COMMUNITY_DOMAIN_COLLECTION_INSTRUCTION_EVENT)
+        .order_by(TrustEvent.id.desc())
+        .limit(500)
+        .all()
+    )
+    out: list[TrustEvent] = []
+    for row in rows:
+        meta = row.meta or {}
+        if int(meta.get("community_domain_id") or 0) == int(community_domain_id):
+            out.append(row)
+        if len(out) >= max(1, min(int(limit), 100)):
+            break
+    return out
+
+
+def _community_collection_instruction_by_public_code(
+    db: Session,
+    *,
+    public_code: str,
+) -> Optional[TrustEvent]:
+    code = _clean_str(public_code)
+    if not code:
+        return None
+    code_hash = hashlib.sha256(code.encode("utf-8")).hexdigest()
+    rows = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == COMMUNITY_DOMAIN_COLLECTION_INSTRUCTION_EVENT)
+        .order_by(TrustEvent.id.desc())
+        .limit(1000)
+        .all()
+    )
+    for row in rows:
+        meta = row.meta or {}
+        if meta.get("public_code_hash") == code_hash or meta.get("public_code") == code:
+            return row
+    return None
+
+
+@router.get("/{community_domain_id}/collection-instructions", response_model=dict[str, Any])
+def list_community_domain_collection_instructions(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    is_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    rows = _community_collection_instruction_events(
+        db,
+        community_domain_id=int(domain.id),
+        limit=30,
+    )
+    return {
+        "ok": True,
+        "items": [
+            _collection_instruction_payload(row, domain=domain, include_private=is_admin)
+            for row in rows
+        ],
+        "boundary": COMMUNITY_DOMAIN_COLLECTION_PUBLIC_BOUNDARY,
+    }
+
+
+@router.post(
+    "/{community_domain_id}/collection-instructions",
+    status_code=201,
+    response_model=dict[str, Any],
+)
+def create_community_domain_collection_instruction(
+    community_domain_id: int,
+    payload: CommunityDomainCollectionInstructionIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_community_domain_feature_enabled(
+        db,
+        domain=domain,
+        feature_key=COMMUNITY_DOMAIN_FEATURE_PAYMENTS_CONTRIBUTIONS,
+        feature_label="Payments and Contributions",
+    )
+
+    public_code = secrets.token_urlsafe(12).rstrip("=")
+    public_code_hash = hashlib.sha256(public_code.encode("utf-8")).hexdigest()
+    meta = {
+        "reason": "Community Domain collection instruction published",
+        "note": payload.note,
+        "trust_delta": "0.00",
+        "system": False,
+        "community_domain_id": int(domain.id),
+        "community_domain_name": domain.display_name,
+        "domain_name": domain.domain_name,
+        "template_key": domain.template_key,
+        "collection_type": payload.collection_type,
+        "collection_mode": payload.collection_mode,
+        "purpose_label": payload.purpose_label,
+        "amount_label": payload.amount_label,
+        "currency": payload.currency,
+        "visibility_scope": payload.visibility_scope,
+        "approval_status": payload.approval_status,
+        "external_payment_url": payload.external_payment_url,
+        "receiving_account_label": payload.receiving_account_label,
+        "public_code": public_code,
+        "public_code_hash": public_code_hash,
+        "public_path": _community_collection_public_path(public_code),
+        "public_api_path": _community_collection_public_api_path(public_code),
+        "privacy_boundary": COMMUNITY_DOMAIN_COLLECTION_PUBLIC_BOUNDARY,
+        "non_custodial": True,
+    }
+    event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_COLLECTION_INSTRUCTION_EVENT,
+        clan_id=int(domain.clan_id) if domain.clan_id else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta=meta,
+        commit=True,
+        refresh=True,
+    )
+    return {
+        "ok": True,
+        "collection_instruction": _collection_instruction_payload(
+            event,
+            domain=domain,
+            include_private=True,
+        ),
+        "public_code": public_code,
+        "public_path": _community_collection_public_path(public_code),
+        "public_api_path": _community_collection_public_api_path(public_code),
+        "boundary": COMMUNITY_DOMAIN_COLLECTION_PUBLIC_BOUNDARY,
+    }
+
+
+@router.get("/public/collection-instructions/{public_code}", response_model=dict[str, Any])
+def get_public_community_domain_collection_instruction(
+    public_code: str,
+    db: Session = Depends(get_db),
+):
+    event = _community_collection_instruction_by_public_code(
+        db,
+        public_code=public_code,
+    )
+    if event is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_collection_instruction_not_found",
+                "message": "GSN could not find this collection instruction QR link.",
+            },
+        )
+    meta = event.meta or {}
+    if _clean_role(meta.get("approval_status"), "published") != "published":
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_collection_instruction_not_public",
+                "message": "This collection instruction is not currently public.",
+            },
+        )
+    if _clean_role(meta.get("visibility_scope"), "public") != "public":
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_collection_instruction_not_public",
+                "message": "This collection instruction is not currently public.",
+            },
+        )
+    domain = db.get(CommunityDomain, int(meta.get("community_domain_id") or 0))
+    _raise_if_domain_publicly_blocked(domain)
+    return {
+        "ok": True,
+        "collection_instruction": _collection_instruction_payload(
+            event,
+            domain=domain,
+            include_private=False,
+        ),
+        "boundary": COMMUNITY_DOMAIN_COLLECTION_PUBLIC_BOUNDARY,
+    }
+
+def _community_attendance_public_path(public_code: str) -> str:
+    return f"/community-attendance/{public_code}"
+
+
+def _community_attendance_public_api_path(public_code: str) -> str:
+    return f"/community-domains/public/attendance-sessions/{public_code}"
+
+
+def _domain_attendance_token() -> str:
+    return secrets.token_urlsafe(18).rstrip("=")
+
+
+def _community_domain_attendance_session_id(*, community_domain_id: int, token: str) -> str:
+    return (
+        f"ATT-CD{int(community_domain_id)}-"
+        f"{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{token[-6:].upper()}"
+    )
+
+
+def _normalize_community_domain_attendance_method(value: Any) -> str:
+    method = _clean_role(str(value or "qr"), "qr")
+    return method if method in COMMUNITY_DOMAIN_ATTENDANCE_METHODS else "qr"
+
+
+def _community_domain_attendance_strength(method: str) -> str:
+    normalized = _normalize_community_domain_attendance_method(method)
+    return COMMUNITY_DOMAIN_ATTENDANCE_STRENGTH.get(normalized, "moderate")
+
+
+def _community_domain_attendance_arrival_status(
+    *,
+    scheduled_at: Any,
+    checked_in_at: datetime,
+) -> dict[str, Any]:
+    scheduled = _parse_notice_datetime(scheduled_at)
+    if scheduled is None:
+        return {"arrival_status": "time_recorded", "minutes_from_start": None}
+    minutes = int((checked_in_at - scheduled).total_seconds() // 60)
+    if minutes < -30:
+        status = "early"
+    elif minutes <= 15:
+        status = "on_time_window"
+    else:
+        status = "late"
+    return {"arrival_status": status, "minutes_from_start": minutes}
+
+
+def _community_domain_attendance_session_is_active(meta: dict[str, Any]) -> bool:
+    expires_at = _parse_notice_datetime(meta.get("attendance_expires_at"))
+    return expires_at is None or expires_at > datetime.now(timezone.utc)
+
+
+def _community_domain_attendance_session_events(
+    db: Session,
+    *,
+    community_domain_id: int,
+    period_start: Optional[datetime] = None,
+    period_end: Optional[datetime] = None,
+    limit: int = 20,
+) -> list[TrustEvent]:
+    rows = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == COMMUNITY_DOMAIN_ATTENDANCE_SESSION_EVENT)
+        .order_by(TrustEvent.id.desc())
+        .limit(1000)
+        .all()
+    )
+    out: list[TrustEvent] = []
+    start = _as_aware_utc(period_start) if period_start is not None else None
+    end = _as_aware_utc(period_end) if period_end is not None else None
+    for row in rows:
+        meta = row.meta or {}
+        if int(meta.get("community_domain_id") or 0) != int(community_domain_id):
+            continue
+        created_at = _as_aware_utc(row.created_at) if row.created_at is not None else None
+        if start is not None and created_at is not None and created_at < start:
+            continue
+        if end is not None and created_at is not None and created_at >= end:
+            continue
+        out.append(row)
+        if len(out) >= max(1, min(int(limit), 500)):
+            break
+    return out
+
+
+def _community_domain_attendance_checkin_events(
+    db: Session,
+    *,
+    community_domain_id: int,
+    attendance_session_event_id: Optional[int] = None,
+    period_start: Optional[datetime] = None,
+    period_end: Optional[datetime] = None,
+    limit: int = 100,
+) -> list[TrustEvent]:
+    rows = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == COMMUNITY_DOMAIN_ATTENDANCE_CHECKIN_EVENT)
+        .order_by(TrustEvent.id.desc())
+        .limit(2000)
+        .all()
+    )
+    out: list[TrustEvent] = []
+    start = _as_aware_utc(period_start) if period_start is not None else None
+    end = _as_aware_utc(period_end) if period_end is not None else None
+    for row in rows:
+        meta = row.meta or {}
+        if int(meta.get("community_domain_id") or 0) != int(community_domain_id):
+            continue
+        if attendance_session_event_id is not None and int(meta.get("attendance_session_event_id") or 0) != int(attendance_session_event_id):
+            continue
+        checked_in_at = _parse_notice_datetime(meta.get("checked_in_at"))
+        created_at = checked_in_at or (_as_aware_utc(row.created_at) if row.created_at is not None else None)
+        if start is not None and created_at is not None and created_at < start:
+            continue
+        if end is not None and created_at is not None and created_at >= end:
+            continue
+        out.append(row)
+        if len(out) >= max(1, min(int(limit), 1000)):
+            break
+    return out
+
+
+def _community_domain_attendance_session_by_public_code(
+    db: Session,
+    *,
+    public_code: str,
+) -> Optional[TrustEvent]:
+    code = _clean_str(public_code)
+    if not code:
+        return None
+    code_hash = hashlib.sha256(code.encode("utf-8")).hexdigest()
+    rows = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == COMMUNITY_DOMAIN_ATTENDANCE_SESSION_EVENT)
+        .order_by(TrustEvent.id.desc())
+        .limit(1000)
+        .all()
+    )
+    for row in rows:
+        meta = row.meta or {}
+        if meta.get("public_code_hash") == code_hash or meta.get("public_code") == code:
+            return row
+    return None
+
+
+def _find_existing_community_domain_attendance_checkin(
+    db: Session,
+    *,
+    community_domain_id: int,
+    attendance_session_event_id: int,
+    user_id: int,
+) -> Optional[TrustEvent]:
+    rows = _community_domain_attendance_checkin_events(
+        db,
+        community_domain_id=int(community_domain_id),
+        attendance_session_event_id=int(attendance_session_event_id),
+        limit=500,
+    )
+    for row in rows:
+        if int(row.subject_user_id or 0) == int(user_id):
+            return row
+    return None
+
+
+def _community_domain_attendance_session_payload(
+    event: TrustEvent,
+    *,
+    domain: Optional[CommunityDomain] = None,
+    checkin_rows: Optional[list[TrustEvent]] = None,
+    include_private: bool = False,
+) -> dict[str, Any]:
+    meta = event.meta or {}
+    public_code = _clean_str(meta.get("public_code"))
+    checkins = checkin_rows or []
+    checked_in_user_ids = [
+        int(row.subject_user_id)
+        for row in checkins
+        if row.subject_user_id is not None
+    ]
+    method_counts: dict[str, int] = {}
+    for row in checkins:
+        row_meta = row.meta or {}
+        method = _normalize_community_domain_attendance_method(row_meta.get("attendance_method"))
+        method_counts[method] = method_counts.get(method, 0) + 1
+    normalized_method = _normalize_community_domain_attendance_method(meta.get("attendance_method"))
+    payload = {
+        "event_id": int(event.id),
+        "community_domain_id": int(meta.get("community_domain_id") or 0) or None,
+        "community_domain_name": meta.get("community_domain_name"),
+        "domain_name": meta.get("domain_name"),
+        "community_node_id": meta.get("community_node_id"),
+        "community_node_name": meta.get("community_node_name"),
+        "programme_label": meta.get("programme_label") or "Church service attendance",
+        "scheduled_at": meta.get("scheduled_at"),
+        "attendance_session_id": meta.get("attendance_session_id"),
+        "attendance_method": normalized_method,
+        "attendance_method_label": meta.get("attendance_method_label") or normalized_method.replace("_", " "),
+        "evidence_strength": meta.get("evidence_strength") or _community_domain_attendance_strength(normalized_method),
+        "attendance_window_minutes": int(meta.get("attendance_window_minutes") or 0) or None,
+        "attendance_opened_at": meta.get("attendance_opened_at"),
+        "attendance_expires_at": meta.get("attendance_expires_at"),
+        "public_code": public_code or None,
+        "public_path": _community_attendance_public_path(public_code) if public_code else None,
+        "public_api_path": _community_attendance_public_api_path(public_code) if public_code else None,
+        "checkin_count": len(checkins),
+        "method_counts": method_counts,
+        "latest_checkin_at": max(
+            [str((row.meta or {}).get("checked_in_at") or "") for row in checkins] or [""],
+        ) or None,
+        "active": _community_domain_attendance_session_is_active(meta),
+        "automatic_bluetooth_scan": False,
+        "boundary": COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY,
+        "created_by_user_id": int(event.actor_user_id) if event.actor_user_id else None,
+        "created_at": _iso(event.created_at),
+    }
+    if domain is not None:
+        payload["community_domain"] = {
+            "id": int(domain.id),
+            "display_name": domain.display_name,
+            "domain_name": domain.domain_name,
+        }
+    if include_private:
+        payload["checked_in_user_ids"] = checked_in_user_ids
+        payload["note"] = meta.get("note")
+    return payload
+
+
+def _community_domain_attendance_checkin_payload(event: TrustEvent) -> dict[str, Any]:
+    meta = event.meta or {}
+    return {
+        "event_id": int(event.id),
+        "community_domain_id": int(meta.get("community_domain_id") or 0) or None,
+        "attendance_session_event_id": int(meta.get("attendance_session_event_id") or 0) or None,
+        "attendance_session_id": meta.get("attendance_session_id"),
+        "programme_label": meta.get("programme_label"),
+        "checked_in_user_id": int(event.subject_user_id) if event.subject_user_id else None,
+        "checked_in_at": meta.get("checked_in_at"),
+        "attendance_method": _normalize_community_domain_attendance_method(meta.get("attendance_method")),
+        "attendance_method_label": meta.get("attendance_method_label"),
+        "arrival_status": meta.get("arrival_status"),
+        "minutes_from_start": meta.get("minutes_from_start"),
+        "evidence_strength": meta.get("evidence_strength"),
+        "automatic_bluetooth_scan": False,
+        "boundary": COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY,
+    }
+
+
+@router.get("/{community_domain_id}/attendance-sessions", response_model=dict[str, Any])
+def list_community_domain_attendance_sessions(
+    community_domain_id: int,
+    limit: int = Query(default=20, ge=1, le=50),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    sessions = _community_domain_attendance_session_events(
+        db,
+        community_domain_id=int(domain.id),
+        limit=int(limit),
+    )
+    return {
+        "ok": True,
+        "items": [
+            _community_domain_attendance_session_payload(
+                row,
+                domain=domain,
+                checkin_rows=_community_domain_attendance_checkin_events(
+                    db,
+                    community_domain_id=int(domain.id),
+                    attendance_session_event_id=int(row.id),
+                    limit=500,
+                ),
+                include_private=True,
+            )
+            for row in sessions
+        ],
+        "boundary": COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY,
+    }
+
+
+@router.post("/{community_domain_id}/attendance-sessions", status_code=201, response_model=dict[str, Any])
+def create_community_domain_attendance_session(
+    community_domain_id: int,
+    payload: CommunityDomainAttendanceSessionIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    node: Optional[CommunityNode] = None
+    if payload.community_node_id is not None:
+        node = _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=int(payload.community_node_id),
+        )
+    method = _normalize_community_domain_attendance_method(payload.method)
+    window_minutes = min(720, max(5, int(payload.window_minutes or 120)))
+    public_code = _domain_attendance_token()
+    public_code_hash = hashlib.sha256(public_code.encode("utf-8")).hexdigest()
+    opened_at = datetime.now(timezone.utc)
+    expires_at = opened_at + timedelta(minutes=window_minutes)
+    session_id = _community_domain_attendance_session_id(
+        community_domain_id=int(domain.id),
+        token=public_code,
+    )
+    event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_ATTENDANCE_SESSION_EVENT,
+        clan_id=int(domain.clan_id) if domain.clan_id else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta={
+            "engine_version": "community_domain_live_attendance_v1",
+            "source": "community_domain_attendance_qr",
+            "reason": "community_domain_live_attendance_session_opened",
+            "community_domain_id": int(domain.id),
+            "community_domain_name": domain.display_name,
+            "domain_name": domain.domain_name,
+            "template_key": domain.template_key,
+            "community_node_id": int(node.id) if node is not None else None,
+            "community_node_name": node.name if node is not None else None,
+            "programme_label": payload.programme_label,
+            "scheduled_at": _iso(payload.scheduled_at),
+            "attendance_session_id": session_id,
+            "attendance_method": method,
+            "attendance_method_label": method.replace("_", " "),
+            "attendance_window_minutes": window_minutes,
+            "attendance_opened_at": _iso(opened_at),
+            "attendance_expires_at": _iso(expires_at),
+            "public_code": public_code,
+            "public_code_hash": public_code_hash,
+            "public_path": _community_attendance_public_path(public_code),
+            "public_api_path": _community_attendance_public_api_path(public_code),
+            "checkin_url": _community_attendance_public_path(public_code),
+            "capture_method": method,
+            "evidence_strength": _community_domain_attendance_strength(method),
+            "presence_evidence": True,
+            "attendance_confirmation": False,
+            "automatic_bluetooth_scan": False,
+            "privacy_boundary": COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY,
+            "trust_delta": "0.00",
+            "note": _clean_str(payload.note) or None,
+        },
+        dedupe_key=f"community-domain-attendance-session:{int(domain.id)}:{public_code_hash}",
+        commit=True,
+        refresh=True,
+    )
+    return {
+        "ok": True,
+        "attendance_session": _community_domain_attendance_session_payload(
+            event,
+            domain=domain,
+            checkin_rows=[],
+            include_private=True,
+        ),
+        "message": "Live attendance QR is open. Members can scan during the active window to mark themselves present.",
+        "boundary": COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY,
+    }
+
+
+@router.get("/public/attendance-sessions/{public_code}", response_model=dict[str, Any])
+def get_public_community_domain_attendance_session(
+    public_code: str,
+    db: Session = Depends(get_db),
+):
+    event = _community_domain_attendance_session_by_public_code(db, public_code=public_code)
+    if event is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_attendance_session_not_found",
+                "message": "GSN could not find this live attendance QR link.",
+            },
+        )
+    meta = event.meta or {}
+    domain = db.get(CommunityDomain, int(meta.get("community_domain_id") or 0))
+    _raise_if_domain_publicly_blocked(domain)
+    return {
+        "ok": True,
+        "attendance_session": _community_domain_attendance_session_payload(
+            event,
+            domain=domain,
+            checkin_rows=_community_domain_attendance_checkin_events(
+                db,
+                community_domain_id=int(meta.get("community_domain_id") or 0),
+                attendance_session_event_id=int(event.id),
+                limit=500,
+            ),
+            include_private=False,
+        ),
+        "signin_required": True,
+        "boundary": COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY,
+    }
+
+
+@router.post("/public/attendance-sessions/{public_code}/check-ins", response_model=dict[str, Any])
+def record_public_community_domain_attendance_checkin(
+    public_code: str,
+    payload: CommunityDomainAttendanceCheckinIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    session_event = _community_domain_attendance_session_by_public_code(db, public_code=public_code)
+    if session_event is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_attendance_session_not_found",
+                "message": "GSN could not find this live attendance QR link.",
+            },
+        )
+    session_meta = session_event.meta or {}
+    if not _community_domain_attendance_session_is_active(session_meta):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_attendance_session_closed",
+                "message": "This live attendance QR window is closed.",
+            },
+        )
+    domain = db.get(CommunityDomain, int(session_meta.get("community_domain_id") or 0))
+    _raise_if_domain_publicly_blocked(domain)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+
+    session_method = _normalize_community_domain_attendance_method(session_meta.get("attendance_method"))
+    requested_method = _normalize_community_domain_attendance_method(payload.method)
+    if requested_method == session_method:
+        method = session_method
+    elif session_method == "bluetooth_proximity" and requested_method == "qr":
+        method = "qr"
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Attendance method does not match the active attendance window.",
+        )
+
+    existing = _find_existing_community_domain_attendance_checkin(
+        db,
+        community_domain_id=int(domain.id),
+        attendance_session_event_id=int(session_event.id),
+        user_id=int(current_user.id),
+    )
+    if existing is not None:
+        return {
+            "ok": True,
+            "attendance_checkin": _community_domain_attendance_checkin_payload(existing),
+            "already_recorded": True,
+            "message": "Attendance was already recorded for this live QR window.",
+            "boundary": COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY,
+        }
+
+    checked_in_at = datetime.now(timezone.utc)
+    event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_ATTENDANCE_CHECKIN_EVENT,
+        clan_id=int(domain.clan_id) if domain.clan_id else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta={
+            "engine_version": "community_domain_live_attendance_v1",
+            "source": "community_domain_attendance_qr",
+            "reason": "community_domain_live_attendance_checkin_recorded",
+            "community_domain_id": int(domain.id),
+            "community_domain_name": domain.display_name,
+            "domain_name": domain.domain_name,
+            "template_key": domain.template_key,
+            "community_node_id": session_meta.get("community_node_id"),
+            "community_node_name": session_meta.get("community_node_name"),
+            "programme_label": session_meta.get("programme_label"),
+            "scheduled_at": session_meta.get("scheduled_at"),
+            "attendance_session_event_id": int(session_event.id),
+            "attendance_session_id": session_meta.get("attendance_session_id"),
+            "attendance_method": method,
+            "attendance_method_label": method.replace("_", " "),
+            "checked_in_at": _iso(checked_in_at),
+            "checked_in_user_id": int(current_user.id),
+            "capture_method": method,
+            "evidence_strength": _community_domain_attendance_strength(method),
+            "presence_evidence": True,
+            "attendance_confirmation": True,
+            "automatic_bluetooth_scan": False,
+            "privacy_boundary": COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY,
+            "trust_delta": "0.00",
+            "note": _clean_str(payload.note) or None,
+            **_community_domain_attendance_arrival_status(
+                scheduled_at=session_meta.get("scheduled_at"),
+                checked_in_at=checked_in_at,
+            ),
+        },
+        dedupe_key=f"community-domain-attendance-checkin:{int(session_event.id)}:{int(current_user.id)}",
+        commit=True,
+        refresh=True,
+    )
+    return {
+        "ok": True,
+        "attendance_checkin": _community_domain_attendance_checkin_payload(event),
+        "already_recorded": False,
+        "message": "Attendance recorded from live QR. This is Presence Evidence, not a trust score.",
+        "boundary": COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY,
+    }
+
+
+def _community_response_public_path(public_code: str) -> str:
+    return f"/community-responses/{public_code}"
+
+
+def _community_response_public_api_path(public_code: str) -> str:
+    return f"/community-domains/public/response-channels/{public_code}"
+
+
+def _domain_response_token() -> str:
+    return secrets.token_urlsafe(18).rstrip("=")
+
+
+def _community_domain_response_channel_id(*, community_domain_id: int, token: str) -> str:
+    return (
+        f"RESP-CD{int(community_domain_id)}-"
+        f"{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{token[-6:].upper()}"
+    )
+
+
+def _normalize_community_domain_response_type(value: Any) -> str:
+    response_type = _clean_role(str(value or "question"), "question")
+    return response_type if response_type in COMMUNITY_DOMAIN_RESPONSE_TYPES else "question"
+
+
+def _normalize_community_domain_response_source_kind(value: Any) -> str:
+    source_kind = _clean_role(str(value or "meeting"), "meeting")
+    return source_kind if source_kind in COMMUNITY_DOMAIN_RESPONSE_SOURCE_KINDS else "meeting"
+
+
+def _normalize_community_domain_response_channel(value: Any) -> str:
+    channel = _clean_role(str(value or "gsn"), "gsn")
+    return channel if channel in COMMUNITY_DOMAIN_RESPONSE_FOLLOW_UP_CHANNELS else "gsn"
+
+
+def _community_domain_response_type_label(response_type: Any) -> str:
+    labels = {
+        "question": "Question",
+        "comment": "Comment",
+        "need_request": "Need / request",
+        "pastoral_follow_up": "Private follow-up",
+        "suggestion": "Suggestion",
+        "concern": "Concern",
+        "testimony_benefit": "Testimony / benefit",
+        "meeting_feedback": "Meeting feedback",
+        "other": "Other",
+    }
+    normalized = _normalize_community_domain_response_type(response_type)
+    return labels.get(normalized, normalized.replace("_", " ").title())
+
+
+def _community_domain_response_channel_is_active(meta: dict[str, Any]) -> bool:
+    expires_at = _parse_notice_datetime(meta.get("response_expires_at"))
+    return expires_at is None or expires_at > datetime.now(timezone.utc)
+
+
+def _community_domain_response_channel_events(
+    db: Session,
+    *,
+    community_domain_id: int,
+    period_start: Optional[datetime] = None,
+    period_end: Optional[datetime] = None,
+    limit: int = 20,
+) -> list[TrustEvent]:
+    rows = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == COMMUNITY_DOMAIN_RESPONSE_CHANNEL_EVENT)
+        .order_by(TrustEvent.id.desc())
+        .limit(1000)
+        .all()
+    )
+    out: list[TrustEvent] = []
+    start = _as_aware_utc(period_start) if period_start is not None else None
+    end = _as_aware_utc(period_end) if period_end is not None else None
+    for row in rows:
+        meta = row.meta or {}
+        if int(meta.get("community_domain_id") or 0) != int(community_domain_id):
+            continue
+        created_at = _as_aware_utc(row.created_at) if row.created_at is not None else None
+        if start is not None and created_at is not None and created_at < start:
+            continue
+        if end is not None and created_at is not None and created_at >= end:
+            continue
+        out.append(row)
+        if len(out) >= max(1, min(int(limit), 500)):
+            break
+    return out
+
+
+def _community_domain_response_events(
+    db: Session,
+    *,
+    community_domain_id: int,
+    response_channel_event_id: Optional[int] = None,
+    period_start: Optional[datetime] = None,
+    period_end: Optional[datetime] = None,
+    limit: int = 100,
+) -> list[TrustEvent]:
+    rows = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == COMMUNITY_DOMAIN_RESPONSE_EVENT)
+        .order_by(TrustEvent.id.desc())
+        .limit(3000)
+        .all()
+    )
+    out: list[TrustEvent] = []
+    start = _as_aware_utc(period_start) if period_start is not None else None
+    end = _as_aware_utc(period_end) if period_end is not None else None
+    for row in rows:
+        meta = row.meta or {}
+        if int(meta.get("community_domain_id") or 0) != int(community_domain_id):
+            continue
+        if response_channel_event_id is not None and int(meta.get("response_channel_event_id") or 0) != int(response_channel_event_id):
+            continue
+        responded_at = _parse_notice_datetime(meta.get("responded_at"))
+        created_at = responded_at or (_as_aware_utc(row.created_at) if row.created_at is not None else None)
+        if start is not None and created_at is not None and created_at < start:
+            continue
+        if end is not None and created_at is not None and created_at >= end:
+            continue
+        out.append(row)
+        if len(out) >= max(1, min(int(limit), 1000)):
+            break
+    return out
+
+
+def _community_domain_response_channel_by_public_code(
+    db: Session,
+    *,
+    public_code: str,
+) -> Optional[TrustEvent]:
+    code = _clean_str(public_code)
+    if not code:
+        return None
+    code_hash = hashlib.sha256(code.encode("utf-8")).hexdigest()
+    rows = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == COMMUNITY_DOMAIN_RESPONSE_CHANNEL_EVENT)
+        .order_by(TrustEvent.id.desc())
+        .limit(1000)
+        .all()
+    )
+    for row in rows:
+        meta = row.meta or {}
+        if meta.get("public_code_hash") == code_hash or meta.get("public_code") == code:
+            return row
+    return None
+
+
+def _community_domain_response_payload(event: TrustEvent, *, include_private: bool = False) -> dict[str, Any]:
+    meta = event.meta or {}
+    response_type = _normalize_community_domain_response_type(meta.get("response_type"))
+    payload = {
+        "event_id": int(event.id),
+        "community_domain_id": int(meta.get("community_domain_id") or 0) or None,
+        "response_channel_event_id": int(meta.get("response_channel_event_id") or 0) or None,
+        "response_channel_id": meta.get("response_channel_id"),
+        "response_type": response_type,
+        "response_type_label": _community_domain_response_type_label(response_type),
+        "body": _clean_str(str(meta.get("body") or ""))[:1000],
+        "wants_private_follow_up": bool(meta.get("wants_private_follow_up")),
+        "preferred_follow_up_channel": _normalize_community_domain_response_channel(meta.get("preferred_follow_up_channel")),
+        "responded_at": meta.get("responded_at") or _iso(event.created_at),
+        "boundary": COMMUNITY_DOMAIN_RESPONSE_BOUNDARY,
+    }
+    if include_private:
+        payload["responder_user_id"] = int(event.subject_user_id) if event.subject_user_id else None
+        payload["review_status"] = meta.get("review_status") or "new"
+        payload["source_kind"] = _normalize_community_domain_response_source_kind(meta.get("source_kind"))
+    return payload
+
+
+def _community_domain_response_channel_payload(
+    event: TrustEvent,
+    *,
+    domain: Optional[CommunityDomain] = None,
+    response_rows: Optional[list[TrustEvent]] = None,
+    include_private: bool = False,
+) -> dict[str, Any]:
+    meta = event.meta or {}
+    public_code = _clean_str(meta.get("public_code"))
+    responses = response_rows or []
+    by_type: dict[str, int] = {}
+    private_follow_up_count = 0
+    for row in responses:
+        row_meta = row.meta or {}
+        response_type = _normalize_community_domain_response_type(row_meta.get("response_type"))
+        _increment_count(by_type, response_type, "question")
+        if bool(row_meta.get("wants_private_follow_up")):
+            private_follow_up_count += 1
+    source_kind = _normalize_community_domain_response_source_kind(meta.get("source_kind"))
+    payload = {
+        "event_id": int(event.id),
+        "community_domain_id": int(meta.get("community_domain_id") or 0) or None,
+        "community_domain_name": meta.get("community_domain_name"),
+        "domain_name": meta.get("domain_name"),
+        "community_node_id": meta.get("community_node_id"),
+        "community_node_name": meta.get("community_node_name"),
+        "title": meta.get("title") or "Meeting Response Box",
+        "source_kind": source_kind,
+        "source_kind_label": source_kind.replace("_", " ").title(),
+        "prompt": meta.get("prompt") or "Leave a question, comment, need, suggestion, or follow-up request for the organisers.",
+        "related_label": meta.get("related_label"),
+        "related_public_code": meta.get("related_public_code"),
+        "response_channel_id": meta.get("response_channel_id"),
+        "response_opened_at": meta.get("response_opened_at") or _iso(event.created_at),
+        "response_expires_at": meta.get("response_expires_at"),
+        "response_window_days": int(meta.get("response_window_days") or 0) or None,
+        "allow_private_follow_up": bool(meta.get("allow_private_follow_up", True)),
+        "active": _community_domain_response_channel_is_active(meta),
+        "public_code": public_code or None,
+        "public_path": _community_response_public_path(public_code) if public_code else None,
+        "public_api_path": _community_response_public_api_path(public_code) if public_code else None,
+        "response_count": len(responses),
+        "by_type": by_type,
+        "private_follow_up_count": private_follow_up_count,
+        "latest_response_at": max(
+            [str((row.meta or {}).get("responded_at") or "") for row in responses] or [""],
+        ) or None,
+        "boundary": COMMUNITY_DOMAIN_RESPONSE_BOUNDARY,
+        "created_at": _iso(event.created_at),
+    }
+    if domain is not None:
+        payload["community_domain"] = {
+            "id": int(domain.id),
+            "display_name": domain.display_name,
+            "domain_name": domain.domain_name,
+        }
+    if include_private:
+        payload["created_by_user_id"] = int(event.actor_user_id) if event.actor_user_id else None
+        payload["note"] = meta.get("note")
+        payload["recent_responses"] = [
+            _community_domain_response_payload(row, include_private=True)
+            for row in responses[:20]
+        ]
+    return payload
+
+
+@router.get("/{community_domain_id}/response-channels", response_model=dict[str, Any])
+def list_community_domain_response_channels(
+    community_domain_id: int,
+    limit: int = Query(default=20, ge=1, le=50),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    channels = _community_domain_response_channel_events(
+        db,
+        community_domain_id=int(domain.id),
+        limit=int(limit),
+    )
+    return {
+        "ok": True,
+        "items": [
+            _community_domain_response_channel_payload(
+                row,
+                domain=domain,
+                response_rows=_community_domain_response_events(
+                    db,
+                    community_domain_id=int(domain.id),
+                    response_channel_event_id=int(row.id),
+                    limit=500,
+                ),
+                include_private=True,
+            )
+            for row in channels
+        ],
+        "response_types": [
+            {"value": value, "label": _community_domain_response_type_label(value)}
+            for value in sorted(COMMUNITY_DOMAIN_RESPONSE_TYPES)
+        ],
+        "boundary": COMMUNITY_DOMAIN_RESPONSE_BOUNDARY,
+    }
+
+
+@router.post("/{community_domain_id}/response-channels", status_code=201, response_model=dict[str, Any])
+def create_community_domain_response_channel(
+    community_domain_id: int,
+    payload: CommunityDomainResponseChannelIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_community_domain_feature_enabled(
+        db,
+        domain=domain,
+        feature_key=COMMUNITY_DOMAIN_FEATURE_DEMAND_BOX,
+        feature_label="Response Box",
+    )
+    node: Optional[CommunityNode] = None
+    if payload.community_node_id is not None:
+        node = _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=int(payload.community_node_id),
+        )
+    source_kind = _normalize_community_domain_response_source_kind(payload.source_kind)
+    window_days = min(90, max(1, int(payload.window_days or 14)))
+    public_code = _domain_response_token()
+    public_code_hash = hashlib.sha256(public_code.encode("utf-8")).hexdigest()
+    opened_at = datetime.now(timezone.utc)
+    expires_at = opened_at + timedelta(days=window_days)
+    channel_id = _community_domain_response_channel_id(
+        community_domain_id=int(domain.id),
+        token=public_code,
+    )
+    event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_RESPONSE_CHANNEL_EVENT,
+        clan_id=int(domain.clan_id) if domain.clan_id else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta={
+            "engine_version": "community_domain_response_box_v1",
+            "source": "community_domain_response_box",
+            "reason": "community_domain_response_channel_opened",
+            "community_domain_id": int(domain.id),
+            "community_domain_name": domain.display_name,
+            "domain_name": domain.domain_name,
+            "template_key": domain.template_key,
+            "community_node_id": int(node.id) if node is not None else None,
+            "community_node_name": node.name if node is not None else None,
+            "title": payload.title,
+            "source_kind": source_kind,
+            "prompt": _clean_str(payload.prompt) or None,
+            "related_label": _clean_str(payload.related_label) or None,
+            "related_public_code": _clean_str(payload.related_public_code) or None,
+            "response_channel_id": channel_id,
+            "response_window_days": window_days,
+            "response_opened_at": _iso(opened_at),
+            "response_expires_at": _iso(expires_at),
+            "allow_private_follow_up": bool(payload.allow_private_follow_up),
+            "public_code": public_code,
+            "public_code_hash": public_code_hash,
+            "public_path": _community_response_public_path(public_code),
+            "public_api_path": _community_response_public_api_path(public_code),
+            "whatsapp_share_ready": True,
+            "provider_send_ready": False,
+            "privacy_boundary": COMMUNITY_DOMAIN_RESPONSE_BOUNDARY,
+            "trust_delta": "0.00",
+            "note": _clean_str(payload.note) or None,
+        },
+        dedupe_key=f"community-domain-response-channel:{int(domain.id)}:{public_code_hash}",
+        commit=True,
+        refresh=True,
+    )
+    return {
+        "ok": True,
+        "response_channel": _community_domain_response_channel_payload(
+            event,
+            domain=domain,
+            response_rows=[],
+            include_private=True,
+        ),
+        "message": "Response QR is open. Share it by QR or WhatsApp link so members can send questions, feedback, needs, or follow-up requests.",
+        "boundary": COMMUNITY_DOMAIN_RESPONSE_BOUNDARY,
+    }
+
+
+@router.get("/public/response-channels/{public_code}", response_model=dict[str, Any])
+def get_public_community_domain_response_channel(
+    public_code: str,
+    db: Session = Depends(get_db),
+):
+    event = _community_domain_response_channel_by_public_code(db, public_code=public_code)
+    if event is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_response_channel_not_found",
+                "message": "GSN could not find this response QR link.",
+            },
+        )
+    meta = event.meta or {}
+    domain = db.get(CommunityDomain, int(meta.get("community_domain_id") or 0))
+    if domain is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_response_domain_missing",
+                "message": "GSN could not find the Community Domain for this response QR.",
+            },
+        )
+    _raise_if_domain_publicly_blocked(domain)
+    feature_mode = _community_domain_feature_mode(
+        db,
+        community_domain_id=int(domain.id),
+        feature_key=COMMUNITY_DOMAIN_FEATURE_DEMAND_BOX,
+        default=COMMUNITY_DOMAIN_FEATURE_MODE_ADMIN_ONLY,
+    )
+    if feature_mode == COMMUNITY_DOMAIN_FEATURE_MODE_OFF:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_response_feature_off",
+                "message": "This Community Domain has turned off response QR access.",
+            },
+        )
+    return {
+        "ok": True,
+        "response_channel": _community_domain_response_channel_payload(
+            event,
+            domain=domain,
+            response_rows=_community_domain_response_events(
+                db,
+                community_domain_id=int(meta.get("community_domain_id") or 0),
+                response_channel_event_id=int(event.id),
+                limit=500,
+            ),
+            include_private=False,
+        ),
+        "response_types": [
+            {"value": value, "label": _community_domain_response_type_label(value)}
+            for value in sorted(COMMUNITY_DOMAIN_RESPONSE_TYPES)
+        ],
+        "signin_required": True,
+        "boundary": COMMUNITY_DOMAIN_RESPONSE_BOUNDARY,
+    }
+
+
+@router.post("/public/response-channels/{public_code}/responses", response_model=dict[str, Any])
+def record_public_community_domain_response(
+    public_code: str,
+    payload: CommunityDomainResponseIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    channel_event = _community_domain_response_channel_by_public_code(db, public_code=public_code)
+    if channel_event is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_response_channel_not_found",
+                "message": "GSN could not find this response QR link.",
+            },
+        )
+    channel_meta = channel_event.meta or {}
+    if not _community_domain_response_channel_is_active(channel_meta):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_response_channel_closed",
+                "message": "This response QR window is closed.",
+            },
+        )
+    domain = db.get(CommunityDomain, int(channel_meta.get("community_domain_id") or 0))
+    if domain is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_response_domain_missing",
+                "message": "GSN could not find the Community Domain for this response QR.",
+            },
+        )
+    _raise_if_domain_publicly_blocked(domain)
+    feature_mode = _community_domain_feature_mode(
+        db,
+        community_domain_id=int(domain.id),
+        feature_key=COMMUNITY_DOMAIN_FEATURE_DEMAND_BOX,
+        default=COMMUNITY_DOMAIN_FEATURE_MODE_ADMIN_ONLY,
+    )
+    if feature_mode == COMMUNITY_DOMAIN_FEATURE_MODE_OFF:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_response_feature_off",
+                "message": "This Community Domain has turned off response QR access.",
+            },
+        )
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+
+    response_type = _normalize_community_domain_response_type(payload.response_type)
+    preferred_channel = _normalize_community_domain_response_channel(payload.preferred_follow_up_channel)
+    wants_private_follow_up = bool(payload.wants_private_follow_up) and bool(channel_meta.get("allow_private_follow_up", True))
+    responded_at = datetime.now(timezone.utc)
+    event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_RESPONSE_EVENT,
+        clan_id=int(domain.clan_id) if domain.clan_id else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta={
+            "engine_version": "community_domain_response_box_v1",
+            "source": "community_domain_response_box",
+            "reason": "community_domain_response_recorded",
+            "community_domain_id": int(domain.id),
+            "community_domain_name": domain.display_name,
+            "domain_name": domain.domain_name,
+            "template_key": domain.template_key,
+            "community_node_id": channel_meta.get("community_node_id"),
+            "community_node_name": channel_meta.get("community_node_name"),
+            "response_channel_event_id": int(channel_event.id),
+            "response_channel_id": channel_meta.get("response_channel_id"),
+            "response_channel_title": channel_meta.get("title"),
+            "source_kind": _normalize_community_domain_response_source_kind(channel_meta.get("source_kind")),
+            "related_label": channel_meta.get("related_label"),
+            "response_type": response_type,
+            "response_type_label": _community_domain_response_type_label(response_type),
+            "body": _clean_str(payload.body)[:1000],
+            "wants_private_follow_up": wants_private_follow_up,
+            "preferred_follow_up_channel": preferred_channel,
+            "preferred_follow_up_channel_label": preferred_channel.replace("_", " "),
+            "whatsapp_is_preference_only": preferred_channel == "whatsapp",
+            "provider_send_ready": False,
+            "review_status": "new",
+            "responded_at": _iso(responded_at),
+            "privacy_boundary": COMMUNITY_DOMAIN_RESPONSE_BOUNDARY,
+            "trust_delta": "0.00",
+        },
+        commit=True,
+        refresh=True,
+    )
+    return {
+        "ok": True,
+        "response": _community_domain_response_payload(event, include_private=False),
+        "message": "Response recorded. Organisers can review it inside GSN; WhatsApp is not the official record.",
+        "boundary": COMMUNITY_DOMAIN_RESPONSE_BOUNDARY,
+    }
+@router.get("/public/notices/{public_code}", response_model=dict[str, Any])
+def get_public_community_domain_notice(
+    public_code: str,
+    db: Session = Depends(get_db),
+):
+    event = _community_notice_by_public_code(db, public_code=public_code)
+    if event is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_notice_not_found",
+                "message": "GSN could not find this Community Domain message QR link.",
+            },
+        )
+    meta = _json_load(event.meta_json)
+    public_code_value = _clean_str(meta.get("public_code"))
+    if not bool(meta.get("public_qr_enabled")) or not public_code_value:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_notice_not_public",
+                "message": "This Community Domain message is not public by QR.",
+            },
+        )
+    if _community_domain_notice_is_expired(meta):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_notice_expired",
+                "message": "This Community Domain message QR has expired.",
+            },
+        )
+    try:
+        community_domain_id = int(meta.get("community_domain_id") or 0)
+    except (TypeError, ValueError):
+        community_domain_id = 0
+    domain = db.get(CommunityDomain, community_domain_id)
+    if domain is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_notice_domain_missing",
+                "message": "GSN could not find the Community Domain for this message.",
+            },
+        )
+    _raise_if_domain_publicly_blocked(domain)
+    feature_mode = _community_domain_feature_mode(
+        db,
+        community_domain_id=int(domain.id),
+        feature_key=COMMUNITY_DOMAIN_FEATURE_ANNOUNCEMENT_BOARD,
+        default=COMMUNITY_DOMAIN_FEATURE_MODE_ADMIN_ONLY,
+    )
+    if feature_mode == COMMUNITY_DOMAIN_FEATURE_MODE_OFF:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_notice_feature_off",
+                "message": "This Community Domain has turned off public message QR access.",
+            },
+        )
+    notice = _community_domain_notice_payload(event, include_private=False)
+    notice["community_domain"] = {
+        "id": int(domain.id),
+        "display_name": domain.display_name,
+        "domain_name": domain.domain_name,
+        "domain_type": domain.domain_type,
+        "template_key": domain.template_key,
+    }
+    return {
+        "ok": True,
+        "notice": notice,
+        "boundary": COMMUNITY_DOMAIN_NOTICE_PUBLIC_BOUNDARY,
+    }
+
 @router.post("/{community_domain_id}/payment-instruction", response_model=dict[str, Any])
 def create_community_domain_payment_instruction(
     community_domain_id: int,
@@ -22693,6 +24525,21 @@ def create_community_domain_payment_instruction(
 ):
     domain = _get_domain_or_404(db, community_domain_id)
     _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    if COMMUNITY_DOMAIN_PILOT_PAYMENT_SUSPENDED:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_pilot_billing_suspended",
+                "message": (
+                    "Community Domain name reservation is free during the pilot. "
+                    "GSN is not creating payment instructions for this feature until "
+                    "paid continuation is reviewed."
+                ),
+                "payment_required_now": False,
+                "pilot_months": COMMUNITY_DOMAIN_PILOT_MONTHS,
+                "next_step": "Use the domain in pilot mode or close/suspend it from Command Centre after review.",
+            },
+        )
     _require_clan_admin_scope(
         db,
         clan_id=int(payload.clan_id),
@@ -22894,6 +24741,15 @@ def lookup_community_domain_by_name(
             detail={
                 "code": "community_domain_not_found",
                 "message": "GSN could not find that Community Domain code.",
+                "normalized_domain_name": normalized,
+            },
+        )
+    if _clean_role(getattr(domain, "status", None), "draft") in COMMUNITY_DOMAIN_OPERATION_BLOCKED_STATUSES:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_not_available",
+                "message": "This Community Domain is not available for public lookup right now.",
                 "normalized_domain_name": normalized,
             },
         )
@@ -26108,6 +27964,349 @@ def get_community_domain_sponsor_summary(
         ),
     }
 
+
+def get_community_domain_church_memory_summary(
+    community_domain_id: int,
+    *,
+    period_start: Optional[datetime] = None,
+    period_end: Optional[datetime] = None,
+    community_node_id: Optional[int] = None,
+    include_descendants: bool = True,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    start, end = _period_bounds(period_start=period_start, period_end=period_end)
+    node = None
+    node_scope_ids: list[int] = []
+    if community_node_id is not None:
+        node = _get_community_node_or_404(db, community_node_id)
+        if int(node.community_domain_id) != int(domain.id):
+            raise HTTPException(
+                status_code=404,
+                detail="Community Domain node not found for this domain.",
+            )
+        node_scope_ids = _community_node_scope_ids(
+            db,
+            community_domain_id=int(domain.id),
+            node=node,
+            include_descendants=bool(include_descendants),
+        )
+
+    notice_candidates = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == COMMUNITY_DOMAIN_NOTICE_EVENT)
+        .filter(TrustEvent.created_at >= start)
+        .filter(TrustEvent.created_at <= end)
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+        .limit(500)
+        .all()
+    )
+    notice_rows: list[TrustEvent] = []
+    notice_by_expiry_policy: dict[str, int] = {}
+    public_message_count = 0
+    for row in notice_candidates:
+        meta = row.meta or {}
+        if int(meta.get("community_domain_id") or 0) != int(domain.id):
+            continue
+        notice_rows.append(row)
+        _increment_count(
+            notice_by_expiry_policy,
+            str(meta.get("expiry_policy") or "standard"),
+            "standard",
+        )
+        if bool(meta.get("public_qr_enabled")):
+            public_message_count += 1
+
+    activity_rows = _community_domain_activity_events(
+        db,
+        community_domain_id=int(domain.id),
+        period_start=start,
+        period_end=end,
+        community_node_ids=node_scope_ids or None,
+        limit=500,
+    )
+    church_activity_types = {
+        "church_programme_attendance",
+        "pastoral_follow_up",
+        "member_belonging_check",
+        "department_service",
+        "contribution_memory",
+    }
+    church_activity_rows = [
+        row
+        for row in activity_rows
+        if str((row.meta or {}).get("activity_type") or "") in church_activity_types
+    ]
+    activity_by_type: dict[str, int] = {}
+    activity_by_visibility: dict[str, int] = {}
+    programme_activity_count = 0
+    pastoral_follow_up_count = 0
+    department_service_count = 0
+    contribution_memory_count = 0
+    for row in church_activity_rows:
+        meta = row.meta or {}
+        activity_type = str(meta.get("activity_type") or "unknown")
+        _increment_count(activity_by_type, activity_type, "unknown")
+        _increment_count(
+            activity_by_visibility,
+            str(meta.get("visibility") or "admin_only"),
+            "admin_only",
+        )
+        if activity_type == "church_programme_attendance":
+            programme_activity_count += 1
+        elif activity_type == "pastoral_follow_up":
+            pastoral_follow_up_count += 1
+        elif activity_type == "department_service":
+            department_service_count += 1
+        elif activity_type == "contribution_memory":
+            contribution_memory_count += 1
+
+    attendance_session_rows = _community_domain_attendance_session_events(
+        db,
+        community_domain_id=int(domain.id),
+        period_start=start,
+        period_end=end,
+        limit=500,
+    )
+    attendance_checkin_rows = _community_domain_attendance_checkin_events(
+        db,
+        community_domain_id=int(domain.id),
+        period_start=start,
+        period_end=end,
+        limit=1000,
+    )
+    response_channel_rows = _community_domain_response_channel_events(
+        db,
+        community_domain_id=int(domain.id),
+        period_start=start,
+        period_end=end,
+        limit=500,
+    )
+    response_rows = _community_domain_response_events(
+        db,
+        community_domain_id=int(domain.id),
+        period_start=start,
+        period_end=end,
+        limit=1000,
+    )
+    if node_scope_ids:
+        attendance_session_rows = [
+            row
+            for row in attendance_session_rows
+            if int((row.meta or {}).get("community_node_id") or 0) in set(node_scope_ids)
+        ]
+        attendance_checkin_rows = [
+            row
+            for row in attendance_checkin_rows
+            if int((row.meta or {}).get("community_node_id") or 0) in set(node_scope_ids)
+        ]
+        response_channel_rows = [
+            row
+            for row in response_channel_rows
+            if int((row.meta or {}).get("community_node_id") or 0) in set(node_scope_ids)
+        ]
+        response_rows = [
+            row
+            for row in response_rows
+            if int((row.meta or {}).get("community_node_id") or 0) in set(node_scope_ids)
+        ]
+
+    response_by_type: dict[str, int] = {}
+    private_response_count = 0
+    whatsapp_preference_count = 0
+    for row in response_rows:
+        meta = row.meta or {}
+        _increment_count(
+            response_by_type,
+            _normalize_community_domain_response_type(meta.get("response_type")),
+            "question",
+        )
+        if bool(meta.get("wants_private_follow_up")):
+            private_response_count += 1
+        if _normalize_community_domain_response_channel(meta.get("preferred_follow_up_channel")) == "whatsapp":
+            whatsapp_preference_count += 1
+
+    def message_item(row: TrustEvent) -> dict[str, Any]:
+        meta = row.meta or {}
+        body = _clean_str(str(meta.get("body") or ""))
+        return {
+            "notice_id": f"TE-{int(row.id)}",
+            "body": body[:240],
+            "posted_at": _iso(row.created_at),
+            "expiry_policy": _clean_role(str(meta.get("expiry_policy") or "standard"), "standard"),
+            "public_qr_enabled": bool(meta.get("public_qr_enabled")),
+            "public_path": meta.get("public_path") if meta.get("public_qr_enabled") else None,
+        }
+
+    def activity_item(row: TrustEvent) -> dict[str, Any]:
+        meta = row.meta or {}
+        activity_type = _clean_role(str(meta.get("activity_type") or "unknown"), "unknown")
+        label = _clean_str(str(meta.get("activity_label") or ""))
+        if not label:
+            label = COMMUNITY_DOMAIN_ACTIVITY_TYPES.get(activity_type, {}).get("label", activity_type)
+        return {
+            "event_id": int(row.id),
+            "activity_type": activity_type,
+            "activity_label": label[:160],
+            "quantity": meta.get("quantity"),
+            "measurement_unit": meta.get("measurement_unit"),
+            "occurred_at": meta.get("occurred_at") or _iso(row.created_at),
+            "evidence_strength": meta.get("evidence_strength"),
+            "visibility": meta.get("visibility"),
+        }
+
+    def attendance_session_item(row: TrustEvent) -> dict[str, Any]:
+        meta = row.meta or {}
+        session_checkins = [
+            checkin
+            for checkin in attendance_checkin_rows
+            if int((checkin.meta or {}).get("attendance_session_event_id") or 0) == int(row.id)
+        ]
+        return {
+            "event_id": int(row.id),
+            "programme_label": _clean_str(str(meta.get("programme_label") or "Church service attendance"))[:160],
+            "scheduled_at": meta.get("scheduled_at"),
+            "opened_at": meta.get("attendance_opened_at") or _iso(row.created_at),
+            "expires_at": meta.get("attendance_expires_at"),
+            "method": _normalize_community_domain_attendance_method(meta.get("attendance_method")),
+            "checkin_count": len(session_checkins),
+            "active": _community_domain_attendance_session_is_active(meta),
+            "source": "trust_events.community_domain.attendance_session.opened",
+        }
+
+    def response_channel_item(row: TrustEvent) -> dict[str, Any]:
+        meta = row.meta or {}
+        channel_responses = [
+            response
+            for response in response_rows
+            if int((response.meta or {}).get("response_channel_event_id") or 0) == int(row.id)
+        ]
+        channel_by_type: dict[str, int] = {}
+        for response in channel_responses:
+            _increment_count(
+                channel_by_type,
+                _normalize_community_domain_response_type((response.meta or {}).get("response_type")),
+                "question",
+            )
+        return {
+            "event_id": int(row.id),
+            "title": _clean_str(str(meta.get("title") or "Meeting Response Box"))[:160],
+            "source_kind": _normalize_community_domain_response_source_kind(meta.get("source_kind")),
+            "opened_at": meta.get("response_opened_at") or _iso(row.created_at),
+            "expires_at": meta.get("response_expires_at"),
+            "response_count": len(channel_responses),
+            "by_type": channel_by_type,
+            "active": _community_domain_response_channel_is_active(meta),
+            "source": "trust_events.community_domain.response_channel.opened",
+        }
+
+    def response_item(row: TrustEvent) -> dict[str, Any]:
+        meta = row.meta or {}
+        response_type = _normalize_community_domain_response_type(meta.get("response_type"))
+        return {
+            "event_id": int(row.id),
+            "response_type": response_type,
+            "response_type_label": _community_domain_response_type_label(response_type),
+            "responded_at": meta.get("responded_at") or _iso(row.created_at),
+            "wants_private_follow_up": bool(meta.get("wants_private_follow_up")),
+            "preferred_follow_up_channel": _normalize_community_domain_response_channel(meta.get("preferred_follow_up_channel")),
+            "body_preview": _clean_str(str(meta.get("body") or ""))[:160],
+            "source": "trust_events.community_domain.response.recorded",
+        }
+
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "community_domain": {
+            "id": int(domain.id),
+            "domain_name": domain.domain_name,
+            "display_name": domain.display_name,
+            "domain_type": domain.domain_type,
+            "template_key": domain.template_key,
+            "status": domain.status,
+            "verification_status": domain.verification_status,
+        },
+        "period": {
+            "start": _iso(start),
+            "end": _iso(end),
+            "visibility_mode": "church_memory",
+        },
+        "node_filter": {
+            "community_node_id": int(node.id) if node is not None else None,
+            "community_node_name": getattr(node, "name", None),
+            "include_descendants": bool(include_descendants),
+            "community_node_ids": node_scope_ids,
+        },
+        "message_summary": {
+            "status": "recorded" if notice_rows else "not_recorded",
+            "total": len(notice_rows),
+            "public_qr_total": public_message_count,
+            "private_notice_total": max(len(notice_rows) - public_message_count, 0),
+            "by_expiry_policy": notice_by_expiry_policy,
+            "recent_messages": [message_item(row) for row in notice_rows[:12]],
+            "source": "trust_events.community_domain.notice.posted",
+        },
+        "programme_summary": {
+            "status": "recorded" if (church_activity_rows or attendance_session_rows or attendance_checkin_rows) else "not_recorded",
+            "total": len(church_activity_rows),
+            "programme_attendance_total": programme_activity_count,
+            "live_attendance_session_total": len(attendance_session_rows),
+            "live_attendance_checkin_total": len(attendance_checkin_rows),
+            "pastoral_follow_up_total": pastoral_follow_up_count,
+            "department_service_total": department_service_count,
+            "contribution_memory_total": contribution_memory_count,
+            "by_type": activity_by_type,
+            "by_visibility": activity_by_visibility,
+            "recent_programme_records": [
+                activity_item(row) for row in church_activity_rows[:12]
+            ],
+            "recent_live_attendance_sessions": [
+                attendance_session_item(row) for row in attendance_session_rows[:12]
+            ],
+            "source": [
+                "trust_events.community_domain.activity_recorded",
+                "trust_events.community_domain.attendance_session.opened",
+                "trust_events.community_domain.attendance_checkin.recorded",
+            ],
+        },
+        "response_summary": {
+            "status": "recorded" if (response_channel_rows or response_rows) else "not_recorded",
+            "response_channel_total": len(response_channel_rows),
+            "response_total": len(response_rows),
+            "question_total": int(response_by_type.get("question") or 0),
+            "need_request_total": int(response_by_type.get("need_request") or 0),
+            "private_follow_up_total": private_response_count,
+            "suggestion_total": int(response_by_type.get("suggestion") or 0),
+            "concern_total": int(response_by_type.get("concern") or 0),
+            "testimony_benefit_total": int(response_by_type.get("testimony_benefit") or 0),
+            "whatsapp_preference_total": whatsapp_preference_count,
+            "by_type": response_by_type,
+            "recent_response_channels": [
+                response_channel_item(row) for row in response_channel_rows[:12]
+            ],
+            "recent_responses": [
+                response_item(row) for row in response_rows[:12]
+            ],
+            "source": [
+                "trust_events.community_domain.response_channel.opened",
+                "trust_events.community_domain.response.recorded",
+            ],
+        },
+        "review_prompts": [
+            "Review whether the repeated message themes match the church's intended pastoral direction.",
+            "Review questions, needs, and follow-up responses before preparing next month's progress story.",
+            "Review whether programme, department, live QR attendance, and response records are being captured consistently enough for yearly memory.",
+            "Treat contribution memory as internal context only until payment proof or reconciliation is separately connected.",
+        ],
+        "boundary": (
+            "GSN Church Summary Report is an admin report from recorded notices, "
+            "church workflow records, live attendance QR, and response records only. It does not judge doctrine, replace the "
+            "pastor or church leadership, expose private pastoral notes, prove "
+            "final attendance beyond live Presence Evidence, prove payment, or certify unrecorded activity."
+        ),
+    }
 @router.get("/{community_domain_id}/community-value-report.pdf")
 def download_community_domain_value_report_pdf(
     community_domain_id: int,
@@ -26115,13 +28314,14 @@ def download_community_domain_value_report_pdf(
     period_end: Optional[datetime] = Query(default=None),
     community_node_id: Optional[int] = Query(default=None, ge=1),
     include_descendants: bool = Query(default=True),
-    audience: Literal["director_admin", "sponsor_safe"] = Query(default="sponsor_safe"),
+    audience: Literal["director_admin", "sponsor_safe", "church_memory"] = Query(default="sponsor_safe"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> StreamingResponse:
     domain = _get_domain_or_404(db, community_domain_id)
     period_payload: dict[str, Any] | None = None
     sponsor_payload: dict[str, Any] | None = None
+    church_memory_payload: dict[str, Any] | None = None
 
     if audience == "director_admin":
         period_payload = get_community_domain_period_summary(
@@ -26131,6 +28331,16 @@ def download_community_domain_value_report_pdf(
             community_node_id=community_node_id,
             include_descendants=include_descendants,
             visibility_mode="director_safe",
+            db=db,
+            current_user=current_user,
+        )
+    elif audience == "church_memory":
+        church_memory_payload = get_community_domain_church_memory_summary(
+            community_domain_id,
+            period_start=period_start,
+            period_end=period_end,
+            community_node_id=community_node_id,
+            include_descendants=include_descendants,
             db=db,
             current_user=current_user,
         )
@@ -26151,10 +28361,12 @@ def download_community_domain_value_report_pdf(
         audience=audience,
         period_summary=period_payload,
         sponsor_summary=sponsor_payload,
+        church_memory_summary=church_memory_payload,
     )
     generated_stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M")
+    report_slug = "church-summary" if audience == "church_memory" else "community-value"
     filename = (
-        f"gsn-community-domain-{int(domain.id)}-community-value-"
+        f"gsn-community-domain-{int(domain.id)}-{report_slug}-"
         f"{audience}-{generated_stamp}.pdf"
     )
     return StreamingResponse(
@@ -26172,6 +28384,7 @@ def list_community_domain_notices(
 ):
     domain = _get_domain_or_404(db, community_domain_id)
     _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    _raise_if_domain_publicly_blocked(domain)
     feature_mode = _community_domain_feature_mode(
         db,
         community_domain_id=int(domain.id),
@@ -26235,6 +28448,12 @@ def create_community_domain_notice(
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    public_code = secrets.token_urlsafe(12).rstrip("=") if payload.public_qr_enabled else ""
+    public_code_hash = (
+        hashlib.sha256(public_code.encode("utf-8")).hexdigest()
+        if public_code
+        else None
+    )
     event = log_trust_event(
         db,
         event_type=COMMUNITY_DOMAIN_NOTICE_EVENT,
@@ -26250,6 +28469,12 @@ def create_community_domain_notice(
             "expiry_policy": expiry_policy,
             "expires_at": _iso(expires_at),
             "active_board_status": "active",
+            "public_qr_enabled": bool(payload.public_qr_enabled),
+            "public_code": public_code or None,
+            "public_code_hash": public_code_hash,
+            "public_path": _community_notice_public_path(public_code) if public_code else None,
+            "public_api_path": _community_notice_public_api_path(public_code) if public_code else None,
+            "public_boundary": COMMUNITY_DOMAIN_NOTICE_PUBLIC_BOUNDARY if public_code else None,
             "comments_enabled": False,
             "reactions_enabled": False,
             "thread_enabled": False,
@@ -26270,6 +28495,8 @@ def create_community_domain_notice(
         "notifications_created": int(notifications_created),
         "notification_kind": COMMUNITY_DOMAIN_NOTICE_EVENT,
         "message": "Official notice posted to this Community Domain board.",
+        "public_path": _community_notice_public_path(public_code) if public_code else None,
+        "public_api_path": _community_notice_public_api_path(public_code) if public_code else None,
         "expiry_policy": expiry_policy,
         "expires_at": _iso(expires_at),
         "boundary": (

@@ -28,7 +28,12 @@ No bottom navigation on these screens.
 3. CommunityVerifyPage
 4. CommunityMemberVerifyPage
 5. MerchantReleasePage
-6. BeneficiaryOutcomeConfirmationPage`n7. TrustSlipVerifyPage card-only route variant (`/t/:code/card`)
+6. BeneficiaryOutcomeConfirmationPage
+7. CommunityCollectionPage
+8. CommunityNoticePage
+9. CommunityAttendancePage
+10. CommunityResponsePage
+11. TrustSlipVerifyPage card-only route variant (`/t/:code/card`)
 
 ## Authenticated Screens
 

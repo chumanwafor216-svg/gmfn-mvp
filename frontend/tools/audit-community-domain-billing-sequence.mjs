@@ -130,7 +130,7 @@ const dashboardPayload = {
   ],
   package_quote: {
     quote_status: "quote_required",
-    pricing_status: "pilot_quote_required",
+    pricing_status: "pilot_payment_suspended",
     renewal_policy: { status: "not_set" },
     included_modules: ["billing", "members"],
   },
@@ -150,21 +150,21 @@ const subscriptionLifecyclePayload = {
     },
     package: {
       package_name: "Community Domain Starter",
-      pricing_status: "pilot_quote_required",
+      pricing_status: "pilot_payment_suspended",
     },
     lanes: [
       {
         lane_key: "quote_preview",
         label: "Quote preview",
         ready: true,
-        status: "draft_quote",
+        status: "pilot_reservation_active",
         next_step: "Review the manual pilot quote with the Community Domain owner.",
       },
       {
         lane_key: "pricing_confirmation",
         label: "Pricing confirmation",
         ready: false,
-        status: "pilot_quote_required",
+        status: "pilot_payment_suspended",
         next_step: "Confirm final price before payment instruction.",
       },
       {
@@ -683,7 +683,7 @@ try {
   const stepsResult = await pageAudit(page);
   const requiredStepsText = [
     "Review quote",
-    "Generate payment code",
+    "Payment suspended for pilot",
     "Use your bank",
     "Upload proof",
     "Finance review",
