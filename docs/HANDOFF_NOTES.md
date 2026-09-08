@@ -1,3 +1,12 @@
+## 2026-09-08 - Auth accepts public GSN-GMFN identity aliases
+
+- Status: Local backend implementation complete and verified; local commit in this slice, not pushed unless the owner asks to deploy this batch.
+- Owner trigger: after a lost/replaced phone and password recovery, the member could see/quote `GSN-GMFN-U-0AEAE2D7` while the auth path could behave as though only the stored `GMFN-U-0AEAE2D7` / `GSN-U-0AEAE2D7` form existed.
+- Backend routes affected: `/auth/login`, `/auth/password-recovery/start`, `/auth/password-recovery/reset`, `/auth/activate-membership`, `/auth/activate-approved-member`, and `/auth/approved-member/{gmfn_id}` now resolve `GSN-GMFN-U-*`, `GMFN-GSN-U-*`, `GMFN-U-*`, `GSN-U-*`, and bare `U-*` display aliases to the same active user where appropriate.
+- Admin diagnostic affected: `/identity-risk/admin/phone-lineage` now also treats UK local `07...` phone entry as the matching `+44...` stored number, while preserving the existing `+...` and `00...` forms.
+- Verification passed: `python -m pytest -q gmfn_backend/tests/test_password_recovery.py`; `python -m pytest -q gmfn_backend/tests/test_auth_profile_update.py`; `python -m pytest -q gmfn_backend/tests/test_identity_reconciliation.py`; `python -m pytest -q gmfn_backend/tests/test_entry_create.py::test_admin_phone_lineage_lookup_identifies_protected_owner`; `git diff --check`.
+- Devil truth: this fixes alias lookup and UK local-phone lookup. It does not inspect or mutate live production records for Nevito/Ebube, and it does not by itself prove whether the duplicate merge already succeeded in production.
+
 ## 2026-09-08 - Community Bulletin opens QR link from Reactions
 
 - Status: Local frontend implementation complete and verified; local commit in this slice, not pushed unless the owner asks to deploy this batch.

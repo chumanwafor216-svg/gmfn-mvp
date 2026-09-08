@@ -18,14 +18,19 @@ RECOVERY_QUESTIONS = [
 ]
 
 
-def _seed_recovery_user(*, configured: bool = True, phone_verified: bool = True) -> None:
+def _seed_recovery_user(
+    *,
+    configured: bool = True,
+    phone_verified: bool = True,
+    gmfn_id: str = "GSN-U-B7AC7BC0",
+) -> None:
     with SessionLocal() as db:
         user = User(
             id=77,
             email="recovery-user@example.com",
             hashed_password=get_password_hash("old-secret"),
             role="user",
-            gmfn_id="GSN-U-B7AC7BC0",
+            gmfn_id=gmfn_id,
             phone_e164="+447700900123",
             phone_verified_at=datetime.now(timezone.utc) if phone_verified else None,
         )
@@ -79,6 +84,23 @@ def test_password_recovery_resets_active_account_after_private_answers(client):
     assert new_login.status_code == 200, new_login.text
     assert new_login.json()["gmfn_id"] == "GSN-U-B7AC7BC0"
 
+
+def test_login_and_recovery_accept_gsn_gmfn_alias_for_gmfn_account(client):
+    _seed_recovery_user(gmfn_id="GMFN-U-B7AC7BC0")
+
+    alias_login = client.post(
+        "/auth/login",
+        data={"username": "GSN-GMFN-U-B7AC7BC0", "password": "old-secret"},
+    )
+    assert alias_login.status_code == 200, alias_login.text
+    assert alias_login.json()["gmfn_id"] == "GMFN-U-B7AC7BC0"
+
+    start = client.post(
+        "/auth/password-recovery/start",
+        json={"gmfn_id": "GSN-GMFN-U-B7AC7BC0", "phone_e164": "07700 900123"},
+    )
+    assert start.status_code == 200, start.text
+    assert start.json()["phone_mask"] == "***0123"
 
 def test_password_recovery_requires_matching_verified_phone(client):
     _seed_recovery_user()

@@ -45,6 +45,10 @@ def _phone_query_candidates(value: object) -> list[str]:
         candidates.append(f"+{cleaned[2:]}")
     if cleaned.startswith("+"):
         candidates.append(cleaned.replace("+", "00", 1))
+    if cleaned.isdigit() and cleaned.startswith("0") and len(cleaned) == 11:
+        national = cleaned[1:]
+        candidates.append(f"+44{national}")
+        candidates.append(f"+234{national}")
     return [item for index, item in enumerate(candidates) if item and item not in candidates[:index]]
 
 

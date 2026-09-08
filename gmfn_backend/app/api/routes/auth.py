@@ -206,6 +206,9 @@ def _identity_candidates(identity: str) -> list[str]:
     add(raw)
     add(raw.lower())
     add(raw.upper())
+    for candidate in _gsn_id_candidates(raw):
+        add(candidate)
+        add(candidate.lower())
 
     compact_phone = (
         raw.replace(" ", "")
@@ -221,6 +224,7 @@ def _identity_candidates(identity: str) -> list[str]:
         add(f"+{compact_phone}")
         if compact_phone.startswith("0") and len(compact_phone) == 11:
             add(f"+234{compact_phone[1:]}")
+            add(f"+44{compact_phone[1:]}")
 
     return candidates
 
@@ -243,13 +247,21 @@ def _gsn_id_candidates(value: str) -> list[str]:
     if not raw:
         return []
 
-    if raw.startswith("GMFN-U-"):
-        candidates = [raw, f"GSN-U-{raw[7:]}"]
-    elif raw.startswith("GSN-U-"):
-        candidates = [raw, f"GMFN-U-{raw[6:]}"]
-    else:
-        suffix = raw.removeprefix("U-")
-        candidates = [f"GSN-U-{suffix}", f"GMFN-U-{suffix}"]
+    suffix = raw
+    for prefix in ("GSN-GMFN-U-", "GMFN-GSN-U-", "GMFN-U-", "GSN-U-", "U-"):
+        if suffix.startswith(prefix):
+            suffix = suffix[len(prefix):]
+            break
+
+    if not suffix or not suffix.isalnum():
+        return []
+
+    candidates = [
+        raw,
+        f"GMFN-U-{suffix}",
+        f"GSN-U-{suffix}",
+        f"GSN-GMFN-U-{suffix}",
+    ]
 
     out: list[str] = []
     seen: set[str] = set()
@@ -258,6 +270,13 @@ def _gsn_id_candidates(value: str) -> list[str]:
             seen.add(candidate)
             out.append(candidate)
     return out
+
+
+def _find_user_by_gsn_id(db: Session, gmfn_id: str) -> User | None:
+    candidates = _gsn_id_candidates(gmfn_id)
+    if not candidates:
+        return None
+    return db.query(User).filter(User.gmfn_id.in_(candidates)).first()
 
 
 def _find_user_by_recovery_claim(db: Session, *, gmfn_id: str, phone_e164: str) -> User | None:
@@ -744,7 +763,7 @@ def activate_approved_member(
     user: Optional[User] = None
 
     if gmfn_id:
-        user = db.query(User).filter(User.gmfn_id == gmfn_id).first()
+        user = _find_user_by_gsn_id(db, gmfn_id)
 
     if user is None and request_id:
         try:
@@ -769,7 +788,11 @@ def activate_approved_member(
     if not user:
         raise HTTPException(status_code=404, detail="Approved member identity not found")
 
-    if gmfn_id and str(getattr(user, "gmfn_id", "") or "").strip().upper() != gmfn_id:
+    if (
+        gmfn_id
+        and str(getattr(user, "gmfn_id", "") or "").strip().upper()
+        not in set(_gsn_id_candidates(gmfn_id))
+    ):
         raise HTTPException(
             status_code=409,
             detail="Request ID does not match the supplied GSN ID",
@@ -828,7 +851,7 @@ def activate_membership(
     if password != confirm_password:
         raise HTTPException(status_code=400, detail="Passwords do not match")
 
-    user = db.query(User).filter(User.gmfn_id == gmfn_id).first()
+    user = _find_user_by_gsn_id(db, gmfn_id)
     if not user:
         raise HTTPException(status_code=404, detail="Invalid GSN ID")
 
@@ -1207,7 +1230,7 @@ def get_approved_member_activation_status(
     if not safe_gmfn_id:
         raise HTTPException(status_code=400, detail="GSN ID is required")
 
-    user = db.query(User).filter(User.gmfn_id == safe_gmfn_id).first()
+    user = _find_user_by_gsn_id(db, safe_gmfn_id)
     if not user:
         raise HTTPException(status_code=404, detail="Approved member identity not found")
 
@@ -1223,7 +1246,7 @@ def get_approved_member_activation_status(
 
     return {
         "ok": True,
-        "gmfn_id": safe_gmfn_id,
+        "gmfn_id": str(getattr(user, "gmfn_id", None) or safe_gmfn_id),
         "approved": approved,
         "activated": activated,
         "status": (latest_join_request.status if latest_join_request else None),

@@ -192,7 +192,7 @@ def test_activate_membership_recovers_display_name_from_join_evidence(client):
     response = client.post(
         "/auth/activate-membership",
         json={
-            "gmfn_id": "GMFN-U-JOINRECOVER",
+            "gmfn_id": "GSN-GMFN-U-JOINRECOVER",
             "password": "secret123",
             "confirm_password": "secret123",
         },
@@ -208,7 +208,7 @@ def test_activate_membership_recovers_display_name_from_join_evidence(client):
         assert user is not None
         assert user.display_name == "Ada Ebony"
 
-    status_response = client.get("/auth/approved-member/GMFN-U-JOINRECOVER")
+    status_response = client.get("/auth/approved-member/GSN-GMFN-U-JOINRECOVER")
     assert status_response.status_code == 200, status_response.text
     status_body = status_response.json()
     assert status_body["display_name"] == "Ada Ebony"

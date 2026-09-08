@@ -1458,6 +1458,13 @@ def test_admin_phone_lineage_lookup_identifies_protected_owner(client):
     assert row["created_community_count"] == 1
     assert "Sign in to this GSN ID" in row["recommended_first_step"]
 
+    local_phone_res = client.get(
+        "/identity-risk/admin/phone-lineage",
+        params={"phone_e164": "07903 165266"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert local_phone_res.status_code == 200, local_phone_res.text
+    assert local_phone_res.json()["match_count"] == 1
 
 def test_admin_phone_lineage_lookup_reports_sanitized_recovery_status(client):
     os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
