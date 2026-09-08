@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from app.db.database import SessionLocal
-from app.db.models import Clan, ClanMembership, MarketplaceRequest, TrustEvent, User
+from app.db.models import Clan, ClanMembership, CommunityDomain, CommunityDomainPolicy, MarketplaceRequest, TrustEvent, User
 from app.db.notification_models import Notification
 
 
@@ -418,6 +418,144 @@ def test_community_notice_archive_hides_expired_notice_but_keeps_memory(
         )
 
 
+
+def test_community_notice_board_includes_linked_domain_notices_and_previous_trail(
+    client, override_current_user
+):
+    _seed_notice_community()
+    now = datetime.now(timezone.utc)
+
+    with SessionLocal() as db:
+        domain_owner = User(
+            id=4,
+            email="domain-owner@example.com",
+            hashed_password="hashed",
+            role="user",
+        )
+        db.add(domain_owner)
+        db.flush()
+        linked_domain = CommunityDomain(
+            id=10,
+            domain_name="igbo-cultural-association",
+            display_name="Igbo Cultural Association",
+            domain_type="generic_association",
+            template_key="generic_association",
+            owner_user_id=4,
+            clan_id=1,
+            status="active",
+            verification_status="verified",
+        )
+        off_domain = CommunityDomain(
+            id=11,
+            domain_name="quiet-domain",
+            display_name="Quiet Domain",
+            domain_type="generic_association",
+            template_key="generic_association",
+            owner_user_id=4,
+            clan_id=1,
+            status="active",
+            verification_status="verified",
+        )
+        db.add_all([linked_domain, off_domain])
+        db.flush()
+        db.add(
+            CommunityDomainPolicy(
+                community_domain_id=11,
+                policy_key="domain.feature_policy",
+                action_key="domain.feature_policy.update",
+                status="active",
+                config_json=json.dumps({"features": {"announcement_board": "off"}}),
+                created_by_user_id=4,
+            )
+        )
+        db.add(
+            TrustEvent(
+                event_type="community_domain.notice.posted",
+                clan_id=1,
+                actor_user_id=4,
+                subject_user_id=4,
+                created_at=now,
+                meta_json=json.dumps(
+                    {
+                        "source": "community_domain_notice_board",
+                        "reason": "community_domain_notice_posted",
+                        "community_domain_id": 10,
+                        "body": "Igbo cultural association meeting this week.",
+                        "word_count": 6,
+                        "expiry_policy": "standard",
+                        "expires_at": (now + timedelta(days=7)).isoformat(),
+                        "public_qr_enabled": True,
+                        "public_code": "public-domain-code",
+                    }
+                ),
+            )
+        )
+        for index in range(12):
+            db.add(
+                TrustEvent(
+                    event_type="community_domain.notice.posted",
+                    clan_id=1,
+                    actor_user_id=4,
+                    subject_user_id=4,
+                    created_at=now - timedelta(days=10, minutes=index),
+                    meta_json=json.dumps(
+                        {
+                            "source": "community_domain_notice_board",
+                            "reason": "community_domain_notice_posted",
+                            "community_domain_id": 10,
+                            "body": f"Expired domain notice {index}.",
+                            "word_count": 4,
+                            "expiry_policy": "standard",
+                        }
+                    ),
+                )
+            )
+        db.add(
+            TrustEvent(
+                event_type="community_domain.notice.posted",
+                clan_id=1,
+                actor_user_id=4,
+                subject_user_id=4,
+                created_at=now,
+                meta_json=json.dumps(
+                    {
+                        "source": "community_domain_notice_board",
+                        "reason": "community_domain_notice_posted",
+                        "community_domain_id": 11,
+                        "body": "Hidden domain board notice.",
+                        "word_count": 4,
+                        "expiry_policy": "standard",
+                        "expires_at": (now + timedelta(days=7)).isoformat(),
+                    }
+                ),
+            )
+        )
+        db.commit()
+
+    list_res = client.get("/community-notices", params={"clan_id": 1, "limit": 5})
+
+    assert list_res.status_code == 200, list_res.text
+    payload = list_res.json()
+    bodies = [item["body"] for item in payload["notices"]]
+    assert "Igbo cultural association meeting this week." in bodies
+    assert "Hidden domain board notice." not in bodies
+    domain_notice = next(
+        item
+        for item in payload["notices"]
+        if item["body"] == "Igbo cultural association meeting this week."
+    )
+    assert domain_notice["source"] == "community_domain_notice_board"
+    assert domain_notice["notice_scope"] == "community_domain"
+    assert domain_notice["notice_kind"] == "official_domain_notice"
+    assert domain_notice["source_domain_name"] == "Igbo Cultural Association"
+    assert domain_notice["public_qr_enabled"] is True
+    assert domain_notice["public_path"] == "/community-notices/public-domain-code"
+    assert payload["previous_announcement_limit"] == 10
+    assert len(payload["previous_announcements"]) == 10
+    previous_bodies = [item["body"] for item in payload["previous_announcements"]]
+    assert "Expired domain notice 0." in previous_bodies
+    assert "Expired domain notice 10." not in previous_bodies
+    assert all(item["active_board_status"] == "archived" for item in payload["previous_announcements"])
 
 def test_community_notice_post_respects_disabled_light_governance_records_policy(
     client, override_current_user

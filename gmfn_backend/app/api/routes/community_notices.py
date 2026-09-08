@@ -14,6 +14,8 @@ from app.db.database import get_db
 from app.db.models import (
     Clan,
     ClanMembership,
+    CommunityDomain,
+    CommunityDomainPolicy,
     MarketplaceRequest,
     TrustEvent,
     User,
@@ -54,7 +56,14 @@ NOTICE_EXPIRY_POLICIES = {
 }
 NOTICE_STANDARD_VISIBLE_DAYS = 7
 NOTICE_URGENT_VISIBLE_HOURS = 48
+NOTICE_PREVIOUS_ANNOUNCEMENT_LIMIT = 10
 NOTICE_BOARD_DEMAND_SIGNAL_LIMIT = 3
+CENTRAL_DOMAIN_NOTICE_EVENT = "community_domain.notice.posted"
+CENTRAL_DOMAIN_NOTICE_SOURCE = "community_domain_notice_board"
+CENTRAL_DOMAIN_FEATURE_POLICY_KEY = "domain.feature_policy"
+CENTRAL_DOMAIN_FEATURE_ANNOUNCEMENT_BOARD = "announcement_board"
+CENTRAL_DOMAIN_FEATURE_MODE_OFF = "off"
+CENTRAL_DOMAIN_OPERATION_BLOCKED_STATUSES = {"suspended", "closed"}
 
 
 def _safe_str(value: Any, fallback: str = "") -> str:
@@ -494,6 +503,108 @@ def _clan_source_payload(db: Session, clan_id: int) -> dict[str, Any]:
         or None,
     }
 
+
+def _notice_sort_time(payload: dict[str, Any]) -> datetime:
+    parsed = _parse_datetime(
+        payload.get("scheduled_at") or payload.get("created_at") or payload.get("expires_at")
+    )
+    return parsed or datetime(1970, 1, 1, tzinfo=timezone.utc)
+
+
+def _central_domain_notice_feature_mode(
+    db: Session,
+    *,
+    community_domain_id: int,
+) -> str:
+    policy = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == int(community_domain_id))
+        .filter(CommunityDomainPolicy.policy_key == CENTRAL_DOMAIN_FEATURE_POLICY_KEY)
+        .filter(CommunityDomainPolicy.status == "active")
+        .first()
+    )
+    if policy is None:
+        return "admin_only"
+    config = _safe_meta(getattr(policy, "config_json", None))
+    features = config.get("features")
+    if not isinstance(features, dict):
+        return "admin_only"
+    return _safe_str(features.get(CENTRAL_DOMAIN_FEATURE_ANNOUNCEMENT_BOARD), "admin_only")
+
+
+def _central_domain_notice_payload(event: TrustEvent, domain: CommunityDomain) -> dict[str, Any]:
+    meta = _safe_meta(getattr(event, "meta_json", None))
+    body = _safe_str(meta.get("body") or meta.get("title"))
+    expiry_policy = _normalize_notice_expiry_policy(meta.get("expiry_policy"))
+    expires_at = _notice_effective_expires_at(
+        meta,
+        created_at=getattr(event, "created_at", None),
+    )
+    expired = _notice_is_expired(meta, created_at=getattr(event, "created_at", None))
+    public_code = _safe_str(meta.get("public_code"))
+    public_qr_enabled = bool(meta.get("public_qr_enabled")) and bool(public_code)
+    return {
+        "notice_id": f"TE-{int(event.id)}",
+        "event_id": int(event.id),
+        "source": CENTRAL_DOMAIN_NOTICE_SOURCE,
+        "notice_scope": "community_domain",
+        "notice_kind": "official_domain_notice",
+        "clan_id": int(getattr(event, "clan_id", 0) or getattr(domain, "clan_id", 0) or 0),
+        "source_community_id": int(domain.clan_id) if domain.clan_id is not None else None,
+        "source_community_name": _safe_str(getattr(domain, "display_name", None), "Community Domain"),
+        "source_community_code": _safe_str(getattr(domain, "domain_name", None)) or None,
+        "source_domain_id": int(domain.id),
+        "source_domain_name": _safe_str(getattr(domain, "display_name", None), "Community Domain"),
+        "source_domain_code": _safe_str(getattr(domain, "domain_name", None)) or None,
+        "body": body,
+        "title": body,
+        "word_count": _word_count(body),
+        "created_at": _iso(getattr(event, "created_at", None)),
+        "expires_at": _iso(expires_at),
+        "expiry_policy": expiry_policy,
+        "active_board_status": "archived" if expired else "active",
+        "is_archived": expired,
+        "posted_by_user_id": int(getattr(event, "actor_user_id", 0) or 0),
+        "posted_by_role": _safe_str(meta.get("posted_by_role")),
+        "posting_policy": "domain_governed",
+        "sender_whatsapp_number": None,
+        "sender_whatsapp_label": None,
+        "sender_contact_ready": False,
+        "acknowledgement_enabled": False,
+        "acknowledgement_label": "Domain notice",
+        "acknowledgement_summary": {"acknowledged": 0, "own_acknowledged": False},
+        "public_qr_enabled": public_qr_enabled,
+        "public_code": public_code if public_qr_enabled else None,
+        "public_path": f"/community-notices/{public_code}" if public_qr_enabled else None,
+        "board_hint": (
+            "Official Community Domain notice. It appears on the shared Bulletin "
+            "for the linked community while the domain board feature is enabled."
+        ),
+    }
+
+
+def _central_notice_visible_domain_map(
+    db: Session,
+    *,
+    clan_id: int,
+) -> dict[int, CommunityDomain]:
+    rows = (
+        db.query(CommunityDomain)
+        .filter(CommunityDomain.clan_id == int(clan_id))
+        .filter(~CommunityDomain.status.in_(CENTRAL_DOMAIN_OPERATION_BLOCKED_STATUSES))
+        .order_by(CommunityDomain.id.desc())
+        .limit(50)
+        .all()
+    )
+    domain_map: dict[int, CommunityDomain] = {}
+    for domain in rows:
+        if _central_domain_notice_feature_mode(
+            db,
+            community_domain_id=int(domain.id),
+        ) == CENTRAL_DOMAIN_FEATURE_MODE_OFF:
+            continue
+        domain_map[int(domain.id)] = domain
+    return domain_map
 
 def _notice_ack_summary(
     db: Session,
@@ -1058,16 +1169,57 @@ def list_notices(
         .limit(max(200, int(limit) * 25))
         .all()
     )
+    visible_domain_map = _central_notice_visible_domain_map(
+        db,
+        clan_id=int(clan_id),
+    )
+    domain_notice_rows = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.clan_id == int(clan_id),
+            TrustEvent.event_type == CENTRAL_DOMAIN_NOTICE_EVENT,
+        )
+        .order_by(TrustEvent.id.desc())
+        .limit(max(200, int(limit) * 25))
+        .all()
+        if visible_domain_map
+        else []
+    )
+
     archived_notice_count = 0
     notices: list[dict[str, Any]] = []
+    previous_announcements: list[dict[str, Any]] = []
+
+    def add_previous(item: dict[str, Any]) -> None:
+        previous_announcements.append(item)
+
     for row in notice_rows:
         meta = _safe_meta(getattr(row, "meta_json", None))
+        item = _event_to_notice(row, db=db, viewer_user_id=int(current_user.id))
         if _notice_is_expired(meta, created_at=getattr(row, "created_at", None)):
             archived_notice_count += 1
+            add_previous(item)
             continue
-        notices.append(_event_to_notice(row, db=db, viewer_user_id=int(current_user.id)))
-        if len(notices) >= int(limit):
-            break
+        notices.append(item)
+
+    for row in domain_notice_rows:
+        meta = _safe_meta(getattr(row, "meta_json", None))
+        try:
+            row_domain_id = int(meta.get("community_domain_id") or 0)
+        except (TypeError, ValueError):
+            row_domain_id = 0
+        domain = visible_domain_map.get(row_domain_id)
+        if domain is None:
+            continue
+        item = _central_domain_notice_payload(row, domain)
+        if _notice_is_expired(meta, created_at=getattr(row, "created_at", None)):
+            archived_notice_count += 1
+            add_previous(item)
+            continue
+        notices.append(item)
+
+    notices.sort(key=_notice_sort_time, reverse=True)
+    previous_announcements.sort(key=_notice_sort_time, reverse=True)
 
     if len(notices) < int(limit):
         meeting_rows = list_community_meetings(
@@ -1077,12 +1229,16 @@ def list_notices(
             viewer_user_id=int(current_user.id),
         )
         for row in meeting_rows:
+            item = _meeting_to_notice(row, db=db, clan_id=int(clan_id))
             if _meeting_notice_is_expired(row):
                 archived_notice_count += 1
+                add_previous(item)
                 continue
-            notices.append(_meeting_to_notice(row, db=db, clan_id=int(clan_id)))
+            notices.append(item)
             if len(notices) >= int(limit):
                 break
+        notices.sort(key=_notice_sort_time, reverse=True)
+        previous_announcements.sort(key=_notice_sort_time, reverse=True)
 
     demand_signals, demand_signal_count = _notice_board_demand_signals(
         db,
@@ -1106,6 +1262,8 @@ def list_notices(
         "default_expires_after_days": NOTICE_STANDARD_VISIBLE_DAYS,
         "urgent_expires_after_hours": NOTICE_URGENT_VISIBLE_HOURS,
         "archived_notice_count": archived_notice_count,
+        "previous_announcement_limit": NOTICE_PREVIOUS_ANNOUNCEMENT_LIMIT,
+        "previous_announcements": previous_announcements[:NOTICE_PREVIOUS_ANNOUNCEMENT_LIMIT],
         "posting_policy": posting_policy,
         "can_post_notice": _can_create_notice_record(
             membership,

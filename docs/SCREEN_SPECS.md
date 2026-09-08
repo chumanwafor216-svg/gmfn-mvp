@@ -377,7 +377,10 @@ Must show:
   - each opened ordinary community item shows community name, marketplace workspace context, and Open Marketplace
   - each opened Community Domain item shows domain name, setup/marketplace readiness, and opens Marketplace when active or setup/dashboard when not active
 - Community Bulletin:
-  - shows one live official notice or a compact empty state
+  - shows one central live announcement feed for the selected ordinary Community plus eligible linked official Community Domain notices
+  - ordinary Community notices and Community Domain official notices keep their separate posting/governance rules, but read into this shared board instead of becoming duplicate announcement engines
+  - expired announcements leave the live board and remain visible in a compact previous-announcements trail capped at 10 items
+  - if no live announcement exists, show `No new announcement.`
   - member records that require admin approval use Submit, not Post
   - submitted member records stay hidden from the active board until an officer approves them
   - officers receive Action Inbox/Web Push review prompts for member-submitted records when notification delivery is configured

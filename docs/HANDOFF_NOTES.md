@@ -1,3 +1,19 @@
+## 2026-09-08 - Local central Community Bulletin feed and previous-announcement trail
+
+- Status: Local implementation complete; not committed, pushed, or deployed in this slice yet.
+- Owner clarification: ordinary Communities and official Community Domains should feed one central announcement board instead of two duplicated announcement engines. The distinction is governance/posting authority, not a separate member-facing board.
+- Backend route affected: `GET /community-notices` now aggregates active ordinary `community.notice.posted` events and eligible linked `community_domain.notice.posted` events for the selected `clan_id`. Domain notices still originate from the Community Domain official notice writer, and a domain whose `announcement_board` feature policy is `off` is excluded from the shared board.
+- History behavior: expired ordinary notices, expired linked Community Domain notices, and expired meeting reminders are removed from the live `notices` list and returned in `previous_announcements`, capped by `previous_announcement_limit = 10`. The cap is applied after date sorting so the newest previous items survive.
+- Frontend route affected: `/app/community` Community Bulletin now reads `previous_announcements`, labels linked domain notices as `Official domain`, prefers domain source name/code where present, and shows a compact `Previous announcements` trail behind the existing Bulletin drawer. If there is no live item, the main board still says `No new announcement.`
+- Test/audit coverage: `gmfn_backend/tests/test_community_notices.py` covers linked Community Domain aggregation, disabled-domain exclusion, public QR fields, and the 10-item previous trail. `frontend/tools/audit-notice-board-phone-notifications.mjs` now cages the central feed and Community Home history rail.
+- Verification passed:
+  - `python -m py_compile gmfn_backend\app\api\routes\community_notices.py gmfn_backend\tests\test_community_notices.py`
+  - `python -m pytest gmfn_backend\tests\test_community_notices.py` -> 17 passed.
+  - `npm --prefix frontend run audit:notice-board-phone-notifications`
+  - `npm --prefix frontend run audit:community-home-button-inventory`
+  - `npm --prefix frontend run audit:community-home-phone-buttons`
+  - `npm --prefix frontend run build`
+- Devil truth: this is a shared read/feed layer, not a database merger. That is the safer architecture for pilot: one visible board, separate governed writers. If later you want one admin place to compose both ordinary and official-domain messages, that needs a deliberate UX/control pass because ordinary Community posting and official Domain posting do not have the same authority rules.
 ## 2026-09-08 - Bulletin legacy expiry and empty-state repair
 
 - Status: Local implementation complete and verified. Not pushed or deployed in this slice.

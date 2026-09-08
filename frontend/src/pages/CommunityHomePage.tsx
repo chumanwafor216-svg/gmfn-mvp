@@ -175,6 +175,15 @@ type CommunityNoticeItem = {
   source_community_id?: number | string | null;
   source_community_name?: string | null;
   source_community_code?: string | null;
+  notice_scope?: string | null;
+  source_domain_id?: number | string | null;
+  source_domain_name?: string | null;
+  source_domain_code?: string | null;
+  active_board_status?: string | null;
+  is_archived?: boolean | null;
+  public_qr_enabled?: boolean | null;
+  public_code?: string | null;
+  public_path?: string | null;
   posting_policy?: string | null;
   expiry_policy?: string | null;
   expires_at?: string | null;
@@ -1395,7 +1404,12 @@ function isMeetingNotice(item: CommunityNoticeItem | null | undefined): boolean 
 function noticeKindLabel(item: CommunityNoticeItem | null | undefined): string {
   if (isMeetingNotice(item)) return "Meeting planning";
   const source = safeStr(item?.source).toLowerCase();
+  const scope = safeStr(item?.notice_scope).toLowerCase();
+  const kind = safeStr(item?.notice_kind).toLowerCase();
   if (source === "demand_box") return "Community need";
+  if (source === "community_domain_notice_board" || scope === "community_domain" || kind.includes("domain")) {
+    return "Official domain";
+  }
   return "Official notice";
 }
 
@@ -1427,7 +1441,7 @@ function noticeSourceCommunityLabel(
   item: CommunityNoticeItem | null | undefined,
   fallbackName: string
 ): string {
-  return firstTruthy(item?.source_community_name, fallbackName, "Selected community");
+  return firstTruthy(item?.source_domain_name, item?.source_community_name, fallbackName, "Selected community");
 }
 
 function noticeSourceLine(
@@ -1435,10 +1449,9 @@ function noticeSourceLine(
   fallbackName: string
 ): string {
   const name = noticeSourceCommunityLabel(item, fallbackName);
-  const code = firstTruthy(item?.source_community_code);
+  const code = firstTruthy(item?.source_domain_code, item?.source_community_code);
   return code ? `From ${name} (${code})` : `From ${name}`;
 }
-
 function noticeAcknowledgedCount(item: CommunityNoticeItem | null | undefined): number {
   return noticeNumber(item?.acknowledgement_summary?.acknowledged);
 }
@@ -1541,6 +1554,8 @@ export default function CommunityHomePage() {
   const [communityDomainRows, setCommunityDomainRows] = useState<CommunityDomainListRow[]>([]);
   const [selectedClan, setSelectedClan] = useState<ClanItem | null>(null);
   const [communityNotices, setCommunityNotices] = useState<CommunityNoticeItem[]>([]);
+  const [communityPreviousAnnouncements, setCommunityPreviousAnnouncements] =
+    useState<CommunityNoticeItem[]>([]);
   const [communityNoticesLoading, setCommunityNoticesLoading] = useState(false);
   const [communityNoticePostingPolicy, setCommunityNoticePostingPolicy] =
     useState<"members" | "admins">("members");
@@ -1590,7 +1605,11 @@ export default function CommunityHomePage() {
   const applyCommunityNoticeListResponse = useCallback(
     (res: any) => {
       const rows = Array.isArray(res?.notices) ? res.notices : [];
+      const previousRows = Array.isArray(res?.previous_announcements)
+        ? res.previous_announcements
+        : [];
       setCommunityNotices(rows);
+      setCommunityPreviousAnnouncements(previousRows.slice(0, 10));
       setCommunityNoticePostingPolicy(
         normalizeNoticePostingPolicy(
           firstTruthy(res?.posting_policy, selectedClan?.notice_posting_policy)
@@ -1834,6 +1853,7 @@ export default function CommunityHomePage() {
 
     if (!clanId) {
       setCommunityNotices([]);
+      setCommunityPreviousAnnouncements([]);
       setCommunityNoticePostingPolicy("members");
       setCanPublishCommunityNotice(false);
       setCanSubmitCommunityNoticeForReview(false);
@@ -1884,8 +1904,11 @@ export default function CommunityHomePage() {
     firstTruthy(primaryCommunityNotice?.sender_whatsapp_number)
   );
   const communityNoticeLogItems = activeCommunityNotices.slice(1, 4);
+  const communityPreviousAnnouncementItems = communityPreviousAnnouncements.slice(0, 10);
   const showCommunityBulletinSettings = Boolean(
-    canManageCommunityNoticeSettings || communityNoticeLogItems.length > 0
+    canManageCommunityNoticeSettings ||
+      communityNoticeLogItems.length > 0 ||
+      communityPreviousAnnouncementItems.length > 0
   );
   const noticeReviewDeepLink = useMemo(
     () => parseNoticeReviewDeepLink(location.search, location.hash),
@@ -4476,6 +4499,8 @@ export default function CommunityHomePage() {
                       ? "Close"
                       : pendingCommunityNoticeReviewCount > 0
                       ? `Settings (${pendingCommunityNoticeReviewCount})`
+                      : !canManageCommunityNoticeSettings && communityPreviousAnnouncementItems.length > 0
+                      ? `History (${communityPreviousAnnouncementItems.length})`
                       : "Settings"}
                   </StableButton>
                 ) : null}
@@ -4807,6 +4832,85 @@ export default function CommunityHomePage() {
                               {">"}
                             </span>
                           )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : null}
+                {communityPreviousAnnouncementItems.length > 0 ? (
+                  <div
+                    data-debug-id="community-home.notice.previous-announcements"
+                    style={{
+                      borderRadius: 18,
+                      overflow: "hidden",
+                      background: "#FFFCF5",
+                      border: "1px solid rgba(186,132,21,0.18)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 10,
+                        alignItems: "center",
+                        padding: "12px 14px",
+                        borderBottom: "1px solid rgba(186,132,21,0.12)",
+                      }}
+                    >
+                      <span style={{ color: "#07172C", fontSize: 14, fontWeight: 930 }}>
+                        Previous announcements
+                      </span>
+                      <span style={{ ...badge(false), whiteSpace: "nowrap" }}>
+                        Last {communityPreviousAnnouncementItems.length}/10
+                      </span>
+                    </div>
+                    {communityPreviousAnnouncementItems.map((item, index) => {
+                      const title = wordLimit(
+                        firstTruthy(item?.title, item?.body, item?.purpose, "Community notice"),
+                        50
+                      );
+                      const when = compactDateLabel(
+                        firstTruthy(item?.scheduled_at, item?.created_at, item?.expires_at)
+                      );
+                      const sourceLine = noticeSourceLine(item, selectedClanName);
+                      const kindLabel = noticeKindLabel(item);
+
+                      return (
+                        <div
+                          key={`previous-${item?.notice_id || item?.meeting_id || index}`}
+                          style={announcementNoticeRowStyle()}
+                        >
+                          <span style={announcementNoticeIconStyle(index + 2)} aria-hidden="true">
+                            <GsnLegacyIcon name="certificate" size={30} />
+                          </span>
+                          <span style={{ minWidth: 0 }}>
+                            <span
+                              style={{
+                                ...brandClampLines(2),
+                                color: "#07172C",
+                                fontSize: 15,
+                                fontWeight: 930,
+                                lineHeight: 1.25,
+                              }}
+                            >
+                              {title}
+                            </span>
+                            <span
+                              style={{
+                                ...brandClampLines(1),
+                                marginTop: 4,
+                                color: "#617085",
+                                fontSize: 12.5,
+                                fontWeight: 780,
+                              }}
+                            >
+                              {sourceLine} - {kindLabel} - Previous
+                              {when ? ` - ${when}` : ""}
+                            </span>
+                          </span>
+                          <span aria-hidden="true" style={{ color: "#48657D", fontSize: 22 }}>
+                            {">"}
+                          </span>
                         </div>
                       );
                     })}

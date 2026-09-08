@@ -426,6 +426,23 @@ assertContains(
   /function isNoticeVisibleOnBoard[\s\S]*?createdAt\.getTime\(\) \+ ttlMs[\s\S]*?No new announcement\./,
   "Community Home bulletin must defensively hide legacy expired notices and use the agreed no-new-announcement empty state."
 );
+assertContains(
+  files.communityNotices,
+  /NOTICE_PREVIOUS_ANNOUNCEMENT_LIMIT = 10[\s\S]*?CENTRAL_DOMAIN_NOTICE_EVENT = "community_domain\.notice\.posted"[\s\S]*?def _central_notice_visible_domain_map[\s\S]*?CommunityDomain\.clan_id == int\(clan_id\)[\s\S]*?CENTRAL_DOMAIN_FEATURE_MODE_OFF[\s\S]*?domain_notice_rows[\s\S]*?previous_announcements[\s\S]*?previous_announcement_limit/,
+  "Community notices API must remain the central board feed for ordinary community notices plus eligible linked Community Domain notices, with a 10-item previous-announcement trail."
+);
+
+assertContains(
+  files.communityPage,
+  /noticeKindLabel[\s\S]*?community_domain_notice_board[\s\S]*?Official domain[\s\S]*?source_domain_name[\s\S]*?source_domain_code/,
+  "Community Home must label linked Community Domain notices as official-domain items on the shared Bulletin."
+);
+
+assertContains(
+  files.communityPage,
+  /communityPreviousAnnouncements[\s\S]*?previous_announcements[\s\S]*?communityPreviousAnnouncementItems[\s\S]*?History \(\$\{communityPreviousAnnouncementItems\.length\}\)[\s\S]*?Previous announcements[\s\S]*?Last \{communityPreviousAnnouncementItems\.length\}\/10/,
+  "Community Home must render expired board items in a compact previous-announcements trail capped at 10."
+);
 
 assertContains(
   files.communityDomainSetupOverviewPanel,
@@ -461,6 +478,11 @@ assertContains(
   files.communityNoticeTests,
   /notification_kind"\] == "community\.notice\.posted"[\s\S]*?notifications_created"\] == 1[\s\S]*?\/app\/marketplace\?clan_id=1#marketplace-official-board[\s\S]*?Open Official Board/,
   "Marketplace/community notice tests must assert notification kind, count, and board CTA."
+);
+assertContains(
+  files.communityNoticeTests,
+  /test_community_notice_board_includes_linked_domain_notices_and_previous_trail[\s\S]*?community_domain\.notice\.posted[\s\S]*?community_domain_notice_board[\s\S]*?notice_scope"\] == "community_domain"[\s\S]*?previous_announcement_limit"\] == 10[\s\S]*?len\(payload\["previous_announcements"\]\) == 10/,
+  "Community notice backend tests must prove the shared board aggregates linked Community Domain notices and caps previous announcements."
 );
 
 assertContains(
