@@ -1,3 +1,11 @@
+## 2026-09-08 - Community Bulletin compact selector and brighter details
+
+- Status: Implemented and locally verified; not deployed in this slice.
+- Owner direction: reduce noise in the Community Bulletin, avoid the large active-announcement wording, remove awkward source-arrow presentation, brighten the lower details area, and let the announcement text own more of the card.
+- Frontend route affected: `/app/community` via `CommunityHomePage.tsx`. Multiple active notices now show a compact `1/4` position chip with smaller numbered selectors instead of `Active announcements` plus `Showing x/y`; the primary card source row shows `community - time` with compact weeks/months; the old arrow and separate From/Posted meta lines were removed; the Details panel uses a brighter white-blue surface.
+- Specs/audits affected: `SCREEN_SPECS.md` now documents the compact position chip; `audit-community-home-button-inventory.mjs` protects the compact selector and source/time row while keeping notice switching and contact-announcer action intact.
+- Verified: `node tools/audit-community-home-button-inventory.mjs`; `npm exec eslint src/pages/CommunityHomePage.tsx tools/audit-community-home-button-inventory.mjs`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`.
+- Devil truth: This is a presentation polish only. It does not solve public document storage, attachment upload behavior, or the Navito/Naviita identity reconciliation data issue.
 ## 2026-09-08 - Community Domain three-lane command front door
 
 - Status: Implemented and locally verified. Not committed, pushed, or deployed in this slice.

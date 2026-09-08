@@ -1363,29 +1363,30 @@ function announcementCompactDateTileStyle(): React.CSSProperties {
 function announcementSourcePillStyle(): React.CSSProperties {
   return {
     display: "grid",
-    gridTemplateColumns: "32px minmax(0, 1fr) auto",
+    gridTemplateColumns: "32px minmax(0, 1fr)",
     gap: 8,
     alignItems: "center",
     minHeight: 38,
     borderRadius: 999,
     padding: "4px 9px 4px 4px",
-    background: "rgba(255,249,234,0.86)",
-    border: "1px solid rgba(214,170,69,0.14)",
+    background: "rgba(255,255,255,0.9)",
+    border: "1px solid rgba(123,161,204,0.14)",
   };
 }
 
 
 function announcementSelectorStyle(isCompact: boolean): React.CSSProperties {
   return {
-    display: "grid",
-    gridTemplateColumns: isCompact ? "minmax(0, 1fr)" : "minmax(0, 1fr) auto",
-    gap: 8,
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 6,
     alignItems: "center",
-    marginBottom: isCompact ? 8 : 10,
-    padding: isCompact ? "8px 8px" : "10px 12px",
-    borderRadius: 16,
-    background: "rgba(255,249,234,0.76)",
-    border: "1px solid rgba(214,170,69,0.16)",
+    justifyContent: isCompact ? "center" : "space-between",
+    marginBottom: isCompact ? 6 : 8,
+    padding: isCompact ? "6px 6px" : "8px 10px",
+    borderRadius: 999,
+    background: "rgba(255,255,255,0.78)",
+    border: "1px solid rgba(123,161,204,0.14)",
   };
 }
 
@@ -1393,7 +1394,7 @@ function announcementSelectorButtonsStyle(): React.CSSProperties {
   return {
     display: "flex",
     flexWrap: "wrap",
-    gap: 6,
+    gap: 5,
     alignItems: "center",
     justifyContent: "center",
     minWidth: 0,
@@ -1494,13 +1495,6 @@ function wordLimit(text: string, maxWords: number): string {
   return `${words.slice(0, maxWords).join(" ")}...`;
 }
 
-function safeDateLabel(value: any): string {
-  const raw = safeStr(value);
-  if (!raw) return "";
-  const date = new Date(raw);
-  if (!Number.isFinite(date.getTime())) return raw;
-  return date.toLocaleString();
-}
 
 function compactDateLabel(value: any): string {
   const raw = safeStr(value);
@@ -1516,6 +1510,10 @@ function compactDateLabel(value: any): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 8) return `${weeks}w ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months}mo ago`;
   return date.toLocaleDateString();
 }
 function noticeEmbeddedEventDate(item: CommunityNoticeItem | null | undefined): Date | null {
@@ -1685,12 +1683,7 @@ function noticeSourceLine(
   fallbackName: string
 ): string {
   const name = noticeSourceCommunityLabel(item, fallbackName);
-  if (isMarketplaceNotice(item)) {
-    const community = firstTruthy(item?.source_community_name, fallbackName);
-    return community && community !== name ? `From ${name} - ${community}` : `From ${name}`;
-  }
-  const code = firstTruthy(item?.source_domain_code, item?.source_community_code);
-  return code ? `From ${name} (${code})` : `From ${name}`;
+  return firstTruthy(name, fallbackName, "Selected community");
 }
 function noticeAcknowledgedCount(item: CommunityNoticeItem | null | undefined): number {
   return noticeNumber(item?.acknowledgement_summary?.acknowledged);
@@ -3556,31 +3549,26 @@ export default function CommunityHomePage() {
         data-debug-id="community-home.bulletin.active-selector"
         style={announcementSelectorStyle(isCompact)}
       >
-        <span style={{ minWidth: 0, textAlign: isCompact ? "center" : "left" }}>
-          <span
-            style={{
-              ...brandClampLines(1),
-              color: "#07172C",
-              fontSize: 13,
-              fontWeight: 940,
-              lineHeight: 1.18,
-            }}
-          >
-            Active announcements
-          </span>
-          <span
-            style={{
-              ...brandClampLines(1),
-              display: "block",
-              marginTop: 3,
-              color: "#617085",
-              fontSize: 12,
-              fontWeight: 820,
-              lineHeight: 1.22,
-            }}
-          >
-            Showing {selectedCommunityNoticeIndexSafe + 1}/{items.length}
-          </span>
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: 30,
+            minWidth: 44,
+            borderRadius: 999,
+            padding: "5px 10px",
+            background: "linear-gradient(180deg, #F8FBFF 0%, #EEF5FD 100%)",
+            border: "1px solid rgba(123,161,204,0.16)",
+            color: "#07172C",
+            fontSize: 12,
+            fontWeight: 950,
+            lineHeight: 1,
+            whiteSpace: "nowrap",
+          }}
+          aria-label={`Announcement ${selectedCommunityNoticeIndexSafe + 1} of ${items.length}`}
+        >
+          {selectedCommunityNoticeIndexSafe + 1}/{items.length}
         </span>
         <span style={announcementSelectorButtonsStyle()}>
           {items.map((item, index) => {
@@ -3606,13 +3594,13 @@ export default function CommunityHomePage() {
                 }}
                 style={{
                   ...communityActionStyle(selected ? "primary" : "soft"),
-                  minHeight: 34,
-                  minWidth: 34,
-                  width: 34,
-                  height: 34,
+                  minHeight: 30,
+                  minWidth: 30,
+                  width: 30,
+                  height: 30,
                   padding: 0,
                   borderRadius: 999,
-                  fontSize: 12,
+                  fontSize: 11.5,
                   boxShadow: selected
                     ? "0 8px 14px rgba(10,24,49,0.12)"
                     : "none",
@@ -3717,10 +3705,7 @@ export default function CommunityHomePage() {
                 )}
               </span>
               <span style={{ ...brandClampLines(1), color: "#0B2D4A", fontSize: 13, fontWeight: 930 }}>
-                {sourceLine}
-              </span>
-              <span aria-hidden="true" style={{ color: "#48657D", fontSize: 20, fontWeight: 900 }}>
-                {">"}
+                {[sourceLine, when].filter(Boolean).join(" - ")}
               </span>
             </div>
 
@@ -3735,11 +3720,6 @@ export default function CommunityHomePage() {
               }}
             >
               {rawBody}
-            </div>
-
-            <div style={{ display: "grid", gap: 5, color: "#617085", fontSize: 12.5, fontWeight: 820 }}>
-              <span style={brandClampLines(1)}>From: {senderLabel}</span>
-              <span style={brandClampLines(1)}>{when ? `Posted ${when}` : kindLabel}</span>
             </div>
           </div>
         </div>
@@ -3821,8 +3801,8 @@ export default function CommunityHomePage() {
               gap: 8,
               padding: isCompact ? "8px 8px" : "10px 12px",
               borderRadius: 16,
-              background: "rgba(255,253,247,0.94)",
-              border: "1px solid rgba(214,170,69,0.16)",
+              background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(243,248,254,0.96) 100%)",
+              border: "1px solid rgba(123,161,204,0.14)",
             }}
           >
             <div

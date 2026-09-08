@@ -317,7 +317,7 @@ assertNotContains(
   "Community Home bulletin acknowledgement must not reuse the check icon because it maps to the trust shield."
 );
 assertContains(
-  /function renderCommunityBulletinPrimaryNotice[\s\S]*?const sourceLine = noticeSourceLine\(noticeItem, selectedClanName\)[\s\S]*?\{sourceLine\}[\s\S]*?debugId=\{`community-home\.bulletin\.primary-sender-whatsapp\.[\s\S]*?Contact announcer/,
+  /function renderCommunityBulletinPrimaryNotice[\s\S]*?const sourceLine = noticeSourceLine\(noticeItem, selectedClanName\)[\s\S]*?\[sourceLine, when\]\.filter\(Boolean\)\.join\(" - "\)[\s\S]*?debugId=\{`community-home\.bulletin\.primary-sender-whatsapp\.[\s\S]*?Contact announcer/,
   "Community Home live bulletin notice must show the source community and keep the announcement sender WhatsApp contact attached to the notice."
 );
 
@@ -581,7 +581,7 @@ while ((match = rawActionPattern.exec(source))) {
 }
 
 assertContains(
-  /COMMUNITY_NOTICE_ACTIVE_LIMIT = 10[\s\S]*?listCommunityNotices\(\{ clan_id: clanId, limit: COMMUNITY_NOTICE_ACTIVE_LIMIT \}\)[\s\S]*?function renderCommunityBulletinNoticeSelector[\s\S]*?Active announcements[\s\S]*?Showing \{selectedCommunityNoticeIndexSafe \+ 1\}\/\{items\.length\}[\s\S]*?debugId=\{`community-home\.bulletin\.notice-select\.\$\{index \+ 1\}`\}[\s\S]*?setSelectedCommunityNoticeIndex\(index\)/,
+  /COMMUNITY_NOTICE_ACTIVE_LIMIT = 10[\s\S]*?listCommunityNotices\(\{ clan_id: clanId, limit: COMMUNITY_NOTICE_ACTIVE_LIMIT \}\)[\s\S]*?function renderCommunityBulletinNoticeSelector[\s\S]*?Announcement \$\{selectedCommunityNoticeIndexSafe \+ 1\} of \$\{items\.length\}[\s\S]*?\{selectedCommunityNoticeIndexSafe \+ 1\}\/\{items\.length\}[\s\S]*?debugId=\{`community-home\.bulletin\.notice-select\.\$\{index \+ 1\}`\}[\s\S]*?setSelectedCommunityNoticeIndex\(index\)/,
   "Community Home Bulletin must fetch up to ten active notices and show a numbered active-announcement selector instead of hiding extra live items."
 );
 if (findings.length > 0) {
