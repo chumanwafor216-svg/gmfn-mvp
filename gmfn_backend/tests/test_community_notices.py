@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from app.db.database import SessionLocal
-from app.db.models import Clan, ClanMembership, CommunityDomain, CommunityDomainPolicy, MarketplaceRequest, TrustEvent, User
+from app.db.models import Clan, ClanMembership, CommunityDomain, CommunityDomainPolicy, MarketplaceBroadcast, MarketplaceRequest, MarketplaceShop, TrustEvent, User
 from app.db.notification_models import Notification
 
 
@@ -517,6 +517,56 @@ def test_community_notice_board_lists_demand_box_signals_without_response_thread
         notifications = db.query(Notification).all()
         assert notifications == []
 
+
+def test_community_notice_board_surfaces_marketplace_broadcasts_on_central_board(
+    client, override_current_user
+):
+    _seed_notice_community()
+
+    now = datetime.now(timezone.utc)
+    with SessionLocal() as db:
+        db.add(
+            MarketplaceShop(
+                id=1,
+                clan_id=1,
+                owner_user_id=2,
+                name="Nevito food shop",
+                description="Local food seller",
+                whatsapp_number="+447717143500",
+                is_active=True,
+                created_at=now,
+            )
+        )
+        db.add(
+            MarketplaceBroadcast(
+                id=1,
+                clan_id=1,
+                author_user_id=2,
+                shop_id=1,
+                message="Fresh rice bags available for collection today",
+                image_url="/uploads/marketplace/images/rice.jpg",
+                priority_mode="free",
+                visibility_scope="direct_communities",
+                expires_at=now + timedelta(days=2),
+                created_at=now,
+            )
+        )
+        db.commit()
+
+    list_res = client.get("/community-notices", params={"clan_id": 1, "limit": 3})
+    assert list_res.status_code == 200, list_res.text
+    body = list_res.json()
+
+    assert body["notices"][0]["source"] == "marketplace_broadcast"
+    assert body["notices"][0]["notice_scope"] == "marketplace"
+    assert body["notices"][0]["notice_kind"] == "marketplace_broadcast"
+    assert body["notices"][0]["marketplace_broadcast_id"] == 1
+    assert body["notices"][0]["body"] == "Fresh rice bags available for collection today"
+    assert body["notices"][0]["source_shop_name"] == "Nevito food shop"
+    assert body["notices"][0]["sender_whatsapp_number"] == "+447717143500"
+    assert body["notices"][0]["image_url"].endswith("/rice.jpg")
+    assert body["notices"][0]["acknowledgement_enabled"] is False
+    assert "Trade details and replies stay in Marketplace" in body["notices"][0]["board_hint"]
 
 def test_community_notice_rejects_more_than_fifty_words(
     client, override_current_user

@@ -218,6 +218,13 @@ type CommunityNoticeItem = {
     own_response?: string | null;
   } | null;
   board_hint?: string | null;
+  marketplace_broadcast_id?: number | string | null;
+  source_marketplace_id?: number | string | null;
+  source_shop_id?: number | string | null;
+  source_shop_name?: string | null;
+  image_url?: string | null;
+  video_url?: string | null;
+  action_url?: string | null;
 };
 
 type CommunityNoticeRollCallMember = {
@@ -1555,8 +1562,16 @@ function isMeetingNotice(item: CommunityNoticeItem | null | undefined): boolean 
   return Boolean(item?.meeting_id || source === "community_meeting" || kind.includes("meeting"));
 }
 
+function isMarketplaceNotice(item: CommunityNoticeItem | null | undefined): boolean {
+  const source = safeStr(item?.source).toLowerCase();
+  const scope = safeStr(item?.notice_scope).toLowerCase();
+  const kind = safeStr(item?.notice_kind).toLowerCase();
+  return Boolean(source === "marketplace_broadcast" || scope === "marketplace" || kind.includes("marketplace"));
+}
+
 function noticeKindLabel(item: CommunityNoticeItem | null | undefined): string {
   if (isMeetingNotice(item)) return "Meeting planning";
+  if (isMarketplaceNotice(item)) return "Marketplace";
   const source = safeStr(item?.source).toLowerCase();
   const scope = safeStr(item?.notice_scope).toLowerCase();
   const kind = safeStr(item?.notice_kind).toLowerCase();
@@ -1605,6 +1620,9 @@ function noticeSourceCommunityLabel(
   item: CommunityNoticeItem | null | undefined,
   fallbackName: string
 ): string {
+  if (isMarketplaceNotice(item)) {
+    return firstTruthy(item?.source_shop_name, item?.source_community_name, fallbackName, "Marketplace");
+  }
   return firstTruthy(item?.source_domain_name, item?.source_community_name, fallbackName, "Selected community");
 }
 
@@ -1613,6 +1631,10 @@ function noticeSourceLine(
   fallbackName: string
 ): string {
   const name = noticeSourceCommunityLabel(item, fallbackName);
+  if (isMarketplaceNotice(item)) {
+    const community = firstTruthy(item?.source_community_name, fallbackName);
+    return community && community !== name ? `From ${name} - ${community}` : `From ${name}`;
+  }
   const code = firstTruthy(item?.source_domain_code, item?.source_community_code);
   return code ? `From ${name} (${code})` : `From ${name}`;
 }
@@ -3423,6 +3445,7 @@ export default function CommunityHomePage() {
     const senderLabel = firstTruthy(noticeItem?.sender_whatsapp_label, "Community contact");
     const sourceLine = noticeSourceLine(noticeItem, selectedClanName);
     const kindLabel = noticeKindLabel(noticeItem);
+    const noticeImageSrc = firstTruthy(noticeItem?.image_url);
     const planningLine = meetingPlanningLine(noticeItem);
     const interestParts = meetingInterestParts(noticeItem);
     const acknowledgedCount = noticeAcknowledgedCount(noticeItem);
@@ -3489,8 +3512,16 @@ export default function CommunityHomePage() {
           </div>
           <div style={{ display: "grid", gap: 10, minWidth: 0, justifyItems: isCompact ? "center" : "stretch", width: "100%" }}>
             <div style={{ ...announcementSourcePillStyle(), width: isCompact ? "min(100%, 270px)" : undefined, justifySelf: isCompact ? "center" : undefined }}>
-              <span style={{ ...announcementNoticeIconStyle(1), width: 32, height: 32, borderRadius: 999 }} aria-hidden="true">
-                <GsnLegacyIcon name="home" size={21} />
+              <span style={{ ...announcementNoticeIconStyle(1), width: 32, height: 32, borderRadius: 999, overflow: "hidden" }} aria-hidden="true">
+                {noticeImageSrc ? (
+                  <img
+                    src={noticeImageSrc}
+                    alt=""
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                ) : (
+                  <GsnLegacyIcon name={isMarketplaceNotice(noticeItem) ? "marketplace" : "home"} size={21} />
+                )}
               </span>
               <span style={{ ...brandClampLines(1), color: "#0B2D4A", fontSize: 13, fontWeight: 930 }}>
                 {sourceLine}
@@ -3659,7 +3690,7 @@ export default function CommunityHomePage() {
             border: "1px solid rgba(214,170,69,0.12)",
           }}
         >
-          <span style={badge(false)}>Official</span>
+          <span style={badge(false)}>{kindLabel}</span>
           <span style={badge(false)}>Acknowledged {acknowledgedCount}</span>
           {expiry ? <span style={badge(false)}>{expiry}</span> : null}
         </div>
@@ -4807,6 +4838,8 @@ export default function CommunityHomePage() {
               <span style={announcementBoardPillStyle()}>
                 {communityNoticesLoading
                   ? "Checking board"
+                  : primaryCommunityNotice
+                  ? noticeKindLabel(primaryCommunityNotice)
                   : "Official notice"}
               </span>
             </div>

@@ -18,7 +18,9 @@ from app.db.models import (
     ClanMembership,
     CommunityDomain,
     CommunityDomainPolicy,
+    MarketplaceBroadcast,
     MarketplaceRequest,
+    MarketplaceShop,
     TrustEvent,
     User,
     UserSettings,
@@ -61,6 +63,7 @@ NOTICE_STANDARD_VISIBLE_DAYS = 7
 NOTICE_URGENT_VISIBLE_HOURS = 48
 NOTICE_PREVIOUS_ANNOUNCEMENT_LIMIT = 10
 NOTICE_BOARD_DEMAND_SIGNAL_LIMIT = 3
+NOTICE_BOARD_MARKETPLACE_BROADCAST_LIMIT = 25
 NOTICE_MONTH_NAMES = {
     "january": 1,
     "jan": 1,
@@ -698,6 +701,103 @@ def _central_notice_visible_domain_map(
             continue
         domain_map[int(domain.id)] = domain
     return domain_map
+
+def _marketplace_broadcast_to_notice(
+    db: Session,
+    row: MarketplaceBroadcast,
+    *,
+    viewer_user_id: Optional[int] = None,
+) -> dict[str, Any]:
+    clan_id = int(getattr(row, "clan_id", 0) or 0)
+    author = db.get(User, int(getattr(row, "author_user_id", 0) or 0))
+    shop = None
+    if getattr(row, "shop_id", None):
+        shop = db.get(MarketplaceShop, int(row.shop_id))
+    if shop is None and getattr(row, "author_user_id", None):
+        shop = (
+            db.query(MarketplaceShop)
+            .filter(MarketplaceShop.owner_user_id == int(row.author_user_id))
+            .first()
+        )
+
+    source_payload = _clan_source_payload(db, clan_id) if clan_id else {}
+    body = _safe_str(getattr(row, "message", None), "Marketplace announcement")
+    shop_name = _safe_str(getattr(shop, "name", None))
+    author_name = _member_display(author)
+    sender_label = shop_name or author_name
+    sender_whatsapp = _safe_str(getattr(shop, "whatsapp_number", None)) or None
+    expires_at = _parse_datetime(getattr(row, "expires_at", None))
+    expired = expires_at is not None and expires_at <= datetime.now(timezone.utc)
+    image_url = _safe_str(getattr(row, "image_url", None)) or None
+    video_url = _safe_str(getattr(row, "video_url", None)) or None
+
+    return {
+        "notice_id": f"MB-{int(row.id)}",
+        "event_id": None,
+        "marketplace_broadcast_id": int(row.id),
+        "source": "marketplace_broadcast",
+        "notice_scope": "marketplace",
+        "notice_kind": "marketplace_broadcast",
+        "clan_id": clan_id,
+        **source_payload,
+        "source_marketplace_id": clan_id,
+        "source_shop_id": int(shop.id) if shop is not None else None,
+        "source_shop_name": shop_name or None,
+        "body": body,
+        "title": body,
+        "word_count": _word_count(body),
+        "created_at": _iso(getattr(row, "created_at", None)),
+        "expires_at": _iso(expires_at),
+        "expiry_policy": "marketplace",
+        "active_board_status": "archived" if expired else "active",
+        "is_archived": expired,
+        "posted_by_user_id": int(getattr(row, "author_user_id", 0) or 0),
+        "posted_by_role": "marketplace",
+        "posting_policy": "marketplace_origin",
+        "sender_whatsapp_number": sender_whatsapp,
+        "sender_whatsapp_label": sender_label if sender_whatsapp else None,
+        "sender_contact_ready": bool(sender_whatsapp),
+        "acknowledgement_enabled": False,
+        "acknowledgement_label": None,
+        "acknowledgement_summary": {"acknowledged": 0, "own_acknowledged": False},
+        "availability_enabled": False,
+        "availability_summary": {
+            "yes": 0,
+            "maybe": 0,
+            "no": 0,
+            "total": 0,
+            "planning_ready": False,
+            "own_response": None,
+        },
+        "image_url": image_url,
+        "video_url": video_url,
+        "public_qr_enabled": False,
+        "public_code": None,
+        "public_path": None,
+        "action_url": f"/app/marketplace?clan_id={clan_id}&broadcast_id={int(row.id)}"
+        if clan_id
+        else "/app/marketplace",
+        "board_hint": (
+            "Marketplace announcement surfaced on the shared Community Bulletin. "
+            "Trade details and replies stay in Marketplace."
+        ),
+        "viewer_user_id": int(viewer_user_id or 0) or None,
+    }
+
+
+def _notice_board_marketplace_broadcast_rows(
+    db: Session,
+    *,
+    clan_id: int,
+    limit: int,
+) -> list[MarketplaceBroadcast]:
+    return (
+        db.query(MarketplaceBroadcast)
+        .filter(MarketplaceBroadcast.clan_id == int(clan_id))
+        .order_by(MarketplaceBroadcast.created_at.desc(), MarketplaceBroadcast.id.desc())
+        .limit(max(NOTICE_BOARD_MARKETPLACE_BROADCAST_LIMIT, int(limit) * 8))
+        .all()
+    )
 
 def _notice_ack_summary(
     db: Session,
@@ -1408,6 +1508,11 @@ def list_notices(
         if visible_domain_map
         else []
     )
+    marketplace_broadcast_rows = _notice_board_marketplace_broadcast_rows(
+        db,
+        clan_id=int(clan_id),
+        limit=int(limit),
+    )
 
     archived_notice_count = 0
     notices: list[dict[str, Any]] = []
@@ -1436,6 +1541,18 @@ def list_notices(
             continue
         item = _central_domain_notice_payload(row, domain, db=db, viewer_user_id=int(current_user.id))
         if _notice_is_expired(meta, created_at=getattr(row, "created_at", None)):
+            archived_notice_count += 1
+            add_previous(item)
+            continue
+        notices.append(item)
+
+    for row in marketplace_broadcast_rows:
+        item = _marketplace_broadcast_to_notice(
+            db,
+            row,
+            viewer_user_id=int(current_user.id),
+        )
+        if bool(item.get("is_archived")):
             archived_notice_count += 1
             add_previous(item)
             continue

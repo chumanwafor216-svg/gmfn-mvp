@@ -1,3 +1,12 @@
+## 2026-09-08 - Community Bulletin surfaces marketplace broadcasts centrally
+
+- Status: Local implementation complete and verified; commit/push/deploy in this slice.
+- Owner direction: keep one central Community Home Bulletin/announcement board. Marketplace-origin announcements may be created in Marketplace, but the member-facing screen should still surface them on Community Home instead of creating another bulletin engine.
+- Backend route affected: `GET /community-notices` now includes active `MarketplaceBroadcast` rows for the selected `clan_id` as `marketplace_broadcast` notice items, sorted with ordinary Community notices, Community Domain notices, and meeting notices. Expired marketplace broadcasts move into `previous_announcements` rather than staying on the main board.
+- Frontend route affected: `/app/community` labels those items as `Marketplace`, keeps source/shop/community metadata in the source pill, and can show the broadcast image in the small bulletin icon slot when one exists.
+- Boundary: marketplace broadcast acknowledgement/roll-call is intentionally not enabled in this pass because the existing acknowledgement endpoint is TrustEvent notice-based. Marketplace contact/details still route back to Marketplace context.
+- Verification passed: `python -m py_compile app\api\routes\community_notices.py tests\test_community_notices.py`; `python -m pytest -q tests\test_community_notices.py` -> 22 passed; `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:community-home-phone-buttons`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`.
+- Devil truth: this unifies the visible Community Home feed for marketplace broadcasts. It does not yet turn every product/listing record itself into a bulletin item unless that listing creates a marketplace broadcast/repost record.
 ## 2026-09-08 - Community Bulletin optional availability poll on normal notices
 
 - Status: Local implementation complete and verified; commit/push/deploy in this slice.
