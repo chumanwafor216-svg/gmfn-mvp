@@ -3361,9 +3361,9 @@ export default function CommunityHomePage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: noticeItem?.sender_whatsapp_number
-              ? "minmax(0, 1fr) minmax(0, 1fr)"
-              : "minmax(0, 1fr)",
+            gridTemplateColumns: isCompact || !noticeItem?.sender_whatsapp_number
+              ? "minmax(0, 1fr)"
+              : "minmax(0, 1fr) minmax(0, 1fr)",
             gap: 10,
           }}
         >
