@@ -10,13 +10,13 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 36;
+const expectedStableButtonTemplateCount = 37;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 4;
 const expectedSpotlightGuidedActionCount = 5;
 const expectedGroupedLaneRowCount = 22;
-const expectedExpandedRouteLocalActionTemplates = 46;
+const expectedExpandedRouteLocalActionTemplates = 47;
 const expectedMobileShellBreakdown = {
   top: 2,
   drawer: 25,
@@ -305,7 +305,7 @@ assertContains(
   "Community Home bulletin acknowledgement must use a visible thumb mark and clear acknowledge language instead of a shield-style security icon."
 );
 assertContains(
-  /debugId=\{`community-home\.bulletin\.reactions\.\$\{noticeKey\}`\}[\s\S]*?Reactions[\s\S]*?data-debug-id="community-home\.bulletin\.reactions-panel"[\s\S]*?debugId=\{`community-home\.bulletin\.roll-call\.\$\{noticeKey\}`\}[\s\S]*?Roll call/,
+  /debugId=\{`community-home\.bulletin\.reactions\.\$\{noticeKey\}`\}[\s\S]*?Reactions[\s\S]*?data-debug-id="community-home\.bulletin\.reactions-panel"[\s\S]*?debugId=\{`community-home\.bulletin\.public-qr\.\$\{noticeKey\}`\}[\s\S]*?Open QR link[\s\S]*?debugId=\{`community-home\.bulletin\.roll-call\.\$\{noticeKey\}`\}[\s\S]*?Roll call/,
   "Community Home live bulletin must decongest member actions behind one Reactions panel and expose admin roll call from that panel."
 );
 assertContains(

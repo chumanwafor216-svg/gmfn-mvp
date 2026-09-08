@@ -1,3 +1,10 @@
+## 2026-09-08 - Community Bulletin opens QR link from Reactions
+
+- Status: Local frontend implementation complete and verified; local commit in this slice, not pushed unless the owner asks to deploy this batch.
+- Owner trigger: after ordinary public QR storage was added, Community Home still only showed `QR ready`, so the QR/full-message route existed but was not practically surfaced where members/admins work.
+- Frontend route affected: `/app/community` now shows `Open QR link` inside the expanded Bulletin Reactions panel when the selected announcement has `public_path` or `public_code`.
+- Boundary: this opens the existing public-safe `/community-notices/:publicCode` page. It does not create a new QR download/print designer and it does not expose private roll-call/contact data.
+- Verification passed: `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:community-home-phone-buttons`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`.
 ## 2026-09-08 - Community Bulletin full notice and ordinary public QR
 
 - Status: Local backend/frontend implementation complete and verified; commit/push/deploy in this slice.

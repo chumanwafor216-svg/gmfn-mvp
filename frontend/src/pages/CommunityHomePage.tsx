@@ -1600,6 +1600,14 @@ function isMarketplaceNotice(item: CommunityNoticeItem | null | undefined): bool
   return Boolean(source === "marketplace_broadcast" || scope === "marketplace" || kind.includes("marketplace"));
 }
 
+function communityNoticePublicPath(item: CommunityNoticeItem | null | undefined): string {
+  const storedPath = firstTruthy(item?.public_path);
+  if (storedPath) return storedPath;
+
+  const publicCode = firstTruthy(item?.public_code);
+  return publicCode ? `/community-notices/${encodeURIComponent(publicCode)}` : "";
+}
+
 function noticeKindLabel(item: CommunityNoticeItem | null | undefined): string {
   if (isMeetingNotice(item)) return "Meeting planning";
   if (isMarketplaceNotice(item)) return "Marketplace";
@@ -3183,6 +3191,22 @@ export default function CommunityHomePage() {
     showNotice("success", "WhatsApp opened for this announcement sender.");
   }
 
+  function openNoticePublicQr(
+    event: React.SyntheticEvent<HTMLElement>,
+    noticeItem: CommunityNoticeItem
+  ) {
+    consumeCommunityButtonEvent(event);
+    const publicPath = communityNoticePublicPath(noticeItem);
+
+    if (!publicPath) {
+      showNotice("error", "This announcement does not have a public QR link yet.");
+      return;
+    }
+
+    preloadRouteForPath(publicPath);
+    navigateWithOrigin(navigate, publicPath, location);
+  }
+
   async function recordNoticeAcknowledgement(
     event: React.SyntheticEvent<HTMLElement>,
     noticeItem: CommunityNoticeItem
@@ -3806,6 +3830,23 @@ export default function CommunityHomePage() {
               ) : null}
             </div>
             {renderMeetingInterestShortcut(noticeItem)}
+            {communityNoticePublicPath(noticeItem) ? (
+              <StableButton
+                type="button"
+                debugId={`community-home.bulletin.public-qr.${noticeKey}`}
+                onClick={(event) => openNoticePublicQr(event, noticeItem)}
+                style={{
+                  ...communityActionStyle("soft"),
+                  minHeight: 42,
+                  width: "100%",
+                  borderRadius: 13,
+                  fontSize: 13,
+                  boxShadow: "none",
+                }}
+              >
+                Open QR link
+              </StableButton>
+            ) : null}
             {canOpenRollCall ? (
               <StableButton
                 type="button"
