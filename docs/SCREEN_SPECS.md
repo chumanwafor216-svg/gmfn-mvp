@@ -464,7 +464,7 @@ Must show:
 - Community Domain identity hero
 - domain name/code, display name, owner, status, verification state, and renewal
   state as compact facts
-- for an owner with no linked domain, a selector that first shows only `Set up the institution` plus a collapsed `Other paths` drawer
+- for an owner with no linked domain, a Community Domain dashboard start that first shows `Set up the institution`; name reservation, local community anchor, payment, and verification must wait inside that stage, not before it
 - one command surface that first shows only `Set up the institution`
 - after that gateway opens, four governance stages: Set up the institution,
   Organise people, Run the community, and Advanced governance
@@ -507,7 +507,7 @@ Must show:
 Rules:
 - This page is the institutional operating surface. It must not replace
   CommunityHomePage, which remains the lightweight selected-community home.
-- The first screen must not expose every operating area at once. Follow the
+- The first screen must not expose every operating area at once. For no-domain entry, do not show a separate path selector before the dashboard start. Follow the
   guided governance-folder rule: one identity hero, one command gateway, four
   stages after the gateway opens, one selected stage, and one opened work area
   at a time.

@@ -153,7 +153,7 @@ assertContains(
 
 assertContains(
   "public/sw.js",
-  /const CACHE_VERSION = "gsn-pwa-shell-v16"[\s\S]*?"\/cover\?source=pwa"[\s\S]*?"\/gsn-app-icon-ios-180-v14\.png"[\s\S]*?"\/gsn-app-icon-192-v14\.png"[\s\S]*?"\/gsn-app-icon-512-v14\.png"[\s\S]*?if \(url\.pathname\.startsWith\("\/api"\)\) return;[\s\S]*?if \(url\.pathname\.startsWith\("\/uploads"\)\) return;[\s\S]*?request\.mode === "navigate"[\s\S]*?url\.pathname === "\/welcome"[\s\S]*?entryFrom !== "cover"[\s\S]*?Response\.redirect\(target\.toString\(\), 302\)/,
+  /const CACHE_VERSION = "gsn-pwa-shell-v17"[\s\S]*?"\/cover\?source=pwa"[\s\S]*?"\/gsn-app-icon-ios-180-v14\.png"[\s\S]*?"\/gsn-app-icon-192-v14\.png"[\s\S]*?"\/gsn-app-icon-512-v14\.png"[\s\S]*?if \(url\.pathname\.startsWith\("\/api"\)\) return;[\s\S]*?if \(url\.pathname\.startsWith\("\/uploads"\)\) return;[\s\S]*?request\.mode === "navigate"[\s\S]*?url\.pathname === "\/welcome"[\s\S]*?entryFrom !== "cover"[\s\S]*?Response\.redirect\(target\.toString\(\), 302\)/,
   "The GSN service worker must support app-shell install without caching private API or uploaded user data."
 );
 

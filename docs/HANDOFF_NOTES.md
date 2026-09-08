@@ -1,3 +1,10 @@
+## 2026-09-08 - Community Domain no-domain dashboard start cleanup
+
+- Status: Frontend/spec/audit fix complete; owner explicitly requested finish-up and deploy, so this slice includes the publish cache bump to `gsn-pwa-shell-v17` and should be pushed/deployed after verification.
+- Owner trigger: Owner clarified from another phone recording that even the `Other paths`/setup chooser before the real Community Domain dashboard still feels like duplication. The product should start at `Set up the institution`; reserve-name, local anchor, payment, and verification should wait inside that stage.
+- Frontend route affected: `/app/community-domain` with no linked domains now opens as a Community Domain dashboard start, not a chooser. The visible first stage is `Set up the institution` with one `Start institution setup` action. The next stages `Organise people`, `Run the community`, and `Advanced governance` are shown as locked next stages. The free Committee/find-domain/my-domains/settings alternatives no longer appear before setup on the no-domain entry; existing-domain accounts still keep secondary `Other paths` below the owned-domain list.
+- Specs/audits affected: `docs/SCREEN_SPECS.md`, `audit-community-domain-product-contracts.mjs`, and `audit-community-domain-mobile-visual.mjs` now reject a separate no-domain selector/Other paths layer before the setup dashboard start.
+- Devil truth: This is a UX-order fix. The first real draft still has to be created through the existing provisioning/name-check route because the backend needs a Community Domain record before the full domain-specific operating dashboard can exist.
 ## 2026-09-08 - Community Domain setup-first entry repair
 
 - Status: Frontend/spec/audit fix committed as `d2b7da33`, pushed to `main`, and deployed to gmfn-frontend on 2026-09-08; follow-up cache publish moved the service worker to `gsn-pwa-shell-v16`.

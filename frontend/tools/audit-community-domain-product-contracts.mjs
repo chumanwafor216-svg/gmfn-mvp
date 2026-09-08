@@ -2298,15 +2298,15 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/DomainSelectorPanel.tsx",
-  /lookupCommunityDomainByName[\s\S]*community-domain-dashboard\.selector\.edit-existing-focus[\s\S]*setSelectorMode\("edit"\)[\s\S]*community-domain-dashboard\.selector\.find-edit-domain[\s\S]*Find domain[\s\S]*community-domain-dashboard\.selector\.open-edit-domain[\s\S]*Open edit path[\s\S]*community-domain-dashboard\.selector\.back-to-choice/,
-  "Lazy Community Domain selector panel must support public-safe domain lookup for edit only after the user chooses the edit path.",
+  /lookupCommunityDomainByName[\s\S]*community-domain-dashboard\.selector\.find-edit-domain[\s\S]*Find domain[\s\S]*community-domain-dashboard\.selector\.open-edit-domain[\s\S]*Open edit path[\s\S]*community-domain-dashboard\.selector\.back-to-choice[\s\S]*community-domain-dashboard\.selector\.edit-existing-compact[\s\S]*setSelectorMode\("edit"\)/,
+  "Lazy Community Domain selector panel must support public-safe domain lookup from the owned-domain secondary edit path only after the user chooses it.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/DomainSelectorPanel.tsx",
-  /openMyDomains[\s\S]*No Community Domains are linked[\s\S]*Set up the institution[\s\S]*community-domain-dashboard\.selector\.setup-new[\s\S]*Set up the institution[\s\S]*community-domain-dashboard\.selector\.other-paths-toggle[\s\S]*Other paths[\s\S]*community-domain-dashboard\.selector\.free-committee[\s\S]*Free Committee[\s\S]*community-domain-dashboard\.selector\.my-domains[\s\S]*Your Community Domains[\s\S]*Choose a Domain[\s\S]*draftDomain \? "Continue setup" : "Open domain"/,
-  "Lazy Community Domain selector panel must start with institution setup, keep alternate paths collapsed, preserve empty-state recovery, and support owned-domain opening.",
+  /openMyDomains[\s\S]*No Community Domains are linked[\s\S]*Community Domain dashboard[\s\S]*Set up the institution[\s\S]*Name reservation, the local community anchor, payment, and[\s\S]*community-domain-dashboard\.selector\.setup-new[\s\S]*Start institution setup[\s\S]*Next stages[\s\S]*2\. Organise people[\s\S]*3\. Run the community[\s\S]*4\. Advanced governance[\s\S]*Your Community Domains[\s\S]*Choose a Domain[\s\S]*draftDomain \? "Continue setup" : "Open domain"/,
+  "Lazy Community Domain selector panel must make the no-domain entry a Community Domain dashboard start, with reservation/payment inside institution setup and owned-domain opening preserved.",
   { frontend: true }
 );
 
@@ -2318,8 +2318,8 @@ assertContains(
 );
 assertContains(
   "src/pages/communityDomainDashboard/DomainSelectorPanel.tsx",
-  /const quickPathRow[\s\S]*community-domain-dashboard\.selector\.setup-new-compact[\s\S]*Set up another institution[\s\S]*community-domain-dashboard\.selector\.edit-existing-compact[\s\S]*Find existing domain/,
-  "Lazy Community Domain selector panel must keep compact alternate paths behind the owned-domain list instead of opening setup and edit panels by default.",
+  /const quickPathRow[\s\S]*community-domain-dashboard\.selector\.setup-new-compact[\s\S]*Start another institution setup[\s\S]*community-domain-dashboard\.selector\.edit-existing-compact[\s\S]*Find existing domain/,
+  "Lazy Community Domain selector panel must keep compact alternate paths only behind the owned-domain list instead of opening setup and edit panels before the dashboard start.",
   { frontend: true }
 );
 
@@ -2854,8 +2854,10 @@ assertContains(
       String.raw`community-domain-purchase\.other-paths`,
       String.raw`domainListScenario = "empty"`,
       String.raw`community-domain-dashboard\.selector\.setup-new`,
-      String.raw`community-domain-dashboard\.selector\.find-edit-domain`,
-      String.raw`community-domain-dashboard\.selector\.back-to-choice`,
+      String.raw`Start institution setup`,
+      String.raw`Next stages`,
+      String.raw`2\. Organise people`,
+      String.raw`Community Domain no-domain dashboard still exposes an Other paths layer before setup`,
       String.raw`dashboardScenario = "draft"`,
       String.raw`community-domain-dashboard\.command-guidance-toggle`,
       String.raw`community-domain-dashboard\.institution-gateway`,
@@ -3073,7 +3075,7 @@ assertContains(
       String.raw`lowContrast`,
     ].join("[\\s\\S]*")
   ),
-  "Community Domain mobile visual audit must exercise purchase first-job compaction, selector one-path state, active-domain summary grouping, focused identity/service/structure/member views, staged Governance record capture, live attendance QR capture, Recent outcome view capture, dead-block regression, overflow, and contrast checks.",
+  "Community Domain mobile visual audit must exercise purchase first-job compaction, no-domain dashboard start, active-domain summary grouping, focused identity/service/structure/member views, staged Governance record capture, live attendance QR capture, Recent outcome view capture, dead-block regression, overflow, and contrast checks.",
   { frontend: true }
 );
 

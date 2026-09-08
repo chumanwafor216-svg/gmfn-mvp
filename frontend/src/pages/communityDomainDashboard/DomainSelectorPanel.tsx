@@ -311,7 +311,6 @@ export default function CommunityDomainSelectorPanel({
   const [editLookupMessage, setEditLookupMessage] = useState("");
   const [editLookupBusy, setEditLookupBusy] = useState(false);
   const [selectorNotice, setSelectorNotice] = useState("");
-  const [startOtherPathsOpen, setStartOtherPathsOpen] = useState(false);
 
   useEffect(() => {
     setSelectorMode((current) => {
@@ -387,7 +386,7 @@ export default function CommunityDomainSelectorPanel({
             textTransform: "uppercase",
           }}
         >
-          GSN / Community Domain
+          GSN / Community Domain dashboard
         </div>
         <h2 style={{ margin: 0, fontSize: 34, lineHeight: 1.03, fontWeight: 950 }}>
           Set up the institution
@@ -398,16 +397,16 @@ export default function CommunityDomainSelectorPanel({
             fontSize: 14,
             fontWeight: 750,
             lineHeight: 1.5,
-            maxWidth: 640,
+            maxWidth: 660,
           }}
         >
-          Start with the institution. GSN checks the name first, creates the local
-          community anchor if needed, then continues into the setup stages.
+          Start here. Name reservation, the local community anchor, payment, and
+          verification all wait inside institution setup.
         </div>
       </div>
 
       <div style={pathGroup()}>
-        <div style={darkLabel()}>Start here</div>
+        <div style={darkLabel()}>1. Current stage</div>
         <StableCtaLink
           to="/community-domain/purchase"
           kind="secondary"
@@ -416,107 +415,44 @@ export default function CommunityDomainSelectorPanel({
           style={pathActionStyle()}
         >
           <PathIcon icon="finance-bank-building" accent="green" />
-          <span style={pathText()}>Set up the institution</span>
+          <span style={pathText()}>Start institution setup</span>
           <span aria-hidden="true" style={arrowStyle("#57C76D")}>
             &gt;
           </span>
         </StableCtaLink>
+        <div style={{ color: "rgba(255,255,255,0.72)", fontSize: 13, lineHeight: 1.5 }}>
+          First: reserve the domain name, connect or create the local GSN
+          community anchor, then record the institution identity.
+        </div>
       </div>
 
       <div style={pathGroup()}>
-        <StableButton
-          type="button"
-          kind="secondary"
-          stableHeight={64}
-          debugId="community-domain-dashboard.selector.other-paths-toggle"
-          aria-expanded={startOtherPathsOpen}
-          aria-controls="community-domain-selector-other-paths"
-          style={{ ...pathActionStyle(), gridTemplateColumns: "48px minmax(0, 1fr) 24px" }}
-          onClick={() => {
-            setStartOtherPathsOpen((current) => !current);
-            setSelectorNotice("");
-          }}
-        >
-          <PathIcon icon="records-folder" accent="blue" size={35} />
-          <span style={{ ...pathText(), fontSize: 18 }}>
-            {startOtherPathsOpen ? "Close other paths" : "Other paths"}
-          </span>
-          <span aria-hidden="true" style={arrowStyle("#4D8DF7")}>
-            {startOtherPathsOpen ? "^" : "+"}
-          </span>
-        </StableButton>
-
-        {startOtherPathsOpen ? (
-          <div id="community-domain-selector-other-paths" style={{ display: "grid", gap: 10 }}>
-            <StableCtaLink
-              to="/create"
-              kind="secondary"
-              stableHeight={64}
-              debugId="community-domain-dashboard.selector.free-committee"
-              style={pathActionStyle()}
-            >
-              <PathIcon icon="join-person-plus" accent="gold" size={35} />
-              <span style={{ ...pathText(), fontSize: 17 }}>Free Committee</span>
-              <span aria-hidden="true" style={arrowStyle("#F2C766")}>
-                &gt;
-              </span>
-            </StableCtaLink>
-            <StableButton
-              type="button"
-              kind="secondary"
-              stableHeight={64}
-              debugId="community-domain-dashboard.selector.edit-existing-focus"
-              style={pathActionStyle()}
-              onClick={() => {
-                setSelectorMode("edit");
-                setSelectorNotice("");
-                setEditLookupMessage(
-                  "Enter the Community Domain code below, then tap Find domain."
-                );
-              }}
-            >
-              <PathIcon icon="public-globe" accent="blue" size={35} />
-              <span style={{ ...pathText(), fontSize: 17 }}>Find Domain</span>
-              <span aria-hidden="true" style={arrowStyle("#4D8DF7")}>
-                &gt;
-              </span>
-            </StableButton>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                gap: 10,
-              }}
-            >
-              <StableButton
-                type="button"
-                kind="secondary"
-                stableHeight={60}
-                debugId="community-domain-dashboard.selector.my-domains"
-                style={quickActionStyle()}
-                onClick={openMyDomains}
-              >
-                <PathIcon icon="records-folder" accent="blue" size={32} />
-                <span style={{ ...pathText(), fontSize: 16 }}>My Domains</span>
-              </StableButton>
-              <StableCtaLink
-                to={APP_ROUTES.SETTINGS}
-                kind="secondary"
-                stableHeight={60}
-                debugId="community-domain-dashboard.selector.settings"
-                style={quickActionStyle()}
-              >
-                <PathIcon icon="identity-card" accent="slate" size={32} />
-                <span style={{ ...pathText(), fontSize: 16 }}>Settings</span>
-              </StableCtaLink>
-            </div>
-            {selectorNotice ? (
-              <div role="status" style={{ color: "rgba(255,255,255,0.76)", fontSize: 13 }}>
-                {selectorNotice}
-              </div>
-            ) : null}
+        <div style={darkLabel()}>Next stages</div>
+        {[
+          "2. Organise people",
+          "3. Run the community",
+          "4. Advanced governance",
+        ].map((label) => (
+          <div
+            key={label}
+            style={{
+              minHeight: 52,
+              borderRadius: 16,
+              border: "1px solid rgba(220,231,243,0.08)",
+              background: "rgba(255,255,255,0.035)",
+              color: "rgba(255,255,255,0.82)",
+              display: "grid",
+              alignItems: "center",
+              gap: 2,
+              padding: "9px 12px",
+            }}
+          >
+            <span style={{ fontSize: 16, fontWeight: 950 }}>{label}</span>
+            <span style={{ fontSize: 12, fontWeight: 800, color: "rgba(255,255,255,0.58)" }}>
+              Opens after institution setup starts.
+            </span>
           </div>
-        ) : null}
+        ))}
       </div>
     </div>
   );
@@ -606,7 +542,7 @@ export default function CommunityDomainSelectorPanel({
         kind="secondary"
         debugId="community-domain-dashboard.selector.setup-new-compact"
       >
-        Set up another institution
+        Start another institution setup
       </StableCtaLink>
       <StableButton
         type="button"

@@ -1188,47 +1188,45 @@ try {
     timeout: 10000,
   });
   audit = await page.evaluate(pageAudit);
+  const selectorText = normalized(audit.bodyText);
   if (!(await isDebugVisible(page, "community-domain-dashboard.selector.setup-new"))) {
-    findings.push("Community Domain selector empty state does not expose the institution setup path.");
+    findings.push("Community Domain no-domain dashboard does not expose the institution setup action.");
   }
-  if (!(await isDebugVisible(page, "community-domain-dashboard.selector.other-paths-toggle"))) {
-    findings.push("Community Domain selector empty state does not expose the collapsed Other paths control.");
+  for (const label of [
+    "Community Domain dashboard",
+    "Start institution setup",
+    "Next stages",
+    "2. Organise people",
+    "3. Run the community",
+    "4. Advanced governance",
+  ]) {
+    if (!selectorText.includes(label)) {
+      findings.push(`Community Domain no-domain dashboard is missing ${label}.`);
+    }
+  }
+  if (await isDebugVisible(page, "community-domain-dashboard.selector.other-paths-toggle")) {
+    findings.push("Community Domain no-domain dashboard still exposes an Other paths layer before setup.");
   }
   if (await isDebugVisible(page, "community-domain-dashboard.selector.free-committee")) {
-    findings.push("Community Domain selector exposes the free Committee path before Other paths is opened.");
+    findings.push("Community Domain no-domain dashboard still exposes the free Committee path before setup.");
   }
   if (await isDebugVisible(page, "community-domain-dashboard.selector.my-domains")) {
-    findings.push("Community Domain selector exposes My Domains before Other paths is opened.");
+    findings.push("Community Domain no-domain dashboard still exposes My Domains before setup.");
   }
   const selectorFirstAction = await firstViewportActionFinding(
     page,
     "community-domain-dashboard.selector.setup-new",
-    "Community Domain selector"
+    "Community Domain no-domain dashboard"
   );
   if (selectorFirstAction) findings.push(selectorFirstAction);
   if (await isDebugVisible(page, "community-domain-dashboard.selector.find-edit-domain")) {
-    findings.push("Community Domain selector exposes edit lookup before the user chooses edit.");
-  }
-  await clickByDebugId(page, "community-domain-dashboard.selector.other-paths-toggle");
-  if (!(await isDebugVisible(page, "community-domain-dashboard.selector.free-committee"))) {
-    findings.push("Community Domain selector Other paths drawer does not reveal the free Committee path.");
-  }
-  if (!(await isDebugVisible(page, "community-domain-dashboard.selector.my-domains"))) {
-    findings.push("Community Domain selector Other paths drawer does not reveal My Domains.");
+    findings.push("Community Domain no-domain dashboard exposes edit lookup before the user chooses edit.");
   }
   if (await isDebugVisible(page, "community-domain-dashboard.empty.purchase")) {
-    findings.push("Community Domain selector empty state repeats a second purchase action.");
+    findings.push("Community Domain no-domain dashboard repeats a second purchase action.");
   }
   if (audit.horizontalOverflow || audit.overflow.length) {
-    findings.push(`Community Domain selector mobile overflow: ${JSON.stringify(audit.overflow)}`);
-  }
-  await clickByDebugId(page, "community-domain-dashboard.selector.edit-existing-focus");
-  if (!(await isDebugVisible(page, "community-domain-dashboard.selector.find-edit-domain"))) {
-    findings.push("Community Domain selector edit path does not reveal the domain lookup.");
-  }
-  await clickByDebugId(page, "community-domain-dashboard.selector.back-to-choice");
-  if (await isDebugVisible(page, "community-domain-dashboard.selector.find-edit-domain")) {
-    findings.push("Community Domain selector keeps edit lookup visible after returning to choices.");
+    findings.push(`Community Domain no-domain dashboard mobile overflow: ${JSON.stringify(audit.overflow)}`);
   }
 
   dashboardScenario = "draft";
