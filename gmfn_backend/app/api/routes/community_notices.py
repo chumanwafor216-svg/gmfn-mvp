@@ -1287,6 +1287,7 @@ class CommunityNoticeIn(BaseModel):
     body: str = Field(..., min_length=2, max_length=500)
     expiry_policy: Literal["standard", "urgent", "event", "pinned"] = NOTICE_EXPIRY_STANDARD
     expires_at: Optional[datetime] = None
+    availability_enabled: bool = False
 
     @field_validator("clan_id", mode="before")
     @classmethod
@@ -1553,6 +1554,7 @@ def create_notice(
                 "comments_enabled": False,
                 "reactions_enabled": False,
                 "thread_enabled": False,
+                "availability_enabled": bool(payload.availability_enabled),
                 "community_records_policy": records_policy,
                 **poster_contact,
             },
@@ -1604,6 +1606,7 @@ def create_notice(
             "comments_enabled": False,
             "reactions_enabled": False,
             "thread_enabled": False,
+            "availability_enabled": bool(payload.availability_enabled),
             "trust_delta": "0.00",
             "community_records_policy": records_policy,
             **poster_contact,
@@ -1742,6 +1745,7 @@ def decide_notice_review_submission(
                 "comments_enabled": False,
                 "reactions_enabled": False,
                 "thread_enabled": False,
+                "availability_enabled": bool(meta.get("availability_enabled")),
                 "trust_delta": "0.00",
                 "community_records_policy": records_policy,
                 **poster_contact,

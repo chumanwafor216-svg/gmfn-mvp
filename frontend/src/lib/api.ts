@@ -1409,6 +1409,7 @@ export async function createCommunityNotice(payload: {
   body: string;
   expiry_policy?: "standard" | "urgent" | "event" | "pinned";
   expires_at?: string;
+  availability_enabled?: boolean;
 }): Promise<any> {
   return httpJson("/community-notices", "POST", payload);
 }

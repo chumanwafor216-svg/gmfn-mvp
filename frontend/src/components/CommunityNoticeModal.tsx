@@ -10,7 +10,7 @@ type Props = {
   onClose: () => void;
   onSubmit: (
     body: string,
-    options?: { expiry_policy?: NoticeExpiryPolicy; expires_at?: string; public_qr_enabled?: boolean }
+    options?: { expiry_policy?: NoticeExpiryPolicy; expires_at?: string; public_qr_enabled?: boolean; availability_enabled?: boolean }
   ) => Promise<void> | void;
 };
 
@@ -33,6 +33,7 @@ export default function CommunityNoticeModal({
   const [expiryPolicy, setExpiryPolicy] = useState<NoticeExpiryPolicy>("standard");
   const [eventExpiresAt, setEventExpiresAt] = useState("");
   const [publicQrEnabled, setPublicQrEnabled] = useState(false);
+  const [availabilityEnabled, setAvailabilityEnabled] = useState(false);
   const words = useMemo(() => countWords(body), [body]);
   const eventExpiryMissing = expiryPolicy === "event" && !eventExpiresAt;
   const blocked = words > 50 || !body.trim() || eventExpiryMissing || busy;
@@ -49,11 +50,13 @@ export default function CommunityNoticeModal({
           ? new Date(eventExpiresAt).toISOString()
           : undefined,
       public_qr_enabled: publicQrEnabled,
+      availability_enabled: availabilityEnabled,
     });
     setBody("");
     setExpiryPolicy("standard");
     setEventExpiresAt("");
     setPublicQrEnabled(false);
+    setAvailabilityEnabled(false);
   }
 
   return (
@@ -115,15 +118,26 @@ export default function CommunityNoticeModal({
         ) : null}
 
         {!isReviewSubmission ? (
-          <label style={checkboxRowStyle}>
-            <input
-              type="checkbox"
-              checked={publicQrEnabled}
-              onChange={(event) => setPublicQrEnabled(event.target.checked)}
-              disabled={busy}
-            />
-            <span>Create public QR for this message</span>
-          </label>
+          <>
+            <label style={checkboxRowStyle}>
+              <input
+                type="checkbox"
+                checked={availabilityEnabled}
+                onChange={(event) => setAvailabilityEnabled(event.target.checked)}
+                disabled={busy}
+              />
+              <span>Ask members if they are available</span>
+            </label>
+            <label style={checkboxRowStyle}>
+              <input
+                type="checkbox"
+                checked={publicQrEnabled}
+                onChange={(event) => setPublicQrEnabled(event.target.checked)}
+                disabled={busy}
+              />
+              <span>Create public QR for this message</span>
+            </label>
+          </>
         ) : null}
 
         <div style={metaRowStyle}>
@@ -145,7 +159,7 @@ export default function CommunityNoticeModal({
               : "Pinned"}
           </span>
           <span style={chipStyle}>No comments</span>
-          <span style={chipStyle}>No reactions</span>
+          <span style={chipStyle}>{availabilityEnabled ? "Availability poll" : "No attendance poll"}</span>
         </div>
 
         <div style={actionsStyle}>

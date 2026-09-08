@@ -3672,6 +3672,7 @@ export default function CommunityHomePage() {
     options?: {
       expiry_policy?: "standard" | "urgent" | "event" | "pinned";
       expires_at?: string;
+      availability_enabled?: boolean;
     }
   ) {
     const clanId = getClanId(selectedClan);

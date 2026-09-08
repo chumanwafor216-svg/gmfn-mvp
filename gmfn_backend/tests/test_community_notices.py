@@ -326,6 +326,26 @@ def test_event_notice_availability_response_updates_live_bulletin(client, overri
     )
     assert blocked_res.status_code == 409, blocked_res.text
 
+    poll_res = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Choir practice needs quick availability response.",
+            "availability_enabled": True,
+        },
+    )
+    assert poll_res.status_code == 200, poll_res.text
+    poll_notice = poll_res.json()["notice"]
+    assert poll_notice["availability_enabled"] is True
+
+    maybe_res = client.post(
+        f"/community-notices/{poll_notice['event_id']}/availability",
+        json={"clan_id": 1, "response": "maybe"},
+    )
+    assert maybe_res.status_code == 200, maybe_res.text
+    assert maybe_res.json()["availability_summary"]["maybe"] == 1
+
+
 
 def test_notice_acknowledgement_roll_call_is_admin_only(client, override_current_user):
     _seed_notice_community()

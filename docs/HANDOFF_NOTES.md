@@ -1,3 +1,11 @@
+## 2026-09-08 - Community Bulletin optional availability poll on normal notices
+
+- Status: Local implementation complete and verified; commit/push/deploy in this slice.
+- Owner trigger: Community Home Bulletin was still not showing `Available`, `Not sure`, and `Not available` for a normal announcement unless the notice had been saved as an event-date notice.
+- Frontend route affected: `/app/community` via `CommunityNoticeModal` now shows an explicit `Ask members if they are available` checkbox in the Post Notice flow. When checked, the central Community Bulletin reaction panel shows the three availability choices for that notice.
+- Backend route affected: `POST /community-notices` now accepts and stores `availability_enabled`; review-approved community records preserve the same flag.
+- Verification passed: `python -m py_compile app\api\routes\community_notices.py tests\test_community_notices.py`; `python -m pytest -q tests\test_community_notices.py` -> 21 passed; `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:community-home-phone-buttons`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`.
+- Devil truth: this fixes the availability-response option on the central Bulletin. The existing ordinary Community Notice `Create public QR for this message` checkbox is still not fully backed by ordinary `/community-notices` storage; Community Domain notice QR support is separate.
 ## 2026-09-08 - Community Bulletin compact phone date and full notice reveal
 
 - Status: Local implementation complete and verified; commit/push/deploy in this slice.
