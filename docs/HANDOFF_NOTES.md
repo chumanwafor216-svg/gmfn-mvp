@@ -1,3 +1,11 @@
+## 2026-09-08 - Community Bulletin phone centering and event availability
+
+- Status: Local implementation complete and verified; commit/push/deploy in this slice.
+- Owner trigger: phone screenshot showed the main announcement title pushed to the side by the date/source arrangement, and Reactions did not show `Available`, `Not sure`, or `Not available` for ordinary date-based announcements.
+- Frontend route affected: `/app/community` in `frontend/src/pages/CommunityHomePage.tsx` now treats the live bulletin as one centered column on compact phone width, keeps the source/community label in a secondary pill, and keeps the main notice title centered and dominant.
+- Reactions behavior: the existing `Available`, `Not sure`, and `Not available` buttons now render for meeting notices and for event-date notices that expose `availability_enabled`; those choices still stay inside the single Reactions panel.
+- Backend route affected: `POST /community-notices/{notice_event_id}/availability` records a member's availability response for active event-date Community Notice Board items. The list endpoint returns `availability_enabled` and `availability_summary` so Community Home can show the counts without requiring a separate meeting engine.
+- Devil truth: this intentionally does not turn every ordinary notice into an attendance register. Only event/date notices, or notices explicitly marked availability-enabled, get `Available / Not sure / Not available`; standard announcements keep only acknowledge/contact/roll-call.
 ## 2026-09-08 - Community Bulletin Reactions and admin roll call
 
 - Status: Local implementation complete and verified. Commit/push/deploy pending in this slice.

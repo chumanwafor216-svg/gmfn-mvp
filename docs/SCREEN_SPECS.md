@@ -382,7 +382,7 @@ Must show:
   - ordinary Community notices and Community Domain official notices keep their separate posting/governance rules, but read into this shared board instead of becoming duplicate announcement engines
   - expired announcements leave the live board and remain visible in a compact previous-announcements trail capped at 10 items
   - if no live announcement exists, show `No new announcement.`
-  - acknowledgement, contact announcer, and meeting availability responses live inside the Reactions panel instead of competing as separate first-surface buttons
+  - acknowledgement, contact announcer, and availability responses live inside the Reactions panel instead of competing as separate first-surface buttons; meeting notices use the meeting response record, while date/event announcements use the notice-level availability record
   - officers/admins authorized by community governance can open a Reactions roll call for a notice to see who acknowledged and who has not; ordinary members must never see that member-by-member roll call
   - member records that require admin approval use Submit, not Post
   - submitted member records stay hidden from the active board until an officer approves them

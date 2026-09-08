@@ -93,6 +93,14 @@ assertContains(
 );
 
 assertContains(
+  /function announcementLiveNoticeGridStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?gridTemplateColumns: isCompact \? "minmax\(0, 1fr\)" : "118px minmax\(0, 1fr\)"[\s\S]*?justifyItems: isCompact \? "center" : "stretch"/,
+  "Community Home live bulletin must use a one-column centered phone layout so the main announcement is not pushed sideways."
+);
+assertContains(
+  /function renderCommunityBulletinPrimaryNotice[\s\S]*?width: isCompact \? "min\(100%, 270px\)" : undefined[\s\S]*?textAlign: isCompact \? "center" : "left"/,
+  "Community Home live bulletin must center the source pill and main notice title on phone."
+);
+assertContains(
   /function communityActionStyle\([\s\S]*?touchAction: "manipulation"[\s\S]*?WebkitTapHighlightColor: "transparent"[\s\S]*?overflowAnchor: "none"[\s\S]*?transform: "none"[\s\S]*?transition: "none"/,
   "Community Home action styles must keep phone tap and movement locks."
 );

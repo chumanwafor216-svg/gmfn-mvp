@@ -37,6 +37,7 @@ COMMUNITY_NOTICE_EVENT = "community.notice.posted"
 COMMUNITY_NOTICE_SUBMISSION_EVENT = "community.notice.submitted"
 COMMUNITY_NOTICE_REVIEW_EVENT = "community.notice.review_decided"
 COMMUNITY_NOTICE_ACK_EVENT = "community.notice.acknowledged"
+COMMUNITY_NOTICE_AVAILABILITY_EVENT = "community.notice.availability_response"
 COMMUNITY_GOVERNANCE_PROFILE_SELECTED_EVENT = "community.governance_profile_selected"
 COMMUNITY_NOTICE_SOURCE = "community_notice_board"
 MAX_NOTICE_WORDS = 50
@@ -622,6 +623,17 @@ def _central_domain_notice_payload(
         if db is not None and clan_id and viewer_user_id
         else {"acknowledged": 0, "own_acknowledged": False}
     )
+    availability_enabled = _notice_availability_enabled(meta)
+    availability_summary = (
+        _notice_availability_summary(
+            db,
+            clan_id=clan_id,
+            notice_event_id=int(event.id),
+            viewer_user_id=int(viewer_user_id or 0),
+        )
+        if availability_enabled and db is not None and clan_id and viewer_user_id
+        else {"yes": 0, "maybe": 0, "no": 0, "total": 0, "planning_ready": False, "own_response": None}
+    )
     return {
         "notice_id": f"TE-{int(event.id)}",
         "event_id": int(event.id),
@@ -652,6 +664,8 @@ def _central_domain_notice_payload(
         "acknowledgement_enabled": True,
         "acknowledgement_label": "I acknowledge",
         "acknowledgement_summary": ack_summary,
+        "availability_enabled": availability_enabled,
+        "availability_summary": availability_summary,
         "public_qr_enabled": public_qr_enabled,
         "public_code": public_code if public_qr_enabled else None,
         "public_path": f"/community-notices/{public_code}" if public_qr_enabled else None,
@@ -714,6 +728,56 @@ def _notice_ack_summary(
     return {
         "acknowledged": len(acknowledged_user_ids),
         "own_acknowledged": int(viewer_user_id) in acknowledged_user_ids,
+    }
+
+
+def _notice_availability_enabled(meta: dict[str, Any]) -> bool:
+    policy = _normalize_notice_expiry_policy(meta.get("expiry_policy"))
+    return bool(meta.get("availability_enabled")) or policy == NOTICE_EXPIRY_EVENT
+
+
+def _notice_availability_summary(
+    db: Session,
+    *,
+    clan_id: int,
+    notice_event_id: int,
+    viewer_user_id: int,
+) -> dict[str, Any]:
+    rows = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.clan_id == int(clan_id),
+            TrustEvent.event_type == COMMUNITY_NOTICE_AVAILABILITY_EVENT,
+            or_(
+                TrustEvent.meta_json.like(f'%"notice_event_id": {int(notice_event_id)}%'),
+                TrustEvent.meta_json.like(f'%"notice_event_id":{int(notice_event_id)}%'),
+            ),
+        )
+        .order_by(TrustEvent.id.asc())
+        .all()
+    )
+    latest_response_by_user_id: dict[int, str] = {}
+    for row in rows:
+        meta = _safe_meta(getattr(row, "meta_json", None))
+        if int(meta.get("notice_event_id") or 0) != int(notice_event_id):
+            continue
+        response = _safe_str(meta.get("response")).lower()
+        if response not in {"yes", "maybe", "no"}:
+            continue
+        user_id = int(getattr(row, "subject_user_id", 0) or 0)
+        if user_id:
+            latest_response_by_user_id[user_id] = response
+
+    yes_count = sum(1 for value in latest_response_by_user_id.values() if value == "yes")
+    maybe_count = sum(1 for value in latest_response_by_user_id.values() if value == "maybe")
+    no_count = sum(1 for value in latest_response_by_user_id.values() if value == "no")
+    return {
+        "yes": yes_count,
+        "maybe": maybe_count,
+        "no": no_count,
+        "total": yes_count + maybe_count + no_count,
+        "planning_ready": bool(yes_count + maybe_count > 0),
+        "own_response": latest_response_by_user_id.get(int(viewer_user_id)),
     }
 
 
@@ -792,6 +856,17 @@ def _event_to_notice(
         if db is not None and clan_id and viewer_user_id
         else {"acknowledged": 0, "own_acknowledged": False}
     )
+    availability_enabled = _notice_availability_enabled(meta)
+    availability_summary = (
+        _notice_availability_summary(
+            db,
+            clan_id=clan_id,
+            notice_event_id=int(event.id),
+            viewer_user_id=int(viewer_user_id or 0),
+        )
+        if availability_enabled and db is not None and clan_id and viewer_user_id
+        else {"yes": 0, "maybe": 0, "no": 0, "total": 0, "planning_ready": False, "own_response": None}
+    )
     return {
         "notice_id": f"TE-{int(event.id)}",
         "event_id": int(event.id),
@@ -815,6 +890,8 @@ def _event_to_notice(
         "acknowledgement_enabled": True,
         "acknowledgement_label": "I acknowledge",
         "acknowledgement_summary": ack_summary,
+        "availability_enabled": availability_enabled,
+        "availability_summary": availability_summary,
         "review_status": _safe_str(meta.get("review_status"), "published"),
         "approved_submission_event_id": meta.get("approved_submission_event_id"),
     }
@@ -1252,6 +1329,21 @@ class CommunityNoticeIn(BaseModel):
 
 class CommunityNoticeSettingsIn(BaseModel):
     posting_policy: Literal["members", "admins"]
+
+
+class CommunityNoticeAvailabilityIn(BaseModel):
+    clan_id: int = Field(..., ge=1)
+    response: Literal["yes", "maybe", "no"]
+
+    @field_validator("clan_id", mode="before")
+    @classmethod
+    def _reject_bool_ids(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "clan_id")
+
+    @field_validator("response", mode="before")
+    @classmethod
+    def _reject_non_text_response(cls, value: Any) -> Any:
+        return _reject_non_text_value(value, "response")
 
 
 class CommunityNoticeAcknowledgementIn(BaseModel):
@@ -1855,6 +1947,69 @@ def acknowledge_notice(
         "acknowledgement_summary": summary,
         "community_records_policy": records_policy,
         "message": "Announcement acknowledged.",
+    }
+
+
+@router.post("/{notice_event_id}/availability")
+def record_notice_availability(
+    notice_event_id: int,
+    payload: CommunityNoticeAvailabilityIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_clan_member(db, clan_id=int(payload.clan_id), current_user=current_user)
+    records_policy = _community_records_policy_for_clan(db, clan_id=int(payload.clan_id))
+    if not bool(records_policy.get("community_records_enabled", True)):
+        raise _community_record_policy_error(
+            code="community_records_disabled",
+            message="This community setup has Community Records turned off.",
+            clan_id=int(payload.clan_id),
+            policy=records_policy,
+        )
+    notice_event = _get_notice_for_acknowledgement(
+        db,
+        clan_id=int(payload.clan_id),
+        notice_event_id=int(notice_event_id),
+    )
+    meta = _safe_meta(getattr(notice_event, "meta_json", None))
+    if _notice_is_expired(meta, created_at=getattr(notice_event, "created_at", None)):
+        raise HTTPException(status_code=409, detail="This notice has already left the active board")
+    if not _notice_availability_enabled(meta):
+        raise HTTPException(status_code=409, detail="Availability is only open for event-date announcements")
+
+    notice_source_event_type = _safe_str(getattr(notice_event, "event_type", None))
+    notice_source = (
+        CENTRAL_DOMAIN_NOTICE_SOURCE
+        if notice_source_event_type == CENTRAL_DOMAIN_NOTICE_EVENT
+        else COMMUNITY_NOTICE_SOURCE
+    )
+    event = log_trust_event(
+        db,
+        event_type=COMMUNITY_NOTICE_AVAILABILITY_EVENT,
+        clan_id=int(payload.clan_id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta={
+            "source": notice_source,
+            "reason": "community_notice_availability_response",
+            "notice_source_event_type": notice_source_event_type,
+            "notice_event_id": int(notice_event_id),
+            "notice_id": f"TE-{int(notice_event_id)}",
+            "response": payload.response,
+            "community_records_policy": records_policy,
+        },
+    )
+    return {
+        "ok": True,
+        "event_id": int(event.id),
+        "notice_event_id": int(notice_event_id),
+        "availability_summary": _notice_availability_summary(
+            db,
+            clan_id=int(payload.clan_id),
+            notice_event_id=int(notice_event_id),
+            viewer_user_id=int(current_user.id),
+        ),
+        "message": "Availability response saved.",
     }
 
 

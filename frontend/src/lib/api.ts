@@ -1464,6 +1464,16 @@ export async function acknowledgeCommunityNotice(
   );
 }
 
+export async function recordCommunityNoticeAvailability(
+  noticeEventId: number | string,
+  payload: { clan_id: number; response: "yes" | "maybe" | "no" }
+): Promise<any> {
+  return httpJson(
+    `/community-notices/${encodeURIComponent(String(noticeEventId))}/availability`,
+    "POST",
+    payload
+  );
+}
 export async function recordCommunityMeetingInterest(
   meetingId: number | string,
   payload: {

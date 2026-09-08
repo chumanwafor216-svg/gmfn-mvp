@@ -254,6 +254,79 @@ def test_community_notice_source_and_acknowledgement_are_scoped_to_selected_comm
         assert ack_events[0].clan_id == 1
 
 
+def test_event_notice_availability_response_updates_live_bulletin(client, override_current_user):
+    _seed_notice_community()
+    expires_at = datetime.now(timezone.utc) + timedelta(days=2)
+
+    event_res = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Choir practice on Wednesday. All members are welcome.",
+            "expiry_policy": "event",
+            "expires_at": expires_at.isoformat(),
+        },
+    )
+    assert event_res.status_code == 200, event_res.text
+    notice = event_res.json()["notice"]
+    assert notice["availability_enabled"] is True
+    assert notice["availability_summary"] == {
+        "yes": 0,
+        "maybe": 0,
+        "no": 0,
+        "total": 0,
+        "planning_ready": False,
+        "own_response": None,
+    }
+
+    yes_res = client.post(
+        f"/community-notices/{notice['event_id']}/availability",
+        json={"clan_id": 1, "response": "yes"},
+    )
+    assert yes_res.status_code == 200, yes_res.text
+    assert yes_res.json()["availability_summary"] == {
+        "yes": 1,
+        "maybe": 0,
+        "no": 0,
+        "total": 1,
+        "planning_ready": True,
+        "own_response": "yes",
+    }
+
+    no_res = client.post(
+        f"/community-notices/{notice['event_id']}/availability",
+        json={"clan_id": 1, "response": "no"},
+    )
+    assert no_res.status_code == 200, no_res.text
+    assert no_res.json()["availability_summary"] == {
+        "yes": 0,
+        "maybe": 0,
+        "no": 1,
+        "total": 1,
+        "planning_ready": False,
+        "own_response": "no",
+    }
+
+    list_res = client.get("/community-notices", params={"clan_id": 1})
+    assert list_res.status_code == 200, list_res.text
+    listed_notice = list_res.json()["notices"][0]
+    assert listed_notice["body"] == "Choir practice on Wednesday. All members are welcome."
+    assert listed_notice["availability_enabled"] is True
+    assert listed_notice["availability_summary"]["no"] == 1
+    assert listed_notice["availability_summary"]["own_response"] == "no"
+
+    standard_res = client.post(
+        "/community-notices",
+        json={"clan_id": 1, "body": "Ordinary update without attendance."},
+    )
+    assert standard_res.status_code == 200, standard_res.text
+    blocked_res = client.post(
+        f"/community-notices/{standard_res.json()['notice']['event_id']}/availability",
+        json={"clan_id": 1, "response": "maybe"},
+    )
+    assert blocked_res.status_code == 409, blocked_res.text
+
+
 def test_notice_acknowledgement_roll_call_is_admin_only(client, override_current_user):
     _seed_notice_community()
 

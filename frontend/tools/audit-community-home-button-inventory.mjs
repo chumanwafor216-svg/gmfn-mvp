@@ -289,8 +289,12 @@ assertContains(
   "Community Home communication block must keep the rich live announcement dominant, use one quiet Post/Submit/Contact/Settings utility row, and tuck officer record review behind the settings toggle."
 );
 assertContains(
-  /function renderMeetingInterestShortcut[\s\S]*?\["yes", "Available"\][\s\S]*?\["maybe", "Not sure"\][\s\S]*?\["no", "Not available"\][\s\S]*?debugId=\{`community-home\.bulletin\.meeting-interest-\$\{response\}`\}[\s\S]*?recordNoticeMeetingInterest\(buttonEvent, noticeItem, response\)/,
-  "Community Home bulletin meeting shortcut must keep the compact Available/Not sure/Not available response controls inside Reactions."
+  /function noticeSupportsAvailability[\s\S]*?isMeetingNotice\(item\)[\s\S]*?item\?\.availability_enabled[\s\S]*?function renderMeetingInterestShortcut[\s\S]*?noticeSupportsAvailability\(noticeItem\)[\s\S]*?firstTruthy\(noticeItem\?\.meeting_id, noticeItem\?\.event_id\)[\s\S]*?\["yes", "Available"\][\s\S]*?\["maybe", "Not sure"\][\s\S]*?\["no", "Not available"\][\s\S]*?debugId=\{`community-home\.bulletin\.meeting-interest-\$\{response\}`\}[\s\S]*?recordNoticeMeetingInterest\(buttonEvent, noticeItem, response\)/,
+  "Community Home bulletin availability shortcut must keep Available/Not sure/Not available controls inside Reactions for meeting notices and event-date notices."
+);
+assertContains(
+  /recordCommunityNoticeAvailability[\s\S]*?const canRecordNoticeAvailability = !meetingId && noticeSupportsAvailability\(noticeItem\) && Boolean\(noticeEventId\)[\s\S]*?await recordCommunityNoticeAvailability\(noticeEventId,/,
+  "Community Home bulletin event-date availability must call the Community Notice availability endpoint instead of requiring a meeting_id."
 );
 assertContains(
   /function renderNoticeAcknowledgementShortcut[\s\S]*?debugId=\{`community-home\.bulletin\.acknowledge\.\$\{eventId\}`\}[\s\S]*?recordNoticeAcknowledgement\(buttonEvent, noticeItem\)[\s\S]*?Acknowledged[\s\S]*?Acknowledge/,

@@ -29,6 +29,7 @@ import {
   listCommunityNoticeReviewQueue,
   listCommunityNotices,
   recordCommunityMeetingInterest,
+  recordCommunityNoticeAvailability,
   updateCommunityNoticeSettings,
   listMyCommunityDomains,
   listMyClans,
@@ -207,6 +208,15 @@ type CommunityNoticeItem = {
     own_response?: string | null;
   } | null;
   planning_status?: string | null;
+  availability_enabled?: boolean | null;
+  availability_summary?: {
+    yes?: number | string | null;
+    maybe?: number | string | null;
+    no?: number | string | null;
+    total?: number | string | null;
+    planning_ready?: boolean | null;
+    own_response?: string | null;
+  } | null;
   board_hint?: string | null;
 };
 
@@ -1304,15 +1314,18 @@ function announcementComposerPreviewStyle(isCompact = false): React.CSSPropertie
 function announcementLiveNoticeGridStyle(isCompact: boolean): React.CSSProperties {
   return {
     display: "grid",
-    gridTemplateColumns: isCompact ? "86px minmax(0, 1fr)" : "118px minmax(0, 1fr)",
-    gap: isCompact ? 14 : 18,
+    gridTemplateColumns: isCompact ? "minmax(0, 1fr)" : "118px minmax(0, 1fr)",
+    gap: isCompact ? 12 : 18,
     alignItems: "start",
+    justifyItems: isCompact ? "center" : "stretch",
   };
 }
 
 function announcementDateTileStyle(isCompact: boolean): React.CSSProperties {
   return {
-    minHeight: isCompact ? 138 : 158,
+    minHeight: isCompact ? 118 : 158,
+    width: isCompact ? 150 : undefined,
+    justifySelf: isCompact ? "center" : undefined,
     borderRadius: 18,
     overflow: "hidden",
     background: "linear-gradient(180deg, #FFFFFF 0%, #FFF9EA 100%)",
@@ -1562,9 +1575,18 @@ function noticeKindLabel(item: CommunityNoticeItem | null | undefined): string {
   return "Official notice";
 }
 
+function noticeSupportsAvailability(item: CommunityNoticeItem | null | undefined): boolean {
+  return Boolean(isMeetingNotice(item) || item?.availability_enabled);
+}
+
+function noticeAvailabilitySummary(item: CommunityNoticeItem | null | undefined) {
+  if (isMeetingNotice(item)) return item?.interest_summary || {};
+  return item?.availability_summary || {};
+}
+
 function meetingInterestParts(item: CommunityNoticeItem | null | undefined): Array<[string, number]> {
-  if (!isMeetingNotice(item)) return [];
-  const summary = item?.interest_summary || {};
+  if (!noticeSupportsAvailability(item)) return [];
+  const summary = noticeAvailabilitySummary(item);
   return [
     ["Available", noticeNumber(summary.yes)],
     ["Not sure", noticeNumber(summary.maybe)],
@@ -1573,16 +1595,17 @@ function meetingInterestParts(item: CommunityNoticeItem | null | undefined): Arr
 }
 
 function meetingPlanningLine(item: CommunityNoticeItem | null | undefined): string {
-  if (!isMeetingNotice(item)) return "";
-  const summary = item?.interest_summary || {};
+  if (!noticeSupportsAvailability(item)) return "";
+  const summary = noticeAvailabilitySummary(item);
   const total = noticeNumber(summary.total);
-  const status = firstTruthy(item?.planning_status);
+  const status = isMeetingNotice(item) ? firstTruthy(item?.planning_status) : "";
   if (total > 0) return status || `${total} member${total === 1 ? "" : "s"} responded`;
   return status || "Waiting for member responses";
 }
 
 function meetingOwnInterest(item: CommunityNoticeItem | null | undefined): MeetingInterestResponse | "" {
-  const response = safeStr(item?.interest_summary?.own_response).toLowerCase();
+  const summary = noticeAvailabilitySummary(item);
+  const response = safeStr(summary.own_response).toLowerCase();
   return response === "yes" || response === "maybe" || response === "no" ? response : "";
 }
 
@@ -3295,35 +3318,43 @@ export default function CommunityHomePage() {
     consumeCommunityButtonEvent(event);
     const clanId = getClanId(selectedClan);
     const meetingId = firstTruthy(noticeItem?.meeting_id);
+    const noticeEventId = firstTruthy(noticeItem?.event_id);
+    const canRecordNoticeAvailability = !meetingId && noticeSupportsAvailability(noticeItem) && Boolean(noticeEventId);
 
-    if (!clanId || !meetingId) {
-      showNotice("error", "This meeting response is not ready yet.");
+    if (!clanId || (!meetingId && !canRecordNoticeAvailability)) {
+      showNotice("error", "This availability response is not ready yet.");
       return;
     }
 
-    const busyKey = `${meetingId}:${response}`;
+    const responseTarget = firstTruthy(meetingId, noticeEventId);
+    const busyKey = `${responseTarget}:${response}`;
     if (noticeMeetingInterestBusy) {
-      showNotice("success", "Saving your meeting response now.");
+      showNotice("success", "Saving your response now.");
       return;
     }
 
     setNoticeMeetingInterestBusy(busyKey);
     try {
-      const result = await recordCommunityMeetingInterest(meetingId, {
-        clan_id: clanId,
-        response,
-        note: "Recorded from Community Bulletin meeting planning.",
-      });
+      const result = meetingId
+        ? await recordCommunityMeetingInterest(meetingId, {
+            clan_id: clanId,
+            response,
+            note: "Recorded from Community Bulletin meeting planning.",
+          })
+        : await recordCommunityNoticeAvailability(noticeEventId, {
+            clan_id: clanId,
+            response,
+          });
       const res = await listCommunityNotices({ clan_id: clanId, limit: 3 }).catch(() => null);
       applyCommunityNoticeListResponse(res);
       showNotice(
         "success",
-        firstTruthy(result?.message, "Meeting response recorded. Planning count updated.")
+        firstTruthy(result?.message, "Availability response recorded. Planning count updated.")
       );
     } catch (error: any) {
       showNotice(
         "error",
-        error?.message || "Meeting response could not be recorded."
+        error?.message || "Availability response could not be recorded."
       );
     } finally {
       setNoticeMeetingInterestBusy("");
@@ -3331,11 +3362,15 @@ export default function CommunityHomePage() {
   }
 
   function renderMeetingInterestShortcut(noticeItem: CommunityNoticeItem) {
-    if (!isMeetingNotice(noticeItem) || !firstTruthy(noticeItem?.meeting_id)) {
+    if (!noticeSupportsAvailability(noticeItem)) {
       return null;
     }
 
-    const meetingId = firstTruthy(noticeItem.meeting_id);
+    const responseTarget = firstTruthy(noticeItem?.meeting_id, noticeItem?.event_id);
+    if (!responseTarget) {
+      return null;
+    }
+
     const ownInterest = meetingOwnInterest(noticeItem);
     const options: Array<[MeetingInterestResponse, string]> = [
       ["yes", "Available"],
@@ -3353,7 +3388,7 @@ export default function CommunityHomePage() {
         }}
       >
         {options.map(([response, label]) => {
-          const busyKey = `${meetingId}:${response}`;
+          const busyKey = `${responseTarget}:${response}`;
           const selected = ownInterest === response;
           return (
             <StableButton
@@ -3443,8 +3478,8 @@ export default function CommunityHomePage() {
             </div>
           </div>
 
-          <div style={{ display: "grid", gap: 10, minWidth: 0 }}>
-            <div style={announcementSourcePillStyle()}>
+          <div style={{ display: "grid", gap: 10, minWidth: 0, justifyItems: isCompact ? "center" : "stretch", width: "100%" }}>
+            <div style={{ ...announcementSourcePillStyle(), width: isCompact ? "min(100%, 270px)" : undefined, justifySelf: isCompact ? "center" : undefined }}>
               <span style={{ ...announcementNoticeIconStyle(1), width: 32, height: 32, borderRadius: 999 }} aria-hidden="true">
                 <GsnLegacyIcon name="home" size={21} />
               </span>
@@ -3463,6 +3498,7 @@ export default function CommunityHomePage() {
                 fontSize: isCompact ? 22 : 28,
                 fontWeight: 980,
                 lineHeight: 1.1,
+                textAlign: isCompact ? "center" : "left",
               }}
             >
               {title}
