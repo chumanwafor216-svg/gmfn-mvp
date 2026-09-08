@@ -352,6 +352,55 @@ def test_admin_manual_recovery_reset_allows_exact_id_when_no_phone_owner(client)
     assert temp_login.status_code == 200, temp_login.text
 
 
+def test_admin_manual_recovery_reset_allows_exact_id_with_unverified_matching_phone(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+
+    with SessionLocal() as db:
+        admin = User(
+            email="manual-recovery-unverified-phone-admin@example.com",
+            hashed_password=get_password_hash("admin-secret"),
+            role="admin",
+            gmfn_id="GMFN-U-UNVERIFIED-ADMIN",
+        )
+        owner = User(
+            email="manual-recovery-unverified-phone-owner@example.com",
+            hashed_password=get_password_hash("old-secret"),
+            role="user",
+            gmfn_id="GMFN-U-UNVERIFIED",
+            display_name="Unverified Phone Owner",
+            phone_e164="+447717143500",
+            phone_verified_at=None,
+        )
+        db.add_all([admin, owner])
+        db.commit()
+
+    res = client.post(
+        "/identity-risk/admin/manual-recovery-reset",
+        json={
+            "gmfn_id": "GSN-GMFN-U-UNVERIFIED",
+            "phone_e164": "+447717143500",
+            "owner_proof_confirmed": True,
+            "reviewer_note": "Owner proof checked for stale unverified recorded phone.",
+        },
+        headers=_headers("manual-recovery-unverified-phone-admin@example.com"),
+    )
+
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["gmfn_id"] == "GMFN-U-UNVERIFIED"
+    assert body["temporary_password"].startswith("GSN-")
+
+    old_login = client.post(
+        "/auth/login",
+        data={"username": "GMFN-U-UNVERIFIED", "password": "old-secret"},
+    )
+    assert old_login.status_code == 401, old_login.text
+
+    temp_login = client.post(
+        "/auth/login",
+        data={"username": "GMFN-U-UNVERIFIED", "password": body["temporary_password"]},
+    )
+    assert temp_login.status_code == 200, temp_login.text
 def test_admin_manual_recovery_reset_still_requires_phone_when_identity_has_phone(client):
     os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
     _seed_confirmed_duplicate_pair()

@@ -159657,3 +159657,12 @@ Operational note:
 - Safety boundary: this is not a second merge and does not restore or reveal the old password. It creates a new temporary password after admin proof. The member must sign in with the surviving/original ID and then reset password/private recovery.
 - Verification passed: `python -m py_compile app\api\routes\identity_risk.py tests\test_identity_reconciliation.py`; `python -m pytest -q tests\test_identity_reconciliation.py` -> 12 passed; `npm --prefix frontend run build`.
 - Devil truth: the current live data still needs an admin to issue a fresh temporary password for the surviving identity. If Nevito keeps trying the retired duplicate ID/password, sign-in will continue to fail by design.
+## 2026-09-08 - Manual recovery allows stale unverified recorded phone after exact ID proof
+
+- Status: Local implementation complete and verified; commit/push/deploy in this slice.
+- Owner trigger: live Admin Tools showed `Manual recovery reset requires a verified recorded phone` after exact GSN ID recovery for Nevito/Ebube, even though the phone-lineage check showed no protected owner for the phone.
+- Backend route affected: `POST /identity-risk/admin/manual-recovery-reset` still requires exact GSN/GMFN ID resolution and still requires the supplied phone to match when the surviving identity has a recorded phone. It no longer blocks solely because that recorded phone lacks `phone_verified_at`; this covers stale/unverified phone records after lost-phone or duplicate-merge recovery.
+- Audit trail: TrustEvent metadata now records `recovery_reset_with_unverified_recorded_phone` when this path is used, so admin resets made through stale phone evidence are visible later.
+- Frontend route affected: `/app/admin/identity-risk` exact recovery copy was shortened for phone use.
+- Verification passed: `python -m py_compile app\api\routes\identity_risk.py tests\test_identity_reconciliation.py`; `python -m pytest -q tests\test_identity_reconciliation.py` -> 13 passed; `npm --prefix frontend run build`.
+- Devil truth: this still does not prove phone ownership automatically. It is an admin owner-proof path. Wrong or omitted recorded phones remain blocked; the admin must still verify the person outside the password reset itself.

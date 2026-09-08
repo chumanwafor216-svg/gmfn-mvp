@@ -552,11 +552,7 @@ def admin_manual_recovery_reset(
 
     has_recorded_phone = bool(getattr(user, "phone_e164", None))
     has_verified_phone = bool(has_recorded_phone and getattr(user, "phone_verified_at", None))
-    if has_recorded_phone and not has_verified_phone:
-        raise HTTPException(
-            status_code=409,
-            detail="Manual recovery reset requires a verified recorded phone.",
-        )
+    used_unverified_recorded_phone = bool(has_recorded_phone and not has_verified_phone)
 
     recovery = get_identity_recovery_summary(db, user_id=int(user.id))
     if recovery.get("configured") and has_verified_phone:
@@ -589,6 +585,7 @@ def admin_manual_recovery_reset(
             ),
             "owner_proof_confirmed": True,
             "recovery_reset_without_recorded_phone": not has_recorded_phone,
+            "recovery_reset_with_unverified_recorded_phone": used_unverified_recorded_phone,
             "private_recovery_configured_before_reset": bool(recovery.get("configured")),
             "temporary_password_shown_once": True,
             "issued_at": issued_at.isoformat(),

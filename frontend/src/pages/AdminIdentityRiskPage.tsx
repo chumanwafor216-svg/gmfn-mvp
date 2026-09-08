@@ -688,9 +688,8 @@ export default function AdminIdentityRiskPage() {
                   {labelWithIcon("shield", "Exact GSN ID recovery")}
                 </div>
                 <div style={{ ...helperText(), color: "#7C2D12", fontWeight: 800 }}>
-                  Use this only when the owner proves the surviving GSN ID and the
-                  phone lookup shows no protected owner. If that identity still has
-                  a recorded phone, GSN will still require the phone match.
+                  Use after owner proof when phone lookup cannot recover the account.
+                  Enter the surviving GSN ID and the phone used for the review.
                 </div>
                 <input
                   value={exactRecoveryIdentity}
