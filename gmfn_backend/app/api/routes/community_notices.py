@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Literal, Optional
 
@@ -58,6 +59,40 @@ NOTICE_STANDARD_VISIBLE_DAYS = 7
 NOTICE_URGENT_VISIBLE_HOURS = 48
 NOTICE_PREVIOUS_ANNOUNCEMENT_LIMIT = 10
 NOTICE_BOARD_DEMAND_SIGNAL_LIMIT = 3
+NOTICE_MONTH_NAMES = {
+    "january": 1,
+    "jan": 1,
+    "february": 2,
+    "feb": 2,
+    "march": 3,
+    "mar": 3,
+    "april": 4,
+    "apr": 4,
+    "may": 5,
+    "june": 6,
+    "jun": 6,
+    "july": 7,
+    "jul": 7,
+    "august": 8,
+    "aug": 8,
+    "september": 9,
+    "sep": 9,
+    "sept": 9,
+    "october": 10,
+    "oct": 10,
+    "november": 11,
+    "nov": 11,
+    "december": 12,
+    "dec": 12,
+}
+NOTICE_EMBEDDED_DATE_RE = re.compile(
+    r"\b(?P<day>\d{1,2})(?:st|nd|rd|th)?\s+"
+    r"(?P<month>jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|"
+    r"jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|"
+    r"nov(?:ember)?|dec(?:ember)?)\s+"
+    r"(?P<year>\d{4})\b",
+    re.IGNORECASE,
+)
 CENTRAL_DOMAIN_NOTICE_EVENT = "community_domain.notice.posted"
 CENTRAL_DOMAIN_NOTICE_SOURCE = "community_domain_notice_board"
 CENTRAL_DOMAIN_FEATURE_POLICY_KEY = "domain.feature_policy"
@@ -293,6 +328,29 @@ def _notice_expires_at(policy: str, explicit_expires_at: Any = None) -> Optional
     return now + timedelta(days=NOTICE_STANDARD_VISIBLE_DAYS)
 
 
+def _notice_embedded_event_expires_at(meta: dict[str, Any]) -> Optional[datetime]:
+    text = " ".join(
+        _safe_str(meta.get(key))
+        for key in ("title", "body", "purpose")
+        if _safe_str(meta.get(key))
+    )
+    if not text:
+        return None
+    match = NOTICE_EMBEDDED_DATE_RE.search(text[:160])
+    if not match:
+        return None
+    month = NOTICE_MONTH_NAMES.get(match.group("month").lower())
+    if month is None:
+        return None
+    try:
+        day = int(match.group("day"))
+        year = int(match.group("year"))
+        event_day = datetime(year, month, day, tzinfo=timezone.utc)
+    except ValueError:
+        return None
+    return event_day + timedelta(days=1)
+
+
 def _notice_effective_expires_at(
     meta: dict[str, Any],
     *,
@@ -301,6 +359,9 @@ def _notice_effective_expires_at(
     expires_at = _parse_datetime(meta.get("expires_at"))
     if expires_at is not None:
         return expires_at
+    embedded_event_expires_at = _notice_embedded_event_expires_at(meta)
+    if embedded_event_expires_at is not None:
+        return embedded_event_expires_at
     policy = _normalize_notice_expiry_policy(meta.get("expiry_policy"))
     if policy == NOTICE_EXPIRY_PINNED:
         return None

@@ -2816,6 +2816,28 @@ def test_community_domain_notice_archive_hides_expired_notice_but_keeps_memory(
                     clan_id=1,
                     actor_user_id=1,
                     subject_user_id=1,
+                    created_at=datetime.now(timezone.utc),
+                    meta_json=json.dumps(
+                        {
+                            "source": "community_domain_notice_board",
+                            "reason": "community_domain_notice_posted",
+                            "community_domain_id": int(domain_id),
+                            "body": "29th August 2026 is Igbo cultural association day.",
+                            "word_count": 8,
+                            "expiry_policy": "pinned",
+                            "comments_enabled": False,
+                            "reactions_enabled": False,
+                            "thread_enabled": False,
+                        }
+                    ),
+                )
+            )
+            db.add(
+                TrustEvent(
+                    event_type="community_domain.notice.posted",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
                     meta_json=json.dumps(
                         {
                             "source": "community_domain_notice_board",
@@ -2866,7 +2888,8 @@ def test_community_domain_notice_archive_hides_expired_notice_but_keeps_memory(
         assert "Pinned domain notice." in bodies
         assert "Expired domain notice." not in bodies
         assert "Legacy cultural day notice." not in bodies
-        assert payload["archived_notice_count"] == 2
+        assert "29th August 2026 is Igbo cultural association day." not in bodies
+        assert payload["archived_notice_count"] == 3
         assert payload["notices"][0]["expiry_policy"] == "pinned"
         assert payload["notices"][0]["expires_at"] is None
 
@@ -2875,7 +2898,7 @@ def test_community_domain_notice_archive_hides_expired_notice_but_keeps_memory(
                 db.query(TrustEvent)
                 .filter(TrustEvent.event_type == "community_domain.notice.posted")
                 .count()
-                == 3
+                == 4
             )
     finally:
         app.dependency_overrides.pop(get_current_user, None)

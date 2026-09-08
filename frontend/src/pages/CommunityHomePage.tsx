@@ -264,6 +264,33 @@ const COMMUNITY_BRAND = {
   border: "rgba(123,161,204,0.18)",
 };
 
+const NOTICE_MONTH_INDEX: Record<string, number> = {
+  january: 0,
+  jan: 0,
+  february: 1,
+  feb: 1,
+  march: 2,
+  mar: 2,
+  april: 3,
+  apr: 3,
+  may: 4,
+  june: 5,
+  jun: 5,
+  july: 6,
+  jul: 6,
+  august: 7,
+  aug: 7,
+  september: 8,
+  sep: 8,
+  sept: 8,
+  october: 9,
+  oct: 9,
+  november: 10,
+  nov: 10,
+  december: 11,
+  dec: 11,
+};
+const NOTICE_EMBEDDED_DATE_RE = /\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{4})\b/i;
 function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
@@ -1160,11 +1187,13 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
 
 function announcementBoardShellStyle(): React.CSSProperties {
   return {
-    ...pageCard("#FFFFFF"),
+    ...pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 68%, #EEF6FF 100%)"),
     padding: 0,
-    borderRadius: "clamp(22px, 5vw, 28px)",
+    borderRadius: "clamp(26px, 6vw, 32px)",
     overflow: "hidden",
-    background: "#FFFFFF",
+    border: "1px solid rgba(123,161,204,0.18)",
+    boxShadow:
+      "0 18px 42px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.94)",
   };
 }
 
@@ -1172,11 +1201,12 @@ function announcementBoardHeaderStyle(isCompact: boolean): React.CSSProperties {
   return {
     display: "grid",
     gridTemplateColumns: "minmax(0, 1fr) auto",
-    gap: isCompact ? 8 : 10,
+    gap: isCompact ? 8 : 12,
     alignItems: "center",
-    padding: isCompact ? "10px 14px" : "12px 18px",
+    minHeight: isCompact ? 78 : 88,
+    padding: isCompact ? "14px 16px" : "18px 24px",
     background:
-      "linear-gradient(135deg, #0B2D4A 0%, #102F57 52%, #071E36 100%)",
+      "linear-gradient(135deg, #08233A 0%, #0B2D4A 56%, #061827 100%)",
     color: "#FFFFFF",
   };
 }
@@ -1185,22 +1215,22 @@ function announcementBoardTitleRowStyle(): React.CSSProperties {
   return {
     display: "flex",
     alignItems: "center",
-    gap: 12,
+    gap: 14,
     minWidth: 0,
   };
 }
 
 function announcementBoardIconStyle(): React.CSSProperties {
   return {
-    width: 34,
-    height: 34,
-    borderRadius: 13,
+    width: 58,
+    height: 58,
+    borderRadius: 20,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "rgba(255,255,255,0.10)",
-    border: "1px solid rgba(255,255,255,0.14)",
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.14)",
+    background: "rgba(255,255,255,0.12)",
+    border: "1px solid rgba(255,255,255,0.16)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18), 0 12px 24px rgba(0,0,0,0.18)",
     flex: "0 0 auto",
   };
 }
@@ -1210,50 +1240,101 @@ function announcementBoardPillStyle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 28,
+    minHeight: 34,
     borderRadius: 999,
-    padding: "5px 10px",
-    background: "rgba(255,255,255,0.10)",
-    border: "1px solid rgba(255,255,255,0.09)",
-    color: "#EAF3FF",
-    fontSize: 11.5,
-    fontWeight: 850,
+    padding: "7px 12px",
+    background: "linear-gradient(180deg, #2E9B62 0%, #1D7A4C 100%)",
+    border: "1px solid rgba(255,255,255,0.18)",
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: 900,
     whiteSpace: "nowrap",
+    boxShadow: "0 10px 20px rgba(15,118,72,0.20), inset 0 1px 0 rgba(255,255,255,0.18)",
   };
 }
 
 function announcementComposerStyle(isCompact: boolean): React.CSSProperties {
   return {
     display: "grid",
-    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gridTemplateColumns: isCompact
+      ? "repeat(auto-fit, minmax(112px, 1fr))"
+      : "repeat(3, minmax(0, 1fr))",
     gap: isCompact ? 8 : 10,
     alignItems: "center",
-    padding: isCompact ? "0 16px 12px" : "0 28px 14px",
-    background: "#FFFFFF",
+    padding: isCompact ? "0 16px 18px" : "0 28px 22px",
+    background: "transparent",
   };
 }
 
 function announcementComposerPreviewStyle(isCompact = false): React.CSSProperties {
   return {
-    minHeight: isCompact ? 205 : 245,
-    borderRadius: 22,
+    minHeight: isCompact ? 250 : 282,
+    borderRadius: 24,
     border: "1px solid rgba(16,37,59,0.10)",
     background:
-      "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 52%, #EEF6FF 100%)",
-    padding: isCompact ? "18px" : "22px",
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,251,255,0.98) 54%, rgba(239,247,255,0.98) 100%)",
+    padding: isCompact ? "18px 16px" : "24px",
     display: "grid",
     gap: 14,
     alignItems: "center",
     color: "#07172C",
     boxShadow:
-      "0 16px 30px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.92)",
+      "0 18px 34px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
+  };
+}
+
+function announcementLiveNoticeGridStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: isCompact ? "86px minmax(0, 1fr)" : "118px minmax(0, 1fr)",
+    gap: isCompact ? 14 : 18,
+    alignItems: "start",
+  };
+}
+
+function announcementDateTileStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    minHeight: isCompact ? 138 : 158,
+    borderRadius: 18,
+    overflow: "hidden",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #FFF9EA 100%)",
+    border: "1px solid rgba(214,170,69,0.24)",
+    boxShadow: "0 14px 26px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.92)",
+    textAlign: "center",
+  };
+}
+
+function announcementSourcePillStyle(): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "32px minmax(0, 1fr) auto",
+    gap: 8,
+    alignItems: "center",
+    minHeight: 38,
+    borderRadius: 999,
+    padding: "4px 9px 4px 4px",
+    background: "rgba(255,249,234,0.86)",
+    border: "1px solid rgba(214,170,69,0.14)",
+  };
+}
+
+function announcementDetailBoxStyle(): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    background: "rgba(255,249,234,0.70)",
+    border: "1px solid rgba(214,170,69,0.12)",
+    padding: "12px 14px",
+    color: "#48657D",
+    fontSize: 13.5,
+    fontWeight: 720,
+    lineHeight: 1.36,
   };
 }
 
 function announcementListPanelStyle(isCompact: boolean): React.CSSProperties {
   return {
-    padding: isCompact ? "14px 16px 10px" : "18px 28px 12px",
-    background: "#FFFFFF",
+    padding: isCompact ? "18px 16px 14px" : "24px 28px 16px",
+    background: "transparent",
   };
 }
 
@@ -1270,7 +1351,7 @@ function announcementNoticeRowStyle(): React.CSSProperties {
 }
 
 function announcementNoticeIconStyle(index: number): React.CSSProperties {
-  const backgrounds = ["#DCFCE7", "#DBEAFE", "#FEF3C7", "#F3E8FF"];
+  const backgrounds = ["#DCFCE7", "#DBEAFE", "#FEF3C7", "#F1F7FF"];
   return {
     width: 48,
     height: 48,
@@ -1283,7 +1364,6 @@ function announcementNoticeIconStyle(index: number): React.CSSProperties {
     boxShadow: "0 8px 16px rgba(10,24,49,0.06)",
   };
 }
-
 
 function contactCommunityButtonStyle(isCompact: boolean, ready: boolean): React.CSSProperties {
   return {
@@ -1369,25 +1449,69 @@ function compactDateLabel(value: any): string {
   if (days < 7) return `${days}d ago`;
   return date.toLocaleDateString();
 }
+function noticeEmbeddedEventDate(item: CommunityNoticeItem | null | undefined): Date | null {
+  const text = [item?.title, item?.body, item?.purpose].map(safeStr).filter(Boolean).join(" ");
+  if (!text) return null;
+  const match = text.slice(0, 160).match(NOTICE_EMBEDDED_DATE_RE);
+  if (!match) return null;
+  const month = NOTICE_MONTH_INDEX[match[2].toLowerCase()];
+  if (typeof month !== "number") return null;
+  const day = Number(match[1]);
+  const year = Number(match[3]);
+  const date = new Date(Date.UTC(year, month, day));
+  return Number.isFinite(date.getTime()) ? date : null;
+}
+
+function noticeEffectiveExpiresAt(item: CommunityNoticeItem | null | undefined): Date | null {
+  const rawExpiresAt = safeStr(item?.expires_at);
+  const explicitExpiresAt = rawExpiresAt ? new Date(rawExpiresAt) : null;
+  if (explicitExpiresAt && Number.isFinite(explicitExpiresAt.getTime())) return explicitExpiresAt;
+  const embeddedDate = noticeEmbeddedEventDate(item);
+  if (embeddedDate) {
+    return new Date(embeddedDate.getTime() + 24 * 60 * 60 * 1000);
+  }
+  const policy = safeStr(item?.expiry_policy).toLowerCase();
+  if (policy === "pinned" || policy === "until_replaced") return null;
+  const createdAt = new Date(firstTruthy(item?.created_at, item?.scheduled_at));
+  if (!Number.isFinite(createdAt.getTime())) return null;
+  const ttlMs = policy === "urgent" ? 48 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
+  return new Date(createdAt.getTime() + ttlMs);
+}
+
+function noticeDisplayDate(item: CommunityNoticeItem | null | undefined): Date | null {
+  const embeddedDate = noticeEmbeddedEventDate(item);
+  if (embeddedDate) return embeddedDate;
+  const raw = firstTruthy(item?.scheduled_at, item?.expires_at, item?.created_at);
+  if (!raw) return null;
+  const date = new Date(raw);
+  return Number.isFinite(date.getTime()) ? date : null;
+}
+
+function noticeCalendarParts(item: CommunityNoticeItem | null | undefined) {
+  const date = noticeDisplayDate(item);
+  if (!date) {
+    return { month: "GSN", day: "--", year: "", weekday: "NOTICE" };
+  }
+  return {
+    month: date.toLocaleString(undefined, { month: "long" }).toUpperCase(),
+    day: String(date.getDate()),
+    year: String(date.getFullYear()),
+    weekday: date.toLocaleString(undefined, { weekday: "long" }).toUpperCase(),
+  };
+}
 
 function noticeExpiryLabel(item: CommunityNoticeItem): string {
+  const expiresAt = noticeEffectiveExpiresAt(item);
+  if (expiresAt) return `Visible until ${expiresAt.toLocaleString()}`;
   if (safeStr(item?.expiry_policy).toLowerCase() === "pinned") return "Pinned";
-  const expiresAt = safeDateLabel(item?.expires_at);
-  return expiresAt ? `Visible until ${expiresAt}` : "";
+  return "";
 }
 
 function isNoticeVisibleOnBoard(item: CommunityNoticeItem, nowMs = Date.now()): boolean {
-  if (safeStr(item?.expiry_policy).toLowerCase() === "pinned") return true;
-  const rawExpiresAt = safeStr(item?.expires_at);
-  let expiresAt = rawExpiresAt ? new Date(rawExpiresAt) : null;
-  if (!expiresAt || !Number.isFinite(expiresAt.getTime())) {
-    const createdAt = new Date(firstTruthy(item?.created_at, item?.scheduled_at));
-    if (!Number.isFinite(createdAt.getTime())) return true;
-    const policy = safeStr(item?.expiry_policy).toLowerCase();
-    const ttlMs = policy === "urgent" ? 48 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
-    expiresAt = new Date(createdAt.getTime() + ttlMs);
-  }
-  return expiresAt.getTime() > nowMs;
+  const status = safeStr(item?.active_board_status).toLowerCase();
+  if (item?.is_archived || status === "archived" || status === "expired") return false;
+  const expiresAt = noticeEffectiveExpiresAt(item);
+  return !expiresAt || expiresAt.getTime() > nowMs;
 }
 
 function noticeNumber(value: unknown): number {
@@ -2997,14 +3121,19 @@ export default function CommunityHomePage() {
         busy={busy}
         busyLabel="Saving"
         style={{
-          ...communityActionStyle(ownAcknowledged ? "primary" : "soft", Boolean(noticeAcknowledgementBusy)),
-          minHeight: 38,
+          ...communityActionStyle("primary", Boolean(noticeAcknowledgementBusy)),
+          minHeight: 48,
           minWidth: 0,
-          padding: "8px 10px",
-          borderRadius: 12,
-          fontSize: 12,
+          padding: "10px 12px",
+          borderRadius: 15,
+          fontSize: 13,
           textTransform: "none",
-          boxShadow: "none",
+          color: ownAcknowledged ? "#F8FBFF" : "#07172C",
+          background: ownAcknowledged
+            ? "linear-gradient(180deg, #0B2D4A 0%, #08233A 100%)"
+            : "linear-gradient(180deg, #F2C766 0%, #E0A815 100%)",
+          border: "1px solid rgba(214,170,69,0.28)",
+          boxShadow: "0 10px 18px rgba(186,132,21,0.16), inset 0 1px 0 rgba(255,255,255,0.20)",
         }}
       >
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
@@ -3025,7 +3154,7 @@ export default function CommunityHomePage() {
           >
             {"\u{1F44D}"}
           </span>
-          <span>{ownAcknowledged ? "Acknowledged" : "Acknowledge this"}</span>
+          <span>{ownAcknowledged ? "Acknowledged" : "Acknowledge"}</span>
           <span>{count}</span>
         </span>
       </StableButton>
@@ -3131,6 +3260,160 @@ export default function CommunityHomePage() {
     );
   }
 
+  function renderCommunityBulletinPrimaryNotice(noticeItem: CommunityNoticeItem) {
+    const calendar = noticeCalendarParts(noticeItem);
+    const rawBody = firstTruthy(noticeItem?.body, noticeItem?.title, noticeItem?.purpose, "Community notice");
+    const title = wordLimit(rawBody, 9);
+    const detail = wordLimit(rawBody, 30);
+    const when = compactDateLabel(firstTruthy(noticeItem?.scheduled_at, noticeItem?.created_at));
+    const expiry = noticeExpiryLabel(noticeItem);
+    const senderLabel = firstTruthy(noticeItem?.sender_whatsapp_label, "Community contact");
+    const sourceLine = noticeSourceLine(noticeItem, selectedClanName);
+    const kindLabel = noticeKindLabel(noticeItem);
+    const planningLine = meetingPlanningLine(noticeItem);
+    const interestParts = meetingInterestParts(noticeItem);
+    const acknowledgedCount = noticeAcknowledgedCount(noticeItem);
+
+    return (
+      <div style={announcementComposerPreviewStyle(isCompact)}>
+        <div style={announcementLiveNoticeGridStyle(isCompact)}>
+          <div style={announcementDateTileStyle(isCompact)} aria-label="Announcement date">
+            <div
+              style={{
+                minHeight: 38,
+                display: "grid",
+                placeItems: "center",
+                background: "linear-gradient(180deg, #F2C766 0%, #E0A815 100%)",
+                color: "#FFFFFF",
+                fontSize: isCompact ? 11 : 12,
+                fontWeight: 950,
+              }}
+            >
+              {calendar.month}
+            </div>
+            <div style={{ padding: isCompact ? "10px 6px" : "12px 8px" }}>
+              <div style={{ color: "#07172C", fontSize: isCompact ? 40 : 50, fontWeight: 980, lineHeight: 1 }}>
+                {calendar.day}
+              </div>
+              {calendar.year ? (
+                <div style={{ marginTop: 5, color: "#0B2D4A", fontSize: 16, fontWeight: 860 }}>
+                  {calendar.year}
+                </div>
+              ) : null}
+              <div
+                style={{
+                  margin: "9px auto 0",
+                  width: "78%",
+                  borderTop: "1px solid rgba(16,37,59,0.10)",
+                }}
+              />
+              <div style={{ marginTop: 8, color: "#617085", fontSize: 10.5, fontWeight: 850 }}>
+                {calendar.weekday}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gap: 10, minWidth: 0 }}>
+            <div style={announcementSourcePillStyle()}>
+              <span style={{ ...announcementNoticeIconStyle(1), width: 32, height: 32, borderRadius: 999 }} aria-hidden="true">
+                <GsnLegacyIcon name="home" size={21} />
+              </span>
+              <span style={{ ...brandClampLines(1), color: "#0B2D4A", fontSize: 13, fontWeight: 930 }}>
+                {sourceLine}
+              </span>
+              <span aria-hidden="true" style={{ color: "#48657D", fontSize: 20, fontWeight: 900 }}>
+                {">"}
+              </span>
+            </div>
+
+            <div
+              style={{
+                ...brandClampLines(3),
+                color: "#07172C",
+                fontSize: isCompact ? 22 : 28,
+                fontWeight: 980,
+                lineHeight: 1.1,
+              }}
+            >
+              {title}
+            </div>
+
+            <div style={{ display: "grid", gap: 5, color: "#617085", fontSize: 12.5, fontWeight: 820 }}>
+              <span style={brandClampLines(1)}>From: {senderLabel}</span>
+              <span style={brandClampLines(1)}>{when ? `Posted ${when}` : kindLabel}</span>
+            </div>
+          </div>
+        </div>
+
+        {detail ? <div style={announcementDetailBoxStyle()}>{detail}</div> : null}
+
+        {planningLine || interestParts.length > 0 ? (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+            {planningLine ? <span style={badge(true)}>{planningLine}</span> : null}
+            {interestParts.map(([label, count]) => (
+              <span key={label} style={badge(false)}>
+                {label}: {count}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: noticeItem?.sender_whatsapp_number
+              ? "minmax(0, 1fr) minmax(0, 1fr)"
+              : "minmax(0, 1fr)",
+            gap: 10,
+          }}
+        >
+          {renderNoticeAcknowledgementShortcut(noticeItem)}
+          {noticeItem?.sender_whatsapp_number ? (
+            <StableButton
+              type="button"
+              aria-label={`Contact ${senderLabel} about this announcement`}
+              debugId={`community-home.bulletin.primary-sender-whatsapp.${noticeItem?.notice_id || noticeItem?.event_id || "active"}`}
+              onClick={(event) => openNoticeSenderWhatsApp(event, noticeItem)}
+              style={{
+                ...communityActionStyle("soft"),
+                minHeight: 48,
+                minWidth: 0,
+                padding: "10px 12px",
+                borderRadius: 15,
+                fontSize: 13,
+                textTransform: "none",
+                color: "#087443",
+                background: "#F0FDF4",
+                border: "1px solid rgba(22,163,74,0.18)",
+                boxShadow: "none",
+              }}
+            >
+              Contact announcer
+            </StableButton>
+          ) : null}
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 8,
+            alignItems: "center",
+            padding: "10px 12px",
+            borderRadius: 16,
+            background: "rgba(255,249,234,0.70)",
+            border: "1px solid rgba(214,170,69,0.12)",
+          }}
+        >
+          <span style={badge(false)}>Official</span>
+          <span style={badge(false)}>Acknowledged {acknowledgedCount}</span>
+          {expiry ? <span style={badge(false)}>{expiry}</span> : null}
+        </div>
+
+        {renderMeetingInterestShortcut(noticeItem)}
+      </div>
+    );
+  }
   async function submitCommunityNotice(
     body: string,
     options?: {
@@ -4264,13 +4547,13 @@ export default function CommunityHomePage() {
                     textTransform: "uppercase",
                   }}
                 >
-                  Bulletin
+                  <span>Community </span><span style={{ color: "#F2C766" }}>Bulletin</span>
                 </span>
               </div>
               <span style={announcementBoardPillStyle()}>
                 {communityNoticesLoading
                   ? "Checking board"
-                  : noticeKindLabel(primaryCommunityNotice)}
+                  : "Official notice"}
               </span>
             </div>
 
@@ -4282,130 +4565,7 @@ export default function CommunityHomePage() {
                   </span>
                 </div>
               ) : primaryCommunityNotice ? (
-                (() => {
-                  const title = wordLimit(
-                    firstTruthy(
-                      primaryCommunityNotice?.title,
-                      primaryCommunityNotice?.body,
-                      primaryCommunityNotice?.purpose,
-                      "Community notice"
-                    ),
-                    50
-                  );
-                  const when = compactDateLabel(
-                    firstTruthy(
-                      primaryCommunityNotice?.scheduled_at,
-                      primaryCommunityNotice?.created_at
-                    )
-                  );
-                  const expiry = noticeExpiryLabel(primaryCommunityNotice);
-                  const senderLabel = firstTruthy(
-                    primaryCommunityNotice?.sender_whatsapp_label,
-                    "Community contact"
-                  );
-                  const sourceLine = noticeSourceLine(primaryCommunityNotice, selectedClanName);
-                  const kindLabel = noticeKindLabel(primaryCommunityNotice);
-                  const planningLine = meetingPlanningLine(primaryCommunityNotice);
-                  const interestParts = meetingInterestParts(primaryCommunityNotice);
-
-                  return (
-                    <div style={announcementComposerPreviewStyle(isCompact)}>
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "52px minmax(0, 1fr)",
-                          gap: 12,
-                          alignItems: "center",
-                        }}
-                      >
-                        <span style={announcementNoticeIconStyle(0)} aria-hidden="true">
-                          <GsnLegacyIcon name="megaphone" size={31} />
-                        </span>
-                        <span style={{ minWidth: 0 }}>
-                          <span
-                            style={{
-                              ...brandClampLines(3),
-                              color: "#07172C",
-                              fontSize: isCompact ? 18 : 21,
-                              fontWeight: 960,
-                              lineHeight: 1.18,
-                            }}
-                          >
-                            {title}
-                          </span>
-                          <span
-                            style={{
-                              ...brandClampLines(1),
-                              marginTop: 6,
-                              color: "#617085",
-                              fontSize: 12.5,
-                              fontWeight: 820,
-                            }}
-                          >
-                            {sourceLine} - {kindLabel}
-                            {when ? ` - ${when}` : ""}
-                            {expiry ? ` - ${expiry}` : ""}
-                          </span>
-                          {planningLine || interestParts.length > 0 ? (
-                            <span
-                              style={{
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: 6,
-                                marginTop: 8,
-                                alignItems: "center",
-                              }}
-                            >
-                              {planningLine ? (
-                                <span style={badge(true)}>{planningLine}</span>
-                              ) : null}
-                              {interestParts.map(([label, count]) => (
-                                <span key={label} style={badge(false)}>
-                                  {label}: {count}
-                                </span>
-                              ))}
-                            </span>
-                          ) : null}
-                          <span
-                            style={{
-                              display: "flex",
-                              flexWrap: "wrap",
-                              gap: 6,
-                              marginTop: 8,
-                              alignItems: "center",
-                            }}
-                          >
-                            {renderNoticeAcknowledgementShortcut(primaryCommunityNotice)}
-                            {primaryCommunityNotice?.sender_whatsapp_number ? (
-                              <StableButton
-                                type="button"
-                                aria-label={`Contact ${senderLabel} about this announcement`}
-                                debugId={`community-home.bulletin.primary-sender-whatsapp.${primaryCommunityNotice?.notice_id || primaryCommunityNotice?.event_id || "active"}`}
-                                onClick={(event) => openNoticeSenderWhatsApp(event, primaryCommunityNotice)}
-                                style={{
-                                  ...communityActionStyle("soft"),
-                                  minHeight: 38,
-                                  minWidth: 0,
-                                  padding: "8px 10px",
-                                  borderRadius: 12,
-                                  fontSize: 12,
-                                  textTransform: "none",
-                                  color: "#087443",
-                                  background: "#F0FDF4",
-                                  border: "1px solid rgba(22,163,74,0.18)",
-                                  boxShadow: "none",
-                                }}
-                              >
-                                Contact announcer
-                              </StableButton>
-                            ) : null}
-                          </span>
-                          {renderMeetingInterestShortcut(primaryCommunityNotice)}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })()
+                renderCommunityBulletinPrimaryNotice(primaryCommunityNotice)
               ) : (
                 <div style={announcementComposerPreviewStyle(isCompact)}>
                   <div
@@ -4471,7 +4631,7 @@ export default function CommunityHomePage() {
                       width: "100%",
                     }}
                   >
-                    Contact community
+                    Contact
                   </StableButton>
                 ) : null}
 

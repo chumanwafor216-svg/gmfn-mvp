@@ -281,27 +281,27 @@ assertContains(
 );
 
 assertContains(
-  /Bulletin[\s\S]*?debugId="community-home\.notice\.post"[\s\S]*?communityNoticeSubmitMode === "review"[\s\S]*?"Submit"[\s\S]*?"Post"[\s\S]*?debugId="community-home\.contact\.whatsapp-chat"[\s\S]*?>\s*Contact community\s*<\/StableButton>[\s\S]*?debugId="community-home\.notice\.settings-toggle"[\s\S]*?communityBulletinSettingsOpen[\s\S]*?data-debug-id="community-home\.notice\.settings-panel"[\s\S]*?debugId="community-home\.notice\.policy\.members"[\s\S]*?debugId="community-home\.notice\.policy\.admins"[\s\S]*?communityNoticeReviewSubmissions\.map[\s\S]*?debugId=\{`community-home\.notice\.review\.approve\.\$\{submissionId\}`\}[\s\S]*?debugId=\{`community-home\.notice\.review\.reject\.\$\{submissionId\}`\}[\s\S]*?communityNoticeLogItems\.map/,
-  "Community Home communication block must keep the live announcement dominant, use one quiet Post/Submit/Contact community/Settings utility row, and tuck officer record review behind the settings toggle."
+  /Community[\s\S]*?Bulletin[\s\S]*?renderCommunityBulletinPrimaryNotice\(primaryCommunityNotice\)[\s\S]*?debugId="community-home\.notice\.post"[\s\S]*?communityNoticeSubmitMode === "review"[\s\S]*?"Submit"[\s\S]*?"Post"[\s\S]*?debugId="community-home\.contact\.whatsapp-chat"[\s\S]*?>\s*Contact\s*<\/StableButton>[\s\S]*?debugId="community-home\.notice\.settings-toggle"[\s\S]*?communityBulletinSettingsOpen[\s\S]*?data-debug-id="community-home\.notice\.settings-panel"[\s\S]*?debugId="community-home\.notice\.policy\.members"[\s\S]*?debugId="community-home\.notice\.policy\.admins"[\s\S]*?communityNoticeReviewSubmissions\.map[\s\S]*?debugId=\{`community-home\.notice\.review\.approve\.\$\{submissionId\}`\}[\s\S]*?debugId=\{`community-home\.notice\.review\.reject\.\$\{submissionId\}`\}[\s\S]*?communityNoticeLogItems\.map/,
+  "Community Home communication block must keep the rich live announcement dominant, use one quiet Post/Submit/Contact/Settings utility row, and tuck officer record review behind the settings toggle."
 );
 assertContains(
   /function renderMeetingInterestShortcut[\s\S]*?\["yes", "Yes"\][\s\S]*?\["maybe", "Maybe"\][\s\S]*?\["no", "No"\][\s\S]*?debugId=\{`community-home\.bulletin\.meeting-interest-\$\{response\}`\}[\s\S]*?recordNoticeMeetingInterest\(buttonEvent, noticeItem, response\)/,
   "Community Home bulletin meeting shortcut must keep the compact Yes/Maybe/No response controls only."
 );
 assertContains(
-  /function renderNoticeAcknowledgementShortcut[\s\S]*?debugId=\{`community-home\.bulletin\.acknowledge\.\$\{eventId\}`\}[\s\S]*?recordNoticeAcknowledgement\(buttonEvent, noticeItem\)[\s\S]*?Acknowledged[\s\S]*?Acknowledge this/,
+  /function renderNoticeAcknowledgementShortcut[\s\S]*?debugId=\{`community-home\.bulletin\.acknowledge\.\$\{eventId\}`\}[\s\S]*?recordNoticeAcknowledgement\(buttonEvent, noticeItem\)[\s\S]*?Acknowledged[\s\S]*?Acknowledge/,
   "Community Home bulletin must expose a compact acknowledgement action for ordinary announcements."
 );
 assertContains(
-  /function renderNoticeAcknowledgementShortcut[\s\S]*?\{"\\u\{1F44D\}"\}[\s\S]*?Acknowledged[\s\S]*?Acknowledge this/,
-  "Community Home bulletin acknowledgement must use a visible thumb mark and clear acknowledge-this language instead of a shield-style security icon."
+  /function renderNoticeAcknowledgementShortcut[\s\S]*?\{"\\u\{1F44D\}"\}[\s\S]*?Acknowledged[\s\S]*?Acknowledge/,
+  "Community Home bulletin acknowledgement must use a visible thumb mark and clear acknowledge language instead of a shield-style security icon."
 );
 assertNotContains(
   /function renderNoticeAcknowledgementShortcut[\s\S]*?<GsnLegacyIcon name="check" size=\{16\} \/>/,
   "Community Home bulletin acknowledgement must not reuse the check icon because it maps to the trust shield."
 );
 assertContains(
-  /sourceLine = noticeSourceLine\(primaryCommunityNotice, selectedClanName\)[\s\S]*?\{sourceLine\} - \{kindLabel\}[\s\S]*?debugId=\{`community-home\.bulletin\.primary-sender-whatsapp\.[\s\S]*?Contact announcer/,
+  /function renderCommunityBulletinPrimaryNotice[\s\S]*?const sourceLine = noticeSourceLine\(noticeItem, selectedClanName\)[\s\S]*?\{sourceLine\}[\s\S]*?debugId=\{`community-home\.bulletin\.primary-sender-whatsapp\.[\s\S]*?Contact announcer/,
   "Community Home live bulletin notice must show the source community and keep the announcement sender WhatsApp contact attached to the notice."
 );
 

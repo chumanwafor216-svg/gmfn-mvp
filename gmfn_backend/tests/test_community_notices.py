@@ -357,6 +357,27 @@ def test_community_notice_archive_hides_expired_notice_but_keeps_memory(
                 clan_id=1,
                 actor_user_id=1,
                 subject_user_id=1,
+                created_at=datetime.now(timezone.utc),
+                meta_json=json.dumps(
+                    {
+                        "source": "community_notice_board",
+                        "reason": "community_notice_posted",
+                        "body": "29th August 2026 is Igbo cultural association day.",
+                        "word_count": 8,
+                        "expiry_policy": "pinned",
+                        "comments_enabled": False,
+                        "reactions_enabled": False,
+                        "thread_enabled": False,
+                    }
+                ),
+            )
+        )
+        db.add(
+            TrustEvent(
+                event_type="community.notice.posted",
+                clan_id=1,
+                actor_user_id=1,
+                subject_user_id=1,
                 meta_json=json.dumps(
                     {
                         "source": "community_notice_board",
@@ -407,14 +428,17 @@ def test_community_notice_archive_hides_expired_notice_but_keeps_memory(
     assert "Food collection this Friday." in bodies
     assert "Expired food collection yesterday." not in bodies
     assert "Legacy cultural day notice." not in bodies
-    assert payload["archived_notice_count"] == 2
+    assert "29th August 2026 is Igbo cultural association day." not in bodies
+    previous_bodies = [item["body"] for item in payload["previous_announcements"]]
+    assert "29th August 2026 is Igbo cultural association day." in previous_bodies
+    assert payload["archived_notice_count"] == 3
 
     with SessionLocal() as db:
         assert (
             db.query(TrustEvent)
             .filter(TrustEvent.event_type == "community.notice.posted")
             .count()
-            == 3
+            == 4
         )
 
 

@@ -423,7 +423,7 @@ assertContains(
 
 assertContains(
   files.communityPage,
-  /function isNoticeVisibleOnBoard[\s\S]*?createdAt\.getTime\(\) \+ ttlMs[\s\S]*?No new announcement\./,
+  /function noticeEmbeddedEventDate[\s\S]*?NOTICE_EMBEDDED_DATE_RE[\s\S]*?function noticeEffectiveExpiresAt[\s\S]*?createdAt\.getTime\(\) \+ ttlMs[\s\S]*?function isNoticeVisibleOnBoard[\s\S]*?active_board_status[\s\S]*?No new announcement\./,
   "Community Home bulletin must defensively hide legacy expired notices and use the agreed no-new-announcement empty state."
 );
 assertContains(
@@ -446,7 +446,7 @@ assertContains(
 
 assertContains(
   files.communityDomainSetupOverviewPanel,
-  /function noticeIsVisible[\s\S]*?active_board_status[\s\S]*?createdAt\.getTime\(\) \+ ttlMs[\s\S]*?visibleDomainNotices[\s\S]*?No new announcement\.[\s\S]*?Community Memory/,
+  /function noticeEmbeddedEventDate[\s\S]*?NOTICE_EMBEDDED_DATE_RE[\s\S]*?function noticeEffectiveExpiresAt[\s\S]*?createdAt\.getTime\(\) \+ ttlMs[\s\S]*?function noticeIsVisible[\s\S]*?active_board_status[\s\S]*?visibleDomainNotices[\s\S]*?No new announcement\.[\s\S]*?Community Memory/,
   "Community Domain Official Board must defensively hide stale notice rows and use the agreed no-new-announcement empty state."
 );
 

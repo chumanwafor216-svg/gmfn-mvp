@@ -24,6 +24,33 @@ type SizeStyleFactory = (size?: number) => React.CSSProperties;
 type StatusStyleFactory = (status: unknown) => React.CSSProperties;
 type UnknownRecord = Record<string, unknown>;
 
+const NOTICE_MONTH_INDEX: Record<string, number> = {
+  january: 0,
+  jan: 0,
+  february: 1,
+  feb: 1,
+  march: 2,
+  mar: 2,
+  april: 3,
+  apr: 3,
+  may: 4,
+  june: 5,
+  jun: 5,
+  july: 6,
+  jul: 6,
+  august: 7,
+  aug: 7,
+  september: 8,
+  sep: 8,
+  sept: 8,
+  october: 9,
+  oct: 9,
+  november: 10,
+  nov: 10,
+  december: 11,
+  dec: 11,
+};
+const NOTICE_EMBEDDED_DATE_RE = /\b(\d{1,2})(?:st|nd|rd|th)?\s+(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{4})\b/i;
 export type CommunityDomainNoticeItem = {
   notice_id?: string | number | null;
   event_id?: string | number | null;
@@ -208,29 +235,47 @@ async function copyText(value: string): Promise<boolean> {
   await navigator.clipboard.writeText(value);
   return true;
 }
-function noticeExpiryLabel(item: CommunityDomainNoticeItem): string {
-  const policy = cleanText(item?.expiry_policy).toLowerCase();
-  if (policy === "pinned" || policy === "until_replaced") {
-    return "Pinned";
+function noticeEmbeddedEventDate(item: CommunityDomainNoticeItem | null | undefined): Date | null {
+  const text = [item?.title, item?.body].map((value) => cleanText(value)).filter(Boolean).join(" ");
+  if (!text) return null;
+  const match = text.slice(0, 160).match(NOTICE_EMBEDDED_DATE_RE);
+  if (!match) return null;
+  const month = NOTICE_MONTH_INDEX[match[2].toLowerCase()];
+  if (typeof month !== "number") return null;
+  const day = Number(match[1]);
+  const year = Number(match[3]);
+  const date = new Date(Date.UTC(year, month, day));
+  return Number.isFinite(date.getTime()) ? date : null;
+}
+
+function noticeEffectiveExpiresAt(item: CommunityDomainNoticeItem | null | undefined): Date | null {
+  const rawExpiresAt = cleanText(item?.expires_at);
+  const explicitExpiresAt = rawExpiresAt ? new Date(rawExpiresAt) : null;
+  if (explicitExpiresAt && Number.isFinite(explicitExpiresAt.getTime())) return explicitExpiresAt;
+  const embeddedDate = noticeEmbeddedEventDate(item);
+  if (embeddedDate) {
+    return new Date(embeddedDate.getTime() + 24 * 60 * 60 * 1000);
   }
-  const expiresAt = noticeDateLabel(item?.expires_at);
-  return expiresAt ? `Until ${expiresAt}` : "";
+  const policy = cleanText(item?.expiry_policy).toLowerCase();
+  if (policy === "pinned" || policy === "until_replaced") return null;
+  const createdAt = new Date(cleanText(item?.created_at));
+  if (!Number.isFinite(createdAt.getTime())) return null;
+  const ttlMs = policy === "urgent" ? 48 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
+  return new Date(createdAt.getTime() + ttlMs);
+}
+function noticeExpiryLabel(item: CommunityDomainNoticeItem): string {
+  const expiresAt = noticeEffectiveExpiresAt(item);
+  if (expiresAt) return `Until ${expiresAt.toLocaleString()}`;
+  const policy = cleanText(item?.expiry_policy).toLowerCase();
+  if (policy === "pinned" || policy === "until_replaced") return "Pinned";
+  return "";
 }
 
 function noticeIsVisible(item: CommunityDomainNoticeItem, nowMs = Date.now()): boolean {
   const status = cleanText(item?.active_board_status).toLowerCase();
   if (item?.is_archived || status === "archived" || status === "expired") return false;
-  const policy = cleanText(item?.expiry_policy).toLowerCase();
-  if (policy === "pinned" || policy === "until_replaced") return true;
-  const rawExpiresAt = cleanText(item?.expires_at);
-  let expiresAt = rawExpiresAt ? new Date(rawExpiresAt) : null;
-  if (!expiresAt || !Number.isFinite(expiresAt.getTime())) {
-    const createdAt = new Date(cleanText(item?.created_at));
-    if (!Number.isFinite(createdAt.getTime())) return true;
-    const ttlMs = policy === "urgent" ? 48 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
-    expiresAt = new Date(createdAt.getTime() + ttlMs);
-  }
-  return expiresAt.getTime() > nowMs;
+  const expiresAt = noticeEffectiveExpiresAt(item);
+  return !expiresAt || expiresAt.getTime() > nowMs;
 }
 
 type Props = {

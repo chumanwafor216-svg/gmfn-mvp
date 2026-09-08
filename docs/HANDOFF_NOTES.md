@@ -1,3 +1,23 @@
+## 2026-09-08 - Community Bulletin rich arrangement and embedded event-date expiry
+
+- Status: Local implementation complete and verified. Not committed, pushed, or deployed in this slice.
+- Owner trigger: owner clarified that the Community Home bulletin still looked dull and did not match the richer arrangement mockup, and reported Builders still showing an expired August 29 cultural-day notice while ISA correctly showed `No new announcement.`
+- Backend behavior change: ordinary `community.notice.posted` and official `community_domain.notice.posted` expiry helpers now detect a visible event date in the title/body/purpose such as `29th August 2026`. When no explicit `expires_at` exists, that event date expires at the end of that calendar day, even if old data was marked `pinned`. This keeps old event announcements from staying live in one community while another community correctly empties.
+- Frontend behavior change: `/app/community` and `/app/community-domain/:id` now apply the same embedded event-date defensive expiry before rendering live notices, so the ordinary central board and the official domain board behave consistently.
+- Visual change: `/app/community` Community Bulletin now follows the richer phone arrangement: navy/gold header, green official notice pill, event date tile, source row, strong title, detail excerpt, gold acknowledgement button, contact announcer action when real sender WhatsApp exists, and compact real-data chips. Fake views/comments/shares/save/report were deliberately not added because the bulletin does not yet have those engines.
+- Empty-state polish: the utility row keeps the contact fallback short as `Contact` so it does not clip on phone; live empty state remains `No new announcement.`
+- Tests/audits passed:
+  - `python -m py_compile gmfn_backend\app\api\routes\community_notices.py gmfn_backend\app\api\routes\community_domains.py gmfn_backend\tests\test_community_notices.py gmfn_backend\tests\test_community_domains.py`
+  - `python -m pytest gmfn_backend\tests\test_community_notices.py -q` -> 17 passed.
+  - `python -m pytest gmfn_backend\tests\test_community_domains.py -q -k "notice_archive_hides_expired_notice or notice_board_is_member_scoped or notice_board_respects_disabled_feature_policy"` -> 3 passed.
+  - `npm --prefix frontend run audit:notice-board-phone-notifications`
+  - `npm --prefix frontend run audit:community-home-button-inventory`
+  - `npm --prefix frontend run audit:community-home-phone-buttons`
+  - `npm --prefix frontend run audit:protected-button-freeze`
+  - `npm --prefix frontend run audit:community-domain-product-contracts`
+  - `npm --prefix frontend run build`
+- Local review URL: Vite was started at `http://127.0.0.1:5173/` for owner phone review.
+- Devil truth: this is the arrangement upgrade and expiry-consistency fix, but it still does not create real view/comment/share/save/report metrics for bulletin notices. Those should not be displayed until there are real engines and data behind them.
 ## 2026-09-08 - Local central Community Bulletin feed and previous-announcement trail
 
 - Status: Local implementation complete; not committed, pushed, or deployed in this slice yet.
