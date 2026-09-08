@@ -1,6 +1,6 @@
 /* global caches, fetch, Response, self, URL */
 
-const CACHE_VERSION = "gsn-pwa-shell-v15";
+const CACHE_VERSION = "gsn-pwa-shell-v16";
 const SHELL_ASSETS = [
   "/",
   "/cover",
