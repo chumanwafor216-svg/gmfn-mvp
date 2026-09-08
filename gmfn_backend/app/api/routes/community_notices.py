@@ -6,6 +6,7 @@ import re
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any, Literal, Optional
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, field_validator
@@ -47,6 +48,8 @@ COMMUNITY_NOTICE_SOURCE = "community_notice_board"
 MAX_NOTICE_WORDS = 50
 MAX_NOTICE_FULL_WORDS = 600
 MAX_NOTICE_FULL_BODY_LENGTH = 4000
+MAX_NOTICE_ATTACHMENT_URL_LENGTH = 1000
+MAX_NOTICE_ATTACHMENT_LABEL_LENGTH = 80
 NOTICE_PUBLIC_BOUNDARY = (
     "Public Community Notice QR only. It shows the public-safe notice and any "
     "attached full details selected by the poster. It does not expose member "
@@ -595,6 +598,29 @@ def _community_notice_public_api_path(public_code: str) -> str:
     return f"/community-notices/public/{public_code}"
 
 
+def _clean_notice_attachment_url(value: Any) -> str:
+    raw = _safe_str(value)
+    if not raw:
+        return ""
+    if len(raw) > MAX_NOTICE_ATTACHMENT_URL_LENGTH:
+        raise ValueError("Notice attachment links must be 1000 characters or fewer.")
+    parsed = urlparse(raw)
+    if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc:
+        raise ValueError("Notice attachments must use an http or https link.")
+    return raw
+
+
+def _notice_attachment_payload(meta: dict[str, Any]) -> dict[str, Any]:
+    attachment_url = _safe_str(meta.get("attachment_url"))
+    attachment_label = _safe_str(meta.get("attachment_label"), "Open attachment")
+    attachment_kind = _safe_str(meta.get("attachment_kind"), "link")
+    return {
+        "attachment_url": attachment_url or None,
+        "attachment_label": attachment_label if attachment_url else None,
+        "attachment_kind": attachment_kind if attachment_url else None,
+    }
+
+
 def _community_notice_public_meta(enabled: bool) -> dict[str, Any]:
     if not enabled:
         return {
@@ -695,6 +721,7 @@ def _central_domain_notice_payload(
         "word_count": _word_count(body),
         "full_body": full_body or None,
         "full_word_count": _word_count(full_body) if full_body else 0,
+        **_notice_attachment_payload(meta),
         "created_at": _iso(getattr(event, "created_at", None)),
         "expires_at": _iso(expires_at),
         "expiry_policy": expiry_policy,
@@ -1021,6 +1048,7 @@ def _event_to_notice(
         "word_count": _word_count(body),
         "full_body": full_body or None,
         "full_word_count": _word_count(full_body) if full_body else 0,
+        **_notice_attachment_payload(meta),
         "created_at": _iso(getattr(event, "created_at", None)),
         "expires_at": _iso(expires_at),
         "expiry_policy": expiry_policy,
@@ -1089,6 +1117,7 @@ def _submission_to_review_item(event: TrustEvent) -> dict[str, Any]:
         "word_count": _word_count(body),
         "full_body": full_body or None,
         "full_word_count": _word_count(full_body) if full_body else 0,
+        **_notice_attachment_payload(meta),
         "public_qr_requested": bool(meta.get("public_qr_requested") or meta.get("public_qr_enabled")),
         "created_at": _iso(getattr(event, "created_at", None)),
         "submitted_by_user_id": int(getattr(event, "actor_user_id", 0) or 0),
@@ -1444,13 +1473,16 @@ class CommunityNoticeIn(BaseModel):
     availability_enabled: bool = False
     public_qr_enabled: bool = False
     full_body: Optional[str] = Field(default=None, max_length=MAX_NOTICE_FULL_BODY_LENGTH)
+    attachment_url: Optional[str] = Field(default=None, max_length=MAX_NOTICE_ATTACHMENT_URL_LENGTH)
+    attachment_label: Optional[str] = Field(default=None, max_length=MAX_NOTICE_ATTACHMENT_LABEL_LENGTH)
+    attachment_kind: Optional[Literal["link", "poster", "document"]] = "link"
 
     @field_validator("clan_id", mode="before")
     @classmethod
     def _reject_bool_ids(cls, value: Any) -> Any:
         return _reject_bool_identifier(value, "clan_id")
 
-    @field_validator("body", "full_body", mode="before")
+    @field_validator("body", "full_body", "attachment_url", "attachment_label", mode="before")
     @classmethod
     def _reject_non_text_notice_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_text_value(value, info.field_name)
@@ -1477,6 +1509,18 @@ class CommunityNoticeIn(BaseModel):
         if _word_count(full_body) > MAX_NOTICE_FULL_WORDS:
             raise ValueError("Attached full notice details must be 600 words or fewer.")
         return full_body
+
+    @field_validator("attachment_url")
+    @classmethod
+    def _enforce_notice_attachment_url(cls, value: Optional[str]) -> Optional[str]:
+        attachment_url = _clean_notice_attachment_url(value)
+        return attachment_url or None
+
+    @field_validator("attachment_label")
+    @classmethod
+    def _enforce_notice_attachment_label(cls, value: Optional[str]) -> Optional[str]:
+        attachment_label = _safe_str(value)
+        return attachment_label or None
 
     @field_validator("expires_at")
     @classmethod
@@ -1710,6 +1754,9 @@ def create_notice(
     )
     body = _safe_str(payload.body)
     full_body = _safe_str(payload.full_body)
+    attachment_url = _clean_notice_attachment_url(payload.attachment_url)
+    attachment_label = _safe_str(payload.attachment_label, "Open attachment")
+    attachment_kind = _safe_str(payload.attachment_kind, "link")
     expiry_policy = _normalize_notice_expiry_policy(payload.expiry_policy)
     try:
         expires_at = _notice_expires_at(expiry_policy, payload.expires_at)
@@ -1732,6 +1779,9 @@ def create_notice(
                 "word_count": _word_count(body),
                 "full_body": full_body or None,
                 "full_word_count": _word_count(full_body) if full_body else 0,
+                "attachment_url": attachment_url or None,
+                "attachment_label": attachment_label if attachment_url else None,
+                "attachment_kind": attachment_kind if attachment_url else None,
                 "public_qr_requested": bool(payload.public_qr_enabled),
                 "posting_policy": posting_policy,
                 "expiry_policy": expiry_policy,
@@ -1786,6 +1836,9 @@ def create_notice(
             "word_count": _word_count(body),
             "full_body": full_body or None,
             "full_word_count": _word_count(full_body) if full_body else 0,
+            "attachment_url": attachment_url or None,
+            "attachment_label": attachment_label if attachment_url else None,
+            "attachment_kind": attachment_kind if attachment_url else None,
             "posting_policy": posting_policy,
             "expiry_policy": expiry_policy,
             "expires_at": _iso(expires_at),
@@ -1990,6 +2043,7 @@ def decide_notice_review_submission(
     body = _safe_str(meta.get("body"))
     full_body = _safe_str(meta.get("full_body") or meta.get("full_notice_body"))
     public_qr_requested = bool(meta.get("public_qr_requested") or meta.get("public_qr_enabled"))
+    attachment_payload = _notice_attachment_payload(meta)
     expiry_policy = _normalize_notice_expiry_policy(meta.get("expiry_policy"))
     if payload.decision == "approve":
         try:
@@ -2017,6 +2071,7 @@ def decide_notice_review_submission(
                 "word_count": _word_count(body),
                 "full_body": full_body or None,
                 "full_word_count": _word_count(full_body) if full_body else 0,
+                **attachment_payload,
                 "posting_policy": _normalize_notice_posting_policy(meta.get("posting_policy")),
                 "expiry_policy": expiry_policy,
                 "expires_at": _iso(expires_at),

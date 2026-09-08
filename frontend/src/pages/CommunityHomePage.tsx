@@ -171,6 +171,9 @@ type CommunityNoticeItem = {
   title?: string | null;
   full_body?: string | null;
   full_word_count?: number | string | null;
+  attachment_url?: string | null;
+  attachment_label?: string | null;
+  attachment_kind?: string | null;
   purpose?: string | null;
   scheduled_at?: string | null;
   status?: string | null;
@@ -1606,6 +1609,17 @@ function communityNoticePublicPath(item: CommunityNoticeItem | null | undefined)
 
   const publicCode = firstTruthy(item?.public_code);
   return publicCode ? `/community-notices/${encodeURIComponent(publicCode)}` : "";
+}
+
+function communityNoticeAttachmentUrl(item: CommunityNoticeItem | null | undefined): string {
+  const raw = firstTruthy(item?.attachment_url);
+  if (!raw) return "";
+  try {
+    const parsed = new URL(raw);
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.toString() : "";
+  } catch {
+    return "";
+  }
 }
 
 function noticeKindLabel(item: CommunityNoticeItem | null | undefined): string {
@@ -3207,6 +3221,22 @@ export default function CommunityHomePage() {
     navigateWithOrigin(navigate, publicPath, location);
   }
 
+  function openNoticeAttachment(
+    event: React.SyntheticEvent<HTMLElement>,
+    noticeItem: CommunityNoticeItem
+  ) {
+    consumeCommunityButtonEvent(event);
+    const attachmentUrl = communityNoticeAttachmentUrl(noticeItem);
+
+    if (!attachmentUrl || typeof window === "undefined") {
+      showNotice("error", "This announcement does not have an attachment link yet.");
+      return;
+    }
+
+    window.open(attachmentUrl, "_blank", "noopener,noreferrer");
+    showNotice("success", "Opening this announcement attachment.");
+  }
+
   async function recordNoticeAcknowledgement(
     event: React.SyntheticEvent<HTMLElement>,
     noticeItem: CommunityNoticeItem
@@ -3594,6 +3624,8 @@ export default function CommunityHomePage() {
     const calendar = noticeCalendarParts(noticeItem);
     const rawBody = firstTruthy(noticeItem?.body, noticeItem?.title, noticeItem?.purpose, "Community notice");
     const fullBody = firstTruthy(noticeItem?.full_body);
+    const attachmentUrl = communityNoticeAttachmentUrl(noticeItem);
+    const attachmentLabel = firstTruthy(noticeItem?.attachment_label, "Open attachment");
     const titleLineLimit = isCompact ? 4 : 3;
     const when = compactDateLabel(firstTruthy(noticeItem?.scheduled_at, noticeItem?.created_at));
     const expiry = noticeExpiryLabel(noticeItem);
@@ -3847,6 +3879,23 @@ export default function CommunityHomePage() {
                 Open QR link
               </StableButton>
             ) : null}
+            {attachmentUrl ? (
+              <StableButton
+                type="button"
+                debugId={`community-home.bulletin.attachment.${noticeKey}`}
+                onClick={(event) => openNoticeAttachment(event, noticeItem)}
+                style={{
+                  ...communityActionStyle("soft"),
+                  minHeight: 42,
+                  width: "100%",
+                  borderRadius: 13,
+                  fontSize: 13,
+                  boxShadow: "none",
+                }}
+              >
+                {attachmentLabel}
+              </StableButton>
+            ) : null}
             {canOpenRollCall ? (
               <StableButton
                 type="button"
@@ -3886,6 +3935,7 @@ export default function CommunityHomePage() {
           <span style={badge(false)}>Acknowledged {acknowledgedCount}</span>
           {expiry ? <span style={badge(false)}>{expiry}</span> : null}
           {noticeItem?.public_qr_enabled ? <span style={badge(false)}>QR ready</span> : null}
+          {attachmentUrl ? <span style={badge(false)}>Attachment</span> : null}
         </div>
 
       </div>
@@ -3899,6 +3949,9 @@ export default function CommunityHomePage() {
       availability_enabled?: boolean;
       public_qr_enabled?: boolean;
       full_body?: string | null;
+      attachment_url?: string | null;
+      attachment_label?: string | null;
+      attachment_kind?: "link" | "poster" | "document" | null;
     }
   ) {
     const clanId = getClanId(selectedClan);

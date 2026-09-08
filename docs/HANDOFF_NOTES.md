@@ -1,3 +1,12 @@
+## 2026-09-08 - Community Bulletin scrollable composer and public link attachments
+
+- Status: Local backend/frontend implementation complete and verified; local commit in this slice, not pushed unless the owner asks to deploy this batch.
+- Owner trigger: after testing several live announcements, the mobile notice composer could grow under the bottom rail so the Post action became unreachable; the owner also wanted one Bulletin composer surface with an add/plus attachment option instead of sending people to a second screen.
+- Backend route affected: `POST /community-notices` now accepts optional `attachment_url`, `attachment_label`, and `attachment_kind` for public `http/https` links only. Published notices, review submissions, approved review notices, linked Community Domain notices, and public QR notice payloads now return the attachment metadata when present.
+- Frontend route affected: `/app/community` notice composer is now a scrollable phone-safe modal with a sticky Cancel/Post row and an `+ Add attachment` drawer for link/video, poster-image link, or document link metadata. The central Bulletin Reactions panel shows the attachment action when present, and QR-enabled public notice pages show the same attachment action.
+- Docs/audit: `docs/SCREEN_SPECS.md` records the public-link-only attachment boundary; `frontend/tools/audit-community-home-button-inventory.mjs` guards the new Reactions attachment button and updated Community Home action count.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\community_notices.py gmfn_backend\tests\test_community_notices.py`; `python -m pytest -q gmfn_backend\tests\test_community_notices.py` -> 24 passed; `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:community-home-phone-buttons`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `git diff --check`.
+- Devil truth: this adds real public URL attachment support and fixes the mobile composer reachability. It does not implement direct gallery/file upload or hosted poster storage yet; that requires a governed media-storage route so private or oversized files are not silently published.
 ## 2026-09-08 - Auth accepts public GSN-GMFN identity aliases
 
 - Status: Local backend implementation complete and verified; local commit in this slice, not pushed unless the owner asks to deploy this batch.

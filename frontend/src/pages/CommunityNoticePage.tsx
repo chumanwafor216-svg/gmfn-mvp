@@ -19,6 +19,17 @@ function errorMessage(error: any): string {
   );
 }
 
+function safeHttpUrl(value: unknown): string {
+  const raw = safeText(value);
+  if (!raw) return "";
+  try {
+    const parsed = new URL(raw);
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.toString() : "";
+  } catch {
+    return "";
+  }
+}
+
 function formatDate(value: unknown): string {
   const raw = safeText(value);
   if (!raw) return "";
@@ -156,6 +167,8 @@ export default function CommunityNoticePage() {
     safeText(notice?.community_domain_name, "This community")
   );
   const body = safeText(notice?.full_body || notice?.body || notice?.title, "Community message");
+  const attachmentUrl = safeHttpUrl(notice?.attachment_url);
+  const attachmentLabel = safeText(notice?.attachment_label, "Open attachment");
   const expiresAt = formatDate(notice?.expires_at);
   const createdAt = formatDate(notice?.created_at);
 
@@ -164,6 +177,11 @@ export default function CommunityNoticePage() {
     await navigator.clipboard.writeText(pageUrl);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1600);
+  }
+
+  function openAttachment() {
+    if (!attachmentUrl || typeof window === "undefined") return;
+    window.open(attachmentUrl, "_blank", "noopener,noreferrer");
   }
 
   return (
@@ -223,6 +241,16 @@ export default function CommunityNoticePage() {
                   {copied ? "Copied" : "Copy QR Link"}
                 </StableButton>
               </div>
+
+              {attachmentUrl ? (
+                <div style={softCard()}>
+                  <div style={label()}>Attachment</div>
+                  <p style={{ ...helper(), margin: 0 }}>{attachmentLabel}</p>
+                  <StableButton kind="primary" debugId="community-notice.open-attachment" onClick={openAttachment}>
+                    Open attachment
+                  </StableButton>
+                </div>
+              ) : null}
 
               <div style={{ ...softCard(), background: "#F5F0E6" }}>
                 <div style={label()}>Boundary</div>

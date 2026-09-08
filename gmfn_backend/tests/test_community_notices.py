@@ -206,6 +206,9 @@ def test_community_notice_public_qr_exposes_full_details_without_private_fields(
             "body": "Choir practice Wednesday 7 pm.",
             "full_body": full_body,
             "public_qr_enabled": True,
+            "attachment_url": "https://example.org/choir-programme",
+            "attachment_label": "Choir programme",
+            "attachment_kind": "document",
         },
     )
 
@@ -214,6 +217,9 @@ def test_community_notice_public_qr_exposes_full_details_without_private_fields(
     assert notice["body"] == "Choir practice Wednesday 7 pm."
     assert notice["full_body"] == full_body
     assert notice["full_word_count"] == 18
+    assert notice["attachment_url"] == "https://example.org/choir-programme"
+    assert notice["attachment_label"] == "Choir programme"
+    assert notice["attachment_kind"] == "document"
     assert notice["public_qr_enabled"] is True
     assert notice["public_code"]
     assert notice["public_path"] == f"/community-notices/{notice['public_code']}"
@@ -225,6 +231,9 @@ def test_community_notice_public_qr_exposes_full_details_without_private_fields(
     public_notice = public_res.json()["notice"]
     assert public_notice["body"] == "Choir practice Wednesday 7 pm."
     assert public_notice["full_body"] == full_body
+    assert public_notice["attachment_url"] == "https://example.org/choir-programme"
+    assert public_notice["attachment_label"] == "Choir programme"
+    assert public_notice["attachment_kind"] == "document"
     assert public_notice["community"]["name"] == "Nigerian Society"
     assert "posted_by_user_id" not in public_notice
     assert "sender_whatsapp_number" not in public_notice
@@ -627,6 +636,25 @@ def test_community_notice_rejects_more_than_fifty_words(
 
     assert res.status_code == 422, res.text
     assert "50 words or fewer" in res.text
+
+
+def test_community_notice_rejects_non_http_attachment_link(
+    client, override_current_user
+):
+    _seed_notice_community()
+
+    res = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Choir practice Wednesday 7 pm.",
+            "attachment_url": "javascript:alert(1)",
+            "attachment_label": "Unsafe link",
+        },
+    )
+
+    assert res.status_code == 422, res.text
+    assert "http or https" in res.text
 
 
 def test_community_notice_archive_hides_expired_notice_but_keeps_memory(

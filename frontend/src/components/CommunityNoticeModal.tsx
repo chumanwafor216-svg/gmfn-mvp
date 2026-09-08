@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { StableButton } from "./StableButton";
 
+type NoticeAttachmentKind = "link" | "poster" | "document";
+
 type Props = {
   open: boolean;
   communityName: string;
@@ -10,7 +12,16 @@ type Props = {
   onClose: () => void;
   onSubmit: (
     body: string,
-    options?: { expiry_policy?: NoticeExpiryPolicy; expires_at?: string; public_qr_enabled?: boolean; availability_enabled?: boolean; full_body?: string | null }
+    options?: {
+      expiry_policy?: NoticeExpiryPolicy;
+      expires_at?: string;
+      public_qr_enabled?: boolean;
+      availability_enabled?: boolean;
+      full_body?: string | null;
+      attachment_url?: string | null;
+      attachment_label?: string | null;
+      attachment_kind?: NoticeAttachmentKind | null;
+    }
   ) => Promise<void> | void;
 };
 
@@ -18,6 +29,17 @@ type NoticeExpiryPolicy = "standard" | "urgent" | "event" | "pinned";
 
 function countWords(value: string): number {
   return value.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function isHttpUrl(value: string): boolean {
+  const raw = value.trim();
+  if (!raw) return true;
+  try {
+    const parsed = new URL(raw);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 export default function CommunityNoticeModal({
@@ -36,10 +58,22 @@ export default function CommunityNoticeModal({
   const [eventExpiresAt, setEventExpiresAt] = useState("");
   const [publicQrEnabled, setPublicQrEnabled] = useState(false);
   const [availabilityEnabled, setAvailabilityEnabled] = useState(false);
+  const [attachmentPanelOpen, setAttachmentPanelOpen] = useState(false);
+  const [attachmentKind, setAttachmentKind] = useState<NoticeAttachmentKind>("link");
+  const [attachmentUrl, setAttachmentUrl] = useState("");
+  const [attachmentLabel, setAttachmentLabel] = useState("");
   const words = useMemo(() => countWords(body), [body]);
   const fullWords = useMemo(() => countWords(fullBody), [fullBody]);
+  const attachmentUrlTrimmed = attachmentUrl.trim();
+  const attachmentUrlInvalid = Boolean(attachmentUrlTrimmed) && !isHttpUrl(attachmentUrlTrimmed);
   const eventExpiryMissing = expiryPolicy === "event" && !eventExpiresAt;
-  const blocked = words > 50 || !body.trim() || (includeFullBody && fullWords > 600) || eventExpiryMissing || busy;
+  const blocked =
+    words > 50 ||
+    !body.trim() ||
+    (includeFullBody && fullWords > 600) ||
+    attachmentUrlInvalid ||
+    eventExpiryMissing ||
+    busy;
   const isReviewSubmission = submitMode === "review";
 
   if (!open) return null;
@@ -55,6 +89,9 @@ export default function CommunityNoticeModal({
       public_qr_enabled: publicQrEnabled,
       availability_enabled: availabilityEnabled,
       full_body: includeFullBody ? fullBody.trim() || null : undefined,
+      attachment_url: attachmentUrlTrimmed || undefined,
+      attachment_label: attachmentUrlTrimmed ? attachmentLabel.trim() || undefined : undefined,
+      attachment_kind: attachmentUrlTrimmed ? attachmentKind : undefined,
     });
     setBody("");
     setExpiryPolicy("standard");
@@ -63,6 +100,10 @@ export default function CommunityNoticeModal({
     setEventExpiresAt("");
     setPublicQrEnabled(false);
     setAvailabilityEnabled(false);
+    setAttachmentPanelOpen(false);
+    setAttachmentKind("link");
+    setAttachmentUrl("");
+    setAttachmentLabel("");
   }
 
   return (
@@ -91,15 +132,81 @@ export default function CommunityNoticeModal({
           style={textareaStyle}
         />
 
-        <label style={checkboxRowStyle}>
-          <input
-            type="checkbox"
-            checked={includeFullBody}
-            onChange={(event) => setIncludeFullBody(event.target.checked)}
-            disabled={busy}
-          />
-          <span>Add full notice details</span>
-        </label>
+        <StableButton
+          type="button"
+          debugId="community-notice-modal.attachment-toggle"
+          onClick={() => setAttachmentPanelOpen((current) => !current)}
+          disabled={busy}
+          kind="secondary"
+          stableHeight={44}
+          fullWidth
+          style={attachmentToggleStyle}
+        >
+          {attachmentPanelOpen ? "Close attachment" : "+ Add attachment"}
+        </StableButton>
+
+        {attachmentPanelOpen ? (
+          <div style={attachmentPanelStyle}>
+            <div style={fieldGroupStyle}>
+              <label style={fieldLabelStyle} htmlFor="community-notice-attachment-kind">
+                Attachment type
+              </label>
+              <select
+                id="community-notice-attachment-kind"
+                value={attachmentKind}
+                onChange={(event) => setAttachmentKind(event.target.value as NoticeAttachmentKind)}
+                style={fieldStyle}
+              >
+                <option value="link">Link / video</option>
+                <option value="poster">Poster image link</option>
+                <option value="document">Document link</option>
+              </select>
+            </div>
+            <div style={fieldGroupStyle}>
+              <label style={fieldLabelStyle} htmlFor="community-notice-attachment-url">
+                Public attachment link
+              </label>
+              <input
+                id="community-notice-attachment-url"
+                type="url"
+                value={attachmentUrl}
+                onChange={(event) => setAttachmentUrl(event.target.value)}
+                maxLength={1000}
+                placeholder="https://..."
+                style={attachmentUrlInvalid ? invalidFieldStyle : fieldStyle}
+              />
+            </div>
+            <div style={fieldGroupStyle}>
+              <label style={fieldLabelStyle} htmlFor="community-notice-attachment-label">
+                Button label
+              </label>
+              <input
+                id="community-notice-attachment-label"
+                type="text"
+                value={attachmentLabel}
+                onChange={(event) => setAttachmentLabel(event.target.value)}
+                maxLength={80}
+                placeholder="Open attachment"
+                style={fieldStyle}
+              />
+            </div>
+            {attachmentUrlInvalid ? (
+              <p style={errorTextStyle}>Use a public http or https link.</p>
+            ) : null}
+            <p style={attachmentHelpStyle}>
+              Gallery and direct file upload still need governed media storage. For now, add a public poster, document, video, or reading link.
+            </p>
+            <label style={checkboxRowStyle}>
+              <input
+                type="checkbox"
+                checked={includeFullBody}
+                onChange={(event) => setIncludeFullBody(event.target.checked)}
+                disabled={busy}
+              />
+              <span>Attach longer text</span>
+            </label>
+          </div>
+        ) : null}
 
         {includeFullBody ? (
           <textarea
@@ -224,9 +331,11 @@ const overlayStyle: React.CSSProperties = {
   inset: 0,
   zIndex: 1000,
   display: "flex",
-  alignItems: "center",
+  alignItems: "flex-start",
   justifyContent: "center",
-  padding: 18,
+  padding: "16px 18px 112px",
+  overflowY: "auto",
+  overscrollBehavior: "contain",
   background: "rgba(7, 23, 44, 0.54)",
 };
 
@@ -237,6 +346,10 @@ const modalStyle: React.CSSProperties = {
   background: "#FFFFFF",
   boxShadow: "0 24px 60px rgba(7,23,44,0.24)",
   padding: 18,
+  maxHeight: "calc(100vh - 36px)",
+  overflowY: "auto",
+  overscrollBehavior: "contain",
+  WebkitOverflowScrolling: "touch",
 };
 
 const eyebrowStyle: React.CSSProperties = {
@@ -264,7 +377,7 @@ const copyStyle: React.CSSProperties = {
 const textareaStyle: React.CSSProperties = {
   width: "100%",
   minHeight: 118,
-  resize: "vertical",
+  resize: "none",
   borderRadius: 14,
   border: "1px solid rgba(16,37,59,0.16)",
   padding: 12,
@@ -281,6 +394,21 @@ const fullTextareaStyle: React.CSSProperties = {
   marginTop: 8,
   minHeight: 154,
   background: "#F8FBFF",
+};
+
+const attachmentToggleStyle: React.CSSProperties = {
+  marginTop: 10,
+  justifyContent: "center",
+};
+
+const attachmentPanelStyle: React.CSSProperties = {
+  marginTop: 10,
+  borderRadius: 16,
+  border: "1px solid rgba(16,37,59,0.12)",
+  background: "#F8FBFF",
+  padding: 12,
+  display: "grid",
+  gap: 8,
 };
 
 const fieldGroupStyle: React.CSSProperties = {
@@ -307,6 +435,25 @@ const fieldStyle: React.CSSProperties = {
   fontWeight: 800,
   boxSizing: "border-box",
   outline: "none",
+};
+
+const invalidFieldStyle: React.CSSProperties = {
+  ...fieldStyle,
+  borderColor: "#FCA5A5",
+  background: "#FFFAFA",
+};
+
+const attachmentHelpStyle: React.CSSProperties = {
+  margin: 0,
+  color: "#617085",
+  fontSize: 12,
+  lineHeight: 1.4,
+  fontWeight: 750,
+};
+
+const errorTextStyle: React.CSSProperties = {
+  ...attachmentHelpStyle,
+  color: "#7F1D1D",
 };
 
 const checkboxRowStyle: React.CSSProperties = {
@@ -343,9 +490,15 @@ const warningStyle: React.CSSProperties = {
 };
 
 const actionsStyle: React.CSSProperties = {
-  marginTop: 16,
+  position: "sticky",
+  bottom: 0,
+  zIndex: 1,
+  margin: "16px -18px -18px",
+  padding: "12px 18px 16px",
   display: "flex",
   justifyContent: "flex-end",
   gap: 8,
   flexWrap: "wrap",
+  background: "linear-gradient(180deg, rgba(255,255,255,0.82), #FFFFFF 24%)",
+  borderTop: "1px solid rgba(16,37,59,0.08)",
 };
