@@ -159622,3 +159622,27 @@ Devil's-advocate boundary: this completes the practical PDF/report button, but i
 - Shared helper change: `frontend/src/lib/gsnSupportContacts.ts` now supports a filled sign-in support message while keeping the existing centralized WhatsApp/email support contact values.
 - Guardrail change: updated `frontend/tools/audit-entry-auth-contracts.mjs` and `frontend/tools/audit-admin-ops-actions.mjs` to cage the recovery review packet, Identity Risk handoff, and requested-GSN-ID match guard.
 - Devil's advocate: this still does not let Codex or the public recovery page reset the member directly. An authenticated admin/support operator must open Identity Risk, confirm owner proof, write the reviewer note, issue the temporary password, and give it only to the verified account owner.
+
+## CURRENT LOCAL STATE - 2026-09-08 - Admin identity tools accept mixed GSN-GMFN display IDs
+
+Owner trigger:
+- Owner tried to merge Nevito/Ebube identity records after password recovery and entered the original marketplace ID as `GSN-GMFN-U-0AEAE2D7` with duplicate/recovery ID `GSN-U-0A2E598F`. Live admin returned `Canonical user was not found`.
+
+Unabated truth:
+- Internally generated user IDs are normally stored as `GMFN-U-...`; some UI surfaces display the wider brand form as `GSN-GMFN-U-...`.
+- Password recovery itself does not mint a new ID, but admin reconciliation was too strict about ID aliases and did not resolve the mixed display prefix.
+
+Changed:
+- `gmfn_backend/app/api/routes/identity_risk.py`
+  - Added `_gsn_id_candidates(...)` for admin identity tools.
+  - Admin duplicate reconciliation and manual recovery reset now accept `GSN-GMFN-U-...`, `GMFN-GSN-U-...`, `GMFN-U-...`, `GSN-U-...`, and bare `U-...`/suffix forms as candidates for the same stored identity.
+- `gmfn_backend/tests/test_identity_reconciliation.py`
+  - Added regression coverage for preview merge using a mixed `GSN-GMFN-U-...` canonical ID.
+  - Added regression coverage for manual recovery reset using a mixed `GSN-GMFN-U-...` ID.
+
+Verification:
+- Passed `.\.venv\Scripts\python.exe -m pytest -q tests\test_identity_reconciliation.py` from `gmfn_backend` (`10 passed`).
+- Passed `.\.venv\Scripts\python.exe -m py_compile app\api\routes\identity_risk.py tests\test_identity_reconciliation.py` from `gmfn_backend`.
+
+Operational note:
+- After deployment, the admin can retry with canonical/original `GSN-GMFN-U-0AEAE2D7` and duplicate/recovery `GSN-U-0A2E598F`. Preview first; execute only after owner proof confirms both records are the same person.

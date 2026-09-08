@@ -254,6 +254,43 @@ def test_admin_identity_reconciliation_accepts_gsn_gmfn_alias_ids(client):
     assert res.json()["mode"] == "dry_run"
 
 
+def test_admin_identity_reconciliation_accepts_mixed_gsn_gmfn_display_alias(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    _seed_confirmed_duplicate_pair()
+
+    res = client.post(
+        "/identity-risk/admin/reconcile-duplicate",
+        json={
+            "canonical_gmfn_id": "GSN-GMFN-U-CANONICAL",
+            "duplicate_gmfn_id": "GSN-U-DUPLICATE",
+        },
+        headers=_headers("identity-reconcile-admin@example.com"),
+    )
+
+    assert res.status_code == 200, res.text
+    assert res.json()["mode"] == "dry_run"
+
+
+def test_admin_manual_recovery_reset_accepts_mixed_gsn_gmfn_display_alias(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    _seed_confirmed_duplicate_pair()
+
+    res = client.post(
+        "/identity-risk/admin/manual-recovery-reset",
+        json={
+            "gmfn_id": "GSN-GMFN-U-CANONICAL",
+            "phone_e164": "+447903165266",
+            "owner_proof_confirmed": True,
+            "reviewer_note": "Owner confirmed phone and identity before manual reset.",
+        },
+        headers=_headers("identity-reconcile-admin@example.com"),
+    )
+
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["gmfn_id"] == "GMFN-U-CANONICAL"
+    assert body["temporary_password"].startswith("GSN-")
+
 def test_admin_identity_reconciliation_requires_owner_confirmation_for_execute(client):
     os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
     _seed_confirmed_duplicate_pair()

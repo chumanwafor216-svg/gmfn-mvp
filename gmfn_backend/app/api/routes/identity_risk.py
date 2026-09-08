@@ -313,6 +313,30 @@ def _temporary_recovery_password() -> str:
     return "GSN-" + "-".join(blocks)
 
 
+def _gsn_id_candidates(value: object) -> list[str]:
+    raw = str(value or "").strip().upper()
+    if not raw:
+        return []
+
+    suffix = raw
+    for prefix in ("GSN-GMFN-U-", "GMFN-GSN-U-", "GMFN-U-", "GSN-U-", "U-"):
+        if suffix.startswith(prefix):
+            suffix = suffix[len(prefix):]
+            break
+
+    candidates = [
+        raw,
+        f"GMFN-U-{suffix}",
+        f"GSN-U-{suffix}",
+        f"GSN-GMFN-U-{suffix}",
+    ]
+    return [
+        item
+        for index, item in enumerate(candidates)
+        if item and item not in candidates[:index]
+    ]
+
+
 def _resolve_reconcile_user(
     db: Session,
     *,
@@ -330,12 +354,7 @@ def _resolve_reconcile_user(
     if user_id is not None:
         user = query.filter(User.id == int(user_id)).first()
     else:
-        raw_gmfn_id = str(gmfn_id or "").strip().upper()
-        candidate_ids = [raw_gmfn_id]
-        if raw_gmfn_id.startswith("GMFN-"):
-            candidate_ids.append(f"GSN-{raw_gmfn_id[5:]}")
-        elif raw_gmfn_id.startswith("GSN-"):
-            candidate_ids.append(f"GMFN-{raw_gmfn_id[4:]}")
+        candidate_ids = _gsn_id_candidates(gmfn_id)
         user = query.filter(User.gmfn_id.in_(candidate_ids)).first()
 
     if user is None:
@@ -349,12 +368,7 @@ def _resolve_manual_recovery_user(
     gmfn_id: str,
     phone_e164: str,
 ) -> User:
-    raw_gmfn_id = str(gmfn_id or "").strip().upper()
-    candidate_ids = [raw_gmfn_id]
-    if raw_gmfn_id.startswith("GMFN-"):
-        candidate_ids.append(f"GSN-{raw_gmfn_id[5:]}")
-    elif raw_gmfn_id.startswith("GSN-"):
-        candidate_ids.append(f"GMFN-{raw_gmfn_id[4:]}")
+    candidate_ids = _gsn_id_candidates(gmfn_id)
 
     phone_candidates = _phone_query_candidates(phone_e164)
     user = (
