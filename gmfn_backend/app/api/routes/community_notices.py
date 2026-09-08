@@ -284,8 +284,32 @@ def _notice_expires_at(policy: str, explicit_expires_at: Any = None) -> Optional
     return now + timedelta(days=NOTICE_STANDARD_VISIBLE_DAYS)
 
 
-def _notice_is_expired(meta: dict[str, Any], *, now: Optional[datetime] = None) -> bool:
+def _notice_effective_expires_at(
+    meta: dict[str, Any],
+    *,
+    created_at: Any = None,
+) -> Optional[datetime]:
     expires_at = _parse_datetime(meta.get("expires_at"))
+    if expires_at is not None:
+        return expires_at
+    policy = _normalize_notice_expiry_policy(meta.get("expiry_policy"))
+    if policy == NOTICE_EXPIRY_PINNED:
+        return None
+    created = _parse_datetime(created_at)
+    if created is None:
+        return None
+    if policy == NOTICE_EXPIRY_URGENT:
+        return created + timedelta(hours=NOTICE_URGENT_VISIBLE_HOURS)
+    return created + timedelta(days=NOTICE_STANDARD_VISIBLE_DAYS)
+
+
+def _notice_is_expired(
+    meta: dict[str, Any],
+    *,
+    now: Optional[datetime] = None,
+    created_at: Any = None,
+) -> bool:
+    expires_at = _notice_effective_expires_at(meta, created_at=created_at)
     if expires_at is None:
         return False
     current = now or datetime.now(timezone.utc)
@@ -510,8 +534,11 @@ def _event_to_notice(
     body = _safe_str(meta.get("body") or meta.get("title"))
     sender_contact = _safe_str(meta.get("sender_whatsapp_number"))
     expiry_policy = _normalize_notice_expiry_policy(meta.get("expiry_policy"))
-    expires_at = _parse_datetime(meta.get("expires_at"))
-    expired = _notice_is_expired(meta)
+    expires_at = _notice_effective_expires_at(
+        meta,
+        created_at=getattr(event, "created_at", None),
+    )
+    expired = _notice_is_expired(meta, created_at=getattr(event, "created_at", None))
     clan_id = int(getattr(event, "clan_id", 0) or 0)
     source_payload = _clan_source_payload(db, clan_id) if db is not None else {}
     ack_summary = (
@@ -1035,7 +1062,7 @@ def list_notices(
     notices: list[dict[str, Any]] = []
     for row in notice_rows:
         meta = _safe_meta(getattr(row, "meta_json", None))
-        if _notice_is_expired(meta):
+        if _notice_is_expired(meta, created_at=getattr(row, "created_at", None)):
             archived_notice_count += 1
             continue
         notices.append(_event_to_notice(row, db=db, viewer_user_id=int(current_user.id)))
@@ -1430,7 +1457,7 @@ def acknowledge_notice(
     if not notice_event:
         raise HTTPException(status_code=404, detail="Community notice not found")
     meta = _safe_meta(getattr(notice_event, "meta_json", None))
-    if _notice_is_expired(meta):
+    if _notice_is_expired(meta, created_at=getattr(notice_event, "created_at", None)):
         raise HTTPException(status_code=409, detail="This notice has already left the active board")
 
     event = log_trust_event(

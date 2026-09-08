@@ -2768,8 +2768,8 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/SetupOverviewPanel.tsx",
-  /type SetupNoticeTaskKey = "recent" \| "post"[\s\S]*SETUP_NOTICE_TASK_OPTIONS[\s\S]*key: "recent"[\s\S]*key: "post"[\s\S]*Official Board[\s\S]*Current notice view[\s\S]*community-domain-dashboard\.setup-notice-toggle[\s\S]*setupNoticeTaskChooserOpen[\s\S]*Close notice views[\s\S]*Change notice view[\s\S]*setupNoticeTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.setup-notice\.\$\{task\.key\}[\s\S]*setSetupNoticeTaskChooserOpen\(false\)[\s\S]*activeSetupNoticeTask === "post"[\s\S]*community-domain-dashboard\.notice\.post[\s\S]*activeSetupNoticeTask === "recent"[\s\S]*domainNoticesLoading[\s\S]*domainNotices\.length/,
-  "Lazy SetupOverviewPanel must keep recent notices and the post action behind an inner view selector instead of exposing the post control beside the notice list.",
+  /type SetupNoticeTaskKey = "recent" \| "post"[\s\S]*SETUP_NOTICE_TASK_OPTIONS[\s\S]*key: "recent"[\s\S]*key: "post"[\s\S]*Official Board[\s\S]*Current notice view[\s\S]*community-domain-dashboard\.setup-notice-toggle[\s\S]*setupNoticeTaskChooserOpen[\s\S]*Close notice views[\s\S]*Change notice view[\s\S]*setupNoticeTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.setup-notice\.\$\{task\.key\}[\s\S]*setSetupNoticeTaskChooserOpen\(false\)[\s\S]*activeSetupNoticeTask === "post"[\s\S]*community-domain-dashboard\.notice\.post[\s\S]*activeSetupNoticeTask === "recent"[\s\S]*domainNoticesLoading[\s\S]*visibleDomainNotices\.length[\s\S]*No new announcement\./,
+  "Lazy SetupOverviewPanel must keep recent notices and the post action behind an inner view selector, hide stale notice rows, and show the no-new-announcement empty state.",
   { frontend: true }
 );
 

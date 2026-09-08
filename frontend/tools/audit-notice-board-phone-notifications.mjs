@@ -94,6 +94,13 @@ const files = {
       "utf8"
     ),
   },
+  communityPage: {
+    path: "frontend/src/pages/CommunityHomePage.tsx",
+    source: readFileSync(
+      join(frontendRoot, "src", "pages", "CommunityHomePage.tsx"),
+      "utf8"
+    ),
+  },
   marketplacePage: {
     path: "frontend/src/pages/MarketplacePage.tsx",
     source: readFileSync(
@@ -242,8 +249,8 @@ assertContains(
 
 assertContains(
   files.communityNotices,
-  /NOTICE_EXPIRY_STANDARD = "standard"[\s\S]*?NOTICE_EXPIRY_URGENT = "urgent"[\s\S]*?NOTICE_EXPIRY_EVENT = "event"[\s\S]*?NOTICE_EXPIRY_PINNED = "pinned"[\s\S]*?def _notice_is_expired\([\s\S]*?archived_notice_count/,
-  "Marketplace/community notices must keep active-board expiry metadata, active filtering, and Community Memory preservation."
+  /NOTICE_EXPIRY_STANDARD = "standard"[\s\S]*?NOTICE_EXPIRY_URGENT = "urgent"[\s\S]*?NOTICE_EXPIRY_EVENT = "event"[\s\S]*?NOTICE_EXPIRY_PINNED = "pinned"[\s\S]*?def _notice_effective_expires_at\([\s\S]*?created \+ timedelta\(days=NOTICE_STANDARD_VISIBLE_DAYS\)[\s\S]*?def _notice_is_expired\([\s\S]*?archived_notice_count/,
+  "Marketplace/community notices must keep active-board expiry metadata, legacy created-at expiry fallback, active filtering, and Community Memory preservation."
 );
 
 assertContains(
@@ -398,8 +405,8 @@ assertContains(
 
 assertContains(
   files.communityDomains,
-  /COMMUNITY_DOMAIN_NOTICE_EXPIRY_STANDARD = "standard"[\s\S]*?COMMUNITY_DOMAIN_NOTICE_EXPIRY_URGENT = "urgent"[\s\S]*?COMMUNITY_DOMAIN_NOTICE_EXPIRY_EVENT = "event"[\s\S]*?COMMUNITY_DOMAIN_NOTICE_EXPIRY_PINNED = "pinned"[\s\S]*?def _community_domain_notice_is_expired\([\s\S]*?archived_notice_count/,
-  "Community Domain notices must keep active-board expiry metadata, active filtering, and Community Memory preservation."
+  /COMMUNITY_DOMAIN_NOTICE_EXPIRY_STANDARD = "standard"[\s\S]*?COMMUNITY_DOMAIN_NOTICE_EXPIRY_URGENT = "urgent"[\s\S]*?COMMUNITY_DOMAIN_NOTICE_EXPIRY_EVENT = "event"[\s\S]*?COMMUNITY_DOMAIN_NOTICE_EXPIRY_PINNED = "pinned"[\s\S]*?def _community_domain_notice_effective_expires_at\([\s\S]*?created \+ timedelta\(days=COMMUNITY_DOMAIN_NOTICE_STANDARD_VISIBLE_DAYS\)[\s\S]*?def _community_domain_notice_is_expired\([\s\S]*?archived_notice_count/,
+  "Community Domain notices must keep active-board expiry metadata, legacy created-at expiry fallback, active filtering, and Community Memory preservation."
 );
 
 assertContains(
@@ -412,6 +419,18 @@ assertContains(
   files.communityNoticeModal,
   /Expired notices leave[\s\S]*?Community Memory[\s\S]*?Active board time[\s\S]*?Normal - 7 days[\s\S]*?Urgent - 48 hours[\s\S]*?Until event date[\s\S]*?Pinned until admin changes it/,
   "Community notice modal must let posters choose a clear active-board lifetime."
+);
+
+assertContains(
+  files.communityPage,
+  /function isNoticeVisibleOnBoard[\s\S]*?createdAt\.getTime\(\) \+ ttlMs[\s\S]*?No new announcement\./,
+  "Community Home bulletin must defensively hide legacy expired notices and use the agreed no-new-announcement empty state."
+);
+
+assertContains(
+  files.communityDomainSetupOverviewPanel,
+  /function noticeIsVisible[\s\S]*?active_board_status[\s\S]*?createdAt\.getTime\(\) \+ ttlMs[\s\S]*?visibleDomainNotices[\s\S]*?No new announcement\.[\s\S]*?Community Memory/,
+  "Community Domain Official Board must defensively hide stale notice rows and use the agreed no-new-announcement empty state."
 );
 
 assertContains(

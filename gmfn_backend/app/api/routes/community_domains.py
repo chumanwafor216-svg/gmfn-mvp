@@ -3634,12 +3634,35 @@ def _community_domain_notice_expires_at(
     return now + timedelta(days=COMMUNITY_DOMAIN_NOTICE_STANDARD_VISIBLE_DAYS)
 
 
+def _community_domain_notice_effective_expires_at(
+    meta: dict[str, Any],
+    *,
+    created_at: Any = None,
+) -> Optional[datetime]:
+    expires_at = _parse_notice_datetime(meta.get("expires_at"))
+    if expires_at is not None:
+        return expires_at
+    policy = _normalize_community_domain_notice_expiry_policy(meta.get("expiry_policy"))
+    if policy == COMMUNITY_DOMAIN_NOTICE_EXPIRY_PINNED:
+        return None
+    created = _parse_notice_datetime(created_at)
+    if created is None:
+        return None
+    if policy == COMMUNITY_DOMAIN_NOTICE_EXPIRY_URGENT:
+        return created + timedelta(hours=COMMUNITY_DOMAIN_NOTICE_URGENT_VISIBLE_HOURS)
+    return created + timedelta(days=COMMUNITY_DOMAIN_NOTICE_STANDARD_VISIBLE_DAYS)
+
+
 def _community_domain_notice_is_expired(
     meta: dict[str, Any],
     *,
     now: Optional[datetime] = None,
+    created_at: Any = None,
 ) -> bool:
-    expires_at = _parse_notice_datetime(meta.get("expires_at"))
+    expires_at = _community_domain_notice_effective_expires_at(
+        meta,
+        created_at=created_at,
+    )
     if expires_at is None:
         return False
     current = now or datetime.now(timezone.utc)
@@ -4245,8 +4268,14 @@ def _community_domain_notice_payload(
     expiry_policy = _normalize_community_domain_notice_expiry_policy(
         meta.get("expiry_policy")
     )
-    expires_at = _parse_notice_datetime(meta.get("expires_at"))
-    expired = _community_domain_notice_is_expired(meta)
+    expires_at = _community_domain_notice_effective_expires_at(
+        meta,
+        created_at=getattr(event, "created_at", None),
+    )
+    expired = _community_domain_notice_is_expired(
+        meta,
+        created_at=getattr(event, "created_at", None),
+    )
     raw_domain_id = meta.get("community_domain_id")
     try:
         community_domain_id: Optional[int] = int(raw_domain_id)
@@ -4372,7 +4401,10 @@ def _list_community_domain_notice_payloads(
             row_domain_id = 0
         if row_domain_id != int(community_domain_id):
             continue
-        if _community_domain_notice_is_expired(meta):
+        if _community_domain_notice_is_expired(
+            meta,
+            created_at=getattr(row, "created_at", None),
+        ):
             archived_notice_count += 1
             continue
         notices.append(_community_domain_notice_payload(row))
@@ -24466,7 +24498,10 @@ def get_public_community_domain_notice(
                 "message": "This Community Domain message is not public by QR.",
             },
         )
-    if _community_domain_notice_is_expired(meta):
+    if _community_domain_notice_is_expired(
+        meta,
+        created_at=getattr(event, "created_at", None),
+    ):
         raise HTTPException(
             status_code=404,
             detail={

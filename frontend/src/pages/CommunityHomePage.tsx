@@ -1370,9 +1370,14 @@ function noticeExpiryLabel(item: CommunityNoticeItem): string {
 function isNoticeVisibleOnBoard(item: CommunityNoticeItem, nowMs = Date.now()): boolean {
   if (safeStr(item?.expiry_policy).toLowerCase() === "pinned") return true;
   const rawExpiresAt = safeStr(item?.expires_at);
-  if (!rawExpiresAt) return true;
-  const expiresAt = new Date(rawExpiresAt);
-  if (!Number.isFinite(expiresAt.getTime())) return true;
+  let expiresAt = rawExpiresAt ? new Date(rawExpiresAt) : null;
+  if (!expiresAt || !Number.isFinite(expiresAt.getTime())) {
+    const createdAt = new Date(firstTruthy(item?.created_at, item?.scheduled_at));
+    if (!Number.isFinite(createdAt.getTime())) return true;
+    const policy = safeStr(item?.expiry_policy).toLowerCase();
+    const ttlMs = policy === "urgent" ? 48 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
+    expiresAt = new Date(createdAt.getTime() + ttlMs);
+  }
   return expiresAt.getTime() > nowMs;
 }
 
@@ -4398,7 +4403,7 @@ export default function CommunityHomePage() {
                         fontWeight: 850,
                       }}
                     >
-                      No announcement for {selectedClanName || "this community"} right now.
+                      No new announcement.
                     </span>
                   </div>
                 </div>

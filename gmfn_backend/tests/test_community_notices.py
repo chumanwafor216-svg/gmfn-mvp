@@ -337,6 +337,26 @@ def test_community_notice_archive_hides_expired_notice_but_keeps_memory(
                 clan_id=1,
                 actor_user_id=1,
                 subject_user_id=1,
+                created_at=datetime.now(timezone.utc) - timedelta(days=10),
+                meta_json=json.dumps(
+                    {
+                        "source": "community_notice_board",
+                        "reason": "community_notice_posted",
+                        "body": "Legacy cultural day notice.",
+                        "word_count": 4,
+                        "comments_enabled": False,
+                        "reactions_enabled": False,
+                        "thread_enabled": False,
+                    }
+                ),
+            )
+        )
+        db.add(
+            TrustEvent(
+                event_type="community.notice.posted",
+                clan_id=1,
+                actor_user_id=1,
+                subject_user_id=1,
                 meta_json=json.dumps(
                     {
                         "source": "community_notice_board",
@@ -386,14 +406,15 @@ def test_community_notice_archive_hides_expired_notice_but_keeps_memory(
     bodies = [item["body"] for item in payload["notices"]]
     assert "Food collection this Friday." in bodies
     assert "Expired food collection yesterday." not in bodies
-    assert payload["archived_notice_count"] == 1
+    assert "Legacy cultural day notice." not in bodies
+    assert payload["archived_notice_count"] == 2
 
     with SessionLocal() as db:
         assert (
             db.query(TrustEvent)
             .filter(TrustEvent.event_type == "community.notice.posted")
             .count()
-            == 2
+            == 3
         )
 
 

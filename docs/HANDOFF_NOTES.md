@@ -1,3 +1,25 @@
+## 2026-09-08 - Bulletin legacy expiry and empty-state repair
+
+- Status: Local implementation complete and verified. Not pushed or deployed in this slice.
+- Owner trigger: owner reported that an August 29 Builders Association / cultural day announcement was still visible after the event date, and asked why the Bulletin / Official Board was not falling back to `No new announcement` after expiry.
+- Deployment check before this fix: `main` matched `origin/main` at `c5aa7a30` (`Guide recovery review and church service flow`). GitHub Actions showed successful manual `Trigger Render Deploy` runs on 2026-09-07 at 18:05:51Z and 18:50:38Z. So the September 7 church service / official notice improvements appear pushed and deployment workflow-triggered, but this new expiry repair is local until publish approval.
+- Root cause found: new notices with `expires_at` already expired correctly, but older/legacy non-pinned notices that had no `expires_at` were treated as active forever. A notice created on 2026-08-29 with no expiry metadata could therefore remain visible on 2026-09-08.
+- Backend route changes:
+  - `GET /community-notices` now derives an effective expiry for legacy non-pinned notices from `created_at`: standard/missing policy expires after 7 days; urgent expires after 48 hours; pinned remains visible until changed.
+  - `POST /community-notices/{notice_event_id}/acknowledgements` uses the same effective expiry so legacy expired notices cannot still be acknowledged.
+  - `GET /community-domains/{community_domain_id}/notices` and public QR `GET /community-domains/public/notices/{public_code}` now use the same legacy effective-expiry rule for Community Domain Official Board notices.
+- Frontend route changes:
+  - `/app/community` Bulletin defensively applies the same created-at fallback when `expires_at` is missing and now shows `No new announcement.` when nothing live remains.
+  - `/app/community-domain/:id` Official Board filters stale/archived notice rows defensively before rendering and now shows `No new announcement.` with a short Community Memory note.
+- Tests/audits updated: legacy no-`expires_at` notices are now covered in `gmfn_backend/tests/test_community_notices.py` and `gmfn_backend/tests/test_community_domains.py`; notice-board audits now guard the fallback and empty-state wording.
+- Verification passed:
+  - `python -m py_compile gmfn_backend\app\api\routes\community_notices.py gmfn_backend\app\api\routes\community_domains.py`
+  - `python -m pytest gmfn_backend\tests\test_community_notices.py -q -k "archive_hides_expired_notice or hides_expired_meeting_reminders"` -> 2 passed.
+  - `python -m pytest gmfn_backend\tests\test_community_domains.py -q -k "notice_archive_hides_expired_notice or notice_board_is_member_scoped or notice_board_respects_disabled_feature_policy"` -> 3 passed.
+  - `npm --prefix frontend run audit:notice-board-phone-notifications`
+  - `npm --prefix frontend run audit:community-domain-product-contracts`
+  - `npm --prefix frontend run build`
+- Devil truth: this does not delete old notice TrustEvents from Community Memory. It only removes expired non-pinned notices from the active board. A notice intentionally posted as `Pinned` will still remain visible until an admin changes it; there is still no admin UI in this slice to unpin/delete a specific old notice.
 ## 2026-09-07 - Local church Service guide nudge for Community Domain dashboard
 
 - Status: Local frontend tightening complete and verified; not committed, pushed, or deployed in this slice.

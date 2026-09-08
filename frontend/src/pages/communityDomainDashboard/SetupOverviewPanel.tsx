@@ -209,11 +209,28 @@ async function copyText(value: string): Promise<boolean> {
   return true;
 }
 function noticeExpiryLabel(item: CommunityDomainNoticeItem): string {
-  if (cleanText(item?.expiry_policy).toLowerCase() === "until_replaced") {
-    return "Until replaced";
+  const policy = cleanText(item?.expiry_policy).toLowerCase();
+  if (policy === "pinned" || policy === "until_replaced") {
+    return "Pinned";
   }
   const expiresAt = noticeDateLabel(item?.expires_at);
   return expiresAt ? `Until ${expiresAt}` : "";
+}
+
+function noticeIsVisible(item: CommunityDomainNoticeItem, nowMs = Date.now()): boolean {
+  const status = cleanText(item?.active_board_status).toLowerCase();
+  if (item?.is_archived || status === "archived" || status === "expired") return false;
+  const policy = cleanText(item?.expiry_policy).toLowerCase();
+  if (policy === "pinned" || policy === "until_replaced") return true;
+  const rawExpiresAt = cleanText(item?.expires_at);
+  let expiresAt = rawExpiresAt ? new Date(rawExpiresAt) : null;
+  if (!expiresAt || !Number.isFinite(expiresAt.getTime())) {
+    const createdAt = new Date(cleanText(item?.created_at));
+    if (!Number.isFinite(createdAt.getTime())) return true;
+    const ttlMs = policy === "urgent" ? 48 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
+    expiresAt = new Date(createdAt.getTime() + ttlMs);
+  }
+  return expiresAt.getTime() > nowMs;
 }
 
 type Props = {
@@ -279,6 +296,10 @@ export default function CommunityDomainSetupOverviewPanel({ data }: Props) {
   const activeSetupNoticeTaskOption =
     SETUP_NOTICE_TASK_OPTIONS.find((task) => task.key === activeSetupNoticeTask) ||
     SETUP_NOTICE_TASK_OPTIONS[0];
+  const visibleDomainNotices = React.useMemo(
+    () => domainNotices.filter((item) => noticeIsVisible(item)),
+    [domainNotices]
+  );
 
   return (
     <>
@@ -572,8 +593,8 @@ export default function CommunityDomainSetupOverviewPanel({ data }: Props) {
                 <div style={{ ...helperText(), fontSize: 13 }}>
                   Loading official Community Domain notices.
                 </div>
-              ) : domainNotices.length ? (
-                domainNotices.map((item, index) => {
+              ) : visibleDomainNotices.length ? (
+                visibleDomainNotices.map((item, index) => {
                   const body = limitWords(item.body || item.title, 50);
                   const when = noticeDateLabel(item.created_at);
                   const expiry = noticeExpiryLabel(item);
@@ -677,10 +698,9 @@ export default function CommunityDomainSetupOverviewPanel({ data }: Props) {
                 })
               ) : (
                 <div style={softCard()}>
-                  <div style={{ fontWeight: 950 }}>No official notices yet.</div>
+                  <div style={{ fontWeight: 950 }}>No new announcement.</div>
                   <div style={{ ...helperText(), marginTop: 6, fontSize: 13 }}>
-                    When a domain owner or domain admin posts here, only members
-                    of this Community Domain see the notice.
+                    Expired notices leave this board but remain in Community Memory.
                   </div>
                 </div>
               )}
