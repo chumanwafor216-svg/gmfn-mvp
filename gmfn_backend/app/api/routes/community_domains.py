@@ -29,6 +29,7 @@ from app.db.models import (
     CommunityConfirmationResponse,
     CommunityMemberVerification,
     CommunityDomain,
+    CommunityDomainGovernancePackage,
     CommunityDomainAffiliation,
     CommunityDomainActionReview,
     CommunityDomainActionReviewComment,
@@ -149,6 +150,8 @@ COMMUNITY_DOMAIN_NOTICE_EMBEDDED_DATE_RE = re.compile(
     re.IGNORECASE,
 )
 COMMUNITY_DOMAIN_FEATURE_POLICY_KEY = "domain.feature_policy"
+COMMUNITY_DOMAIN_GOVERNANCE_PACKAGE_KEY = "domain.governance_package"
+COMMUNITY_DOMAIN_GOVERNANCE_PACKAGE_LOCK_ACTION_KEY = "domain.governance_package.lock"
 COMMUNITY_DOMAIN_FEATURE_ANNOUNCEMENT_BOARD = "announcement_board"
 COMMUNITY_DOMAIN_FEATURE_MODE_OFF = "off"
 COMMUNITY_DOMAIN_FEATURE_MODE_ADMIN_ONLY = "admin_only"
@@ -3523,17 +3526,28 @@ def _upsert_setup_feature_policy_from_preferences(
     return policy
 
 
-def _community_domain_feature_policy_config(
+def _active_feature_policy_row(
     db: Session,
     *,
     community_domain_id: int,
-) -> dict[str, Any]:
-    policy = (
+) -> Optional[CommunityDomainPolicy]:
+    return (
         db.query(CommunityDomainPolicy)
         .filter(CommunityDomainPolicy.community_domain_id == int(community_domain_id))
         .filter(CommunityDomainPolicy.policy_key == COMMUNITY_DOMAIN_FEATURE_POLICY_KEY)
         .filter(CommunityDomainPolicy.status == "active")
         .first()
+    )
+
+
+def _community_domain_feature_policy_config(
+    db: Session,
+    *,
+    community_domain_id: int,
+) -> dict[str, Any]:
+    policy = _active_feature_policy_row(
+        db,
+        community_domain_id=int(community_domain_id),
     )
     if policy is None:
         return {}
@@ -3545,12 +3559,9 @@ def _community_domain_feature_policy_summary(
     *,
     community_domain_id: int,
 ) -> Optional[dict[str, Any]]:
-    policy = (
-        db.query(CommunityDomainPolicy)
-        .filter(CommunityDomainPolicy.community_domain_id == int(community_domain_id))
-        .filter(CommunityDomainPolicy.policy_key == COMMUNITY_DOMAIN_FEATURE_POLICY_KEY)
-        .filter(CommunityDomainPolicy.status == "active")
-        .first()
+    policy = _active_feature_policy_row(
+        db,
+        community_domain_id=int(community_domain_id),
     )
     if policy is None:
         return None
@@ -3923,6 +3934,160 @@ def _policy_payload(row: CommunityDomainPolicy) -> dict[str, Any]:
         "updated_at": _iso(row.updated_at),
     }
 
+def _governance_package_payload(
+    row: CommunityDomainGovernancePackage,
+    *,
+    include_package: bool = False,
+) -> dict[str, Any]:
+    locker = getattr(row, "locker", None)
+    payload: dict[str, Any] = {
+        "id": int(row.id),
+        "community_domain_id": int(row.community_domain_id),
+        "package_key": row.package_key,
+        "version": int(row.version),
+        "status": row.status,
+        "source_policy_id": int(row.source_policy_id) if row.source_policy_id is not None else None,
+        "action_review_id": int(row.action_review_id) if row.action_review_id is not None else None,
+        "previous_package_id": int(row.previous_package_id) if row.previous_package_id is not None else None,
+        "package_hash": row.package_hash,
+        "package_hash_short": (row.package_hash or "")[:12],
+        "package_summary": row.package_summary,
+        "locked_by_user_id": int(row.locked_by_user_id) if row.locked_by_user_id is not None else None,
+        "locked_by_user_email": getattr(locker, "email", None),
+        "locked_at": _iso(row.locked_at),
+        "created_at": _iso(row.created_at),
+        "boundary": (
+            "Locked governance package version. This is an audit snapshot; it does not "
+            "activate billing, verify ownership, move money, or prevent later owner/admin "
+            "changes from creating a new locked version."
+        ),
+    }
+    if include_package:
+        payload["package"] = _json_load(row.package_json)
+    return payload
+
+
+def _latest_governance_package(
+    db: Session,
+    *,
+    community_domain_id: int,
+) -> Optional[CommunityDomainGovernancePackage]:
+    return (
+        db.query(CommunityDomainGovernancePackage)
+        .filter(CommunityDomainGovernancePackage.community_domain_id == int(community_domain_id))
+        .filter(CommunityDomainGovernancePackage.package_key == COMMUNITY_DOMAIN_GOVERNANCE_PACKAGE_KEY)
+        .order_by(
+            CommunityDomainGovernancePackage.version.desc(),
+            CommunityDomainGovernancePackage.id.desc(),
+        )
+        .first()
+    )
+
+
+def _community_domain_governance_package_snapshot(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    feature_policy: CommunityDomainPolicy,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    node_count = db.query(CommunityNode).filter(CommunityNode.community_domain_id == domain_id).count()
+    active_member_count = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .count()
+    )
+    node_member_count = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .count()
+    )
+    active_policy_count = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .count()
+    )
+    open_review_count = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .filter(CommunityDomainActionReview.status.in_(REVIEWER_QUEUE_PENDING_STATUSES))
+        .count()
+    )
+    setup_evidence_count = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.community_domain_id == domain_id)
+        .count()
+    )
+    config = _json_load(feature_policy.config_json)
+    return {
+        "source": "community_domain_setup_lock",
+        "package_key": COMMUNITY_DOMAIN_GOVERNANCE_PACKAGE_KEY,
+        "community_domain": {
+            "id": domain_id,
+            "domain_name": domain.domain_name,
+            "display_name": domain.display_name,
+            "domain_type": domain.domain_type,
+            "template_key": domain.template_key,
+            "status": domain.status,
+            "verification_status": domain.verification_status,
+            "owner_user_id": int(domain.owner_user_id),
+            "clan_id": int(domain.clan_id) if domain.clan_id is not None else None,
+            "country": domain.country,
+            "state": domain.state,
+            "public_profile_present": bool(_clean_str(domain.public_profile)),
+        },
+        "feature_policy": {
+            "id": int(feature_policy.id),
+            "policy_key": feature_policy.policy_key,
+            "action_key": feature_policy.action_key,
+            "scope_type": feature_policy.scope_type,
+            "review_mode": feature_policy.review_mode,
+            "required_role": feature_policy.required_role,
+            "status": feature_policy.status,
+            "policy_summary": feature_policy.policy_summary,
+            "updated_at": _iso(feature_policy.updated_at or feature_policy.created_at),
+            "config": config,
+        },
+        "counts": {
+            "nodes": int(node_count),
+            "active_members": int(active_member_count),
+            "active_node_memberships": int(node_member_count),
+            "active_policies": int(active_policy_count),
+            "open_reviews": int(open_review_count),
+            "setup_evidence": int(setup_evidence_count),
+        },
+        "locked_sections": [
+            "domain_identity",
+            "public_profile_presence",
+            "domain_feature_policy",
+            "member_invite_policy",
+            "official_notice_policy",
+            "marketplace_shop_policy",
+            "payments_contributions_policy",
+            "rosca_cycle_policy",
+            "demand_box_policy",
+            "private_record_policy",
+        ],
+        "authority": {
+            "lock_requires": "community_domain_owner_or_admin",
+            "setup_editor_scope": "prepare_setup_profile_and_evidence_only",
+            "owner_admin_remains_final": True,
+        },
+        "boundary": (
+            "This immutable package snapshots current server-known setup and policy. "
+            "It is not billing activation, ownership verification, payment collection, "
+            "or a permanent block on future owner/admin changes. Later authorized changes "
+            "must create another locked package version."
+        ),
+    }
+
+
+def _governance_package_hash(snapshot: dict[str, Any]) -> str:
+    source = _json_dump(snapshot) or "{}"
+    return hashlib.sha256(source.encode("utf-8")).hexdigest()
 
 def _action_review_payload(row: CommunityDomainActionReview) -> dict[str, Any]:
     node = getattr(row, "community_node", None)
@@ -5727,6 +5892,7 @@ def _community_domain_readiness_payload(
         .count()
     )
 
+
     status = _clean_role(domain.status, "draft")
     verification_status = _clean_role(domain.verification_status, "unverified")
 
@@ -6737,6 +6903,11 @@ def _community_domain_dashboard_payload(
         .count()
     )
 
+    latest_governance_package = _latest_governance_package(
+        db,
+        community_domain_id=int(domain.id),
+    )
+
     status = _clean_role(domain.status, "draft")
     billing_status = "active" if status == "active" else "quote_required"
     if can_admin and status == "draft":
@@ -6838,6 +7009,11 @@ def _community_domain_dashboard_payload(
         },
         "primary_next_action": primary_next_action,
         "lanes": lanes,
+        "governance_package": (
+            _governance_package_payload(latest_governance_package)
+            if latest_governance_package is not None
+            else None
+        ),
         "boundary": (
             "Dashboard summary only. This does not create a payment instruction, "
             "activate billing, activate the Community Domain, verify ownership, "
@@ -20778,6 +20954,16 @@ class CommunityDomainPolicyUpsertIn(BaseModel):
         return _reject_invalid_policy_count_config(value)
 
 
+class CommunityDomainGovernancePackageLockIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    package_summary: Optional[str] = Field(default=None, max_length=1200)
+
+    @field_validator("package_summary", mode="before")
+    @classmethod
+    def _reject_non_text_package_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 class CommunityDomainActionReviewCreateIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -30592,6 +30778,166 @@ def upsert_community_node_member(
         ),
     }
 
+@router.get("/{community_domain_id}/governance-package", response_model=dict[str, Any])
+def get_community_domain_governance_package(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_setup_edit_scope(db, domain=domain, current_user=current_user)
+
+    rows = (
+        db.query(CommunityDomainGovernancePackage)
+        .filter(CommunityDomainGovernancePackage.community_domain_id == int(domain.id))
+        .filter(CommunityDomainGovernancePackage.package_key == COMMUNITY_DOMAIN_GOVERNANCE_PACKAGE_KEY)
+        .order_by(
+            CommunityDomainGovernancePackage.version.desc(),
+            CommunityDomainGovernancePackage.id.desc(),
+        )
+        .all()
+    )
+    latest = rows[0] if rows else None
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "latest": _governance_package_payload(latest) if latest is not None else None,
+        "items": [_governance_package_payload(row) for row in rows],
+        "total": len(rows),
+        "boundary": (
+            "Governance package history is versioned audit evidence. It does not "
+            "activate billing, verify ownership, move money, or expose private member evidence."
+        ),
+    }
+
+
+@router.post("/{community_domain_id}/governance-package/lock", status_code=201, response_model=dict[str, Any])
+def lock_community_domain_governance_package(
+    community_domain_id: int,
+    payload: CommunityDomainGovernancePackageLockIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+
+    feature_policy = _active_feature_policy_row(
+        db,
+        community_domain_id=int(domain.id),
+    )
+    if feature_policy is None:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_feature_policy_required",
+                "message": "Save the Community Domain feature policy before locking the governance package.",
+            },
+        )
+
+    snapshot = _community_domain_governance_package_snapshot(
+        db,
+        domain=domain,
+        feature_policy=feature_policy,
+    )
+    package_hash = _governance_package_hash(snapshot)
+    latest = _latest_governance_package(db, community_domain_id=int(domain.id))
+    if latest is not None and latest.package_hash == package_hash:
+        return {
+            "ok": True,
+            "created": False,
+            "community_domain_id": int(domain.id),
+            "governance_package": _governance_package_payload(latest, include_package=True),
+            "message": "Governance package already locked at the current version.",
+            "boundary": "No new version was created because the server-known setup and feature policy have not changed.",
+        }
+
+    summary = _clean_str(payload.package_summary) or None
+    now = datetime.now(timezone.utc)
+    package = CommunityDomainGovernancePackage(
+        community_domain_id=int(domain.id),
+        package_key=COMMUNITY_DOMAIN_GOVERNANCE_PACKAGE_KEY,
+        version=(int(latest.version) + 1 if latest is not None else 1),
+        status="locked",
+        source_policy_id=int(feature_policy.id),
+        previous_package_id=int(latest.id) if latest is not None else None,
+        package_hash=package_hash,
+        package_summary=summary,
+        package_json=_json_dump(snapshot) or "{}",
+        locked_by_user_id=int(current_user.id),
+        locked_at=now,
+    )
+    db.add(package)
+    db.flush()
+
+    review = CommunityDomainActionReview(
+        community_domain_id=int(domain.id),
+        policy_id=int(feature_policy.id),
+        action_key=COMMUNITY_DOMAIN_GOVERNANCE_PACKAGE_LOCK_ACTION_KEY,
+        requested_by_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        decided_by_user_id=int(current_user.id),
+        applied_by_user_id=int(current_user.id),
+        target_type="community_domain_governance_package",
+        target_id=str(int(package.id)),
+        status="applied",
+        decision="approved",
+        request_note=summary or "Governance package locked by owner/admin.",
+        decision_note="Governance package version locked by owner/admin.",
+        payload_json=_json_dump(
+            {
+                "community_domain_id": int(domain.id),
+                "package_id": int(package.id),
+                "version": int(package.version),
+                "package_hash": package_hash,
+                "source_policy_id": int(feature_policy.id),
+                "previous_package_id": int(latest.id) if latest is not None else None,
+                "boundary": snapshot["boundary"],
+            }
+        ),
+        decided_at=now,
+        applied_at=now,
+    )
+    db.add(review)
+    db.flush()
+    package.action_review_id = int(review.id)
+
+    log_trust_event(
+        db,
+        event_type="community_domain.governance_package_locked",
+        clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta={
+            "source": "community_domain_governance_package_lock",
+            "community_domain_id": int(domain.id),
+            "domain_name": domain.domain_name,
+            "display_name": domain.display_name,
+            "package_id": int(package.id),
+            "version": int(package.version),
+            "package_hash": package_hash,
+            "source_policy_id": int(feature_policy.id),
+            "previous_package_id": int(latest.id) if latest is not None else None,
+            "trust_delta": "0.00",
+        },
+        commit=False,
+        refresh=False,
+    )
+
+    db.commit()
+    db.refresh(package)
+    db.refresh(review)
+    return {
+        "ok": True,
+        "created": True,
+        "community_domain_id": int(domain.id),
+        "governance_package": _governance_package_payload(package, include_package=True),
+        "action_review": _action_review_payload(review),
+        "message": f"Governance package v{int(package.version)} locked.",
+        "boundary": (
+            "Locked package recorded. This does not activate billing, verify ownership, move money, "
+            "or prevent later authorized changes from creating a new version."
+        ),
+    }
 
 @router.get("/{community_domain_id}/policies", response_model=dict[str, Any])
 def list_community_domain_policies(

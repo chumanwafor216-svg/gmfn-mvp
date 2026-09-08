@@ -667,6 +667,89 @@ class CommunityDomainPolicy(Base):
     updater = relationship("User", foreign_keys=[updated_by_user_id])
 
 
+class CommunityDomainGovernancePackage(Base):
+    __tablename__ = "community_domain_governance_packages"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "community_domain_id",
+            "package_key",
+            "version",
+            name="uq_comm_domain_gov_pkg_domain_key_version",
+        ),
+        Index("ix_comm_domain_gov_pkg_domain_key", "community_domain_id", "package_key"),
+        Index("ix_comm_domain_gov_pkg_domain_status", "community_domain_id", "status"),
+        Index("ix_comm_domain_gov_pkg_hash", "package_hash"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    community_domain_id: Mapped[int] = mapped_column(
+        ForeignKey("community_domains.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    package_key: Mapped[str] = mapped_column(
+        String(96),
+        nullable=False,
+        default="domain.governance_package",
+        server_default="domain.governance_package",
+        index=True,
+    )
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    status: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="locked",
+        server_default="locked",
+        index=True,
+    )
+    source_policy_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("community_domain_policies.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    action_review_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("community_domain_action_reviews.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    previous_package_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("community_domain_governance_packages.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    package_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    package_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    package_json: Mapped[str] = mapped_column(Text, nullable=False)
+    locked_by_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    locked_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+
+    community_domain = relationship("CommunityDomain", foreign_keys=[community_domain_id])
+    source_policy = relationship("CommunityDomainPolicy", foreign_keys=[source_policy_id])
+    action_review = relationship("CommunityDomainActionReview", foreign_keys=[action_review_id])
+    previous_package = relationship(
+        "CommunityDomainGovernancePackage",
+        remote_side=[id],
+        foreign_keys=[previous_package_id],
+    )
+    locker = relationship("User", foreign_keys=[locked_by_user_id])
+
 class CommunityDomainActionReview(Base):
     __tablename__ = "community_domain_action_reviews"
 

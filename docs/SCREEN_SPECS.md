@@ -519,8 +519,12 @@ Rules:
   lock or unlock must depend on backend owner/admin/delegated-authority checks
   and recorded history, not only frontend hiding.
 - Save / lock package must save a setup checkpoint before launch-readiness
-  handoff. If setup editing is locked, it must route the user to owner/admin
-  authority request instead of implying a local password or self-unlock.
+  handoff, then owner/admin must create a server-side governance package version
+  with a package hash from the active `domain.feature_policy` and current domain
+  setup snapshot. If setup editing is locked, it must route the user to owner/admin
+  authority request instead of implying a local password or self-unlock. Later
+  authorised changes create a new package version; the previous package is not
+  silently mutated.
 - A branch, campus, parish, line, class, committee, ROSCA circle, or welfare
   group should normally be represented as a `CommunityNode` or activity group,
   not a separate domain, unless it needs separate billing, public identity, or

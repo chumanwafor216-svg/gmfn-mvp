@@ -16,6 +16,7 @@ from app.db.models import (
     CommunityConfirmationRequest,
     CommunityConfirmationResponse,
     CommunityDomain,
+    CommunityDomainGovernancePackage,
     CommunityDomainAffiliation,
     CommunityDomainActionReview,
     CommunityDomainActionReviewComment,
@@ -3505,6 +3506,184 @@ def test_community_domain_profile_update_upserts_setup_preferences_policy(
         assert stored_config["features"]["marketplace_shops"] == "off"
         assert db.query(CommunityDomain).one().display_name == "Pillar Setup Update Trust"
 
+def test_community_domain_owner_locks_governance_package_version(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Governance Package Lock",
+                "display_name": "Governance Package Lock",
+                "domain_type": "ngo_project_network",
+                "template_key": "ngo_project_network",
+                "setup_preferences": {
+                    "member_invites": True,
+                    "official_announcements": True,
+                    "member_shops": False,
+                    "contributions": True,
+                    "welfare_cycles": False,
+                    "demand_box": True,
+                    "private_records": True,
+                },
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        locked = client.post(
+            f"/community-domains/{domain_id}/governance-package/lock",
+            json={"package_summary": "Owner locks initial setup governance package."},
+        )
+        assert locked.status_code == 201, locked.text
+        locked_data = locked.json()
+        package = locked_data["governance_package"]
+        assert locked_data["created"] is True
+        assert package["package_key"] == "domain.governance_package"
+        assert package["version"] == 1
+        assert package["status"] == "locked"
+        assert len(package["package_hash"]) == 64
+        assert package["package_hash_short"] == package["package_hash"][:12]
+        assert package["package"]["feature_policy"]["policy_key"] == "domain.feature_policy"
+        assert package["package"]["authority"]["lock_requires"] == "community_domain_owner_or_admin"
+        assert "billing activation" in package["package"]["boundary"]
+        assert locked_data["action_review"]["action_key"] == "domain.governance_package.lock"
+        assert locked_data["action_review"]["status"] == "applied"
+
+        dashboard = client.get(f"/community-domains/{domain_id}/dashboard")
+        assert dashboard.status_code == 200, dashboard.text
+        dashboard_package = dashboard.json()["dashboard"]["governance_package"]
+        assert dashboard_package["version"] == 1
+        assert dashboard_package["package_hash_short"] == package["package_hash_short"]
+
+        duplicate = client.post(
+            f"/community-domains/{domain_id}/governance-package/lock",
+            json={"package_summary": "Same snapshot should not duplicate."},
+        )
+        assert duplicate.status_code == 201, duplicate.text
+        assert duplicate.json()["created"] is False
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        assert db.query(CommunityDomainGovernancePackage).count() == 1
+        review = db.query(CommunityDomainActionReview).filter(
+            CommunityDomainActionReview.action_key == "domain.governance_package.lock"
+        ).one()
+        assert review.decision == "approved"
+        assert review.target_type == "community_domain_governance_package"
+        assert db.query(TrustEvent).filter(
+            TrustEvent.event_type == "community_domain.governance_package_locked"
+        ).count() == 1
+
+
+def test_community_domain_governance_package_lock_requires_owner_admin(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    editor = _seed_user(2, "package-editor@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Package Editor Boundary",
+                "display_name": "Package Editor Boundary",
+                "domain_type": "ngo_project_network",
+                "template_key": "ngo_project_network",
+                "setup_preferences": {"member_invites": True},
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        delegated = client.post(
+            f"/community-domains/{domain_id}/setup-editor",
+            json={"subject": editor.email},
+        )
+        assert delegated.status_code == 200, delegated.text
+
+        app.dependency_overrides[get_current_user] = lambda: editor
+        history = client.get(f"/community-domains/{domain_id}/governance-package")
+        assert history.status_code == 200, history.text
+        assert history.json()["total"] == 0
+
+        rejected = client.post(
+            f"/community-domains/{domain_id}/governance-package/lock",
+            json={"package_summary": "Editor prepares but cannot final-lock."},
+        )
+        assert rejected.status_code == 403, rejected.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        assert db.query(CommunityDomainGovernancePackage).count() == 0
+
+
+def test_community_domain_governance_package_versions_after_policy_change(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Package Version Change",
+                "display_name": "Package Version Change",
+                "domain_type": "ngo_project_network",
+                "template_key": "ngo_project_network",
+                "setup_preferences": {
+                    "member_invites": True,
+                    "member_shops": False,
+                    "contributions": True,
+                },
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        first = client.post(f"/community-domains/{domain_id}/governance-package/lock", json={})
+        assert first.status_code == 201, first.text
+        first_package = first.json()["governance_package"]
+        assert first_package["version"] == 1
+
+        updated = client.patch(
+            f"/community-domains/{domain_id}/profile",
+            json={
+                "domain_name": "package-version-change",
+                "display_name": "Package Version Change",
+                "domain_type": "ngo_project_network",
+                "template_key": "ngo_project_network",
+                "setup_preferences": {
+                    "member_invites": True,
+                    "member_shops": True,
+                    "contributions": False,
+                    "demand_box": True,
+                },
+            },
+        )
+        assert updated.status_code == 200, updated.text
+
+        second = client.post(f"/community-domains/{domain_id}/governance-package/lock", json={})
+        assert second.status_code == 201, second.text
+        second_package = second.json()["governance_package"]
+        assert second_package["version"] == 2
+        assert second_package["previous_package_id"] == first_package["id"]
+        assert second_package["package_hash"] != first_package["package_hash"]
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        packages = db.query(CommunityDomainGovernancePackage).order_by(
+            CommunityDomainGovernancePackage.version.asc()
+        ).all()
+        assert [row.version for row in packages] == [1, 2]
 
 def test_community_domain_draft_defaults_template_to_domain_type(
     client: TestClient,

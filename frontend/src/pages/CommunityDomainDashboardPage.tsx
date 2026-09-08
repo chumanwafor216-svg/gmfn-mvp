@@ -87,6 +87,7 @@ import {
   listCommunityDomainServiceSettings,
   listCommunityDomainActionReviews,
   listCommunityDomainActivities,
+  lockCommunityDomainGovernancePackage,
   listCommunityDomainAttendanceSessions,
   listCommunityDomainCollectionInstructions,
   listCommunityDomainResponseChannels,
@@ -915,6 +916,7 @@ type DashboardPayload = {
   };
   lanes?: DomainLane[];
   package_quote?: UnknownRecord;
+  governance_package?: UnknownRecord | null;
   boundary?: string;
 };
 
@@ -1220,7 +1222,7 @@ function featurePolicySummary(config: DomainFeaturePolicyConfig): string {
     return `${row.label}: ${mode}`;
   });
   return [
-    "Domain feature policy locked from setup.",
+    "Governance package captures domain feature choices from setup.",
     "Community Domain is the governed professional marketplace form: ordinary marketplace behaviours stay available only as this domain permits them.",
     "This policy controls behaviour inside this registered domain; it does not remove member identity in other communities or automate tariffs, upgrades, member bands, paid slots, or outside publishing.",
     ...controlled,
@@ -5172,12 +5174,26 @@ export default function CommunityDomainDashboardPage() {
     [setupDraft.feature_policy_json]
   );
   const effectiveFeaturePolicy = lockedFeaturePolicy || featurePolicyDraft;
-  const featurePolicySourceLabel = lockedFeaturePolicy
-    ? "Locked domain policy"
+  const latestGovernancePackage = isUnknownRecord(dashboard?.governance_package)
+    ? dashboard.governance_package
+    : null;
+  const latestGovernancePackageVersion = cleanText(latestGovernancePackage?.version);
+  const latestGovernancePackageLockedAt = cleanText(
+    latestGovernancePackage?.locked_at || latestGovernancePackage?.created_at
+  );
+  const latestGovernancePackageHash = cleanText(
+    latestGovernancePackage?.package_hash_short || latestGovernancePackage?.package_hash
+  ).slice(0, 12);
+  const featurePolicySourceLabel = latestGovernancePackage
+    ? `Locked governance package v${latestGovernancePackageVersion || "1"}`
+    : lockedFeaturePolicy
+    ? "Saved domain policy"
     : "Setup draft";
-  const featurePolicySourceDetail = lockedFeaturePolicy
-    ? "Actions use the active policy saved for this Community Domain. Edit the draft, then save and lock again to change live behaviour."
-    : "Actions use this setup draft until the owner/admin locks a domain feature policy.";
+  const featurePolicySourceDetail = latestGovernancePackage
+    ? `Server package${latestGovernancePackageHash ? ` ${latestGovernancePackageHash}` : ""} is locked by owner/admin. Edit the draft, then save setup again to create a new package version.`
+    : lockedFeaturePolicy
+    ? "Actions use the active policy saved for this Community Domain. Save setup to create the server governance package lock."
+    : "Actions use this setup draft until the owner/admin locks a governance package.";
   const activeSetupFeaturePolicyRow =
     DOMAIN_FEATURE_POLICY_ROWS.find((row) => row.key === activeSetupFeaturePolicyRule) ||
     DOMAIN_FEATURE_POLICY_ROWS[0];
@@ -5256,13 +5272,16 @@ export default function CommunityDomainDashboardPage() {
       message: "Check the domain code before saving identity setup.",
     });
     setSetupCompletionSavedAt("");
-    setFeaturePolicyLockedAt(lockedFeaturePolicyLoadedAt || "");
+    setFeaturePolicyLockedAt(
+      latestGovernancePackageLockedAt || lockedFeaturePolicyLoadedAt || ""
+    );
   }, [
     communityDomainId,
     dashboard,
     domain,
     lockedFeaturePolicyJson,
     lockedFeaturePolicyLoadedAt,
+    latestGovernancePackageLockedAt,
   ]);
 
   function updateSetupDraftField(
@@ -5840,7 +5859,7 @@ export default function CommunityDomainDashboardPage() {
     openSetupJourneyAt("launch", "edit");
     setMessage(
       isAdmin
-        ? "Checkpoint saved. Launch readiness is open; use Save setup on the final step to lock the feature policy."
+        ? "Checkpoint saved. Launch readiness is open; use Save setup on the final step to lock the governance package."
         : "Checkpoint saved. Launch readiness is open. Final lock still depends on owner/admin authority."
     );
   }
@@ -6169,14 +6188,14 @@ export default function CommunityDomainDashboardPage() {
       return {
         locked: false,
         message:
-          "Setup saved. Feature choices are still a draft until the owner/admin locks them for this domain.",
+          "Setup saved. Feature choices are still a draft until the owner/admin locks the governance package for this domain.",
       };
     }
     const requestDomainId = cleanText(communityDomainId);
     if (!requestDomainId) {
       return {
         locked: false,
-        message: "Setup saved. GSN could not lock the feature policy because the domain was not resolved.",
+        message: "Setup saved. GSN could not lock the governance package because the domain was not resolved.",
       };
     }
 
@@ -6193,21 +6212,35 @@ export default function CommunityDomainDashboardPage() {
         policy_summary: featurePolicySummary(config),
         config,
       });
-      const lockedAt = new Date().toISOString();
+      const lockPayload = await lockCommunityDomainGovernancePackage(requestDomainId, {
+        package_summary: featurePolicySummary(config),
+      });
+      const governancePackage = isUnknownRecord(lockPayload?.governance_package)
+        ? lockPayload.governance_package
+        : null;
+      const packageVersion = cleanText(governancePackage?.version);
+      const lockedAt = cleanText(
+        governancePackage?.locked_at || governancePackage?.created_at,
+        new Date().toISOString()
+      );
       setLockedFeaturePolicy(config);
       setLockedFeaturePolicyLoadedAt(lockedAt);
       setFeaturePolicyLockedAt(lockedAt);
+      setDashboard((previous) =>
+        previous && governancePackage
+          ? { ...previous, governance_package: governancePackage }
+          : previous
+      );
       return {
         locked: true,
-        message:
-          "Setup saved and feature policy locked. Payment activation and verification still need their separate admin checks.",
+        message: `Setup saved and governance package${packageVersion ? ` v${packageVersion}` : ""} locked. Payment activation and verification still need their separate admin checks.`,
       };
     } catch (err) {
       return {
         locked: false,
         message: errorDetailMessage(
           err,
-          "Setup saved, but GSN could not lock the feature policy. The owner/admin should try again before launch."
+          "Setup saved, but GSN could not lock the governance package. The owner/admin should try again before launch."
         ),
       };
     } finally {
@@ -9661,10 +9694,10 @@ export default function CommunityDomainDashboardPage() {
                               Saved: {setupDraftTimeLabel(setupCompletionSavedAt)}
                             </div>
                             <div style={statusBadge(featurePolicyLockedAt ? "locked" : "draft")}>
-                              Feature policy:{" "}
+                              Governance package:{" "}
                               {featurePolicyLockedAt
                                 ? `locked ${setupDraftTimeLabel(featurePolicyLockedAt)}`
-                                : "draft until owner/admin lock"}
+                                : "draft until owner/admin package lock"}
                             </div>
                           </div>
                         ) : null}

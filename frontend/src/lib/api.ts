@@ -2882,6 +2882,10 @@ export type CommunityDomainPolicyPayload = {
   config?: Record<string, any> | null;
 };
 
+export type CommunityDomainGovernancePackageLockPayload = {
+  package_summary?: string | null;
+};
+
 export type CommunityDomainActionReviewPayload = {
   policy_id?: number | string | null;
   community_node_id?: number | string | null;
@@ -4275,6 +4279,19 @@ export async function upsertCommunityDomainPolicy(
     policy_summary: payload.policy_summary || undefined,
     config: payload.config || undefined,
   });
+}
+
+export async function lockCommunityDomainGovernancePackage(
+  communityDomainId: number | string,
+  payload: CommunityDomainGovernancePackageLockPayload = {}
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/governance-package/lock"),
+    "POST",
+    {
+      package_summary: payload.package_summary || undefined,
+    }
+  );
 }
 
 export async function listCommunityDomainActionReviews(

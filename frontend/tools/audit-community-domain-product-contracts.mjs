@@ -1865,7 +1865,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /function featurePolicySummary[\s\S]*Domain feature policy locked from setup[\s\S]*Community Domain is the governed professional marketplace form[\s\S]*ordinary marketplace behaviours stay available only as this domain permits them[\s\S]*does not remove member identity in other communities or automate tariffs, upgrades, member bands, paid slots, or outside publishing[\s\S]*Spotlight:/,
+  /function featurePolicySummary[\s\S]*Governance package captures domain feature choices from setup[\s\S]*Community Domain is the governed professional marketplace form[\s\S]*ordinary marketplace behaviours stay available only as this domain permits them[\s\S]*does not remove member identity in other communities or automate tariffs, upgrades, member bands, paid slots, or outside publishing[\s\S]*Spotlight:/,
   "Community Domain locked feature-policy summaries must preserve the governed professional marketplace boundary, not only a switch list.",
   { frontend: true }
 );
@@ -1906,7 +1906,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /lockedFeaturePolicyJson = lockedFeaturePolicy[\s\S]*serializeDomainFeaturePolicy\(lockedFeaturePolicy\)[\s\S]*policyBackedDomainDraft[\s\S]*feature_policy_json: lockedFeaturePolicyJson[\s\S]*safeStored = setupDraftBelongsToDomain[\s\S]*\.\.\.policyBackedDomainDraft[\s\S]*\.\.\.\(safeStored \|\| \{\}\)[\s\S]*setFeaturePolicyLockedAt\(lockedFeaturePolicyLoadedAt \|\| ""\)[\s\S]*lockedFeaturePolicyLoadedAt/,
+  /lockedFeaturePolicyJson = lockedFeaturePolicy[\s\S]*serializeDomainFeaturePolicy\(lockedFeaturePolicy\)[\s\S]*policyBackedDomainDraft[\s\S]*feature_policy_json: lockedFeaturePolicyJson[\s\S]*safeStored = setupDraftBelongsToDomain[\s\S]*\.\.\.policyBackedDomainDraft[\s\S]*\.\.\.\(safeStored \|\| \{\}\)[\s\S]*setFeaturePolicyLockedAt\([\s\S]*latestGovernancePackageLockedAt \|\| lockedFeaturePolicyLoadedAt \|\| ""[\s\S]*latestGovernancePackageLockedAt/,
   "Community Domain dashboard setup editor must seed service-rule choices from the active locked backend policy before falling back to local setup draft state.",
   { frontend: true }
 );
@@ -1920,7 +1920,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /setLockedFeaturePolicy\(config\)[\s\S]*setLockedFeaturePolicyLoadedAt\(lockedAt\)[\s\S]*Rule in use[\s\S]*featurePolicySourceLabel[\s\S]*lockedFeaturePolicyLoadedAt/,
+  /lockCommunityDomainGovernancePackage[\s\S]*setLockedFeaturePolicy\(config\)[\s\S]*setLockedFeaturePolicyLoadedAt\(lockedAt\)[\s\S]*governance_package: governancePackage[\s\S]*Rule in use[\s\S]*featurePolicySourceLabel[\s\S]*lockedFeaturePolicyLoadedAt/,
   "Community Domain dashboard must refresh the locked policy after saving and explain whether live actions use locked policy or draft policy.",
   { frontend: true }
 );
@@ -6210,6 +6210,23 @@ assertContains(
   "gmfn_backend/tests/test_community_domain_collection_instructions.py",
   /test_church_summary_pdf_summarizes_message_qr_and_programme_records[\s\S]*public_qr_enabled[\s\S]*church_programme_attendance[\s\S]*test_church_summary_pdf_accepts_live_attendance_qr_counts[\s\S]*\/attendance-sessions[\s\S]*\/check-ins[\s\S]*\/response-channels[\s\S]*need_request[\s\S]*church-summary-church_memory/,
   "Backend tests must prove Church Summary PDF generation from public message QR, programme records, live attendance QR check-ins, and response QR records."
+);
+assertContains(
+  "gmfn_backend/app/db/models.py",
+  /class CommunityDomainGovernancePackage[\s\S]*__tablename__ = "community_domain_governance_packages"[\s\S]*package_hash[\s\S]*package_json[\s\S]*locked_by_user_id/,
+  "Backend must store immutable Community Domain governance package snapshots with hash, JSON body, and locker audit metadata."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /CommunityDomainGovernancePackageLockIn[\s\S]*governance-package\/lock[\s\S]*_require_domain_admin_scope[\s\S]*_active_feature_policy_row[\s\S]*_governance_package_hash[\s\S]*CommunityDomainActionReview[\s\S]*community_domain\.governance_package_locked/,
+  "Backend must let only owner/admin lock a server-side governance package version from the active domain feature policy."
+);
+
+assertContains(
+  "gmfn_backend/alembic/versions/20260908_add_community_domain_governance_packages.py",
+  /community_domain_governance_packages[\s\S]*uq_comm_domain_gov_pkg_domain_key_version[\s\S]*ix_comm_domain_gov_pkg_hash/,
+  "Alembic must create the immutable Community Domain governance package table with version and hash guards."
 );
 if (findings.length > 0) {
   console.error("Community Domain product contract audit failed:");
