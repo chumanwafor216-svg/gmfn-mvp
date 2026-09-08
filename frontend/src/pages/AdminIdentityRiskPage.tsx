@@ -498,6 +498,15 @@ export default function AdminIdentityRiskPage() {
         return;
       }
       setReconcileResult(res || null);
+      if (
+        safeStr(res?.mode) === "already_reconciled" &&
+        safeStr(res?.canonical_user?.gmfn_id)
+      ) {
+        setExactRecoveryIdentity(safeStr(res.canonical_user.gmfn_id));
+        setManualRecoveryErr("");
+        setManualRecoveryResult(null);
+        setManualRecoveryCopyStatus("");
+      }
     } catch (e: any) {
       if (
         reconcileSeqRef.current !== requestSeq ||
@@ -1259,7 +1268,11 @@ export default function AdminIdentityRiskPage() {
               }}
             >
               <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
-                {reconcileResult.mode === "execute" ? "Merge executed" : "Merge preview"}
+                {reconcileResult.mode === "execute"
+                  ? "Merge executed"
+                  : reconcileResult.mode === "already_reconciled"
+                  ? "Duplicate already retired"
+                  : "Merge preview"}
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
                 {safeStr(reconcileResult.warning || "Review the operation record before continuing.")}

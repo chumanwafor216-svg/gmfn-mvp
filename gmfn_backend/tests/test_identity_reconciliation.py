@@ -272,6 +272,62 @@ def test_admin_identity_reconciliation_accepts_mixed_gsn_gmfn_display_alias(clie
     assert res.json()["mode"] == "dry_run"
 
 
+def test_admin_identity_reconciliation_accepts_gen_typo_duplicate_alias(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    _seed_confirmed_duplicate_pair()
+
+    res = client.post(
+        "/identity-risk/admin/reconcile-duplicate",
+        json={
+            "canonical_gmfn_id": "GSN-GMFN-U-CANONICAL",
+            "duplicate_gmfn_id": "GEN-U-DUPLICATE",
+        },
+        headers=_headers("identity-reconcile-admin@example.com"),
+    )
+
+    assert res.status_code == 200, res.text
+    assert res.json()["mode"] == "dry_run"
+
+
+def test_admin_identity_reconciliation_reports_already_retired_duplicate(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    _seed_confirmed_duplicate_pair()
+
+    first_res = client.post(
+        "/identity-risk/admin/reconcile-duplicate",
+        json={
+            "canonical_gmfn_id": "GSN-GMFN-U-CANONICAL",
+            "duplicate_gmfn_id": "GSN-U-DUPLICATE",
+            "owner_confirmed": True,
+            "execute": True,
+            "reviewer_note": "Product owner confirmed both records are the same person.",
+        },
+        headers=_headers("identity-reconcile-admin@example.com"),
+    )
+    assert first_res.status_code == 200, first_res.text
+    assert first_res.json()["mode"] == "execute"
+
+    second_res = client.post(
+        "/identity-risk/admin/reconcile-duplicate",
+        json={
+            "canonical_gmfn_id": "GSN-GMFN-U-CANONICAL",
+            "duplicate_gmfn_id": "GSN-U-DUPLICATE",
+            "owner_confirmed": True,
+            "execute": True,
+            "reviewer_note": "Owner retried the merge from the admin screen.",
+        },
+        headers=_headers("identity-reconcile-admin@example.com"),
+    )
+
+    assert second_res.status_code == 200, second_res.text
+    body = second_res.json()
+    assert body["mode"] == "already_reconciled"
+    assert body["next_action"] == "manual_recovery_reset"
+    assert body["canonical_user"]["gmfn_id"] == "GMFN-U-CANONICAL"
+    assert body["duplicate_user"]["before"]["gmfn_id"] == "GMFN-U-DUPLICATE"
+    assert body["operations"] == []
+
+
 def test_admin_manual_recovery_reset_accepts_mixed_gsn_gmfn_display_alias(client):
     os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
     _seed_confirmed_duplicate_pair()

@@ -1,3 +1,11 @@
+## 2026-09-08 - Identity reconciliation already-retired duplicate repair
+
+- Status: Local backend/frontend implementation complete and verified; not pushed or deployed in this slice yet.
+- Owner trigger: live Admin Tools Identity reconciliation for Navito/Ebube still showed `Duplicate user was not found` when trying canonical `GSN-GMFN-U-0AEAE2D7` with duplicate `GSN-U-0A2E598F`; screenshots also showed one mistyped duplicate prefix as `GEN-U-0A2E598F`.
+- Backend route affected: `POST /identity-risk/admin/reconcile-duplicate` now accepts the common admin-only `GEN-U-*` typo as a `GSN-U-*` alias, still scoped by exact suffix. When the active duplicate user row is not found, the route now checks recent `identity.duplicate_reconciled` audit events for that canonical user and returns a safe `already_reconciled` no-op payload if the old duplicate ID was already retired.
+- Frontend route affected: `/app/admin/identity-risk` now labels that state as `Duplicate already retired` instead of a failed merge preview and pre-fills the surviving canonical GSN ID in the Exact GSN ID recovery tool so the admin can issue a temporary password after owner proof.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\identity_risk.py gmfn_backend\tests\test_identity_reconciliation.py`; `python -m pytest -q gmfn_backend\tests\test_identity_reconciliation.py` -> 16 passed; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run audit:admin-route-guards`; `npm --prefix frontend run build`; `git diff --check`.
+- Devil truth: this does not prove the real production record is correct by itself. It fixes the stuck admin workflow if the duplicate was already retired. If the surviving canonical identity is still activation-pending or the wrong temporary password was issued, the admin must use the exact recovery/activation path for the canonical ID, not keep re-running merge.
 ## 2026-09-08 - Community Bulletin video/poster attachment picker repair
 
 - Status: Local backend/frontend implementation complete and verified; not pushed or deployed in this slice.

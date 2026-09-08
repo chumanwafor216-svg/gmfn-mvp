@@ -12,7 +12,7 @@ from app.core.auth import get_current_user
 from app.core.auth import is_user_activation_pending
 from app.core.security import get_password_hash
 from app.db.database import get_db
-from app.db.models import Clan, ClanJoinRequest, ClanMembership, User
+from app.db.models import Clan, ClanJoinRequest, ClanMembership, TrustEvent, User
 from app.services.identity_reconciliation_service import reconcile_duplicate_identity
 from app.services.identity_service import (
     get_identity_recovery_summary,
@@ -324,7 +324,7 @@ def _gsn_id_candidates(value: object) -> list[str]:
         return []
 
     suffix = raw
-    for prefix in ("GSN-GMFN-U-", "GMFN-GSN-U-", "GMFN-U-", "GSN-U-", "U-"):
+    for prefix in ("GSN-GMFN-U-", "GMFN-GSN-U-", "GMFN-U-", "GSN-U-", "GEN-U-", "U-"):
         if suffix.startswith(prefix):
             suffix = suffix[len(prefix):]
             break
@@ -341,6 +341,83 @@ def _gsn_id_candidates(value: object) -> list[str]:
         if item and item not in candidates[:index]
     ]
 
+
+def _basic_user_snapshot(user: User) -> dict[str, Any]:
+    return {
+        "user_id": int(user.id),
+        "gmfn_id": getattr(user, "gmfn_id", None),
+        "email": getattr(user, "email", None),
+        "display_name": getattr(user, "display_name", None),
+        "phone_e164": getattr(user, "phone_e164", None),
+        "phone_verified": bool(
+            getattr(user, "phone_e164", None)
+            and getattr(user, "phone_verified_at", None)
+        ),
+    }
+
+
+def _already_reconciled_duplicate_payload(
+    db: Session,
+    *,
+    canonical_user: User,
+    duplicate_gmfn_id: str | None,
+    owner_confirmed: bool,
+    execute: bool,
+) -> dict[str, Any] | None:
+    candidate_ids = {item.upper() for item in _gsn_id_candidates(duplicate_gmfn_id)}
+    if not candidate_ids:
+        return None
+
+    rows = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.event_type == "identity.duplicate_reconciled",
+            TrustEvent.subject_user_id == int(canonical_user.id),
+        )
+        .order_by(TrustEvent.id.desc())
+        .limit(50)
+        .all()
+    )
+
+    for event in rows:
+        meta = event.meta or {}
+        duplicate_payload = meta.get("duplicate_user") if isinstance(meta, dict) else None
+        if not isinstance(duplicate_payload, dict):
+            continue
+        before = duplicate_payload.get("before")
+        after = duplicate_payload.get("after")
+        before_id = (
+            str((before or {}).get("gmfn_id") or "").strip().upper()
+            if isinstance(before, dict)
+            else ""
+        )
+        after_id = (
+            str((after or {}).get("gmfn_id") or "").strip().upper()
+            if isinstance(after, dict)
+            else ""
+        )
+        if before_id not in candidate_ids and after_id not in candidate_ids:
+            continue
+
+        return {
+            "ok": True,
+            "mode": "already_reconciled",
+            "owner_confirmed": bool(owner_confirmed),
+            "canonical_user": _basic_user_snapshot(canonical_user),
+            "duplicate_user": duplicate_payload,
+            "operations": [],
+            "audit_event_id": int(event.id),
+            "warning": (
+                "This duplicate GSN ID was already retired into the canonical "
+                "identity. Do not run merge again. If the member cannot sign in, "
+                "use Exact GSN ID recovery to issue a temporary password for the "
+                "surviving canonical GSN ID."
+            ),
+            "next_action": "manual_recovery_reset",
+            "execute_requested": bool(execute),
+        }
+
+    return None
 
 def _resolve_reconcile_user(
     db: Session,
@@ -363,7 +440,14 @@ def _resolve_reconcile_user(
         user = query.filter(User.gmfn_id.in_(candidate_ids)).first()
 
     if user is None:
-        raise HTTPException(status_code=404, detail=f"{label} user was not found")
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"{label} user was not found. Check the GSN ID spelling "
+                "(GSN, not GEN). If this duplicate was already merged, use "
+                "Exact GSN ID recovery for the surviving account."
+            ),
+        )
     return user
 
 
@@ -643,12 +727,25 @@ def admin_reconcile_duplicate_identity(
         gmfn_id=payload.canonical_gmfn_id,
         label="Canonical",
     )
-    duplicate = _resolve_reconcile_user(
-        db,
-        user_id=payload.duplicate_user_id,
-        gmfn_id=payload.duplicate_gmfn_id,
-        label="Duplicate",
-    )
+    try:
+        duplicate = _resolve_reconcile_user(
+            db,
+            user_id=payload.duplicate_user_id,
+            gmfn_id=payload.duplicate_gmfn_id,
+            label="Duplicate",
+        )
+    except HTTPException as exc:
+        if exc.status_code == 404 and payload.duplicate_gmfn_id:
+            already_reconciled = _already_reconciled_duplicate_payload(
+                db,
+                canonical_user=canonical,
+                duplicate_gmfn_id=payload.duplicate_gmfn_id,
+                owner_confirmed=payload.owner_confirmed,
+                execute=payload.execute,
+            )
+            if already_reconciled is not None:
+                return already_reconciled
+        raise
 
     try:
         return reconcile_duplicate_identity(
