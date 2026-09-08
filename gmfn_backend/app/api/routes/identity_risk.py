@@ -288,7 +288,7 @@ class AdminIdentityReconcileIn(BaseModel):
 
 class AdminManualRecoveryResetIn(BaseModel):
     gmfn_id: str = Field(..., min_length=6, max_length=64)
-    phone_e164: str = Field(..., min_length=6, max_length=40)
+    phone_e164: str | None = Field(default=None, max_length=40)
     owner_proof_confirmed: bool = False
     reviewer_note: str = Field(..., min_length=8, max_length=600)
 
@@ -366,24 +366,32 @@ def _resolve_manual_recovery_user(
     db: Session,
     *,
     gmfn_id: str,
-    phone_e164: str,
+    phone_e164: str | None,
 ) -> User:
     candidate_ids = _gsn_id_candidates(gmfn_id)
-
-    phone_candidates = _phone_query_candidates(phone_e164)
     user = (
         db.query(User)
-        .filter(User.gmfn_id.in_(candidate_ids), User.phone_e164.in_(phone_candidates))
+        .filter(User.gmfn_id.in_(candidate_ids))
         .with_for_update()
         .first()
-        if phone_candidates
-        else None
     )
     if user is None:
-        raise HTTPException(
-            status_code=404,
-            detail="No active GSN identity matches that GSN ID and recorded phone.",
-        )
+        raise HTTPException(status_code=404, detail="No active GSN identity matches that GSN ID.")
+
+    recorded_phone = _clean_phone_query(getattr(user, "phone_e164", None))
+    phone_candidates = _phone_query_candidates(phone_e164)
+    if recorded_phone:
+        if not phone_candidates:
+            raise HTTPException(
+                status_code=400,
+                detail="Recorded phone is required for this GSN identity.",
+            )
+        if recorded_phone not in {_clean_phone_query(item) for item in phone_candidates}:
+            raise HTTPException(
+                status_code=404,
+                detail="No active GSN identity matches that GSN ID and recorded phone.",
+            )
+
     return user
 
 
@@ -542,14 +550,16 @@ def admin_manual_recovery_reset(
             detail="Activate this GSN identity before manual password recovery.",
         )
 
-    if not getattr(user, "phone_verified_at", None):
+    has_recorded_phone = bool(getattr(user, "phone_e164", None))
+    has_verified_phone = bool(has_recorded_phone and getattr(user, "phone_verified_at", None))
+    if has_recorded_phone and not has_verified_phone:
         raise HTTPException(
             status_code=409,
             detail="Manual recovery reset requires a verified recorded phone.",
         )
 
     recovery = get_identity_recovery_summary(db, user_id=int(user.id))
-    if recovery.get("configured"):
+    if recovery.get("configured") and has_verified_phone:
         raise HTTPException(
             status_code=409,
             detail="Private recovery is already configured. Use self-service password recovery before manual reset.",
@@ -569,9 +579,17 @@ def admin_manual_recovery_reset(
             "gmfn_id": getattr(user, "gmfn_id", None),
             "phone_mask": (
                 "***" + "".join(ch for ch in str(getattr(user, "phone_e164", "")) if ch.isdigit())[-4:]
+                if getattr(user, "phone_e164", None)
+                else None
+            ),
+            "supplied_phone_mask": (
+                "***" + "".join(ch for ch in str(payload.phone_e164 or "") if ch.isdigit())[-4:]
+                if payload.phone_e164
+                else None
             ),
             "owner_proof_confirmed": True,
-            "private_recovery_configured_before_reset": False,
+            "recovery_reset_without_recorded_phone": not has_recorded_phone,
+            "private_recovery_configured_before_reset": bool(recovery.get("configured")),
             "temporary_password_shown_once": True,
             "issued_at": issued_at.isoformat(),
             "next_required_step": "Member must sign in with the temporary password and set private recovery.",

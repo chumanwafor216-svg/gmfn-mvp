@@ -5147,7 +5147,7 @@ export async function postAdminIdentityReconciliation(payload: {
 
 export async function postAdminManualRecoveryReset(payload: {
   gmfn_id: string;
-  phone_e164: string;
+  phone_e164?: string | null;
   owner_proof_confirmed: boolean;
   reviewer_note: string;
 }): Promise<any> {

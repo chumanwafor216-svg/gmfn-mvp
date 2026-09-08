@@ -256,6 +256,7 @@ export default function AdminIdentityRiskPage() {
   const [manualRecoveryResult, setManualRecoveryResult] = useState<any>(null);
   const [manualRecoveryErr, setManualRecoveryErr] = useState("");
   const [manualRecoveryCopyStatus, setManualRecoveryCopyStatus] = useState("");
+  const [exactRecoveryIdentity, setExactRecoveryIdentity] = useState(gsnLookupFromQuery);
   const [canonicalIdentity, setCanonicalIdentity] = useState("");
   const [duplicateIdentity, setDuplicateIdentity] = useState("");
   const [reconcileOwnerConfirmed, setReconcileOwnerConfirmed] = useState(false);
@@ -394,6 +395,38 @@ export default function AdminIdentityRiskPage() {
       const res = await postAdminManualRecoveryReset({
         gmfn_id: safeStr(row?.gmfn_id),
         phone_e164: safeStr(row?.phone_e164),
+        owner_proof_confirmed: manualRecoveryConfirmed,
+        reviewer_note: note,
+      });
+      if (manualRecoveryBusy && manualRecoveryBusy !== contextKey) return;
+      setManualRecoveryResult(res || null);
+    } catch (e: any) {
+      if (manualRecoveryBusy && manualRecoveryBusy !== contextKey) return;
+      setManualRecoveryErr(String(e?.message || e || "Unable to issue manual recovery reset."));
+    } finally {
+      setManualRecoveryBusy("");
+    }
+  }
+
+  async function handleExactManualRecoveryReset() {
+    const identity = safeStr(exactRecoveryIdentity || canonicalIdentity || gsnLookupFromQuery)
+      .trim()
+      .toUpperCase();
+    if (manualRecoveryBusy || !identity) return;
+    const note = safeStr(manualRecoveryNote).trim();
+    if (!manualRecoveryConfirmed || note.length < 8) return;
+
+    const suppliedPhone = safeStr(phoneLookup).trim();
+    const contextKey = `exact\n${identity}\n${suppliedPhone}\n${note}`;
+    setManualRecoveryBusy(contextKey);
+    setManualRecoveryErr("");
+    setManualRecoveryResult(null);
+    setManualRecoveryCopyStatus("");
+
+    try {
+      const res = await postAdminManualRecoveryReset({
+        gmfn_id: identity,
+        phone_e164: suppliedPhone || null,
         owner_proof_confirmed: manualRecoveryConfirmed,
         reviewer_note: note,
       });
@@ -642,6 +675,171 @@ export default function AdminIdentityRiskPage() {
                 ? `${phoneLineage.match_count} protected identity line found.`
                 : "No GSN identity currently owns that phone in the protected identity record."}
             </div>
+            {toNum(phoneLineage.match_count) === 0 ? (
+              <div
+                style={{
+                  ...institutionalInnerCard("#FFF7ED"),
+                  border: "1px solid rgba(154,52,18,0.18)",
+                  display: "grid",
+                  gap: 12,
+                }}
+              >
+                <div style={{ fontWeight: 1000, color: "#7C2D12" }}>
+                  {labelWithIcon("shield", "Exact GSN ID recovery")}
+                </div>
+                <div style={{ ...helperText(), color: "#7C2D12", fontWeight: 800 }}>
+                  Use this only when the owner proves the surviving GSN ID and the
+                  phone lookup shows no protected owner. If that identity still has
+                  a recorded phone, GSN will still require the phone match.
+                </div>
+                <input
+                  value={exactRecoveryIdentity}
+                  onChange={(event) => {
+                    setExactRecoveryIdentity(event.target.value.toUpperCase());
+                    setManualRecoveryErr("");
+                    setManualRecoveryResult(null);
+                    setManualRecoveryCopyStatus("");
+                  }}
+                  placeholder="GSN-GMFN-U-0AEAE2D7"
+                  style={{
+                    width: "100%",
+                    minHeight: 52,
+                    boxSizing: "border-box",
+                    borderRadius: 16,
+                    border: "1px solid rgba(20,52,83,0.22)",
+                    background: "#FFFFFF",
+                    color: "#0B1F33",
+                    fontSize: 16,
+                    fontWeight: 900,
+                    padding: "0 14px",
+                  }}
+                />
+                <textarea
+                  value={manualRecoveryNote}
+                  onChange={(event) => {
+                    setManualRecoveryNote(event.target.value);
+                    setManualRecoveryErr("");
+                    setManualRecoveryResult(null);
+                    setManualRecoveryCopyStatus("");
+                  }}
+                  placeholder="Reviewer note: what proof was checked?"
+                  style={{
+                    width: "100%",
+                    minHeight: 86,
+                    boxSizing: "border-box",
+                    borderRadius: 16,
+                    border: "1px solid rgba(20,52,83,0.22)",
+                    background: "#FFFFFF",
+                    color: "#0B1F33",
+                    fontSize: 16,
+                    fontWeight: 800,
+                    padding: 14,
+                    resize: "vertical",
+                  }}
+                />
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 10,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={manualRecoveryConfirmed}
+                    onChange={(event) => {
+                      setManualRecoveryConfirmed(event.target.checked);
+                      setManualRecoveryErr("");
+                      setManualRecoveryResult(null);
+                      setManualRecoveryCopyStatus("");
+                    }}
+                    style={{ width: 18, height: 18, marginTop: 3, flex: "0 0 auto" }}
+                  />
+                  <span>
+                    Owner proof checked: this exact GSN ID belongs to the person
+                    asking for recovery.
+                  </span>
+                </label>
+                <PrimaryButton
+                  type="button"
+                  busy={Boolean(manualRecoveryBusy)}
+                  busyLabel="Issuing..."
+                  disabled={
+                    !safeStr(exactRecoveryIdentity || canonicalIdentity || gsnLookupFromQuery).trim() ||
+                    !manualRecoveryConfirmed ||
+                    safeStr(manualRecoveryNote).trim().length < 8 ||
+                    Boolean(manualRecoveryResult?.temporary_password)
+                  }
+                  stableHeight={52}
+                  minWidth={190}
+                  debugId="admin-identity-risk.manual-recovery-reset.exact"
+                  onClick={() => void handleExactManualRecoveryReset()}
+                >
+                  Issue temporary password
+                </PrimaryButton>
+                {manualRecoveryErr ? (
+                  <div
+                    style={{
+                      ...institutionalInnerCard("#FEF2F2"),
+                      color: "#991B1B",
+                      fontWeight: 900,
+                    }}
+                  >
+                    {manualRecoveryErr}
+                  </div>
+                ) : null}
+                {manualRecoveryResult?.temporary_password ? (
+                  <div
+                    style={{
+                      ...institutionalInnerCard("#F0FDF4"),
+                      border: "1px solid rgba(22,101,52,0.18)",
+                      display: "grid",
+                      gap: 10,
+                    }}
+                  >
+                    <div style={{ color: "#166534", fontWeight: 1000 }}>
+                      Temporary password shown once
+                    </div>
+                    <div
+                      style={{
+                        padding: "12px 14px",
+                        borderRadius: 14,
+                        background: "#FFFFFF",
+                        border: "1px solid rgba(20,52,83,0.16)",
+                        color: "#0B1F33",
+                        fontSize: 18,
+                        fontWeight: 1000,
+                        letterSpacing: 0.4,
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {safeStr(manualRecoveryResult.temporary_password)}
+                    </div>
+                    <div style={{ ...helperText(), color: "#166534", fontWeight: 800 }}>
+                      Give it only to the verified owner. They must sign in,
+                      change password, and set private recovery.
+                    </div>
+                    <PrimaryButton
+                      type="button"
+                      stableHeight={48}
+                      minWidth={160}
+                      debugId="admin-identity-risk.manual-recovery-reset.exact-copy"
+                      onClick={() => void copyTemporaryPassword()}
+                    >
+                      Copy temporary password
+                    </PrimaryButton>
+                    {manualRecoveryCopyStatus ? (
+                      <div style={{ ...helperText(), color: "#166534", fontWeight: 900 }}>
+                        {manualRecoveryCopyStatus}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
             {Array.isArray(phoneLineage.matches)
               ? phoneLineage.matches.map((row: any) => (
                   <div

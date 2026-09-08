@@ -159646,3 +159646,14 @@ Verification:
 
 Operational note:
 - After deployment, the admin can retry with canonical/original `GSN-GMFN-U-0AEAE2D7` and duplicate/recovery `GSN-U-0A2E598F`. Preview first; execute only after owner proof confirms both records are the same person.
+
+## 2026-09-08 - Exact-ID manual recovery after duplicate merge phone gap
+
+- Status: Local implementation complete and verified; commit/push/deploy in this slice.
+- Owner trigger: owner reported Nevito/Ebube could not sign in after duplicate identity reconciliation. Phone lineage for `+447717143500` returned `match_count: 0`, so no protected identity currently owns that phone number.
+- Confirmed behavior: after a duplicate merge, the duplicate identity is retired and its phone/password are cleared. If the surviving canonical identity has no recorded phone, the old phone lookup cannot expose the manual reset row, leaving the admin stuck even after owner proof.
+- Backend route affected: `POST /identity-risk/admin/manual-recovery-reset` now accepts exact GSN/GMFN ID aliases without requiring `phone_e164` only when the matched surviving identity has no recorded phone. If that identity still has a recorded phone, the route still requires the supplied phone to match and still blocks unverified recorded phones.
+- Frontend route affected: `/app/admin/identity-risk` now shows an `Exact GSN ID recovery` action when phone lineage returns zero matches. Admin can enter the surviving GSN ID, owner-proof note, confirmation checkbox, and issue a one-time temporary password.
+- Safety boundary: this is not a second merge and does not restore or reveal the old password. It creates a new temporary password after admin proof. The member must sign in with the surviving/original ID and then reset password/private recovery.
+- Verification passed: `python -m py_compile app\api\routes\identity_risk.py tests\test_identity_reconciliation.py`; `python -m pytest -q tests\test_identity_reconciliation.py` -> 12 passed; `npm --prefix frontend run build`.
+- Devil truth: the current live data still needs an admin to issue a fresh temporary password for the surviving identity. If Nevito keeps trying the retired duplicate ID/password, sign-in will continue to fail by design.

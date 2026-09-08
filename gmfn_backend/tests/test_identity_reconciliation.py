@@ -14,6 +14,7 @@ from app.db.models import (
     UserPayoutDestination,
 )
 from app.db.verification_models import IdentityVerificationCheck
+from app.services.identity_service import upsert_identity_recovery_profile
 
 
 def _headers(email: str) -> dict[str, str]:
@@ -290,6 +291,83 @@ def test_admin_manual_recovery_reset_accepts_mixed_gsn_gmfn_display_alias(client
     body = res.json()
     assert body["gmfn_id"] == "GMFN-U-CANONICAL"
     assert body["temporary_password"].startswith("GSN-")
+
+def test_admin_manual_recovery_reset_allows_exact_id_when_no_phone_owner(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+
+    with SessionLocal() as db:
+        admin = User(
+            email="manual-recovery-no-phone-admin@example.com",
+            hashed_password=get_password_hash("admin-secret"),
+            role="admin",
+            gmfn_id="GMFN-U-NOPHONE-ADMIN",
+        )
+        owner = User(
+            email="manual-recovery-no-phone-owner@example.com",
+            hashed_password=get_password_hash("old-secret"),
+            role="user",
+            gmfn_id="GMFN-U-NOPHONE",
+            display_name="No Phone Owner",
+            phone_e164=None,
+            phone_verified_at=None,
+        )
+        db.add_all([admin, owner])
+        db.commit()
+        db.refresh(owner)
+        upsert_identity_recovery_profile(
+            db,
+            user_id=int(owner.id),
+            prompts_and_answers=[
+                {"prompt": "What answer do you keep for trust recovery?", "answer": "Bridge"},
+                {"prompt": "What first community joined you?", "answer": "Circle"},
+                {"prompt": "Which city did you first join from?", "answer": "Aberdeen"},
+            ],
+        )
+
+    res = client.post(
+        "/identity-risk/admin/manual-recovery-reset",
+        json={
+            "gmfn_id": "GSN-GMFN-U-NOPHONE",
+            "owner_proof_confirmed": True,
+            "reviewer_note": "Owner proof checked after duplicate merge left no phone owner.",
+        },
+        headers=_headers("manual-recovery-no-phone-admin@example.com"),
+    )
+
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["gmfn_id"] == "GMFN-U-NOPHONE"
+    assert body["temporary_password"].startswith("GSN-")
+
+    old_login = client.post(
+        "/auth/login",
+        data={"username": "GMFN-U-NOPHONE", "password": "old-secret"},
+    )
+    assert old_login.status_code == 401, old_login.text
+
+    temp_login = client.post(
+        "/auth/login",
+        data={"username": "GMFN-U-NOPHONE", "password": body["temporary_password"]},
+    )
+    assert temp_login.status_code == 200, temp_login.text
+
+
+def test_admin_manual_recovery_reset_still_requires_phone_when_identity_has_phone(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    _seed_confirmed_duplicate_pair()
+
+    res = client.post(
+        "/identity-risk/admin/manual-recovery-reset",
+        json={
+            "gmfn_id": "GMFN-U-CANONICAL",
+            "owner_proof_confirmed": True,
+            "reviewer_note": "Owner proof checked but recorded phone was omitted.",
+        },
+        headers=_headers("identity-reconcile-admin@example.com"),
+    )
+
+    assert res.status_code == 400, res.text
+    assert "Recorded phone is required" in res.text
 
 def test_admin_identity_reconciliation_requires_owner_confirmation_for_execute(client):
     os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
