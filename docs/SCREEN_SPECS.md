@@ -518,6 +518,9 @@ Rules:
 - Save/checkpoint actions may preserve draft progress, but a real governance
   lock or unlock must depend on backend owner/admin/delegated-authority checks
   and recorded history, not only frontend hiding.
+- Save / lock package must save a setup checkpoint before launch-readiness
+  handoff. If setup editing is locked, it must route the user to owner/admin
+  authority request instead of implying a local password or self-unlock.
 - A branch, campus, parish, line, class, committee, ROSCA circle, or welfare
   group should normally be represented as a `CommunityNode` or activity group,
   not a separate domain, unless it needs separate billing, public identity, or

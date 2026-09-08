@@ -2581,6 +2581,13 @@ assertContains(
   "Community Domain dashboard must land on one institution gateway, then reveal four governance stages and six inner actions only after the owner opens the relevant stage.",
   { frontend: true }
 );
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /function saveDomainCommandCheckpoint\(\)[\s\S]*saveSetupProgress\(\)[\s\S]*Governance setup checkpoint saved[\s\S]*function openLaunchReadinessForLock\(\)[\s\S]*setupEditingLocked[\s\S]*setActiveSetupWorkbenchTask\("access"\)[\s\S]*setActiveSetupAccessTask\("authority"\)[\s\S]*saveSetupProgress\(\)[\s\S]*openSetupJourneyAt\("launch", "edit"\)[\s\S]*Final lock still depends on owner\/admin authority[\s\S]*key: "lock-package"[\s\S]*label: "Save \/ lock package"[\s\S]*run: openLaunchReadinessForLock/,
+  "Community Domain Save / lock package must save a checkpoint first, send locked users to owner authority, and avoid pretending non-admins can locally unlock governance.",
+  { frontend: true }
+);
+
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",

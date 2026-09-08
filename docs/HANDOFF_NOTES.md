@@ -1,3 +1,11 @@
+## 2026-09-08 - Community Domain governance-folder save/lock polish
+
+- Status: Local frontend/spec/audit polish complete; not pushed or deployed in this slice.
+- Owner direction: Finish the Community Domain setup neatly so the first surface stays simple, deeper governance stays hidden under staged buttons, progress can be saved, and locked editing depends on owner/admin assent rather than another password.
+- Frontend route affected: `/app/community-domains/:id` via `CommunityDomainDashboardPage.tsx`. The `Save / lock package` action now saves a setup checkpoint first, then opens Launch readiness for an authorised editor. If editing is locked, it opens the delegated setup editor authority area and tells the user to ask the owner/admin to authorise editing before changing or locking the package.
+- Authority truth: the existing backend `POST /community-domains/{id}/setup-editor` flow already supports request/appoint/revoke for delegated setup editors with review/audit records. This slice does not invent a password gate or transfer ownership; owner/admin authority remains the controlling lock.
+- Audit/spec coverage: `SCREEN_SPECS.md` and `audit-community-domain-product-contracts.mjs` now guard the save-first lock handoff and the locked-user route to owner authority.
+- Devil truth: this makes the UI behavior honest and cleaner, but the durable server-side lock currently covers the `domain.feature_policy` record. A broader immutable governance package would still need a dedicated backend package/version model later.
 ## 2026-09-08 - Community Bulletin compact selector and brighter details
 
 - Status: Implemented and locally verified; not deployed in this slice.

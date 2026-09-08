@@ -2787,7 +2787,6 @@ export default function CommunityDomainDashboardPage() {
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
   const [operatingAreaPickerOpen, setOperatingAreaPickerOpen] = useState(false);
   const [commandGuidanceOpen, setCommandGuidanceOpen] = useState(false);
-  const [commandMoreActionsOpen, setCommandMoreActionsOpen] = useState(false);
   const [domainCommandMenuOpen, setDomainCommandMenuOpen] = useState(false);
   const [activeDomainCommandGroup, setActiveDomainCommandGroup] =
     useState<DomainCommandGroupKey | null>(null);
@@ -4846,7 +4845,6 @@ export default function CommunityDomainDashboardPage() {
     setSetupJourneyMode("setup");
     setShowAdvancedTools(requestedLane !== "settings");
     setCommandGuidanceOpen(false);
-    setCommandMoreActionsOpen(false);
     setWorkSurfaceNotesOpen(false);
     setOperatingSummaryNotesOpen(false);
     setOperatingSummaryGroupChooserOpen(false);
@@ -5557,7 +5555,6 @@ export default function CommunityDomainDashboardPage() {
     setSetupWorkspaceOpen(true);
     setShowAdvancedTools(false);
     setCommandGuidanceOpen(false);
-    setCommandMoreActionsOpen(false);
     setWorkSurfaceNotesOpen(false);
     setOperatingSummaryNotesOpen(false);
     setOperatingSummaryGroupChooserOpen(false);
@@ -5637,7 +5634,6 @@ export default function CommunityDomainDashboardPage() {
     setShowAdvancedTools(true);
     setOperatingAreaPickerOpen(false);
     setCommandGuidanceOpen(false);
-    setCommandMoreActionsOpen(false);
     setWorkSurfaceNotesOpen(false);
     setOperatingSummaryNotesOpen(false);
     setSetupOverviewGroupChooserOpen(false);
@@ -5667,7 +5663,6 @@ export default function CommunityDomainDashboardPage() {
   function closeDomainCommandDrawers() {
     setOperatingAreaPickerOpen(false);
     setCommandGuidanceOpen(false);
-    setCommandMoreActionsOpen(false);
     setWorkSurfaceNotesOpen(false);
     setOperatingSummaryNotesOpen(false);
     setOperatingSummaryGroupChooserOpen(false);
@@ -5828,6 +5823,27 @@ export default function CommunityDomainDashboardPage() {
     setDomainCommandMenuOpen(true);
     setMessage("Governance setup checkpoint saved. Open Launch readiness when the full package is ready to lock.");
   }
+
+  function openLaunchReadinessForLock() {
+    if (setupEditingLocked) {
+      openSetupJourney("edit");
+      setActiveSetupWorkbenchTask("access");
+      setActiveSetupAccessTask("authority");
+      setMessage(
+        "This setup is locked. Ask the owner/admin to authorise editing before changing or locking the package."
+      );
+      return;
+    }
+    const saved = saveSetupProgress();
+    if (!saved) return;
+    setSetupCompletionSavedAt(cleanText(saved.saved_at, new Date().toISOString()));
+    openSetupJourneyAt("launch", "edit");
+    setMessage(
+      isAdmin
+        ? "Checkpoint saved. Launch readiness is open; use Save setup on the final step to lock the feature policy."
+        : "Checkpoint saved. Launch readiness is open. Final lock still depends on owner/admin authority."
+    );
+  }
   function dismissServiceFlowGuide() {
     setServiceFlowGuideDismissed(true);
     setServiceFlowGuideOpen(false);
@@ -5922,7 +5938,6 @@ export default function CommunityDomainDashboardPage() {
     setSetupWorkspaceOpen(false);
     setSetupJourneyMode("setup");
     setCommandGuidanceOpen(false);
-    setCommandMoreActionsOpen(false);
     setDomainCommandMenuOpen(true);
     setActiveDomainCommandGroup(null);
     setWorkSurfaceNotesOpen(false);
@@ -6069,7 +6084,6 @@ export default function CommunityDomainDashboardPage() {
     setSetupWorkspaceOpen(false);
     setShowAdvancedTools(true);
     setCommandGuidanceOpen(false);
-    setCommandMoreActionsOpen(false);
     setWorkSurfaceNotesOpen(false);
     setOperatingSummaryNotesOpen(false);
     setSetupEvidenceListOpen(false);
@@ -7640,7 +7654,7 @@ export default function CommunityDomainDashboardPage() {
             key: "lock-package",
             label: "Save / lock package",
             note: "Save progress and open launch readiness for the owner/admin lock.",
-            run: () => openSetupJourneyAt("launch", "edit"),
+            run: openLaunchReadinessForLock,
           },
         ]
       : [];
@@ -7874,7 +7888,6 @@ export default function CommunityDomainDashboardPage() {
               </div>
               <div
                 data-debug-id="community-domain-dashboard.governance-gateway"
-                data-legacy-advanced-open={commandMoreActionsOpen || undefined}
                 style={{ display: "grid", gap: 10 }}
               >
                 <StableButton
@@ -7888,7 +7901,6 @@ export default function CommunityDomainDashboardPage() {
                   onClick={() => {
                     setDomainCommandMenuOpen((current) => {
                       const next = !current;
-                      setCommandMoreActionsOpen(next);
                       if (!next) {
                         setActiveDomainCommandGroup(null);
                         setCommandGuidanceOpen(false);
@@ -8269,7 +8281,6 @@ export default function CommunityDomainDashboardPage() {
                       setShowAdvancedTools(false);
                     }
                     setCommandGuidanceOpen(false);
-                    setCommandMoreActionsOpen(false);
                     setWorkSurfaceNotesOpen(false);
                     setOperatingSummaryNotesOpen(false);
                     setServicePacketChooserOpen(false);
@@ -8511,7 +8522,6 @@ export default function CommunityDomainDashboardPage() {
                           setActiveLane(operationalLaneKey);
                           setSetupJourneyMode("setup");
                           setCommandGuidanceOpen(false);
-                          setCommandMoreActionsOpen(false);
                           setWorkSurfaceNotesOpen(false);
                           setOperatingSummaryNotesOpen(false);
                           setServicePacketChooserOpen(false);
@@ -10595,15 +10605,14 @@ export default function CommunityDomainDashboardPage() {
                         setOperatingAreaPickerOpen(false);
                         setSetupJourneyMode("setup");
                         setCommandGuidanceOpen(false);
-                        setCommandMoreActionsOpen(false);
                         setWorkSurfaceNotesOpen(false);
                         setOperatingSummaryNotesOpen(false);
-    setSetupOverviewGroupChooserOpen(false);
-    setSetupOverviewTaskChooserOpen(false);
-    setSetupNoticeTaskChooserOpen(false);
-    setSetupLaunchProgressOpen(false);
-    setSetupLaunchEditOpen(false);
-    setSetupEvidenceListOpen(false);
+                        setSetupOverviewGroupChooserOpen(false);
+                        setSetupOverviewTaskChooserOpen(false);
+                        setSetupNoticeTaskChooserOpen(false);
+                        setSetupLaunchProgressOpen(false);
+                        setSetupLaunchEditOpen(false);
+                        setSetupEvidenceListOpen(false);
                         setServicePacketChooserOpen(false);
                         setStructurePacketChooserOpen(false);
                         setMemberPacketChooserOpen(false);
