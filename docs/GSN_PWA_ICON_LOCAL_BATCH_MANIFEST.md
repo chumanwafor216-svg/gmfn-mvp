@@ -64,7 +64,7 @@ Verification tooling:
 - Manifest install icons must not offer `maskable` or `/gsn-app-icon.svg` as an
   install shortcut icon.
 - Shortcut icons must point to `/gsn-app-icon-192-v14.png`.
-- The service worker cache must use `gsn-pwa-shell-v14` and precache the v14
+- The service worker cache must use `gsn-pwa-shell-v15` and precache the v14
   icon PNGs.
 - The install prompt preview must use `/gsn-app-icon-ios-180-v14.png`.
 - The link-contract audit must cage the same v14 install metadata, prompt, and

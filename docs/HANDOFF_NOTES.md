@@ -1,3 +1,11 @@
+## 2026-09-08 - Community visibility cache nudge
+
+- Status: Local cache-refresh patch complete; not pushed/deployed in this slice yet.
+- Owner trigger: Owner reported not seeing Community Domain changes after the deploy.
+- Verified truth: `main` and `origin/main` both point at `8a94e174` (`Add community domain governance package lock`). GitHub Actions run `34266990579` reported gmfn-frontend Render deploy `dep-dag5pcj6vvis73fi13eg` live and gmfn-api Render deploy `dep-dag5qhu1egvs73ae8up0` live. Direct live asset scans found the deployed Community chunks contain `Governance package`, `Save / lock package`, `Set up the institution`, `Bulletin tools`, `Open QR link`, and `governance-package/lock` markers.
+- Frontend cache patch: bumped `frontend/public/sw.js` from `gsn-pwa-shell-v14` to `gsn-pwa-shell-v15` and updated the matching icon/link audits so installed/mobile shells are forced onto a fresh service-worker cache version.
+- Affected visibility: `/app/community` Bulletin changes and `/app/community-domain` / `/app/community-domains/:id` command/governance package changes should become more visible after the fresh shell is installed. The Community Domain command still intentionally starts behind `Set up the institution`; deeper stages appear after opening that gateway.
+- Devil truth: This does not add new Community Domain product behavior. It is a freshness nudge for already-deployed changes. A user may still not see a given control if their role/domain state does not meet the code path condition, or if they do not open the gateway/drawer where the control lives.
 ## 2026-09-08 - Community Domain server governance package lock
 
 - Status: Local backend/frontend implementation complete and verified; not pushed or deployed yet.

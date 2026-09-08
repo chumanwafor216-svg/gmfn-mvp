@@ -413,7 +413,7 @@ assertContains(
 
 assertContains(
   "docs/GSN_PWA_ICON_LOCAL_BATCH_MANIFEST.md",
-  /apple-touch-icon` must point to `\/gsn-app-icon-ios-180-v14\.png`[\s\S]*?Manifest install icons must use `purpose: "any"`[\s\S]*?must not offer `maskable` or `\/gsn-app-icon\.svg`[\s\S]*?service worker cache must use `gsn-pwa-shell-v14`[\s\S]*?install prompt preview must use `\/gsn-app-icon-ios-180-v14\.png`/,
+  /apple-touch-icon` must point to `\/gsn-app-icon-ios-180-v14\.png`[\s\S]*?Manifest install icons must use `purpose: "any"`[\s\S]*?must not offer `maskable` or `\/gsn-app-icon\.svg`[\s\S]*?service worker cache must use `gsn-pwa-shell-v15`[\s\S]*?install prompt preview must use `\/gsn-app-icon-ios-180-v14\.png`/,
   "PWA icon batch manifest must cage the v14 metadata, no-maskable/SVG, service-worker, and prompt-preview contracts."
 );
 
@@ -576,7 +576,7 @@ if (existsSync(join(repoRoot, "frontend/dist"))) {
 
   assertBuiltArtifactContains(
     "frontend/dist/sw.js",
-    /const CACHE_VERSION = "gsn-pwa-shell-v14"[\s\S]*?"\/gsn-app-icon-ios-180-v14\.png"[\s\S]*?"\/gsn-app-icon-192-v14\.png"[\s\S]*?"\/gsn-app-icon-512-v14\.png"/,
+    /const CACHE_VERSION = "gsn-pwa-shell-v15"[\s\S]*?"\/gsn-app-icon-ios-180-v14\.png"[\s\S]*?"\/gsn-app-icon-192-v14\.png"[\s\S]*?"\/gsn-app-icon-512-v14\.png"/,
     "Built deploy service worker must precache the iPhone-safe app icon."
   );
 
