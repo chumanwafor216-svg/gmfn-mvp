@@ -1323,8 +1323,8 @@ function announcementLiveNoticeGridStyle(isCompact: boolean): React.CSSPropertie
 
 function announcementDateTileStyle(isCompact: boolean): React.CSSProperties {
   return {
-    minHeight: isCompact ? 118 : 158,
-    width: isCompact ? 150 : undefined,
+    minHeight: isCompact ? 54 : 158,
+    width: isCompact ? "100%" : undefined,
     justifySelf: isCompact ? "center" : undefined,
     borderRadius: 18,
     overflow: "hidden",
@@ -1332,6 +1332,17 @@ function announcementDateTileStyle(isCompact: boolean): React.CSSProperties {
     border: "1px solid rgba(214,170,69,0.24)",
     boxShadow: "0 14px 26px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.92)",
     textAlign: "center",
+  };
+}
+
+function announcementCompactDateTileStyle(): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto auto",
+    gap: 8,
+    alignItems: "center",
+    minHeight: 54,
+    padding: "8px 12px",
   };
 }
 
@@ -1349,18 +1360,6 @@ function announcementSourcePillStyle(): React.CSSProperties {
   };
 }
 
-function announcementDetailBoxStyle(): React.CSSProperties {
-  return {
-    borderRadius: 16,
-    background: "rgba(255,249,234,0.70)",
-    border: "1px solid rgba(214,170,69,0.12)",
-    padding: "12px 14px",
-    color: "#48657D",
-    fontSize: 13.5,
-    fontWeight: 720,
-    lineHeight: 1.36,
-  };
-}
 
 function announcementListPanelStyle(isCompact: boolean): React.CSSProperties {
   return {
@@ -1456,13 +1455,6 @@ function wordLimit(text: string, maxWords: number): string {
   return `${words.slice(0, maxWords).join(" ")}...`;
 }
 
-function wordRemainder(text: string, skipWords: number, maxWords: number): string {
-  const words = safeStr(text).split(/\s+/).filter(Boolean);
-  if (words.length <= skipWords) return "";
-  const remainder = words.slice(skipWords);
-  if (remainder.length <= maxWords) return remainder.join(" ");
-  return `${remainder.slice(0, maxWords).join(" ")}...`;
-}
 function safeDateLabel(value: any): string {
   const raw = safeStr(value);
   if (!raw) return "";
@@ -1749,6 +1741,7 @@ export default function CommunityHomePage() {
   const [noticeAcknowledgementBusy, setNoticeAcknowledgementBusy] = useState("");
   const [noticeMeetingInterestBusy, setNoticeMeetingInterestBusy] = useState("");
   const [noticeReactionPanelOpenId, setNoticeReactionPanelOpenId] = useState("");
+  const [noticeDetailOpenId, setNoticeDetailOpenId] = useState("");
   const [noticeRollCallBusy, setNoticeRollCallBusy] = useState("");
   const [noticeRollCallByNotice, setNoticeRollCallByNotice] = useState<Record<string, CommunityNoticeRollCall>>({});
   const [noticeExpiryNowMs, setNoticeExpiryNowMs] = useState(() => Date.now());
@@ -3424,8 +3417,7 @@ export default function CommunityHomePage() {
   function renderCommunityBulletinPrimaryNotice(noticeItem: CommunityNoticeItem) {
     const calendar = noticeCalendarParts(noticeItem);
     const rawBody = firstTruthy(noticeItem?.body, noticeItem?.title, noticeItem?.purpose, "Community notice");
-    const title = wordLimit(rawBody, 9);
-    const detail = wordRemainder(rawBody, 9, 30);
+    const titleLineLimit = isCompact ? 4 : 3;
     const when = compactDateLabel(firstTruthy(noticeItem?.scheduled_at, noticeItem?.created_at));
     const expiry = noticeExpiryLabel(noticeItem);
     const senderLabel = firstTruthy(noticeItem?.sender_whatsapp_label, "Community contact");
@@ -3437,47 +3429,64 @@ export default function CommunityHomePage() {
     const eventId = firstTruthy(noticeItem?.event_id);
     const noticeKey = firstTruthy(noticeItem?.notice_id, eventId, noticeItem?.meeting_id, "active");
     const reactionPanelOpen = noticeReactionPanelOpenId === noticeKey;
+    const detailOpen = noticeDetailOpenId === noticeKey;
     const canOpenRollCall = canManageCommunityNoticeSettings && Boolean(eventId) && noticeItem?.acknowledgement_enabled !== false;
+    const canToggleFullNotice = safeStr(rawBody).split(/\s+/).filter(Boolean).length > 10;
 
     return (
       <div style={announcementComposerPreviewStyle(isCompact)}>
         <div style={announcementLiveNoticeGridStyle(isCompact)}>
           <div style={announcementDateTileStyle(isCompact)} aria-label="Announcement date">
-            <div
-              style={{
-                minHeight: 38,
-                display: "grid",
-                placeItems: "center",
-                background: "linear-gradient(180deg, #F2C766 0%, #E0A815 100%)",
-                color: "#FFFFFF",
-                fontSize: isCompact ? 11 : 12,
-                fontWeight: 950,
-              }}
-            >
-              {calendar.month}
-            </div>
-            <div style={{ padding: isCompact ? "10px 6px" : "12px 8px" }}>
-              <div style={{ color: "#07172C", fontSize: isCompact ? 40 : 50, fontWeight: 980, lineHeight: 1 }}>
-                {calendar.day}
+            {isCompact ? (
+              <div style={announcementCompactDateTileStyle()}>
+                <span style={{ color: "#B98200", fontSize: 11, fontWeight: 950 }}>
+                  {calendar.month}
+                </span>
+                <span style={{ color: "#07172C", fontSize: 30, fontWeight: 980, lineHeight: 1 }}>
+                  {calendar.day}
+                </span>
+                <span style={{ color: "#617085", fontSize: 11, fontWeight: 900 }}>
+                  {[calendar.year, calendar.weekday].filter(Boolean).join(" - ")}
+                </span>
               </div>
-              {calendar.year ? (
-                <div style={{ marginTop: 5, color: "#0B2D4A", fontSize: 16, fontWeight: 860 }}>
-                  {calendar.year}
+            ) : (
+              <>
+                <div
+                  style={{
+                    minHeight: 38,
+                    display: "grid",
+                    placeItems: "center",
+                    background: "linear-gradient(180deg, #F2C766 0%, #E0A815 100%)",
+                    color: "#FFFFFF",
+                    fontSize: 12,
+                    fontWeight: 950,
+                  }}
+                >
+                  {calendar.month}
                 </div>
-              ) : null}
-              <div
-                style={{
-                  margin: "9px auto 0",
-                  width: "78%",
-                  borderTop: "1px solid rgba(16,37,59,0.10)",
-                }}
-              />
-              <div style={{ marginTop: 8, color: "#617085", fontSize: 10.5, fontWeight: 850 }}>
-                {calendar.weekday}
-              </div>
-            </div>
+                <div style={{ padding: "12px 8px" }}>
+                  <div style={{ color: "#07172C", fontSize: 50, fontWeight: 980, lineHeight: 1 }}>
+                    {calendar.day}
+                  </div>
+                  {calendar.year ? (
+                    <div style={{ marginTop: 5, color: "#0B2D4A", fontSize: 16, fontWeight: 860 }}>
+                      {calendar.year}
+                    </div>
+                  ) : null}
+                  <div
+                    style={{
+                      margin: "9px auto 0",
+                      width: "78%",
+                      borderTop: "1px solid rgba(16,37,59,0.10)",
+                    }}
+                  />
+                  <div style={{ marginTop: 8, color: "#617085", fontSize: 10.5, fontWeight: 850 }}>
+                    {calendar.weekday}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
-
           <div style={{ display: "grid", gap: 10, minWidth: 0, justifyItems: isCompact ? "center" : "stretch", width: "100%" }}>
             <div style={{ ...announcementSourcePillStyle(), width: isCompact ? "min(100%, 270px)" : undefined, justifySelf: isCompact ? "center" : undefined }}>
               <span style={{ ...announcementNoticeIconStyle(1), width: 32, height: 32, borderRadius: 999 }} aria-hidden="true">
@@ -3493,7 +3502,7 @@ export default function CommunityHomePage() {
 
             <div
               style={{
-                ...brandClampLines(3),
+                ...brandClampLines(detailOpen ? 12 : titleLineLimit),
                 color: "#07172C",
                 fontSize: isCompact ? 22 : 28,
                 fontWeight: 980,
@@ -3501,7 +3510,7 @@ export default function CommunityHomePage() {
                 textAlign: isCompact ? "center" : "left",
               }}
             >
-              {title}
+              {rawBody}
             </div>
 
             <div style={{ display: "grid", gap: 5, color: "#617085", fontSize: 12.5, fontWeight: 820 }}>
@@ -3511,7 +3520,30 @@ export default function CommunityHomePage() {
           </div>
         </div>
 
-        {detail ? <div style={announcementDetailBoxStyle()}>{detail}</div> : null}
+        {canToggleFullNotice ? (
+          <StableButton
+            type="button"
+            debugId={`community-home.bulletin.read-full.${noticeKey}`}
+            aria-expanded={detailOpen}
+            onClick={(event) => {
+              consumeCommunityButtonEvent(event);
+              setNoticeDetailOpenId((current) => (current === noticeKey ? "" : noticeKey));
+            }}
+            style={{
+              ...communityActionStyle("soft"),
+              minHeight: 38,
+              justifySelf: "center",
+              width: isCompact ? "min(100%, 220px)" : "auto",
+              padding: "8px 14px",
+              borderRadius: 13,
+              fontSize: 12,
+              textTransform: "none",
+              boxShadow: "none",
+            }}
+          >
+            {detailOpen ? "Close full notice" : "Read full notice"}
+          </StableButton>
+        ) : null}
 
         {planningLine || interestParts.length > 0 ? (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>

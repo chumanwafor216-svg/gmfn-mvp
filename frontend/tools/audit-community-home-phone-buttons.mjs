@@ -97,8 +97,12 @@ assertContains(
   "Community Home live bulletin must use a one-column centered phone layout so the main announcement is not pushed sideways."
 );
 assertContains(
-  /function renderCommunityBulletinPrimaryNotice[\s\S]*?width: isCompact \? "min\(100%, 270px\)" : undefined[\s\S]*?textAlign: isCompact \? "center" : "left"/,
-  "Community Home live bulletin must center the source pill and main notice title on phone."
+  /function announcementDateTileStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?minHeight: isCompact \? 54 : 158[\s\S]*?width: isCompact \? "100%" : undefined[\s\S]*?function announcementCompactDateTileStyle/,
+  "Community Home live bulletin date must stay compact on phone instead of taking over the notice body."
+);
+assertContains(
+  /function renderCommunityBulletinPrimaryNotice[\s\S]*?width: isCompact \? "min\(100%, 270px\)" : undefined[\s\S]*?brandClampLines\(detailOpen \? 12 : titleLineLimit\)[\s\S]*?textAlign: isCompact \? "center" : "left"[\s\S]*?debugId=\{`community-home\.bulletin\.read-full\.\$\{noticeKey\}`\}/,
+  "Community Home live bulletin must center the source pill and main notice title on phone, with a full notice control."
 );
 assertContains(
   /function communityActionStyle\([\s\S]*?touchAction: "manipulation"[\s\S]*?WebkitTapHighlightColor: "transparent"[\s\S]*?overflowAnchor: "none"[\s\S]*?transform: "none"[\s\S]*?transition: "none"/,

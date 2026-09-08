@@ -10,13 +10,13 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 34;
+const expectedStableButtonTemplateCount = 35;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 4;
 const expectedSpotlightGuidedActionCount = 5;
 const expectedGroupedLaneRowCount = 22;
-const expectedExpandedRouteLocalActionTemplates = 44;
+const expectedExpandedRouteLocalActionTemplates = 45;
 const expectedMobileShellBreakdown = {
   top: 2,
   drawer: 25,
@@ -307,6 +307,10 @@ assertContains(
 assertContains(
   /debugId=\{`community-home\.bulletin\.reactions\.\$\{noticeKey\}`\}[\s\S]*?Reactions[\s\S]*?data-debug-id="community-home\.bulletin\.reactions-panel"[\s\S]*?debugId=\{`community-home\.bulletin\.roll-call\.\$\{noticeKey\}`\}[\s\S]*?Roll call/,
   "Community Home live bulletin must decongest member actions behind one Reactions panel and expose admin roll call from that panel."
+);
+assertContains(
+  /noticeDetailOpenId[\s\S]*?brandClampLines\(detailOpen \? 12 : titleLineLimit\)[\s\S]*?\{rawBody\}[\s\S]*?debugId=\{`community-home\.bulletin\.read-full\.\$\{noticeKey\}`\}[\s\S]*?Close full notice[\s\S]*?Read full notice/,
+  "Community Home live bulletin must show the notice from the beginning and provide an in-place full-notice open/close control when text is longer."
 );
 assertNotContains(
   /function renderNoticeAcknowledgementShortcut[\s\S]*?<GsnLegacyIcon name="check" size=\{16\} \/>/,

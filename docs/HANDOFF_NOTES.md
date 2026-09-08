@@ -1,3 +1,10 @@
+## 2026-09-08 - Community Bulletin compact phone date and full notice reveal
+
+- Status: Local implementation complete and verified; commit/push/deploy in this slice.
+- Owner trigger: phone screenshot showed the September 15 date card occupying too much vertical space, while the announcement text was clipped and the leftover detail started mid-sentence.
+- Frontend route affected: `/app/community` in `frontend/src/pages/CommunityHomePage.tsx` now renders the phone date as a compact one-row strip, keeps the message text centered as the dominant content, and adds a `Read full notice` / `Close full notice` toggle for longer announcements.
+- Visual behavior: the bulletin no longer splits the notice into an arbitrary 9-word title and tail detail. The closed state shows the message from the beginning with line clamp; the open state expands the same message in place.
+- Devil truth: this is a display/readability correction only. It does not change notice storage, expiry, notifications, acknowledgement, roll call, or availability response logic.
 ## 2026-09-08 - Community Bulletin phone centering and event availability
 
 - Status: Local implementation complete and verified; commit/push/deploy in this slice.
