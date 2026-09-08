@@ -4244,8 +4244,9 @@ def _domain_payload(
         "boundary": (
             "Pilot Community Domain reservation. This keeps the name reserved and "
             "opens setup during customer discovery, but payment is suspended for now. "
-            "It does not verify ownership, confirm paid continuation, move money, "
-            "or create a final public proof of authority."
+            "It does not create a social Community, activate billing, "
+            "verify ownership, confirm paid continuation, move money, or create "
+            "a final public proof of authority."
         ),
     }
 
