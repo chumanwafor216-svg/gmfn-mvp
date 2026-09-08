@@ -5149,6 +5149,7 @@ export async function postAdminManualRecoveryReset(payload: {
   gmfn_id: string;
   phone_e164?: string | null;
   owner_proof_confirmed: boolean;
+  stale_phone_review_confirmed?: boolean;
   reviewer_note: string;
 }): Promise<any> {
   return httpJson("/identity-risk/admin/manual-recovery-reset", "POST", payload);

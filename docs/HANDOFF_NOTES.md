@@ -159661,8 +159661,8 @@ Operational note:
 
 - Status: Local implementation complete and verified; commit/push/deploy in this slice.
 - Owner trigger: live Admin Tools showed `Manual recovery reset requires a verified recorded phone` after exact GSN ID recovery for Nevito/Ebube, even though the phone-lineage check showed no protected owner for the phone.
-- Backend route affected: `POST /identity-risk/admin/manual-recovery-reset` still requires exact GSN/GMFN ID resolution and still requires the supplied phone to match when the surviving identity has a recorded phone. It no longer blocks solely because that recorded phone lacks `phone_verified_at`; this covers stale/unverified phone records after lost-phone or duplicate-merge recovery.
+- Backend route affected: `POST /identity-risk/admin/manual-recovery-reset` still requires exact GSN/GMFN ID resolution and still requires the supplied phone to match when the surviving identity has a recorded phone. For stale/unverified recorded phones, it now also requires explicit `stale_phone_review_confirmed=true`; this covers lost-phone or duplicate-merge recovery without silently treating an unverified phone as trusted.
 - Audit trail: TrustEvent metadata now records `recovery_reset_with_unverified_recorded_phone` when this path is used, so admin resets made through stale phone evidence are visible later.
-- Frontend route affected: `/app/admin/identity-risk` exact recovery copy was shortened for phone use.
-- Verification passed: `python -m py_compile app\api\routes\identity_risk.py tests\test_identity_reconciliation.py`; `python -m pytest -q tests\test_identity_reconciliation.py` -> 13 passed; `npm --prefix frontend run build`.
+- Frontend route affected: `/app/admin/identity-risk` exact recovery copy was shortened for phone use and now requires a second stale-phone review checkbox before issuing a temporary password through the exact-ID panel.
+- Verification passed: `python -m py_compile app\api\routes\identity_risk.py tests\test_identity_reconciliation.py`; `python -m pytest -q tests\test_identity_reconciliation.py` -> 14 passed; `npm --prefix frontend run build`.
 - Devil truth: this still does not prove phone ownership automatically. It is an admin owner-proof path. Wrong or omitted recorded phones remain blocked; the admin must still verify the person outside the password reset itself.

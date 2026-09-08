@@ -290,6 +290,7 @@ class AdminManualRecoveryResetIn(BaseModel):
     gmfn_id: str = Field(..., min_length=6, max_length=64)
     phone_e164: str | None = Field(default=None, max_length=40)
     owner_proof_confirmed: bool = False
+    stale_phone_review_confirmed: bool = False
     reviewer_note: str = Field(..., min_length=8, max_length=600)
 
     @field_validator("gmfn_id", "phone_e164", "reviewer_note", mode="before")
@@ -297,7 +298,7 @@ class AdminManualRecoveryResetIn(BaseModel):
     def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_text_value(value, info.field_name)
 
-    @field_validator("owner_proof_confirmed", mode="before")
+    @field_validator("owner_proof_confirmed", "stale_phone_review_confirmed", mode="before")
     @classmethod
     def _reject_non_bool_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_bool_value(value, info.field_name)
@@ -553,6 +554,11 @@ def admin_manual_recovery_reset(
     has_recorded_phone = bool(getattr(user, "phone_e164", None))
     has_verified_phone = bool(has_recorded_phone and getattr(user, "phone_verified_at", None))
     used_unverified_recorded_phone = bool(has_recorded_phone and not has_verified_phone)
+    if used_unverified_recorded_phone and not bool(payload.stale_phone_review_confirmed):
+        raise HTTPException(
+            status_code=409,
+            detail="Stale phone review confirmation is required before manual recovery reset.",
+        )
 
     recovery = get_identity_recovery_summary(db, user_id=int(user.id))
     if recovery.get("configured") and has_verified_phone:

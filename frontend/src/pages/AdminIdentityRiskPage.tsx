@@ -251,6 +251,7 @@ export default function AdminIdentityRiskPage() {
   const [phoneLineageErr, setPhoneLineageErr] = useState("");
   const [phoneLineageBusy, setPhoneLineageBusy] = useState(false);
   const [manualRecoveryConfirmed, setManualRecoveryConfirmed] = useState(false);
+  const [stalePhoneReviewConfirmed, setStalePhoneReviewConfirmed] = useState(false);
   const [manualRecoveryNote, setManualRecoveryNote] = useState("");
   const [manualRecoveryBusy, setManualRecoveryBusy] = useState("");
   const [manualRecoveryResult, setManualRecoveryResult] = useState<any>(null);
@@ -357,6 +358,7 @@ export default function AdminIdentityRiskPage() {
 
   function clearManualRecoveryResult() {
     setManualRecoveryConfirmed(false);
+    setStalePhoneReviewConfirmed(false);
     setManualRecoveryNote("");
     setManualRecoveryBusy("");
     setManualRecoveryResult(null);
@@ -428,6 +430,7 @@ export default function AdminIdentityRiskPage() {
         gmfn_id: identity,
         phone_e164: suppliedPhone || null,
         owner_proof_confirmed: manualRecoveryConfirmed,
+        stale_phone_review_confirmed: stalePhoneReviewConfirmed,
         reviewer_note: note,
       });
       if (manualRecoveryBusy && manualRecoveryBusy !== contextKey) return;
@@ -762,6 +765,32 @@ export default function AdminIdentityRiskPage() {
                     asking for recovery.
                   </span>
                 </label>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 10,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={stalePhoneReviewConfirmed}
+                    onChange={(event) => {
+                      setStalePhoneReviewConfirmed(event.target.checked);
+                      setManualRecoveryErr("");
+                      setManualRecoveryResult(null);
+                      setManualRecoveryCopyStatus("");
+                    }}
+                    style={{ width: 18, height: 18, marginTop: 3, flex: "0 0 auto" }}
+                  />
+                  <span>
+                    Stale phone checked: use this because the recorded phone is
+                    not a trusted sign-in recovery path.
+                  </span>
+                </label>
                 <PrimaryButton
                   type="button"
                   busy={Boolean(manualRecoveryBusy)}
@@ -769,6 +798,7 @@ export default function AdminIdentityRiskPage() {
                   disabled={
                     !safeStr(exactRecoveryIdentity || canonicalIdentity || gsnLookupFromQuery).trim() ||
                     !manualRecoveryConfirmed ||
+                    !stalePhoneReviewConfirmed ||
                     safeStr(manualRecoveryNote).trim().length < 8 ||
                     Boolean(manualRecoveryResult?.temporary_password)
                   }

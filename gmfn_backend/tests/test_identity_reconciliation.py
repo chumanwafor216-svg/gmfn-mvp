@@ -352,6 +352,43 @@ def test_admin_manual_recovery_reset_allows_exact_id_when_no_phone_owner(client)
     assert temp_login.status_code == 200, temp_login.text
 
 
+def test_admin_manual_recovery_reset_requires_stale_phone_confirmation_for_unverified_phone(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+
+    with SessionLocal() as db:
+        admin = User(
+            email="manual-recovery-stale-phone-admin@example.com",
+            hashed_password=get_password_hash("admin-secret"),
+            role="admin",
+            gmfn_id="GMFN-U-STALE-ADMIN",
+        )
+        owner = User(
+            email="manual-recovery-stale-phone-owner@example.com",
+            hashed_password=get_password_hash("old-secret"),
+            role="user",
+            gmfn_id="GMFN-U-STALE",
+            display_name="Stale Phone Owner",
+            phone_e164="+447717143501",
+            phone_verified_at=None,
+        )
+        db.add_all([admin, owner])
+        db.commit()
+
+    res = client.post(
+        "/identity-risk/admin/manual-recovery-reset",
+        json={
+            "gmfn_id": "GSN-GMFN-U-STALE",
+            "phone_e164": "+447717143501",
+            "owner_proof_confirmed": True,
+            "reviewer_note": "Owner proof checked but stale phone was not confirmed.",
+        },
+        headers=_headers("manual-recovery-stale-phone-admin@example.com"),
+    )
+
+    assert res.status_code == 409, res.text
+    assert "Stale phone review confirmation is required" in res.text
+
+
 def test_admin_manual_recovery_reset_allows_exact_id_with_unverified_matching_phone(client):
     os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
 
@@ -380,6 +417,7 @@ def test_admin_manual_recovery_reset_allows_exact_id_with_unverified_matching_ph
             "gmfn_id": "GSN-GMFN-U-UNVERIFIED",
             "phone_e164": "+447717143500",
             "owner_proof_confirmed": True,
+            "stale_phone_review_confirmed": True,
             "reviewer_note": "Owner proof checked for stale unverified recorded phone.",
         },
         headers=_headers("manual-recovery-unverified-phone-admin@example.com"),
