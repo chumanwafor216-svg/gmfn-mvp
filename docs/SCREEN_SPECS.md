@@ -250,18 +250,18 @@ Rules:
 - Create community goes to StartCommunityPage.
 - Request to join goes to JoinRequestMembershipPage.
 - Purchase Community Domain goes to CommunityDomainPurchasePage.
-- Purchase Community Domain is a separate institutional path and must not be
+- Purchase Community Domain is a separate institutional provisioning path and must not be
   merged into ordinary Create Community.
 - After successful completion, user returns to SignInPage.
 
 ## CommunityDomainPurchasePage
 
 Purpose:
-Let an organization owner start the institutional Community Domain path without confusing it with ordinary free community creation. During early pilot/customer discovery, Community Domain payment is suspended while name checking and reservation remain active.
+Let an organization owner start institution setup without confusing it with ordinary free community creation. During early pilot/customer discovery, Community Domain payment is suspended while name checking and reservation remain active.
 
 Must show:
 - GSN / Community Domain identity
-- short difference between `Create Community` and `Purchase Community Domain`
+- short difference between ordinary `Create Community` and institutional Community Domain setup
 - normal GSN community / local marketplace anchor first when the owner does not already have one
 - organization name
 - requested domain name
@@ -283,7 +283,7 @@ Rules:
 - A first-time organization owner must create the normal GSN community/local marketplace first so the organization has a local community record and GSN number before Domain filling begins.
 - After that local community exists, Domain setup may protect the wider institutional name, governance, package, and rights.
 - It must not show bottom navigation before authentication is complete.
-- `Purchase Community Domain` must not create a live verified institution by itself. A pilot reservation, draft, quote, or suspended payment rail is not verification, paid continuation, or final public proof.
+- The provisioning route must not create a live verified institution by itself. A pilot reservation, draft, quote, or suspended payment rail is not verification, paid continuation, or final public proof.
 - Do not call the object `Community Package`. The owned institutional object is
   `Community Domain`; the paid bundle may be called a package only when talking
   about pricing, allowance, or renewal.
@@ -408,6 +408,7 @@ Rules:
 - Community Home is an overview page, not a full content dump.
 - Do not expose all owner tools on this page.
 - Create marketplace community must appear here as one compact action only.
+- Set up Community Domain must open the CommunityDomainDashboardPage selector/command surface first, not the purchase/provisioning page as the first Community Home handoff.
 - The full create-community process belongs in the StartCommunityPage 3-step wizard.
 - Owner Shop Control must stay a separate page, not an expanded panel inside Community Home.
 - Owner Spotlight Status on Community Home must be current-member scoped. It may show the signed-in member's own live spotlight status/preview for the selected community, but it must not render another member's spotlight media on the member's personal Community Home.
@@ -463,6 +464,7 @@ Must show:
 - Community Domain identity hero
 - domain name/code, display name, owner, status, verification state, and renewal
   state as compact facts
+- for an owner with no linked domain, a selector that first shows only `Set up the institution` plus a collapsed `Other paths` drawer
 - one command surface that first shows only `Set up the institution`
 - after that gateway opens, four governance stages: Set up the institution,
   Organise people, Run the community, and Advanced governance

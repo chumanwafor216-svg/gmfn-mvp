@@ -630,8 +630,7 @@ Local community first for Community Domains:
 - Directionally, use `Create Committee` for the free/self-created lightweight
   path once the rename is planned and implemented. Until then, existing
   `Create Community` routes may remain as compatibility surfaces.
-- Use `Purchase Community Domain` or `Create Community Domain` for the
-  institutional path, depending on whether payment is part of the current step.
+- Use `Set up Community Domain` for the Community Home/dashboard command entry. Use `Purchase Community Domain` only when the current step is explicitly about payment or provisioning.
 - Do not call the institutional object a `Community Package`. A package is a
   commercial bundle or allowance. The owned institutional object is the
   `Community Domain`.

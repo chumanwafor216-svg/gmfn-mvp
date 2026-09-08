@@ -2305,8 +2305,8 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/DomainSelectorPanel.tsx",
-  /openMyDomains[\s\S]*No Community Domains are linked[\s\S]*Choose a Path[\s\S]*community-domain-dashboard\.selector\.free-committee[\s\S]*Free Committee[\s\S]*community-domain-dashboard\.selector\.setup-new[\s\S]*Buy Domain[\s\S]*community-domain-dashboard\.selector\.my-domains[\s\S]*Your Community Domains[\s\S]*Choose a Domain[\s\S]*draftDomain \? "Continue setup" : "Open domain"/,
-  "Lazy Community Domain selector panel must keep the compact path chooser, empty-state recovery, draft setup wording, and owned-domain opening.",
+  /openMyDomains[\s\S]*No Community Domains are linked[\s\S]*Set up the institution[\s\S]*community-domain-dashboard\.selector\.setup-new[\s\S]*Set up the institution[\s\S]*community-domain-dashboard\.selector\.other-paths-toggle[\s\S]*Other paths[\s\S]*community-domain-dashboard\.selector\.free-committee[\s\S]*Free Committee[\s\S]*community-domain-dashboard\.selector\.my-domains[\s\S]*Your Community Domains[\s\S]*Choose a Domain[\s\S]*draftDomain \? "Continue setup" : "Open domain"/,
+  "Lazy Community Domain selector panel must start with institution setup, keep alternate paths collapsed, preserve empty-state recovery, and support owned-domain opening.",
   { frontend: true }
 );
 
@@ -2318,7 +2318,7 @@ assertContains(
 );
 assertContains(
   "src/pages/communityDomainDashboard/DomainSelectorPanel.tsx",
-  /const quickPathRow[\s\S]*community-domain-dashboard\.selector\.setup-new-compact[\s\S]*Set up new domain[\s\S]*community-domain-dashboard\.selector\.edit-existing-compact[\s\S]*Find existing domain/,
+  /const quickPathRow[\s\S]*community-domain-dashboard\.selector\.setup-new-compact[\s\S]*Set up another institution[\s\S]*community-domain-dashboard\.selector\.edit-existing-compact[\s\S]*Find existing domain/,
   "Lazy Community Domain selector panel must keep compact alternate paths behind the owned-domain list instead of opening setup and edit panels by default.",
   { frontend: true }
 );

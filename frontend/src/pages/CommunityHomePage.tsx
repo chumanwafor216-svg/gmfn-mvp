@@ -2332,6 +2332,7 @@ export default function CommunityHomePage() {
         "community-home.route.community-packages",
         { hash: OWNER_SHOP_HASHES.communityPackage }
       ),
+      communityDomainCommand: "/app/community-domain",
       communityDomainPurchase: "/community-domain/purchase",
       freeSpotlight: routeTarget(
         "freeSpotlight",
@@ -4679,13 +4680,13 @@ export default function CommunityHomePage() {
               </StableButton>
               <StableButton
                 type="button"
-                debugId="community-home.empty.purchase-community-domain"
+                debugId="community-home.empty.setup-community-domain"
                 onClick={(event) =>
-                  openCommunityRoute(event, routes.communityDomainPurchase)
+                  openCommunityRoute(event, routes.communityDomainCommand)
                 }
                 style={communityActionStyle("secondary")}
               >
-                Purchase Community Domain
+                Set up Community Domain
               </StableButton>
               <StableButton
                 type="button"
@@ -5920,11 +5921,11 @@ export default function CommunityHomePage() {
                     {
                       icon: "financeInstitution",
                       id: "create-community-domain",
-                      title: "Create Community Domain",
+                      title: "Set up Community Domain",
                       detail:
-                        "Start the paid institutional domain path for a school, church, union, market, or association.",
+                        "Open the institution setup path before name checks, billing, or governance stages.",
                       onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                        openCommunityRoute(event, routes.communityDomainPurchase),
+                        openCommunityRoute(event, routes.communityDomainCommand),
                     },
                     {
                       icon: "join-person-plus",
@@ -6219,7 +6220,7 @@ export default function CommunityHomePage() {
                       title: "Market Domain subscriptions",
                       detail: primaryCommunityDomainRow
                         ? `Open ${primaryCommunityDomainRow.name} subscription, renewal, and billing status.`
-                        : "Create or select a Community Domain before opening domain subscriptions.",
+                        : "Set up or select a Community Domain before opening domain subscriptions.",
                       onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                         primaryCommunityDomainRow
                           ? openCommunityDomainDestination(
@@ -6227,7 +6228,7 @@ export default function CommunityHomePage() {
                               primaryCommunityDomainRow,
                               primaryCommunityDomainRow.billingPath
                             )
-                          : openCommunityRoute(event, routes.communityDomainPurchase),
+                          : openCommunityRoute(event, routes.communityDomainCommand),
                     },
                   ].map((item, index) => (
                     <StableButton

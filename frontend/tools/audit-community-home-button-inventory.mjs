@@ -337,8 +337,8 @@ assertContains(
 );
 
 assertContains(
-  /communityDomainPurchase:\s*"\/community-domain\/purchase"[\s\S]*?debugId="community-home\.empty\.purchase-community-domain"[\s\S]*?openCommunityRoute\(event, routes\.communityDomainPurchase\)/,
-  "Community Home empty-state must expose the institutional Community Domain purchase path even when no marketplace community exists."
+  /communityDomainCommand:\s*"\/app\/community-domain"[\s\S]*?debugId="community-home\.empty\.setup-community-domain"[\s\S]*?openCommunityRoute\(event, routes\.communityDomainCommand\)/,
+  "Community Home empty-state must open the Community Domain institution setup command surface even when no marketplace community exists."
 );
 
 assertContains(
@@ -377,8 +377,8 @@ assertContains(
 );
 
 assertContains(
-  /id: "communities"[\s\S]*?lane: "communities"[\s\S]*?title: "Marketplaces"[\s\S]*?Marketplace communities[\s\S]*?title: "Choose marketplace"[\s\S]*?title: "Create marketplace"[\s\S]*?title: "Create Community Domain"[\s\S]*?routes\.communityDomainPurchase[\s\S]*?title: "Join marketplace"/,
-  "Community Home grouped lane must show marketplace-community wording and keep Create Community Domain beside the create/join marketplace choices."
+  /id: "communities"[\s\S]*?lane: "communities"[\s\S]*?title: "Marketplaces"[\s\S]*?Marketplace communities[\s\S]*?title: "Choose marketplace"[\s\S]*?title: "Create marketplace"[\s\S]*?title: "Set up Community Domain"[\s\S]*?routes\.communityDomainCommand[\s\S]*?title: "Join marketplace"/,
+  "Community Home grouped lane must show marketplace-community wording and keep Set up Community Domain beside the create/join marketplace choices."
 );
 
 assertContains(
@@ -392,8 +392,8 @@ assertContains(
 );
 
 assertContains(
-  /Payments, subscriptions and renewals[\s\S]*?id: "payments-renewals"[\s\S]*?title: "Market Domain subscriptions"[\s\S]*?primaryCommunityDomainRow[\s\S]*?subscription, renewal, and billing status[\s\S]*?primaryCommunityDomainRow\.billingPath[\s\S]*?routes\.communityDomainPurchase/,
-  "Community Home subscriptions row must open the official Community Domain billing lane, or the purchase path when no domain exists."
+  /Payments, subscriptions and renewals[\s\S]*?id: "payments-renewals"[\s\S]*?title: "Market Domain subscriptions"[\s\S]*?primaryCommunityDomainRow[\s\S]*?subscription, renewal, and billing status[\s\S]*?primaryCommunityDomainRow\.billingPath[\s\S]*?routes\.communityDomainCommand/,
+  "Community Home subscriptions row must open the official Community Domain billing lane, or the institution setup command surface when no domain exists."
 );
 
 assertContains(

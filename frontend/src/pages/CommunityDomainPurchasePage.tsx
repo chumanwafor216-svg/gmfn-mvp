@@ -824,7 +824,7 @@ export default function CommunityDomainPurchasePage() {
   useEffect(() => {
     mountedRef.current = true;
     if (typeof document !== "undefined") {
-      document.title = "GSN | Purchase Community Domain";
+      document.title = "GSN | Set up the institution";
     }
 
     return () => {
@@ -1457,7 +1457,7 @@ export default function CommunityDomainPurchasePage() {
                   letterSpacing: 0,
                 }}
               >
-                Purchase Community Domain
+                Set up the institution
               </h1>
               {!purchaseReviewMode ? (
                 <>
@@ -1469,8 +1469,7 @@ export default function CommunityDomainPurchasePage() {
                       textAlign: isCompact ? "left" : "center",
                     }}
                   >
-                    Check the institutional domain name first. A draft request is not a live
-                    domain, not a payment, and not a verified public record.
+                    Check the institution name first. This creates a draft request only: not a live domain, not a payment, and not a verified public record.
                   </p>
                   <div
                     style={{
@@ -1712,7 +1711,7 @@ export default function CommunityDomainPurchasePage() {
                       ? "Draft created"
                       : busy === "availability"
                       ? "Checking..."
-                      : "Check domain name"}
+                      : "Check institution name"}
                   </EntryActionButton>
                 ) : null}
 
@@ -1786,7 +1785,7 @@ export default function CommunityDomainPurchasePage() {
                         ? "Draft created"
                         : busy === "availability"
                         ? "Checking..."
-                        : "Check domain name"}
+                        : "Check institution name"}
                     </EntryActionButton>
                   ) : null}
                 </div>

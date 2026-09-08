@@ -1105,7 +1105,7 @@ await page.route("**/*", mockApi);
 
 try {
   await page.goto(`${baseUrl}${purchaseRoutePath}`, { waitUntil: "networkidle", timeout: 15000 });
-  await page.getByText("Purchase Community Domain", { exact: true }).waitFor({ timeout: 10000 });
+  await page.getByRole("heading", { name: "Set up the institution" }).waitFor({ timeout: 10000 });
   await page.getByText("Local community first", { exact: true }).waitFor({ timeout: 10000 });
 
   let audit = await page.evaluate(pageAudit);
@@ -1184,27 +1184,37 @@ try {
     waitUntil: "networkidle",
     timeout: 15000,
   });
-  await page.getByText("Choose a Path", { exact: true }).waitFor({
+  await page.getByRole("heading", { name: "Set up the institution" }).waitFor({
     timeout: 10000,
   });
-  if (!(await isDebugVisible(page, "community-domain-dashboard.selector.free-committee"))) {
-    findings.push("Community Domain selector empty state does not expose the free Committee path.");
-  }
   audit = await page.evaluate(pageAudit);
   if (!(await isDebugVisible(page, "community-domain-dashboard.selector.setup-new"))) {
-    findings.push("Community Domain selector empty state does not expose the buy-domain path.");
+    findings.push("Community Domain selector empty state does not expose the institution setup path.");
   }
-  if (!(await isDebugVisible(page, "community-domain-dashboard.selector.my-domains"))) {
-    findings.push("Community Domain selector empty state does not expose My Domains as a quick action.");
+  if (!(await isDebugVisible(page, "community-domain-dashboard.selector.other-paths-toggle"))) {
+    findings.push("Community Domain selector empty state does not expose the collapsed Other paths control.");
+  }
+  if (await isDebugVisible(page, "community-domain-dashboard.selector.free-committee")) {
+    findings.push("Community Domain selector exposes the free Committee path before Other paths is opened.");
+  }
+  if (await isDebugVisible(page, "community-domain-dashboard.selector.my-domains")) {
+    findings.push("Community Domain selector exposes My Domains before Other paths is opened.");
   }
   const selectorFirstAction = await firstViewportActionFinding(
     page,
-    "community-domain-dashboard.selector.free-committee",
+    "community-domain-dashboard.selector.setup-new",
     "Community Domain selector"
   );
   if (selectorFirstAction) findings.push(selectorFirstAction);
   if (await isDebugVisible(page, "community-domain-dashboard.selector.find-edit-domain")) {
     findings.push("Community Domain selector exposes edit lookup before the user chooses edit.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.selector.other-paths-toggle");
+  if (!(await isDebugVisible(page, "community-domain-dashboard.selector.free-committee"))) {
+    findings.push("Community Domain selector Other paths drawer does not reveal the free Committee path.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.selector.my-domains"))) {
+    findings.push("Community Domain selector Other paths drawer does not reveal My Domains.");
   }
   if (await isDebugVisible(page, "community-domain-dashboard.empty.purchase")) {
     findings.push("Community Domain selector empty state repeats a second purchase action.");

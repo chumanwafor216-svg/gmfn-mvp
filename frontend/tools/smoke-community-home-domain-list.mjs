@@ -185,7 +185,7 @@ async function run() {
         "Pillar of Hope",
         "Community Domain marketplace workspace",
         "Marketplace ready",
-        "Create Community Domain",
+        "Set up Community Domain",
         "Setup Domain",
         "Setup needed",
       ];
