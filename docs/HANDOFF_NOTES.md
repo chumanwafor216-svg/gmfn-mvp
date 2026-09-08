@@ -1,3 +1,12 @@
+## 2026-09-08 - Community Bulletin density and tools collapse
+
+- Status: Local frontend implementation complete and verified; not pushed/deployed because current pilot publishing is batch-frozen until owner asks to publish.
+- Owner trigger: Community Home Bulletin looked too narrow and rowdy on phone because inner padding consumed width and secondary rows/buttons competed with the announcement.
+- Frontend route affected: `/app/community` in `frontend/src/pages/CommunityHomePage.tsx` now reduces the Bulletin shell/header/card/date/source padding on compact phone layouts, makes the source pill full-width, shortens the date strip, and keeps status chips/planning counts inside the notice `Details` drawer instead of visible on the default card.
+- Behavior changed: the old full-width `Reactions` opener is now a compact `Details` opener for acknowledge/contact/availability/QR/attachment/roll-call/status. Post, Contact, Settings, review queue, and previous announcements now sit behind one `Bulletin tools` opener instead of appearing as separate first-surface controls.
+- Audit/docs updated: `docs/SCREEN_SPECS.md`, `frontend/tools/audit-community-home-button-inventory.mjs`, `frontend/tools/audit-community-home-phone-buttons.mjs`, and `frontend/tools/audit-notice-board-phone-notifications.mjs` now guard the compact Details/Bulletin-tools contract.
+- Verification passed: `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:community-home-phone-buttons`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`.
+- Devil truth: this cleans the phone surface and preserves the same capabilities. It does not change backend notice storage, add public document upload, or prove production data is refreshed until this local batch is published.
 ## 2026-09-08 - Identity reconciliation already-retired duplicate repair
 
 - Status: Local backend/frontend implementation complete and verified; not pushed or deployed in this slice yet.

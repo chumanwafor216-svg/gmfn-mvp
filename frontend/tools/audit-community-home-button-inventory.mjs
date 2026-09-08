@@ -285,12 +285,12 @@ assertContains(
   "Community Home notice-board officer actions must include platform admins, community admins, and community owners."
 );
 assertContains(
-  /Community[\s\S]*?Bulletin[\s\S]*?renderCommunityBulletinNoticeSelector\(activeCommunityNotices\)[\s\S]*?renderCommunityBulletinPrimaryNotice\(primaryCommunityNotice\)[\s\S]*?debugId="community-home\.notice\.post"[\s\S]*?communityNoticeSubmitMode === "review"[\s\S]*?"Submit"[\s\S]*?"Post"[\s\S]*?debugId="community-home\.contact\.whatsapp-chat"[\s\S]*?>\s*Contact\s*<\/StableButton>[\s\S]*?debugId="community-home\.notice\.settings-toggle"[\s\S]*?communityBulletinSettingsOpen[\s\S]*?data-debug-id="community-home\.notice\.settings-panel"[\s\S]*?debugId="community-home\.notice\.policy\.members"[\s\S]*?debugId="community-home\.notice\.policy\.admins"[\s\S]*?communityNoticeReviewSubmissions\.map[\s\S]*?debugId=\{`community-home\.notice\.review\.approve\.\$\{submissionId\}`\}[\s\S]*?debugId=\{`community-home\.notice\.review\.reject\.\$\{submissionId\}`\}[\s\S]*?communityNoticeLogItems\.map/,
-  "Community Home communication block must keep the rich live announcement dominant, use one quiet Post/Submit/Contact/Settings utility row, and tuck officer record review behind the settings toggle."
+  /Community[\s\S]*?Bulletin[\s\S]*?renderCommunityBulletinNoticeSelector\(activeCommunityNotices\)[\s\S]*?renderCommunityBulletinPrimaryNotice\(primaryCommunityNotice\)[\s\S]*?showCommunityBulletinTools[\s\S]*?debugId="community-home\.notice\.settings-toggle"[\s\S]*?Bulletin tools[\s\S]*?data-debug-id="community-home\.notice\.settings-panel"[\s\S]*?debugId="community-home\.notice\.post"[\s\S]*?communityNoticeSubmitMode === "review"[\s\S]*?"Submit"[\s\S]*?"Post"[\s\S]*?debugId="community-home\.contact\.whatsapp-chat"[\s\S]*?>\s*Contact\s*<\/StableButton>[\s\S]*?debugId="community-home\.notice\.policy\.members"[\s\S]*?debugId="community-home\.notice\.policy\.admins"[\s\S]*?communityNoticeReviewSubmissions\.map[\s\S]*?debugId=\{`community-home\.notice\.review\.approve\.\$\{submissionId\}`\}[\s\S]*?debugId=\{`community-home\.notice\.review\.reject\.\$\{submissionId\}`\}[\s\S]*?communityNoticeLogItems\.map/,
+  "Community Home communication block must keep the rich live announcement dominant, expose one Bulletin tools opener, and tuck Post/Contact/Settings/history behind that opener."
 );
 assertContains(
   /function noticeSupportsAvailability[\s\S]*?isMeetingNotice\(item\)[\s\S]*?item\?\.availability_enabled[\s\S]*?function renderMeetingInterestShortcut[\s\S]*?noticeSupportsAvailability\(noticeItem\)[\s\S]*?firstTruthy\(noticeItem\?\.meeting_id, noticeItem\?\.event_id\)[\s\S]*?\["yes", "Available"\][\s\S]*?\["maybe", "Not sure"\][\s\S]*?\["no", "Not available"\][\s\S]*?debugId=\{`community-home\.bulletin\.meeting-interest-\$\{response\}`\}[\s\S]*?recordNoticeMeetingInterest\(buttonEvent, noticeItem, response\)/,
-  "Community Home bulletin availability shortcut must keep Available/Not sure/Not available controls inside Reactions for meeting notices and event-date notices."
+  "Community Home bulletin availability shortcut must keep Available/Not sure/Not available controls inside Details for meeting notices and event-date notices."
 );
 assertContains(
   /recordCommunityNoticeAvailability[\s\S]*?const canRecordNoticeAvailability = !meetingId && noticeSupportsAvailability\(noticeItem\) && Boolean\(noticeEventId\)[\s\S]*?await recordCommunityNoticeAvailability\(noticeEventId,/,
@@ -305,8 +305,8 @@ assertContains(
   "Community Home bulletin acknowledgement must use a visible thumb mark and clear acknowledge language instead of a shield-style security icon."
 );
 assertContains(
-  /debugId=\{`community-home\.bulletin\.reactions\.\$\{noticeKey\}`\}[\s\S]*?Reactions[\s\S]*?data-debug-id="community-home\.bulletin\.reactions-panel"[\s\S]*?debugId=\{`community-home\.bulletin\.public-qr\.\$\{noticeKey\}`\}[\s\S]*?Open QR link[\s\S]*?debugId=\{`community-home\.bulletin\.attachment\.\$\{noticeKey\}`\}[\s\S]*?openNoticeAttachment\(event, noticeItem\)[\s\S]*?debugId=\{`community-home\.bulletin\.roll-call\.\$\{noticeKey\}`\}[\s\S]*?Roll call/,
-  "Community Home live bulletin must decongest member actions behind one Reactions panel and expose QR, attachment, and admin roll call from that panel."
+  /debugId=\{`community-home\.bulletin\.reactions\.\$\{noticeKey\}`\}[\s\S]*?Details[\s\S]*?data-debug-id="community-home\.bulletin\.reactions-panel"[\s\S]*?debugId=\{`community-home\.bulletin\.public-qr\.\$\{noticeKey\}`\}[\s\S]*?Open QR link[\s\S]*?debugId=\{`community-home\.bulletin\.attachment\.\$\{noticeKey\}`\}[\s\S]*?openNoticeAttachment\(event, noticeItem\)[\s\S]*?debugId=\{`community-home\.bulletin\.roll-call\.\$\{noticeKey\}`\}[\s\S]*?Roll call/,
+  "Community Home live bulletin must decongest member actions behind one Details panel and expose QR, attachment, and admin roll call from that panel."
 );
 assertContains(
   /noticeDetailOpenId[\s\S]*?brandClampLines\(detailOpen && !fullBody \? 12 : titleLineLimit\)[\s\S]*?\{rawBody\}[\s\S]*?debugId=\{`community-home\.bulletin\.read-full\.\$\{noticeKey\}`\}[\s\S]*?Close full notice[\s\S]*?Read full notice[\s\S]*?detailOpen && fullBody[\s\S]*?Full notice/,

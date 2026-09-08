@@ -377,16 +377,16 @@ Must show:
   - each opened ordinary community item shows community name, marketplace workspace context, and Open Marketplace
   - each opened Community Domain item shows domain name, setup/marketplace readiness, and opens Marketplace when active or setup/dashboard when not active
 - Community Bulletin:
-  - uses the richer phone bulletin arrangement: navy/gold header, compact date strip on phone, source row, strong centered notice text, in-place `Read full notice` / `Close full notice` control for longer messages, one bold Reactions control, and compact history behind Settings/History
-  - when more than one live announcement exists, the board shows a compact `Active announcements` selector with numbered controls; choosing a number makes that announcement the single bold card with its own Reactions, availability response, full notice, and admin roll call
-  - ordinary Community notices keep the main board short, but officers may attach longer public-safe full notice details and request a public QR link; QR-enabled notices expose `Open QR link` inside Reactions, public URL and GSN-uploaded video/poster attachments expose one `Open attachment` action, and the public route must hide private sender/contact/roll-call data
+  - uses the richer phone bulletin arrangement: navy/gold header, compact date strip on phone, source row, strong centered notice text, in-place `Read full notice` / `Close full notice` control for longer messages, one compact `Details` control for notice actions/status, and one `Bulletin tools` control for Post/Contact/Settings/history
+  - when more than one live announcement exists, the board shows a compact `Active announcements` selector with numbered controls; choosing a number makes that announcement the single bold card with its own Details panel, availability response, full notice, and admin roll call
+  - ordinary Community notices keep the main board short, but officers may attach longer public-safe full notice details and request a public QR link; QR-enabled notices expose `Open QR link` inside Details, public URL and GSN-uploaded video/poster attachments expose one `Open attachment` action, and the public route must hide private sender/contact/roll-call data
   - Bulletin attachments support public `http/https` links plus GSN-uploaded poster images and short videos through the existing governed media upload path. Direct document-file upload is still not enabled; document attachments must use a public document link until a governed public-document storage route exists.
   - shows one central live announcement feed for the selected ordinary Community plus eligible linked official Community Domain notices
   - ordinary Community notices and Community Domain official notices keep their separate posting/governance rules, but read into this shared board instead of becoming duplicate announcement engines
   - expired announcements leave the live board and remain visible in a compact previous-announcements trail capped at 10 items
   - if no live announcement exists, show `No new announcement.`
-  - acknowledgement, contact announcer, and availability responses live inside the Reactions panel instead of competing as separate first-surface buttons; meeting notices use the meeting response record, while date/event announcements use the notice-level availability record
-  - officers/admins authorized by community governance can open a Reactions roll call for a notice to see who acknowledged and who has not; ordinary members must never see that member-by-member roll call
+  - acknowledgement, contact announcer, availability responses, status chips, QR, attachment, and roll-call actions live inside the Details panel instead of competing as separate first-surface buttons; meeting notices use the meeting response record, while date/event announcements use the notice-level availability record
+  - officers/admins authorized by community governance can open a Details roll call for a notice to see who acknowledged and who has not; ordinary members must never see that member-by-member roll call
   - member records that require admin approval use Submit, not Post
   - submitted member records stay hidden from the active board until an officer approves them
   - officers receive Action Inbox/Web Push review prompts for member-submitted records when notification delivery is configured

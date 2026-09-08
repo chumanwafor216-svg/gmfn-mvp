@@ -440,7 +440,7 @@ assertContains(
 
 assertContains(
   files.communityPage,
-  /communityPreviousAnnouncements[\s\S]*?previous_announcements[\s\S]*?communityPreviousAnnouncementItems[\s\S]*?History \(\$\{communityPreviousAnnouncementItems\.length\}\)[\s\S]*?Previous announcements[\s\S]*?Last \{communityPreviousAnnouncementItems\.length\}\/10/,
+  /communityPreviousAnnouncements[\s\S]*?previous_announcements[\s\S]*?communityPreviousAnnouncementItems[\s\S]*?Bulletin history \(\$\{communityPreviousAnnouncementItems\.length\}\)[\s\S]*?Previous announcements[\s\S]*?Last \{communityPreviousAnnouncementItems\.length\}\/10/,
   "Community Home must render expired board items in a compact previous-announcements trail capped at 10."
 );
 

@@ -1245,10 +1245,10 @@ function announcementBoardHeaderStyle(isCompact: boolean): React.CSSProperties {
   return {
     display: "grid",
     gridTemplateColumns: "minmax(0, 1fr) auto",
-    gap: isCompact ? 8 : 12,
+    gap: isCompact ? 6 : 12,
     alignItems: "center",
-    minHeight: isCompact ? 78 : 88,
-    padding: isCompact ? "14px 16px" : "18px 24px",
+    minHeight: isCompact ? 62 : 82,
+    padding: isCompact ? "10px 12px" : "16px 22px",
     background:
       "linear-gradient(135deg, #08233A 0%, #0B2D4A 56%, #061827 100%)",
     color: "#FFFFFF",
@@ -1259,16 +1259,16 @@ function announcementBoardTitleRowStyle(): React.CSSProperties {
   return {
     display: "flex",
     alignItems: "center",
-    gap: 14,
+    gap: 10,
     minWidth: 0,
   };
 }
 
 function announcementBoardIconStyle(): React.CSSProperties {
   return {
-    width: 58,
-    height: 58,
-    borderRadius: 20,
+    width: 46,
+    height: 46,
+    borderRadius: 16,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1284,9 +1284,9 @@ function announcementBoardPillStyle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 34,
+    minHeight: 30,
     borderRadius: 999,
-    padding: "7px 12px",
+    padding: "6px 10px",
     background: "linear-gradient(180deg, #2E9B62 0%, #1D7A4C 100%)",
     border: "1px solid rgba(255,255,255,0.18)",
     color: "#FFFFFF",
@@ -1300,26 +1300,24 @@ function announcementBoardPillStyle(): React.CSSProperties {
 function announcementComposerStyle(isCompact: boolean): React.CSSProperties {
   return {
     display: "grid",
-    gridTemplateColumns: isCompact
-      ? "repeat(auto-fit, minmax(112px, 1fr))"
-      : "repeat(3, minmax(0, 1fr))",
+    gridTemplateColumns: "minmax(0, 1fr)",
     gap: isCompact ? 8 : 10,
     alignItems: "center",
-    padding: isCompact ? "0 16px 18px" : "0 28px 22px",
+    padding: isCompact ? "0 10px 12px" : "0 20px 18px",
     background: "transparent",
   };
 }
 
 function announcementComposerPreviewStyle(isCompact = false): React.CSSProperties {
   return {
-    minHeight: isCompact ? 250 : 282,
-    borderRadius: 24,
+    minHeight: isCompact ? 190 : 250,
+    borderRadius: isCompact ? 20 : 24,
     border: "1px solid rgba(16,37,59,0.10)",
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,251,255,0.98) 54%, rgba(239,247,255,0.98) 100%)",
-    padding: isCompact ? "18px 16px" : "24px",
+    padding: isCompact ? "12px 10px" : "22px",
     display: "grid",
-    gap: 14,
+    gap: isCompact ? 10 : 14,
     alignItems: "center",
     color: "#07172C",
     boxShadow:
@@ -1331,7 +1329,7 @@ function announcementLiveNoticeGridStyle(isCompact: boolean): React.CSSPropertie
   return {
     display: "grid",
     gridTemplateColumns: isCompact ? "minmax(0, 1fr)" : "118px minmax(0, 1fr)",
-    gap: isCompact ? 12 : 18,
+    gap: isCompact ? 8 : 18,
     alignItems: "start",
     justifyItems: isCompact ? "center" : "stretch",
   };
@@ -1339,10 +1337,10 @@ function announcementLiveNoticeGridStyle(isCompact: boolean): React.CSSPropertie
 
 function announcementDateTileStyle(isCompact: boolean): React.CSSProperties {
   return {
-    minHeight: isCompact ? 54 : 158,
+    minHeight: isCompact ? 44 : 158,
     width: isCompact ? "100%" : undefined,
     justifySelf: isCompact ? "center" : undefined,
-    borderRadius: 18,
+    borderRadius: 16,
     overflow: "hidden",
     background: "linear-gradient(180deg, #FFFFFF 0%, #FFF9EA 100%)",
     border: "1px solid rgba(214,170,69,0.24)",
@@ -1355,10 +1353,10 @@ function announcementCompactDateTileStyle(): React.CSSProperties {
   return {
     display: "grid",
     gridTemplateColumns: "minmax(0, 1fr) auto auto",
-    gap: 8,
+    gap: 6,
     alignItems: "center",
-    minHeight: 54,
-    padding: "8px 12px",
+    minHeight: 44,
+    padding: "6px 8px",
   };
 }
 
@@ -1381,11 +1379,11 @@ function announcementSelectorStyle(isCompact: boolean): React.CSSProperties {
   return {
     display: "grid",
     gridTemplateColumns: isCompact ? "minmax(0, 1fr)" : "minmax(0, 1fr) auto",
-    gap: 10,
+    gap: 8,
     alignItems: "center",
-    marginBottom: 10,
-    padding: isCompact ? "10px 10px" : "10px 12px",
-    borderRadius: 18,
+    marginBottom: isCompact ? 8 : 10,
+    padding: isCompact ? "8px 8px" : "10px 12px",
+    borderRadius: 16,
     background: "rgba(255,249,234,0.76)",
     border: "1px solid rgba(214,170,69,0.16)",
   };
@@ -1404,7 +1402,7 @@ function announcementSelectorButtonsStyle(): React.CSSProperties {
 
 function announcementListPanelStyle(isCompact: boolean): React.CSSProperties {
   return {
-    padding: isCompact ? "18px 16px 14px" : "24px 28px 16px",
+    padding: isCompact ? "10px 8px 10px" : "20px 22px 14px",
     background: "transparent",
   };
 }
@@ -2176,6 +2174,11 @@ export default function CommunityHomePage() {
     canManageCommunityNoticeSettings ||
       communityNoticeLogItems.length > 0 ||
       communityPreviousAnnouncementItems.length > 0
+  );
+  const showCommunityBulletinTools = Boolean(
+    canOpenCommunityNoticeComposer ||
+      showCommunityBulletinSettings ||
+      (selectedClan && !primaryNoticeHasSenderWhatsApp)
   );
   const noticeReviewDeepLink = useMemo(
     () => parseNoticeReviewDeepLink(location.search, location.hash),
@@ -3655,7 +3658,7 @@ export default function CommunityHomePage() {
                 <span style={{ color: "#B98200", fontSize: 11, fontWeight: 950 }}>
                   {calendar.month}
                 </span>
-                <span style={{ color: "#07172C", fontSize: 30, fontWeight: 980, lineHeight: 1 }}>
+                <span style={{ color: "#07172C", fontSize: 24, fontWeight: 980, lineHeight: 1 }}>
                   {calendar.day}
                 </span>
                 <span style={{ color: "#617085", fontSize: 11, fontWeight: 900 }}>
@@ -3701,7 +3704,7 @@ export default function CommunityHomePage() {
             )}
           </div>
           <div style={{ display: "grid", gap: 10, minWidth: 0, justifyItems: isCompact ? "center" : "stretch", width: "100%" }}>
-            <div style={{ ...announcementSourcePillStyle(), width: isCompact ? "min(100%, 270px)" : undefined, justifySelf: isCompact ? "center" : undefined }}>
+            <div style={{ ...announcementSourcePillStyle(), width: isCompact ? "100%" : undefined, justifySelf: isCompact ? "center" : undefined }}>
               <span style={{ ...announcementNoticeIconStyle(1), width: 32, height: 32, borderRadius: 999, overflow: "hidden" }} aria-hidden="true">
                 {noticeImageSrc ? (
                   <img
@@ -3786,16 +3789,6 @@ export default function CommunityHomePage() {
           </div>
         ) : null}
 
-        {planningLine || interestParts.length > 0 ? (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-            {planningLine ? <span style={badge(true)}>{planningLine}</span> : null}
-            {interestParts.map(([label, count]) => (
-              <span key={label} style={badge(false)}>
-                {label}: {count}
-              </span>
-            ))}
-          </div>
-        ) : null}
 
         <StableButton
           type="button"
@@ -3807,15 +3800,17 @@ export default function CommunityHomePage() {
           }}
           style={{
             ...communityActionStyle("primary"),
-            minHeight: 48,
-            width: "100%",
-            borderRadius: 15,
+            minHeight: 40,
+            justifySelf: "center",
+            width: isCompact ? "min(100%, 176px)" : "min(100%, 210px)",
+            padding: "8px 12px",
+            borderRadius: 13,
             fontSize: 13,
             textTransform: "none",
-            boxShadow: "0 10px 18px rgba(10,24,49,0.12)",
+            boxShadow: "0 8px 14px rgba(10,24,49,0.10)",
           }}
         >
-          Reactions
+          Details
         </StableButton>
 
         {reactionPanelOpen ? (
@@ -3823,13 +3818,33 @@ export default function CommunityHomePage() {
             data-debug-id="community-home.bulletin.reactions-panel"
             style={{
               display: "grid",
-              gap: 10,
-              padding: "10px 12px",
+              gap: 8,
+              padding: isCompact ? "8px 8px" : "10px 12px",
               borderRadius: 16,
               background: "rgba(255,253,247,0.94)",
               border: "1px solid rgba(214,170,69,0.16)",
             }}
           >
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 6,
+                alignItems: "center",
+              }}
+            >
+              <span style={badge(false)}>{kindLabel}</span>
+              <span style={badge(false)}>Acknowledged {acknowledgedCount}</span>
+              {expiry ? <span style={badge(false)}>{expiry}</span> : null}
+              {noticeItem?.public_qr_enabled ? <span style={badge(false)}>QR ready</span> : null}
+              {attachmentUrl ? <span style={badge(false)}>Attachment</span> : null}
+              {planningLine ? <span style={badge(true)}>{planningLine}</span> : null}
+              {interestParts.map(([label, count]) => (
+                <span key={label} style={badge(false)}>
+                  {label}: {count}
+                </span>
+              ))}
+            </div>
             <div
               style={{
                 display: "grid",
@@ -3922,24 +3937,7 @@ export default function CommunityHomePage() {
             {renderNoticeRollCallPanel(noticeItem)}
           </div>
         ) : null}
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 8,
-            alignItems: "center",
-            padding: "10px 12px",
-            borderRadius: 16,
-            background: "rgba(255,249,234,0.70)",
-            border: "1px solid rgba(214,170,69,0.12)",
-          }}
-        >
-          <span style={badge(false)}>{kindLabel}</span>
-          <span style={badge(false)}>Acknowledged {acknowledgedCount}</span>
-          {expiry ? <span style={badge(false)}>{expiry}</span> : null}
-          {noticeItem?.public_qr_enabled ? <span style={badge(false)}>QR ready</span> : null}
-          {attachmentUrl ? <span style={badge(false)}>Attachment</span> : null}
-        </div>
+
 
       </div>
     );
@@ -5139,91 +5137,100 @@ export default function CommunityHomePage() {
               )}
             </div>
 
-            {canOpenCommunityNoticeComposer || showCommunityBulletinSettings || (selectedClan && !primaryNoticeHasSenderWhatsApp) ? (
+            {showCommunityBulletinTools ? (
               <div style={announcementComposerStyle(isCompact)}>
-                {canOpenCommunityNoticeComposer ? (
-                  <StableButton
-                    type="button"
-                    debugId="community-home.notice.post"
-                    onClick={(event) => {
-                      consumeCommunityButtonEvent(event);
-                      setNoticeModalOpen(true);
-                    }}
-                    style={{
-                      ...communityActionStyle("primary"),
-                      minHeight: 42,
-                      borderRadius: 13,
-                      width: "100%",
-                      gap: 6,
-                      fontSize: 13,
-                      boxShadow: "0 8px 14px rgba(10,24,49,0.10)",
-                    }}
-                  >
-                    <span>{communityNoticeSubmitMode === "review" ? "Submit" : "Post"}</span>
-                  </StableButton>
-                ) : null}
-
-                {selectedClan && !primaryNoticeHasSenderWhatsApp ? (
-                  <StableButton
-                    type="button"
-                    aria-label="Contact the official community contact on WhatsApp"
-                    debugId="community-home.contact.whatsapp-chat"
-                    onClick={openCommunityWhatsAppContact}
-                    style={{
-                      ...contactCommunityButtonStyle(
-                        isCompact,
-                        Boolean(firstTruthy(selectedClan?.official_whatsapp_number))
-                      ),
-                      width: "100%",
-                    }}
-                  >
-                    Contact
-                  </StableButton>
-                ) : null}
-
-                {showCommunityBulletinSettings ? (
-                  <StableButton
-                    type="button"
-                    debugId="community-home.notice.settings-toggle"
-                    aria-expanded={communityBulletinSettingsOpen}
-                    aria-controls={COMMUNITY_NOTICE_SETTINGS_PANEL_ID}
-                    onClick={(event) => {
-                      consumeCommunityButtonEvent(event);
-                      setCommunityBulletinSettingsOpen((current) => !current);
-                    }}
-                    style={{
-                      ...communityActionStyle("soft"),
-                      minHeight: 42,
-                      justifyContent: "center",
-                      width: "100%",
-                      borderRadius: 13,
-                      fontSize: 13,
-                      boxShadow: "none",
-                    }}
-                  >
-                    {communityBulletinSettingsOpen
-                      ? "Close"
-                      : pendingCommunityNoticeReviewCount > 0
-                      ? `Settings (${pendingCommunityNoticeReviewCount})`
-                      : !canManageCommunityNoticeSettings && communityPreviousAnnouncementItems.length > 0
-                      ? `History (${communityPreviousAnnouncementItems.length})`
-                      : "Settings"}
-                  </StableButton>
-                ) : null}
+                <StableButton
+                  type="button"
+                  debugId="community-home.notice.settings-toggle"
+                  aria-expanded={communityBulletinSettingsOpen}
+                  aria-controls={COMMUNITY_NOTICE_SETTINGS_PANEL_ID}
+                  onClick={(event) => {
+                    consumeCommunityButtonEvent(event);
+                    setCommunityBulletinSettingsOpen((current) => !current);
+                  }}
+                  style={{
+                    ...communityActionStyle("soft"),
+                    minHeight: 40,
+                    justifySelf: "center",
+                    width: isCompact ? "min(100%, 190px)" : "min(100%, 230px)",
+                    borderRadius: 13,
+                    fontSize: 13,
+                    boxShadow: "none",
+                  }}
+                >
+                  {communityBulletinSettingsOpen
+                    ? "Close tools"
+                    : pendingCommunityNoticeReviewCount > 0
+                    ? `Bulletin tools (${pendingCommunityNoticeReviewCount})`
+                    : !canManageCommunityNoticeSettings && communityPreviousAnnouncementItems.length > 0
+                    ? `Bulletin history (${communityPreviousAnnouncementItems.length})`
+                    : "Bulletin tools"}
+                </StableButton>
               </div>
             ) : null}
-
-            {showCommunityBulletinSettings && communityBulletinSettingsOpen ? (
+            {showCommunityBulletinTools && communityBulletinSettingsOpen ? (
               <div
                 id={COMMUNITY_NOTICE_SETTINGS_PANEL_ID}
                 data-debug-id="community-home.notice.settings-panel"
                 style={{
                   display: "grid",
-                  gap: 12,
-                  padding: isCompact ? "0 16px 18px" : "0 28px 24px",
+                  gap: 10,
+                  padding: isCompact ? "0 10px 12px" : "0 20px 18px",
                   background: "#FFFFFF",
                 }}
               >
+                {canOpenCommunityNoticeComposer || (selectedClan && !primaryNoticeHasSenderWhatsApp) ? (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        isCompact || !(canOpenCommunityNoticeComposer && selectedClan && !primaryNoticeHasSenderWhatsApp)
+                          ? "minmax(0, 1fr)"
+                          : "repeat(2, minmax(0, 1fr))",
+                      gap: 8,
+                    }}
+                  >
+                    {canOpenCommunityNoticeComposer ? (
+                      <StableButton
+                        type="button"
+                        debugId="community-home.notice.post"
+                        onClick={(event) => {
+                          consumeCommunityButtonEvent(event);
+                          setNoticeModalOpen(true);
+                        }}
+                        style={{
+                          ...communityActionStyle("primary"),
+                          minHeight: 42,
+                          borderRadius: 13,
+                          width: "100%",
+                          gap: 6,
+                          fontSize: 13,
+                          boxShadow: "0 8px 14px rgba(10,24,49,0.10)",
+                        }}
+                      >
+                        <span>{communityNoticeSubmitMode === "review" ? "Submit" : "Post"}</span>
+                      </StableButton>
+                    ) : null}
+
+                    {selectedClan && !primaryNoticeHasSenderWhatsApp ? (
+                      <StableButton
+                        type="button"
+                        aria-label="Contact the official community contact on WhatsApp"
+                        debugId="community-home.contact.whatsapp-chat"
+                        onClick={openCommunityWhatsAppContact}
+                        style={{
+                          ...contactCommunityButtonStyle(
+                            isCompact,
+                            Boolean(firstTruthy(selectedClan?.official_whatsapp_number))
+                          ),
+                          width: "100%",
+                        }}
+                      >
+                        Contact
+                      </StableButton>
+                    ) : null}
+                  </div>
+                ) : null}
                 {canManageCommunityNoticeSettings ? (
                   <div
                     style={{
