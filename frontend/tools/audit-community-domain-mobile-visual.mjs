@@ -1015,6 +1015,15 @@ async function ensureOperatingAreasOpen(page) {
   await operatingAreas.first().waitFor({ timeout: 10000 });
 }
 
+async function openAllAreasFromCommand(page) {
+  if (!(await isDebugVisible(page, "community-domain-dashboard.command-action.advanced.all-areas"))) {
+    if (!(await isDebugVisible(page, "community-domain-dashboard.governance-stage-board"))) {
+      await clickByDebugId(page, "community-domain-dashboard.institution-gateway");
+    }
+    await clickByDebugId(page, "community-domain-dashboard.command-stage.advanced");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.command-action.advanced.all-areas");
+}
 async function firstViewportActionFinding(page, debugId, label) {
   return page.evaluate(
     ({ debugId: targetDebugId, label: targetLabel }) => {
@@ -1218,42 +1227,75 @@ try {
   await page.getByText("Domain command", { exact: true }).waitFor({ timeout: 10000 });
   audit = await page.evaluate(pageAudit);
   let commandText = normalized(audit.bodyText);
-  if (!commandText.includes("Complete the next setup step")) {
-    findings.push("Draft Community Domain command does not show setup-first guidance.");
+  if (!commandText.includes("Open institution setup, then choose one setup stage at a time.")) {
+    findings.push("Draft Community Domain command does not show the one-gateway setup guidance.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.institution-gateway"))) {
+    findings.push("Draft Community Domain command does not expose the one institution setup gateway.");
+  }
+  if (await isDebugVisible(page, "community-domain-dashboard.governance-stage-board")) {
+    findings.push("Draft Community Domain command exposes the four stages before the gateway opens.");
+  }
+  if (commandText.includes("Reserve domain name") || commandText.includes("Run the community")) {
+    findings.push("Draft Community Domain command exposes stage/action text before the gateway opens.");
   }
   if (await isDebugVisible(page, "community-domain-dashboard.command-guidance-toggle")) {
-    findings.push("Draft Community Domain command exposes Guidance before Advanced is opened.");
-  }
-  if (!(await isDebugVisible(page, "community-domain-dashboard.more-actions-toggle"))) {
-    findings.push("Draft Community Domain command does not expose the Advanced drawer.");
+    findings.push("Draft Community Domain command exposes Guidance before a stage is opened.");
   }
   if (commandText.includes("Do first") || commandText.includes("Important rule")) {
     findings.push("Draft Community Domain command shows read-only guidance before the user opens it.");
   }
-  await clickByDebugId(page, "community-domain-dashboard.more-actions-toggle");
-  if (!(await isDebugVisible(page, "community-domain-dashboard.command-guidance-toggle"))) {
-    findings.push("Draft Community Domain Advanced drawer does not reveal guidance.");
+  const draftFirstAction = await firstViewportActionFinding(
+    page,
+    "community-domain-dashboard.institution-gateway",
+    "Draft Community Domain dashboard"
+  );
+  if (draftFirstAction) findings.push(draftFirstAction);
+  await clickByDebugId(page, "community-domain-dashboard.institution-gateway");
+  await page.getByText("1. Set up the institution", { exact: true }).waitFor({ timeout: 10000 });
+  for (const label of [
+    "1. Set up the institution",
+    "2. Organise people",
+    "3. Run the community",
+    "4. Advanced governance",
+  ]) {
+    if (!normalized((await page.locator("body").innerText())).includes(label)) {
+      findings.push(`Draft Community Domain gateway does not show stage ${label}.`);
+    }
+  }
+  if (await isDebugVisible(page, "community-domain-dashboard.command-guidance-toggle")) {
+    findings.push("Draft Community Domain gateway exposes Guidance before a stage is selected.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.command-stage.institution");
+  await page.getByText("1. Reserve domain name", { exact: true }).waitFor({ timeout: 10000 });
+  for (const label of [
+    "1. Reserve domain name",
+    "2. Create / connect communities",
+    "3. Add identities / profiles",
+    "4. Verify owner authority",
+    "5. Subscription package & status",
+    "6. Launch readiness",
+  ]) {
+    if (!normalized((await page.locator("body").innerText())).includes(label)) {
+      findings.push(`Set up the institution stage does not show action ${label}.`);
+    }
   }
   await clickByDebugId(page, "community-domain-dashboard.command-guidance-toggle");
   audit = await page.evaluate(pageAudit);
   commandText = normalized(audit.bodyText);
   if (!commandText.includes("Do first") || !commandText.includes("Important rule")) {
-    findings.push("Draft Community Domain command guidance does not open the first action and rule notes.");
+    findings.push("Draft Community Domain command guidance does not open from the selected stage.");
   }
-  await page.waitForTimeout(450);
-  await clickByDebugId(page, "community-domain-dashboard.command-guidance-toggle");
+  await page.waitForTimeout(420);
+  await page.getByRole("button", { name: "Close guidance", exact: true }).click({ timeout: 10000 });
+  await page
+    .locator('[data-debug-id="community-domain-dashboard.command-guidance-panel"]')
+    .waitFor({ state: "hidden", timeout: 10000 });
   audit = await page.evaluate(pageAudit);
   commandText = normalized(audit.bodyText);
   if (commandText.includes("Do first") || commandText.includes("Important rule")) {
     findings.push("Draft Community Domain command guidance does not close after reading.");
   }
-  await clickByDebugId(page, "community-domain-dashboard.more-actions-toggle");
-  const draftFirstAction = await firstViewportActionFinding(
-    page,
-    "community-domain-dashboard.setup-focus",
-    "Draft Community Domain dashboard"
-  );
-  if (draftFirstAction) findings.push(draftFirstAction);
   if (await isDebugVisible(page, "community-domain-dashboard.advanced-tools-toggle")) {
     findings.push("Draft Community Domain dashboard exposes Other domain tools before setup is opened.");
   }
@@ -1263,7 +1305,7 @@ try {
   if (audit.horizontalOverflow || audit.overflow.length) {
     findings.push(`Draft Community Domain dashboard mobile overflow: ${JSON.stringify(audit.overflow)}`);
   }
-  await clickByDebugId(page, "community-domain-dashboard.setup-focus");
+  await clickByDebugId(page, "community-domain-dashboard.command-action.institution.reserve-domain");
   await page.getByRole("heading", { name: "Create Community Domain" }).waitFor({ timeout: 10000 });
   await page
     .locator('[data-cta-id="community-domain-dashboard.setup-check-domain-name"]')
@@ -1311,84 +1353,80 @@ try {
 
   audit = await page.evaluate(pageAudit);
   commandText = normalized(audit.bodyText);
-  if (!commandText.includes("Run one operating area at a time")) {
-    findings.push("Domain command does not show the focused operating-area guidance.");
+  if (!commandText.includes("Open institution setup, then choose one governance stage at a time.")) {
+    findings.push("Active Community Domain command does not show the one-gateway governance guidance.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.institution-gateway"))) {
+    findings.push("Active Community Domain dashboard does not expose the institution setup gateway.");
+  }
+  const dashboardFirstAction = await firstViewportActionFinding(
+    page,
+    "community-domain-dashboard.institution-gateway",
+    "Community Domain dashboard"
+  );
+  if (dashboardFirstAction) findings.push(dashboardFirstAction);
+  if (commandText.includes("Open marketplace") || commandText.includes("Record activity")) {
+    findings.push("Active Community Domain dashboard exposes inner actions before the gateway opens.");
   }
   if (await isDebugVisible(page, "community-domain-dashboard.command-guidance-toggle")) {
-    findings.push("Active Community Domain dashboard exposes Guidance before Advanced is opened.");
+    findings.push("Active Community Domain dashboard exposes Guidance before a stage is opened.");
   }
   if (commandText.includes("Do first") || commandText.includes("Important rule")) {
     findings.push("Domain command shows read-only guidance before the user opens it.");
   }
-  const dashboardFirstAction = await firstViewportActionFinding(
-    page,
-    "community-domain-dashboard.open-marketplace",
-    "Community Domain dashboard"
-  );
-  if (dashboardFirstAction) findings.push(dashboardFirstAction);
-  if (!commandText.includes("Open Marketplace")) {
-    findings.push("Active Community Domain dashboard does not expose Marketplace as the primary handoff.");
+  await clickByDebugId(page, "community-domain-dashboard.institution-gateway");
+  await page.getByText("3. Run the community", { exact: true }).waitFor({ timeout: 10000 });
+  await clickByDebugId(page, "community-domain-dashboard.command-stage.community");
+  await page.getByText("1. Open marketplace", { exact: true }).waitFor({ timeout: 10000 });
+  if (!(await isDebugVisible(page, "community-domain-dashboard.command-action.community.marketplace"))) {
+    findings.push("Run the community stage does not expose the marketplace action control.");
   }
-  if (!commandText.includes("Open People")) {
-    findings.push("Active Community Domain dashboard does not expose the People lane shortcut.");
+  for (const label of [
+    "1. Open marketplace",
+    "2. Post official notice",
+    "3. Live attendance",
+    "4. Response QR",
+    "5. Collection QR",
+    "6. Record activity",
+  ]) {
+    if (!normalized((await page.locator("body").innerText())).includes(label)) {
+      findings.push(`Run the community stage does not show action ${label}.`);
+    }
   }
-  if (!commandText.includes("Advanced")) {
-    findings.push("Active Community Domain dashboard does not expose the compact Advanced drawer for secondary actions.");
+  await clickByDebugId(page, "community-domain-dashboard.command-stage.back");
+  if (await isDebugVisible(page, "community-domain-dashboard.command-action.community.record-activity")) {
+    findings.push("Run the community actions stay visible after returning to stages.");
   }
-  if (commandText.includes("Open operating areas")) {
-    findings.push("Active Community Domain dashboard exposes broad Open operating areas wording on the first command surface.");
+  await clickByDebugId(page, "community-domain-dashboard.command-stage.advanced");
+  await page.getByText("6. Save / lock package", { exact: true }).waitFor({ timeout: 10000 });
+  if (!(await isDebugVisible(page, "community-domain-dashboard.command-action.advanced.all-areas"))) {
+    findings.push("Advanced governance stage does not expose the all operating areas action control.");
   }
-  if (commandText.includes("Record activity")) {
-    findings.push("Active Community Domain dashboard exposes Record activity before Advanced is opened.");
-  }
-  if (await isDebugVisible(page, "community-domain-dashboard.open-governance")) {
-    findings.push("Active Community Domain dashboard exposes Governance before Advanced is opened.");
-  }
-  if (commandText.includes("Record from real life")) {
-    findings.push("Active Community Domain dashboard exposes broad Record from real life wording on the first command surface.");
-  }
-  if (await isDebugVisible(page, "community-domain-dashboard.open-subscription")) {
-    findings.push("Active Community Domain dashboard exposes Subscription before Advanced is opened.");
-  }
-  if (!(await isDebugVisible(page, "community-domain-dashboard.more-actions-toggle"))) {
-    findings.push("Active Community Domain dashboard does not cover secondary actions with Advanced.");
-  }
-  await clickByDebugId(page, "community-domain-dashboard.more-actions-toggle");
-  await page.waitForTimeout(450);
-  if (!(await isDebugVisible(page, "community-domain-dashboard.open-governance"))) {
-    findings.push("Advanced does not reveal the Governance action.");
-  }
-  if (!(await isDebugVisible(page, "community-domain-dashboard.real-life-record-shortcut"))) {
-    findings.push("Advanced does not reveal the Record activity action for admins.");
-  }
-  if (!(await isDebugVisible(page, "community-domain-dashboard.open-subscription"))) {
-    findings.push("Advanced does not reveal the Subscription action.");
-  }
-  if (!(await isDebugVisible(page, "community-domain-dashboard.command-guidance-toggle"))) {
-    findings.push("Advanced does not reveal the Guidance control.");
+  for (const label of [
+    "1. Governance readiness",
+    "2. Feature policy",
+    "3. Director summary",
+    "4. Sponsor report",
+    "5. All operating areas",
+    "6. Save / lock package",
+  ]) {
+    if (!normalized((await page.locator("body").innerText())).includes(label)) {
+      findings.push(`Advanced governance stage does not show action ${label}.`);
+    }
   }
   await clickByDebugId(page, "community-domain-dashboard.command-guidance-toggle");
   audit = await page.evaluate(pageAudit);
   commandText = normalized(audit.bodyText);
   if (!commandText.includes("Do first") || !commandText.includes("Important rule")) {
-    findings.push("Domain command guidance does not open the first action and rule notes from Advanced.");
+    findings.push("Domain command guidance does not open the first action and rule notes from the selected stage.");
   }
-  await clickByDebugId(page, "community-domain-dashboard.command-guidance-toggle");
-  await page.waitForTimeout(450);
-  await clickByDebugId(page, "community-domain-dashboard.more-actions-toggle");
-  await page.waitForTimeout(450);
-  if (await isDebugVisible(page, "community-domain-dashboard.open-governance")) {
-    findings.push("Governance action stays visible after closing Advanced.");
-  }
-  if (await isDebugVisible(page, "community-domain-dashboard.real-life-record-shortcut")) {
-    findings.push("Record activity action stays visible after closing Advanced.");
-  }
-  if (await isDebugVisible(page, "community-domain-dashboard.open-subscription")) {
-    findings.push("Subscription action stays visible after closing Advanced.");
-  }
-  if (await isDebugVisible(page, "community-domain-dashboard.command-guidance-toggle")) {
-    findings.push("Guidance control stays visible after closing Advanced.");
-  }
+  await page.waitForTimeout(420);
+  await page.getByRole("button", { name: "Close guidance", exact: true }).click({ timeout: 10000 });
+  await page
+    .locator('[data-debug-id="community-domain-dashboard.command-guidance-panel"]')
+    .waitFor({ state: "hidden", timeout: 10000 });
+  audit = await page.evaluate(pageAudit);
+  commandText = normalized(audit.bodyText);
   if (!(await isDebugVisible(page, "community-domain-dashboard.nav.dashboard"))) {
     findings.push("Active Community Domain dashboard does not expose the Dashboard route escape.");
   }
@@ -1417,7 +1455,7 @@ try {
   if (activeHeroFinding) findings.push(activeHeroFinding);
   const operatingProofFinding = await page.evaluate(() => {
     const proofTargets = [
-      ["Start here", '[data-debug-id="community-domain-dashboard.daily-work-card"]'],
+      ["Start here", '[data-debug-id="community-domain-dashboard.governance-gateway"]'],
     ];
     const missing = [];
     for (const [label, selector] of proofTargets) {
@@ -1445,13 +1483,12 @@ try {
   });
   await alignProductEvidenceCaptureBottom(
     page,
-    '[data-debug-id="community-domain-dashboard.daily-work-card"]'
+    '[data-debug-id="community-domain-dashboard.governance-gateway"]'
   );
   await captureProductEvidenceCandidate(
     page,
     "candidate_04_community_operating_area_top_2026-07-19.png"
   );
-
   await page.goto(`${baseUrl}${routePath}?lane=settings`, {
     waitUntil: "networkidle",
     timeout: 15000,
@@ -1548,8 +1585,7 @@ try {
 
   await page.goto(`${baseUrl}${routePath}`, { waitUntil: "networkidle", timeout: 15000 });
   await page.getByText("Domain command", { exact: true }).waitFor({ timeout: 10000 });
-  await clickByDebugId(page, "community-domain-dashboard.more-actions-toggle");
-  await clickByDebugId(page, "community-domain-dashboard.operational-focus");
+  await openAllAreasFromCommand(page);
   await page.getByText("Live area", { exact: true }).waitFor({ timeout: 10000 });
   if (!(await isDebugVisible(page, "community-domain-dashboard.work-surface.back-to-command"))) {
     findings.push("Opened Community Domain work surface does not expose Back to command.");
@@ -1579,7 +1615,7 @@ try {
     findings.push("Opened Community Domain work surface notes do not close after reading.");
   }
   await clickByDebugId(page, "community-domain-dashboard.work-surface.back-to-command");
-  await page.getByText("Returned to Domain command.", { exact: false }).waitFor({ timeout: 10000 });
+  await page.getByText("Returned to institution stages.", { exact: false }).waitFor({ timeout: 10000 });
   if (await isDebugVisible(page, "community-domain-dashboard.work-surface.back-to-command")) {
     findings.push("Back to command did not close the opened Community Domain work surface.");
   }
@@ -1590,8 +1626,7 @@ try {
     320
   );
   if (commandReturnFinding) findings.push(commandReturnFinding);
-  await clickByDebugId(page, "community-domain-dashboard.more-actions-toggle");
-  await clickByDebugId(page, "community-domain-dashboard.operational-focus");
+  await openAllAreasFromCommand(page);
   await page.getByText("Live area", { exact: true }).waitFor({ timeout: 10000 });
 
   await ensureOperatingAreasOpen(page);

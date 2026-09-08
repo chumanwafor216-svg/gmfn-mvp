@@ -1117,8 +1117,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /SetupNoticeTaskKey[\s\S]*SetupOverviewTaskKey[\s\S]*CommunityDomainGovernanceFocusPanel[\s\S]*activeSetupOverviewTask[\s\S]*activeSetupNoticeTask[\s\S]*operatingAreaPickerOpen[\s\S]*governanceGroupChooserOpen[\s\S]*showOtherDomainToolsEntry = setupJourneyMode === "edit"[\s\S]*selectGovernanceTask[\s\S]*setActiveGovernanceTask\(task\)[\s\S]*openRealLifeRecordTask[\s\S]*setActiveGovernanceTask\("real_life_record"\)[\s\S]*community-domain-dashboard\.real-life-record-shortcut[\s\S]*openRealLifeRecordTask\("activity"\)[\s\S]*CommunityDomainSetupOverviewPanel[\s\S]*setActiveSetupNoticeTask[\s\S]*setActiveSetupOverviewTask[\s\S]*showAdvancedTools && operatingAreaPickerOpen[\s\S]*CommunityDomainLaneSelectorPanel[\s\S]*community-domain-dashboard\.operating-area-picker-toggle[\s\S]*activeLane === "governance"[\s\S]*CommunityDomainGovernanceFocusPanel[\s\S]*type GovernanceTaskKey[\s\S]*"real_life_record"[\s\S]*"access_requests"[\s\S]*GOVERNANCE_TASK_OPTIONS[\s\S]*key: "real_life_record"[\s\S]*key: "access_requests"[\s\S]*Governance jobs[\s\S]*community-domain-dashboard\.governance-group-toggle[\s\S]*community-domain-dashboard\.governance-task-toggle[\s\S]*data\.activeGovernanceTask === "real_life_record"[\s\S]*CommunityDomainAccessRequestsPanel/,
-  "Community Domain dashboard must keep setup overview state and data in the parent, lazy-render setup overview jobs, keep the operating-area picker collapsed until requested, keep owner/admin real-life record as a direct Governance shortcut, keep Governance stages behind Change governance stage before hiding second-level jobs behind Change job, gate access requests behind their selected job, and expose only the selected activity or beneficiary outcome form.",
+  /SetupNoticeTaskKey[\s\S]*SetupOverviewTaskKey[\s\S]*CommunityDomainGovernanceFocusPanel[\s\S]*activeSetupOverviewTask[\s\S]*activeSetupNoticeTask[\s\S]*operatingAreaPickerOpen[\s\S]*governanceGroupChooserOpen[\s\S]*showOtherDomainToolsEntry = setupJourneyMode === "edit"[\s\S]*selectGovernanceTask[\s\S]*setActiveGovernanceTask\(task\)[\s\S]*openRealLifeRecordTask[\s\S]*setActiveGovernanceTask\("real_life_record"\)[\s\S]*key: "record-activity"[\s\S]*openRealLifeRecordTask\("activity"\)[\s\S]*CommunityDomainSetupOverviewPanel[\s\S]*setActiveSetupNoticeTask[\s\S]*setActiveSetupOverviewTask[\s\S]*showAdvancedTools && operatingAreaPickerOpen[\s\S]*CommunityDomainLaneSelectorPanel[\s\S]*community-domain-dashboard\.operating-area-picker-toggle[\s\S]*activeLane === "governance"[\s\S]*CommunityDomainGovernanceFocusPanel[\s\S]*type GovernanceTaskKey[\s\S]*"real_life_record"[\s\S]*"access_requests"[\s\S]*GOVERNANCE_TASK_OPTIONS[\s\S]*key: "real_life_record"[\s\S]*key: "access_requests"[\s\S]*Governance jobs[\s\S]*community-domain-dashboard\.governance-group-toggle[\s\S]*community-domain-dashboard\.governance-task-toggle[\s\S]*data\.activeGovernanceTask === "real_life_record"[\s\S]*CommunityDomainAccessRequestsPanel/,
+  "Community Domain dashboard must keep setup overview state and data in the parent, lazy-render setup overview jobs, keep the operating-area picker collapsed until requested, keep owner/admin real-life record as a direct Run the community action, keep Governance stages behind Change governance stage before hiding second-level jobs behind Change job, gate access requests behind their selected job, and expose only the selected activity or beneficiary outcome form.",
   { frontend: true }
 );
 
@@ -1655,8 +1655,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /setupJourneyMode[\s\S]*showSetupAccessCard = setupJourneyMode === "edit" \|\| setupEditingLocked[\s\S]*openSetupJourney\(mode: "setup" \| "edit"\)[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*Continue setup[\s\S]*setupJourneyMode === "edit"[\s\S]*Edit Community Domain/,
-  "Community Domain dashboard must expose setup as the draft front-door choice while keeping edit mode out of the active first command surface.",
+  /setupJourneyMode[\s\S]*showSetupAccessCard = setupJourneyMode === "edit" \|\| setupEditingLocked[\s\S]*openSetupJourney\(mode: "setup" \| "edit"\)[\s\S]*key: "reserve-domain"[\s\S]*label: "Reserve domain name"[\s\S]*openSetupJourneyAt\("identity", domainOperational \? "edit" : "setup"\)[\s\S]*community-domain-dashboard\.institution-gateway[\s\S]*Set up the institution[\s\S]*setupJourneyMode === "edit"[\s\S]*Edit Community Domain/,
+  "Community Domain dashboard must expose the institution gateway as the front-door choice while keeping edit mode out of the active first command surface.",
   { frontend: true }
 );
 
@@ -2577,8 +2577,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /Domain command[\s\S]*community-domain-dashboard\.domain-lane-board[\s\S]*community-domain-dashboard\.daily-work-card[\s\S]*Daily work[\s\S]*community-domain-dashboard\.setup-lane-card[\s\S]*Set up[\s\S]*community-domain-dashboard\.people-lane-card[\s\S]*People[\s\S]*community-domain-dashboard\.more-actions-toggle[\s\S]*Advanced[\s\S]*community-domain-dashboard\.more-actions-panel[\s\S]*community-domain-dashboard\.command-guidance-toggle[\s\S]*community-domain-dashboard\.command-guidance-panel/,
-  "Community Domain dashboard must land on a three-lane command centre and keep guidance/deeper setup controls behind Advanced until the owner opens them.",
+  /Domain command[\s\S]*community-domain-dashboard\.governance-gateway[\s\S]*community-domain-dashboard\.institution-gateway[\s\S]*Set up the institution[\s\S]*domainCommandMenuOpen \? \([\s\S]*community-domain-dashboard\.domain-lane-board[\s\S]*community-domain-dashboard\.governance-stage-board[\s\S]*community-domain-dashboard\.command-stage\.\$\{group\.key\}[\s\S]*community-domain-dashboard\.command-stage-panel\.\$\{activeDomainCommandGroupOption\.key\}[\s\S]*domainCommandActions\.map[\s\S]*community-domain-dashboard\.command-action\.\$\{activeDomainCommandGroupOption\.key\}\.\$\{action\.key\}[\s\S]*community-domain-dashboard\.command-stage\.save-checkpoint[\s\S]*community-domain-dashboard\.command-guidance-toggle[\s\S]*community-domain-dashboard\.command-guidance-panel/,
+  "Community Domain dashboard must land on one institution gateway, then reveal four governance stages and six inner actions only after the owner opens the relevant stage.",
   { frontend: true }
 );
 
@@ -2591,15 +2591,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /commandSurfaceRef[\s\S]*workSurfaceRef[\s\S]*function returnToDomainCommand\(\)[\s\S]*setOperatingAreaPickerOpen\(false\)[\s\S]*setShowAdvancedTools\(false\)[\s\S]*setSetupWorkspaceOpen\(false\)[\s\S]*setSetupJourneyMode\("setup"\)[\s\S]*Returned to Domain command\. Choose Marketplace or open one operating area\.[\s\S]*commandSurfaceRef\.current\?\.scrollIntoView[\s\S]*function openMemberDashboard\(\)[\s\S]*navigate\(APP_ROUTES\.DASHBOARD\)[\s\S]*function openDomainCommunityHome\(\)[\s\S]*setSelectedClanId\(clanId\)[\s\S]*navigate\(routeWithCommunity\(APP_ROUTES\.COMMUNITY, clanId\)\)[\s\S]*aria-label="Community Domain navigation"[\s\S]*community-domain-dashboard\.nav\.dashboard[\s\S]*Dashboard[\s\S]*community-domain-dashboard\.nav\.community-home[\s\S]*Community Home[\s\S]*ref=\{commandSurfaceRef\}[\s\S]*community-domain-dashboard\.work-surface\.back-to-command[\s\S]*onClick=\{returnToDomainCommand\}/,
-  "Active Community Domains must expose route-level Dashboard/Community Home navigation and every opened work surface must visibly return to the Domain command card with action-response copy.",
+  /commandSurfaceRef[\s\S]*workSurfaceRef[\s\S]*function returnToDomainCommand\(\)[\s\S]*setOperatingAreaPickerOpen\(false\)[\s\S]*setShowAdvancedTools\(false\)[\s\S]*setSetupWorkspaceOpen\(false\)[\s\S]*setSetupJourneyMode\("setup"\)[\s\S]*setDomainCommandMenuOpen\(true\)[\s\S]*setActiveDomainCommandGroup\(null\)[\s\S]*Returned to institution stages\. Choose one stage, then open the exact governance task\.[\s\S]*commandSurfaceRef\.current\?\.scrollIntoView[\s\S]*function openMemberDashboard\(\)[\s\S]*navigate\(APP_ROUTES\.DASHBOARD\)[\s\S]*function openDomainCommunityHome\(\)[\s\S]*setSelectedClanId\(clanId\)[\s\S]*navigate\(routeWithCommunity\(APP_ROUTES\.COMMUNITY, clanId\)\)[\s\S]*aria-label="Community Domain navigation"[\s\S]*community-domain-dashboard\.nav\.dashboard[\s\S]*Dashboard[\s\S]*community-domain-dashboard\.nav\.community-home[\s\S]*Community Home[\s\S]*ref=\{commandSurfaceRef\}[\s\S]*community-domain-dashboard\.work-surface\.back-to-command[\s\S]*onClick=\{returnToDomainCommand\}/,
+  "Active Community Domains must expose route-level Dashboard/Community Home navigation and every opened work surface must visibly return to the four-stage institution command card with action-response copy.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /openSetupJourney[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*openSetupJourneyAt[\s\S]*openSetupJourney\(mode\)[\s\S]*openDailyWorkLane[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*openPeopleLane[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*openDailyWorkLane\(\)[\s\S]*CommunityDomainSetupOverviewPanel[\s\S]*onOpenMainAction: \(\) => \{[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*CommunityDomainOperatingSummaryPanel[\s\S]*onOpenLiveLane: \(\) => \{[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.advanced-tools-toggle[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true/,
-  "Community Domain work-surface entry points must all request focus when they open setup or lanes, including lazy setup-overview and operating-summary callbacks.",
+  /openSetupJourney[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*openSetupJourneyAt[\s\S]*openSetupJourney\(mode\)[\s\S]*openDailyWorkLane[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*openPeopleLane[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*openDomainCommandGroup[\s\S]*openStructureFocus[\s\S]*openMemberFocus[\s\S]*openBillingFocus[\s\S]*openGovernanceFocus[\s\S]*key: "all-areas"[\s\S]*openDailyWorkLane\(\)[\s\S]*CommunityDomainSetupOverviewPanel[\s\S]*onOpenMainAction: \(\) => \{[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*CommunityDomainOperatingSummaryPanel[\s\S]*onOpenLiveLane: \(\) => \{[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.advanced-tools-toggle[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true/,
+  "Community Domain work-surface entry points must all request focus when they open setup or lanes, including the new governance-folder actions and lazy panel callbacks.",
   { frontend: true }
 );
 
@@ -2620,8 +2620,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /function pageShell\(\)[\s\S]*display: "grid"[\s\S]*alignContent: "start"[\s\S]*isCommunityDomainOperational[\s\S]*firstAvailableOperationalLaneKey[\s\S]*domainOperational[\s\S]*mainActionLaneKey[\s\S]*domainOperational \? operationalLaneKey : primaryActionLaneKey[\s\S]*mainActionCopy[\s\S]*showDomainWorkSurface[\s\S]*setupWorkspaceOpen \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*openDomainMarketplace[\s\S]*routeWithCommunity\(APP_ROUTES\.MARKETPLACE, clanId\)[\s\S]*!domainOperational \? \([\s\S]*PageTopNav[\s\S]*Domain command[\s\S]*Run one operating area at a time[\s\S]*community-domain-dashboard\.domain-lane-board[\s\S]*community-domain-dashboard\.open-marketplace[\s\S]*Open Marketplace[\s\S]*community-domain-dashboard\.open-setup-lane[\s\S]*Open Set up[\s\S]*community-domain-dashboard\.open-people-lane[\s\S]*Open People[\s\S]*community-domain-dashboard\.more-actions-toggle[\s\S]*Advanced[\s\S]*community-domain-dashboard\.more-actions-panel[\s\S]*community-domain-dashboard\.subscription-card[\s\S]*community-domain-dashboard\.governance-card[\s\S]*community-domain-dashboard\.all-areas-card[\s\S]*community-domain-dashboard\.real-life-record-card[\s\S]*community-domain-dashboard\.guidance-card[\s\S]*CommunityDomainSetupOverviewPanel[\s\S]*onOpenMainAction: \(\) => \{[\s\S]*setActiveLane\(mainActionLaneKey\)[\s\S]*setSetupWorkspaceOpen\(true\)/,
-  "Active Community Domains must show the three owner lanes first, keep Subscription/Governance/Records/All areas/Guidance behind Advanced, and preserve Marketplace and setup workbench handoffs.",
+  /function pageShell\(\)[\s\S]*display: "grid"[\s\S]*alignContent: "start"[\s\S]*isCommunityDomainOperational[\s\S]*firstAvailableOperationalLaneKey[\s\S]*domainOperational[\s\S]*mainActionLaneKey[\s\S]*domainOperational \? operationalLaneKey : primaryActionLaneKey[\s\S]*mainActionCopy[\s\S]*showDomainWorkSurface[\s\S]*setupWorkspaceOpen \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*openDomainMarketplace[\s\S]*routeWithCommunity\(APP_ROUTES\.MARKETPLACE, clanId\)[\s\S]*const domainCommandGroups[\s\S]*Set up the institution[\s\S]*Organise people[\s\S]*Run the community[\s\S]*Advanced governance[\s\S]*const domainCommandActions[\s\S]*Reserve domain name[\s\S]*Create \/ connect communities[\s\S]*Save \/ lock package[\s\S]*Domain command[\s\S]*community-domain-dashboard\.governance-gateway[\s\S]*community-domain-dashboard\.institution-gateway[\s\S]*domainCommandMenuOpen \? \([\s\S]*community-domain-dashboard\.command-stage\.\$\{group\.key\}[\s\S]*community-domain-dashboard\.command-action\.\$\{activeDomainCommandGroupOption\.key\}\.\$\{action\.key\}[\s\S]*CommunityDomainSetupOverviewPanel[\s\S]*onOpenMainAction: \(\) => \{[\s\S]*setActiveLane\(mainActionLaneKey\)[\s\S]*setSetupWorkspaceOpen\(true\)/,
+  "Active Community Domains must show one gateway first, reveal four governance stages, keep each stage to six inner actions, and preserve Marketplace/setup workbench handoffs.",
   { frontend: true }
 );
 
@@ -2641,8 +2641,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /community-domain-dashboard\.real-life-record-shortcut[\s\S]{0,220}openRealLifeRecordTask\("activity"\)[\s\S]{0,220}Record activity/,
-  "Community Domain real-life shortcut must stay deterministic inside More: it opens the Activity record task, not a vague multi-record surface.",
+  /key: "record-activity"[\s\S]*label: "Record activity"[\s\S]*openRealLifeRecordTask\("activity"\)/,
+  "Community Domain real-life action must stay deterministic inside Run the community: it opens the Activity record task, not a vague multi-record surface.",
   { frontend: true }
 );
 
@@ -2851,17 +2851,22 @@ assertContains(
       String.raw`community-domain-dashboard\.selector\.back-to-choice`,
       String.raw`dashboardScenario = "draft"`,
       String.raw`community-domain-dashboard\.command-guidance-toggle`,
+      String.raw`community-domain-dashboard\.institution-gateway`,
+      String.raw`community-domain-dashboard\.command-stage\.institution`,
       String.raw`guidance does not close after reading`,
-      String.raw`community-domain-dashboard\.setup-focus`,
       String.raw`Draft Community Domain dashboard exposes Other domain tools before setup is opened`,
+      String.raw`community-domain-dashboard\.command-action\.institution\.reserve-domain`,
       String.raw`community-domain-dashboard\.work-surface`,
       String.raw`Draft Community Domain setup workbench exposes Other domain tools during the primary setup journey`,
       String.raw`Draft Community Domain setup workbench exposes advanced dashboard blocks during setup`,
       String.raw`dashboardScenario = "active"`,
-      String.raw`community-domain-dashboard\.open-marketplace`,
-      String.raw`Open Marketplace`,
-      String.raw`Open People`,
-      String.raw`Active Community Domain dashboard exposes broad Open operating areas wording on the first command surface`,
+      String.raw`3\. Run the community`,
+      String.raw`community-domain-dashboard\.command-stage\.community`,
+      String.raw`community-domain-dashboard\.command-action\.community\.marketplace`,
+      String.raw`1\. Open marketplace`,
+      String.raw`community-domain-dashboard\.command-stage\.advanced`,
+      String.raw`community-domain-dashboard\.command-action\.advanced\.all-areas`,
+      String.raw`5\. All operating areas`,
       String.raw`Active Community Domain dashboard exposes setup editing on the first command surface`,
       String.raw`Active Community Domain dashboard exposes Other domain tools before operating areas are opened`,
       String.raw`routePath\}\?lane=settings`,
@@ -2902,7 +2907,7 @@ assertContains(
       String.raw`settings summary questions stay visible after selecting a question`,
       String.raw`Domain permissions`,
       String.raw`routePath\}`,
-      String.raw`community-domain-dashboard\.operational-focus`,
+      String.raw`openAllAreasFromCommand`,
       String.raw`Live area`,
       String.raw`community-domain-dashboard\.work-surface\.notes-toggle`,
       String.raw`work surface notes do not close after reading`,
@@ -4248,7 +4253,7 @@ assertContains(
 
 assertContains(
   "docs/SCREEN_SPECS.md",
-  /## CommunityDomainDashboardPage[\s\S]*institutional operating surface[\s\S]*three\s+visible owner lanes[\s\S]*one Advanced drawer[\s\S]*one opened operating area[\s\S]*Payment, package quote, and renewal status must not be shown as verification/,
+  /## CommunityDomainDashboardPage[\s\S]*one command surface that first shows only `Set up the institution`[\s\S]*four governance stages[\s\S]*six inner actions[\s\S]*guided governance-folder rule[\s\S]*one command gateway[\s\S]*one opened work area[\s\S]*Payment, package quote, and renewal status must not be shown as verification/,
   "Community Domain dashboard contract must preserve guided operation and verification boundaries."
 );
 

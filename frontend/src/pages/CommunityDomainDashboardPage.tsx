@@ -186,6 +186,7 @@ type DomainLane = {
   count?: number;
 };
 
+type DomainCommandGroupKey = "institution" | "people" | "community" | "advanced";
 type MemberRosterTaskKey = "summary" | "members";
 type OperatingSummaryTaskKey = "next_action" | "status" | "allowance" | "permissions";
 type SetupWorkbenchTaskKey = "step" | "access";
@@ -2163,24 +2164,6 @@ function commandLaneGrid(): React.CSSProperties {
   };
 }
 
-function commandLaneCard(kind: "primary" | "secondary" = "secondary"): React.CSSProperties {
-  const primary = kind === "primary";
-  return {
-    minWidth: 0,
-    borderRadius: 18,
-    border: primary
-      ? "1px solid rgba(12,79,168,0.18)"
-      : "1px solid rgba(9,27,46,0.11)",
-    background: primary
-      ? "linear-gradient(180deg, rgba(240,247,255,0.98) 0%, rgba(248,251,255,0.995) 100%)"
-      : "linear-gradient(180deg, rgba(255,255,255,0.995) 0%, rgba(246,249,252,0.98) 100%)",
-    boxShadow: primary ? "0 14px 28px rgba(12,79,168,0.08)" : "none",
-    padding: 10,
-    display: "grid",
-    gap: 8,
-  };
-}
-
 function commandGuidanceGrid(): React.CSSProperties {
   return {
     display: "grid",
@@ -2805,6 +2788,9 @@ export default function CommunityDomainDashboardPage() {
   const [operatingAreaPickerOpen, setOperatingAreaPickerOpen] = useState(false);
   const [commandGuidanceOpen, setCommandGuidanceOpen] = useState(false);
   const [commandMoreActionsOpen, setCommandMoreActionsOpen] = useState(false);
+  const [domainCommandMenuOpen, setDomainCommandMenuOpen] = useState(false);
+  const [activeDomainCommandGroup, setActiveDomainCommandGroup] =
+    useState<DomainCommandGroupKey | null>(null);
   const [workSurfaceNotesOpen, setWorkSurfaceNotesOpen] = useState(false);
   const [operatingSummaryNotesOpen, setOperatingSummaryNotesOpen] = useState(false);
   const [operatingSummaryGroupChooserOpen, setOperatingSummaryGroupChooserOpen] =
@@ -5776,6 +5762,72 @@ export default function CommunityDomainDashboardPage() {
     setMessage("");
   }
 
+  function openDomainCommandGroup(group: DomainCommandGroupKey) {
+    closeDomainCommandDrawers();
+    setDomainCommandMenuOpen(true);
+    setActiveDomainCommandGroup(group);
+    setMessage("");
+  }
+
+  function openStructureFocus(detail: StructureDetailKey = "preview") {
+    focusWorkSurfaceAfterOpenRef.current = true;
+    setSetupJourneyMode("setup");
+    setSetupWorkspaceOpen(false);
+    setShowAdvancedTools(true);
+    closeDomainCommandDrawers();
+    setActiveStructureDetail(detail);
+    setActiveLane("structure");
+    setMessage("");
+  }
+
+  function openMemberFocus(detail: MemberDetailKey = "readiness") {
+    focusWorkSurfaceAfterOpenRef.current = true;
+    setSetupJourneyMode("setup");
+    setSetupWorkspaceOpen(false);
+    setShowAdvancedTools(true);
+    closeDomainCommandDrawers();
+    setActiveMemberDetail(detail);
+    setActiveMemberRosterTask(detail === "roster" ? "members" : "summary");
+    setActiveLane("members");
+    setMessage("");
+  }
+
+  function openBillingFocus(
+    task: BillingTaskKey = "readiness",
+    paymentTask: BillingPaymentTaskKey = "reference"
+  ) {
+    focusWorkSurfaceAfterOpenRef.current = true;
+    setSetupJourneyMode("setup");
+    setSetupWorkspaceOpen(false);
+    setShowAdvancedTools(true);
+    closeDomainCommandDrawers();
+    setActiveBillingTask(task);
+    setActiveBillingPaymentTask(paymentTask);
+    setBillingPaymentGroupChooserOpen(false);
+    setBillingPaymentStepChooserOpen(false);
+    setBillingAccountTaskChooserOpen(false);
+    setActiveLane("billing");
+    setMessage("");
+  }
+
+  function openGovernanceFocus(task: GovernanceTaskKey = "readiness") {
+    focusWorkSurfaceAfterOpenRef.current = true;
+    setSetupJourneyMode("setup");
+    setSetupWorkspaceOpen(false);
+    setShowAdvancedTools(true);
+    closeDomainCommandDrawers();
+    selectGovernanceTask(task);
+    setActiveLane("governance");
+    setMessage("");
+  }
+
+  function saveDomainCommandCheckpoint() {
+    const saved = saveSetupProgress();
+    if (!saved) return;
+    setSetupCompletionSavedAt(cleanText(saved.saved_at, new Date().toISOString()));
+    setDomainCommandMenuOpen(true);
+    setMessage("Governance setup checkpoint saved. Open Launch readiness when the full package is ready to lock.");
+  }
   function dismissServiceFlowGuide() {
     setServiceFlowGuideDismissed(true);
     setServiceFlowGuideOpen(false);
@@ -5871,6 +5923,8 @@ export default function CommunityDomainDashboardPage() {
     setSetupJourneyMode("setup");
     setCommandGuidanceOpen(false);
     setCommandMoreActionsOpen(false);
+    setDomainCommandMenuOpen(true);
+    setActiveDomainCommandGroup(null);
     setWorkSurfaceNotesOpen(false);
     setOperatingSummaryNotesOpen(false);
     setSetupOverviewGroupChooserOpen(false);
@@ -5897,7 +5951,7 @@ export default function CommunityDomainDashboardPage() {
     setRealLifeRecordTypeChooserOpen(false);
     setActivityRecordTaskChooserOpen(false);
     setBeneficiaryOutcomeTaskChooserOpen(false);
-    setMessage("Returned to Domain command. Choose Marketplace or open one operating area.");
+    setMessage("Returned to institution stages. Choose one stage, then open the exact governance task.");
     window.requestAnimationFrame(() => {
       commandSurfaceRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
       window.requestAnimationFrame(() => {
@@ -7382,6 +7436,214 @@ export default function CommunityDomainDashboardPage() {
         },
       ];
 
+  const domainCommandGroups: Array<{
+    key: DomainCommandGroupKey;
+    label: string;
+    note: string;
+  }> = [
+    {
+      key: "institution",
+      label: "Set up the institution",
+      note: "Name, authority, subscription, and launch readiness.",
+    },
+    {
+      key: "people",
+      label: "Organise people",
+      note: "Members, roles, departments, access, and delegated setup.",
+    },
+    {
+      key: "community",
+      label: "Run the community",
+      note: "Marketplace, notices, attendance, response, payments, and records.",
+    },
+    {
+      key: "advanced",
+      label: "Advanced governance",
+      note: "Policy, review, reports, evidence, and deep operating areas.",
+    },
+  ];
+  const activeDomainCommandGroupOption =
+    domainCommandGroups.find((group) => group.key === activeDomainCommandGroup) ||
+    null;
+  const domainCommandActions: Array<{
+    key: string;
+    label: string;
+    note: string;
+    run: () => void | Promise<void>;
+    disabled?: boolean;
+  }> =
+    activeDomainCommandGroup === "institution"
+      ? [
+          {
+            key: "reserve-domain",
+            label: "Reserve domain name",
+            note: "Check and save the official domain identity.",
+            run: () => openSetupJourneyAt("identity", domainOperational ? "edit" : "setup"),
+          },
+          {
+            key: "connect-communities",
+            label: "Create / connect communities",
+            note: "Link the institution to its Community Home and marketplace record.",
+            run: () => openBillingFocus("payment_code", "reference"),
+          },
+          {
+            key: "profiles",
+            label: "Add identities / profiles",
+            note: "Prepare member identity and profile placement.",
+            run: () => openSetupJourneyAt("members", domainOperational ? "edit" : "setup"),
+          },
+          {
+            key: "authority",
+            label: "Verify owner authority",
+            note: "Submit or review private authority evidence.",
+            run: () => openSetupJourneyAt("evidence", domainOperational ? "edit" : "setup"),
+          },
+          {
+            key: "subscription",
+            label: "Subscription package & status",
+            note: "Review package, billing, renewal, and proof status.",
+            run: openSubscriptionLane,
+          },
+          {
+            key: "launch",
+            label: "Launch readiness",
+            note: "Review setup completion before locking the usable policy.",
+            run: () => openSetupJourneyAt("launch", domainOperational ? "edit" : "setup"),
+          },
+        ]
+      : activeDomainCommandGroup === "people"
+      ? [
+          {
+            key: "first-circle",
+            label: "Add first circle",
+            note: "Invite trusted people through the governed domain context.",
+            run: openSetupFirstCircle,
+            disabled: !selectedDomainClanId || memberInvitesOff,
+          },
+          {
+            key: "roster",
+            label: "Member roster",
+            note: "Review active and inactive domain members.",
+            run: openPeopleLane,
+          },
+          {
+            key: "departments",
+            label: "Departments / units",
+            note: "Open the institutional structure map.",
+            run: () => openStructureFocus("preview"),
+          },
+          {
+            key: "placement",
+            label: "Placement readiness",
+            note: "Check how members sit inside operating units.",
+            run: () => openMemberFocus("placement"),
+          },
+          {
+            key: "access-requests",
+            label: "Access requests",
+            note: "Approve, decline, or request changes for domain access.",
+            run: () => openGovernanceFocus("access_requests"),
+          },
+          {
+            key: "delegated-editor",
+            label: "Delegated setup editor",
+            note: "Request, authorise, revoke, or replace setup authority.",
+            run: () => {
+              openSetupJourney("edit");
+              setActiveSetupWorkbenchTask("access");
+              setActiveSetupAccessTask("authority");
+            },
+          },
+        ]
+      : activeDomainCommandGroup === "community"
+      ? [
+          {
+            key: "marketplace",
+            label: "Open marketplace",
+            note: "Run the linked marketplace community.",
+            run: openDomainMarketplace,
+          },
+          {
+            key: "notice",
+            label: "Post official notice",
+            note: "Create a public-safe announcement or message QR.",
+            run: () => setDomainNoticeModalOpen(true),
+            disabled: !isAdmin,
+          },
+          {
+            key: "attendance",
+            label: "Live attendance",
+            note: "Record programme or meeting presence.",
+            run: () => openServiceFlowRecordStep("attendance"),
+            disabled: !isAdmin,
+          },
+          {
+            key: "response",
+            label: "Response QR",
+            note: "Collect questions, needs, comments, and follow-up requests.",
+            run: () => openServiceFlowRecordStep("response"),
+            disabled: !isAdmin,
+          },
+          {
+            key: "collection",
+            label: "Collection QR",
+            note: "Open governed payment-instruction setup for approved money-in.",
+            run: openServiceFlowOfferingStep,
+            disabled: !isAdmin,
+          },
+          {
+            key: "record-activity",
+            label: "Record activity",
+            note: "Capture a real-life institutional activity record.",
+            run: () => openRealLifeRecordTask("activity"),
+            disabled: !isAdmin,
+          },
+        ]
+      : activeDomainCommandGroup === "advanced"
+      ? [
+          {
+            key: "readiness",
+            label: "Governance readiness",
+            note: "Review blockers, approvals, and setup health.",
+            run: openGovernanceLane,
+          },
+          {
+            key: "feature-policy",
+            label: "Feature policy",
+            note: "Choose what is on, off, admin-only, or delegated.",
+            run: () => openSetupJourneyAt("services", "edit"),
+          },
+          {
+            key: "director-summary",
+            label: "Director summary",
+            note: "Open owner/admin reporting counts.",
+            run: () => openGovernanceFocus("director_summary"),
+          },
+          {
+            key: "sponsor-report",
+            label: "Sponsor report",
+            note: "Open sponsor-safe reporting and export material.",
+            run: () => openGovernanceFocus("sponsor_summary"),
+          },
+          {
+            key: "all-areas",
+            label: "All operating areas",
+            note: "Choose a deep domain area only when needed.",
+            run: () => {
+              openDailyWorkLane();
+              window.requestAnimationFrame(() => {
+                setOperatingAreaPickerOpen(true);
+              });
+            },
+          },
+          {
+            key: "lock-package",
+            label: "Save / lock package",
+            note: "Save progress and open launch readiness for the owner/admin lock.",
+            run: () => openSetupJourneyAt("launch", "edit"),
+          },
+        ]
+      : [];
   return (
     <main style={pageShell()}>
       <CommunityNoticeModal
@@ -7605,338 +7867,184 @@ export default function CommunityDomainDashboardPage() {
                   </h2>
                   <div style={{ ...helperText(), marginTop: 6, fontSize: 13, lineHeight: 1.42 }}>
                     {domainOperational
-                      ? "Run one operating area at a time. Setup stays quiet unless details or evidence need attention."
-                      : "Complete the next setup step. Billing, activation, and verification stay separate."}
+                      ? "Open institution setup, then choose one governance stage at a time."
+                      : "Open institution setup, then choose one setup stage at a time."}
                   </div>
                 </div>
               </div>
-              {domainOperational ? (
-                <div style={{ display: "grid", gap: 10 }}>
+              <div
+                data-debug-id="community-domain-dashboard.governance-gateway"
+                data-legacy-advanced-open={commandMoreActionsOpen || undefined}
+                style={{ display: "grid", gap: 10 }}
+              >
+                <StableButton
+                  type="button"
+                  kind="primary"
+                  fullWidth
+                  stableHeight={48}
+                  debugId="community-domain-dashboard.institution-gateway"
+                  aria-expanded={domainCommandMenuOpen}
+                  aria-controls="community-domain-governance-folders"
+                  onClick={() => {
+                    setDomainCommandMenuOpen((current) => {
+                      const next = !current;
+                      setCommandMoreActionsOpen(next);
+                      if (!next) {
+                        setActiveDomainCommandGroup(null);
+                        setCommandGuidanceOpen(false);
+                      }
+                      return next;
+                    });
+                  }}
+                  style={{ justifyContent: "center", fontSize: 14, textTransform: "none" }}
+                >
+                  {domainCommandMenuOpen ? "Close institution setup" : "Set up the institution"}
+                </StableButton>
+
+                {domainCommandMenuOpen ? (
                   <div
+                    id="community-domain-governance-folders"
                     data-debug-id="community-domain-dashboard.domain-lane-board"
-                    style={commandLaneGrid()}
+                    style={{ display: "grid", gap: 10 }}
                   >
-                    <div
-                      data-debug-id="community-domain-dashboard.daily-work-card"
-                      style={commandLaneCard("primary")}
-                    >
-                      <div style={sectionLabel()}>Daily work</div>
-                      <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                        Marketplace, notices, records, collections, and live community activity.
-                      </div>
-                      <StableButton
-                        type="button"
-                        kind="primary"
-                        fullWidth
-                        stableHeight={44}
-                        debugId="community-domain-dashboard.open-marketplace"
-                        onClick={openDomainMarketplace}
-                      >
-                        Open Marketplace
-                      </StableButton>
-                    </div>
-                    <div
-                      data-debug-id="community-domain-dashboard.setup-lane-card"
-                      style={commandLaneCard()}
-                    >
-                      <div style={sectionLabel()}>Set up</div>
-                      <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                        Identity, authority evidence, package, and service on/off choices.
-                      </div>
-                      <StableButton
-                        type="button"
-                        kind="secondary"
-                        fullWidth
-                        stableHeight={44}
-                        debugId="community-domain-dashboard.open-setup-lane"
-                        onClick={() => openSetupJourneyAt("identity", "edit")}
-                      >
-                        Open Set up
-                      </StableButton>
-                    </div>
-                    <div
-                      data-debug-id="community-domain-dashboard.people-lane-card"
-                      style={commandLaneCard()}
-                    >
-                      <div style={sectionLabel()}>People</div>
-                      <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                        Members, departments, roles, approvals, and delegated authority.
-                      </div>
-                      <StableButton
-                        type="button"
-                        kind="secondary"
-                        fullWidth
-                        stableHeight={44}
-                        debugId="community-domain-dashboard.open-people-lane"
-                        onClick={openPeopleLane}
-                      >
-                        Open People
-                      </StableButton>
-                    </div>
-                  </div>
-                  <StableButton
-                    type="button"
-                    kind="secondary"
-                    fullWidth
-                    stableHeight={42}
-                    debugId="community-domain-dashboard.more-actions-toggle"
-                    aria-expanded={commandMoreActionsOpen}
-                    aria-controls="community-domain-command-more-actions"
-                    onClick={() =>
-                      setCommandMoreActionsOpen((current) => {
-                        if (current) setCommandGuidanceOpen(false);
-                        return !current;
-                      })
-                    }
-                    style={{ justifyContent: "center", fontSize: 13, textTransform: "none" }}
-                  >
-                    {commandMoreActionsOpen ? "Close Advanced" : "Advanced"}
-                  </StableButton>
-                  {commandMoreActionsOpen ? (
-                    <div
-                      id="community-domain-command-more-actions"
-                      data-debug-id="community-domain-dashboard.more-actions-panel"
-                      style={commandLaneGrid()}
-                    >
+                    {!activeDomainCommandGroupOption ? (
                       <div
-                        data-debug-id="community-domain-dashboard.subscription-card"
-                        style={commandLaneCard()}
+                        data-debug-id="community-domain-dashboard.governance-stage-board"
+                        style={commandLaneGrid()}
                       >
-                        <div style={sectionLabel()}>Subscription</div>
-                        <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                          Package, renewal, billing status, and payment proof review.
-                        </div>
-                        <StableButton
-                          type="button"
-                          kind="secondary"
-                          fullWidth
-                          stableHeight={44}
-                          debugId="community-domain-dashboard.open-subscription"
-                          onClick={openSubscriptionLane}
-                        >
-                          Open Subscription
-                        </StableButton>
+                        {domainCommandGroups.map((group, index) => (
+                          <StableButton
+                            key={group.key}
+                            type="button"
+                            kind={index === 0 ? "primary" : "secondary"}
+                            fullWidth
+                            stableHeight={64}
+                            title={group.note}
+                            debugId={`community-domain-dashboard.command-stage.${group.key}`}
+                            onClick={() => openDomainCommandGroup(group.key)}
+                            style={{
+                              justifyContent: "flex-start",
+                              textAlign: "left",
+                              fontSize: 14,
+                              textTransform: "none",
+                              whiteSpace: "normal",
+                              lineHeight: 1.18,
+                            }}
+                          >
+                            {index + 1}. {group.label}
+                          </StableButton>
+                        ))}
                       </div>
+                    ) : (
                       <div
-                        data-debug-id="community-domain-dashboard.governance-card"
-                        style={commandLaneCard()}
+                        data-debug-id={`community-domain-dashboard.command-stage-panel.${activeDomainCommandGroupOption.key}`}
+                        style={{ ...softCard(), display: "grid", gap: 10 }}
                       >
-                        <div style={sectionLabel()}>Governance</div>
-                        <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                          Rules, approvals, review queue, and evidence checks.
-                        </div>
-                        <StableButton
-                          type="button"
-                          kind="secondary"
-                          fullWidth
-                          stableHeight={44}
-                          debugId="community-domain-dashboard.open-governance"
-                          onClick={openGovernanceLane}
-                        >
-                          Open Governance
-                        </StableButton>
-                      </div>
-                      <div
-                        data-debug-id="community-domain-dashboard.all-areas-card"
-                        style={commandLaneCard()}
-                      >
-                        <div style={sectionLabel()}>All areas</div>
-                        <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                          Use only when you need a specific deep operating area.
-                        </div>
-                        <StableButton
-                          type="button"
-                          kind="secondary"
-                          fullWidth
-                          stableHeight={44}
-                          debugId="community-domain-dashboard.operational-focus"
-                          onClick={() => {
-                            openDailyWorkLane();
-                            window.requestAnimationFrame(() => {
-                              setOperatingAreaPickerOpen(true);
-                            });
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "minmax(0, 1fr) auto",
+                            gap: 10,
+                            alignItems: "center",
                           }}
                         >
-                          Choose Area
-                        </StableButton>
-                      </div>
-                      {isAdmin ? (
-                        <div
-                          data-debug-id="community-domain-dashboard.real-life-record-card"
-                          style={commandLaneCard()}
-                        >
-                          <div style={sectionLabel()}>Records</div>
-                          <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                            Add a real activity only when the source facts are ready.
+                          <div style={{ minWidth: 0 }}>
+                            <div style={sectionLabel()}>Governance stage</div>
+                            <h3 style={{ margin: "4px 0 0", fontSize: 20, lineHeight: 1.12 }}>
+                              {activeDomainCommandGroupOption.label}
+                            </h3>
+                            <div style={{ ...helperText(), marginTop: 5, fontSize: 13, lineHeight: 1.38 }}>
+                              {activeDomainCommandGroupOption.note}
+                            </div>
                           </div>
+                          <div style={statusBadge(`${domainCommandGroups.findIndex((group) => group.key === activeDomainCommandGroupOption.key) + 1}/4`)}>
+                            {domainCommandGroups.findIndex((group) => group.key === activeDomainCommandGroupOption.key) + 1}/4
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 154px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          {domainCommandActions.map((action, index) => (
+                            <StableButton
+                              key={action.key}
+                              type="button"
+                              kind={index === 0 ? "primary" : "secondary"}
+                              fullWidth
+                              stableHeight={58}
+                              title={action.note}
+                              debugId={`community-domain-dashboard.command-action.${activeDomainCommandGroupOption.key}.${action.key}`}
+                              disabled={action.disabled}
+                              onClick={() => {
+                                void action.run();
+                              }}
+                              style={{
+                                justifyContent: "flex-start",
+                                textAlign: "left",
+                                fontSize: 13,
+                                textTransform: "none",
+                                whiteSpace: "normal",
+                                lineHeight: 1.16,
+                              }}
+                            >
+                              {index + 1}. {action.label}
+                            </StableButton>
+                          ))}
+                        </div>
+
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
                           <StableButton
                             type="button"
                             kind="secondary"
                             fullWidth
-                            stableHeight={44}
-                            debugId="community-domain-dashboard.real-life-record-shortcut"
-                            onClick={() => openRealLifeRecordTask("activity")}
+                            stableHeight={42}
+                            debugId="community-domain-dashboard.command-stage.back"
+                            onClick={() => {
+                              setActiveDomainCommandGroup(null);
+                              setCommandGuidanceOpen(false);
+                            }}
                           >
-                            Record activity
+                            Back to stages
+                          </StableButton>
+                          <StableButton
+                            type="button"
+                            kind="secondary"
+                            fullWidth
+                            stableHeight={42}
+                            debugId="community-domain-dashboard.command-stage.save-checkpoint"
+                            disabled={setupEditingLocked}
+                            onClick={saveDomainCommandCheckpoint}
+                          >
+                            Save checkpoint
+                          </StableButton>
+                          <StableButton
+                            type="button"
+                            kind="secondary"
+                            fullWidth
+                            stableHeight={42}
+                            debugId="community-domain-dashboard.command-guidance-toggle"
+                            aria-expanded={commandGuidanceOpen}
+                            aria-controls="community-domain-command-guidance"
+                            onClick={() => setCommandGuidanceOpen((current) => !current)}
+                          >
+                            {commandGuidanceOpen ? "Close guidance" : "Open guidance"}
                           </StableButton>
                         </div>
-                      ) : null}
-                      <div
-                        data-debug-id="community-domain-dashboard.guidance-card"
-                        style={commandLaneCard()}
-                      >
-                        <div style={sectionLabel()}>Guidance</div>
-                        <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                          Read the next safe step and the rule before changing deeper settings.
-                        </div>
-                        <StableButton
-                          type="button"
-                          kind="secondary"
-                          fullWidth
-                          stableHeight={44}
-                          debugId="community-domain-dashboard.command-guidance-toggle"
-                          aria-expanded={commandGuidanceOpen}
-                          aria-controls="community-domain-command-guidance"
-                          onClick={() => setCommandGuidanceOpen((current) => !current)}
-                        >
-                          {commandGuidanceOpen ? "Close guidance" : "Open guidance"}
-                        </StableButton>
                       </div>
-                    </div>
-                  ) : null}
-                </div>
-              ) : (
-                <div style={{ display: "grid", gap: 10 }}>
-                  <div
-                    data-debug-id="community-domain-dashboard.domain-lane-board"
-                    style={commandLaneGrid()}
-                  >
-                    <div
-                      data-debug-id="community-domain-dashboard.setup-lane-card"
-                      style={commandLaneCard("primary")}
-                    >
-                      <div style={sectionLabel()}>Set up</div>
-                      <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                        Start with identity, authority evidence, package, and launch readiness.
-                      </div>
-                      <StableButton
-                        type="button"
-                        kind="primary"
-                        fullWidth
-                        stableHeight={44}
-                        debugId="community-domain-dashboard.setup-focus"
-                        onClick={() => openSetupJourney("setup")}
-                      >
-                        Continue setup
-                      </StableButton>
-                    </div>
-                    <div
-                      data-debug-id="community-domain-dashboard.people-lane-card"
-                      style={commandLaneCard()}
-                    >
-                      <div style={sectionLabel()}>People</div>
-                      <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                        Plan structure, members, and the approval rules before launch.
-                      </div>
-                      <StableButton
-                        type="button"
-                        kind="secondary"
-                        fullWidth
-                        stableHeight={44}
-                        debugId="community-domain-dashboard.setup-people-focus"
-                        onClick={() => openSetupJourneyAt("structure")}
-                      >
-                        Plan People
-                      </StableButton>
-                    </div>
-                    <div
-                      data-debug-id="community-domain-dashboard.services-lane-card"
-                      style={commandLaneCard()}
-                    >
-                      <div style={sectionLabel()}>Daily work</div>
-                      <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                        Choose which services are on, admin-only, or member-submitted.
-                      </div>
-                      <StableButton
-                        type="button"
-                        kind="secondary"
-                        fullWidth
-                        stableHeight={44}
-                        debugId="community-domain-dashboard.setup-services-focus"
-                        onClick={() => openSetupJourneyAt("services")}
-                      >
-                        Choose Services
-                      </StableButton>
-                    </div>
+                    )}
                   </div>
-                  <StableButton
-                    type="button"
-                    kind="secondary"
-                    fullWidth
-                    stableHeight={42}
-                    debugId="community-domain-dashboard.more-actions-toggle"
-                    aria-expanded={commandMoreActionsOpen}
-                    aria-controls="community-domain-command-more-actions"
-                    onClick={() =>
-                      setCommandMoreActionsOpen((current) => {
-                        if (current) setCommandGuidanceOpen(false);
-                        return !current;
-                      })
-                    }
-                    style={{ justifyContent: "center", fontSize: 13, textTransform: "none" }}
-                  >
-                    {commandMoreActionsOpen ? "Close Advanced" : "Advanced"}
-                  </StableButton>
-                  {commandMoreActionsOpen ? (
-                    <div
-                      id="community-domain-command-more-actions"
-                      data-debug-id="community-domain-dashboard.more-actions-panel"
-                      style={commandLaneGrid()}
-                    >
-                      <div
-                        data-debug-id="community-domain-dashboard.subscription-card"
-                        style={commandLaneCard()}
-                      >
-                        <div style={sectionLabel()}>Subscription</div>
-                        <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                          Review package quote and payment boundary separately from verification.
-                        </div>
-                        <StableButton
-                          type="button"
-                          kind="secondary"
-                          fullWidth
-                          stableHeight={44}
-                          debugId="community-domain-dashboard.open-subscription"
-                          onClick={openSubscriptionLane}
-                        >
-                          Open Subscription
-                        </StableButton>
-                      </div>
-                      <div
-                        data-debug-id="community-domain-dashboard.guidance-card"
-                        style={commandLaneCard()}
-                      >
-                        <div style={sectionLabel()}>Guidance</div>
-                        <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                          Read the next safe step and the rule before launch.
-                        </div>
-                        <StableButton
-                          type="button"
-                          kind="secondary"
-                          fullWidth
-                          stableHeight={44}
-                          debugId="community-domain-dashboard.command-guidance-toggle"
-                          aria-expanded={commandGuidanceOpen}
-                          aria-controls="community-domain-command-guidance"
-                          onClick={() => setCommandGuidanceOpen((current) => !current)}
-                        >
-                          {commandGuidanceOpen ? "Close guidance" : "Open guidance"}
-                        </StableButton>
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              )}
+                ) : null}
+              </div>
               {commandGuidanceOpen ? (
                 <div
                   id="community-domain-command-guidance"

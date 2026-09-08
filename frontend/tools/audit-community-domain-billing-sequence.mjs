@@ -490,8 +490,9 @@ if (
 
 try {
   await page.goto(`${baseUrl}${routePath}`, { waitUntil: "networkidle", timeout: 15000 });
-  await page.locator('[data-cta-id="community-domain-dashboard.setup-focus"]').first().click();
-  await page.locator('[data-cta-id="community-domain-dashboard.setup-open-billing"]').first().click();
+  await page.locator('[data-cta-id="community-domain-dashboard.institution-gateway"]').first().click();
+  await page.locator('[data-cta-id="community-domain-dashboard.command-stage.institution"]').first().click();
+  await page.locator('[data-cta-id="community-domain-dashboard.command-action.institution.connect-communities"]').first().click();
   await page.waitForLoadState("networkidle");
   await page.getByText("Code, account, proof.", { exact: true }).waitFor({ timeout: 10000 });
   await page.getByText("Latest payment code", { exact: true }).waitFor({ timeout: 10000 });

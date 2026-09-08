@@ -463,17 +463,20 @@ Must show:
 - Community Domain identity hero
 - domain name/code, display name, owner, status, verification state, and renewal
   state as compact facts
-- one command surface that shows the current state and routes the owner through
-  three visible lanes: Set up, People, and Daily work
-- Set up lane for identity, owner authority evidence, package/subscription
-  boundary, launch readiness, and service on/off choices
-- People lane for structure, members, departments/lines, roles, approvals, and
-  delegated authority
-- Daily work lane for marketplace, notices, real-life records, collections,
-  Spotlight, Demand Box, shop/vault activity, reports, and live community work
-- one Advanced drawer for Subscription, Governance, all-area chooser, records
-  shortcut, guidance, and other deeper controls that should not compete on the
-  first surface
+- one command surface that first shows only `Set up the institution`
+- after that gateway opens, four governance stages: Set up the institution,
+  Organise people, Run the community, and Advanced governance
+- each governance stage exposes six inner actions only after that stage is
+  selected
+- Set up the institution actions for domain name reservation, community linking,
+  identities/profiles, owner authority evidence, subscription/package status,
+  and launch readiness
+- Organise people actions for first circle, roster, departments/units,
+  placement readiness, access requests, and delegated setup editor authority
+- Run the community actions for marketplace, official notices, attendance,
+  response QR, collection QR, and real-life activity records
+- Advanced governance actions for readiness, feature policy, director summary,
+  sponsor report, all operating areas, and save/lock package handoff
 - where Community Finance collections are enabled, a compact governed QR or
   payment-instruction row for offerings, donations, levies, registrations, or
   support appeals
@@ -503,15 +506,18 @@ Rules:
 - This page is the institutional operating surface. It must not replace
   CommunityHomePage, which remains the lightweight selected-community home.
 - The first screen must not expose every operating area at once. Follow the
-  guided work-surface rule: one identity hero, one command surface, three
-  visible owner lanes, one Advanced drawer, and one opened operating area at a
-  time.
-- Before launch, the Set up lane is primary. People planning and service on/off
-  choices may open directly to their setup step, but billing, verification, and
-  final activation stay separate.
-- After launch, Daily work may lead to the linked Marketplace while Set up and
-  People remain available as quiet lanes. Subscription, Governance, record
-  shortcuts, all-area browsing, and guidance belong behind Advanced.
+  guided governance-folder rule: one identity hero, one command gateway, four
+  stages after the gateway opens, one selected stage, and one opened work area
+  at a time.
+- Before launch, Set up the institution is the primary stage. Billing,
+  verification, and final activation remain separate even when they are reached
+  from that stage.
+- After launch, Run the community may lead to the linked Marketplace while Set
+  up the institution, Organise people, and Advanced governance remain available
+  as quiet stage choices behind the gateway.
+- Save/checkpoint actions may preserve draft progress, but a real governance
+  lock or unlock must depend on backend owner/admin/delegated-authority checks
+  and recorded history, not only frontend hiding.
 - A branch, campus, parish, line, class, committee, ROSCA circle, or welfare
   group should normally be represented as a `CommunityNode` or activity group,
   not a separate domain, unless it needs separate billing, public identity, or
@@ -571,7 +577,7 @@ Sermon/message attachment guardrail:
 Primary action:
 
 ```text
-Continue setup before launch; Open Marketplace or Daily work after launch.
+Set up the institution first; then choose one governance stage and one inner action at a time.
 ```
 
 ## MarketplacePage
@@ -608,7 +614,7 @@ Rules:
   context`, not `verified community context`, unless the selected community has
   an explicit protected-domain verification state.
 - Open only one major lane as the main visible work area at a time.
-- When a lane opens, unrelated lanes must visually step back until the user
+- When a stage or lane opens, unrelated stages and lanes must visually step back until the user
   finishes, pauses, or returns to the lane chooser.
 - Money Pool, ROSCA, Support Request, and Trade Evidence must be stabilized
   lane-by-lane, with outside launcher, target section/hash/open state, inner
