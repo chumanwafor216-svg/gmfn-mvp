@@ -1,3 +1,12 @@
+## 2026-09-08 - Community Bulletin full notice and ordinary public QR
+
+- Status: Local backend/frontend implementation complete and verified; commit/push/deploy in this slice.
+- Owner trigger: the central Community Home Bulletin needed the same useful full-message/QR surface that had been sitting inside Community Domain flows, while keeping the first bulletin card short and readable.
+- Backend route affected: `POST /community-notices` now accepts optional `full_body` details and `public_qr_enabled`; approved review submissions preserve the full notice details and can carry a public QR request. `GET /community-notices/public/{public_code}` exposes a public-safe ordinary community notice payload by public code.
+- Frontend route affected: `/app/community` notice composer now has `Add full notice details`; the central bulletin shows `Read full notice` in place and marks QR-enabled notices as `QR ready`. `/community-notices/:publicCode` first tries the ordinary community notice public endpoint and falls back to the existing Community Domain public notice endpoint.
+- Privacy boundary: public ordinary notice QR responses remove private sender/contact fields, member-by-member acknowledgement roll call, and availability summaries; full public details should be treated as public-safe text only.
+- Verification passed locally: `python -m py_compile gmfn_backend\app\api\routes\community_notices.py gmfn_backend\tests\test_community_notices.py`; `python -m pytest -q gmfn_backend\tests\test_community_notices.py` -> 23 passed; `npm --prefix frontend run build`; `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:community-home-phone-buttons`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`.
+- Devil truth: this adds long text/full notice and public QR support for ordinary central bulletin notices. It does not implement true file uploads or an admin QR print/download screen yet.
 ## 2026-09-08 - Community Bulletin active announcement selector
 
 - Status: Local frontend implementation complete and verified; commit/push/deploy in this slice.

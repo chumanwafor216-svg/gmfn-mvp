@@ -1410,6 +1410,8 @@ export async function createCommunityNotice(payload: {
   expiry_policy?: "standard" | "urgent" | "event" | "pinned";
   expires_at?: string;
   availability_enabled?: boolean;
+  public_qr_enabled?: boolean;
+  full_body?: string | null;
 }): Promise<any> {
   return httpJson("/community-notices", "POST", payload);
 }
@@ -1529,6 +1531,15 @@ export async function createCommunityDomainNotice(
     `/community-domains/${encodeURIComponent(String(communityDomainId))}/notices`,
     "POST",
     payload
+  );
+}
+
+export async function getPublicCommunityNotice(publicCode: number | string): Promise<any> {
+  return httpJson(
+    `/community-notices/public/${encodeURIComponent(String(publicCode))}`,
+    "GET",
+    undefined,
+    { includeAuth: false }
   );
 }
 

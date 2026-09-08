@@ -379,6 +379,7 @@ Must show:
 - Community Bulletin:
   - uses the richer phone bulletin arrangement: navy/gold header, compact date strip on phone, source row, strong centered notice text, in-place `Read full notice` / `Close full notice` control for longer messages, one bold Reactions control, and compact history behind Settings/History
   - when more than one live announcement exists, the board shows a compact `Active announcements` selector with numbered controls; choosing a number makes that announcement the single bold card with its own Reactions, availability response, full notice, and admin roll call
+  - ordinary Community notices keep the main board short, but officers may attach longer public-safe full notice details and request a public QR link; the public route must hide private sender/contact/roll-call data
   - shows one central live announcement feed for the selected ordinary Community plus eligible linked official Community Domain notices
   - ordinary Community notices and Community Domain official notices keep their separate posting/governance rules, but read into this shared board instead of becoming duplicate announcement engines
   - expired announcements leave the live board and remain visible in a compact previous-announcements trail capped at 10 items

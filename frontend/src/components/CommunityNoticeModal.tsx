@@ -10,7 +10,7 @@ type Props = {
   onClose: () => void;
   onSubmit: (
     body: string,
-    options?: { expiry_policy?: NoticeExpiryPolicy; expires_at?: string; public_qr_enabled?: boolean; availability_enabled?: boolean }
+    options?: { expiry_policy?: NoticeExpiryPolicy; expires_at?: string; public_qr_enabled?: boolean; availability_enabled?: boolean; full_body?: string | null }
   ) => Promise<void> | void;
 };
 
@@ -30,13 +30,16 @@ export default function CommunityNoticeModal({
   onSubmit,
 }: Props) {
   const [body, setBody] = useState("");
+  const [includeFullBody, setIncludeFullBody] = useState(false);
+  const [fullBody, setFullBody] = useState("");
   const [expiryPolicy, setExpiryPolicy] = useState<NoticeExpiryPolicy>("standard");
   const [eventExpiresAt, setEventExpiresAt] = useState("");
   const [publicQrEnabled, setPublicQrEnabled] = useState(false);
   const [availabilityEnabled, setAvailabilityEnabled] = useState(false);
   const words = useMemo(() => countWords(body), [body]);
+  const fullWords = useMemo(() => countWords(fullBody), [fullBody]);
   const eventExpiryMissing = expiryPolicy === "event" && !eventExpiresAt;
-  const blocked = words > 50 || !body.trim() || eventExpiryMissing || busy;
+  const blocked = words > 50 || !body.trim() || (includeFullBody && fullWords > 600) || eventExpiryMissing || busy;
   const isReviewSubmission = submitMode === "review";
 
   if (!open) return null;
@@ -51,9 +54,12 @@ export default function CommunityNoticeModal({
           : undefined,
       public_qr_enabled: publicQrEnabled,
       availability_enabled: availabilityEnabled,
+      full_body: includeFullBody ? fullBody.trim() || null : undefined,
     });
     setBody("");
     setExpiryPolicy("standard");
+    setIncludeFullBody(false);
+    setFullBody("");
     setEventExpiresAt("");
     setPublicQrEnabled(false);
     setAvailabilityEnabled(false);
@@ -84,6 +90,26 @@ export default function CommunityNoticeModal({
           placeholder="Meeting Saturday 4 pm."
           style={textareaStyle}
         />
+
+        <label style={checkboxRowStyle}>
+          <input
+            type="checkbox"
+            checked={includeFullBody}
+            onChange={(event) => setIncludeFullBody(event.target.checked)}
+            disabled={busy}
+          />
+          <span>Add full notice details</span>
+        </label>
+
+        {includeFullBody ? (
+          <textarea
+            value={fullBody}
+            onChange={(event) => setFullBody(event.target.value)}
+            maxLength={4000}
+            placeholder="Add the longer message here. The main board stays short; readers open the full notice or scan the QR for the complete detail."
+            style={fullTextareaStyle}
+          />
+        ) : null}
 
         <div style={fieldGroupStyle}>
           <label style={fieldLabelStyle} htmlFor="community-notice-expiry">
@@ -158,6 +184,9 @@ export default function CommunityNoticeModal({
               ? "Until event date"
               : "Pinned"}
           </span>
+          {includeFullBody ? (
+            <span style={fullWords > 600 ? warningStyle : chipStyle}>{fullWords}/600 full words</span>
+          ) : null}
           <span style={chipStyle}>No comments</span>
           <span style={chipStyle}>{availabilityEnabled ? "Availability poll" : "No attendance poll"}</span>
         </div>
@@ -245,6 +274,13 @@ const textareaStyle: React.CSSProperties = {
   lineHeight: 1.45,
   outline: "none",
   boxSizing: "border-box",
+};
+
+const fullTextareaStyle: React.CSSProperties = {
+  ...textareaStyle,
+  marginTop: 8,
+  minHeight: 154,
+  background: "#F8FBFF",
 };
 
 const fieldGroupStyle: React.CSSProperties = {

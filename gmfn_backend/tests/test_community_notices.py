@@ -190,6 +190,49 @@ def test_community_officer_can_post_and_members_can_read_notice(
         assert notifications[0].is_read is False
 
 
+def test_community_notice_public_qr_exposes_full_details_without_private_fields(
+    client, override_current_user
+):
+    _seed_notice_community()
+    full_body = (
+        "Choir practice starts with opening prayer, then section rehearsal, "
+        "then final full-group practice. Members should come with notebooks."
+    )
+
+    post_res = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Choir practice Wednesday 7 pm.",
+            "full_body": full_body,
+            "public_qr_enabled": True,
+        },
+    )
+
+    assert post_res.status_code == 200, post_res.text
+    notice = post_res.json()["notice"]
+    assert notice["body"] == "Choir practice Wednesday 7 pm."
+    assert notice["full_body"] == full_body
+    assert notice["full_word_count"] == 18
+    assert notice["public_qr_enabled"] is True
+    assert notice["public_code"]
+    assert notice["public_path"] == f"/community-notices/{notice['public_code']}"
+    assert notice["public_api_path"] == f"/community-notices/public/{notice['public_code']}"
+
+    public_res = client.get(f"/community-notices/public/{notice['public_code']}")
+
+    assert public_res.status_code == 200, public_res.text
+    public_notice = public_res.json()["notice"]
+    assert public_notice["body"] == "Choir practice Wednesday 7 pm."
+    assert public_notice["full_body"] == full_body
+    assert public_notice["community"]["name"] == "Nigerian Society"
+    assert "posted_by_user_id" not in public_notice
+    assert "sender_whatsapp_number" not in public_notice
+    assert "acknowledgement_summary" not in public_notice
+    assert "availability_summary" not in public_notice
+    assert "member lists" in public_notice["boundary"]
+
+
 def test_community_notice_source_and_acknowledgement_are_scoped_to_selected_community(
     client, override_current_user
 ):

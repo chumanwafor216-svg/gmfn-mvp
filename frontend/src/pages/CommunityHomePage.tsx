@@ -169,6 +169,8 @@ type CommunityNoticeItem = {
   meeting_id?: string | null;
   body?: string | null;
   title?: string | null;
+  full_body?: string | null;
+  full_word_count?: number | string | null;
   purpose?: string | null;
   scheduled_at?: string | null;
   status?: string | null;
@@ -186,6 +188,7 @@ type CommunityNoticeItem = {
   public_qr_enabled?: boolean | null;
   public_code?: string | null;
   public_path?: string | null;
+  public_api_path?: string | null;
   posting_policy?: string | null;
   expiry_policy?: string | null;
   expires_at?: string | null;
@@ -248,6 +251,8 @@ type CommunityNoticeReviewSubmission = {
   submission_event_id?: number | string | null;
   body?: string | null;
   title?: string | null;
+  full_body?: string | null;
+  full_word_count?: number | string | null;
   created_at?: string | null;
   submitted_by_user_id?: number | string | null;
   submitted_by_role?: string | null;
@@ -3564,6 +3569,7 @@ export default function CommunityHomePage() {
   function renderCommunityBulletinPrimaryNotice(noticeItem: CommunityNoticeItem) {
     const calendar = noticeCalendarParts(noticeItem);
     const rawBody = firstTruthy(noticeItem?.body, noticeItem?.title, noticeItem?.purpose, "Community notice");
+    const fullBody = firstTruthy(noticeItem?.full_body);
     const titleLineLimit = isCompact ? 4 : 3;
     const when = compactDateLabel(firstTruthy(noticeItem?.scheduled_at, noticeItem?.created_at));
     const expiry = noticeExpiryLabel(noticeItem);
@@ -3579,7 +3585,7 @@ export default function CommunityHomePage() {
     const reactionPanelOpen = noticeReactionPanelOpenId === noticeKey;
     const detailOpen = noticeDetailOpenId === noticeKey;
     const canOpenRollCall = canManageCommunityNoticeSettings && Boolean(eventId) && noticeItem?.acknowledgement_enabled !== false;
-    const canToggleFullNotice = safeStr(rawBody).split(/\s+/).filter(Boolean).length > 10;
+    const canToggleFullNotice = Boolean(fullBody) || safeStr(rawBody).split(/\s+/).filter(Boolean).length > 10;
 
     return (
       <div style={announcementComposerPreviewStyle(isCompact)}>
@@ -3658,7 +3664,7 @@ export default function CommunityHomePage() {
 
             <div
               style={{
-                ...brandClampLines(detailOpen ? 12 : titleLineLimit),
+                ...brandClampLines(detailOpen && !fullBody ? 12 : titleLineLimit),
                 color: "#07172C",
                 fontSize: isCompact ? 22 : 28,
                 fontWeight: 980,
@@ -3699,6 +3705,26 @@ export default function CommunityHomePage() {
           >
             {detailOpen ? "Close full notice" : "Read full notice"}
           </StableButton>
+        ) : null}
+
+        {detailOpen && fullBody ? (
+          <div
+            style={{
+              ...innerCard("#FFF9EA"),
+              display: "grid",
+              gap: 6,
+              color: "#48657D",
+              fontSize: 13,
+              fontWeight: 780,
+              lineHeight: 1.45,
+              textAlign: "left",
+              overflowWrap: "break-word",
+              whiteSpace: "pre-wrap",
+            }}
+          >
+            <span style={sectionLabel("left")}>Full notice</span>
+            <span>{fullBody}</span>
+          </div>
         ) : null}
 
         {planningLine || interestParts.length > 0 ? (
@@ -3818,6 +3844,7 @@ export default function CommunityHomePage() {
           <span style={badge(false)}>{kindLabel}</span>
           <span style={badge(false)}>Acknowledged {acknowledgedCount}</span>
           {expiry ? <span style={badge(false)}>{expiry}</span> : null}
+          {noticeItem?.public_qr_enabled ? <span style={badge(false)}>QR ready</span> : null}
         </div>
 
       </div>
@@ -3829,6 +3856,8 @@ export default function CommunityHomePage() {
       expiry_policy?: "standard" | "urgent" | "event" | "pinned";
       expires_at?: string;
       availability_enabled?: boolean;
+      public_qr_enabled?: boolean;
+      full_body?: string | null;
     }
   ) {
     const clanId = getClanId(selectedClan);

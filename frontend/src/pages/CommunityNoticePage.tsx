@@ -4,7 +4,7 @@ import { useParams } from "react-router-dom";
 import { GsnRealisticIcon } from "../components/GsnRealisticIcon";
 import PageTopNav from "../components/PageTopNav";
 import { StableButton } from "../components/StableButton";
-import { getPublicCommunityDomainNotice } from "../lib/api";
+import { getPublicCommunityDomainNotice, getPublicCommunityNotice } from "../lib/api";
 
 function safeText(value: unknown, fallback = ""): string {
   const text = String(value ?? "").trim();
@@ -15,7 +15,7 @@ function errorMessage(error: any): string {
   const detail = error?.detail;
   return safeText(
     detail?.message || error?.message || error,
-    "GSN could not load this Community Domain message QR link."
+    "GSN could not load this community message QR link."
   );
 }
 
@@ -127,7 +127,12 @@ export default function CommunityNoticePage() {
       setLoading(true);
       setMessage("");
       try {
-        const payload = await getPublicCommunityDomainNotice(code);
+        let payload: any | null = null;
+        try {
+          payload = await getPublicCommunityNotice(code);
+        } catch {
+          payload = await getPublicCommunityDomainNotice(code);
+        }
         if (!cancelled) setNotice(payload?.notice || null);
       } catch (error: any) {
         if (!cancelled) setMessage(errorMessage(error));
@@ -147,10 +152,10 @@ export default function CommunityNoticePage() {
   }, [notice?.public_path]);
 
   const domainName = safeText(
-    notice?.community_domain?.display_name,
+    notice?.community?.name || notice?.community_domain?.display_name || notice?.source_community_name,
     safeText(notice?.community_domain_name, "This community")
   );
-  const body = safeText(notice?.body || notice?.title, "Community Domain message");
+  const body = safeText(notice?.full_body || notice?.body || notice?.title, "Community message");
   const expiresAt = formatDate(notice?.expires_at);
   const createdAt = formatDate(notice?.created_at);
 
@@ -166,7 +171,7 @@ export default function CommunityNoticePage() {
       <PageTopNav
         sectionLabel="Public message"
         title="GSN message QR"
-        subtitle="Public-safe Community Domain notice"
+        subtitle="Public-safe community notice"
       />
       <section style={pageInner()}>
         <div style={{ color: "#F8FBFF", display: "grid", gap: 8, padding: "8px 2px 0" }}>
@@ -180,13 +185,13 @@ export default function CommunityNoticePage() {
             </div>
           </div>
           <p style={{ margin: 0, maxWidth: 680, color: "rgba(248,251,255,0.78)", lineHeight: 1.55 }}>
-            A public-safe message shared by this Community Domain. GSN shows the message; the pastor or appointed leaders keep authority over the content.
+            A public-safe message shared from this community. GSN shows the message; the community officers keep authority over the content.
           </p>
         </div>
 
         <section style={card()}>
           {loading ? (
-            <div style={softCard()}>Loading this Community Domain message.</div>
+            <div style={softCard()}>Loading this community message.</div>
           ) : message ? (
             <div style={{ ...softCard(), background: "#FFF4D6", color: "#6B4A00" }}>{message}</div>
           ) : notice ? (
@@ -212,7 +217,7 @@ export default function CommunityNoticePage() {
               <div style={softCard()}>
                 <div style={label()}>Share</div>
                 <p style={{ ...helper(), margin: 0 }}>
-                  Print or display this QR when the message is meant for public access, such as a sermon topic, programme theme, reading note, or message of the day.
+                  Print or display this QR when the message is meant for public access, such as a programme note, meeting detail, reading note, or message of the day.
                 </p>
                 <StableButton kind="secondary" debugId="community-notice.copy-link" onClick={copyLink}>
                   {copied ? "Copied" : "Copy QR Link"}
@@ -222,12 +227,12 @@ export default function CommunityNoticePage() {
               <div style={{ ...softCard(), background: "#F5F0E6" }}>
                 <div style={label()}>Boundary</div>
                 <p style={{ ...helper(), margin: 0 }}>
-                  {safeText(notice.boundary, "GSN shows a public-safe Community Domain message only. It does not expose member lists, open comments, prove attendance, collect money, or replace the pastor's or domain leader's authority.")}
+                  {safeText(notice.boundary, "GSN shows a public-safe community message only. It does not expose member lists, open comments, prove attendance, collect money, or replace the community officer's authority.")}
                 </p>
               </div>
             </>
           ) : (
-            <div style={softCard()}>GSN could not find this Community Domain message.</div>
+            <div style={softCard()}>GSN could not find this community message.</div>
           )}
         </section>
       </section>

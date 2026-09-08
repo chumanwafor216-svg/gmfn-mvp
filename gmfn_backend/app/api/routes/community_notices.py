@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import re
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any, Literal, Optional
 
@@ -43,6 +45,14 @@ COMMUNITY_NOTICE_AVAILABILITY_EVENT = "community.notice.availability_response"
 COMMUNITY_GOVERNANCE_PROFILE_SELECTED_EVENT = "community.governance_profile_selected"
 COMMUNITY_NOTICE_SOURCE = "community_notice_board"
 MAX_NOTICE_WORDS = 50
+MAX_NOTICE_FULL_WORDS = 600
+MAX_NOTICE_FULL_BODY_LENGTH = 4000
+NOTICE_PUBLIC_BOUNDARY = (
+    "Public Community Notice QR only. It shows the public-safe notice and any "
+    "attached full details selected by the poster. It does not expose member "
+    "lists, acknowledgement roll call, availability responses, private contact "
+    "records, payments, or admin authority."
+)
 NOTICE_POSTING_POLICY_MEMBERS = "members"
 NOTICE_POSTING_POLICY_ADMINS = "admins"
 NOTICE_POSTING_POLICIES = {
@@ -577,6 +587,35 @@ def _notice_sort_time(payload: dict[str, Any]) -> datetime:
     return parsed or datetime(1970, 1, 1, tzinfo=timezone.utc)
 
 
+def _community_notice_public_path(public_code: str) -> str:
+    return f"/community-notices/{public_code}"
+
+
+def _community_notice_public_api_path(public_code: str) -> str:
+    return f"/community-notices/public/{public_code}"
+
+
+def _community_notice_public_meta(enabled: bool) -> dict[str, Any]:
+    if not enabled:
+        return {
+            "public_qr_enabled": False,
+            "public_code": None,
+            "public_code_hash": None,
+            "public_path": None,
+            "public_api_path": None,
+            "public_boundary": None,
+        }
+    public_code = secrets.token_urlsafe(12).rstrip("=")
+    return {
+        "public_qr_enabled": True,
+        "public_code": public_code,
+        "public_code_hash": hashlib.sha256(public_code.encode("utf-8")).hexdigest(),
+        "public_path": _community_notice_public_path(public_code),
+        "public_api_path": _community_notice_public_api_path(public_code),
+        "public_boundary": NOTICE_PUBLIC_BOUNDARY,
+    }
+
+
 def _central_domain_notice_feature_mode(
     db: Session,
     *,
@@ -607,6 +646,7 @@ def _central_domain_notice_payload(
 ) -> dict[str, Any]:
     meta = _safe_meta(getattr(event, "meta_json", None))
     body = _safe_str(meta.get("body") or meta.get("title"))
+    full_body = _safe_str(meta.get("full_body") or meta.get("full_notice_body"))
     expiry_policy = _normalize_notice_expiry_policy(meta.get("expiry_policy"))
     expires_at = _notice_effective_expires_at(
         meta,
@@ -653,6 +693,8 @@ def _central_domain_notice_payload(
         "body": body,
         "title": body,
         "word_count": _word_count(body),
+        "full_body": full_body or None,
+        "full_word_count": _word_count(full_body) if full_body else 0,
         "created_at": _iso(getattr(event, "created_at", None)),
         "expires_at": _iso(expires_at),
         "expiry_policy": expiry_policy,
@@ -937,6 +979,7 @@ def _event_to_notice(
 ) -> dict[str, Any]:
     meta = _safe_meta(getattr(event, "meta_json", None))
     body = _safe_str(meta.get("body") or meta.get("title"))
+    full_body = _safe_str(meta.get("full_body") or meta.get("full_notice_body"))
     sender_contact = _safe_str(meta.get("sender_whatsapp_number"))
     expiry_policy = _normalize_notice_expiry_policy(meta.get("expiry_policy"))
     expires_at = _notice_effective_expires_at(
@@ -976,6 +1019,8 @@ def _event_to_notice(
         "body": body,
         "title": body,
         "word_count": _word_count(body),
+        "full_body": full_body or None,
+        "full_word_count": _word_count(full_body) if full_body else 0,
         "created_at": _iso(getattr(event, "created_at", None)),
         "expires_at": _iso(expires_at),
         "expiry_policy": expiry_policy,
@@ -994,6 +1039,11 @@ def _event_to_notice(
         "availability_summary": availability_summary,
         "review_status": _safe_str(meta.get("review_status"), "published"),
         "approved_submission_event_id": meta.get("approved_submission_event_id"),
+        "public_qr_enabled": bool(meta.get("public_qr_enabled")) and bool(_safe_str(meta.get("public_code"))),
+        "public_code": _safe_str(meta.get("public_code")) if bool(meta.get("public_qr_enabled")) else None,
+        "public_path": _safe_str(meta.get("public_path")) or (_community_notice_public_path(_safe_str(meta.get("public_code"))) if bool(meta.get("public_qr_enabled")) and _safe_str(meta.get("public_code")) else None),
+        "public_api_path": _safe_str(meta.get("public_api_path")) or (_community_notice_public_api_path(_safe_str(meta.get("public_code"))) if bool(meta.get("public_qr_enabled")) and _safe_str(meta.get("public_code")) else None),
+        "boundary": _safe_str(meta.get("public_boundary")) or (NOTICE_PUBLIC_BOUNDARY if bool(meta.get("public_qr_enabled")) and _safe_str(meta.get("public_code")) else None),
     }
 
 
@@ -1030,12 +1080,16 @@ def _notice_review_decisions_by_submission(
 def _submission_to_review_item(event: TrustEvent) -> dict[str, Any]:
     meta = _safe_meta(getattr(event, "meta_json", None))
     body = _safe_str(meta.get("body") or meta.get("title"))
+    full_body = _safe_str(meta.get("full_body") or meta.get("full_notice_body"))
     return {
         "submission_event_id": int(event.id),
         "clan_id": int(getattr(event, "clan_id", 0) or 0),
         "body": body,
         "title": body,
         "word_count": _word_count(body),
+        "full_body": full_body or None,
+        "full_word_count": _word_count(full_body) if full_body else 0,
+        "public_qr_requested": bool(meta.get("public_qr_requested") or meta.get("public_qr_enabled")),
         "created_at": _iso(getattr(event, "created_at", None)),
         "submitted_by_user_id": int(getattr(event, "actor_user_id", 0) or 0),
         "submitted_by_role": _safe_str(meta.get("submitted_by_role"), "member"),
@@ -1388,13 +1442,15 @@ class CommunityNoticeIn(BaseModel):
     expiry_policy: Literal["standard", "urgent", "event", "pinned"] = NOTICE_EXPIRY_STANDARD
     expires_at: Optional[datetime] = None
     availability_enabled: bool = False
+    public_qr_enabled: bool = False
+    full_body: Optional[str] = Field(default=None, max_length=MAX_NOTICE_FULL_BODY_LENGTH)
 
     @field_validator("clan_id", mode="before")
     @classmethod
     def _reject_bool_ids(cls, value: Any) -> Any:
         return _reject_bool_identifier(value, "clan_id")
 
-    @field_validator("body", mode="before")
+    @field_validator("body", "full_body", mode="before")
     @classmethod
     def _reject_non_text_notice_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_text_value(value, info.field_name)
@@ -1411,6 +1467,16 @@ class CommunityNoticeIn(BaseModel):
         if _word_count(body) > MAX_NOTICE_WORDS:
             raise ValueError("Official community notices must be 50 words or fewer.")
         return body
+
+    @field_validator("full_body")
+    @classmethod
+    def _enforce_notice_full_word_limit(cls, value: Optional[str]) -> Optional[str]:
+        full_body = _safe_str(value)
+        if not full_body:
+            return None
+        if _word_count(full_body) > MAX_NOTICE_FULL_WORDS:
+            raise ValueError("Attached full notice details must be 600 words or fewer.")
+        return full_body
 
     @field_validator("expires_at")
     @classmethod
@@ -1643,6 +1709,7 @@ def create_notice(
         current_user=current_user,
     )
     body = _safe_str(payload.body)
+    full_body = _safe_str(payload.full_body)
     expiry_policy = _normalize_notice_expiry_policy(payload.expiry_policy)
     try:
         expires_at = _notice_expires_at(expiry_policy, payload.expires_at)
@@ -1663,6 +1730,9 @@ def create_notice(
                 "reason": "community_notice_submitted_for_review",
                 "body": body,
                 "word_count": _word_count(body),
+                "full_body": full_body or None,
+                "full_word_count": _word_count(full_body) if full_body else 0,
+                "public_qr_requested": bool(payload.public_qr_enabled),
                 "posting_policy": posting_policy,
                 "expiry_policy": expiry_policy,
                 "expires_at": _iso(expires_at),
@@ -1714,6 +1784,8 @@ def create_notice(
             "reason": "community_notice_posted",
             "body": body,
             "word_count": _word_count(body),
+            "full_body": full_body or None,
+            "full_word_count": _word_count(full_body) if full_body else 0,
             "posting_policy": posting_policy,
             "expiry_policy": expiry_policy,
             "expires_at": _iso(expires_at),
@@ -1726,6 +1798,7 @@ def create_notice(
             "availability_enabled": bool(payload.availability_enabled),
             "trust_delta": "0.00",
             "community_records_policy": records_policy,
+            **_community_notice_public_meta(bool(payload.public_qr_enabled)),
             **poster_contact,
         },
     )
@@ -1753,6 +1826,97 @@ def create_notice(
             "domains, or public visitors. Expired notices leave the active board "
             "but remain in Community Memory."
         ),
+    }
+
+
+def _community_notice_by_public_code(
+    db: Session,
+    *,
+    public_code: str,
+) -> Optional[TrustEvent]:
+    code = _safe_str(public_code)
+    if not code:
+        return None
+    code_hash = hashlib.sha256(code.encode("utf-8")).hexdigest()
+    rows = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == COMMUNITY_NOTICE_EVENT)
+        .order_by(TrustEvent.id.desc())
+        .limit(1000)
+        .all()
+    )
+    for row in rows:
+        meta = _safe_meta(getattr(row, "meta_json", None))
+        if meta.get("public_code_hash") == code_hash or meta.get("public_code") == code:
+            return row
+    return None
+
+
+@router.get("/public/{public_code}")
+def get_public_community_notice(
+    public_code: str,
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    event = _community_notice_by_public_code(db, public_code=public_code)
+    if event is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_notice_not_found",
+                "message": "GSN could not find this Community Notice QR link.",
+            },
+        )
+    meta = _safe_meta(getattr(event, "meta_json", None))
+    public_code_value = _safe_str(meta.get("public_code"))
+    if not bool(meta.get("public_qr_enabled")) or not public_code_value:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_notice_not_public",
+                "message": "This Community Notice is not public by QR.",
+            },
+        )
+    if _notice_is_expired(meta, created_at=getattr(event, "created_at", None)):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_notice_expired",
+                "message": "This Community Notice QR has expired.",
+            },
+        )
+    clan_id = int(getattr(event, "clan_id", 0) or 0)
+    clan = db.get(Clan, clan_id) if clan_id else None
+    if clan_id and clan is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_notice_community_missing",
+                "message": "GSN could not find the community for this notice.",
+            },
+        )
+    notice = _event_to_notice(event, db=db, viewer_user_id=None)
+    for private_key in (
+        "posted_by_user_id",
+        "sender_whatsapp_number",
+        "sender_whatsapp_label",
+        "sender_contact_ready",
+        "acknowledgement_summary",
+        "availability_summary",
+    ):
+        notice.pop(private_key, None)
+    notice["boundary"] = _safe_str(meta.get("public_boundary"), NOTICE_PUBLIC_BOUNDARY)
+    notice["community"] = {
+        "id": clan_id or None,
+        "name": _safe_str(getattr(clan, "name", None), "Community"),
+        "code": _safe_str(
+            getattr(clan, "community_code", None)
+            or getattr(clan, "invite_code", None)
+        ) or None,
+    }
+    return {
+        "ok": True,
+        "notice": notice,
+        "boundary": NOTICE_PUBLIC_BOUNDARY,
     }
 
 
@@ -1824,6 +1988,8 @@ def decide_notice_review_submission(
 
     meta = _safe_meta(getattr(submission, "meta_json", None))
     body = _safe_str(meta.get("body"))
+    full_body = _safe_str(meta.get("full_body") or meta.get("full_notice_body"))
+    public_qr_requested = bool(meta.get("public_qr_requested") or meta.get("public_qr_enabled"))
     expiry_policy = _normalize_notice_expiry_policy(meta.get("expiry_policy"))
     if payload.decision == "approve":
         try:
@@ -1849,6 +2015,8 @@ def decide_notice_review_submission(
                 "reason": "community_notice_review_approved",
                 "body": body,
                 "word_count": _word_count(body),
+                "full_body": full_body or None,
+                "full_word_count": _word_count(full_body) if full_body else 0,
                 "posting_policy": _normalize_notice_posting_policy(meta.get("posting_policy")),
                 "expiry_policy": expiry_policy,
                 "expires_at": _iso(expires_at),
@@ -1865,6 +2033,7 @@ def decide_notice_review_submission(
                 "availability_enabled": bool(meta.get("availability_enabled")),
                 "trust_delta": "0.00",
                 "community_records_policy": records_policy,
+                **_community_notice_public_meta(public_qr_requested),
                 **poster_contact,
             },
         )

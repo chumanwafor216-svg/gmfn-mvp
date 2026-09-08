@@ -309,7 +309,7 @@ assertContains(
   "Community Home live bulletin must decongest member actions behind one Reactions panel and expose admin roll call from that panel."
 );
 assertContains(
-  /noticeDetailOpenId[\s\S]*?brandClampLines\(detailOpen \? 12 : titleLineLimit\)[\s\S]*?\{rawBody\}[\s\S]*?debugId=\{`community-home\.bulletin\.read-full\.\$\{noticeKey\}`\}[\s\S]*?Close full notice[\s\S]*?Read full notice/,
+  /noticeDetailOpenId[\s\S]*?brandClampLines\(detailOpen && !fullBody \? 12 : titleLineLimit\)[\s\S]*?\{rawBody\}[\s\S]*?debugId=\{`community-home\.bulletin\.read-full\.\$\{noticeKey\}`\}[\s\S]*?Close full notice[\s\S]*?Read full notice[\s\S]*?detailOpen && fullBody[\s\S]*?Full notice/,
   "Community Home live bulletin must show the notice from the beginning and provide an in-place full-notice open/close control when text is longer."
 );
 assertNotContains(

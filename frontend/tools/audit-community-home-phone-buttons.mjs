@@ -101,7 +101,7 @@ assertContains(
   "Community Home live bulletin date must stay compact on phone instead of taking over the notice body."
 );
 assertContains(
-  /function renderCommunityBulletinPrimaryNotice[\s\S]*?width: isCompact \? "min\(100%, 270px\)" : undefined[\s\S]*?brandClampLines\(detailOpen \? 12 : titleLineLimit\)[\s\S]*?textAlign: isCompact \? "center" : "left"[\s\S]*?debugId=\{`community-home\.bulletin\.read-full\.\$\{noticeKey\}`\}/,
+  /function renderCommunityBulletinPrimaryNotice[\s\S]*?width: isCompact \? "min\(100%, 270px\)" : undefined[\s\S]*?brandClampLines\(detailOpen && !fullBody \? 12 : titleLineLimit\)[\s\S]*?textAlign: isCompact \? "center" : "left"[\s\S]*?debugId=\{`community-home\.bulletin\.read-full\.\$\{noticeKey\}`\}/,
   "Community Home live bulletin must center the source pill and main notice title on phone, with a full notice control."
 );
 assertContains(
