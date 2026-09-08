@@ -1,3 +1,12 @@
+## 2026-09-08 - Community Domain three-lane command front door
+
+- Status: Implemented and locally verified. Not committed, pushed, or deployed in this slice.
+- Owner intent: Make Community Domain less loud and less like an app inside another app. The first owner surface now leads with three lanes only: Daily work, Set up, and People. Secondary/deeper controls are hidden behind Advanced.
+- Frontend: `CommunityDomainDashboardPage.tsx` now uses `openSetupJourneyAt`, `openPeopleLane`, and a compact Domain command surface. Active domains show Marketplace first, then Set up and People; Subscription, Governance, All areas, Records, and Guidance are under Advanced. Draft domains keep setup first, with People planning and service on/off decisions opened as guided setup steps.
+- Template truth fix: Real-life record panel handoff now falls back from `community_domain.template_key` to dashboard `template.key`, so church/religious workflow QR cards do not disappear when the backend sends the template separately.
+- Purchase copy: Community Domain purchase now labels the owner state as `Draft and quote state` to match the local-community-first gate language.
+- Audits: `audit-community-domain-mobile-visual.mjs` now treats Operating areas as already open when `Choose Area` opens them and checks both `data-cta-id` and `data-debug-id` for visibility probes. Product-contract guards were updated to the three-lane/Advanced contract.
+- Verified: `npm exec eslint ...`, `node tools/audit-community-domain-product-contracts.mjs`, `npm --prefix frontend run build`, `npm --prefix frontend run audit:protected-button-freeze`, and `GSN_AUDIT_BASE_URL=http://127.0.0.1:5173 npm run audit:community-domain-mobile-visual` all pass locally.
 ## 2026-09-08 - Community Bulletin density and tools collapse
 
 - Status: Local frontend implementation complete and verified; not pushed/deployed because current pilot publishing is batch-frozen until owner asks to publish.

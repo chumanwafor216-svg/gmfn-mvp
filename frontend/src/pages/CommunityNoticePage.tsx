@@ -257,7 +257,7 @@ export default function CommunityNoticePage() {
               <div style={softCard()}>
                 <div style={label()}>Share</div>
                 <p style={{ ...helper(), margin: 0 }}>
-                  Print or display this QR when the message is meant for public access, such as a programme note, meeting detail, reading note, or message of the day.
+                  Print or display this QR when the message is meant for public access, such as a sermon topic, programme theme, reading note, or message of the day.
                 </p>
                 <StableButton kind="secondary" debugId="community-notice.copy-link" onClick={copyLink}>
                   {copied ? "Copied" : "Copy QR Link"}

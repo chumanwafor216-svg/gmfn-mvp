@@ -2577,8 +2577,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /communityDomainOperatingStateCopy[\s\S]*Domain closed[\s\S]*Domain suspended[\s\S]*Domain expired[\s\S]*Waiting for activation[\s\S]*Active operating domain[\s\S]*Active, not verified[\s\S]*Run live domain work from the operating lanes[\s\S]*Draft setup[\s\S]*setupWorkspaceOpen[\s\S]*commandGuidanceOpen[\s\S]*showDomainWorkSurface[\s\S]*setupWorkspaceOpen \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*showOtherDomainToolsEntry = setupJourneyMode === "edit"[\s\S]*Domain command[\s\S]*Complete the next setup step\. Billing, activation, and verification stay separate[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*community-domain-dashboard\.command-guidance-toggle[\s\S]*commandGuidanceOpen \? "Close guidance" : "Open guidance"[\s\S]*commandGuidanceOpen \? \([\s\S]*community-domain-dashboard\.command-guidance-panel[\s\S]*Do first[\s\S]*operatingStateCopy\.nextStep[\s\S]*Important rule[\s\S]*operatingStateCopy\.risk/,
-  "Community Domain dashboard must land on a compact command centre and keep setup/deeper tools closed until the owner opens them.",
+  /Domain command[\s\S]*community-domain-dashboard\.domain-lane-board[\s\S]*community-domain-dashboard\.daily-work-card[\s\S]*Daily work[\s\S]*community-domain-dashboard\.setup-lane-card[\s\S]*Set up[\s\S]*community-domain-dashboard\.people-lane-card[\s\S]*People[\s\S]*community-domain-dashboard\.more-actions-toggle[\s\S]*Advanced[\s\S]*community-domain-dashboard\.more-actions-panel[\s\S]*community-domain-dashboard\.command-guidance-toggle[\s\S]*community-domain-dashboard\.command-guidance-panel/,
+  "Community Domain dashboard must land on a three-lane command centre and keep guidance/deeper setup controls behind Advanced until the owner opens them.",
   { frontend: true }
 );
 
@@ -2598,7 +2598,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /openSetupJourney[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*CommunityDomainSetupOverviewPanel[\s\S]*onOpenMainAction: \(\) => \{[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*CommunityDomainOperatingSummaryPanel[\s\S]*onOpenLiveLane: \(\) => \{[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.advanced-tools-toggle[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true/,
+  /openSetupJourney[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*openSetupJourneyAt[\s\S]*openSetupJourney\(mode\)[\s\S]*openDailyWorkLane[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*openPeopleLane[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*openDailyWorkLane\(\)[\s\S]*CommunityDomainSetupOverviewPanel[\s\S]*onOpenMainAction: \(\) => \{[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*CommunityDomainOperatingSummaryPanel[\s\S]*onOpenLiveLane: \(\) => \{[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.advanced-tools-toggle[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true/,
   "Community Domain work-surface entry points must all request focus when they open setup or lanes, including lazy setup-overview and operating-summary callbacks.",
   { frontend: true }
 );
@@ -2620,8 +2620,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /function pageShell\(\)[\s\S]*display: "grid"[\s\S]*alignContent: "start"[\s\S]*isCommunityDomainOperational[\s\S]*firstAvailableOperationalLaneKey[\s\S]*domainOperational[\s\S]*mainActionLaneKey[\s\S]*domainOperational \? operationalLaneKey : primaryActionLaneKey[\s\S]*mainActionCopy[\s\S]*showDomainWorkSurface[\s\S]*setupWorkspaceOpen \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*openDomainMarketplace[\s\S]*routeWithCommunity\(APP_ROUTES\.MARKETPLACE, clanId\)[\s\S]*!domainOperational \? \([\s\S]*PageTopNav[\s\S]*Domain command[\s\S]*Run one operating area at a time[\s\S]*Start here[\s\S]*Use Marketplace first\. Open another area only when the next job needs it\.[\s\S]*community-domain-dashboard\.open-marketplace[\s\S]*Open Marketplace[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*setSetupWorkspaceOpen\(false\)[\s\S]*Open \{operationalLaneLabel\}[\s\S]*community-domain-dashboard\.more-actions-toggle[\s\S]*aria-expanded=\{commandMoreActionsOpen\}[\s\S]*commandMoreActionsOpen \? "Close more" : "More"[\s\S]*community-domain-dashboard\.more-actions-panel[\s\S]*community-domain-dashboard\.governance-card[\s\S]*community-domain-dashboard\.real-life-record-card[\s\S]*community-domain-dashboard\.subscription-card[\s\S]*community-domain-dashboard\.guidance-card[\s\S]*CommunityDomainSetupOverviewPanel[\s\S]*onOpenMainAction: \(\) => \{[\s\S]*setActiveLane\(mainActionLaneKey\)[\s\S]*setSetupWorkspaceOpen\(true\)/,
-  "Active Community Domains must hand off to Marketplace first, expose only one named live-area shortcut plus More, and keep Governance, Records, Subscription, and Guidance behind the More drawer while draft domains keep setup behind an explicit focused workbench.",
+  /function pageShell\(\)[\s\S]*display: "grid"[\s\S]*alignContent: "start"[\s\S]*isCommunityDomainOperational[\s\S]*firstAvailableOperationalLaneKey[\s\S]*domainOperational[\s\S]*mainActionLaneKey[\s\S]*domainOperational \? operationalLaneKey : primaryActionLaneKey[\s\S]*mainActionCopy[\s\S]*showDomainWorkSurface[\s\S]*setupWorkspaceOpen \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*openDomainMarketplace[\s\S]*routeWithCommunity\(APP_ROUTES\.MARKETPLACE, clanId\)[\s\S]*!domainOperational \? \([\s\S]*PageTopNav[\s\S]*Domain command[\s\S]*Run one operating area at a time[\s\S]*community-domain-dashboard\.domain-lane-board[\s\S]*community-domain-dashboard\.open-marketplace[\s\S]*Open Marketplace[\s\S]*community-domain-dashboard\.open-setup-lane[\s\S]*Open Set up[\s\S]*community-domain-dashboard\.open-people-lane[\s\S]*Open People[\s\S]*community-domain-dashboard\.more-actions-toggle[\s\S]*Advanced[\s\S]*community-domain-dashboard\.more-actions-panel[\s\S]*community-domain-dashboard\.subscription-card[\s\S]*community-domain-dashboard\.governance-card[\s\S]*community-domain-dashboard\.all-areas-card[\s\S]*community-domain-dashboard\.real-life-record-card[\s\S]*community-domain-dashboard\.guidance-card[\s\S]*CommunityDomainSetupOverviewPanel[\s\S]*onOpenMainAction: \(\) => \{[\s\S]*setActiveLane\(mainActionLaneKey\)[\s\S]*setSetupWorkspaceOpen\(true\)/,
+  "Active Community Domains must show the three owner lanes first, keep Subscription/Governance/Records/All areas/Guidance behind Advanced, and preserve Marketplace and setup workbench handoffs.",
   { frontend: true }
 );
 
@@ -2803,7 +2803,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /DOMAIN_PURCHASE_MOBILE_FACTS[\s\S]*Community first[\s\S]*Domain after[\s\S]*Pilot no payment[\s\S]*needsLocalCommunityFirst[\s\S]*Pillar of Hope needs the normal GSN community first[\s\S]*Create Domain draft[\s\S]*Local community first[\s\S]*Pillar of Hope needs its local community record and GSN number before the Domain layer is filled[\s\S]*community-domain-purchase\.open-create-community-first[\s\S]*Create GSN community first[\s\S]*Create the normal GSN community first[\s\S]*Pilot reservation state[\s\S]*!needsLocalCommunityFirst \? \([\s\S]*community-domain-purchase\.create-draft/,
+  /DOMAIN_PURCHASE_MOBILE_FACTS[\s\S]*Community first[\s\S]*Domain after[\s\S]*Pilot no payment[\s\S]*needsLocalCommunityFirst[\s\S]*Pillar of Hope needs the normal GSN community first[\s\S]*Create Domain draft[\s\S]*Local community first[\s\S]*Pillar of Hope needs its local community record and GSN number before the Domain layer is filled[\s\S]*community-domain-purchase\.open-create-community-first[\s\S]*Create GSN community first[\s\S]*Create the normal GSN community first[\s\S]*Draft and quote state[\s\S]*!needsLocalCommunityFirst \? \([\s\S]*community-domain-purchase\.create-draft/,
   "Community Domain purchase must gate first-time domain setup behind the normal local GSN community anchor.",
   { frontend: true }
 );
@@ -2860,7 +2860,7 @@ assertContains(
       String.raw`dashboardScenario = "active"`,
       String.raw`community-domain-dashboard\.open-marketplace`,
       String.raw`Open Marketplace`,
-      String.raw`Open Members`,
+      String.raw`Open People`,
       String.raw`Active Community Domain dashboard exposes broad Open operating areas wording on the first command surface`,
       String.raw`Active Community Domain dashboard exposes setup editing on the first command surface`,
       String.raw`Active Community Domain dashboard exposes Other domain tools before operating areas are opened`,
@@ -2906,7 +2906,7 @@ assertContains(
       String.raw`Live area`,
       String.raw`community-domain-dashboard\.work-surface\.notes-toggle`,
       String.raw`work surface notes do not close after reading`,
-      String.raw`community-domain-dashboard\.operating-area-picker-toggle`,
+      String.raw`ensureOperatingAreasOpen`,
       String.raw`community-domain-dashboard\.lane\.identity`,
       String.raw`community-domain-identity\.detail\.profile`,
       String.raw`Identity view buttons are visible before Change view is opened`,
@@ -2915,7 +2915,7 @@ assertContains(
       String.raw`community-domain-identity\.detail\.bridge`,
       String.raw`Identity view buttons stay visible after selecting a view`,
       String.raw`Institutional checks needing attention`,
-      String.raw`community-domain-dashboard\.operating-area-picker-toggle`,
+      String.raw`ensureOperatingAreasOpen`,
       String.raw`community-domain-dashboard\.lane\.billing`,
       String.raw`community-domain-dashboard\.billing-task\.account`,
       String.raw`Billing job buttons are visible before Change billing job is opened`,
@@ -2972,7 +2972,7 @@ assertContains(
       String.raw`community-domain\.trust-evidence\.focus\.release`,
       String.raw`community-domain\.trust-evidence\.focus\.records`,
       String.raw`Trust/Evidence view buttons stay visible after selecting a view`,
-      String.raw`community-domain-dashboard\.operating-area-picker-toggle`,
+      String.raw`ensureOperatingAreasOpen`,
       String.raw`community-domain-dashboard\.lane\.structure`,
       String.raw`community-domain-dashboard\.structure-group\.rollout`,
       String.raw`Structure view buttons are visible before Change view is opened`,
@@ -2987,7 +2987,7 @@ assertContains(
       String.raw`community-domain\.structure-planning\.focus\.groups`,
       String.raw`community-domain\.structure-planning\.focus\.rollout`,
       String.raw`Structure planning view buttons stay visible after selecting a view`,
-      String.raw`community-domain-dashboard\.operating-area-picker-toggle`,
+      String.raw`ensureOperatingAreasOpen`,
       String.raw`community-domain-dashboard\.lane\.members`,
       String.raw`Members view buttons are visible before Change view is opened`,
       String.raw`community-domain-dashboard\.member-packet-toggle`,
@@ -3001,7 +3001,7 @@ assertContains(
       String.raw`member roster does not expose a Change roster view control`,
       String.raw`community-domain-dashboard\.member-roster\.summary`,
       String.raw`member roster views stay visible after selecting a view`,
-      String.raw`community-domain-dashboard\.operating-area-picker-toggle`,
+      String.raw`ensureOperatingAreasOpen`,
       String.raw`community-domain-dashboard\.lane\.governance`,
       String.raw`community-domain-dashboard\.governance-group\.records`,
       String.raw`Governance stage buttons are visible before Change governance stage is opened`,
@@ -4248,7 +4248,7 @@ assertContains(
 
 assertContains(
   "docs/SCREEN_SPECS.md",
-  /## CommunityDomainDashboardPage[\s\S]*institutional operating surface[\s\S]*one opened operating area at a time[\s\S]*Payment, package quote, and renewal status must not be shown as verification/,
+  /## CommunityDomainDashboardPage[\s\S]*institutional operating surface[\s\S]*three\s+visible owner lanes[\s\S]*one Advanced drawer[\s\S]*one opened operating area[\s\S]*Payment, package quote, and renewal status must not be shown as verification/,
   "Community Domain dashboard contract must preserve guided operation and verification boundaries."
 );
 

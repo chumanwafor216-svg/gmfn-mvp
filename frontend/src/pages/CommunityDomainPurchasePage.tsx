@@ -2196,7 +2196,7 @@ export default function CommunityDomainPurchasePage() {
 
               <div style={whiteCard()}>
                 <div style={{ display: "grid", gap: 10, minWidth: 0 }}>
-                  <div style={labelText(false)}>Pilot reservation state</div>
+                  <div style={labelText(false)}>Draft and quote state</div>
                   <div style={statusPill(draftResult ? "ready" : "waiting")}>
                     {draftResult ? "Pilot reserved" : "Waiting for owner"}
                   </div>

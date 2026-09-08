@@ -463,13 +463,17 @@ Must show:
 - Community Domain identity hero
 - domain name/code, display name, owner, status, verification state, and renewal
   state as compact facts
-- one primary next action based on current state, such as complete activation,
-  add structure, invite members, review pending action, or renew package
-- compact structure preview showing root node and first branches/departments
-- compact member and role summary
-- compact governance/action-review summary
-- compact operating-area status rows for Shops, Spotlight, Vault, Verification,
-  Trust Centre, Analytics, Billing, and Settings
+- one command surface that shows the current state and routes the owner through
+  three visible lanes: Set up, People, and Daily work
+- Set up lane for identity, owner authority evidence, package/subscription
+  boundary, launch readiness, and service on/off choices
+- People lane for structure, members, departments/lines, roles, approvals, and
+  delegated authority
+- Daily work lane for marketplace, notices, real-life records, collections,
+  Spotlight, Demand Box, shop/vault activity, reports, and live community work
+- one Advanced drawer for Subscription, Governance, all-area chooser, records
+  shortcut, guidance, and other deeper controls that should not compete on the
+  first surface
 - where Community Finance collections are enabled, a compact governed QR or
   payment-instruction row for offerings, donations, levies, registrations, or
   support appeals
@@ -499,8 +503,15 @@ Rules:
 - This page is the institutional operating surface. It must not replace
   CommunityHomePage, which remains the lightweight selected-community home.
 - The first screen must not expose every operating area at once. Follow the
-  guided work-surface rule: one identity hero, one main action, compact status
-  rows, and one opened operating area at a time.
+  guided work-surface rule: one identity hero, one command surface, three
+  visible owner lanes, one Advanced drawer, and one opened operating area at a
+  time.
+- Before launch, the Set up lane is primary. People planning and service on/off
+  choices may open directly to their setup step, but billing, verification, and
+  final activation stay separate.
+- After launch, Daily work may lead to the linked Marketplace while Set up and
+  People remain available as quiet lanes. Subscription, Governance, record
+  shortcuts, all-area browsing, and guidance belong behind Advanced.
 - A branch, campus, parish, line, class, committee, ROSCA circle, or welfare
   group should normally be represented as a `CommunityNode` or activity group,
   not a separate domain, unless it needs separate billing, public identity, or
@@ -560,7 +571,7 @@ Sermon/message attachment guardrail:
 Primary action:
 
 ```text
-Continue setup
+Continue setup before launch; Open Marketplace or Daily work after launch.
 ```
 
 ## MarketplacePage

@@ -5607,6 +5607,10 @@ export default function CommunityDomainDashboardPage() {
     setMessage("");
   }
 
+  function openSetupJourneyAt(step: SetupStepKey, mode: "setup" | "edit" = "setup") {
+    openSetupJourney(mode);
+    setActiveSetupStep(step);
+  }
   function selectGovernanceTask(task: GovernanceTaskKey) {
     setActiveGovernanceTask(task);
     setGovernanceGroupChooserOpen(false);
@@ -5728,6 +5732,25 @@ export default function CommunityDomainDashboardPage() {
     setMessage("");
   }
 
+  function openPeopleLane() {
+    focusWorkSurfaceAfterOpenRef.current = true;
+    setSetupJourneyMode("setup");
+    setSetupWorkspaceOpen(false);
+    setShowAdvancedTools(true);
+    closeDomainCommandDrawers();
+    setMemberRosterTaskChooserOpen(false);
+    setActiveMemberRosterTask("summary");
+    const laneKeys = lanes
+      .map((lane) => cleanText(lane.lane_key))
+      .filter(Boolean);
+    const peopleLaneKey =
+      laneKeys.find((key) => key === "members") ||
+      laneKeys.find((key) => key === "structure") ||
+      laneKeys.find((key) => key === "governance") ||
+      operationalLaneKey;
+    setActiveLane(peopleLaneKey);
+    setMessage("");
+  }
   function openGovernanceLane() {
     focusWorkSurfaceAfterOpenRef.current = true;
     setSetupJourneyMode("setup");
@@ -6044,7 +6067,7 @@ export default function CommunityDomainDashboardPage() {
           domainName: cleanText(domain?.display_name, "Community Domain"),
           domainCode: cleanText(domain?.domain_name),
           domainType: cleanText(domain?.domain_type),
-          templateKey: cleanText(domain?.template_key || domain?.domain_type),
+          templateKey: cleanText(domain?.template_key || template?.key || domain?.domain_type),
         })
       );
     } catch {
@@ -7590,64 +7613,85 @@ export default function CommunityDomainDashboardPage() {
               {domainOperational ? (
                 <div style={{ display: "grid", gap: 10 }}>
                   <div
-                    data-debug-id="community-domain-dashboard.daily-work-card"
-                    style={commandLaneCard("primary")}
+                    data-debug-id="community-domain-dashboard.domain-lane-board"
+                    style={commandLaneGrid()}
                   >
-                    <div style={sectionLabel()}>Start here</div>
-                    <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                      Use Marketplace first. Open another area only when the next job needs it.
-                    </div>
-                    <StableButton
-                      type="button"
-                      kind="primary"
-                      fullWidth
-                      stableHeight={44}
-                      debugId="community-domain-dashboard.open-marketplace"
-                      onClick={openDomainMarketplace}
-                    >
-                      Open Marketplace
-                    </StableButton>
                     <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                        gap: 8,
-                      }}
+                      data-debug-id="community-domain-dashboard.daily-work-card"
+                      style={commandLaneCard("primary")}
                     >
+                      <div style={sectionLabel()}>Daily work</div>
+                      <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
+                        Marketplace, notices, records, collections, and live community activity.
+                      </div>
                       <StableButton
                         type="button"
-                        kind="secondary"
+                        kind="primary"
                         fullWidth
-                        stableHeight={40}
-                        debugId="community-domain-dashboard.operational-focus"
-                        onClick={() => {
-                          focusWorkSurfaceAfterOpenRef.current = true;
-                          setSetupWorkspaceOpen(false);
-                          openDailyWorkLane();
-                        }}
+                        stableHeight={44}
+                        debugId="community-domain-dashboard.open-marketplace"
+                        onClick={openDomainMarketplace}
                       >
-                        Open {operationalLaneLabel}
+                        Open Marketplace
                       </StableButton>
+                    </div>
+                    <div
+                      data-debug-id="community-domain-dashboard.setup-lane-card"
+                      style={commandLaneCard()}
+                    >
+                      <div style={sectionLabel()}>Set up</div>
+                      <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
+                        Identity, authority evidence, package, and service on/off choices.
+                      </div>
                       <StableButton
                         type="button"
                         kind="secondary"
                         fullWidth
-                        stableHeight={40}
-                        debugId="community-domain-dashboard.more-actions-toggle"
-                        aria-expanded={commandMoreActionsOpen}
-                        aria-controls="community-domain-command-more-actions"
-                        onClick={() =>
-                          setCommandMoreActionsOpen((current) => {
-                            if (current) setCommandGuidanceOpen(false);
-                            return !current;
-                          })
-                        }
-                        style={{ justifyContent: "center", fontSize: 13, textTransform: "none" }}
+                        stableHeight={44}
+                        debugId="community-domain-dashboard.open-setup-lane"
+                        onClick={() => openSetupJourneyAt("identity", "edit")}
                       >
-                        {commandMoreActionsOpen ? "Close more" : "More"}
+                        Open Set up
+                      </StableButton>
+                    </div>
+                    <div
+                      data-debug-id="community-domain-dashboard.people-lane-card"
+                      style={commandLaneCard()}
+                    >
+                      <div style={sectionLabel()}>People</div>
+                      <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
+                        Members, departments, roles, approvals, and delegated authority.
+                      </div>
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        fullWidth
+                        stableHeight={44}
+                        debugId="community-domain-dashboard.open-people-lane"
+                        onClick={openPeopleLane}
+                      >
+                        Open People
                       </StableButton>
                     </div>
                   </div>
+                  <StableButton
+                    type="button"
+                    kind="secondary"
+                    fullWidth
+                    stableHeight={42}
+                    debugId="community-domain-dashboard.more-actions-toggle"
+                    aria-expanded={commandMoreActionsOpen}
+                    aria-controls="community-domain-command-more-actions"
+                    onClick={() =>
+                      setCommandMoreActionsOpen((current) => {
+                        if (current) setCommandGuidanceOpen(false);
+                        return !current;
+                      })
+                    }
+                    style={{ justifyContent: "center", fontSize: 13, textTransform: "none" }}
+                  >
+                    {commandMoreActionsOpen ? "Close Advanced" : "Advanced"}
+                  </StableButton>
                   {commandMoreActionsOpen ? (
                     <div
                       id="community-domain-command-more-actions"
@@ -7655,12 +7699,31 @@ export default function CommunityDomainDashboardPage() {
                       style={commandLaneGrid()}
                     >
                       <div
+                        data-debug-id="community-domain-dashboard.subscription-card"
+                        style={commandLaneCard()}
+                      >
+                        <div style={sectionLabel()}>Subscription</div>
+                        <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
+                          Package, renewal, billing status, and payment proof review.
+                        </div>
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          stableHeight={44}
+                          debugId="community-domain-dashboard.open-subscription"
+                          onClick={openSubscriptionLane}
+                        >
+                          Open Subscription
+                        </StableButton>
+                      </div>
+                      <div
                         data-debug-id="community-domain-dashboard.governance-card"
                         style={commandLaneCard()}
                       >
                         <div style={sectionLabel()}>Governance</div>
                         <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                          Rules, approvals, and evidence checks.
+                          Rules, approvals, review queue, and evidence checks.
                         </div>
                         <StableButton
                           type="button"
@@ -7673,6 +7736,30 @@ export default function CommunityDomainDashboardPage() {
                           Open Governance
                         </StableButton>
                       </div>
+                      <div
+                        data-debug-id="community-domain-dashboard.all-areas-card"
+                        style={commandLaneCard()}
+                      >
+                        <div style={sectionLabel()}>All areas</div>
+                        <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
+                          Use only when you need a specific deep operating area.
+                        </div>
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          stableHeight={44}
+                          debugId="community-domain-dashboard.operational-focus"
+                          onClick={() => {
+                            openDailyWorkLane();
+                            window.requestAnimationFrame(() => {
+                              setOperatingAreaPickerOpen(true);
+                            });
+                          }}
+                        >
+                          Choose Area
+                        </StableButton>
+                      </div>
                       {isAdmin ? (
                         <div
                           data-debug-id="community-domain-dashboard.real-life-record-card"
@@ -7680,7 +7767,7 @@ export default function CommunityDomainDashboardPage() {
                         >
                           <div style={sectionLabel()}>Records</div>
                           <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                            Add a real activity only when you have the source facts ready.
+                            Add a real activity only when the source facts are ready.
                           </div>
                           <StableButton
                             type="button"
@@ -7694,25 +7781,6 @@ export default function CommunityDomainDashboardPage() {
                           </StableButton>
                         </div>
                       ) : null}
-                      <div
-                        data-debug-id="community-domain-dashboard.subscription-card"
-                        style={commandLaneCard()}
-                      >
-                        <div style={sectionLabel()}>Subscription</div>
-                        <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                          Package, renewal, and billing status.
-                        </div>
-                        <StableButton
-                          type="button"
-                          kind="secondary"
-                          fullWidth
-                          stableHeight={44}
-                          debugId="community-domain-dashboard.open-subscription"
-                          onClick={openSubscriptionLane}
-                        >
-                          Open Subscription
-                        </StableButton>
-                      </div>
                       <div
                         data-debug-id="community-domain-dashboard.guidance-card"
                         style={commandLaneCard()}
@@ -7738,30 +7806,137 @@ export default function CommunityDomainDashboardPage() {
                   ) : null}
                 </div>
               ) : (
-                <StableButton
-                  type="button"
-                  kind="primary"
-                  fullWidth
-                  debugId="community-domain-dashboard.setup-focus"
-                  onClick={() => openSetupJourney("setup")}
-                >
-                  Continue setup
-                </StableButton>
+                <div style={{ display: "grid", gap: 10 }}>
+                  <div
+                    data-debug-id="community-domain-dashboard.domain-lane-board"
+                    style={commandLaneGrid()}
+                  >
+                    <div
+                      data-debug-id="community-domain-dashboard.setup-lane-card"
+                      style={commandLaneCard("primary")}
+                    >
+                      <div style={sectionLabel()}>Set up</div>
+                      <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
+                        Start with identity, authority evidence, package, and launch readiness.
+                      </div>
+                      <StableButton
+                        type="button"
+                        kind="primary"
+                        fullWidth
+                        stableHeight={44}
+                        debugId="community-domain-dashboard.setup-focus"
+                        onClick={() => openSetupJourney("setup")}
+                      >
+                        Continue setup
+                      </StableButton>
+                    </div>
+                    <div
+                      data-debug-id="community-domain-dashboard.people-lane-card"
+                      style={commandLaneCard()}
+                    >
+                      <div style={sectionLabel()}>People</div>
+                      <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
+                        Plan structure, members, and the approval rules before launch.
+                      </div>
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        fullWidth
+                        stableHeight={44}
+                        debugId="community-domain-dashboard.setup-people-focus"
+                        onClick={() => openSetupJourneyAt("structure")}
+                      >
+                        Plan People
+                      </StableButton>
+                    </div>
+                    <div
+                      data-debug-id="community-domain-dashboard.services-lane-card"
+                      style={commandLaneCard()}
+                    >
+                      <div style={sectionLabel()}>Daily work</div>
+                      <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
+                        Choose which services are on, admin-only, or member-submitted.
+                      </div>
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        fullWidth
+                        stableHeight={44}
+                        debugId="community-domain-dashboard.setup-services-focus"
+                        onClick={() => openSetupJourneyAt("services")}
+                      >
+                        Choose Services
+                      </StableButton>
+                    </div>
+                  </div>
+                  <StableButton
+                    type="button"
+                    kind="secondary"
+                    fullWidth
+                    stableHeight={42}
+                    debugId="community-domain-dashboard.more-actions-toggle"
+                    aria-expanded={commandMoreActionsOpen}
+                    aria-controls="community-domain-command-more-actions"
+                    onClick={() =>
+                      setCommandMoreActionsOpen((current) => {
+                        if (current) setCommandGuidanceOpen(false);
+                        return !current;
+                      })
+                    }
+                    style={{ justifyContent: "center", fontSize: 13, textTransform: "none" }}
+                  >
+                    {commandMoreActionsOpen ? "Close Advanced" : "Advanced"}
+                  </StableButton>
+                  {commandMoreActionsOpen ? (
+                    <div
+                      id="community-domain-command-more-actions"
+                      data-debug-id="community-domain-dashboard.more-actions-panel"
+                      style={commandLaneGrid()}
+                    >
+                      <div
+                        data-debug-id="community-domain-dashboard.subscription-card"
+                        style={commandLaneCard()}
+                      >
+                        <div style={sectionLabel()}>Subscription</div>
+                        <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
+                          Review package quote and payment boundary separately from verification.
+                        </div>
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          stableHeight={44}
+                          debugId="community-domain-dashboard.open-subscription"
+                          onClick={openSubscriptionLane}
+                        >
+                          Open Subscription
+                        </StableButton>
+                      </div>
+                      <div
+                        data-debug-id="community-domain-dashboard.guidance-card"
+                        style={commandLaneCard()}
+                      >
+                        <div style={sectionLabel()}>Guidance</div>
+                        <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
+                          Read the next safe step and the rule before launch.
+                        </div>
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          stableHeight={44}
+                          debugId="community-domain-dashboard.command-guidance-toggle"
+                          aria-expanded={commandGuidanceOpen}
+                          aria-controls="community-domain-command-guidance"
+                          onClick={() => setCommandGuidanceOpen((current) => !current)}
+                        >
+                          {commandGuidanceOpen ? "Close guidance" : "Open guidance"}
+                        </StableButton>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
               )}
-              {!domainOperational ? (
-                <StableButton
-                  type="button"
-                  kind="secondary"
-                  fullWidth
-                  stableHeight={44}
-                  debugId="community-domain-dashboard.command-guidance-toggle"
-                  aria-expanded={commandGuidanceOpen}
-                  aria-controls="community-domain-command-guidance"
-                  onClick={() => setCommandGuidanceOpen((current) => !current)}
-                >
-                  {commandGuidanceOpen ? "Close guidance" : "Open guidance"}
-                </StableButton>
-              ) : null}
               {commandGuidanceOpen ? (
                 <div
                   id="community-domain-command-guidance"
@@ -10144,7 +10319,7 @@ export default function CommunityDomainDashboardPage() {
                           beneficiaryOutcomeTaskChooserOpen,
                           billingInputStyle,
                           domainType: cleanText(domain?.domain_type),
-                          templateKey: cleanText(domain?.template_key || domain?.domain_type),
+                          templateKey: cleanText(domain?.template_key || template?.key || domain?.domain_type),
                           busyActivityRecord,
                           busyAttendanceSession,
                           busyBeneficiaryOutcomeRecord,
