@@ -50,6 +50,10 @@ MAX_NOTICE_FULL_WORDS = 600
 MAX_NOTICE_FULL_BODY_LENGTH = 4000
 MAX_NOTICE_ATTACHMENT_URL_LENGTH = 1000
 MAX_NOTICE_ATTACHMENT_LABEL_LENGTH = 80
+NOTICE_INTERNAL_MEDIA_ATTACHMENT_RE = re.compile(
+    r"^/uploads/marketplace/(?:images|videos)/[^?#\s]+(?:[?#][^\s]*)?$",
+    re.IGNORECASE,
+)
 NOTICE_PUBLIC_BOUNDARY = (
     "Public Community Notice QR only. It shows the public-safe notice and any "
     "attached full details selected by the poster. It does not expose member "
@@ -604,9 +608,13 @@ def _clean_notice_attachment_url(value: Any) -> str:
         return ""
     if len(raw) > MAX_NOTICE_ATTACHMENT_URL_LENGTH:
         raise ValueError("Notice attachment links must be 1000 characters or fewer.")
+    if NOTICE_INTERNAL_MEDIA_ATTACHMENT_RE.match(raw):
+        return raw
     parsed = urlparse(raw)
     if parsed.scheme.lower() not in {"http", "https"} or not parsed.netloc:
-        raise ValueError("Notice attachments must use an http or https link.")
+        raise ValueError(
+            "Notice attachments must use an http or https link or a GSN uploaded media path."
+        )
     return raw
 
 
@@ -1475,7 +1483,7 @@ class CommunityNoticeIn(BaseModel):
     full_body: Optional[str] = Field(default=None, max_length=MAX_NOTICE_FULL_BODY_LENGTH)
     attachment_url: Optional[str] = Field(default=None, max_length=MAX_NOTICE_ATTACHMENT_URL_LENGTH)
     attachment_label: Optional[str] = Field(default=None, max_length=MAX_NOTICE_ATTACHMENT_LABEL_LENGTH)
-    attachment_kind: Optional[Literal["link", "poster", "document"]] = "link"
+    attachment_kind: Optional[Literal["link", "video", "poster", "document"]] = "link"
 
     @field_validator("clan_id", mode="before")
     @classmethod

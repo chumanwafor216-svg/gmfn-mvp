@@ -1,7 +1,20 @@
 import React, { useMemo, useState } from "react";
 import { StableButton } from "./StableButton";
+import {
+  uploadMarketplaceImageFile,
+  uploadMarketplaceVideoFile,
+} from "../lib/api";
+import {
+  SPOTLIGHT_MAX_IMAGE_BYTES,
+  SPOTLIGHT_MAX_VIDEO_BYTES,
+  SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+} from "../lib/spotlightPilot";
+import {
+  prepareSpotlightImageFile,
+  prepareSpotlightVideoFile,
+} from "../lib/spotlightMediaPrep";
 
-type NoticeAttachmentKind = "link" | "poster" | "document";
+type NoticeAttachmentKind = "link" | "video" | "poster" | "document";
 
 type Props = {
   open: boolean;
@@ -9,6 +22,7 @@ type Props = {
   busy?: boolean;
   postingPolicy?: "members" | "admins" | string;
   submitMode?: "post" | "review";
+  clanId?: number | null;
   onClose: () => void;
   onSubmit: (
     body: string,
@@ -31,9 +45,12 @@ function countWords(value: string): number {
   return value.trim().split(/\s+/).filter(Boolean).length;
 }
 
-function isHttpUrl(value: string): boolean {
+function isAllowedAttachmentUrl(value: string): boolean {
   const raw = value.trim();
   if (!raw) return true;
+  if (/^\/uploads\/marketplace\/(?:images|videos)\/[^?#\s]+(?:[?#][^\s]*)?$/i.test(raw)) {
+    return true;
+  }
   try {
     const parsed = new URL(raw);
     return parsed.protocol === "http:" || parsed.protocol === "https:";
@@ -42,12 +59,33 @@ function isHttpUrl(value: string): boolean {
   }
 }
 
+function uploadResultUrl(data: any, mediaKind: "image" | "video"): string {
+  const value = String(
+    data?.[mediaKind === "image" ? "image_url" : "video_url"] ||
+      data?.url ||
+      data?.file_url ||
+      data?.path ||
+      data?.item?.[mediaKind === "image" ? "image_url" : "video_url"] ||
+      data?.data?.[mediaKind === "image" ? "image_url" : "video_url"] ||
+      ""
+  ).trim();
+  if (!value) {
+    throw new Error(
+      mediaKind === "image"
+        ? "Image upload completed but did not return a usable link."
+        : "Video upload completed but did not return a usable link."
+    );
+  }
+  return value;
+}
+
 export default function CommunityNoticeModal({
   open,
   communityName,
   busy = false,
   postingPolicy = "members",
   submitMode = "post",
+  clanId = null,
   onClose,
   onSubmit,
 }: Props) {
@@ -62,21 +100,78 @@ export default function CommunityNoticeModal({
   const [attachmentKind, setAttachmentKind] = useState<NoticeAttachmentKind>("link");
   const [attachmentUrl, setAttachmentUrl] = useState("");
   const [attachmentLabel, setAttachmentLabel] = useState("");
+  const [attachmentUploadMessage, setAttachmentUploadMessage] = useState("");
+  const [attachmentUploading, setAttachmentUploading] = useState(false);
+  const [attachmentError, setAttachmentError] = useState("");
   const words = useMemo(() => countWords(body), [body]);
   const fullWords = useMemo(() => countWords(fullBody), [fullBody]);
   const attachmentUrlTrimmed = attachmentUrl.trim();
-  const attachmentUrlInvalid = Boolean(attachmentUrlTrimmed) && !isHttpUrl(attachmentUrlTrimmed);
+  const attachmentUrlInvalid = Boolean(attachmentUrlTrimmed) && !isAllowedAttachmentUrl(attachmentUrlTrimmed);
   const eventExpiryMissing = expiryPolicy === "event" && !eventExpiresAt;
   const blocked =
     words > 50 ||
     !body.trim() ||
     (includeFullBody && fullWords > 600) ||
     attachmentUrlInvalid ||
+    attachmentUploading ||
     eventExpiryMissing ||
     busy;
   const isReviewSubmission = submitMode === "review";
 
   if (!open) return null;
+
+  function clearAttachmentState(nextKind: NoticeAttachmentKind = "link") {
+    setAttachmentKind(nextKind);
+    setAttachmentUrl("");
+    setAttachmentLabel("");
+    setAttachmentUploadMessage("");
+    setAttachmentError("");
+  }
+
+  async function pickAttachmentFile(file: File | null, mediaKind: "image" | "video") {
+    setAttachmentError("");
+    setAttachmentUploadMessage("");
+    if (!file) return;
+    setAttachmentUploading(true);
+    try {
+      if (mediaKind === "image") {
+        const prepared = await prepareSpotlightImageFile(file, {
+          maxBytes: SPOTLIGHT_MAX_IMAGE_BYTES,
+        });
+        const data = await uploadMarketplaceImageFile(prepared.file, clanId || null);
+        const url = uploadResultUrl(data, "image");
+        setAttachmentUrl(url);
+        setAttachmentLabel((current) => current.trim() || "Open poster");
+        setAttachmentUploadMessage(
+          prepared.message || "Poster image attached. It will open from the notice."
+        );
+        return;
+      }
+
+      const prepared = await prepareSpotlightVideoFile(file, {
+        maxBytes: SPOTLIGHT_MAX_VIDEO_BYTES,
+        maxDurationSeconds: SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+      });
+      const data = await uploadMarketplaceVideoFile(
+        prepared.file,
+        prepared.durationSeconds ?? null,
+        clanId || null
+      );
+      const url = uploadResultUrl(data, "video");
+      setAttachmentUrl(url);
+      setAttachmentLabel((current) => current.trim() || "Open video");
+      setAttachmentUploadMessage(
+        prepared.message || "Video attached. It will open from the notice."
+      );
+    } catch (error: any) {
+      setAttachmentError(
+        String(error?.detail?.message || error?.detail || error?.message || error)
+          .trim() || "This attachment could not be uploaded."
+      );
+    } finally {
+      setAttachmentUploading(false);
+    }
+  }
 
   async function submitNotice() {
     if (blocked) return;
@@ -101,9 +196,7 @@ export default function CommunityNoticeModal({
     setPublicQrEnabled(false);
     setAvailabilityEnabled(false);
     setAttachmentPanelOpen(false);
-    setAttachmentKind("link");
-    setAttachmentUrl("");
-    setAttachmentLabel("");
+    clearAttachmentState();
   }
 
   return (
@@ -154,25 +247,64 @@ export default function CommunityNoticeModal({
               <select
                 id="community-notice-attachment-kind"
                 value={attachmentKind}
-                onChange={(event) => setAttachmentKind(event.target.value as NoticeAttachmentKind)}
+                onChange={(event) => clearAttachmentState(event.target.value as NoticeAttachmentKind)}
                 style={fieldStyle}
               >
-                <option value="link">Link / video</option>
-                <option value="poster">Poster image link</option>
+                <option value="link">Public link</option>
+                <option value="video">Video from phone</option>
+                <option value="poster">Poster image from phone</option>
                 <option value="document">Document link</option>
               </select>
             </div>
+            {attachmentKind === "video" || attachmentKind === "poster" ? (
+              <div style={fieldGroupStyle}>
+                <label
+                  style={fieldLabelStyle}
+                  htmlFor="community-notice-attachment-file"
+                >
+                  {attachmentKind === "video" ? "Choose video" : "Choose poster"}
+                </label>
+                <input
+                  id="community-notice-attachment-file"
+                  data-gmfn-action-root="true"
+                  data-cta-id="community-notice-modal.attachment-file"
+                  type="file"
+                  accept={
+                    attachmentKind === "video"
+                      ? "video/*,.mp4,.webm,.mov"
+                      : "image/*,.jpg,.jpeg,.png,.webp"
+                  }
+                  onChange={(event) =>
+                    pickAttachmentFile(
+                      event.currentTarget.files?.[0] || null,
+                      attachmentKind === "video" ? "video" : "image"
+                    )
+                  }
+                  disabled={busy || attachmentUploading}
+                  style={fileFieldStyle}
+                />
+              </div>
+            ) : null}
             <div style={fieldGroupStyle}>
               <label style={fieldLabelStyle} htmlFor="community-notice-attachment-url">
-                Public attachment link
+                {attachmentKind === "document"
+                  ? "Public document link"
+                  : attachmentKind === "link"
+                  ? "Public attachment link"
+                  : "Uploaded attachment link"}
               </label>
               <input
                 id="community-notice-attachment-url"
-                type="url"
+                type={attachmentKind === "video" || attachmentKind === "poster" ? "text" : "url"}
                 value={attachmentUrl}
                 onChange={(event) => setAttachmentUrl(event.target.value)}
                 maxLength={1000}
-                placeholder="https://..."
+                placeholder={
+                  attachmentKind === "video" || attachmentKind === "poster"
+                    ? "Choose a file above"
+                    : "https://..."
+                }
+                readOnly={attachmentKind === "video" || attachmentKind === "poster"}
                 style={attachmentUrlInvalid ? invalidFieldStyle : fieldStyle}
               />
             </div>
@@ -190,11 +322,21 @@ export default function CommunityNoticeModal({
                 style={fieldStyle}
               />
             </div>
-            {attachmentUrlInvalid ? (
-              <p style={errorTextStyle}>Use a public http or https link.</p>
+            {attachmentUploading ? (
+              <p style={attachmentHelpStyle}>Uploading attachment...</p>
+            ) : null}
+            {attachmentUploadMessage ? (
+              <p style={successTextStyle}>{attachmentUploadMessage}</p>
+            ) : null}
+            {attachmentError ? (
+              <p style={errorTextStyle}>{attachmentError}</p>
+            ) : attachmentUrlInvalid ? (
+              <p style={errorTextStyle}>
+                Use a public http/https link or choose a supported GSN media file.
+              </p>
             ) : null}
             <p style={attachmentHelpStyle}>
-              Gallery and direct file upload still need governed media storage. For now, add a public poster, document, video, or reading link.
+              Video and poster choices open your phone gallery. Document attachments use a public document link for now.
             </p>
             <label style={checkboxRowStyle}>
               <input
@@ -296,6 +438,7 @@ export default function CommunityNoticeModal({
           ) : null}
           <span style={chipStyle}>No comments</span>
           <span style={chipStyle}>{availabilityEnabled ? "Availability poll" : "No attendance poll"}</span>
+          {attachmentUrlTrimmed ? <span style={chipStyle}>Attachment ready</span> : null}
         </div>
 
         <div style={actionsStyle}>
@@ -313,8 +456,8 @@ export default function CommunityNoticeModal({
             debugId="community-notice-modal.post"
             onClick={submitNotice}
             disabled={blocked}
-            busy={busy}
-            busyLabel={isReviewSubmission ? "Submitting..." : "Posting..."}
+            busy={busy || attachmentUploading}
+            busyLabel={attachmentUploading ? "Uploading..." : isReviewSubmission ? "Submitting..." : "Posting..."}
             stableHeight={48}
             kind="primary"
           >
@@ -443,12 +586,24 @@ const invalidFieldStyle: React.CSSProperties = {
   background: "#FFFAFA",
 };
 
+const fileFieldStyle: React.CSSProperties = {
+  ...fieldStyle,
+  padding: "10px 12px",
+  height: "auto",
+  lineHeight: 1.25,
+};
+
 const attachmentHelpStyle: React.CSSProperties = {
   margin: 0,
   color: "#617085",
   fontSize: 12,
   lineHeight: 1.4,
   fontWeight: 750,
+};
+
+const successTextStyle: React.CSSProperties = {
+  ...attachmentHelpStyle,
+  color: "#155A32",
 };
 
 const errorTextStyle: React.CSSProperties = {

@@ -657,6 +657,64 @@ def test_community_notice_rejects_non_http_attachment_link(
     assert "http or https" in res.text
 
 
+def test_community_notice_accepts_gsn_uploaded_media_attachment(
+    client, override_current_user
+):
+    _seed_notice_community()
+
+    res = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Youth programme video is ready.",
+            "attachment_url": "/uploads/marketplace/videos/programme.mp4",
+            "attachment_label": "Open video",
+            "attachment_kind": "video",
+            "public_qr_enabled": True,
+        },
+    )
+
+    assert res.status_code == 200, res.text
+    notice = res.json()["notice"]
+    assert notice["attachment_url"] == "/uploads/marketplace/videos/programme.mp4"
+    assert notice["attachment_label"] == "Open video"
+    assert notice["attachment_kind"] == "video"
+
+    list_res = client.get("/community-notices", params={"clan_id": 1, "limit": 3})
+    assert list_res.status_code == 200, list_res.text
+    listed = list_res.json()["notices"][0]
+    assert listed["attachment_url"] == "/uploads/marketplace/videos/programme.mp4"
+    assert listed["attachment_label"] == "Open video"
+    assert listed["attachment_kind"] == "video"
+
+    public_code = listed["public_code"]
+    public_res = client.get(f"/community-notices/public/{public_code}")
+    assert public_res.status_code == 200, public_res.text
+    public_notice = public_res.json()["notice"]
+    assert public_notice["attachment_url"] == "/uploads/marketplace/videos/programme.mp4"
+    assert public_notice["attachment_label"] == "Open video"
+    assert public_notice["attachment_kind"] == "video"
+
+
+def test_community_notice_rejects_unowned_relative_attachment_path(
+    client, override_current_user
+):
+    _seed_notice_community()
+
+    res = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Unsafe relative document path.",
+            "attachment_url": "/uploads/private/document.pdf",
+            "attachment_label": "Open document",
+        },
+    )
+
+    assert res.status_code == 422, res.text
+    assert "GSN uploaded media path" in res.text
+
+
 def test_community_notice_archive_hides_expired_notice_but_keeps_memory(
     client, override_current_user
 ):

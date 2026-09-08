@@ -1414,7 +1414,7 @@ export async function createCommunityNotice(payload: {
   full_body?: string | null;
   attachment_url?: string | null;
   attachment_label?: string | null;
-  attachment_kind?: "link" | "poster" | "document" | null;
+  attachment_kind?: "link" | "video" | "poster" | "document" | null;
 }): Promise<any> {
   return httpJson("/community-notices", "POST", payload);
 }

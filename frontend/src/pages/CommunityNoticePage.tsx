@@ -19,9 +19,31 @@ function errorMessage(error: any): string {
   );
 }
 
-function safeHttpUrl(value: unknown): string {
+function attachmentAssetOrigin(): string {
+  if (typeof window === "undefined") return "";
+  const configured =
+    (typeof import.meta !== "undefined" &&
+      (import.meta as any)?.env?.VITE_API_BASE_URL) ||
+    "/api";
+  const trimmed = String(configured || "").trim().replace(/\/+$/, "");
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      return new URL(trimmed).origin;
+    } catch {
+      return window.location.origin;
+    }
+  }
+
+  return window.location.origin;
+}
+
+function safeAttachmentUrl(value: unknown): string {
   const raw = safeText(value);
   if (!raw) return "";
+  if (/^\/uploads\/marketplace\/(?:images|videos)\/[^?#\s]+(?:[?#][^\s]*)?$/i.test(raw)) {
+    return `${attachmentAssetOrigin()}${raw}`;
+  }
   try {
     const parsed = new URL(raw);
     return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.toString() : "";
@@ -167,7 +189,7 @@ export default function CommunityNoticePage() {
     safeText(notice?.community_domain_name, "This community")
   );
   const body = safeText(notice?.full_body || notice?.body || notice?.title, "Community message");
-  const attachmentUrl = safeHttpUrl(notice?.attachment_url);
+  const attachmentUrl = safeAttachmentUrl(notice?.attachment_url);
   const attachmentLabel = safeText(notice?.attachment_label, "Open attachment");
   const expiresAt = formatDate(notice?.expires_at);
   const createdAt = formatDate(notice?.created_at);

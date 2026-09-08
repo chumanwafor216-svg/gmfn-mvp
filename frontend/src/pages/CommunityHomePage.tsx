@@ -1614,6 +1614,9 @@ function communityNoticePublicPath(item: CommunityNoticeItem | null | undefined)
 function communityNoticeAttachmentUrl(item: CommunityNoticeItem | null | undefined): string {
   const raw = firstTruthy(item?.attachment_url);
   if (!raw) return "";
+  if (/^\/uploads\/marketplace\/(?:images|videos)\/[^?#\s]+(?:[?#][^\s]*)?$/i.test(raw)) {
+    return toBackendAssetUrl(raw);
+  }
   try {
     const parsed = new URL(raw);
     return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.toString() : "";
@@ -3951,7 +3954,7 @@ export default function CommunityHomePage() {
       full_body?: string | null;
       attachment_url?: string | null;
       attachment_label?: string | null;
-      attachment_kind?: "link" | "poster" | "document" | null;
+      attachment_kind?: "link" | "video" | "poster" | "document" | null;
     }
   ) {
     const clanId = getClanId(selectedClan);
@@ -4744,6 +4747,7 @@ export default function CommunityHomePage() {
             busy={noticePosting}
             postingPolicy={activeNoticePostingPolicy}
             submitMode={communityNoticeSubmitMode}
+            clanId={selectedClanId || null}
             onClose={() => setNoticeModalOpen(false)}
             onSubmit={submitCommunityNotice}
           />
