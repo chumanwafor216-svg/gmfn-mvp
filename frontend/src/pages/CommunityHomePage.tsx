@@ -25,6 +25,7 @@ import {
   createCommunityNotice,
   decideCommunityNoticeReviewSubmission,
   acknowledgeCommunityNotice,
+  listCommunityNoticeAcknowledgements,
   listCommunityNoticeReviewQueue,
   listCommunityNotices,
   recordCommunityMeetingInterest,
@@ -209,6 +210,23 @@ type CommunityNoticeItem = {
   board_hint?: string | null;
 };
 
+type CommunityNoticeRollCallMember = {
+  user_id?: number | string | null;
+  display_name?: string | null;
+  gmfn_id?: string | null;
+  role?: string | null;
+  acknowledged_at?: string | null;
+};
+
+type CommunityNoticeRollCall = {
+  summary?: {
+    acknowledged?: number | string | null;
+    not_acknowledged?: number | string | null;
+    total_members?: number | string | null;
+  } | null;
+  acknowledged?: CommunityNoticeRollCallMember[] | null;
+  not_acknowledged?: CommunityNoticeRollCallMember[] | null;
+};
 type CommunityNoticeReviewSubmission = {
   submission_event_id?: number | string | null;
   body?: string | null;
@@ -1425,6 +1443,13 @@ function wordLimit(text: string, maxWords: number): string {
   return `${words.slice(0, maxWords).join(" ")}...`;
 }
 
+function wordRemainder(text: string, skipWords: number, maxWords: number): string {
+  const words = safeStr(text).split(/\s+/).filter(Boolean);
+  if (words.length <= skipWords) return "";
+  const remainder = words.slice(skipWords);
+  if (remainder.length <= maxWords) return remainder.join(" ");
+  return `${remainder.slice(0, maxWords).join(" ")}...`;
+}
 function safeDateLabel(value: any): string {
   const raw = safeStr(value);
   if (!raw) return "";
@@ -1541,9 +1566,9 @@ function meetingInterestParts(item: CommunityNoticeItem | null | undefined): Arr
   if (!isMeetingNotice(item)) return [];
   const summary = item?.interest_summary || {};
   return [
-    ["Yes", noticeNumber(summary.yes)],
-    ["Maybe", noticeNumber(summary.maybe)],
-    ["No", noticeNumber(summary.no)],
+    ["Available", noticeNumber(summary.yes)],
+    ["Not sure", noticeNumber(summary.maybe)],
+    ["Not available", noticeNumber(summary.no)],
   ];
 }
 
@@ -1601,7 +1626,7 @@ function isCommunityOfficer(clan: ClanItem | null | undefined, user: any): boole
   const communityRole = safeStr(
     firstTruthy(clan?.membership_role, clan?.member_role, clan?.participant_role, clan?.role)
   ).toLowerCase();
-  return platformRole === "admin" || communityRole === "admin";
+  return platformRole === "admin" || communityRole === "admin" || communityRole === "owner";
 }
 
 function normalizeNoticePostingPolicy(value: unknown): "members" | "admins" {
@@ -1700,6 +1725,9 @@ export default function CommunityHomePage() {
   const [noticePosting, setNoticePosting] = useState(false);
   const [noticeAcknowledgementBusy, setNoticeAcknowledgementBusy] = useState("");
   const [noticeMeetingInterestBusy, setNoticeMeetingInterestBusy] = useState("");
+  const [noticeReactionPanelOpenId, setNoticeReactionPanelOpenId] = useState("");
+  const [noticeRollCallBusy, setNoticeRollCallBusy] = useState("");
+  const [noticeRollCallByNotice, setNoticeRollCallByNotice] = useState<Record<string, CommunityNoticeRollCall>>({});
   const [noticeExpiryNowMs, setNoticeExpiryNowMs] = useState(() => Date.now());
   const [communityBulletinSettingsOpen, setCommunityBulletinSettingsOpen] = useState(false);
   const [poolSummary, setPoolSummary] = useState<any>(null);
@@ -3103,6 +3131,104 @@ export default function CommunityHomePage() {
     }
   }
 
+  async function loadNoticeAcknowledgementRollCall(
+    event: React.SyntheticEvent<HTMLElement>,
+    noticeItem: CommunityNoticeItem
+  ) {
+    consumeCommunityButtonEvent(event);
+    const clanId = getClanId(selectedClan);
+    const eventId = firstTruthy(noticeItem?.event_id);
+    const noticeKey = firstTruthy(noticeItem?.notice_id, eventId);
+
+    if (!clanId || !eventId || !noticeKey || !canManageCommunityNoticeSettings) {
+      showNotice("error", "Only a community admin can open announcement roll call.");
+      return;
+    }
+
+    if (noticeRollCallBusy) {
+      showNotice("success", "Loading the acknowledgement roll call now.");
+      return;
+    }
+
+    setNoticeRollCallBusy(noticeKey);
+    try {
+      const result = await listCommunityNoticeAcknowledgements(eventId, { clan_id: clanId });
+      setNoticeRollCallByNotice((current) => ({ ...current, [noticeKey]: result }));
+      showNotice("success", "Announcement roll call loaded.");
+    } catch (error: any) {
+      showNotice(
+        "error",
+        gsnGovernanceErrorMessage(error, "This roll call is only available to community admins.")
+      );
+    } finally {
+      setNoticeRollCallBusy("");
+    }
+  }
+
+  function renderRollCallMembers(items: CommunityNoticeRollCallMember[] | null | undefined) {
+    const rows = Array.isArray(items) ? items.slice(0, 12) : [];
+    if (rows.length === 0) {
+      return <span style={{ color: "#617085", fontSize: 12, fontWeight: 760 }}>None yet</span>;
+    }
+    return (
+      <span style={{ display: "grid", gap: 6 }}>
+        {rows.map((member) => (
+          <span
+            key={`${member.user_id || member.display_name}`}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 8,
+              color: "#0B2D4A",
+              fontSize: 12,
+              fontWeight: 820,
+            }}
+          >
+            <span style={brandClampLines(1)}>{firstTruthy(member.display_name, member.gmfn_id, "Member")}</span>
+            <span style={{ color: "#617085", whiteSpace: "nowrap" }}>
+              {member.acknowledged_at ? compactDateLabel(member.acknowledged_at) : firstTruthy(member.role, "member")}
+            </span>
+          </span>
+        ))}
+      </span>
+    );
+  }
+
+  function renderNoticeRollCallPanel(noticeItem: CommunityNoticeItem) {
+    const noticeKey = firstTruthy(noticeItem?.notice_id, noticeItem?.event_id);
+    const rollCall = noticeKey ? noticeRollCallByNotice[noticeKey] : null;
+    if (!rollCall) return null;
+    const acknowledged = Array.isArray(rollCall.acknowledged) ? rollCall.acknowledged : [];
+    const notAcknowledged = Array.isArray(rollCall.not_acknowledged) ? rollCall.not_acknowledged : [];
+
+    return (
+      <div
+        data-debug-id="community-home.bulletin.roll-call-panel"
+        style={{
+          display: "grid",
+          gap: 10,
+          marginTop: 10,
+          padding: "10px 12px",
+          borderRadius: 16,
+          background: "#FFFDF7",
+          border: "1px solid rgba(214,170,69,0.16)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+          <span style={{ color: "#07172C", fontSize: 13, fontWeight: 930 }}>Admin roll call</span>
+          <span style={badge(false)}>
+            {acknowledged.length}/{acknowledged.length + notAcknowledged.length}
+          </span>
+        </div>
+        <div style={{ display: "grid", gap: 8 }}>
+          <span style={{ color: "#166534", fontSize: 12, fontWeight: 900 }}>Acknowledged</span>
+          {renderRollCallMembers(acknowledged)}
+          <span style={{ color: "#991B1B", fontSize: 12, fontWeight: 900, marginTop: 4 }}>Not yet</span>
+          {renderRollCallMembers(notAcknowledged)}
+        </div>
+      </div>
+    );
+  }
   function renderNoticeAcknowledgementShortcut(noticeItem: CommunityNoticeItem) {
     if (isMeetingNotice(noticeItem)) return null;
     const eventId = firstTruthy(noticeItem?.event_id);
@@ -3212,16 +3338,16 @@ export default function CommunityHomePage() {
     const meetingId = firstTruthy(noticeItem.meeting_id);
     const ownInterest = meetingOwnInterest(noticeItem);
     const options: Array<[MeetingInterestResponse, string]> = [
-      ["yes", "Yes"],
-      ["maybe", "Maybe"],
-      ["no", "No"],
+      ["yes", "Available"],
+      ["maybe", "Not sure"],
+      ["no", "Not available"],
     ];
 
     return (
       <span
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+          gridTemplateColumns: isCompact ? "minmax(0, 1fr)" : "repeat(3, minmax(0, 1fr))",
           gap: 6,
           marginTop: 8,
         }}
@@ -3264,7 +3390,7 @@ export default function CommunityHomePage() {
     const calendar = noticeCalendarParts(noticeItem);
     const rawBody = firstTruthy(noticeItem?.body, noticeItem?.title, noticeItem?.purpose, "Community notice");
     const title = wordLimit(rawBody, 9);
-    const detail = wordLimit(rawBody, 30);
+    const detail = wordRemainder(rawBody, 9, 30);
     const when = compactDateLabel(firstTruthy(noticeItem?.scheduled_at, noticeItem?.created_at));
     const expiry = noticeExpiryLabel(noticeItem);
     const senderLabel = firstTruthy(noticeItem?.sender_whatsapp_label, "Community contact");
@@ -3273,6 +3399,10 @@ export default function CommunityHomePage() {
     const planningLine = meetingPlanningLine(noticeItem);
     const interestParts = meetingInterestParts(noticeItem);
     const acknowledgedCount = noticeAcknowledgedCount(noticeItem);
+    const eventId = firstTruthy(noticeItem?.event_id);
+    const noticeKey = firstTruthy(noticeItem?.notice_id, eventId, noticeItem?.meeting_id, "active");
+    const reactionPanelOpen = noticeReactionPanelOpenId === noticeKey;
+    const canOpenRollCall = canManageCommunityNoticeSettings && Boolean(eventId) && noticeItem?.acknowledgement_enabled !== false;
 
     return (
       <div style={announcementComposerPreviewStyle(isCompact)}>
@@ -3358,41 +3488,97 @@ export default function CommunityHomePage() {
           </div>
         ) : null}
 
-        <div
+        <StableButton
+          type="button"
+          debugId={`community-home.bulletin.reactions.${noticeKey}`}
+          aria-expanded={reactionPanelOpen}
+          onClick={(event) => {
+            consumeCommunityButtonEvent(event);
+            setNoticeReactionPanelOpenId((current) => (current === noticeKey ? "" : noticeKey));
+          }}
           style={{
-            display: "grid",
-            gridTemplateColumns: isCompact || !noticeItem?.sender_whatsapp_number
-              ? "minmax(0, 1fr)"
-              : "minmax(0, 1fr) minmax(0, 1fr)",
-            gap: 10,
+            ...communityActionStyle("primary"),
+            minHeight: 48,
+            width: "100%",
+            borderRadius: 15,
+            fontSize: 13,
+            textTransform: "none",
+            boxShadow: "0 10px 18px rgba(10,24,49,0.12)",
           }}
         >
-          {renderNoticeAcknowledgementShortcut(noticeItem)}
-          {noticeItem?.sender_whatsapp_number ? (
-            <StableButton
-              type="button"
-              aria-label={`Contact ${senderLabel} about this announcement`}
-              debugId={`community-home.bulletin.primary-sender-whatsapp.${noticeItem?.notice_id || noticeItem?.event_id || "active"}`}
-              onClick={(event) => openNoticeSenderWhatsApp(event, noticeItem)}
+          Reactions
+        </StableButton>
+
+        {reactionPanelOpen ? (
+          <div
+            data-debug-id="community-home.bulletin.reactions-panel"
+            style={{
+              display: "grid",
+              gap: 10,
+              padding: "10px 12px",
+              borderRadius: 16,
+              background: "rgba(255,253,247,0.94)",
+              border: "1px solid rgba(214,170,69,0.16)",
+            }}
+          >
+            <div
               style={{
-                ...communityActionStyle("soft"),
-                minHeight: 48,
-                minWidth: 0,
-                padding: "10px 12px",
-                borderRadius: 15,
-                fontSize: 13,
-                textTransform: "none",
-                color: "#087443",
-                background: "#F0FDF4",
-                border: "1px solid rgba(22,163,74,0.18)",
-                boxShadow: "none",
+                display: "grid",
+                gridTemplateColumns: isCompact || !noticeItem?.sender_whatsapp_number
+                  ? "minmax(0, 1fr)"
+                  : "minmax(0, 1fr) minmax(0, 1fr)",
+                gap: 10,
               }}
             >
-              Contact announcer
-            </StableButton>
-          ) : null}
-        </div>
-
+              {renderNoticeAcknowledgementShortcut(noticeItem)}
+              {noticeItem?.sender_whatsapp_number ? (
+                <StableButton
+                  type="button"
+                  aria-label={`Contact ${senderLabel} about this announcement`}
+                  debugId={`community-home.bulletin.primary-sender-whatsapp.${noticeItem?.notice_id || noticeItem?.event_id || "active"}`}
+                  onClick={(event) => openNoticeSenderWhatsApp(event, noticeItem)}
+                  style={{
+                    ...communityActionStyle("soft"),
+                    minHeight: 48,
+                    minWidth: 0,
+                    padding: "10px 12px",
+                    borderRadius: 15,
+                    fontSize: 13,
+                    textTransform: "none",
+                    color: "#087443",
+                    background: "#F0FDF4",
+                    border: "1px solid rgba(22,163,74,0.18)",
+                    boxShadow: "none",
+                  }}
+                >
+                  Contact announcer
+                </StableButton>
+              ) : null}
+            </div>
+            {renderMeetingInterestShortcut(noticeItem)}
+            {canOpenRollCall ? (
+              <StableButton
+                type="button"
+                debugId={`community-home.bulletin.roll-call.${noticeKey}`}
+                onClick={(event) => loadNoticeAcknowledgementRollCall(event, noticeItem)}
+                busy={noticeRollCallBusy === noticeKey}
+                busyLabel="Loading"
+                aria-disabled={noticeRollCallBusy ? true : undefined}
+                style={{
+                  ...communityActionStyle("soft", Boolean(noticeRollCallBusy)),
+                  minHeight: 42,
+                  width: "100%",
+                  borderRadius: 13,
+                  fontSize: 13,
+                  boxShadow: "none",
+                }}
+              >
+                Roll call
+              </StableButton>
+            ) : null}
+            {renderNoticeRollCallPanel(noticeItem)}
+          </div>
+        ) : null}
         <div
           style={{
             display: "flex",
@@ -3410,7 +3596,6 @@ export default function CommunityHomePage() {
           {expiry ? <span style={badge(false)}>{expiry}</span> : null}
         </div>
 
-        {renderMeetingInterestShortcut(noticeItem)}
       </div>
     );
   }

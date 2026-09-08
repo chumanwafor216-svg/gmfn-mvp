@@ -1442,6 +1442,17 @@ export async function decideCommunityNoticeReviewSubmission(
     )
   );
 }
+export async function listCommunityNoticeAcknowledgements(
+  noticeEventId: number | string,
+  params: { clan_id: number }
+): Promise<any> {
+  return httpJson(
+    `/community-notices/${encodeURIComponent(String(noticeEventId))}/acknowledgements${buildQuery({
+      clan_id: params.clan_id,
+    })}`,
+    "GET"
+  );
+}
 export async function acknowledgeCommunityNotice(
   noticeEventId: number | string,
   payload: { clan_id: number }

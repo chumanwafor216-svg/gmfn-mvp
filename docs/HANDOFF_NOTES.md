@@ -1,3 +1,13 @@
+## 2026-09-08 - Community Bulletin Reactions and admin roll call
+
+- Status: Local implementation complete and verified. Commit/push/deploy pending in this slice.
+- Owner direction: keep one bold Community Home announcement block, decongest the first surface, and put acknowledgement, contact, and availability-style responses under one `Reactions` button. Admin/local governance-authorized officers should be able to see who acknowledged and who has not.
+- Backend behavior: `GET /community-notices/{notice_event_id}/acknowledgements?clan_id=...` returns an admin-only roll call for active members, split into `acknowledged` and `not_acknowledged`, with counts and display names/roles only. It intentionally does not expose email or phone details. Ordinary members receive 403. Community owners are included in the officer gate.
+- Backend consistency: Community Domain official notices that feed into `/community-notices` now support the same acknowledgement summary and `POST /community-notices/{notice_event_id}/acknowledgements` flow as ordinary community notices, while still preserving separate posting/governance origins.
+- Frontend behavior: `/app/community` now shows one `Reactions` button on the live bulletin. Expanding it reveals Acknowledge/Acknowledged, Contact announcer when a real sender number exists, existing meeting planning responses as `Available`, `Not sure`, and `Not available`, and an admin-only `Roll call` button.
+- Visual cleanup: the live bulletin avoids repeating the same first words twice by showing the bold title first and only rendering body detail from the remaining words.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\community_notices.py gmfn_backend\tests\test_community_notices.py`; `python -m pytest gmfn_backend\tests\test_community_notices.py -q` -> 20 passed; `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:community-home-phone-buttons`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run build`.
+- Devil truth: availability uses the existing meeting-planning response engine. Plain ordinary notices still have acknowledgement/contact/roll-call; they do not yet create a universal attendance/availability register unless they are represented as meeting-planning notices.
 ## 2026-09-08 - Community Bulletin rich arrangement and embedded event-date expiry
 
 - Status: Local implementation complete and verified. Not committed, pushed, or deployed in this slice.

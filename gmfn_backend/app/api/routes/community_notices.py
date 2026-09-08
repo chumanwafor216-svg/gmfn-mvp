@@ -7,6 +7,7 @@ from typing import Any, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, field_validator
+from sqlalchemy import or_
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
@@ -414,9 +415,9 @@ def _set_notice_posting_policy_for_clan(
 
 
 def _is_notice_officer(membership: ClanMembership, current_user: User) -> bool:
-    is_platform_admin = str(getattr(current_user, "role", "") or "").lower() == "admin"
-    is_clan_admin = str(getattr(membership, "role", "") or "").lower() == "admin"
-    return bool(is_platform_admin or is_clan_admin)
+    user_role = str(getattr(current_user, "role", "") or "").lower()
+    membership_role = str(getattr(membership, "role", "") or "").lower()
+    return bool(user_role == "admin" or membership_role in {"admin", "owner"})
 
 
 def _require_clan_member(
@@ -593,7 +594,13 @@ def _central_domain_notice_feature_mode(
     return _safe_str(features.get(CENTRAL_DOMAIN_FEATURE_ANNOUNCEMENT_BOARD), "admin_only")
 
 
-def _central_domain_notice_payload(event: TrustEvent, domain: CommunityDomain) -> dict[str, Any]:
+def _central_domain_notice_payload(
+    event: TrustEvent,
+    domain: CommunityDomain,
+    *,
+    db: Optional[Session] = None,
+    viewer_user_id: Optional[int] = None,
+) -> dict[str, Any]:
     meta = _safe_meta(getattr(event, "meta_json", None))
     body = _safe_str(meta.get("body") or meta.get("title"))
     expiry_policy = _normalize_notice_expiry_policy(meta.get("expiry_policy"))
@@ -602,15 +609,26 @@ def _central_domain_notice_payload(event: TrustEvent, domain: CommunityDomain) -
         created_at=getattr(event, "created_at", None),
     )
     expired = _notice_is_expired(meta, created_at=getattr(event, "created_at", None))
+    clan_id = int(getattr(event, "clan_id", 0) or getattr(domain, "clan_id", 0) or 0)
     public_code = _safe_str(meta.get("public_code"))
     public_qr_enabled = bool(meta.get("public_qr_enabled")) and bool(public_code)
+    ack_summary = (
+        _notice_ack_summary(
+            db,
+            clan_id=clan_id,
+            notice_event_id=int(event.id),
+            viewer_user_id=int(viewer_user_id or 0),
+        )
+        if db is not None and clan_id and viewer_user_id
+        else {"acknowledged": 0, "own_acknowledged": False}
+    )
     return {
         "notice_id": f"TE-{int(event.id)}",
         "event_id": int(event.id),
         "source": CENTRAL_DOMAIN_NOTICE_SOURCE,
         "notice_scope": "community_domain",
         "notice_kind": "official_domain_notice",
-        "clan_id": int(getattr(event, "clan_id", 0) or getattr(domain, "clan_id", 0) or 0),
+        "clan_id": clan_id,
         "source_community_id": int(domain.clan_id) if domain.clan_id is not None else None,
         "source_community_name": _safe_str(getattr(domain, "display_name", None), "Community Domain"),
         "source_community_code": _safe_str(getattr(domain, "domain_name", None)) or None,
@@ -631,9 +649,9 @@ def _central_domain_notice_payload(event: TrustEvent, domain: CommunityDomain) -
         "sender_whatsapp_number": None,
         "sender_whatsapp_label": None,
         "sender_contact_ready": False,
-        "acknowledgement_enabled": False,
-        "acknowledgement_label": "Domain notice",
-        "acknowledgement_summary": {"acknowledged": 0, "own_acknowledged": False},
+        "acknowledgement_enabled": True,
+        "acknowledgement_label": "I acknowledge",
+        "acknowledgement_summary": ack_summary,
         "public_qr_enabled": public_qr_enabled,
         "public_code": public_code if public_qr_enabled else None,
         "public_path": f"/community-notices/{public_code}" if public_qr_enabled else None,
@@ -679,7 +697,10 @@ def _notice_ack_summary(
         .filter(
             TrustEvent.clan_id == int(clan_id),
             TrustEvent.event_type == COMMUNITY_NOTICE_ACK_EVENT,
-            TrustEvent.meta_json.like(f'%"notice_event_id": {int(notice_event_id)}%'),
+            or_(
+                TrustEvent.meta_json.like(f'%"notice_event_id": {int(notice_event_id)}%'),
+                TrustEvent.meta_json.like(f'%"notice_event_id":{int(notice_event_id)}%'),
+            ),
         )
         .order_by(TrustEvent.id.asc())
         .all()
@@ -695,6 +716,54 @@ def _notice_ack_summary(
         "own_acknowledged": int(viewer_user_id) in acknowledged_user_ids,
     }
 
+
+def _notice_ack_member_payload(
+    *,
+    user: User,
+    membership: ClanMembership,
+    acknowledged_at: Optional[datetime] = None,
+) -> dict[str, Any]:
+    user_id = int(getattr(user, "id", 0) or getattr(membership, "user_id", 0) or 0)
+    display_name = _safe_str(getattr(user, "display_name", None))
+    gmfn_id = _safe_str(getattr(user, "gmfn_id", None))
+    email = _safe_str(getattr(user, "email", None))
+    return {
+        "user_id": user_id,
+        "display_name": display_name or gmfn_id or (email.split("@", 1)[0] if email else f"Member {user_id}"),
+        "gmfn_id": gmfn_id or None,
+        "role": _safe_str(getattr(membership, "role", None), "member"),
+        "acknowledged_at": _iso(acknowledged_at),
+    }
+
+
+def _get_notice_for_acknowledgement(
+    db: Session,
+    *,
+    clan_id: int,
+    notice_event_id: int,
+) -> TrustEvent:
+    notice_event = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.id == int(notice_event_id),
+            TrustEvent.clan_id == int(clan_id),
+            TrustEvent.event_type.in_([COMMUNITY_NOTICE_EVENT, CENTRAL_DOMAIN_NOTICE_EVENT]),
+        )
+        .first()
+    )
+    if not notice_event:
+        raise HTTPException(status_code=404, detail="Community notice not found")
+
+    meta = _safe_meta(getattr(notice_event, "meta_json", None))
+    if _safe_str(getattr(notice_event, "event_type", None)) == CENTRAL_DOMAIN_NOTICE_EVENT:
+        try:
+            notice_domain_id = int(meta.get("community_domain_id") or 0)
+        except (TypeError, ValueError):
+            notice_domain_id = 0
+        visible_domain_map = _central_notice_visible_domain_map(db, clan_id=int(clan_id))
+        if not notice_domain_id or notice_domain_id not in visible_domain_map:
+            raise HTTPException(status_code=404, detail="Community notice not found")
+    return notice_event
 
 def _event_to_notice(
     event: TrustEvent,
@@ -1272,7 +1341,7 @@ def list_notices(
         domain = visible_domain_map.get(row_domain_id)
         if domain is None:
             continue
-        item = _central_domain_notice_payload(row, domain)
+        item = _central_domain_notice_payload(row, domain, db=db, viewer_user_id=int(current_user.id))
         if _notice_is_expired(meta, created_at=getattr(row, "created_at", None)):
             archived_notice_count += 1
             add_previous(item)
@@ -1648,6 +1717,83 @@ def decide_notice_review_submission(
     }
 
 
+@router.get("/{notice_event_id}/acknowledgements")
+def list_notice_acknowledgements(
+    notice_event_id: int,
+    clan_id: int = Query(..., ge=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    membership = _require_clan_member(db, clan_id=int(clan_id), current_user=current_user)
+    if not _is_notice_officer(membership, current_user):
+        raise HTTPException(status_code=403, detail="Only a community officer can see acknowledgement roll call")
+
+    notice_event = _get_notice_for_acknowledgement(
+        db,
+        clan_id=int(clan_id),
+        notice_event_id=int(notice_event_id),
+    )
+    ack_rows = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.clan_id == int(clan_id),
+            TrustEvent.event_type == COMMUNITY_NOTICE_ACK_EVENT,
+            or_(
+                TrustEvent.meta_json.like(f'%"notice_event_id": {int(notice_event_id)}%'),
+                TrustEvent.meta_json.like(f'%"notice_event_id":{int(notice_event_id)}%'),
+            ),
+        )
+        .order_by(TrustEvent.id.asc())
+        .all()
+    )
+    acknowledged_at_by_user_id: dict[int, datetime] = {}
+    for row in ack_rows:
+        meta = _safe_meta(getattr(row, "meta_json", None))
+        if int(meta.get("notice_event_id") or 0) != int(notice_event_id):
+            continue
+        user_id = int(getattr(row, "subject_user_id", 0) or 0)
+        if user_id and user_id not in acknowledged_at_by_user_id:
+            acknowledged_at_by_user_id[user_id] = getattr(row, "created_at", None)
+
+    member_rows = (
+        db.query(ClanMembership, User)
+        .join(User, User.id == ClanMembership.user_id)
+        .filter(
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .order_by(ClanMembership.role.desc(), User.display_name.asc(), User.id.asc())
+        .all()
+    )
+    acknowledged: list[dict[str, Any]] = []
+    not_acknowledged: list[dict[str, Any]] = []
+    for row_membership, user in member_rows:
+        user_id = int(getattr(user, "id", 0) or 0)
+        acknowledged_at = acknowledged_at_by_user_id.get(user_id)
+        payload = _notice_ack_member_payload(
+            user=user,
+            membership=row_membership,
+            acknowledged_at=acknowledged_at,
+        )
+        if acknowledged_at is not None:
+            acknowledged.append(payload)
+        else:
+            not_acknowledged.append(payload)
+
+    return {
+        "ok": True,
+        "notice_event_id": int(getattr(notice_event, "id", notice_event_id)),
+        "clan_id": int(clan_id),
+        "can_view_roll_call": True,
+        "summary": {
+            "acknowledged": len(acknowledged),
+            "not_acknowledged": len(not_acknowledged),
+            "total_members": len(acknowledged) + len(not_acknowledged),
+        },
+        "acknowledged": acknowledged,
+        "not_acknowledged": not_acknowledged,
+    }
+
 @router.post("/{notice_event_id}/acknowledgements")
 def acknowledge_notice(
     notice_event_id: int,
@@ -1664,18 +1810,18 @@ def acknowledge_notice(
             clan_id=int(payload.clan_id),
             policy=records_policy,
         )
-    notice_event = (
-        db.query(TrustEvent)
-        .filter(
-            TrustEvent.id == int(notice_event_id),
-            TrustEvent.clan_id == int(payload.clan_id),
-            TrustEvent.event_type == COMMUNITY_NOTICE_EVENT,
-        )
-        .first()
+    notice_event = _get_notice_for_acknowledgement(
+        db,
+        clan_id=int(payload.clan_id),
+        notice_event_id=int(notice_event_id),
     )
-    if not notice_event:
-        raise HTTPException(status_code=404, detail="Community notice not found")
     meta = _safe_meta(getattr(notice_event, "meta_json", None))
+    notice_source_event_type = _safe_str(getattr(notice_event, "event_type", None))
+    notice_source = (
+        CENTRAL_DOMAIN_NOTICE_SOURCE
+        if notice_source_event_type == CENTRAL_DOMAIN_NOTICE_EVENT
+        else COMMUNITY_NOTICE_SOURCE
+    )
     if _notice_is_expired(meta, created_at=getattr(notice_event, "created_at", None)):
         raise HTTPException(status_code=409, detail="This notice has already left the active board")
 
@@ -1686,8 +1832,9 @@ def acknowledge_notice(
         actor_user_id=int(current_user.id),
         subject_user_id=int(current_user.id),
         meta={
-            "source": COMMUNITY_NOTICE_SOURCE,
+            "source": notice_source,
             "reason": "community_notice_acknowledged",
+            "notice_source_event_type": notice_source_event_type,
             "notice_event_id": int(notice_event_id),
             "notice_id": f"TE-{int(notice_event_id)}",
             "acknowledgement": "seen",

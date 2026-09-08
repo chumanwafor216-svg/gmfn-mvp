@@ -254,6 +254,124 @@ def test_community_notice_source_and_acknowledgement_are_scoped_to_selected_comm
         assert ack_events[0].clan_id == 1
 
 
+def test_notice_acknowledgement_roll_call_is_admin_only(client, override_current_user):
+    _seed_notice_community()
+
+    post_res = client.post(
+        "/community-notices",
+        json={"clan_id": 1, "body": "Sunday school practice on Thursday."},
+    )
+    assert post_res.status_code == 200, post_res.text
+    notice = post_res.json()["notice"]
+
+    with SessionLocal() as db:
+        admin = db.get(User, 1)
+        member = db.get(User, 2)
+        admin.display_name = "Chuma Admin"
+        member.display_name = "Ada Member"
+        db.add(
+            TrustEvent(
+                event_type="community.notice.acknowledged",
+                clan_id=1,
+                actor_user_id=2,
+                subject_user_id=2,
+                created_at=datetime.now(timezone.utc),
+                meta_json=json.dumps(
+                    {
+                        "source": "community_notice_board",
+                        "reason": "community_notice_acknowledged",
+                        "notice_event_id": int(notice["event_id"]),
+                        "notice_id": notice["notice_id"],
+                        "acknowledgement": "seen",
+                    },
+                    separators=(",", ":"),
+                ),
+            )
+        )
+        db.commit()
+
+    roll_call_res = client.get(
+        f"/community-notices/{notice['event_id']}/acknowledgements",
+        params={"clan_id": 1},
+    )
+    assert roll_call_res.status_code == 200, roll_call_res.text
+    payload = roll_call_res.json()
+    assert payload["summary"] == {
+        "acknowledged": 1,
+        "not_acknowledged": 1,
+        "total_members": 2,
+    }
+    assert [row["display_name"] for row in payload["acknowledged"]] == ["Ada Member"]
+    assert [row["display_name"] for row in payload["not_acknowledged"]] == ["Chuma Admin"]
+    assert "email" not in payload["acknowledged"][0]
+
+
+def test_notice_acknowledgement_roll_call_allows_community_owner(client, override_current_user):
+    _seed_notice_community(membership_role="owner")
+
+    with SessionLocal() as db:
+        db.add(
+            TrustEvent(
+                event_type="community.notice.posted",
+                clan_id=1,
+                actor_user_id=1,
+                subject_user_id=1,
+                created_at=datetime.now(timezone.utc),
+                meta_json=json.dumps(
+                    {
+                        "source": "community_notice_board",
+                        "reason": "community_notice_posted",
+                        "body": "Owner should see the roll call.",
+                        "word_count": 6,
+                        "expiry_policy": "standard",
+                    }
+                ),
+            )
+        )
+        db.commit()
+        notice_event_id = db.query(TrustEvent.id).scalar()
+
+    roll_call_res = client.get(
+        f"/community-notices/{notice_event_id}/acknowledgements",
+        params={"clan_id": 1},
+    )
+    assert roll_call_res.status_code == 200, roll_call_res.text
+    assert roll_call_res.json()["summary"]["total_members"] == 1
+
+
+def test_member_cannot_read_notice_acknowledgement_roll_call(
+    client, override_current_user_user
+):
+    _seed_notice_community(membership_role="member")
+    now = datetime.now(timezone.utc)
+    with SessionLocal() as db:
+        db.add(
+            TrustEvent(
+                event_type="community.notice.posted",
+                clan_id=1,
+                actor_user_id=1,
+                subject_user_id=1,
+                created_at=now,
+                meta_json=json.dumps(
+                    {
+                        "source": "community_notice_board",
+                        "reason": "community_notice_posted",
+                        "body": "Members only see the acknowledgement count.",
+                        "word_count": 6,
+                        "expiry_policy": "standard",
+                        "expires_at": (now + timedelta(days=7)).isoformat(),
+                    }
+                ),
+            )
+        )
+        db.commit()
+        notice_event_id = db.query(TrustEvent.id).scalar()
+
+    roll_call_res = client.get(
+        f"/community-notices/{notice_event_id}/acknowledgements",
+        params={"clan_id": 1},
+    )
+    assert roll_call_res.status_code == 403, roll_call_res.text
 def test_community_notice_board_lists_demand_box_signals_without_response_thread(
     client, override_current_user
 ):
@@ -574,6 +692,20 @@ def test_community_notice_board_includes_linked_domain_notices_and_previous_trai
     assert domain_notice["source_domain_name"] == "Igbo Cultural Association"
     assert domain_notice["public_qr_enabled"] is True
     assert domain_notice["public_path"] == "/community-notices/public-domain-code"
+    assert domain_notice["acknowledgement_enabled"] is True
+    assert domain_notice["acknowledgement_summary"] == {
+        "acknowledged": 0,
+        "own_acknowledged": False,
+    }
+    ack_res = client.post(
+        f"/community-notices/{domain_notice['event_id']}/acknowledgements",
+        json={"clan_id": 1},
+    )
+    assert ack_res.status_code == 200, ack_res.text
+    assert ack_res.json()["acknowledgement_summary"] == {
+        "acknowledged": 1,
+        "own_acknowledged": True,
+    }
     assert payload["previous_announcement_limit"] == 10
     assert len(payload["previous_announcements"]) == 10
     previous_bodies = [item["body"] for item in payload["previous_announcements"]]

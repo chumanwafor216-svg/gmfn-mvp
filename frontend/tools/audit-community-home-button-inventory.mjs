@@ -10,13 +10,13 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 32;
+const expectedStableButtonTemplateCount = 34;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 4;
 const expectedSpotlightGuidedActionCount = 5;
 const expectedGroupedLaneRowCount = 22;
-const expectedExpandedRouteLocalActionTemplates = 42;
+const expectedExpandedRouteLocalActionTemplates = 44;
 const expectedMobileShellBreakdown = {
   top: 2,
   drawer: 25,
@@ -281,12 +281,16 @@ assertContains(
 );
 
 assertContains(
+  /function isCommunityOfficer[\s\S]*?platformRole === "admin"[\s\S]*?communityRole === "admin"[\s\S]*?communityRole === "owner"/,
+  "Community Home notice-board officer actions must include platform admins, community admins, and community owners."
+);
+assertContains(
   /Community[\s\S]*?Bulletin[\s\S]*?renderCommunityBulletinPrimaryNotice\(primaryCommunityNotice\)[\s\S]*?debugId="community-home\.notice\.post"[\s\S]*?communityNoticeSubmitMode === "review"[\s\S]*?"Submit"[\s\S]*?"Post"[\s\S]*?debugId="community-home\.contact\.whatsapp-chat"[\s\S]*?>\s*Contact\s*<\/StableButton>[\s\S]*?debugId="community-home\.notice\.settings-toggle"[\s\S]*?communityBulletinSettingsOpen[\s\S]*?data-debug-id="community-home\.notice\.settings-panel"[\s\S]*?debugId="community-home\.notice\.policy\.members"[\s\S]*?debugId="community-home\.notice\.policy\.admins"[\s\S]*?communityNoticeReviewSubmissions\.map[\s\S]*?debugId=\{`community-home\.notice\.review\.approve\.\$\{submissionId\}`\}[\s\S]*?debugId=\{`community-home\.notice\.review\.reject\.\$\{submissionId\}`\}[\s\S]*?communityNoticeLogItems\.map/,
   "Community Home communication block must keep the rich live announcement dominant, use one quiet Post/Submit/Contact/Settings utility row, and tuck officer record review behind the settings toggle."
 );
 assertContains(
-  /function renderMeetingInterestShortcut[\s\S]*?\["yes", "Yes"\][\s\S]*?\["maybe", "Maybe"\][\s\S]*?\["no", "No"\][\s\S]*?debugId=\{`community-home\.bulletin\.meeting-interest-\$\{response\}`\}[\s\S]*?recordNoticeMeetingInterest\(buttonEvent, noticeItem, response\)/,
-  "Community Home bulletin meeting shortcut must keep the compact Yes/Maybe/No response controls only."
+  /function renderMeetingInterestShortcut[\s\S]*?\["yes", "Available"\][\s\S]*?\["maybe", "Not sure"\][\s\S]*?\["no", "Not available"\][\s\S]*?debugId=\{`community-home\.bulletin\.meeting-interest-\$\{response\}`\}[\s\S]*?recordNoticeMeetingInterest\(buttonEvent, noticeItem, response\)/,
+  "Community Home bulletin meeting shortcut must keep the compact Available/Not sure/Not available response controls inside Reactions."
 );
 assertContains(
   /function renderNoticeAcknowledgementShortcut[\s\S]*?debugId=\{`community-home\.bulletin\.acknowledge\.\$\{eventId\}`\}[\s\S]*?recordNoticeAcknowledgement\(buttonEvent, noticeItem\)[\s\S]*?Acknowledged[\s\S]*?Acknowledge/,
@@ -295,6 +299,10 @@ assertContains(
 assertContains(
   /function renderNoticeAcknowledgementShortcut[\s\S]*?\{"\\u\{1F44D\}"\}[\s\S]*?Acknowledged[\s\S]*?Acknowledge/,
   "Community Home bulletin acknowledgement must use a visible thumb mark and clear acknowledge language instead of a shield-style security icon."
+);
+assertContains(
+  /debugId=\{`community-home\.bulletin\.reactions\.\$\{noticeKey\}`\}[\s\S]*?Reactions[\s\S]*?data-debug-id="community-home\.bulletin\.reactions-panel"[\s\S]*?debugId=\{`community-home\.bulletin\.roll-call\.\$\{noticeKey\}`\}[\s\S]*?Roll call/,
+  "Community Home live bulletin must decongest member actions behind one Reactions panel and expose admin roll call from that panel."
 );
 assertNotContains(
   /function renderNoticeAcknowledgementShortcut[\s\S]*?<GsnLegacyIcon name="check" size=\{16\} \/>/,
