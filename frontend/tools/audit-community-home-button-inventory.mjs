@@ -10,13 +10,13 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 35;
+const expectedStableButtonTemplateCount = 36;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 4;
 const expectedSpotlightGuidedActionCount = 5;
 const expectedGroupedLaneRowCount = 22;
-const expectedExpandedRouteLocalActionTemplates = 45;
+const expectedExpandedRouteLocalActionTemplates = 46;
 const expectedMobileShellBreakdown = {
   top: 2,
   drawer: 25,
@@ -285,7 +285,7 @@ assertContains(
   "Community Home notice-board officer actions must include platform admins, community admins, and community owners."
 );
 assertContains(
-  /Community[\s\S]*?Bulletin[\s\S]*?renderCommunityBulletinPrimaryNotice\(primaryCommunityNotice\)[\s\S]*?debugId="community-home\.notice\.post"[\s\S]*?communityNoticeSubmitMode === "review"[\s\S]*?"Submit"[\s\S]*?"Post"[\s\S]*?debugId="community-home\.contact\.whatsapp-chat"[\s\S]*?>\s*Contact\s*<\/StableButton>[\s\S]*?debugId="community-home\.notice\.settings-toggle"[\s\S]*?communityBulletinSettingsOpen[\s\S]*?data-debug-id="community-home\.notice\.settings-panel"[\s\S]*?debugId="community-home\.notice\.policy\.members"[\s\S]*?debugId="community-home\.notice\.policy\.admins"[\s\S]*?communityNoticeReviewSubmissions\.map[\s\S]*?debugId=\{`community-home\.notice\.review\.approve\.\$\{submissionId\}`\}[\s\S]*?debugId=\{`community-home\.notice\.review\.reject\.\$\{submissionId\}`\}[\s\S]*?communityNoticeLogItems\.map/,
+  /Community[\s\S]*?Bulletin[\s\S]*?renderCommunityBulletinNoticeSelector\(activeCommunityNotices\)[\s\S]*?renderCommunityBulletinPrimaryNotice\(primaryCommunityNotice\)[\s\S]*?debugId="community-home\.notice\.post"[\s\S]*?communityNoticeSubmitMode === "review"[\s\S]*?"Submit"[\s\S]*?"Post"[\s\S]*?debugId="community-home\.contact\.whatsapp-chat"[\s\S]*?>\s*Contact\s*<\/StableButton>[\s\S]*?debugId="community-home\.notice\.settings-toggle"[\s\S]*?communityBulletinSettingsOpen[\s\S]*?data-debug-id="community-home\.notice\.settings-panel"[\s\S]*?debugId="community-home\.notice\.policy\.members"[\s\S]*?debugId="community-home\.notice\.policy\.admins"[\s\S]*?communityNoticeReviewSubmissions\.map[\s\S]*?debugId=\{`community-home\.notice\.review\.approve\.\$\{submissionId\}`\}[\s\S]*?debugId=\{`community-home\.notice\.review\.reject\.\$\{submissionId\}`\}[\s\S]*?communityNoticeLogItems\.map/,
   "Community Home communication block must keep the rich live announcement dominant, use one quiet Post/Submit/Contact/Settings utility row, and tuck officer record review behind the settings toggle."
 );
 assertContains(
@@ -580,6 +580,10 @@ while ((match = rawActionPattern.exec(source))) {
   });
 }
 
+assertContains(
+  /COMMUNITY_NOTICE_ACTIVE_LIMIT = 10[\s\S]*?listCommunityNotices\(\{ clan_id: clanId, limit: COMMUNITY_NOTICE_ACTIVE_LIMIT \}\)[\s\S]*?function renderCommunityBulletinNoticeSelector[\s\S]*?Active announcements[\s\S]*?Showing \{selectedCommunityNoticeIndexSafe \+ 1\}\/\{items\.length\}[\s\S]*?debugId=\{`community-home\.bulletin\.notice-select\.\$\{index \+ 1\}`\}[\s\S]*?setSelectedCommunityNoticeIndex\(index\)/,
+  "Community Home Bulletin must fetch up to ten active notices and show a numbered active-announcement selector instead of hiding extra live items."
+);
 if (findings.length > 0) {
   console.error("Community Home button inventory audit failed:");
   for (const finding of findings) {

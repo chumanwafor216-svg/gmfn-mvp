@@ -380,6 +380,7 @@ function positiveNumber(value: any): number {
 
 const COMMUNITY_NOTICE_SETTINGS_PANEL_ID = "community-home-notice-settings-panel";
 const COMMUNITY_NOTICE_SETTINGS_PANEL_HASH = `#${COMMUNITY_NOTICE_SETTINGS_PANEL_ID}`;
+const COMMUNITY_NOTICE_ACTIVE_LIMIT = 10;
 
 function parseNoticeReviewDeepLink(search: string, hash: string) {
   const params = new URLSearchParams(search);
@@ -1368,6 +1369,31 @@ function announcementSourcePillStyle(): React.CSSProperties {
 }
 
 
+function announcementSelectorStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: isCompact ? "minmax(0, 1fr)" : "minmax(0, 1fr) auto",
+    gap: 10,
+    alignItems: "center",
+    marginBottom: 10,
+    padding: isCompact ? "10px 10px" : "10px 12px",
+    borderRadius: 18,
+    background: "rgba(255,249,234,0.76)",
+    border: "1px solid rgba(214,170,69,0.16)",
+  };
+}
+
+function announcementSelectorButtonsStyle(): React.CSSProperties {
+  return {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 0,
+  };
+}
+
 function announcementListPanelStyle(isCompact: boolean): React.CSSProperties {
   return {
     padding: isCompact ? "18px 16px 14px" : "24px 28px 16px",
@@ -1764,6 +1790,7 @@ export default function CommunityHomePage() {
   const [noticeMeetingInterestBusy, setNoticeMeetingInterestBusy] = useState("");
   const [noticeReactionPanelOpenId, setNoticeReactionPanelOpenId] = useState("");
   const [noticeDetailOpenId, setNoticeDetailOpenId] = useState("");
+  const [selectedCommunityNoticeIndex, setSelectedCommunityNoticeIndex] = useState(0);
   const [noticeRollCallBusy, setNoticeRollCallBusy] = useState("");
   const [noticeRollCallByNotice, setNoticeRollCallByNotice] = useState<Record<string, CommunityNoticeRollCall>>({});
   const [noticeExpiryNowMs, setNoticeExpiryNowMs] = useState(() => Date.now());
@@ -2052,13 +2079,15 @@ export default function CommunityHomePage() {
       setCommunityNoticeReviewLoading(false);
       setCommunityNoticeReviewBusy("");
       setCommunityNoticesLoading(false);
+      setSelectedCommunityNoticeIndex(0);
       return;
     }
 
+    setSelectedCommunityNoticeIndex(0);
     setCommunityNoticesLoading(true);
 
     (async () => {
-      const res = await listCommunityNotices({ clan_id: clanId, limit: 3 }).catch(() => null);
+      const res = await listCommunityNotices({ clan_id: clanId, limit: COMMUNITY_NOTICE_ACTIVE_LIMIT }).catch(() => null);
       if (!alive) return;
 
       applyCommunityNoticeListResponse(res);
@@ -2089,7 +2118,25 @@ export default function CommunityHomePage() {
     const nowMs = noticeExpiryNowMs;
     return communityNotices.filter((item) => isNoticeVisibleOnBoard(item, nowMs));
   }, [communityNotices, noticeExpiryNowMs]);
-  const primaryCommunityNotice = activeCommunityNotices[0] || null;
+  const selectedCommunityNoticeIndexSafe =
+    activeCommunityNotices.length > 0
+      ? Math.min(selectedCommunityNoticeIndex, activeCommunityNotices.length - 1)
+      : 0;
+
+  useEffect(() => {
+    if (activeCommunityNotices.length === 0) {
+      if (selectedCommunityNoticeIndex !== 0) {
+        setSelectedCommunityNoticeIndex(0);
+      }
+      return;
+    }
+
+    if (selectedCommunityNoticeIndex >= activeCommunityNotices.length) {
+      setSelectedCommunityNoticeIndex(activeCommunityNotices.length - 1);
+    }
+  }, [activeCommunityNotices.length, selectedCommunityNoticeIndex]);
+  const primaryCommunityNotice =
+    activeCommunityNotices[selectedCommunityNoticeIndexSafe] || activeCommunityNotices[0] || null;
   const primaryNoticeHasSenderWhatsApp = Boolean(
     firstTruthy(primaryCommunityNotice?.sender_whatsapp_number)
   );
@@ -3153,7 +3200,7 @@ export default function CommunityHomePage() {
     setNoticeAcknowledgementBusy(busyKey);
     try {
       const result = await acknowledgeCommunityNotice(eventId, { clan_id: clanId });
-      const res = await listCommunityNotices({ clan_id: clanId, limit: 3 }).catch(() => null);
+      const res = await listCommunityNotices({ clan_id: clanId, limit: COMMUNITY_NOTICE_ACTIVE_LIMIT }).catch(() => null);
       applyCommunityNoticeListResponse(res);
       showNotice(
         "success",
@@ -3360,7 +3407,7 @@ export default function CommunityHomePage() {
             clan_id: clanId,
             response,
           });
-      const res = await listCommunityNotices({ clan_id: clanId, limit: 3 }).catch(() => null);
+      const res = await listCommunityNotices({ clan_id: clanId, limit: COMMUNITY_NOTICE_ACTIVE_LIMIT }).catch(() => null);
       applyCommunityNoticeListResponse(res);
       showNotice(
         "success",
@@ -3436,6 +3483,84 @@ export default function CommunityHomePage() {
     );
   }
 
+  function renderCommunityBulletinNoticeSelector(items: CommunityNoticeItem[]) {
+    if (items.length <= 1) return null;
+
+    return (
+      <div
+        data-debug-id="community-home.bulletin.active-selector"
+        style={announcementSelectorStyle(isCompact)}
+      >
+        <span style={{ minWidth: 0, textAlign: isCompact ? "center" : "left" }}>
+          <span
+            style={{
+              ...brandClampLines(1),
+              color: "#07172C",
+              fontSize: 13,
+              fontWeight: 940,
+              lineHeight: 1.18,
+            }}
+          >
+            Active announcements
+          </span>
+          <span
+            style={{
+              ...brandClampLines(1),
+              display: "block",
+              marginTop: 3,
+              color: "#617085",
+              fontSize: 12,
+              fontWeight: 820,
+              lineHeight: 1.22,
+            }}
+          >
+            Showing {selectedCommunityNoticeIndexSafe + 1}/{items.length}
+          </span>
+        </span>
+        <span style={announcementSelectorButtonsStyle()}>
+          {items.map((item, index) => {
+            const selected = index === selectedCommunityNoticeIndexSafe;
+            const label = String(index + 1);
+            const title = wordLimit(
+              firstTruthy(item?.title, item?.body, item?.purpose, "Community announcement"),
+              12
+            );
+
+            return (
+              <StableButton
+                key={`${item?.notice_id || item?.event_id || item?.meeting_id || index}-selector`}
+                type="button"
+                debugId={`community-home.bulletin.notice-select.${index + 1}`}
+                aria-label={`Show announcement ${label}: ${title}`}
+                aria-current={selected ? "true" : undefined}
+                onClick={(event) => {
+                  consumeCommunityButtonEvent(event);
+                  setSelectedCommunityNoticeIndex(index);
+                  setNoticeReactionPanelOpenId("");
+                  setNoticeDetailOpenId("");
+                }}
+                style={{
+                  ...communityActionStyle(selected ? "primary" : "soft"),
+                  minHeight: 34,
+                  minWidth: 34,
+                  width: 34,
+                  height: 34,
+                  padding: 0,
+                  borderRadius: 999,
+                  fontSize: 12,
+                  boxShadow: selected
+                    ? "0 8px 14px rgba(10,24,49,0.12)"
+                    : "none",
+                }}
+              >
+                {label}
+              </StableButton>
+            );
+          })}
+        </span>
+      </div>
+    );
+  }
   function renderCommunityBulletinPrimaryNotice(noticeItem: CommunityNoticeItem) {
     const calendar = noticeCalendarParts(noticeItem);
     const rawBody = firstTruthy(noticeItem?.body, noticeItem?.title, noticeItem?.purpose, "Community notice");
@@ -3715,8 +3840,9 @@ export default function CommunityHomePage() {
     setNoticePosting(true);
     try {
       const result = await createCommunityNotice({ clan_id: clanId, body, ...options });
-      const res = await listCommunityNotices({ clan_id: clanId, limit: 3 }).catch(() => null);
+      const res = await listCommunityNotices({ clan_id: clanId, limit: COMMUNITY_NOTICE_ACTIVE_LIMIT }).catch(() => null);
       applyCommunityNoticeListResponse(res);
+      setSelectedCommunityNoticeIndex(0);
       setNoticeModalOpen(false);
       showNotice(
         "success",
@@ -3816,8 +3942,11 @@ export default function CommunityHomePage() {
             ? "Approved from Community Home Bulletin."
             : "Rejected from Community Home Bulletin.",
       });
-      const res = await listCommunityNotices({ clan_id: clanId, limit: 3 }).catch(() => null);
+      const res = await listCommunityNotices({ clan_id: clanId, limit: COMMUNITY_NOTICE_ACTIVE_LIMIT }).catch(() => null);
       applyCommunityNoticeListResponse(res);
+      if (decision === "approve") {
+        setSelectedCommunityNoticeIndex(0);
+      }
       await refreshCommunityNoticeReviewQueue(clanId).catch(() => null);
       showNotice(
         "success",
@@ -4852,7 +4981,10 @@ export default function CommunityHomePage() {
                   </span>
                 </div>
               ) : primaryCommunityNotice ? (
-                renderCommunityBulletinPrimaryNotice(primaryCommunityNotice)
+                <>
+                  {renderCommunityBulletinNoticeSelector(activeCommunityNotices)}
+                  {renderCommunityBulletinPrimaryNotice(primaryCommunityNotice)}
+                </>
               ) : (
                 <div style={announcementComposerPreviewStyle(isCompact)}>
                   <div

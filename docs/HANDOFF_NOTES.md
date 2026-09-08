@@ -1,3 +1,13 @@
+## 2026-09-08 - Community Bulletin active announcement selector
+
+- Status: Local frontend implementation complete and verified; commit/push/deploy in this slice.
+- Owner trigger: after posting a second non-expired announcement, the first active announcement appeared to disappear because Community Home rendered only the first active notice as the live card and tucked extra live notices into the Settings drawer.
+- Frontend route affected: `/app/community` in `frontend/src/pages/CommunityHomePage.tsx` now fetches up to 10 active central bulletin items and shows a compact `Active announcements` selector when more than one live announcement exists.
+- Behavior: selecting number 1, 2, 3, etc. swaps the single bold bulletin card. The selected notice keeps its own Reactions panel, acknowledgement state, availability response options, full-notice toggle, contact announcer action, and admin roll call.
+- UX boundary: this is still an announcement bulletin, not a notification feed. It deliberately shows one selected announcement at a time and uses small numbered controls instead of dumping all active notices onto the first surface.
+- Docs/audit: `docs/SCREEN_SPECS.md` now records the multi-active selector rule; `frontend/tools/audit-community-home-button-inventory.mjs` now guards the added selector button template and updated Community Home button baseline.
+- Verification passed: `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:community-home-phone-buttons`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`.
+- Devil truth: this fixes visibility and selection for multiple active announcements returned by `/community-notices`. It does not create a new composer scope picker, long attachment storage, or ordinary public QR storage in this slice.
 ## 2026-09-08 - Community Bulletin surfaces marketplace broadcasts centrally
 
 - Status: Local implementation complete and verified; commit/push/deploy in this slice.
