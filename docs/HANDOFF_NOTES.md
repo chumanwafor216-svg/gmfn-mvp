@@ -1,3 +1,11 @@
+## 2026-09-09 - TrustSlip setup-first flow added
+
+- Status: Implemented and verified locally; frontend-only UX correction. Owner phone QA still needed for real tap-path confirmation.
+- Owner trigger: Owner reported that `/app/trust-slip` is too long and asked for the purpose/community choice to stand alone before the TrustSlip paper appears.
+- Change: `/app/trust-slip` now opens with a compact setup panel: choose purpose, choose community, then Generate TrustSlip. The long TrustSlip paper is hidden until generation succeeds, or until the holder explicitly opens the current TrustSlip when a code already exists.
+- Boundary: This does not change TrustSlip issuance rules, selected-community backend behavior, public verification privacy limits, or Trust Passport/private evidence exposure. It only changes the holder-facing sequence.
+- Verification passed: `npm exec eslint -- src/pages/TrustSlipPage.tsx` from `frontend`; `npm --prefix frontend run audit:trust-actions`; `npm --prefix frontend run audit:trust-passport-trustslip-boundary`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`.
+- Devil truth: This should make the first phone screen far less overwhelming, but it still needs real owner phone QA to prove the user understands when to generate versus when to open the current paper.
 ## 2026-09-09 - TrustSlip refresh moved beside community choice
 
 - Status: Implemented and verified locally; frontend-only UX correction. Owner phone QA still needed for real tap-path confirmation.

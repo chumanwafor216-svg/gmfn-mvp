@@ -56,6 +56,7 @@ Bottom navigation is allowed here.
 15. AdminCommunityOwnershipPage
 16. SupportPage
 17. AdminSupportPage
+18. TrustSlipPage
 
 ## Current Repo Name Notes
 

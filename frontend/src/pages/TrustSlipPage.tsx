@@ -2382,6 +2382,7 @@ export default function TrustSlipPage() {
     useState<TrustSlipVerificationScope>("community_specific");
   const [selectedVerificationCommunityOptionId, setSelectedVerificationCommunityOptionId] =
     useState("");
+  const [trustSlipSetupSubmitted, setTrustSlipSetupSubmitted] = useState(false);
 
   useEffect(() => {
     const requestedPack = new URLSearchParams(location.search).get("decision_pack");
@@ -2715,6 +2716,7 @@ export default function TrustSlipPage() {
         ...data,
         summary: mergeFreshTrustSlipSummary(data.summary, reissueResult),
       });
+      setTrustSlipSetupSubmitted(true);
       setConfirmationOutcome(null);
       setMerchantRailLink(null);
       showNotice(
@@ -3787,6 +3789,7 @@ export default function TrustSlipPage() {
       icon: "megaphone",
       rows: [
         ["check", "Status", communityParticipationStatusLabel],
+        ["evidence", "Meaning", communityParticipationPlainLanguage],
         ...communityParticipationRows,
       ],
     },
@@ -4502,6 +4505,219 @@ export default function TrustSlipPage() {
           }
         `}</style>
 
+        {!trustSlipSetupSubmitted ? (
+          <section
+            data-gsn-trustslip-setup-only="true"
+            style={{
+              ...trustSlipScrollClearance(isCompact),
+              ...trustSlipWorkArea(),
+              gridTemplateColumns: "minmax(0, 1fr)",
+              alignItems: "start",
+              position: "relative",
+              overflow: "visible",
+            }}
+          >
+            <div
+              style={{
+                ...trustSlipPaperPanel("#FFFFFF"),
+                gridColumn: "1 / -1",
+                maxWidth: 760,
+                margin: "0 auto",
+                display: "grid",
+                gap: isCompact ? 12 : 14,
+              }}
+            >
+              <TrustPaperWatermark name="shield" color="#D6AA45" size={210} opacity={0.035} />
+              {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
+              <div style={{ display: "grid", gap: 5, position: "relative", zIndex: 1 }}>
+                <div style={{ ...sectionLabel(), color: "#7A4A00" }}>TrustSlip setup</div>
+                <div
+                  style={{
+                    color: "#07172C",
+                    fontSize: isCompact ? 24 : 30,
+                    fontWeight: 1000,
+                    lineHeight: 1.06,
+                  }}
+                >
+                  Choose purpose and community first.
+                </div>
+                <div
+                  style={{
+                    color: "#526579",
+                    fontSize: isCompact ? 13 : 14,
+                    fontWeight: 850,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  The full TrustSlip opens after GSN refreshes it for this exact choice.
+                </div>
+              </div>
+              <div
+                data-gsn-trustslip-purpose-mobile-select="setup"
+                style={{
+                  position: "relative",
+                  zIndex: 1,
+                  borderRadius: 16,
+                  border: "1px solid rgba(214,170,69,0.24)",
+                  background: "#FFFDF7",
+                  padding: isCompact ? "11px 12px" : "13px 14px",
+                  display: "grid",
+                  gap: 8,
+                }}
+              >
+                <label style={{ display: "grid", gap: 7, minWidth: 0 }}>
+                  <span style={{ ...sectionLabel(), color: "#7A4A00" }}>
+                    1. Why are you sending it?
+                  </span>
+                  <select
+                    aria-label="Choose Decision Pack"
+                    value={selectedTrustSlipPurpose}
+                    onChange={(event) =>
+                      setSelectedTrustSlipPurpose(event.target.value as DecisionPackKey)
+                    }
+                    style={{
+                      width: "100%",
+                      minHeight: 50,
+                      borderRadius: 14,
+                      border: "1px solid rgba(37,78,119,0.2)",
+                      background: "#FFFFFF",
+                      color: "#07172C",
+                      fontSize: 16,
+                      fontWeight: 900,
+                      lineHeight: 1.2,
+                      padding: "0 40px 0 12px",
+                    }}
+                  >
+                    {GSN_DECISION_PACKS.map((option) => (
+                      <option key={option.key} value={option.key}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div
+                  style={{
+                    color: "#254E77",
+                    fontSize: isCompact ? 12 : 13,
+                    fontWeight: 900,
+                    lineHeight: 1.3,
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {selectedPurposeOption.label}
+                </div>
+              </div>
+              <div
+                data-gsn-trustslip-verification-scope="setup"
+                style={{
+                  position: "relative",
+                  zIndex: 1,
+                  borderRadius: 16,
+                  border: "1px solid rgba(37,78,119,0.12)",
+                  background: "#F8FBFF",
+                  padding: isCompact ? "11px 12px" : "13px 14px",
+                  display: "grid",
+                  gap: 8,
+                }}
+              >
+                <label style={{ display: "grid", gap: 7, minWidth: 0 }}>
+                  <span style={{ ...sectionLabel(), color: "#7A4A00" }}>
+                    2. Which community should speak for it?
+                  </span>
+                  <select
+                    aria-label="Choose TrustSlip community"
+                    value={verificationScopeSelectValue}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      if (value === "all_visible_communities") {
+                        setSelectedVerificationScope("all_visible_communities");
+                        return;
+                      }
+
+                      setSelectedVerificationScope("community_specific");
+                      setSelectedVerificationCommunityOptionId(value.replace(/^community:/, ""));
+                    }}
+                    style={{
+                      width: "100%",
+                      minHeight: 50,
+                      borderRadius: 14,
+                      border: "1px solid rgba(37,78,119,0.2)",
+                      background: "#FFFFFF",
+                      color: "#07172C",
+                      fontSize: 16,
+                      fontWeight: 900,
+                      padding: "0 40px 0 12px",
+                    }}
+                  >
+                    {verificationCommunityOptions.map((option) => (
+                      <option key={option.id} value={`community:${option.id}`}>
+                        {option.label}
+                      </option>
+                    ))}
+                    <option value="all_visible_communities">All visible community context</option>
+                  </select>
+                </label>
+                <div
+                  style={{
+                    color: "#526579",
+                    fontSize: isCompact ? 12 : 13,
+                    fontWeight: 850,
+                    lineHeight: 1.35,
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {verificationScopeBoundary}
+                </div>
+              </div>
+              <div
+                style={{
+                  position: "relative",
+                  zIndex: 1,
+                  display: "grid",
+                  gridTemplateColumns: isCompact || !trustSlipCode ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+                  gap: 10,
+                }}
+              >
+                <PrimaryButton
+                  type="button"
+                  onClick={() => {
+                    if (trustSlipBlockedByPhone) {
+                      navigateWithOrigin(navigate, routes.identityPhone, location);
+                      return;
+                    }
+                    void refreshTrustSlip();
+                  }}
+                  busy={refreshing}
+                  busyLabel={trustSlipBlockedByPhone ? "Opening..." : "Generating..."}
+                  fullWidth
+                  stableHeight={isCompact ? 54 : 52}
+                  debugId="trust-slip.setup.submit"
+                  style={trustSlipPrimaryActionStyle(isCompact)}
+                >
+                  {trustSlipIconBadge(
+                    trustSlipBlockedByPhone ? "phone" : "refresh",
+                    isCompact ? 26 : 28,
+                    "blue"
+                  )}
+                  {trustSlipBlockedByPhone ? "Verify phone" : "Generate TrustSlip"}
+                </PrimaryButton>
+                {trustSlipCode ? (
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => setTrustSlipSetupSubmitted(true)}
+                    fullWidth
+                    stableHeight={isCompact ? 54 : 52}
+                    debugId="trust-slip.setup.open-current"
+                    style={trustSlipActionButtonStyle(isCompact)}
+                  >
+                    {trustSlipIconBadge("document", isCompact ? 26 : 28, "navy")}
+                    Open current TrustSlip
+                  </SecondaryButton>
+                ) : null}
+              </div>
+            </div>
+          </section>
+        ) : (
         <section
           className="print-trust-document"
           style={{
@@ -6640,6 +6856,7 @@ export default function TrustSlipPage() {
             <TrustPaperSecurityFooter text="Human-first TrustSlip: clear identity, clear status, clear limits, clear verification." />
           </div>
         </section>
+        )}
       </div>
     );
   }

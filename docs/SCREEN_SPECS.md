@@ -980,6 +980,25 @@ Rules:
   that witness strength, renewal, activity evidence, TrustSlip, and community
   record should be read together before a serious decision.
 
+
+## TrustSlipPage
+
+Purpose:
+Let a signed-in holder generate and share a public TrustSlip for one chosen purpose and one chosen community context.
+
+Must show:
+- a short setup-first panel before the full paper
+- Decision Pack/purpose choice
+- community/scope choice
+- one generate/refresh action immediately after those choices
+- the full TrustSlip paper only after generation or an explicit open-current action
+- copy/share and public-code verification controls inside the revealed paper
+
+Rules:
+- The default first view must not expose the full TrustSlip document.
+- Use the sequence: choose purpose, choose community, generate or refresh TrustSlip, then copy/share.
+- Do not expose private Trust Passport evidence on the public TrustSlip flow.
+- Opening the current paper is allowed when a TrustSlip code already exists, but generating after changing purpose/community remains the clean path.
 ## TrustSlipVerifyPage
 
 Purpose:
