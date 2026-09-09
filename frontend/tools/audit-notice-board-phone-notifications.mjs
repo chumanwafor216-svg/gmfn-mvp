@@ -422,6 +422,12 @@ assertContains(
 );
 
 assertContains(
+  files.communityNoticeModal,
+  /const overlayStyle[\s\S]*?zIndex:\s*2400[\s\S]*?padding:\s*"12px 16px 136px"[\s\S]*?const modalStyle[\s\S]*?maxHeight:\s*"min\(690px, calc\(100svh - 156px\)\)"[\s\S]*?paddingBottom:\s*0[\s\S]*?const textareaStyle[\s\S]*?minHeight:\s*96[\s\S]*?const actionsStyle[\s\S]*?position:\s*"sticky"[\s\S]*?padding:\s*"10px 16px max\(14px, env\(safe-area-inset-bottom\)\)"/,
+  "Community notice modal must keep the post/cancel actions above the phone bottom navigation."
+);
+
+assertContains(
   files.communityPage,
   /function noticeEmbeddedEventDate[\s\S]*?NOTICE_EMBEDDED_DATE_RE[\s\S]*?function noticeEffectiveExpiresAt[\s\S]*?createdAt\.getTime\(\) \+ ttlMs[\s\S]*?function isNoticeVisibleOnBoard[\s\S]*?active_board_status[\s\S]*?No new announcement\./,
   "Community Home bulletin must defensively hide legacy expired notices and use the agreed no-new-announcement empty state."

@@ -160022,3 +160022,12 @@ Operational note:
 - Safety boundary: this does not close, suspend, delete, release, or recreate the Community Domain. It records the canonical owner for the existing protected Community Domain and preserves history. Lifecycle close/suspend/reactivate remains separate.
 - Verification passed: `npm exec eslint src/pages/AdminCommunityOwnershipPage.tsx src/lib/api.ts`; `npm --prefix frontend run audit:admin-ops-actions`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `git diff --check -- frontend/src/pages/AdminCommunityOwnershipPage.tsx frontend/src/lib/api.ts`.
 - Devil truth: if Felix's exact identity still cannot be found with `GMFN-U-E485F73F` or `fetern@yahoo.com`, the live data is not matching the earlier observed account record, and the next step is an admin identity lookup/data correction, not a domain lifecycle change.
+
+## 2026-09-09 - Local Community Notice Modal Phone Bottom-Safe Footer
+
+- Owner trigger: live phone screenshot showed the Community Home `Post notice` action area being covered by the bottom navigation on smaller phones after the notice form grew tall.
+- Frontend change: `frontend/src/components/CommunityNoticeModal.tsx` now sits above the app bottom rail with a higher modal z-index, shorter viewport-capped modal height, reduced main notice textarea height, and a sticky footer padded for safe-area bottom spacing.
+- Guardrail change: `frontend/tools/audit-notice-board-phone-notifications.mjs` now cages the phone-safe z-index, modal height cap, textarea height, and sticky footer padding so the post/cancel actions do not drop behind the bottom nav again.
+- Shared impact: this modal is reused from Community Home, Marketplace board posting, and Community Domain notice posting.
+- Verification passed: `npm exec eslint src/components/CommunityNoticeModal.tsx tools/audit-notice-board-phone-notifications.mjs`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `git diff --check -- frontend/src/components/CommunityNoticeModal.tsx frontend/tools/audit-notice-board-phone-notifications.mjs`.
+- Devil truth: this is source/build verified but not fresh phone-screenshot verified in-browser in this session. The next owner phone check should confirm the button footer is fully above the bottom nav on the smallest pilot phone.
