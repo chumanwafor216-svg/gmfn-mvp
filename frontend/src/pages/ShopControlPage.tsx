@@ -3,6 +3,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 import GSNBrandMark from "../components/GSNBrandMark";
+import { RealLifeMeaningGuide } from "../components/RealLifeMeaningGuide";
 import PaymentProofSubmissionPanel from "../components/PaymentProofSubmissionPanel";
 import {
   PrimaryButton,
@@ -48,6 +49,7 @@ import {
 } from "../lib/spotlightPilot";
 import { publicFrontendUrl } from "../lib/publicLinks";
 import { institutionalBlueRailShell } from "../lib/institutionalSurface";
+import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import { marketplaceGovernanceErrorMessage } from "../lib/structuredErrors";
 import { rememberPublishRecovery } from "../lib/publishRecovery";
 import { navigateWithOrigin } from "../lib/nav";
@@ -3364,9 +3366,15 @@ export default function ShopControlPage() {
       ) : null}
 
       {identityLockNotice ? (
-        <div style={noticeCard("info")}>
-          Identity review is needed before protected shop actions can run. {identityLockNotice}
-        </div>
+        <>
+          <div style={noticeCard("info")}>
+            Identity review is needed before protected shop actions can run. {identityLockNotice}
+          </div>
+          <RealLifeMeaningGuide
+            compact={isCompact}
+            guidance={getRealLifeTrustGuidance("shop-control-readiness")}
+          />
+        </>
       ) : null}
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}

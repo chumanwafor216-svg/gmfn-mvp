@@ -8,7 +8,9 @@ import React, {
 } from "react";
 
 import { StableButton } from "../../components/StableButton";
+import { RealLifeMeaningGuide } from "../../components/RealLifeMeaningGuide";
 import type { ProtectedTradeEventRecord, ProtectedTradeRecord } from "../../lib/api";
+import { getRealLifeTrustGuidance } from "../../lib/realLifeTrustGuidance";
 import type {
   MarketplaceActionKind,
   MarketplaceDepartmentTone,
@@ -261,6 +263,14 @@ export default function MarketplaceTradeEvidenceSection({
                 : "No records yet"}
             </span>
           </div>
+        ) : null}
+
+        {sectionsOpen.trade ? (
+          <RealLifeMeaningGuide
+            compact={isCompact}
+            guidance={getRealLifeTrustGuidance("marketplace-trade-boundary")}
+            style={{ marginTop: 12 }}
+          />
         ) : null}
 
         {sectionsOpen.trade ? (

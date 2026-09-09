@@ -13,7 +13,9 @@ import {
   StableCtaLink,
   StableDisclosureSummary,
 } from "../../components/StableButton";
+import { RealLifeMeaningGuide } from "../../components/RealLifeMeaningGuide";
 import { APP_ROUTES, routeWithCommunity } from "../../lib/appRoutes";
+import { getRealLifeTrustGuidance } from "../../lib/realLifeTrustGuidance";
 import type {
   ExpectedPaymentRecord,
   LinkCenterTool,
@@ -498,6 +500,14 @@ export default function MarketplaceToolsSection({ data }: MarketplaceToolsSectio
             </div>
           </div>
         </div>
+
+        {sectionsOpen.tools ? (
+          <RealLifeMeaningGuide
+            compact={isCompact}
+            guidance={getRealLifeTrustGuidance("marketplace-public-link-readiness")}
+            style={{ marginTop: 12 }}
+          />
+        ) : null}
 
         {sectionsOpen.tools ? (
           <>

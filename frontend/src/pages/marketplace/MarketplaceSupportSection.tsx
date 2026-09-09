@@ -1,8 +1,10 @@
 import React from "react";
 import ExplainToggle from "../../components/ExplainToggle";
+import { RealLifeMeaningGuide } from "../../components/RealLifeMeaningGuide";
 import { StableButton, StableDisclosureSummary } from "../../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../../components/GsnLegacyIcon";
 import { marketplaceSectionStyle } from "../../lib/marketplaceActionStability";
+import { getRealLifeTrustGuidance } from "../../lib/realLifeTrustGuidance";
 import type { MarketplaceSupportSectionData } from "./MarketplaceSupportTypes";
 
 type Props = {
@@ -322,6 +324,14 @@ export default function MarketplaceSupportSection({ data }: Props) {
               path and does not share this request form.
             </div>
           </div>
+        ) : null}
+
+        {supportLoanDeskOpen ? (
+          <RealLifeMeaningGuide
+            compact={isCompact}
+            guidance={getRealLifeTrustGuidance("marketplace-support-readiness")}
+            style={{ marginTop: 12 }}
+          />
         ) : null}
 
         {supportLoanDeskOpen ? (

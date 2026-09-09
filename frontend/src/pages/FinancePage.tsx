@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PageTopNav from "../components/PageTopNav";
+import { RealLifeMeaningGuide } from "../components/RealLifeMeaningGuide";
 import {
   PrimaryButton,
   SecondaryButton,
@@ -21,6 +22,7 @@ import {
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
+import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 import { brandClampLines, brandSingleLine } from "../styles/gmfnBrand";
 
@@ -2054,6 +2056,11 @@ export default function FinancePage() {
         </div>
       </section>
 
+      <RealLifeMeaningGuide
+        compact={isCompact}
+        guidance={getRealLifeTrustGuidance("finance-readiness")}
+      />
+
       <section
         style={{
           ...pageCard("#FFFFFF"),
@@ -3168,6 +3175,3 @@ export default function FinancePage() {
     </div>
   );
 }
-
-
-

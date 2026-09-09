@@ -39,7 +39,7 @@ function assertNotContains(file, pattern, message) {
 
 assertContains(
   "src/lib/realLifeTrustGuidance.ts",
-  /RealLifeTrustScenario[\s\S]*?join-request[\s\S]*?pending-approval[\s\S]*?no-community-home[\s\S]*?borrowing-readiness[\s\S]*?marketplace-access[\s\S]*?support-request/,
+  /RealLifeTrustScenario[\s\S]*?join-request[\s\S]*?pending-approval[\s\S]*?no-community-home[\s\S]*?borrowing-readiness[\s\S]*?finance-readiness[\s\S]*?shop-control-readiness[\s\S]*?trust-passport-repair[\s\S]*?marketplace-access[\s\S]*?marketplace-money-readiness[\s\S]*?marketplace-support-readiness[\s\S]*?marketplace-trade-boundary[\s\S]*?marketplace-public-link-readiness[\s\S]*?support-request/,
   "Real-life trust guidance scenarios must stay in a shared frontend library."
 );
 
@@ -65,6 +65,12 @@ assertNotContains(
   "src/lib/realLifeTrustGuidance.ts",
   /\b(?:guaranteed approval|credit approved|bank verified|government verified)\b/i,
   "Real-life trust guidance must not overpromise approval, banking, or government verification."
+);
+
+assertNotContains(
+  "src/lib/realLifeTrustGuidance.ts",
+  /\b(?:GSN holds funds|GSN guarantees transfer|delivery guaranteed|escrow secured|manual trust edit)\b/i,
+  "Real-life trust guidance must not overpromise custody, transfer, delivery, escrow, or manual trust editing."
 );
 
 assertContains(
@@ -119,6 +125,48 @@ assertContains(
   "src/pages/MarketplacePage.tsx",
   /No community is active in Marketplace yet[\s\S]*?RealLifeMeaningGuide[\s\S]*?getRealLifeTrustGuidance\("marketplace-access"\)[\s\S]*?debugId="marketplace\.empty\.community-home"/,
   "Marketplace blocked access must explain the real-life meaning of choosing a community before commerce tools."
+);
+
+assertContains(
+  "src/pages/FinancePage.tsx",
+  /RealLifeMeaningGuide[\s\S]*?getRealLifeTrustGuidance\("finance-readiness"\)[\s\S]*?Choose what you need now/,
+  "Finance must explain real-life finance evidence boundaries before users choose money lanes."
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /identityLockNotice[\s\S]*?RealLifeMeaningGuide[\s\S]*?getRealLifeTrustGuidance\("shop-control-readiness"\)/,
+  "Shop Control identity-lock blockers must explain why protected shop actions wait for identity confidence."
+);
+
+assertContains(
+  "src/pages/TrustScorePage.tsx",
+  /Repair or Next Step[\s\S]*?RealLifeMeaningGuide[\s\S]*?getRealLifeTrustGuidance\("trust-passport-repair"\)[\s\S]*?First thing to check/,
+  "Trust Passport repair must explain that repair strengthens evidence instead of manually editing trust."
+);
+
+assertContains(
+  "src/pages/marketplace/MarketplaceMoneySection.tsx",
+  /!communitySettlementReady \|\| !payoutReady[\s\S]*?RealLifeMeaningGuide[\s\S]*?getRealLifeTrustGuidance\("marketplace-money-readiness"\)/,
+  "Marketplace Money blockers must explain rail and payout readiness before money movement."
+);
+
+assertContains(
+  "src/pages/marketplace/MarketplaceSupportSection.tsx",
+  /supportLoanDeskOpen[\s\S]*?RealLifeMeaningGuide[\s\S]*?getRealLifeTrustGuidance\("marketplace-support-readiness"\)[\s\S]*?Start a support request/,
+  "Marketplace Support lane must explain evidence readiness before users share support pressure."
+);
+
+assertContains(
+  "src/pages/marketplace/MarketplaceTradeEvidenceSection.tsx",
+  /Trade Evidence[\s\S]*?RealLifeMeaningGuide[\s\S]*?getRealLifeTrustGuidance\("marketplace-trade-boundary"\)[\s\S]*?marketplace\.trade\.evidence-module/,
+  "Marketplace Trade Evidence lane must explain trade evidence boundaries before trade recording."
+);
+
+assertContains(
+  "src/pages/marketplace/MarketplaceToolsSection.tsx",
+  /Access & Public Links[\s\S]*?RealLifeMeaningGuide[\s\S]*?getRealLifeTrustGuidance\("marketplace-public-link-readiness"\)[\s\S]*?marketplace\.links\.choose\.verify/,
+  "Marketplace Links/Repost lane must explain scoped public-link readiness before sharing outward."
 );
 
 if (findings.length > 0) {

@@ -1,8 +1,10 @@
 import React from "react";
 
 import { GsnLegacyIcon, type GsnIconName } from "../../components/GsnLegacyIcon";
+import { RealLifeMeaningGuide } from "../../components/RealLifeMeaningGuide";
 import { StableButton, StableCtaLink } from "../../components/StableButton";
 import { marketplaceSectionStyle } from "../../lib/marketplaceActionStability";
+import { getRealLifeTrustGuidance } from "../../lib/realLifeTrustGuidance";
 import type {
   CommunityMoneySettlement,
   CommunityMoneySurface,
@@ -786,6 +788,15 @@ export default function MarketplaceMoneySection({
               </span>
             </div>
           </div>
+
+          {!communitySettlementReady || !payoutReady ? (
+            <div style={{ gridColumn: "1 / -1" }}>
+              <RealLifeMeaningGuide
+                compact={isCompact}
+                guidance={getRealLifeTrustGuidance("marketplace-money-readiness")}
+              />
+            </div>
+          ) : null}
 
           {payInEditorOpen ? (
             <div

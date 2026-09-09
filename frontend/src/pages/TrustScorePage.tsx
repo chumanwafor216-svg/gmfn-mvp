@@ -14,6 +14,7 @@ import EvidenceMeter, {
   stopInertMeterTap,
 } from "../components/EvidenceMeter";
 import PageTopNav from "../components/PageTopNav";
+import { RealLifeMeaningGuide } from "../components/RealLifeMeaningGuide";
 import GSNBrandMark from "../components/GSNBrandMark";
 import {
   PrimaryButton,
@@ -53,6 +54,7 @@ import {
   buildTrustPassportShareText,
   buildTrustPassportSnapshot,
 } from "../lib/trustDocumentSnapshots";
+import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import {
   getContextualEvidencePosture,
   TRUST_BAND_SHORT_LABELS,
@@ -4923,6 +4925,12 @@ export default function TrustScorePage() {
             >
               {nextStep.detail}
             </p>
+
+            <RealLifeMeaningGuide
+              compact={isCompact}
+              guidance={getRealLifeTrustGuidance("trust-passport-repair")}
+              style={{ marginTop: 12 }}
+            />
 
             <div
               style={{

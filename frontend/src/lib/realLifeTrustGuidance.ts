@@ -4,7 +4,14 @@ export type RealLifeTrustScenario =
   | "no-community-home"
   | "identity-evidence"
   | "borrowing-readiness"
+  | "finance-readiness"
+  | "shop-control-readiness"
+  | "trust-passport-repair"
   | "marketplace-access"
+  | "marketplace-money-readiness"
+  | "marketplace-support-readiness"
+  | "marketplace-trade-boundary"
+  | "marketplace-public-link-readiness"
   | "support-request";
 
 export type RealLifeTrustGuidance = {
@@ -119,6 +126,57 @@ export function getRealLifeTrustGuidance(
     };
   }
 
+  if (scenario === "finance-readiness") {
+    return {
+      eyebrow: "Real-life meaning",
+      title: "Finance here is evidence and coordination, not banking.",
+      meaning:
+        "Money in, money out, support, repayment, and rail status help people understand what happened and what is still waiting.",
+      why:
+        "For underbanked members, clean community finance records can explain responsibility that a formal bank file may not show.",
+      firstStep:
+        "Open one finance lane, check the current status, then complete the missing payment, payout, support, or evidence step.",
+      ifSkipped:
+        "Unclear finance records can delay support, repayment decisions, shop confidence, and later TrustSlip checks.",
+      boundary:
+        "GSN is not a bank or lender. It records finance evidence and the decision trail around community money activity.",
+    };
+  }
+
+  if (scenario === "shop-control-readiness") {
+    return {
+      eyebrow: "Real-life meaning",
+      title: "Protected shop actions depend on identity confidence.",
+      meaning:
+        "Your public shop, Vault links, Spotlight, and merchant checks all point back to one GSN identity.",
+      why:
+        "Identity continuity protects buyers, community admins, and the shop owner from mistaken public exposure or impersonation.",
+      firstStep:
+        "Resolve the identity review first, then return to Shop Control to publish, verify, or share protected shop tools.",
+      ifSkipped:
+        "Public shop links or paid visibility can attach to a weak identity record and reduce confidence instead of building it.",
+      boundary:
+        "Shop evidence supports marketplace judgement. It is not delivery, escrow, payment, or legal identity verification.",
+    };
+  }
+
+  if (scenario === "trust-passport-repair") {
+    return {
+      eyebrow: "Real-life meaning",
+      title: "Repair means strengthening evidence, not editing trust by hand.",
+      meaning:
+        "A weak Trust Passport usually means identity, membership, support, repayment, or community evidence needs a clearer record.",
+      why:
+        "This helps people who are known in real life but poorly represented in formal systems build portable evidence safely.",
+      firstStep:
+        "Read the pressure signal, open the next safe evidence step, and add or confirm only what really happened.",
+      ifSkipped:
+        "A weak or confusing passport can make outside readers ask for fresh confirmation before work, goods, support, or referral.",
+      boundary:
+        "Trust Passport is generated from evidence. GSN must not manually rewrite trust or hide past events to make a record look stronger.",
+    };
+  }
+
   if (scenario === "marketplace-access") {
     return {
       eyebrow: "Real-life meaning",
@@ -133,6 +191,74 @@ export function getRealLifeTrustGuidance(
         "Without the right community context, a listing can look unsupported or may not be visible to the right people.",
       boundary:
         "Marketplace evidence supports judgement. It is not a guarantee that every claim is true.",
+    };
+  }
+
+  if (scenario === "marketplace-money-readiness") {
+    return {
+      eyebrow: "Real-life meaning",
+      title: "Money rails must be clear before people act.",
+      meaning:
+        "A receiving rail or payout path tells members where money activity belongs and how it can be checked later.",
+      why:
+        "Clear rails protect members from sending money to the wrong place and help underbanked users keep a visible record.",
+      firstStep:
+        "Set or check the Money In rail, then confirm the payout or withdrawal path before moving money outside GSN.",
+      ifSkipped:
+        "Money activity can become hard to verify, and support or repayment evidence may not match the real transaction.",
+      boundary:
+        "GSN records payment instructions and evidence. It does not hold funds, guarantee transfer, or replace the community's money decision.",
+    };
+  }
+
+  if (scenario === "marketplace-support-readiness") {
+    return {
+      eyebrow: "Real-life meaning",
+      title: "Support requests need enough evidence before pressure is shared.",
+      meaning:
+        "A support request asks real people to stand with a borrower, so the amount, reason, repayment plan, and supporters must be visible.",
+      why:
+        "People-backed support works only when risk is explained clearly and no one is pressured through hidden promises.",
+      firstStep:
+        "Complete the support draft, check the suggested supporters, then send requests only when the record is ready.",
+      ifSkipped:
+        "Supporters may decline or delay because they cannot see what they are being asked to back.",
+      boundary:
+        "GSN records the support evidence and responses. It is not the lender and does not force anyone to guarantee repayment.",
+    };
+  }
+
+  if (scenario === "marketplace-trade-boundary") {
+    return {
+      eyebrow: "Real-life meaning",
+      title: "Trade evidence should be recorded before goods or money move.",
+      meaning:
+        "The trade record keeps the item, other side, terms, and outcome in one place so the decision can be checked later.",
+      why:
+        "This protects buyers and sellers when trust depends on community memory rather than formal paperwork.",
+      firstStep:
+        "Create the trade record, add the agreed terms, then record delivery, receipt, dispute, or completion as it happens.",
+      ifSkipped:
+        "If something goes wrong, the community may only have scattered messages instead of a clear evidence trail.",
+      boundary:
+        "Trade evidence is not escrow, delivery guarantee, payment release authority, or proof that every claim is true.",
+    };
+  }
+
+  if (scenario === "marketplace-public-link-readiness") {
+    return {
+      eyebrow: "Real-life meaning",
+      title: "Public links should expose only ready, scoped evidence.",
+      meaning:
+        "Community records, invite links, shop links, and reposts travel outside the app, so they must point to the right public context.",
+      why:
+        "A scoped link helps outsiders check the current record without seeing private member, payment, or admin information.",
+      firstStep:
+        "Prepare the link or payment code inside this marketplace, then share only the ready package shown here.",
+      ifSkipped:
+        "Old, missing, or unsupported links can send people to the wrong place or make the shop/community look less trustworthy.",
+      boundary:
+        "Public links support verification and access. They do not prove delivery, payment, ownership, or future behaviour by themselves.",
     };
   }
 

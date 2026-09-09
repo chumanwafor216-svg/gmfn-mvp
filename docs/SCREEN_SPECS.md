@@ -631,6 +631,9 @@ Rules:
 - If no community is active, the blocked state must explain the real-life
   meaning of choosing a community before listings, shops, demand, money, and
   trust work can safely continue.
+- Money rail, support-request, trade-evidence, and public-link or repost
+  blockers must use shared real-life meaning guidance before a member moves
+  money, asks supporters, records trade evidence, or shares outward links.
 - Trust context must appear before operational choices so the page reads as
   community trust infrastructure, not generic commerce.
 - The trust front desk should use safe wording such as `recorded community
@@ -670,6 +673,9 @@ Must show:
 
 Rules:
 - Finance must guide the user through one money lane at a time.
+- The Finance front desk must explain that GSN Finance is evidence and
+  coordination infrastructure, not a bank, lender, wallet custodian, payment
+  processor, or promise that money will move.
 - Do not expose every route, event table, signal, and payment tool as equal
   first-screen choices.
 - Marketplace-local finance may be summarized when the user arrived from a
@@ -1052,6 +1058,9 @@ Must show:
 - Owner Spotlight Status
 
 Rules:
+- Identity-lock and protected-shop-action blockers must explain why Shop
+  Control waits for GSN identity confidence before public shop, Vault,
+  Spotlight, merchant-verification, or outward sharing actions can run.
 - Ordinary public shop link surfaces must show and copy the complete canonical public shop root URL, including the public domain and `/shop/{GSN_ID}`. Do not add `#shop-diaries`, product, block, focus, or community query hints to ordinary public share links.
 - Explicit legacy/deep-link handling may still reveal a shelf or product after the full public shop loads, but it must be separate from default ordinary public sharing. Vault/private access links remain exact private targets such as `/vault/{token}`.
 - Join invite link surfaces must show and copy only canonical `/start/join/{code}` invite URLs. They must not fall back to unrelated app routes such as Finance, Dashboard, Trust, or Marketplace.
