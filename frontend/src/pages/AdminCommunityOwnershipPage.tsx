@@ -11,6 +11,7 @@ import {
 import {
   getAdminCommunityOwnershipLookup,
   postAdminCommunityDomainLifecycle,
+  postAdminCommunityDomainOwnershipReconciliation,
   postAdminCommunityOwnershipReconciliation,
 } from "../lib/api";
 
@@ -188,6 +189,18 @@ export default function AdminCommunityOwnershipPage() {
   const [domainLifecycleMessage, setDomainLifecycleMessage] = useState("");
   const [domainLifecycleError, setDomainLifecycleError] = useState("");
   const [domainLifecycleBusy, setDomainLifecycleBusy] = useState<"preview" | "execute" | "">("");
+  const [domainOwnerName, setDomainOwnerName] = useState(
+    safeStr(searchParams.get("domain_name")) || "Pillar of Hope"
+  );
+  const [domainOwnerId, setDomainOwnerId] = useState(0);
+  const [domainOwnerQuery, setDomainOwnerQuery] = useState(safeStr(searchParams.get("owner_query")));
+  const [domainOwnerNote, setDomainOwnerNote] = useState("");
+  const [domainOwnerConfirmed, setDomainOwnerConfirmed] = useState(false);
+  const [domainOwnerPreview, setDomainOwnerPreview] = useState<any>(null);
+  const [domainOwnerResult, setDomainOwnerResult] = useState<any>(null);
+  const [domainOwnerMessage, setDomainOwnerMessage] = useState("");
+  const [domainOwnerError, setDomainOwnerError] = useState("");
+  const [domainOwnerBusy, setDomainOwnerBusy] = useState<"preview" | "execute" | "">("");
   const didInitialLookupRef = useRef(false);
 
   const communities = useMemo(() => {
@@ -219,6 +232,12 @@ export default function AdminCommunityOwnershipPage() {
     [ownerIntakes, selectedIntakeId]
   );
   const directOwner = useMemo(() => directOwnerSignal(ownerQuery), [ownerQuery]);
+  const directDomainOwner = useMemo(() => directOwnerSignal(domainOwnerQuery), [domainOwnerQuery]);
+  const domainOwnerIdentityReady = Boolean(
+    safeStr(directDomainOwner.owner_gmfn_id) ||
+      safeStr(directDomainOwner.owner_email) ||
+      safeStr(directDomainOwner.owner_phone_e164)
+  );
   const ownerIdentityReady = Boolean(
     selectedOwnerId ||
       selectedIntakeId ||
@@ -372,6 +391,56 @@ export default function AdminCommunityOwnershipPage() {
       setDomainLifecycleBusy("");
     }
   }
+
+  async function runDomainOwnerPreview() {
+    setDomainOwnerBusy("preview");
+    setDomainOwnerError("");
+    setDomainOwnerMessage("");
+    setDomainOwnerPreview(null);
+    setDomainOwnerResult(null);
+    try {
+      const out = await postAdminCommunityDomainOwnershipReconciliation({
+        community_domain_id: domainOwnerId || undefined,
+        domain_name: domainOwnerId ? undefined : domainOwnerName,
+        owner_gmfn_id: directDomainOwner.owner_gmfn_id,
+        owner_email: directDomainOwner.owner_email,
+        owner_phone_e164: directDomainOwner.owner_phone_e164,
+        execute: false,
+      });
+      setDomainOwnerPreview(out);
+      setDomainOwnerMessage(safeStr(out?.message) || "Domain owner transfer preview ready.");
+    } catch (err: any) {
+      setDomainOwnerError(safeStr(err?.message || err) || "Domain owner preview failed.");
+    } finally {
+      setDomainOwnerBusy("");
+    }
+  }
+
+  async function runDomainOwnerExecute() {
+    setDomainOwnerBusy("execute");
+    setDomainOwnerError("");
+    setDomainOwnerMessage("");
+    setDomainOwnerResult(null);
+    try {
+      const out = await postAdminCommunityDomainOwnershipReconciliation({
+        community_domain_id: domainOwnerId || undefined,
+        domain_name: domainOwnerId ? undefined : domainOwnerName,
+        owner_gmfn_id: directDomainOwner.owner_gmfn_id,
+        owner_email: directDomainOwner.owner_email,
+        owner_phone_e164: directDomainOwner.owner_phone_e164,
+        owner_proof_confirmed: domainOwnerConfirmed,
+        execute: true,
+        reviewer_note: domainOwnerNote,
+      });
+      setDomainOwnerResult(out);
+      setDomainOwnerPreview(out);
+      setDomainOwnerMessage(safeStr(out?.message) || "Community Domain owner recorded.");
+    } catch (err: any) {
+      setDomainOwnerError(safeStr(err?.message || err) || "Domain owner transfer failed.");
+    } finally {
+      setDomainOwnerBusy("");
+    }
+  }
   useEffect(() => {
     if (didInitialLookupRef.current) return;
     if (safeStr(searchParams.get("community_name")) || safeStr(searchParams.get("owner_query"))) {
@@ -384,6 +453,8 @@ export default function AdminCommunityOwnershipPage() {
   const canExecute = Boolean(preview) && proofConfirmed && safeStr(note).length >= 12 && !result;
   const canLifecyclePreview = Boolean(domainLifecycleId || safeStr(domainLifecycleName));
   const canLifecycleExecute = Boolean(domainLifecyclePreview) && domainLifecycleConfirmed && safeStr(domainLifecycleNote).length >= 12 && !domainLifecycleResult;
+  const canDomainOwnerPreview = Boolean(domainOwnerId || safeStr(domainOwnerName)) && domainOwnerIdentityReady;
+  const canDomainOwnerExecute = Boolean(domainOwnerPreview) && domainOwnerConfirmed && safeStr(domainOwnerNote).length >= 12 && !domainOwnerResult;
   const hasStuckIntake = Boolean(selectedIntake || ownerIntakes.length > 0);
   const noOwnerMatches = Boolean(lookup && safeStr(ownerQuery) && owners.length === 0 && ownerIntakes.length === 0);
   const repairState = result
@@ -456,6 +527,131 @@ export default function AdminCommunityOwnershipPage() {
           </div>
         </section>
 
+        <section style={card("#F8FBFF")}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <div style={label()}>Community Domain owner</div>
+              <h2 style={{ margin: "6px 0 0", color: "#0B1F33", fontSize: 22 }}>Transfer the protected domain</h2>
+            </div>
+            <div style={{ ...helper(), maxWidth: 430 }}>
+              Use this when a pilot/demo Community Domain name already exists and must move to the rightful representative. This does not close, delete, or recreate the domain.
+            </div>
+          </div>
+
+          <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 12 }}>
+            <div>
+              <div style={fieldLabel()}>Domain name</div>
+              <input
+                value={domainOwnerName}
+                onChange={(event) => {
+                  setDomainOwnerName(event.target.value);
+                  setDomainOwnerId(0);
+                  setDomainOwnerPreview(null);
+                  setDomainOwnerResult(null);
+                }}
+                placeholder="pillar-of-hope"
+                style={inputStyle()}
+              />
+            </div>
+            <div>
+              <div style={fieldLabel()}>Or domain ID</div>
+              <input
+                value={domainOwnerId || ""}
+                onChange={(event) => {
+                  setDomainOwnerId(toNum(event.target.value));
+                  setDomainOwnerPreview(null);
+                  setDomainOwnerResult(null);
+                }}
+                placeholder="123"
+                inputMode="numeric"
+                style={inputStyle()}
+              />
+            </div>
+            <div>
+              <div style={fieldLabel()}>New owner</div>
+              <input
+                value={domainOwnerQuery}
+                onChange={(event) => {
+                  setDomainOwnerQuery(event.target.value);
+                  setDomainOwnerPreview(null);
+                  setDomainOwnerResult(null);
+                }}
+                placeholder="GMFN-U-E485F73F or email"
+                style={inputStyle()}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <SecondaryButton
+              onClick={runDomainOwnerPreview}
+              busy={domainOwnerBusy === "preview"}
+              busyLabel="Previewing..."
+              disabled={domainOwnerBusy !== "" || !canDomainOwnerPreview}
+              debugId="admin-community-domain-ownership.preview"
+            >
+              {iconLabel("eye", "Preview domain transfer")}
+            </SecondaryButton>
+          </div>
+
+          <div style={{ marginTop: 10, ...helper() }}>
+            For Felix, use exact ID <strong>GMFN-U-E485F73F</strong> or exact email <strong>fetern@yahoo.com</strong>. Do not use lifecycle close/suspend for ownership transfer.
+          </div>
+
+          {domainOwnerPreview ? (
+            <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+              <div style={{ ...factGrid(142) }}>
+                {fact("Domain", safeStr(domainOwnerPreview?.community_domain?.display_name) || safeStr(domainOwnerPreview?.community_domain?.domain_name))}
+                {fact("Current owner", userName(domainOwnerPreview?.current_owner))}
+                {fact("New owner", userName(domainOwnerPreview?.requested_owner))}
+                {fact("Action", safeStr(domainOwnerPreview?.membership_action).replace(/_/g, " "))}
+              </div>
+              <div style={{ ...institutionalInnerCard("#FFFFFF"), ...helper() }}>
+                {safeStr(domainOwnerPreview?.boundary) || "History is preserved. This records Community Domain ownership; it does not delete or duplicate the name."}
+              </div>
+              {!domainOwnerResult ? (
+                <div style={{ display: "grid", gap: 12 }}>
+                  <label style={{ display: "flex", gap: 10, alignItems: "flex-start", color: "#0B1F33", fontWeight: 900 }}>
+                    <input
+                      type="checkbox"
+                      checked={domainOwnerConfirmed}
+                      onChange={(event) => setDomainOwnerConfirmed(event.target.checked)}
+                      style={{ marginTop: 3 }}
+                    />
+                    I checked proof that this person is the real owner or representative for this Community Domain.
+                  </label>
+                  <div>
+                    <div style={fieldLabel()}>Reviewer note</div>
+                    <textarea
+                      value={domainOwnerNote}
+                      onChange={(event) => setDomainOwnerNote(event.target.value)}
+                      placeholder="Example: Felix Nwobi is present with Chuma. Pillar of Hope demo domain was created under Chuma during pilot setup and is now transferred to the rightful representative."
+                      rows={4}
+                      style={{ ...inputStyle(), resize: "vertical", minHeight: 92 }}
+                    />
+                  </div>
+                  <PrimaryButton
+                    onClick={runDomainOwnerExecute}
+                    busy={domainOwnerBusy === "execute"}
+                    busyLabel="Recording..."
+                    disabled={domainOwnerBusy !== "" || !canDomainOwnerExecute}
+                    debugId="admin-community-domain-ownership.execute"
+                  >
+                    {iconLabel("check", "Record domain owner")}
+                  </PrimaryButton>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {(domainOwnerMessage || domainOwnerError) ? (
+            <div style={{ marginTop: 12, ...institutionalInnerCard(domainOwnerError ? "#FEF2F2" : "#ECFDF5") }}>
+              <div style={{ color: domainOwnerError ? "#991B1B" : "#065F46", fontWeight: 1000 }}>
+                {iconLabel(domainOwnerError ? "alert" : "check", domainOwnerError || domainOwnerMessage)}
+              </div>
+            </div>
+          ) : null}
+        </section>
         <section style={card()}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>

@@ -5248,6 +5248,21 @@ export async function postAdminCommunityOwnershipReconciliation(payload: {
 }): Promise<any> {
   return httpJson("/admin/community-ownership/reconcile", "POST", payload);
 }
+
+export async function postAdminCommunityDomainOwnershipReconciliation(payload: {
+  domain_name?: string | null;
+  community_domain_id?: number | null;
+  owner_user_id?: number | null;
+  owner_gmfn_id?: string | null;
+  owner_email?: string | null;
+  owner_phone_e164?: string | null;
+  owner_proof_confirmed?: boolean;
+  execute?: boolean;
+  reviewer_note?: string | null;
+}): Promise<any> {
+  return httpJson("/admin/community-domain-ownership/reconcile", "POST", payload);
+}
+
 export async function postAdminCommunityDomainLifecycle(payload: {
   domain_name?: string | null;
   community_domain_id?: number | null;
