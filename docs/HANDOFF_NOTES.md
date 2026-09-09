@@ -1,3 +1,13 @@
+## 2026-09-09 - Free tooling audit sweep and Community Domain notice label polish
+
+- Status: Implemented and verified locally; not pushed/deployed under the current batch-freeze and Render-cost caution.
+- Owner trigger: Owner asked to keep going until GSN had taken full advantage of the free ride from available tooling and local production guards.
+- Free-tooling boundary: Used repo-local audits, lint, and build only. No Gamma credits were spent, no Canva generation was retried, and no Render deploy was triggered.
+- Community Home change: Linked Community Domain notices on the shared Community Bulletin now reuse a single `isCommunityDomainNotice` helper and can show the source as `Domain Name (DomainCode)` when both `source_domain_name` and `source_domain_code` are present. This makes official-domain notices more traceable without changing Bulletin action geometry.
+- Audit infrastructure changes: `audit-money-in-identity-fallback.mjs` now recognizes the current typed/nested Money In fallback helper while still requiring signed-in member ID, selected-community member ID, stored member ID fallback, community-ID rejection, and honest missing-ID copy. `audit-notice-board-phone-notifications.mjs` now guards the shared Community Domain notice helper plus domain-code source fallback.
+- Verification passed: startup timing, app tab first paint, slow-tab preload priority, icon protocol, Finance package and all Finance lane/fallback checks, Marketplace package and lane checks, Trust Passport package/lane checks, public TrustSlip/community verification/evidence boundaries, entry/auth, action response, support helpdesk, notice-board phone notifications, Web Push production readiness, protected button freeze, targeted ESLint, and `npm --prefix frontend run build`.
+- Timing truth: local timing guards passed with warm shell 5772ms, warm Dashboard 6009ms, auth-retry Dashboard 8180ms, and app tab first surfaces between 1315ms and 4838ms before delayed secondary calls. This confirms first-paint discipline locally, not live Render cold-start removal.
+- Devil truth: This batch improves guard accuracy and one visible official-domain source label. It does not cancel subscriptions, prove live Render billing correctness, eliminate DNS/network/cold-start delays, or turn Web Push into a live configured service unless production VAPID/env settings are present.
 ## 2026-09-09 - Button stability audit refreshed for Create Entry
 
 - Status: Implemented and verified locally; not pushed/deployed in this slice under the current batch-freeze rule.

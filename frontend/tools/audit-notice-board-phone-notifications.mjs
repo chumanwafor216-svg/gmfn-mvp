@@ -434,7 +434,7 @@ assertContains(
 
 assertContains(
   files.communityPage,
-  /noticeKindLabel[\s\S]*?community_domain_notice_board[\s\S]*?Official domain[\s\S]*?source_domain_name[\s\S]*?source_domain_code/,
+  /function isCommunityDomainNotice[\s\S]*?community_domain_notice_board[\s\S]*?scope === "community_domain"[\s\S]*?kind\.includes\("domain"\)[\s\S]*?function noticeKindLabel[\s\S]*?isCommunityDomainNotice\(item\)[\s\S]*?Official domain[\s\S]*?source_domain_name[\s\S]*?source_domain_code[\s\S]*?`\$\{domainName\} \(\$\{domainCode\}\)`/,
   "Community Home must label linked Community Domain notices as official-domain items on the shared Bulletin."
 );
 

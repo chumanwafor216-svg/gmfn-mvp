@@ -24,7 +24,7 @@ assertContains(
 );
 
 assertContains(
-  /function resolveMoneyInMemberGmfnId\(me: any, currentClan: any\): string \{[\s\S]*?me\?\.gmfn_id[\s\S]*?currentClan\?\.current_member_gmfn_id[\s\S]*?currentClan\?\.member_gmfn_id[\s\S]*?currentClan\?\.membership\?\.gmfn_id[\s\S]*?\(api as any\)\.getStoredGmfnId\?\.\(\)/,
+  /function resolveMoneyInMemberGmfnId\(me: unknown, currentClan: unknown\): string \{[\s\S]*?nestedValue\(me,\s*"gmfn_id"\)[\s\S]*?nestedValue\(currentClan,\s*"current_member_gmfn_id"\)[\s\S]*?nestedValue\(currentClan,\s*"member_gmfn_id"\)[\s\S]*?nestedValue\(currentClan,\s*"membership",\s*"gmfn_id"\)[\s\S]*?api\.getStoredGmfnId\(\)/,
   "Money In must use signed-in and selected-community member GSN ID fallbacks."
 );
 
@@ -39,7 +39,7 @@ assertContains(
 );
 
 assertContains(
-  /function getCommunityPublicId\(currentClan: any\): string \{[\s\S]*?\|\| "No community ID yet"/,
+  /function getCommunityPublicId\(currentClan: unknown\): string \{[\s\S]*?\|\| "No community ID yet"/,
   "Money In must show honest missing-community-ID copy instead of stale issue-tracking language."
 );
 

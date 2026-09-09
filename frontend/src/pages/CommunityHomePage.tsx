@@ -1623,14 +1623,19 @@ function communityNoticeAttachmentUrl(item: CommunityNoticeItem | null | undefin
   }
 }
 
+function isCommunityDomainNotice(item: CommunityNoticeItem | null | undefined): boolean {
+  const source = safeStr(item?.source).toLowerCase();
+  const scope = safeStr(item?.notice_scope).toLowerCase();
+  const kind = safeStr(item?.notice_kind).toLowerCase();
+  return Boolean(source === "community_domain_notice_board" || scope === "community_domain" || kind.includes("domain"));
+}
+
 function noticeKindLabel(item: CommunityNoticeItem | null | undefined): string {
   if (isMeetingNotice(item)) return "Meeting planning";
   if (isMarketplaceNotice(item)) return "Marketplace";
   const source = safeStr(item?.source).toLowerCase();
-  const scope = safeStr(item?.notice_scope).toLowerCase();
-  const kind = safeStr(item?.notice_kind).toLowerCase();
   if (source === "demand_box") return "Community need";
-  if (source === "community_domain_notice_board" || scope === "community_domain" || kind.includes("domain")) {
+  if (isCommunityDomainNotice(item)) {
     return "Official domain";
   }
   return "Official notice";
@@ -1677,7 +1682,18 @@ function noticeSourceCommunityLabel(
   if (isMarketplaceNotice(item)) {
     return firstTruthy(item?.source_shop_name, item?.source_community_name, fallbackName, "Marketplace");
   }
-  return firstTruthy(item?.source_domain_name, item?.source_community_name, fallbackName, "Selected community");
+  if (isCommunityDomainNotice(item)) {
+    const domainName = firstTruthy(item?.source_domain_name);
+    const domainCode = firstTruthy(item?.source_domain_code);
+    return firstTruthy(
+      domainName && domainCode ? `${domainName} (${domainCode})` : "",
+      domainName,
+      domainCode,
+      fallbackName,
+      "Community Domain"
+    );
+  }
+  return firstTruthy(item?.source_community_name, fallbackName, "Selected community");
 }
 
 function noticeSourceLine(
