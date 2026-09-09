@@ -132,6 +132,12 @@ COMMUNITY_VERIFY_PREFIXES = (
     "GMFN-COM-",
     "GMFM-COM-",
 )
+PUBLIC_VERIFICATION_LEVELS = {"minimal", "standard"}
+
+
+def _public_verification_level(level: Optional[str]) -> str:
+    normalized = str(level or "standard").strip().lower()
+    return normalized if normalized in PUBLIC_VERIFICATION_LEVELS else "standard"
 
 
 def _confirmation_request_action_url(request_id: int) -> str:
@@ -4225,7 +4231,9 @@ def _public_community_domain_member_verification(
     *,
     community_key: str,
     member_key: str,
+    level: str = "standard",
 ) -> Dict[str, Any]:
+    verification_level = _public_verification_level(level)
     domain = _find_public_community_domain(db, community_key=community_key)
     domain_status = str(getattr(domain, "status", "") or "draft").strip().lower()
     if domain_status != "active":
@@ -4270,7 +4278,7 @@ def _public_community_domain_member_verification(
             .filter(TrustEvent.subject_user_id == int(member.id))
             .filter(~TrustEvent.event_type.in_(PUBLIC_ACTIVITY_EXCLUDED_EVENT_TYPES))
             .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
-            .limit(100)
+            .limit(20 if verification_level == "minimal" else 100)
             .all()
         )
         latest_activity_at = activity_rows[0].created_at if activity_rows else None
@@ -4427,7 +4435,9 @@ def public_community_member_verification(
     *,
     community_key: str,
     member_key: str,
+    level: str = "standard",
 ) -> Dict[str, Any]:
+    verification_level = _public_verification_level(level)
     try:
         community = _find_public_community(db, community_key=community_key)
     except ValueError:
@@ -4435,6 +4445,7 @@ def public_community_member_verification(
             db,
             community_key=community_key,
             member_key=member_key,
+            level=verification_level,
         )
     community_status = str(getattr(community, "status", "") or "active").strip().lower()
     if community_status != "active":
@@ -4506,6 +4517,7 @@ def public_community_member_verification(
     community_public_record = public_community_verification(
         db,
         community_key=community_code,
+        level="minimal",
     )
     activity_count = (
         db.query(func.count(TrustEvent.id))
@@ -4521,7 +4533,7 @@ def public_community_member_verification(
         .filter(TrustEvent.subject_user_id == int(member.id))
         .filter(~TrustEvent.event_type.in_(PUBLIC_ACTIVITY_EXCLUDED_EVENT_TYPES))
         .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
-        .limit(100)
+        .limit(20 if verification_level == "minimal" else 100)
         .all()
     )
     latest_activity_at = activity_rows[0].created_at if activity_rows else None
@@ -4729,7 +4741,13 @@ def _community_record_is_active(community: Optional[Clan]) -> bool:
     return str(getattr(community, "status", "") or "").strip().lower() == "active"
 
 
-def public_community_verification(db: Session, *, community_key: str) -> Dict[str, Any]:
+def public_community_verification(
+    db: Session,
+    *,
+    community_key: str,
+    level: str = "standard",
+) -> Dict[str, Any]:
+    verification_level = _public_verification_level(level)
     try:
         community = _find_public_community(db, community_key=community_key)
     except ValueError:
@@ -4751,18 +4769,22 @@ def public_community_verification(db: Session, *, community_key: str) -> Dict[st
     )
     community_is_active = _community_record_is_active(community)
     parent_is_active = _community_record_is_active(parent_community)
-    summary = build_community_confirmation_summary(
-        db,
-        community_id=int(community.id),
-        subject_user_id=None,
-    )
-    recipient_ids = _community_confirmation_relay_recipient_ids(db, community=community)
-    confirmation_ready = bool(summary.get("confirmation_schema_available", True))
-    relay_available = bool(
-        community_is_active
-        and confirmation_ready
-        and (summary.get("relay_available") or recipient_ids)
-    )
+    if verification_level == "minimal":
+        confirmation_ready = True
+        relay_available = False
+    else:
+        summary = build_community_confirmation_summary(
+            db,
+            community_id=int(community.id),
+            subject_user_id=None,
+        )
+        recipient_ids = _community_confirmation_relay_recipient_ids(db, community=community)
+        confirmation_ready = bool(summary.get("confirmation_schema_available", True))
+        relay_available = bool(
+            community_is_active
+            and confirmation_ready
+            and (summary.get("relay_available") or recipient_ids)
+        )
 
     official_affiliate_status = "not_asserted"
     official_affiliate_label = "No parent community affiliate claim on this record"

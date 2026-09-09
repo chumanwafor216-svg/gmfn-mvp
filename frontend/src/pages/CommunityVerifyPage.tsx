@@ -433,7 +433,7 @@ export default function CommunityVerifyPage() {
       followerCount: null,
     });
     try {
-      const result = await getPublicCommunityVerification(keyText);
+      const result = await getPublicCommunityVerification(keyText, "minimal");
       if (
         recordLoadSeqRef.current !== loadSeq ||
         recordLoadContextRef.current !== contextKey
@@ -441,6 +441,21 @@ export default function CommunityVerifyPage() {
         return;
       }
       setRecord(normalizeRecord(result));
+      setLoading(false);
+
+      void getPublicCommunityVerification(keyText)
+        .then((freshResult) => {
+          if (
+            recordLoadSeqRef.current !== loadSeq ||
+            recordLoadContextRef.current !== contextKey
+          ) {
+            return;
+          }
+          setRecord(normalizeRecord(freshResult));
+        })
+        .catch(() => {
+          // Keep the fast public record visible if the secondary relay refresh is slow.
+        });
     } catch (err: any) {
       if (
         recordLoadSeqRef.current !== loadSeq ||

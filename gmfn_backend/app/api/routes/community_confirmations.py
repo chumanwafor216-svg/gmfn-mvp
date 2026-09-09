@@ -1133,11 +1133,16 @@ def community_confirmation_summary(
 def verify_public_community(
     community_key: str,
     request: Request,
+    level: str = Query(default="standard", pattern="^(minimal|standard)$"),
     db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
     _throttle_public(request, "community_verify_public", max_requests=80)
     try:
-        return public_community_verification(db, community_key=community_key)
+        return public_community_verification(
+            db,
+            community_key=community_key,
+            level=level,
+        )
     except Exception as exc:
         raise _service_error(exc) from exc
 
@@ -1147,6 +1152,7 @@ def verify_public_community_member(
     community_key: str,
     member_key: str,
     request: Request,
+    level: str = Query(default="standard", pattern="^(minimal|standard)$"),
     db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
     _throttle_public(request, "community_member_verify_public", max_requests=80)
@@ -1155,6 +1161,7 @@ def verify_public_community_member(
             db,
             community_key=community_key,
             member_key=member_key,
+            level=level,
         )
     except Exception as exc:
         raise _service_error(exc) from exc

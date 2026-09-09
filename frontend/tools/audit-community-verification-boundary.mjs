@@ -68,20 +68,20 @@ assertContains(
 
 assertContains(
   "api",
-  /export async function getPublicCommunityVerification\([\s\S]*?return httpJson\([\s\S]*?`\/verify\/community\/\$\{encodeURIComponent\(String\(communityKey\)\)\}`,[\s\S]*?"GET",[\s\S]*?undefined,[\s\S]*?\{ includeAuth: false, header_clan_id: null, quiet: true \}/,
-  "Public Community Verification GET must not inherit viewer auth or selected-community headers, and expected public not-found states should stay quiet."
+  /PUBLIC_VERIFY_MINIMAL_TIMEOUT_MS = 12000[\s\S]*?PUBLIC_VERIFY_STANDARD_TIMEOUT_MS = 30000[\s\S]*?export async function getPublicCommunityVerification\([\s\S]*?level: PublicVerificationLevel = "standard"[\s\S]*?timeoutMs =[\s\S]*?PUBLIC_VERIFY_MINIMAL_TIMEOUT_MS[\s\S]*?PUBLIC_VERIFY_STANDARD_TIMEOUT_MS[\s\S]*?`\/verify\/community\/\$\{encodeURIComponent\(String\(communityKey\)\)\}\$\{buildQuery\([\s\S]*?level: level === "minimal" \? level : undefined[\s\S]*?\)\}`,[\s\S]*?"GET",[\s\S]*?undefined,[\s\S]*?\{ includeAuth: false, header_clan_id: null, quiet: true, timeoutMs \}/,
+  "Public Community Verification GET must use scoped public-verification timeouts, avoid viewer auth and selected-community headers, and keep expected public not-found states quiet."
 );
 
 assertContains(
   "api",
-  /export async function getPublicCommunityMemberVerification\([\s\S]*?return httpJson\([\s\S]*?`\/verify\/community\/\$\{encodeURIComponent\(String\(communityKey\)\)\}\/member\/\$\{encodeURIComponent\([\s\S]*?String\(memberKey\)[\s\S]*?\)\}`,[\s\S]*?"GET",[\s\S]*?undefined,[\s\S]*?\{ includeAuth: false, header_clan_id: null, quiet: true \}/,
-  "Public Community Member Credential GET must not inherit viewer auth or selected-community headers, and expected public not-found states should stay quiet."
+  /export async function getPublicCommunityMemberVerification\([\s\S]*?level: PublicVerificationLevel = "standard"[\s\S]*?timeoutMs =[\s\S]*?PUBLIC_VERIFY_MINIMAL_TIMEOUT_MS[\s\S]*?PUBLIC_VERIFY_STANDARD_TIMEOUT_MS[\s\S]*?`\/verify\/community\/\$\{encodeURIComponent\(String\(communityKey\)\)\}\/member\/\$\{encodeURIComponent\([\s\S]*?String\(memberKey\)[\s\S]*?\)\}\$\{buildQuery\([\s\S]*?level: level === "minimal" \? level : undefined[\s\S]*?\)\}`,[\s\S]*?"GET",[\s\S]*?undefined,[\s\S]*?\{ includeAuth: false, header_clan_id: null, quiet: true, timeoutMs \}/,
+  "Public Community Member Credential GET must use scoped public-verification timeouts, avoid viewer auth and selected-community headers, and keep expected public not-found states quiet."
 );
 
 assertContains(
   "community",
-  /getPublicCommunityVerification\(keyText\)/,
-  "Community Verify must load through the public community verification API wrapper."
+  /getPublicCommunityVerification\(keyText, "minimal"\)[\s\S]*?void getPublicCommunityVerification\(keyText\)/,
+  "Community Verify must load the minimal public record first, then hydrate secondary relay availability in the background."
 );
 
 assertContains(
@@ -122,8 +122,8 @@ assertNotContains(
 
 assertContains(
   "member",
-  /getPublicCommunityMemberVerification\([\s\S]*?cleanCommunityKey,[\s\S]*?cleanMemberKey/,
-  "Community Member Credential must load through the public member credential API wrapper."
+  /getPublicCommunityMemberVerification\([\s\S]*?cleanCommunityKey,[\s\S]*?cleanMemberKey,[\s\S]*?"minimal"/,
+  "Community Member Credential must load through the minimal public member credential API wrapper."
 );
 
 assertContains(
@@ -187,8 +187,13 @@ assertContains(
 
 assertContains(
   "service",
-  /def public_community_verification\(db: Session, \*, community_key: str\) -> Dict\[str, Any\]:[\s\S]*?"community_public_face_scope": public_face_scope[\s\S]*?"community_next_evidence_scope": next_evidence_scope[\s\S]*?"community_reader_decision_scope": reader_decision_scope[\s\S]*?"community_evidence_currentness_scope": evidence_currentness_scope[\s\S]*?"public_limitation": \(/,
-  "Backend public community verification must keep explicit scope and limitation fields."
+  /def public_community_verification\([\s\S]*?community_key: str,[\s\S]*?level: str = "standard",[\s\S]*?verification_level = _public_verification_level\(level\)[\s\S]*?"community_public_face_scope": public_face_scope[\s\S]*?"community_next_evidence_scope": next_evidence_scope[\s\S]*?"community_reader_decision_scope": reader_decision_scope[\s\S]*?"community_evidence_currentness_scope": evidence_currentness_scope[\s\S]*?"public_limitation": \(/,
+  "Backend public community verification must keep explicit scope and limitation fields while accepting the fast minimal level."
+);
+assertContains(
+  "service",
+  /if verification_level == "minimal":[\s\S]*?relay_available = False[\s\S]*?else:[\s\S]*?summary = build_community_confirmation_summary\([\s\S]*?_community_confirmation_relay_recipient_ids/,
+  "Backend public community verification minimal level must skip the heavier confirmation summary and relay recipient work."
 );
 
 assertContains(
@@ -199,8 +204,8 @@ assertContains(
 
 assertContains(
   "service",
-  /eligible_rows = \[[\s\S]*?if int\(row\.subject_user_id\) in active_member_ids[\s\S]*?and int\(row\.verifier_user_id\) in active_member_ids[\s\S]*?\][\s\S]*?current_rows = \[[\s\S]*?valid_until[\s\S]*?>= now/,
-  "Backend public member credential must count only eligible active/current witness rows."
+  /verification_level = _public_verification_level\(level\)[\s\S]*?eligible_rows = \[[\s\S]*?if int\(row\.subject_user_id\) in active_member_ids[\s\S]*?and int\(row\.verifier_user_id\) in active_member_ids[\s\S]*?\][\s\S]*?current_rows = \[[\s\S]*?valid_until[\s\S]*?>= now[\s\S]*?community_public_record = public_community_verification\([\s\S]*?level="minimal"[\s\S]*?limit\(20 if verification_level == "minimal" else 100\)/,
+  "Backend public member credential must count only eligible active/current witness rows while using the minimal community record and bounded activity rows for fast public reads."
 );
 
 assertContains(

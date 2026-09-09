@@ -96,6 +96,8 @@ class HttpStatusError extends Error {
 
 const DEFAULT_JSON_TIMEOUT_MS = 30000;
 const DEFAULT_MULTIPART_TIMEOUT_MS = 60000;
+const PUBLIC_VERIFY_MINIMAL_TIMEOUT_MS = 12000;
+const PUBLIC_VERIFY_STANDARD_TIMEOUT_MS = 30000;
 const TRUSTSLIP_VERIFY_MINIMAL_TIMEOUT_MS = 18000;
 const TRUSTSLIP_VERIFY_STANDARD_TIMEOUT_MS = 30000;
 const TRUSTSLIP_VERIFY_DETAILED_TIMEOUT_MS = 65000;
@@ -2787,28 +2789,44 @@ export async function getPublicCommunityConfirmation(
   );
 }
 
+export type PublicVerificationLevel = "minimal" | "standard";
+
 export async function getPublicCommunityVerification(
-  communityKey: string | number
+  communityKey: string | number,
+  level: PublicVerificationLevel = "standard"
 ): Promise<any> {
+  const timeoutMs =
+    level === "minimal"
+      ? PUBLIC_VERIFY_MINIMAL_TIMEOUT_MS
+      : PUBLIC_VERIFY_STANDARD_TIMEOUT_MS;
+
   return httpJson(
-    `/verify/community/${encodeURIComponent(String(communityKey))}`,
+    `/verify/community/${encodeURIComponent(String(communityKey))}${buildQuery({
+      level: level === "minimal" ? level : undefined,
+    })}`,
     "GET",
     undefined,
-    { includeAuth: false, header_clan_id: null, quiet: true }
+    { includeAuth: false, header_clan_id: null, quiet: true, timeoutMs }
   );
 }
 
 export async function getPublicCommunityMemberVerification(
   communityKey: string | number,
-  memberKey: string | number
+  memberKey: string | number,
+  level: PublicVerificationLevel = "standard"
 ): Promise<any> {
+  const timeoutMs =
+    level === "minimal"
+      ? PUBLIC_VERIFY_MINIMAL_TIMEOUT_MS
+      : PUBLIC_VERIFY_STANDARD_TIMEOUT_MS;
+
   return httpJson(
     `/verify/community/${encodeURIComponent(String(communityKey))}/member/${encodeURIComponent(
       String(memberKey)
-    )}`,
+    )}${buildQuery({ level: level === "minimal" ? level : undefined })}`,
     "GET",
     undefined,
-    { includeAuth: false, header_clan_id: null, quiet: true }
+    { includeAuth: false, header_clan_id: null, quiet: true, timeoutMs }
   );
 }
 

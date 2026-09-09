@@ -23,6 +23,7 @@ from app.db.models import (
     User,
 )
 from app.main import app
+import app.services.community_confirmation_service as community_confirmation_service
 from app.services.trust_slips_services import _community_context, get_trust_slip_payload
 
 
@@ -1189,6 +1190,39 @@ def test_member_witness_request_expires_before_approval(
         app.dependency_overrides.pop(get_current_user, None)
 
 
+def test_public_member_credential_minimal_skips_full_community_relay_summary(
+    client: TestClient,
+    monkeypatch,
+):
+    _seed_member_verification_context(member_count=3, admin_member_ids={1})
+
+    def fail_heavy_public_work(*args, **kwargs):
+        raise AssertionError("minimal member credential must not run relay summary work")
+
+    monkeypatch.setattr(
+        community_confirmation_service,
+        "build_community_confirmation_summary",
+        fail_heavy_public_work,
+    )
+    monkeypatch.setattr(
+        community_confirmation_service,
+        "_community_confirmation_relay_recipient_ids",
+        fail_heavy_public_work,
+    )
+
+    public = client.get(
+        "/verify/community/GMFN-C-000001/member/GMFN-P-000002?level=minimal"
+    )
+    assert public.status_code == 200, public.text
+    body = public.json()
+    assert body["member_gsn_id"] == "GMFN-P-000002"
+    assert body["membership_status"] == "active"
+    assert body["community_public_face_status"] == "basic_public_record"
+    assert body["official_affiliate_status"] == "not_asserted"
+    assert body["community_evidence_currentness_status"] == "active_basic_record"
+    assert "verifier_display_name" not in body
+    assert "verification_note" not in body
+    assert "private" in body["privacy_note"].lower()
 def test_public_member_credential_shows_aggregate_membership_without_private_witnesses(
     client: TestClient,
 ):

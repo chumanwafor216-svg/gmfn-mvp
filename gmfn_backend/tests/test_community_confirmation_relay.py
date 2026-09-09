@@ -1544,6 +1544,38 @@ def test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases(client: 
         assert "hidden_by_design" not in data
 
 
+def test_public_community_verify_minimal_skips_heavy_relay_summary(
+    client: TestClient,
+    monkeypatch,
+):
+    _seed_relay_fixture()
+
+    def fail_heavy_public_work(*args, **kwargs):
+        raise AssertionError("minimal public verify must not run relay summary work")
+
+    monkeypatch.setattr(
+        community_confirmation_service,
+        "build_community_confirmation_summary",
+        fail_heavy_public_work,
+    )
+    monkeypatch.setattr(
+        community_confirmation_service,
+        "_community_confirmation_relay_recipient_ids",
+        fail_heavy_public_work,
+    )
+
+    response = client.get("/verify/community/GSN-C-000001?level=minimal")
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["community_id"] == 1
+    assert data["community_name"] == "Test Clan"
+    assert data["community_code"] == "GSN-C-000001"
+    assert data["relay_available"] is False
+    assert data["request_confirmation_available"] is False
+    assert data["community_next_evidence_label"] == "Ask for scoped member or group evidence"
+    assert "active_member_count" not in data
+    assert "contactable_reference_count" not in data
+    assert "plain_language" not in data
 def test_public_community_verify_accepts_trustslip_fallback_for_uncoded_clan(client: TestClient):
     with engine.begin() as conn:
         conn.execute(

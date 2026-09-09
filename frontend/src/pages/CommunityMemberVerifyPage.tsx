@@ -358,7 +358,8 @@ export default function CommunityMemberVerifyPage() {
     try {
       const result = await getPublicCommunityMemberVerification(
         cleanCommunityKey,
-        cleanMemberKey
+        cleanMemberKey,
+        "minimal"
       );
       if (
         credentialLoadSeqRef.current !== loadSeq ||
