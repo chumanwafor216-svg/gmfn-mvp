@@ -1,11 +1,11 @@
 ## 2026-09-09 - Join invite evidence 3D icon polish
 
-- Status: Implemented locally and verified; not deployed in this slice.
+- Status: Committed, pushed to `main`, and frontend-deployed on 2026-09-09. Runtime commit: `15338849d025e42906972490cd2a04866141c848`; GitHub Actions Render run `34351979944` completed successfully; frontend Render deploy `dep-dagl5hu7bikc73blvq70` reached `live`; backend deploy was not needed (`deploy_api=false`).
 - Route/screen: `/join`, `/join/:code`, `/start/join/:code`, `/start/invite/:code`, `/invite/:code`, and `/get-invite/:code` through `JoinEntryPage`.
 - Change: The branded invitation evidence grid now keeps the portable check-prefixed message parsing contract but renders each visible evidence item with `GsnRealisticIcon name="trust-shield"` inside a compact tile instead of using a primary check emoji.
 - Audit update: `audit-existing-community-invite-line.mjs` now protects the 3D trust-icon presentation, marker stripping, and no-visible-emoji boundary while preserving existing-community/create-community route separation and stale-auth bypass rules.
 - Verification: Passed `audit:existing-community-invite-line`, `audit:entry-flow-polish`, `audit:entry-auth`, `audit:icon-protocol`, `audit:member-entry-actions`, `audit:entry-copy-response`, `audit:protected-button-freeze`, targeted ESLint for `JoinEntryPage.tsx` and the invite audit, and `npm --prefix frontend run build`.
-- Unabated truth: This is presentation polish, not a performance fix or Render billing fix. It improves pre-auth trust quality and keeps architecture guardrails tighter, but it does not change verification API latency.
+- Unabated truth: This is presentation polish, not a performance fix or Render billing fix. It improves pre-auth trust quality and keeps architecture guardrails tighter, but it does not change verification API latency. The deployment workflow verified the public frontend URL was serving the expected build marker, but no separate live browser visual screenshot was taken in this slice.
 
 ## 2026-09-09 - External tool spend rule for GSN
 
