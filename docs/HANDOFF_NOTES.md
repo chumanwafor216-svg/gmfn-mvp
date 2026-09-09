@@ -1,3 +1,11 @@
+## 2026-09-09 - External app continuation: verification speed board partial
+
+- Status: External-app continuation performed after owner said to continue using added apps accordingly. No code/runtime change, no Render deploy, and no Gamma generation credits spent in this slice.
+- Figma: Began a new board frame in `https://www.figma.com/design/AqjzJaSBVqa865wAidAGp1`, node `12:2`, named `GSN Public Verification Speed Board / 2026-09-09`. The `Speed Contract / Minimal First` section and `Mobile State Frames / First Viewport` section were created, including TrustSlip, Community Verification, and Member Credential phone-state frames.
+- Figma blocker: after those successful writes, Figma returned `INVALID_ARGUMENT` for every later call, including tiny read-only recovery checks and screenshots. Treat the board as partial until the connector recovers; expected unfinished sections are `Blockers That Still Exist` and `Reviewer Checklist / Next Free Use`.
+- Canva: Searched owned/shared Canva designs for `GSN` and `Global Support Network`; both returned no items. Searched autofill-capable brand templates; none were returned. Canva remains useful only after an existing Canva design/template is created or supplied.
+- Gamma: Checked existing deck `https://gamma.app/docs/9cojaodm5186jct`; it has 9 cards and zero recorded views/unique viewers/editors. Card analytics also showed zero reach/time on every card, so the deck is created but not yet market-tested.
+- Devil truth: the app connectors gave us presentation inventory and one partial Figma board, not production change. Do not spend new Gamma credits or force Canva generation until there is a recipient, a real template, or a concrete collateral job.
 ## 2026-09-09 - Free tooling audit batch deployed
 
 - Status: Pushed to `main` and frontend-deployed on 2026-09-09. Runtime commit: `db589cf6819a528b8eb39e4af075c945f982a17a`; GitHub Actions Render run `34356390222` completed successfully; frontend Render deploy `dep-daglq1p5efls73b4hnd0` reached `live`; backend deploy was not needed (`deploy_api=false`).
