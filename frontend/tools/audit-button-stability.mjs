@@ -380,7 +380,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/CreateEntryPage.tsx",
-  /import \{ PrimaryButton, SecondaryButton \} from "\.\.\/components\/StableButton";[\s\S]*?debugId="create-entry\.existing-member\.toggle"[\s\S]*?debugId="create-entry\.existing-member\.sign-in"[\s\S]*?debugId="create-entry\.guide\.done"[\s\S]*?debugId="create-entry\.details\.submit"[\s\S]*?debugId="create-entry\.verification\.confirm-code"[\s\S]*?debugId="create-entry\.bank\.save"[\s\S]*?debugId="create-entry\.community\.submit"/,
+  /import \{[\s\S]*?PrimaryButton,[\s\S]*?SecondaryButton,[\s\S]*?StableDisclosureSummary,[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?debugId="create-entry\.existing-member\.toggle"[\s\S]*?debugId="create-entry\.existing-member\.sign-in"[\s\S]*?debugId="create-entry\.guide\.done"[\s\S]*?debugId="create-entry\.details\.submit"[\s\S]*?debugId="create-entry\.verification\.confirm-code"[\s\S]*?debugId="create-entry\.bank\.save"[\s\S]*?debugId="create-entry\.community\.submit"/,
   "Create entry must use shared stable button primitives across existing-member, guide, details, verification, bank, and final submit actions."
 );
 

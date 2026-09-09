@@ -1,3 +1,12 @@
+## 2026-09-09 - Button stability audit refreshed for Create Entry
+
+- Status: Implemented and verified locally; not pushed/deployed in this slice under the current batch-freeze rule.
+- Owner trigger: Owner asked to keep using plugin/tooling direction to move GSN deeper toward production frontend quality.
+- Finding: `audit:button-stability` failed because its `CreateEntryPage` assertion still required the older exact `PrimaryButton, SecondaryButton` import shape, while the page now also imports `StableDisclosureSummary`, which is part of the shared stable button primitive family.
+- Change: Updated `frontend/tools/audit-button-stability.mjs` so the Create Entry audit recognizes `PrimaryButton`, `SecondaryButton`, and `StableDisclosureSummary` from `StableButton` while preserving all existing required debug IDs and the raw-button/link rejection rule.
+- Verification: Passed `npm --prefix frontend run audit:button-stability`, `npm --prefix frontend run audit:protected-button-freeze`, `npm exec eslint -- tools/audit-button-stability.mjs` from `frontend`, `git diff --check frontend/tools/audit-button-stability.mjs`, plus `audit:mobile-visual-sweep`, `audit:gsn-visible-language`, `audit:capability-mirror`, and `audit:protocol-readiness` before the patch.
+- Unabated truth: This is guardrail maintenance, not new user-facing polish. It improves architecture/infrastructure confidence by making the audit match the current stable primitive system, but it does not change app runtime behavior.
+
 ## 2026-09-09 - Canva capability check for GSN collateral
 
 - Status: Checked after owner asked to use Canva/deeper plugin tooling for GSN enhancement.
