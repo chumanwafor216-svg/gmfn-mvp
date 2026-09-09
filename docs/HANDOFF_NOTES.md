@@ -1,3 +1,10 @@
+## 2026-09-09 - Free tooling audit batch deployed
+
+- Status: Pushed to `main` and frontend-deployed on 2026-09-09. Runtime commit: `db589cf6819a528b8eb39e4af075c945f982a17a`; GitHub Actions Render run `34356390222` completed successfully; frontend Render deploy `dep-daglq1p5efls73b4hnd0` reached `live`; backend deploy was not needed (`deploy_api=false`).
+- Scope deployed: local commits `80f765b1` and `db589cf6`, covering Create Entry button-audit refresh, free tooling audit sweep, Community Domain notice source-label polish, Money In identity-fallback audit refresh, and notice-board/Web Push guard refresh.
+- Live verification: the workflow verified that `https://gmfn-frontend.onrender.com` served the expected Decision Pack build marker after Render went live.
+- Cost boundary: No API deploy was triggered for this batch. No Gamma credits, Canva generation, or extra Render backend build were used.
+- Devil truth: This proves the frontend deploy pipeline accepted and served the pushed build. It does not prove live mobile feel on the owner phone, resolve Render billing, or configure live Web Push secrets if they are absent in production.
 ## 2026-09-09 - Free tooling audit sweep and Community Domain notice label polish
 
 - Status: Implemented and verified locally; not pushed/deployed under the current batch-freeze and Render-cost caution.
