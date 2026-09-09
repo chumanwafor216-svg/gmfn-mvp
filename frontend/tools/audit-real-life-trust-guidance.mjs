@@ -39,7 +39,7 @@ function assertNotContains(file, pattern, message) {
 
 assertContains(
   "src/lib/realLifeTrustGuidance.ts",
-  /RealLifeTrustScenario[\s\S]*?join-request[\s\S]*?pending-approval[\s\S]*?no-community-home[\s\S]*?borrowing-readiness[\s\S]*?support-request/,
+  /RealLifeTrustScenario[\s\S]*?join-request[\s\S]*?pending-approval[\s\S]*?no-community-home[\s\S]*?borrowing-readiness[\s\S]*?marketplace-access[\s\S]*?support-request/,
   "Real-life trust guidance scenarios must stay in a shared frontend library."
 );
 
@@ -113,6 +113,12 @@ assertContains(
   "src/pages/IdentityIntegrityPage.tsx",
   /RealLifeMeaningGuide[\s\S]*?getRealLifeTrustGuidance\("identity-evidence"\)/,
   "Identity & Integrity must explain how evidence creates user trust without overpromising verification."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /No community is active in Marketplace yet[\s\S]*?RealLifeMeaningGuide[\s\S]*?getRealLifeTrustGuidance\("marketplace-access"\)[\s\S]*?debugId="marketplace\.empty\.community-home"/,
+  "Marketplace blocked access must explain the real-life meaning of choosing a community before commerce tools."
 );
 
 if (findings.length > 0) {

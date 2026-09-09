@@ -628,6 +628,9 @@ Rules:
   dumping ground for every finance, trust, shop, support, demand, and link tool
   at once.
 - The first screen must act as a guided front desk.
+- If no community is active, the blocked state must explain the real-life
+  meaning of choosing a community before listings, shops, demand, money, and
+  trust work can safely continue.
 - Trust context must appear before operational choices so the page reads as
   community trust infrastructure, not generic commerce.
 - The trust front desk should use safe wording such as `recorded community

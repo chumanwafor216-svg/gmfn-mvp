@@ -1,3 +1,12 @@
+## 2026-09-09 - Marketplace blocked-access real-life guidance
+
+- Status: Local frontend/docs implementation complete and verified; not pushed or deployed because the active pilot publish rule is batch-frozen until the owner explicitly says to publish.
+- Owner trigger: Owner asked to continue from the trust-first guidance work for unbanked and underbanked users.
+- Route affected: `/app/marketplace` now shows the shared real-life meaning guide when no community is active, before the recovery actions to Community Home and Dashboard. The blocked state explains that marketplace listings, shops, demand, money, and trust work need a selected community context first.
+- Shared logic: reused the existing `marketplace-access` scenario from `frontend/src/lib/realLifeTrustGuidance.ts`; no new marketplace business rule, backend route, schema, permission, payment, or trust-score behavior was added.
+- Docs/audits affected: `docs/SCREEN_SPECS.md` now records the no-active-community Marketplace blocker guidance rule. `frontend/tools/audit-real-life-trust-guidance.mjs` now requires the Marketplace blocked-access placement and includes `marketplace-access` in the shared scenario guard.
+- Verification passed: `npm --prefix frontend run audit:real-life-trust-guidance`; `npm --prefix frontend run audit:marketplace-front-package`; `npm --prefix frontend run audit:marketplace-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`; `npm exec eslint -- src/pages/MarketplacePage.tsx tools/audit-real-life-trust-guidance.mjs` from `frontend`; `npm --prefix frontend run build`.
+- Devil truth: This improves the selected-community blocker, but it does not visually verify the phone layout in a browser and it does not audit every deeper Marketplace lane blocker. It also does not make Marketplace evidence a guarantee that a seller, listing, repayment, or delivery claim is true.
 ## 2026-09-09 - Real-life trust guidance second slice
 
 - Status: Local frontend/docs implementation complete and verified; not pushed or deployed because the active pilot publish rule is batch-frozen until the owner explicitly says to publish.

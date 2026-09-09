@@ -1,6 +1,7 @@
 import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import DomainIntroToggle from "../components/DomainIntroToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
+import { RealLifeMeaningGuide } from "../components/RealLifeMeaningGuide";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   compactJoinInviteUrl,
@@ -115,6 +116,7 @@ import {
   marketWisdomPairFromDailyInsight,
   type MarketWisdomPair,
 } from "../lib/marketWisdom";
+import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 const MarketplaceBoardSection = lazy(
   () => import("./marketplace/MarketplaceBoardSection")
@@ -8253,6 +8255,12 @@ export default function MarketplacePage() {
             Choose a community in Community Home first, then return here to open
             that community's Marketplace.
           </div>
+
+          <RealLifeMeaningGuide
+            compact={isCompact}
+            guidance={getRealLifeTrustGuidance("marketplace-access")}
+            style={{ marginTop: 16, maxWidth: 900 }}
+          />
 
           <div
             style={{
