@@ -371,11 +371,14 @@ export default function AdminIdentityRiskPage() {
     return safeStr(row?.gmfn_id).toUpperCase() === gsnLookupFromQuery;
   }
 
+  function manualRecoveryNeedsStalePhoneReview(row: any): boolean {
+    return Boolean(row?.phone_e164 && !row?.phone_verified);
+  }
+
   function canManualRecoveryReset(row: any): boolean {
     return Boolean(
       row?.gmfn_id &&
         row?.phone_e164 &&
-        row?.phone_verified &&
         !row?.activation_pending &&
         row?.private_recovery?.configured === false &&
         requestedGsnIdMatches(row)
@@ -385,7 +388,14 @@ export default function AdminIdentityRiskPage() {
   async function handleManualRecoveryReset(row: any) {
     if (manualRecoveryBusy || !canManualRecoveryReset(row)) return;
     const note = safeStr(manualRecoveryNote).trim();
-    if (!manualRecoveryConfirmed || note.length < 8) return;
+    const needsStalePhoneReview = manualRecoveryNeedsStalePhoneReview(row);
+    if (
+      !manualRecoveryConfirmed ||
+      (needsStalePhoneReview && !stalePhoneReviewConfirmed) ||
+      note.length < 8
+    ) {
+      return;
+    }
 
     const contextKey = `${safeStr(row?.gmfn_id)}\n${safeStr(row?.phone_e164)}\n${note}`;
     setManualRecoveryBusy(contextKey);
@@ -398,6 +408,7 @@ export default function AdminIdentityRiskPage() {
         gmfn_id: safeStr(row?.gmfn_id),
         phone_e164: safeStr(row?.phone_e164),
         owner_proof_confirmed: manualRecoveryConfirmed,
+        stale_phone_review_confirmed: needsStalePhoneReview ? stalePhoneReviewConfirmed : false,
         reviewer_note: note,
       });
       if (manualRecoveryBusy && manualRecoveryBusy !== contextKey) return;
@@ -1002,12 +1013,41 @@ export default function AdminIdentityRiskPage() {
                             community identity match this person.
                           </span>
                         </label>
+                        {manualRecoveryNeedsStalePhoneReview(row) ? (
+                          <label
+                            style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: 10,
+                              color: "#0B1F33",
+                              fontWeight: 900,
+                              lineHeight: 1.35,
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={stalePhoneReviewConfirmed}
+                              onChange={(event) => {
+                                setStalePhoneReviewConfirmed(event.target.checked);
+                                setManualRecoveryErr("");
+                                setManualRecoveryResult(null);
+                                setManualRecoveryCopyStatus("");
+                              }}
+                              style={{ width: 18, height: 18, marginTop: 3, flex: "0 0 auto" }}
+                            />
+                            <span>
+                              Stale phone checked: this recorded phone is not
+                              verified, so recovery is admin-reviewed only.
+                            </span>
+                          </label>
+                        ) : null}
                         <PrimaryButton
                           type="button"
                           busy={Boolean(manualRecoveryBusy)}
                           busyLabel="Issuing..."
                           disabled={
                             !manualRecoveryConfirmed ||
+                            (manualRecoveryNeedsStalePhoneReview(row) && !stalePhoneReviewConfirmed) ||
                             safeStr(manualRecoveryNote).trim().length < 8 ||
                             Boolean(manualRecoveryResult?.temporary_password)
                           }
