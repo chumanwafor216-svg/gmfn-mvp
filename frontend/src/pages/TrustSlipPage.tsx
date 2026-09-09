@@ -4827,6 +4827,78 @@ export default function TrustSlipPage() {
               </div>
             </div>
             <div
+              data-gsn-trustslip-refresh-after-community="true"
+              style={{
+                borderRadius: 14,
+                border: trustSlipNeedsSelectedCommunityRefresh
+                  ? "1px solid rgba(214,170,69,0.42)"
+                  : "1px solid rgba(37,78,119,0.12)",
+                background: trustSlipNeedsSelectedCommunityRefresh ? "#FFF8E6" : "#F8FBFF",
+                padding: isCompact ? "10px 11px" : "11px 12px",
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(180px, 0.34fr)",
+                gap: 10,
+                alignItems: "center",
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <div style={{ ...sectionLabel(), color: "#7A4A00" }}>
+                  Next step
+                </div>
+                <div
+                  style={{
+                    marginTop: 3,
+                    color: "#07172C",
+                    fontSize: isCompact ? 13 : 14,
+                    fontWeight: 1000,
+                    lineHeight: 1.24,
+                  }}
+                >
+                  Refresh after choosing the community, then copy or share.
+                </div>
+                <div
+                  style={{
+                    marginTop: 4,
+                    color: "#526579",
+                    fontSize: isCompact ? 11 : 12,
+                    fontWeight: 850,
+                    lineHeight: 1.35,
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {trustSlipNeedsSelectedCommunityRefresh
+                    ? trustSlipSelectedCommunityRefreshText
+                    : selectedVerificationScope === "community_specific"
+                      ? `Ready to issue from ${selectedVerificationCommunityName}.`
+                      : "Refresh uses your current community as the anchor while showing wider visible context."}
+                </div>
+              </div>
+              <PrimaryButton
+                type="button"
+                onClick={() => {
+                  if (trustSlipBlockedByPhone) {
+                    navigateWithOrigin(navigate, routes.identityPhone, location);
+                    return;
+                  }
+                  void refreshTrustSlip();
+                }}
+                busy={refreshing}
+                busyLabel={trustSlipBlockedByPhone ? "Opening..." : "Refreshing..."}
+                fullWidth
+                stableHeight={isCompact ? 52 : 50}
+                debugId="trust-slip.scope.refresh"
+                style={trustSlipPrimaryActionStyle(isCompact)}
+              >
+                {trustSlipIconBadge(
+                  trustSlipBlockedByPhone ? "phone" : "refresh",
+                  isCompact ? 26 : 28,
+                  "blue"
+                )}
+                {trustSlipBlockedByPhone ? "Verify phone" : "Refresh TrustSlip"}
+              </PrimaryButton>
+            </div>
+
+            <div
               data-gsn-trustslip-decision-reading="purpose-specific"
               style={{
                 borderRadius: 14,
@@ -6519,7 +6591,7 @@ export default function TrustSlipPage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
                 gap: isCompact ? 9 : 10,
                 marginTop: 12,
               }}
@@ -6534,28 +6606,6 @@ export default function TrustSlipPage() {
                 {trustSlipIconBadge("copy", isCompact ? 26 : 28, "navy")}
                 Copy TrustSlip
               </SecondaryButton>
-              <PrimaryButton
-                onClick={() => {
-                  if (trustSlipBlockedByPhone) {
-                    navigateWithOrigin(navigate, routes.identityPhone, location);
-                    return;
-                  }
-                  void refreshTrustSlip();
-                }}
-                busy={refreshing}
-                busyLabel={trustSlipBlockedByPhone ? "Opening..." : "Refreshing..."}
-                fullWidth
-                stableHeight={isCompact ? 52 : 50}
-                debugId="trust-slip.paper.refresh"
-                style={trustSlipPrimaryActionStyle(isCompact)}
-              >
-                {trustSlipIconBadge(
-                  trustSlipBlockedByPhone ? "phone" : "refresh",
-                  isCompact ? 26 : 28,
-                  "blue"
-                )}
-                {trustSlipBlockedByPhone ? "Verify phone" : "Refresh TrustSlip"}
-              </PrimaryButton>
               <SecondaryButton
                 onClick={() => {
                   if (verifyPath) {

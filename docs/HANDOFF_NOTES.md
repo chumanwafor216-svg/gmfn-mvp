@@ -1,6 +1,15 @@
+## 2026-09-09 - TrustSlip refresh moved beside community choice
+
+- Status: Implemented and verified locally; frontend-only UX correction. Owner phone QA still needed for real tap-path confirmation.
+- Owner trigger: Owner pointed out that the correct TrustSlip sequence is `Choose purpose -> Choose community -> Refresh TrustSlip -> Copy/share`, so the refresh button should appear immediately after choosing the community, not later near the bottom.
+- Change: `/app/trust-slip` now shows a `Next step` refresh strip immediately under the Verification scope/community chooser. The lower paper action row now keeps only Copy TrustSlip and Verify public code, so refresh is no longer buried in the bottom paper actions.
+- Boundary: This reuses the existing `refreshTrustSlip` behavior and phone-verification guard. It does not change TrustSlip issuance rules, selected-community backend logic, public evidence payloads, or Trust Passport privacy boundaries.
+- Verification passed: `npm --prefix frontend run audit:trust-actions`; `npm --prefix frontend run audit:trust-passport-trustslip-boundary`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`.
+- Devil truth: This fixes the visual sequence. It still needs owner phone QA to prove the tap path feels obvious in real use.
+
 ## 2026-09-09 - TrustSlip community participation evidence added
 
-- Status: Implemented and verified locally; not pushed/deployed in this slice.
+- Status: Pushed to `main` and deployed on 2026-09-09. Runtime commit: `b258a7acba415cc1801add454e22bba9b8840a6d`; GitHub Actions Render run `34375950847` completed successfully; frontend Render deploy `dep-dagoe0ou01pc738p4oo0` reached `live`; API Render deploy `dep-dagoen5bedkc739giv4g` reached `live`.
 - Owner trigger: Owner asked whether TrustSlip quality can be enhanced using member responses to announcements, meetings, and community calls.
 - Backend change: TrustSlip payloads now summarize public-safe official participation evidence from existing TrustEvents in the selected/anchored community: notice acknowledgements, notice availability responses, meeting interest responses, meeting attendance check-ins, meeting summary attendance, official notice posting, and meeting coordination.
 - Privacy boundary: TrustSlip exposes aggregate counts, category labels, latest timestamp, response totals, attendance totals, and a boundary note only. It does not expose raw messages, meeting notes, private reasons, contact details, responder names, or WhatsApp chat content.
@@ -10,7 +19,7 @@
 
 ## 2026-09-09 - TrustSlip selected-community refresh fixed
 
-- Status: Implemented and verified locally; not pushed/deployed in this slice.
+- Status: Pushed to `main` and deployed as part of runtime commit `b258a7acba415cc1801add454e22bba9b8840a6d` on 2026-09-09.
 - Owner trigger: Owner reported that TrustSlip/TrustLink appeared to keep returning to the first/default reason and first community after choosing a different community and purpose, and asked which path is the correct way to generate a team/community TrustSlip.
 - Root finding: This was a real product-state bug, not just user sequencing. The TrustSlip page let the holder choose a verification community, but `reissueMyTrustSlip` posted only `reason` and `force`; the backend `/trust-slips/me/reissue` then resolved the issue clan from latest TrustSlip or first active membership. The mobile Tools share action also copied/shared a generic `/verify/trust-slip?decision_pack=...` path with no TrustSlip code, which made the app look like it had multiple valid share sources.
 - Backend change: `get_trust_slip_payload`, `issue_trust_slip_for_user`, and `reissue_trust_slip` now accept a preferred clan/community id; selected communities are validated as active communities where the holder has an active membership. Reissue responses and TrustEvents now carry the resolved clan/community id.
@@ -18,6 +27,7 @@
 - Correct owner/operator workflow: open TrustSlip, choose the Decision Pack/purpose, choose the exact community/team scope, tap Refresh TrustSlip, then use Copy message or Copy Verify Link from the TrustSlip page. Do not send the private Trust Passport/preview as the public TrustSlip.
 - Verification passed: `python -m pytest -q gmfn_backend/tests/test_trust_slip_boundary_controls.py::test_trust_slip_reissue_uses_selected_member_community_anchor gmfn_backend/tests/test_trust_slip_boundary_controls.py::test_trust_slip_reissue_rejects_non_member_selected_community gmfn_backend/tests/test_trust_slip_boundary_controls.py::test_trust_slip_reissue_rejects_malformed_payload_before_new_slip_or_event`; `python -m pytest -q gmfn_backend/tests/test_focus_commitment_trust_events.py::test_holder_can_force_fresh_trustslip_for_new_public_qr gmfn_backend/tests/test_focus_commitment_trust_events.py::test_expired_current_trustslip_reissues_with_fresh_expiry`; `npm --prefix frontend run audit:trust-actions`; `npm --prefix frontend run audit:trust-passport-trustslip-boundary`; `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`.
 - Devil truth: The fix makes selected-community refresh explicit and prevents one misleading share shortcut, but it does not yet prove the full phone UX feels simple. Manual mobile QA should still check the exact tap sequence, QR/link contents, and that recipients never see private Trust Passport evidence unless the holder intentionally exports a private consent summary.
+
 ## 2026-09-09 - External app free-ride playbook added
 
 - Status: Local docs checkpoint; no product code change, no Render deploy, no Canva/Gamma generation spend.
