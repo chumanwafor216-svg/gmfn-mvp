@@ -256,14 +256,14 @@ assertContains(
 
 assertContains(
   "verify",
-  /const canShowPrivateEvidence = ownsVisibleTrustSlip;/,
+  /const canShowPrivateEvidence = ownsVisibleTrustSlip && !isCardRoute;/,
   "Private evidence visibility must stay tied to visible TrustSlip ownership."
 );
 
 assertContains(
   "api",
-  /export async function verifyTrustSlip\([\s\S]*?return httpJson\([\s\S]*?`\/trust-slips\/verify\/\$\{encodeURIComponent\(String\(code\)\)\}\$\{buildQuery\([\s\S]*?\)[\s\S]*?"GET",[\s\S]*?undefined,[\s\S]*?\{ includeAuth: false, header_clan_id: null, quiet: true, timeoutMs: 65000 \}/,
-  "Public TrustSlip verify API calls must not inherit viewer auth or selected-community headers, and expected public not-found states should stay quiet."
+  /TRUSTSLIP_VERIFY_MINIMAL_TIMEOUT_MS[\s\S]*?TRUSTSLIP_VERIFY_STANDARD_TIMEOUT_MS[\s\S]*?TRUSTSLIP_VERIFY_DETAILED_TIMEOUT_MS[\s\S]*?export async function verifyTrustSlip\([\s\S]*?const timeoutMs =[\s\S]*?level === "minimal"[\s\S]*?TRUSTSLIP_VERIFY_MINIMAL_TIMEOUT_MS[\s\S]*?level === "detailed"[\s\S]*?TRUSTSLIP_VERIFY_DETAILED_TIMEOUT_MS[\s\S]*?TRUSTSLIP_VERIFY_STANDARD_TIMEOUT_MS[\s\S]*?return httpJson\([\s\S]*?`\/trust-slips\/verify\/\$\{encodeURIComponent\(String\(code\)\)\}\$\{buildQuery\([\s\S]*?\)[\s\S]*?"GET",[\s\S]*?undefined,[\s\S]*?\{ includeAuth: false, header_clan_id: null, quiet: true, timeoutMs \}/,
+  "Public TrustSlip verify API calls must use scoped timeouts while not inheriting viewer auth or selected-community headers, and expected public not-found states should stay quiet."
 );
 
 assertContains(
@@ -290,7 +290,7 @@ assertOrder(
   [
     { label: "public paper", pattern: /<TrustSlipVerifyPublicPaper/ },
     { label: "public sharing boundary", pattern: /<TrustSlipVerifyBoundary/ },
-    { label: "private evidence gate", pattern: /\{canShowPrivateEvidence && !isCardRoute \? \(/ },
+    { label: "private evidence gate", pattern: /\{canShowPrivateEvidence \? \(/ },
     { label: "private evidence disclosure", pattern: /debugId="trust-slip-verify\.full-evidence-toggle"/ },
     { label: "private evidence component", pattern: /<TrustSlipVerifyPrivateEvidence/ },
   ],
@@ -703,6 +703,11 @@ assertContains(
   "backend",
   /"profile_image_url": merchant_view_out\.get\("profile_image_url"\) if visibility_level != "minimal" else None,[\s\S]*?"identity_context": identity_context if visibility_level != "minimal" else \{\},[\s\S]*?"community_context": community_context if visibility_level != "minimal" else \{\},[\s\S]*?"community_confirmation": community_confirmation if visibility_level != "minimal" else \{/,
   "Backend minimal public TrustSlip level must continue suppressing profile image, identity, community, and detailed confirmation context."
+);
+assertContains(
+  "backend",
+  /community_confirmation_options = \([\s\S]*?\[\][\s\S]*?if visibility_level == "minimal"[\s\S]*?else _public_community_confirmation_options/,
+  "Backend minimal public TrustSlip verify must skip heavier community-confirmation option building."
 );
 
 assertContains(

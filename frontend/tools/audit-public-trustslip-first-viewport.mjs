@@ -262,8 +262,8 @@ assertContains(
 
 assertContains(
   "api",
-  /import \{ configuredPublicApiOrigin, isPrivateFrontendHost \} from "\.\/publicLinks";[\s\S]*?normalized === "\/api"[\s\S]*?hostname && !isPrivateFrontendHost\(hostname\)[\s\S]*?return configuredPublicApiOrigin\(\)[\s\S]*?timeoutMs: 65000/,
-  "Production frontend API calls must resolve relative /api to the public API origin and give public TrustSlip verification enough time for Render cold starts."
+  /import \{ configuredPublicApiOrigin, isPrivateFrontendHost \} from "\.\/publicLinks";[\s\S]*?normalized === "\/api"[\s\S]*?hostname && !isPrivateFrontendHost\(hostname\)[\s\S]*?return configuredPublicApiOrigin\(\)[\s\S]*?TRUSTSLIP_VERIFY_MINIMAL_TIMEOUT_MS[\s\S]*?TRUSTSLIP_VERIFY_STANDARD_TIMEOUT_MS[\s\S]*?TRUSTSLIP_VERIFY_DETAILED_TIMEOUT_MS[\s\S]*?timeoutMs/,
+  "Production frontend API calls must resolve relative /api to the public API origin and use scoped TrustSlip verification timeouts instead of one long public wait."
 );
 
 assertContains(
@@ -279,8 +279,8 @@ assertContains(
 );
 assertContains(
   "routePage",
-  /const verifyResult = await callFirstAvailable\([\s\S]*?\[\[codeToUse\]\][\s\S]*?\);/,
-  "Public TrustSlip loading must pass the TrustSlip code as a string only, so fallback attempts do not call /verify/[object Object] or append object query params."
+  /const verifyResult = await callFirstAvailable\([\s\S]*?\[\[codeToUse, "minimal"\], \[codeToUse\]\][\s\S]*?\);/,
+  "Public TrustSlip loading must request the minimal TrustSlip reading first, while keeping the old code-only fallback so legacy verify functions do not call /verify/[object Object] or append object query params."
 );
 if (findings.length) {
   findings.forEach((finding) => {

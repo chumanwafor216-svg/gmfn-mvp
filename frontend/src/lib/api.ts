@@ -96,6 +96,9 @@ class HttpStatusError extends Error {
 
 const DEFAULT_JSON_TIMEOUT_MS = 30000;
 const DEFAULT_MULTIPART_TIMEOUT_MS = 60000;
+const TRUSTSLIP_VERIFY_MINIMAL_TIMEOUT_MS = 18000;
+const TRUSTSLIP_VERIFY_STANDARD_TIMEOUT_MS = 30000;
+const TRUSTSLIP_VERIFY_DETAILED_TIMEOUT_MS = 65000;
 const STARTUP_READ_CACHE_MS = 15000;
 const STARTUP_SECTION_CACHE_MS = 15000;
 const DAILY_INSIGHT_CACHE_MS = 5 * 60 * 1000;
@@ -2718,13 +2721,20 @@ export async function verifyTrustSlip(
   code: string,
   level?: "minimal" | "standard" | "detailed"
 ): Promise<any> {
+  const timeoutMs =
+    level === "minimal"
+      ? TRUSTSLIP_VERIFY_MINIMAL_TIMEOUT_MS
+      : level === "detailed"
+        ? TRUSTSLIP_VERIFY_DETAILED_TIMEOUT_MS
+        : TRUSTSLIP_VERIFY_STANDARD_TIMEOUT_MS;
+
   return httpJson(
     `/trust-slips/verify/${encodeURIComponent(String(code))}${buildQuery({
       level: level || undefined,
     })}`,
     "GET",
     undefined,
-    { includeAuth: false, header_clan_id: null, quiet: true, timeoutMs: 65000 }
+    { includeAuth: false, header_clan_id: null, quiet: true, timeoutMs }
   );
 }
 

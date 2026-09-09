@@ -554,7 +554,7 @@ export default function TrustSlipVerifyPage() {
             "getTrustSlipPublic",
             "getTrustSlipPublicByCode",
           ],
-          [[codeToUse]]
+          [[codeToUse, "minimal"], [codeToUse]]
         );
 
         if (

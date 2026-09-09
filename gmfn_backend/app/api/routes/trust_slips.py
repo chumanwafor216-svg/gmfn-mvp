@@ -1357,14 +1357,18 @@ def verify_trust_slip_public(
             "relay_available": False,
             "plain_language": "Community confirmation could not be loaded for this TrustSlip.",
         }
-    community_confirmation_options = _public_community_confirmation_options(
-        db,
-        merchant_view_out.get("community_footprint")
-        or merchant_summary.get("community_footprint")
-        or full_summary.get("community_footprint")
-        or [],
-        primary_clan_id=getattr(slip, "clan_id", None),
-        subject_user_id=getattr(slip, "holder_user_id", None),
+    community_confirmation_options = (
+        []
+        if visibility_level == "minimal"
+        else _public_community_confirmation_options(
+            db,
+            merchant_view_out.get("community_footprint")
+            or merchant_summary.get("community_footprint")
+            or full_summary.get("community_footprint")
+            or [],
+            primary_clan_id=getattr(slip, "clan_id", None),
+            subject_user_id=getattr(slip, "holder_user_id", None),
+        )
     )
 
     decision_pack_context = normalize_decision_pack_context(request.query_params)
