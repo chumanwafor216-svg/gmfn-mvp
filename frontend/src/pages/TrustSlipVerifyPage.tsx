@@ -747,7 +747,7 @@ export default function TrustSlipVerifyPage() {
       privateEvidenceBanner,
     ]
   );
-  const canShowPrivateEvidence = ownsVisibleTrustSlip;
+  const canShowPrivateEvidence = ownsVisibleTrustSlip && !isCardRoute;
 
   const {
     profileImageUrl,
@@ -1612,7 +1612,7 @@ export default function TrustSlipVerifyPage() {
       )}
       {noPublicCodeSupplied || isLiteRoute || isCardRoute ? null : <TrustSlipVerifyBoundary compact={isCompact} />}
 
-      {canShowPrivateEvidence && !isCardRoute ? (
+      {canShowPrivateEvidence ? (
         <details
           className="print-trust-support"
           open={privateEvidenceOpen}

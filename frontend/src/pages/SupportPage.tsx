@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
+import { RealLifeMeaningGuide } from "../components/RealLifeMeaningGuide";
 import { StableButton, StableCtaLink } from "../components/StableButton";
 import { structuredErrorMessage } from "../lib/structuredErrors";
+import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import {
   addSupportCaseMessage,
   createSupportCase,
@@ -389,6 +391,7 @@ function SupportPage() {
               <div style={sectionLabel()}>Ask for help</div>
               <h2 style={{ margin: "6px 0 0", color: "#0B1F33", fontSize: 24 }}>New support request</h2>
             </div>
+            <RealLifeMeaningGuide guidance={getRealLifeTrustGuidance("support-request")} />
             <label style={labelStyle()}>
               What kind of help?
               <select value={issueType} onChange={(event) => setIssueType(event.target.value as SupportCaseIssueType)} style={inputStyle()}>

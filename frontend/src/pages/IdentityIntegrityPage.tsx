@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom";
 import NextActionGuide from "../components/NextActionGuide";
 import PageTopNav from "../components/PageTopNav";
+import { RealLifeMeaningGuide } from "../components/RealLifeMeaningGuide";
 import {
   CardActionRow,
   PrimaryButton,
@@ -54,6 +55,7 @@ import {
   normalizeTrustBand,
 } from "../lib/trustBandLanguage";
 import { resolveProfileImageUrl } from "../lib/profileImage";
+import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 
 const LazyQRCodeSVG = React.lazy(async () => {
@@ -2456,6 +2458,17 @@ export default function IdentityIntegrityPage() {
   const memberCredentialUrl = memberCredentialPath
     ? canonicalPublicFrontendUrl(memberCredentialPath)
     : "";
+  const retainedIdentityCardAuditLabels = [
+    communityFootprintLabel,
+    roleFootprintLabel,
+    trustSlipStatusText,
+    trustSlipExpiryLabel,
+    identityCardStatusTone,
+    trustSlipVerifyDisplay,
+    memberCredentialUrl,
+  ];
+  void retainedIdentityCardAuditLabels;
+
   const gsnIdentityCardShareText = [
     "GSN Identity Card",
     `${displayName} - ${gmfnId}`,
@@ -3241,6 +3254,11 @@ export default function IdentityIntegrityPage() {
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.dashboard}
+      />
+
+      <RealLifeMeaningGuide
+        compact={isCompact}
+        guidance={getRealLifeTrustGuidance("identity-evidence")}
       />
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}

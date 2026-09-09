@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
+import { RealLifeMeaningGuide } from "../components/RealLifeMeaningGuide";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { StableCtaLink, SubtleButton } from "../components/StableButton";
 import * as api from "../lib/api";
@@ -14,6 +15,7 @@ import {
   institutionalStatTile,
 } from "../lib/institutionalSurface";
 import { buildGsnSupportEvidenceShareText } from "../lib/gsnSnapshotPaper";
+import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import { brandClampLines } from "../styles/gmfnBrand";
 
 type LoanRow = {
@@ -1233,6 +1235,12 @@ export default function LoanReadinessPage() {
         why="Finance records the wider money story. Readiness helps you decide whether this one support path should continue, pause, or clear another pressure first."
         next="Support Readiness is decision support only; it does not approve support, choose a supporter, or authorize release of goods, credit, or money."
         tone="blue"
+      />
+
+      <RealLifeMeaningGuide
+        compact={isCompact}
+        tone="dark"
+        guidance={getRealLifeTrustGuidance("borrowing-readiness")}
       />
 
       <section

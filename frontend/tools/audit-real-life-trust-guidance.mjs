@@ -97,6 +97,24 @@ assertContains(
   "Empty Community Home must explain why community context comes before deeper tools."
 );
 
+assertContains(
+  "src/pages/LoanReadinessPage.tsx",
+  /RealLifeMeaningGuide[\s\S]*?tone="dark"[\s\S]*?getRealLifeTrustGuidance\("borrowing-readiness"\)/,
+  "Loan Readiness must explain the real-life boundary before support-readiness decisions."
+);
+
+assertContains(
+  "src/pages/SupportPage.tsx",
+  /RealLifeMeaningGuide[\s\S]*?getRealLifeTrustGuidance\("support-request"\)/,
+  "Help Desk must explain the real-life value of creating a support evidence trail."
+);
+
+assertContains(
+  "src/pages/IdentityIntegrityPage.tsx",
+  /RealLifeMeaningGuide[\s\S]*?getRealLifeTrustGuidance\("identity-evidence"\)/,
+  "Identity & Integrity must explain how evidence creates user trust without overpromising verification."
+);
+
 if (findings.length > 0) {
   console.error("Real-life trust guidance audit failed:");
   for (const finding of findings) {

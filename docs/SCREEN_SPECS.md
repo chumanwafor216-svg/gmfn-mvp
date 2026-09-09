@@ -294,7 +294,7 @@ Rules:
 - A first-time organization owner must create the normal GSN community/local marketplace first so the organization has a local community record and GSN number before Domain filling begins.
 - After that local community exists, Domain setup may protect the wider institutional name, governance, package, and rights.
 - It must not show bottom navigation before authentication is complete.
-- The provisioning route must not create a live verified institution by itself. A pilot reservation, draft, quote, or suspended payment rail is not verification, paid continuation, or final public proof.
+- The provisioning route must not create a live verified institution by itself. A pilot reservation, draft, quote, or suspended payment rail is not verification, paid continuation, or final public evidence.
 - Do not call the object `Community Package`. The owned institutional object is
   `Community Domain`; the paid bundle may be called a package only when talking
   about pricing, allowance, or renewal.
@@ -551,11 +551,11 @@ Rules:
 - Payment, package quote, and renewal status must not be shown as verification.
 - Offering, donation, levy, or registration QR codes must be shown as governed
   collection instructions only. They must not imply GSN custody, payment
-  confirmation, bank approval, or impact proof.
+  confirmation, bank approval, or impact evidence.
 - Church real-life records may preserve pastoral care, welfare follow-up,
   member belonging, programme attendance, department service, and contribution
   memory, but must remain workflow/evidence records. They must not replace
-  pastoral counselling, safeguarding duties, spiritual authority, payment proof,
+  pastoral counselling, safeguarding duties, spiritual authority, payment evidence,
   or beneficiary outcome confirmation.
 - Message QR pages must not expose member lists, open public comments,
   collect money, prove attendance, or replace the pastor/domain leader as

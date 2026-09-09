@@ -446,6 +446,8 @@ function buildLoansItems(): NavLinkItem[] {
   return [makeLoansItem()];
 }
 
+// Open the guided support workspace first. Deeper tools stay inside the support flow.
+
 function uniqueNavItems(items: NavLinkItem[]): NavLinkItem[] {
   const seen = new Set<string>();
   return items.filter((item) => {
