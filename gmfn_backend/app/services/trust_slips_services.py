@@ -1589,7 +1589,33 @@ def _find_latest_trust_slip(db: Session, *, user_id: int) -> Optional[TrustSlip]
     )
 
 
-def _resolve_issue_clan_id(db: Session, *, user_id: int) -> int:
+def _resolve_issue_clan_id(
+    db: Session,
+    *,
+    user_id: int,
+    preferred_clan_id: Any = None,
+) -> int:
+    preferred_id = _safe_positive_int(preferred_clan_id)
+    if preferred_id:
+        clan = db.get(Clan, preferred_id)
+        if not clan:
+            raise ValueError("Selected community was not found for TrustSlip issuance")
+        if _safe_str(getattr(clan, "status", "active"), "active").lower() != "active":
+            raise ValueError("Selected community is not active for TrustSlip issuance")
+
+        membership = (
+            db.query(ClanMembership)
+            .filter(
+                ClanMembership.user_id == int(user_id),
+                ClanMembership.clan_id == int(preferred_id),
+                ClanMembership.left_at.is_(None),
+            )
+            .first()
+        )
+        if not membership:
+            raise ValueError("You are not an active member of the selected community")
+        return int(preferred_id)
+
     latest = _find_latest_trust_slip(db, user_id=int(user_id))
     if latest and getattr(latest, "clan_id", None):
         return int(latest.clan_id)
@@ -1607,6 +1633,169 @@ def _resolve_issue_clan_id(db: Session, *, user_id: int) -> int:
         return int(membership.clan_id)
 
     raise ValueError("No active clan membership found for TrustSlip issuance")
+
+
+_COMMUNITY_PARTICIPATION_EVENT_LABELS = {
+    "community.notice.acknowledged": "notice acknowledgement",
+    "community.notice.availability_response": "notice availability response",
+    "community.meeting.interest_recorded": "meeting response",
+    "community.meeting.attendance_checkin_recorded": "meeting attendance check-in",
+    "community.meeting.summary_recorded": "meeting summary attendance",
+    "community.notice.posted": "official notice posting",
+    "community.meeting.reminder_created": "meeting coordination",
+}
+
+
+def _trust_event_meta(event: TrustEvent) -> Dict[str, Any]:
+    raw = getattr(event, "meta_json", None)
+    if isinstance(raw, dict):
+        return raw
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(str(raw))
+        return parsed if isinstance(parsed, dict) else {}
+    except Exception:
+        return {}
+
+
+def _meta_user_ids(value: Any) -> set[int]:
+    if not isinstance(value, list):
+        return set()
+    out: set[int] = set()
+    for item in value:
+        try:
+            parsed = int(item)
+        except Exception:
+            continue
+        if parsed > 0:
+            out.add(parsed)
+    return out
+
+
+def _community_participation_evidence_summary(
+    db: Session,
+    *,
+    user_id: int,
+    clan_id: int,
+    limit: int = 300,
+) -> Dict[str, Any]:
+    uid = int(user_id)
+    cid = int(clan_id or 0)
+    if not uid or not cid:
+        return {
+            "evidence_count": 0,
+            "latest_at": None,
+            "categories": [],
+            "response_counts": {"yes": 0, "maybe": 0, "no": 0, "other": 0},
+            "status_label": "No participation evidence shown",
+            "plain_language": "No official notice or meeting response evidence is shown for this TrustSlip community yet.",
+            "boundary": "Public-safe aggregate only. GSN does not expose raw messages, meeting notes, private reasons, contact details, or WhatsApp chat content on TrustSlip.",
+            "rows": [],
+        }
+
+    event_types = set(_COMMUNITY_PARTICIPATION_EVENT_LABELS.keys())
+    rows = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.clan_id == cid)
+        .filter(TrustEvent.event_type.in_(event_types))
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+        .limit(max(1, min(int(limit), 500)))
+        .all()
+    )
+
+    category_counts: Dict[str, int] = {}
+    response_counts = {"yes": 0, "maybe": 0, "no": 0, "other": 0}
+    latest_at: Optional[datetime] = None
+    evidence_count = 0
+
+    for row in rows:
+        event_type = _safe_str(getattr(row, "event_type", ""))
+        meta = _trust_event_meta(row)
+        actor_id = _safe_positive_int(getattr(row, "actor_user_id", None))
+        subject_id = _safe_positive_int(getattr(row, "subject_user_id", None))
+        attendee_ids = _meta_user_ids(meta.get("attendee_user_ids"))
+        responder_id = _safe_positive_int(
+            meta.get("responder_user_id")
+            or meta.get("checked_in_user_id")
+            or meta.get("member_user_id")
+            or meta.get("user_id")
+        )
+        belongs_to_holder = (
+            actor_id == uid
+            or subject_id == uid
+            or responder_id == uid
+            or uid in attendee_ids
+        )
+        if not belongs_to_holder:
+            continue
+
+        label = _COMMUNITY_PARTICIPATION_EVENT_LABELS.get(event_type, event_type)
+        category_counts[label] = category_counts.get(label, 0) + 1
+        evidence_count += 1
+        created_at = getattr(row, "created_at", None)
+        if isinstance(created_at, datetime):
+            latest_at = created_at if latest_at is None or created_at > latest_at else latest_at
+
+        response = _safe_str(
+            meta.get("response")
+            or meta.get("availability_response")
+            or meta.get("interest_response")
+            or meta.get("acknowledgement")
+            or meta.get("arrival_status")
+        ).lower()
+        if response in {"yes", "maybe", "no"}:
+            response_counts[response] += 1
+        elif response:
+            response_counts["other"] += 1
+
+    categories = [
+        {"label": label, "count": count}
+        for label, count in sorted(category_counts.items(), key=lambda item: (-item[1], item[0]))
+    ]
+    category_labels = [item["label"] for item in categories]
+    latest_iso = latest_at.isoformat() if latest_at else None
+    attendance_count = sum(
+        count
+        for label, count in category_counts.items()
+        if "attendance" in label
+    )
+    response_total = sum(response_counts.values())
+
+    if evidence_count >= 5 and attendance_count:
+        status_label = "Active participation evidence"
+    elif evidence_count >= 2:
+        status_label = "Some response evidence"
+    elif evidence_count == 1:
+        status_label = "One response evidence item"
+    else:
+        status_label = "No participation evidence shown"
+
+    if evidence_count:
+        plain_language = (
+            f"This member has {evidence_count} public-safe official notice or meeting response "
+            f"evidence item{'s' if evidence_count != 1 else ''} in this community."
+        )
+    else:
+        plain_language = "No official notice or meeting response evidence is shown for this TrustSlip community yet."
+
+    return {
+        "evidence_count": evidence_count,
+        "latest_at": latest_iso,
+        "categories": category_labels,
+        "category_counts": categories,
+        "response_counts": response_counts,
+        "response_total": response_total,
+        "attendance_count": attendance_count,
+        "status_label": status_label,
+        "plain_language": plain_language,
+        "boundary": "Public-safe aggregate only. GSN does not expose raw messages, meeting notes, private reasons, contact details, or WhatsApp chat content on TrustSlip.",
+        "rows": [
+            {"label": "Official responses", "value": str(response_total)},
+            {"label": "Attendance evidence", "value": str(attendance_count)},
+            {"label": "Latest participation evidence", "value": latest_iso or "Not shown"},
+        ],
+    }
 
 
 def get_current_trust_slip_for_user(db: Session, *, user_id: int) -> Optional[TrustSlip]:
@@ -1637,6 +1826,7 @@ def build_trust_slip_visibility_view(payload: Dict[str, Any], *, level: Optional
     relationship_evidence_summary = dict(payload.get("relationship_evidence_summary") or {})
     cci_explainer = dict(payload.get("cci_explainer") or {})
     evidence_scope = dict(payload.get("evidence_scope") or {})
+    community_participation_evidence = dict(payload.get("community_participation_evidence") or {})
 
     base: Dict[str, Any] = {
         "visibility_level": safe_level,
@@ -1652,6 +1842,7 @@ def build_trust_slip_visibility_view(payload: Dict[str, Any], *, level: Optional
         "community_context": community_context,
         "relationship_evidence_summary": relationship_evidence_summary,
         "evidence_scope": evidence_scope,
+            "community_participation_evidence": community_participation_evidence,
         "cci_explainer": cci_explainer,
         "band": payload.get("band"),
         "trust_limit": payload.get("trust_limit") or payload.get("trust_slip_limit"),
@@ -1693,6 +1884,7 @@ def build_trust_slip_visibility_view(payload: Dict[str, Any], *, level: Optional
             "community_evidence_currentness_label": merchant_summary.get("community_evidence_currentness_label"),
             "community_evidence_currentness_scope": merchant_summary.get("community_evidence_currentness_scope"),
             "evidence_scope": merchant_summary.get("evidence_scope") or evidence_scope,
+            "community_participation_evidence": merchant_summary.get("community_participation_evidence") or community_participation_evidence,
         }
         base.pop("profile_image_url", None)
         base.pop("identity_context", None)
@@ -1746,6 +1938,7 @@ def build_trust_slip_visibility_view(payload: Dict[str, Any], *, level: Optional
             "community_activity_categories": merchant_summary.get("community_activity_categories"),
             "community_activity_label": merchant_summary.get("community_activity_label"),
             "evidence_scope": merchant_summary.get("evidence_scope") or evidence_scope,
+            "community_participation_evidence": merchant_summary.get("community_participation_evidence") or community_participation_evidence,
             "membership_currentness_label": merchant_summary.get("membership_currentness_label"),
             "membership_currentness_scope": merchant_summary.get("membership_currentness_scope"),
             "next_witness_renewal_at": merchant_summary.get("next_witness_renewal_at"),
@@ -1884,14 +2077,23 @@ def ensure_trust_slip_snapshot(
     )
 
 
-def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
+def get_trust_slip_payload(
+    db: Session,
+    *,
+    user_id: int,
+    preferred_clan_id: Any = None,
+) -> Dict[str, Any]:
     uid = int(user_id)
     user = db.get(User, uid)
     summary = compute_trust_breakdown(db, user_id=uid)
     graph = _build_graph_data(db, user_id=uid)
     slip = get_current_trust_slip_for_user(db, user_id=uid)
 
-    clan_id = _resolve_issue_clan_id(db, user_id=uid)
+    clan_id = _resolve_issue_clan_id(
+        db,
+        user_id=uid,
+        preferred_clan_id=preferred_clan_id,
+    )
 
     trust_limit = _safe_decimal_str(summary.get("trust_slip_limit", Decimal("0.00")))
     standing_score = _safe_decimal_str(summary.get("standing_score", Decimal("0.00")))
@@ -2126,18 +2328,25 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
             ),
         }
 
+    community_participation_evidence = _community_participation_evidence_summary(
+        db,
+        user_id=uid,
+        clan_id=int(clan_id or 0),
+    )
+    evidence_summary["community_participation"] = community_participation_evidence
+
     evidence_summary["human_terms"] = {
         "support_finance_trade": (
-            "Use the trust band, CCI, trust limit signal, sponsor signals, and current validity to judge whether this person has enough visible trust evidence for the decision in front of you."
+            "Use the trust band, CCI, trust limit signal, sponsor signals, current validity, and official community response evidence to judge whether this person has enough visible trust evidence for the decision in front of you."
         ),
         "follow_through": (
-            "Use contribution records, repayment records, last release, and last full repayment to see whether the person tends to finish what they start."
+            "Use contribution records, repayment records, last release, last full repayment, meeting attendance, and official response records to see whether the person tends to finish what they start."
         ),
         "community_stability": (
-            "Use community name, active community count, sponsor signals, and counterparty signals to judge whether the person is stable inside real community relationships."
+            "Use community name, active community count, notice acknowledgements, meeting responses, attendance evidence, sponsor signals, and counterparty signals to judge whether the person is stable inside real community relationships."
         ),
         "verified_history": (
-            "Use Trust Events, Trust Graph, CCI, snapshot data, and Trust Passport evidence to check whether the story is backed by records instead of only words."
+            "Use Trust Events, Trust Graph, CCI, snapshot data, official notice and meeting records, and Trust Passport evidence to check whether the story is backed by records instead of only words."
         ),
     }
 
@@ -2154,6 +2363,7 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
         "community_context": community_context,
         "relationship_evidence_summary": relationship_evidence_summary,
         "evidence_scope": evidence_scope,
+            "community_participation_evidence": community_participation_evidence,
         "community_footprint": community_footprint,
         "community_role_counts": community_role_counts,
         "identity_evidence_summary": identity_evidence_summary,
@@ -2302,6 +2512,7 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
             "community_activity_latest_at": community_context.get("community_activity_latest_at"),
             "community_activity_categories": community_context.get("community_activity_categories"),
             "community_activity_label": community_context.get("community_activity_label"),
+            "community_participation_evidence": community_participation_evidence,
         },
         "merchant_visibility_level": saved_level,
         "visibility_options": ["minimal", "standard", "detailed"],
@@ -2328,6 +2539,7 @@ def issue_trust_slip_for_user(
     *,
     user_id: int,
     include_payload: bool = False,
+    preferred_clan_id: Any = None,
 ) -> Dict[str, Any]:
     uid = int(user_id)
     user = db.get(User, uid)
@@ -2337,13 +2549,22 @@ def issue_trust_slip_for_user(
     if not getattr(user, "phone_verified_at", None) or not getattr(user, "phone_e164", None):
         raise ValueError("Verify your phone number before issuing TrustSlip")
 
+    selected_clan_id = _safe_positive_int(preferred_clan_id)
     current = get_current_trust_slip_for_user(db, user_id=uid)
     if (
         current
         and bool(getattr(current, "is_current", False))
         and not _trust_slip_is_expired(current)
+        and (
+            not selected_clan_id
+            or int(getattr(current, "clan_id", 0) or 0) == selected_clan_id
+        )
     ):
-        current_payload = get_trust_slip_payload(db, user_id=uid)
+        current_payload = get_trust_slip_payload(
+            db,
+            user_id=uid,
+            preferred_clan_id=selected_clan_id,
+        )
         snapshot = ensure_trust_slip_snapshot(
             db,
             slip=current,
@@ -2357,6 +2578,8 @@ def issue_trust_slip_for_user(
             "trust_slip_id": int(current.id),
             "code": current.code,
             "gmfn_id": getattr(user, "gmfn_id", None),
+            "clan_id": int(getattr(current, "clan_id", 0) or 0) or None,
+            "community_id": int(getattr(current, "clan_id", 0) or 0) or None,
             "status": current.status,
             "is_current": bool(current.is_current),
             "snapshot_version": snapshot.get("snapshot_version") or getattr(current, "snapshot_version", None),
@@ -2376,17 +2599,29 @@ def issue_trust_slip_for_user(
                 user_id=uid,
                 reason="expired_trustslip_auto_refresh",
                 include_payload=include_payload,
+                preferred_clan_id=selected_clan_id,
             ),
         }
 
-    pre_payload = get_trust_slip_payload(db, user_id=uid)
+    pre_payload = get_trust_slip_payload(
+        db,
+        user_id=uid,
+        preferred_clan_id=selected_clan_id,
+    )
     trust_limit = _safe_decimal(
         pre_payload.get("trust_limit") or pre_payload.get("trust_slip_limit"),
         "0.00",
     )
     currency = _safe_str(pre_payload.get("currency"), "NGN")
     expires_at = _parse_expiry_or_default(pre_payload.get("expires_at"))
-    clan_id = int(pre_payload.get("clan_id") or _resolve_issue_clan_id(db, user_id=uid))
+    clan_id = int(
+        pre_payload.get("clan_id")
+        or _resolve_issue_clan_id(
+            db,
+            user_id=uid,
+            preferred_clan_id=selected_clan_id,
+        )
+    )
     code = _generate_unique_trustslip_code(db)
 
     slip = TrustSlip(
@@ -2407,7 +2642,11 @@ def issue_trust_slip_for_user(
     db.commit()
     db.refresh(slip)
 
-    issued_payload = get_trust_slip_payload(db, user_id=uid)
+    issued_payload = get_trust_slip_payload(
+        db,
+        user_id=uid,
+        preferred_clan_id=clan_id,
+    )
     snapshot = store_trust_slip_snapshot(
         db,
         slip=slip,
@@ -2422,6 +2661,8 @@ def issue_trust_slip_for_user(
         "trust_slip_id": int(slip.id),
         "code": slip.code,
         "gmfn_id": getattr(user, "gmfn_id", None),
+        "clan_id": clan_id,
+        "community_id": clan_id,
         "status": slip.status,
         "is_current": bool(slip.is_current),
         "snapshot_version": snapshot.get("snapshot_version") or getattr(slip, "snapshot_version", None),
@@ -2507,6 +2748,7 @@ def reissue_trust_slip(
     user_id: int,
     reason: str,
     include_payload: bool = False,
+    preferred_clan_id: Any = None,
 ) -> Dict[str, Any]:
     uid = int(user_id)
     current_slip = get_current_trust_slip_for_user(db, user_id=uid)
@@ -2514,9 +2756,25 @@ def reissue_trust_slip(
     if not user:
         raise ValueError("User not found")
 
-    current_payload = get_trust_slip_payload(db, user_id=uid)
+    selected_clan_id = _safe_positive_int(preferred_clan_id)
+    current_payload = get_trust_slip_payload(
+        db,
+        user_id=uid,
+        preferred_clan_id=selected_clan_id,
+    )
 
     if current_slip:
+        snapshot_payload = current_payload
+        current_clan_id = _safe_positive_int(getattr(current_slip, "clan_id", None))
+        if selected_clan_id and current_clan_id and current_clan_id != selected_clan_id:
+            try:
+                snapshot_payload = get_trust_slip_payload(
+                    db,
+                    user_id=uid,
+                    preferred_clan_id=current_clan_id,
+                )
+            except ValueError:
+                snapshot_payload = current_payload
         current_status = _safe_str(getattr(current_slip, "status", "active"), "active").lower()
         if current_status in {"frozen", "revoked"}:
             raise ValueError(f"Cannot reissue from {current_status} TrustSlip")
@@ -2524,7 +2782,7 @@ def reissue_trust_slip(
             db,
             slip=current_slip,
             user=user,
-            full_payload=current_payload,
+            full_payload=snapshot_payload,
         )
 
     code = _generate_unique_trustslip_code(db)
@@ -2534,7 +2792,14 @@ def reissue_trust_slip(
     )
     currency = _safe_str(current_payload.get("currency"), "NGN")
     expires_at = _default_weekly_expiry()
-    clan_id = int(current_payload.get("clan_id") or _resolve_issue_clan_id(db, user_id=uid))
+    clan_id = int(
+        current_payload.get("clan_id")
+        or _resolve_issue_clan_id(
+            db,
+            user_id=uid,
+            preferred_clan_id=selected_clan_id,
+        )
+    )
 
     new_slip = TrustSlip(
         code=code,
@@ -2560,7 +2825,11 @@ def reissue_trust_slip(
         db.commit()
         db.refresh(current_slip)
 
-    new_payload = get_trust_slip_payload(db, user_id=uid)
+    new_payload = get_trust_slip_payload(
+        db,
+        user_id=uid,
+        preferred_clan_id=clan_id,
+    )
     store_trust_slip_snapshot(
         db,
         slip=new_slip,
@@ -2574,6 +2843,8 @@ def reissue_trust_slip(
         "old_trust_slip_id": int(current_slip.id) if current_slip else None,
         "new_trust_slip_id": int(new_slip.id),
         "code": new_slip.code,
+        "clan_id": clan_id,
+        "community_id": clan_id,
         "reason": new_slip.issued_reason,
         "status": new_slip.status,
         "created_at": new_slip.created_at.isoformat() if new_slip.created_at else None,

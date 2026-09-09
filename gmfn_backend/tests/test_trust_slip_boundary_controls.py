@@ -1,19 +1,22 @@
 from __future__ import annotations
 
+import json
+
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from app.db.database import SessionLocal
 from app.db.models import Clan, ClanMembership, CommunityConfirmationDecision, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, CommunityConfirmationReviewCase, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceRequest, MarketplaceReview, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare, User
+from app.services.trust_slips_services import get_trust_slip_payload
 
 
-def _create_trust_slip(*, code: str, holder_user_id: int = 1) -> int:
+def _create_trust_slip(*, code: str, holder_user_id: int = 1, clan_id: int = 1) -> int:
     db = SessionLocal()
     try:
         now = datetime.now(timezone.utc)
         slip = TrustSlip(
             code=code,
-            clan_id=1,
+            clan_id=clan_id,
             holder_user_id=holder_user_id,
             trust_limit=Decimal("0.00"),
             currency="NGN",
@@ -199,6 +202,180 @@ def test_trust_slip_reissue_rejects_malformed_payload_before_new_slip_or_event(
     assert _trust_slip_count() == 1
     assert _trust_event_count() == 0
 
+
+def test_trust_slip_reissue_uses_selected_member_community_anchor(
+    client,
+    seed_clan_member_membership,
+    override_current_user_user,
+):
+    _create_trust_slip(code="REISSUE-OLD-COMMUNITY", clan_id=1)
+    _add_active_membership(clan_id=2)
+
+    response = client.post(
+        "/trust-slips/me/reissue",
+        json={
+            "reason": "holder_requested_fresh_public_trustslip",
+            "force": True,
+            "community_id": 2,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["reissued"] is True
+    assert payload["clan_id"] == 2
+    assert payload["community_id"] == 2
+    assert payload["code"] != "REISSUE-OLD-COMMUNITY"
+
+    db = SessionLocal()
+    try:
+        current = db.query(TrustSlip).filter(TrustSlip.is_current.is_(True)).one()
+        old = db.query(TrustSlip).filter(TrustSlip.code == "REISSUE-OLD-COMMUNITY").one()
+        event = db.query(TrustEvent).filter(TrustEvent.event_type == "trust_slip.reissued").one()
+        assert current.clan_id == 2
+        assert old.clan_id == 1
+        assert old.is_current is False
+        assert event.clan_id == 2
+    finally:
+        db.close()
+
+
+def test_trust_slip_reissue_rejects_non_member_selected_community(
+    client,
+    seed_clan_member_membership,
+    override_current_user_user,
+):
+    _create_trust_slip(code="REISSUE-NON-MEMBER", clan_id=1)
+
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc)
+        db.add(
+            Clan(
+                id=3,
+                name="Outside Clan",
+                invite_code="outside-clan",
+                community_code="GMFN-C-OUTSIDE",
+                status="active",
+                invite_uses=0,
+                created_at=now,
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.post(
+        "/trust-slips/me/reissue",
+        json={
+            "reason": "holder_requested_fresh_public_trustslip",
+            "force": True,
+            "community_id": 3,
+        },
+    )
+
+    assert response.status_code == 400, response.text
+    assert "not an active member" in response.text
+    assert _trust_slip_count() == 1
+    assert _trust_event_count() == 0
+
+
+
+def test_trust_slip_payload_summarizes_notice_and_meeting_response_without_private_text(
+    seed_clan_member_membership,
+):
+    _create_trust_slip(code="PARTICIPATION-EVIDENCE", clan_id=1)
+    _add_active_membership(clan_id=2)
+    now = datetime.now(timezone.utc)
+
+    db = SessionLocal()
+    try:
+        db.add_all(
+            [
+                TrustEvent(
+                    event_type="community.notice.acknowledged",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    meta_json=json.dumps(
+                        {"acknowledgement": "seen", "private_note": "SECRET-NOTICE"}
+                    ),
+                    dedupe_key="participation-ack",
+                    created_at=now,
+                ),
+                TrustEvent(
+                    event_type="community.notice.availability_response",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    meta_json=json.dumps(
+                        {"availability_response": "yes", "reason": "SECRET-REASON"}
+                    ),
+                    dedupe_key="participation-availability",
+                    created_at=now,
+                ),
+                TrustEvent(
+                    event_type="community.meeting.interest_recorded",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    meta_json=json.dumps(
+                        {"interest_response": "maybe", "comment": "SECRET-COMMENT"}
+                    ),
+                    dedupe_key="participation-interest",
+                    created_at=now,
+                ),
+                TrustEvent(
+                    event_type="community.meeting.attendance_checkin_recorded",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    meta_json=json.dumps(
+                        {"checked_in_user_id": 1, "arrival_status": "present", "note": "SECRET-CHECKIN"}
+                    ),
+                    dedupe_key="participation-checkin",
+                    created_at=now,
+                ),
+                TrustEvent(
+                    event_type="community.meeting.summary_recorded",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    meta_json=json.dumps(
+                        {"attendee_user_ids": [1], "summary": "SECRET-SUMMARY"}
+                    ),
+                    dedupe_key="participation-summary",
+                    created_at=now,
+                ),
+                TrustEvent(
+                    event_type="community.notice.acknowledged",
+                    clan_id=2,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    meta_json=json.dumps({"acknowledgement": "seen"}),
+                    dedupe_key="participation-other-community",
+                    created_at=now,
+                ),
+            ]
+        )
+        db.commit()
+
+        payload = get_trust_slip_payload(db, user_id=1, preferred_clan_id=1)
+    finally:
+        db.close()
+
+    evidence = payload["community_participation_evidence"]
+    assert evidence["evidence_count"] == 5
+    assert evidence["response_total"] == 4
+    assert evidence["attendance_count"] == 2
+    assert evidence["status_label"] == "Active participation evidence"
+    assert payload["evidence_summary"]["community_participation"]["evidence_count"] == 5
+    assert payload["merchant_view"]["community_participation_evidence"]["evidence_count"] == 5
+    assert payload["merchant_summary"]["community_participation_evidence"]["evidence_count"] == 5
+
+    evidence_dump = json.dumps(evidence)
+    assert "SECRET" not in evidence_dump
+    assert "WhatsApp chat content" in evidence_dump
 
 def test_public_verify_records_decision_pack_access_without_trust_event(
     client,

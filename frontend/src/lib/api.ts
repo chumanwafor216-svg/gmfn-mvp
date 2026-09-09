@@ -2674,10 +2674,14 @@ export async function getMyTrustSlip(): Promise<any> {
 export async function reissueMyTrustSlip(params?: {
   reason?: string;
   force?: boolean;
+  community_id?: number | string | null;
+  clan_id?: number | string | null;
 }): Promise<any> {
+  const selectedCommunityId = params?.community_id ?? params?.clan_id ?? null;
   return httpJson("/trust-slips/me/reissue", "POST", {
     reason: params?.reason || "holder_requested_fresh_public_trustslip",
     force: params?.force ?? true,
+    community_id: selectedCommunityId || undefined,
   });
 }
 

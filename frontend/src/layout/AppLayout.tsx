@@ -130,21 +130,6 @@ function trustSlipPurposePath(
   return `${base}#${hash.replace(/^#/, "")}`;
 }
 
-function publicTrustSlipCheckPath(purpose: TrustSlipSharePurpose): string {
-  const search = new URLSearchParams();
-  search.set("decision_pack", purpose.decisionPack);
-  return `/verify/trust-slip?${search.toString()}`;
-}
-
-function absoluteFrontendUrl(path: string): string {
-  if (typeof window === "undefined") return path;
-  try {
-    return new URL(path, window.location.origin).toString();
-  } catch {
-    return path;
-  }
-}
-
 function readRole(): string {
   try {
     if (typeof window === "undefined") return "";
@@ -2216,38 +2201,9 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
     isMobile && (!taskMode || shouldKeepBottomRailInTaskMode(location.pathname));
 
   async function shareSelectedTrustSlipPurpose() {
-    const publicPath = publicTrustSlipCheckPath(selectedTrustSlipSharePurpose);
-    const publicUrl = absoluteFrontendUrl(publicPath);
-    const text = [
-      `GSN TrustSlip: ${selectedTrustSlipSharePurpose.label}`,
-      selectedTrustSlipSharePurpose.purpose,
-      `Evidence focus: ${selectedTrustSlipSharePurpose.recordSummary}.`,
-      "Open the link to check the current public record. This helps your decision, but it is not an approval or guarantee.",
-    ].join("\n");
-
-    try {
-      if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
-        await navigator.share({
-          title: "GSN TrustSlip",
-          text,
-          url: publicUrl,
-        });
-        setTrustSlipShareNotice("Share sheet opened.");
-        setIsActionsOpen(false);
-        return;
-      }
-
-      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(`${text}\n${publicUrl}`);
-        setTrustSlipShareNotice("TrustSlip share message copied.");
-        return;
-      }
-    } catch {
-      setTrustSlipShareNotice("Share did not complete. Open TrustSlip and copy the selected pack there.");
-      return;
-    }
-
-    setTrustSlipShareNotice("Open TrustSlip and copy the selected pack there.");
+    setTrustSlipShareNotice(
+      "Open TrustSlip, choose the community, refresh the record, then copy the final public link."
+    );
     navigate(selectedTrustSlipSharePath);
     setIsActionsOpen(false);
   }
@@ -2761,7 +2717,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
                           color: "#FFFFFF",
                         }}
                       >
-                        Share
+                        Open share
                       </StableButton>
                     </div>
                   </div>

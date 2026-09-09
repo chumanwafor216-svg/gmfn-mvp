@@ -713,7 +713,7 @@ def _ensure_my_trust_slip_payload(
             log_trust_event(
                 db,
                 event_type="trust_slip.reissued" if current else "trust_slip.issued",
-                clan_id=0,
+                clan_id=int(issue_result.get("clan_id") or 0),
                 actor_user_id=int(current_user.id),
                 subject_user_id=int(current_user.id),
                 loan_id=None,
@@ -812,6 +812,8 @@ class TrustSlipExtendIn(BaseModel):
 class TrustSlipReissueIn(BaseModel):
     reason: str = Field(default="manual_reissue", min_length=3, max_length=255)
     force: bool = False
+    community_id: Optional[int] = Field(default=None, ge=1)
+    clan_id: Optional[int] = Field(default=None, ge=1)
 
     @field_validator("reason", mode="before")
     @classmethod
@@ -822,6 +824,13 @@ class TrustSlipReissueIn(BaseModel):
     @classmethod
     def reject_non_bool_force(cls, value: Any) -> Any:
         return _reject_non_bool_value(value, "force")
+
+    @field_validator("community_id", "clan_id", mode="before")
+    @classmethod
+    def reject_malformed_selected_community(cls, value: Any, info: Any) -> Any:
+        if value is None or value == "":
+            return None
+        return _reject_int_boundary_value(value, str(info.field_name))
 
 
 class TrustSlipDecisionPackConsentShareIn(BaseModel):
@@ -993,7 +1002,7 @@ def issue_my_trust_slip(
         log_trust_event(
             db,
             event_type="trust_slip.issued",
-            clan_id=0,
+            clan_id=int(result.get("clan_id") or 0),
             actor_user_id=int(current_user.id),
             subject_user_id=int(current_user.id),
             loan_id=None,
@@ -1083,7 +1092,14 @@ def reissue_my_trust_slip(
 
     slip = get_current_trust_slip_for_user(db, user_id=int(current_user.id))
     slip_needs_refresh = _trust_slip_needs_refresh(slip)
-    force_reissue = bool(payload.force)
+    selected_clan_id = int(payload.community_id or payload.clan_id or 0) or None
+    force_reissue = bool(payload.force) or bool(selected_clan_id)
+    if (
+        selected_clan_id
+        and slip
+        and int(getattr(slip, "clan_id", 0) or 0) != int(selected_clan_id)
+    ):
+        force_reissue = True
     if slip and not slip_needs_refresh and not force_reissue:
         check = has_material_trustslip_change(
             db,
@@ -1105,6 +1121,7 @@ def reissue_my_trust_slip(
             db,
             user_id=int(current_user.id),
             reason=payload.reason,
+            preferred_clan_id=selected_clan_id,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
@@ -1112,7 +1129,7 @@ def reissue_my_trust_slip(
     log_trust_event(
         db,
         event_type="trust_slip.reissued",
-        clan_id=0,
+        clan_id=int(result.get("clan_id") or selected_clan_id or 0),
         actor_user_id=int(current_user.id),
         subject_user_id=int(current_user.id),
         loan_id=None,
@@ -1122,6 +1139,7 @@ def reissue_my_trust_slip(
             "new_trust_slip_id": result.get("new_trust_slip_id"),
             "old_trust_slip_id": result.get("old_trust_slip_id"),
             "code": result.get("code"),
+            "clan_id": result.get("clan_id") or selected_clan_id,
         },
         commit=False,
         refresh=False,

@@ -123,6 +123,7 @@ type MerchantSummary = {
   community_activity_latest_at?: string | null;
   community_activity_categories?: string[] | null;
   community_activity_label?: string | null;
+  community_participation_evidence?: CommunityParticipationEvidence | null;
   cci_explainer?: Record<string, any> | null;
   identity_status_label?: string | null;
   bank_verified?: boolean | null;
@@ -168,6 +169,7 @@ type MerchantView = {
   community_activity_latest_at?: string | null;
   community_activity_categories?: string[] | null;
   community_activity_label?: string | null;
+  community_participation_evidence?: CommunityParticipationEvidence | null;
   band?: string | null;
   trust_limit?: string | null;
   currency?: string | null;
@@ -206,9 +208,24 @@ type CapacityContext = {
   reasons?: string[];
 };
 
+type CommunityParticipationEvidence = {
+  evidence_count?: string | number | null;
+  latest_at?: string | null;
+  categories?: string[] | null;
+  category_counts?: Array<{ label?: string | null; count?: string | number | null }> | null;
+  response_counts?: Record<string, string | number | null> | null;
+  response_total?: string | number | null;
+  attendance_count?: string | number | null;
+  status_label?: string | null;
+  plain_language?: string | null;
+  boundary?: string | null;
+  rows?: Array<{ label?: string | null; value?: string | number | null }> | null;
+};
+
 type EvidenceSummary = {
   capacity_context?: CapacityContext | null;
   readiness_context?: Record<string, any> | null;
+  community_participation?: CommunityParticipationEvidence | null;
   commitment_discipline?: Record<string, any> | null;
   personal_commitment_discipline?: Record<string, any> | null;
   human_terms?: Record<string, string> | null;
@@ -315,7 +332,7 @@ type TrustSlipSummary = {
   verification_code?: string | null;
   token?: string | null;
   public_verify_url?: string | null;
-  community_id?: string | null;
+  community_id?: string | number | null;
   community_global_id?: string | null;
   community_code?: string | null;
   clan_code?: string | null;
@@ -334,6 +351,7 @@ type TrustSlipSummary = {
   community_activity_latest_at?: string | null;
   community_activity_categories?: string[] | null;
   community_activity_label?: string | null;
+  community_participation_evidence?: CommunityParticipationEvidence | null;
   total_member_count?: string | number | null;
 };
 
@@ -700,6 +718,11 @@ function countText(value: any): string {
 function numericCount(value: any): number {
   const n = Number(value ?? 0);
   return Number.isFinite(n) ? n : 0;
+}
+
+function positiveNumberId(value: any): number {
+  const n = Number(value ?? 0);
+  return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
 function countOrNotProvided(value: any): string {
@@ -1743,6 +1766,7 @@ function normalizeTrustSlipSummary(raw: any): TrustSlipSummary | null {
       ? src.internal_contacts
       : [],
     evidence_summary: src?.evidence_summary || null,
+    community_participation_evidence: src?.community_participation_evidence || null,
     merchant_summary: src?.merchant_summary || null,
     merchant_visibility_level: firstTruthy(src?.merchant_visibility_level),
     visibility_options: Array.isArray(src?.visibility_options)
@@ -2675,6 +2699,7 @@ export default function TrustSlipPage() {
       const reissueResult = await api.reissueMyTrustSlip({
         reason: "holder_requested_fresh_public_trustslip",
         force: true,
+        community_id: selectedTrustSlipIssueCommunityId || undefined,
       });
       const data = await fetchTrustSlipPageData(selectedClanId, {
         forceFresh: true,
@@ -2692,7 +2717,12 @@ export default function TrustSlipPage() {
       });
       setConfirmationOutcome(null);
       setMerchantRailLink(null);
-      showNotice("success", "Fresh TrustSlip issued.");
+      showNotice(
+        "success",
+        selectedTrustSlipIssueCommunityId
+          ? `Fresh TrustSlip issued for ${selectedVerificationCommunityName}.`
+          : "Fresh TrustSlip issued."
+      );
     } catch (error: any) {
       if (
         loadSeq === trustSlipLoadSeqRef.current &&
@@ -2872,6 +2902,23 @@ export default function TrustSlipPage() {
     selectedVerificationScope === "community_specific"
       ? `Live confirmation requests should be answered by ${selectedVerificationCommunityName}. Other communities are not treated as giving the same judgement.`
       : "This link may show wider visible community context, but it is not proof that every community gives the same judgement. Choose one community when you need a live answer.";
+  const selectedTrustSlipIssueCommunityId = positiveNumberId(
+    selectedVerificationScope === "community_specific"
+      ? selectedVerificationCommunityId
+      : selectedClanId
+  );
+  const currentTrustSlipAnchorCommunityId = positiveNumberId(
+    firstTruthy(summary?.community_id, summary?.clan_id)
+  );
+  const trustSlipNeedsSelectedCommunityRefresh = Boolean(
+    selectedVerificationScope === "community_specific" &&
+      selectedTrustSlipIssueCommunityId &&
+      currentTrustSlipAnchorCommunityId &&
+      selectedTrustSlipIssueCommunityId !== currentTrustSlipAnchorCommunityId
+  );
+  const trustSlipSelectedCommunityRefreshText = trustSlipNeedsSelectedCommunityRefresh
+    ? `Refresh TrustSlip before sharing so the public code is issued from ${selectedVerificationCommunityName}.`
+    : "";
   const publicDecisionPackQuery = useMemo(
     () => ({
       decision_pack: selectedPurposeOption.key,
@@ -3207,6 +3254,54 @@ export default function TrustSlipPage() {
           : ""
       }`
     : "not shown";
+  const communityParticipationEvidence =
+    summary?.community_participation_evidence ||
+    summary?.merchant_view?.community_participation_evidence ||
+    summary?.merchant_view?.merchant_summary?.community_participation_evidence ||
+    summary?.merchant_summary?.community_participation_evidence ||
+    summary?.evidence_summary?.community_participation ||
+    {};
+  const communityParticipationCount = numericCount(
+    communityParticipationEvidence?.evidence_count
+  );
+  const communityParticipationResponseTotal = numericCount(
+    communityParticipationEvidence?.response_total
+  );
+  const communityParticipationAttendanceCount = numericCount(
+    communityParticipationEvidence?.attendance_count
+  );
+  const communityParticipationStatusLabel = firstTruthy(
+    communityParticipationEvidence?.status_label,
+    communityParticipationCount > 0
+      ? "Official response evidence visible"
+      : "No participation evidence shown"
+  );
+  const communityParticipationPlainLanguage = firstTruthy(
+    communityParticipationEvidence?.plain_language,
+    communityParticipationCount > 0
+      ? `This member has ${communityParticipationCount} official notice or meeting response evidence item${communityParticipationCount === 1 ? "" : "s"}.`
+      : "No official notice or meeting response evidence is shown for this TrustSlip community yet."
+  );
+  const communityParticipationBoundary = firstTruthy(
+    communityParticipationEvidence?.boundary,
+    "Public-safe aggregate only. Raw messages, private reasons, contact details, and WhatsApp chat content are not shown on TrustSlip."
+  );
+  const communityParticipationLatestLabel =
+    safeDateTime(communityParticipationEvidence?.latest_at) || "Not shown";
+  const communityParticipationCategoryLabel = firstTruthy(
+    Array.isArray(communityParticipationEvidence?.categories)
+      ? communityParticipationEvidence.categories.map((item) => safeStr(item)).filter(Boolean).slice(0, 3).join(", ")
+      : "",
+    "No categories shown"
+  );
+  const communityParticipationRows: Array<[GsnIconName, string, string]> = [
+    ["megaphone", "Official responses", String(communityParticipationResponseTotal)],
+    ["community-building", "Meeting attendance", String(communityParticipationAttendanceCount)],
+    ["calendar", "Latest", communityParticipationLatestLabel],
+    ["evidence", "Categories", communityParticipationCategoryLabel],
+    ["shield", "Boundary", communityParticipationBoundary],
+  ];
+
   const relationshipEvidenceSummary =
     summary?.relationship_evidence_summary ||
     summary?.merchant_view?.relationship_evidence_summary ||
@@ -3685,6 +3780,15 @@ export default function TrustSlipPage() {
         "Signal",
         item,
       ]),
+    },
+    {
+      title: "Response evidence",
+      tone: communityParticipationCount > 0 ? "green" : "blue",
+      icon: "megaphone",
+      rows: [
+        ["check", "Status", communityParticipationStatusLabel],
+        ...communityParticipationRows,
+      ],
     },
     {
       title: "Good for",
@@ -4872,7 +4976,9 @@ export default function TrustSlipPage() {
                   lineHeight: 1.35,
                 }}
               >
-                Ask the receiver to confirm the part that matters for their decision. Membership, the selected community answer, and witness/activity evidence are separate checks.
+                {trustSlipNeedsSelectedCommunityRefresh
+                  ? trustSlipSelectedCommunityRefreshText
+                  : "Ask the receiver to confirm the part that matters for their decision. Membership, the selected community answer, and witness/activity evidence are separate checks."}
               </div>
               <div
                 style={{
@@ -5143,7 +5249,7 @@ export default function TrustSlipPage() {
               <CardActionRow>
                 <PrimaryButton
                   onClick={copyPublicDecisionPackShareNote}
-                  disabled={!verifyUrl}
+                  disabled={!verifyUrl || trustSlipNeedsSelectedCommunityRefresh}
                   stableHeight={isCompact ? 50 : 48}
                   minWidth={isCompact ? undefined : 176}
                   debugId="trust-slip.public-decision-pack.copy-note"
@@ -6296,7 +6402,7 @@ export default function TrustSlipPage() {
                         display: "grid",
                         gridTemplateColumns: isCompact
                           ? "1fr"
-                          : "repeat(4, minmax(0, 1fr))",
+                          : "repeat(auto-fit, minmax(190px, 1fr))",
                         gap: 10,
                       }}
                     >

@@ -849,6 +849,47 @@ function normalizeDecisionPackProfile(
           : ""
       }`
     : "not shown";
+  const communityParticipationEvidence =
+    record?.community_participation_evidence ||
+    merchantView?.community_participation_evidence ||
+    merchantSummary?.community_participation_evidence ||
+    merchantView?.merchant_summary?.community_participation_evidence ||
+    record?.evidence_summary?.community_participation ||
+    {};
+  const communityParticipationCount = firstNumberLike(
+    communityParticipationEvidence?.evidence_count
+  );
+  const communityParticipationResponseTotal = firstNumberLike(
+    communityParticipationEvidence?.response_total
+  );
+  const communityParticipationAttendanceCount = firstNumberLike(
+    communityParticipationEvidence?.attendance_count
+  );
+  const communityParticipationCategories = firstStringList(
+    communityParticipationEvidence?.categories
+  );
+  const communityParticipationStatusLabel = firstTruthy(
+    communityParticipationEvidence?.status_label,
+    communityParticipationCount ? "Official response evidence visible" : "not shown"
+  );
+  const communityParticipationSignal = communityParticipationCount
+    ? `${communityParticipationStatusLabel}; ${communityParticipationCount} official notice or meeting response evidence item${
+        communityParticipationCount === 1 ? "" : "s"
+      }${
+        communityParticipationResponseTotal
+          ? `; ${communityParticipationResponseTotal} response marker${communityParticipationResponseTotal === 1 ? "" : "s"}`
+          : ""
+      }${
+        communityParticipationAttendanceCount
+          ? `; ${communityParticipationAttendanceCount} meeting attendance marker${communityParticipationAttendanceCount === 1 ? "" : "s"}`
+          : ""
+      }${
+        communityParticipationCategories.length
+          ? ` across ${communityParticipationCategories.slice(0, 3).join(", ")}`
+          : ""
+      }`
+    : "not shown";
+
   const relationshipEvidenceLabel = firstTruthy(
     relationshipEvidenceSummary?.summary_label,
     Array.isArray(relationshipEvidenceSummary?.rows)
@@ -1035,7 +1076,7 @@ function normalizeDecisionPackProfile(
     communityLabel !== "Not stated"
       ? `Community shown: ${communityLabel}. Phone: ${phoneVerified}. Member-witness strength: ${
           membershipStrengthLabel || "not shown"
-        }. Evidence currentness: ${membershipCurrentnessLabel}. Community activity evidence: ${communityActivitySignal}. Sponsor count: ${
+        }. Evidence currentness: ${membershipCurrentnessLabel}. Community activity evidence: ${communityActivitySignal}. Official response evidence: ${communityParticipationSignal}. Sponsor count: ${
           sponsorCount === null ? "not shown" : sponsorCount
         }.`
       : "Community stability is not clear from this public paper.",
@@ -1085,8 +1126,10 @@ function normalizeDecisionPackProfile(
       "community-building",
       "Is there a real community?",
       communityLabel !== "Not stated"
-        ? communityActivityCount
-          ? "Community context and activity evidence are visible."
+        ? communityActivityCount || communityParticipationCount
+          ? communityParticipationCount
+            ? "Community context, activity, and official response evidence are visible."
+            : "Community context and activity evidence are visible."
           : "Community context is visible."
         : "Stability is not shown.",
     ],
