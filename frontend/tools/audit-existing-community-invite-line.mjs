@@ -136,8 +136,26 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /function isInvitationEvidenceLine[\s\S]*?startsWith\("✅ "\)[\s\S]*?function invitationEvidenceGridStyle[\s\S]*?repeat\(2, minmax\(0, 1fr\)\)[\s\S]*?function invitationEvidenceItemStyle[\s\S]*?function renderInvitationMessageLines[\s\S]*?invitationEvidenceGridStyle\(isCompact\)[\s\S]*?renderInvitationMessageLines\(lines, isCompact\)/,
-  "The visible invitation paper must render portable-trust evidence points as a proper compact evidence grid, not a loose sentence line."
+  /function isInvitationEvidenceLine[\s\S]*?\/\^\\u2705\\s\+\/[\s\S]*?function invitationEvidenceGridStyle[\s\S]*?repeat\(2, minmax\(0, 1fr\)\)[\s\S]*?function invitationEvidenceItemStyle[\s\S]*?function invitationEvidenceIconTileStyle[\s\S]*?function renderInvitationMessageLines[\s\S]*?invitationEvidenceGridStyle\(isCompact\)[\s\S]*?renderInvitationMessageLines\(lines, isCompact\)/,
+  "The visible invitation paper must keep portable-trust evidence points grouped in a compact grid."
+);
+
+assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /data-gsn-join-evidence-icon="3d"[\s\S]*?<GsnRealisticIcon[\s\S]*?name="trust-shield"[\s\S]*?loading="eager"/,
+  "The visible invitation evidence grid must use GSN's realistic 3D trust icon instead of emoji-first UI."
+);
+
+assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /replace\(\/\^\\u2705\\s\*\/, ""\)/,
+  "The visible invitation evidence label must strip the portable-message check marker before rendering."
+);
+
+assertNotContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /aria-hidden="true">\u2705<\/span>/,
+  "The visible invitation evidence grid must not render the old check emoji as its primary icon."
 );
 
 assertContains(

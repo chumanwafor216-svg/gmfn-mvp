@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams, useSearchParams } from "react-rout
 import { EntryBackLink } from "../components/EntryControls";
 import GSNBrandMark from "../components/GSNBrandMark";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
+import { GsnRealisticIcon } from "../components/GsnRealisticIcon";
 import { RealLifeMeaningGuide } from "../components/RealLifeMeaningGuide";
 import {
   CardActionRow,
@@ -266,7 +267,7 @@ function invitationPaperMessageStyle(isCompact: boolean): React.CSSProperties {
 }
 
 function isInvitationEvidenceLine(line: string): boolean {
-  return cleanText(line).startsWith("✅ ");
+  return /^\u2705\s+/.test(cleanText(line));
 }
 
 function invitationEvidenceGridStyle(isCompact: boolean): React.CSSProperties {
@@ -281,10 +282,10 @@ function invitationEvidenceGridStyle(isCompact: boolean): React.CSSProperties {
 function invitationEvidenceItemStyle(isCompact: boolean): React.CSSProperties {
   return {
     display: "grid",
-    gridTemplateColumns: "22px minmax(0, 1fr)",
+    gridTemplateColumns: isCompact ? "32px minmax(0, 1fr)" : "34px minmax(0, 1fr)",
     alignItems: "center",
-    gap: 7,
-    minHeight: isCompact ? 38 : 40,
+    gap: 9,
+    minHeight: isCompact ? 42 : 44,
     padding: isCompact ? "8px 9px" : "8px 10px",
     borderRadius: isCompact ? 13 : 14,
     background: "rgba(236, 253, 245, 0.72)",
@@ -294,6 +295,23 @@ function invitationEvidenceItemStyle(isCompact: boolean): React.CSSProperties {
     fontWeight: 900,
     lineHeight: 1.18,
     overflow: "hidden",
+  };
+}
+
+function invitationEvidenceIconTileStyle(isCompact: boolean): React.CSSProperties {
+  const size = isCompact ? 30 : 32;
+
+  return {
+    width: size,
+    height: size,
+    borderRadius: isCompact ? 11 : 12,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(224,242,254,0.86) 100%)",
+    border: "1px solid rgba(180, 83, 9, 0.14)",
+    boxShadow: "0 8px 18px rgba(15, 23, 42, 0.08)",
   };
 }
 
@@ -313,8 +331,19 @@ function renderInvitationMessageLines(lines: string[], isCompact: boolean) {
         >
           {evidenceLines.map((evidenceLine) => (
             <div key={evidenceLine} style={invitationEvidenceItemStyle(isCompact)}>
-              <span aria-hidden="true">✅</span>
-              <span>{cleanText(evidenceLine).replace(/^✅\s*/, "")}</span>
+              <span
+                aria-hidden="true"
+                data-gsn-join-evidence-icon="3d"
+                style={invitationEvidenceIconTileStyle(isCompact)}
+              >
+                <GsnRealisticIcon
+                  name="trust-shield"
+                  size={isCompact ? 24 : 26}
+                  decorative
+                  loading="eager"
+                />
+              </span>
+              <span>{cleanText(evidenceLine).replace(/^\u2705\s*/, "")}</span>
             </div>
           ))}
         </div>
@@ -3243,6 +3272,3 @@ export default function JoinEntryPage() {
     </div>
   );
 }
-
-
-

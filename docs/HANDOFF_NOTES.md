@@ -1,3 +1,30 @@
+## 2026-09-09 - Join invite evidence 3D icon polish
+
+- Status: Implemented locally and verified; not deployed in this slice.
+- Route/screen: `/join`, `/join/:code`, `/start/join/:code`, `/start/invite/:code`, `/invite/:code`, and `/get-invite/:code` through `JoinEntryPage`.
+- Change: The branded invitation evidence grid now keeps the portable check-prefixed message parsing contract but renders each visible evidence item with `GsnRealisticIcon name="trust-shield"` inside a compact tile instead of using a primary check emoji.
+- Audit update: `audit-existing-community-invite-line.mjs` now protects the 3D trust-icon presentation, marker stripping, and no-visible-emoji boundary while preserving existing-community/create-community route separation and stale-auth bypass rules.
+- Verification: Passed `audit:existing-community-invite-line`, `audit:entry-flow-polish`, `audit:entry-auth`, `audit:icon-protocol`, `audit:member-entry-actions`, `audit:entry-copy-response`, `audit:protected-button-freeze`, targeted ESLint for `JoinEntryPage.tsx` and the invite audit, and `npm --prefix frontend run build`.
+- Unabated truth: This is presentation polish, not a performance fix or Render billing fix. It improves pre-auth trust quality and keeps architecture guardrails tighter, but it does not change verification API latency.
+
+## 2026-09-09 - External tool spend rule for GSN
+
+- Status: Owner approved a free-first external tooling policy.
+- Rule: Use free versions of Figma, Canva, Gamma, Runway/Higgsfield-style media tools, and similar presentation/creative services until GSN is producing cashflow.
+- Subscription boundary: Cancel or avoid recurring paid subscriptions for design, AI media, presentation, and optional creative tooling unless the owner explicitly approves a revenue-backed exception.
+- Infrastructure exception: Do not cancel services that keep the live GSN product online, secure, or reachable until an equivalent production-safe replacement is confirmed. Hosting, DNS, email, deploy, storage, database, security, and uptime tools are different from optional polish tools.
+- Practical plugin setting: Figma, Canva, and Gamma currently use `review_important_actions` permissions so low-risk polish can move, but important actions still get reviewed. This does not cancel billing or change external account plans.
+- Unabated truth: Plugin permissions are not subscription management. Codex can avoid paid actions and document the policy, but real billing cancellation must be confirmed inside each provider account unless a future billing-management tool is exposed.
+
+## 2026-09-09 - Plugin-assisted GSN frontend polish artifacts
+
+- Status: Figma, Canva, and Gamma plugin permissions were set to `review_important_actions`, allowing low-risk polish work to move faster while keeping sensitive or important actions reviewed. Cloudflare skills are available in the session, but Plugin Management still reports the Cloudflare app/plugin id as `not_installed`, so treat Cloudflare as guidance-only unless a later tool surface appears.
+- Owner trigger: Owner permitted use of presentation/polish plugins but wants to avoid tools or team choices that create constant payment/payment-plan pressure.
+- Figma: Created `GSN Frontend Polish Board - 2026-09-09` at `https://www.figma.com/design/AqjzJaSBVqa865wAidAGp1`. The authenticated Figma account has one plan, `Nwafor Chuma's team`, key `team::1679468620375508193`, seat shown as `View`, but creating and writing to a draft design file succeeded. The board includes a clean `Presentation View` page with `GSN Polish Snapshot / Clean v2`, covering Decision-first hierarchy, public verification, Trust Passport, Shop Control, Marketplace, Finance, and Canva public-kit handoff.
+- Gamma: Generated `GSN Frontend Production Polish Readout` at `https://gamma.app/docs/9cojaodm5186jct`; generation `AGSUWp5o6VInT1u0oiUvL` completed and deducted 27 credits, leaving 373 at generation time. Theme used: `aurum`, constrained in prompt to calm civic trust / navy-gold production polish.
+- Canva: Canva is installed and permission-tuned. The currently exposed Canva tool is editing-focused and needs an existing Canva design ID/URL before Codex can inspect or edit a Canva design. Do not claim a new Canva design can be created in-chat unless a creation tool is later exposed.
+- Unabated truth: The plugin preference change does not upgrade Figma seats, change Figma billing, or create a paid Canva/Figma/Gamma plan. It only reduces low-risk ChatGPT plugin approval friction. Figma/Gamma artifacts help presentation and alignment; they do not themselves change the production app. Actual frontend polish still requires route-local implementation, audits, build, and phone/browser QA.
+
 ## 2026-09-09 - Public community/member verification fast-minimal path
 
 - Status: Committed, pushed to `main`, and deployed to frontend plus API on 2026-09-09. Runtime commit: `792607f6d63db7834e15d6520910c79e22084e57`; GitHub Actions Render run `34340281802` completed successfully; frontend Render deploy `dep-dagj92i9goss738524m0` reached `live`; API Render deploy `dep-dagja83l550s73bshcsg` reached `live`; live API identity/public verification contracts passed on attempt 1/18.
