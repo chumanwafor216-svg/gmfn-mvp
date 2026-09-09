@@ -5,6 +5,14 @@
 - Live verification: the workflow verified that `https://gmfn-frontend.onrender.com` served the expected Decision Pack build marker after Render went live.
 - Cost boundary: No API deploy was triggered for this batch. No Gamma credits, Canva generation, or extra Render backend build were used.
 - Devil truth: This proves the frontend deploy pipeline accepted and served the pushed build. It does not prove live mobile feel on the owner phone, resolve Render billing, or configure live Web Push secrets if they are absent in production.
+## 2026-09-09 - Figma free-ride deploy snapshot added
+
+- Status: External Figma board updated; no code/runtime change, no Canva/Gamma spend, and no Render deploy.
+- Figma file: `https://www.figma.com/design/AqjzJaSBVqa865wAidAGp1`.
+- New frame: `GSN Deployed Free Ride Snapshot / 2026-09-09`, wrapper node `6:2`.
+- Contents: deploy facts for runtime `db589cf6819a528b8eb39e4af075c945f982a17a`, GitHub run `34356390222`, frontend Render deploy `dep-daglq1p5efls73b4hnd0`, app-use matrix for Figma/Canva/Gamma, and a truth-boundary section for next use.
+- Verification: Figma screenshot rendered at `1400x1123` from wrapper `6:2`; structural read-back showed 4 sections, 50 text nodes, zero placeholders, and confirmed key text for Figma, Canva, Gamma, runtime commit, Render deploy, and no-backend-deploy boundary.
+- Devil truth: The board improves presentation and review memory only. It does not change the live frontend, cancel subscriptions, fix Render billing, prove real phone feel, or configure production Web Push secrets.
 ## 2026-09-09 - Free tooling audit sweep and Community Domain notice label polish
 
 - Status: Implemented and verified locally; not pushed/deployed under the current batch-freeze and Render-cost caution.
