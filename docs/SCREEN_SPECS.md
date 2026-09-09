@@ -999,6 +999,8 @@ Rules:
 - Use the sequence: choose purpose, choose community, generate or refresh TrustSlip, then copy/share.
 - Do not expose private Trust Passport evidence on the public TrustSlip flow.
 - Opening the current paper is allowed when a TrustSlip code already exists, but generating after changing purpose/community remains the clean path.
+- Once the paper opens, show the official summary plus one active pack; do not expose holder, community, evidence, confirmation, limits, and action panels as one long stack.
+
 ## TrustSlipVerifyPage
 
 Purpose:

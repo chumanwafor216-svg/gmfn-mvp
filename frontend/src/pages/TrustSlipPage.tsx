@@ -507,6 +507,7 @@ type TrustSlipDecisionPackIssueResolutionPointer = {
 };
 
 type TrustSlipVerificationScope = "community_specific" | "all_visible_communities";
+type TrustSlipPaperPackKey = "share" | "holder" | "community" | "evidence" | "limits";
 
 type TrustSlipDecisionPackEvidenceExtract = {
   source: string;
@@ -2383,6 +2384,8 @@ export default function TrustSlipPage() {
   const [selectedVerificationCommunityOptionId, setSelectedVerificationCommunityOptionId] =
     useState("");
   const [trustSlipSetupSubmitted, setTrustSlipSetupSubmitted] = useState(false);
+  const [activeTrustSlipPaperPack, setActiveTrustSlipPaperPack] =
+    useState<TrustSlipPaperPackKey>("share");
 
   useEffect(() => {
     const requestedPack = new URLSearchParams(location.search).get("decision_pack");
@@ -2717,6 +2720,7 @@ export default function TrustSlipPage() {
         summary: mergeFreshTrustSlipSummary(data.summary, reissueResult),
       });
       setTrustSlipSetupSubmitted(true);
+      setActiveTrustSlipPaperPack("share");
       setConfirmationOutcome(null);
       setMerchantRailLink(null);
       showNotice(
@@ -4482,6 +4486,52 @@ export default function TrustSlipPage() {
     }
   }
 
+  const trustSlipPaperPackOptions: Array<{
+    key: TrustSlipPaperPackKey;
+    label: string;
+    detail: string;
+    icon: GsnIconName;
+    status: string;
+  }> = [
+    {
+      key: "share",
+      label: "Share",
+      detail: "Copy, open, or send the public TrustSlip link.",
+      icon: "public-globe",
+      status: trustSlipNeedsSelectedCommunityRefresh ? "Refresh needed" : trustSlipCodeLabel,
+    },
+    {
+      key: "holder",
+      label: "Holder",
+      detail: "Name, GSN ID, phone, and identity evidence.",
+      icon: "id",
+      status: holderName,
+    },
+    {
+      key: "community",
+      label: "Community",
+      detail: "Community anchor, role, witness, and live confirmation.",
+      icon: "community-building",
+      status: selectedVerificationCommunityName,
+    },
+    {
+      key: "evidence",
+      label: "Evidence",
+      detail: "Decision reading, responses, activity, and evidence basis.",
+      icon: "evidence",
+      status: communityParticipationStatusLabel,
+    },
+    {
+      key: "limits",
+      label: "Limits",
+      detail: "What the TrustSlip confirms, excludes, and references.",
+      icon: "shield",
+      status: trustSlipSecurityLabel,
+    },
+  ];
+  const activeTrustSlipPaperPackOption =
+    trustSlipPaperPackOptions.find((pack) => pack.key === activeTrustSlipPaperPack) ||
+    trustSlipPaperPackOptions[0];
   const trustSlipPaperFrameEnabled = true;
   if (trustSlipPaperFrameEnabled) {
     return (
@@ -4754,7 +4804,7 @@ export default function TrustSlipPage() {
                 "linear-gradient(180deg, rgba(255,253,247,0.99) 0%, rgba(248,251,255,0.97) 100%)",
               boxShadow: "0 18px 38px rgba(15,23,42,0.08)",
               padding: isCompact ? 12 : 16,
-              display: "grid",
+              display: "none",
               gap: isCompact ? 10 : 12,
             }}
           >
@@ -6067,12 +6117,402 @@ export default function TrustSlipPage() {
           </header>
 
           <section
+            data-gsn-trustslip-paper-pack-shell="true"
+            style={{
+              ...trustSlipPaperPanel("#FFFFFF"),
+              ...trustSlipScrollClearance(isCompact),
+              order: 1,
+              gridColumn: "1 / -1",
+              display: "grid",
+              gap: isCompact ? 12 : 14,
+            }}
+          >
+            <TrustPaperWatermark name="document" color="#0B63D1" size={220} opacity={0.03} />
+            <div style={trustSlipPanelContent()}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(210px, 0.34fr)",
+                  gap: 10,
+                  alignItems: "start",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ ...sectionLabel(), color: "#7A4A00" }}>TrustSlip map</div>
+                  <div style={trustSlipPaperTitle(isCompact)}>
+                    {activeTrustSlipPaperPackOption.label} pack
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 4,
+                      color: "#526579",
+                      fontSize: isCompact ? 12 : 13,
+                      fontWeight: 850,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    One pack opens at a time. The TrustSlip still carries the public link, holder, community, evidence, and limits.
+                  </div>
+                </div>
+                <SecondaryButton
+                  type="button"
+                  onClick={() => setTrustSlipSetupSubmitted(false)}
+                  fullWidth
+                  stableHeight={isCompact ? 48 : 48}
+                  debugId="trust-slip.paper.change-setup"
+                  style={trustSlipActionButtonStyle(isCompact)}
+                >
+                  {trustSlipIconBadge("refresh", isCompact ? 24 : 26, "navy")}
+                  Change setup
+                </SecondaryButton>
+              </div>
+
+              <div
+                data-gsn-trustslip-paper-pack-buttons="true"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(5, minmax(0, 1fr))",
+                  gap: 8,
+                  marginTop: 13,
+                }}
+              >
+                {trustSlipPaperPackOptions.map((pack) => {
+                  const selected = pack.key === activeTrustSlipPaperPack;
+                  const ButtonComponent = selected ? PrimaryButton : SecondaryButton;
+                  return (
+                    <ButtonComponent
+                      key={pack.key}
+                      type="button"
+                      onClick={() => setActiveTrustSlipPaperPack(pack.key)}
+                      fullWidth
+                      stableHeight={isCompact ? 58 : 62}
+                      debugId={`trust-slip.paper-pack.${pack.key}`}
+                      style={{
+                        padding: isCompact ? "7px 8px" : "8px 9px",
+                        fontSize: isCompact ? 11 : 12,
+                        lineHeight: 1.08,
+                      }}
+                    >
+                      {trustSlipIconBadge(pack.icon, isCompact ? 24 : 26, selected ? "blue" : "navy")}
+                      <span style={{ minWidth: 0, display: "grid", gap: 2 }}>
+                        <span>{pack.label}</span>
+                        <span
+                          style={{
+                            fontSize: 9.5,
+                            fontWeight: 850,
+                            opacity: 0.78,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {pack.status}
+                        </span>
+                      </span>
+                    </ButtonComponent>
+                  );
+                })}
+              </div>
+
+              <div
+                data-gsn-trustslip-paper-pack-panel={activeTrustSlipPaperPack}
+                style={{
+                  marginTop: 13,
+                  borderRadius: 18,
+                  border: "1px solid rgba(37,78,119,0.12)",
+                  background: activeTrustSlipPaperPack === "limits" ? "#FFFDF7" : "#F8FBFF",
+                  padding: isCompact ? 12 : 14,
+                  display: "grid",
+                  gap: 11,
+                }}
+              >
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "34px minmax(0, 1fr)",
+                    gap: 9,
+                    alignItems: "center",
+                  }}
+                >
+                  {trustSlipIconBadge(activeTrustSlipPaperPackOption.icon, 32, "blue")}
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ ...sectionLabel(), fontSize: isCompact ? 9 : 10 }}>
+                      {activeTrustSlipPaperPackOption.label} pack
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 2,
+                        color: "#07172C",
+                        fontSize: isCompact ? 14 : 16,
+                        fontWeight: 1000,
+                        lineHeight: 1.18,
+                      }}
+                    >
+                      {activeTrustSlipPaperPackOption.detail}
+                    </div>
+                  </div>
+                </div>
+
+                {activeTrustSlipPaperPack === "share" ? (
+                  <div style={{ display: "grid", gap: 10 }}>
+                    <div
+                      style={{
+                        ...documentMetaCard(trustSlipNeedsSelectedCommunityRefresh ? "#FFF8E6" : "#FFFFFF"),
+                        color: "#334155",
+                        fontWeight: 850,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {trustSlipNeedsSelectedCommunityRefresh
+                        ? trustSlipSelectedCommunityRefreshText
+                        : `Ready to send ${selectedPurposeOption.label} from ${verificationScopeLabel}.`}
+                    </div>
+                    <CardActionRow>
+                      <PrimaryButton
+                        onClick={copyPublicDecisionPackShareNote}
+                        disabled={!verifyUrl || trustSlipNeedsSelectedCommunityRefresh}
+                        stableHeight={isCompact ? 52 : 50}
+                        minWidth={isCompact ? undefined : 176}
+                        debugId="trust-slip.paper-pack.share.copy-note"
+                        style={trustSlipPrimaryActionStyle(isCompact)}
+                      >
+                        {trustSlipIconBadge("copy", isCompact ? 26 : 28, "blue")}
+                        Copy message
+                      </PrimaryButton>
+                      {verifyPath ? (
+                        <StableCtaLink
+                          to={verifyPath}
+                          target="_blank"
+                          rel="noreferrer"
+                          kind="soft"
+                          stableHeight={isCompact ? 52 : 50}
+                          fullWidth={isCompact}
+                          minWidth={isCompact ? undefined : 158}
+                          debugId="trust-slip.paper-pack.share.open-link"
+                        >
+                          {trustSlipIconBadge("search", isCompact ? 26 : 28, "navy")}
+                          Open link
+                        </StableCtaLink>
+                      ) : (
+                        <SecondaryButton
+                          type="button"
+                          onClick={() => showNotice("error", "This TrustSlip link is not ready yet.")}
+                          fullWidth
+                          stableHeight={isCompact ? 52 : 50}
+                          minWidth={isCompact ? undefined : 158}
+                          debugId="trust-slip.paper-pack.share.open-link"
+                          style={trustSlipActionButtonStyle(isCompact)}
+                        >
+                          {trustSlipIconBadge("search", isCompact ? 26 : 28, "navy")}
+                          Open link
+                        </SecondaryButton>
+                      )}
+                      <SecondaryButton
+                        onClick={copyTrustSlipSnapshot}
+                        fullWidth
+                        stableHeight={isCompact ? 52 : 50}
+                        minWidth={isCompact ? undefined : 158}
+                        debugId="trust-slip.paper-pack.share.copy-slip"
+                        style={trustSlipActionButtonStyle(isCompact)}
+                      >
+                        {trustSlipIconBadge("document", isCompact ? 26 : 28, "navy")}
+                        Copy TrustSlip
+                      </SecondaryButton>
+                    </CardActionRow>
+                  </div>
+                ) : null}
+
+                {activeTrustSlipPaperPack === "holder" ? (
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                      gap: 9,
+                    }}
+                  >
+                    {([
+                      ["Holder", holderName, "id"],
+                      ["GSN ID", gmfnId, "qr"],
+                      ["Phone", phoneRecordLabel, "phone"],
+                      ["Identity", identityCheckLabel || "Identity record building", "shield"],
+                      ["Bank", heroBankDisplay, "bank"],
+                      ["ID evidence", heroIdDisplay, "document"],
+                    ] as Array<[string, string, GsnIconName]>).map(([label, value, icon]) => (
+                      <div key={label} style={documentMetaCard("#FFFFFF")}>
+                        <div style={{ display: "grid", gridTemplateColumns: "28px minmax(0, 1fr)", gap: 8, alignItems: "center" }}>
+                          {trustSlipIconBadge(icon, 28, "blue")}
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ ...sectionLabel(), fontSize: 9.5 }}>{label}</div>
+                            <div style={{ marginTop: 2, color: "#07172C", fontSize: 13, fontWeight: 950, lineHeight: 1.2, overflowWrap: "anywhere" }}>
+                              {value}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                {activeTrustSlipPaperPack === "community" ? (
+                  <div style={{ display: "grid", gap: 10 }}>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                        gap: 9,
+                      }}
+                    >
+                      {([
+                        ["Community", selectedVerificationCommunityName, "community-building"],
+                        ["Role", holderRole, "id"],
+                        ["Witness", memberWitnessSignal, "certificate-seal"],
+                        ["Activity", communityActivitySignal, "megaphone"],
+                        ["Membership", membershipStrengthLabel, "shield"],
+                        ["Currentness", membershipCurrentnessLabel, "calendar"],
+                      ] as Array<[string, string, GsnIconName]>).map(([label, value, icon]) => (
+                        <div key={label} style={documentMetaCard("#FFFFFF")}>
+                          <div style={{ display: "grid", gridTemplateColumns: "28px minmax(0, 1fr)", gap: 8, alignItems: "center" }}>
+                            {trustSlipIconBadge(icon, 28, "blue")}
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ ...sectionLabel(), fontSize: 9.5 }}>{label}</div>
+                              <div style={{ marginTop: 2, color: "#07172C", fontSize: 13, fontWeight: 950, lineHeight: 1.2, overflowWrap: "anywhere" }}>
+                                {value}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <CardActionRow>
+                      <PrimaryButton
+                        type="button"
+                        onClick={() => { void requestCommunityPulse(); }}
+                        busy={confirmationBusy}
+                        busyLabel="Requesting..."
+                        fullWidth
+                        stableHeight={isCompact ? 52 : 50}
+                        debugId="trust-slip.paper-pack.community.request"
+                        style={trustSlipPrimaryActionStyle(isCompact)}
+                      >
+                        {trustSlipIconBadge("community", isCompact ? 26 : 28, "blue")}
+                        Request confirmation
+                      </PrimaryButton>
+                      {communityVerifyPath ? (
+                        <StableCtaLink
+                          to={communityVerifyPath}
+                          kind="soft"
+                          stableHeight={isCompact ? 52 : 50}
+                          fullWidth={isCompact}
+                          minWidth={isCompact ? undefined : 176}
+                          debugId="trust-slip.paper-pack.community.open-record"
+                        >
+                          {trustSlipIconBadge("search", isCompact ? 26 : 28, "navy")}
+                          Community record
+                        </StableCtaLink>
+                      ) : null}
+                    </CardActionRow>
+                    {confirmationOutcome ? (
+                      <div style={documentMetaCard("#FFFFFF")}>
+                        <div style={{ color: "#166534", fontWeight: 1000 }}>Request opened</div>
+                        <div style={{ marginTop: 6, color: "#334155", fontWeight: 850, lineHeight: 1.4 }}>
+                          {confirmationOutcome.visible_summary || "Community responses will appear as an aggregate result when members answer."}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {activeTrustSlipPaperPack === "evidence" ? (
+                  <div style={{ display: "grid", gap: 10 }}>
+                    <div style={{ ...documentMetaCard("#FFF7E6"), color: "#07172C", fontWeight: 950, lineHeight: 1.4 }}>
+                      {decisionSummaryText}
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: isCompact ? "1fr" : "repeat(auto-fit, minmax(190px, 1fr))",
+                        gap: 10,
+                      }}
+                    >
+                      {trustSlipEvidenceSummaryCards.map((card) => (
+                        <div
+                          key={card.title}
+                          style={{
+                            ...documentMetaCard(
+                              card.tone === "red"
+                                ? "#FFF1F2"
+                                : card.tone === "green"
+                                  ? "#F0FBF4"
+                                  : "#FFFFFF"
+                            ),
+                            display: "grid",
+                            gap: 8,
+                          }}
+                        >
+                          <div style={{ display: "grid", gridTemplateColumns: "30px minmax(0, 1fr)", gap: 8, alignItems: "center" }}>
+                            {trustSlipIconBadge(card.icon, 30, card.tone === "red" ? "red" : card.tone === "green" ? "green" : "blue")}
+                            <div style={{ color: "#07172C", fontSize: 13, fontWeight: 1000 }}>{card.title}</div>
+                          </div>
+                          <div style={{ display: "grid", gap: 6 }}>
+                            {card.rows.slice(0, 4).map(([icon, label, value]) => (
+                              <div key={`${card.title}-${label}-${value}`} style={{ display: "grid", gridTemplateColumns: "24px minmax(0, 1fr)", gap: 7 }}>
+                                {trustSlipIconBadge(icon, 24, card.tone === "red" ? "red" : card.tone === "green" ? "green" : "blue")}
+                                <span style={{ minWidth: 0 }}>
+                                  <span style={{ display: "block", color: "#64748B", fontSize: 9.5, fontWeight: 1000, textTransform: "uppercase" }}>{label}</span>
+                                  <span style={{ display: "block", marginTop: 2, color: card.tone === "red" ? "#991B1B" : "#334155", fontSize: 12, fontWeight: 880, lineHeight: 1.28, overflowWrap: "anywhere" }}>{value}</span>
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+
+                {activeTrustSlipPaperPack === "limits" ? (
+                  <div style={{ display: "grid", gap: 10 }}>
+                    <TrustDocumentConfidenceRibbon items={trustSlipHolderConfidenceRibbonItems} />
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+                        gap: 10,
+                      }}
+                    >
+                      <TrustDocumentBoundaryPanel
+                        title="This TrustSlip confirms"
+                        tone="good"
+                        items={trustSlipHolderConfirmsList}
+                      />
+                      <TrustDocumentBoundaryPanel
+                        title="This TrustSlip does not confirm"
+                        tone="warn"
+                        items={trustSlipHolderDoesNotConfirmList}
+                      />
+                    </div>
+                    <TrustDocumentSecurityPanel
+                      title="Audit Details"
+                      items={trustSlipHolderSecurityItems}
+                    />
+                    <TrustDocumentFingerprint
+                      label="TrustSlip holder record reference"
+                      value={trustSlipHolderFingerprint}
+                      detail="Record reference for this visible holder-facing TrustSlip. It helps match this page with its GSN record; it is not legal proof or payment approval."
+                    />
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </section>
+
+          <section
             data-gsn-trust-document-certificate="trustslip-holder"
             style={{
               ...trustSlipScrollClearance(isCompact),
               order: 1,
               gridColumn: "1 / -1",
-              display: "grid",
+              display: "none",
               gap: 12,
             }}
           >
@@ -6186,6 +6626,7 @@ export default function TrustSlipPage() {
               ...trustSlipScrollClearance(isCompact),
               order: 6,
               gridColumn: isCompact ? "1 / -1" : "2 / 3",
+              display: "none",
               position: "relative",
               overflow: "hidden",
             }}
@@ -6331,7 +6772,7 @@ export default function TrustSlipPage() {
           <section
             style={{
               ...trustSlipScrollClearance(isCompact),
-              display: "contents",
+              display: "none",
             }}
           >
             <div
@@ -6567,7 +7008,7 @@ export default function TrustSlipPage() {
           <section
             style={{
               ...trustSlipScrollClearance(isCompact),
-              display: "contents",
+              display: "none",
             }}
           >
             <div
@@ -6797,6 +7238,7 @@ export default function TrustSlipPage() {
               ...trustSlipScrollClearance(isCompact),
               order: 9,
               gridColumn: "1 / -1",
+              display: "none",
             }}
           >
             <TrustPaperWatermark name="qr" color="#0B63D1" size={190} opacity={0.03} />

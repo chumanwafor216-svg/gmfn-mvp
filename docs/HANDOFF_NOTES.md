@@ -1,3 +1,12 @@
+## 2026-09-09 - TrustSlip paper folded into five packs
+
+- Status: Implemented and verified locally; frontend-only UX correction. Not pushed/deployed yet in this slice.
+- Owner trigger: Owner confirmed the setup-first flow helped but said the actual TrustSlip paper is still too long and asked for a smarter map with a few buttons representing what the TrustSlip carries.
+- Change: `/app/trust-slip` now keeps the official TrustSlip header visible and folds the actual paper into five packs: Share, Holder, Community, Evidence, and Limits. The generated TrustSlip opens on Share by default, and the older stacked document panels are visually hidden behind the new pack representation.
+- TrustSlip map: Share carries copy/open/send actions; Holder carries name, GSN ID, phone, identity, bank, and ID evidence; Community carries selected community, role, witness, activity, membership, and confirmation actions; Evidence carries decision summary plus response/activity/evidence cards; Limits carries confidence ribbon, what confirms/does not confirm, audit details, and fingerprint.
+- Boundary: This does not change backend TrustSlip payloads, public verify behavior, privacy rules, or Trust Passport/private evidence exposure. Copy/share still uses the same TrustSlip data.
+- Verification passed: `npm exec eslint -- src/pages/TrustSlipPage.tsx` from `frontend`; `npm --prefix frontend run audit:trust-actions`; `npm --prefix frontend run audit:trust-passport-trustslip-boundary`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`.
+- Devil truth: This folds the holder-facing paper and cages it in source audit, but it still needs real phone QA to verify the pack buttons feel obvious and the hidden legacy stack does not create any unexpected screen-reader or print behavior.
 ## 2026-09-09 - TrustSlip setup-first flow added
 
 - Status: Implemented and verified locally; frontend-only UX correction. Owner phone QA still needed for real tap-path confirmation.

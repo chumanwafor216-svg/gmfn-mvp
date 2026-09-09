@@ -123,6 +123,18 @@ assertContains(
 
 trustDomainFiles.forEach(assertStableActionsHaveDebugIds);
 
+assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /type TrustSlipPaperPackKey = "share" \| "holder" \| "community" \| "evidence" \| "limits"[\s\S]*?data-gsn-trustslip-paper-pack-shell="true"[\s\S]*?data-gsn-trustslip-paper-pack-buttons="true"[\s\S]*?debugId=\{`trust-slip\.paper-pack\.\$\{pack\.key\}`\}[\s\S]*?data-gsn-trustslip-paper-pack-panel=\{activeTrustSlipPaperPack\}/,
+  "TrustSlip holder page must keep the full paper folded behind the five-pack map instead of exposing the whole document stack at once."
+);
+
+assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /setTrustSlipSetupSubmitted\(true\);[\s\S]*?setActiveTrustSlipPaperPack\("share"\);/,
+  "Generated TrustSlips must open on the Share pack first, because the holder's next job is to copy or send the public link."
+);
+
 for (const file of trustDomainFiles) {
   assertNotContains(
     file,
