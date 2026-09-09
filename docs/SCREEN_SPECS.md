@@ -16,6 +16,17 @@ Use `Decision first. Evidence second. Explanation last.` for Trust Passport,
 TrustSlip, Decision Packs, verification, marketplace, finance, support, and
 admin surfaces.
 
+Trust-first real-life guidance:
+- important status and decision surfaces should translate system state into
+  real-life meaning;
+- use the reusable Real-life meaning pattern where possible: Meaning, Why it
+  matters, First step, and If skipped;
+- this guidance must especially protect unbanked and underbanked users by
+  explaining how community evidence helps without pretending GSN is a bank,
+  lender, credit bureau, or government verifier;
+- do not scatter one-off trust paragraphs across pages when a shared guidance
+  rule can carry the same meaning.
+
 ## CoverPage
 
 Purpose:

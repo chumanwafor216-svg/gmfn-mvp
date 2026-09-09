@@ -120,6 +120,7 @@
     "audit:existing-community-invite-line": "node tools/audit-existing-community-invite-line.mjs",
     "audit:share-tag-actions": "node tools/audit-share-tag-actions.mjs",
     "audit:action-response-protocol": "node tools/audit-action-response-protocol.mjs",
+    "audit:real-life-trust-guidance": "node tools/audit-real-life-trust-guidance.mjs",
     "audit:support-helpdesk": "node tools/audit-support-helpdesk.mjs",
     "audit:dashboard-actions": "node tools/audit-dashboard-actions.mjs",
     "audit:dashboard-button-inventory": "node tools/audit-dashboard-button-inventory.mjs",

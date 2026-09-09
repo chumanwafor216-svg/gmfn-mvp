@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams, useSearchParams } from "react-rout
 import { EntryBackLink } from "../components/EntryControls";
 import GSNBrandMark from "../components/GSNBrandMark";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
+import { RealLifeMeaningGuide } from "../components/RealLifeMeaningGuide";
 import {
   CardActionRow,
   PrimaryButton,
@@ -36,6 +37,7 @@ import {
   saveJoinEntryDraft,
 } from "../lib/entryDraft";
 import { buildJoinInviteLetter } from "../lib/joinInviteMessaging";
+import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import { structuredErrorDetail } from "../lib/structuredErrors";
 
 type JoinPathChoice = "existing" | "new" | null;
@@ -2472,6 +2474,14 @@ export default function JoinEntryPage() {
               Use your existing GSN ID if you have one. If you are new, fill the
               short form for community review.
             </div>
+
+            <RealLifeMeaningGuide
+              compact={isCompact}
+              guidance={getRealLifeTrustGuidance("join-request", {
+                communityName: resolvedCommunityName || "this community",
+              })}
+              style={{ marginTop: 14 }}
+            />
 
             {showDraftRecovery ? (
               <div style={{ marginTop: 14, ...innerCard("#F8FBFF") }}>

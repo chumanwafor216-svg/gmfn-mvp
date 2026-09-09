@@ -15,6 +15,8 @@ A screen is acceptable only if:
   not remain stacked into a long page above or below the new task.
 - It follows the Action Response Protocol: every meaningful action succeeds
   visibly, routes visibly, or explains why it cannot continue.
+- Important statuses explain their real-life meaning: what is happening, why it
+  matters, the first step, and what happens if the user skips or ignores it.
 - It follows `docs/APP_WIDE_AUDIT_PROTOCOL.md`: each page has a clear route
   purpose, honest actions, truthful empty states, correct permission visibility,
   in-page return navigation for deep tasks, and a regression cage for the

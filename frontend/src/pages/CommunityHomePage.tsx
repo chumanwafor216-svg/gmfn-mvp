@@ -6,6 +6,7 @@ import type {
   NextActionGuideResolution,
 } from "../components/NextActionGuide";
 import PageTopNav from "../components/PageTopNav";
+import { RealLifeMeaningGuide } from "../components/RealLifeMeaningGuide";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { StableButton } from "../components/StableButton";
 import { brandClampLines } from "../styles/gmfnBrand";
@@ -15,6 +16,7 @@ import { navigateWithOrigin } from "../lib/nav";
 import { preloadRouteForPath } from "../lib/routePreload";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import { gsnGovernanceErrorMessage } from "../lib/structuredErrors";
+import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import {
   getMarketplaceBroadcasts,
   getMyMarketplaceShop,
@@ -4661,6 +4663,12 @@ export default function CommunityHomePage() {
             >
               Create or join first. Your marketplace communities will appear here.
             </div>
+
+            <RealLifeMeaningGuide
+              compact={isCompact}
+              guidance={getRealLifeTrustGuidance("no-community-home")}
+              style={{ marginTop: 14 }}
+            />
 
             <div
               style={{

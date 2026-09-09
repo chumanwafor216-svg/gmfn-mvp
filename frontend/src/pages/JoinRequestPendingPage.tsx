@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
+import { RealLifeMeaningGuide } from "../components/RealLifeMeaningGuide";
 import { CardActionRow, StableCtaLink } from "../components/StableButton";
 import { getJoinApprovalStatus } from "../lib/api";
 import { resolveCtaTarget, type CtaTarget } from "../lib/ctaTargets";
+import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 
 type ReviewerLine = {
   display: string;
@@ -756,6 +758,14 @@ export default function JoinRequestPendingPage() {
         </section>
 
         <section style={panelStyle(isCompact ? 14 : 18)} aria-label="Request facts">
+          <RealLifeMeaningGuide
+            compact={isCompact}
+            tone="dark"
+            guidance={getRealLifeTrustGuidance("pending-approval", {
+              communityName,
+            })}
+            style={{ marginBottom: 14 }}
+          />
           <div style={{ display: "grid" }}>
             {factRows.map((row, index) => (
               <div
