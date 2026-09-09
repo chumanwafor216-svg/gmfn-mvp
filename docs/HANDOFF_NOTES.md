@@ -1,3 +1,10 @@
+## 2026-09-09 - External app free-ride playbook added
+
+- Status: Local docs checkpoint; no product code change, no Render deploy, no Canva/Gamma generation spend.
+- Added `docs/GSN_EXTERNAL_APP_FREE_RIDE_PLAYBOOK_2026-09-09.md` to preserve the exact free-first operating rules for Figma, Canva, Gamma, and similar optional presentation tools.
+- The playbook records current app artifacts, current blockers, worthwhile-use tests, and next best app moves: finish Figma node `12:2` when the connector recovers, use Canva only after a real design/template exists, and use Gamma generation only for a real audience.
+- Verification: docs-only diff and whitespace check.
+- Devil truth: this playbook improves operating discipline, not production functionality. Real speed proof still requires phone/browser QA, API timing, backend logs, and Render billing clarity.
 ## 2026-09-09 - External app continuation: verification speed board partial
 
 - Status: External-app continuation performed after owner said to continue using added apps accordingly. No code/runtime change, no Render deploy, and no Gamma generation credits spent in this slice.
