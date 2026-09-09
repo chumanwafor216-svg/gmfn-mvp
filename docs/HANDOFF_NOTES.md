@@ -1,3 +1,12 @@
+## 2026-09-09 - Canva capability check for GSN collateral
+
+- Status: Checked after owner asked to use Canva/deeper plugin tooling for GSN enhancement.
+- Canva generation attempt: `_prepare_design_generation` accepted a flyer generation job (`5e15a9f6-f83a-49fc-b49c-0f87a438b4b8`) for `GSN Public Trust Verification Flyer`, but no owned Canva design appeared in search afterward and no candidate ID was returned to convert into an editable design.
+- Canva direct generation: `_generate_design` returned `INVALID_ARGUMENT` for both a flyer and a simpler poster prompt, so do not rely on direct Canva AI generation from this chat path yet.
+- Canva brand state: `_list_brand_kits` returned no brand kits; `_search_brand_templates` with `dataset=non_empty` for presentation returned no autofill-capable templates.
+- Practical use now: Canva can still help if the owner provides an existing Canva design URL/ID, or if a usable template/design is created manually in Canva first. Until then, Figma/Gamma plus repo-local GSN assets are more reliable for production polish.
+- Unabated truth: Canva is connected, but connected does not mean production-useful for new GSN assets today. Avoid spending time or money around Canva until a real design/template/candidate is visible.
+
 ## 2026-09-09 - Join invite evidence 3D icon polish
 
 - Status: Committed, pushed to `main`, and frontend-deployed on 2026-09-09. Runtime commit: `15338849d025e42906972490cd2a04866141c848`; GitHub Actions Render run `34351979944` completed successfully; frontend Render deploy `dep-dagl5hu7bikc73blvq70` reached `live`; backend deploy was not needed (`deploy_api=false`).
