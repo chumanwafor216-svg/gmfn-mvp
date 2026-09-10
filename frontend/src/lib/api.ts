@@ -1403,7 +1403,7 @@ export async function listCommunityNotices(params: {
   return httpJson(
     `/community-notices${buildQuery({
       clan_id: params.clan_id,
-      limit: params.limit ?? 5,
+      limit: params.limit ?? 10,
     })}`,
     "GET"
   );

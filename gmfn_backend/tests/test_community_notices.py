@@ -570,10 +570,60 @@ def test_community_notice_board_lists_demand_box_signals_without_response_thread
         assert notifications == []
 
 
-def test_community_notice_board_surfaces_marketplace_broadcasts_on_central_board(
+def test_community_notice_board_defaults_to_ten_live_announcements(client, override_current_user):
+    _seed_notice_community()
+
+    now = datetime.now(timezone.utc)
+    with SessionLocal() as db:
+        for index in range(11):
+            db.add(
+                TrustEvent(
+                    event_type="community.notice.posted",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    created_at=now + timedelta(minutes=index),
+                    meta_json=json.dumps(
+                        {
+                            "source": "community_notice_board",
+                            "reason": "community_notice_posted",
+                            "body": f"Official bulletin notice {index + 1}",
+                            "word_count": 4,
+                            "expiry_policy": "standard",
+                            "expires_at": (now + timedelta(days=7)).isoformat(),
+                            "comments_enabled": False,
+                            "reactions_enabled": False,
+                            "thread_enabled": False,
+                        }
+                    ),
+                )
+            )
+        db.commit()
+
+    default_res = client.get("/community-notices", params={"clan_id": 1})
+    assert default_res.status_code == 200, default_res.text
+    default_notices = default_res.json()["notices"]
+    assert len(default_notices) == 10
+    assert default_notices[0]["body"] == "Official bulletin notice 11"
+    assert default_notices[-1]["body"] == "Official bulletin notice 2"
+
+    too_many_res = client.get("/community-notices", params={"clan_id": 1, "limit": 11})
+    assert too_many_res.status_code == 422, too_many_res.text
+
+
+def test_community_notice_board_keeps_marketplace_broadcasts_out_of_central_board(
     client, override_current_user
 ):
     _seed_notice_community()
+
+    post_res = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Official meeting stays on bulletin.",
+        },
+    )
+    assert post_res.status_code == 200, post_res.text
 
     now = datetime.now(timezone.utc)
     with SessionLocal() as db:
@@ -600,7 +650,7 @@ def test_community_notice_board_surfaces_marketplace_broadcasts_on_central_board
                 priority_mode="free",
                 visibility_scope="direct_communities",
                 expires_at=now + timedelta(days=2),
-                created_at=now,
+                created_at=now + timedelta(minutes=5),
             )
         )
         db.commit()
@@ -608,17 +658,15 @@ def test_community_notice_board_surfaces_marketplace_broadcasts_on_central_board
     list_res = client.get("/community-notices", params={"clan_id": 1, "limit": 3})
     assert list_res.status_code == 200, list_res.text
     body = list_res.json()
+    notices = body["notices"]
 
-    assert body["notices"][0]["source"] == "marketplace_broadcast"
-    assert body["notices"][0]["notice_scope"] == "marketplace"
-    assert body["notices"][0]["notice_kind"] == "marketplace_broadcast"
-    assert body["notices"][0]["marketplace_broadcast_id"] == 1
-    assert body["notices"][0]["body"] == "Fresh rice bags available for collection today"
-    assert body["notices"][0]["source_shop_name"] == "Nevito food shop"
-    assert body["notices"][0]["sender_whatsapp_number"] == "+447717143500"
-    assert body["notices"][0]["image_url"].endswith("/rice.jpg")
-    assert body["notices"][0]["acknowledgement_enabled"] is False
-    assert "Trade details and replies stay in Marketplace" in body["notices"][0]["board_hint"]
+    assert len(notices) == 1
+    assert notices[0]["source"] == "community_notice_board"
+    assert notices[0]["body"] == "Official meeting stays on bulletin."
+    assert all(notice.get("source") != "marketplace_broadcast" for notice in notices)
+    assert all(notice.get("notice_scope") != "marketplace" for notice in notices)
+    assert all("marketplace_broadcast_id" not in notice for notice in notices)
+    assert body["previous_announcements"] == []
 
 def test_community_notice_rejects_more_than_fifty_words(
     client, override_current_user

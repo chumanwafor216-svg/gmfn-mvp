@@ -1,3 +1,21 @@
+## 2026-09-10 - Community Bulletin live capacity set to 10
+
+- Status: Implemented and verified locally; not pushed/deployed in this slice.
+- Owner trigger: after confirming the Community Bulletin should not carry Marketplace/Spotlight content, owner clarified the bulletin should allow up to 10 active notices at a time.
+- Backend route affected: `GET /community-notices` now defaults to `limit=10` and caps caller-supplied `limit` at 10, replacing the old default 5 / max 20 mismatch.
+- Frontend API helper affected: `listCommunityNotices` now uses `params.limit ?? 10`, so any Community Bulletin caller that omits a limit still requests the approved 10 live notices.
+- Guardrail changes: notice tests now include `test_community_notice_board_defaults_to_ten_live_announcements`, and `audit-notice-board-phone-notifications` cages the backend `default=10, le=10` plus frontend helper fallback.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\community_notices.py gmfn_backend\tests\test_community_notices.py`; `python -m pytest -q gmfn_backend\tests\test_community_notices.py` (`27 passed`); `node --check frontend\tools\audit-notice-board-phone-notifications.mjs`; `npm exec eslint -- src/lib/api.ts tools/audit-notice-board-phone-notifications.mjs` from `frontend`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:community-home-phone-buttons`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`.
+- Devil truth: this sets and verifies the contract locally. Live phone will show up to 10 only after the backend/frontend build containing this change is deployed and the selected community actually has up to 10 active, unexpired official notices/domain notices/meeting notices.
+## 2026-09-10 - Community Bulletin excludes Marketplace Spotlight broadcasts
+
+- Status: Implemented and verified locally; not pushed/deployed in this slice.
+- Owner trigger: live phone screenshot showed Marketplace/Spotlight product information appearing inside the Community Home Community Bulletin, which made the bulletin behave like a shop Spotlight carousel instead of an official notice board.
+- Backend route affected: `GET /community-notices` no longer queries `MarketplaceBroadcast` rows and no longer adapts marketplace broadcasts into notice payloads. The endpoint still returns ordinary community notices, eligible official Community Domain notices, meeting-planning notices, previous announcements, and read-only Demand Box signals.
+- Boundary: Marketplace/Spotlight content remains a Marketplace/Public Shop/Dashboard spotlight concern. Community Bulletin is for notices and linked official domain notices, not product promotion cards.
+- Regression guard: `test_community_notice_board_keeps_marketplace_broadcasts_out_of_central_board` seeds a newer Marketplace broadcast beside an official notice and asserts the Bulletin response contains only the official notice with no marketplace source/scope/broadcast id.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\community_notices.py gmfn_backend\tests\test_community_notices.py`; `python -m pytest -q gmfn_backend\tests\test_community_notices.py` (`26 passed`); `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:community-home-phone-buttons`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`.
+- Devil truth: this fixes the API source mix-up and preserves Community Home button geometry, but it still needs one live phone check after deploy to confirm no old cached API/build is being served.
 ## 2026-09-09 - TrustSlip paper folded into five packs
 
 - Status: Implemented and verified locally; frontend-only UX correction. Not pushed/deployed yet in this slice.

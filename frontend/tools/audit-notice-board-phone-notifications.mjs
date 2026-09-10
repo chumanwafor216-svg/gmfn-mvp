@@ -255,6 +255,17 @@ assertContains(
 
 assertContains(
   files.communityNotices,
+  /def list_notices\([\s\S]*?limit: int = Query\(default=10, ge=1, le=10\)[\s\S]*?"notices": notices\[: int\(limit\)\]/,
+  "Community Bulletin list responses must default to 10 live announcements and cap caller requests at 10."
+);
+
+assertContains(
+  files.api,
+  /export async function listCommunityNotices\(params: \{[\s\S]*?`\/community-notices\$\{buildQuery\(\{[\s\S]*?limit: params\.limit \?\? 10/,
+  "Frontend Community Bulletin helper must request up to 10 announcements when no caller limit is supplied."
+);
+assertContains(
+  files.communityNotices,
   /Expired notices leave the active board[\s\S]*?remain in Community Memory/,
   "Marketplace/community notice response must explain that expired notices leave the board without being deleted."
 );
