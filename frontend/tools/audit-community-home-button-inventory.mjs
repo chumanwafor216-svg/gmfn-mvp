@@ -10,13 +10,13 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 38;
+const expectedStableButtonTemplateCount = 39;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 4;
 const expectedSpotlightGuidedActionCount = 5;
 const expectedGroupedLaneRowCount = 22;
-const expectedExpandedRouteLocalActionTemplates = 48;
+const expectedExpandedRouteLocalActionTemplates = 49;
 const expectedMobileShellBreakdown = {
   top: 2,
   drawer: 25,
@@ -595,6 +595,18 @@ assertContains(
 assertContains(
   /function renderCommunityBulletinNoticeSelector[\s\S]*?const urgency = communityBulletinNoticeUrgency\(item\)[\s\S]*?aria-label=\{`Show announcement \$\{label\}: \$\{title\}\. \$\{urgency\.label\}\.`\}[\s\S]*?communityBulletinNoticeUrgencyButtonStyle\(urgency\.tone, selected\)/,
   "Community Home Bulletin notice numbers must visibly carry each announcement's urgency colour, including unselected announcements."
+);
+assertContains(
+  /const communityBulletinPulse = useMemo[\s\S]*?counts: Record<CommunityBulletinNoticeUrgencyTone, number>[\s\S]*?responseNeededCount[\s\S]*?acknowledgementNeededCount[\s\S]*?pendingCommunityNoticeReviewCount[\s\S]*?nextIndex: recommendedIndex/,
+  "Community Home Pulse must summarize existing Bulletin urgency, response, acknowledgement, and admin-review signals without creating a separate data source."
+);
+assertContains(
+  /function renderCommunityBulletinPulse[\s\S]*?data-debug-id="community-home\.bulletin\.pulse"[\s\S]*?Community pulse[\s\S]*?\["red", "yellow", "green"\][\s\S]*?debugId="community-home\.bulletin\.pulse-open"[\s\S]*?setSelectedCommunityNoticeIndex\(communityBulletinPulse\.nextIndex\)/,
+  "Community Home Pulse must stay inside the Bulletin and route attention back to the existing selected announcement card."
+);
+assertContains(
+  /renderCommunityBulletinPulse\(\)[\s\S]*?renderCommunityBulletinNoticeSelector\(activeCommunityNotices\)[\s\S]*?renderCommunityBulletinPrimaryNotice\(primaryCommunityNotice\)/,
+  "Community Home Pulse must sit directly above the existing Bulletin selector and primary notice, not become a separate attention screen."
 );
 assertContains(
   /COMMUNITY_NOTICE_ACTIVE_LIMIT = 10[\s\S]*?listCommunityNotices\(communityNoticeListParams\(clanId\)\)[\s\S]*?function renderCommunityBulletinNoticeSelector[\s\S]*?Announcement \$\{selectedCommunityNoticeIndexSafe \+ 1\} of \$\{items\.length\}[\s\S]*?\{selectedCommunityNoticeIndexSafe \+ 1\}\/\{items\.length\}[\s\S]*?debugId=\{`community-home\.bulletin\.notice-select\.\$\{index \+ 1\}`\}[\s\S]*?setSelectedCommunityNoticeIndex\(index\)/,

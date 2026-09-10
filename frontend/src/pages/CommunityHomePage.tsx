@@ -1619,6 +1619,48 @@ function communityBulletinNoticeUrgencyButtonStyle(
   };
 }
 
+function communityBulletinPulseStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    display: "grid",
+    gap: isCompact ? 8 : 10,
+    marginBottom: isCompact ? 7 : 10,
+    padding: isCompact ? "9px 9px" : "11px 12px",
+    borderRadius: 18,
+    background: "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(247,251,255,0.96) 100%)",
+    border: "1px solid rgba(123,161,204,0.16)",
+    boxShadow: "0 12px 24px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.94)",
+  };
+}
+
+function communityBulletinPulseGridStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: isCompact ? "repeat(3, minmax(0, 1fr))" : "repeat(3, minmax(72px, 1fr))",
+    gap: 6,
+    alignItems: "stretch",
+  };
+}
+
+function communityBulletinPulseChipStyle(
+  tone: CommunityBulletinNoticeUrgencyTone
+): React.CSSProperties {
+  const toneStyle = COMMUNITY_BULLETIN_NOTICE_URGENCY_STYLES[tone];
+  return {
+    display: "grid",
+    alignContent: "center",
+    justifyItems: "center",
+    minHeight: 42,
+    minWidth: 0,
+    borderRadius: 14,
+    padding: "5px 6px",
+    background: toneStyle.background,
+    border: toneStyle.border,
+    color: toneStyle.color,
+    boxSizing: "border-box",
+    textAlign: "center",
+  };
+}
+
 function noticeCalendarParts(item: CommunityNoticeItem | null | undefined) {
   const date = noticeDisplayDate(item);
   if (!date) {
@@ -2258,6 +2300,69 @@ export default function CommunityHomePage() {
     firstTruthy(primaryCommunityNotice?.sender_whatsapp_number)
   );
   const communityNoticeLogItems = activeCommunityNotices.slice(1, 4);
+  const communityBulletinPulse = useMemo(() => {
+    const counts: Record<CommunityBulletinNoticeUrgencyTone, number> = {
+      green: 0,
+      yellow: 0,
+      red: 0,
+    };
+    let firstRedIndex = -1;
+    let firstYellowIndex = -1;
+    let responseNeededCount = 0;
+    let acknowledgementNeededCount = 0;
+
+    activeCommunityNotices.forEach((item, index) => {
+      const urgency = communityBulletinNoticeUrgency(item, noticeExpiryNowMs);
+      counts[urgency.tone] += 1;
+      if (urgency.tone === "red" && firstRedIndex === -1) firstRedIndex = index;
+      if (urgency.tone === "yellow" && firstYellowIndex === -1) firstYellowIndex = index;
+      if (noticeSupportsAvailability(item) && !meetingOwnInterest(item)) {
+        responseNeededCount += 1;
+      }
+      if (
+        !isMeetingNotice(item) &&
+        item?.acknowledgement_enabled !== false &&
+        firstTruthy(item?.event_id) &&
+        !noticeOwnAcknowledged(item)
+      ) {
+        acknowledgementNeededCount += 1;
+      }
+    });
+
+    const recommendedIndex = firstRedIndex >= 0 ? firstRedIndex : firstYellowIndex;
+    const attentionCount = counts.red + counts.yellow;
+    const workCount = responseNeededCount + acknowledgementNeededCount + pendingCommunityNoticeReviewCount;
+    const headline = counts.red > 0
+      ? `${counts.red} urgent`
+      : counts.yellow > 0
+      ? `${counts.yellow} due soon`
+      : activeCommunityNotices.length > 0
+      ? "Bulletin steady"
+      : "No live items";
+    const detailParts = [
+      responseNeededCount > 0
+        ? `${responseNeededCount} response${responseNeededCount === 1 ? "" : "s"} needed`
+        : "",
+      acknowledgementNeededCount > 0
+        ? `${acknowledgementNeededCount} acknowledgement${acknowledgementNeededCount === 1 ? "" : "s"} needed`
+        : "",
+      pendingCommunityNoticeReviewCount > 0
+        ? `${pendingCommunityNoticeReviewCount} admin review${pendingCommunityNoticeReviewCount === 1 ? "" : "s"}`
+        : "",
+    ].filter(Boolean);
+
+    return {
+      counts,
+      headline,
+      detail: detailParts.length > 0
+        ? detailParts.join(" - ")
+        : attentionCount > 0
+        ? "Open the highlighted notice first."
+        : "No urgent bulletin follow-up.",
+      nextIndex: recommendedIndex,
+      workCount,
+    };
+  }, [activeCommunityNotices, noticeExpiryNowMs, pendingCommunityNoticeReviewCount]);
   const communityPreviousAnnouncementItems = communityPreviousAnnouncements.slice(0, 10);
   const showCommunityBulletinSettings = Boolean(
     canManageCommunityNoticeSettings ||
@@ -3635,6 +3740,111 @@ export default function CommunityHomePage() {
           );
         })}
       </span>
+    );
+  }
+
+  function renderCommunityBulletinPulse() {
+    if (activeCommunityNotices.length === 0) return null;
+
+    const canOpenRecommendedNotice = communityBulletinPulse.nextIndex >= 0;
+    const openLabel = communityBulletinPulse.counts.red > 0
+      ? "Open urgent"
+      : communityBulletinPulse.counts.yellow > 0
+      ? "Open due soon"
+      : "Open notice";
+
+    return (
+      <div
+        data-debug-id="community-home.bulletin.pulse"
+        style={communityBulletinPulseStyle(isCompact)}
+        aria-label="Community pulse"
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 8,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <span
+            style={{
+              color: "#07172C",
+              fontSize: 13.5,
+              fontWeight: 950,
+              lineHeight: 1.15,
+            }}
+          >
+            Community pulse
+          </span>
+          <span style={badge(communityBulletinPulse.workCount > 0)}>
+            {communityBulletinPulse.headline}
+          </span>
+        </div>
+        <div style={communityBulletinPulseGridStyle(isCompact)}>
+          {(["red", "yellow", "green"] as CommunityBulletinNoticeUrgencyTone[]).map((tone) => (
+            <span key={tone} style={communityBulletinPulseChipStyle(tone)}>
+              <span style={{ fontSize: 16, fontWeight: 950, lineHeight: 1 }}>
+                {communityBulletinPulse.counts[tone]}
+              </span>
+              <span
+                style={{
+                  fontSize: 10.5,
+                  fontWeight: 900,
+                  lineHeight: 1.05,
+                  textTransform: "uppercase",
+                }}
+              >
+                {tone === "red" ? "Now" : tone === "yellow" ? "72h" : "Clear"}
+              </span>
+            </span>
+          ))}
+
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: canOpenRecommendedNotice ? "minmax(0, 1fr) auto" : "minmax(0, 1fr)",
+            gap: 8,
+            alignItems: "center",
+          }}
+        >
+          <span
+            style={{
+              color: "#48657D",
+              fontSize: 12.5,
+              fontWeight: 800,
+              lineHeight: 1.25,
+            }}
+          >
+            {communityBulletinPulse.detail}
+          </span>
+          {canOpenRecommendedNotice ? (
+            <StableButton
+              type="button"
+              debugId="community-home.bulletin.pulse-open"
+              onClick={(event) => {
+                consumeCommunityButtonEvent(event);
+                setSelectedCommunityNoticeIndex(communityBulletinPulse.nextIndex);
+                setNoticeReactionPanelOpenId("");
+                setNoticeDetailOpenId("");
+              }}
+              style={{
+                ...communityActionStyle("soft"),
+                minHeight: isCompact ? 36 : 42,
+                minWidth: isCompact ? 92 : 118,
+                padding: isCompact ? "7px 9px" : "8px 10px",
+                borderRadius: 13,
+                fontSize: isCompact ? 12 : 12.5,
+                boxShadow: "none",
+              }}
+            >
+              {openLabel}
+            </StableButton>
+          ) : null}
+        </div>
+      </div>
     );
   }
 
@@ -5190,6 +5400,7 @@ export default function CommunityHomePage() {
                 </div>
               ) : primaryCommunityNotice ? (
                 <>
+                  {renderCommunityBulletinPulse()}
                   {renderCommunityBulletinNoticeSelector(activeCommunityNotices)}
                   {renderCommunityBulletinPrimaryNotice(primaryCommunityNotice)}
                 </>
