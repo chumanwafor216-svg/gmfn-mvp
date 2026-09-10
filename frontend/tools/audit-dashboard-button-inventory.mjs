@@ -241,8 +241,18 @@ assertContains(
   "Dashboard My Pulse must read server-owned Attention Spine signals before adding local fallback signals."
 );
 assertContains(
-  /data-debug-id="dashboard\.my-pulse"[\s\S]*?My Pulse[\s\S]*?\["red", "yellow", "green"\][\s\S]*?debugId="dashboard\.my-pulse\.primary"[\s\S]*?dashboardPulsePrimaryTo[\s\S]*?debugId="dashboard\.my-pulse\.secondary"[\s\S]*?dashboardPulseSecondaryTo/,
-  "Dashboard My Pulse must remain a compact summary strip with one primary route and one optional secondary route."
+  /debugId="dashboard\.inbox\.toggle"[\s\S]*?data-debug-id="dashboard\.my-pulse"[\s\S]*?My Pulse[\s\S]*?\["red", "yellow", "green"\]/,
+  "Dashboard My Pulse must live inside What needs your attention, not as a separate attention destination."
+);
+
+assertContains(
+  /debugId="dashboard\.my-pulse\.primary"[\s\S]*?toggleUiStateFlag\("pulseExpanded"\)[\s\S]*?data-debug-id="dashboard\.my-pulse\.items"[\s\S]*?dashboardPulseVisibleSignals\.map/,
+  "Dashboard My Pulse primary action must reveal the current signal list in place."
+);
+
+assertContains(
+  /debugId="dashboard\.my-pulse\.secondary"[\s\S]*?openDashboardRoute\(event, dashboardPulseSecondaryTo\)/,
+  "Dashboard My Pulse secondary action may route to the deeper owner screen after the in-place reading is available."
 );
 assertContains(
   /debugId="dashboard\.market-wisdom\.open-focus-commitments"[\s\S]*?onClick=\{\(event\) =>[\s\S]*?openDashboardRoute\([\s\S]*?event,[\s\S]*?`\$\{DASHBOARD_TARGETS\.DASHBOARD\}#focus-commitments`[\s\S]*?\)[\s\S]*?\}[\s\S]*?Open Focus Commitments/,

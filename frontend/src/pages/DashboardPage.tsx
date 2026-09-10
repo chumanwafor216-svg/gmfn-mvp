@@ -174,6 +174,7 @@ type DashboardUIState = {
   routesExpanded: boolean;
   appsExpanded: boolean;
   inboxExpanded: boolean;
+  pulseExpanded: boolean;
   trustExpanded: boolean;
 };
 
@@ -784,6 +785,40 @@ function dashboardPulseChipStyle(tone: AttentionSpineUrgency): React.CSSProperti
     textAlign: "center",
   };
 }
+
+function dashboardPulseSourceLabel(source: AttentionSpineSignal["source"]): string {
+  switch (source) {
+    case "action_inbox":
+      return "Action Inbox";
+    case "bulletin":
+      return "Community Bulletin";
+    case "commitment":
+      return "Focus Commitments";
+    case "market_wisdom":
+      return "Market Wisdom";
+    case "meeting":
+      return "Meeting Pack";
+    default:
+      return "GSN";
+  }
+}
+
+function dashboardPulseUrgencyLabel(tone: AttentionSpineUrgency): string {
+  if (tone === "red") return "Now";
+  if (tone === "yellow") return "72h";
+  return "Clear";
+}
+
+function dashboardPulseTonePalette(tone: AttentionSpineUrgency) {
+  if (tone === "red") {
+    return { bg: "#FFF5F5", border: "rgba(239,68,68,0.18)", text: "#991B1B" };
+  }
+  if (tone === "yellow") {
+    return { bg: "#FFFBEF", border: "rgba(245,158,11,0.20)", text: "#92400E" };
+  }
+  return { bg: "#F3FBF5", border: "rgba(34,197,94,0.18)", text: "#166534" };
+}
+
 function helperText(): React.CSSProperties {
   return {
     color: DASHBOARD_BRAND.helper,
@@ -2568,6 +2603,7 @@ function defaultDashboardUIState(): DashboardUIState {
     routesExpanded: false,
     appsExpanded: false,
     inboxExpanded: false,
+    pulseExpanded: false,
     trustExpanded: false,
   };
 }
@@ -2603,6 +2639,7 @@ function normalizeDashboardUIState(raw: unknown): DashboardUIState {
     routesExpanded: Boolean(src.routesExpanded ?? base.routesExpanded),
     appsExpanded: Boolean(src.appsExpanded ?? base.appsExpanded),
     inboxExpanded: Boolean(src.inboxExpanded ?? base.inboxExpanded),
+    pulseExpanded: Boolean(src.pulseExpanded ?? base.pulseExpanded),
     trustExpanded: Boolean(src.trustExpanded ?? base.trustExpanded),
   };
 }
@@ -5714,22 +5751,30 @@ export default function DashboardPage() {
   ]);
 
   const dashboardPulsePrimarySignal = dashboardPulseSummary.nextSignal;
-  const dashboardPulsePrimaryTo =
-    dashboardPulsePrimarySignal?.actionTo || dashboardNoticePrimaryActionTo;
-  const dashboardPulsePrimaryLabel =
-    dashboardPulsePrimarySignal?.actionLabel || dashboardNoticePrimaryActionLabel;
+  const dashboardPulseVisibleSignals = useMemo(
+    () =>
+      dashboardPulseSummary.signals
+        .filter((signal) => signal.countInPulse !== false)
+        .slice(0, 12),
+    [dashboardPulseSummary.signals]
+  );
+  const dashboardPulsePrimaryLabel = uiState.pulseExpanded
+    ? "Hide items"
+    : dashboardPulseVisibleSignals.length > 0
+    ? `Show ${dashboardPulseVisibleSignals.length} item${dashboardPulseVisibleSignals.length === 1 ? "" : "s"}`
+    : "Show reading";
   const dashboardPulseSecondaryTo =
-    dashboardPulsePrimaryTo !== DASHBOARD_TARGETS.WHAT_MATTERS_NOW && dashboardNoticeTotalCount > 0
+    dashboardNoticeTotalCount > 0
       ? DASHBOARD_TARGETS.WHAT_MATTERS_NOW
-      : dashboardPulsePrimaryTo !== `${DASHBOARD_TARGETS.DASHBOARD}#focus-commitments` &&
-        (combinedFocusBehindCount > 0 || combinedFocusWatchCount > 0)
-      ? `${DASHBOARD_TARGETS.DASHBOARD}#focus-commitments`
+      : dashboardPulsePrimarySignal?.actionTo &&
+        dashboardPulsePrimarySignal.actionTo !== DASHBOARD_TARGETS.DASHBOARD
+      ? dashboardPulsePrimarySignal.actionTo
       : "";
   const dashboardPulseSecondaryLabel =
     dashboardPulseSecondaryTo === DASHBOARD_TARGETS.WHAT_MATTERS_NOW
       ? "Action Inbox"
       : dashboardPulseSecondaryTo
-      ? "Commitments"
+      ? dashboardPulsePrimarySignal?.actionLabel || dashboardNoticePrimaryActionLabel
       : "";
   const userOperationalClass = useMemo(
     () =>
@@ -11536,132 +11581,6 @@ export default function DashboardPage() {
       </section>
 
       <section
-        data-debug-id="dashboard.my-pulse"
-        style={{
-          ...pageCard("linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)"),
-          order: 38,
-          border: "1px solid rgba(15,59,116,0.12)",
-          padding: isPhone ? 13 : 18,
-          borderRadius: isPhone ? 22 : 26,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: 10,
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={{ minWidth: 0 }}>
-            <DashboardSectionLabel label="My Pulse" />
-            <div
-              style={{
-                marginTop: 5,
-                color: DASHBOARD_BRAND.ink,
-                fontSize: isPhone ? 15 : 16,
-                fontWeight: 950,
-                lineHeight: 1.25,
-              }}
-            >
-              {dashboardPulseSummary.headline}
-            </div>
-          </div>
-          <span style={badge(dashboardPulseSummary.workCount > 0)}>
-            {dashboardPulseSummary.workCount > 0 ? "Follow up" : "Steady"}
-          </span>
-        </div>
-
-        <div
-          style={{
-            marginTop: 10,
-            display: "grid",
-            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-            gap: isPhone ? 6 : 8,
-          }}
-        >
-          {(["red", "yellow", "green"] as AttentionSpineUrgency[]).map((tone) => (
-            <div key={tone} style={dashboardPulseChipStyle(tone)}>
-              <span style={{ fontSize: isPhone ? 17 : 18, fontWeight: 950, lineHeight: 1 }}>
-                {dashboardPulseSummary.counts[tone]}
-              </span>
-              <span
-                style={{
-                  fontSize: 10.5,
-                  fontWeight: 900,
-                  lineHeight: 1.05,
-                  textTransform: "uppercase",
-                }}
-              >
-                {tone === "red" ? "Now" : tone === "yellow" ? "72h" : "Clear"}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <div
-          style={{
-            marginTop: 10,
-            display: "grid",
-            gridTemplateColumns: dashboardPulseSecondaryTo
-              ? isPhone
-                ? "1fr"
-                : "minmax(0, 1fr) auto auto"
-              : isPhone
-              ? "1fr"
-              : "minmax(0, 1fr) auto",
-            gap: 8,
-            alignItems: "center",
-          }}
-        >
-          <div
-            style={{
-              color: DASHBOARD_BRAND.helper,
-              fontSize: isPhone ? 12.5 : 13,
-              fontWeight: 800,
-              lineHeight: 1.35,
-            }}
-          >
-            {dashboardPulseSummary.detail}
-          </div>
-          <StableButton
-            debugId="dashboard.my-pulse.primary"
-            type="button"
-            onClick={(event) => openDashboardRoute(event, dashboardPulsePrimaryTo)}
-            onPointerDown={consumeDashboardPointerEvent}
-            style={{
-              ...secondaryBtn(false),
-              minHeight: isPhone ? 38 : 42,
-              minWidth: isPhone ? 0 : 136,
-              width: isPhone ? "100%" : undefined,
-              padding: "8px 11px",
-              boxShadow: "none",
-            }}
-          >
-            {dashboardPulsePrimaryLabel}
-          </StableButton>
-          {dashboardPulseSecondaryTo ? (
-            <StableButton
-              debugId="dashboard.my-pulse.secondary"
-              type="button"
-              onClick={(event) => openDashboardRoute(event, dashboardPulseSecondaryTo)}
-              onPointerDown={consumeDashboardPointerEvent}
-              style={{
-                ...subtleBtn(false),
-                minHeight: isPhone ? 38 : 42,
-                minWidth: isPhone ? 0 : 118,
-                width: isPhone ? "100%" : undefined,
-                padding: "8px 11px",
-                boxShadow: "none",
-              }}
-            >
-              {dashboardPulseSecondaryLabel}
-            </StableButton>
-          ) : null}
-        </div>
-      </section>
-      <section
         style={{
           ...pageCard(notificationSurfaceChrome.shellBg),
           order: 40,
@@ -11748,6 +11667,242 @@ export default function DashboardPage() {
             <DashboardChevronIcon expanded={uiState.inboxExpanded} />
           </span>
         </StableButton>
+
+        <div
+          data-debug-id="dashboard.my-pulse"
+          style={{
+            marginTop: isPhone ? 10 : 14,
+            ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)"),
+            border: "1px solid rgba(15,59,116,0.12)",
+            padding: isPhone ? 11 : 14,
+            borderRadius: isPhone ? 18 : 22,
+            boxShadow:
+              "inset 0 1px 0 rgba(255,255,255,0.82), 0 10px 22px rgba(10,24,49,0.05)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <DashboardSectionLabel label="My Pulse" />
+              <div
+                style={{
+                  marginTop: 5,
+                  color: DASHBOARD_BRAND.ink,
+                  fontSize: isPhone ? 15 : 16,
+                  fontWeight: 950,
+                  lineHeight: 1.25,
+                }}
+              >
+                {dashboardPulseSummary.headline}
+              </div>
+            </div>
+            <span style={badge(dashboardPulseSummary.workCount > 0)}>
+              {dashboardPulseSummary.workCount > 0 ? "Follow up" : "Steady"}
+            </span>
+          </div>
+
+          <div
+            style={{
+              marginTop: 10,
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: isPhone ? 6 : 8,
+            }}
+          >
+            {(["red", "yellow", "green"] as AttentionSpineUrgency[]).map((tone) => (
+              <div key={tone} style={dashboardPulseChipStyle(tone)}>
+                <span style={{ fontSize: isPhone ? 17 : 18, fontWeight: 950, lineHeight: 1 }}>
+                  {dashboardPulseSummary.counts[tone]}
+                </span>
+                <span
+                  style={{
+                    fontSize: 10.5,
+                    fontWeight: 900,
+                    lineHeight: 1.05,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {dashboardPulseUrgencyLabel(tone)}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div
+            style={{
+              marginTop: 10,
+              color: DASHBOARD_BRAND.helper,
+              fontSize: isPhone ? 12.5 : 13,
+              fontWeight: 800,
+              lineHeight: 1.35,
+            }}
+          >
+            {dashboardPulseSummary.detail}
+          </div>
+
+          <div
+            style={{
+              marginTop: 10,
+              display: "grid",
+              gridTemplateColumns: dashboardPulseSecondaryTo
+                ? isPhone
+                  ? "1fr"
+                  : "minmax(0, 1fr) auto"
+                : "1fr",
+              gap: 8,
+              alignItems: "center",
+            }}
+          >
+            <StableButton
+              debugId="dashboard.my-pulse.primary"
+              type="button"
+              aria-expanded={uiState.pulseExpanded}
+              onClick={(event) =>
+                runDashboardUiMutation(event, () =>
+                  toggleUiStateFlag("pulseExpanded")
+                )
+              }
+              onPointerDown={consumeDashboardPointerEvent}
+              style={{
+                ...secondaryBtn(false),
+                minHeight: isPhone ? 38 : 42,
+                minWidth: isPhone ? 0 : 136,
+                width: "100%",
+                padding: "8px 11px",
+                boxShadow: "none",
+              }}
+            >
+              {dashboardPulsePrimaryLabel}
+            </StableButton>
+            {dashboardPulseSecondaryTo ? (
+              <StableButton
+                debugId="dashboard.my-pulse.secondary"
+                type="button"
+                onClick={(event) => openDashboardRoute(event, dashboardPulseSecondaryTo)}
+                onPointerDown={consumeDashboardPointerEvent}
+                style={{
+                  ...subtleBtn(false),
+                  minHeight: isPhone ? 38 : 42,
+                  minWidth: isPhone ? 0 : 118,
+                  width: isPhone ? "100%" : undefined,
+                  padding: "8px 11px",
+                  boxShadow: "none",
+                }}
+              >
+                {dashboardPulseSecondaryLabel}
+              </StableButton>
+            ) : null}
+          </div>
+
+          {uiState.pulseExpanded ? (
+            <div
+              data-debug-id="dashboard.my-pulse.items"
+              style={{
+                marginTop: 10,
+                display: "grid",
+                gap: 7,
+              }}
+            >
+              {dashboardPulseVisibleSignals.length > 0 ? (
+                dashboardPulseVisibleSignals.map((signal, index) => {
+                  const tone = dashboardPulseTonePalette(signal.urgency);
+                  return (
+                    <div
+                      key={signal.id || `pulse-${index}`}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "auto minmax(0, 1fr)",
+                        gap: 9,
+                        alignItems: "start",
+                        padding: isPhone ? "9px 10px" : "10px 12px",
+                        borderRadius: isPhone ? 14 : 16,
+                        border: `1px solid ${tone.border}`,
+                        background: tone.bg,
+                      }}
+                    >
+                      <span
+                        style={{
+                          display: "inline-grid",
+                          placeItems: "center",
+                          minWidth: 40,
+                          minHeight: 32,
+                          borderRadius: 999,
+                          background: "rgba(255,255,255,0.78)",
+                          color: tone.text,
+                          fontSize: 10,
+                          fontWeight: 950,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {dashboardPulseUrgencyLabel(signal.urgency)}
+                      </span>
+                      <span style={{ minWidth: 0 }}>
+                        <span
+                          style={{
+                            display: "block",
+                            color: DASHBOARD_BRAND.ink,
+                            fontSize: isPhone ? 13 : 13.5,
+                            fontWeight: 950,
+                            lineHeight: 1.25,
+                          }}
+                        >
+                          {signal.summary}
+                        </span>
+                        <span
+                          style={{
+                            display: "block",
+                            marginTop: 3,
+                            color: DASHBOARD_BRAND.helper,
+                            fontSize: isPhone ? 11.5 : 12.5,
+                            fontWeight: 760,
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {signal.detail || "GSN has found something worth checking."}
+                        </span>
+                        <span
+                          style={{
+                            display: "block",
+                            marginTop: 4,
+                            color: tone.text,
+                            fontSize: 10.5,
+                            fontWeight: 900,
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          {dashboardPulseSourceLabel(signal.source)}
+                          {signal.actionLabel ? ` - ${signal.actionLabel}` : ""}
+                        </span>
+                      </span>
+                    </div>
+                  );
+                })
+              ) : (
+                <div
+                  style={{
+                    padding: isPhone ? 10 : 12,
+                    borderRadius: isPhone ? 14 : 16,
+                    border: "1px solid rgba(34,197,94,0.18)",
+                    background: "#F3FBF5",
+                    color: "#166534",
+                    fontSize: isPhone ? 12 : 13,
+                    fontWeight: 850,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  Nothing is pressing right now. GSN will keep watching the signs here.
+                </div>
+              )}
+            </div>
+          ) : null}
+        </div>
 
         {uiState.inboxExpanded ? (
           <React.Suspense
