@@ -255,14 +255,20 @@ assertContains(
 
 assertContains(
   files.communityNotices,
-  /def list_notices\([\s\S]*?limit: int = Query\(default=10, ge=1, le=10\)[\s\S]*?"notices": notices\[: int\(limit\)\]/,
-  "Community Bulletin list responses must default to 10 live announcements and cap caller requests at 10."
+  /def list_notices\([\s\S]*?limit: int = Query\(default=10, ge=1, le=10\)[\s\S]*?scope: Literal\["selected", "my_communities"\][\s\S]*?"notices": notices\[: int\(limit\)\]/,
+  "Community Bulletin list responses must default to 10 live announcements, cap caller requests at 10, and support selected/all-my-communities read scopes."
+);
+
+assertContains(
+  files.communityNotices,
+  /def _active_notice_read_clan_ids[\s\S]*?ClanMembership\.user_id == int\(current_user\.id\)[\s\S]*?ClanMembership\.left_at\.is_\(None\)[\s\S]*?"source_community_count": len\(read_clan_ids\)/,
+  "All-communities Bulletin reading must stay limited to active memberships for the signed-in member."
 );
 
 assertContains(
   files.api,
-  /export async function listCommunityNotices\(params: \{[\s\S]*?`\/community-notices\$\{buildQuery\(\{[\s\S]*?limit: params\.limit \?\? 10/,
-  "Frontend Community Bulletin helper must request up to 10 announcements when no caller limit is supplied."
+  /export async function listCommunityNotices\(params: \{[\s\S]*?scope\?: "selected" \| "my_communities"[\s\S]*?`\/community-notices\$\{buildQuery\(\{[\s\S]*?limit: params\.limit \?\? 10[\s\S]*?scope: params\.scope/,
+  "Frontend Community Bulletin helper must request up to 10 announcements and carry the selected/all-my-communities scope."
 );
 assertContains(
   files.communityNotices,

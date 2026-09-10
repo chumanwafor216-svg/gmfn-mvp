@@ -396,7 +396,8 @@ Must show:
   - when more than one live announcement exists, the board shows a compact position chip such as `1/4` with numbered controls; choosing a number makes that announcement the single bold card with its own Details panel, availability response, full notice, and admin roll call
   - ordinary Community notices keep the main board short, but officers may attach longer public-safe full notice details and request a public QR link; QR-enabled notices expose `Open QR link` inside Details, public URL and GSN-uploaded video/poster attachments expose one `Open attachment` action, and the public route must hide private sender/contact/roll-call data
   - Bulletin attachments support public `http/https` links plus GSN-uploaded poster images and short videos through the existing governed media upload path. Direct document-file upload is still not enabled; document attachments must use a public document link until a governed public-document storage route exists.
-  - shows one central live announcement feed for the selected ordinary Community plus eligible linked official Community Domain notices
+  - shows one central live announcement feed across all ordinary Communities where the signed-in member has active membership, plus eligible linked official Community Domain notices for those communities
+  - posting, settings, review, and roll-call management stay local to the selected/source community; central reading must not turn a local notice into a cross-community broadcast
   - ordinary Community notices and Community Domain official notices keep their separate posting/governance rules, but read into this shared board instead of becoming duplicate announcement engines
   - expired announcements leave the live board and remain visible in a compact previous-announcements trail capped at 10 items
   - if no live announcement exists, show `No new announcement.`

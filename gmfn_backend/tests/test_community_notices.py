@@ -570,6 +570,113 @@ def test_community_notice_board_lists_demand_box_signals_without_response_thread
         assert notifications == []
 
 
+def test_community_notice_board_can_read_across_active_member_communities(
+    client, override_current_user
+):
+    _seed_notice_community()
+    now = datetime.now(timezone.utc)
+
+    with SessionLocal() as db:
+        db.add_all(
+            [
+                Clan(
+                    id=2,
+                    name="Pillar of Hope",
+                    invite_code="pillar-notices",
+                    invite_created_at=now,
+                    created_by_user_id=1,
+                    notice_posting_policy="members",
+                ),
+                Clan(
+                    id=3,
+                    name="Left community",
+                    invite_code="left-notices",
+                    invite_created_at=now,
+                    created_by_user_id=3,
+                    notice_posting_policy="members",
+                ),
+            ]
+        )
+        db.flush()
+        db.add_all(
+            [
+                ClanMembership(
+                    id=3,
+                    clan_id=2,
+                    user_id=1,
+                    role="member",
+                    personal_pool_balance=0,
+                ),
+                ClanMembership(
+                    id=4,
+                    clan_id=3,
+                    user_id=1,
+                    role="member",
+                    personal_pool_balance=0,
+                    left_at=now,
+                ),
+            ]
+        )
+        for clan_id, body, offset in [
+            (1, "Selected community meeting tonight.", 1),
+            (2, "Pillar welfare visit tomorrow.", 2),
+            (3, "Left community hidden notice.", 3),
+        ]:
+            db.add(
+                TrustEvent(
+                    event_type="community.notice.posted",
+                    clan_id=clan_id,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    created_at=now + timedelta(minutes=offset),
+                    meta_json=json.dumps(
+                        {
+                            "source": "community_notice_board",
+                            "reason": "community_notice_posted",
+                            "body": body,
+                            "word_count": 4,
+                            "expiry_policy": "standard",
+                            "expires_at": (now + timedelta(days=7)).isoformat(),
+                            "comments_enabled": False,
+                            "reactions_enabled": False,
+                            "thread_enabled": False,
+                        }
+                    ),
+                )
+            )
+        db.commit()
+
+    list_res = client.get(
+        "/community-notices",
+        params={"clan_id": 1, "scope": "my_communities", "limit": 10},
+    )
+    assert list_res.status_code == 200, list_res.text
+    payload = list_res.json()
+    bodies = [item["body"] for item in payload["notices"]]
+
+    assert payload["scope"] == "my_communities"
+    assert payload["read_clan_ids"] == [1, 2]
+    assert payload["source_community_count"] == 2
+    assert payload["can_post_notice"] is True
+    assert "Pillar welfare visit tomorrow." in bodies
+    assert "Selected community meeting tonight." in bodies
+    assert "Left community hidden notice." not in bodies
+    pillar_notice = next(
+        item for item in payload["notices"] if item["body"] == "Pillar welfare visit tomorrow."
+    )
+    assert pillar_notice["clan_id"] == 2
+    assert pillar_notice["source_community_name"] == "Pillar of Hope"
+    assert "Posting remains inside the selected community" in payload["boundary"]
+
+    selected_res = client.get(
+        "/community-notices",
+        params={"clan_id": 1, "scope": "selected", "limit": 10},
+    )
+    assert selected_res.status_code == 200, selected_res.text
+    selected_bodies = [item["body"] for item in selected_res.json()["notices"]]
+    assert "Selected community meeting tonight." in selected_bodies
+    assert "Pillar welfare visit tomorrow." not in selected_bodies
+
 def test_community_notice_board_defaults_to_ten_live_announcements(client, override_current_user):
     _seed_notice_community()
 

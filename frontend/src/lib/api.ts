@@ -1397,13 +1397,15 @@ export async function listCommunityMeetings(params: {
 }
 
 export async function listCommunityNotices(params: {
-  clan_id: number;
+  clan_id?: number;
   limit?: number;
+  scope?: "selected" | "my_communities";
 }): Promise<any> {
   return httpJson(
     `/community-notices${buildQuery({
       clan_id: params.clan_id,
       limit: params.limit ?? 10,
+      scope: params.scope,
     })}`,
     "GET"
   );

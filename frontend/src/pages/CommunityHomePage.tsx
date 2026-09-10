@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import GSNBrandMark from "../components/GSNBrandMark";
 import type {
@@ -166,6 +166,7 @@ type ActiveCommunitySpotlight = {
 };
 
 type CommunityNoticeItem = {
+  clan_id?: number | string | null;
   notice_id?: string | null;
   event_id?: number | string | null;
   meeting_id?: string | null;
@@ -1711,6 +1712,21 @@ function noticeOwnAcknowledged(item: CommunityNoticeItem | null | undefined): bo
   return Boolean(item?.acknowledgement_summary?.own_acknowledged);
 }
 
+function noticeClanId(
+  item: CommunityNoticeItem | null | undefined,
+  fallbackClan: ClanItem | null | undefined
+): number {
+  return positiveNumber(item?.clan_id || item?.source_community_id || getClanId(fallbackClan));
+}
+
+function communityNoticeListParams(clanId: number) {
+  return {
+    clan_id: clanId,
+    scope: "my_communities" as const,
+    limit: COMMUNITY_NOTICE_ACTIVE_LIMIT,
+  };
+}
+
 function communityContactMessage(clan: ClanItem | null | undefined): string {
   const name = getClanName(clan);
   const code = firstTruthy(clan?.community_code, clan?.clan_code, clan?.code);
@@ -2126,7 +2142,7 @@ export default function CommunityHomePage() {
     setCommunityNoticesLoading(true);
 
     (async () => {
-      const res = await listCommunityNotices({ clan_id: clanId, limit: COMMUNITY_NOTICE_ACTIVE_LIMIT }).catch(() => null);
+      const res = await listCommunityNotices(communityNoticeListParams(clanId)).catch(() => null);
       if (!alive) return;
 
       applyCommunityNoticeListResponse(res);
@@ -3208,7 +3224,7 @@ export default function CommunityHomePage() {
     const contact = firstTruthy(noticeItem?.sender_whatsapp_number);
     const chatUrl = buildWhatsAppChatUrl(
       contact,
-      `Hi ${firstTruthy(noticeItem?.sender_whatsapp_label, "there")}. I saw your GSN community announcement for ${selectedClanName}.`
+      `Hi ${firstTruthy(noticeItem?.sender_whatsapp_label, "there")}. I saw your GSN community announcement for ${noticeSourceLine(noticeItem, selectedClanName)}.`
     );
 
     if (!chatUrl || typeof window === "undefined") {
@@ -3260,7 +3276,7 @@ export default function CommunityHomePage() {
     noticeItem: CommunityNoticeItem
   ) {
     consumeCommunityButtonEvent(event);
-    const clanId = getClanId(selectedClan);
+    const clanId = noticeClanId(noticeItem, selectedClan);
     const eventId = firstTruthy(noticeItem?.event_id);
 
     if (!clanId || !eventId) {
@@ -3277,7 +3293,7 @@ export default function CommunityHomePage() {
     setNoticeAcknowledgementBusy(busyKey);
     try {
       const result = await acknowledgeCommunityNotice(eventId, { clan_id: clanId });
-      const res = await listCommunityNotices({ clan_id: clanId, limit: COMMUNITY_NOTICE_ACTIVE_LIMIT }).catch(() => null);
+      const res = await listCommunityNotices(communityNoticeListParams(clanId)).catch(() => null);
       applyCommunityNoticeListResponse(res);
       showNotice(
         "success",
@@ -3298,7 +3314,7 @@ export default function CommunityHomePage() {
     noticeItem: CommunityNoticeItem
   ) {
     consumeCommunityButtonEvent(event);
-    const clanId = getClanId(selectedClan);
+    const clanId = noticeClanId(noticeItem, selectedClan);
     const eventId = firstTruthy(noticeItem?.event_id);
     const noticeKey = firstTruthy(noticeItem?.notice_id, eventId);
 
@@ -3455,7 +3471,7 @@ export default function CommunityHomePage() {
     response: MeetingInterestResponse
   ) {
     consumeCommunityButtonEvent(event);
-    const clanId = getClanId(selectedClan);
+    const clanId = noticeClanId(noticeItem, selectedClan);
     const meetingId = firstTruthy(noticeItem?.meeting_id);
     const noticeEventId = firstTruthy(noticeItem?.event_id);
     const canRecordNoticeAvailability = !meetingId && noticeSupportsAvailability(noticeItem) && Boolean(noticeEventId);
@@ -3484,7 +3500,7 @@ export default function CommunityHomePage() {
             clan_id: clanId,
             response,
           });
-      const res = await listCommunityNotices({ clan_id: clanId, limit: COMMUNITY_NOTICE_ACTIVE_LIMIT }).catch(() => null);
+      const res = await listCommunityNotices(communityNoticeListParams(clanId)).catch(() => null);
       applyCommunityNoticeListResponse(res);
       showNotice(
         "success",
@@ -3653,7 +3669,7 @@ export default function CommunityHomePage() {
     const noticeKey = firstTruthy(noticeItem?.notice_id, eventId, noticeItem?.meeting_id, "active");
     const reactionPanelOpen = noticeReactionPanelOpenId === noticeKey;
     const detailOpen = noticeDetailOpenId === noticeKey;
-    const canOpenRollCall = canManageCommunityNoticeSettings && Boolean(eventId) && noticeItem?.acknowledgement_enabled !== false;
+    const canOpenRollCall = canManageCommunityNoticeSettings && noticeClanId(noticeItem, selectedClan) === selectedClanId && Boolean(eventId) && noticeItem?.acknowledgement_enabled !== false;
     const canToggleFullNotice = Boolean(fullBody) || safeStr(rawBody).split(/\s+/).filter(Boolean).length > 10;
 
     return (
@@ -3963,7 +3979,7 @@ export default function CommunityHomePage() {
     setNoticePosting(true);
     try {
       const result = await createCommunityNotice({ clan_id: clanId, body, ...options });
-      const res = await listCommunityNotices({ clan_id: clanId, limit: COMMUNITY_NOTICE_ACTIVE_LIMIT }).catch(() => null);
+      const res = await listCommunityNotices(communityNoticeListParams(clanId)).catch(() => null);
       applyCommunityNoticeListResponse(res);
       setSelectedCommunityNoticeIndex(0);
       setNoticeModalOpen(false);
@@ -4065,7 +4081,7 @@ export default function CommunityHomePage() {
             ? "Approved from Community Home Bulletin."
             : "Rejected from Community Home Bulletin.",
       });
-      const res = await listCommunityNotices({ clan_id: clanId, limit: COMMUNITY_NOTICE_ACTIVE_LIMIT }).catch(() => null);
+      const res = await listCommunityNotices(communityNoticeListParams(clanId)).catch(() => null);
       applyCommunityNoticeListResponse(res);
       if (decision === "approve") {
         setSelectedCommunityNoticeIndex(0);

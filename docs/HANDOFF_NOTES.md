@@ -1,4 +1,4 @@
-## 2026-09-10 - Daily secretary cadence and sector rotation added
+﻿## 2026-09-10 - Daily secretary cadence and sector rotation added
 
 - Status: Docs/calendar operating update; no product code, backend route, frontend route, schema, payment, email-send, commit, push, or deploy change.
 - Owner trigger: Founder asked for morning/evening flow so he can simply follow up each day, report what happened, see what remains, understand blockers, and pursue additional contacts across faith communities, immigrant organisations, schools, real marketplaces, and Nigeria/Africa routes.
@@ -12345,7 +12345,7 @@ Published baseline:
 - No commit, push, deploy, backend change, schema change, or permission change
   has been done for this latest local slice.
 - Historical local notes below are retained for continuity, but their older
-  ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œlocal onlyÃƒÂ¢Ã¢â€šÂ¬Ã‚Â baseline statements were superseded by the `19315f90` push.
+  ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“local onlyÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â baseline statements were superseded by the `19315f90` push.
 
 Unabated truth:
 - The Receipt, Contact, and Recent packet chooser work had reduced clutter, but
@@ -39599,7 +39599,7 @@ Verification:
   `status` strings directly.
 
 Unabated truth / remaining boundary:
-- This should reduce the ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œthin column / one-word stackÃƒÂ¢Ã¢â€šÂ¬Ã‚Â issue in Community
+- This should reduce the ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“thin column / one-word stackÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â issue in Community
   Domain readiness cards. It does not prove every Community Domain lane is now
   screenshot-perfect because no browser/phone screenshot sweep was run in this
   slice.
@@ -60237,7 +60237,7 @@ What changed locally:
 - While optional readiness/map reads are still loading:
   - the Setup readiness card says readiness checks are loading instead of falsely saying the checklist could not load;
   - the Setup plan card says the setup plan is loading instead of falsely saying the plan could not load;
-  - the opened-lane detail area shows a read-only ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œLoading setup intelligenceÃƒÂ¢Ã¢â€šÂ¬Ã‚Â card instead of rendering lane panels against null optional data.
+  - the opened-lane detail area shows a read-only ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“Loading setup intelligenceÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â card instead of rendering lane panels against null optional data.
 - Once the optional reads complete, the existing lane panels render with the same state fields as before.
 - Existing write actions, owner/admin review actions, membership request actions, quote refresh, permission checks, route contracts, and navigation model were not changed.
 
@@ -70363,7 +70363,7 @@ Publish/deploy status:
 Unabated truth:
 - This is not identity reconciliation. It does not create, repair, or merge
   member IDs.
-- It is useful because it makes the ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œone person, many communities/domainsÃƒÂ¢Ã¢â€šÂ¬Ã‚Â
+- It is useful because it makes the ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“one person, many communities/domainsÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â
   doctrine visible without leaking other domain names or private member records.
 - The rest of this handoff file still contains repeated older sections. Treat
   this top block as the freshest state before reading older entries.
@@ -82624,7 +82624,7 @@ Complaint ledger:
 
 - Trigger:
   - continued the urgent phone drag/jumpy-button cleanup after the first
-    `scrollIntoView` pass. The ownerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s complaint is still that phone dragging
+    `scrollIntoView` pass. The ownerÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s complaint is still that phone dragging
     can feel glued/hanging and buttons can appear to jump after taps.
 - Changed:
   - `frontend/src/pages/DemandBoxPage.tsx`
@@ -82667,7 +82667,7 @@ Complaint ledger:
   - remaining page-local raw `window.scrollTo` is only the TrustSlip no-hash
     top restore; the other `scrollTo` hits are shared stability/clipboard
     helpers;
-  - this is a broad code-side fix for route reveal jumpiness, but the ownerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s
+  - this is a broad code-side fix for route reveal jumpiness, but the ownerÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s
     real Android phone still needs to verify the tactile drag improvement;
   - `npm run audit:trust-actions` still fails on older unrelated wording/route
     expectations in TrustSlip, Guarantor Inbox, Loan Summary, and Money In;
@@ -83662,7 +83662,7 @@ Complaint ledger:
     - added a low-opacity GSN page watermark and seal-style background mark to
       the active TrustSlip paper frame.
     - changed the active hero from a plain app header into a document masthead:
-      TrustSlip wordmark, 3D GSN shield icon, `GSN Ãƒâ€šÃ‚Â· Public View`, record
+      TrustSlip wordmark, 3D GSN shield icon, `GSN ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Public View`, record
       anchor, and holder/community/GSN ID context.
     - added a truth-bound security mark driven by the actual TrustSlip state:
       `Active`, `Expired`, `Revoked`/`Frozen`, or `Pending`.
@@ -83954,7 +83954,7 @@ Complaint ledger:
     passed: 16 tests.
 - Unabated truth:
   - this repair fixes the stale Trust Passport read path. It does not prove the
-    ownerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s live phone/browser session has the expected backend rows yet; if the
+    ownerÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s live phone/browser session has the expected backend rows yet; if the
     live user record still does not show recorded states after this build, the
     next check should inspect the actual `/trust-slips/me` JSON for that account
     and confirm whether the save requests are returning success or errors.
@@ -94030,7 +94030,7 @@ Complaint ledger:
       - save/contribute with clearer records and fewer disputes;
       - do not start from zero; take your trust with you.
     - changed the marketplace/community line to
-      `ÃƒÂ°Ã…Â¸Ã‚ÂÃ¢â‚¬ÂºÃƒÂ¯Ã‚Â¸Ã‚Â Community: {marketplaceName}`.
+      `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Community: {marketplaceName}`.
     - kept the copied-message top invite URL, tap hint, sender name, personal
       note, expiry, request-access instruction, and review boundary.
   - `frontend/tools/audit-existing-community-invite-line.mjs`
@@ -94051,7 +94051,7 @@ Complaint ledger:
     - tap hint;
     - sender line;
     - six serial benefit lines;
-    - `ÃƒÂ°Ã…Â¸Ã‚ÂÃ¢â‚¬ÂºÃƒÂ¯Ã‚Â¸Ã‚Â Community: {marketplaceName}`;
+    - `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Community: {marketplaceName}`;
     - personal note and review boundary.
 - Unabated truth:
   - this is copy-only in the shared invite message builder and source audits;
@@ -94064,7 +94064,7 @@ Complaint ledger:
     the link preview/text area is the place to tap.
 - Changed:
   - `frontend/src/lib/joinInviteMessaging.ts`
-    - adds `ÃƒÂ¢Ã‚Â¬Ã¢â‚¬Â ÃƒÂ¯Ã‚Â¸Ã‚Â Tap the GSN Link preview above to open the invitation.` directly
+    - adds `ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Tap the GSN Link preview above to open the invitation.` directly
       after the top invite URL in copied/WhatsApp doorway messages.
     - keeps the compact link first so WhatsApp can still generate the hero
       preview card.
@@ -94086,7 +94086,7 @@ Complaint ledger:
     sandboxed Vite/esbuild process hits Windows `spawn EPERM`.
   - Confirmed generated copied-message text starts with:
     - invite URL;
-    - `ÃƒÂ¢Ã‚Â¬Ã¢â‚¬Â ÃƒÂ¯Ã‚Â¸Ã‚Â Tap the GSN Link preview above to open the invitation.`
+    - `ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Tap the GSN Link preview above to open the invitation.`
   - Confirmed lower copied-message instruction now says:
     - `After it opens, request access from the invitation page.`
 - Unabated truth:
@@ -94693,8 +94693,8 @@ Complaint ledger:
   - Passed `npm run build` from `frontend`.
 - Unabated truth:
   - the private GSN relationship note is not for the invitee. It is for extra
-    relationship evidence such as ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œknown from Alaba market for 5 yearsÃƒÂ¢Ã¢â€šÂ¬Ã‚Â or ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œmy
-    schoolmate and trading contact.ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â It stays out of the WhatsApp message.
+    relationship evidence such as ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“known from Alaba market for 5 yearsÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â or ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“my
+    schoolmate and trading contact.ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â It stays out of the WhatsApp message.
 
 ### Join invite messages now carry explicit sender and receiver names (2026-06-14)
 
@@ -103202,7 +103202,7 @@ Complaint ledger:
   - `npm exec -- eslint src/pages/ShopGalleryPage.tsx
     src/components/TrustGraphAdminPage.tsx` passed from `frontend`;
   - focused scan found no remaining `TrustGraph Command`, `CCI remains`,
-    `internal metric name`, `Explainability`, `ÃƒÆ’Ã¢â‚¬Å¡`, `ÃƒÆ’Ã‚Â¢`, em-dash fallback, or
+    `internal metric name`, `Explainability`, `ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡`, `ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢`, em-dash fallback, or
     circled-info glyph matches in the touched public shop / duplicate Trust
     Graph files;
   - `npm run audit:shop-gallery-button-inventory` passed from `frontend`;
@@ -103770,7 +103770,7 @@ Complaint ledger:
   - focused scan found no visible emoji/mojibake scars in the touched files;
   - broad `rg` scan found no remaining visible emoji marks in
     `frontend/src/pages` or `frontend/src/components`;
-  - broad `rg` scan found no remaining `ÃƒÆ’Ã‚Â¢`, `ÃƒÆ’Ã†â€™`, or `ÃƒÆ’Ã¢â‚¬Å¡` broken-character scars
+  - broad `rg` scan found no remaining `ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢`, `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢`, or `ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡` broken-character scars
     in `frontend/src/pages` or `frontend/src/components`;
   - `npm --prefix frontend run audit:button-stability` passed;
   - `npm --prefix frontend run audit:tap-stability` passed;
@@ -103841,8 +103841,8 @@ Complaint ledger:
 - Verification:
   - `npm exec -- eslint src/pages/SubscriptionSpotlightPage.tsx` passed from
     `frontend`;
-  - quick scan found no remaining visible `ÃƒÂ¢Ã‚Â­Ã‚Â`, `ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦`, `ÃƒÂ¢Ã…Â¡Ã¢â€žÂ¢ÃƒÂ¯Ã‚Â¸Ã‚Â`, `ÃƒÂ¢Ã‚ÂÃ‚Â³`, or mojibake
-    `ÃƒÆ’Ã‚Â¢` scars in `SubscriptionSpotlightPage.tsx`;
+  - quick scan found no remaining visible `ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚Â­Ãƒâ€šÃ‚Â`, `ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦`, `ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â`, `ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â³`, or mojibake
+    `ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢` scars in `SubscriptionSpotlightPage.tsx`;
   - `npm --prefix frontend run audit:marketplace-actions` passed;
   - `npm --prefix frontend run audit:button-stability` passed;
   - `npm --prefix frontend run audit:tap-stability` passed;
@@ -104542,7 +104542,7 @@ Complaint ledger:
     - Dashboard Spotlight audio labels only;
   - shortened `PayoutDetailsPage.tsx` copy so the page says what the user needs
     to do without repeating custody explanations;
-  - removed a `WorkingÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦` mojibake/display issue in the confirm modal;
+  - removed a `WorkingÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦` mojibake/display issue in the confirm modal;
   - updated the related audits so they protect the new SVG/audio-label shape.
 - Verification:
   - frontend source emoji/mojibake scan over `frontend/src/pages`,
@@ -105141,7 +105141,7 @@ Complaint ledger:
     or shared tap-guard behavior changed.
 - Fix:
   - removed the top `ExplainToggle`, the separate `Why this matters` section,
-    and the duplicated long ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œGSN does not hold fundsÃƒÂ¢Ã¢â€šÂ¬Ã‚Â paragraph;
+    and the duplicated long ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“GSN does not hold fundsÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â paragraph;
   - added app-native SVG bank pictogram support to `TrustPaperIcon`;
   - rebuilt the payout form as a lighter, icon-led card with stronger contrast;
   - added a visible `UK sort code` field, normalizing six digits to
@@ -105347,7 +105347,7 @@ Complaint ledger:
     changed.
 - Fix:
   - shortened the Demand Box hero to a community-specific request prompt;
-  - replaced the old ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œhow demand worksÃƒÂ¢Ã¢â€šÂ¬Ã‚Â explainer/stat shape with a compact
+  - replaced the old ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“how demand worksÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â explainer/stat shape with a compact
     current-state card showing mine, community, next step, and optional GSN ID;
   - made the create action span the first phone row while Return and Dashboard
     sit as stable secondary escapes;
@@ -108946,9 +108946,9 @@ Complaint ledger:
   - repair must be system-level, not only a page repaint.
 - Backend repair:
   - added a shared `_owner_public_shop_payload(...)` helper that gathers the
-    signed-in ownerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s active shops and active public/community-visible products
+    signed-in ownerÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s active shops and active public/community-visible products
     across the owner shop identity;
-  - `GET /marketplace/shops/me` now returns the signed-in ownerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s shop face and
+  - `GET /marketplace/shops/me` now returns the signed-in ownerÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s shop face and
     public block products directly from backend truth;
   - `GET /marketplace/shops/by-gmfn/{gmfn_id}` now uses the same helper, so
     authenticated GMFN lookup and owner lookup share the same product scope;
@@ -109863,7 +109863,7 @@ Complaint ledger:
   - no raw buttons or links were introduced;
   - existing stable debug IDs remain for shop shortcuts, hero actions, vault
     actions, product toggle/share, and remaining product controls;
-  - the button-stability audit now protects the softer `ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â¼` close sign instead
+  - the button-stability audit now protects the softer `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¼` close sign instead
     of the older red X.
 - Verification:
   - `npm run audit:button-stability` passed;
@@ -110397,10 +110397,10 @@ Complaint ledger:
   - the requested meaning of "emoji" here is compact real-life signs that use
     less space and are easier for low-literacy users to understand.
 - Frontend change:
-  - product-card video sound now shows compact speaker signs: `ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ…Â `, `ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Â¡`, and
-    `ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¶ÃƒÂ¯Ã‚Â¸Ã‚Â` for the fallback retry state;
-  - product-card open/close now shows compact signs: `ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚ÂÃƒÂ¯Ã‚Â¸Ã‚Â` and `ÃƒÂ¢Ã‚ÂÃ…â€™`;
-  - product-card share now shows `ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¤`;
+  - product-card video sound now shows compact speaker signs: `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€¦Ã‚Â `, `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡`, and
+    `ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“Ãƒâ€šÃ‚Â¶ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â` for the fallback retry state;
+  - product-card open/close now shows compact signs: `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â` and `ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€¦Ã¢â‚¬â„¢`;
+  - product-card share now shows `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€šÃ‚Â¤`;
   - all compact sign buttons keep text `aria-label` and `title` values for
     accessibility and traceability;
   - product-card action buttons are fixed-size round controls instead of wide
@@ -114914,7 +114914,7 @@ Complaint ledger:
   - Drafts expire locally after 24 hours.
 - `CreateEntryPage` now:
   - restores the safe draft on load;
-  - shows a compact ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œContinue unfinished entryÃƒÂ¢Ã¢â€šÂ¬Ã‚Â card with Continue and Start
+  - shows a compact ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“Continue unfinished entryÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â card with Continue and Start
     again actions;
   - clears the draft after successful account/community handoff or when the
     user chooses Existing Member sign-in.
@@ -115482,8 +115482,8 @@ Complaint ledger:
   - `npm run build` first hit the known sandbox Vite/esbuild `spawn EPERM`,
     then passed with approved escalation.
 - Remaining truth:
-  - This changes the meaning of the TrustSlip page refresh button from ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œreload
-    current slipÃƒÂ¢Ã¢â€šÂ¬Ã‚Â to ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œissue a fresh public slip for a new sharing session.ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â
+  - This changes the meaning of the TrustSlip page refresh button from ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“reload
+    current slipÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â to ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“issue a fresh public slip for a new sharing session.ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â
   - Existing already-shared old QR links will still show their original issue
     date by design; new refresh produces the new QR/code/date.
 
@@ -116127,7 +116127,7 @@ Complaint ledger:
   - `npm run build` still hits sandbox Vite/esbuild `spawn EPERM` inside the
     sandbox, then passed with approved escalation.
 - Remaining truth:
-  - This is now a stronger system-level fix, but it still needs the ownerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s
+  - This is now a stronger system-level fix, but it still needs the ownerÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s
     real phone retest before declaring the Dashboard safe for the school test.
   - If a wrong landing remains, the next move is a runtime geometry audit that
     samples each Dashboard CTA with `elementFromPoint()` on phone viewport.
@@ -123195,7 +123195,7 @@ Marketplace picture-tools click-barrier cleanup pass.
 
 #### Open risks or unknowns
 - This is another safe checkpoint, not a final freeze.
-- Other small tool bubbles or nested action surfaces may still carry the same ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œpointer guard plus extra click stopÃƒÂ¢Ã¢â€šÂ¬Ã‚Â pattern and can be cleaned in later passes.
+- Other small tool bubbles or nested action surfaces may still carry the same ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“pointer guard plus extra click stopÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â pattern and can be cleaned in later passes.
 
 #### Next recommended step
 - Continue targeting nested tool surfaces where pointer/touch guards already exist but extra click-time propagation stops are still layered on top.
@@ -124901,7 +124901,7 @@ Money-out decision-lane simplification pass for `WithdrawalInstructionsPage`.
   - build passed
 
 #### Open risks or unknowns
-- `PaymentInstructionsPage.tsx` still has dense action bands and may need the same style of ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œone clear decision pointÃƒÂ¢Ã¢â€šÂ¬Ã‚Â simplification if live testing says Money In still feels physically heavy.
+- `PaymentInstructionsPage.tsx` still has dense action bands and may need the same style of ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“one clear decision pointÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â simplification if live testing says Money In still feels physically heavy.
 - Other routes may still keep older local button-guard patterns, but this pass was specifically about removing a duplicate route-action band rather than guard stacking.
 - Marketplace, Dashboard, Community Home, Shop-family routes, and the money-side routes should still be treated as safe checkpoints rather than final freeze states until the broader live phone testing round is complete.
 
@@ -124912,7 +124912,7 @@ Money-out decision-lane simplification pass for `WithdrawalInstructionsPage`.
   - direct withdrawal decision
   - support-backed continuation decision
   - result section after the decision
-- If Money Out now feels materially calmer, inspect `PaymentInstructionsPage.tsx` for the same ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œtoo many action bands for one taskÃƒÂ¢Ã¢â€šÂ¬Ã‚Â pattern.
+- If Money Out now feels materially calmer, inspect `PaymentInstructionsPage.tsx` for the same ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“too many action bands for one taskÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â pattern.
 
 #### Date
 2026-04-26 15:05
@@ -126307,7 +126307,7 @@ Dashboard friction cleanup plus Marketplace link-lane separation and button tigh
 #### Open risks or unknowns
 - This pass improves local/frontend behavior but does not itself fix already-issued stale join links on live Render. Fresh links still need to be generated after the invite-link backend fix is live.
 - The broader request to make other domains visually match the more institutional dashboard profile block is still open.
-- Wider shop/vault/view link auditing across every outward path is still incomplete; this pass focused on MarketplaceÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s public/tester-facing link desk first.
+- Wider shop/vault/view link auditing across every outward path is still incomplete; this pass focused on MarketplaceÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s public/tester-facing link desk first.
 
 #### Next recommended step
 - Retest Marketplace on phone first: section toggles, join/create/public-marketplace/public-shop buttons, and WhatsApp send buttons.
@@ -126635,7 +126635,7 @@ Community Home vs Marketplace strategic separation pass, with read-only parallel
   - `One-shop owner work`
   - `Open Selected Community Marketplace`
 - Marketplace copy was tightened to reinforce that Community Home chooses the group first and Marketplace runs one-community work after that.
-- MarketplaceÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s no-community-selected state was reduced to the correct handoff surface instead of acting like a generic app launcher. It now mainly sends the user back to Community Home or Dashboard rather than offering multiple unrelated domain jumps before a community is chosen.
+- MarketplaceÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s no-community-selected state was reduced to the correct handoff surface instead of acting like a generic app launcher. It now mainly sends the user back to Community Home or Dashboard rather than offering multiple unrelated domain jumps before a community is chosen.
 - Two read-only parallel audits agreed that the main remaining blur is wording/launcher overlap, not backend business logic confusion.
 
 #### Open risks or unknowns
@@ -128014,7 +128014,7 @@ Dashboard attention surface and shared next-action guide tap containment.
 2026-04-21
 
 #### Workstream
-Install reusable ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œWhat do you want to do next?ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â guide on Community Home and
+Install reusable ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“What do you want to do next?ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â guide on Community Home and
 Dashboard.
 
 #### Routes/screens affected
@@ -128031,8 +128031,8 @@ Dashboard.
 - `docs/HANDOFF_NOTES.md`
 
 #### Confirmed facts
-- Product owner asked to bring the Marketplace-style ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œWhat do you want to do
-  next?ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â helper into Community Home and Dashboard.
+- Product owner asked to bring the Marketplace-style ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“What do you want to do
+  next?ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â helper into Community Home and Dashboard.
 - Added a shared route-neutral `NextActionGuide` component with collapsed/open
   state, simple keyword matching, search input, quick choices, and tap-event
   containment.
@@ -131102,7 +131102,7 @@ Dashboard branding pass corrected to the real visual benchmark:
   dashboard itself, what is wrong and the first action to take in simple
   language before the user opens the follow-through page.
 - The shared guidance module was then tightened one step further to follow the
-  ownerÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s exact pattern for low-literacy / low-time users: `Problem`, `Why it
+  ownerÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s exact pattern for low-literacy / low-time users: `Problem`, `Why it
   matters`, and `Do this`. The dashboard helper now shows those three parts on
   the card itself, and the shared translator also softens some technical words
   from trust/identity guidance into simpler language before the user sees them.
@@ -133614,8 +133614,8 @@ GSN-branded invite composer and invite-entry continuity.
   - It did not stop the final click event from bubbling into surrounding cards,
     drawers, overlays, or parent link-like blocks.
   - That can make a correctly tapped link still trigger a parent surface after
-    the link receives the tap, which matches the reported ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œbutton falls
-    somewhere elseÃƒÂ¢Ã¢â€šÂ¬Ã‚Â behaviour.
+    the link receives the tap, which matches the reported ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“button falls
+    somewhere elseÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â behaviour.
 - Updated `frontend/src/components/OriginLink.tsx`:
   - Link and external-anchor clicks now stop propagation before calling their
     own supplied `onClick` handler.
@@ -135201,12 +135201,12 @@ GSN-branded invite composer and invite-entry continuity.
   - Finance utility links and support CTAs now consistently use the
     `Loans & Support` label.
   - Loan readiness, suggestions, workbench, summary, repayment, and revenue
-    allocation now use the same ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œThis page is one step inside Loans & SupportÃƒÂ¢Ã¢â€šÂ¬Ã‚Â
+    allocation now use the same ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“This page is one step inside Loans & SupportÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â
     framing or equivalent route-local support wording.
   - Cross-links from loan pages back into finance were softened from action
     language like `Open Finance` to evidence language like `See this in
     Finance` where appropriate.
-  - Remaining ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œsupport continuation routesÃƒÂ¢Ã¢â€šÂ¬Ã‚Â wording was normalized into
+  - Remaining ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“support continuation routesÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â wording was normalized into
     `Next support routes` so the loans stack no longer mixes three route-label
     styles.
 - Mobile polish / button tightening:
@@ -135494,7 +135494,7 @@ GSN-branded invite composer and invite-entry continuity.
     - masked outward link codes / labels
     - short GSN share-message text
   - Join-link card now shows a humanized label like:
-    - `Secure GSN join link for <community> ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ code <shortened>`
+    - `Secure GSN join link for <community> ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ code <shortened>`
   - Create-link area now shows a short message preview and a masked founder
     entry label.
   - Public marketplace face and public shop face now show short masked labels
@@ -136169,7 +136169,7 @@ GSN-branded invite composer and invite-entry continuity.
 - Important remaining product note:
   - the lane is now steadier and more app-led, but the user-facing copy can
     still be simplified further if the product owner wants an even stronger
-    ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œthe app leads every next stepÃƒÂ¢Ã¢â€šÂ¬Ã‚Â tone before freezing this route
+    ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“the app leads every next stepÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â tone before freezing this route
 ### Public shop / gallery now reads through a true public route (2026-04-25)
 
 - Product-owner concern:
@@ -138695,11 +138695,11 @@ GSN-branded invite composer and invite-entry continuity.
       - `created_at`
 - Verification:
   - `python -m pytest tests/test_clan_members.py tests/test_clan_pool.py -q`
-    ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ `7 passed`
+    ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ `7 passed`
   - `python -m pytest -q tests`
-    ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ `94 passed`
+    ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ `94 passed`
   - `python -m py_compile app/api/routes/clans.py tests/conftest.py tests/test_join_requests.py`
-    ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ passed
+    ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ passed
 - Routes impacted:
   - backend member-management + pool-adjustment routes listed above
 - Shared logic impact:
@@ -138739,9 +138739,9 @@ GSN-branded invite composer and invite-entry continuity.
       institutional blue baseline
 - Verification:
   - `npm exec -- eslint src/styles/gmfnBrand.ts src/lib/institutionalSurface.ts src/ui/styles.ts src/components/WorkspaceSettingsBridge.tsx src/components/PageTopNav.tsx`
-    ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ passed
+    ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ passed
   - `npm run build`
-    ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢ passed
+    ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ passed
 - Routes / screen families most affected:
   - app shell / layout-driven surfaces using `gmfnBrand` and the shared page
     wash
@@ -140266,7 +140266,7 @@ GSN-branded invite composer and invite-entry continuity.
   - `python -m py_compile gmfn_backend\app\api\routes\marketplace.py gmfn_backend\app\services\vault_access_service.py` passed.
   - targeted scans found no remaining plain `OriginLink to="/app/marketplace"`, no plain `navigateWithOrigin(navigate, "/app/marketplace")`, no `publicFrontendUrl(location.pathname)` shop-share pattern, and consistent Vault `api_view_url` values.
 - Remaining risks:
-  - The repo still contains two invite systems (`/invites` direct membership and `/clans` join requests). This pass kept todayÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s Marketplace/community join links on the richer `/clans` path, but merging or retiring `/invites` requires an explicit product/governance decision.
+  - The repo still contains two invite systems (`/invites` direct membership and `/clans` join requests). This pass kept todayÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s Marketplace/community join links on the richer `/clans` path, but merging or retiring `/invites` requires an explicit product/governance decision.
   - Some global nav/legacy shortcuts remain intentionally context-agnostic where no concrete community row is being selected.
 
 ### Borrowing/support route-context audit (2026-05-08)
@@ -141088,12 +141088,12 @@ GSN-branded invite composer and invite-entry continuity.
   - repeated pending requests return `pending_request_exists`;
   - approval for existing identities creates membership and does not create an activation package.
 - Updated `frontend/src/pages/JoinEntryPage.tsx`:
-  - logged-in users with an existing GMFN ID see ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œJoin this community with your existing GMFN identityÃƒÂ¢Ã¢â€šÂ¬Ã‚Â and submit the invite as an existing-user join request;
-  - logged-out users now see the explicit branch ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œI already have a GMFN IDÃƒÂ¢Ã¢â€šÂ¬Ã‚Â versus ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œI am new to GSNÃƒÂ¢Ã¢â€šÂ¬Ã‚Â;
+  - logged-in users with an existing GMFN ID see ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“Join this community with your existing GMFN identityÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â and submit the invite as an existing-user join request;
+  - logged-out users now see the explicit branch ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“I already have a GMFN IDÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â versus ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“I am new to GSNÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â;
   - the new-person form is only available to logged-out users who choose the new-member path;
   - logged-in users with unclear identity state are blocked from falling through to new-person signup copy.
 - Updated `gmfn_backend/app/api/routes/clans.py` direct `/clans/{clan_id}/join` route:
-  - reuses/ensures the authenticated userÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢s GMFN ID before creating membership;
+  - reuses/ensures the authenticated userÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s GMFN ID before creating membership;
   - returns `joined_successfully` with `user_id`, `gmfn_id`, `existing_identity`, and `identity_reused`;
   - repeated clicks now return `already_member` with the same identity/membership instead of a hard duplicate-membership error;
   - logs direct existing-user join and already-member outcomes through `log_trust_event`.
@@ -160109,3 +160109,15 @@ Operational note:
 - Product spec change: `docs/SCREEN_SPECS.md` now records the boundary that Focus Commitments is not a CRM, payment processor, loan ledger, WhatsApp scraper, or verified legal evidence system without a separate backend/governance review.
 - Verification passed: `npm --prefix frontend run audit:dashboard-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `npm exec -- eslint src/pages/DashboardPage.tsx tools/audit-dashboard-button-inventory.mjs` from `frontend`; `git diff --check -- frontend/src/pages/DashboardPage.tsx frontend/tools/audit-dashboard-button-inventory.mjs docs/SCREEN_SPECS.md docs/HANDOFF_NOTES.md`.
 - Devil truth: this does not read WhatsApp automatically, enforce payment, verify that a promise was kept, or solve GDPR/ICO compliance by itself. It gives a community secretary a cleaner operational list and a bridge back to the original conversation/tool.
+
+## 2026-09-10 - Local Community Bulletin All-Member-Communities Read Feed
+
+- Status: Local implementation complete and verified; commit/push/deploy in this slice.
+- Owner trigger: owner reported that announcements currently require switching into each community/marketplace, which can make members miss opportunities when they belong to more than one community.
+- Backend route affected: `GET /community-notices` now accepts `scope=my_communities`. The existing selected-community behavior remains available through `scope=selected` and still requires `clan_id`.
+- Read behavior: `scope=my_communities` gathers live notices from ordinary Communities where the signed-in member has active membership, plus eligible linked official Community Domain notices for those same communities. The response includes `read_clan_ids`, `source_community_count`, and a boundary note.
+- Posting behavior: `POST /community-notices`, notice review, notification dispatch, and settings remain local to the selected/source community. This does not turn a local notice into a cross-community broadcast.
+- Frontend route affected: `/app/community` Community Bulletin now reads the all-member-communities feed while keeping posting controls tied to the selected community. Acknowledgement and availability actions use each notice's source community ID, and roll-call management is only opened when the notice belongs to the selected community.
+- Guardrail changes: `frontend/tools/audit-community-home-button-inventory.mjs` and `frontend/tools/audit-notice-board-phone-notifications.mjs` now cage the all-member-communities read scope and active-membership boundary.
+- Verification passed: `python -m py_compile app\api\routes\community_notices.py tests\test_community_notices.py`; `python -m pytest -q tests\test_community_notices.py`; `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; targeted frontend eslint; `npm --prefix frontend run build`; `git diff --check` on the scoped files.
+- Devil truth: this is not WhatsApp scraping, not a global public bulletin, not cross-community visibility for non-members, and not a push-notification expansion. It fixes the read surface so a member has one place to see notices from the communities they already belong to.

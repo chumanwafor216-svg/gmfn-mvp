@@ -285,6 +285,14 @@ assertContains(
   "Community Home notice-board officer actions must include platform admins, community admins, and community owners."
 );
 assertContains(
+  /function communityNoticeListParams\(clanId: number\)[\s\S]*?scope: "my_communities" as const[\s\S]*?limit: COMMUNITY_NOTICE_ACTIVE_LIMIT/,
+  "Community Home Bulletin must read the signed-in member's all-communities notice feed while preserving selected-community posting controls."
+);
+assertContains(
+  /function noticeClanId[\s\S]*?item\?\.clan_id[\s\S]*?item\?\.source_community_id[\s\S]*?getClanId\(fallbackClan\)/,
+  "Community Home Bulletin actions must use each notice's source community id when the board is reading all member communities."
+);
+assertContains(
   /Community[\s\S]*?Bulletin[\s\S]*?renderCommunityBulletinNoticeSelector\(activeCommunityNotices\)[\s\S]*?renderCommunityBulletinPrimaryNotice\(primaryCommunityNotice\)[\s\S]*?showCommunityBulletinTools[\s\S]*?debugId="community-home\.notice\.settings-toggle"[\s\S]*?Bulletin tools[\s\S]*?data-debug-id="community-home\.notice\.settings-panel"[\s\S]*?debugId="community-home\.notice\.post"[\s\S]*?communityNoticeSubmitMode === "review"[\s\S]*?"Submit"[\s\S]*?"Post"[\s\S]*?debugId="community-home\.contact\.whatsapp-chat"[\s\S]*?>\s*Contact\s*<\/StableButton>[\s\S]*?debugId="community-home\.notice\.policy\.members"[\s\S]*?debugId="community-home\.notice\.policy\.admins"[\s\S]*?communityNoticeReviewSubmissions\.map[\s\S]*?debugId=\{`community-home\.notice\.review\.approve\.\$\{submissionId\}`\}[\s\S]*?debugId=\{`community-home\.notice\.review\.reject\.\$\{submissionId\}`\}[\s\S]*?communityNoticeLogItems\.map/,
   "Community Home communication block must keep the rich live announcement dominant, expose one Bulletin tools opener, and tuck Post/Contact/Settings/history behind that opener."
 );
@@ -581,7 +589,7 @@ while ((match = rawActionPattern.exec(source))) {
 }
 
 assertContains(
-  /COMMUNITY_NOTICE_ACTIVE_LIMIT = 10[\s\S]*?listCommunityNotices\(\{ clan_id: clanId, limit: COMMUNITY_NOTICE_ACTIVE_LIMIT \}\)[\s\S]*?function renderCommunityBulletinNoticeSelector[\s\S]*?Announcement \$\{selectedCommunityNoticeIndexSafe \+ 1\} of \$\{items\.length\}[\s\S]*?\{selectedCommunityNoticeIndexSafe \+ 1\}\/\{items\.length\}[\s\S]*?debugId=\{`community-home\.bulletin\.notice-select\.\$\{index \+ 1\}`\}[\s\S]*?setSelectedCommunityNoticeIndex\(index\)/,
+  /COMMUNITY_NOTICE_ACTIVE_LIMIT = 10[\s\S]*?listCommunityNotices\(communityNoticeListParams\(clanId\)\)[\s\S]*?function renderCommunityBulletinNoticeSelector[\s\S]*?Announcement \$\{selectedCommunityNoticeIndexSafe \+ 1\} of \$\{items\.length\}[\s\S]*?\{selectedCommunityNoticeIndexSafe \+ 1\}\/\{items\.length\}[\s\S]*?debugId=\{`community-home\.bulletin\.notice-select\.\$\{index \+ 1\}`\}[\s\S]*?setSelectedCommunityNoticeIndex\(index\)/,
   "Community Home Bulletin must fetch up to ten active notices and show a numbered active-announcement selector instead of hiding extra live items."
 );
 if (findings.length > 0) {

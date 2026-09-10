@@ -584,6 +584,37 @@ def _clan_source_payload(db: Session, clan_id: int) -> dict[str, Any]:
     }
 
 
+def _active_notice_read_clan_ids(
+    db: Session,
+    *,
+    current_user: User,
+    selected_clan_id: Optional[int] = None,
+) -> list[int]:
+    rows = (
+        db.query(ClanMembership.clan_id)
+        .filter(
+            ClanMembership.user_id == int(current_user.id),
+            ClanMembership.left_at.is_(None),
+        )
+        .order_by(ClanMembership.clan_id.asc())
+        .limit(100)
+        .all()
+    )
+    ids: list[int] = []
+    seen: set[int] = set()
+    selected_id = int(selected_clan_id or 0)
+    if selected_id and str(getattr(current_user, "role", "") or "").lower() == "admin":
+        ids.append(selected_id)
+        seen.add(selected_id)
+    for row in rows:
+        clan_id = int(row[0] or 0)
+        if not clan_id or clan_id in seen:
+            continue
+        ids.append(clan_id)
+        seen.add(clan_id)
+    return ids
+
+
 def _notice_sort_time(payload: dict[str, Any]) -> datetime:
     parsed = _parse_datetime(
         payload.get("scheduled_at") or payload.get("created_at") or payload.get("expires_at")
@@ -1492,38 +1523,92 @@ class CommunityNoticeReviewDecisionIn(BaseModel):
 
 @router.get("")
 def list_notices(
-    clan_id: int = Query(..., ge=1),
+    clan_id: Optional[int] = Query(default=None, ge=1),
     limit: int = Query(default=10, ge=1, le=10),
+    scope: Literal["selected", "my_communities"] = Query(default="selected"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
-    membership = _require_clan_member(db, clan_id=int(clan_id), current_user=current_user)
-    posting_policy = _notice_posting_policy_for_clan(db, clan_id=int(clan_id))
-    records_policy = _community_records_policy_for_clan(db, clan_id=int(clan_id))
+    selected_clan_id = int(clan_id or 0)
+    selected_membership: Optional[ClanMembership] = None
+
+    if scope == "selected":
+        if not selected_clan_id:
+            raise HTTPException(status_code=422, detail="clan_id is required for selected community notices")
+        selected_membership = _require_clan_member(
+            db,
+            clan_id=selected_clan_id,
+            current_user=current_user,
+        )
+        read_clan_ids = [selected_clan_id]
+    else:
+        if selected_clan_id:
+            selected_membership = _require_clan_member(
+                db,
+                clan_id=selected_clan_id,
+                current_user=current_user,
+            )
+        read_clan_ids = _active_notice_read_clan_ids(
+            db,
+            current_user=current_user,
+            selected_clan_id=selected_clan_id or None,
+        )
+        if selected_clan_id and selected_clan_id not in read_clan_ids:
+            read_clan_ids.insert(0, selected_clan_id)
+
+    control_clan_id = selected_clan_id or (read_clan_ids[0] if read_clan_ids else 0)
+    if selected_membership is None and control_clan_id:
+        selected_membership = _require_clan_member(
+            db,
+            clan_id=control_clan_id,
+            current_user=current_user,
+        )
+
+    posting_policy = (
+        _notice_posting_policy_for_clan(db, clan_id=control_clan_id)
+        if control_clan_id
+        else NOTICE_POSTING_POLICY_MEMBERS
+    )
+    records_policy = (
+        _community_records_policy_for_clan(db, clan_id=control_clan_id)
+        if control_clan_id
+        else {
+            "community_records_enabled": False,
+            "member_record_submissions_enabled": False,
+            "admin_approval_required_for_records": True,
+        }
+    )
+
     notice_rows = (
         db.query(TrustEvent)
         .filter(
-            TrustEvent.clan_id == int(clan_id),
+            TrustEvent.clan_id.in_(read_clan_ids),
             TrustEvent.event_type == COMMUNITY_NOTICE_EVENT,
         )
         .order_by(TrustEvent.id.desc())
         .limit(max(200, int(limit) * 25))
         .all()
+        if read_clan_ids
+        else []
     )
-    visible_domain_map = _central_notice_visible_domain_map(
-        db,
-        clan_id=int(clan_id),
-    )
+    visible_domain_maps = {
+        clan_id_value: _central_notice_visible_domain_map(
+            db,
+            clan_id=int(clan_id_value),
+        )
+        for clan_id_value in read_clan_ids
+    }
+    has_visible_domain = any(bool(domain_map) for domain_map in visible_domain_maps.values())
     domain_notice_rows = (
         db.query(TrustEvent)
         .filter(
-            TrustEvent.clan_id == int(clan_id),
+            TrustEvent.clan_id.in_(read_clan_ids),
             TrustEvent.event_type == CENTRAL_DOMAIN_NOTICE_EVENT,
         )
         .order_by(TrustEvent.id.desc())
         .limit(max(200, int(limit) * 25))
         .all()
-        if visible_domain_map
+        if read_clan_ids and has_visible_domain
         else []
     )
 
@@ -1544,12 +1629,13 @@ def list_notices(
         notices.append(item)
 
     for row in domain_notice_rows:
+        row_clan_id = int(getattr(row, "clan_id", 0) or 0)
         meta = _safe_meta(getattr(row, "meta_json", None))
         try:
             row_domain_id = int(meta.get("community_domain_id") or 0)
         except (TypeError, ValueError):
             row_domain_id = 0
-        domain = visible_domain_map.get(row_domain_id)
+        domain = visible_domain_maps.get(row_clan_id, {}).get(row_domain_id)
         if domain is None:
             continue
         item = _central_domain_notice_payload(row, domain, db=db, viewer_user_id=int(current_user.id))
@@ -1559,43 +1645,49 @@ def list_notices(
             continue
         notices.append(item)
 
-
     notices.sort(key=_notice_sort_time, reverse=True)
     previous_announcements.sort(key=_notice_sort_time, reverse=True)
 
     if len(notices) < int(limit):
-        meeting_rows = list_community_meetings(
-            db,
-            clan_id=int(clan_id),
-            limit=max(6, (int(limit) - len(notices)) * 6),
-            viewer_user_id=int(current_user.id),
-        )
-        for row in meeting_rows:
-            item = _meeting_to_notice(row, db=db, clan_id=int(clan_id))
-            if _meeting_notice_is_expired(row):
-                archived_notice_count += 1
-                add_previous(item)
-                continue
-            notices.append(item)
+        for read_clan_id in read_clan_ids:
             if len(notices) >= int(limit):
                 break
+            meeting_rows = list_community_meetings(
+                db,
+                clan_id=int(read_clan_id),
+                limit=max(6, (int(limit) - len(notices)) * 6),
+                viewer_user_id=int(current_user.id),
+            )
+            for row in meeting_rows:
+                item = _meeting_to_notice(row, db=db, clan_id=int(read_clan_id))
+                if _meeting_notice_is_expired(row):
+                    archived_notice_count += 1
+                    add_previous(item)
+                    continue
+                notices.append(item)
+                if len(notices) >= int(limit):
+                    break
         notices.sort(key=_notice_sort_time, reverse=True)
         previous_announcements.sort(key=_notice_sort_time, reverse=True)
 
-    demand_signals, demand_signal_count = _notice_board_demand_signals(
-        db,
-        clan_id=int(clan_id),
+    demand_signals, demand_signal_count = (
+        _notice_board_demand_signals(db, clan_id=control_clan_id)
+        if control_clan_id
+        else ([], 0)
     )
     pending_review_count = (
-        len(_pending_notice_submission_rows(db, clan_id=int(clan_id), limit=50))
-        if _is_notice_officer(membership, current_user)
+        len(_pending_notice_submission_rows(db, clan_id=control_clan_id, limit=50))
+        if control_clan_id and selected_membership is not None and _is_notice_officer(selected_membership, current_user)
         else 0
     )
 
     return {
         "ok": True,
         "engine_ready": True,
-        "clan_id": int(clan_id),
+        "clan_id": control_clan_id or None,
+        "scope": scope,
+        "read_clan_ids": read_clan_ids,
+        "source_community_count": len(read_clan_ids),
         "max_words": MAX_NOTICE_WORDS,
         "comments_enabled": False,
         "reactions_enabled": False,
@@ -1607,17 +1699,23 @@ def list_notices(
         "previous_announcement_limit": NOTICE_PREVIOUS_ANNOUNCEMENT_LIMIT,
         "previous_announcements": previous_announcements[:NOTICE_PREVIOUS_ANNOUNCEMENT_LIMIT],
         "posting_policy": posting_policy,
-        "can_post_notice": _can_create_notice_record(
-            membership,
-            current_user,
-            posting_policy=posting_policy,
-            records_policy=records_policy,
+        "can_post_notice": bool(
+            selected_membership is not None
+            and _can_create_notice_record(
+                selected_membership,
+                current_user,
+                posting_policy=posting_policy,
+                records_policy=records_policy,
+            )
         ),
-        "can_submit_notice_for_review": _can_submit_notice_for_review(
-            membership,
-            current_user,
-            posting_policy=posting_policy,
-            records_policy=records_policy,
+        "can_submit_notice_for_review": bool(
+            selected_membership is not None
+            and _can_submit_notice_for_review(
+                selected_membership,
+                current_user,
+                posting_policy=posting_policy,
+                records_policy=records_policy,
+            )
         ),
         "pending_notice_review_count": pending_review_count,
         "community_records_policy": records_policy,
@@ -1630,8 +1728,13 @@ def list_notices(
             "Responding stays in Demand Box; the Official Board does not create a "
             "second request, response thread, payment approval, or release authority."
         ),
+        "boundary": (
+            "Posting remains inside the selected community. The all-communities view only "
+            "collects notices from communities where this signed-in member already has active membership."
+            if scope == "my_communities"
+            else "The notice board is scoped to the selected community."
+        ),
     }
-
 
 @router.post("")
 def create_notice(
