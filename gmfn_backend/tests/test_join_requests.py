@@ -729,6 +729,60 @@ def test_notifications_endpoint_retires_join_review_notice_after_request_is_done
         assert notification.read_at is not None
 
 
+def test_notifications_endpoint_limits_visible_items_to_twenty(client):
+    with SessionLocal() as db:
+        db.add(
+            User(
+                id=1,
+                email="member@example.com",
+                hashed_password="hashed",
+                role="user",
+            )
+        )
+        db.flush()
+        for index in range(25):
+            db.add(
+                Notification(
+                    user_id=1,
+                    kind="community.notice.posted",
+                    title=f"Official notice {index + 1}",
+                    message=f"Community post notification {index + 1}",
+                    action_url="/app/community",
+                    action_label="Open Community",
+                    is_read=False,
+                    created_at=datetime.now(timezone.utc) + timedelta(seconds=index),
+                )
+            )
+        db.commit()
+
+    def fake_current_user():
+        return SimpleNamespace(
+            id=1,
+            email="member@example.com",
+            role="user",
+            hashed_password="hashed",
+        )
+
+    app.dependency_overrides[auth.get_current_user] = fake_current_user
+    try:
+        default_res = client.get("/notifications/me")
+        assert default_res.status_code == 200, default_res.text
+        default_items = default_res.json()["items"]
+        assert len(default_items) == 20
+        assert default_items[0]["title"] == "Official notice 25"
+        assert default_items[-1]["title"] == "Official notice 6"
+
+        high_res = client.get("/notifications/me?limit=100")
+        assert high_res.status_code == 200, high_res.text
+        assert len(high_res.json()["items"]) == 20
+
+        pilot_res = client.get("/notifications/me?limit=15")
+        assert pilot_res.status_code == 200, pilot_res.text
+        assert len(pilot_res.json()["items"]) == 15
+    finally:
+        app.dependency_overrides.pop(auth.get_current_user, None)
+
+
 def test_public_join_request_creates_pending_activation_identity(client):
     _seed_join_context()
 

@@ -2512,7 +2512,7 @@ export async function buildGuidanceSnapshot(): Promise<GuidanceSnapshot> {
     dailyInsight,
     myDemandsRaw,
   ] = await Promise.all([
-    getMyNotifications(60, false).catch(() => ({ items: [] })),
+    getMyNotifications(20, false).catch(() => ({ items: [] })),
     getLoanGuarantorInbox({
       clan_id: selectedClanId || undefined,
       status: "pending",

@@ -992,7 +992,7 @@ export default function NotificationsPage() {
         const [settingsRes, guidanceRes, rawRes] = await Promise.all([
           getMySettings().catch(() => null),
           buildGuidanceSnapshot().catch(() => null),
-          getMyNotifications(100, false).catch(() => ({ items: [] })),
+          getMyNotifications(20, false).catch(() => ({ items: [] })),
         ]);
 
         if (!alive) return;

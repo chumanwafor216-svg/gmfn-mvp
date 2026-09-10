@@ -11,6 +11,9 @@ from app.db.models import Clan, ClanJoinRequest, ClanMembership, User
 from app.db.notification_models import Notification
 from app.services.web_push_service import dispatch_web_push_for_notification
 
+NOTIFICATION_VISIBLE_LIMIT_DEFAULT = 20
+NOTIFICATION_VISIBLE_LIMIT_MAX = 20
+
 
 def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
@@ -364,7 +367,7 @@ def list_my_notifications(
     db: Session,
     *,
     user_id: int,
-    limit: int = 50,
+    limit: int = NOTIFICATION_VISIBLE_LIMIT_DEFAULT,
     unread_only: bool = False,
 ) -> Dict[str, Any]:
     q = (
@@ -376,7 +379,8 @@ def list_my_notifications(
     if unread_only:
         q = q.filter(Notification.is_read == False)  # noqa: E712
 
-    rows = q.limit(int(max(1, min(limit, 200)))).all()
+    visible_limit = int(max(1, min(limit, NOTIFICATION_VISIBLE_LIMIT_MAX)))
+    rows = q.limit(visible_limit).all()
 
     items: List[Dict[str, Any]] = []
     for r in rows:

@@ -6,10 +6,14 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const notificationsFile = "src/pages/NotificationsPage.tsx";
-const guidanceFile = "src/lib/guidance.ts";const communityConfirmationPolicyFile = "src/pages/CommunityConfirmationPolicyPage.tsx";
+const guidanceFile = "src/lib/guidance.ts";
+const apiFile = "src/lib/api.ts";
+const communityConfirmationPolicyFile = "src/pages/CommunityConfirmationPolicyPage.tsx";
 const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, notificationsFile), "utf8");
-const guidanceSource = readFileSync(join(frontendRoot, guidanceFile), "utf8");const communityConfirmationPolicySource = readFileSync(
+const guidanceSource = readFileSync(join(frontendRoot, guidanceFile), "utf8");
+const apiSource = readFileSync(join(frontendRoot, apiFile), "utf8");
+const communityConfirmationPolicySource = readFileSync(
   join(frontendRoot, communityConfirmationPolicyFile),
   "utf8"
 );
@@ -104,6 +108,20 @@ function assertGuidanceContains(
   if (pattern.test(guidanceSource)) return;
   findings.push({
     file: guidanceFile,
+    line: 1,
+    message,
+    text,
+  });
+}
+
+function assertApiContains(
+  pattern,
+  message,
+  text = "Expected Action Inbox API pattern was not found."
+) {
+  if (pattern.test(apiSource)) return;
+  findings.push({
+    file: apiFile,
     line: 1,
     message,
     text,
@@ -292,6 +310,20 @@ assertContains(
 assertContains(
   /const NOTIFICATIONS_UI_STORAGE_KEY = "gmfn\.notifications\.ui\.v2"[\s\S]*?function defaultCollapseState\(\): CollapseState \{[\s\S]*?focus: false,[\s\S]*?buckets: true,[\s\S]*?rawFeed: true,[\s\S]*?reading: true/,
   "Notifications should keep the first action visible while the full waiting-item bucket list starts covered on phone."
+);
+assertApiContains(
+  /export async function getMyNotifications\([\s\S]*?limit: number = 20,/,
+  "Action Inbox API helper must default to the bounded 20-notification pilot read."
+);
+
+assertContains(
+  /getMyNotifications\(20, false\)/,
+  "Notifications recent feed must request at most the bounded 20-notification pilot read."
+);
+
+assertGuidanceContains(
+  /getMyNotifications\(20, false\)/,
+  "Shared guidance snapshot must request at most the bounded 20-notification pilot read."
 );
 
 

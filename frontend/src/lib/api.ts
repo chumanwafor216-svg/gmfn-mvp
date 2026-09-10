@@ -5277,7 +5277,7 @@ export async function postAdminCommunityDomainLifecycle(payload: {
 }
 
 export async function getMyNotifications(
-  limit: number = 50,
+  limit: number = 20,
   unreadOnly: boolean = false
 ): Promise<any> {
   const queryParams = { limit, unread_only: unreadOnly };

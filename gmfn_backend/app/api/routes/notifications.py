@@ -7,6 +7,7 @@ from app.core.auth import get_current_user
 from app.db.database import get_db
 from app.db.models import User
 from app.services.notification_service import (
+    NOTIFICATION_VISIBLE_LIMIT_DEFAULT,
     ensure_join_review_notifications,
     get_unread_count,
     list_my_notifications,
@@ -19,7 +20,7 @@ router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 @router.get("/me")
 def my_notifications(
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(NOTIFICATION_VISIBLE_LIMIT_DEFAULT, ge=1, le=200),
     unread_only: bool = Query(False),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
