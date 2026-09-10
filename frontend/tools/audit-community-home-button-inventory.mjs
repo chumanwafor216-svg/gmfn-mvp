@@ -10,13 +10,13 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 39;
+const expectedStableButtonTemplateCount = 40;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 4;
 const expectedSpotlightGuidedActionCount = 5;
 const expectedGroupedLaneRowCount = 22;
-const expectedExpandedRouteLocalActionTemplates = 49;
+const expectedExpandedRouteLocalActionTemplates = 50;
 const expectedMobileShellBreakdown = {
   top: 2,
   drawer: 25,
@@ -589,20 +589,20 @@ while ((match = rawActionPattern.exec(source))) {
 }
 
 assertContains(
-  /function communityBulletinNoticeUrgency[\s\S]*?if \(!date\) return \{ tone: "green", label: "No set date" \}[\s\S]*?if \(diffDays <= 1\) return \{ tone: "red", label: "Due now" \}[\s\S]*?if \(diffDays <= 3\) return \{ tone: "yellow", label: "Due within 72 hours" \}[\s\S]*?return \{ tone: "green", label: "Still ahead" \}/,
-  "Community Home Bulletin numbered selector must use green for no/far date, yellow inside 72 hours, and red for day-before/day-of/overdue notices."
+  /import \{[\s\S]*?attentionUrgencyFromDate[\s\S]*?buildAttentionSpineSummary[\s\S]*?type AttentionSpineSignal[\s\S]*?type AttentionSpineUrgency[\s\S]*?\} from "\.\.\/lib\/attentionSpine";[\s\S]*?function communityBulletinNoticeUrgency[\s\S]*?attentionUrgencyFromDate\(noticeDisplayDate\(item\), nowMs\)[\s\S]*?return \{ tone: urgency\.urgency, label: urgency\.label \}/,
+  "Community Home Bulletin numbered selector must use the shared Attention Spine date urgency helper for green/yellow/red meaning."
 );
 assertContains(
   /function renderCommunityBulletinNoticeSelector[\s\S]*?const urgency = communityBulletinNoticeUrgency\(item\)[\s\S]*?aria-label=\{`Show announcement \$\{label\}: \$\{title\}\. \$\{urgency\.label\}\.`\}[\s\S]*?communityBulletinNoticeUrgencyButtonStyle\(urgency\.tone, selected\)/,
   "Community Home Bulletin notice numbers must visibly carry each announcement's urgency colour, including unselected announcements."
 );
 assertContains(
-  /const communityBulletinPulse = useMemo[\s\S]*?counts: Record<CommunityBulletinNoticeUrgencyTone, number>[\s\S]*?responseNeededCount[\s\S]*?acknowledgementNeededCount[\s\S]*?pendingCommunityNoticeReviewCount[\s\S]*?nextIndex: recommendedIndex/,
-  "Community Home Pulse must summarize existing Bulletin urgency, response, acknowledgement, and admin-review signals without creating a separate data source."
+  /const communityBulletinPulse = useMemo[\s\S]*?const signals: AttentionSpineSignal\[\][\s\S]*?source: "action_inbox"[\s\S]*?buildAttentionSpineSummary\(signals[\s\S]*?pendingCommunityNoticeReviewCount/,
+  "Community Home Pulse must summarize existing Bulletin, meeting, acknowledgement, and admin-review signals through the shared Attention Spine helper."
 );
 assertContains(
-  /function renderCommunityBulletinPulse[\s\S]*?data-debug-id="community-home\.bulletin\.pulse"[\s\S]*?Community pulse[\s\S]*?\["red", "yellow", "green"\][\s\S]*?debugId="community-home\.bulletin\.pulse-open"[\s\S]*?setSelectedCommunityNoticeIndex\(communityBulletinPulse\.nextIndex\)/,
-  "Community Home Pulse must stay inside the Bulletin and route attention back to the existing selected announcement card."
+  /function renderCommunityBulletinPulse[\s\S]*?data-debug-id="community-home\.bulletin\.pulse"[\s\S]*?Community pulse[\s\S]*?\["red", "yellow", "green"\][\s\S]*?debugId="community-home\.bulletin\.pulse-open"[\s\S]*?setSelectedCommunityNoticeIndex\(nextPulseNoticeIndex\)[\s\S]*?debugId="community-home\.bulletin\.pulse-inbox"[\s\S]*?APP_ROUTES\.NOTIFICATIONS/,
+  "Community Home Pulse must stay inside the Bulletin, open the selected announcement in place, and route admin review to the existing Action Inbox."
 );
 assertContains(
   /renderCommunityBulletinPulse\(\)[\s\S]*?renderCommunityBulletinNoticeSelector\(activeCommunityNotices\)[\s\S]*?renderCommunityBulletinPrimaryNotice\(primaryCommunityNotice\)/,

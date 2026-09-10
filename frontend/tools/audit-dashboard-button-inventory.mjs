@@ -1,4 +1,4 @@
-﻿/* global console, process */
+/* global console, process */
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -169,10 +169,10 @@ while ((match = nativeFieldPattern.exec(dashboardSource))) {
 }
 
 const expected = {
-  StableButton: 49,
+  StableButton: 51,
   StableDisclosureSummary: 1,
   PictureFrameToolsControl: 2,
-  EffectiveDashboardActionRoots: 58,
+  EffectiveDashboardActionRoots: 60,
 };
 const expectedWholeMobileRouteActionRoots =
   expected.EffectiveDashboardActionRoots + expectedMobileShellActionCount;
@@ -231,6 +231,14 @@ assertContains(
   "Dashboard hidden most-used-apps source controls remain counted. Re-audit before exposing, removing, or moving this section."
 );
 
+assertContains(
+  /import \{[\s\S]*?buildAttentionSpineSummary[\s\S]*?type AttentionSpineSignal[\s\S]*?type AttentionSpineUrgency[\s\S]*?\} from "\.\.\/lib\/attentionSpine";[\s\S]*?const dashboardPulseSummary = useMemo\(\(\) => \{[\s\S]*?source: "action_inbox"[\s\S]*?source: "commitment"[\s\S]*?source: "market_wisdom"[\s\S]*?buildAttentionSpineSummary\(signals/,
+  "Dashboard My Pulse must read the shared Attention Spine signals from Action Inbox, Focus Commitments, and Market Wisdom."
+);
+assertContains(
+  /data-debug-id="dashboard\.my-pulse"[\s\S]*?My Pulse[\s\S]*?\["red", "yellow", "green"\][\s\S]*?debugId="dashboard\.my-pulse\.primary"[\s\S]*?dashboardPulsePrimaryTo[\s\S]*?debugId="dashboard\.my-pulse\.secondary"[\s\S]*?dashboardPulseSecondaryTo/,
+  "Dashboard My Pulse must remain a compact summary strip with one primary route and one optional secondary route."
+);
 assertContains(
   /debugId="dashboard\.market-wisdom\.open-focus-commitments"[\s\S]*?onClick=\{\(event\) =>[\s\S]*?openDashboardRoute\([\s\S]*?event,[\s\S]*?`\$\{DASHBOARD_TARGETS\.DASHBOARD\}#focus-commitments`[\s\S]*?\)[\s\S]*?\}[\s\S]*?Open Focus Commitments/,
   "Dashboard Focus Commitments action must stay caged to /app/dashboard#focus-commitments.",

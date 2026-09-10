@@ -58,6 +58,11 @@ import {
   type AppUseRecord,
 } from "../lib/dashboardAppUsage";
 import {
+  buildAttentionSpineSummary,
+  type AttentionSpineSignal,
+  type AttentionSpineUrgency,
+} from "../lib/attentionSpine";
+import {
   buildDashboardAttentionSignal,
   type DashboardAttentionStoredState,
   defaultDashboardAttentionStoredState,
@@ -758,6 +763,26 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
+function dashboardPulseChipStyle(tone: AttentionSpineUrgency): React.CSSProperties {
+  const palette =
+    tone === "red"
+      ? { bg: "#FFF5F5", border: "1px solid rgba(239,68,68,0.16)", text: "#991B1B" }
+      : tone === "yellow"
+      ? { bg: "#FFFBEF", border: "1px solid rgba(245,158,11,0.18)", text: "#92400E" }
+      : { bg: "#F3FBF5", border: "1px solid rgba(34,197,94,0.16)", text: "#166534" };
+
+  return {
+    ...statTile(palette.bg, palette.border),
+    minHeight: 44,
+    display: "grid",
+    alignContent: "center",
+    justifyItems: "center",
+    gap: 2,
+    padding: "6px 8px",
+    color: palette.text,
+    textAlign: "center",
+  };
+}
 function helperText(): React.CSSProperties {
   return {
     color: DASHBOARD_BRAND.helper,
@@ -5452,6 +5477,142 @@ export default function DashboardPage() {
   const combinedFocusBehindCount =
     focusSummary.behindCount + roscaFocusSummary.behindCount;
 
+  const dashboardPulseSummary = useMemo(() => {
+    const signals: AttentionSpineSignal[] = [];
+
+    if (dashboardNoticeSummary.counts.actNow > 0) {
+      signals.push({
+        id: "action-inbox:act-now",
+        source: "action_inbox",
+        scope: "personal",
+        kind: "action",
+        urgency: "red",
+        summary: "Action waiting",
+        detail: "Action Inbox has items that need a clear response.",
+        actionLabel: "Open Action Inbox",
+        actionTo: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
+        groupLabel: "action waiting",
+        weight: dashboardNoticeSummary.counts.actNow,
+        sortBoost: 16,
+      });
+    }
+
+    if (dashboardNoticeSummary.counts.dueSoon > 0) {
+      signals.push({
+        id: "action-inbox:due-soon",
+        source: "action_inbox",
+        scope: "personal",
+        kind: "action",
+        urgency: "yellow",
+        summary: "Due-soon alert",
+        detail: "Action Inbox has items due soon.",
+        actionLabel: "Open Action Inbox",
+        actionTo: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
+        groupLabel: "due-soon alert",
+        weight: dashboardNoticeSummary.counts.dueSoon,
+        sortBoost: 10,
+      });
+    }
+
+    if (dashboardNoticeSummary.counts.unread > 0) {
+      signals.push({
+        id: "action-inbox:unread",
+        source: "action_inbox",
+        scope: "personal",
+        kind: "condition",
+        urgency: dashboardNoticeSummary.counts.actNow > 0 ? "red" : "yellow",
+        summary: "Unread alert",
+        detail: "New alerts are waiting in Action Inbox.",
+        actionLabel: "Open Action Inbox",
+        actionTo: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
+        groupLabel: "unread alert",
+        weight: dashboardNoticeSummary.counts.unread,
+        countInPulse: dashboardNoticeSummary.counts.actNow === 0,
+        sortBoost: 6,
+      });
+    }
+
+    if (combinedFocusBehindCount > 0) {
+      signals.push({
+        id: "commitment:behind",
+        source: "commitment",
+        scope: "personal",
+        kind: "action",
+        urgency: "red",
+        summary: "Commitment pressure",
+        detail: "A promise or ROSCA-linked responsibility has slipped.",
+        actionLabel: "Open commitments",
+        actionTo: `${DASHBOARD_TARGETS.DASHBOARD}#focus-commitments`,
+        groupLabel: "commitment behind",
+        weight: combinedFocusBehindCount,
+        sortBoost: 14,
+      });
+    } else if (combinedFocusWatchCount > 0) {
+      signals.push({
+        id: "commitment:watch",
+        source: "commitment",
+        scope: "personal",
+        kind: "action",
+        urgency: "yellow",
+        summary: "Commitment watch",
+        detail: focusSummary.nextReviewLabel || "A promise needs review before it becomes pressure.",
+        actionLabel: "Review commitments",
+        actionTo: `${DASHBOARD_TARGETS.DASHBOARD}#focus-commitments`,
+        groupLabel: "commitment due soon",
+        weight: combinedFocusWatchCount,
+        sortBoost: 12,
+      });
+    }
+
+    if (activeMarketWisdomSignal) {
+      signals.push({
+        id: `market-wisdom:${activeMarketWisdomSignal.key}`,
+        source: "market_wisdom",
+        scope: "personal",
+        kind: "opportunity",
+        urgency: dashboardNoticeSummary.counts.actNow > 0 || combinedFocusBehindCount > 0 ? "yellow" : "green",
+        summary: activeMarketWisdomSignal.label || "Market Wisdom",
+        detail: marketWisdomNowLine,
+        actionLabel: "Open Market Wisdom",
+        actionTo: DASHBOARD_TARGETS.DASHBOARD,
+        groupLabel: "market reading",
+        countInPulse: dashboardNoticeSummary.counts.actNow === 0 && combinedFocusBehindCount === 0,
+      });
+    }
+
+    return buildAttentionSpineSummary(signals, {
+      quietHeadline: "My pulse steady",
+      quietDetail: "No urgent personal follow-up.",
+    });
+  }, [
+    activeMarketWisdomSignal,
+    combinedFocusBehindCount,
+    combinedFocusWatchCount,
+    dashboardNoticeSummary.counts.actNow,
+    dashboardNoticeSummary.counts.dueSoon,
+    dashboardNoticeSummary.counts.unread,
+    focusSummary.nextReviewLabel,
+    marketWisdomNowLine,
+  ]);
+
+  const dashboardPulsePrimarySignal = dashboardPulseSummary.nextSignal;
+  const dashboardPulsePrimaryTo =
+    dashboardPulsePrimarySignal?.actionTo || dashboardNoticePrimaryActionTo;
+  const dashboardPulsePrimaryLabel =
+    dashboardPulsePrimarySignal?.actionLabel || dashboardNoticePrimaryActionLabel;
+  const dashboardPulseSecondaryTo =
+    dashboardPulsePrimaryTo !== DASHBOARD_TARGETS.WHAT_MATTERS_NOW && dashboardNoticeTotalCount > 0
+      ? DASHBOARD_TARGETS.WHAT_MATTERS_NOW
+      : dashboardPulsePrimaryTo !== `${DASHBOARD_TARGETS.DASHBOARD}#focus-commitments` &&
+        (combinedFocusBehindCount > 0 || combinedFocusWatchCount > 0)
+      ? `${DASHBOARD_TARGETS.DASHBOARD}#focus-commitments`
+      : "";
+  const dashboardPulseSecondaryLabel =
+    dashboardPulseSecondaryTo === DASHBOARD_TARGETS.WHAT_MATTERS_NOW
+      ? "Action Inbox"
+      : dashboardPulseSecondaryTo
+      ? "Commitments"
+      : "";
   const userOperationalClass = useMemo(
     () =>
       getUserOperationalClass({
@@ -9807,7 +9968,7 @@ export default function DashboardPage() {
                         activeSpotlight.author_name ||
                         "Your community seller"
                     )}{" "}
-                    â€¢{" "}
+                    •{" "}
                     {safeStr(
                       activeSpotlight.source_clan_name ||
                         currentCommunityName(currentClan, selectedClanId)
@@ -10897,7 +11058,7 @@ export default function DashboardPage() {
                       background: "rgba(239,246,255,0.92)",
                     }}
                   >
-                    <span aria-hidden="true">â€¢</span>
+                    <span aria-hidden="true">•</span>
                     {currentDemandIsUrgent ? "Urgent" : "Open"}
                   </span>
                   {safeDateTime(currentDemandItem.created_at) ? (
@@ -11137,7 +11298,7 @@ export default function DashboardPage() {
                     <DashboardSignalIcon name="package" size={isPhone ? 18 : 20} />
                     Open your Demand Box
                     <span aria-hidden="true" style={{ marginLeft: "auto", color: "#D6AA45" }}>
-                      â€º
+                      ›
                     </span>
                   </StableButton>
 
@@ -11161,7 +11322,7 @@ export default function DashboardPage() {
                     <DashboardSignalIcon name="identity" size={isPhone ? 17 : 18} />
                     View full record
                     <span aria-hidden="true" style={{ marginLeft: "auto", color: "#66758A" }}>
-                      â€º
+                      ›
                     </span>
                   </StableButton>
                 </div>
@@ -11256,6 +11417,132 @@ export default function DashboardPage() {
         ) : null}
       </section>
 
+      <section
+        data-debug-id="dashboard.my-pulse"
+        style={{
+          ...pageCard("linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)"),
+          order: 38,
+          border: "1px solid rgba(15,59,116,0.12)",
+          padding: isPhone ? 13 : 18,
+          borderRadius: isPhone ? 22 : 26,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 10,
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <DashboardSectionLabel label="My Pulse" />
+            <div
+              style={{
+                marginTop: 5,
+                color: DASHBOARD_BRAND.ink,
+                fontSize: isPhone ? 15 : 16,
+                fontWeight: 950,
+                lineHeight: 1.25,
+              }}
+            >
+              {dashboardPulseSummary.headline}
+            </div>
+          </div>
+          <span style={badge(dashboardPulseSummary.workCount > 0)}>
+            {dashboardPulseSummary.workCount > 0 ? "Follow up" : "Steady"}
+          </span>
+        </div>
+
+        <div
+          style={{
+            marginTop: 10,
+            display: "grid",
+            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+            gap: isPhone ? 6 : 8,
+          }}
+        >
+          {(["red", "yellow", "green"] as AttentionSpineUrgency[]).map((tone) => (
+            <div key={tone} style={dashboardPulseChipStyle(tone)}>
+              <span style={{ fontSize: isPhone ? 17 : 18, fontWeight: 950, lineHeight: 1 }}>
+                {dashboardPulseSummary.counts[tone]}
+              </span>
+              <span
+                style={{
+                  fontSize: 10.5,
+                  fontWeight: 900,
+                  lineHeight: 1.05,
+                  textTransform: "uppercase",
+                }}
+              >
+                {tone === "red" ? "Now" : tone === "yellow" ? "72h" : "Clear"}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div
+          style={{
+            marginTop: 10,
+            display: "grid",
+            gridTemplateColumns: dashboardPulseSecondaryTo
+              ? isPhone
+                ? "1fr"
+                : "minmax(0, 1fr) auto auto"
+              : isPhone
+              ? "1fr"
+              : "minmax(0, 1fr) auto",
+            gap: 8,
+            alignItems: "center",
+          }}
+        >
+          <div
+            style={{
+              color: DASHBOARD_BRAND.helper,
+              fontSize: isPhone ? 12.5 : 13,
+              fontWeight: 800,
+              lineHeight: 1.35,
+            }}
+          >
+            {dashboardPulseSummary.detail}
+          </div>
+          <StableButton
+            debugId="dashboard.my-pulse.primary"
+            type="button"
+            onClick={(event) => openDashboardRoute(event, dashboardPulsePrimaryTo)}
+            onPointerDown={consumeDashboardPointerEvent}
+            style={{
+              ...secondaryBtn(false),
+              minHeight: isPhone ? 38 : 42,
+              minWidth: isPhone ? 0 : 136,
+              width: isPhone ? "100%" : undefined,
+              padding: "8px 11px",
+              boxShadow: "none",
+            }}
+          >
+            {dashboardPulsePrimaryLabel}
+          </StableButton>
+          {dashboardPulseSecondaryTo ? (
+            <StableButton
+              debugId="dashboard.my-pulse.secondary"
+              type="button"
+              onClick={(event) => openDashboardRoute(event, dashboardPulseSecondaryTo)}
+              onPointerDown={consumeDashboardPointerEvent}
+              style={{
+                ...subtleBtn(false),
+                minHeight: isPhone ? 38 : 42,
+                minWidth: isPhone ? 0 : 118,
+                width: isPhone ? "100%" : undefined,
+                padding: "8px 11px",
+                boxShadow: "none",
+              }}
+            >
+              {dashboardPulseSecondaryLabel}
+            </StableButton>
+          ) : null}
+        </div>
+      </section>
       <section
         style={{
           ...pageCard(notificationSurfaceChrome.shellBg),
@@ -12838,4 +13125,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

@@ -39,6 +39,12 @@ import {
 } from "../lib/api";
 import { buildWhatsAppChatUrl } from "../lib/whatsappLinks";
 import {
+  attentionUrgencyFromDate,
+  buildAttentionSpineSummary,
+  type AttentionSpineSignal,
+  type AttentionSpineUrgency,
+} from "../lib/attentionSpine";
+import {
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
   SPOTLIGHT_PILOT_REFRESH_MS,
   SPOTLIGHT_PILOT_ROTATION_MS,
@@ -1578,30 +1584,14 @@ const COMMUNITY_BULLETIN_NOTICE_URGENCY_STYLES = {
   },
 } as const;
 
-type CommunityBulletinNoticeUrgencyTone =
-  keyof typeof COMMUNITY_BULLETIN_NOTICE_URGENCY_STYLES;
-
-function localDayStartMs(value: Date): number {
-  const date = new Date(value);
-  date.setHours(0, 0, 0, 0);
-  return date.getTime();
-}
+type CommunityBulletinNoticeUrgencyTone = AttentionSpineUrgency;
 
 function communityBulletinNoticeUrgency(
   item: CommunityNoticeItem | null | undefined,
   nowMs = Date.now()
 ): { tone: CommunityBulletinNoticeUrgencyTone; label: string } {
-  const date = noticeDisplayDate(item);
-  if (!date) return { tone: "green", label: "No set date" };
-
-  const diffDays = Math.ceil(
-    (localDayStartMs(date) - localDayStartMs(new Date(nowMs))) /
-      (24 * 60 * 60 * 1000)
-  );
-
-  if (diffDays <= 1) return { tone: "red", label: "Due now" };
-  if (diffDays <= 3) return { tone: "yellow", label: "Due within 72 hours" };
-  return { tone: "green", label: "Still ahead" };
+  const urgency = attentionUrgencyFromDate(noticeDisplayDate(item), nowMs);
+  return { tone: urgency.urgency, label: urgency.label };
 }
 
 function communityBulletinNoticeUrgencyButtonStyle(
@@ -2301,11 +2291,7 @@ export default function CommunityHomePage() {
   );
   const communityNoticeLogItems = activeCommunityNotices.slice(1, 4);
   const communityBulletinPulse = useMemo(() => {
-    const counts: Record<CommunityBulletinNoticeUrgencyTone, number> = {
-      green: 0,
-      yellow: 0,
-      red: 0,
-    };
+    const signals: AttentionSpineSignal[] = [];
     let firstRedIndex = -1;
     let firstYellowIndex = -1;
     let responseNeededCount = 0;
@@ -2313,12 +2299,49 @@ export default function CommunityHomePage() {
 
     activeCommunityNotices.forEach((item, index) => {
       const urgency = communityBulletinNoticeUrgency(item, noticeExpiryNowMs);
-      counts[urgency.tone] += 1;
+      const noticeKey = firstTruthy(item?.notice_id, item?.event_id, item?.meeting_id, index);
+      const title = wordLimit(
+        firstTruthy(item?.title, item?.body, item?.purpose, "Community announcement"),
+        12
+      );
+      const source = isMeetingNotice(item) ? "meeting" : "bulletin";
+
       if (urgency.tone === "red" && firstRedIndex === -1) firstRedIndex = index;
       if (urgency.tone === "yellow" && firstYellowIndex === -1) firstYellowIndex = index;
+
+      signals.push({
+        id: `${source}:${noticeKey}:date`,
+        source,
+        scope: "community",
+        kind: "condition",
+        urgency: urgency.tone,
+        summary: title,
+        detail: urgency.label,
+        actionLabel: "Open notice",
+        actionTo: APP_ROUTES.COMMUNITY,
+        meta: { noticeIndex: index },
+        sortBoost: activeCommunityNotices.length - index,
+      });
+
       if (noticeSupportsAvailability(item) && !meetingOwnInterest(item)) {
         responseNeededCount += 1;
+        signals.push({
+          id: `${source}:${noticeKey}:response`,
+          source,
+          scope: "community",
+          kind: "action",
+          urgency: urgency.tone === "green" ? "yellow" : urgency.tone,
+          summary: "Response needed",
+          detail: `${title} still needs a response.`,
+          actionLabel: "Open notice",
+          actionTo: APP_ROUTES.COMMUNITY,
+          groupLabel: "response needed",
+          countInPulse: false,
+          meta: { noticeIndex: index },
+          sortBoost: 8,
+        });
       }
+
       if (
         !isMeetingNotice(item) &&
         item?.acknowledgement_enabled !== false &&
@@ -2326,19 +2349,42 @@ export default function CommunityHomePage() {
         !noticeOwnAcknowledged(item)
       ) {
         acknowledgementNeededCount += 1;
+        signals.push({
+          id: `${source}:${noticeKey}:acknowledgement`,
+          source,
+          scope: "community",
+          kind: "action",
+          urgency: urgency.tone === "green" ? "yellow" : urgency.tone,
+          summary: "Acknowledgement needed",
+          detail: `${title} still needs acknowledgement.`,
+          actionLabel: "Open notice",
+          actionTo: APP_ROUTES.COMMUNITY,
+          groupLabel: "acknowledgement needed",
+          countInPulse: false,
+          meta: { noticeIndex: index },
+          sortBoost: 7,
+        });
       }
     });
 
-    const recommendedIndex = firstRedIndex >= 0 ? firstRedIndex : firstYellowIndex;
-    const attentionCount = counts.red + counts.yellow;
-    const workCount = responseNeededCount + acknowledgementNeededCount + pendingCommunityNoticeReviewCount;
-    const headline = counts.red > 0
-      ? `${counts.red} urgent`
-      : counts.yellow > 0
-      ? `${counts.yellow} due soon`
-      : activeCommunityNotices.length > 0
-      ? "Bulletin steady"
-      : "No live items";
+    if (pendingCommunityNoticeReviewCount > 0) {
+      signals.push({
+        id: "action-inbox:community-notice-review",
+        source: "action_inbox",
+        scope: "admin",
+        kind: "action",
+        urgency: "red",
+        summary: "Admin review waiting",
+        detail: "Member-submitted bulletin records are waiting for officer review.",
+        actionLabel: "Open Action Inbox",
+        actionTo: APP_ROUTES.NOTIFICATIONS,
+        groupLabel: "admin review",
+        weight: pendingCommunityNoticeReviewCount,
+        countInPulse: false,
+        sortBoost: 12,
+      });
+    }
+
     const detailParts = [
       responseNeededCount > 0
         ? `${responseNeededCount} response${responseNeededCount === 1 ? "" : "s"} needed`
@@ -2350,17 +2396,17 @@ export default function CommunityHomePage() {
         ? `${pendingCommunityNoticeReviewCount} admin review${pendingCommunityNoticeReviewCount === 1 ? "" : "s"}`
         : "",
     ].filter(Boolean);
+    const summary = buildAttentionSpineSummary(signals, {
+      detailOverride: detailParts.length > 0 ? detailParts.join(" - ") : undefined,
+      quietHeadline: activeCommunityNotices.length > 0 ? "Bulletin steady" : "No live items",
+      quietDetail: "No urgent bulletin follow-up.",
+    });
+    const fallbackIndex = firstRedIndex >= 0 ? firstRedIndex : firstYellowIndex;
+    const nextIndex = Number(summary.nextSignal?.meta?.noticeIndex ?? fallbackIndex);
 
     return {
-      counts,
-      headline,
-      detail: detailParts.length > 0
-        ? detailParts.join(" - ")
-        : attentionCount > 0
-        ? "Open the highlighted notice first."
-        : "No urgent bulletin follow-up.",
-      nextIndex: recommendedIndex,
-      workCount,
+      ...summary,
+      nextIndex: Number.isFinite(nextIndex) ? nextIndex : -1,
     };
   }, [activeCommunityNotices, noticeExpiryNowMs, pendingCommunityNoticeReviewCount]);
   const communityPreviousAnnouncementItems = communityPreviousAnnouncements.slice(0, 10);
@@ -3746,12 +3792,15 @@ export default function CommunityHomePage() {
   function renderCommunityBulletinPulse() {
     if (activeCommunityNotices.length === 0) return null;
 
-    const canOpenRecommendedNotice = communityBulletinPulse.nextIndex >= 0;
-    const openLabel = communityBulletinPulse.counts.red > 0
+    const nextPulseSignal = communityBulletinPulse.nextSignal;
+    const nextPulseNoticeIndex = Number(nextPulseSignal?.meta?.noticeIndex ?? communityBulletinPulse.nextIndex);
+    const canOpenRecommendedNotice = Boolean(nextPulseSignal?.actionTo) || nextPulseNoticeIndex >= 0;
+    const canOpenActionInbox = pendingCommunityNoticeReviewCount > 0 && nextPulseSignal?.actionTo !== APP_ROUTES.NOTIFICATIONS;
+    const openLabel = nextPulseSignal?.actionLabel || (communityBulletinPulse.counts.red > 0
       ? "Open urgent"
       : communityBulletinPulse.counts.yellow > 0
       ? "Open due soon"
-      : "Open notice";
+      : "Open notice");
 
     return (
       <div
@@ -3805,7 +3854,7 @@ export default function CommunityHomePage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: canOpenRecommendedNotice ? "minmax(0, 1fr) auto" : "minmax(0, 1fr)",
+            gridTemplateColumns: canOpenRecommendedNotice ? (canOpenActionInbox ? "minmax(0, 1fr) auto auto" : "minmax(0, 1fr) auto") : "minmax(0, 1fr)",
             gap: 8,
             alignItems: "center",
           }}
@@ -3826,9 +3875,15 @@ export default function CommunityHomePage() {
               debugId="community-home.bulletin.pulse-open"
               onClick={(event) => {
                 consumeCommunityButtonEvent(event);
-                setSelectedCommunityNoticeIndex(communityBulletinPulse.nextIndex);
-                setNoticeReactionPanelOpenId("");
-                setNoticeDetailOpenId("");
+                if (nextPulseNoticeIndex >= 0) {
+                  setSelectedCommunityNoticeIndex(nextPulseNoticeIndex);
+                  setNoticeReactionPanelOpenId("");
+                  setNoticeDetailOpenId("");
+                  return;
+                }
+                if (nextPulseSignal?.actionTo) {
+                  navigateWithOrigin(navigate, nextPulseSignal.actionTo, location);
+                }
               }}
               style={{
                 ...communityActionStyle("soft"),
@@ -3841,6 +3896,27 @@ export default function CommunityHomePage() {
               }}
             >
               {openLabel}
+            </StableButton>
+          ) : null}
+          {canOpenActionInbox ? (
+            <StableButton
+              type="button"
+              debugId="community-home.bulletin.pulse-inbox"
+              onClick={(event) => {
+                consumeCommunityButtonEvent(event);
+                navigateWithOrigin(navigate, APP_ROUTES.NOTIFICATIONS, location);
+              }}
+              style={{
+                ...communityActionStyle("soft"),
+                minHeight: isCompact ? 36 : 42,
+                minWidth: isCompact ? 98 : 126,
+                padding: isCompact ? "7px 9px" : "8px 10px",
+                borderRadius: 13,
+                fontSize: isCompact ? 12 : 12.5,
+                boxShadow: "none",
+              }}
+            >
+              Action Inbox
             </StableButton>
           ) : null}
         </div>
