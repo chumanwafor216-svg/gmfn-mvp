@@ -251,11 +251,22 @@ type FocusCommitmentCategory =
   | "inventory"
   | "service"
   | "repayment"
-  | "community";
+  | "community"
+  | "volunteer"
+  | "payment"
+  | "delivery"
+  | "followup"
+  | "project"
+  | "attendance";
 
 type FocusCommitmentCadence = "weekly" | "monthly";
 
 type FocusCommitmentStatus = "onTrack" | "watch" | "behind" | "completed";
+
+type FocusCommitmentPrivacyLevel =
+  | "private"
+  | "community-admin"
+  | "evidence-ready";
 
 type FocusCommitment = {
   id: string;
@@ -269,6 +280,9 @@ type FocusCommitment = {
   cadence: FocusCommitmentCadence;
   nextCheckInDate: string;
   note?: string;
+  responsibleParty?: string;
+  externalLink?: string;
+  privacyLevel?: FocusCommitmentPrivacyLevel;
   createdAt: string;
   updatedAt: string;
   completedAt?: string | null;
@@ -300,6 +314,9 @@ type FocusCommitmentDraft = {
   dueDate: string;
   cadence: FocusCommitmentCadence;
   note: string;
+  responsibleParty: string;
+  externalLink: string;
+  privacyLevel: FocusCommitmentPrivacyLevel;
 };
 
 type FocusCommitmentSummary = {
@@ -1678,6 +1695,9 @@ function defaultFocusCommitmentDraft(): FocusCommitmentDraft {
     dueDate: dateInputValueFromNow(30),
     cadence: "weekly",
     note: "",
+    responsibleParty: "",
+    externalLink: "",
+    privacyLevel: "private",
   };
 }
 
@@ -1688,7 +1708,36 @@ function focusCategoryLabel(category: FocusCommitmentCategory): string {
   if (category === "inventory") return "Inventory";
   if (category === "service") return "Service";
   if (category === "repayment") return "Repayment";
+  if (category === "volunteer") return "Volunteer";
+  if (category === "payment") return "Payment";
+  if (category === "delivery") return "Delivery";
+  if (category === "followup") return "Follow-up";
+  if (category === "project") return "Project";
+  if (category === "attendance") return "Attendance";
   return "Community";
+}
+
+function focusPrivacyLabel(level: FocusCommitmentPrivacyLevel | undefined): string {
+  if (level === "community-admin") return "Admin-visible";
+  if (level === "evidence-ready") return "Evidence-ready";
+  return "Private";
+}
+
+function normalizeFocusExternalLink(value: unknown): string {
+  const raw = safeStr(value);
+  if (!raw) return "";
+  if (raw.startsWith("/")) return raw;
+  if (/^(https?:|mailto:|tel:|sms:|whatsapp:)/i.test(raw)) return raw;
+  if (/^(www\.|wa\.me\/|chat\.whatsapp\.com\/)/i.test(raw)) {
+    return `https://${raw}`;
+  }
+  return raw;
+}
+
+function isOpenableFocusExternalLink(value: unknown): boolean {
+  const target = normalizeFocusExternalLink(value);
+  return Boolean(target) &&
+    (/^\//.test(target) || /^(https?:|mailto:|tel:|sms:|whatsapp:)/i.test(target));
 }
 
 function routeSurfaceLabel(route: IntelligentRoute): string {
@@ -5641,6 +5690,24 @@ export default function DashboardPage() {
     navigateWithOrigin(navigate, to, location);
   }
 
+  function openFocusExternalLink(
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    item: FocusCommitment
+  ) {
+    consumeDashboardButtonEvent(event);
+    if (Date.now() < dashboardTapLockUntilRef.current) return;
+
+    const target = normalizeFocusExternalLink(item.externalLink);
+    if (!isOpenableFocusExternalLink(target)) return;
+
+    if (target.startsWith("/")) {
+      navigateWithOrigin(navigate, target, location);
+      return;
+    }
+
+    window.open(target, "_blank", "noopener,noreferrer");
+  }
+
   function runDashboardUiMutation(
     event: React.SyntheticEvent<HTMLElement> | undefined,
     action: () => void,
@@ -5908,6 +5975,7 @@ export default function DashboardPage() {
   function prefillFocusDraft(kind: "savings" | "business" | "repayment") {
     if (kind === "savings") {
       setFocusDraft({
+        ...defaultFocusCommitmentDraft(),
         title: "Savings target",
         category: "savings",
         targetValue: "",
@@ -5918,6 +5986,7 @@ export default function DashboardPage() {
       });
     } else if (kind === "repayment") {
       setFocusDraft({
+        ...defaultFocusCommitmentDraft(),
         title: "Repayment target",
         category: "repayment",
         targetValue: "",
@@ -5928,6 +5997,7 @@ export default function DashboardPage() {
       });
     } else {
       setFocusDraft({
+        ...defaultFocusCommitmentDraft(),
         title: "Business target",
         category: "business",
         targetValue: "",
@@ -6004,6 +6074,9 @@ export default function DashboardPage() {
         nextCheckInForCadence(cadence, new Date())
       ),
       note: safeStr(focusDraft.note),
+      responsibleParty: safeStr(focusDraft.responsibleParty),
+      externalLink: normalizeFocusExternalLink(focusDraft.externalLink),
+      privacyLevel: focusDraft.privacyLevel,
       createdAt: now,
       updatedAt: now,
       completedAt: null,
@@ -12063,6 +12136,12 @@ export default function DashboardPage() {
                     <option value="service">Service</option>
                     <option value="repayment">Repayment</option>
                     <option value="community">Community</option>
+                    <option value="volunteer">Volunteer</option>
+                    <option value="payment">Payment</option>
+                    <option value="delivery">Delivery</option>
+                    <option value="followup">Follow-up</option>
+                    <option value="project">Project</option>
+                    <option value="attendance">Attendance</option>
                   </select>
 
                   <input
@@ -12136,8 +12215,59 @@ export default function DashboardPage() {
                         note: event.target.value,
                       }))
                     }
-                    placeholder="Why this commitment matters"
+                    placeholder="What was promised and why it matters"
                     style={fieldTextareaStyle()}
+                  />
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 10,
+                    display: "grid",
+                    gridTemplateColumns: isCompact
+                      ? "1fr"
+                      : "minmax(0, 1fr) 180px minmax(0, 1fr)",
+                    gap: 10,
+                  }}
+                >
+                  <input
+                    value={focusDraft.responsibleParty}
+                    onChange={(event) =>
+                      setFocusDraft((prev) => ({
+                        ...prev,
+                        responsibleParty: event.target.value,
+                      }))
+                    }
+                    placeholder="Who promised"
+                    style={fieldInputStyle()}
+                  />
+
+                  <select
+                    value={focusDraft.privacyLevel}
+                    onChange={(event) =>
+                      setFocusDraft((prev) => ({
+                        ...prev,
+                        privacyLevel: event.target
+                          .value as FocusCommitmentPrivacyLevel,
+                      }))
+                    }
+                    style={fieldInputStyle()}
+                  >
+                    <option value="private">Private</option>
+                    <option value="community-admin">Admin-visible</option>
+                    <option value="evidence-ready">Evidence-ready</option>
+                  </select>
+
+                  <input
+                    value={focusDraft.externalLink}
+                    onChange={(event) =>
+                      setFocusDraft((prev) => ({
+                        ...prev,
+                        externalLink: event.target.value,
+                      }))
+                    }
+                    placeholder="WhatsApp, sheet, or tool link"
+                    style={fieldInputStyle()}
                   />
                 </div>
 
@@ -12275,6 +12405,17 @@ export default function DashboardPage() {
                             <span style={badge(false)}>
                               {item.cadence === "weekly" ? "Weekly" : "Monthly"} review
                             </span>
+                            {safeStr(item.responsibleParty) ? (
+                              <span style={badge(false)}>
+                                Who: {safeStr(item.responsibleParty)}
+                              </span>
+                            ) : null}
+                            <span style={badge(false)}>
+                              {focusPrivacyLabel(item.privacyLevel)}
+                            </span>
+                            {isOpenableFocusExternalLink(item.externalLink) ? (
+                              <span style={badge(false)}>Linked tool</span>
+                            ) : null}
                           </div>
                         </div>
 
@@ -12378,7 +12519,7 @@ export default function DashboardPage() {
                           display: "grid",
                           gridTemplateColumns: isCompact
                             ? "repeat(2, minmax(0, 1fr))"
-                            : "minmax(0, 180px) repeat(3, auto)",
+                            : "minmax(0, 180px) repeat(4, auto)",
                           gap: 8,
                           alignItems: "center",
                         }}
@@ -12442,6 +12583,18 @@ export default function DashboardPage() {
                         >
                           Complete
                         </StableButton>
+
+                        {isOpenableFocusExternalLink(item.externalLink) ? (
+                          <StableButton
+                            debugId={`dashboard.focus.open-linked-tool.${item.id}`}
+                            type="button"
+                            onClick={(event) => openFocusExternalLink(event, item)}
+                            onPointerDown={consumeDashboardPointerEvent}
+                            style={focusCommitmentButton()}
+                          >
+                            Open linked tool
+                          </StableButton>
+                        ) : null}
                       </div>
                     </div>
                   );

@@ -1,3 +1,51 @@
+## 2026-09-10 - Daily secretary cadence and sector rotation added
+
+- Status: Docs/calendar operating update; no product code, backend route, frontend route, schema, payment, email-send, commit, push, or deploy change.
+- Owner trigger: Founder asked for morning/evening flow so he can simply follow up each day, report what happened, see what remains, understand blockers, and pursue additional contacts across faith communities, immigrant organisations, schools, real marketplaces, and Nigeria/Africa routes.
+- Google Calendar reminders created on the primary calendar: `GSN Morning Command Sheet` daily 08:00-08:20 from 2026-09-11 to 2026-12-09 (`dp1vk8dl3a8h9c28helksljacc`), and `GSN Evening Evidence Review` daily 20:00-20:20 from 2026-09-11 to 2026-12-09 (`r2oaqnh8pplmo840508ujfn0vc`). Both are private transparent events with email and popup reminders 10 minutes before.
+- Added `docs/GSN_DAILY_SECRETARY_FLOW_2026-09-10.md` with the morning command flow, evening evidence-review flow, daily priority order, weekly sector rhythm, and target sectors: faith communities, immigrant/diaspora organisations, schools/education communities, real marketplaces/trading communities, and Nigeria/African scale route.
+- Updated `docs/GSN_SECRETARY_OPERATIONS_REGISTER_2026-09-10.md` with the reminder event IDs and trigger phrases: `morning GSN secretary check-in` and `evening GSN evidence review`.
+- README continuity links now include the daily secretary flow.
+- Truth boundary: Codex cannot initiate unsolicited chats. Calendar reminders can prompt the founder to open Codex; once opened, Codex should run the relevant daily flow and update the register from the founder's reports.
+## 2026-09-10 - Secretary operations register opened
+
+- Status: Docs-only operations register update; no product code, backend route, frontend route, schema, payment, email-send, commit, push, or deploy change.
+- Owner trigger: Founder explicitly authorised Codex to act as secretary for GSN Ltd support readiness, customer discovery, grant/support preparation, Innovator Founder evidence preparation, and day-by-day organisation inside this repo.
+- Added `docs/GSN_SECRETARY_OPERATIONS_REGISTER_2026-09-10.md` as the active register for people, organisations, dates, current status, next actions, support/grant relevance, and Innovator Founder evidence needs.
+- The register includes confirmed support routes: Business Gateway/Steliana Radu, Scottish Enterprise, RGU Innovation/Startup Accelerator, Business Gateway Research Service, and RGU contacts route where later confirmation is still needed.
+- The register includes customer discovery/pilot routes: Aberdeen Dads, pastor/church lead, Mamacita Foundation, Pillar of Hope, ICA Aberdeen, Ndi Abia, Ndi Anambra, Ndi Imo, Ndi Enugu, Aberdeen DAS, and the unnamed Aberdeen umbrella organisation.
+- Mailbox fact added: a 2026-09-07 pastor/church customer-discovery summary captured a concrete workflow around WhatsApp notice engagement, event registration, Sunday QR attendance, missed-member follow-up, Welcome/Follow-up Team ownership, and privacy boundaries. This is strong workflow evidence but still needs correction/confirmation from the pastor and is not adoption.
+- Source-of-truth rule: use `GSN_SECRETARY_OPERATIONS_REGISTER_2026-09-10.md` for operational status; use `GSN_SUPPORT_AND_DISCOVERY_COMMAND_TRACKER_2026-09-10.md` for timetable/support plan; use `GSN_SUPPORT_FOLLOW_UP_EMAIL_DRAFTS_2026-09-10.md` for wording; use `GSN_ONE_PAGE_SUPPORT_BRIEF_2026-09-10.md` and `GSN_90_DAY_PILOT_BUDGET_DRAFT_2026-09-10.md` as the proof-pack materials.
+- Devil truth: the secretary register makes the work organised, but it does not solve the evidence gap by itself. The next evidence must come from actual replies, corrected summaries, pilot intent, usage and payment/sponsor signals. Also, visa-sensitive activities require qualified immigration/university advice.
+## 2026-09-10 - Immediate support-readiness proof pack added
+
+- Status: Docs-only proof-pack update; no product code, backend route, frontend route, schema, payment, email-send, commit, push, or deploy change.
+- Owner trigger: Founder asked what can be done today, right now, to move GSN further ahead.
+- Added `docs/GSN_ONE_PAGE_SUPPORT_BRIEF_2026-09-10.md` as the concise brief for Business Gateway, RGU Innovation and Scottish Enterprise conversations. It states what GSN is, current stage, problem being tested, pilot shape, support needed, and what GSN is not yet claiming.
+- Added `docs/GSN_90_DAY_PILOT_BUDGET_DRAFT_2026-09-10.md` with lean and serious pilot budget ranges, support-in-kind targets, first paid-pilot pricing options to test, and approval gates before spending.
+- Added `docs/GSN_TODAY_ACTION_SHEET_2026-09-10.md` as the right-now operating checklist: confirm RGU session registration, prepare tomorrow's Mamacita/Aberdeen Dads/Pillar of Hope follow-ups, build the private contact table, prepare the payment/sponsor question, and avoid sending more broad Scottish Enterprise/Business Gateway emails today.
+- README continuity links now include the action sheet, one-page support brief, and 90-day budget draft.
+- Devil truth: today's progress is useful because it creates a proof package, not because it proves demand. The next external proof still requires actual replies, logged discovery, written pilot intent, and paid/sponsor signals.
+## 2026-09-10 - Support and discovery command tracker added
+
+- Status: Docs-only operating tracker update; no product code, backend route, frontend route, schema, payment, email-send, commit, push, or deploy change.
+- Owner trigger: Founder asked Codex to stay on the trail of Business Gateway, RGU, Scottish Enterprise, customer-discovery workshop contacts, Mamacita Foundation, Aberdeen Dads, Pillar of Hope, churches/pastors, and Nigerian association leads, and to tell him what is practically required this week.
+- New tracker: `docs/GSN_SUPPORT_AND_DISCOVERY_COMMAND_TRACKER_2026-09-10.md` now acts as the single command sheet for support-body follow-up, customer-discovery lead status, paid/sponsor questions, manpower gaps, 2026-09-10 to 2026-09-17 timetable, 90-day milestones, and visa/endorsement evidence discipline.
+- New draft bank: `docs/GSN_SUPPORT_FOLLOW_UP_EMAIL_DRAFTS_2026-09-10.md` contains do-not-send-before follow-up drafts for Scottish Enterprise, Business Gateway/Steliana, RGU Innovation, Mamacita Foundation, Aberdeen Dads, and Pillar of Hope.
+- Mailbox facts checked: Business Gateway contact is Steliana Radu; on 2026-08-11 she confirmed adviser support and asked for business plan, market research, BMC/cash-flow work and offered review. Follow-ups were sent on 2026-09-06 and 2026-09-10. Scottish Enterprise enquiry was sent on 2026-09-10 and acknowledged the same day with a 3-working-day response aim. RGU Innovation sent Startup Accelerator information-session dates on 2026-09-09.
+- Scottish Enterprise assessment: the sent enquiry is good enough to open the conversation, but too broad to be the final support ask. The next proof package needs a one-page support brief, 90-day pilot budget, customer evidence, and paid/sponsor willingness signals. Do not follow up before 2026-09-16 unless Scottish Enterprise replies first.
+- Practical next actions: register/confirm RGU information sessions by 2026-09-11; prepare one-page support brief and rough 90-day budget by 2026-09-11/2026-09-15; follow up Mamacita, Aberdeen Dads and Pillar of Hope; ask paid/sponsor questions only after the organisation confirms the problem is real.
+- Devil truth: the current support trail is promising but not yet commercial proof. Advice is not endorsement; warm interest is not payment; a discovery conversation is not a pilot; and visa-sensitive business activity needs qualified immigration/university advice before relying on money, trading activity, or role changes.
+
+## 2026-09-10 - Paid-pilot discovery and founder daily runbook protocol added
+
+- Status: Docs-only operating protocol update; no product code, backend route, frontend route, schema, auth, payment, or deploy change.
+- Owner trigger: Founder clarified that GSN customer discovery must now ask whether organisations will pay for community infrastructure after satisfaction, while also gathering evidence for Scottish Enterprise, Business Gateway, RGU Accelerator, team formation, and Innovator Founder readiness. Founder stated current postgraduate visa expiry is 2027-10-25, approximately 410 days from 2026-09-10.
+- New protocol: `docs/GSN_CUSTOMER_DISCOVERY_PAID_PILOT_AND_SUPPORT_READINESS_PROTOCOL_2026-09-10.md` makes payment, sponsor, budget-holder, written commitment, and support-readiness signals mandatory discovery outputs after listen-first current-reality discovery.
+- New runbook: `docs/GSN_FOUNDER_DAILY_OPERATING_RUNBOOK_2026-09-10.md` gives the founder a daily operating surface: people to contact, messages to check, discovery prep, support route, visa/endorsement evidence task, product/support-readiness task, and end-of-day proof.
+- Template changes: updated discovery interview log, evidence memo, customer discovery interview script, and endorsement evidence ledger so paid/sponsor signals and Scottish Enterprise/Business Gateway/RGU/Innovator Founder evidence tags are captured consistently.
+- Confirmed external dates from Gmail/web checks: Scottish Enterprise acknowledged enquiries on 2026-09-10 and aimed to respond within 3 working days; RGU Startup Accelerator 2027 applications open 2026-09-14 and close 2026-11-02; RGU info sessions are 2026-09-17, 2026-09-30, and 2026-10-15.
+- Devil truth: this creates preparation discipline only. It does not prove any organisation will pay, sponsor, commit to a pilot, or support an Innovator Founder endorsement. Next proof must come from 8-10 real discovery records, 3 written EOIs, 2 pilot commitments, and at least 1 paid or sponsor-backed pilot.
 ## 2026-09-10 - Community Bulletin live capacity set to 10
 
 - Status: Implemented and verified locally; not pushed/deployed in this slice.
@@ -160049,3 +160097,15 @@ Operational note:
 - Shared impact: this modal is reused from Community Home, Marketplace board posting, and Community Domain notice posting.
 - Verification passed: `npm exec eslint src/components/CommunityNoticeModal.tsx tools/audit-notice-board-phone-notifications.mjs`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `git diff --check -- frontend/src/components/CommunityNoticeModal.tsx frontend/tools/audit-notice-board-phone-notifications.mjs`.
 - Devil truth: this is source/build verified but not fresh phone-screenshot verified in-browser in this session. The next owner phone check should confirm the button footer is fully above the bottom nav on the smallest pilot phone.
+## 2026-09-10 - Local Dashboard Focus Commitments Promise-to-Proof Pass
+
+- Status: Local implementation complete and verified; not pushed/deployed in this slice.
+- Owner trigger: owner described a real WhatsApp-group problem where 200+ community members and 100+ party/help/payment/volunteer promises become impossible for a secretary to track when every change stays inside chat noise.
+- Product decision: do not build a full CRM inside GSN now. Focus Commitments stays a lightweight promise-to-proof layer that captures the commitment, who promised, review cadence, progress, privacy level, and a link back to the outside tool or conversation.
+- Frontend route affected: `/app/dashboard#focus-commitments` in `frontend/src/pages/DashboardPage.tsx`.
+- UI change: Focus Commitment categories now include volunteer, payment, delivery, follow-up, project, and attendance alongside the existing savings/business/service/repayment categories. The composer now asks `Who promised`, privacy level, and an optional `WhatsApp, sheet, or tool link`.
+- Linked-tool behavior: active commitments show owner/privacy/link chips and expose `Open linked tool` only when the stored link is openable. Plain WhatsApp short links such as `wa.me/...` and `chat.whatsapp.com/...` are normalised to `https://...`; internal `/...` links route inside the app.
+- Guardrail change: `frontend/tools/audit-dashboard-button-inventory.mjs` now cages the 49 StableButton / 12 native field baseline plus the promise categories, owner/privacy/link fields, and linked-tool action.
+- Product spec change: `docs/SCREEN_SPECS.md` now records the boundary that Focus Commitments is not a CRM, payment processor, loan ledger, WhatsApp scraper, or verified legal evidence system without a separate backend/governance review.
+- Verification passed: `npm --prefix frontend run audit:dashboard-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; `npm exec -- eslint src/pages/DashboardPage.tsx tools/audit-dashboard-button-inventory.mjs` from `frontend`; `git diff --check -- frontend/src/pages/DashboardPage.tsx frontend/tools/audit-dashboard-button-inventory.mjs docs/SCREEN_SPECS.md docs/HANDOFF_NOTES.md`.
+- Devil truth: this does not read WhatsApp automatically, enforce payment, verify that a promise was kept, or solve GDPR/ICO compliance by itself. It gives a community secretary a cleaner operational list and a bridge back to the original conversation/tool.

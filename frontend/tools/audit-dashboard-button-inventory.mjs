@@ -35,7 +35,7 @@ const frameToolsSource = readFileSync(join(frontendRoot, frameToolsFile), "utf8"
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const requireAuthSource = readFileSync(join(frontendRoot, requireAuthFile), "utf8");
 const findings = [];
-const expectedNativeFieldCount = 9;
+const expectedNativeFieldCount = 12;
 const expectedMobileShellBreakdown = {
   top: 2,
   drawer: 25,
@@ -169,10 +169,10 @@ while ((match = nativeFieldPattern.exec(dashboardSource))) {
 }
 
 const expected = {
-  StableButton: 48,
+  StableButton: 49,
   StableDisclosureSummary: 1,
   PictureFrameToolsControl: 2,
-  EffectiveDashboardActionRoots: 57,
+  EffectiveDashboardActionRoots: 58,
 };
 const expectedWholeMobileRouteActionRoots =
   expected.EffectiveDashboardActionRoots + expectedMobileShellActionCount;
@@ -240,6 +240,21 @@ assertContains(
 assertContains(
   /id="focus-commitments"[\s\S]*?Your Focus Commitments/,
   "Dashboard must keep the #focus-commitments landing section that the caged Focus Commitment action targets."
+);
+
+assertContains(
+  /<option value="volunteer">Volunteer<\/option>[\s\S]*?<option value="payment">Payment<\/option>[\s\S]*?<option value="delivery">Delivery<\/option>[\s\S]*?<option value="followup">Follow-up<\/option>/,
+  "Focus Commitments must keep the promise-to-proof community categories for volunteer, payment, delivery, and follow-up tracking."
+);
+
+assertContains(
+  /placeholder="Who promised"[\s\S]*?privacyLevel[\s\S]*?placeholder="WhatsApp, sheet, or tool link"/,
+  "Focus Commitments composer must keep promise owner, privacy, and outside-tool link fields."
+);
+
+assertContains(
+  /debugId=\{`dashboard\.focus\.open-linked-tool\.\$\{item\.id\}`\}[\s\S]*?openFocusExternalLink\(event, item\)[\s\S]*?Open linked tool/,
+  "Focus Commitments with an outside link must keep the caged linked-tool action."
 );
 
 const frontToInnerOrder = [
