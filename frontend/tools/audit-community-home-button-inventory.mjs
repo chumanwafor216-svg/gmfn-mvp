@@ -589,6 +589,14 @@ while ((match = rawActionPattern.exec(source))) {
 }
 
 assertContains(
+  /function communityBulletinNoticeUrgency[\s\S]*?if \(!date\) return \{ tone: "green", label: "No set date" \}[\s\S]*?if \(diffDays <= 1\) return \{ tone: "red", label: "Due now" \}[\s\S]*?if \(diffDays <= 3\) return \{ tone: "yellow", label: "Due within 72 hours" \}[\s\S]*?return \{ tone: "green", label: "Still ahead" \}/,
+  "Community Home Bulletin numbered selector must use green for no/far date, yellow inside 72 hours, and red for day-before/day-of/overdue notices."
+);
+assertContains(
+  /function renderCommunityBulletinNoticeSelector[\s\S]*?const urgency = communityBulletinNoticeUrgency\(item\)[\s\S]*?aria-label=\{`Show announcement \$\{label\}: \$\{title\}\. \$\{urgency\.label\}\.`\}[\s\S]*?communityBulletinNoticeUrgencyButtonStyle\(urgency\.tone, selected\)/,
+  "Community Home Bulletin notice numbers must visibly carry each announcement's urgency colour, including unselected announcements."
+);
+assertContains(
   /COMMUNITY_NOTICE_ACTIVE_LIMIT = 10[\s\S]*?listCommunityNotices\(communityNoticeListParams\(clanId\)\)[\s\S]*?function renderCommunityBulletinNoticeSelector[\s\S]*?Announcement \$\{selectedCommunityNoticeIndexSafe \+ 1\} of \$\{items\.length\}[\s\S]*?\{selectedCommunityNoticeIndexSafe \+ 1\}\/\{items\.length\}[\s\S]*?debugId=\{`community-home\.bulletin\.notice-select\.\$\{index \+ 1\}`\}[\s\S]*?setSelectedCommunityNoticeIndex\(index\)/,
   "Community Home Bulletin must fetch up to ten active notices and show a numbered active-announcement selector instead of hiding extra live items."
 );

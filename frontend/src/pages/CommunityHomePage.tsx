@@ -1557,6 +1557,68 @@ function noticeDisplayDate(item: CommunityNoticeItem | null | undefined): Date |
   return Number.isFinite(date.getTime()) ? date : null;
 }
 
+const COMMUNITY_BULLETIN_NOTICE_URGENCY_STYLES = {
+  green: {
+    background: "linear-gradient(180deg, #EAF8F0 0%, #CFEFDD 100%)",
+    border: "1px solid rgba(46,155,98,0.52)",
+    color: "#073B25",
+    shadow: "0 8px 14px rgba(46,155,98,0.16)",
+  },
+  yellow: {
+    background: "linear-gradient(180deg, #FFF7DA 0%, #F8DE8A 100%)",
+    border: "1px solid rgba(214,170,69,0.68)",
+    color: "#4B3500",
+    shadow: "0 8px 14px rgba(214,170,69,0.2)",
+  },
+  red: {
+    background: "linear-gradient(180deg, #FFE8E8 0%, #F3BBBB 100%)",
+    border: "1px solid rgba(200,58,58,0.62)",
+    color: "#651616",
+    shadow: "0 8px 14px rgba(200,58,58,0.2)",
+  },
+} as const;
+
+type CommunityBulletinNoticeUrgencyTone =
+  keyof typeof COMMUNITY_BULLETIN_NOTICE_URGENCY_STYLES;
+
+function localDayStartMs(value: Date): number {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date.getTime();
+}
+
+function communityBulletinNoticeUrgency(
+  item: CommunityNoticeItem | null | undefined,
+  nowMs = Date.now()
+): { tone: CommunityBulletinNoticeUrgencyTone; label: string } {
+  const date = noticeDisplayDate(item);
+  if (!date) return { tone: "green", label: "No set date" };
+
+  const diffDays = Math.ceil(
+    (localDayStartMs(date) - localDayStartMs(new Date(nowMs))) /
+      (24 * 60 * 60 * 1000)
+  );
+
+  if (diffDays <= 1) return { tone: "red", label: "Due now" };
+  if (diffDays <= 3) return { tone: "yellow", label: "Due within 72 hours" };
+  return { tone: "green", label: "Still ahead" };
+}
+
+function communityBulletinNoticeUrgencyButtonStyle(
+  tone: CommunityBulletinNoticeUrgencyTone,
+  selected: boolean
+): React.CSSProperties {
+  const toneStyle = COMMUNITY_BULLETIN_NOTICE_URGENCY_STYLES[tone];
+  return {
+    background: toneStyle.background,
+    border: toneStyle.border,
+    color: toneStyle.color,
+    boxShadow: selected ? toneStyle.shadow : "none",
+    outline: selected ? "2px solid rgba(7,23,44,0.28)" : "none",
+    outlineOffset: selected ? 2 : 0,
+  };
+}
+
 function noticeCalendarParts(item: CommunityNoticeItem | null | undefined) {
   const date = noticeDisplayDate(item);
   if (!date) {
@@ -3613,13 +3675,15 @@ export default function CommunityHomePage() {
               firstTruthy(item?.title, item?.body, item?.purpose, "Community announcement"),
               12
             );
+            const urgency = communityBulletinNoticeUrgency(item);
 
             return (
               <StableButton
                 key={`${item?.notice_id || item?.event_id || item?.meeting_id || index}-selector`}
                 type="button"
                 debugId={`community-home.bulletin.notice-select.${index + 1}`}
-                aria-label={`Show announcement ${label}: ${title}`}
+                aria-label={`Show announcement ${label}: ${title}. ${urgency.label}.`}
+                title={`${title} - ${urgency.label}`}
                 aria-current={selected ? "true" : undefined}
                 onClick={(event) => {
                   consumeCommunityButtonEvent(event);
@@ -3629,6 +3693,7 @@ export default function CommunityHomePage() {
                 }}
                 style={{
                   ...communityActionStyle(selected ? "primary" : "soft"),
+                  ...communityBulletinNoticeUrgencyButtonStyle(urgency.tone, selected),
                   minHeight: 30,
                   minWidth: 30,
                   width: 30,
@@ -3636,9 +3701,6 @@ export default function CommunityHomePage() {
                   padding: 0,
                   borderRadius: 999,
                   fontSize: 11.5,
-                  boxShadow: selected
-                    ? "0 8px 14px rgba(10,24,49,0.12)"
-                    : "none",
                 }}
               >
                 {label}
