@@ -265,6 +265,18 @@ assertContains(
   /focusSummary\.active\.map\(\(item\) => \{[\s\S]*?const dueIntel = getFocusCommitmentDueIntelligence\(item\)[\s\S]*?\{dueIntel\.label\}[\s\S]*?\{dueIntel\.detail\}/,
   "Focus Commitment cards must show the traffic-light due intelligence label and plain-language follow-up detail."
 );
+assertContains(
+  /const marketWisdomNowLine = useMemo[\s\S]*?focusSummary\.behindCount > 0[\s\S]*?A focus commitment has slipped[\s\S]*?focusSummary\.watchCount > 0[\s\S]*?A focus commitment is close/,
+  "Market Wisdom Now signal must read Focus Commitment pressure without creating another task screen."
+);
+assertContains(
+  /const marketWisdomAttentionState = useMemo[\s\S]*?focusSummary\.behindCount > 0[\s\S]*?label: "Commitment pressure"[\s\S]*?focusSummary\.watchCount > 0[\s\S]*?label: "Commitment watch"/,
+  "Market Wisdom attention state must surface slipped/watch commitments as a reading, not as a separate notification engine."
+);
+assertContains(
+  /const activeWisdomGuideCapability = useMemo[\s\S]*?focusSummary\.behindCount[\s\S]*?focusSummary\.watchCount[\s\S]*?const marketWisdomGuideLine = useMemo[\s\S]*?focusSummary\.behindCount[\s\S]*?focusSummary\.watchCount/,
+  "Market Wisdom guide seed must include Focus Commitment pressure so the guidance rotates with execution risk."
+);
 
 const frontToInnerOrder = [
   { label: "attention popup", pattern: /^dashboard\.attention-popup\./ },

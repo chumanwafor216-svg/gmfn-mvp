@@ -5092,6 +5092,8 @@ export default function DashboardPage() {
       demandItems.length,
       pendingRequests.length,
       dashboardNoticeSummary.counts.unread,
+      focusSummary.behindCount,
+      focusSummary.watchCount,
       openTrust.tone,
       cci.tone,
     ].join("|");
@@ -5108,6 +5110,8 @@ export default function DashboardPage() {
     cci.tone,
     dashboardNoticeSummary.counts.unread,
     demandItems.length,
+    focusSummary.behindCount,
+    focusSummary.watchCount,
     openTrust.tone,
     pendingRequests.length,
     urgentDemandItems.length,
@@ -5153,6 +5157,14 @@ export default function DashboardPage() {
       return "Support requests are waiting. Review and respond when ready.";
     }
 
+    if (focusSummary.behindCount > 0) {
+      return "A focus commitment has slipped. Replan or complete it before the next move.";
+    }
+
+    if (focusSummary.watchCount > 0) {
+      return "A focus commitment is close. Check the promise before it becomes pressure.";
+    }
+
     if (dashboardNoticeSummary.counts.unread > 0) {
       return "New signals are waiting. Open the screen that needs you next.";
     }
@@ -5189,6 +5201,8 @@ export default function DashboardPage() {
     cci.tone,
     dashboardNoticeSummary.counts.unread,
     demandItems.length,
+    focusSummary.behindCount,
+    focusSummary.watchCount,
     openTrust.tone,
     pendingRequests.length,
     urgentDemandItems.length,
@@ -5203,6 +5217,8 @@ export default function DashboardPage() {
       demandItems.length,
       pendingRequests.length,
       dashboardNoticeSummary.counts.unread,
+      focusSummary.behindCount,
+      focusSummary.watchCount,
       openTrust.tone,
       cci.tone,
     ].join("|");
@@ -5224,6 +5240,8 @@ export default function DashboardPage() {
     cci.tone,
     dashboardNoticeSummary.counts.unread,
     demandItems.length,
+    focusSummary.behindCount,
+    focusSummary.watchCount,
     openTrust.tone,
     pendingRequests.length,
     urgentDemandItems.length,
@@ -5256,6 +5274,28 @@ export default function DashboardPage() {
       return {
         label: "Support waiting",
         detail: "Pending community requests are shaping the current reading.",
+        accent: "#B45309",
+        border: "rgba(217,119,6,0.18)",
+        background:
+          "linear-gradient(180deg, rgba(254,243,199,0.90) 0%, rgba(255,255,255,0.96) 100%)",
+      };
+    }
+
+    if (focusSummary.behindCount > 0) {
+      return {
+        label: "Commitment pressure",
+        detail: "A slipped promise or checkpoint is shaping the current reading.",
+        accent: "#B91C1C",
+        border: "rgba(220,38,38,0.18)",
+        background:
+          "linear-gradient(180deg, rgba(254,226,226,0.88) 0%, rgba(255,255,255,0.96) 100%)",
+      };
+    }
+
+    if (focusSummary.watchCount > 0) {
+      return {
+        label: "Commitment watch",
+        detail: "A promise due for review is shaping the current reading.",
         accent: "#B45309",
         border: "rgba(217,119,6,0.18)",
         background:
@@ -5309,6 +5349,8 @@ export default function DashboardPage() {
     activeWisdomCategoryLabel,
     cci.tone,
     dashboardNoticeSummary.counts.unread,
+    focusSummary.behindCount,
+    focusSummary.watchCount,
     openTrust.tone,
     pendingRequests.length,
     urgentDemandItems.length,
