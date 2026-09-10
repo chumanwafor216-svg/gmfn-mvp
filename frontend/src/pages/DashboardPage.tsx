@@ -15,6 +15,7 @@ import {
   getMarketWisdomRecommendation,
   getMarketplaceBroadcasts,
   getMe,
+  getMyAttentionSpine,
   getMyNotifications,
   getMyRoscaObligations,
   getMyTrustSlip,
@@ -1059,6 +1060,62 @@ function stopDashboardPointerEvent(
 
 function safeStr(x: unknown): string {
   return String(x ?? "").trim();
+}
+
+function normalizeDashboardServerAttentionSignals(value: unknown): AttentionSpineSignal[] {
+  if (!Array.isArray(value)) return [];
+
+  const validUrgencies = new Set<AttentionSpineUrgency>(["red", "yellow", "green"]);
+  const validSources = new Set([
+    "action_inbox",
+    "bulletin",
+    "commitment",
+    "market_wisdom",
+    "meeting",
+  ]);
+  const validScopes = new Set(["admin", "community", "personal"]);
+  const validKinds = new Set(["action", "condition", "opportunity"]);
+
+  return value
+    .map((item): AttentionSpineSignal | null => {
+      if (!item || typeof item !== "object") return null;
+      const raw = item as Record<string, unknown>;
+      const urgency = safeStr(raw.urgency) as AttentionSpineUrgency;
+      const source = safeStr(raw.source);
+      const scope = safeStr(raw.scope);
+      const kind = safeStr(raw.kind);
+      const summary = safeStr(raw.summary);
+
+      if (
+        !summary ||
+        !validUrgencies.has(urgency) ||
+        !validSources.has(source) ||
+        !validScopes.has(scope) ||
+        !validKinds.has(kind)
+      ) {
+        return null;
+      }
+
+      const weight = Number(raw.weight);
+      const sortBoost = Number(raw.sortBoost);
+
+      return {
+        id: safeStr(raw.id) || `${source}:${summary}`,
+        source: source as AttentionSpineSignal["source"],
+        scope: scope as AttentionSpineSignal["scope"],
+        kind: kind as AttentionSpineSignal["kind"],
+        urgency,
+        summary,
+        detail: safeStr(raw.detail),
+        actionLabel: safeStr(raw.actionLabel),
+        actionTo: safeStr(raw.actionTo) || DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
+        groupLabel: safeStr(raw.groupLabel) || summary,
+        weight: Number.isFinite(weight) ? weight : 1,
+        sortBoost: Number.isFinite(sortBoost) ? sortBoost : 0,
+        countInPulse: raw.countInPulse === false ? false : true,
+      };
+    })
+    .filter((signal): signal is AttentionSpineSignal => Boolean(signal));
 }
 
 function readableTrustStatus(classText: unknown): string {
@@ -3345,6 +3402,9 @@ export default function DashboardPage() {
   const [pendingRequests, setPendingRequests] = useState<JoinRequestItem[]>([]);
   const [notices, setNotices] = useState<NoticeItem[]>([]);
   const [noticesLoading, setNoticesLoading] = useState<boolean>(false);
+  const [serverAttentionSignals, setServerAttentionSignals] = useState<
+    AttentionSpineSignal[]
+  >([]);
   const [noticeSourceOpenKey, setNoticeSourceOpenKey] = useState<string>("");
 
   const [demandItems, setDemandItems] = useState<DemandItem[]>([]);
@@ -3920,6 +3980,60 @@ export default function DashboardPage() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    let alive = true;
+    let refreshTimer: number | null = null;
+
+    async function refreshAttentionSpine() {
+      const res = await getMyAttentionSpine({
+        clan_id: selectedClanId || undefined,
+        limit: 24,
+      }).catch(() => null);
+
+      if (!alive) return;
+
+      setServerAttentionSignals(
+        normalizeDashboardServerAttentionSignals((res as any)?.signals)
+      );
+    }
+
+    void refreshAttentionSpine();
+
+    function handleVisibilityRefresh() {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+
+      void refreshAttentionSpine();
+    }
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("focus", handleVisibilityRefresh);
+      refreshTimer = window.setInterval(() => {
+        void refreshAttentionSpine();
+      }, 30000);
+    }
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityRefresh);
+    }
+
+    return () => {
+      alive = false;
+
+      if (typeof window !== "undefined") {
+        window.removeEventListener("focus", handleVisibilityRefresh);
+        if (refreshTimer !== null) {
+          window.clearInterval(refreshTimer);
+        }
+      }
+
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityRefresh);
+      }
+    };
+  }, [selectedClanId]);
 
   useEffect(() => {
     (async () => {
@@ -5478,9 +5592,12 @@ export default function DashboardPage() {
     focusSummary.behindCount + roscaFocusSummary.behindCount;
 
   const dashboardPulseSummary = useMemo(() => {
-    const signals: AttentionSpineSignal[] = [];
+    const signals: AttentionSpineSignal[] = [...serverAttentionSignals];
+    const hasServerActionInboxSignals = serverAttentionSignals.some(
+      (signal) => signal.source === "action_inbox"
+    );
 
-    if (dashboardNoticeSummary.counts.actNow > 0) {
+    if (!hasServerActionInboxSignals && dashboardNoticeSummary.counts.actNow > 0) {
       signals.push({
         id: "action-inbox:act-now",
         source: "action_inbox",
@@ -5497,7 +5614,7 @@ export default function DashboardPage() {
       });
     }
 
-    if (dashboardNoticeSummary.counts.dueSoon > 0) {
+    if (!hasServerActionInboxSignals && dashboardNoticeSummary.counts.dueSoon > 0) {
       signals.push({
         id: "action-inbox:due-soon",
         source: "action_inbox",
@@ -5514,7 +5631,7 @@ export default function DashboardPage() {
       });
     }
 
-    if (dashboardNoticeSummary.counts.unread > 0) {
+    if (!hasServerActionInboxSignals && dashboardNoticeSummary.counts.unread > 0) {
       signals.push({
         id: "action-inbox:unread",
         source: "action_inbox",
@@ -5593,6 +5710,7 @@ export default function DashboardPage() {
     dashboardNoticeSummary.counts.unread,
     focusSummary.nextReviewLabel,
     marketWisdomNowLine,
+    serverAttentionSignals,
   ]);
 
   const dashboardPulsePrimarySignal = dashboardPulseSummary.nextSignal;

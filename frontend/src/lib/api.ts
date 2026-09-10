@@ -5295,6 +5295,19 @@ export async function getMyUnreadNotificationCount(): Promise<any> {
   return httpJson("/notifications/me/unread-count", "GET");
 }
 
+export async function getMyAttentionSpine(params?: {
+  clan_id?: number | null;
+  limit?: number;
+}): Promise<any> {
+  return httpJson(
+    `/attention-spine/me${buildQuery({
+      clan_id: params?.clan_id || undefined,
+      limit: params?.limit || 30,
+    })}`,
+    "GET"
+  );
+}
+
 export async function getWebPushStatus(): Promise<any> {
   return httpJson("/web-push/status", "GET", undefined, { quiet: true });
 }

@@ -176,7 +176,7 @@ Rules:
 - Focus Commitments must not become a full CRM, payment processor, loan ledger, WhatsApp scraper, or verified legal evidence system without a separate backend/governance review.
 - Outside-tool links may point to WhatsApp, spreadsheets, or a CRM already used by the community. GSN remains the commitment organiser and trust reflection layer, not the owner of every external conversation.
 - Market Wisdom may use Focus Commitment pressure as a `Now` reading so the user sees execution risk before acting, but the actual commitment work must remain inside Focus Commitments and the Action Inbox; do not create a second task manager from Market Wisdom.
-- Dashboard may show a compact `My Pulse` strip that reads shared Attention Spine signals from Action Inbox, Focus Commitments, and Market Wisdom. It must remain a summary lens with one primary route and one optional secondary route; it must not become another inbox, posting area, approval queue, or commitment manager.
+- Dashboard may show a compact `My Pulse` strip that reads server-owned Attention Spine signals from `/attention-spine/me` first, then local Focus Commitments and Market Wisdom context where those engines are not yet server-persisted. It must remain a summary lens with one primary route and one optional secondary route; it must not become another inbox, posting area, approval queue, or commitment manager.
 
 ## Mobile Task Page Rule
 

@@ -235,6 +235,11 @@ assertContains(
   /import \{[\s\S]*?buildAttentionSpineSummary[\s\S]*?type AttentionSpineSignal[\s\S]*?type AttentionSpineUrgency[\s\S]*?\} from "\.\.\/lib\/attentionSpine";[\s\S]*?const dashboardPulseSummary = useMemo\(\(\) => \{[\s\S]*?source: "action_inbox"[\s\S]*?source: "commitment"[\s\S]*?source: "market_wisdom"[\s\S]*?buildAttentionSpineSummary\(signals/,
   "Dashboard My Pulse must read the shared Attention Spine signals from Action Inbox, Focus Commitments, and Market Wisdom."
 );
+
+assertContains(
+  /import \{[\s\S]*?getMyAttentionSpine[\s\S]*?\} from "\.\.\/lib\/api";[\s\S]*?serverAttentionSignals[\s\S]*?getMyAttentionSpine\([\s\S]*?normalizeDashboardServerAttentionSignals[\s\S]*?const signals: AttentionSpineSignal\[\] = \[\.\.\.serverAttentionSignals\]/,
+  "Dashboard My Pulse must read server-owned Attention Spine signals before adding local fallback signals."
+);
 assertContains(
   /data-debug-id="dashboard\.my-pulse"[\s\S]*?My Pulse[\s\S]*?\["red", "yellow", "green"\][\s\S]*?debugId="dashboard\.my-pulse\.primary"[\s\S]*?dashboardPulsePrimaryTo[\s\S]*?debugId="dashboard\.my-pulse\.secondary"[\s\S]*?dashboardPulseSecondaryTo/,
   "Dashboard My Pulse must remain a compact summary strip with one primary route and one optional secondary route."
