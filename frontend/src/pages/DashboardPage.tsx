@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useEffect, useMemo, useRef, useState } from "react";
 import GSNBrandMark from "../components/GSNBrandMark";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PictureFrameToolsControl from "../components/PictureFrameToolsControl";
@@ -262,6 +262,15 @@ type FocusCommitmentCategory =
 type FocusCommitmentCadence = "weekly" | "monthly";
 
 type FocusCommitmentStatus = "onTrack" | "watch" | "behind" | "completed";
+
+type FocusCommitmentDueIntelligence = {
+  status: FocusCommitmentStatus;
+  label: string;
+  detail: string;
+  urgencyRank: number;
+  dueIn: number | null;
+  reviewIn: number | null;
+};
 
 type FocusCommitmentPrivacyLevel =
   | "private"
@@ -1664,7 +1673,7 @@ function daysUntil(value: unknown): number | null {
 
 function formatDateLabel(value: unknown): string {
   const d = toDateSafe(value);
-  if (!d) return "—";
+  if (!d) return "â€”";
   return d.toLocaleDateString();
 }
 
@@ -1785,7 +1794,7 @@ function formatFocusProgress(
 
   const target =
     targetValue === null || Number.isNaN(Number(targetValue))
-      ? "—"
+      ? "â€”"
       : String(targetValue);
 
   if (unit === "?") {
@@ -1981,7 +1990,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
         classText,
         postureSource:
           scoreNum === null || Number.isNaN(scoreNum)
-            ? "—"
+            ? "â€”"
             : formatReadingScore(rawScore, scoreNum),
         tone: "green",
         statusText: "Healthy across visible communities",
@@ -1994,7 +2003,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
         classText,
         postureSource:
           scoreNum === null || Number.isNaN(scoreNum)
-            ? "—"
+            ? "â€”"
             : formatReadingScore(rawScore, scoreNum),
         tone: "green",
         statusText: "Stable and growing",
@@ -2009,7 +2018,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
         classText,
         postureSource:
           scoreNum === null || Number.isNaN(scoreNum)
-            ? "—"
+            ? "â€”"
             : formatReadingScore(rawScore, scoreNum),
         tone: "yellow",
         statusText: "Needs attention",
@@ -2023,7 +2032,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
       classText,
       postureSource:
         scoreNum === null || Number.isNaN(scoreNum)
-          ? "—"
+          ? "â€”"
           : formatReadingScore(rawScore, scoreNum),
       tone: "red",
       statusText: "At risk",
@@ -2137,7 +2146,7 @@ function getOpenTrustState(
         classText: rawClass,
         postureSource:
           rawScore === null || Number.isNaN(rawScore)
-            ? "—"
+            ? "â€”"
             : String(Math.round(rawScore)),
         tone: "green",
         statusText: "Strong in your current community",
@@ -2150,7 +2159,7 @@ function getOpenTrustState(
         classText: rawClass,
         postureSource:
           rawScore === null || Number.isNaN(rawScore)
-            ? "—"
+            ? "â€”"
             : String(Math.round(rawScore)),
         tone: "green",
         statusText: "Stable in your current community",
@@ -2164,7 +2173,7 @@ function getOpenTrustState(
         classText: rawClass,
         postureSource:
           rawScore === null || Number.isNaN(rawScore)
-            ? "—"
+            ? "â€”"
             : String(Math.round(rawScore)),
         tone: "yellow",
         statusText: "Needs attention in your current community",
@@ -2178,7 +2187,7 @@ function getOpenTrustState(
       classText: rawClass,
       postureSource:
         rawScore === null || Number.isNaN(rawScore)
-          ? "—"
+          ? "â€”"
           : String(Math.round(rawScore)),
       tone: "red",
       statusText: "At risk in your current community",
@@ -2516,24 +2525,82 @@ function normalizeDashboardUIState(raw: unknown): DashboardUIState {
   };
 }
 
-function getFocusCommitmentStatus(
-  item: FocusCommitment
-): FocusCommitmentStatus {
-  if (item.completedAt) return "completed";
+function focusRelativeDateLabel(days: number | null, noun: string): string {
+  if (days === null) return `${noun} date not set`;
+  if (days < 0) {
+    const count = Math.abs(days);
+    return `${noun} overdue by ${count} day${count === 1 ? "" : "s"}`;
+  }
+  if (days === 0) return `${noun} today`;
+  if (days === 1) return `${noun} tomorrow`;
+  return `${noun} in ${days} days`;
+}
 
+function getFocusCommitmentDueIntelligence(
+  item: FocusCommitment
+): FocusCommitmentDueIntelligence {
   const target = Number(item.targetValue || 0);
   const current = Number(item.currentValue || 0);
   const dueIn = daysUntil(item.dueDate);
   const reviewIn = daysUntil(item.nextCheckInDate);
 
-  if (target > 0 && current >= target) return "completed";
-  if (dueIn !== null && dueIn < 0) return "behind";
-  if (reviewIn !== null && reviewIn < 0) return "behind";
-  if ((dueIn !== null && dueIn <= 7) || (reviewIn !== null && reviewIn <= 3)) {
-    return "watch";
+  if (item.completedAt || (target > 0 && current >= target)) {
+    return {
+      status: "completed",
+      label: "Done",
+      detail: "Completed commitment",
+      urgencyRank: 99,
+      dueIn,
+      reviewIn,
+    };
   }
 
-  return "onTrack";
+  if ((dueIn !== null && dueIn <= 1) || (reviewIn !== null && reviewIn <= 0)) {
+    const detail =
+      reviewIn !== null && reviewIn <= 0
+        ? `${focusRelativeDateLabel(reviewIn, "Review")} - follow up now`
+        : `${focusRelativeDateLabel(dueIn, "Due")} - follow up now`;
+
+    return {
+      status: "behind",
+      label: dueIn !== null && dueIn === 1 ? "Due tomorrow" : "Due now",
+      detail,
+      urgencyRank: 0,
+      dueIn,
+      reviewIn,
+    };
+  }
+
+  if ((dueIn !== null && dueIn <= 7) || (reviewIn !== null && reviewIn <= 3)) {
+    const detail =
+      reviewIn !== null && reviewIn <= 3 && (dueIn === null || reviewIn < dueIn)
+        ? `${focusRelativeDateLabel(reviewIn, "Review")} - getting close`
+        : `${focusRelativeDateLabel(dueIn, "Due")} - getting close`;
+
+    return {
+      status: "watch",
+      label: "Getting close",
+      detail,
+      urgencyRank: 1,
+      dueIn,
+      reviewIn,
+    };
+  }
+
+  return {
+    status: "onTrack",
+    label: "Still clear",
+    detail: `${focusRelativeDateLabel(dueIn, "Due")} - keep moving`,
+    urgencyRank: 2,
+    dueIn,
+    reviewIn,
+  };
+}
+
+function getFocusCommitmentStatus(
+  item: FocusCommitment
+): FocusCommitmentStatus {
+  return getFocusCommitmentDueIntelligence(item).status;
 }
 
 function focusStatusMeta(status: FocusCommitmentStatus) {
@@ -2829,7 +2896,7 @@ function buildPriorityRoutes(params: {
     return {
       title: "Fix evidence first",
       detail:
-        "Your current evidence reading is under pressure. Protect tomorrow’s options before chasing more visibility or movement.",
+        "Your current evidence reading is under pressure. Protect tomorrowâ€™s options before chasing more visibility or movement.",
       primaryRoute: trustPrimary
         ? {
             key: "trust",
@@ -3065,10 +3132,13 @@ function summarizeFocusCommitments(
   const active = commitments
     .filter((item) => !item.archived && !item.completedAt)
     .sort((a, b) => {
-      const aDays =
-        daysUntil(a.nextCheckInDate) ?? daysUntil(a.dueDate) ?? 999999;
-      const bDays =
-        daysUntil(b.nextCheckInDate) ?? daysUntil(b.dueDate) ?? 999999;
+      const aIntel = getFocusCommitmentDueIntelligence(a);
+      const bIntel = getFocusCommitmentDueIntelligence(b);
+      if (aIntel.urgencyRank !== bIntel.urgencyRank) {
+        return aIntel.urgencyRank - bIntel.urgencyRank;
+      }
+      const aDays = aIntel.reviewIn ?? aIntel.dueIn ?? 999999;
+      const bDays = bIntel.reviewIn ?? bIntel.dueIn ?? 999999;
       return aDays - bDays;
     })
     .slice(0, 2);
@@ -4555,7 +4625,7 @@ export default function DashboardPage() {
         return {
           key: `source-${key}`,
           title: safeStr(first?.source || "General"),
-          detail: detailParts.join(" • "),
+          detail: detailParts.join(" â€¢ "),
           count: sortedRows.length,
           unreadCount,
           actNowCount,
@@ -9662,7 +9732,7 @@ export default function DashboardPage() {
                     ) : null}
                     {!isCompact ? (
                       <span style={badge(false)}>
-                        {safeDateTime(activeSpotlight.created_at) || "—"}
+                        {safeDateTime(activeSpotlight.created_at) || "â€”"}
                       </span>
                     ) : null}
                   </div>
@@ -9695,7 +9765,7 @@ export default function DashboardPage() {
                         activeSpotlight.author_name ||
                         "Your community seller"
                     )}{" "}
-                    •{" "}
+                    â€¢{" "}
                     {safeStr(
                       activeSpotlight.source_clan_name ||
                         currentCommunityName(currentClan, selectedClanId)
@@ -9984,7 +10054,7 @@ export default function DashboardPage() {
                         backdropFilter: "blur(10px)",
                       }}
                     >
-                      {safeDateTime(activeSpotlight.created_at) || "—"}
+                      {safeDateTime(activeSpotlight.created_at) || "â€”"}
                     </span>
                   ) : null}
                 </div>
@@ -10233,7 +10303,7 @@ export default function DashboardPage() {
                             lineHeight: 1.32,
                           }}
                         >
-                          {safeDateTime(activeSpotlight.created_at) || "—"}
+                          {safeDateTime(activeSpotlight.created_at) || "â€”"}
                         </div>
                       </div>
 
@@ -10785,7 +10855,7 @@ export default function DashboardPage() {
                       background: "rgba(239,246,255,0.92)",
                     }}
                   >
-                    <span aria-hidden="true">•</span>
+                    <span aria-hidden="true">â€¢</span>
                     {currentDemandIsUrgent ? "Urgent" : "Open"}
                   </span>
                   {safeDateTime(currentDemandItem.created_at) ? (
@@ -11025,7 +11095,7 @@ export default function DashboardPage() {
                     <DashboardSignalIcon name="package" size={isPhone ? 18 : 20} />
                     Open your Demand Box
                     <span aria-hidden="true" style={{ marginLeft: "auto", color: "#D6AA45" }}>
-                      ›
+                      â€º
                     </span>
                   </StableButton>
 
@@ -11049,7 +11119,7 @@ export default function DashboardPage() {
                     <DashboardSignalIcon name="identity" size={isPhone ? 17 : 18} />
                     View full record
                     <span aria-hidden="true" style={{ marginLeft: "auto", color: "#66758A" }}>
-                      ›
+                      â€º
                     </span>
                   </StableButton>
                 </div>
@@ -12342,7 +12412,8 @@ export default function DashboardPage() {
             <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
               {focusSummary.active.length > 0 ? (
                 focusSummary.active.map((item) => {
-                  const status = getFocusCommitmentStatus(item);
+                  const dueIntel = getFocusCommitmentDueIntelligence(item);
+                  const status = dueIntel.status;
                   const meta = focusStatusMeta(status);
 
                   return (
@@ -12402,6 +12473,15 @@ export default function DashboardPage() {
                             >
                               {meta.label}
                             </span>
+                            <span
+                              style={{
+                                ...badge(false),
+                                background: meta.bg,
+                                color: meta.text,
+                              }}
+                            >
+                              {dueIntel.label}
+                            </span>
                             <span style={badge(false)}>
                               {item.cadence === "weekly" ? "Weekly" : "Monthly"} review
                             </span>
@@ -12440,8 +12520,15 @@ export default function DashboardPage() {
                               item.unit
                             )}
                           </div>
-                          <div style={{ ...helperText(), fontSize: 12 }}>
-                            Due {formatDateLabel(item.dueDate)}
+                          <div
+                            style={{
+                              ...helperText(),
+                              color: meta.text,
+                              fontSize: 12,
+                              fontWeight: 800,
+                            }}
+                          >
+                            {dueIntel.detail}
                           </div>
                         </div>
                       </div>
@@ -12494,7 +12581,7 @@ export default function DashboardPage() {
                               lineHeight: 1.32,
                             }}
                           >
-                            {daysUntil(item.dueDate) ?? "—"}
+                            {focusRelativeDateLabel(dueIntel.dueIn, "Due")}
                           </div>
                         </div>
 
@@ -12508,7 +12595,7 @@ export default function DashboardPage() {
                               lineHeight: 1.32,
                             }}
                           >
-                            {meta.label}
+                            {dueIntel.label}
                           </div>
                         </div>
                       </div>

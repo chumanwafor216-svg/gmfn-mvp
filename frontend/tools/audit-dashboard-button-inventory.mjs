@@ -1,4 +1,4 @@
-/* global console, process */
+﻿/* global console, process */
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -255,6 +255,15 @@ assertContains(
 assertContains(
   /debugId=\{`dashboard\.focus\.open-linked-tool\.\$\{item\.id\}`\}[\s\S]*?openFocusExternalLink\(event, item\)[\s\S]*?Open linked tool/,
   "Focus Commitments with an outside link must keep the caged linked-tool action."
+);
+assertContains(
+  /function getFocusCommitmentDueIntelligence[\s\S]*?dueIn !== null && dueIn <= 1[\s\S]*?label: dueIn !== null && dueIn === 1 \? "Due tomorrow" : "Due now"[\s\S]*?urgencyRank: 0/,
+  "Focus Commitments must flag due-tomorrow, due-today, overdue, and review-due items as the urgent red band."
+);
+
+assertContains(
+  /focusSummary\.active\.map\(\(item\) => \{[\s\S]*?const dueIntel = getFocusCommitmentDueIntelligence\(item\)[\s\S]*?\{dueIntel\.label\}[\s\S]*?\{dueIntel\.detail\}/,
+  "Focus Commitment cards must show the traffic-light due intelligence label and plain-language follow-up detail."
 );
 
 const frontToInnerOrder = [

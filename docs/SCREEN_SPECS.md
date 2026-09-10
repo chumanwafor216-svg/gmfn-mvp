@@ -1,4 +1,4 @@
-# Screen Specs
+﻿# Screen Specs
 
 ## Global Decision-First Screen Rule
 
@@ -172,6 +172,7 @@ Rules:
 - Dashboard must stay a reflector / command centre, not a content dump.
 - Focus Commitments is the lightweight promise-to-proof layer for personal and community-facing follow-through. It may track what was promised, who promised, review cadence, progress, privacy level, and an outside-tool link.
 - Focus Commitments may support community promise categories such as volunteer, payment, delivery, follow-up, project, and attendance, because those are the common chaotic commitments that move through WhatsApp groups, paper notes, secretaries, and meetings.
+- Focus Commitments must keep lightweight due-date intelligence: urgent items due tomorrow, due today, overdue, or review-due rise first and show red/yellow/green traffic-light labels with plain-language follow-up guidance.
 - Focus Commitments must not become a full CRM, payment processor, loan ledger, WhatsApp scraper, or verified legal evidence system without a separate backend/governance review.
 - Outside-tool links may point to WhatsApp, spreadsheets, or a CRM already used by the community. GSN remains the commitment organiser and trust reflection layer, not the owner of every external conversation.
 

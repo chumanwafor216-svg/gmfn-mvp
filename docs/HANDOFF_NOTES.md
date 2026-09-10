@@ -160121,3 +160121,13 @@ Operational note:
 - Guardrail changes: `frontend/tools/audit-community-home-button-inventory.mjs` and `frontend/tools/audit-notice-board-phone-notifications.mjs` now cage the all-member-communities read scope and active-membership boundary.
 - Verification passed: `python -m py_compile app\api\routes\community_notices.py tests\test_community_notices.py`; `python -m pytest -q tests\test_community_notices.py`; `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:protected-button-freeze`; targeted frontend eslint; `npm --prefix frontend run build`; `git diff --check` on the scoped files.
 - Devil truth: this is not WhatsApp scraping, not a global public bulletin, not cross-community visibility for non-members, and not a push-notification expansion. It fixes the read surface so a member has one place to see notices from the communities they already belong to.
+
+## 2026-09-10 - Local Dashboard Focus Commitment Due Intelligence
+
+- Status: Local implementation complete and verified; not pushed/deployed in this slice.
+- Owner trigger: owner asked for a small intelligence layer so commitments/activities with dates coming close are flagged instead of sitting in a flat list.
+- Frontend route affected: `/app/dashboard#focus-commitments` in `frontend/src/pages/DashboardPage.tsx`.
+- UI behavior: active Focus Commitments now calculate due/review urgency, sort urgent items first, and show traffic-light due labels. Red covers due tomorrow, due today, overdue, or review-due. Yellow covers getting close. Green covers still clear.
+- Product boundary: this is lightweight local due-date guidance, not automated WhatsApp reading, legal evidence, payroll/task-management authority, or a full CRM.
+- Guardrail change: `frontend/tools/audit-dashboard-button-inventory.mjs` now cages the due-intelligence helper and visible due label/detail on commitment cards. Verification passed: `npm --prefix frontend run audit:dashboard-button-inventory`; targeted frontend eslint; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check` on scoped files.
+- Devil truth: this does not notify users by push/email yet. It makes the dashboard list visibly intelligent when the user opens it.
