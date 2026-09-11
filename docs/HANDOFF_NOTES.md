@@ -160560,3 +160560,14 @@ Operational note:
 - Guardrail changed: `frontend/tools/audit-shop-gallery-button-inventory.mjs` now cages the owner-only full-width follower/analytics phone row and conditional icon-row span.
 - Truth boundary: visual/layout polish only. It does not change analytics data, follower counts, owner-only visibility, Vault behavior, Share behavior, or Demand Bus/Ask Community routes.
 - Verification passed: targeted frontend ESLint; `npm --prefix frontend run audit:shop-gallery-button-inventory`; `npm --prefix frontend run audit:link-contracts`; `npm --prefix frontend run audit:share-tag-actions`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`.
+## 2026-09-11 - Ask Community folded into Demand Box mode (local)
+
+- Status: Local frontend correction implemented and verified; not pushed or deployed yet.
+- Owner trigger: owner reported the Ask Community page/modal felt like a hanging separate thing and should live inside Demand Bus/Create Demand as an opinion/question demand type, not be mistaken for a separate Demand Box.
+- Frontend routes affected: `/app/demand-box` through `frontend/src/pages/DemandBoxPage.tsx`; Shop Control Market Intelligence Ask Community link through `frontend/src/pages/ShopControlPage.tsx`; shared notice composer through `frontend/src/components/CommunityNoticeModal.tsx`.
+- Product behavior changed: `Ask Community` now routes to Demand Box with `mode=ask_community`, opens the existing market-need question composer from Demand Box, and appears inside the Demand Box form as a `Demand type` choice beside normal `Post demand`.
+- Existing engine reused: Demand Box Ask Community still posts through `createCommunityNotice` with `notice_mode: market_need_pulse` and yes/maybe/no availability responses. No new demand/opinion backend engine or duplicate request table was added.
+- Phone modal fix: Community Notice modal now renders through a `document.body` portal with viewport-safe centering and height, preventing it from hanging inside a page shell or behind bottom navigation.
+- Backward compatibility: the old Marketplace `ask_market` route handling remains in place for existing links, but new Demand Box and Shop Control Ask Community CTAs point into Demand Box question mode.
+- Truth boundary: this does not change the backend data model, buyer proof, sales proof, private Vault behavior, or Demand Box request rows. It is routing, presentation, and modal containment correction.
+- Verification passed: targeted frontend ESLint; `npm --prefix frontend run audit:demand-box-front-package`; `npm --prefix frontend run audit:spotlight-system-feed`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run audit:link-contracts`; `npm --prefix frontend run build`.

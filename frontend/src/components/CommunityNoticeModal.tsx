@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { StableButton } from "./StableButton";
 import {
   uploadMarketplaceImageFile,
@@ -211,7 +212,7 @@ export default function CommunityNoticeModal({
     clearAttachmentState();
   }
 
-  return (
+  const dialog = (
     <div
       style={overlayStyle}
       role="dialog"
@@ -219,13 +220,13 @@ export default function CommunityNoticeModal({
       aria-label={isMarketNeedPulse ? "Ask community question" : isReviewSubmission ? "Submit community record" : "Post community notice"}
     >
       <div style={modalStyle}>
-        <div style={eyebrowStyle}>{isMarketNeedPulse ? "Community need pulse" : "Community announcement"}</div>
+        <div style={eyebrowStyle}>{isMarketNeedPulse ? "Demand Box question" : "Community announcement"}</div>
         <h3 style={titleStyle}>
           {isMarketNeedPulse ? "Ask" : isReviewSubmission ? "Submit for review" : "Post to"} {communityName || "this community"}
         </h3>
         <p style={copyStyle}>
           {isMarketNeedPulse
-            ? "Ask one simple market-need question. Members answer yes, maybe, or no. GSN records a demand signal, not a buyer list or sales proof."
+            ? "Ask one simple market-need question from Demand Box. Members answer yes, maybe, or no. GSN records a demand signal, not a buyer list or sales proof."
             : isReviewSubmission
             ? "Keep it short. GSN records your submission, then a community officer approves it before it appears on the active board."
             : "Keep it short. GSN records who posted it and links your verified public WhatsApp contact when you have chosen to show one. Expired notices leave the active board but stay in Community Memory."}
@@ -487,16 +488,18 @@ export default function CommunityNoticeModal({
       </div>
     </div>
   );
+
+  return typeof document !== "undefined" ? createPortal(dialog, document.body) : dialog;
 }
 
 const overlayStyle: React.CSSProperties = {
   position: "fixed",
   inset: 0,
-  zIndex: 2400,
+  zIndex: 5600,
   display: "flex",
-  alignItems: "flex-start",
+  alignItems: "center",
   justifyContent: "center",
-  padding: "12px 16px 136px",
+  padding: "max(14px, env(safe-area-inset-top)) 14px max(22px, env(safe-area-inset-bottom))",
   overflowY: "auto",
   overscrollBehavior: "contain",
   background: "rgba(7, 23, 44, 0.54)",
@@ -509,7 +512,7 @@ const modalStyle: React.CSSProperties = {
   background: "#FFFFFF",
   boxShadow: "0 24px 60px rgba(7,23,44,0.24)",
   padding: 16,
-  maxHeight: "min(690px, calc(100svh - 156px))",
+  maxHeight: "calc(100dvh - 36px)",
   paddingBottom: 0,
   overflowY: "auto",
   overscrollBehavior: "contain",

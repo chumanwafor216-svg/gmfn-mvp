@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
@@ -15,6 +15,7 @@ import {
   institutionalSoftCard,
 } from "../lib/institutionalSurface";
 import {
+  createCommunityNotice,
   createMarketplaceRequest,
   getCurrentClan,
   getMe,
@@ -37,6 +38,10 @@ import {
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import { buildPhoneCallUrl, buildWhatsAppChatUrl } from "../lib/whatsappLinks";
 import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
+
+const CommunityNoticeModal = lazy(
+  () => import("../components/CommunityNoticeModal")
+);
 
 type DemandRow = {
   id?: number;
@@ -63,6 +68,7 @@ type DemandRow = {
 
 type NoticeTone = "success" | "error";
 type DemandPaperScope = "owner" | "community";
+type DemandNoticeExpiryPolicy = "standard" | "urgent" | "event" | "pinned";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -520,11 +526,9 @@ export default function DemandBoxPage() {
       community: routeTarget("communityHome", selectedClanId, "demand-box.open-community"),
       marketplace: routeTarget("marketplace", selectedClanId, "demand-box.return"),
       askCommunity: appendRouteQueryParam(
-        routeTarget("marketplace", selectedClanId, "demand-box.ask-community", {
-          hash: "marketplace-official-board",
-        }),
-        "ask_market",
-        "1"
+        routeTarget("demandBox", selectedClanId, "demand-box.ask-community"),
+        "mode",
+        "ask_community"
       ),
       notifications: routeTarget(
         "notifications",
@@ -565,6 +569,8 @@ export default function DemandBoxPage() {
   const [allowTrustCredit, setAllowTrustCredit] = useState(false);
 
   const [creating, setCreating] = useState(false);
+  const [marketNeedPulseOpen, setMarketNeedPulseOpen] = useState(false);
+  const [marketNeedPulsePosting, setMarketNeedPulsePosting] = useState(false);
   const [selectingClanId, setSelectingClanId] = useState<number>(0);
   const [updatingDemandId, setUpdatingDemandId] = useState<number>(0);
   const [createCommunityConfirmed, setCreateCommunityConfirmed] =
@@ -964,6 +970,68 @@ export default function DemandBoxPage() {
     demandBoxDomainFeatureMatch?.domainName || currentCommunityName
   );
 
+  const openMarketNeedPulse = useCallback(() => {
+    if (!selectedClanId) {
+      showNotice("error", "Select a community first before asking the community.");
+      return;
+    }
+
+    if (demandBoxFeatureOff) {
+      showNotice("error", demandBoxFeatureOffText);
+      return;
+    }
+
+    setMarketNeedPulseOpen(true);
+  }, [demandBoxFeatureOff, demandBoxFeatureOffText, selectedClanId]);
+
+  async function submitMarketNeedPulse(
+    body: string,
+    options?: {
+      expiry_policy?: DemandNoticeExpiryPolicy;
+      expires_at?: string;
+      public_qr_enabled?: boolean;
+      availability_enabled?: boolean;
+      full_body?: string | null;
+      attachment_url?: string | null;
+      attachment_label?: string | null;
+      attachment_kind?: "link" | "video" | "poster" | "document" | null;
+      notice_mode?: "notice" | "market_need_pulse";
+    }
+  ) {
+    if (!selectedClanId) {
+      showNotice("error", "Select a community first before asking the community.");
+      return;
+    }
+
+    if (demandBoxFeatureOff) {
+      showNotice("error", demandBoxFeatureOffText);
+      return;
+    }
+
+    setMarketNeedPulsePosting(true);
+    try {
+      const res = await createCommunityNotice({
+        clan_id: selectedClanId,
+        body,
+        ...options,
+        notice_mode: "market_need_pulse",
+        availability_enabled: true,
+      });
+      setMarketNeedPulseOpen(false);
+      showNotice(
+        "success",
+        safeStr(res?.message) || "Community question posted as a Demand Box signal."
+      );
+    } catch (err: any) {
+      showNotice(
+        "error",
+        safeStr(err?.message) || "Community question could not be posted."
+      );
+    } finally {
+      setMarketNeedPulsePosting(false);
+    }
+  }
+
   function demandContactActions(row: DemandRow, debugBase: string) {
     const hasContact = Boolean(safeStr(row?.whatsapp_number));
     return (
@@ -1007,8 +1075,9 @@ export default function DemandBoxPage() {
     const params = new URLSearchParams(location.search);
     return safeStr(params.get("mode") || "").toLowerCase();
   }, [location.search]);
+  const routeAskCommunityMode = ["ask_community", "ask-community", "market_need_pulse"].includes(demandMode);
   const hasLegacyCreateHash = location.hash === "#demand-box-create";
-  const isCreateMode = demandMode === "create" || hasLegacyCreateHash;
+  const isCreateMode = demandMode === "create" || routeAskCommunityMode || hasLegacyCreateHash;
   const currentPath = `${location.pathname}${location.search}${
     hasLegacyCreateHash ? location.hash : ""
   }`;
@@ -1030,26 +1099,31 @@ export default function DemandBoxPage() {
     if (communities.length > 1 && !createCommunityConfirmed) return;
 
     revealDemandCreate();
+    if (routeAskCommunityMode) {
+      openMarketNeedPulse();
+    }
 
-      if (typeof window !== "undefined") {
-        const params = new URLSearchParams(location.search);
-        if (params.get("mode") === "create") {
-          params.delete("mode");
-        }
-        const nextSearch = params.toString();
-        const cleanUrl = `${location.pathname}${
-          nextSearch ? `?${nextSearch}` : ""
-        }`;
-        window.history.replaceState(window.history.state, "", cleanUrl);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(location.search);
+      if (params.get("mode") === "create" || routeAskCommunityMode) {
+        params.delete("mode");
       }
-    }, [
-      communities.length,
-      createCommunityConfirmed,
-      isCreateMode,
+      const nextSearch = params.toString();
+      const cleanUrl = `${location.pathname}${
+        nextSearch ? `?${nextSearch}` : ""
+      }`;
+      window.history.replaceState(window.history.state, "", cleanUrl);
+    }
+  }, [
+    communities.length,
+    createCommunityConfirmed,
+    isCreateMode,
     loading,
     location.pathname,
     location.search,
+    openMarketNeedPulse,
     revealDemandCreate,
+    routeAskCommunityMode,
   ]);
 
   useEffect(() => {
@@ -1371,6 +1445,20 @@ export default function DemandBoxPage() {
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
+      {marketNeedPulseOpen ? (
+        <Suspense fallback={null}>
+          <CommunityNoticeModal
+            open
+            communityName={currentCommunityName}
+            busy={marketNeedPulsePosting}
+            mode="market_need_pulse"
+            clanId={selectedClanId}
+            onClose={() => setMarketNeedPulseOpen(false)}
+            onSubmit={submitMarketNeedPulse}
+          />
+        </Suspense>
+      ) : null}
+
       {!isCreateMode ? (
       <section
         style={{
@@ -1687,6 +1775,46 @@ export default function DemandBoxPage() {
           <span style={badge(false)}>Payment terms optional</span>
         </div>
 
+        <div
+          style={{
+            marginTop: 14,
+            ...innerCard("#FCFEFF"),
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+            gap: 10,
+            alignItems: "stretch",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Demand type</div>
+            <div style={{ marginTop: 6, color: "#0B1F33", fontSize: 16, fontWeight: 900, lineHeight: 1.3 }}>
+              Post a direct need or ask the community first.
+            </div>
+            <div style={{ marginTop: 6, ...helperText(), fontSize: 13, lineHeight: 1.5 }}>
+              Use normal demand when you already know what you need. Use Ask Community when you need yes, maybe, or no opinions before stocking, pricing, or offering something.
+            </div>
+          </div>
+          <div style={demandActionRowStyle(isCompact, 52, 160, 0)}>
+            <SecondaryButton
+              type="button"
+              debugId="demand-box.mode.normal-demand"
+              stableHeight={52}
+              style={demandActionStyle(52)}
+              onClick={() => revealDemandCreate()}
+            >
+              {demandIconText("document", "Post demand", 20)}
+            </SecondaryButton>
+            <SecondaryButton
+              type="button"
+              debugId="demand-box.ask-community.inline"
+              stableHeight={52}
+              style={demandActionStyle(52)}
+              onClick={openMarketNeedPulse}
+            >
+              {demandIconText("community", "Ask Community", 20)}
+            </SecondaryButton>
+          </div>
+        </div>
         {demandBoxFeatureOff ? (
           <div
             style={{

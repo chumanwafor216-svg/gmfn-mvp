@@ -233,8 +233,8 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /askCommunity: appendRouteQueryParam[\s\S]*?marketplace-official-board[\s\S]*?"ask_market"[\s\S]*?"1"/,
-  "Shop Control Ask Community must route into the existing Marketplace official board pulse lane."
+  /askCommunity: appendRouteQueryParam[\s\S]*?routeTarget\([\s\S]*?"demandBox"[\s\S]*?"shop-control\.route\.ask-community"[\s\S]*?"mode"[\s\S]*?"ask_community"/,
+  "Shop Control Ask Community must route into Demand Box question mode, while reusing the existing market need pulse engine."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",

@@ -1719,13 +1719,12 @@ export default function ShopControlPage() {
       ),
       askCommunity: appendRouteQueryParam(
         routeTarget(
-          "marketplace",
+          "demandBox",
           effectiveShopClanId,
-          "shop-control.route.ask-community",
-          { hash: "marketplace-official-board" }
+          "shop-control.route.ask-community"
         ),
-        "ask_market",
-        "1"
+        "mode",
+        "ask_community"
       ),
       tradeEvidence: routeTarget(
         "marketplace",

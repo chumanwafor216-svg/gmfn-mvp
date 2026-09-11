@@ -103,12 +103,20 @@ function requirePattern(pattern, message) {
     "Demand Box return action must keep its stable debug id.",
   ],
   [
-    /askCommunity: appendRouteQueryParam[\s\S]*?marketplace-official-board[\s\S]*?"ask_market"[\s\S]*?"1"/,
-    "Demand Box Ask Community must route into the existing Marketplace official-board pulse lane.",
+    /askCommunity: appendRouteQueryParam[\s\S]*?routeTarget\("demandBox", selectedClanId, "demand-box\.ask-community"\)[\s\S]*?"mode"[\s\S]*?"ask_community"/,
+    "Demand Box Ask Community must route into Demand Box question mode, not a separate Marketplace modal path.",
   ],
   [
     /to=\{routes\.askCommunity\}[\s\S]*?debugId="demand-box\.ask-community"[\s\S]*?Ask Community/,
     "Demand Box hero must expose the Ask Community action without creating a separate demand engine.",
+  ],
+  [
+    /debugId="demand-box\.mode\.normal-demand"[\s\S]*?Post demand[\s\S]*?debugId="demand-box\.ask-community\.inline"[\s\S]*?Ask Community/,
+    "Demand Box form must show Ask Community as a Demand type beside normal demand posting.",
+  ],
+  [
+    /createCommunityNotice[\s\S]*?notice_mode: "market_need_pulse"[\s\S]*?availability_enabled: true/,
+    "Demand Box Ask Community must reuse the governed Community Notice market-need pulse engine.",
   ],
   [
     /debugId="demand-box\.hero-dashboard"/,
