@@ -185,6 +185,17 @@ assertContains(
   /CONTACTS_NOT_PROTECTED[\s\S]*?TRADE_RECORD_PRESSURE[\s\S]*?OUTCOME_EVIDENCE_BUILDING[\s\S]*?tradeRecords\?: number \| null[\s\S]*?Protected Trade is the existing evidence engine/,
   "Shop Market Intelligence must read protected trade outcome metrics without creating a sales or conversion engine."
 );
+assertContains(
+  "frontend/src/lib/shopAnalyticsWisdom.ts",
+  /export type ShopSellerHelper[\s\S]*?whatIsHappening: string[\s\S]*?whyItMatters: string[\s\S]*?tryFirst: string[\s\S]*?reassurance: string[\s\S]*?export function buildShopSellerHelper[\s\S]*?SHOP_SETUP_GAP[\s\S]*?LOW_EXPOSURE[\s\S]*?LOW_CONTACT_INTENT[\s\S]*?STRONG_MOMENTUM[\s\S]*?Small data should make you patient, not discouraged/,
+  "Shop Market Intelligence must translate analytics into a plain small-seller helper without adding a coaching engine."
+);
+
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /buildShopSellerHelper\(shopAnalyticsWisdom\)[\s\S]*?Small Seller Helper[\s\S]*?What is happening[\s\S]*?Why it matters[\s\S]*?Try first[\s\S]*?Recommended next move/,
+  "Shop Control Market Intelligence must show the small-seller helper before deeper evidence and route actions."
+);
 
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",

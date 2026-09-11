@@ -160453,3 +160453,14 @@ Operational note:
 - Guardrails: Shop Control button inventory was rebased for the one mapped analytics panel `StableButton`; Spotlight system feed audit now cages all six panel keys and per-section display gates; Demand Box audit now cages the Ask Community route and button.
 - Truth boundary: the collapsed sections improve reading and navigation only. Analytics still show attention, response, and protected evidence signals; they do not prove buyers, sales, payment, delivery, verification, or trust score.
 - Verification passed: targeted frontend ESLint; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:spotlight-system-feed`; `npm --prefix frontend run audit:demand-box-front-package`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`. `git diff --check` reported only line-ending normalization warnings.
+
+## 2026-09-11 - Small Seller Helper Inside Shop Market Intelligence (local)
+
+- Status: Local implementation complete and verified; not pushed/deployed because the current pilot freeze says routine continuation work should wait for explicit publish approval.
+- Owner trigger: owner clarified that the purpose is not a mega ecommerce dashboard, but helping ordinary sellers with a phone, small stock, no office, and no formal coaching know what to do next.
+- Existing engine reused: added `buildShopSellerHelper` on top of the existing `buildShopAnalyticsWisdom` diagnosis. No new coaching engine, ranking engine, predictive demand engine, backend table, or separate Market Wisdom system was added.
+- Frontend route affected: `/app/shop-control#shop-control-counts`, inside the owner-only Market Intelligence collapsible section.
+- Product behavior changed: Market Intelligence now starts with a compact `Small Seller Helper` card showing `What is happening`, `Why it matters`, and `Try first`, plus a reassuring plain-language line for small sellers.
+- Decision-first boundary: deeper Observation, Interpretation, Recheck, recommended route action, Community Needs, advice action trail, and Why-this-advice details remain below the plain seller helper.
+- Truth boundary: Seller Helper translates analytics into practical guidance only. It does not claim buyers, sales, payment, delivery, verification, coaching completion, or a trust score.
+- Verification passed: targeted frontend ESLint; `npm --prefix frontend run audit:spotlight-system-feed`; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`.

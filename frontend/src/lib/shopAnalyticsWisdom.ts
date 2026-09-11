@@ -43,6 +43,12 @@ export type ShopAnalyticsMetrics = {
   unresolvedTradeRecords?: number | null;
 };
 
+export type ShopSellerHelper = {
+  whatIsHappening: string;
+  whyItMatters: string;
+  tryFirst: string;
+  reassurance: string;
+};
 export type ShopAnalyticsWisdom = {
   tone: ShopAnalyticsWisdomTone;
   diagnosisCode: ShopAnalyticsDiagnosisCode;
@@ -505,6 +511,89 @@ export function buildShopAnalyticsWisdom(metrics: ShopAnalyticsMetrics): ShopAna
     recheckPoint: "After the next contact or seller-confirmed outcome.",
     why: "The system can read attention turning into intent, but it cannot call intent a sale.",
   };
+}
+
+export function buildShopSellerHelper(wisdom: ShopAnalyticsWisdom): ShopSellerHelper {
+  switch (wisdom.diagnosisCode) {
+    case "SHOP_SETUP_GAP":
+      return {
+        whatIsHappening: "Your shop needs one clear public item before people can decide.",
+        whyItMatters: "A visitor cannot buy, ask, or trust the offer if the first item is empty or unclear.",
+        tryFirst: "Add one real product with picture, price, and how the buyer should contact or collect.",
+        reassurance: "Start with the item you already understand best; the shop can grow one item at a time.",
+      };
+    case "FOLLOWERS_WAITING":
+      return {
+        whatIsHappening: "You already have people who chose to follow the shop.",
+        whyItMatters: "Followers are the easiest people to wake up because they asked to hear from you first.",
+        tryFirst: "Post one simple update about your strongest item and let followers see it before changing everything.",
+        reassurance: "A small shop does not need many products first; it needs one clear reason for people to return.",
+      };
+    case "LOW_EXPOSURE":
+      return {
+        whatIsHappening: "Too few people are seeing the shop yet.",
+        whyItMatters: "You cannot judge your product until enough people in the community have actually seen it.",
+        tryFirst: "Share the shop once, or repost the strongest item at a better time if your community allows it.",
+        reassurance: "Low traffic is not failure; it often means the shop has not reached enough eyes yet.",
+      };
+    case "LOW_VISIT_RATE":
+      return {
+        whatIsHappening: "People see the spotlight, but not enough are entering the shop.",
+        whyItMatters: "The first picture or first line may not be giving them a strong reason to open.",
+        tryFirst: "Use a clearer product photo, mention the real benefit, and invite people to open the shop.",
+        reassurance: "Do not change the whole business yet; improve the first message first.",
+      };
+    case "LOW_PRODUCT_CURIOSITY":
+      return {
+        whatIsHappening: "People visit the shop, but they are not opening product details.",
+        whyItMatters: "The first visible products must quickly answer: what is it, price, and how can I get it?",
+        tryFirst: "Move the strongest item first, improve the thumbnail, and add price or availability cues.",
+        reassurance: "This is a shop presentation problem before it is a product failure.",
+      };
+    case "LOW_CONTACT_INTENT":
+      return {
+        whatIsHappening: "People inspect products, but they are not contacting yet.",
+        whyItMatters: "A buyer may stop if price, delivery, collection, or contact instructions are unclear.",
+        tryFirst: "Add the price, say whether pickup or delivery is possible, and tell buyers what to send first.",
+        reassurance: "Interest already exists; the next step just needs to feel easier.",
+      };
+    case "CONTACTS_NOT_PROTECTED":
+      return {
+        whatIsHappening: "People are reaching contact, but serious trade is not protected yet.",
+        whyItMatters: "GSN can only help you learn from real outcomes when serious buyer steps are recorded safely.",
+        tryFirst: "Use Protected Trade for the next serious buyer conversation before pushing more promotion.",
+        reassurance: "This protects both sides without pretending every contact is already a sale.",
+      };
+    case "TRADE_RECORD_PRESSURE":
+      return {
+        whatIsHappening: "Some trade records need follow-up before more promotion.",
+        whyItMatters: "More traffic can create more pressure if payment, receipt, release, or dispute steps are unclear.",
+        tryFirst: "Open the protected trade records and update the next evidence step first.",
+        reassurance: "Cleaning the current records is part of growing a trusted small shop.",
+      };
+    case "OUTCOME_EVIDENCE_BUILDING":
+      return {
+        whatIsHappening: "Your shop is starting to leave useful trade evidence.",
+        whyItMatters: "This is stronger than views alone, but it still needs careful follow-through.",
+        tryFirst: "Repeat the product or channel that produced the protected record, then ask for receipt confirmation where needed.",
+        reassurance: "Growth can stay small and steady; repeat what is proving itself.",
+      };
+    case "STRONG_MOMENTUM":
+      return {
+        whatIsHappening: "Attention is turning into buyer action.",
+        whyItMatters: "Now the seller wins by replying quickly and keeping the strongest offer visible.",
+        tryFirst: "Respond to every serious contact, keep your best item first, and record real outcomes when they happen.",
+        reassurance: "This is the moment to repeat what worked, not to complicate the shop.",
+      };
+    case "GATHERING_DATA":
+    default:
+      return {
+        whatIsHappening: "There is not enough activity yet to judge the shop fairly.",
+        whyItMatters: "One or two views cannot prove whether people want the product or not.",
+        tryFirst: "Share once, let the spotlight breathe, or ask the community what they need before changing everything.",
+        reassurance: "Small data should make you patient, not discouraged.",
+      };
+  }
 }
 function urgencyForShopMarketIntelligence(
   wisdom: ShopAnalyticsWisdom

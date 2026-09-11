@@ -64,6 +64,7 @@ import {
   analyticsRate,
   buildShopAnalyticsWisdom,
   buildShopMarketIntelligenceSummary,
+  buildShopSellerHelper,
   formatAnalyticsRate,
 } from "../lib/shopAnalyticsWisdom";
 import {
@@ -2577,6 +2578,10 @@ export default function ShopControlPage() {
   const shopMarketIntelligenceSummary = buildShopMarketIntelligenceSummary(
     shopAnalyticsWisdom,
     `${routes.shop}#${OWNER_SHOP_HASHES.summary}`
+  );
+  const shopSellerHelper = useMemo(
+    () => buildShopSellerHelper(shopAnalyticsWisdom),
+    [shopAnalyticsWisdom]
   );
   const marketIntelligencePrimaryAction = useMemo(() => {
     switch (shopAnalyticsWisdom.diagnosisCode) {
@@ -6294,6 +6299,37 @@ export default function ShopControlPage() {
               <span style={badge(shopAnalyticsWisdom.confidence === "high")}>Confidence: {shopAnalyticsWisdom.confidence}</span>
               <span style={badge(shopAnalyticsWisdom.diagnosisCode !== "GATHERING_DATA")}>{shopAnalyticsWisdom.diagnosisCode.replace(/_/g, " ")}</span>
               <span style={badge(shopMarketIntelligenceSummary.workCount > 0)}>Spine: {shopMarketIntelligenceSummary.headline}</span>
+            </div>
+            <div
+              style={{
+                marginTop: 12,
+                borderRadius: 18,
+                border: "1px solid rgba(46,155,98,0.18)",
+                background: "linear-gradient(180deg, #F3FFF9 0%, #E8F8F1 100%)",
+                padding: 12,
+                display: "grid",
+                gap: 10,
+              }}
+            >
+              <div style={{ display: "flex", gap: 9, alignItems: "center" }}>
+                <GsnLegacyIcon name="shop" size={30} />
+                <div>
+                  <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Small Seller Helper</div>
+                  <div style={{ marginTop: 2, color: "#2D5A46", fontSize: 12, fontWeight: 800, lineHeight: 1.35 }}>
+                    {shopSellerHelper.reassurance}
+                  </div>
+                </div>
+              </div>
+              {[
+                ["What is happening", shopSellerHelper.whatIsHappening],
+                ["Why it matters", shopSellerHelper.whyItMatters],
+                ["Try first", shopSellerHelper.tryFirst],
+              ].map(([label, value]) => (
+                <div key={`seller-helper-${label}`} style={{ borderRadius: 14, background: "rgba(255,255,255,0.76)", border: "1px solid rgba(46,155,98,0.10)", padding: "8px 10px" }}>
+                  <div style={{ color: "#1F6F4A", fontSize: 10.5, fontWeight: 950, textTransform: "uppercase", letterSpacing: 0 }}>{label}</div>
+                  <div style={{ marginTop: 3, color: "#183A2B", fontSize: 12, fontWeight: 820, lineHeight: 1.4 }}>{value}</div>
+                </div>
+              ))}
             </div>
             <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
               <div style={{ color: "#24415C", fontSize: 13, fontWeight: 850, lineHeight: 1.4 }}>
