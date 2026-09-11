@@ -164,6 +164,41 @@ assertContains(
   /does not delete[\s\S]*?remove members[\s\S]*?transfer ownership/,
   "Ordinary-community lifecycle UI must keep the no-delete/no-member-removal/no-transfer boundary visible."
 );
+
+assertContains(
+  apiFile,
+  apiSource,
+  /postAdminCommunityStewardSetup[\s\S]*?\/admin\/community-steward-setup/,
+  "Admin Community Ownership page must keep its community steward setup API wrapper."
+);
+
+assertContains(
+  backendAdminFile,
+  backendAdminSource,
+  /@router\.post\("\/community-steward-setup"\)[\s\S]*?community\.steward_setup_prepared/,
+  "Backend admin route must record steward setup preparation with a trust event."
+);
+
+assertContains(
+  backendAdminFile,
+  backendAdminSource,
+  /will_activate_steward_setup[\s\S]*?released_steward_setup/,
+  "Owner repair must explicitly release steward setup communities only after proof-confirmed reconciliation."
+);
+
+assertContains(
+  adminPageFile,
+  adminPageSource,
+  /Steward setup[\s\S]*?Preview steward setup[\s\S]*?Record steward setup/,
+  "Admin Community Ownership page must expose steward setup preview and record controls."
+);
+
+assertContains(
+  adminPageFile,
+  adminPageSource,
+  /does not claim verified ownership[\s\S]*?owner proof is still required/,
+  "Steward setup UI must keep the no-verified-owner and owner-proof-required boundary visible."
+);
 if (findings.length) {
   console.error("Admin route guard audit failed:");
   for (const finding of findings) {

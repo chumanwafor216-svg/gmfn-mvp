@@ -1157,6 +1157,7 @@ Must show:
 - community lookup by name
 - owner lookup by member identity signal
 - exact community and owner selection
+- steward setup preview/record controls for preparing a hidden organisation/community shell before owner acceptance
 - ordinary community lifecycle preview/record controls for active, dormant, or closed status
 - preview before mutation
 - evidence confirmation checkbox
@@ -1168,11 +1169,14 @@ Must show:
 Rules:
 - Route is `/app/command-center/community-ownership` and must remain platform-admin only.
 - The tool must not delete the existing community, erase prior admins, or remove historical evidence.
+- Steward setup can reserve and prepare a hidden ordinary community shell from a supplied brief. It must keep status `steward_setup`, stay hidden from normal member lists, and avoid claiming verified ownership until proof-checked owner repair releases it.
+- Steward setup must not overwrite an active community name, publish the community, delete evidence, remove members, or transfer ownership.
 - Ordinary community lifecycle can mark an example/setup community `active`, `dormant`, or `closed`; dormant/closed communities must stop appearing in normal member community lists while the community name, memberships, and trust-event history stay preserved.
 - Ordinary community lifecycle must not transfer ownership, remove members, create a Community Domain/payment, or globally ban an identity.
 - Preview must be read-only.
 - Execute must require evidence confirmation and a reviewer note.
-- Successful execution records the selected user as `created_by_user_id`, ensures an active admin membership, and logs a trust event for audit.
+- Successful owner-repair execution records the selected user as `created_by_user_id`, ensures an active admin membership, and logs a trust event for audit.
+- If owner repair is executed against a `steward_setup` community, proof confirmation releases that community to `active`; dormant/closed communities are not automatically reactivated by ordinary transfer.
 - If the rightful owner has a recorded onboarding intake but no GSN identity because the duplicate community name blocked account creation, lookup may show that intake as a repair source. Preview must remain read-only; execute must create the missing GSN identity from recorded intake evidence before assigning ownership.
 - Redirect aliases may preserve `community_name` and `owner_query` query parameters so Command Centre can open directly to a case such as Pillar of Hope/Felix.
 ## SupportPage

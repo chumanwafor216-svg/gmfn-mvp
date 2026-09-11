@@ -5252,6 +5252,19 @@ export async function postAdminCommunityOwnershipReconciliation(payload: {
   return httpJson("/admin/community-ownership/reconcile", "POST", payload);
 }
 
+export async function postAdminCommunityStewardSetup(payload: {
+  community_name: string;
+  description?: string | null;
+  marketplace_name?: string | null;
+  marketplace_description?: string | null;
+  representative_reference?: string | null;
+  setup_confirmed?: boolean;
+  execute?: boolean;
+  reviewer_note?: string | null;
+}): Promise<any> {
+  return httpJson("/admin/community-steward-setup", "POST", payload);
+}
+
 export async function postAdminCommunityLifecycle(payload: {
   community_name?: string | null;
   clan_id?: number | null;

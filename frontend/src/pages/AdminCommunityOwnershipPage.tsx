@@ -11,6 +11,7 @@ import {
 import {
   getAdminCommunityOwnershipLookup,
   postAdminCommunityLifecycle,
+  postAdminCommunityStewardSetup,
   postAdminCommunityDomainLifecycle,
   postAdminCommunityDomainOwnershipReconciliation,
   postAdminCommunityOwnershipReconciliation,
@@ -180,6 +181,18 @@ export default function AdminCommunityOwnershipPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<"lookup" | "preview" | "execute" | "">("");
+  const [stewardName, setStewardName] = useState("");
+  const [stewardDescription, setStewardDescription] = useState("");
+  const [stewardMarketplaceName, setStewardMarketplaceName] = useState("");
+  const [stewardMarketplaceDescription, setStewardMarketplaceDescription] = useState("");
+  const [stewardRepresentative, setStewardRepresentative] = useState("");
+  const [stewardNote, setStewardNote] = useState("");
+  const [stewardConfirmed, setStewardConfirmed] = useState(false);
+  const [stewardPreview, setStewardPreview] = useState<any>(null);
+  const [stewardResult, setStewardResult] = useState<any>(null);
+  const [stewardMessage, setStewardMessage] = useState("");
+  const [stewardError, setStewardError] = useState("");
+  const [stewardBusy, setStewardBusy] = useState<"preview" | "execute" | "">("");
   const [communityLifecycleName, setCommunityLifecycleName] = useState(
     safeStr(searchParams.get("community_name")) || "Pillar of Hope"
   );
@@ -359,6 +372,59 @@ export default function AdminCommunityOwnershipPage() {
   }
 
 
+  async function runStewardPreview() {
+    setStewardBusy("preview");
+    setStewardError("");
+    setStewardMessage("");
+    setStewardPreview(null);
+    setStewardResult(null);
+    try {
+      const out = await postAdminCommunityStewardSetup({
+        community_name: stewardName,
+        description: stewardDescription || undefined,
+        marketplace_name: stewardMarketplaceName || undefined,
+        marketplace_description: stewardMarketplaceDescription || undefined,
+        representative_reference: stewardRepresentative || undefined,
+        execute: false,
+      });
+      setStewardPreview(out);
+      setStewardMessage(safeStr(out?.message) || "Steward setup preview ready.");
+    } catch (err: any) {
+      setStewardError(safeStr(err?.message || err) || "Steward setup preview failed.");
+    } finally {
+      setStewardBusy("");
+    }
+  }
+
+  async function runStewardExecute() {
+    setStewardBusy("execute");
+    setStewardError("");
+    setStewardMessage("");
+    setStewardResult(null);
+    try {
+      const out = await postAdminCommunityStewardSetup({
+        community_name: stewardName,
+        description: stewardDescription || undefined,
+        marketplace_name: stewardMarketplaceName || undefined,
+        marketplace_description: stewardMarketplaceDescription || undefined,
+        representative_reference: stewardRepresentative || undefined,
+        setup_confirmed: stewardConfirmed,
+        execute: true,
+        reviewer_note: stewardNote,
+      });
+      setStewardResult(out);
+      setStewardPreview(out);
+      setStewardMessage(safeStr(out?.message) || "Steward setup recorded.");
+      if (safeStr(out?.community?.name)) {
+        setCommunityNameInput(safeStr(out.community.name));
+        setCommunityLifecycleName(safeStr(out.community.name));
+      }
+    } catch (err: any) {
+      setStewardError(safeStr(err?.message || err) || "Steward setup failed.");
+    } finally {
+      setStewardBusy("");
+    }
+  }
   async function runCommunityLifecyclePreview() {
     setCommunityLifecycleBusy("preview");
     setCommunityLifecycleError("");
@@ -509,6 +575,13 @@ export default function AdminCommunityOwnershipPage() {
 
   const canPreview = Boolean(selectedClanId || safeStr(communityNameInput)) && ownerIdentityReady;
   const canExecute = Boolean(preview) && proofConfirmed && safeStr(note).length >= 12 && !result;
+  const canStewardPreview = Boolean(safeStr(stewardName));
+  const canStewardExecute =
+    Boolean(stewardPreview) &&
+    !stewardPreview?.blocked_by_active_community &&
+    stewardConfirmed &&
+    safeStr(stewardNote).length >= 12 &&
+    !stewardResult;
   const canCommunityLifecyclePreview = Boolean(communityLifecycleId || safeStr(communityLifecycleName));
   const canCommunityLifecycleExecute =
     Boolean(communityLifecyclePreview) && communityLifecycleConfirmed && safeStr(communityLifecycleNote).length >= 12 && !communityLifecycleResult;
@@ -589,6 +662,165 @@ export default function AdminCommunityOwnershipPage() {
         </section>
 
         <section style={card("#F8FBFF")}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <div style={label()}>Steward setup</div>
+              <h2 style={{ margin: "6px 0 0", color: "#0B1F33", fontSize: 22 }}>Prepare before owner acceptance</h2>
+            </div>
+            <div style={{ ...helper(), maxWidth: 430 }}>
+              Use this when GSN prepares a hidden organisation/community shell from a brief. It does not claim verified ownership or publish the community.
+            </div>
+          </div>
+
+          <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 12 }}>
+            <div>
+              <div style={fieldLabel()}>Community or organisation name</div>
+              <input
+                value={stewardName}
+                onChange={(event) => {
+                  setStewardName(event.target.value);
+                  setStewardPreview(null);
+                  setStewardResult(null);
+                }}
+                placeholder="Mamacita Foundation"
+                style={inputStyle()}
+              />
+            </div>
+            <div>
+              <div style={fieldLabel()}>Marketplace name</div>
+              <input
+                value={stewardMarketplaceName}
+                onChange={(event) => {
+                  setStewardMarketplaceName(event.target.value);
+                  setStewardPreview(null);
+                  setStewardResult(null);
+                }}
+                placeholder="Mamacita Foundation Marketplace"
+                style={inputStyle()}
+              />
+            </div>
+            <div>
+              <div style={fieldLabel()}>Representative reference</div>
+              <input
+                value={stewardRepresentative}
+                onChange={(event) => {
+                  setStewardRepresentative(event.target.value);
+                  setStewardPreview(null);
+                  setStewardResult(null);
+                }}
+                placeholder="Name, phone, email, or call note"
+                style={inputStyle()}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12 }}>
+            <div>
+              <div style={fieldLabel()}>Public description</div>
+              <textarea
+                value={stewardDescription}
+                onChange={(event) => {
+                  setStewardDescription(event.target.value);
+                  setStewardPreview(null);
+                  setStewardResult(null);
+                }}
+                placeholder="Short public-facing description supplied for the setup."
+                rows={3}
+                style={{ ...inputStyle(), resize: "vertical", minHeight: 88 }}
+              />
+            </div>
+            <div>
+              <div style={fieldLabel()}>Marketplace description</div>
+              <textarea
+                value={stewardMarketplaceDescription}
+                onChange={(event) => {
+                  setStewardMarketplaceDescription(event.target.value);
+                  setStewardPreview(null);
+                  setStewardResult(null);
+                }}
+                placeholder="Optional shop/marketplace context for the owner to review later."
+                rows={3}
+                style={{ ...inputStyle(), resize: "vertical", minHeight: 88 }}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <SecondaryButton
+              onClick={runStewardPreview}
+              busy={stewardBusy === "preview"}
+              busyLabel="Previewing..."
+              disabled={stewardBusy !== "" || !canStewardPreview}
+              debugId="admin-community-steward.preview"
+            >
+              {iconLabel("eye", "Preview steward setup")}
+            </SecondaryButton>
+          </div>
+
+          {stewardPreview ? (
+            <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+              <div style={{ ...factGrid(142) }}>
+                {fact("Community", safeStr(stewardPreview?.community?.name))}
+                {fact("Current", safeStr(stewardPreview?.current_status))}
+                {fact("Requested", safeStr(stewardPreview?.requested_status).replace(/_/g, " "))}
+                {fact("Member Home", stewardPreview?.will_hide_from_member_home ? "Hidden" : "Visible")}
+              </div>
+              <div style={{ ...institutionalInnerCard(stewardPreview?.blocked_by_active_community ? "#FEF2F2" : "#FFFFFF"), ...helper() }}>
+                {safeStr(stewardPreview?.boundary) || "This prepares a hidden setup only. Owner proof is still required before release."}
+              </div>
+              {stewardPreview?.blocked_by_active_community ? (
+                <div style={{ ...institutionalInnerCard("#FFF7ED"), color: "#92400E", fontWeight: 900 }}>
+                  {iconLabel("alert", "An active community already uses this name. Use owner repair or lifecycle review instead.")}
+                </div>
+              ) : null}
+              {!stewardResult && !stewardPreview?.blocked_by_active_community ? (
+                <div style={{ display: "grid", gap: 12 }}>
+                  <label style={{ display: "flex", gap: 10, alignItems: "flex-start", color: "#0B1F33", fontWeight: 900 }}>
+                    <input
+                      type="checkbox"
+                      checked={stewardConfirmed}
+                      onChange={(event) => setStewardConfirmed(event.target.checked)}
+                      style={{ marginTop: 3 }}
+                    />
+                    I confirm this is GSN steward setup. The organisation has not yet accepted ownership, and owner proof is still required before release.
+                  </label>
+                  <div>
+                    <div style={fieldLabel()}>Reviewer note</div>
+                    <textarea
+                      value={stewardNote}
+                      onChange={(event) => setStewardNote(event.target.value)}
+                      placeholder="Example: Community shell prepared from representative brief. Keep hidden until the real owner accepts and proof is checked."
+                      rows={4}
+                      style={{ ...inputStyle(), resize: "vertical", minHeight: 92 }}
+                    />
+                  </div>
+                  <PrimaryButton
+                    onClick={runStewardExecute}
+                    busy={stewardBusy === "execute"}
+                    busyLabel="Recording..."
+                    disabled={stewardBusy !== "" || !canStewardExecute}
+                    debugId="admin-community-steward.execute"
+                  >
+                    {iconLabel("check", "Record steward setup")}
+                  </PrimaryButton>
+                </div>
+              ) : null}
+              {stewardResult ? (
+                <div style={{ ...institutionalInnerCard("#ECFDF5"), ...helper() }}>
+                  Next: use Owner repair on this page to record the real owner after acceptance and proof check. That release makes the prepared community active.
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {(stewardMessage || stewardError) ? (
+            <div style={{ marginTop: 12, ...institutionalInnerCard(stewardError ? "#FEF2F2" : "#ECFDF5") }}>
+              <div style={{ color: stewardError ? "#991B1B" : "#065F46", fontWeight: 1000 }}>
+                {iconLabel(stewardError ? "alert" : "check", stewardError || stewardMessage)}
+              </div>
+            </div>
+          ) : null}
+        </section>        <section style={card("#F8FBFF")}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>
               <div style={label()}>Community lifecycle</div>

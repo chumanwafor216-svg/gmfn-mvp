@@ -160483,3 +160483,13 @@ Operational note:
 - Guardrail: `frontend/tools/audit-admin-route-guards.mjs` now cages the ordinary-community lifecycle API wrapper, backend trust-event route, active-community visibility filter, and UI no-delete boundary.
 - Truth boundary: this is a lifecycle stop/pause tool only. It is not hard delete, not account deletion, not ownership transfer, not a payment/billing action, and not a global user ban.
 - Verification passed: backend py_compile; `python -m pytest gmfn_backend\tests\test_admin_community_ownership.py -q` (`17 passed`); targeted frontend ESLint from `frontend`; `npm --prefix frontend run audit:admin-route-guards`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; focused Community Domain lifecycle test still passed.
+## 2026-09-11 - Admin Steward Setup And Owner Release (local)
+
+- Status: Local implementation complete and verified; not pushed/deployed under the current batch freeze.
+- Owner trigger: owner asked whether GSN can prepare an organisation/community from supplied information, keep it out of normal use, then transfer/release it to the rightful people after acceptance.
+- Existing engine reused: ordinary `Clan`, admin ownership repair, lifecycle status, admin membership, and TrustEvent evidence are reused. No new organisation engine, payment/domain engine, or hard-delete system was added.
+- Backend route affected: `POST /admin/community-steward-setup` previews/records `steward_setup` ordinary communities. Preview is read-only. Execute requires steward confirmation and reviewer note, blocks active-name overwrite, creates/reserves the community name when missing, keeps it hidden, and records `community.steward_setup_prepared`.
+- Release path affected: `POST /admin/community-ownership/reconcile` now releases only `steward_setup` communities to `active` after owner proof is confirmed. Dormant/closed lifecycle states are not silently reactivated by transfer.
+- Frontend route affected: `/app/command-center/community-ownership` now includes a `Steward setup` section before lifecycle/transfer controls.
+- Truth boundary: steward setup does not claim the organisation has accepted, does not verify ownership, does not publish the community, does not delete evidence, and does not remove members. Real owner acceptance/proof is still required before release.
+- Verification passed: backend py_compile; focused backend owner/community-domain guard bundle (`25 passed`); targeted frontend ESLint; `npm --prefix frontend run audit:admin-route-guards`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`.

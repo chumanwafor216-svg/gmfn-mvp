@@ -215,6 +215,29 @@ class CommunityOwnershipReconcileIn(BaseModel):
         return _reject_non_text_value(value, info.field_name)
 
 
+class CommunityStewardSetupIn(BaseModel):
+    community_name: str = Field(..., min_length=2, max_length=80)
+    description: Optional[str] = Field(default=None, max_length=500)
+    marketplace_name: Optional[str] = Field(default=None, max_length=120)
+    marketplace_description: Optional[str] = Field(default=None, max_length=500)
+    representative_reference: Optional[str] = Field(default=None, max_length=240)
+    setup_confirmed: bool = False
+    execute: bool = False
+    reviewer_note: Optional[str] = Field(default=None, max_length=800)
+
+    @field_validator(
+        "community_name",
+        "description",
+        "marketplace_name",
+        "marketplace_description",
+        "representative_reference",
+        "reviewer_note",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 class CommunityLifecycleIn(BaseModel):
     community_name: Optional[str] = Field(default=None, max_length=120)
     clan_id: Optional[int] = Field(default=None, ge=1)
@@ -354,6 +377,8 @@ def _community_row(db: Session, clan: Clan) -> dict[str, Any]:
         "clan_id": int(clan.id),
         "name": _safe_str(clan.name),
         "description": _safe_str(getattr(clan, "description", None)) or None,
+        "marketplace_name": _safe_str(getattr(clan, "marketplace_name", None)) or None,
+        "marketplace_description": _safe_str(getattr(clan, "marketplace_description", None)) or None,
         "community_code": _safe_str(getattr(clan, "community_code", None)) or f"GSN-C-{int(clan.id):06d}",
         "status": _safe_str(getattr(clan, "status", None)) or "active",
         "closed_at": _dt_iso(getattr(clan, "closed_at", None)),
@@ -510,17 +535,20 @@ def _community_ownership_preview(
     elif _safe_str(getattr(active_membership, "role", None)).lower() != "admin":
         membership_action = "promote_to_admin"
 
+    steward_setup = (_safe_str(getattr(clan, "status", None)) or "active").lower() == "steward_setup"
     return {
         "community": _community_row(db, clan),
         "requested_owner": _user_label(owner),
         "current_owner": _user_label(current_owner),
         "membership_action": membership_action,
         "will_set_created_by_user_id": int(owner.id),
+        "will_activate_steward_setup": steward_setup,
         "will_preserve_community_code": True,
         "will_preserve_history": True,
         "will_remove_other_admins": False,
         "boundary": (
             "This records the canonical owner/admin for the existing community. "
+            "If this is a GSN steward setup, owner proof releases it to active use. "
             "It does not delete historical evidence or erase previous activity."
         ),
     }
@@ -1389,6 +1417,67 @@ def _normalize_community_lifecycle_status(value: Any) -> str:
     return status
 
 
+
+def _find_existing_community_for_steward_setup(db: Session, community_name: str) -> Optional[Clan]:
+    try:
+        return _resolve_community_for_ownership(db, community_name=community_name)
+    except HTTPException as exc:
+        if exc.status_code == 404:
+            return None
+        raise
+
+
+def _steward_setup_pending_row(community_name: str, payload: CommunityStewardSetupIn) -> dict[str, Any]:
+    return {
+        "clan_id": None,
+        "name": _safe_str(community_name),
+        "description": _safe_str(payload.description) or "Prepared by GSN steward setup. Owner acceptance still required.",
+        "marketplace_name": _safe_str(payload.marketplace_name) or f"{_safe_str(community_name)} Marketplace",
+        "marketplace_description": _safe_str(payload.marketplace_description) or None,
+        "community_code": "Will be created",
+        "status": "steward_setup",
+        "closed_at": None,
+        "closed_reason": None,
+        "created_by_user_id": None,
+        "created_at": None,
+        "canonical_owner": None,
+        "admin_members": [],
+    }
+
+
+def _community_steward_setup_preview(
+    db: Session,
+    *,
+    community_name: str,
+    payload: CommunityStewardSetupIn,
+    existing: Optional[Clan],
+) -> dict[str, Any]:
+    existing_status = _safe_str(getattr(existing, "status", None)) if existing is not None else ""
+    active_existing = existing is not None and (existing_status or "active").lower() == "active"
+    return {
+        "community": _community_row(db, existing) if existing is not None else _steward_setup_pending_row(community_name, payload),
+        "representative_reference": _safe_str(payload.representative_reference) or None,
+        "current_status": existing_status or "missing",
+        "requested_status": "steward_setup",
+        "will_create_community": existing is None,
+        "will_prepare_existing_inactive_community": bool(existing is not None and not active_existing),
+        "blocked_by_active_community": active_existing,
+        "will_hide_from_member_home": True,
+        "will_keep_community_name_reserved": True,
+        "will_preserve_history": True,
+        "will_delete_community": False,
+        "will_remove_members": False,
+        "will_claim_verified_owner": False,
+        "will_activate_on_owner_acceptance": True,
+        "next_action": "Record verified owner/admin to release this prepared setup." if not active_existing else "Use ownership repair instead; do not overwrite an active community.",
+        "boundary": (
+            "This prepares a hidden GSN steward setup. It does not claim the organisation has accepted, "
+            "does not verify ownership, does not delete evidence, and does not make the community public. "
+            "The real representative must accept through the proof-checked owner repair before the setup is released."
+        ),
+    }
+
+
 def _community_lifecycle_preview(
     db: Session,
     *,
@@ -1577,7 +1666,13 @@ def admin_community_ownership_reconcile(
         preview = _community_ownership_preview(db, clan=clan, owner=owner)
 
     previous_owner_id = int(clan.created_by_user_id) if clan.created_by_user_id else None
+    previous_status = _safe_str(getattr(clan, "status", None)) or "active"
+    released_steward_setup = previous_status.lower() == "steward_setup"
     clan.created_by_user_id = int(owner.id)
+    if released_steward_setup:
+        clan.status = "active"
+        clan.closed_at = None
+        clan.closed_reason = None
     db.add(clan)
     membership = _ensure_ownership_admin_membership_no_commit(db=db, clan=clan, owner=owner)
 
@@ -1617,6 +1712,8 @@ def admin_community_ownership_reconcile(
             "community_name": _safe_str(clan.name),
             "community_code": _safe_str(getattr(clan, "community_code", None)) or f"GSN-C-{int(clan.id):06d}",
             "previous_created_by_user_id": previous_owner_id,
+            "previous_status": previous_status,
+            "released_steward_setup": released_steward_setup,
             "canonical_owner_user_id": int(owner.id),
             "canonical_owner_gmfn_id": _safe_str(getattr(owner, "gmfn_id", None)) or None,
             "entry_verification_id": int(intake.id) if intake is not None else None,
@@ -1627,6 +1724,7 @@ def admin_community_ownership_reconcile(
             "membership_action": preview.get("membership_action"),
             "history_preserved": True,
             "other_admins_removed": False,
+            "owner_acceptance_required_before_release": False if released_steward_setup else None,
         },
     )
     log_trust_event(
@@ -1672,6 +1770,145 @@ def admin_community_ownership_reconcile(
         "mode": "execute",
         "executed": True,
         "message": message,
+        **result_preview,
+    }
+
+
+@router.post("/community-steward-setup")
+def admin_community_steward_setup(
+    payload: CommunityStewardSetupIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_platform_admin(current_user)
+    clean_name = _safe_str(payload.community_name)
+    existing = _find_existing_community_for_steward_setup(db, clean_name)
+    preview = _community_steward_setup_preview(
+        db,
+        community_name=clean_name,
+        payload=payload,
+        existing=existing,
+    )
+    reviewer_note = _safe_str(payload.reviewer_note)
+
+    if not payload.execute:
+        return {
+            "ok": True,
+            "mode": "preview",
+            "executed": False,
+            "message": "Preview ready. Confirm steward setup before reserving this community shell.",
+            **preview,
+        }
+
+    if preview.get("blocked_by_active_community"):
+        raise HTTPException(
+            status_code=409,
+            detail="An active community already uses this name. Use ownership repair or lifecycle review instead of steward setup.",
+        )
+    if not bool(payload.setup_confirmed):
+        raise HTTPException(
+            status_code=400,
+            detail="Steward setup confirmation is required before preparing this community.",
+        )
+    if len(reviewer_note) < 12:
+        raise HTTPException(
+            status_code=400,
+            detail="Reviewer note is required before preparing this steward setup.",
+        )
+
+    now = datetime.now(timezone.utc)
+    created_community = existing is None
+    if existing is None:
+        clan = Clan(
+            name=clean_name,
+            description=_safe_str(payload.description) or "Prepared by GSN steward setup. Owner acceptance still required.",
+            marketplace_name=_safe_str(payload.marketplace_name) or f"{clean_name} Marketplace",
+            marketplace_description=_safe_str(payload.marketplace_description) or None,
+            invite_code=secrets.token_urlsafe(16),
+            invite_created_at=now,
+            invite_expires_at=now + timedelta(days=7),
+            invite_max_uses=None,
+            invite_uses=0,
+            status="steward_setup",
+            created_by_user_id=int(current_user.id),
+            closed_reason=f"Steward setup pending owner acceptance: {reviewer_note}",
+        )
+        db.add(clan)
+        try:
+            db.flush()
+        except IntegrityError:
+            db.rollback()
+            raise HTTPException(status_code=409, detail="Community name already exists. Search records before preparing steward setup.")
+        if not _safe_str(getattr(clan, "community_code", None)):
+            clan.community_code = f"GSN-C-{int(clan.id):06d}"
+            db.add(clan)
+            db.flush()
+    else:
+        clan = existing
+        clan.status = "steward_setup"
+        if _safe_str(payload.description):
+            clan.description = _safe_str(payload.description)
+        if _safe_str(payload.marketplace_name):
+            clan.marketplace_name = _safe_str(payload.marketplace_name)
+        if _safe_str(payload.marketplace_description):
+            clan.marketplace_description = _safe_str(payload.marketplace_description)
+        clan.closed_reason = f"Steward setup pending owner acceptance: {reviewer_note}"
+        if not clan.created_by_user_id:
+            clan.created_by_user_id = int(current_user.id)
+        if not _safe_str(getattr(clan, "community_code", None)):
+            db.add(clan)
+            db.flush()
+            clan.community_code = f"GSN-C-{int(clan.id):06d}"
+        db.add(clan)
+        db.flush()
+
+    steward_membership = _ensure_ownership_admin_membership_no_commit(db=db, clan=clan, owner=current_user)
+    log_trust_event(
+        db,
+        event_type="community.steward_setup_prepared",
+        clan_id=int(clan.id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta=build_trust_meta(
+            reason="community_steward_setup_prepared",
+            note=reviewer_note,
+            trust_delta="0.00",
+            system=True,
+            extra={
+                "community_id": int(clan.id),
+                "community_name": _safe_str(clan.name),
+                "community_code": _safe_str(getattr(clan, "community_code", None)) or f"GSN-C-{int(clan.id):06d}",
+                "created_community": created_community,
+                "previous_status": preview.get("current_status"),
+                "requested_status": "steward_setup",
+                "representative_reference": _safe_str(payload.representative_reference) or None,
+                "steward_user_id": int(current_user.id),
+                "steward_membership_id": int(steward_membership.id),
+                "owner_acceptance_required": True,
+                "verified_owner_claimed": False,
+                "member_home_hidden": True,
+                "name_reserved": True,
+                "history_preserved": True,
+                "community_deleted": False,
+                "members_removed": False,
+            },
+        ),
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+    db.refresh(clan)
+    result_preview = _community_steward_setup_preview(
+        db,
+        community_name=clean_name,
+        payload=payload,
+        existing=clan,
+    )
+    return {
+        "ok": True,
+        "mode": "execute",
+        "executed": True,
+        "message": f"{_safe_str(clan.name)} is prepared in GSN steward setup and hidden until owner acceptance.",
         **result_preview,
     }
 

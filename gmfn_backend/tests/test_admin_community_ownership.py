@@ -828,3 +828,225 @@ def test_closed_community_is_hidden_from_member_home(
         assert setup_owner is not None
         visible = list_visible_user_clans(db=db, user=setup_owner)
         assert all(clan.community_code != 'GSN-C-PILLAR-HOPE' for clan in visible)
+
+def _seed_platform_admin_only() -> None:
+    with SessionLocal() as db:
+        db.add(
+            User(
+                id=1,
+                email='pytest@example.com',
+                hashed_password='hashed',
+                display_name='Platform Admin',
+                role='admin',
+                gmfn_id='GSN-P-ADMIN',
+                phone_e164='+447700900001',
+            )
+        )
+        db.commit()
+
+
+def _seed_steward_setup_release_case() -> None:
+    with SessionLocal() as db:
+        db.add_all(
+            [
+                User(
+                    id=1,
+                    email='pytest@example.com',
+                    hashed_password='hashed',
+                    display_name='Platform Admin',
+                    role='admin',
+                    gmfn_id='GSN-P-ADMIN',
+                    phone_e164='+447700900001',
+                ),
+                User(
+                    id=3,
+                    email='felix@example.com',
+                    hashed_password='hashed',
+                    display_name='Mr Felix',
+                    role='user',
+                    gmfn_id='GSN-P-FELIX',
+                    phone_e164='+447700900003',
+                ),
+                Clan(
+                    id=31,
+                    name='Mamacita Foundation',
+                    description='Prepared from a steward brief.',
+                    marketplace_name='Mamacita Foundation Marketplace',
+                    community_code='GSN-C-MAMACITA',
+                    created_by_user_id=1,
+                    status='steward_setup',
+                    invite_code='mamacita-steward-invite',
+                    invite_uses=0,
+                    closed_reason='Steward setup pending owner acceptance.',
+                ),
+                ClanMembership(
+                    id=41,
+                    clan_id=31,
+                    user_id=1,
+                    role='admin',
+                    personal_pool_balance=0,
+                ),
+            ]
+        )
+        db.commit()
+
+
+def test_community_steward_setup_preview_is_read_only(
+    client: TestClient,
+    override_current_user,
+):
+    _seed_platform_admin_only()
+
+    response = client.post(
+        '/admin/community-steward-setup',
+        json={
+            'community_name': 'Mamacita Foundation',
+            'description': 'Prepared from a remote organisation brief.',
+            'marketplace_name': 'Mamacita Foundation Marketplace',
+            'representative_reference': 'Representative will confirm after call.',
+            'execute': False,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body['mode'] == 'preview'
+    assert body['executed'] is False
+    assert body['current_status'] == 'missing'
+    assert body['requested_status'] == 'steward_setup'
+    assert body['will_create_community'] is True
+    assert body['will_claim_verified_owner'] is False
+    assert body['will_hide_from_member_home'] is True
+    assert body['will_delete_community'] is False
+
+    with SessionLocal() as db:
+        assert db.query(Clan).filter(Clan.name == 'Mamacita Foundation').first() is None
+        assert db.query(TrustEvent).count() == 0
+
+
+def test_community_steward_setup_execute_creates_hidden_reserved_shell(
+    client: TestClient,
+    override_current_user,
+):
+    _seed_platform_admin_only()
+
+    response = client.post(
+        '/admin/community-steward-setup',
+        json={
+            'community_name': 'Mamacita Foundation',
+            'description': 'Prepared from a remote organisation brief.',
+            'marketplace_name': 'Mamacita Foundation Marketplace',
+            'marketplace_description': 'Local sellers and support activity will be reviewed by the owner.',
+            'representative_reference': 'Representative will confirm after call.',
+            'setup_confirmed': True,
+            'execute': True,
+            'reviewer_note': 'Prepared only as a hidden steward setup pending real owner acceptance.',
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body['mode'] == 'execute'
+    assert body['executed'] is True
+    assert body['community']['status'] == 'steward_setup'
+    assert body['will_claim_verified_owner'] is False
+    assert body['will_hide_from_member_home'] is True
+
+    with SessionLocal() as db:
+        clan = db.query(Clan).filter(Clan.name == 'Mamacita Foundation').one()
+        assert clan.status == 'steward_setup'
+        assert clan.created_by_user_id == 1
+        assert clan.community_code == f'GSN-C-{int(clan.id):06d}'
+        assert 'pending real owner acceptance' in (clan.closed_reason or '')
+        admin_membership = (
+            db.query(ClanMembership)
+            .filter(ClanMembership.clan_id == clan.id, ClanMembership.user_id == 1)
+            .one()
+        )
+        assert admin_membership.role == 'admin'
+        admin_user = db.get(User, 1)
+        assert admin_user is not None
+        visible = list_visible_user_clans(db=db, user=admin_user)
+        assert all(row.id != clan.id for row in visible)
+        event = db.query(TrustEvent).one()
+        assert event.event_type == 'community.steward_setup_prepared'
+        assert event.meta['owner_acceptance_required'] is True
+        assert event.meta['verified_owner_claimed'] is False
+        assert event.meta['member_home_hidden'] is True
+
+
+def test_community_steward_setup_blocks_active_name_overwrite(
+    client: TestClient,
+    override_current_user,
+):
+    _seed_pillar_of_hope_case()
+
+    preview = client.post(
+        '/admin/community-steward-setup',
+        json={
+            'community_name': 'Pillar of Hope',
+            'execute': False,
+        },
+    )
+    assert preview.status_code == 200, preview.text
+    assert preview.json()['blocked_by_active_community'] is True
+
+    execute = client.post(
+        '/admin/community-steward-setup',
+        json={
+            'community_name': 'Pillar of Hope',
+            'setup_confirmed': True,
+            'execute': True,
+            'reviewer_note': 'Attempting to reuse an active community name must be blocked.',
+        },
+    )
+    assert execute.status_code == 409, execute.text
+
+    with SessionLocal() as db:
+        clan = db.get(Clan, 11)
+        assert clan is not None
+        assert clan.status == 'active'
+        assert clan.created_by_user_id == 2
+        assert db.query(TrustEvent).count() == 0
+
+
+def test_community_ownership_release_activates_steward_setup(
+    client: TestClient,
+    override_current_user,
+):
+    _seed_steward_setup_release_case()
+
+    response = client.post(
+        '/admin/community-ownership/reconcile',
+        json={
+            'community_name': 'Mamacita Foundation',
+            'owner_gmfn_id': 'GSN-P-FELIX',
+            'owner_proof_confirmed': True,
+            'execute': True,
+            'reviewer_note': 'Felix accepted the prepared setup and proof was checked before release.',
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body['mode'] == 'execute'
+    assert body['community']['status'] == 'active'
+    assert body['will_activate_steward_setup'] is False
+
+    with SessionLocal() as db:
+        clan = db.get(Clan, 31)
+        assert clan is not None
+        assert clan.status == 'active'
+        assert clan.closed_at is None
+        assert clan.closed_reason is None
+        assert clan.created_by_user_id == 3
+        felix_membership = (
+            db.query(ClanMembership)
+            .filter(ClanMembership.clan_id == 31, ClanMembership.user_id == 3)
+            .one()
+        )
+        assert felix_membership.role == 'admin'
+        event = db.query(TrustEvent).filter(TrustEvent.event_type == 'community.ownership_reconciled').one()
+        assert event.meta['previous_status'] == 'steward_setup'
+        assert event.meta['released_steward_setup'] is True
+        assert event.meta['owner_acceptance_required_before_release'] is False
