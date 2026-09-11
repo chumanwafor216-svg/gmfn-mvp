@@ -285,8 +285,8 @@ assertContains(
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact\s*\? shopFollowState\.isOwner\s*\? "max-content minmax\(0, 1fr\)"[\s\S]*?gap: isCompact \? 6 : 10[\s\S]*?debugId="shop-gallery\.owner\.shop-analytics"[\s\S]*?gridColumn: isCompact \? "auto" : undefined[\s\S]*?whiteSpace: "nowrap"/,
-  "Public Shop owner compact signboard must place follower count and Shop analytics in one balanced row without the old empty gap."
+  /gridTemplateColumns: isCompact\s*\? shopFollowState\.isOwner\s*\? "max-content minmax\(118px, 1fr\)"[\s\S]*?gap: isCompact \? 6 : 10[\s\S]*?stableHeight=\{isCompact \? 50 : 46\}[\s\S]*?debugId="shop-gallery\.owner\.shop-analytics"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?View insights/,
+  "Public Shop owner compact signboard must place follower count and a two-line Shop analytics shortcut in one balanced phone row."
 );
 assertContains(
   /shopFollowState\.isOwner[\s\S]*?display: isCompact \? "none" : "grid"[\s\S]*?debugId="shop-gallery\.public-shop\.sign-in-follow"/,
@@ -366,8 +366,8 @@ assertContains(
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact[\s\S]*?"repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?debugId="shop-gallery\.share-shop"[\s\S]*?stableHeight=\{isCompact \? 46 : 54\}[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?stableHeight=\{isCompact \? 46 : 54\}[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"/,
-  "Public Shop signboard Share, Verify, and WhatsApp controls must keep fixed phone geometry."
+  /gridTemplateColumns: isCompact[\s\S]*?"repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?buttonLabel="Share"[\s\S]*?triggerIcon=\{inlineShareGlyph\("#FFFFFF", isCompact \? 18 : 21\)\}[\s\S]*?stableHeight=\{isCompact \? 46 : 54\}[\s\S]*?debugId="shop-gallery\.share-shop"[\s\S]*?linear-gradient\(180deg, #0B2D4A 0%, #08233A 100%\)[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?stableHeight=\{isCompact \? 46 : 54\}[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"/,
+  "Public Shop signboard Share, Verify, and WhatsApp controls must keep fixed phone geometry with a visible navy Share icon button."
 );
 
 assertContains(

@@ -21,6 +21,7 @@ type SocialTagShareButtonProps = {
   target: ShareTarget;
   disabled?: boolean;
   buttonLabel?: string;
+  triggerIcon?: React.ReactNode;
   buttonKind?: "primary" | "secondary";
   debugId: string;
   stableHeight?: number;
@@ -96,6 +97,7 @@ export default function SocialTagShareButton({
   target,
   disabled = false,
   buttonLabel = "Share",
+  triggerIcon,
   buttonKind = "secondary",
   debugId,
   stableHeight,
@@ -250,7 +252,8 @@ export default function SocialTagShareButton({
         style={style}
         title="Choose how to share this GSN package"
       >
-        {buttonLabel}
+        {triggerIcon ? <span aria-hidden="true">{triggerIcon}</span> : null}
+        <span>{buttonLabel}</span>
       </TriggerButton>
 
       {open ? (

@@ -160540,3 +160540,13 @@ Operational note:
 - Guardrail changed: `frontend/tools/audit-link-contracts.mjs` now cages public-shop share copy separately from Vault request copy, including the owner-issued Vault access wording.
 - Truth boundary: this does not expose private Vault items, create buyer proof, create real Vault inventory, grant access, verify hidden offers, or count private sales. It is only a request path for owner-issued Vault access.
 - Verification passed: `npm --prefix frontend run audit:link-contracts`; `npm --prefix frontend run audit:shop-gallery-button-inventory`; targeted frontend ESLint; `npm --prefix frontend run audit:marketplace-shop-evidence-boundary`; `npm --prefix frontend run audit:share-tag-actions`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build` outside the sandbox after sandboxed esbuild failed with `spawn EPERM`.
+
+## 2026-09-11 - Public Shop phone action polish (local)
+
+- Status: Local frontend polish implemented and verified; not pushed or deployed yet.
+- Owner trigger: owner mobile screenshot showed the Share button lacked a visible share symbol, the owner-only Shop analytics shortcut felt cramped on phone, and the Vault action language still risked feeling like another full-shop share.
+- Frontend route affected: `/shop/:gmfnId` through `frontend/src/pages/ShopGalleryPage.tsx` plus the shared `frontend/src/components/SocialTagShareButton.tsx` trigger slot.
+- Product behavior changed: Public Shop Share now keeps the full-shop advertisement function but appears as a dark navy icon+text button on phone. Owner Shop analytics now uses a clearer two-line `Shop analytics / View insights` shortcut. Vault compact copy action now reads `Copy Request` and the Vault panel says it sends a private-offer request, not the public shop share.
+- Existing engine reused: no share route, Vault route, analytics engine, or backend behavior was duplicated. The existing social share chooser and Vault-request preview link remain the source of truth.
+- Truth boundary: this is mobile presentation and request-language polish only. It does not expose private Vault stock, grant Vault access, prove offers exist, or count sales.
+- Verification passed: `npm --prefix frontend run audit:shop-gallery-button-inventory`; `npm --prefix frontend run audit:share-tag-actions`; `npm --prefix frontend run audit:link-contracts`; targeted frontend ESLint; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build` outside the sandbox after prior sandboxed esbuild spawn issues.

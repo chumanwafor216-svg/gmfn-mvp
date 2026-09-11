@@ -1379,6 +1379,69 @@ function inlineShopIcon(
   );
 }
 
+function inlineShareGlyph(color = "#FFFFFF", size = 18): React.ReactNode {
+  const dot = Math.max(4, Math.round(size * 0.25));
+  const lineHeight = Math.max(2, Math.round(size * 0.11));
+
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        position: "relative",
+        width: size,
+        height: size,
+        display: "inline-block",
+        flex: "0 0 auto",
+      }}
+    >
+      <span
+        style={{
+          position: "absolute",
+          left: Math.round(size * 0.28),
+          top: Math.round(size * 0.28),
+          width: Math.round(size * 0.42),
+          height: lineHeight,
+          borderRadius: 999,
+          background: color,
+          transform: "rotate(-30deg)",
+          transformOrigin: "left center",
+        }}
+      />
+      <span
+        style={{
+          position: "absolute",
+          left: Math.round(size * 0.28),
+          top: Math.round(size * 0.62),
+          width: Math.round(size * 0.42),
+          height: lineHeight,
+          borderRadius: 999,
+          background: color,
+          transform: "rotate(30deg)",
+          transformOrigin: "left center",
+        }}
+      />
+      {[
+        [0, Math.round(size * 0.43)],
+        [Math.round(size * 0.66), Math.round(size * 0.1)],
+        [Math.round(size * 0.66), Math.round(size * 0.72)],
+      ].map(([left, top], index) => (
+        <span
+          key={index}
+          style={{
+            position: "absolute",
+            left,
+            top,
+            width: dot,
+            height: dot,
+            borderRadius: "50%",
+            background: color,
+            boxShadow: "0 1px 0 rgba(255,255,255,0.28)",
+          }}
+        />
+      ))}
+    </span>
+  );
+}
 function labelWithShopIcon(
   name: ShopIconName,
   label: React.ReactNode,
@@ -3529,7 +3592,7 @@ export default function ShopGalleryPage() {
                   display: "grid",
                   gridTemplateColumns: isCompact
                     ? shopFollowState.isOwner
-                      ? "max-content minmax(0, 1fr)"
+                      ? "max-content minmax(118px, 1fr)"
                       : "minmax(0, 1fr)"
                     : "minmax(0, 1fr) auto",
                   gridColumn: isCompact ? "2" : undefined,
@@ -3682,7 +3745,7 @@ export default function ShopGalleryPage() {
                 <StableCtaLink
                   to={ownerShopAnalyticsPath}
                   fullWidth
-                  stableHeight={isCompact ? 48 : 46}
+                  stableHeight={isCompact ? 50 : 46}
                   debugId="shop-gallery.owner.shop-analytics"
                   aria-label="Open owner shop analytics"
                   style={{
@@ -3692,16 +3755,35 @@ export default function ShopGalleryPage() {
                     color: "#FFFFFF",
                     border: "1px solid rgba(214,170,69,0.28)",
                     boxShadow: "0 10px 20px rgba(8,38,67,0.16), inset 0 1px 0 rgba(255,255,255,0.16)",
-                    fontSize: isCompact ? 11.5 : 13,
+                    fontSize: isCompact ? 10.8 : 13,
                     fontWeight: 900,
-                    gap: isCompact ? 4 : 8,
+                    gap: isCompact ? 6 : 8,
                     minWidth: 0,
-                    padding: isCompact ? "6px 7px" : undefined,
+                    padding: isCompact ? "6px 8px" : undefined,
                     whiteSpace: "nowrap",
                   }}
                 >
-                  {inlineShopIcon("chart", "#FFFFFF", isCompact ? 13 : 15)}
-                  <span>Shop analytics</span>
+                  {inlineShopIcon("chart", "#FFFFFF", isCompact ? 12 : 15)}
+                  <span
+                    style={{
+                      display: "grid",
+                      gap: 1,
+                      minWidth: 0,
+                      lineHeight: 1.05,
+                      textAlign: "left",
+                    }}
+                  >
+                    <span>Shop analytics</span>
+                    <span
+                      style={{
+                        color: "rgba(255,255,255,0.72)",
+                        fontSize: isCompact ? 9 : 11,
+                        fontWeight: 750,
+                      }}
+                    >
+                      View insights
+                    </span>
+                  </span>
                 </StableCtaLink>
               ) : null}
               </div>
@@ -3855,6 +3937,7 @@ export default function ShopGalleryPage() {
               disabled={shopLoadFailed || !absoluteShopShareLink}
               buttonLabel="Share"
               buttonKind="primary"
+              triggerIcon={inlineShareGlyph("#FFFFFF", isCompact ? 18 : 21)}
               minWidth={0}
               fullWidth
               stableHeight={isCompact ? 46 : 54}
@@ -3866,12 +3949,12 @@ export default function ShopGalleryPage() {
                 fontSize: isCompact ? 11.2 : 14,
                 padding: isCompact ? "5px 3px" : "10px 12px",
                 gap: isCompact ? 4 : 7,
-                color: "#07172C",
+                color: "#FFFFFF",
                 background:
-                  "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)",
-                border: "1px solid rgba(214,170,69,0.28)",
+                  "linear-gradient(180deg, #0B2D4A 0%, #08233A 100%)",
+                border: "1px solid rgba(214,170,69,0.34)",
                 boxShadow:
-                  "0 10px 22px rgba(8,38,67,0.10), inset 0 1px 0 rgba(255,255,255,0.94)",
+                  "0 12px 24px rgba(8,38,67,0.18), inset 0 1px 0 rgba(255,255,255,0.16)",
               }}
               onResult={(tone, text) => {
                 if (tone === "success") {
@@ -5147,7 +5230,7 @@ export default function ShopGalleryPage() {
                   fontWeight: 650,
                 }}
               >
-                Ask the owner for an access link to view private deals.
+                Sends a private-offer request, not the public shop share.
               </p>
               <div
                 style={{
@@ -5191,7 +5274,7 @@ export default function ShopGalleryPage() {
                     textOverflow: "ellipsis",
                   }}
                 >
-                  {isCompact ? "Copy Vault" : "Copy Vault request"}
+                  {isCompact ? "Copy Request" : "Copy Vault request"}
                 </SecondaryButton>
               </div>
             </div>
