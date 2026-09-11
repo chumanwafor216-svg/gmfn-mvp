@@ -597,7 +597,7 @@ def _create_marketplace_listing_review_notifications(
             kind=MARKETPLACE_LISTING_SUBMISSION_EVENT,
             title="Marketplace listing waiting for review",
             message=f"A member submitted {summary} for marketplace approval.",
-            action_url=attributed_action_url,
+            action_url=action_url,
             action_label="Review listing",
             commit=False,
             refresh=False,
