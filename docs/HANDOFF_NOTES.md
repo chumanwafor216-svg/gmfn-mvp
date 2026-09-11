@@ -160510,3 +160510,12 @@ Operational note:
 - Frontend route affected: `/app/command-center/community-ownership` now opens with a compact Case chooser explaining which existing engine to use: Owner repair for transfer/release, Steward setup for prepared shells, Pilot cleanup for public setup/test traces, and Lifecycle close for organisation exit.
 - Boundary: This does not add another backend engine or duplicate account logic. It reduces misuse of the existing engines and keeps the truth boundary visible: no legal erasure, no silent deletion, and no proof of organisation acceptance.
 - Guardrail: `frontend/tools/audit-admin-route-guards.mjs` now cages the Case chooser and its boundary language.
+
+## 2026-09-11 - Steward setup and handover protocol added
+
+- Status: Docs-only operating procedure added after deployment of the admin ownership/cleanup tools; no product code, backend route, frontend route, or schema change.
+- Owner trigger: founder clarified the practical Pillar of Hope/Felix workflow: send or ask all setup questions, get permission, prepare the workspace as GSN steward, then release ownership to the real representative.
+- Added `docs/GSN_STEWARD_SETUP_AND_HANDOVER_PROTOCOL_2026-09-11.md` as the standard procedure for temporary GSN setup followed by owner handover.
+- Procedure boundary: GSN may collect answers, prepare a hidden `steward_setup` workspace, clean old test/public data, and release ownership after proof. GSN must not pretend adoption, verified legal ownership, payment, endorsement, or impact happened.
+- Practical Pillar of Hope advice: call or email Mr Felix Moby/Nwobi, collect the organisation answers and written authority, prepare only approved information, then use owner repair/release once his GSN identity is ready. After handover, remove or downgrade the founder/steward admin role unless temporary support is explicitly agreed.
+- Devil truth: this makes onboarding cleaner, but it still depends on real owner confirmation. A steward-prepared workspace is not the same as formal organisational adoption.
