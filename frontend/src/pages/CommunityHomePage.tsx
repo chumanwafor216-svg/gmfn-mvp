@@ -2594,6 +2594,7 @@ export default function CommunityHomePage() {
         "community-home.route.community-packages",
         { hash: OWNER_SHOP_HASHES.communityPackage }
       ),
+      whatsappBridge: routeWithCommunity(APP_ROUTES.WHATSAPP_BRIDGE, selectedClanId),
       communityDomainCommand: "/app/community-domain",
       communityDomainPurchase: "/community-domain/purchase",
       freeSpotlight: routeTarget(
@@ -2660,6 +2661,7 @@ export default function CommunityHomePage() {
           routes.shopGalleryTools,
           routes.merchantRelease,
           routes.communityPackages,
+          routes.whatsappBridge,
           routes.paidRepost,
           routes.rosca,
         ].filter((route): route is string => Boolean(route))
@@ -2685,6 +2687,7 @@ export default function CommunityHomePage() {
     routes.shopGalleryTools,
     routes.merchantRelease,
     routes.communityPackages,
+    routes.whatsappBridge,
     routes.paidRepost,
     routes.rosca,
   ]);
@@ -6445,6 +6448,19 @@ export default function CommunityHomePage() {
                       detail: "Open the selected community marketplace.",
                       onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                         openCommunityNextAction(event, "marketplace"),
+                    },
+                    {
+                      icon: "phone",
+                      id: "whatsapp-bridge",
+                      title: "WhatsApp Bridge",
+                      detail:
+                        "Copy the group signpost and send members into the right GSN action.",
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openSelectedCommunityRoute(
+                          event,
+                          routes.whatsappBridge,
+                          "Choose a community first, then open the WhatsApp Bridge."
+                        ),
                     },
                     {
                       icon: COMMUNITY_OWNER_HANDLE_ICONS["shop-control"],

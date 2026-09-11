@@ -1,3 +1,10 @@
+## 2026-09-11 - WhatsApp Bridge discoverability added locally
+
+- Owner trigger: owner asked where the WhatsApp Bridge lives and said it should be part of every community delivery, especially Community tools for groups like Pillar of Hope.
+- Product decision: `/app/whatsapp-bridge` remains the stable bridge home; Community Home now exposes it through Verification tools -> Work tools -> WhatsApp Bridge.
+- Frontend change: `CommunityHomePage` now builds and preloads `routes.whatsappBridge`, then shows a Work tools row that opens the selected community's bridge.
+- Guardrail updated: `frontend/tools/audit-whatsapp-bridge-contract.mjs` now checks that Community Home still contains the WhatsApp Bridge entry point.
+- Devil truth: this makes the bridge discoverable inside GSN, but WhatsApp itself still needs the group admin to paste the description/signpost and pin the message.
 ## 2026-09-11 - WhatsApp Bridge v1 added locally
 
 - Owner trigger: owner asked to start the practical GSN/WhatsApp bridge so WhatsApp remains the conversation space while GSN holds structured community actions.

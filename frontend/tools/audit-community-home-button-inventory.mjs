@@ -15,8 +15,8 @@ const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 4;
 const expectedSpotlightGuidedActionCount = 5;
-const expectedGroupedLaneRowCount = 22;
-const expectedExpandedRouteLocalActionTemplates = 50;
+const expectedGroupedLaneRowCount = 23;
+const expectedExpandedRouteLocalActionTemplates = 51;
 const expectedMobileShellBreakdown = {
   top: 2,
   drawer: 25,
@@ -504,6 +504,11 @@ assertContains(
   /id: "rosca"[\s\S]*?title: "ROSCA"[\s\S]*?detail: "Open contribution cycles for this community marketplace\."[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.rosca[\s\S]*?"Choose a community first, then open ROSCA in Marketplace\."/,
   "Community Home ROSCA row must keep its Marketplace wording and selected-community route explanation."
 );
+assertContains(
+  /whatsappBridge:\s*routeWithCommunity\(APP_ROUTES\.WHATSAPP_BRIDGE, selectedClanId\)[\s\S]*?id: "whatsapp-bridge"[\s\S]*?title: "WhatsApp Bridge"[\s\S]*?routes\.whatsappBridge[\s\S]*?"Choose a community first, then open the WhatsApp Bridge\."/,
+  "Community Home WhatsApp Bridge row must stay in Work tools and use the selected-community route guard."
+);
+
 
 assertContains(
   /function communityQuickActionButton\([\s\S]*?height: isCompact \? 58 : 100[\s\S]*?minHeight: isCompact \? 58 : 100[\s\S]*?maxHeight: isCompact \? 58 : 100[\s\S]*?overflow: "hidden"[\s\S]*?function communityQuickActionIcon\([\s\S]*?width: 25,[\s\S]*?height: 25,[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?"repeat\(4, minmax\(0, 1fr\)\)"[\s\S]*?debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}/,

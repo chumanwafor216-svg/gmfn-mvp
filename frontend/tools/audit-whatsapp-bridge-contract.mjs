@@ -14,6 +14,7 @@ function mustInclude(name, text, needle) {
 const app = read("src/App.tsx");
 const routes = read("src/lib/appRoutes.ts");
 const page = read("src/pages/WhatsAppBridgePage.tsx");
+const communityHome = read("src/pages/CommunityHomePage.tsx");
 const registry = read("../docs/SCREEN_REGISTRY.md");
 const specs = read("../docs/SCREEN_SPECS.md");
 const protocol = read("../docs/GSN_WHATSAPP_BRIDGE_PROTOCOL_2026-09-11.md");
@@ -34,6 +35,10 @@ mustInclude("WhatsAppBridgePage.tsx", page, "No WhatsApp scraping");
 mustInclude("WhatsAppBridgePage.tsx", page, "/app/demand-box?mode=ask_community");
 mustInclude("WhatsAppBridgePage.tsx", page, "Demand Box");
 mustInclude("WhatsAppBridgePage.tsx", page, "GSN records GSN actions only");
+
+mustInclude("CommunityHomePage.tsx", communityHome, "WhatsApp Bridge");
+mustInclude("CommunityHomePage.tsx", communityHome, "routes.whatsappBridge");
+mustInclude("CommunityHomePage.tsx", communityHome, "community-home.lane.marketplace-tools");
 
 mustInclude("SCREEN_REGISTRY.md", registry, "WhatsAppBridgePage");
 mustInclude("SCREEN_SPECS.md", specs, "## WhatsAppBridgePage");

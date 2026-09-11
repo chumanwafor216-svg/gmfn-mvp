@@ -1272,6 +1272,7 @@ Must show:
 - Share to WhatsApp action
 - destination buttons for Community Domain, Notice Board, Demand Box, Ask
   Community, Meeting Response, Attendance, Shop Gallery, Spotlight, and Reports
+- visible entry from Community Home -> Verification tools -> Work tools
 - WhatsApp anchor guidance for group description and pinned message
 - decision boundary that GSN records only actions completed inside GSN
 
@@ -1280,8 +1281,8 @@ Rules:
 - Do not claim WhatsApp delivery, read receipt, vote proof, or member consent.
 - Demand Box must stay written as `Demand Box`.
 - Ask Community must route into Demand Box question mode, not a separate engine.
-- The bridge page is the stable home; WhatsApp group description and pinned
-  message are signposts only.
+- The bridge page is the stable home; Community Home Work tools is the in-app
+  doorway; WhatsApp group description and pinned message are signposts only.
 - WhatsApp Status may be a reminder only because it disappears.
 
 Primary action:
