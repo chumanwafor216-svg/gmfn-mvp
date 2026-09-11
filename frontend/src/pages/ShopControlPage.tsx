@@ -1229,6 +1229,22 @@ function shopAnalyticsIconTile(accent: AnalyticsAccent): React.CSSProperties {
   };
 }
 
+function shopAnalyticsMetricLabelStyle(label: string): React.CSSProperties {
+  const compactLabel = label.length > 8;
+  return {
+    ...sectionLabel(),
+    flex: "1 1 0",
+    minWidth: 0,
+    textAlign: "right",
+    lineHeight: 1.12,
+    fontSize: compactLabel ? 9.2 : 10.5,
+    letterSpacing: 0,
+    overflowWrap: "normal",
+    wordBreak: "keep-all",
+    hyphens: "none",
+  };
+}
+
 function ShopAnalyticsMetricCard({
   icon,
   label,
@@ -1248,7 +1264,7 @@ function ShopAnalyticsMetricCard({
         <div style={{ ...shopAnalyticsIconTile(accent), flex: "0 0 auto", width: 36, height: 36, borderRadius: 14 }} aria-hidden="true">
           <GsnLegacyIcon name={icon} size={24} />
         </div>
-        <div style={{ ...sectionLabel(), flex: "1 1 0", minWidth: 0, textAlign: "right", lineHeight: 1.15, fontSize: 10.5, overflowWrap: "anywhere" }}>{label}</div>
+        <div style={shopAnalyticsMetricLabelStyle(label)}>{label}</div>
       </div>
       <div>
         <div style={{ color: "#061827", fontSize: 26, fontWeight: 950, lineHeight: 1, overflowWrap: "anywhere" }}>{value}</div>

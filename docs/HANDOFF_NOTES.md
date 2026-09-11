@@ -160464,3 +160464,12 @@ Operational note:
 - Decision-first boundary: deeper Observation, Interpretation, Recheck, recommended route action, Community Needs, advice action trail, and Why-this-advice details remain below the plain seller helper.
 - Truth boundary: Seller Helper translates analytics into practical guidance only. It does not claim buyers, sales, payment, delivery, verification, coaching completion, or a trust score.
 - Verification passed: targeted frontend ESLint; `npm --prefix frontend run audit:spotlight-system-feed`; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`.
+
+## 2026-09-11 - Shop Analytics Metric Label Readability Fix (local)
+
+- Status: Implemented locally after owner mobile screenshot showed metric labels breaking character-by-character inside compact cards.
+- Frontend route affected: `/app/shop-control#shop-control-counts`, inside Shop Analytics > Key Metrics.
+- Product behavior changed: `ShopAnalyticsMetricCard` now uses `shopAnalyticsMetricLabelStyle` so longer labels such as `Spotlights`, `Followers`, `Follower notices`, `Product opens`, and `Contact taps` use compact type and keep words intact instead of splitting letters.
+- Layout boundary: outer metric card footprint was not intentionally expanded; the fix changes label wrapping behavior inside the existing compact card.
+- Regression guard: `audit:spotlight-system-feed` now asserts metric labels use normal wrapping, `wordBreak: keep-all`, and no hyphenation for this component.
+- Verification passed before commit: targeted frontend ESLint; `npm --prefix frontend run audit:spotlight-system-feed`; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`.

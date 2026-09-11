@@ -249,6 +249,12 @@ assertContains(
 );
 
 assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /shopAnalyticsMetricLabelStyle[\s\S]*?label\.length > 8[\s\S]*?overflowWrap: "normal"[\s\S]*?wordBreak: "keep-all"[\s\S]*?hyphens: "none"[\s\S]*?<div style=\{shopAnalyticsMetricLabelStyle\(label\)\}>\{label\}<\/div>/,
+  "Shop Analytics metric card labels must stay readable on narrow phones without character-by-character word breaks."
+);
+
+assertContains(
   "frontend/src/pages/MarketplacePage.tsx",
   /routeAskMarketPulse[\s\S]*?ask_market[\s\S]*?market_need_pulse[\s\S]*?marketplace-official-board[\s\S]*?setMarketplaceNoticeModalMode\("market_need_pulse"\)[\s\S]*?setMarketplaceNoticeModalOpen\(true\)/,
   "Marketplace must open the existing Community Notice composer in market need pulse mode from the governed routeback."
