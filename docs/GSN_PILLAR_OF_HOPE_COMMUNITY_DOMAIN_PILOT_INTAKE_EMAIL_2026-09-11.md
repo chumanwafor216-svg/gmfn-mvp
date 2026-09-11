@@ -1,11 +1,11 @@
 # Pillar Of Hope Community Domain Pilot Intake Email
 
 Date prepared: 2026-09-11
-Status: updated Gmail draft prepared; not sent at this checkpoint
-Current draft id: `r-8958806702853699935`
-Superseded draft id: `r-3768560555913906788`
+Status: sent to confirmed Felix/Pillar of Hope thread
+Sent message id: `1a0918080da3a791`
+Sent draft id: `r2243798302874002322`
 Thread: existing Felix Nwobi / Pillar of Hope customer-discovery thread
-Recipient source: confirmed prior reply in Gmail thread; do not duplicate private email in public docs unnecessarily.
+Recipient source: confirmed prior Felix Nwobi reply in Gmail thread; do not duplicate private email in public docs unnecessarily.
 
 ## Purpose
 
@@ -15,7 +15,7 @@ before handover.
 
 ## Truth Boundary
 
-This draft is for pilot listening, setup, and learning only. It does not claim
+This sent message is for pilot listening, setup, and learning only. It does not claim
 adoption, payment, endorsement, public permission, RGU endorsement, Business
 Gateway endorsement, Scottish Enterprise endorsement, or permanent free access.
 
@@ -48,7 +48,7 @@ After the pilot, if Pillar of Hope still finds GSN useful, we can separately dis
 
 Either Pillar of Hope or GSN may pause, change, or stop the pilot at any time if it is not useful, ready, or suitable. GSN will not use Pillar of Hope's name, logo, members, beneficiaries, or private information publicly without separate permission.
 
-For context, GSN is developing this pilot while receiving business-development guidance from Business Gateway Aberdeen City & Shire and engaging with the Robert Gordon University Startup Accelerator / Innovation route. This does not mean either body has endorsed Pillar of Hope or GSN; it only shows we are developing the project responsibly.
+For context, GSN is currently progressing structured customer-discovery work with the support of Robert Gordon University, while also receiving business-development guidance from Business Gateway Aberdeen City & Shire. This does not mean either body has endorsed Pillar of Hope or GSN; it only shows we are developing the project responsibly.
 
 Please fill the attached questions as best as you can and email them back. Short answers are fine. If any question is unclear, please call me and I will explain it.
 
@@ -168,5 +168,5 @@ I authorise Global Support Network Ltd / GSN to prepare the Pillar of Hope GSN p
 
 ## Send Gate
 
-The updated Gmail draft should be sent only after the founder explicitly
-confirms the exact draft id and recipient at send time.
+The corrected Gmail draft was sent after the founder instructed Codex to use
+the Chris/RGU support wording, confirm the Felix email thread, and execute.

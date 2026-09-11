@@ -1,3 +1,11 @@
+## 2026-09-11 - Pillar of Hope pilot intake email sent with RGU support wording (local)
+
+- Status: Email sent through Gmail to the confirmed Felix/Pillar of Hope thread; repo evidence note updated locally, not pushed/deployed yet.
+- Gmail sent message id: `1a0918080da3a791`; thread id: `1a06ba9cd6073f27`; sent draft id: `r2243798302874002322`.
+- Founder correction: use Chris/RGU-authorised wording with the word support. Gmail evidence found: on 2026-08-25 Chris Moule, Director of Research, Innovation & Enterprise at Robert Gordon University, rewrote the pilot line to say GSN is progressing structured customer-discovery work `with the support of Robert Gordon University`.
+- Sent wording used: `GSN is currently progressing structured customer-discovery work with the support of Robert Gordon University, while also receiving business-development guidance from Business Gateway Aberdeen City & Shire.`
+- Boundary preserved: the sent email still says this does not mean RGU or Business Gateway has endorsed Pillar of Hope or GSN; it is pilot setup only, free at this stage, and either side may pause/change/stop.
+- Superseded drafts: `r-3768560555913906788` and `r-8958806702853699935` should be ignored if seen in Gmail drafts.
 ## 2026-09-11 - Pillar of Hope pilot intake email draft updated (local)
 
 - Status: Updated Gmail draft prepared in the existing Felix/Pillar of Hope thread; not sent until founder confirms exact draft id and recipient at send time.
