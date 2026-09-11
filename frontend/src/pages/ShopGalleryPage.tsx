@@ -2865,6 +2865,20 @@ export default function ShopGalleryPage() {
     });
   }
 
+  function buildVaultRequestText() {
+    const shopTitle = firstMeaningful(
+      effectiveShop?.shopName,
+      effectiveShop?.ownerName,
+      "this shop"
+    );
+
+    return [
+      `Hello, I am asking about private Vault offers from ${shopTitle}.`,
+      "Please send me an owner-issued Vault access link if there are selected offers you do not show on the public page.",
+      absoluteVaultRequestPreviewLink,
+    ].filter(Boolean).join("\n");
+  }
+
   async function copyVaultRequestLink() {
     if (shopLoadFailed) {
       setNotice({
@@ -2879,11 +2893,12 @@ export default function ShopGalleryPage() {
       return;
     }
 
-    const copied = await safeCopy(absoluteVaultRequestPreviewLink);
+    const requestText = buildVaultRequestText();
+    const copied = await safeCopy(requestText);
     setNotice({
       tone: copied ? "success" : "error",
       text: copied
-        ? "Vault request link copied."
+        ? "Vault request copied. Send it to the shop owner."
         : "Clipboard copy was blocked. Ask the owner for a private Vault link.",
     });
   }
@@ -3108,12 +3123,6 @@ export default function ShopGalleryPage() {
   }
 
   async function askForVaultAccess() {
-    const shopTitle = firstMeaningful(
-      effectiveShop?.shopName,
-      effectiveShop?.ownerName,
-      "this shop"
-    );
-
     if (!absoluteVaultRequestPreviewLink) {
       setNotice({
         tone: "error",
@@ -3122,11 +3131,7 @@ export default function ShopGalleryPage() {
       return;
     }
 
-    const requestText = [
-      `Hello, I would like to request a private Vault access link for ${shopTitle}.`,
-      absoluteVaultRequestPreviewLink,
-      "Please share any selected offers you do not show on the public page.",
-    ].filter(Boolean).join("\n");
+    const requestText = buildVaultRequestText();
 
     if (
       openOwnerWhatsAppChat(

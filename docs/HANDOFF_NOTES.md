@@ -160529,3 +160529,14 @@ Operational note:
 - Guardrail changed: `frontend/tools/audit-shop-gallery-button-inventory.mjs` now expects the owner-only analytics action in the Public Shop action inventory and cages the compact same-row layout plus shop-sign title treatment.
 - Truth boundary: this is visual/layout polish only. It does not change follower counts, analytics data, public visibility, Shop Control behavior, Spotlight feed logic, or marketplace ownership rules.
 - Verification passed: targeted frontend ESLint; `npm --prefix frontend run audit:shop-gallery-button-inventory`; `npm --prefix frontend run audit:spotlight-system-feed`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run build`.
+
+## 2026-09-11 - Public Shop Vault request copy narrowed (local)
+
+- Status: Local frontend polish implemented and verified; not pushed or deployed under the current batch-publish rule.
+- Owner trigger: owner clarified that Share should advertise the whole public shop, while Copy Vault / Ask Vault should request private Vault offers only and should not feel like another Shop Diaries share.
+- Frontend route affected: `/shop/:gmfnId` through `frontend/src/pages/ShopGalleryPage.tsx`.
+- Product behavior changed: `Copy Vault` now copies a short request message plus the existing Vault-request preview URL. `Ask Vault` reuses the same request message for WhatsApp, Telegram, or clipboard fallback. `Share` remains the whole public shop advertisement.
+- Existing engine reused: existing `/share/vault-request/:gmfnId` preview/card link engine. No backend route, Vault storage model, analytics model, or public-shop sharing engine was duplicated.
+- Guardrail changed: `frontend/tools/audit-link-contracts.mjs` now cages public-shop share copy separately from Vault request copy, including the owner-issued Vault access wording.
+- Truth boundary: this does not expose private Vault items, create buyer proof, create real Vault inventory, grant access, verify hidden offers, or count private sales. It is only a request path for owner-issued Vault access.
+- Verification passed: `npm --prefix frontend run audit:link-contracts`; `npm --prefix frontend run audit:shop-gallery-button-inventory`; targeted frontend ESLint; `npm --prefix frontend run audit:marketplace-shop-evidence-boundary`; `npm --prefix frontend run audit:share-tag-actions`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build` outside the sandbox after sandboxed esbuild failed with `spawn EPERM`.

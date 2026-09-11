@@ -893,14 +893,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const absoluteShopLink = useMemo\(\(\) => \{[\s\S]*?publicShopUrl\(ownerId\)[\s\S]*?const absoluteShopShareLink = useMemo\(\(\) => \{[\s\S]*?publicShopShareUrl\(\{ gmfnId: ownerId \}\)[\s\S]*?async function copyShopLink\(\) \{[\s\S]*?if \(shopLoadFailed\)[\s\S]*?not active yet[\s\S]*?return;[\s\S]*?const copied = await safeCopy\([\s\S]*?buildPublicShopMessage\(absoluteShopShareLink\)[\s\S]*?GSN public shop invitation copied\.[\s\S]*?Clipboard copy was blocked\. Use Share, or copy the page address from your browser\./,
+  /const absoluteShopLink = useMemo\(\(\) => \{[\s\S]*?publicShopUrl\(ownerId\)[\s\S]*?const absoluteShopShareLink = useMemo\(\(\) => \{[\s\S]*?publicShopShareUrl\(\{ gmfnId: ownerId \}\)[\s\S]*?async function copyShopLink\(\) \{[\s\S]*?if \(shopLoadFailed\)[\s\S]*?not active yet[\s\S]*?return;[\s\S]*?const shareLink = attributedShopShareLink \|\| absoluteShopShareLink[\s\S]*?const copied = await safeCopy\(buildPublicShopMessage\(shareLink\)[\s\S]*?GSN public shop invitation copied\.[\s\S]*?Clipboard copy was blocked\. Use Share, or copy the page address from your browser\./,
   "Public Shop Gallery copy must block failed public-shop links and copy compact GSN public shop link text."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const absoluteVaultRequestPreviewLink = useMemo\(\(\) => \{[\s\S]*?publicVaultRequestPreviewUrl\(\{ gmfnId: ownerId \}\)[\s\S]*?async function copyVaultRequestLink\(\)[\s\S]*?safeCopy\(absoluteVaultRequestPreviewLink\)[\s\S]*?Vault request link copied\.[\s\S]*?async function askForVaultAccess\(\)[\s\S]*?if \(!absoluteVaultRequestPreviewLink\)[\s\S]*?const requestText = \[[\s\S]*?request a private Vault access link[\s\S]*?absoluteVaultRequestPreviewLink,[\s\S]*?selected offers you do not show on the public page[\s\S]*?openOwnerWhatsAppChat\([\s\S]*?requestText[\s\S]*?const copied = await safeCopy\(requestText\);[\s\S]*?id=\{PUBLIC_SHOP_VAULT_ANCHOR\}[\s\S]*?debugId="shop-gallery\.copy-vault-request-link"/,
-  "Public Shop Vault access requests must use the Vault-request preview URL and Vault copy handler, not the general public shop link."
+  /const absoluteVaultRequestPreviewLink = useMemo\(\(\) => \{[\s\S]*?publicVaultRequestPreviewUrl\(\{ gmfnId: ownerId \}\)[\s\S]*?function buildVaultRequestText\(\)[\s\S]*?private Vault offers from \$\{shopTitle\}[\s\S]*?owner-issued Vault access link[\s\S]*?absoluteVaultRequestPreviewLink[\s\S]*?async function copyVaultRequestLink\(\)[\s\S]*?const requestText = buildVaultRequestText\(\);[\s\S]*?safeCopy\(requestText\)[\s\S]*?Vault request copied\. Send it to the shop owner\.[\s\S]*?async function askForVaultAccess\(\)[\s\S]*?const requestText = buildVaultRequestText\(\);[\s\S]*?openOwnerWhatsAppChat\([\s\S]*?requestText[\s\S]*?id=\{PUBLIC_SHOP_VAULT_ANCHOR\}[\s\S]*?debugId="shop-gallery\.copy-vault-request-link"/,
+  "Public Shop Vault copy/request actions must copy request wording plus the Vault-request preview URL, not a bare general shop link."
 );
 
 assertNotContains(
