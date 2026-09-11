@@ -199,6 +199,34 @@ assertContains(
   /does not claim verified ownership[\s\S]*?owner proof is still required/,
   "Steward setup UI must keep the no-verified-owner and owner-proof-required boundary visible."
 );
+
+assertContains(
+  apiFile,
+  apiSource,
+  /postAdminPilotDataCleanup[\s\S]*?\/admin\/pilot-data-cleanup/,
+  "Admin Community Ownership page must keep its pilot data cleanup API wrapper."
+);
+
+assertContains(
+  backendAdminFile,
+  backendAdminSource,
+  /@router\.post\("\/pilot-data-cleanup"\)[\s\S]*?community\.pilot_data_cleaned/,
+  "Backend admin route must record pilot data cleanup with a trust event."
+);
+
+assertContains(
+  adminPageFile,
+  adminPageSource,
+  /Pilot data cleanup[\s\S]*?Preview pilot cleanup[\s\S]*?Record pilot cleanup/,
+  "Admin Community Ownership page must expose pilot data cleanup preview and record controls."
+);
+
+assertContains(
+  adminPageFile,
+  adminPageSource,
+  /must not be used as legal erasure[\s\S]*?hard delete[\s\S]*?organisation accepted GSN/,
+  "Pilot data cleanup UI must keep the legal-erasure, hard-delete, and acceptance boundary visible."
+);
 if (findings.length) {
   console.error("Admin route guard audit failed:");
   for (const finding of findings) {

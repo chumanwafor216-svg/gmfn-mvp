@@ -7,7 +7,17 @@ from sqlalchemy import text
 
 from app.core.clan_auth import list_visible_user_clans
 from app.db.database import SessionLocal
-from app.db.models import Clan, ClanMembership, EntryPhoneVerification, TrustEvent, User, UserPayoutDestination
+from app.db.models import (
+    Clan,
+    ClanMembership,
+    EntryPhoneVerification,
+    MarketplaceBroadcast,
+    MarketplaceProduct,
+    MarketplaceShop,
+    TrustEvent,
+    User,
+    UserPayoutDestination,
+)
 from app.db.verification_models import IdentityVerificationCheck
 
 
@@ -1050,3 +1060,248 @@ def test_community_ownership_release_activates_steward_setup(
         assert event.meta['previous_status'] == 'steward_setup'
         assert event.meta['released_steward_setup'] is True
         assert event.meta['owner_acceptance_required_before_release'] is False
+
+def _seed_pilot_cleanup_case() -> None:
+    with SessionLocal() as db:
+        db.add_all(
+            [
+                User(
+                    id=1,
+                    email='pytest@example.com',
+                    hashed_password='hashed',
+                    display_name='Platform Admin',
+                    role='admin',
+                    gmfn_id='GSN-P-ADMIN',
+                    phone_e164='+447700900001',
+                ),
+                User(
+                    id=2,
+                    email='setup-owner@example.com',
+                    hashed_password='hashed',
+                    display_name='Earlier Setup Owner',
+                    role='user',
+                    gmfn_id='GSN-P-SETUP',
+                    phone_e164='+447700900002',
+                ),
+                Clan(
+                    id=51,
+                    name='Pillar Pilot Cleanup',
+                    description='Public real organisation details entered during setup testing.',
+                    marketplace_name='Pillar Real Marketplace',
+                    marketplace_description='Public seller details entered during pilot setup.',
+                    community_code='GSN-C-PILOT-CLEANUP',
+                    created_by_user_id=2,
+                    status='active',
+                    invite_code='pillar-pilot-cleanup',
+                    invite_uses=0,
+                ),
+                ClanMembership(
+                    id=61,
+                    clan_id=51,
+                    user_id=2,
+                    role='admin',
+                    personal_pool_balance=0,
+                ),
+                MarketplaceShop(
+                    id=71,
+                    clan_id=51,
+                    owner_user_id=2,
+                    name='Felix Real Shop',
+                    description='Real public shop description from setup testing.',
+                    whatsapp_number='+447700900777',
+                    telegram_handle='realhandle',
+                    image_url='https://example.com/shop.jpg',
+                    is_active=True,
+                ),
+                MarketplaceProduct(
+                    id=81,
+                    clan_id=51,
+                    shop_id=71,
+                    seller_user_id=2,
+                    name='Real Product',
+                    description='Real public product description from setup testing.',
+                    price='20.00',
+                    currency='GBP',
+                    image_url='https://example.com/product.jpg',
+                    video_url='https://example.com/product.mp4',
+                    visibility_mode='community_visible',
+                    is_active=True,
+                ),
+                MarketplaceBroadcast(
+                    id=91,
+                    clan_id=51,
+                    author_user_id=2,
+                    shop_id=71,
+                    message='Real public pilot broadcast.',
+                    image_url='https://example.com/broadcast.jpg',
+                    video_url='https://example.com/broadcast.mp4',
+                    expires_at=datetime.now(timezone.utc) + timedelta(days=1),
+                ),
+            ]
+        )
+        db.commit()
+
+
+def test_pilot_data_cleanup_preview_is_read_only(
+    client: TestClient,
+    override_current_user,
+):
+    _seed_pilot_cleanup_case()
+
+    response = client.post(
+        '/admin/pilot-data-cleanup',
+        json={
+            'community_name': 'Pillar Pilot Cleanup',
+            'execute': False,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body['mode'] == 'preview'
+    assert body['executed'] is False
+    assert body['community']['community_code'] == 'GSN-C-PILOT-CLEANUP'
+    assert body['requested_status'] == 'closed'
+    assert body['counts']['shops_total'] == 1
+    assert body['counts']['shops_active'] == 1
+    assert body['counts']['products_total'] == 1
+    assert body['counts']['products_active'] == 1
+    assert body['counts']['broadcasts_total'] == 1
+    assert body['counts']['broadcasts_open'] == 1
+    assert body['will_clear_community_public_fields'] is True
+    assert body['will_deactivate_shops'] is True
+    assert body['will_deactivate_products'] is True
+    assert body['will_expire_broadcasts'] is True
+    assert body['will_delete_community'] is False
+    assert body['will_preserve_memberships'] is True
+
+    with SessionLocal() as db:
+        clan = db.get(Clan, 51)
+        assert clan is not None
+        assert clan.status == 'active'
+        assert clan.description == 'Public real organisation details entered during setup testing.'
+        assert clan.marketplace_name == 'Pillar Real Marketplace'
+        shop = db.get(MarketplaceShop, 71)
+        product = db.get(MarketplaceProduct, 81)
+        broadcast = db.get(MarketplaceBroadcast, 91)
+        assert shop is not None and shop.is_active is True and shop.name == 'Felix Real Shop'
+        assert product is not None and product.is_active is True and product.name == 'Real Product'
+        assert broadcast is not None and broadcast.message == 'Real public pilot broadcast.'
+        assert db.query(ClanMembership).filter(ClanMembership.clan_id == 51).count() == 1
+        assert db.query(TrustEvent).count() == 0
+
+
+def test_pilot_data_cleanup_execute_requires_confirmation_before_mutation(
+    client: TestClient,
+    override_current_user,
+):
+    _seed_pilot_cleanup_case()
+
+    response = client.post(
+        '/admin/pilot-data-cleanup',
+        json={
+            'community_name': 'Pillar Pilot Cleanup',
+            'execute': True,
+            'cleanup_confirmed': False,
+            'reviewer_note': 'Clean public pilot details while preserving history.',
+        },
+    )
+
+    assert response.status_code == 400, response.text
+    assert 'Cleanup confirmation is required' in response.text
+
+    with SessionLocal() as db:
+        clan = db.get(Clan, 51)
+        assert clan is not None
+        assert clan.status == 'active'
+        assert clan.description == 'Public real organisation details entered during setup testing.'
+        assert db.get(MarketplaceShop, 71).is_active is True
+        assert db.get(MarketplaceProduct, 81).is_active is True
+        assert db.get(MarketplaceBroadcast, 91).message == 'Real public pilot broadcast.'
+        assert db.query(TrustEvent).count() == 0
+
+
+def test_pilot_data_cleanup_execute_scrubs_public_marketplace_without_deleting_history(
+    client: TestClient,
+    override_current_user,
+):
+    _seed_pilot_cleanup_case()
+
+    response = client.post(
+        '/admin/pilot-data-cleanup',
+        json={
+            'community_name': 'Pillar Pilot Cleanup',
+            'scrub_public_fields': True,
+            'close_community': True,
+            'deactivate_marketplace_items': True,
+            'cleanup_confirmed': True,
+            'execute': True,
+            'reviewer_note': 'Real public pilot details were used during setup testing and should be cleaned.',
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body['mode'] == 'execute'
+    assert body['executed'] is True
+    assert body['community']['status'] == 'closed'
+    assert body['counts']['shops_active'] == 0
+    assert body['counts']['products_active'] == 0
+    assert body['counts']['broadcasts_open'] == 0
+    assert body['will_delete_community'] is False
+    assert body['will_delete_users'] is False
+    assert body['will_remove_members'] is False
+    assert body['will_free_name_for_new_duplicate'] is False
+
+    with SessionLocal() as db:
+        clan = db.get(Clan, 51)
+        assert clan is not None
+        assert clan.status == 'closed'
+        assert clan.description is None
+        assert clan.marketplace_name is None
+        assert clan.marketplace_description is None
+        assert clan.closed_at is not None
+        assert 'Pilot data cleanup' in (clan.closed_reason or '')
+        assert db.get(User, 2) is not None
+        membership = db.query(ClanMembership).filter(ClanMembership.clan_id == 51, ClanMembership.user_id == 2).one()
+        assert membership.role == 'admin'
+
+        shop = db.get(MarketplaceShop, 71)
+        assert shop is not None
+        assert shop.is_active is False
+        assert shop.name == 'Archived pilot shop 71'
+        assert shop.description is None
+        assert shop.whatsapp_number is None
+        assert shop.telegram_handle is None
+        assert shop.image_url is None
+
+        product = db.get(MarketplaceProduct, 81)
+        assert product is not None
+        assert product.is_active is False
+        assert product.name == 'Archived pilot item 81'
+        assert product.description is None
+        assert product.price is None
+        assert product.image_url is None
+        assert product.video_url is None
+        assert product.visibility_mode == 'archived_pilot_cleanup'
+
+        broadcast = db.get(MarketplaceBroadcast, 91)
+        assert broadcast is not None
+        assert broadcast.message == 'Pilot broadcast archived.'
+        assert broadcast.image_url is None
+        assert broadcast.video_url is None
+        assert broadcast.expires_at is not None
+
+        event = db.query(TrustEvent).filter(TrustEvent.event_type == 'community.pilot_data_cleaned').one()
+        assert event.clan_id == 51
+        assert event.actor_user_id == 1
+        assert event.subject_user_id == 2
+        assert event.meta['history_preserved'] is True
+        assert event.meta['identity_records_preserved'] is True
+        assert event.meta['community_deleted'] is False
+        assert event.meta['users_deleted'] is False
+        assert event.meta['members_removed'] is False
+        assert event.meta['name_freed_for_duplicate'] is False
+        assert event.meta['before_counts']['shops_active'] == 1
+        assert event.meta['before_counts']['products_active'] == 1
+        assert event.meta['before_counts']['broadcasts_open'] == 1

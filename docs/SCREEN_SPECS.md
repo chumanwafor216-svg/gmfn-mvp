@@ -1158,6 +1158,7 @@ Must show:
 - owner lookup by member identity signal
 - exact community and owner selection
 - steward setup preview/record controls for preparing a hidden organisation/community shell before owner acceptance
+- pilot data cleanup preview/record controls for cleaning public-facing setup/test data while preserving audit history
 - ordinary community lifecycle preview/record controls for active, dormant, or closed status
 - preview before mutation
 - evidence confirmation checkbox
@@ -1171,6 +1172,7 @@ Rules:
 - The tool must not delete the existing community, erase prior admins, or remove historical evidence.
 - Steward setup can reserve and prepare a hidden ordinary community shell from a supplied brief. It must keep status `steward_setup`, stay hidden from normal member lists, and avoid claiming verified ownership until proof-checked owner repair releases it.
 - Steward setup must not overwrite an active community name, publish the community, delete evidence, remove members, or transfer ownership.
+- Pilot data cleanup can close an ordinary community, clear public community/marketplace text, and archive related shops, products, and spotlights when real/test details were used during setup. It must preserve the community record, users, memberships, identity records, trust events, and name reservation; it must not be treated as legal erasure, hard delete, duplicate-name freeing, or proof that the organisation accepted GSN.
 - Ordinary community lifecycle can mark an example/setup community `active`, `dormant`, or `closed`; dormant/closed communities must stop appearing in normal member community lists while the community name, memberships, and trust-event history stay preserved.
 - Ordinary community lifecycle must not transfer ownership, remove members, create a Community Domain/payment, or globally ban an identity.
 - Preview must be read-only.

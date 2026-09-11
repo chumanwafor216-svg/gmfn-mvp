@@ -5265,6 +5265,19 @@ export async function postAdminCommunityStewardSetup(payload: {
   return httpJson("/admin/community-steward-setup", "POST", payload);
 }
 
+export async function postAdminPilotDataCleanup(payload: {
+  community_name?: string | null;
+  clan_id?: number | null;
+  scrub_public_fields?: boolean;
+  close_community?: boolean;
+  deactivate_marketplace_items?: boolean;
+  cleanup_confirmed?: boolean;
+  execute?: boolean;
+  reviewer_note?: string | null;
+}): Promise<any> {
+  return httpJson("/admin/pilot-data-cleanup", "POST", payload);
+}
+
 export async function postAdminCommunityLifecycle(payload: {
   community_name?: string | null;
   clan_id?: number | null;

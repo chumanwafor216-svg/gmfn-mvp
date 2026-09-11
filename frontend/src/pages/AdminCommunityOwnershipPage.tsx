@@ -11,6 +11,7 @@ import {
 import {
   getAdminCommunityOwnershipLookup,
   postAdminCommunityLifecycle,
+  postAdminPilotDataCleanup,
   postAdminCommunityStewardSetup,
   postAdminCommunityDomainLifecycle,
   postAdminCommunityDomainOwnershipReconciliation,
@@ -193,6 +194,20 @@ export default function AdminCommunityOwnershipPage() {
   const [stewardMessage, setStewardMessage] = useState("");
   const [stewardError, setStewardError] = useState("");
   const [stewardBusy, setStewardBusy] = useState<"preview" | "execute" | "">("");
+  const [pilotCleanupName, setPilotCleanupName] = useState(
+    safeStr(searchParams.get("community_name")) || "Pillar of Hope"
+  );
+  const [pilotCleanupId, setPilotCleanupId] = useState(0);
+  const [pilotCleanupScrubPublic, setPilotCleanupScrubPublic] = useState(true);
+  const [pilotCleanupClose, setPilotCleanupClose] = useState(true);
+  const [pilotCleanupMarketplace, setPilotCleanupMarketplace] = useState(true);
+  const [pilotCleanupNote, setPilotCleanupNote] = useState("");
+  const [pilotCleanupConfirmed, setPilotCleanupConfirmed] = useState(false);
+  const [pilotCleanupPreview, setPilotCleanupPreview] = useState<any>(null);
+  const [pilotCleanupResult, setPilotCleanupResult] = useState<any>(null);
+  const [pilotCleanupMessage, setPilotCleanupMessage] = useState("");
+  const [pilotCleanupError, setPilotCleanupError] = useState("");
+  const [pilotCleanupBusy, setPilotCleanupBusy] = useState<"preview" | "execute" | "">("");
   const [communityLifecycleName, setCommunityLifecycleName] = useState(
     safeStr(searchParams.get("community_name")) || "Pillar of Hope"
   );
@@ -425,6 +440,56 @@ export default function AdminCommunityOwnershipPage() {
       setStewardBusy("");
     }
   }
+  async function runPilotCleanupPreview() {
+    setPilotCleanupBusy("preview");
+    setPilotCleanupError("");
+    setPilotCleanupMessage("");
+    setPilotCleanupPreview(null);
+    setPilotCleanupResult(null);
+    try {
+      const out = await postAdminPilotDataCleanup({
+        clan_id: pilotCleanupId || undefined,
+        community_name: pilotCleanupId ? undefined : pilotCleanupName,
+        scrub_public_fields: pilotCleanupScrubPublic,
+        close_community: pilotCleanupClose,
+        deactivate_marketplace_items: pilotCleanupMarketplace,
+        execute: false,
+      });
+      setPilotCleanupPreview(out);
+      setPilotCleanupMessage(safeStr(out?.message) || "Pilot cleanup preview ready.");
+    } catch (err: any) {
+      setPilotCleanupError(safeStr(err?.message || err) || "Pilot cleanup preview failed.");
+    } finally {
+      setPilotCleanupBusy("");
+    }
+  }
+
+  async function runPilotCleanupExecute() {
+    setPilotCleanupBusy("execute");
+    setPilotCleanupError("");
+    setPilotCleanupMessage("");
+    setPilotCleanupResult(null);
+    try {
+      const out = await postAdminPilotDataCleanup({
+        clan_id: pilotCleanupId || undefined,
+        community_name: pilotCleanupId ? undefined : pilotCleanupName,
+        scrub_public_fields: pilotCleanupScrubPublic,
+        close_community: pilotCleanupClose,
+        deactivate_marketplace_items: pilotCleanupMarketplace,
+        cleanup_confirmed: pilotCleanupConfirmed,
+        execute: true,
+        reviewer_note: pilotCleanupNote,
+      });
+      setPilotCleanupResult(out);
+      setPilotCleanupPreview(out);
+      setPilotCleanupMessage(safeStr(out?.message) || "Pilot cleanup recorded.");
+    } catch (err: any) {
+      setPilotCleanupError(safeStr(err?.message || err) || "Pilot cleanup failed.");
+    } finally {
+      setPilotCleanupBusy("");
+    }
+  }
+
   async function runCommunityLifecyclePreview() {
     setCommunityLifecycleBusy("preview");
     setCommunityLifecycleError("");
@@ -582,6 +647,9 @@ export default function AdminCommunityOwnershipPage() {
     stewardConfirmed &&
     safeStr(stewardNote).length >= 12 &&
     !stewardResult;
+  const canPilotCleanupPreview = Boolean(pilotCleanupId || safeStr(pilotCleanupName));
+  const canPilotCleanupExecute =
+    Boolean(pilotCleanupPreview) && pilotCleanupConfirmed && safeStr(pilotCleanupNote).length >= 12 && !pilotCleanupResult;
   const canCommunityLifecyclePreview = Boolean(communityLifecycleId || safeStr(communityLifecycleName));
   const canCommunityLifecycleExecute =
     Boolean(communityLifecyclePreview) && communityLifecycleConfirmed && safeStr(communityLifecycleNote).length >= 12 && !communityLifecycleResult;
@@ -820,7 +888,167 @@ export default function AdminCommunityOwnershipPage() {
               </div>
             </div>
           ) : null}
-        </section>        <section style={card("#F8FBFF")}>
+        </section>
+
+        <section style={card("#F8FBFF")}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <div style={label()}>Pilot data cleanup</div>
+              <h2 style={{ margin: "6px 0 0", color: "#0B1F33", fontSize: 22 }}>Clean example data</h2>
+            </div>
+            <div style={{ ...helper(), maxWidth: 430 }}>
+              Use this when real people or organisation details were used during setup testing. It cleans public pilot data, not the audit trail.
+            </div>
+          </div>
+
+          <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+            <div>
+              <div style={fieldLabel()}>Community name</div>
+              <input
+                value={pilotCleanupName}
+                onChange={(event) => {
+                  setPilotCleanupName(event.target.value);
+                  setPilotCleanupId(0);
+                  setPilotCleanupPreview(null);
+                  setPilotCleanupResult(null);
+                }}
+                placeholder="Pillar of Hope"
+                style={inputStyle()}
+              />
+            </div>
+            <div>
+              <div style={fieldLabel()}>Or community ID</div>
+              <input
+                value={pilotCleanupId || ""}
+                onChange={(event) => {
+                  setPilotCleanupId(toNum(event.target.value));
+                  setPilotCleanupPreview(null);
+                  setPilotCleanupResult(null);
+                }}
+                placeholder="11"
+                inputMode="numeric"
+                style={inputStyle()}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 10 }}>
+            <label style={{ ...institutionalInnerCard("#FFFFFF"), display: "flex", gap: 10, alignItems: "flex-start", color: "#0B1F33", fontWeight: 900 }}>
+              <input
+                type="checkbox"
+                checked={pilotCleanupScrubPublic}
+                onChange={(event) => {
+                  setPilotCleanupScrubPublic(event.target.checked);
+                  setPilotCleanupPreview(null);
+                  setPilotCleanupResult(null);
+                }}
+                style={{ marginTop: 3 }}
+              />
+              Clear public community text
+            </label>
+            <label style={{ ...institutionalInnerCard("#FFFFFF"), display: "flex", gap: 10, alignItems: "flex-start", color: "#0B1F33", fontWeight: 900 }}>
+              <input
+                type="checkbox"
+                checked={pilotCleanupClose}
+                onChange={(event) => {
+                  setPilotCleanupClose(event.target.checked);
+                  setPilotCleanupPreview(null);
+                  setPilotCleanupResult(null);
+                }}
+                style={{ marginTop: 3 }}
+              />
+              Close example community
+            </label>
+            <label style={{ ...institutionalInnerCard("#FFFFFF"), display: "flex", gap: 10, alignItems: "flex-start", color: "#0B1F33", fontWeight: 900 }}>
+              <input
+                type="checkbox"
+                checked={pilotCleanupMarketplace}
+                onChange={(event) => {
+                  setPilotCleanupMarketplace(event.target.checked);
+                  setPilotCleanupPreview(null);
+                  setPilotCleanupResult(null);
+                }}
+                style={{ marginTop: 3 }}
+              />
+              Archive shops, products, and spotlights
+            </label>
+          </div>
+
+          <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <SecondaryButton
+              onClick={runPilotCleanupPreview}
+              busy={pilotCleanupBusy === "preview"}
+              busyLabel="Previewing..."
+              disabled={pilotCleanupBusy !== "" || !canPilotCleanupPreview}
+              debugId="admin-pilot-cleanup.preview"
+            >
+              {iconLabel("eye", "Preview pilot cleanup")}
+            </SecondaryButton>
+          </div>
+
+          {pilotCleanupPreview ? (
+            <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+              <div style={{ ...factGrid(142) }}>
+                {fact("Community", safeStr(pilotCleanupPreview?.community?.name))}
+                {fact("Current", safeStr(pilotCleanupPreview?.current_status))}
+                {fact("Requested", safeStr(pilotCleanupPreview?.requested_status))}
+                {fact("Shops", `${toNum(pilotCleanupPreview?.counts?.shops_active)} active / ${toNum(pilotCleanupPreview?.counts?.shops_total)} total`)}
+                {fact("Products", `${toNum(pilotCleanupPreview?.counts?.products_active)} active / ${toNum(pilotCleanupPreview?.counts?.products_total)} total`)}
+                {fact("Spotlights", `${toNum(pilotCleanupPreview?.counts?.broadcasts_open)} open / ${toNum(pilotCleanupPreview?.counts?.broadcasts_total)} total`)}
+              </div>
+              <div style={{ ...institutionalInnerCard("#FFFFFF"), ...helper() }}>
+                {safeStr(pilotCleanupPreview?.boundary) || "This cleans public-facing pilot/example data. It is not hard-delete and it preserves identities, memberships, and audit history."}
+              </div>
+              {!pilotCleanupResult ? (
+                <div style={{ display: "grid", gap: 12 }}>
+                  <label style={{ display: "flex", gap: 10, alignItems: "flex-start", color: "#0B1F33", fontWeight: 900 }}>
+                    <input
+                      type="checkbox"
+                      checked={pilotCleanupConfirmed}
+                      onChange={(event) => setPilotCleanupConfirmed(event.target.checked)}
+                      style={{ marginTop: 3 }}
+                    />
+                    I confirm this is pilot/example cleanup. It must not be used as legal erasure, hard delete, or proof that the organisation accepted GSN.
+                  </label>
+                  <div>
+                    <div style={fieldLabel()}>Reviewer note</div>
+                    <textarea
+                      value={pilotCleanupNote}
+                      onChange={(event) => setPilotCleanupNote(event.target.value)}
+                      placeholder="Example: Public pilot/example details were created during setup testing. Clean public fields and archive marketplace items while preserving audit history."
+                      rows={4}
+                      style={{ ...inputStyle(), resize: "vertical", minHeight: 92 }}
+                    />
+                  </div>
+                  <PrimaryButton
+                    onClick={runPilotCleanupExecute}
+                    busy={pilotCleanupBusy === "execute"}
+                    busyLabel="Recording..."
+                    disabled={pilotCleanupBusy !== "" || !canPilotCleanupExecute}
+                    debugId="admin-pilot-cleanup.execute"
+                  >
+                    {iconLabel("check", "Record pilot cleanup")}
+                  </PrimaryButton>
+                </div>
+              ) : null}
+              {pilotCleanupResult ? (
+                <div style={{ ...institutionalInnerCard("#ECFDF5"), ...helper() }}>
+                  Public example data is cleaned. Use steward setup or owner repair if the real organisation should continue under a verified representative.
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {(pilotCleanupMessage || pilotCleanupError) ? (
+            <div style={{ marginTop: 12, ...institutionalInnerCard(pilotCleanupError ? "#FEF2F2" : "#ECFDF5") }}>
+              <div style={{ color: pilotCleanupError ? "#991B1B" : "#065F46", fontWeight: 1000 }}>
+                {iconLabel(pilotCleanupError ? "alert" : "check", pilotCleanupError || pilotCleanupMessage)}
+              </div>
+            </div>
+          ) : null}
+        </section>
+
+        <section style={card("#F8FBFF")}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>
               <div style={label()}>Community lifecycle</div>

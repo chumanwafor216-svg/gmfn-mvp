@@ -160493,3 +160493,13 @@ Operational note:
 - Frontend route affected: `/app/command-center/community-ownership` now includes a `Steward setup` section before lifecycle/transfer controls.
 - Truth boundary: steward setup does not claim the organisation has accepted, does not verify ownership, does not publish the community, does not delete evidence, and does not remove members. Real owner acceptance/proof is still required before release.
 - Verification passed: backend py_compile; focused backend owner/community-domain guard bundle (`25 passed`); targeted frontend ESLint; `npm --prefix frontend run audit:admin-route-guards`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`.
+## 2026-09-11 - Pilot data cleanup tool added
+
+- Status: Implemented and verified locally; not pushed/deployed in this slice.
+- Owner trigger: Founder explained that real organisation/person data may have been used during pilot setup and asked for a way to properly remove or deactivate those example traces so rightful owners can continue cleanly.
+- Backend route added: `POST /admin/pilot-data-cleanup` previews and records cleanup for an ordinary community by name or ID. Preview is read-only; execute requires confirmation and a reviewer note.
+- Cleanup behavior: can clear public community/marketplace text, close the ordinary community, deactivate/archive related shops and products, and expire related marketplace spotlights/broadcasts.
+- Preservation boundary: the tool does not hard-delete the community, delete users, remove memberships, erase identity records, erase trust events, free the name for a duplicate, or prove that the organisation accepted GSN. It logs `community.pilot_data_cleaned` for audit.
+- Frontend route affected: `/app/command-center/community-ownership` now includes a Pilot data cleanup section between steward setup and ordinary lifecycle controls.
+- Guardrails: `gmfn_backend/tests/test_admin_community_ownership.py` covers read-only preview, confirmation gating, and non-destructive cleanup; `frontend/tools/audit-admin-route-guards.mjs` cages the route, wrapper, UI controls, and no-erasure/no-delete boundary.
+- Devil truth: this solves controlled pilot cleanup, not legal GDPR erasure, irreversible deletion, or duplicate-name recreation. For a real organisation continuing under its owner, use steward setup plus owner repair/release instead.
