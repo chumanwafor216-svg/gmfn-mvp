@@ -163,6 +163,7 @@ const MemberActivationPage = React.lazy(
   () => import("./pages/MemberActivationPage")
 );
 const DemandBoxPage = React.lazy(() => import("./pages/DemandBoxPage"));
+const WhatsAppBridgePage = React.lazy(() => import("./pages/WhatsAppBridgePage"));
 const JoinRequestPendingPage = React.lazy(
   () => import("./pages/JoinRequestPendingPage")
 );
@@ -541,6 +542,10 @@ const ROOT_APP_ROUTE_ALIASES: Record<string, string> = {
   "shop-gallery-control": "/app/shop-control#shop-control-gallery-tools",
   "app/vault-control": APP_ROUTES.VAULT_CONTROL,
   "vault-control": APP_ROUTES.VAULT_CONTROL,
+  "app/whatsapp-bridge": APP_ROUTES.WHATSAPP_BRIDGE,
+  "whatsapp-bridge": APP_ROUTES.WHATSAPP_BRIDGE,
+  "app/gsn-whatsapp-bridge": APP_ROUTES.WHATSAPP_BRIDGE,
+  "gsn-whatsapp-bridge": APP_ROUTES.WHATSAPP_BRIDGE,
 };
 
 function rootAppAliasTarget(pathname: string, search: string, hash: string): string {
@@ -850,6 +855,8 @@ export default function App() {
 
       <Route path="/demand-box" element={<PreserveRedirect to={APP_ROUTES.DEMAND_BOX} />} />
       <Route path="/demands" element={<PreserveRedirect to={APP_ROUTES.DEMAND_BOX} />} />
+      <Route path="/whatsapp-bridge" element={<PreserveRedirect to={APP_ROUTES.WHATSAPP_BRIDGE} />} />
+      <Route path="/gsn-whatsapp-bridge" element={<PreserveRedirect to={APP_ROUTES.WHATSAPP_BRIDGE} />} />
 
       <Route path="/login" element={<LoginPage />} />
       <Route path="/existing" element={<RedirectToCover entry="existing" />} />
@@ -1122,6 +1129,8 @@ export default function App() {
         />
         <Route path="demand-box" element={<DemandBoxPage />} />
         <Route path="demands" element={<PreserveRedirect to={APP_ROUTES.DEMAND_BOX} />} />
+        <Route path="whatsapp-bridge" element={<WhatsAppBridgePage />} />
+        <Route path="gsn-whatsapp-bridge" element={<PreserveRedirect to={APP_ROUTES.WHATSAPP_BRIDGE} />} />
         <Route path="open-demand" element={<PreserveRedirect to={APP_ROUTES.DEMAND_BOX} />} />
 
         <Route path="shop-control" element={<ShopControlPage />} />

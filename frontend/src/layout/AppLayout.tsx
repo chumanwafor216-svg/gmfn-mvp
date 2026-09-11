@@ -104,6 +104,7 @@ const COMMUNITY_CONTEXT_ROUTE_PREFIXES = [
   "/app/community-confirmations",
   "/app/vault-control",
   "/app/demand-box",
+  "/app/whatsapp-bridge",
   "/app/help",
 ];
 
@@ -444,6 +445,19 @@ function uniqueNavItems(items: NavLinkItem[]): NavLinkItem[] {
 }
 
 function getTaskModeMeta(pathname: string): TaskModeMeta | null {
+  if (pathname === "/app/whatsapp-bridge") {
+    return {
+      title: "WhatsApp Bridge",
+      hint:
+        "Prepare the WhatsApp signpost, then send members into the right GSN action.",
+      actions: [
+        makeCommunityItem(),
+        { label: "Demand Box", to: "/app/demand-box" },
+        makeMarketplaceItem(),
+      ],
+    };
+  }
+
   if (pathname === "/app/demand-box") {
     return {
       title: "Demand Box",
@@ -675,6 +689,13 @@ function getSpecialRouteMeta(
     return {
       section: "Community",
       page: "Community Domain",
+    };
+  }
+
+  if (pathname === "/app/whatsapp-bridge") {
+    return {
+      section: "Focused task",
+      page: "WhatsApp Bridge",
     };
   }
 

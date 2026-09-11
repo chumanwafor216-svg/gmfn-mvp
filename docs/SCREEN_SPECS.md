@@ -1255,3 +1255,37 @@ Overbuilt systems to simplify on the first surface:
 - Community Domain Action Reviews remain detailed governance infrastructure, but ordinary users should see simple labels: My requests, Waiting for admin, Needs changes, Resolved.
 - Policy, node, lineage, evidence metadata, and apply mechanics belong behind admin/advanced controls.
 - Do not delete heavy governance tools until route references, backend tests, and domain contracts prove they are unused.
+
+## WhatsAppBridgePage
+
+Route: `/app/whatsapp-bridge` (`/whatsapp-bridge` redirects here).
+
+Purpose:
+Let a signed-in community owner, admin, or member share one stable GSN bridge
+link into WhatsApp while keeping official actions inside existing GSN engines.
+
+Must show:
+- WhatsApp Bridge title
+- clear statement that GSN is the real action home
+- permanent bridge link for the selected community when available
+- Copy Bridge Message action
+- Share to WhatsApp action
+- destination buttons for Community Domain, Notice Board, Demand Box, Ask
+  Community, Meeting Response, Attendance, Shop Gallery, Spotlight, and Reports
+- WhatsApp anchor guidance for group description and pinned message
+- decision boundary that GSN records only actions completed inside GSN
+
+Rules:
+- Do not scrape, read, or import WhatsApp group conversation.
+- Do not claim WhatsApp delivery, read receipt, vote proof, or member consent.
+- Demand Box must stay written as `Demand Box`.
+- Ask Community must route into Demand Box question mode, not a separate engine.
+- The bridge page is the stable home; WhatsApp group description and pinned
+  message are signposts only.
+- WhatsApp Status may be a reminder only because it disappears.
+
+Primary action:
+
+```text
+Copy Bridge Message
+```

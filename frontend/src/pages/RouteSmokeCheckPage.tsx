@@ -36,6 +36,11 @@ const memberRoutes: SmokeRoute[] = [
   },
   { to: "/app/clans", label: "My Communities" },
   { to: "/app/marketplace", label: "Marketplace" },
+  {
+    to: "/app/whatsapp-bridge",
+    label: "WhatsApp Bridge",
+    note: "Should copy the bridge message and route members into existing GSN action tools.",
+  },
   { to: "/app/finance", label: "Finance" },
   { to: "/app/payment/pool?currency=NGN", label: "Money In" },
   { to: "/app/withdrawal-instructions", label: "Money Out" },

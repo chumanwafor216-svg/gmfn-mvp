@@ -1,3 +1,14 @@
+## 2026-09-11 - WhatsApp Bridge v1 added locally
+
+- Owner trigger: owner asked to start the practical GSN/WhatsApp bridge so WhatsApp remains the conversation space while GSN holds structured community actions.
+- Frontend route added: `/app/whatsapp-bridge`; public aliases `/whatsapp-bridge` and `/gsn-whatsapp-bridge` redirect to the signed-in route.
+- Product behavior added: the bridge page prepares a copyable bridge message and a WhatsApp share action, shows the permanent bridge link, and routes users into existing GSN tools: Community Domain, Notice Board, Demand Box, Ask Community, Meeting Response, Attendance, Shop Gallery, Spotlight, and Reports.
+- Existing engines reused: Ask Community routes into `/app/demand-box?mode=ask_community`; Demand Box routes into the existing Demand Box page; meeting/attendance/shop/Spotlight routes point back into Shop Control and Community Domain surfaces. No WhatsApp reader, scraper, importer, or new demand/notice/meeting engine was added.
+- WhatsApp anchor rule recorded: GSN Bridge Page is the real home; WhatsApp group description and pinned message are signposts; WhatsApp Status is only a reminder.
+- Docs added/updated: `docs/GSN_WHATSAPP_BRIDGE_PROTOCOL_2026-09-11.md`, `docs/SCREEN_REGISTRY.md`, and `docs/SCREEN_SPECS.md`.
+- Guardrail added: `frontend/tools/audit-whatsapp-bridge-contract.mjs` cages the route, screen copy, Demand Box Ask Community path, and anchor model.
+- Verification passed so far: targeted frontend ESLint, `node tools/audit-whatsapp-bridge-contract.mjs`, and `npm --prefix frontend run build`.
+- Devil truth: this reduces WhatsApp message drift, but it does not solve WhatsApp chat movement by itself and does not record WhatsApp delivery/read proof. Only actions completed inside GSN are recorded by GSN.
 ## 2026-09-11 - Pillar of Hope pilot intake email sent with RGU support wording (local)
 
 - Status: Email sent through Gmail to the confirmed Felix/Pillar of Hope thread; repo evidence note updated locally, not pushed/deployed yet.
