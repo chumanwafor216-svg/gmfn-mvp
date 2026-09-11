@@ -71,6 +71,8 @@ VISIBILITY_VAULT = "vault_private"
 
 SPOTLIGHT_FREE = "free"
 SPOTLIGHT_PAID = "paid"
+SPOTLIGHT_STANDARD_ROTATION_WEIGHT = 1
+SPOTLIGHT_PAID_ROTATION_WEIGHT = 3
 
 FEATURE_VAULT_SLOT = "vault_slot"
 FEATURE_SPOTLIGHT_PRIORITY = "spotlight_priority"
@@ -1759,6 +1761,14 @@ def _active_spotlight_rows_for_clan_ids(
     )
 
 
+def _spotlight_rotation_weight(item: MarketplaceBroadcast) -> int:
+    priority_mode = _safe_str(getattr(item, "priority_mode", None), SPOTLIGHT_FREE).lower()
+    if priority_mode == SPOTLIGHT_PAID:
+        return SPOTLIGHT_PAID_ROTATION_WEIGHT
+
+    return SPOTLIGHT_STANDARD_ROTATION_WEIGHT
+
+
 def _member_count_for_clan(
     *,
     db: Session,
@@ -2593,6 +2603,12 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
         "visibility_scope": _safe_str(
             getattr(item, "visibility_scope", None),
             "direct_communities",
+        ),
+        "rotation_weight": _spotlight_rotation_weight(item),
+        "rotation_weight_label": (
+            "Paid priority rotation"
+            if _spotlight_rotation_weight(item) > SPOTLIGHT_STANDARD_ROTATION_WEIGHT
+            else "Standard rotation"
         ),
         "expires_at": item.expires_at.isoformat() if item.expires_at else None,
         "created_at": item.created_at.isoformat() if item.created_at else None,
@@ -5141,8 +5157,17 @@ def list_marketplace_broadcasts(
         MarketplaceBroadcast.image_url != "",
     ).count()
 
+    priority_rank = case(
+        (MarketplaceBroadcast.priority_mode == SPOTLIGHT_PAID, 1),
+        else_=0,
+    )
+
     items = (
-        q.order_by(MarketplaceBroadcast.created_at.desc(), MarketplaceBroadcast.id.desc())
+        q.order_by(
+            priority_rank.desc(),
+            MarketplaceBroadcast.created_at.desc(),
+            MarketplaceBroadcast.id.desc(),
+        )
         .limit(int(limit))
         .all()
     )

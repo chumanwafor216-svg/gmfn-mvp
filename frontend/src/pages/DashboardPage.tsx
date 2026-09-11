@@ -74,6 +74,8 @@ import {
 } from "../lib/dashboardAttentionEngine";
 import { prepareSpotlightImageFile } from "../lib/spotlightMediaPrep";
 import {
+  buildSpotlightRotationQueue,
+  spotlightRotationWeight,
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
   SPOTLIGHT_PILOT_REFRESH_MS,
   SPOTLIGHT_PILOT_ROTATION_MS,
@@ -119,6 +121,10 @@ type SpotlightItem = {
   source_product_id?: number | string | null;
   source_product_block?: number | string | null;
   source_product_slot_number?: number | string | null;
+  priority_mode?: string | null;
+  priorityMode?: string | null;
+  rotation_weight?: number | string | null;
+  rotationWeight?: number | string | null;
   created_at?: string | null;
   expires_at?: string | null;
 };
@@ -1332,6 +1338,10 @@ function normalizeSpotlightItem(raw: any): SpotlightItem | null {
       source.source_product_block ?? source.sourceProductBlock ?? null,
     source_product_slot_number:
       source.source_product_slot_number ?? source.sourceProductSlotNumber ?? null,
+    priority_mode: safeStr(source.priority_mode || source.priorityMode) || null,
+    priorityMode: safeStr(source.priorityMode || source.priority_mode) || null,
+    rotation_weight: source.rotation_weight ?? source.rotationWeight ?? null,
+    rotationWeight: source.rotationWeight ?? source.rotation_weight ?? null,
     created_at: safeStr(source.created_at || source.createdAt) || null,
     expires_at: safeStr(source.expires_at || source.expiresAt) || null,
   };
@@ -1424,7 +1434,11 @@ function uniqueSpotlightItems(rawItems: any[]): SpotlightItem[] {
     items.push(item);
   }
 
-  return items.sort((a, b) => spotlightSortTime(b) - spotlightSortTime(a));
+  return items.sort((a, b) => {
+    const weightDelta = spotlightRotationWeight(b) - spotlightRotationWeight(a);
+    if (weightDelta !== 0) return weightDelta;
+    return spotlightSortTime(b) - spotlightSortTime(a);
+  });
 }
 
 function normalizePublicShopSpotlights(raw: any): SpotlightItem[] {
@@ -3735,7 +3749,7 @@ export default function DashboardPage() {
           : [];
         const items = uniqueSpotlightItems(rawItems);
 
-        setSpotlights(items);
+        setSpotlights(buildSpotlightRotationQueue(items));
         setSpotlightQueueTotal(items.length);
 
         if (items.length > 0) {
@@ -3758,7 +3772,7 @@ export default function DashboardPage() {
             normalizePublicShopSpotlights(publicShopRes);
 
           if (publicShopSpotlights.length > 0) {
-            setSpotlights(publicShopSpotlights);
+            setSpotlights(buildSpotlightRotationQueue(publicShopSpotlights));
             setSpotlightQueueTotal(publicShopSpotlights.length);
             setLatestSpotlightSnapshot(publicShopSpotlights[0] || null);
             return;

@@ -4482,6 +4482,81 @@ def test_paid_spotlight_requires_unused_subscription_credit(
     assert int(usage_count) == 1
 
 
+def test_marketplace_broadcast_feed_prioritizes_paid_rotation_metadata(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+
+    now = datetime.now(timezone.utc)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'pytest@example.com', 'hashed', 'Shop Owner', 'user', 'GMFN-U-ROTPAID'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Golden boys', 'Golden boys Marketplace', 'ROTPAID1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 1, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'Rotation Priority Shop', 'Paid rotation test', 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_broadcasts (
+                    id, clan_id, author_user_id, shop_id, message,
+                    priority_mode, visibility_scope, expires_at, created_at
+                ) VALUES
+                    (1, 1, 1, 1, 'Newer free spotlight', 'free', 'direct_communities', :expires_at, :free_created_at),
+                    (2, 1, 1, 1, 'Older paid spotlight', 'paid', 'direct_communities', :expires_at, :paid_created_at)
+                """
+            ),
+            {
+                "expires_at": now + timedelta(hours=3),
+                "free_created_at": now,
+                "paid_created_at": now - timedelta(minutes=20),
+            },
+        )
+
+    response = client.get("/marketplace/broadcasts?clan_id=1&active_only=true&limit=2")
+    assert response.status_code == 200, response.text
+    items = response.json()["items"]
+
+    assert [item["id"] for item in items] == [2, 1]
+    assert items[0]["priority_mode"] == "paid"
+    assert items[0]["rotation_weight"] == marketplace_routes.SPOTLIGHT_PAID_ROTATION_WEIGHT
+    assert items[0]["rotation_weight_label"] == "Paid priority rotation"
+    assert items[1]["rotation_weight"] == marketplace_routes.SPOTLIGHT_STANDARD_ROTATION_WEIGHT
+    assert items[1]["rotation_weight_label"] == "Standard rotation"
+
 def test_network_repost_does_not_block_direct_subscription_spotlight(
     client,
     monkeypatch,

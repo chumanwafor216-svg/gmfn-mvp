@@ -42,6 +42,7 @@ import { ownerSurfaceIdentityMatches } from "../lib/ownerSurfaceIdentity";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import {
+  buildSpotlightRotationQueue,
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
   SPOTLIGHT_PILOT_REFRESH_MS,
   SPOTLIGHT_PILOT_ROTATION_MS,
@@ -120,6 +121,8 @@ type ShopBroadcast = {
   sourceProductId?: number;
   sourceProductBlock?: number;
   sourceProductSlotNumber?: number;
+  priorityMode?: string;
+  rotationWeight?: number;
   createdAt?: string;
   expiresAt?: string;
 };
@@ -970,6 +973,9 @@ function normalizeBroadcast(raw: any): ShopBroadcast | null {
       positiveNumber(
         src?.source_product_slot_number || src?.sourceProductSlotNumber
       ) || undefined,
+    priorityMode: firstMeaningful(src?.priority_mode, src?.priorityMode),
+    rotationWeight:
+      positiveNumber(src?.rotation_weight || src?.rotationWeight) || undefined,
     createdAt: firstMeaningful(src?.created_at, src?.createdAt),
     expiresAt: firstMeaningful(src?.expires_at, src?.expiresAt),
   };
@@ -1685,11 +1691,15 @@ export default function ShopGalleryPage() {
         .filter(Boolean)
         .filter(broadcastIsActive)
         .sort((a, b) => {
+          const weightDelta =
+            Number(b?.rotationWeight || 1) - Number(a?.rotationWeight || 1);
+          if (weightDelta !== 0) return weightDelta;
           const timeDelta =
             spotlightBroadcastSortValue(b) - spotlightBroadcastSortValue(a);
           if (timeDelta !== 0) return timeDelta;
           return spotlightBroadcastKey(a).localeCompare(spotlightBroadcastKey(b));
         }) as ShopBroadcast[];
+      const rotationBroadcasts = buildSpotlightRotationQueue(normalizedBroadcasts);
       const currentSpotlight =
         communitySpotlightsRef.current[miniSpotlightIndexRef.current] ||
         communitySpotlightsRef.current[0] ||
@@ -1706,9 +1716,9 @@ export default function ShopGalleryPage() {
       setPublicShopVerification(publicShopRes?.verification || null);
       setProducts(arrangedProducts);
       setBroadcast(relevantBroadcast);
-      setCommunitySpotlights(normalizedBroadcasts);
+      setCommunitySpotlights(rotationBroadcasts);
       setMiniSpotlightIndex(
-        normalizedBroadcasts.length <= 0
+        rotationBroadcasts.length <= 0
           ? 0
           : matchedSpotlightIndex >= 0
           ? matchedSpotlightIndex

@@ -154,6 +154,35 @@ assertContains(
   "Backend tests must lock Network Repost and direct paid Subscription Spotlight as separate paid lanes."
 );
 
+assertContains(
+  "gmfn_backend/app/api/routes/marketplace.py",
+  /SPOTLIGHT_STANDARD_ROTATION_WEIGHT = 1[\s\S]*?SPOTLIGHT_PAID_ROTATION_WEIGHT = 3[\s\S]*?def _spotlight_rotation_weight[\s\S]*?"rotation_weight": _spotlight_rotation_weight\(item\)[\s\S]*?priority_rank = case\([\s\S]*?MarketplaceBroadcast\.priority_mode == SPOTLIGHT_PAID/,
+  "Backend Spotlight feed must keep explicit paid rotation metadata and paid-first active ordering."
+);
+
+assertContains(
+  "frontend/src/lib/spotlightPilot.ts",
+  /SPOTLIGHT_PAID_ROTATION_WEIGHT = 3[\s\S]*?function spotlightRotationWeight[\s\S]*?export function buildSpotlightRotationQueue/,
+  "Frontend Spotlight pilot controls must keep the shared paid rotation queue helper."
+);
+
+assertContains(
+  "frontend/src/pages/DashboardPage.tsx",
+  /buildSpotlightRotationQueue[\s\S]*?spotlightRotationWeight[\s\S]*?const weightDelta = spotlightRotationWeight\(b\) - spotlightRotationWeight\(a\)[\s\S]*?setSpotlights\(buildSpotlightRotationQueue\(items\)\)/,
+  "Dashboard Spotlight rotation must preserve paid rotation weighting without changing the feed source."
+);
+
+assertContains(
+  "frontend/src/pages/ShopGalleryPage.tsx",
+  /buildSpotlightRotationQueue[\s\S]*?rotationWeight\?: number[\s\S]*?const rotationBroadcasts = buildSpotlightRotationQueue\(normalizedBroadcasts\)[\s\S]*?setCommunitySpotlights\(rotationBroadcasts\)/,
+  "Public Shop Spotlight rotation must use the shared paid rotation queue."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_marketplace_public_shop.py",
+  /test_marketplace_broadcast_feed_prioritizes_paid_rotation_metadata[\s\S]*?assert \[item\["id"\] for item in items\] == \[2, 1\][\s\S]*?SPOTLIGHT_PAID_ROTATION_WEIGHT/,
+  "Backend tests must lock paid-first Spotlight ordering and rotation metadata."
+);
 if (findings.length > 0) {
   console.error("Spotlight system feed audit failed:");
   for (const finding of findings) {
