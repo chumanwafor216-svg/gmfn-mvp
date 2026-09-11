@@ -160571,3 +160571,12 @@ Operational note:
 - Backward compatibility: the old Marketplace `ask_market` route handling remains in place for existing links, but new Demand Box and Shop Control Ask Community CTAs point into Demand Box question mode.
 - Truth boundary: this does not change the backend data model, buyer proof, sales proof, private Vault behavior, or Demand Box request rows. It is routing, presentation, and modal containment correction.
 - Verification passed: targeted frontend ESLint; `npm --prefix frontend run audit:demand-box-front-package`; `npm --prefix frontend run audit:spotlight-system-feed`; `npm --prefix frontend run audit:notice-board-phone-notifications`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run audit:link-contracts`; `npm --prefix frontend run build`.
+## 2026-09-11 - Public Shop analytics pill shrunk to match follower pill (local)
+
+- Status: Local frontend correction implemented and verified; not pushed or deployed yet.
+- Owner trigger: owner screenshot showed the compact owner-only `Shop analytics` shortcut still extending past the phone signboard and asked to shrink it to share the same length as the follower pill.
+- Frontend route affected: `/shop/:gmfnId` through `frontend/src/pages/ShopGalleryPage.tsx`.
+- Product behavior changed: compact owner view now keeps follower count and Analytics as two equal-width pills in the right-hand signboard row. The phone label is shortened to `Analytics`; desktop still shows `Shop analytics / View insights`.
+- Guardrail changed: `frontend/tools/audit-shop-gallery-button-inventory.mjs` now cages the equal-width compact owner pills and compact `Analytics` label.
+- Truth boundary: this is visual/layout polish only. It does not change analytics data, owner-only visibility, follower counts, Share, Vault, Demand Box, or Market Intelligence behavior.
+- Verification passed: targeted frontend ESLint; `npm --prefix frontend run audit:shop-gallery-button-inventory`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run audit:share-tag-actions`; `npm --prefix frontend run build`.

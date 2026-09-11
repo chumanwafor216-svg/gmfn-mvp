@@ -3452,7 +3452,7 @@ export default function ShopGalleryPage() {
                 placeItems: "center",
                 justifySelf: "center",
                 alignSelf: isCompact ? "start" : "center",
-                gridRow: isCompact ? shopFollowState.isOwner ? "1 / span 2" : "1 / span 3" : undefined,
+                gridRow: isCompact ? "1 / span 3" : undefined,
                 background:
                   "radial-gradient(circle at 36% 30%, rgba(255,255,255,0.95) 0%, rgba(246,196,83,0.18) 46%, rgba(4,24,43,0.92) 100%)",
                 border: "1px solid rgba(214,170,69,0.58)",
@@ -3592,11 +3592,11 @@ export default function ShopGalleryPage() {
                   display: "grid",
                   gridTemplateColumns: isCompact
                     ? shopFollowState.isOwner
-                      ? "minmax(0, 0.72fr) minmax(0, 1.28fr)"
+                      ? "repeat(2, minmax(0, 1fr))"
                       : "minmax(0, 1fr)"
                     : "minmax(0, 1fr) auto",
-                  gridColumn: isCompact ? shopFollowState.isOwner ? "1 / -1" : "2" : undefined,
-                  gap: isCompact ? shopFollowState.isOwner ? 8 : 6 : 10,
+                  gridColumn: isCompact ? "2" : undefined,
+                  gap: isCompact ? 6 : 10,
                   alignItems: "center",
                   minHeight: isCompact ? 30 : 54,
                 }}
@@ -3759,8 +3759,8 @@ export default function ShopGalleryPage() {
                     fontWeight: 900,
                     gap: isCompact ? 6 : 8,
                     minWidth: 0,
-                    padding: isCompact ? "6px 8px" : undefined,
-                    justifyContent: "flex-start",
+                    padding: isCompact ? "6px 7px" : undefined,
+                    justifyContent: isCompact ? "center" : "flex-start",
                     whiteSpace: "normal",
                     textOverflow: "clip",
                   }}
@@ -3768,23 +3768,28 @@ export default function ShopGalleryPage() {
                   {inlineShopIcon("chart", "#FFFFFF", isCompact ? 12 : 15)}
                   <span
                     style={{
-                      display: "grid",
+                      display: isCompact ? "block" : "grid",
                       gap: 1,
                       minWidth: 0,
                       lineHeight: 1.05,
-                      textAlign: "left",
+                      textAlign: isCompact ? "center" : "left",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    <span>Shop analytics</span>
-                    <span
-                      style={{
-                        color: "rgba(255,255,255,0.72)",
-                        fontSize: isCompact ? 9 : 11,
-                        fontWeight: 750,
-                      }}
-                    >
-                      View insights
-                    </span>
+                    <span>{isCompact ? "Analytics" : "Shop analytics"}</span>
+                    {!isCompact ? (
+                      <span
+                        style={{
+                          color: "rgba(255,255,255,0.72)",
+                          fontSize: 11,
+                          fontWeight: 750,
+                        }}
+                      >
+                        View insights
+                      </span>
+                    ) : null}
                   </span>
                 </StableCtaLink>
               ) : null}
