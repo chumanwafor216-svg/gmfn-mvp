@@ -38,6 +38,10 @@ Send or ask these questions before setup:
 - Short public description.
 - Main representative name and role.
 - Best contact channel for handover.
+- The representative's GSN number, if already known.
+- If the main representative will not operate the workspace daily, the acting
+  operator's name, role, phone/contact channel, and GSN number if already
+  known.
 - Community or programme purpose.
 - Who should be the first owner/admin after handover.
 - Whether the organisation wants marketplace/shop features enabled now.
@@ -48,6 +52,67 @@ Send or ask these questions before setup:
 - Whether the setup is for private testing, pilot review, or real public use.
 - Whether the representative authorises GSN to prepare the workspace on their
   behalf before transferring control.
+
+## Identity And Acting Authority Rule
+
+For steward setup, the organisation does not automatically receive a second
+separate person-style GSN number.
+
+The public organisation workspace is tied to the responsible human
+representative who stands behind it. In the Pillar of Hope case, Pillar of Hope
+as an entity is tied to Mr Felix's GSN number once he accepts handover, because
+he is the accountable face or named representative behind the organisation in
+GSN.
+
+If Mr Felix will not be the daily operator, he should name the person who will
+act for Pillar of Hope. The setup record should then keep both roles clear:
+
+- responsible representative: the person with final authority for the
+  organisation's GSN presence;
+- acting operator: the person allowed to manage daily posting, setup, notices,
+  marketplace updates, or member responses on the representative's behalf.
+
+Before handover, record how the responsible representative authorised the
+acting operator. Do not treat an acting operator as the owner unless the
+representative explicitly says ownership should transfer to that person.
+
+## Spotlight Rule
+
+The ordinary Spotlight rule still applies to a steward-prepared organisation.
+The free daily Spotlight allowance is tied to the responsible GSN number, not to
+an extra hidden organisation identity.
+
+For Pillar of Hope, this means the organisation should normally have the same
+one free daily Spotlight space through Mr Felix's GSN identity after handover.
+If the organisation wants more rotation, wider placement, or repeated pipeline
+exposure, that should be handled as the paid Spotlight option when that product
+path is active.
+
+Do not create a separate free Spotlight allowance merely because the account is
+an NGO, charity, school, church, association, or Community Domain.
+
+## Member Shop And Message-Receiving Boundary
+
+The organisation may control what appears as official organisation activity.
+It should not control whether ordinary members can own personal GSN accounts,
+personal shops, or participate in other communities where they are members.
+
+Default Pillar of Hope setup:
+
+- admins/operators control official Pillar of Hope notices, Spotlight posts,
+  official shop/page updates, and public organisation wording;
+- members may still have their own GSN shops or marketplace activity outside
+  the official Pillar of Hope workspace;
+- Demand Box should remain open by default for community needs and market-need
+  questions, unless the organisation later chooses moderation rules for abuse,
+  privacy, or safety;
+- `Ask Community` messages should be controlled by the receiver's own
+  notification/preference settings where possible, not by a blanket ban that
+  prevents all members from asking their other communities.
+
+A member may belong to many communities. If one community limits a message type
+inside that community, the system should not infer that the member is blocked
+from asking or receiving similar community questions elsewhere.
 
 ## Written Authority Minimum
 
@@ -83,18 +148,21 @@ handover.
 
 1. Ask the real representative to create or confirm their GSN account.
 2. Confirm identity and authority outside the app using the available evidence.
-3. Use owner repair/release to transfer the community to the representative.
-4. Confirm the representative has active admin membership.
-5. Remove or downgrade the steward's owner/admin role unless GSN support still
+3. If someone else will operate daily on the representative's behalf, confirm
+   that acting operator and record the representative's authorisation.
+4. Use owner repair/release to transfer the community to the representative.
+5. Confirm the representative has active admin membership.
+6. Confirm any acting operator has only the agreed admin/operator access.
+7. Remove or downgrade the steward's owner/admin role unless GSN support still
    has a clearly agreed temporary support role.
-6. Tell the representative how to continue:
+8. Tell the representative how to continue:
    - sign in with their own account;
    - check organisation details;
    - edit marketplace/shop information;
    - invite the first trusted members;
    - use Shop Analytics / Market Intelligence only as guidance, not proof of
      sales or trust.
-7. Record the reviewer note with who accepted, what proof was checked, and what
+9. Record the reviewer note with who accepted, what proof was checked, and what
    was released.
 
 ## If The Organisation Leaves GSN

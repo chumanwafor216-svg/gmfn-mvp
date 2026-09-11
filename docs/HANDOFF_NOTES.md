@@ -1,3 +1,13 @@
+## 2026-09-11 - Steward setup identity and Spotlight boundary corrected (local)
+
+- Status: Docs-only protocol correction; not pushed or deployed yet.
+- Owner trigger: Founder clarified that Pillar of Hope should not receive an extra person-style GSN identity or extra free Spotlight quota. The organisation is tied to the responsible human representative's GSN number, with any daily operator recorded as delegated authority.
+- Protocol affected: `docs/GSN_STEWARD_SETUP_AND_HANDOVER_PROTOCOL_2026-09-11.md` now asks for the representative's GSN number, acting-operator details where needed, and the authorisation path between them.
+- Product boundary recorded: the normal one-free-Spotlight-per-responsible-GSN-number rule still applies to steward-prepared organisations; extra rotation belongs to the paid Spotlight path when active.
+- Governance boundary recorded: Pillar of Hope may control official Pillar notices, official Spotlight posts, official shop/page wording, admin/operator roles, and member approval, but it should not block members from having personal GSN shops or participating in other communities.
+- Message boundary recorded: `Ask Community`/market-need messages should be controlled through receiver/community preference and moderation rules, not by a blanket rule that follows a member across all communities.
+- Devil truth: this is a protocol correction only. It does not add notification-preference backend logic, paid Spotlight billing, or legal authority verification by itself.
+
 ## 2026-09-10 - Ndi Abia discovery identity corrected
 
 - Status: Docs-only evidence correction; no product code, backend route, frontend route, schema, deploy, commit, push, or email send.
