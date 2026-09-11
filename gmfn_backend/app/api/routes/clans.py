@@ -557,6 +557,8 @@ def _resolve_target_clan_membership(
     if not clan or _is_default_clan_name(getattr(clan, "name", None)):
         raise HTTPException(status_code=404, detail="Community not found")
 
+    if (getattr(clan, "status", None) or "active").lower() != "active":
+        raise HTTPException(status_code=404, detail="Community is not active")
     membership = (
         db.query(ClanMembership)
         .filter(

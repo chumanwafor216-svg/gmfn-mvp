@@ -7,8 +7,16 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const appFile = "src/App.tsx";
 const requireAuthFile = "src/components/RequireAuth.tsx";
+const adminPageFile = "src/pages/AdminCommunityOwnershipPage.tsx";
+const apiFile = "src/lib/api.ts";
+const backendAdminFile = "../gmfn_backend/app/api/routes/admin.py";
+const clanAuthFile = "../gmfn_backend/app/core/clan_auth.py";
 const appSource = readFileSync(join(frontendRoot, appFile), "utf8");
 const requireAuthSource = readFileSync(join(frontendRoot, requireAuthFile), "utf8");
+const adminPageSource = readFileSync(join(frontendRoot, adminPageFile), "utf8");
+const apiSource = readFileSync(join(frontendRoot, apiFile), "utf8");
+const backendAdminSource = readFileSync(join(frontendRoot, backendAdminFile), "utf8");
+const clanAuthSource = readFileSync(join(frontendRoot, clanAuthFile), "utf8");
 const findings = [];
 
 function lineAt(source, index) {
@@ -122,6 +130,40 @@ if (/cachedRoleAllows|readCachedRole/.test(requireAuthSource)) {
   );
 }
 
+assertContains(
+  apiFile,
+  apiSource,
+  /postAdminCommunityLifecycle[\s\S]*?\/admin\/community-lifecycle/,
+  "Admin Community Ownership page must keep its ordinary-community lifecycle API wrapper."
+);
+
+assertContains(
+  backendAdminFile,
+  backendAdminSource,
+  /@router\.post\("\/community-lifecycle"\)[\s\S]*?community\.lifecycle_changed/,
+  "Backend admin route must record ordinary-community lifecycle changes with a trust event."
+);
+
+assertContains(
+  clanAuthFile,
+  clanAuthSource,
+  /Clan\.status == "active"/,
+  "Normal user community lists must hide dormant or closed ordinary communities."
+);
+
+assertContains(
+  adminPageFile,
+  adminPageSource,
+  /Community lifecycle[\s\S]*?Preview community lifecycle[\s\S]*?Record community lifecycle/,
+  "Admin Community Ownership page must expose the ordinary-community lifecycle preview and record controls."
+);
+
+assertContains(
+  adminPageFile,
+  adminPageSource,
+  /does not delete[\s\S]*?remove members[\s\S]*?transfer ownership/,
+  "Ordinary-community lifecycle UI must keep the no-delete/no-member-removal/no-transfer boundary visible."
+);
 if (findings.length) {
   console.error("Admin route guard audit failed:");
   for (const finding of findings) {

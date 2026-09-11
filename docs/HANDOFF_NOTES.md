@@ -160473,3 +160473,13 @@ Operational note:
 - Layout boundary: outer metric card footprint was not intentionally expanded; the fix changes label wrapping behavior inside the existing compact card.
 - Regression guard: `audit:spotlight-system-feed` now asserts metric labels use normal wrapping, `wordBreak: keep-all`, and no hyphenation for this component.
 - Verification passed before commit: targeted frontend ESLint; `npm --prefix frontend run audit:spotlight-system-feed`; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`.
+## 2026-09-11 - Admin Ordinary Community Lifecycle Cleanup (local)
+
+- Status: Local implementation complete and verified; not pushed/deployed under the current batch freeze.
+- Owner trigger: owner asked for a way to deactivate/close an example community such as Pillar of Hope after pilot setup, so real owners can join without old setup data continuing to look operational.
+- Backend routes affected: added platform-admin `POST /admin/community-lifecycle` for ordinary `Clan` records, separate from existing `POST /admin/community-domain-lifecycle` for protected Community Domains.
+- Product behavior changed: admin can preview then record ordinary community status as `active`, `dormant`, or `closed`. Dormant/closed communities are hidden from normal member community lists and direct active-community selection, while community name, memberships, ownership history, and trust-event evidence stay preserved.
+- Frontend route affected: `/app/command-center/community-ownership` now has a `Community lifecycle` section for pausing/closing an example community without deleting it, removing members, transferring ownership, creating a Community Domain/payment, or globally banning anyone.
+- Guardrail: `frontend/tools/audit-admin-route-guards.mjs` now cages the ordinary-community lifecycle API wrapper, backend trust-event route, active-community visibility filter, and UI no-delete boundary.
+- Truth boundary: this is a lifecycle stop/pause tool only. It is not hard delete, not account deletion, not ownership transfer, not a payment/billing action, and not a global user ban.
+- Verification passed: backend py_compile; `python -m pytest gmfn_backend\tests\test_admin_community_ownership.py -q` (`17 passed`); targeted frontend ESLint from `frontend`; `npm --prefix frontend run audit:admin-route-guards`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; focused Community Domain lifecycle test still passed.

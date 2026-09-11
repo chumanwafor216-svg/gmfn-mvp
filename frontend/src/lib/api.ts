@@ -5252,6 +5252,16 @@ export async function postAdminCommunityOwnershipReconciliation(payload: {
   return httpJson("/admin/community-ownership/reconcile", "POST", payload);
 }
 
+export async function postAdminCommunityLifecycle(payload: {
+  community_name?: string | null;
+  clan_id?: number | null;
+  status: "active" | "dormant" | "closed" | string;
+  lifecycle_confirmed?: boolean;
+  execute?: boolean;
+  reviewer_note?: string | null;
+}): Promise<any> {
+  return httpJson("/admin/community-lifecycle", "POST", payload);
+}
 export async function postAdminCommunityDomainOwnershipReconciliation(payload: {
   domain_name?: string | null;
   community_domain_id?: number | null;

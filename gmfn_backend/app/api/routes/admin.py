@@ -215,6 +215,18 @@ class CommunityOwnershipReconcileIn(BaseModel):
         return _reject_non_text_value(value, info.field_name)
 
 
+class CommunityLifecycleIn(BaseModel):
+    community_name: Optional[str] = Field(default=None, max_length=120)
+    clan_id: Optional[int] = Field(default=None, ge=1)
+    status: str = Field(..., min_length=3, max_length=24)
+    lifecycle_confirmed: bool = False
+    execute: bool = False
+    reviewer_note: Optional[str] = Field(default=None, max_length=800)
+
+    @field_validator("community_name", "status", "reviewer_note", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 class CommunityDomainOwnershipReconcileIn(BaseModel):
     domain_name: Optional[str] = Field(default=None, max_length=120)
@@ -344,6 +356,8 @@ def _community_row(db: Session, clan: Clan) -> dict[str, Any]:
         "description": _safe_str(getattr(clan, "description", None)) or None,
         "community_code": _safe_str(getattr(clan, "community_code", None)) or f"GSN-C-{int(clan.id):06d}",
         "status": _safe_str(getattr(clan, "status", None)) or "active",
+        "closed_at": _dt_iso(getattr(clan, "closed_at", None)),
+        "closed_reason": _safe_str(getattr(clan, "closed_reason", None)) or None,
         "created_by_user_id": int(clan.created_by_user_id) if clan.created_by_user_id else None,
         "created_at": _dt_iso(getattr(clan, "created_at", None)),
         "canonical_owner": _user_label(creator),
@@ -1347,6 +1361,62 @@ def _normalize_domain_lifecycle_status(value: Any) -> str:
     return status
 
 
+COMMUNITY_LIFECYCLE_STATUSES = {"active", "dormant", "closed"}
+
+
+def _normalize_community_lifecycle_status(value: Any) -> str:
+    status = _safe_str(value).lower().replace("-", "_")
+    aliases = {
+        "reactivate": "active",
+        "reactivated": "active",
+        "reopen": "active",
+        "opened": "active",
+        "pause": "dormant",
+        "paused": "dormant",
+        "suspend": "dormant",
+        "suspended": "dormant",
+        "inactive": "dormant",
+        "shut": "closed",
+        "shutdown": "closed",
+        "close": "closed",
+    }
+    status = aliases.get(status, status)
+    if status not in COMMUNITY_LIFECYCLE_STATUSES:
+        raise HTTPException(
+            status_code=400,
+            detail="Community lifecycle status must be active, dormant, or closed.",
+        )
+    return status
+
+
+def _community_lifecycle_preview(
+    db: Session,
+    *,
+    clan: Clan,
+    requested_status: str,
+) -> dict[str, Any]:
+    current_status = _safe_str(getattr(clan, "status", None)) or "active"
+    inactive = requested_status in {"closed", "dormant"}
+    return {
+        "community": _community_row(db, clan),
+        "current_status": current_status,
+        "requested_status": requested_status,
+        "will_change_status": current_status != requested_status,
+        "will_block_normal_operation": inactive,
+        "will_hide_from_member_home": inactive,
+        "will_keep_community_name_reserved": True,
+        "will_preserve_history": True,
+        "will_delete_community": False,
+        "will_remove_members": False,
+        "will_globally_ban_owner": False,
+        "boundary": (
+            "This changes the ordinary community lifecycle only. It keeps the "
+            "community name reserved and preserves history; it does not delete "
+            "evidence, erase members, transfer ownership, create a domain/payment, "
+            "or globally ban any identity."
+        ),
+    }
+
 def _community_domain_lifecycle_preview(
     db: Session,
     *,
@@ -1605,6 +1675,103 @@ def admin_community_ownership_reconcile(
         **result_preview,
     }
 
+
+@router.post("/community-lifecycle")
+def admin_community_lifecycle(
+    payload: CommunityLifecycleIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_platform_admin(current_user)
+    requested_status = _normalize_community_lifecycle_status(payload.status)
+    clan = _resolve_community_for_ownership(
+        db,
+        clan_id=payload.clan_id,
+        community_name=payload.community_name,
+    )
+    preview = _community_lifecycle_preview(
+        db,
+        clan=clan,
+        requested_status=requested_status,
+    )
+    reviewer_note = _safe_str(payload.reviewer_note)
+
+    if not payload.execute:
+        return {
+            "ok": True,
+            "mode": "preview",
+            "executed": False,
+            "message": "Preview ready. Confirm the lifecycle decision before changing this community.",
+            **preview,
+        }
+
+    if not bool(payload.lifecycle_confirmed):
+        raise HTTPException(
+            status_code=400,
+            detail="Lifecycle confirmation is required before changing community status.",
+        )
+    if len(reviewer_note) < 12:
+        raise HTTPException(
+            status_code=400,
+            detail="Reviewer note is required before changing community status.",
+        )
+
+    previous_status = _safe_str(getattr(clan, "status", None)) or "active"
+    clan.status = requested_status
+    if requested_status == "active":
+        clan.closed_at = None
+        clan.closed_reason = None
+    else:
+        if requested_status == "closed" and getattr(clan, "closed_at", None) is None:
+            clan.closed_at = datetime.now(timezone.utc)
+        clan.closed_reason = reviewer_note
+    db.add(clan)
+
+    log_trust_event(
+        db,
+        event_type="community.lifecycle_changed",
+        clan_id=int(clan.id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(clan.created_by_user_id) if clan.created_by_user_id else None,
+        meta=build_trust_meta(
+            reason="community_lifecycle_changed",
+            note=reviewer_note,
+            trust_delta="0.00",
+            system=True,
+            extra={
+                "community_id": int(clan.id),
+                "community_name": _safe_str(clan.name),
+                "community_code": _safe_str(getattr(clan, "community_code", None)) or f"GSN-C-{int(clan.id):06d}",
+                "previous_status": previous_status,
+                "requested_status": requested_status,
+                "normal_operation_blocked": requested_status in {"closed", "dormant"},
+                "member_home_hidden": requested_status in {"closed", "dormant"},
+                "name_reserved": True,
+                "history_preserved": True,
+                "community_deleted": False,
+                "members_removed": False,
+                "ownership_transferred": False,
+                "owner_globally_banned": False,
+                "admin_lifecycle_confirmation": True,
+            },
+        ),
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+    db.refresh(clan)
+    result_preview = _community_lifecycle_preview(
+        db,
+        clan=clan,
+        requested_status=requested_status,
+    )
+    return {
+        "ok": True,
+        "mode": "execute",
+        "executed": True,
+        "message": f"{_safe_str(clan.name)} is now {requested_status}.",
+        **result_preview,
+    }
 
 @router.post("/community-domain-ownership/reconcile")
 def admin_community_domain_ownership_reconcile(

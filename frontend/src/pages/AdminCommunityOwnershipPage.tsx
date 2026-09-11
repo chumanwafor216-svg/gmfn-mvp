@@ -10,6 +10,7 @@ import {
 } from "../lib/institutionalSurface";
 import {
   getAdminCommunityOwnershipLookup,
+  postAdminCommunityLifecycle,
   postAdminCommunityDomainLifecycle,
   postAdminCommunityDomainOwnershipReconciliation,
   postAdminCommunityOwnershipReconciliation,
@@ -179,6 +180,18 @@ export default function AdminCommunityOwnershipPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState<"lookup" | "preview" | "execute" | "">("");
+  const [communityLifecycleName, setCommunityLifecycleName] = useState(
+    safeStr(searchParams.get("community_name")) || "Pillar of Hope"
+  );
+  const [communityLifecycleId, setCommunityLifecycleId] = useState(0);
+  const [communityLifecycleStatus, setCommunityLifecycleStatus] = useState<"active" | "dormant" | "closed">("dormant");
+  const [communityLifecycleNote, setCommunityLifecycleNote] = useState("");
+  const [communityLifecycleConfirmed, setCommunityLifecycleConfirmed] = useState(false);
+  const [communityLifecyclePreview, setCommunityLifecyclePreview] = useState<any>(null);
+  const [communityLifecycleResult, setCommunityLifecycleResult] = useState<any>(null);
+  const [communityLifecycleMessage, setCommunityLifecycleMessage] = useState("");
+  const [communityLifecycleError, setCommunityLifecycleError] = useState("");
+  const [communityLifecycleBusy, setCommunityLifecycleBusy] = useState<"preview" | "execute" | "">("");
   const [domainLifecycleName, setDomainLifecycleName] = useState(safeStr(searchParams.get("domain_name")));
   const [domainLifecycleId, setDomainLifecycleId] = useState(0);
   const [domainLifecycleStatus, setDomainLifecycleStatus] = useState<"active" | "suspended" | "closed">("suspended");
@@ -346,6 +359,51 @@ export default function AdminCommunityOwnershipPage() {
   }
 
 
+  async function runCommunityLifecyclePreview() {
+    setCommunityLifecycleBusy("preview");
+    setCommunityLifecycleError("");
+    setCommunityLifecycleMessage("");
+    setCommunityLifecyclePreview(null);
+    setCommunityLifecycleResult(null);
+    try {
+      const out = await postAdminCommunityLifecycle({
+        clan_id: communityLifecycleId || undefined,
+        community_name: communityLifecycleId ? undefined : communityLifecycleName,
+        status: communityLifecycleStatus,
+        execute: false,
+      });
+      setCommunityLifecyclePreview(out);
+      setCommunityLifecycleMessage(safeStr(out?.message) || "Community lifecycle preview ready.");
+    } catch (err: any) {
+      setCommunityLifecycleError(safeStr(err?.message || err) || "Community lifecycle preview failed.");
+    } finally {
+      setCommunityLifecycleBusy("");
+    }
+  }
+
+  async function runCommunityLifecycleExecute() {
+    setCommunityLifecycleBusy("execute");
+    setCommunityLifecycleError("");
+    setCommunityLifecycleMessage("");
+    setCommunityLifecycleResult(null);
+    try {
+      const out = await postAdminCommunityLifecycle({
+        clan_id: communityLifecycleId || undefined,
+        community_name: communityLifecycleId ? undefined : communityLifecycleName,
+        status: communityLifecycleStatus,
+        lifecycle_confirmed: communityLifecycleConfirmed,
+        execute: true,
+        reviewer_note: communityLifecycleNote,
+      });
+      setCommunityLifecycleResult(out);
+      setCommunityLifecyclePreview(out);
+      setCommunityLifecycleMessage(safeStr(out?.message) || "Community lifecycle recorded.");
+    } catch (err: any) {
+      setCommunityLifecycleError(safeStr(err?.message || err) || "Community lifecycle update failed.");
+    } finally {
+      setCommunityLifecycleBusy("");
+    }
+  }
   async function runDomainLifecyclePreview() {
     setDomainLifecycleBusy("preview");
     setDomainLifecycleError("");
@@ -451,6 +509,9 @@ export default function AdminCommunityOwnershipPage() {
 
   const canPreview = Boolean(selectedClanId || safeStr(communityNameInput)) && ownerIdentityReady;
   const canExecute = Boolean(preview) && proofConfirmed && safeStr(note).length >= 12 && !result;
+  const canCommunityLifecyclePreview = Boolean(communityLifecycleId || safeStr(communityLifecycleName));
+  const canCommunityLifecycleExecute =
+    Boolean(communityLifecyclePreview) && communityLifecycleConfirmed && safeStr(communityLifecycleNote).length >= 12 && !communityLifecycleResult;
   const canLifecyclePreview = Boolean(domainLifecycleId || safeStr(domainLifecycleName));
   const canLifecycleExecute = Boolean(domainLifecyclePreview) && domainLifecycleConfirmed && safeStr(domainLifecycleNote).length >= 12 && !domainLifecycleResult;
   const canDomainOwnerPreview = Boolean(domainOwnerId || safeStr(domainOwnerName)) && domainOwnerIdentityReady;
@@ -527,6 +588,130 @@ export default function AdminCommunityOwnershipPage() {
           </div>
         </section>
 
+        <section style={card("#F8FBFF")}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <div style={label()}>Community lifecycle</div>
+              <h2 style={{ margin: "6px 0 0", color: "#0B1F33", fontSize: 22 }}>Pause or close example community</h2>
+            </div>
+            <div style={{ ...helper(), maxWidth: 430 }}>
+              Use this when a setup community should stop appearing to normal members. It does not delete the community, remove members, or transfer ownership.
+            </div>
+          </div>
+
+          <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
+            <div>
+              <div style={fieldLabel()}>Community name</div>
+              <input
+                value={communityLifecycleName}
+                onChange={(event) => {
+                  setCommunityLifecycleName(event.target.value);
+                  setCommunityLifecycleId(0);
+                  setCommunityLifecyclePreview(null);
+                  setCommunityLifecycleResult(null);
+                }}
+                placeholder="Pillar of Hope"
+                style={inputStyle()}
+              />
+            </div>
+            <div>
+              <div style={fieldLabel()}>Or community ID</div>
+              <input
+                value={communityLifecycleId || ""}
+                onChange={(event) => {
+                  setCommunityLifecycleId(toNum(event.target.value));
+                  setCommunityLifecyclePreview(null);
+                  setCommunityLifecycleResult(null);
+                }}
+                placeholder="11"
+                inputMode="numeric"
+                style={inputStyle()}
+              />
+            </div>
+            <div>
+              <div style={fieldLabel()}>Lifecycle decision</div>
+              <select
+                value={communityLifecycleStatus}
+                onChange={(event) => {
+                  setCommunityLifecycleStatus(event.target.value as "active" | "dormant" | "closed");
+                  setCommunityLifecyclePreview(null);
+                  setCommunityLifecycleResult(null);
+                }}
+                style={inputStyle()}
+              >
+                <option value="dormant">Pause pilot use</option>
+                <option value="closed">Close example community</option>
+                <option value="active">Reactivate community</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <SecondaryButton
+              onClick={runCommunityLifecyclePreview}
+              busy={communityLifecycleBusy === "preview"}
+              busyLabel="Previewing..."
+              disabled={communityLifecycleBusy !== "" || !canCommunityLifecyclePreview}
+              debugId="admin-community-lifecycle.preview"
+            >
+              {iconLabel("eye", "Preview community lifecycle")}
+            </SecondaryButton>
+          </div>
+
+          {communityLifecyclePreview ? (
+            <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+              <div style={{ ...factGrid(142) }}>
+                {fact("Community", safeStr(communityLifecyclePreview?.community?.name))}
+                {fact("Current", safeStr(communityLifecyclePreview?.current_status))}
+                {fact("Requested", safeStr(communityLifecyclePreview?.requested_status))}
+                {fact("Member Home", communityLifecyclePreview?.will_hide_from_member_home ? "Hidden" : "Visible")}
+              </div>
+              <div style={{ ...institutionalInnerCard("#FFFFFF"), ...helper() }}>
+                {safeStr(communityLifecyclePreview?.boundary) || "History is preserved. This does not delete the community, remove members, transfer ownership, or ban anybody."}
+              </div>
+              {!communityLifecycleResult ? (
+                <div style={{ display: "grid", gap: 12 }}>
+                  <label style={{ display: "flex", gap: 10, alignItems: "flex-start", color: "#0B1F33", fontWeight: 900 }}>
+                    <input
+                      type="checkbox"
+                      checked={communityLifecycleConfirmed}
+                      onChange={(event) => setCommunityLifecycleConfirmed(event.target.checked)}
+                      style={{ marginTop: 3 }}
+                    />
+                    I confirm this ordinary community lifecycle decision. I understand it preserves history and does not delete members or evidence.
+                  </label>
+                  <div>
+                    <div style={fieldLabel()}>Reviewer note</div>
+                    <textarea
+                      value={communityLifecycleNote}
+                      onChange={(event) => setCommunityLifecycleNote(event.target.value)}
+                      placeholder="Example: Pillar of Hope was used as a pilot setup example. Pause the example shell while preserving the name, membership trail, and audit history."
+                      rows={4}
+                      style={{ ...inputStyle(), resize: "vertical", minHeight: 92 }}
+                    />
+                  </div>
+                  <PrimaryButton
+                    onClick={runCommunityLifecycleExecute}
+                    busy={communityLifecycleBusy === "execute"}
+                    busyLabel="Recording..."
+                    disabled={communityLifecycleBusy !== "" || !canCommunityLifecycleExecute}
+                    debugId="admin-community-lifecycle.execute"
+                  >
+                    {iconLabel("check", "Record community lifecycle")}
+                  </PrimaryButton>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          {(communityLifecycleMessage || communityLifecycleError) ? (
+            <div style={{ marginTop: 12, ...institutionalInnerCard(communityLifecycleError ? "#FEF2F2" : "#ECFDF5") }}>
+              <div style={{ color: communityLifecycleError ? "#991B1B" : "#065F46", fontWeight: 1000 }}>
+                {iconLabel(communityLifecycleError ? "alert" : "check", communityLifecycleError || communityLifecycleMessage)}
+              </div>
+            </div>
+          ) : null}
+        </section>
         <section style={card("#F8FBFF")}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>

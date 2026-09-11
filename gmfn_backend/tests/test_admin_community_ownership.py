@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 
+from app.core.clan_auth import list_visible_user_clans
 from app.db.database import SessionLocal
 from app.db.models import Clan, ClanMembership, EntryPhoneVerification, TrustEvent, User, UserPayoutDestination
 from app.db.verification_models import IdentityVerificationCheck
@@ -694,3 +695,136 @@ def test_community_domain_ownership_execute_transfers_owner_and_keeps_history(
         assert event.meta['history_preserved'] is True
         assert event.meta['domain_deleted'] is False
         assert event.meta['duplicate_domain_created'] is False
+
+def test_community_lifecycle_preview_is_read_only(
+    client: TestClient,
+    override_current_user,
+):
+    _seed_pillar_of_hope_case()
+
+    response = client.post(
+        '/admin/community-lifecycle',
+        json={
+            'community_name': 'Pillar of Hope',
+            'status': 'dormant',
+            'execute': False,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body['mode'] == 'preview'
+    assert body['executed'] is False
+    assert body['community']['community_code'] == 'GSN-C-PILLAR-HOPE'
+    assert body['current_status'] == 'active'
+    assert body['requested_status'] == 'dormant'
+    assert body['will_hide_from_member_home'] is True
+    assert body['will_preserve_history'] is True
+    assert body['will_delete_community'] is False
+    assert body['will_remove_members'] is False
+
+    with SessionLocal() as db:
+        clan = db.get(Clan, 11)
+        assert clan is not None
+        assert clan.status == 'active'
+        assert clan.closed_at is None
+        assert db.query(TrustEvent).count() == 0
+
+
+def test_community_lifecycle_execute_requires_confirmation_before_mutation(
+    client: TestClient,
+    override_current_user,
+):
+    _seed_pillar_of_hope_case()
+
+    response = client.post(
+        '/admin/community-lifecycle',
+        json={
+            'community_name': 'Pillar of Hope',
+            'status': 'closed',
+            'execute': True,
+            'lifecycle_confirmed': False,
+            'reviewer_note': 'Pilot setup example should be closed after owner review.',
+        },
+    )
+
+    assert response.status_code == 400, response.text
+    assert 'Lifecycle confirmation is required' in response.text
+
+    with SessionLocal() as db:
+        clan = db.get(Clan, 11)
+        assert clan is not None
+        assert clan.status == 'active'
+        assert clan.closed_at is None
+        assert db.query(TrustEvent).count() == 0
+
+
+def test_community_lifecycle_execute_closes_ordinary_community_without_deleting_history(
+    client: TestClient,
+    override_current_user,
+):
+    _seed_pillar_of_hope_case()
+
+    response = client.post(
+        '/admin/community-lifecycle',
+        json={
+            'community_name': 'Pillar of Hope',
+            'status': 'closed',
+            'execute': True,
+            'lifecycle_confirmed': True,
+            'reviewer_note': 'Pillar of Hope was a pilot setup example and should stop normal operation.',
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body['mode'] == 'execute'
+    assert body['executed'] is True
+    assert body['community']['status'] == 'closed'
+    assert body['will_hide_from_member_home'] is True
+    assert body['will_delete_community'] is False
+    assert body['will_remove_members'] is False
+
+    with SessionLocal() as db:
+        clan = db.get(Clan, 11)
+        assert clan is not None
+        assert clan.status == 'closed'
+        assert clan.closed_at is not None
+        assert 'pilot setup example' in (clan.closed_reason or '')
+        memberships = db.query(ClanMembership).filter(ClanMembership.clan_id == 11).all()
+        assert len(memberships) == 1
+        assert memberships[0].user_id == 2
+        assert memberships[0].left_at is None
+        event = db.query(TrustEvent).one()
+        assert event.event_type == 'community.lifecycle_changed'
+        assert event.actor_user_id == 1
+        assert event.subject_user_id == 2
+        assert event.meta['previous_status'] == 'active'
+        assert event.meta['requested_status'] == 'closed'
+        assert event.meta['history_preserved'] is True
+        assert event.meta['community_deleted'] is False
+        assert event.meta['members_removed'] is False
+        assert event.meta['member_home_hidden'] is True
+
+
+def test_closed_community_is_hidden_from_member_home(
+    client: TestClient,
+    override_current_user,
+):
+    _seed_pillar_of_hope_case()
+    client.post(
+        '/admin/community-lifecycle',
+        json={
+            'community_name': 'Pillar of Hope',
+            'status': 'closed',
+            'execute': True,
+            'lifecycle_confirmed': True,
+            'reviewer_note': 'Pillar of Hope was a pilot setup example and should stop normal operation.',
+        },
+    )
+
+    with SessionLocal() as db:
+        setup_owner = db.get(User, 2)
+        assert setup_owner is not None
+        visible = list_visible_user_clans(db=db, user=setup_owner)
+        assert all(clan.community_code != 'GSN-C-PILLAR-HOPE' for clan in visible)

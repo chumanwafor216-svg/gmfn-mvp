@@ -30,6 +30,7 @@ def list_visible_user_clans(*, db: Session, user: User) -> list[Clan]:
         .filter(
             ClanMembership.user_id == user.id,
             ClanMembership.left_at.is_(None),
+            Clan.status == "active",
         )
         .order_by(Clan.id.desc())
         .all()
@@ -125,6 +126,8 @@ def get_current_clan_membership(
         clan = db.get(Clan, x_clan_id)
         if not clan or _is_default_clan_name(getattr(clan, "name", None)):
             raise HTTPException(status_code=404, detail="Community not found")
+        if (getattr(clan, "status", None) or "active").lower() != "active":
+            raise HTTPException(status_code=404, detail="Community is not active")
         existing_membership = (
             db.query(ClanMembership)
             .filter(
