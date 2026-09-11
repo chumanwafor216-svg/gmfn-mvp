@@ -160519,3 +160519,13 @@ Operational note:
 - Procedure boundary: GSN may collect answers, prepare a hidden `steward_setup` workspace, clean old test/public data, and release ownership after proof. GSN must not pretend adoption, verified legal ownership, payment, endorsement, or impact happened.
 - Practical Pillar of Hope advice: call or email Mr Felix Moby/Nwobi, collect the organisation answers and written authority, prepare only approved information, then use owner repair/release once his GSN identity is ready. After handover, remove or downgrade the founder/steward admin role unless temporary support is explicitly agreed.
 - Devil truth: this makes onboarding cleaner, but it still depends on real owner confirmation. A steward-prepared workspace is not the same as formal organisational adoption.
+
+## 2026-09-11 - Public Shop signboard spacing polish (local)
+
+- Status: Local frontend polish implemented, verified, and committed; not pushed or deployed under the current batch-publish rule.
+- Owner trigger: owner mobile screenshot showed too much empty space between the follower count and owner-only Shop analytics shortcut on the Public Shop signboard, and asked for a more natural Nigerian shop-sign feel without increasing the main block.
+- Frontend route affected: `/shop/:gmfnId` through `frontend/src/pages/ShopGalleryPage.tsx`.
+- Product behavior changed: compact owner view now places follower count and the owner-only Shop analytics link in one balanced row; the shop name gets a subtle gold shop-sign strip so it feels more like a real trading sign while keeping the same signboard footprint.
+- Guardrail changed: `frontend/tools/audit-shop-gallery-button-inventory.mjs` now expects the owner-only analytics action in the Public Shop action inventory and cages the compact same-row layout plus shop-sign title treatment.
+- Truth boundary: this is visual/layout polish only. It does not change follower counts, analytics data, public visibility, Shop Control behavior, Spotlight feed logic, or marketplace ownership rules.
+- Verification passed: targeted frontend ESLint; `npm --prefix frontend run audit:shop-gallery-button-inventory`; `npm --prefix frontend run audit:spotlight-system-feed`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run build`.

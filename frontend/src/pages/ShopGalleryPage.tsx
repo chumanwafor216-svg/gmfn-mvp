@@ -3440,7 +3440,15 @@ export default function ShopGalleryPage() {
                   textTransform: "uppercase",
                   letterSpacing: 0,
                   textShadow:
-                    "0 1px 0 rgba(255,255,255,0.94), 0 12px 22px rgba(8,38,67,0.10)",
+                    isCompact
+                      ? "0 1px 0 rgba(255,255,255,0.96), 0 7px 14px rgba(8,38,67,0.12)"
+                      : "0 1px 0 rgba(255,255,255,0.94), 0 12px 22px rgba(8,38,67,0.10)",
+                  padding: isCompact ? "3px 7px 4px" : 0,
+                  borderRadius: isCompact ? 10 : 0,
+                  borderLeft: isCompact ? "3px solid rgba(214,170,69,0.72)" : "none",
+                  background: isCompact
+                    ? "linear-gradient(90deg, rgba(255,248,224,0.82) 0%, rgba(255,255,255,0.50) 72%, transparent 100%)"
+                    : "transparent",
                   minHeight: isCompact ? 0 : undefined,
                   overflow: isCompact ? "visible" : "hidden",
                   textOverflow: isCompact ? "clip" : "ellipsis",
@@ -3515,10 +3523,12 @@ export default function ShopGalleryPage() {
                 style={{
                   display: "grid",
                   gridTemplateColumns: isCompact
-                    ? "minmax(0, 1fr)"
+                    ? shopFollowState.isOwner
+                      ? "max-content minmax(0, 1fr)"
+                      : "minmax(0, 1fr)"
                     : "minmax(0, 1fr) auto",
                   gridColumn: isCompact ? "2" : undefined,
-                  gap: isCompact ? 5 : 10,
+                  gap: isCompact ? 6 : 10,
                   alignItems: "center",
                   minHeight: isCompact ? 30 : 54,
                 }}
@@ -3529,7 +3539,7 @@ export default function ShopGalleryPage() {
                     minHeight: isCompact ? 30 : 44,
                     width: "fit-content",
                     maxWidth: "100%",
-                    justifySelf: isCompact ? "start" : "stretch",
+                    justifySelf: "start",
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "flex-start",
@@ -3671,15 +3681,18 @@ export default function ShopGalleryPage() {
                   debugId="shop-gallery.owner.shop-analytics"
                   aria-label="Open owner shop analytics"
                   style={{
-                    gridColumn: isCompact ? "1 / -1" : undefined,
+                    gridColumn: isCompact ? "auto" : undefined,
                     borderRadius: isCompact ? 14 : 16,
                     background: "linear-gradient(180deg, #08233A 0%, #0B2D4A 100%)",
                     color: "#FFFFFF",
                     border: "1px solid rgba(214,170,69,0.28)",
                     boxShadow: "0 10px 20px rgba(8,38,67,0.16), inset 0 1px 0 rgba(255,255,255,0.16)",
-                    fontSize: isCompact ? 12 : 13,
+                    fontSize: isCompact ? 11.5 : 13,
                     fontWeight: 900,
-                    gap: isCompact ? 6 : 8,
+                    gap: isCompact ? 4 : 8,
+                    minWidth: 0,
+                    padding: isCompact ? "6px 7px" : undefined,
+                    whiteSpace: "nowrap",
                   }}
                 >
                   {inlineShopIcon("chart", "#FFFFFF", isCompact ? 13 : 15)}

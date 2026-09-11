@@ -27,8 +27,8 @@ const findings = [];
 const expectedPageSourceActions = {
   PrimaryButton: 8,
   SecondaryButton: 13,
-  StableCtaLink: 4,
-  total: 25,
+  StableCtaLink: 5,
+  total: 26,
 };
 const expectedNativeFieldCount = 0;
 const expectedSignedInShortcutCount = 7;
@@ -178,6 +178,7 @@ const expectedActionOrder = [
   "shop-gallery.public-shop.following",
   "shop-gallery.public-shop.unfollow",
   "shop-gallery.public-shop.follow",
+  "shop-gallery.owner.shop-analytics",
   "shop-gallery.share-shop",
   "shop-gallery.verify-shop.toggle",
   "shop-gallery.owner-contact.choose",
@@ -278,6 +279,15 @@ assertContains(
   "Public Shop compact signboard facts must break out to a full-width row instead of staying cramped beside the hero icon."
 );
 
+assertContains(
+  /textShadow:\s*isCompact[\s\S]*?borderLeft: isCompact \? "3px solid rgba\(214,170,69,0\.72\)" : "none"[\s\S]*?background: isCompact[\s\S]*?linear-gradient\(90deg, rgba\(255,248,224,0\.82\)/,
+  "Public Shop compact shop name must use a subtle Nigerian shop-sign treatment without increasing the whole signboard."
+);
+
+assertContains(
+  /gridTemplateColumns: isCompact\s*\? shopFollowState\.isOwner\s*\? "max-content minmax\(0, 1fr\)"[\s\S]*?gap: isCompact \? 6 : 10[\s\S]*?debugId="shop-gallery\.owner\.shop-analytics"[\s\S]*?gridColumn: isCompact \? "auto" : undefined[\s\S]*?whiteSpace: "nowrap"/,
+  "Public Shop owner compact signboard must place follower count and Shop analytics in one balanced row without the old empty gap."
+);
 assertContains(
   /shopFollowState\.isOwner[\s\S]*?display: isCompact \? "none" : "grid"[\s\S]*?debugId="shop-gallery\.public-shop\.sign-in-follow"/,
   "Public Shop compact signboard must not place the follow button between identity and facts on phones."
