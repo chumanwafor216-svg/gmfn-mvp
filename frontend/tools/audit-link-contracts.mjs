@@ -899,8 +899,14 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const absoluteVaultRequestPreviewLink = useMemo\(\(\) => \{[\s\S]*?publicVaultRequestPreviewUrl\(\{ gmfnId: ownerId \}\)[\s\S]*?function buildVaultRequestText\(\)[\s\S]*?private Vault offers from \$\{shopTitle\}[\s\S]*?owner-issued Vault access link[\s\S]*?absoluteVaultRequestPreviewLink[\s\S]*?async function copyVaultRequestLink\(\)[\s\S]*?const requestText = buildVaultRequestText\(\);[\s\S]*?safeCopy\(requestText\)[\s\S]*?Vault request copied\. Send it to the shop owner\.[\s\S]*?async function askForVaultAccess\(\)[\s\S]*?const requestText = buildVaultRequestText\(\);[\s\S]*?openOwnerWhatsAppChat\([\s\S]*?requestText[\s\S]*?id=\{PUBLIC_SHOP_VAULT_ANCHOR\}[\s\S]*?debugId="shop-gallery\.copy-vault-request-link"/,
-  "Public Shop Vault copy/request actions must copy request wording plus the Vault-request preview URL, not a bare general shop link."
+  /function buildVaultRequestText\(\)[\s\S]*?private Vault offers from \$\{shopTitle\}[\s\S]*?owner-issued Vault access link[\s\S]*?async function copyVaultRequestLink\(\)[\s\S]*?const requestText = buildVaultRequestText\(\);[\s\S]*?safeCopy\(requestText\)[\s\S]*?Vault request copied\. Send it to the shop owner\.[\s\S]*?async function askForVaultAccess\(\)[\s\S]*?const requestText = buildVaultRequestText\(\);[\s\S]*?openOwnerWhatsAppChat\([\s\S]*?requestText[\s\S]*?id=\{PUBLIC_SHOP_VAULT_ANCHOR\}[\s\S]*?debugId="shop-gallery\.copy-vault-request-link"/,
+  "Public Shop Vault copy/request actions must copy request wording only, without a public shop or Vault-preview URL."
+);
+
+assertNotContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /buildVaultRequestText\(\)[\s\S]*?publicVaultRequestPreviewUrl|buildVaultRequestText\(\)[\s\S]*?absoluteVaultRequestPreviewLink/,
+  "Vault request copy must not attach a preview URL that makes phones show the whole shop page."
 );
 
 assertNotContains(

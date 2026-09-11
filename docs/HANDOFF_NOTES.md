@@ -160580,3 +160580,12 @@ Operational note:
 - Guardrail changed: `frontend/tools/audit-shop-gallery-button-inventory.mjs` now cages the equal-width compact owner pills and compact `Analytics` label.
 - Truth boundary: this is visual/layout polish only. It does not change analytics data, owner-only visibility, follower counts, Share, Vault, Demand Box, or Market Intelligence behavior.
 - Verification passed: targeted frontend ESLint; `npm --prefix frontend run audit:shop-gallery-button-inventory`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run audit:share-tag-actions`; `npm --prefix frontend run build`.
+## 2026-09-11 - Public Shop Vault request copy made text-only (local)
+
+- Status: Local frontend correction implemented and verified; not pushed or deployed yet.
+- Owner trigger: owner reported that `Ask Vault` / `Copy Request` still pasted a link that previewed or opened the whole public shop page, duplicating the Share function.
+- Frontend route affected: `/shop/:gmfnId` through `frontend/src/pages/ShopGalleryPage.tsx`.
+- Product behavior changed: `Copy Request` and `Ask Vault` now use request wording only: the visitor asks the seller for owner-issued private Vault access, without attaching the public shop URL or Vault-preview URL. `Share` remains the whole-shop advertisement path.
+- Guardrail changed: `frontend/tools/audit-link-contracts.mjs` now fails if the Vault request text reintroduces `publicVaultRequestPreviewUrl` or `absoluteVaultRequestPreviewLink`.
+- Truth boundary: this does not remove the backend `/share/vault-request/:gmfnId` preview helper, expose private Vault stock, grant Vault access, or create buyer/sales proof. It only stops visitor request copy from advertising the full shop.
+- Verification passed: targeted frontend ESLint; `npm --prefix frontend run audit:link-contracts`; `npm --prefix frontend run audit:shop-gallery-button-inventory`; `npm --prefix frontend run audit:share-tag-actions`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`.

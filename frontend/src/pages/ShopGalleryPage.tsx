@@ -33,7 +33,6 @@ import {
   publicShopShareUrl,
   publicShopSocialPreviewUrl,
   publicShopUrl,
-  publicVaultRequestPreviewUrl,
 } from "../lib/publicLinks";
 import { buildGsnPublicShopLinkMessage } from "../lib/gsnSnapshotPaper";
 import { buildWhatsAppChatUrl } from "../lib/whatsappLinks";
@@ -2612,11 +2611,6 @@ export default function ShopGalleryPage() {
       : "";
   }, [effectiveShop?.gmfnId, gmfnId]);
 
-  const absoluteVaultRequestPreviewLink = useMemo(() => {
-    const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
-    return ownerId ? publicVaultRequestPreviewUrl({ gmfnId: ownerId }) : "";
-  }, [effectiveShop?.gmfnId, gmfnId]);
-
   const shopRootPath = useMemo(() => {
     const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
     return ownerId ? publicShopPath(ownerId) : "";
@@ -2938,7 +2932,6 @@ export default function ShopGalleryPage() {
     return [
       `Hello, I am asking about private Vault offers from ${shopTitle}.`,
       "Please send me an owner-issued Vault access link if there are selected offers you do not show on the public page.",
-      absoluteVaultRequestPreviewLink,
     ].filter(Boolean).join("\n");
   }
 
@@ -2946,13 +2939,8 @@ export default function ShopGalleryPage() {
     if (shopLoadFailed) {
       setNotice({
         tone: "error",
-        text: "This Vault request link is not active yet. Ask the owner to refresh the shop link from Marketplace before copying it.",
+        text: "This Vault request is not ready yet. Ask the owner directly for a private Vault link.",
       });
-      return;
-    }
-
-    if (!absoluteVaultRequestPreviewLink) {
-      setNotice({ tone: "error", text: "Vault request link is not ready yet." });
       return;
     }
 
@@ -3186,14 +3174,6 @@ export default function ShopGalleryPage() {
   }
 
   async function askForVaultAccess() {
-    if (!absoluteVaultRequestPreviewLink) {
-      setNotice({
-        tone: "error",
-        text: "Vault request link is not ready yet. Ask the owner directly for a private Vault link.",
-      });
-      return;
-    }
-
     const requestText = buildVaultRequestText();
 
     if (
