@@ -17,6 +17,7 @@ from app.db.models import (
     MarketplaceProduct,
     MarketplaceProductRepost,
     MarketplaceShop,
+    ProtectedTradeRecord,
     ShopFollower,
     TrustEvent,
 )
@@ -29,6 +30,7 @@ def _ensure_marketplace_tables() -> None:
     MarketplaceBroadcast.__table__.create(bind=engine, checkfirst=True)
     MarketplaceProductRepost.__table__.create(bind=engine, checkfirst=True)
     MarketplaceAttentionEvent.__table__.create(bind=engine, checkfirst=True)
+    ProtectedTradeRecord.__table__.create(bind=engine, checkfirst=True)
     ShopFollower.__table__.create(bind=engine, checkfirst=True)
     TrustEvent.__table__.create(bind=engine, checkfirst=True)
     Notification.__table__.create(bind=engine, checkfirst=True)
@@ -4034,6 +4036,143 @@ def test_shop_spotlight_publish_targets_all_eligible_owner_communities(
     assert [int(row[0]) for row in rows] == [1, 2]
 
 
+def test_shop_broadcast_publish_notifies_visible_followers_only(
+    client,
+    override_current_user_user,
+    monkeypatch,
+):
+    pushed_batches = []
+
+    def fake_dispatch_shop_push(db, notification_rows):
+        pushed_batches.append(
+            [
+                {
+                    "user_id": int(row.user_id),
+                    "kind": row.kind,
+                    "title": row.title,
+                    "message": row.message,
+                    "action_url": row.action_url,
+                    "action_label": row.action_label,
+                }
+                for row in notification_rows
+            ]
+        )
+        return {"attempted": len(notification_rows), "sent": len(notification_rows), "deactivated": 0}
+
+    monkeypatch.setattr(
+        "app.api.routes.marketplace.dispatch_web_push_for_notifications",
+        fake_dispatch_shop_push,
+    )
+    _ensure_marketplace_tables()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES
+                    (1, 'broadcast-owner@example.com', 'hashed', 'Broadcast Owner', 'user', 'GMFN-U-BROADCASTOWNER'),
+                    (2, 'broadcast-follower-one@example.com', 'hashed', 'Follower One', 'user', 'GMFN-U-BROADCASTF1'),
+                    (3, 'broadcast-follower-two@example.com', 'hashed', 'Follower Two', 'user', 'GMFN-U-BROADCASTF2'),
+                    (4, 'broadcast-outsider@example.com', 'hashed', 'Outside Follower', 'user', 'GMFN-U-BROADCASTOUT')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES
+                    (1, 'Broadcast Clan One', 'Broadcast Market One', 'BROADCAST1'),
+                    (2, 'Broadcast Clan Two', 'Broadcast Market Two', 'BROADCAST2'),
+                    (3, 'Outside Broadcast Clan', 'Outside Broadcast Market', 'BROADCAST3')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES
+                    (1, 1, 1, 'member', 0),
+                    (2, 2, 1, 'member', 0),
+                    (3, 1, 2, 'member', 0),
+                    (4, 2, 3, 'member', 0),
+                    (5, 3, 4, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'Broadcast Follow Shop', 'Updates for followers', 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO shop_followers (id, shop_id, follower_user_id)
+                VALUES
+                    (1, 1, 2),
+                    (2, 1, 3),
+                    (3, 1, 4)
+                """
+            )
+        )
+
+    res = client.post(
+        "/marketplace/broadcasts",
+        json={
+            "clan_id": 1,
+            "shop_id": 1,
+            "message": "New rice bundle - N25k - Ready today",
+            "image_url": "/uploads/marketplace/images/broadcast-rice.jpg",
+            "priority_mode": "free",
+            "visibility_scope": "direct_communities",
+        },
+    )
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["propagated_clan_ids"] == [1, 2]
+
+    with engine.begin() as conn:
+        notices = conn.execute(
+            text(
+                """
+                SELECT user_id, kind, title, message, action_url, action_label
+                FROM notifications
+                ORDER BY user_id ASC
+                """
+            )
+        ).fetchall()
+
+    assert [int(row.user_id) for row in notices] == [2, 3]
+    assert {row.kind for row in notices} == {"marketplace.shop.broadcast_created"}
+    assert {row.title for row in notices} == {"Broadcast Follow Shop posted an update"}
+    assert all(row.action_label == "Open post" for row in notices)
+    assert all("broadcast_id=" in row.action_url for row in notices)
+    assert all("gsn_source=shop_follower_notice" in row.action_url for row in notices)
+    assert all("gsn_notice=marketplace.shop.broadcast_created" in row.action_url for row in notices)
+    assert all(row.action_url.startswith("/shop/GMFN-U-BROADCASTOWNER?") for row in notices)
+    assert pushed_batches == [
+        [
+            {
+                "user_id": int(row.user_id),
+                "kind": row.kind,
+                "title": row.title,
+                "message": row.message,
+                "action_url": row.action_url,
+                "action_label": row.action_label,
+            }
+            for row in notices
+        ]
+    ]
 def test_shop_spotlight_publish_ignores_community_capacity_but_blocks_second_daily_free_run(
     client,
     override_current_user_user,
@@ -5028,6 +5167,28 @@ def test_shop_follow_status_count_and_unfollow(client, monkeypatch):
 
 def test_shop_product_create_notifies_visible_followers_only(client, monkeypatch):
     monkeypatch.setenv("SECRET_KEY", "pytest-shop-follow-notification-secret")
+    pushed_batches = []
+
+    def fake_dispatch_shop_push(db, notification_rows):
+        pushed_batches.append(
+            [
+                {
+                    "user_id": int(row.user_id),
+                    "kind": row.kind,
+                    "title": row.title,
+                    "message": row.message,
+                    "action_url": row.action_url,
+                    "action_label": row.action_label,
+                }
+                for row in notification_rows
+            ]
+        )
+        return {"attempted": len(notification_rows), "sent": len(notification_rows), "deactivated": 0}
+
+    monkeypatch.setattr(
+        "app.api.routes.marketplace.dispatch_web_push_for_notifications",
+        fake_dispatch_shop_push,
+    )
     _ensure_marketplace_tables()
 
     with engine.begin() as conn:
@@ -5118,10 +5279,24 @@ def test_shop_product_create_notifies_visible_followers_only(client, monkeypatch
     assert len(notices) == 1
     assert notices[0].user_id == 2
     assert notices[0].kind == "marketplace.shop.product_created"
-    assert notices[0].title == "Shop update"
-    assert notices[0].message == "Visible Follow Shop added a new product."
-    assert notices[0].action_label == "Open shop"
+    assert notices[0].title == "Visible Follow Shop posted"
+    assert notices[0].message == "Visible Follow Shop posted Follower Rice. Open it from your GSN updates."
+    assert notices[0].action_label == "Open post"
     assert "product_id=" in notices[0].action_url
+    assert "gsn_source=shop_follower_notice" in notices[0].action_url
+    assert "gsn_notice=marketplace.shop.product_created" in notices[0].action_url
+    assert pushed_batches == [
+        [
+            {
+                "user_id": 2,
+                "kind": "marketplace.shop.product_created",
+                "title": "Visible Follow Shop posted",
+                "message": "Visible Follow Shop posted Follower Rice. Open it from your GSN updates.",
+                "action_url": notices[0].action_url,
+                "action_label": "Open post",
+            }
+        ]
+    ]
 
 
 def test_marketplace_attention_records_public_views_and_owner_summary(client, monkeypatch):
@@ -5196,13 +5371,78 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
             ),
             {"expires_at": datetime.now(timezone.utc) + timedelta(hours=2)},
         )
+        conn.execute(
+            text(
+                """
+                INSERT INTO shop_followers (id, shop_id, follower_user_id)
+                VALUES (1, 1, 2)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO protected_trade_records (
+                    id, trade_code, clan_id, creator_user_id, seller_user_id, buyer_user_id,
+                    shop_id, product_id, item_title, amount, currency, status,
+                    payment_status, release_status, receipt_status, dispute_status,
+                    created_at, updated_at, closed_at
+                ) VALUES (
+                    1, 'GSN-TRADE-ATTENTION-1', 1, 1, 1, 2,
+                    1, 1, 'Attention Product', 42000.00, 'NGN', 'released',
+                    'claimed', 'released', 'not_confirmed', 'none',
+                    :created_at, :updated_at, :closed_at
+                )
+                """
+            ),
+            {
+                "created_at": datetime.now(timezone.utc),
+                "updated_at": datetime.now(timezone.utc),
+                "closed_at": datetime.now(timezone.utc),
+            },
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO notifications (
+                    user_id, kind, title, message, action_url, action_label,
+                    is_read, created_at
+                ) VALUES (
+                    2, 'marketplace.shop.product_created', 'Attention Shop posted',
+                    'Attention Shop posted Attention Product. Open it from your GSN updates.',
+                    '/shop/GMFN-U-ATTOWNER?clan_id=1&product_id=1&gsn_source=shop_follower_notice&gsn_notice=marketplace.shop.product_created', 'Open post',
+                    0, :created_at
+                )
+                """
+            ),
+            {"created_at": datetime.now(timezone.utc)},
+        )
 
     event_payloads = [
-        {"event_type": "shop_visit", "shop_id": 1, "clan_id": 1, "source": "public_shop", "session_key": "visitor-a"},
-        {"event_type": "product_open", "shop_id": 1, "product_id": 1, "clan_id": 1, "source": "public_shop", "session_key": "visitor-a"},
+        {"event_type": "shop_visit", "shop_id": 1, "clan_id": 1, "source": "public_shop", "source_path": "/shop/GMFN-U-ATTOWNER?gsn_share=copy_shop_link", "session_key": "visitor-a"},
+        {"event_type": "product_open", "shop_id": 1, "product_id": 1, "clan_id": 1, "source": "public_shop", "source_path": "/shop/GMFN-U-ATTOWNER?gsn_share=copy_shop_link&product_id=1", "session_key": "visitor-a"},
+        {"event_type": "shop_visit", "shop_id": 1, "clan_id": 1, "source": "public_shop_gallery", "source_path": "/shop/GMFN-U-ATTOWNER?clan_id=1&product_id=1&gsn_source=shop_follower_notice&gsn_notice=marketplace.shop.product_created", "session_key": "visitor-follower"},
+        {"event_type": "product_open", "shop_id": 1, "product_id": 1, "clan_id": 1, "source": "public_shop_product", "source_path": "/shop/GMFN-U-ATTOWNER?clan_id=1&product_id=1&gsn_source=shop_follower_notice&gsn_notice=marketplace.shop.product_created", "session_key": "visitor-follower"},
         {"event_type": "spotlight_impression", "shop_id": 1, "broadcast_id": 1, "clan_id": 1, "source": "public_shop_spotlight", "session_key": "visitor-a"},
         {"event_type": "spotlight_shop_click", "shop_id": 1, "broadcast_id": 1, "clan_id": 1, "source": "public_shop_spotlight", "session_key": "visitor-a"},
         {"event_type": "contact_tap", "shop_id": 1, "product_id": 1, "clan_id": 1, "source": "product", "session_key": "visitor-a"},
+        {
+            "event_type": "share_action",
+            "shop_id": 1,
+            "product_id": 1,
+            "clan_id": 1,
+            "source": "shop_gallery_share",
+            "source_path": "/shop/GMFN-U-ATTOWNER?gsn_share=copy_shop_link&gsn_channel=copy&product_id=1",
+            "client_event_id": "share-action-1",
+        },
+        {
+            "event_type": "recommendation_actioned",
+            "shop_id": 1,
+            "clan_id": 1,
+            "source": "shop_market_intelligence",
+            "source_path": "/app/shop-control?gsn_recommendation=market_intelligence&gsn_action=open_demand_box&gsn_diagnosis=GATHERING_DATA#shop-control-counts",
+            "client_event_id": "recommendation-action-1",
+        },
     ]
     for payload in event_payloads:
         response = client.post("/marketplace/analytics/attention", json=payload)
@@ -5223,18 +5463,127 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert summary.status_code == 200, summary.text
     body = summary.json()
     today = body["periods"]["today"]
-    assert today["shop_visits"] == 1
-    assert today["unique_shop_visitors"] == 1
-    assert today["product_opens"] == 1
+    assert today["shop_visits"] == 2
+    assert today["unique_shop_visitors"] == 2
+    assert today["product_opens"] == 2
     assert today["spotlight_impressions"] == 1
     assert today["unique_spotlight_viewers"] == 1
     assert today["spotlight_shop_clicks"] == 1
     assert today["contact_taps"] == 1
+    daily_activity = body["daily_activity"]
+    assert len(daily_activity) == 7
+    assert sum(int(day["shop_visits"]) for day in daily_activity) == 2
+    assert sum(int(day["unique_shop_visitors"]) for day in daily_activity) == 2
+    assert sum(int(day["product_opens"]) for day in daily_activity) == 2
+    assert sum(int(day["spotlight_impressions"]) for day in daily_activity) == 1
+    assert sum(int(day["contact_taps"]) for day in daily_activity) == 1
+    assert daily_activity[-1]["date"] == datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    assert body["followers"]["follower_count"] == 1
+    assert body["followers"]["followers_count"] == 1
+    assert "notifications" in body["followers"]["notification_label"]
+    assert "not buyers" in body["followers"]["boundary_label"]
+    follower_notifications = body["follower_notifications"]
+    assert follower_notifications["last_7_days"] == 1
+    assert follower_notifications["year_to_date"] == 1
+    assert follower_notifications["by_kind"] == [
+        {
+            "kind": "marketplace.shop.product_created",
+            "label": "Product posts",
+            "count": 1,
+            "last_sent_at": follower_notifications["by_kind"][0]["last_sent_at"],
+        }
+    ]
+    assert "best-effort" in follower_notifications["delivery_label"]
+    assert "not views" in follower_notifications["boundary_label"]
+    assert "notification rows" in follower_notifications["count_method"]
+    follower_response = body["follower_notification_response"]
+    assert follower_response["last_7_days"] == 2
+    assert follower_response["shop_visits"] == 1
+    assert follower_response["unique_visitors"] == 1
+    assert follower_response["product_opens"] == 1
+    assert follower_response["contact_taps"] == 0
+    assert follower_response["by_kind"] == [
+        {
+            "kind": "marketplace.shop.product_created",
+            "label": "Product posts",
+            "shop_visits": 1,
+            "unique_visitors": 1,
+            "product_opens": 1,
+            "contact_taps": 0,
+            "total_events": 2,
+        }
+    ]
+    assert "not buyer" in follower_response["boundary_label"]
+    assert "gsn_source=shop_follower_notice" in follower_response["count_method"]
+    share_actions = body["share_actions"]
+    assert share_actions["last_7_days"] == 1
+    assert share_actions["by_channel"] == [
+        {"source": "copy_shop_link", "label": "Copied shop link", "count": 1}
+    ]
+    assert "not proof" in share_actions["boundary_label"]
+    assert "attention events" in share_actions["count_method"]
+    share_response = body["share_response"]
+    assert share_response["last_7_days"] == 2
+    assert share_response["shop_visits"] == 1
+    assert share_response["unique_visitors"] == 1
+    assert share_response["product_opens"] == 1
+    assert share_response["contact_taps"] == 0
+    assert share_response["by_channel"] == [
+        {
+            "source": "copy_shop_link",
+            "label": "Copied shop link",
+            "shop_visits": 1,
+            "unique_visitors": 1,
+            "product_opens": 1,
+            "contact_taps": 0,
+            "total_events": 2,
+        }
+    ]
+    assert "not buyer" in share_response["boundary_label"]
+    assert "source_path" in share_response["count_method"]
+    recommendation_actions = body["recommendation_actions"]
+    assert recommendation_actions["last_7_days"] == 1
+    assert recommendation_actions["by_action"] == [
+        {
+            "action": "open_demand_box",
+            "label": "Opened Demand Box",
+            "count": 1,
+            "diagnosis": "GATHERING_DATA",
+        }
+    ]
+    assert "do not prove" in recommendation_actions["boundary_label"]
+    assert "event_type=recommendation_actioned" in recommendation_actions["count_method"]
+    trade_outcomes = body["trade_outcomes"]
+    assert trade_outcomes["last_7_days"] == 1
+    assert trade_outcomes["shop_linked_records"] == 1
+    assert trade_outcomes["seller_side_records"] == 1
+    assert trade_outcomes["released_records"] == 1
+    assert trade_outcomes["payment_claimed_or_recorded"] == 1
+    assert trade_outcomes["receipt_confirmed"] == 0
+    assert trade_outcomes["dispute_records"] == 0
+    assert trade_outcomes["unresolved_records"] == 0
+    assert trade_outcomes["recent_records"][0]["trade_code"] == "GSN-TRADE-ATTENTION-1"
+    assert trade_outcomes["recent_records"][0]["linked_to_shop"] is True
+    assert "not automatic sales" in trade_outcomes["boundary_label"]
+    assert "protected_trade_records" in trade_outcomes["count_method"]
+    source_breakdown = body["source_breakdown"]
+    source_rows = {row["source"]: row for row in source_breakdown}
+    assert source_rows["public_shop"]["label"] == "Public shop"
+    assert source_rows["public_shop"]["shop_visits"] == 1
+    assert source_rows["public_shop"]["product_opens"] == 1
+    assert source_rows["public_shop"]["total_events"] == 2
+    assert source_rows["public_shop_spotlight"]["label"] == "Spotlight feed"
+    assert source_rows["public_shop_spotlight"]["spotlight_impressions"] == 1
+    assert source_rows["public_shop_spotlight"]["spotlight_shop_clicks"] == 1
+    assert source_rows["product"]["contact_taps"] == 1
+    assert "shop_gallery_share" not in source_rows
+    assert "shop_market_intelligence" not in source_rows
+    assert "not who bought" in source_rows["public_shop"]["boundary_label"]
     assert body["spotlight"]["active_spotlights"] == 1
     assert body["spotlight"]["possible_member_reach"] == 2
     assert body["spotlight"]["reach_label"] == "Possible member reach, not confirmed views"
     assert body["top_products"] == [
-        {"product_id": 1, "name": "Attention Product", "opens": 1}
+        {"product_id": 1, "name": "Attention Product", "opens": 2}
     ]
     assert "not buyers" in body["boundary_note"]
 

@@ -3,23 +3,27 @@ from __future__ import annotations
 import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
+from urllib.parse import parse_qs, urlparse
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from jose import JWTError
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.auth import oauth2_scheme
 from app.core.security import decode_token
 from app.db.database import get_db
+from app.db.notification_models import Notification
 from app.db.models import (
     ClanMembership,
     MarketplaceAttentionEvent,
     MarketplaceBroadcast,
     MarketplaceProduct,
     MarketplaceShop,
+    ProtectedTradeRecord,
+    ShopFollower,
     User,
 )
 
@@ -30,6 +34,8 @@ EVENT_PRODUCT_OPEN = "product_open"
 EVENT_SPOTLIGHT_IMPRESSION = "spotlight_impression"
 EVENT_SPOTLIGHT_SHOP_CLICK = "spotlight_shop_click"
 EVENT_CONTACT_TAP = "contact_tap"
+EVENT_SHARE_ACTION = "share_action"
+EVENT_RECOMMENDATION_ACTIONED = "recommendation_actioned"
 
 ATTENTION_EVENT_TYPES = {
     EVENT_SHOP_VISIT,
@@ -37,6 +43,8 @@ ATTENTION_EVENT_TYPES = {
     EVENT_SPOTLIGHT_IMPRESSION,
     EVENT_SPOTLIGHT_SHOP_CLICK,
     EVENT_CONTACT_TAP,
+    EVENT_SHARE_ACTION,
+    EVENT_RECOMMENDATION_ACTIONED,
 }
 
 DAILY_DEDUPE_EVENT_TYPES = {EVENT_SHOP_VISIT, EVENT_PRODUCT_OPEN}
@@ -44,6 +52,21 @@ SHORT_BUCKET_DEDUPE_EVENT_TYPES = {
     EVENT_SPOTLIGHT_IMPRESSION,
     EVENT_SPOTLIGHT_SHOP_CLICK,
     EVENT_CONTACT_TAP,
+    EVENT_SHARE_ACTION,
+    EVENT_RECOMMENDATION_ACTIONED,
+}
+SHOP_FOLLOWER_NOTICE_KINDS = {
+    "marketplace.shop.broadcast_created",
+    "marketplace.shop.product_created",
+    "marketplace.shop.product_updated",
+    "marketplace.shop.spotlight_created",
+}
+
+SHOP_FOLLOWER_NOTICE_LABELS = {
+    "marketplace.shop.broadcast_created": "Shop updates",
+    "marketplace.shop.product_created": "Product posts",
+    "marketplace.shop.product_updated": "Product updates",
+    "marketplace.shop.spotlight_created": "Spotlights",
 }
 
 
@@ -149,6 +172,14 @@ def _member_count_for_clan(db: Session, clan_id: int) -> int:
     )
 
 
+def _shop_follower_count(db: Session, *, shop_id: int) -> int:
+    return (
+        db.query(ShopFollower)
+        .filter(ShopFollower.shop_id == int(shop_id))
+        .count()
+    )
+
+
 class MarketplaceAttentionIn(BaseModel):
     event_type: str = Field(..., min_length=3, max_length=40)
     shop_id: Optional[int] = Field(default=None, ge=1)
@@ -225,6 +256,595 @@ def _period_summary(db: Session, *, shop_id: int, since: datetime) -> dict[str, 
         "contact_taps": _event_count(db, shop_id=shop_id, event_type=EVENT_CONTACT_TAP, since=since),
     }
 
+
+def _attention_source_label(source: str) -> str:
+    normalized = _safe_str(source, "unknown", max_length=80).lower()
+    labels = {
+        "public_shop_gallery": "Shop gallery",
+        "public_shop_product": "Product card",
+        "public_shop_product_contact": "Product contact",
+        "public_shop_phone_contact": "Phone contact",
+        "public_shop_whatsapp_contact": "WhatsApp contact",
+        "public_shop_spotlight": "Spotlight feed",
+        "public_shop_spotlight_contact": "Spotlight contact",
+        "shop-diaries": "Shop diaries",
+        "product": "Product action",
+        "public_shop": "Public shop",
+    }
+    return labels.get(normalized, normalized.replace("_", " ").replace("-", " ").title())
+
+
+def _share_source_label(value: str) -> str:
+    normalized = _safe_str(value, "direct", max_length=80).lower()
+    labels = {
+        "copy_shop_link": "Copied shop link",
+        "share_shop": "Shared shop",
+        "share_product": "Shared product",
+        "product_owner_share": "Shared product",
+        "x": "X",
+        "linkedin": "LinkedIn",
+        "facebook": "Facebook",
+        "instagram": "Instagram",
+        "tiktok": "TikTok",
+        "copy": "Copied message",
+        "direct": "Direct or unknown",
+    }
+    return labels.get(normalized, normalized.replace("_", " ").replace("-", " ").title())
+
+
+def _share_source_from_path(source_path: Optional[str]) -> str:
+    raw = _safe_str(source_path, max_length=240)
+    if not raw:
+        return "direct"
+    try:
+        parsed = urlparse(raw)
+        params = parse_qs(parsed.query)
+    except Exception:
+        return "direct"
+    for key in ("gsn_share", "gsn_channel", "utm_source"):
+        value = _safe_str((params.get(key) or [""])[0], max_length=80)
+        if value:
+            return value
+    return "direct"
+
+
+def _query_value_from_path(source_path: Optional[str], *keys: str, max_length: int = 80) -> str:
+    raw = _safe_str(source_path, max_length=240)
+    if not raw:
+        return ""
+    try:
+        parsed = urlparse(raw)
+        params = parse_qs(parsed.query)
+    except Exception:
+        return ""
+    for key in keys:
+        value = _safe_str((params.get(key) or [""])[0], max_length=max_length)
+        if value:
+            return value
+    return ""
+
+
+def _recommendation_action_label(value: str) -> str:
+    normalized = _safe_str(value, "market_intelligence_action", max_length=80).lower()
+    labels = {
+        "open_demand_box": "Opened Demand Box",
+        "mark_tried": "Marked advice tried",
+        "improve_products": "Improve products",
+        "improve_thumbnail": "Improve thumbnail or call-to-action",
+        "increase_distribution": "Increase distribution",
+        "review_spotlight": "Review spotlight",
+    }
+    return labels.get(normalized, normalized.replace("_", " ").replace("-", " ").title())
+
+def _share_action_summary(db: Session, *, shop_id: int, since: datetime) -> dict[str, Any]:
+    rows = (
+        db.query(MarketplaceAttentionEvent.source_path)
+        .filter(
+            MarketplaceAttentionEvent.shop_id == int(shop_id),
+            MarketplaceAttentionEvent.event_type == EVENT_SHARE_ACTION,
+            MarketplaceAttentionEvent.created_at >= since,
+        )
+        .all()
+    )
+    by_source: dict[str, int] = {}
+    for (source_path,) in rows:
+        source_key = _share_source_from_path(source_path)
+        by_source[source_key] = by_source.get(source_key, 0) + 1
+
+    by_channel = [
+        {
+            "source": source,
+            "label": _share_source_label(source),
+            "count": count,
+        }
+        for source, count in sorted(by_source.items(), key=lambda item: (-item[1], _share_source_label(item[0])))
+    ]
+    return {
+        "last_7_days": len(rows),
+        "by_channel": by_channel[:8],
+        "boundary_label": "Share actions are owner/user share attempts, not proof that a recipient opened the link.",
+        "count_method": "Existing marketplace attention events with event_type=share_action and source_path campaign parameters.",
+    }
+
+
+def _recommendation_action_summary(db: Session, *, shop_id: int, since: datetime) -> dict[str, Any]:
+    rows = (
+        db.query(MarketplaceAttentionEvent.source_path)
+        .filter(
+            MarketplaceAttentionEvent.shop_id == int(shop_id),
+            MarketplaceAttentionEvent.event_type == EVENT_RECOMMENDATION_ACTIONED,
+            MarketplaceAttentionEvent.created_at >= since,
+        )
+        .all()
+    )
+    by_action: dict[str, dict[str, Any]] = {}
+    for (source_path,) in rows:
+        action_key = (
+            _query_value_from_path(source_path, "gsn_action", "action")
+            or "mark_tried"
+        )
+        diagnosis = _query_value_from_path(source_path, "gsn_diagnosis", "diagnosis")
+        item = by_action.setdefault(
+            action_key,
+            {
+                "action": action_key,
+                "label": _recommendation_action_label(action_key),
+                "count": 0,
+                "diagnosis": diagnosis,
+            },
+        )
+        item["count"] += 1
+        if diagnosis and not item.get("diagnosis"):
+            item["diagnosis"] = diagnosis
+
+    action_rows = sorted(
+        by_action.values(),
+        key=lambda row: (-int(row.get("count") or 0), str(row.get("label") or "")),
+    )
+    return {
+        "last_7_days": len(rows),
+        "by_action": action_rows[:8],
+        "boundary_label": "Recommendation actions mean the shop owner tapped or marked advice as tried; they do not prove the advice produced sales.",
+        "count_method": "Existing marketplace attention events with event_type=recommendation_actioned and Market Intelligence action parameters.",
+    }
+
+def _share_response_summary(db: Session, *, shop_id: int, since: datetime) -> dict[str, Any]:
+    rows = (
+        db.query(
+            MarketplaceAttentionEvent.event_type,
+            MarketplaceAttentionEvent.source_path,
+            MarketplaceAttentionEvent.viewer_user_id,
+            MarketplaceAttentionEvent.anonymous_key_hash,
+        )
+        .filter(
+            MarketplaceAttentionEvent.shop_id == int(shop_id),
+            MarketplaceAttentionEvent.event_type.in_([
+                EVENT_SHOP_VISIT,
+                EVENT_PRODUCT_OPEN,
+                EVENT_CONTACT_TAP,
+            ]),
+            MarketplaceAttentionEvent.created_at >= since,
+        )
+        .all()
+    )
+    by_source: dict[str, dict[str, Any]] = {}
+    unique_visitors: set[str] = set()
+    for event_type, source_path, viewer_user_id, anonymous_key_hash in rows:
+        source_key = _share_source_from_path(source_path)
+        if source_key == "direct":
+            continue
+        item = by_source.setdefault(
+            source_key,
+            {
+                "source": source_key,
+                "label": _share_source_label(source_key),
+                "shop_visits": 0,
+                "unique_visitors": set(),
+                "product_opens": 0,
+                "contact_taps": 0,
+                "total_events": 0,
+            },
+        )
+        item["total_events"] += 1
+        if event_type == EVENT_SHOP_VISIT:
+            item["shop_visits"] += 1
+            viewer_key = (
+                f"user:{int(viewer_user_id)}"
+                if viewer_user_id is not None
+                else f"anon:{anonymous_key_hash or ''}"
+            )
+            if viewer_key != "anon:":
+                unique_visitors.add(viewer_key)
+                item["unique_visitors"].add(viewer_key)
+        elif event_type == EVENT_PRODUCT_OPEN:
+            item["product_opens"] += 1
+        elif event_type == EVENT_CONTACT_TAP:
+            item["contact_taps"] += 1
+
+    by_channel = []
+    for item in by_source.values():
+        by_channel.append(
+            {
+                "source": item["source"],
+                "label": item["label"],
+                "shop_visits": int(item["shop_visits"]),
+                "unique_visitors": len(item["unique_visitors"]),
+                "product_opens": int(item["product_opens"]),
+                "contact_taps": int(item["contact_taps"]),
+                "total_events": int(item["total_events"]),
+            }
+        )
+    by_channel.sort(key=lambda item: (-int(item["total_events"]), str(item["label"])))
+
+    return {
+        "last_7_days": sum(int(item["total_events"]) for item in by_channel),
+        "shop_visits": sum(int(item["shop_visits"]) for item in by_channel),
+        "unique_visitors": len(unique_visitors),
+        "product_opens": sum(int(item["product_opens"]) for item in by_channel),
+        "contact_taps": sum(int(item["contact_taps"]) for item in by_channel),
+        "by_channel": by_channel[:8],
+        "boundary_label": "Share response counts attributed visits, opens, and taps after a shared link is opened; it is still not buyer, payment, or delivery proof.",
+        "count_method": "Existing marketplace attention events whose source_path includes share attribution parameters.",
+    }
+
+
+def _follower_notification_response_summary(db: Session, *, shop_id: int, since: datetime) -> dict[str, Any]:
+    rows = (
+        db.query(
+            MarketplaceAttentionEvent.event_type,
+            MarketplaceAttentionEvent.source_path,
+            MarketplaceAttentionEvent.viewer_user_id,
+            MarketplaceAttentionEvent.anonymous_key_hash,
+        )
+        .filter(
+            MarketplaceAttentionEvent.shop_id == int(shop_id),
+            MarketplaceAttentionEvent.event_type.in_([
+                EVENT_SHOP_VISIT,
+                EVENT_PRODUCT_OPEN,
+                EVENT_CONTACT_TAP,
+            ]),
+            MarketplaceAttentionEvent.created_at >= since,
+        )
+        .all()
+    )
+
+    by_notice: dict[str, dict[str, Any]] = {}
+    unique_visitors: set[str] = set()
+    totals = {"shop_visits": 0, "product_opens": 0, "contact_taps": 0}
+    for event_type, source_path, viewer_user_id, anonymous_key_hash in rows:
+        if _query_value_from_path(source_path, "gsn_source") != "shop_follower_notice":
+            continue
+        notice_kind = _query_value_from_path(source_path, "gsn_notice", max_length=120) or "shop_follower_notice"
+        item = by_notice.setdefault(
+            notice_kind,
+            {
+                "kind": notice_kind,
+                "label": SHOP_FOLLOWER_NOTICE_LABELS.get(
+                    notice_kind,
+                    notice_kind.replace("_", " ").replace(".", " ").title(),
+                ),
+                "shop_visits": 0,
+                "unique_visitors": set(),
+                "product_opens": 0,
+                "contact_taps": 0,
+                "total_events": 0,
+            },
+        )
+        item["total_events"] += 1
+        if event_type == EVENT_SHOP_VISIT:
+            item["shop_visits"] += 1
+            totals["shop_visits"] += 1
+            viewer_key = (
+                f"user:{int(viewer_user_id)}"
+                if viewer_user_id is not None
+                else f"anon:{anonymous_key_hash or ''}"
+            )
+            if viewer_key != "anon:":
+                unique_visitors.add(viewer_key)
+                item["unique_visitors"].add(viewer_key)
+        elif event_type == EVENT_PRODUCT_OPEN:
+            item["product_opens"] += 1
+            totals["product_opens"] += 1
+        elif event_type == EVENT_CONTACT_TAP:
+            item["contact_taps"] += 1
+            totals["contact_taps"] += 1
+
+    by_kind = []
+    for item in by_notice.values():
+        by_kind.append(
+            {
+                "kind": item["kind"],
+                "label": item["label"],
+                "shop_visits": int(item["shop_visits"]),
+                "unique_visitors": len(item["unique_visitors"]),
+                "product_opens": int(item["product_opens"]),
+                "contact_taps": int(item["contact_taps"]),
+                "total_events": int(item["total_events"]),
+            }
+        )
+    by_kind.sort(key=lambda item: (-int(item["total_events"]), str(item["label"])))
+
+    return {
+        "last_7_days": sum(int(item["total_events"]) for item in by_kind),
+        "shop_visits": totals["shop_visits"],
+        "unique_visitors": len(unique_visitors),
+        "product_opens": totals["product_opens"],
+        "contact_taps": totals["contact_taps"],
+        "by_kind": by_kind[:8],
+        "boundary_label": "Follower notice response counts attributed visits, opens, and taps after a follower-notice link is opened; it is not buyer, payment, delivery, push-display, or sales proof.",
+        "count_method": "Existing marketplace attention events whose source_path includes gsn_source=shop_follower_notice and a gsn_notice kind.",
+    }
+
+
+def _protected_trade_outcome_summary(db: Session, *, shop: MarketplaceShop, since: datetime) -> dict[str, Any]:
+    shop_id = int(shop.id)
+    owner_user_id = _safe_positive_int(getattr(shop, "owner_user_id", None))
+    filters = [ProtectedTradeRecord.shop_id == shop_id]
+    if owner_user_id is not None:
+        filters.append(ProtectedTradeRecord.seller_user_id == owner_user_id)
+
+    rows = (
+        db.query(ProtectedTradeRecord)
+        .filter(
+            or_(*filters),
+            ProtectedTradeRecord.created_at >= since,
+        )
+        .order_by(ProtectedTradeRecord.updated_at.desc(), ProtectedTradeRecord.id.desc())
+        .limit(200)
+        .all()
+    )
+
+    def status(row: ProtectedTradeRecord, field: str, fallback: str = "") -> str:
+        return _safe_str(getattr(row, field, None), fallback, max_length=80).lower()
+
+    recent_records = []
+    for row in rows[:5]:
+        recent_records.append(
+            {
+                "trade_id": int(row.id),
+                "trade_code": _safe_str(getattr(row, "trade_code", None), max_length=80),
+                "item_title": _safe_str(getattr(row, "item_title", None), "Protected trade", max_length=160),
+                "status": status(row, "status", "draft"),
+                "payment_status": status(row, "payment_status", "not_started"),
+                "release_status": status(row, "release_status", "not_requested"),
+                "receipt_status": status(row, "receipt_status", "not_confirmed"),
+                "dispute_status": status(row, "dispute_status", "none"),
+                "linked_to_shop": int(getattr(row, "shop_id", 0) or 0) == shop_id,
+            }
+        )
+
+    return {
+        "last_7_days": len(rows),
+        "shop_linked_records": sum(1 for row in rows if int(getattr(row, "shop_id", 0) or 0) == shop_id),
+        "seller_side_records": sum(1 for row in rows if owner_user_id is not None and int(getattr(row, "seller_user_id", 0) or 0) == owner_user_id),
+        "released_records": sum(1 for row in rows if status(row, "status") == "released" or status(row, "release_status") == "released"),
+        "payment_claimed_or_recorded": sum(1 for row in rows if status(row, "payment_status") in {"claimed", "recorded_not_bank_confirmed", "under_review"}),
+        "receipt_confirmed": sum(1 for row in rows if status(row, "receipt_status") == "received"),
+        "dispute_records": sum(1 for row in rows if status(row, "dispute_status") not in {"", "none", "resolved"}),
+        "unresolved_records": sum(1 for row in rows if status(row, "status") not in {"released", "received", "closed", "cancelled"}),
+        "recent_records": recent_records,
+        "boundary_label": "Protected trade outcomes are recorded trade evidence, not automatic sales, payment confirmation, escrow, delivery proof, or buyer satisfaction proof.",
+        "count_method": "Existing protected_trade_records linked by shop_id or seller_user_id within the last 7 days.",
+    }
+
+def _source_breakdown_summary(
+    db: Session,
+    *,
+    shop_id: int,
+    since: datetime,
+) -> list[dict[str, Any]]:
+    rows = (
+        db.query(
+            MarketplaceAttentionEvent.source,
+            MarketplaceAttentionEvent.event_type,
+            func.count(MarketplaceAttentionEvent.id).label("events"),
+        )
+        .filter(
+            MarketplaceAttentionEvent.shop_id == int(shop_id),
+            MarketplaceAttentionEvent.event_type.notin_([
+                EVENT_SHARE_ACTION,
+                EVENT_RECOMMENDATION_ACTIONED,
+            ]),
+            MarketplaceAttentionEvent.created_at >= since,
+        )
+        .group_by(MarketplaceAttentionEvent.source, MarketplaceAttentionEvent.event_type)
+        .all()
+    )
+    by_source: dict[str, dict[str, Any]] = {}
+    for source, event_type, event_count in rows:
+        source_key = _safe_str(source, "unknown", max_length=80) or "unknown"
+        item = by_source.setdefault(
+            source_key,
+            {
+                "source": source_key,
+                "label": _attention_source_label(source_key),
+                "shop_visits": 0,
+                "product_opens": 0,
+                "spotlight_impressions": 0,
+                "spotlight_shop_clicks": 0,
+                "contact_taps": 0,
+                "total_events": 0,
+                "boundary_label": "Source counts show where attention was recorded, not who bought or paid.",
+            },
+        )
+        count = int(event_count or 0)
+        item["total_events"] += count
+        if event_type == EVENT_SHOP_VISIT:
+            item["shop_visits"] += count
+        elif event_type == EVENT_PRODUCT_OPEN:
+            item["product_opens"] += count
+        elif event_type == EVENT_SPOTLIGHT_IMPRESSION:
+            item["spotlight_impressions"] += count
+        elif event_type == EVENT_SPOTLIGHT_SHOP_CLICK:
+            item["spotlight_shop_clicks"] += count
+        elif event_type == EVENT_CONTACT_TAP:
+            item["contact_taps"] += count
+
+    return sorted(
+        by_source.values(),
+        key=lambda item: (-int(item["total_events"]), str(item["label"])),
+    )[:8]
+
+
+def _shop_follower_notice_action_prefix(db: Session, *, shop: MarketplaceShop) -> str:
+    owner = db.query(User).filter(User.id == int(shop.owner_user_id)).first()
+    gmfn_id = _safe_str(getattr(owner, "gmfn_id", None), max_length=120)
+    if gmfn_id:
+        return f"/shop/{gmfn_id}"
+    return "/app/shop"
+
+
+def _shop_follower_notice_counts(
+    db: Session,
+    *,
+    action_prefix: str,
+    since: datetime,
+) -> tuple[int, Optional[datetime], list[dict[str, Any]]]:
+    rows = (
+        db.query(
+            Notification.kind,
+            func.count(Notification.id).label("notice_count"),
+            func.max(Notification.created_at).label("last_sent_at"),
+        )
+        .filter(
+            Notification.kind.in_(sorted(SHOP_FOLLOWER_NOTICE_KINDS)),
+            Notification.action_url.like(f"{action_prefix}%"),
+            Notification.created_at >= since,
+        )
+        .group_by(Notification.kind)
+        .all()
+    )
+
+    total = 0
+    last_sent_at: Optional[datetime] = None
+    by_kind: list[dict[str, Any]] = []
+    for kind, count_value, latest in rows:
+        safe_kind = _safe_str(kind, max_length=120)
+        count = int(count_value or 0)
+        total += count
+        if latest is not None and (last_sent_at is None or latest > last_sent_at):
+            last_sent_at = latest
+        by_kind.append(
+            {
+                "kind": safe_kind,
+                "label": SHOP_FOLLOWER_NOTICE_LABELS.get(safe_kind, safe_kind.replace("_", " ").replace(".", " ").title()),
+                "count": count,
+                "last_sent_at": latest.isoformat() if latest else None,
+            }
+        )
+
+    by_kind.sort(key=lambda item: (-int(item["count"]), str(item["label"])))
+    return total, last_sent_at, by_kind
+
+
+def _shop_follower_notice_summary(
+    db: Session,
+    *,
+    shop: MarketplaceShop,
+    last_7_days: datetime,
+    now: datetime,
+) -> dict[str, Any]:
+    action_prefix = _shop_follower_notice_action_prefix(db, shop=shop)
+    year_start = now.astimezone(timezone.utc).replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+    last_7_count, last_sent_at, by_kind = _shop_follower_notice_counts(
+        db,
+        action_prefix=action_prefix,
+        since=last_7_days,
+    )
+    year_to_date_count, year_last_sent_at, _year_by_kind = _shop_follower_notice_counts(
+        db,
+        action_prefix=action_prefix,
+        since=year_start,
+    )
+    last_seen = last_sent_at or year_last_sent_at
+    return {
+        "last_7_days": last_7_count,
+        "year_to_date": year_to_date_count,
+        "last_sent_at": last_seen.isoformat() if last_seen else None,
+        "by_kind": by_kind,
+        "delivery_label": "Action Inbox notices created for eligible followers; phone push is best-effort.",
+        "boundary_label": "Follower notices are distribution records, not views, purchases, or push-delivery proof.",
+        "count_method": "Existing notification rows filtered by shop follower notice kind and public shop action route.",
+    }
+def _daily_activity_summary(
+    db: Session,
+    *,
+    shop_id: int,
+    days: int,
+    now: datetime,
+) -> list[dict[str, Any]]:
+    safe_days = max(1, min(int(days), 30))
+    today_start = now.astimezone(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    start = today_start - timedelta(days=safe_days - 1)
+    labels = [(start + timedelta(days=offset)).strftime("%Y-%m-%d") for offset in range(safe_days)]
+    rows_by_day: dict[str, dict[str, Any]] = {
+        label: {
+            "date": label,
+            "shop_visits": 0,
+            "unique_shop_visitors": 0,
+            "product_opens": 0,
+            "spotlight_impressions": 0,
+            "unique_spotlight_viewers": 0,
+            "spotlight_shop_clicks": 0,
+            "contact_taps": 0,
+        }
+        for label in labels
+    }
+    unique_shop_visitors: dict[str, set[str]] = {label: set() for label in labels}
+    unique_spotlight_viewers: dict[str, set[str]] = {label: set() for label in labels}
+
+    event_rows = (
+        db.query(
+            MarketplaceAttentionEvent.event_type,
+            MarketplaceAttentionEvent.created_at,
+            MarketplaceAttentionEvent.viewer_user_id,
+            MarketplaceAttentionEvent.anonymous_key_hash,
+        )
+        .filter(
+            MarketplaceAttentionEvent.shop_id == int(shop_id),
+            MarketplaceAttentionEvent.created_at >= start,
+        )
+        .all()
+    )
+
+    for event_type, created_at, viewer_user_id, anonymous_key_hash in event_rows:
+        created = created_at
+        if created is None:
+            continue
+        if created.tzinfo is None:
+            created = created.replace(tzinfo=timezone.utc)
+        day = created.astimezone(timezone.utc).strftime("%Y-%m-%d")
+        summary = rows_by_day.get(day)
+        if summary is None:
+            continue
+
+        viewer_key = (
+            f"user:{int(viewer_user_id)}"
+            if viewer_user_id is not None
+            else f"anon:{anonymous_key_hash or ''}"
+        )
+
+        if event_type == EVENT_SHOP_VISIT:
+            summary["shop_visits"] += 1
+            if viewer_key != "anon:":
+                unique_shop_visitors[day].add(viewer_key)
+        elif event_type == EVENT_PRODUCT_OPEN:
+            summary["product_opens"] += 1
+        elif event_type == EVENT_SPOTLIGHT_IMPRESSION:
+            summary["spotlight_impressions"] += 1
+            if viewer_key != "anon:":
+                unique_spotlight_viewers[day].add(viewer_key)
+        elif event_type == EVENT_SPOTLIGHT_SHOP_CLICK:
+            summary["spotlight_shop_clicks"] += 1
+        elif event_type == EVENT_CONTACT_TAP:
+            summary["contact_taps"] += 1
+
+    for day, viewers in unique_shop_visitors.items():
+        rows_by_day[day]["unique_shop_visitors"] = len(viewers)
+    for day, viewers in unique_spotlight_viewers.items():
+        rows_by_day[day]["unique_spotlight_viewers"] = len(viewers)
+
+    return [rows_by_day[label] for label in labels]
 
 def _active_spotlight_reach(db: Session, *, shop_id: int, now: datetime) -> dict[str, Any]:
     rows = (
@@ -443,6 +1063,7 @@ def get_marketplace_shop_attention_summary(
         for row in product_rows
         if row.product_id is not None
     ]
+    follower_count = _shop_follower_count(db, shop_id=int(shop.id))
 
     return {
         "ok": True,
@@ -455,6 +1076,29 @@ def get_marketplace_shop_attention_summary(
             "requested": _period_summary(db, shop_id=int(shop.id), since=requested_start),
         },
         "spotlight": _active_spotlight_reach(db, shop_id=int(shop.id), now=now),
+        "followers": {
+            "follower_count": follower_count,
+            "followers_count": follower_count,
+            "notification_label": "Followers receive shop update notifications when visible shop products or spotlights are posted.",
+            "boundary_label": "Followers are repeat audience, not buyers or payment evidence.",
+        },
+        "daily_activity": _daily_activity_summary(db, shop_id=int(shop.id), days=7, now=now),
+        "follower_notifications": _shop_follower_notice_summary(
+            db,
+            shop=shop,
+            last_7_days=last_7_days,
+            now=now,
+        ),
+        "follower_notification_response": _follower_notification_response_summary(
+            db,
+            shop_id=int(shop.id),
+            since=last_7_days,
+        ),
+        "share_actions": _share_action_summary(db, shop_id=int(shop.id), since=last_7_days),
+        "share_response": _share_response_summary(db, shop_id=int(shop.id), since=last_7_days),
+        "recommendation_actions": _recommendation_action_summary(db, shop_id=int(shop.id), since=last_7_days),
+        "trade_outcomes": _protected_trade_outcome_summary(db, shop=shop, since=last_7_days),
+        "source_breakdown": _source_breakdown_summary(db, shop_id=int(shop.id), since=last_7_days),
         "top_products": top_products,
         "boundary_note": "Visitors, views, and taps help a seller improve the shop. They are not buyers, sales, verification, payment evidence, or trust score.",
     }

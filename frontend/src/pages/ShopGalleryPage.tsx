@@ -40,6 +40,7 @@ import { buildWhatsAppChatUrl } from "../lib/whatsappLinks";
 import { getCachedShopProductMedia } from "../lib/shopProductMediaCache";
 import { ownerSurfaceIdentityMatches } from "../lib/ownerSurfaceIdentity";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
+import { OWNER_SHOP_HASHES } from "../lib/ownerShopHandles";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import {
   buildSpotlightRotationQueue,
@@ -302,6 +303,40 @@ function replacePublicShopAddress(gmfnId: string): void {
 function positiveNumber(value: any): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function appendShopShareAttribution(
+  url: string,
+  shareSource: string,
+  channel?: string
+): string {
+  const rawUrl = safeStr(url);
+  if (!rawUrl) return "";
+
+  try {
+    const base = typeof window !== "undefined" ? window.location.origin : "https://gsn.local";
+    const parsed = new URL(rawUrl, base);
+    parsed.searchParams.set("gsn_share", firstMeaningful(shareSource, "share_shop"));
+    if (channel) parsed.searchParams.set("gsn_channel", channel);
+    parsed.searchParams.set("utm_source", "gsn_shop_gallery");
+    return parsed.toString();
+  } catch {
+    const joiner = rawUrl.includes("?") ? "&" : "?";
+    const params = new URLSearchParams({
+      gsn_share: firstMeaningful(shareSource, "share_shop"),
+      utm_source: "gsn_shop_gallery",
+    });
+    if (channel) params.set("gsn_channel", channel);
+    return `${rawUrl}${joiner}${params.toString()}`;
+  }
+}
+
+function createShareClientEventId(prefix: string): string {
+  const randomId =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return `${prefix}:${randomId}`;
 }
 
 function rowsOf<T = any>(input: any): T[] {
@@ -2499,6 +2534,21 @@ export default function ShopGalleryPage() {
     return ownerId ? publicShopShareUrl({ gmfnId: ownerId }) : "";
   }, [effectiveShop?.gmfnId, gmfnId]);
 
+  const attributedShopShareLink = useMemo(
+    () => appendShopShareAttribution(absoluteShopShareLink, "share_shop"),
+    [absoluteShopShareLink]
+  );
+
+  const attributedShopSocialLink = useMemo(() => {
+    const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
+    return ownerId
+      ? appendShopShareAttribution(
+          publicShopSocialPreviewUrl({ gmfnId: ownerId }),
+          "share_shop"
+        )
+      : "";
+  }, [effectiveShop?.gmfnId, gmfnId]);
+
   const absoluteVaultRequestPreviewLink = useMemo(() => {
     const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
     return ownerId ? publicVaultRequestPreviewUrl({ gmfnId: ownerId }) : "";
@@ -2521,6 +2571,10 @@ export default function ShopGalleryPage() {
   );
   const marketplaceMemberShopsPath = routeWithCommunity(
     `${APP_ROUTES.MARKETPLACE}#marketplace-members-shops`,
+    ownerSurfaceCommunityId
+  );
+  const ownerShopAnalyticsPath = routeWithCommunity(
+    `${APP_ROUTES.SHOP_ME}#${OWNER_SHOP_HASHES.summary}`,
     ownerSurfaceCommunityId
   );
   const signedInOwnsShop = Boolean(
@@ -2767,6 +2821,23 @@ export default function ShopGalleryPage() {
     });
   }
 
+  function trackShopShareAction(
+    shareSource: string,
+    sourcePath: string,
+    product?: ShopProduct
+  ) {
+    if (!sourcePath) return;
+
+    trackMarketplaceAttention("share_action", {
+      product_id: product ? positiveNumber(product.id) || undefined : undefined,
+      source: firstMeaningful(shareSource, "share_shop"),
+      source_path: sourcePath,
+      client_event_id: createShareClientEventId(
+        `shop-share:${positiveNumber(effectiveShop?.id) || "pending"}`
+      ),
+    });
+  }
+
   async function copyShopLink() {
     if (shopLoadFailed) {
       setNotice({
@@ -2781,9 +2852,11 @@ export default function ShopGalleryPage() {
       return;
     }
 
-    const copied = await safeCopy(
-      buildPublicShopMessage(absoluteShopShareLink)
-    );
+    const shareLink = attributedShopShareLink || absoluteShopShareLink;
+    const copied = await safeCopy(buildPublicShopMessage(shareLink));
+    if (copied) {
+      trackShopShareAction("copy_shop_link", shareLink);
+    }
     setNotice({
       tone: copied ? "success" : "error",
       text: copied
@@ -2818,16 +2891,22 @@ export default function ShopGalleryPage() {
   function buildProductSocialShareTarget(product: ShopProduct) {
     const blockLabel = publicShopBlockLabel(product);
     const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
-    const productUrl = publicShopShareUrl({
-      gmfnId: ownerId,
-      productId: product.id,
-      block: product.slotNumber,
-    });
-    const productSocialUrl = publicShopSocialPreviewUrl({
-      gmfnId: ownerId,
-      productId: product.id,
-      block: product.slotNumber,
-    });
+    const productUrl = appendShopShareAttribution(
+      publicShopShareUrl({
+        gmfnId: ownerId,
+        productId: product.id,
+        block: product.slotNumber,
+      }),
+      "share_product"
+    );
+    const productSocialUrl = appendShopShareAttribution(
+      publicShopSocialPreviewUrl({
+        gmfnId: ownerId,
+        productId: product.id,
+        block: product.slotNumber,
+      }),
+      "share_product"
+    );
     const productTitle = productDisplayTitle(product);
     const title = `${blockLabel} - ${productTitle}`;
     const shopContext = firstMeaningful(
@@ -3584,6 +3663,29 @@ export default function ShopGalleryPage() {
                   Follow to keep this shop in your GSN updates. Still verify
                   the seller before goods, credit, or money move.
                 </div>
+              {shopFollowState.isOwner ? (
+                <StableCtaLink
+                  to={ownerShopAnalyticsPath}
+                  fullWidth
+                  stableHeight={isCompact ? 48 : 46}
+                  debugId="shop-gallery.owner.shop-analytics"
+                  aria-label="Open owner shop analytics"
+                  style={{
+                    gridColumn: isCompact ? "1 / -1" : undefined,
+                    borderRadius: isCompact ? 14 : 16,
+                    background: "linear-gradient(180deg, #08233A 0%, #0B2D4A 100%)",
+                    color: "#FFFFFF",
+                    border: "1px solid rgba(214,170,69,0.28)",
+                    boxShadow: "0 10px 20px rgba(8,38,67,0.16), inset 0 1px 0 rgba(255,255,255,0.16)",
+                    fontSize: isCompact ? 12 : 13,
+                    fontWeight: 900,
+                    gap: isCompact ? 6 : 8,
+                  }}
+                >
+                  {inlineShopIcon("chart", "#FFFFFF", isCompact ? 13 : 15)}
+                  <span>Shop analytics</span>
+                </StableCtaLink>
+              ) : null}
               </div>
               <div
                 style={{
@@ -3723,18 +3825,14 @@ export default function ShopGalleryPage() {
                   effectiveShop?.ownerName,
                   "GSN public shop"
                 ),
-                message: buildPublicShopMessage(absoluteShopShareLink),
+                message: buildPublicShopMessage(attributedShopShareLink || absoluteShopShareLink),
                 socialMessage: `${firstMeaningful(
                   effectiveShop?.shopName,
                   effectiveShop?.ownerName,
                   "GSN public shop"
                 )} on GSN. Public shop record. Open the shop link.`,
-                socialUrl: firstMeaningful(effectiveShop?.gmfnId, gmfnId)
-                  ? publicShopSocialPreviewUrl({
-                      gmfnId: firstMeaningful(effectiveShop?.gmfnId, gmfnId),
-                    })
-                  : "",
-                url: absoluteShopShareLink,
+                socialUrl: attributedShopSocialLink,
+                url: attributedShopShareLink || absoluteShopShareLink,
               }}
               disabled={shopLoadFailed || !absoluteShopShareLink}
               buttonLabel="Share"
@@ -3757,7 +3855,15 @@ export default function ShopGalleryPage() {
                 boxShadow:
                   "0 10px 22px rgba(8,38,67,0.10), inset 0 1px 0 rgba(255,255,255,0.94)",
               }}
-              onResult={(tone, text) => setNotice({ tone, text })}
+              onResult={(tone, text) => {
+                if (tone === "success") {
+                  trackShopShareAction(
+                    "share_shop",
+                    attributedShopShareLink || absoluteShopShareLink
+                  );
+                }
+                setNotice({ tone, text });
+              }}
             />
             <SecondaryButton
               onClick={toggleShopVerificationPanel}
@@ -5613,7 +5719,16 @@ export default function ShopGalleryPage() {
                             minWidth={0}
                             stableHeight={diaryActionHeight}
                             debugId={`shop-gallery.product.${productOpenId}.owner-share`}
-                            onResult={(tone, text) => setNotice({ tone, text })}
+                            onResult={(tone, text) => {
+                              if (tone === "success") {
+                                trackShopShareAction(
+                                  "share_product",
+                                  buildProductSocialShareTarget(product).url,
+                                  product
+                                );
+                              }
+                              setNotice({ tone, text });
+                            }}
                             style={{
                               ...secondaryBtn(false),
                               display: isProductOpen ? "inline-flex" : "none",

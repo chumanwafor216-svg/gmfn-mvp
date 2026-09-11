@@ -137,6 +137,217 @@ assertContains(
 );
 
 assertContains(
+  "frontend/src/pages/ShopGalleryPage.tsx",
+  /const ownerShopAnalyticsPath = routeWithCommunity\([\s\S]*?APP_ROUTES\.SHOP_ME[\s\S]*?OWNER_SHOP_HASHES\.summary/,
+  "Public Shop owner analytics shortcut must route to the Shop Control summary hash."
+);
+
+assertContains(
+  "frontend/src/pages/ShopGalleryPage.tsx",
+  /shopFollowState\.isOwner \? \([\s\S]*?<StableCtaLink[\s\S]*?to=\{ownerShopAnalyticsPath\}[\s\S]*?debugId="shop-gallery\.owner\.shop-analytics"/,
+  "Public Shop owner analytics shortcut must remain hidden unless the signed-in viewer is the shop owner."
+);
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /label="Followers"[\s\S]*?value=\{shopFollowerCount\}[\s\S]*?Notification audience/,
+  "Shop Control analytics must keep follower count visible as a notification audience metric."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/marketplace_analytics.py",
+  /"followers": \{[\s\S]*?"follower_count": follower_count[\s\S]*?"boundary_label": "Followers are repeat audience, not buyers or payment evidence\."/,
+  "Shop owner analytics API must expose follower count with truthful boundary wording."
+);
+assertContains(
+  "frontend/src/lib/shopAnalyticsWisdom.ts",
+  /spotlightSeen === 0 \|\| spotlightSeen < 5 \|\| spotlightIsFresh[\s\S]*?diagnosisCode: "GATHERING_DATA"[\s\S]*?headline: "distribution is still low; conversion cannot yet be judged\."/,
+  "Shop Market Intelligence must treat fresh or tiny-sample spotlight data as gathering data, not product failure."
+);
+
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /Market Intelligence[\s\S]*?Observation:[\s\S]*?Interpretation:[\s\S]*?Recheck:[\s\S]*?Why this advice\?/,
+  "Shop Control analytics must show explainable Market Intelligence inside the owner analytics board."
+);
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /recordMarketplaceAttentionEvent[\s\S]*?"recommendation_actioned"[\s\S]*?shop_market_intelligence[\s\S]*?shop-control\.market-intelligence\.actioned[\s\S]*?Mark tried[\s\S]*?Advice action trail[\s\S]*?\{recommendationActionBoundary\}/,
+  "Shop Control Market Intelligence must record owner advice actions through the existing attention-event engine with a truthful boundary."
+);
+
+assertContains(
+  "frontend/src/lib/shopAnalyticsWisdom.ts",
+  /buildAttentionSpineSummary[\s\S]*?buildShopMarketIntelligenceSignal[\s\S]*?source: "market_wisdom"[\s\S]*?engine: "attention_spine_configured_market_intelligence"/,
+  "Shop Market Intelligence must reuse the shared Attention Spine signal engine instead of duplicating a separate priority engine."
+);
+assertContains(
+  "frontend/src/lib/shopAnalyticsWisdom.ts",
+  /CONTACTS_NOT_PROTECTED[\s\S]*?TRADE_RECORD_PRESSURE[\s\S]*?OUTCOME_EVIDENCE_BUILDING[\s\S]*?tradeRecords\?: number \| null[\s\S]*?Protected Trade is the existing evidence engine/,
+  "Shop Market Intelligence must read protected trade outcome metrics without creating a sales or conversion engine."
+);
+
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /buildShopAnalyticsWisdom\([\s\S]*?tradeRecords: tradeOutcomeRecords7Days[\s\S]*?releasedTradeRecords: tradeOutcomeReleasedRecords[\s\S]*?unresolvedTradeRecords: tradeOutcomeUnresolvedRecords/,
+  "Shop Control must feed protected trade outcome counts into the existing Market Intelligence helper."
+);
+
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /marketIntelligencePrimaryAction = useMemo\([\s\S]*?SHOP_SETUP_GAP[\s\S]*?routes\.shopAssets[\s\S]*?LOW_EXPOSURE[\s\S]*?routes\.freeSpotlight[\s\S]*?LOW_CONTACT_INTENT[\s\S]*?routes\.shopDetails[\s\S]*?CONTACTS_NOT_PROTECTED[\s\S]*?routes\.tradeEvidence[\s\S]*?STRONG_MOMENTUM[\s\S]*?routes\.shopGallery[\s\S]*?debugId="shop-control\.market-intelligence\.primary-action"/,
+  "Shop Control Market Intelligence must route each diagnosis to an existing shop, spotlight, gallery, or trade-evidence lane."
+);
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /buildShopMarketIntelligenceSummary\([\s\S]*?shopAnalyticsWisdom[\s\S]*?OWNER_SHOP_HASHES\.summary[\s\S]*?Spine: \{shopMarketIntelligenceSummary\.headline\}/,
+  "Shop Control must consume the configured shared-engine Market Intelligence summary."
+);
+
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /listMarketplaceRequests\([\s\S]*?status: "open"[\s\S]*?mine_only: false[\s\S]*?limit: 12/,
+  "Shop Control Market Intelligence must read Demand Box context from the existing marketplace request lane."
+);
+
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /Demand Box context[\s\S]*?not buyer proof or automatic product matching[\s\S]*?to=\{routes\.demandBox\}[\s\S]*?shop-control\.market-intelligence\.demand-box/,
+  "Shop Control Demand Box context must route to Demand Box while avoiding automatic buyer-match claims."
+);
+
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /SHOP_DEMAND_CONTEXT_STOP_WORDS[\s\S]*?marketContextTokens[\s\S]*?buildShopDemandContextHints[\s\S]*?possible overlap only[\s\S]*?possible overlap:/,
+  "Shop Control Demand Box context may show word-overlap hints, but must keep them framed as possible overlap only."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/marketplace_analytics.py",
+  /ProtectedTradeRecord[\s\S]*?def _protected_trade_outcome_summary\([\s\S]*?protected_trade_records linked by shop_id or seller_user_id within the last 7 days\.[\s\S]*?"trade_outcomes": _protected_trade_outcome_summary/,
+  "Shop owner analytics API must summarize protected trade outcome records through the existing Protected Trade engine."
+);
+
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /trade_outcomes\?:[\s\S]*?tradeOutcomeRecords7Days[\s\S]*?label="Trade records"[\s\S]*?Recorded trade outcomes[\s\S]*?Protected trade evidence linked to this shop or seller\.[\s\S]*?\{tradeOutcomeBoundary\}/,
+  "Shop Control analytics must show protected trade outcome context with a truthful evidence-only boundary."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_marketplace_public_shop.py",
+  /protected_trade_records[\s\S]*?trade_outcomes = body\["trade_outcomes"\][\s\S]*?released_records"\] == 1[\s\S]*?not automatic sales/,
+  "Backend analytics tests must lock protected trade outcome counts and boundaries."
+);
+assertContains(
+  "gmfn_backend/app/api/routes/marketplace_analytics.py",
+  /def _source_breakdown_summary\([\s\S]*?MarketplaceAttentionEvent\.source[\s\S]*?MarketplaceAttentionEvent\.event_type[\s\S]*?event_type\.notin_\([\s\S]*?EVENT_SHARE_ACTION[\s\S]*?EVENT_RECOMMENDATION_ACTIONED[\s\S]*?Source counts show where attention was recorded, not who bought or paid\.[\s\S]*?"source_breakdown": _source_breakdown_summary/,
+  "Shop owner analytics API must summarize existing attention-event sources without creating a duplicate traffic engine."
+);
+
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /source_breakdown\?: ShopAttentionSourceBreakdown\[\][\s\S]*?attentionSourceBreakdownRows[\s\S]*?Traffic sources[\s\S]*?Source counts show where attention was recorded, not who bought or paid\./,
+  "Shop Control analytics must show attention source breakdown with the truthful buyer-proof boundary."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_marketplace_public_shop.py",
+  /source_breakdown = body\["source_breakdown"\][\s\S]*?source_rows\["public_shop"\]\["shop_visits"\] == 1[\s\S]*?source_rows\["public_shop_spotlight"\]\["spotlight_impressions"\] == 1[\s\S]*?not who bought/,
+  "Backend tests must lock shop, spotlight, product, and contact source breakdown counts."
+);
+assertContains(
+  "gmfn_backend/app/api/routes/marketplace_analytics.py",
+  /SHOP_FOLLOWER_NOTICE_KINDS[\s\S]*?def _shop_follower_notice_summary[\s\S]*?"follower_notifications": _shop_follower_notice_summary/,
+  "Shop owner analytics API must summarize follower notices from the existing notification engine."
+);
+
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /follower_notifications\?:[\s\S]*?followerNotices7Days[\s\S]*?followerNoticeBoundary[\s\S]*?not views, purchases, or push-delivery proof[\s\S]*?label="Follower notices"[\s\S]*?Follower notice trail[\s\S]*?\{followerNoticeBoundary\}/,
+  "Shop Control analytics must show follower notice counts with the push-delivery truth boundary."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_marketplace_public_shop.py",
+  /follower_notifications = body\["follower_notifications"\][\s\S]*?last_7_days"\] == 1[\s\S]*?year_to_date"\] == 1[\s\S]*?not views/,
+  "Backend analytics tests must lock follower notice distribution counts and boundaries."
+);
+assertContains(
+  "gmfn_backend/app/api/routes/marketplace.py",
+  /def _shop_notice_action_url[\s\S]*?gsn_source=shop_follower_notice[\s\S]*?gsn_notice=\{quote[\s\S]*?attributed_action_url = _shop_notice_action_url/,
+  "Shop follower notice links must carry existing attention-engine attribution tags."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/marketplace_analytics.py",
+  /def _follower_notification_response_summary[\s\S]*?gsn_source"\) != "shop_follower_notice"[\s\S]*?"follower_notification_response": _follower_notification_response_summary/,
+  "Shop owner analytics API must summarize follower notice click-back response through source_path attribution."
+);
+
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /follower_notification_response\?:[\s\S]*?followerNoticeResponseVisitors[\s\S]*?not buyer, payment, delivery, push-display, or sales proof[\s\S]*?label="Notice visits"[\s\S]*?Follower notice response/,
+  "Shop Control analytics must show follower notice response separately from notice distribution."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_marketplace_public_shop.py",
+  /gsn_source=shop_follower_notice[\s\S]*?follower_response = body\["follower_notification_response"\][\s\S]*?shop_visits"\] == 1[\s\S]*?product_opens"\] == 1[\s\S]*?gsn_source=shop_follower_notice/,
+  "Backend analytics tests must lock follower notice attribution tags and click-back response counts."
+);
+assertContains(
+  "gmfn_backend/app/api/routes/marketplace_analytics.py",
+  /EVENT_SHARE_ACTION = "share_action"[\s\S]*?EVENT_RECOMMENDATION_ACTIONED = "recommendation_actioned"[\s\S]*?def _share_action_summary[\s\S]*?event_type=share_action[\s\S]*?def _recommendation_action_summary[\s\S]*?event_type=recommendation_actioned[\s\S]*?def _share_response_summary[\s\S]*?source_path includes share attribution parameters[\s\S]*?"share_actions": _share_action_summary[\s\S]*?"share_response": _share_response_summary[\s\S]*?"recommendation_actions": _recommendation_action_summary/,
+  "Shop owner analytics API must summarize tracked share attempts and owner advice actions through the existing attention-event engine."
+);
+
+assertContains(
+  "frontend/src/lib/api.ts",
+  /recordMarketplaceAttentionEvent[\s\S]*?\| "share_action"[\s\S]*?\| "recommendation_actioned"/,
+  "Frontend API typing must allow share_action and recommendation_actioned attention events."
+);
+
+assertContains(
+  "frontend/src/pages/ShopGalleryPage.tsx",
+  /appendShopShareAttribution[\s\S]*?gsn_share[\s\S]*?trackShopShareAction[\s\S]*?"share_action"[\s\S]*?copy_shop_link[\s\S]*?share_product/,
+  "Public Shop share and copy actions must add campaign attribution and record share attempts without creating a duplicate analytics engine."
+);
+
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /share_actions\?:[\s\S]*?share_response\?:[\s\S]*?recommendation_actions\?:[\s\S]*?shareActions7Days[\s\S]*?shareResponseVisits[\s\S]*?recommendationActions7Days[\s\S]*?label="Shared links"[\s\S]*?Share action trail[\s\S]*?Share response[\s\S]*?Advice action trail/,
+  "Shop Control analytics must show share attempts with the recipient-open truth boundary."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_marketplace_public_shop.py",
+  /"event_type": "share_action"[\s\S]*?gsn_share=copy_shop_link[\s\S]*?"event_type": "recommendation_actioned"[\s\S]*?recommendation_actions = body\["recommendation_actions"\][\s\S]*?Opened Demand Box[\s\S]*?"shop_gallery_share" not in source_rows[\s\S]*?"shop_market_intelligence" not in source_rows/,
+  "Backend analytics tests must lock share attribution, recommendation action logging, and boundary wording."
+);
+assertContains(
+  "gmfn_backend/app/api/routes/marketplace.py",
+  /dispatch_web_push_for_notifications[\s\S]*?def _notify_shop_followers\([\s\S]*?-> list\[Notification\][\s\S]*?action_label="Open post"[\s\S]*?dispatch_web_push_for_notifications\(db, follower_notification_rows\)/,
+  "Shop follower notices must reuse the existing web-push batch dispatcher and route followers directly to the posted item."
+);
+
+assertContains(
+  "gmfn_backend/app/services/web_push_service.py",
+  /"marketplace\.shop\.broadcast_created"[\s\S]*?"marketplace\.shop\.product_created"[\s\S]*?"marketplace\.shop\.product_updated"[\s\S]*?"marketplace\.shop\.spotlight_created"/,
+  "Web Push allow-list must include shop follower product, update, broadcast, and spotlight notices."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_marketplace_public_shop.py",
+  /pushed_batches[\s\S]*?dispatch_web_push_for_notifications[\s\S]*?Visible Follow Shop posted Follower Rice[\s\S]*?"action_label": "Open post"/,
+  "Backend tests must lock follower Action Inbox notices and the post-commit web-push dispatch call."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_web_push_notifications.py",
+  /test_shop_follower_notifications_are_web_push_allowed[\s\S]*?marketplace\.shop\.product_created[\s\S]*?marketplace\.shop\.spotlight_created/,
+  "Web Push tests must lock shop follower notice kinds as allowed push notifications."
+);
+assertContains(
   "gmfn_backend/tests/test_marketplace_public_shop.py",
   /test_shop_spotlight_publish_targets_all_eligible_owner_communities[\s\S]*?assert body\["propagated_count"\] == 2[\s\S]*?assert body\["item"\]\["source_product_title"\] == "Fresh spotlight"[\s\S]*?assert body\["item"\]\["source_product_description"\] == "Available today for delivery"[\s\S]*?assert body\["item"\]\["source_product_category"\] == "Spotlight update"[\s\S]*?assert \[int\(row\[0\]\) for row in rows\] == \[1, 2\]/,
   "Backend tests must lock one-shop Spotlight placement and visible product information across all eligible owner communities."

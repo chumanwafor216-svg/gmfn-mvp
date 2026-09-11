@@ -1,4 +1,58 @@
-﻿## 2026-09-10 - Daily secretary cadence and sector rotation added
+## 2026-09-10 - Ndi Abia discovery identity corrected
+
+- Status: Docs-only evidence correction; no product code, backend route, frontend route, schema, deploy, commit, push, or email send.
+- Owner correction: the participant previously filed generically as the Aberdeen community Chairman is Mr Ugochukwu Iheukwumere, Chairman of Ndi Abia in Aberdeen.
+- The properly filed Grade A discovery record is now `docs/GSN_NDI_ABIA_ABERDEEN_UGOCHUKWU_IHEUKWUMERE_CUSTOMER_DISCOVERY_RECORD_2026-09-10.md`, using Gmail sent-message ID `1a08c4bbab8430f8` as the follow-up proof pointer.
+- The old `Chairman Daniel / Ndi Abia` reconstruction label has been superseded and moved into an identity-correction note: `docs/GSN_NDI_ABIA_IDENTITY_CORRECTION_SUPERSEDED_RECONSTRUCTION_2026-09-10.md`.
+- Evidence classification corrected: Ndi Abia in Aberdeen is Grade A; do not count Chairman Daniel / Ndi Abia as a separate lead unless the founder later confirms a different person/interview.
+- Devil truth: this correction strengthens the evidence trail, but it is still discovery/demo interest only, not formal adoption, payment, pilot approval, or endorsement.
+## 2026-09-10 - Mandatory discovery recording rule added
+
+- Status: Docs-only evidence-governance update; no product code, backend route, frontend route, schema, deploy, commit, push, or email send.
+- Owner trigger: Founder instructed that every customer discovery workshop must be recorded and recorded because the conversations are important evidence.
+- Updated `docs/GSN_CUSTOMER_DISCOVERY_LISTENING_ASSISTANT_PROTOCOL_2026-09-07.md` with a mandatory recording and evidence rule: every discovery conversation/workshop/demo/follow-up must have both raw capture and a structured repo evidence note.
+- Updated `docs/GSN_CUSTOMER_DISCOVERY_EVIDENCE_REGISTER_2026-09-10.md` with the same rule: raw capture plus structured record are required before a workshop is complete or usable as external evidence.
+- Updated `docs/GSN_CUSTOMER_DISCOVERY_RECORD_RECONSTRUCTION_QUEUE_2026-09-10.md` with a recording-failure rule: if same-day filing does not happen, open a reconstruction item immediately and mark what is missing.
+- Devil truth: chat memory, WhatsApp memory, founder memory, and presentation packs are not enough by themselves. They can help reconstruct the trail, but they are not complete evidence until dated source pointers and structured records exist.
+
+## 2026-09-10 - Customer discovery evidence structure corrected
+
+- Status: Docs-only evidence management update; no product code, backend route, frontend route, schema, deploy, or email send.
+- Owner trigger: Founder challenged the record list as incomplete and asked Codex to structure the discovery evidence correctly because it is important.
+- Added `docs/GSN_CUSTOMER_DISCOVERY_EVIDENCE_REGISTER_2026-09-10.md` as the current source-of-truth evidence register with Grade A/B/C classification.
+- Rewrote `docs/GSN_CUSTOMER_DISCOVERY_INTERVIEW_INDEX_2026-09-10.md` to separate properly filed discovery records, partial-evidence reconstruction records, founder-recalled reconstruction records, and warm leads/preparation-only items.
+- Added reconstruction records for the missing/partial interviews: `docs/GSN_NDI_IMO_DANIEL_CUSTOMER_DISCOVERY_RECONSTRUCTION_2026-09-10.md`, `docs/GSN_NDI_ABIA_CHAIRMAN_DANIEL_CUSTOMER_DISCOVERY_RECONSTRUCTION_2026-09-10.md`, `docs/GSN_ANGANA_EBECKER_CUSTOMER_DISCOVERY_RECONSTRUCTION_2026-09-10.md`, `docs/GSN_ICH_2000_DUKE_CUSTOMER_DISCOVERY_RECONSTRUCTION_2026-09-10.md`, and `docs/GSN_PILLAR_OF_HOPE_FELIX_CUSTOMER_DISCOVERY_RECONSTRUCTION_2026-09-10.md`.
+- Evidence classification corrected later: Grade A properly filed records are Aberdeen Dads, pastor/church contact, Dr. Ebuka Ibeke/Ndi Anambra, and Mr Ugochukwu Iheukwumere/Ndi Abia in Aberdeen. Grade B partial records are Daniel/Ndi Imo, Mr Duke/ICH 2000, and Mr Felix/Pillar of Hope. Grade C founder-recalled record is Mr E. Becker/Ebeker/Angana only.
+- Devil truth: the added reconstruction files preserve the evidence gap; they do not magically make remembered interviews fully documented. Next task is to fill each record from founder memory plus Gmail/material evidence and seek participant correction where possible.
+## 2026-09-10 - Discovery reconstruction queue opened for remembered interviews
+
+- Status: Docs-only evidence hygiene update; no product code, backend route, frontend route, schema, deploy, or email send.
+- Owner trigger: Founder corrected the interview list and recalled additional discovery conversations: Daniel/Chairman for Ndi Imo, an initially mislabelled Ndi Abia item later corrected to Mr Ugochukwu Iheukwumere, Mr E. Becker/Ebeker for Angana, Mr Duke for ICH 2000, and Mr Felix/Misa Felix for Pillar of Hope.
+- Added `docs/GSN_CUSTOMER_DISCOVERY_RECORD_RECONSTRUCTION_QUEUE_2026-09-10.md` to separate founder-recalled interviews from fully filed records.
+- Evidence found: Ndi Imo has local customer-discovery/read-through packs under `outputs/manual-20260906/presentations/ndi-imo-final/`; Mr Duke has Gmail sent-message ID `1a06b6b5a37d2a99` confirming a 2026-09-03 customer-discovery session that was not fully concluded and a proposed continuation on 2026-09-06; Pillar of Hope has prep/domain/customer-discovery email records but the actual post-2026-08-15 outcome still needs recording.
+- Evidence not found as standalone repo records yet: full Daniel/Ndi Imo interview answers, Mr E. Becker/Ebeker/Angana interview answers, full Mr Duke/ICH 2000 answers, and final Mr Felix/Pillar of Hope discussion outcome. The old Chairman Daniel/Ndi Abia label is superseded by the Mr Ugochukwu Iheukwumere/Ndi Abia in Aberdeen Grade A record.
+- Devil truth: chat memory is not an evidence repository. If prior interviews were conducted inside Codex but not exported to repo docs at the time, the safe path is reconstruction from founder memory plus Gmail/material evidence, then participant confirmation where possible.
+## 2026-09-10 - Discovery trail updated for Ndi Anambra, Aberdeen Chairman call, and Mamacita follow-up
+
+- Status: Docs-only evidence/secretary update; no product code, backend route, frontend route, schema, deploy, or new email send in this slice.
+- Owner trigger: Founder asked whether Codex is keeping records of the live community discovery conversations and whether the evidence is going into the GSN trail.
+- Records added: `docs/GSN_CUSTOMER_DISCOVERY_INTERVIEW_INDEX_2026-09-10.md` lists properly recorded interviews versus warm/incomplete leads. `docs/GSN_PASTOR_CHURCH_CUSTOMER_DISCOVERY_RECORD_2026-09-07.md`, `docs/GSN_NDI_ANAMBRA_ABERDEEN_CUSTOMER_DISCOVERY_RECORD_2026-09-10.md`, and `docs/GSN_NDI_ABIA_ABERDEEN_UGOCHUKWU_IHEUKWUMERE_CUSTOMER_DISCOVERY_RECORD_2026-09-10.md` now preserve the pastor/church, Ndi Anambra, and Ndi Abia in Aberdeen discovery calls.
+- Central trail updated: `docs/GSN_OUTREACH_EVIDENCE_LOG.md`, `docs/GSN_SECRETARY_OPERATIONS_REGISTER_2026-09-10.md`, and `docs/GSN_SUPPORT_AND_DISCOVERY_COMMAND_TRACKER_2026-09-10.md` now record Mamacita follow-up sent, pastor/church discovery filed, Ndi Anambra discovery completed, and Ndi Abia in Aberdeen discovery completed.
+- Evidence pointers recorded without storing private email addresses: pastor/church summary Gmail sent-message ID `1a07bd70a9fd2721`; pastor CDW review pack Gmail sent-message ID `1a06e0178b67094b`; Ndi Anambra summary Gmail sent-message ID `1a08bf325a523313`; Ndi Abia in Aberdeen / Mr Ugochukwu Iheukwumere summary Gmail sent-message ID `1a08c4bbab8430f8`; Mamacita follow-up Gmail sent-message ID `1a08c290fd7c54a9`.
+- Next actions: wait for date/time replies from Ndi Anambra and Mr Ugochukwu Iheukwumere; watch for Mamacita reply; prepare demos around official notices, acknowledgements, meeting responses, records/minutes, welfare follow-up, contributions/levies, and active member lists.
+- Devil truth: these are good qualitative discovery records and demo-interest signals, not adoption, endorsement, payment, pilot approval, RGU backing, or commercial validation. Payment/sponsor/budget-holder questions still need to be asked after workflow fit is shown.
+## 2026-09-10 - Action Inbox visible notification cap set to 20
+
+- Status: Implemented and verified locally; not committed, pushed, or deployed in this slice.
+- Owner trigger: Owner said post notifications should not be endless as the network grows, and suggested watching the limit around 15-20 rather than letting many messages crowd the user.
+- Backend route affected: `GET /notifications/me` now defaults to a 20-row visible read through `NOTIFICATION_VISIBLE_LIMIT_DEFAULT` and the notification service clamps caller-supplied limits to `NOTIFICATION_VISIBLE_LIMIT_MAX = 20`. Existing high callers such as `limit=100` still get a valid response, but only the latest 20 rows are returned.
+- Frontend surfaces affected: `/app/notifications` Recent notifications now requests 20 rows instead of 100; shared guidance/Action Inbox snapshot now requests 20 rows instead of 60; the API helper default is now 20. Dashboard remains at its existing tighter 12-row summary and Companion unread polling remains 20 unread rows.
+- Boundary: This limits the normal visible/fetched notification feed. It does not delete old notification rows, change unread count semantics, stop event creation, change Web Push delivery eligibility, or weaken notification history/audit memory.
+- Guardrail changes: `gmfn_backend/tests/test_join_requests.py` now verifies default/high/smaller limits return 20/20/15 rows respectively, and `frontend/tools/audit-notifications-button-inventory.mjs` now cages the 20-row frontend/API/guidance read.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\notifications.py gmfn_backend\app\services\notification_service.py gmfn_backend\tests\test_join_requests.py`; `python -m pytest -q gmfn_backend\tests\test_join_requests.py::test_notifications_endpoint_limits_visible_items_to_twenty gmfn_backend\tests\test_join_requests.py::test_notifications_endpoint_backfills_missing_join_review_notice_for_late_reviewer gmfn_backend\tests\test_join_requests.py::test_notifications_endpoint_retires_join_review_notice_after_request_is_done`; `node --check frontend\tools\audit-notifications-button-inventory.mjs`; `npm --prefix frontend run audit:notifications-button-inventory`; `npm exec eslint -- src/lib/api.ts src/lib/guidance.ts src/pages/NotificationsPage.tsx tools/audit-notifications-button-inventory.mjs` from `frontend`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`.
+- Devil truth: This stops the ordinary Action Inbox/feed from becoming visually endless, but it is not a notification-volume throttler. Large communities can still generate many database rows and Web Push attempts; if live pilot usage proves noisy, the next architectural step is per-kind bundling/digesting or community settings for notification frequency, not deleting history.
+
+## 2026-09-10 - Daily secretary cadence and sector rotation added
 
 - Status: Docs/calendar operating update; no product code, backend route, frontend route, schema, payment, email-send, commit, push, or deploy change.
 - Owner trigger: Founder asked for morning/evening flow so he can simply follow up each day, report what happened, see what remains, understand blockers, and pursue additional contacts across faith communities, immigrant organisations, schools, real marketplaces, and Nigeria/Africa routes.
@@ -1013,7 +1067,7 @@
 - Frontend implementation: `frontend/src/pages/MarketplacePage.tsx` now preserves `listing_review_required`, `listing_review_due_at`, `listing_review_status`, and `listing_expiry_enforced` from marketplace shop payloads and carries them into member/shop rows.
 - UI implementation: `frontend/src/pages/marketplace/MarketplaceMembersSection.tsx` shows a compact `Review due ...` marker beside visible member shops when the backend supplies a listing review due date, or `Review expected` when review is required without a date.
 - Spec update: `docs/SCREEN_SPECS.md` documents compact shop review status as part of MarketplacePage.
-- Verification: `npm exec -- tsc -b --pretty false`; `npm --prefix frontend run audit:marketplace-actions`; `npm --prefix frontend run audit:marketplace-button-inventory`; `npm --prefix frontend run audit:marketplace-touch-blockers`; `npm --prefix frontend run audit:marketplace-button-lines`; `npm --prefix frontend run audit:link-contracts`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `git diff --check`.
+- Verification: `npm exec -- tsc -b --pretty false`; `npm --prefix frontend run audit:marketplace-actions`; `npm --prefix frontend run audit:marketplace-button-inventory`; `npm --prefix frontend run audit:marketplace-touch-blockers`; `npm --prefix frontend run audit:marketplace-button-lines`; `npm --prefix frontend run audit:link-contracts`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check`.
 - Devil truth: this surfaces backend review markers only. It does not create reviewer assignment, member submission queues, listing expiry, stale-listing hiding, or admin decision workflow.
 ## 2026-08-31 - Local marketplace listing review-date disclosure
 - Status: Local implementation verified; ready for active pilot commit/push/deploy protocol.
@@ -1203,14 +1257,14 @@
 - The parent route still owns the selected member detail, member stage/view chooser state, roster task state, roster summary counts, member status-change handler, placement/member-verification/participation maps, and governance/real-life chooser resets; the lazy child owns the Readiness/Roster stage catalogue, Change stage/view controls, and lazy rendering of member readiness, unit placement, and roster control.
 - Updated `frontend/tools/audit-community-domain-product-contracts.mjs` so member-lane guardrails check parent handoff and lazy child controls separately.
 - Build truth: after the setup-overview split the Community Domain route was about `171.63 kB` / `43.60 kB gzip`; after this member-focus split it is about `167.95 kB` / `43.18 kB gzip`, with a new `MemberFocusPanel` chunk about `6.02 kB` / `2.01 kB gzip`. Existing `MemberRosterPanel` and `MemberReadinessPanels` chunks remain lazy.
-- Verification passed: `npm exec -- tsc -b --pretty false` from `frontend`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `git diff --check`.
+- Verification passed: `npm exec -- tsc -b --pretty false` from `frontend`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check`.
 - Devil's advocate: this is a smaller gain than setup overview, but it is low-risk and keeps us moving toward a lighter first route chunk. The next safe lane-wrapper candidates are Structure or Services. The setup workbench remains the largest possible gain, but it is still the riskiest because it owns live edit forms, uploads, delegated setup-editor changes, feature-policy locking, and save flow.## 2026-08-24 - Local Community Domain Setup Overview Lazy Split
 - Status: Local implementation verified; not pushed/deployed because the active pilot freeze asks for batch publishing unless the owner explicitly says to push.
 - Split the Community Domain setup overview surface out of `frontend/src/pages/CommunityDomainDashboardPage.tsx` into lazy-loaded `frontend/src/pages/communityDomainDashboard/SetupOverviewPanel.tsx`.
 - The parent route still owns setup overview task state, Official Board notice state, setup readiness/setup plan payloads, the main-action focus callback, notice modal opening, counts, template, and status data; the lazy child owns the Action/Reference setup overview selector, Official Board recent/post selector, Community Domain facts, next setup card, and counts view.
 - Updated `frontend/tools/audit-community-domain-product-contracts.mjs` so setup overview guardrails check parent ownership and lazy child controls separately.
 - Build truth: after the operating-summary split the Community Domain route was about `183.70 kB` / `45.70 kB gzip`; after this setup-overview split it is about `171.63 kB` / `43.60 kB gzip`, with a new `SetupOverviewPanel` chunk about `15.23 kB` / `4.19 kB gzip`. The nested `SetupIntelligenceCards` chunk remains lazy at about `5.29 kB` / `1.90 kB gzip`.
-- Verification passed: `npm exec -- tsc -b --pretty false` from `frontend`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `git diff --check`.
+- Verification passed: `npm exec -- tsc -b --pretty false` from `frontend`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check`.
 - Devil's advocate: this is the biggest local reduction in the current bundle-splitting batch, but Community Domain is still the largest app-owned route. The next larger target is the setup workbench edit/access form, but that is riskier because it owns inputs, evidence uploads, setup-editor delegation, feature-policy locking, save-and-continue behavior, and more audit cages.
 ## 2026-08-24 - Local Community Domain Operating Summary Lazy Split
 - Status: Local implementation verified; not pushed/deployed because the active pilot freeze asks for batch publishing unless the owner explicitly says to push.
@@ -1259,7 +1313,7 @@
 - Added backend platform-admin Community Domain ownership reconciliation at `/admin/community-domain-ownership/reconcile`. Preview is read-only; execute requires proof confirmation and a reviewer note, moves the existing domain owner to the requested owner, preserves the domain/payment/history record, ensures the requested owner has active owner membership, and demotes the previous domain owner to admin instead of deleting history.
 - Added tests for latest meeting-interest counting, invalid response rejection, read-only domain ownership preview, proof-required execution, and proof-confirmed Pillar of Hope domain transfer preserving history.
 - Changed files: `gmfn_backend/app/services/community_meeting_service.py`, `gmfn_backend/app/api/routes/community_meetings.py`, `gmfn_backend/app/api/routes/admin.py`, `frontend/src/pages/ShopControlPage.tsx`, `frontend/tools/audit-shop-control-button-inventory.mjs`, `gmfn_backend/tests/test_community_meetings.py`, and `gmfn_backend/tests/test_admin_community_ownership.py`.
-- Verification passed: `python -m pytest gmfn_backend\tests\test_community_meetings.py -q`; `python -m pytest gmfn_backend\tests\test_admin_community_ownership.py -q`; `python -m py_compile gmfn_backend\app\api\routes\admin.py gmfn_backend\app\api\routes\community_meetings.py gmfn_backend\app\services\community_meeting_service.py`; `npm exec -- tsc -b --pretty false` from `frontend`; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `git diff --check` with line-ending warnings only.
+- Verification passed: `python -m pytest gmfn_backend\tests\test_community_meetings.py -q`; `python -m pytest gmfn_backend\tests\test_admin_community_ownership.py -q`; `python -m py_compile gmfn_backend\app\api\routes\admin.py gmfn_backend\app\api\routes\community_meetings.py gmfn_backend\app\services\community_meeting_service.py`; `npm exec -- tsc -b --pretty false` from `frontend`; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check` with line-ending warnings only.
 - Devil's advocate: this does not by itself mutate the live production Pillar of Hope record. A platform admin must still run the new reconcile endpoint with proof and reviewer note for Mr Felix. This also does not send WhatsApp/SMS/calendar invites; the meeting interest feature only records in-app planning responses.
 ## 2026-08-18 - Command Centre can complete missing community from stuck intake
 - Status: Local implementation verified and ready to push/deploy. Owner's live phone test reached `Stuck intake found` for Felix Nwobi but Preview still returned `Community name was not found`, which means this production case is not only a missing owner GSN ID; the normal GSN community row may also be missing because Create Community stopped before final creation.
@@ -1345,7 +1399,7 @@
 - Changed `frontend/src/lib/routePreload.ts` so the preloader knows Community Join Requests, Subscription Spotlight, Vault Control, and Build First Circle chunks instead of only the broader Community Home/Shop Control routes.
 - Changed `frontend/src/pages/CommunityHomePage.tsx` to warm likely owner/action destination chunks after a selected community is available and again immediately before route navigation, without changing button targets or geometry.
 - Changed `frontend/src/pages/ShopControlPage.tsx` so the page releases the first owner/shop surface after primary identity/shop context loads, while live Spotlight, Vault, payment, TrustSlip, ROSCA, meeting, and capacity rows hydrate behind a visible refreshing notice.
-- Verification passed: `npm --prefix frontend run audit:slow-tab-preload-priority`; `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:community-home-phone-buttons`; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `git diff --check`.
+- Verification passed: `npm --prefix frontend run audit:slow-tab-preload-priority`; `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:community-home-phone-buttons`; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check`.
 - Devil's advocate: this removes avoidable frontend cold-chunk delay and Shop Control secondary-read blocking. It does not prove the production phone will never see 15 seconds; if it persists after deployment, measure backend latency for the primary Shop Control identity/shop reads and repeat the first-paint decoupling for Vault Control, Subscription Spotlight, and Build First Circle.
 ## 2026-08-01 - Local Trust Passport first-paint TrustSlip summary decoupling
 - Status: Local only, not pushed/deployed. Owner reported Trust Passport takes an awful time to load after the TrustSlip Verify speed fix.
@@ -1381,7 +1435,7 @@
 - Changed `/app/trust-slip` in `frontend/src/pages/TrustSlipPage.tsx` to show a visible `Decision reading` block under the selected pack/scope and include the same conclusion and first Because rows in copied public share text.
 - Changed public TrustSlip Verify in `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx` so `Decision First` and `Why this recommendation?` use the shared purpose-specific reading and show Because 1 / Because 2 before deeper evidence rows on phone.
 - Updated TrustSlip public/holder audits so the explicit decision-reading contract cannot regress to vague pack facts without the actual decision message.
-- Verification passed: `node --check frontend/tools/audit-public-trustslip-first-viewport.mjs`; `node --check frontend/tools/audit-public-trustslip-verify-boundary.mjs`; `npm --prefix frontend run audit:trust-actions`; `npm --prefix frontend run audit:public-trustslip-first-viewport`; `npm --prefix frontend run audit:public-trustslip-verify-boundary`; `npm exec -- tsc -b --pretty false` from `frontend`; `npm --prefix frontend run audit:trust-passport-trustslip-boundary`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `git diff --check`.
+- Verification passed: `node --check frontend/tools/audit-public-trustslip-first-viewport.mjs`; `node --check frontend/tools/audit-public-trustslip-verify-boundary.mjs`; `npm --prefix frontend run audit:trust-actions`; `npm --prefix frontend run audit:public-trustslip-first-viewport`; `npm --prefix frontend run audit:public-trustslip-verify-boundary`; `npm exec -- tsc -b --pretty false` from `frontend`; `npm --prefix frontend run audit:trust-passport-trustslip-boundary`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check`.
 - Devil's advocate: this now explains the reading and the reason chain, but it still interprets existing visible evidence only. It is not a backend approval engine, does not create new evidence, and does not replace the receiver's final decision or required external checks.
 ## 2026-08-01 - Local TrustSlip community scope dropdown
 - Status: Pushed to `main` in commit `2a8042c6` and deployed to Render frontend by workflow run `30714091879`; Render deploy `dep-d9n4821kcmdc73bmo1qg` reached `live`.
@@ -1452,7 +1506,7 @@
 - Removed the now-unused parent `ExplainToggle` import because the ROSCA child owns the savings-circle explanation surface.
 - Updated Marketplace audit source composition so the lazy ROSCA child is still included in ROSCA lane, button inventory, button line, action, touch-blocker, mobile tap, and button-stability guardrails. Also fixed the button-line audit to compose the previously extracted Demand Box child so it still counts all 89 Marketplace stable actions.
 - Production build now emits `MarketplaceRoscaSection` as a separate chunk at about `11.94 kB` raw / `4.22 kB` gzip. The `MarketplacePage` route chunk moved from the previous local `182.26 kB` raw / `48.89 kB` gzip to `174.33 kB` raw / `47.18 kB` gzip.
-- Verification passed: `npm exec -- tsc -b --pretty false` from `frontend`; `node --check frontend/tools/audit-marketplace-rosca-lane.mjs`; `node --check frontend/tools/audit-marketplace-actions.mjs`; `node --check frontend/tools/audit-mobile-tap-stability.mjs`; `node --check frontend/tools/audit-marketplace-button-lines.mjs`; `npm --prefix frontend run audit:marketplace-rosca-lane`; `npm --prefix frontend run audit:marketplace-button-inventory`; `npm --prefix frontend run audit:marketplace-button-lines`; `npm --prefix frontend run audit:marketplace-actions`; `npm --prefix frontend run audit:marketplace-touch-blockers`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run audit:tap-stability`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `git diff --check`.
+- Verification passed: `npm exec -- tsc -b --pretty false` from `frontend`; `node --check frontend/tools/audit-marketplace-rosca-lane.mjs`; `node --check frontend/tools/audit-marketplace-actions.mjs`; `node --check frontend/tools/audit-mobile-tap-stability.mjs`; `node --check frontend/tools/audit-marketplace-button-lines.mjs`; `npm --prefix frontend run audit:marketplace-rosca-lane`; `npm --prefix frontend run audit:marketplace-button-inventory`; `npm --prefix frontend run audit:marketplace-button-lines`; `npm --prefix frontend run audit:marketplace-actions`; `npm --prefix frontend run audit:marketplace-touch-blockers`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run audit:tap-stability`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check`.
 - First-paint audit required escalation because sandboxed Vite/esbuild hit the known `spawn EPERM`; escalated `npm --prefix frontend run audit:app-tab-first-paint` passed with `21000ms` delayed secondary calls: Community Home `2929ms`, Marketplace `1769ms`, Profile / My GSN Identity `1288ms`, with loading text gone on all three.
 - Startup timing audit required escalation for the same sandbox spawn limitation; escalated `npm --prefix frontend run audit:startup-timing` passed: warm shell `3236ms`, warm Dashboard `3482ms`, auth-retry Dashboard `8424ms`.
 - Devil's advocate: this is a stronger local Marketplace shell reduction than the Demand split, but it still does not prove production phone latency is fixed until pushed/deployed and tested on the real network/device. Marketplace is still a large route at about `174 kB`, and `CommunityDomainDashboardPage.tsx` still triggers Babel's >500KB deoptimization warning as a separate big-route risk.
@@ -1462,7 +1516,7 @@
 - Updated Marketplace audit source composition so Demand Box still participates in action, button, front-package, department-boundary, trusted-trade, touch-blocker, and button-stability guardrails after extraction.
 - Corrected the Trade Evidence lane audit to recognize the already-lazy `GsnSnapshotPaperCard` import while still requiring the shared GSN headed-paper card.
 - Production build now emits `MarketplaceDemandSection` as a separate chunk at about `6.42 kB` raw / `2.48 kB` gzip. The `MarketplacePage` route chunk moved from the previous local `183.82 kB` raw / `49.20 kB` gzip to `182.26 kB` raw / `48.89 kB` gzip.
-- Verification passed: `node --check frontend/tools/audit-marketplace-actions.mjs`; `node --check frontend/tools/audit-marketplace-button-inventory.mjs`; `node --check frontend/tools/audit-marketplace-demand-box-lane.mjs`; `node --check frontend/tools/audit-marketplace-front-package.mjs`; `node --check frontend/tools/audit-marketplace-trusted-trade-lane.mjs`; `npm --prefix frontend run audit:marketplace-demand-box-lane`; `npm --prefix frontend run audit:marketplace-button-inventory`; `npm --prefix frontend run audit:marketplace-actions`; `npm --prefix frontend run audit:marketplace-front-package`; `npm --prefix frontend run audit:marketplace-touch-blockers`; `npm --prefix frontend run audit:marketplace-department-boundaries`; `npm --prefix frontend run audit:marketplace-trusted-trade-lane`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run audit:slow-tab-preload-priority`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `git diff --check`.
+- Verification passed: `node --check frontend/tools/audit-marketplace-actions.mjs`; `node --check frontend/tools/audit-marketplace-button-inventory.mjs`; `node --check frontend/tools/audit-marketplace-demand-box-lane.mjs`; `node --check frontend/tools/audit-marketplace-front-package.mjs`; `node --check frontend/tools/audit-marketplace-trusted-trade-lane.mjs`; `npm --prefix frontend run audit:marketplace-demand-box-lane`; `npm --prefix frontend run audit:marketplace-button-inventory`; `npm --prefix frontend run audit:marketplace-actions`; `npm --prefix frontend run audit:marketplace-front-package`; `npm --prefix frontend run audit:marketplace-touch-blockers`; `npm --prefix frontend run audit:marketplace-department-boundaries`; `npm --prefix frontend run audit:marketplace-trusted-trade-lane`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run audit:slow-tab-preload-priority`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check`.
 - First-paint audit required escalation because sandboxed Vite/esbuild hit the known `spawn EPERM`; escalated `npm --prefix frontend run audit:app-tab-first-paint` passed with `21000ms` delayed secondary calls: Community Home `2915ms`, Marketplace `1899ms`, Profile / My GSN Identity `1294ms`, with loading text gone on all three.
 - Startup timing audit also required escalation for the same sandbox `spawn EPERM`; escalated `npm --prefix frontend run audit:startup-timing` passed: warm shell `3265ms`, warm Dashboard `3538ms`, auth-retry Dashboard `8310ms`.
 - Devil's advocate: this is a small structural win, not a magic cure. The 20+ second tab-opening problem still is not reproducing locally under the delayed-secondary harness, and production phone performance remains unproven until pushed/deployed and tested on the real device/network. The Marketplace shell is still large at about `182 kB`; the next meaningful Marketplace performance work is a larger structural split of another closed department such as Tools, Trade Evidence, ROSCA, or Support internals. `CommunityDomainDashboardPage.tsx` still triggers Babel's >500KB deoptimization warning and remains a separate big-route risk.
@@ -1848,7 +1902,7 @@
 - Composed lazy Marketplace children in route-local audits that need whole-page boundaries: button-lines, Demand Box lane, department boundaries, ROSCA lane, and Trade Evidence lane.
 - Updated `audit-marketplace-button-lines.mjs` to the current canonical `89` stable Marketplace actions and `37` native fields, matching `audit-marketplace-button-inventory.mjs`.
 - No app UI, API, route, state, or bundle behavior changed in this slice.
-- Verification passed: `npm --prefix frontend run audit:marketplace-button-lines`; `npm --prefix frontend run audit:marketplace-demand-box-lane`; `npm --prefix frontend run audit:marketplace-department-boundaries`; `npm --prefix frontend run audit:marketplace-money-pool-lane`; `npm --prefix frontend run audit:marketplace-rosca-lane`; `npm --prefix frontend run audit:marketplace-trusted-trade-lane`; `npm --prefix frontend run audit:marketplace-support-lane`; `npm --prefix frontend run audit:marketplace-records-links-lane`; `npm --prefix frontend run audit:marketplace-more-tools-lane`; `npm --prefix frontend run audit:marketplace-shop-evidence-boundary`; `npm --prefix frontend run audit:marketplace-button-inventory`; `npm --prefix frontend run audit:marketplace-actions`; `npm --prefix frontend run audit:marketplace-touch-blockers`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `git diff --check`.
+- Verification passed: `npm --prefix frontend run audit:marketplace-button-lines`; `npm --prefix frontend run audit:marketplace-demand-box-lane`; `npm --prefix frontend run audit:marketplace-department-boundaries`; `npm --prefix frontend run audit:marketplace-money-pool-lane`; `npm --prefix frontend run audit:marketplace-rosca-lane`; `npm --prefix frontend run audit:marketplace-trusted-trade-lane`; `npm --prefix frontend run audit:marketplace-support-lane`; `npm --prefix frontend run audit:marketplace-records-links-lane`; `npm --prefix frontend run audit:marketplace-more-tools-lane`; `npm --prefix frontend run audit:marketplace-shop-evidence-boundary`; `npm --prefix frontend run audit:marketplace-button-inventory`; `npm --prefix frontend run audit:marketplace-actions`; `npm --prefix frontend run audit:marketplace-touch-blockers`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check`.
 - Devil's advocate: this improves QA truth, not runtime performance. It closes hidden stale-audit risk so future Marketplace changes are tested against the actual split source tree.
 ## 2026-07-29 - Local Marketplace Support Lane Lazy Split
 - Status: Local only, not pushed/deployed. Builds on local commit `2d05ddd0`; push/deploy only when the owner sends `2` or explicitly asks.
@@ -1858,7 +1912,7 @@
 - Updated audit source composition so Marketplace QA sees the lazy Support child in `audit-marketplace-actions.mjs`, `audit-marketplace-button-inventory.mjs`, `audit-marketplace-support-lane.mjs`, `audit-marketplace-touch-blockers.mjs`, `audit-mobile-tap-stability.mjs`, and `audit-button-stability.mjs`.
 - Build output after this split includes `MarketplaceSupportSection` at `19.84 kB` (`5.89 kB` gzip) and `MarketplacePage` at `192.71 kB` (`50.75 kB` gzip). The measured pre-split Marketplace chunk in this session was `207.94 kB` (`53.80 kB` gzip), so the first Marketplace route chunk drops by about `15.23 kB` uncompressed and `3.05 kB` gzip.
 - Devil's advocate: this is a real first-open reduction, but opening Support now downloads the extra Support chunk. The new child currently uses a loose `Record<string, any>` data prop to keep the extraction small and reversible; a future hardening pass should replace that with an explicit typed props contract if more Support work is planned.
-- Verification passed: `npm --prefix frontend run audit:marketplace-support-lane`; `npm --prefix frontend run audit:marketplace-button-inventory`; `npm --prefix frontend run audit:marketplace-actions`; `npm --prefix frontend run audit:marketplace-touch-blockers`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run audit:marketplace-front-package`; `npm --prefix frontend run audit:tap-stability`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `git diff --check`.
+- Verification passed: `npm --prefix frontend run audit:marketplace-support-lane`; `npm --prefix frontend run audit:marketplace-button-inventory`; `npm --prefix frontend run audit:marketplace-actions`; `npm --prefix frontend run audit:marketplace-touch-blockers`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run audit:marketplace-front-package`; `npm --prefix frontend run audit:tap-stability`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check`.
 ## CURRENT LOCAL STATE - 2026-07-29 - Community Domain real-life record value contract finish
 
 Owner trigger:
@@ -12345,7 +12399,7 @@ Published baseline:
 - No commit, push, deploy, backend change, schema change, or permission change
   has been done for this latest local slice.
 - Historical local notes below are retained for continuity, but their older
-  ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“local onlyÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â baseline statements were superseded by the `19315f90` push.
+  ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“local onlyÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â baseline statements were superseded by the `19315f90` push.
 
 Unabated truth:
 - The Receipt, Contact, and Recent packet chooser work had reduced clutter, but
@@ -39599,7 +39653,7 @@ Verification:
   `status` strings directly.
 
 Unabated truth / remaining boundary:
-- This should reduce the ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“thin column / one-word stackÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â issue in Community
+- This should reduce the ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“thin column / one-word stackÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â issue in Community
   Domain readiness cards. It does not prove every Community Domain lane is now
   screenshot-perfect because no browser/phone screenshot sweep was run in this
   slice.
@@ -60237,7 +60291,7 @@ What changed locally:
 - While optional readiness/map reads are still loading:
   - the Setup readiness card says readiness checks are loading instead of falsely saying the checklist could not load;
   - the Setup plan card says the setup plan is loading instead of falsely saying the plan could not load;
-  - the opened-lane detail area shows a read-only ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“Loading setup intelligenceÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â card instead of rendering lane panels against null optional data.
+  - the opened-lane detail area shows a read-only ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“Loading setup intelligenceÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â card instead of rendering lane panels against null optional data.
 - Once the optional reads complete, the existing lane panels render with the same state fields as before.
 - Existing write actions, owner/admin review actions, membership request actions, quote refresh, permission checks, route contracts, and navigation model were not changed.
 
@@ -70363,7 +70417,7 @@ Publish/deploy status:
 Unabated truth:
 - This is not identity reconciliation. It does not create, repair, or merge
   member IDs.
-- It is useful because it makes the ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“one person, many communities/domainsÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â
+- It is useful because it makes the ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“one person, many communities/domainsÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â
   doctrine visible without leaking other domain names or private member records.
 - The rest of this handoff file still contains repeated older sections. Treat
   this top block as the freshest state before reading older entries.
@@ -82624,7 +82678,7 @@ Complaint ledger:
 
 - Trigger:
   - continued the urgent phone drag/jumpy-button cleanup after the first
-    `scrollIntoView` pass. The ownerÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s complaint is still that phone dragging
+    `scrollIntoView` pass. The ownerÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢s complaint is still that phone dragging
     can feel glued/hanging and buttons can appear to jump after taps.
 - Changed:
   - `frontend/src/pages/DemandBoxPage.tsx`
@@ -82667,7 +82721,7 @@ Complaint ledger:
   - remaining page-local raw `window.scrollTo` is only the TrustSlip no-hash
     top restore; the other `scrollTo` hits are shared stability/clipboard
     helpers;
-  - this is a broad code-side fix for route reveal jumpiness, but the ownerÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s
+  - this is a broad code-side fix for route reveal jumpiness, but the ownerÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢s
     real Android phone still needs to verify the tactile drag improvement;
   - `npm run audit:trust-actions` still fails on older unrelated wording/route
     expectations in TrustSlip, Guarantor Inbox, Loan Summary, and Money In;
@@ -83662,7 +83716,7 @@ Complaint ledger:
     - added a low-opacity GSN page watermark and seal-style background mark to
       the active TrustSlip paper frame.
     - changed the active hero from a plain app header into a document masthead:
-      TrustSlip wordmark, 3D GSN shield icon, `GSN ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Public View`, record
+      TrustSlip wordmark, 3D GSN shield icon, `GSN ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Public View`, record
       anchor, and holder/community/GSN ID context.
     - added a truth-bound security mark driven by the actual TrustSlip state:
       `Active`, `Expired`, `Revoked`/`Frozen`, or `Pending`.
@@ -83954,7 +84008,7 @@ Complaint ledger:
     passed: 16 tests.
 - Unabated truth:
   - this repair fixes the stale Trust Passport read path. It does not prove the
-    ownerÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s live phone/browser session has the expected backend rows yet; if the
+    ownerÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢s live phone/browser session has the expected backend rows yet; if the
     live user record still does not show recorded states after this build, the
     next check should inspect the actual `/trust-slips/me` JSON for that account
     and confirm whether the save requests are returning success or errors.
@@ -94030,7 +94084,7 @@ Complaint ledger:
       - save/contribute with clearer records and fewer disputes;
       - do not start from zero; take your trust with you.
     - changed the marketplace/community line to
-      `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Community: {marketplaceName}`.
+      `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â Community: {marketplaceName}`.
     - kept the copied-message top invite URL, tap hint, sender name, personal
       note, expiry, request-access instruction, and review boundary.
   - `frontend/tools/audit-existing-community-invite-line.mjs`
@@ -94051,7 +94105,7 @@ Complaint ledger:
     - tap hint;
     - sender line;
     - six serial benefit lines;
-    - `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸Ãƒâ€šÃ‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂºÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Community: {marketplaceName}`;
+    - `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂºÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â Community: {marketplaceName}`;
     - personal note and review boundary.
 - Unabated truth:
   - this is copy-only in the shared invite message builder and source audits;
@@ -94064,7 +94118,7 @@ Complaint ledger:
     the link preview/text area is the place to tap.
 - Changed:
   - `frontend/src/lib/joinInviteMessaging.ts`
-    - adds `ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Tap the GSN Link preview above to open the invitation.` directly
+    - adds `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â Tap the GSN Link preview above to open the invitation.` directly
       after the top invite URL in copied/WhatsApp doorway messages.
     - keeps the compact link first so WhatsApp can still generate the hero
       preview card.
@@ -94086,7 +94140,7 @@ Complaint ledger:
     sandboxed Vite/esbuild process hits Windows `spawn EPERM`.
   - Confirmed generated copied-message text starts with:
     - invite URL;
-    - `ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â Tap the GSN Link preview above to open the invitation.`
+    - `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â Tap the GSN Link preview above to open the invitation.`
   - Confirmed lower copied-message instruction now says:
     - `After it opens, request access from the invitation page.`
 - Unabated truth:
@@ -94693,8 +94747,8 @@ Complaint ledger:
   - Passed `npm run build` from `frontend`.
 - Unabated truth:
   - the private GSN relationship note is not for the invitee. It is for extra
-    relationship evidence such as ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“known from Alaba market for 5 yearsÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â or ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“my
-    schoolmate and trading contact.ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â It stays out of the WhatsApp message.
+    relationship evidence such as ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“known from Alaba market for 5 yearsÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â or ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“my
+    schoolmate and trading contact.ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â It stays out of the WhatsApp message.
 
 ### Join invite messages now carry explicit sender and receiver names (2026-06-14)
 
@@ -103202,7 +103256,7 @@ Complaint ledger:
   - `npm exec -- eslint src/pages/ShopGalleryPage.tsx
     src/components/TrustGraphAdminPage.tsx` passed from `frontend`;
   - focused scan found no remaining `TrustGraph Command`, `CCI remains`,
-    `internal metric name`, `Explainability`, `ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡`, `ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢`, em-dash fallback, or
+    `internal metric name`, `Explainability`, `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡`, `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢`, em-dash fallback, or
     circled-info glyph matches in the touched public shop / duplicate Trust
     Graph files;
   - `npm run audit:shop-gallery-button-inventory` passed from `frontend`;
@@ -103770,7 +103824,7 @@ Complaint ledger:
   - focused scan found no visible emoji/mojibake scars in the touched files;
   - broad `rg` scan found no remaining visible emoji marks in
     `frontend/src/pages` or `frontend/src/components`;
-  - broad `rg` scan found no remaining `ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢`, `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢`, or `ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡` broken-character scars
+  - broad `rg` scan found no remaining `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢`, `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢`, or `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡` broken-character scars
     in `frontend/src/pages` or `frontend/src/components`;
   - `npm --prefix frontend run audit:button-stability` passed;
   - `npm --prefix frontend run audit:tap-stability` passed;
@@ -103841,8 +103895,8 @@ Complaint ledger:
 - Verification:
   - `npm exec -- eslint src/pages/SubscriptionSpotlightPage.tsx` passed from
     `frontend`;
-  - quick scan found no remaining visible `ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚Â­Ãƒâ€šÃ‚Â`, `ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦`, `ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã‚Â¡ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â`, `ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€šÃ‚Â³`, or mojibake
-    `ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢` scars in `SubscriptionSpotlightPage.tsx`;
+  - quick scan found no remaining visible `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â`, `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦`, `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â`, `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³`, or mojibake
+    `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢` scars in `SubscriptionSpotlightPage.tsx`;
   - `npm --prefix frontend run audit:marketplace-actions` passed;
   - `npm --prefix frontend run audit:button-stability` passed;
   - `npm --prefix frontend run audit:tap-stability` passed;
@@ -104542,7 +104596,7 @@ Complaint ledger:
     - Dashboard Spotlight audio labels only;
   - shortened `PayoutDetailsPage.tsx` copy so the page says what the user needs
     to do without repeating custody explanations;
-  - removed a `WorkingÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¦` mojibake/display issue in the confirm modal;
+  - removed a `WorkingÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦` mojibake/display issue in the confirm modal;
   - updated the related audits so they protect the new SVG/audio-label shape.
 - Verification:
   - frontend source emoji/mojibake scan over `frontend/src/pages`,
@@ -105141,7 +105195,7 @@ Complaint ledger:
     or shared tap-guard behavior changed.
 - Fix:
   - removed the top `ExplainToggle`, the separate `Why this matters` section,
-    and the duplicated long ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“GSN does not hold fundsÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â paragraph;
+    and the duplicated long ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“GSN does not hold fundsÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â paragraph;
   - added app-native SVG bank pictogram support to `TrustPaperIcon`;
   - rebuilt the payout form as a lighter, icon-led card with stronger contrast;
   - added a visible `UK sort code` field, normalizing six digits to
@@ -105347,7 +105401,7 @@ Complaint ledger:
     changed.
 - Fix:
   - shortened the Demand Box hero to a community-specific request prompt;
-  - replaced the old ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“how demand worksÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â explainer/stat shape with a compact
+  - replaced the old ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“how demand worksÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â explainer/stat shape with a compact
     current-state card showing mine, community, next step, and optional GSN ID;
   - made the create action span the first phone row while Return and Dashboard
     sit as stable secondary escapes;
@@ -108946,9 +109000,9 @@ Complaint ledger:
   - repair must be system-level, not only a page repaint.
 - Backend repair:
   - added a shared `_owner_public_shop_payload(...)` helper that gathers the
-    signed-in ownerÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s active shops and active public/community-visible products
+    signed-in ownerÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢s active shops and active public/community-visible products
     across the owner shop identity;
-  - `GET /marketplace/shops/me` now returns the signed-in ownerÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s shop face and
+  - `GET /marketplace/shops/me` now returns the signed-in ownerÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢s shop face and
     public block products directly from backend truth;
   - `GET /marketplace/shops/by-gmfn/{gmfn_id}` now uses the same helper, so
     authenticated GMFN lookup and owner lookup share the same product scope;
@@ -109863,7 +109917,7 @@ Complaint ledger:
   - no raw buttons or links were introduced;
   - existing stable debug IDs remain for shop shortcuts, hero actions, vault
     actions, product toggle/share, and remaining product controls;
-  - the button-stability audit now protects the softer `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â¼` close sign instead
+  - the button-stability audit now protects the softer `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼` close sign instead
     of the older red X.
 - Verification:
   - `npm run audit:button-stability` passed;
@@ -110397,10 +110451,10 @@ Complaint ledger:
   - the requested meaning of "emoji" here is compact real-life signs that use
     less space and are easier for low-literacy users to understand.
 - Frontend change:
-  - product-card video sound now shows compact speaker signs: `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€¦Ã‚Â `, `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡`, and
-    `ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“Ãƒâ€šÃ‚Â¶ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â` for the fallback retry state;
-  - product-card open/close now shows compact signs: `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‹Å“Ãƒâ€šÃ‚ÂÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¸Ãƒâ€šÃ‚Â` and `ÃƒÆ’Ã‚Â¢Ãƒâ€šÃ‚ÂÃƒâ€¦Ã¢â‚¬â„¢`;
-  - product-card share now shows `ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒâ€šÃ‚Â¤`;
+  - product-card video sound now shows compact speaker signs: `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â `, `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡`, and
+    `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¶ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â` for the fallback retry state;
+  - product-card open/close now shows compact signs: `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¹Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â` and `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚ÂÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢`;
+  - product-card share now shows `ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤`;
   - all compact sign buttons keep text `aria-label` and `title` values for
     accessibility and traceability;
   - product-card action buttons are fixed-size round controls instead of wide
@@ -114914,7 +114968,7 @@ Complaint ledger:
   - Drafts expire locally after 24 hours.
 - `CreateEntryPage` now:
   - restores the safe draft on load;
-  - shows a compact ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“Continue unfinished entryÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â card with Continue and Start
+  - shows a compact ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“Continue unfinished entryÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â card with Continue and Start
     again actions;
   - clears the draft after successful account/community handoff or when the
     user chooses Existing Member sign-in.
@@ -115482,8 +115536,8 @@ Complaint ledger:
   - `npm run build` first hit the known sandbox Vite/esbuild `spawn EPERM`,
     then passed with approved escalation.
 - Remaining truth:
-  - This changes the meaning of the TrustSlip page refresh button from ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“reload
-    current slipÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â to ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“issue a fresh public slip for a new sharing session.ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â
+  - This changes the meaning of the TrustSlip page refresh button from ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“reload
+    current slipÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â to ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“issue a fresh public slip for a new sharing session.ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â
   - Existing already-shared old QR links will still show their original issue
     date by design; new refresh produces the new QR/code/date.
 
@@ -116127,7 +116181,7 @@ Complaint ledger:
   - `npm run build` still hits sandbox Vite/esbuild `spawn EPERM` inside the
     sandbox, then passed with approved escalation.
 - Remaining truth:
-  - This is now a stronger system-level fix, but it still needs the ownerÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s
+  - This is now a stronger system-level fix, but it still needs the ownerÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢s
     real phone retest before declaring the Dashboard safe for the school test.
   - If a wrong landing remains, the next move is a runtime geometry audit that
     samples each Dashboard CTA with `elementFromPoint()` on phone viewport.
@@ -123195,7 +123249,7 @@ Marketplace picture-tools click-barrier cleanup pass.
 
 #### Open risks or unknowns
 - This is another safe checkpoint, not a final freeze.
-- Other small tool bubbles or nested action surfaces may still carry the same ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“pointer guard plus extra click stopÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â pattern and can be cleaned in later passes.
+- Other small tool bubbles or nested action surfaces may still carry the same ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“pointer guard plus extra click stopÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â pattern and can be cleaned in later passes.
 
 #### Next recommended step
 - Continue targeting nested tool surfaces where pointer/touch guards already exist but extra click-time propagation stops are still layered on top.
@@ -124901,7 +124955,7 @@ Money-out decision-lane simplification pass for `WithdrawalInstructionsPage`.
   - build passed
 
 #### Open risks or unknowns
-- `PaymentInstructionsPage.tsx` still has dense action bands and may need the same style of ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“one clear decision pointÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â simplification if live testing says Money In still feels physically heavy.
+- `PaymentInstructionsPage.tsx` still has dense action bands and may need the same style of ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“one clear decision pointÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â simplification if live testing says Money In still feels physically heavy.
 - Other routes may still keep older local button-guard patterns, but this pass was specifically about removing a duplicate route-action band rather than guard stacking.
 - Marketplace, Dashboard, Community Home, Shop-family routes, and the money-side routes should still be treated as safe checkpoints rather than final freeze states until the broader live phone testing round is complete.
 
@@ -124912,7 +124966,7 @@ Money-out decision-lane simplification pass for `WithdrawalInstructionsPage`.
   - direct withdrawal decision
   - support-backed continuation decision
   - result section after the decision
-- If Money Out now feels materially calmer, inspect `PaymentInstructionsPage.tsx` for the same ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“too many action bands for one taskÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â pattern.
+- If Money Out now feels materially calmer, inspect `PaymentInstructionsPage.tsx` for the same ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“too many action bands for one taskÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â pattern.
 
 #### Date
 2026-04-26 15:05
@@ -126307,7 +126361,7 @@ Dashboard friction cleanup plus Marketplace link-lane separation and button tigh
 #### Open risks or unknowns
 - This pass improves local/frontend behavior but does not itself fix already-issued stale join links on live Render. Fresh links still need to be generated after the invite-link backend fix is live.
 - The broader request to make other domains visually match the more institutional dashboard profile block is still open.
-- Wider shop/vault/view link auditing across every outward path is still incomplete; this pass focused on MarketplaceÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s public/tester-facing link desk first.
+- Wider shop/vault/view link auditing across every outward path is still incomplete; this pass focused on MarketplaceÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢s public/tester-facing link desk first.
 
 #### Next recommended step
 - Retest Marketplace on phone first: section toggles, join/create/public-marketplace/public-shop buttons, and WhatsApp send buttons.
@@ -126635,7 +126689,7 @@ Community Home vs Marketplace strategic separation pass, with read-only parallel
   - `One-shop owner work`
   - `Open Selected Community Marketplace`
 - Marketplace copy was tightened to reinforce that Community Home chooses the group first and Marketplace runs one-community work after that.
-- MarketplaceÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s no-community-selected state was reduced to the correct handoff surface instead of acting like a generic app launcher. It now mainly sends the user back to Community Home or Dashboard rather than offering multiple unrelated domain jumps before a community is chosen.
+- MarketplaceÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢s no-community-selected state was reduced to the correct handoff surface instead of acting like a generic app launcher. It now mainly sends the user back to Community Home or Dashboard rather than offering multiple unrelated domain jumps before a community is chosen.
 - Two read-only parallel audits agreed that the main remaining blur is wording/launcher overlap, not backend business logic confusion.
 
 #### Open risks or unknowns
@@ -128014,7 +128068,7 @@ Dashboard attention surface and shared next-action guide tap containment.
 2026-04-21
 
 #### Workstream
-Install reusable ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“What do you want to do next?ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â guide on Community Home and
+Install reusable ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“What do you want to do next?ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â guide on Community Home and
 Dashboard.
 
 #### Routes/screens affected
@@ -128031,8 +128085,8 @@ Dashboard.
 - `docs/HANDOFF_NOTES.md`
 
 #### Confirmed facts
-- Product owner asked to bring the Marketplace-style ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“What do you want to do
-  next?ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â helper into Community Home and Dashboard.
+- Product owner asked to bring the Marketplace-style ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“What do you want to do
+  next?ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â helper into Community Home and Dashboard.
 - Added a shared route-neutral `NextActionGuide` component with collapsed/open
   state, simple keyword matching, search input, quick choices, and tap-event
   containment.
@@ -131102,7 +131156,7 @@ Dashboard branding pass corrected to the real visual benchmark:
   dashboard itself, what is wrong and the first action to take in simple
   language before the user opens the follow-through page.
 - The shared guidance module was then tightened one step further to follow the
-  ownerÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s exact pattern for low-literacy / low-time users: `Problem`, `Why it
+  ownerÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢s exact pattern for low-literacy / low-time users: `Problem`, `Why it
   matters`, and `Do this`. The dashboard helper now shows those three parts on
   the card itself, and the shared translator also softens some technical words
   from trust/identity guidance into simpler language before the user sees them.
@@ -133614,8 +133668,8 @@ GSN-branded invite composer and invite-entry continuity.
   - It did not stop the final click event from bubbling into surrounding cards,
     drawers, overlays, or parent link-like blocks.
   - That can make a correctly tapped link still trigger a parent surface after
-    the link receives the tap, which matches the reported ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“button falls
-    somewhere elseÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â behaviour.
+    the link receives the tap, which matches the reported ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“button falls
+    somewhere elseÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â behaviour.
 - Updated `frontend/src/components/OriginLink.tsx`:
   - Link and external-anchor clicks now stop propagation before calling their
     own supplied `onClick` handler.
@@ -135201,12 +135255,12 @@ GSN-branded invite composer and invite-entry continuity.
   - Finance utility links and support CTAs now consistently use the
     `Loans & Support` label.
   - Loan readiness, suggestions, workbench, summary, repayment, and revenue
-    allocation now use the same ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“This page is one step inside Loans & SupportÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â
+    allocation now use the same ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“This page is one step inside Loans & SupportÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â
     framing or equivalent route-local support wording.
   - Cross-links from loan pages back into finance were softened from action
     language like `Open Finance` to evidence language like `See this in
     Finance` where appropriate.
-  - Remaining ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“support continuation routesÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â wording was normalized into
+  - Remaining ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“support continuation routesÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â wording was normalized into
     `Next support routes` so the loans stack no longer mixes three route-label
     styles.
 - Mobile polish / button tightening:
@@ -135494,7 +135548,7 @@ GSN-branded invite composer and invite-entry continuity.
     - masked outward link codes / labels
     - short GSN share-message text
   - Join-link card now shows a humanized label like:
-    - `Secure GSN join link for <community> ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¢ code <shortened>`
+    - `Secure GSN join link for <community> ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ code <shortened>`
   - Create-link area now shows a short message preview and a masked founder
     entry label.
   - Public marketplace face and public shop face now show short masked labels
@@ -136169,7 +136223,7 @@ GSN-branded invite composer and invite-entry continuity.
 - Important remaining product note:
   - the lane is now steadier and more app-led, but the user-facing copy can
     still be simplified further if the product owner wants an even stronger
-    ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“the app leads every next stepÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â tone before freezing this route
+    ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“the app leads every next stepÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â tone before freezing this route
 ### Public shop / gallery now reads through a true public route (2026-04-25)
 
 - Product-owner concern:
@@ -138695,11 +138749,11 @@ GSN-branded invite composer and invite-entry continuity.
       - `created_at`
 - Verification:
   - `python -m pytest tests/test_clan_members.py tests/test_clan_pool.py -q`
-    ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ `7 passed`
+    ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ `7 passed`
   - `python -m pytest -q tests`
-    ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ `94 passed`
+    ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ `94 passed`
   - `python -m py_compile app/api/routes/clans.py tests/conftest.py tests/test_join_requests.py`
-    ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ passed
+    ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ passed
 - Routes impacted:
   - backend member-management + pool-adjustment routes listed above
 - Shared logic impact:
@@ -138739,9 +138793,9 @@ GSN-branded invite composer and invite-entry continuity.
       institutional blue baseline
 - Verification:
   - `npm exec -- eslint src/styles/gmfnBrand.ts src/lib/institutionalSurface.ts src/ui/styles.ts src/components/WorkspaceSettingsBridge.tsx src/components/PageTopNav.tsx`
-    ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ passed
+    ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ passed
   - `npm run build`
-    ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ passed
+    ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ passed
 - Routes / screen families most affected:
   - app shell / layout-driven surfaces using `gmfnBrand` and the shared page
     wash
@@ -140266,7 +140320,7 @@ GSN-branded invite composer and invite-entry continuity.
   - `python -m py_compile gmfn_backend\app\api\routes\marketplace.py gmfn_backend\app\services\vault_access_service.py` passed.
   - targeted scans found no remaining plain `OriginLink to="/app/marketplace"`, no plain `navigateWithOrigin(navigate, "/app/marketplace")`, no `publicFrontendUrl(location.pathname)` shop-share pattern, and consistent Vault `api_view_url` values.
 - Remaining risks:
-  - The repo still contains two invite systems (`/invites` direct membership and `/clans` join requests). This pass kept todayÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s Marketplace/community join links on the richer `/clans` path, but merging or retiring `/invites` requires an explicit product/governance decision.
+  - The repo still contains two invite systems (`/invites` direct membership and `/clans` join requests). This pass kept todayÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢s Marketplace/community join links on the richer `/clans` path, but merging or retiring `/invites` requires an explicit product/governance decision.
   - Some global nav/legacy shortcuts remain intentionally context-agnostic where no concrete community row is being selected.
 
 ### Borrowing/support route-context audit (2026-05-08)
@@ -141088,12 +141142,12 @@ GSN-branded invite composer and invite-entry continuity.
   - repeated pending requests return `pending_request_exists`;
   - approval for existing identities creates membership and does not create an activation package.
 - Updated `frontend/src/pages/JoinEntryPage.tsx`:
-  - logged-in users with an existing GMFN ID see ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“Join this community with your existing GMFN identityÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â and submit the invite as an existing-user join request;
-  - logged-out users now see the explicit branch ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“I already have a GMFN IDÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â versus ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“I am new to GSNÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â;
+  - logged-in users with an existing GMFN ID see ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“Join this community with your existing GMFN identityÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â and submit the invite as an existing-user join request;
+  - logged-out users now see the explicit branch ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“I already have a GMFN IDÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â versus ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“I am new to GSNÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â;
   - the new-person form is only available to logged-out users who choose the new-member path;
   - logged-in users with unclear identity state are blocked from falling through to new-person signup copy.
 - Updated `gmfn_backend/app/api/routes/clans.py` direct `/clans/{clan_id}/join` route:
-  - reuses/ensures the authenticated userÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢s GMFN ID before creating membership;
+  - reuses/ensures the authenticated userÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢s GMFN ID before creating membership;
   - returns `joined_successfully` with `user_id`, `gmfn_id`, `existing_identity`, and `identity_reused`;
   - repeated clicks now return `already_member` with the same identity/membership instead of a hard duplicate-membership error;
   - logs direct existing-user join and already-member outcomes through `log_trust_event`.
@@ -159845,7 +159899,7 @@ Deployment:
 - Frontend change: the Community Domain denied-access recovery panel now shows the ordinary applicant surface as `My requests` with a compact visible status pill such as `Waiting for admin`, `Needs changes`, `Approved`, or `Resolved`. The main message no longer leads with internal review IDs.
 - Progressive disclosure change: applicant request history is now behind a `View request history` toggle and resets closed when the latest request changes. The history remains available for traceability but no longer crowds the first recovery view.
 - Guardrail change: updated `frontend/tools/audit-community-domain-product-contracts.mjs` so the Community Domain contract cages the simpler member-facing request state and the hidden request-history drawer.
-- Verification passed: `node --check frontend/tools/audit-community-domain-product-contracts.mjs`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `git diff --check`.
+- Verification passed: `node --check frontend/tools/audit-community-domain-product-contracts.mjs`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check`.
 - Devil's advocate: this is a clarity win for applicants, not a backend/governance simplification and not a megabyte reduction. The heavy review machinery still exists and is still needed for Community Domain governance; we are just exposing less of it to ordinary users at once.
 
 ## 2026-08-24 - Local Community Domain Governance Focus Split
@@ -159853,7 +159907,7 @@ Deployment:
 - Continued the Community Domain simplification/performance round after the services and structure focus splits.
 - Frontend change: split the Governance lane selector/report/record/access wrapper out of `frontend/src/pages/CommunityDomainDashboardPage.tsx` into `frontend/src/pages/communityDomainDashboard/GovernanceFocusPanel.tsx`. The parent route still owns governance state, access-review decisions, report data, and real-life record mutations; the lazy wrapper owns the visible governance stage/job controls and loads the existing readiness, report, real-life record, and access-request panels only after Governance opens.
 - Guardrail change: updated `frontend/tools/audit-community-domain-product-contracts.mjs` so the audit expands the governance wrapper and still verifies the default-hidden governance stages, access-request gating, raw readiness-map handoff, and parent-owned access-review actions.
-- Verification passed: `npm exec -- tsc -b --pretty false`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `git diff --check`.
+- Verification passed: `npm exec -- tsc -b --pretty false`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check`.
 - Build truth: `CommunityDomainDashboardPage` dropped from the previous `157.29 kB` / `41.78 kB gzip` to `151.28 kB` / `40.66 kB gzip`. New lazy chunk: `GovernanceFocusPanel` at `9.50 kB` / `2.79 kB gzip`. This is a real first-load reduction, but the route is still large; the next practical split is another lane wrapper or moving remaining setup/billing selector shells out of the parent.
 - Devil's advocate: this does not remove any governance complexity from the product. It hides it until needed and moves code out of the first route chunk. Real user simplicity still depends on keeping the first Governance view as readiness-first and not adding more exposed admin buttons to the command surface.
 
@@ -159862,7 +159916,7 @@ Deployment:
 - Continued the Community Domain route-weight reduction after Governance focus split commit `52889f53`.
 - Frontend change: split the Billing lane selector/readiness shell out of `frontend/src/pages/CommunityDomainDashboardPage.tsx` into `frontend/src/pages/communityDomainDashboard/BillingFocusPanel.tsx`. The parent route still owns billing state, payment/account API actions, package quote data, policy context, and raw subscription/capacity maps; the lazy wrapper owns billing task catalogues, selected billing option calculation, and readiness rendering.
 - Guardrail change: updated `frontend/tools/audit-community-domain-product-contracts.mjs` so the audit expands the billing wrapper and still verifies parent-owned billing data/actions, hidden billing task selectors, payment-step catalogues, policy context handoff, and read-only readiness maps.
-- Verification passed: `npm exec -- tsc -b --pretty false`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `git diff --check`.
+- Verification passed: `npm exec -- tsc -b --pretty false`; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check`.
 - Build truth: `CommunityDomainDashboardPage` dropped from the previous `151.28 kB` / `40.66 kB gzip` to `148.39 kB` / `39.80 kB gzip`. New lazy chunk: `BillingFocusPanel` at `4.45 kB` / `1.68 kB gzip`.
 - Devil's advocate: this is another real first-load reduction, but it is still incremental. The route remains heavy because setup and other route-owned orchestration still live in the dashboard page. Do not claim megabyte-level app-size reduction from these splits alone.
 
@@ -159872,7 +159926,7 @@ Deployment:
 - Frontend change: Community Home now shows `Post Notice` as the first bulletin control and adds a `Bulletin settings` toggle. The Members/Admin posting policy controls, `50 words` guardrail, and older notice rows are hidden until that settings panel is opened. The panel resets closed when the selected community changes.
 - Backend change: meeting-planning notices returned by `GET /community-notices` now include `expires_at` equal to their scheduled time and are filtered out after the scheduled time passes, matching the live-board behavior already used by ordinary community notices.
 - Guardrail change: Community Home button inventory now expects the new settings toggle and cages the admin policy controls inside the settings panel instead of on the first bulletin surface.
-- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\community_notices.py`; `python -m pytest gmfn_backend\tests\test_community_notices.py -q`; `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:community-home-phone-buttons`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `git diff --check`.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\community_notices.py`; `python -m pytest gmfn_backend\tests\test_community_notices.py -q`; `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:community-home-phone-buttons`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run lint`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check`.
 - Devil's advocate: Yes/Maybe/No was already present only for meeting-planning notices; ordinary official notices still do not show attendance buttons because that would blur simple announcements with meeting/event planning. This slice does not add a future start-date scheduler; ordinary notices start when posted and expire from their selected end/active-board policy.
 ## 2026-08-24 - Local Community Bulletin Visual Hierarchy Polish
 - Status: Local only, not pushed/deployed.
@@ -160131,3 +160185,239 @@ Operational note:
 - Product boundary: this is lightweight local due-date guidance, not automated WhatsApp reading, legal evidence, payroll/task-management authority, or a full CRM.
 - Guardrail change: `frontend/tools/audit-dashboard-button-inventory.mjs` now cages the due-intelligence helper and visible due label/detail on commitment cards. Verification passed: `npm --prefix frontend run audit:dashboard-button-inventory`; targeted frontend eslint; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check` on scoped files.
 - Devil truth: this does not notify users by push/email yet. It makes the dashboard list visibly intelligent when the user opens it.
+## 2026-09-10 - GSN Pilot Product Feature Pack Draft
+
+- Status: Draft document created; not committed/pushed/deployed in this slice.
+- Owner trigger: owner asked to move from a raw feature list into a public pack explaining GSN products, what they do, and how churches, schools, marketplaces and diaspora associations can use them without exposing sensitive implementation details.
+- New document: `docs/GSN_PILOT_PRODUCT_FEATURE_PACK_2026-09-10.md`.
+- Supporting internal structure: `docs/GSN_PRODUCT_ENGINE_MAP_FOR_PILOT_FEATURE_PACK_2026-09-10.md` maps GSN engines to product fruits before public packaging.
+- Products covered: Online Member ID Card, Instant Verification, TrustSlip, Trust Passport, Community/Committee Bulletin, Focus Commitments, Meeting Pack/Monthly Management Pack, Demand Box/Support Tracker, Community Records, Marketplace/Shop, Spotlight/Repost, ROSCA/Contribution Responsibilities, and Community Domain.
+- Organisation fit covered: churches, schools/colleges, marketplaces, diaspora associations and charities/support bodies.
+- Boundary: the pack explains what GSN can help a community do, not backend architecture, trust formulas, regulated finance, legal minutes, government ID, or endorsement claims.
+- Devil truth: this draft is clearer than a feature dump, but it still needs tightening into a short email-ready PDF/Word pack before sending to pilot contacts.
+
+## 2026-09-10 - Community Bulletin traffic-light announcement numbers
+
+- Status: Pushed to `main` and deployed on 2026-09-10 in frontend commit `c6eb64ca78afb7e4dfe85ac3ac941eb7eb8a9603`; Render deploy `dep-dahalf3l550s73e9kvi0` reached live.
+- Owner trigger: owner asked for the Committee/Community Bulletin numbered announcement controls to stop using the same dark colour and show green/yellow/red intelligence at a glance.
+- Route/screen affected: `/app/community` Community Home, Community Bulletin active-announcement selector.
+- Behaviour: each numbered announcement button now derives its colour from the bulletin's existing display date logic. Green means no set date or more than three days away; yellow means within 72 hours; red means due tomorrow, due today, or overdue.
+- Guardrail: `frontend/tools/audit-community-home-button-inventory.mjs` now cages the traffic-light helper and verifies selector numbers use each announcement's urgency colour, including unselected announcements.
+- Product boundary: this is visual due-date guidance only. It does not send push reminders, read WhatsApp, create legal evidence, or change posting/approval/governance rules.
+
+## 2026-09-10 - Community Pulse summary lens added inside Bulletin
+
+- Status: Pushed to `main` and deployed on 2026-09-10 in frontend commit `c6eb64ca78afb7e4dfe85ac3ac941eb7eb8a9603`; Render deploy `dep-dahalf3l550s73e9kvi0` reached live.
+- Owner trigger: owner approved a small intelligence layer but challenged that it must not duplicate the existing Action Inbox / attention engine or scatter attention across more screens.
+- Route/screen affected: `/app/community` Community Home, Community Bulletin.
+- Behaviour: a compact `Community pulse` block now appears inside the live Bulletin when active notices exist. It summarizes red/yellow/green announcement counts, personal response/acknowledgement needs, and pending admin review count, then routes the user back to the existing selected Bulletin notice through one `Open urgent` / `Open due soon` / `Open notice` action.
+- Guardrail: `frontend/tools/audit-community-home-button-inventory.mjs` now cages the Pulse data source, placement, and single route-back action so it stays a summary lens rather than a second inbox or new screen.
+- Product boundary: Action Inbox remains the task/notification engine. Community Pulse is a front-page reading of the Bulletin only; it does not send notifications, create approvals, read WhatsApp, or manage tasks separately.
+
+## 2026-09-10 - Market Wisdom reads Focus Commitment pressure
+
+- Status: Pushed to `main` and deployed on 2026-09-10 in frontend commit `c6eb64ca78afb7e4dfe85ac3ac941eb7eb8a9603`; Render deploy `dep-dahalf3l550s73e9kvi0` reached live.
+- Owner trigger: owner asked to continue the small intelligence layer without scattering attention across more screens and specifically mentioned using what already exists, including Market Wisdom.
+- Route/screen affected: `/app/dashboard` Dashboard, existing Market Wisdom card and `Now` signal only.
+- Behaviour: Market Wisdom now treats slipped Focus Commitments as `Commitment pressure` and due-for-review commitments as `Commitment watch`. The visible `Now` line tells the user to replan/complete or check the promise before taking the next move.
+- Guardrail: `frontend/tools/audit-dashboard-button-inventory.mjs` now cages the Market Wisdom + Focus Commitment signal bridge and the guide seed linkage.
+- Product boundary: no new screen, no new button, no notification routing, no CRM/task-manager expansion, and no change to the frozen Market Wisdom presentation or interaction model. Focus Commitments remains the place where promise work is managed.
+
+## 2026-09-10 - Attention Spine MVP completed locally
+
+- Status: Pushed to `main` and deployed on 2026-09-10 in frontend commit `1b37269f31bee7313e842c42dd728ac4932f3d6d`; GitHub Actions run `34483298778` completed successfully; Render frontend deploy `dep-dahb30p5efls738p5cc0` reached live at `https://gmfn-frontend.onrender.com`. API/backend was not redeployed (`deploy_api=false`) because this was frontend/spec only.
+- Owner trigger: Owner asked to complete the architecture where Action Inbox, Community Pulse, Market Wisdom, Focus Commitments, and Community Bulletin stay distinct but read through one intelligence spine.
+- Shared frontend helper added: `frontend/src/lib/attentionSpine.ts` defines `AttentionSpineSignal`, red/yellow/green urgency, signal source/scope/kind, date urgency conversion, and `buildAttentionSpineSummary`.
+- Community Home change: `frontend/src/pages/CommunityHomePage.tsx` now builds Community Pulse from Attention Spine signals covering bulletin notice timing, meeting/notice responses, acknowledgements, and pending admin-review pressure. Pulse can open the selected notice in place or route admin review to the existing Action Inbox; it does not create a new screen or own records.
+- Dashboard change: `frontend/src/pages/DashboardPage.tsx` now shows compact `My Pulse` before `What needs your attention`, reading Action Inbox, Focus Commitments/ROSCA-linked responsibilities, and Market Wisdom through the shared signal summary. It has one primary route and one optional secondary route only.
+- Audit changes: `frontend/tools/audit-community-home-button-inventory.mjs` and `frontend/tools/audit-dashboard-button-inventory.mjs` intentionally update action counts and cage the shared Attention Spine usage plus the no-second-inbox boundary.
+- Spec change: `docs/SCREEN_SPECS.md` now records Dashboard `My Pulse` as a summary lens, not an inbox or manager.
+- Verification passed: `npm exec -- eslint src/lib/attentionSpine.ts src/pages/CommunityHomePage.tsx src/pages/DashboardPage.tsx tools/audit-community-home-button-inventory.mjs tools/audit-dashboard-button-inventory.mjs`; `npm --prefix frontend run audit:community-home-button-inventory`; `npm --prefix frontend run audit:dashboard-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`.
+- Devil truth: this completes the frontend Attention Spine MVP. It does not yet create backend persisted signal rows, web-push scheduling, server-side meeting-pack signals, or CRM integrations. Those need separate backend/governance design before they can be called complete infrastructure.
+
+## 2026-09-11 - Marketplace Attention Analytics Phase 1
+
+- Status: Pushed to `main` and deployed on 2026-09-11 in commit `4b495e8292638863fe385a0c7a8856604747c842`; Backend Tests run `34567120750` passed; Render workflow run `34567282170` completed successfully; frontend deploy `dep-dahpbmvd4mas73cej8f0` and API deploy `dep-dahpcr9594qs7380vtsg` reached live.
+- Owner trigger: owner asked to strengthen marketplace testing before public pilot by showing sellers how many people visit a shop, open products, see a spotlight, and tap contact actions, while keeping the truth that visits are not sales.
+- Backend model/migration: added `MarketplaceAttentionEvent` and Alembic revision `20260911_market_attention` for `marketplace_attention_events`. It records shop/product/broadcast/community ids, optional signed-in viewer id, daily anonymous hash, source/source path, and a dedupe key. It does not store raw IP addresses.
+- Backend routes added: `POST /marketplace/analytics/attention` records public-safe attention events for `shop_visit`, `product_open`, `spotlight_impression`, `spotlight_shop_click`, and `contact_tap`. `GET /marketplace/analytics/shops/{shop_id}/summary` is owner/admin-only and returns today, last-7-days, requested-period counts, top product opens, and active spotlight possible member reach.
+- Frontend routes affected: Public Shop Gallery now records shop visits, product opens, contact taps, and spotlight impressions/clicks. Owner Shop Control `Shop summary` now shows last-7-day Visitors, Product opens, Contact taps, Spotlight seen, and possible spotlight reach.
+- Attribution boundary: spotlight impressions are only sent when the spotlight payload exposes its real `shop_id`; the public shop page does not credit the current shop for another seller's spotlight rotation.
+- Product boundary: visitors, views, product opens, spotlight impressions, and contact taps are attention signals only. They are not buyers, sales, payment evidence, verification, endorsement, or trust score.
+- Verification passed: `python -m py_compile gmfn_backend\app\db\models.py gmfn_backend\app\api\routes\marketplace_analytics.py gmfn_backend\app\api\router.py gmfn_backend\tests\test_marketplace_public_shop.py gmfn_backend\alembic\versions\20260911_add_marketplace_attention_events.py`; `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py::test_marketplace_attention_records_public_views_and_owner_summary gmfn_backend\tests\test_marketplace_public_shop.py::test_marketplace_attention_summary_is_owner_only`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze`; `git diff --check`. Live verification: OpenAPI exposes `/marketplace/analytics/attention` and `/marketplace/analytics/shops/{shop_id}/summary` on `https://gmfn-api.onrender.com`.
+- Devil truth: this is enough to start marketplace testing with honest attention numbers, but it is not a conversion funnel yet. There is still no purchase/order ledger, no sales conversion calculation, no paid Spotlight frequency scheduler, no cross-community repost reach breakdown, and no seller-facing per-product chart beyond top product opens.
+
+## 2026-09-11 - Marketplace Spotlight paid rotation weighting (local)
+- Added explicit backend Spotlight rotation metadata: paid rows now return rotation_weight=3 and standard/free rows return rotation_weight=1.
+- Updated /marketplace/broadcasts ordering so active paid Spotlights rank before newer free Spotlights for signed-in Dashboard/Public Shop feeds.
+- Added shared frontend Spotlight rotation queue helper and wired Dashboard + Public Shop carousels to repeat paid rows by weight while keeping the same feed source.
+- Added backend regression test and Spotlight audit checks for paid-first ordering, rotation metadata, and weighted frontend queues.
+- Verified: py_compile marketplace route/test, targeted pytest x3, npm --prefix frontend run audit:spotlight-system-feed, npm --prefix frontend run audit:protected-button-freeze, npm --prefix frontend run build.
+- Boundary: this is not full purchased 5-minute/10-minute interval scheduling; that still needs schema/payment tier fields before it can be represented truthfully.
+
+
+## 2026-09-11 - Shop analytics board and follower audience signal (local)
+
+- Status: Local implementation complete and verified; not pushed/deployed in this slice because publishing is batch-frozen.
+- Owner trigger: owner asked for Shop Control analytics to become a deeper board like the supplied mockup, for Shop Gallery to provide an owner-only analytics shortcut, and for follower audience/notifications to be visible in the analytics picture.
+- Backend route affected: `GET /marketplace/analytics/shops/{shop_id}/summary` now returns seven-day `daily_activity` rows and a `followers` object with `follower_count` / `followers_count` plus boundary wording.
+- Existing notification behavior verified: followed-shop product creation already creates `marketplace.shop.product_created` Action Inbox notices for visible followers; shop spotlight/update publishing already calls the same follower notification helper for `marketplace.shop.spotlight_created` / `marketplace.shop.broadcast_created`.
+- Frontend routes affected: `/app/shop-control#shop-control-counts` now shows a richer owner analytics board with key metrics, followers, funnel, visitor chart, inventory visibility, spotlight performance, and Market Wisdom-style reading. Public Shop Gallery now shows an owner-only `Shop analytics` shortcut back to Shop Control; visitors do not see it.
+- Product boundary: followers are repeat audience and notification audience. They are not buyers, sales, payment proof, verification, or a trust score. Immediate notification means the notice row is created during posting; device push delivery still depends on push/browser permission infrastructure.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\marketplace_analytics.py gmfn_backend\tests\test_marketplace_public_shop.py`; targeted pytest x3 including follower notification regression; `npm --prefix frontend run build`; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:spotlight-system-feed`; `npm --prefix frontend run audit:protected-button-freeze`; targeted eslint; scoped `git diff --check`.
+
+## 2026-09-11 - Shop Control Market Intelligence Phase 1 (local)
+
+- Status: Local implementation complete and verified; not pushed/deployed because publishing is batch-frozen.
+- Owner trigger: owner supplied the Shop Control + Market Wisdom developer brief and asked to start the Market Intelligence layer while keeping Market Wisdom as the broader guidance pack.
+- Product decision implemented: Shop Control analytics now includes an owner-facing `Market Intelligence` card that explains the current data through Observation, Interpretation, Confidence, Recheck point, recommended actions, and a `Why this advice?` disclosure.
+- Shared frontend helper: `frontend/src/lib/shopAnalyticsWisdom.ts` now returns deterministic diagnosis codes, confidence, evidence, possible explanations, action labels, and review timing. The 18 potential audience / 2 seen / 1 visitor / 0 opens / 0 contact case now stays in `GATHERING_DATA` with low confidence and says distribution is still low; conversion cannot yet be judged.
+- Frontend route affected: `/app/shop-control#shop-control-counts` only. Dashboard Market Wisdom presentation and interaction model remain untouched.
+- Guardrail: `frontend/tools/audit-spotlight-system-feed.mjs` now cages the low-sample `GATHERING_DATA` rule and the visible Market Intelligence explainability panel.
+- Cleanup caught by audit: replaced a raw `<summary>` with `StableDisclosureSummary` and corrected a corrupted unlimited-views fallback to `Unlimited`.
+- Boundary: this does not yet implement tracked share links, campaign/source attribution, recommendation_actioned storage, seller outcome recording, timing-history comparison, or Demand Box matching. Those need separate backend event-contract work.
+- Verification passed: `npm --prefix frontend run build`; targeted eslint; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:spotlight-system-feed`; `npm --prefix frontend run audit:protected-button-freeze`; backend py_compile; targeted pytest x3 including follower notification regression; scoped `git diff --check`.
+
+## 2026-09-11 - Shop Market Intelligence shared-engine bridge (local)
+
+- Status: Local implementation complete and verified; not pushed/deployed because publishing is batch-frozen.
+- Owner trigger: owner asked to check existing engines and avoid duplicating Market Wisdom, Attention Spine, Demand Box, Spotlight, or shop analytics engines.
+- Product decision implemented: Shop Control `Market Intelligence` remains a seller-facing interpretation layer, but its priority/signal packaging now goes through the shared `frontend/src/lib/attentionSpine.ts` engine instead of introducing a new shop-only priority engine.
+- Shared frontend helper: `frontend/src/lib/shopAnalyticsWisdom.ts` now exports `buildShopMarketIntelligenceSignal` and `buildShopMarketIntelligenceSummary`; the summary calls `buildAttentionSpineSummary` and marks the configured bridge with `meta.engine = "attention_spine_configured_market_intelligence"`.
+- Frontend route affected: `/app/shop-control#shop-control-counts` shows the Attention Spine headline chip inside the owner-only Market Intelligence card.
+- Guardrail: `frontend/tools/audit-spotlight-system-feed.mjs` now cages the no-duplicate-engine bridge by requiring the Shop Market Intelligence signal to use `source: "market_wisdom"` and `buildAttentionSpineSummary`.
+- Boundary: Demand Box remains its own marketplace lane/page. This slice does not create Demand Box matching, purchase/sales ledgers, tracked share attribution, or persisted backend Attention Spine signals.
+- Verification passed: `npm --prefix frontend run build`; targeted eslint; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:spotlight-system-feed`; `npm --prefix frontend run audit:protected-button-freeze`; backend py_compile; targeted pytest x3 including follower notification regression; scoped `git diff --check`.
+## 2026-09-11 - Shop Market Intelligence Demand Box context bridge (local)
+
+- Status: Local implementation complete and verified; not pushed/deployed because publishing is batch-frozen.
+- Owner trigger: owner asked to continue while checking existing engines first and avoiding duplicate engines.
+- Product decision implemented: Shop Control Market Intelligence now reads open community Demand Box requests through the existing `listMarketplaceRequests` API and shows them as `Demand Box context` inside the owner-only analytics board.
+- Frontend route affected: `/app/shop-control#shop-control-counts`; one `Open Demand Box` link routes to the existing `/app/demand-box` page through the existing CTA route map.
+- Guardrail: `frontend/tools/audit-spotlight-system-feed.mjs` now cages the Demand Box bridge as context only, and `frontend/tools/audit-shop-control-button-inventory.mjs` intentionally updates the Shop Control StableCtaLink count from 7 to 8.
+- Boundary: this is not buyer matching, sales proof, purchase intent, or a new Demand Box engine. It is a seller-facing reading of existing open marketplace requests so the seller can decide whether the community is asking for something relevant.
+## 2026-09-11 - Shop Market Intelligence Demand Box soft-overlap hints (local)
+
+- Status: Local implementation complete and verified; not pushed/deployed because publishing is batch-frozen.
+- Owner trigger: owner continued the Market Intelligence work while warning not to duplicate engines.
+- Product decision implemented: Shop Control now compares open Demand Box request words with visible shop product words only as a soft context hint. It may show `possible overlap`, but never calls this a match, buyer, conversion, or purchase intent.
+- Frontend route affected: `/app/shop-control#shop-control-counts`, inside the owner-only Market Intelligence card.
+- Existing engine reused: Demand Box remains the source of request records through `listMarketplaceRequests`; Market Intelligence remains the seller interpretation layer; the actual action routes back to `/app/demand-box`.
+- Guardrail: `frontend/tools/audit-spotlight-system-feed.mjs` now cages the stop-word/token helper and requires the wording `possible overlap only` / `possible overlap:` so this does not silently become a fake matching engine.
+- Verification passed: `npm --prefix frontend run build`; targeted eslint; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:spotlight-system-feed`; `npm --prefix frontend run audit:protected-button-freeze`; scoped `git diff --check`.
+
+## Shop Analytics Attention Source Breakdown (local)
+- Added an owner analytics source breakdown to `GET /marketplace/analytics/shops/{shop_id}/summary` in `gmfn_backend/app/api/routes/marketplace_analytics.py` using the existing `MarketplaceAttentionEvent.source` and `event_type` fields. This is configuration of the existing attention engine, not a new traffic engine.
+- The summary returns `source_breakdown` rows with source label, total events, shop visits, product opens, spotlight impressions, spotlight shop clicks, contact taps, and the boundary text: `Source counts show where attention was recorded, not who bought or paid.`
+- `frontend/src/pages/ShopControlPage.tsx` now shows these rows in the owner-only Shop Control analytics board as `Traffic sources`, so sellers can see whether attention came through the shop gallery, product card, spotlight feed, or contact actions.
+- `gmfn_backend/tests/test_marketplace_public_shop.py` locks the source counts for public shop, spotlight, and product/contact attention events.
+- `frontend/tools/audit-spotlight-system-feed.mjs` now cages the source-breakdown API, UI surface, and test assertions.
+- Truth boundary: this does not yet count outbound link sends, repost campaign lineage, or confirmed purchases. Those require a future share/campaign attribution contract, not reuse of raw source labels alone.
+- Verified locally with `python -m py_compile gmfn_backend\app\api\routes\marketplace_analytics.py gmfn_backend\tests\test_marketplace_public_shop.py`, focused `pytest`, `npm --prefix frontend run build`, targeted eslint, `audit:shop-control-button-inventory`, `audit:spotlight-system-feed`, and `audit:protected-button-freeze`.
+
+## Shop Follower Immediate Notification Push Bridge (local)
+- Reused the existing Action Inbox + Web Push engine for shop follower notices instead of creating a separate shop-notification engine.
+- `gmfn_backend/app/api/routes/marketplace.py` now has `_notify_shop_followers` return the created `Notification` rows. Product create, product approval publish, major public offer update, network spotlight, and shop broadcast/spotlight publishing now commit those rows and then call the existing `dispatch_web_push_for_notifications` batch helper.
+- Shop follower notice copy now says the shop `posted` or `updated` and the action label is `Open post`; action URLs still carry the existing shop/product/broadcast route params such as `product_id=` and `broadcast_id=`.
+- `gmfn_backend/app/services/web_push_service.py` now allows `marketplace.shop.product_created`, `marketplace.shop.product_updated`, `marketplace.shop.spotlight_created`, and `marketplace.shop.broadcast_created` through the existing web-push allow-list.
+- Tests updated in `gmfn_backend/tests/test_marketplace_public_shop.py` and `gmfn_backend/tests/test_web_push_notifications.py`; `frontend/tools/audit-spotlight-system-feed.mjs` cages the bridge so follower notices stay tied to the existing push helper.
+- Truth boundary: followers always get an Action Inbox row when visible and eligible. Phone/browser push is best effort and only works when Web Push is configured, the device/browser supports it, the user granted permission, and an active subscription exists.
+- Verified locally with `python -m py_compile gmfn_backend\app\api\routes\marketplace.py gmfn_backend\app\services\web_push_service.py gmfn_backend\tests\test_marketplace_public_shop.py gmfn_backend\tests\test_web_push_notifications.py`, focused pytest for follower notification creation, focused pytest for shop follower web-push allow-list, `npm --prefix frontend run audit:spotlight-system-feed`, and `npm --prefix frontend run audit:protected-button-freeze`.
+
+## Shop Analytics Follower Notice Counts (local)
+- Added `follower_notifications` to the owner-only shop analytics summary in `gmfn_backend/app/api/routes/marketplace_analytics.py` using the existing `notifications` table and shop follower notification kinds. This is a reporting layer over the existing Action Inbox/Web Push engine, not a new notification engine.
+- The summary returns last-7-days count, year-to-date count, last sent timestamp, by-kind rows, delivery wording, boundary wording, and a count-method label.
+- `frontend/src/pages/ShopControlPage.tsx` now shows `Follower notices` in Key Metrics and a `Follower notice trail` under Traffic sources, separating follower audience size from actual follower notices sent.
+- Guardrail: `frontend/tools/audit-spotlight-system-feed.mjs` now cages the backend `follower_notifications` summary, the UI card/trail, and the backend test assertions.
+- Truth boundary: follower notice counts are distribution records. They do not prove views, purchases, buyer intent, push delivery, or phone notification receipt. The count is based on existing notification rows filtered by shop follower notice kind and public shop action route.
+- Verified locally with `python -m py_compile gmfn_backend\app\api\routes\marketplace_analytics.py gmfn_backend\tests\test_marketplace_public_shop.py`, focused owner analytics pytest, `npm --prefix frontend run build`, targeted eslint, `audit:shop-control-button-inventory`, `audit:spotlight-system-feed`, and `audit:protected-button-freeze`.
+
+## 2026-09-11 - Shop Analytics Share Attribution Foundation (local)
+
+- Status: Local implementation complete and verified; not pushed/deployed because publishing is batch-frozen.
+- Owner trigger: owner asked whether the analytics should record links sent out, follower counts/notices, and the difference between traffic, distribution, and conversion.
+- Existing engine reused: outbound shop/product copy and social-share actions now record `share_action` through the existing marketplace attention event endpoint/table. No new analytics table or duplicate traffic engine was added.
+- Backend route affected: `GET /marketplace/analytics/shops/{shop_id}/summary` now returns `share_actions` with last-7-days count, channel rows parsed from `gsn_share` / `gsn_channel` / `utm_source`, count-method text, and a boundary label.
+- Frontend routes affected: Public Shop Gallery now adds attribution parameters to shop and product share URLs and records successful share/copy attempts. `/app/shop-control#shop-control-counts` now shows `Shared links` in Key Metrics and a `Share action trail` under Traffic sources.
+- Guardrails: `frontend/tools/audit-spotlight-system-feed.mjs` cages the backend API summary, API event typing, Shop Gallery tracking, Shop Control UI, and backend test assertions. `frontend/tools/audit-share-tag-actions.mjs` was updated so compact share/social preview behavior still stays caged with the new attributed URLs.
+- Truth boundary: `Shared links` means a copy/share attempt was prepared or opened by the user. It does not prove the recipient received it, opened it, bought anything, or paid. Confirmed recipient attention still appears through later shop visits/product opens/contact taps.
+- Verification passed: backend py_compile; focused owner analytics pytest; targeted eslint; `npm --prefix frontend run build`; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:spotlight-system-feed`; `npm --prefix frontend run audit:protected-button-freeze`; scoped `git diff --check` showed only line-ending warnings.
+
+## 2026-09-11 - Shop Analytics Share Response Attribution (local)
+
+- Status: Local implementation complete and verified; not pushed/deployed because publishing is batch-frozen.
+- Product decision implemented: owner analytics now separates share attempts from attributed response. `share_actions` counts copy/share attempts; `share_response` counts later attributed shop visits, product opens, and contact taps whose existing attention-event `source_path` includes share parameters.
+- Existing engine reused: built on `MarketplaceAttentionEvent.source_path` and existing `recordMarketplaceAttentionEvent` default path capture; no new table, route, or tracking engine.
+- Backend route affected: `GET /marketplace/analytics/shops/{shop_id}/summary` now returns `share_response`; ordinary `source_breakdown` excludes `share_action` rows so prepared links do not pollute actual traffic sources.
+- Frontend route affected: `/app/shop-control#shop-control-counts` now shows `Share response` below `Share action trail`, with visits, unique visitors, product opens, and contact taps from attributed shared links.
+- Guardrail: `frontend/tools/audit-spotlight-system-feed.mjs` cages the response summary, UI, test assertions, and exclusion of share actions from ordinary traffic sources.
+- Truth boundary: share response is attributed attention after an opened link, not recipient delivery, buyer intent beyond explicit taps, sale, payment, verification, or trust score.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\marketplace_analytics.py gmfn_backend\tests\test_marketplace_public_shop.py`; focused owner analytics pytest; targeted frontend eslint; `npm --prefix frontend run build`; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:spotlight-system-feed`; `npm --prefix frontend run audit:protected-button-freeze`; scoped `git diff --check` showed only line-ending warnings.
+
+## 2026-09-11 - Shop Market Intelligence Advice Action Logging (local)
+
+- Status: Local implementation complete and verified; not pushed/deployed because publishing is batch-frozen.
+- Product decision implemented: Shop Control Market Intelligence now records when an owner taps `Mark tried` on a recommendation or opens Demand Box from the Market Intelligence card.
+- Existing engine reused: added `recommendation_actioned` to the existing marketplace attention event endpoint/table. No new recommendation table, analytics engine, or Market Wisdom engine was added.
+- Backend route affected: `POST /marketplace/analytics/attention` accepts `recommendation_actioned`; `GET /marketplace/analytics/shops/{shop_id}/summary` returns `recommendation_actions` with last-7-days count, by-action rows, count method, and boundary wording.
+- Frontend route affected: `/app/shop-control#shop-control-counts` shows owner-only `Mark tried` controls beside the top Market Intelligence recommendations and an `Advice action trail` under the Market Intelligence card.
+- Guardrails: `frontend/tools/audit-spotlight-system-feed.mjs` cages the new event, summary, UI, backend test assertions, and exclusion from ordinary traffic sources. `frontend/tools/audit-shop-control-button-inventory.mjs` intentionally moved Shop Control source action inventory from 49 to 50 and SubtleButton count from 2 to 3.
+- Truth boundary: recommendation actions mean the owner tapped or marked advice as tried. They do not prove the advice produced sales, payments, delivery, verification, or buyer trust.
+- Verification passed: backend py_compile; focused owner analytics pytest; targeted frontend eslint; `npm --prefix frontend run build`; `npm --prefix frontend run audit:spotlight-system-feed`; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`; scoped `git diff --check` showed only line-ending warnings.
+
+## 2026-09-11 - Shop Analytics Protected Trade Outcome Context (local)
+
+- Status: Local implementation complete and verified; not pushed/deployed because publishing is batch-frozen.
+- Owner trigger: owner asked whether the shop analytics matrix should include what happened after traffic and follower/share distribution, while avoiding duplicate engines.
+- Existing engine reused: Shop Control analytics now reads existing `protected_trade_records` through `ProtectedTradeRecord`. No new sales table, payment ledger, escrow flow, or conversion engine was added.
+- Backend route affected: `GET /marketplace/analytics/shops/{shop_id}/summary` now returns `trade_outcomes` for the owner/admin summary, counting protected trade records linked by `shop_id` or the shop owner's seller-side records in the last 7 days.
+- Frontend route affected: `/app/shop-control#shop-control-counts` now shows `Trade records` in Key Metrics and a read-only `Recorded trade outcomes` card with protected records, released records, payment-claimed records, receipt confirmations, disputes, unresolved records, and recent protected records.
+- Guardrail: `frontend/tools/audit-spotlight-system-feed.mjs` now cages the Protected Trade analytics bridge, the visible Shop Control outcome card, and backend test assertions.
+- Truth boundary: protected trade outcomes are recorded trade evidence only. They are not automatic sales, payment confirmation, escrow, delivery proof, buyer satisfaction proof, verification, or a trust score.
+- Verification passed: backend py_compile; focused owner analytics pytest; targeted frontend eslint; `npm --prefix frontend run build`; `npm --prefix frontend run audit:spotlight-system-feed`; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`.
+
+## 2026-09-11 - Shop Market Intelligence Outcome-Aware Reading (local)
+
+- Status: Local implementation complete and verified; not pushed/deployed because publishing is batch-frozen.
+- Owner trigger: owner wanted the analytics to feed into Market Wisdom / Market Intelligence so sellers know what to do when traffic is present, absent, or not converting into real action.
+- Existing engine reused: `frontend/src/lib/shopAnalyticsWisdom.ts` now reads the protected trade outcome counts already returned by shop analytics. It does not create a separate sales, conversion, payment, or fulfilment engine.
+- Frontend route affected: `/app/shop-control#shop-control-counts`. The existing owner-only Market Intelligence card now receives protected trade counts and can diagnose: contact intent without protected evidence, protected trade records needing follow-through, or small outcome evidence building.
+- Advice action logging: Protected Trade / trade-evidence recommendations use the existing `recommendation_actioned` attention event path with `review_trade_evidence` as the action key.
+- Guardrail: `frontend/tools/audit-spotlight-system-feed.mjs` now cages the outcome-aware helper fields/rules and the Shop Control metrics feed into `buildShopAnalyticsWisdom`.
+- Truth boundary: the reading still treats protected trade rows as evidence only. It does not call them sales, payment proof, delivery proof, escrow, buyer satisfaction, verification, or a trust score.
+- Verification passed: targeted frontend ESLint; `npm --prefix frontend run build`; `npm --prefix frontend run audit:spotlight-system-feed`; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`.
+
+## 2026-09-11 - Shop Market Intelligence Trade Evidence Routeback (local)
+
+- Status: Local implementation complete and verified; not pushed/deployed because publishing is batch-frozen.
+- Owner trigger: after analytics began reading protected trade outcomes, the next practical need was to route sellers back to the existing evidence lane instead of leaving advice as text only.
+- Existing engine reused: Shop Control now routes protected-trade Market Intelligence advice to `/app/marketplace#marketplace-trade-evidence`, the existing Marketplace Trade Evidence lane. No new protected-trade screen or sales workflow was added.
+- Frontend route affected: `/app/shop-control#shop-control-counts`. Protected-trade diagnoses now resolve through the single `Recommended next move` CTA, which opens the existing Marketplace Trade Evidence lane.
+- Advice action logging: tapping the protected-trade recommended action records the existing `recommendation_actioned` attention event with action key `review_trade_evidence`.
+- Guardrails: `frontend/tools/audit-spotlight-system-feed.mjs` cages the routeback to the existing Marketplace anchor; `frontend/tools/audit-shop-control-button-inventory.mjs` intentionally moves Shop Control StableCtaLink count from 8 to 9 and total source actions from 50 to 51.
+- Truth boundary: the routeback opens evidence recording/review only. It does not claim a sale, payment, delivery, escrow, or buyer satisfaction.
+- Verification passed: targeted frontend ESLint; `npm --prefix frontend run build`; `npm --prefix frontend run audit:spotlight-system-feed`; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`.
+
+## Shop Market Intelligence Primary Routebacks (local)
+- Status: implemented locally, not pushed/deployed under the current batch freeze.
+- Route/screen: `/app/shop-control#shop-control-counts`, owner-only Shop Control analytics board.
+- Change: Market Intelligence now shows a `Recommended next move` CTA that routes each diagnosis to an existing lane: Shop Assets for setup/product gaps, Free Spotlight for visibility gaps, Shop Details for contact-intent gaps, Marketplace Trade Evidence for protected-trade gaps, and Shop Gallery for momentum review.
+- Guardrail: no new market engine was added. The CTA records `recommendation_actioned` through the existing marketplace attention-event path and only acts as navigation/advice.
+- Truth boundary: recommendation clicks are owner action signals only; they do not prove sales, payment, delivery, fulfilment, or buyer satisfaction.
+- Verification: `npm exec eslint src/pages/ShopControlPage.tsx tools/audit-shop-control-button-inventory.mjs tools/audit-spotlight-system-feed.mjs`, `npm --prefix frontend run audit:shop-control-button-inventory`, `npm --prefix frontend run audit:spotlight-system-feed`, `npm --prefix frontend run build`, backend py_compile for modified marketplace modules, exact focused marketplace analytics/follower tests, and `test_shop_follower_notifications_are_web_push_allowed` passed locally. Broad marketplace `-k attention or follower or spotlight or trade_outcomes` was blocked only by Windows pytest temp-directory permissions on unrelated public-shop media fixtures.
+## Shop Follower Broadcast Notification Test (local)
+- Status: implemented locally, not pushed/deployed under the current batch freeze.
+- Owner trigger: shop followers should be among the first people notified when a shop posts a new update, with navigation back to the post/shop.
+- Backend route covered: `POST /marketplace/broadcasts` for a free direct-community shop update.
+- Test added: `test_shop_broadcast_publish_notifies_visible_followers_only` verifies that eligible followers in the owner-visible communities receive `marketplace.shop.broadcast_created` notifications, outsiders do not, each notice uses `Open post`, and the action URL points to the public shop with `broadcast_id`.
+- Truth boundary: notification rows and web-push dispatch attempts prove distribution attempts only. They do not prove the follower opened, viewed, bought, paid, or received delivery.
+- Verification: the new single test passed, the focused marketplace analytics/follower bundle passed, targeted frontend ESLint/audits passed, `npm --prefix frontend run build` passed, and `git diff --check` reported only line-ending warnings.
+## Shop Follower Notice Response Attribution (local)
+- Status: implemented locally, not pushed/deployed under the current batch freeze.
+- Owner trigger: shop owners need to know not only how many follower notices went out, but how many visits, product opens, and contact taps came back through those notice links.
+- Existing engine reused: follower notice links now append `gsn_source=shop_follower_notice` and `gsn_notice=<notice-kind>`, then the existing Marketplace Attention Event path captures those query parameters through `source_path`. No new analytics table, tracking endpoint, or notification engine was added.
+- Backend routes affected: product, update, broadcast, and spotlight follower notices still create Action Inbox rows and web-push batches, but their `action_url` now carries follower-notice attribution. `GET /marketplace/analytics/shops/{shop_id}/summary` now returns `follower_notification_response` with visits, unique visitors, product opens, contact taps, and rows by notice kind.
+- Frontend route affected: `/app/shop-control#shop-control-counts` now shows `Notice visits` in Key Metrics and `Follower notice response` inside the distribution/traffic detail card, separately from `Follower notices` sent.
+- Guardrails: `frontend/tools/audit-spotlight-system-feed.mjs` cages the notice URL tags, backend response summary, frontend board display, and backend test assertions.
+- Truth boundary: follower notice counts prove distribution rows only; follower notice response proves attributed attention after an opened notice link only. Neither proves push delivery, a buyer, payment, delivery, sales, verification, or trust score.
+- Verification: backend py_compile passed; focused backend bundle passed (`5 passed`); targeted frontend ESLint passed; `npm --prefix frontend run audit:shop-control-button-inventory` passed; `npm --prefix frontend run audit:spotlight-system-feed` passed; `npm --prefix frontend run build` passed.

@@ -9,6 +9,7 @@ import {
   PrimaryButton,
   SecondaryButton,
   StableCtaLink,
+  StableDisclosureSummary,
   SubtleButton,
 } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
@@ -20,6 +21,8 @@ import {
   getMe,
   getMarketplaceShopByGmfnId,
   getMarketplaceShopAttentionSummary,
+  listMarketplaceRequests,
+  recordMarketplaceAttentionEvent,
   getMyMarketplaceShop,
   getMyIdentityRisk,
   getSelectedClanId,
@@ -31,6 +34,7 @@ import {
   safeCopy,
   uploadMarketplaceImageFile,
   uploadMarketplaceVideoFile,
+  type MarketplaceRequestItem,
 } from "../lib/api";
 import {
   communityDomainFeatureIsOff,
@@ -55,6 +59,12 @@ import { marketplaceGovernanceErrorMessage } from "../lib/structuredErrors";
 import { rememberPublishRecovery } from "../lib/publishRecovery";
 import { navigateWithOrigin } from "../lib/nav";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
+import {
+  analyticsRate,
+  buildShopAnalyticsWisdom,
+  buildShopMarketIntelligenceSummary,
+  formatAnalyticsRate,
+} from "../lib/shopAnalyticsWisdom";
 import {
   OWNER_SHOP_HASHES,
   PAID_REPOST_HASH,
@@ -188,6 +198,17 @@ type ShopAttentionPeriod = {
   contact_taps?: number | null;
 };
 
+type ShopAttentionDailyActivity = ShopAttentionPeriod & {
+  date?: string | null;
+};
+
+type ShopAttentionSourceBreakdown = ShopAttentionPeriod & {
+  source?: string | null;
+  label?: string | null;
+  total_events?: number | null;
+  boundary_label?: string | null;
+};
+
 type ShopAttentionSummary = {
   periods?: {
     today?: ShopAttentionPeriod;
@@ -196,9 +217,113 @@ type ShopAttentionSummary = {
   };
   spotlight?: {
     active_count?: number | null;
+    active_spotlights?: number | null;
     possible_member_reach?: number | null;
     possible_reach_label?: string | null;
+    reach_label?: string | null;
   };
+  followers?: {
+    follower_count?: number | null;
+    followers_count?: number | null;
+    notification_label?: string | null;
+    boundary_label?: string | null;
+  };
+  follower_notifications?: {
+    last_7_days?: number | null;
+    year_to_date?: number | null;
+    last_sent_at?: string | null;
+    delivery_label?: string | null;
+    boundary_label?: string | null;
+    count_method?: string | null;
+    by_kind?: Array<{
+      kind?: string | null;
+      label?: string | null;
+      count?: number | null;
+      last_sent_at?: string | null;
+    }> | null;
+  } | null;
+  follower_notification_response?: {
+    last_7_days?: number | null;
+    shop_visits?: number | null;
+    unique_visitors?: number | null;
+    product_opens?: number | null;
+    contact_taps?: number | null;
+    boundary_label?: string | null;
+    count_method?: string | null;
+    by_kind?: Array<{
+      kind?: string | null;
+      label?: string | null;
+      shop_visits?: number | null;
+      unique_visitors?: number | null;
+      product_opens?: number | null;
+      contact_taps?: number | null;
+      total_events?: number | null;
+    }> | null;
+  } | null;
+  share_actions?: {
+    last_7_days?: number | null;
+    boundary_label?: string | null;
+    count_method?: string | null;
+    by_channel?: Array<{
+      source?: string | null;
+      label?: string | null;
+      count?: number | null;
+    }> | null;
+  } | null;
+  share_response?: {
+    last_7_days?: number | null;
+    shop_visits?: number | null;
+    unique_visitors?: number | null;
+    product_opens?: number | null;
+    contact_taps?: number | null;
+    boundary_label?: string | null;
+    count_method?: string | null;
+    by_channel?: Array<{
+      source?: string | null;
+      label?: string | null;
+      shop_visits?: number | null;
+      unique_visitors?: number | null;
+      product_opens?: number | null;
+      contact_taps?: number | null;
+      total_events?: number | null;
+    }> | null;
+  } | null;
+  recommendation_actions?: {
+    last_7_days?: number | null;
+    boundary_label?: string | null;
+    count_method?: string | null;
+    by_action?: Array<{
+      action?: string | null;
+      label?: string | null;
+      count?: number | null;
+      diagnosis?: string | null;
+    }> | null;
+  } | null;
+  trade_outcomes?: {
+    last_7_days?: number | null;
+    shop_linked_records?: number | null;
+    seller_side_records?: number | null;
+    released_records?: number | null;
+    payment_claimed_or_recorded?: number | null;
+    receipt_confirmed?: number | null;
+    dispute_records?: number | null;
+    unresolved_records?: number | null;
+    boundary_label?: string | null;
+    count_method?: string | null;
+    recent_records?: Array<{
+      trade_id?: number | null;
+      trade_code?: string | null;
+      item_title?: string | null;
+      status?: string | null;
+      payment_status?: string | null;
+      release_status?: string | null;
+      receipt_status?: string | null;
+      dispute_status?: string | null;
+      linked_to_shop?: boolean | null;
+    }> | null;
+  } | null;
+  daily_activity?: ShopAttentionDailyActivity[] | null;
+  source_breakdown?: ShopAttentionSourceBreakdown[] | null;
   boundary_note?: string | null;
 };
 
@@ -401,6 +526,90 @@ function firstTruthy(...values: unknown[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function marketIntelligenceActionKey(value: unknown, index: number): string {
+  const text = safeStr(value).toLowerCase();
+  if (text.includes("demand box") || text.includes("demand")) return "open_demand_box";
+  if (text.includes("protected trade") || text.includes("trade evidence") || text.includes("receipt evidence")) return "review_trade_evidence";
+  if (text.includes("thumbnail") || text.includes("call-to-action") || text.includes("call to action")) return "improve_thumbnail";
+  if (text.includes("product") || text.includes("inventory") || text.includes("shop block")) return "improve_products";
+  if (text.includes("spotlight")) return "review_spotlight";
+  if (text.includes("share") || text.includes("reach") || text.includes("traffic") || text.includes("distribution")) return "increase_distribution";
+  return `advice_${index + 1}`;
+}
+
+const SHOP_DEMAND_CONTEXT_STOP_WORDS = new Set([
+  "and",
+  "are",
+  "available",
+  "buy",
+  "for",
+  "from",
+  "has",
+  "have",
+  "need",
+  "needs",
+  "offer",
+  "open",
+  "please",
+  "request",
+  "sale",
+  "sell",
+  "shop",
+  "the",
+  "this",
+  "want",
+  "with",
+]);
+
+function marketContextTokens(...values: unknown[]): Set<string> {
+  const text = values.map((value) => safeStr(value).toLowerCase()).join(" ");
+  const tokens = text
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(
+      (token) => token.length >= 3 && !SHOP_DEMAND_CONTEXT_STOP_WORDS.has(token)
+    );
+  return new Set(tokens);
+}
+
+function sharedMarketContextTerms(
+  demand: MarketplaceRequestItem,
+  products: ProductRecord[]
+): string[] {
+  const demandTokens = marketContextTokens(
+    demand.title,
+    demand.category,
+    demand.description,
+    demand.area
+  );
+  if (!demandTokens.size) return [];
+
+  const productTokens = marketContextTokens(
+    ...products.flatMap((item) => [item.name, item.description, item.price])
+  );
+  if (!productTokens.size) return [];
+
+  return [...demandTokens]
+    .filter((token) => productTokens.has(token))
+    .slice(0, 4);
+}
+
+type ShopDemandContextHint = {
+  row: MarketplaceRequestItem;
+  terms: string[];
+};
+
+function buildShopDemandContextHints(
+  rows: MarketplaceRequestItem[],
+  products: ProductRecord[]
+): ShopDemandContextHint[] {
+  return rows
+    .map((row) => ({ row, terms: sharedMarketContextTerms(row, products) }))
+    .sort((a, b) => b.terms.length - a.terms.length)
+    .slice(0, 3);
 }
 
 function extractPublicBlockNumber(description: string): number {
@@ -825,6 +1034,134 @@ function statTile(): React.CSSProperties {
   };
 }
 
+type AnalyticsAccent = "green" | "gold" | "blue" | "purple" | "red" | "navy";
+
+const ANALYTICS_ACCENTS: Record<AnalyticsAccent, { bg: string; border: string; color: string }> = {
+  green: { bg: "linear-gradient(180deg, #F3FFF9 0%, #E6FBF2 100%)", border: "rgba(46,155,98,0.24)", color: "#1F8A57" },
+  gold: { bg: "linear-gradient(180deg, #FFF9E7 0%, #FFF1C7 100%)", border: "rgba(214,170,69,0.34)", color: "#B47B00" },
+  blue: { bg: "linear-gradient(180deg, #F3F9FF 0%, #E5F1FF 100%)", border: "rgba(32,116,204,0.22)", color: "#176FC2" },
+  purple: { bg: "linear-gradient(180deg, #F7F5FF 0%, #ECEBFF 100%)", border: "rgba(91,84,196,0.22)", color: "#574EC6" },
+  red: { bg: "linear-gradient(180deg, #FFF5F6 0%, #FFECEE 100%)", border: "rgba(200,58,58,0.18)", color: "#C83A3A" },
+  navy: { bg: "linear-gradient(180deg, #F8FBFF 0%, #EAF4FF 100%)", border: "rgba(18,58,89,0.16)", color: "#0B2D4A" },
+};
+
+function shopAnalyticsMetricCardStyle(accent: AnalyticsAccent): React.CSSProperties {
+  const palette = ANALYTICS_ACCENTS[accent];
+  return {
+    ...statTile(),
+    minHeight: 112,
+    display: "grid",
+    alignContent: "space-between",
+    border: `1px solid ${palette.border}`,
+    background: palette.bg,
+  };
+}
+
+function shopAnalyticsIconTile(accent: AnalyticsAccent): React.CSSProperties {
+  const palette = ANALYTICS_ACCENTS[accent];
+  return {
+    width: 42,
+    height: 42,
+    borderRadius: 16,
+    display: "grid",
+    placeItems: "center",
+    color: palette.color,
+    background: "rgba(255,255,255,0.78)",
+    boxShadow: "0 10px 18px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.92)",
+  };
+}
+
+function ShopAnalyticsMetricCard({
+  icon,
+  label,
+  value,
+  detail,
+  accent,
+}: {
+  icon: GsnIconName;
+  label: string;
+  value: React.ReactNode;
+  detail: string;
+  accent: AnalyticsAccent;
+}) {
+  return (
+    <div style={shopAnalyticsMetricCardStyle(accent)}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
+        <div style={shopAnalyticsIconTile(accent)} aria-hidden="true">
+          <GsnLegacyIcon name={icon} size={30} />
+        </div>
+        <div style={{ ...sectionLabel(), flex: "1 1 auto", textAlign: "right", lineHeight: 1.2 }}>{label}</div>
+      </div>
+      <div>
+        <div style={{ color: "#061827", fontSize: 28, fontWeight: 950, lineHeight: 1 }}>{value}</div>
+        <div style={{ ...helperText(), marginTop: 8, fontSize: 12, lineHeight: 1.35 }}>{detail}</div>
+      </div>
+    </div>
+  );
+}
+
+function ShopAnalyticsFunnelStep({
+  icon,
+  label,
+  value,
+  detail,
+  rateLabel,
+  strong,
+}: {
+  icon: GsnIconName;
+  label: string;
+  value: number;
+  detail: string;
+  rateLabel: string;
+  strong?: boolean;
+}) {
+  return (
+    <div
+      style={{
+        borderRadius: 18,
+        border: strong ? "1px solid rgba(255,255,255,0.36)" : "1px solid rgba(18,58,89,0.12)",
+        background: strong
+          ? "linear-gradient(180deg, #0F79D0 0%, #2C94E6 100%)"
+          : "linear-gradient(180deg, #F7FBFF 0%, #E7F3FF 100%)",
+        color: strong ? "#FFFFFF" : "#0B2D4A",
+        padding: "14px 12px",
+        minHeight: 160,
+        display: "grid",
+        alignContent: "space-between",
+        boxShadow: "0 14px 28px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.86)",
+      }}
+    >
+      <div style={{ display: "grid", justifyItems: "center", gap: 6, textAlign: "center" }}>
+        <GsnLegacyIcon name={icon} size={32} />
+        <div style={{ fontSize: 13, fontWeight: 900, lineHeight: 1.2 }}>{label}</div>
+        <div style={{ fontSize: 30, fontWeight: 950, lineHeight: 1 }}>{value}</div>
+        <div style={{ fontSize: 12, fontWeight: 750, lineHeight: 1.25, opacity: strong ? 0.92 : 0.82 }}>{detail}</div>
+      </div>
+      <div
+        style={{
+          justifySelf: "center",
+          borderRadius: 999,
+          padding: "5px 12px",
+          background: strong ? "rgba(255,255,255,0.24)" : "rgba(255,255,255,0.92)",
+          color: strong ? "#FFFFFF" : "#0F5EAA",
+          fontSize: 12,
+          fontWeight: 900,
+        }}
+      >
+        {rateLabel}
+      </div>
+    </div>
+  );
+}
+
+function shortAnalyticsDateLabel(value: unknown): string {
+  const text = safeStr(value);
+  if (!text) return "Day";
+  const parsed = new Date(`${text}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return text.slice(5) || text;
+  return parsed.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
 function noticeCard(tone: NoticeTone): React.CSSProperties {
   if (tone === "success") {
     return {
@@ -1025,6 +1362,9 @@ export default function ShopControlPage() {
     useState<CommunityPackageStatus | null>(null);
   const [shopAttentionSummary, setShopAttentionSummary] =
     useState<ShopAttentionSummary | null>(null);
+  const [loggedRecommendationActionKeys, setLoggedRecommendationActionKeys] =
+    useState<Set<string>>(() => new Set());
+  const [openDemandRows, setOpenDemandRows] = useState<MarketplaceRequestItem[]>([]);
   const [roscaCycles, setRoscaCycles] = useState<RoscaCycleSummary[]>([]);
   const [communityMeetings, setCommunityMeetings] = useState<CommunityMeetingRecord[]>(
     []
@@ -1195,6 +1535,17 @@ export default function ShopControlPage() {
         "marketplace",
         effectiveShopClanId,
         "shop-control.route.marketplace"
+      ),
+      demandBox: routeTarget(
+        "demandBox",
+        effectiveShopClanId,
+        "shop-control.route.demand-box"
+      ),
+      tradeEvidence: routeTarget(
+        "marketplace",
+        effectiveShopClanId,
+        "shop-control.route.trade-evidence",
+        { hash: "marketplace-trade-evidence" }
       ),
       shop: routeTarget("shop", effectiveShopClanId, "shop-control.route.shop"),
       shopGallery: routeTarget(
@@ -1524,6 +1875,7 @@ export default function ShopControlPage() {
           roscaCyclesRes,
           communityMeetingsRes,
           attentionSummaryRes,
+          demandRequestsRes,
         ] =
           await Promise.all([
           apiJson<any>(
@@ -1539,6 +1891,12 @@ export default function ShopControlPage() {
           apiJson<any>(roscaCyclesPath).catch(() => null),
           apiJson<any>(communityMeetingsPath).catch(() => null),
           getMarketplaceShopAttentionSummary(shopItem.id, { days: 30 }).catch(() => null),
+          listMarketplaceRequests({
+            clan_id: shopContextClanId || undefined,
+            status: "open",
+            mine_only: false,
+            limit: 12,
+          }).catch(() => []),
         ]).finally(() => {
           if (!background) setDetailsLoading(false);
         });
@@ -1582,6 +1940,11 @@ export default function ShopControlPage() {
             ? (communityMeetingsRes.meetings as CommunityMeetingRecord[])
             : []
         );
+        setOpenDemandRows(
+          Array.isArray(demandRequestsRes)
+            ? (demandRequestsRes as MarketplaceRequestItem[])
+            : []
+        );
       } else {
         if (!background) setDetailsLoading(false);
         setSpotlights([]);
@@ -1592,6 +1955,7 @@ export default function ShopControlPage() {
         setShopAttentionSummary(null);
         setRoscaCycles([]);
         setCommunityMeetings([]);
+        setOpenDemandRows([]);
       }
     } finally {
       if (!background) {
@@ -1780,7 +2144,19 @@ export default function ShopControlPage() {
     })[0];
   }, [activeSpotlights]);
 
+  const currentActiveSpotlightAgeHours = useMemo(() => {
+    const createdRaw = safeStr(currentActiveSpotlight?.created_at);
+    if (!createdRaw) return null;
+    const createdMs = new Date(createdRaw).getTime();
+    if (!Number.isFinite(createdMs)) return null;
+    return Math.max(0, Math.round((Date.now() - createdMs) / (60 * 60 * 1000)));
+  }, [currentActiveSpotlight?.created_at]);
+
   const attentionLast7Days = shopAttentionSummary?.periods?.last_7_days || {};
+  const attentionShopVisits7Days = safePositiveNumber(
+    attentionLast7Days.shop_visits,
+    0
+  );
   const attentionVisitors7Days = safePositiveNumber(
     attentionLast7Days.unique_shop_visitors,
     0
@@ -1797,10 +2173,339 @@ export default function ShopControlPage() {
     attentionLast7Days.spotlight_impressions,
     0
   );
+  const attentionSpotlightShopClicks7Days = safePositiveNumber(
+    attentionLast7Days.spotlight_shop_clicks,
+    0
+  );
   const attentionPossibleSpotlightReach = safePositiveNumber(
     shopAttentionSummary?.spotlight?.possible_member_reach,
     0
   );
+  const attentionDailyActivityRows = useMemo(() => {
+    const rows = Array.isArray(shopAttentionSummary?.daily_activity)
+      ? shopAttentionSummary.daily_activity
+      : [];
+    return rows.slice(-7).map((row) => ({
+      date: safeStr(row?.date),
+      visitors: safePositiveNumber(row?.unique_shop_visitors, 0),
+      visits: safePositiveNumber(row?.shop_visits, 0),
+      productOpens: safePositiveNumber(row?.product_opens, 0),
+      contactTaps: safePositiveNumber(row?.contact_taps, 0),
+    }));
+  }, [shopAttentionSummary?.daily_activity]);
+  const attentionDailyMaxVisitors = Math.max(
+    1,
+    ...attentionDailyActivityRows.map((row) => row.visitors || row.visits || 0)
+  );
+  const attentionSourceBreakdownRows = useMemo(() => {
+    const rows = Array.isArray(shopAttentionSummary?.source_breakdown)
+      ? shopAttentionSummary.source_breakdown
+      : [];
+    return rows.slice(0, 5).map((row) => ({
+      source: safeStr(row?.source),
+      label: firstTruthy(row?.label, row?.source, "Traffic source"),
+      shopVisits: safePositiveNumber(row?.shop_visits, 0),
+      productOpens: safePositiveNumber(row?.product_opens, 0),
+      spotlightViews: safePositiveNumber(row?.spotlight_impressions, 0),
+      contactTaps: safePositiveNumber(row?.contact_taps, 0),
+      totalEvents: safePositiveNumber(row?.total_events, 0),
+      boundary: firstTruthy(
+        row?.boundary_label,
+        "Source counts show where attention was recorded, not who bought or paid."
+      ),
+    }));
+  }, [shopAttentionSummary?.source_breakdown]);
+  const shopFollowerCount = safePositiveNumber(
+    shopAttentionSummary?.followers?.follower_count ??
+      shopAttentionSummary?.followers?.followers_count,
+    0
+  );
+  const followerNotices7Days = safePositiveNumber(
+    shopAttentionSummary?.follower_notifications?.last_7_days,
+    0
+  );
+  const followerNoticesYearToDate = safePositiveNumber(
+    shopAttentionSummary?.follower_notifications?.year_to_date,
+    0
+  );
+  const followerNoticeBoundary = firstTruthy(
+    shopAttentionSummary?.follower_notifications?.boundary_label,
+    "Follower notices are distribution records, not views, purchases, or push-delivery proof."
+  );
+  const followerNoticeDeliveryLabel = firstTruthy(
+    shopAttentionSummary?.follower_notifications?.delivery_label,
+    "Action Inbox notices created for eligible followers; phone push is best-effort."
+  );
+  const followerNoticeKindRows = Array.isArray(shopAttentionSummary?.follower_notifications?.by_kind)
+    ? shopAttentionSummary.follower_notifications.by_kind.slice(0, 4).map((row) => ({
+        kind: safeStr(row?.kind),
+        label: firstTruthy(row?.label, row?.kind, "Follower notice"),
+        count: safePositiveNumber(row?.count, 0),
+      }))
+    : [];
+  const followerNoticeResponseVisits = safePositiveNumber(
+    shopAttentionSummary?.follower_notification_response?.shop_visits,
+    0
+  );
+  const followerNoticeResponseVisitors = safePositiveNumber(
+    shopAttentionSummary?.follower_notification_response?.unique_visitors,
+    0
+  );
+  const followerNoticeResponseProductOpens = safePositiveNumber(
+    shopAttentionSummary?.follower_notification_response?.product_opens,
+    0
+  );
+  const followerNoticeResponseContactTaps = safePositiveNumber(
+    shopAttentionSummary?.follower_notification_response?.contact_taps,
+    0
+  );
+  const followerNoticeResponseBoundary = firstTruthy(
+    shopAttentionSummary?.follower_notification_response?.boundary_label,
+    "Follower notice response counts attributed visits, opens, and taps after a follower-notice link is opened; it is not buyer, payment, delivery, push-display, or sales proof."
+  );
+  const followerNoticeResponseKindRows = Array.isArray(shopAttentionSummary?.follower_notification_response?.by_kind)
+    ? shopAttentionSummary.follower_notification_response.by_kind.slice(0, 3).map((row) => ({
+        kind: safeStr(row?.kind),
+        label: firstTruthy(row?.label, row?.kind, "Follower response"),
+        visits: safePositiveNumber(row?.shop_visits, 0),
+        visitors: safePositiveNumber(row?.unique_visitors, 0),
+        productOpens: safePositiveNumber(row?.product_opens, 0),
+        contactTaps: safePositiveNumber(row?.contact_taps, 0),
+        totalEvents: safePositiveNumber(row?.total_events, 0),
+      }))
+    : [];
+  const shareActions7Days = safePositiveNumber(
+    shopAttentionSummary?.share_actions?.last_7_days,
+    0
+  );
+  const shareActionBoundary = firstTruthy(
+    shopAttentionSummary?.share_actions?.boundary_label,
+    "Share actions are owner/user share attempts, not proof that a recipient opened the link."
+  );
+  const shareActionChannelRows = Array.isArray(shopAttentionSummary?.share_actions?.by_channel)
+    ? shopAttentionSummary.share_actions.by_channel.slice(0, 4).map((row) => ({
+        source: safeStr(row?.source),
+        label: firstTruthy(row?.label, row?.source, "Share channel"),
+        count: safePositiveNumber(row?.count, 0),
+      }))
+    : [];
+  const shareResponseVisits = safePositiveNumber(
+    shopAttentionSummary?.share_response?.shop_visits,
+    0
+  );
+  const shareResponseVisitors = safePositiveNumber(
+    shopAttentionSummary?.share_response?.unique_visitors,
+    0
+  );
+  const shareResponseProductOpens = safePositiveNumber(
+    shopAttentionSummary?.share_response?.product_opens,
+    0
+  );
+  const shareResponseContactTaps = safePositiveNumber(
+    shopAttentionSummary?.share_response?.contact_taps,
+    0
+  );
+  const shareResponseBoundary = firstTruthy(
+    shopAttentionSummary?.share_response?.boundary_label,
+    "Share response counts attributed visits, opens, and taps after a shared link is opened; it is still not buyer, payment, or delivery proof."
+  );
+  const shareResponseChannelRows = Array.isArray(shopAttentionSummary?.share_response?.by_channel)
+    ? shopAttentionSummary.share_response.by_channel.slice(0, 4).map((row) => ({
+        source: safeStr(row?.source),
+        label: firstTruthy(row?.label, row?.source, "Share response"),
+        visits: safePositiveNumber(row?.shop_visits, 0),
+        visitors: safePositiveNumber(row?.unique_visitors, 0),
+        productOpens: safePositiveNumber(row?.product_opens, 0),
+        contactTaps: safePositiveNumber(row?.contact_taps, 0),
+        totalEvents: safePositiveNumber(row?.total_events, 0),
+      }))
+    : [];
+  const recommendationActions7Days = safePositiveNumber(
+    shopAttentionSummary?.recommendation_actions?.last_7_days,
+    0
+  );
+  const recommendationActionBoundary = firstTruthy(
+    shopAttentionSummary?.recommendation_actions?.boundary_label,
+    "Recommendation actions mean the shop owner tapped or marked advice as tried; they do not prove the advice produced sales."
+  );
+  const recommendationActionRows = Array.isArray(shopAttentionSummary?.recommendation_actions?.by_action)
+    ? shopAttentionSummary.recommendation_actions.by_action.slice(0, 4).map((row) => ({
+        action: safeStr(row?.action),
+        label: firstTruthy(row?.label, row?.action, "Advice action"),
+        count: safePositiveNumber(row?.count, 0),
+        diagnosis: safeStr(row?.diagnosis),
+      }))
+    : [];
+  const tradeOutcomeRecords7Days = safePositiveNumber(
+    shopAttentionSummary?.trade_outcomes?.last_7_days,
+    0
+  );
+  const tradeOutcomeShopLinkedRecords = safePositiveNumber(
+    shopAttentionSummary?.trade_outcomes?.shop_linked_records,
+    0
+  );
+  const tradeOutcomeSellerSideRecords = safePositiveNumber(
+    shopAttentionSummary?.trade_outcomes?.seller_side_records,
+    0
+  );
+  const tradeOutcomeReleasedRecords = safePositiveNumber(
+    shopAttentionSummary?.trade_outcomes?.released_records,
+    0
+  );
+  const tradeOutcomePaymentClaimedRecords = safePositiveNumber(
+    shopAttentionSummary?.trade_outcomes?.payment_claimed_or_recorded,
+    0
+  );
+  const tradeOutcomeReceiptConfirmedRecords = safePositiveNumber(
+    shopAttentionSummary?.trade_outcomes?.receipt_confirmed,
+    0
+  );
+  const tradeOutcomeDisputeRecords = safePositiveNumber(
+    shopAttentionSummary?.trade_outcomes?.dispute_records,
+    0
+  );
+  const tradeOutcomeUnresolvedRecords = safePositiveNumber(
+    shopAttentionSummary?.trade_outcomes?.unresolved_records,
+    0
+  );
+  const tradeOutcomeBoundary = firstTruthy(
+    shopAttentionSummary?.trade_outcomes?.boundary_label,
+    "Protected trade outcomes are recorded trade evidence, not automatic sales, payment confirmation, escrow, delivery proof, or buyer satisfaction proof."
+  );
+  const tradeOutcomeRecentRows = Array.isArray(shopAttentionSummary?.trade_outcomes?.recent_records)
+    ? shopAttentionSummary.trade_outcomes.recent_records.slice(0, 4).map((row) => ({
+        tradeId: safePositiveNumber(row?.trade_id, 0),
+        tradeCode: safeStr(row?.trade_code),
+        itemTitle: firstTruthy(row?.item_title, "Protected trade"),
+        status: safeStr(row?.status),
+        paymentStatus: safeStr(row?.payment_status),
+        releaseStatus: safeStr(row?.release_status),
+        receiptStatus: safeStr(row?.receipt_status),
+        disputeStatus: safeStr(row?.dispute_status),
+        linkedToShop: Boolean(row?.linked_to_shop),
+      }))
+    : [];
+  const shopAnalyticsWisdom = buildShopAnalyticsWisdom({
+    possibleReach: attentionPossibleSpotlightReach,
+    spotlightSeen: attentionSpotlightImpressions7Days,
+    visitors: attentionVisitors7Days,
+    productOpens: attentionProductOpens7Days,
+    contactTaps: attentionContactTaps7Days,
+    followers: shopFollowerCount,
+    activeSpotlights: activeSpotlights.length,
+    activeSpotlightAgeHours: currentActiveSpotlightAgeHours,
+    publicItems: occupiedPublicProductSlotCount,
+    publicSlots: publicProductSlotsTotal,
+    vaultItems: vaultProducts.length,
+    vaultSlots: 6,
+    tradeRecords: tradeOutcomeRecords7Days,
+    releasedTradeRecords: tradeOutcomeReleasedRecords,
+    paymentClaimedTradeRecords: tradeOutcomePaymentClaimedRecords,
+    receiptConfirmedTradeRecords: tradeOutcomeReceiptConfirmedRecords,
+    disputeTradeRecords: tradeOutcomeDisputeRecords,
+    unresolvedTradeRecords: tradeOutcomeUnresolvedRecords,
+  });
+  const shopMarketIntelligenceSummary = buildShopMarketIntelligenceSummary(
+    shopAnalyticsWisdom,
+    `${routes.shop}#${OWNER_SHOP_HASHES.summary}`
+  );
+  const marketIntelligencePrimaryAction = useMemo(() => {
+    switch (shopAnalyticsWisdom.diagnosisCode) {
+      case "SHOP_SETUP_GAP":
+      case "LOW_PRODUCT_CURIOSITY":
+        return {
+          to: routes.shopAssets,
+          label: shopAnalyticsWisdom.primaryActionLabel || "Edit products",
+          actionKey: "improve_products",
+          detail: "Open the existing product and shop block tools.",
+        };
+      case "FOLLOWERS_WAITING":
+      case "GATHERING_DATA":
+      case "LOW_EXPOSURE":
+      case "LOW_VISIT_RATE":
+        return {
+          to: routes.freeSpotlight,
+          label: shopAnalyticsWisdom.primaryActionLabel || "Review spotlight",
+          actionKey: "review_spotlight",
+          detail: "Open the existing Spotlight lane for the next visibility step.",
+        };
+      case "LOW_CONTACT_INTENT":
+        return {
+          to: routes.shopDetails,
+          label: shopAnalyticsWisdom.primaryActionLabel || "Improve contact",
+          actionKey: "improve_contact",
+          detail: "Open the existing shop details area to clarify buyer instructions.",
+        };
+      case "CONTACTS_NOT_PROTECTED":
+      case "TRADE_RECORD_PRESSURE":
+      case "OUTCOME_EVIDENCE_BUILDING":
+        return {
+          to: routes.tradeEvidence,
+          label: shopAnalyticsWisdom.primaryActionLabel || "Review trade evidence",
+          actionKey: "review_trade_evidence",
+          detail: "Open the existing protected trade evidence lane.",
+        };
+      case "STRONG_MOMENTUM":
+      default:
+        return {
+          to: routes.shopGallery,
+          label: shopAnalyticsWisdom.primaryActionLabel || "Review shop gallery",
+          actionKey: "review_shop_gallery",
+          detail: "Open the existing shop gallery to repeat what is working.",
+        };
+    }
+  }, [routes.freeSpotlight, routes.shopAssets, routes.shopDetails, routes.shopGallery, routes.tradeEvidence, shopAnalyticsWisdom.diagnosisCode, shopAnalyticsWisdom.primaryActionLabel]);
+  const trackMarketIntelligenceAction = useCallback(
+    (actionKey: string) => {
+      const activeShopId = Number(shop?.id || 0);
+      if (!activeShopId) return;
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const diagnosis = shopAnalyticsWisdom.diagnosisCode;
+      const safeActionKey = actionKey || "mark_tried";
+      const sourcePath = `/app/shop-control?gsn_recommendation=market_intelligence&gsn_action=${encodeURIComponent(safeActionKey)}&gsn_diagnosis=${encodeURIComponent(diagnosis)}#${OWNER_SHOP_HASHES.summary}`;
+      void recordMarketplaceAttentionEvent({
+        event_type: "recommendation_actioned",
+        shop_id: activeShopId,
+        clan_id: effectiveShopClanId || selectedClanId || null,
+        source: "shop_market_intelligence",
+        source_path: sourcePath,
+        client_event_id: `shop-mi-${activeShopId}-${diagnosis}-${safeActionKey}-${todayKey}`,
+      })
+        .then((result) => {
+          if (result?.recorded || result?.deduped) {
+            setLoggedRecommendationActionKeys((previous) => {
+              const next = new Set(previous);
+              next.add(safeActionKey);
+              return next;
+            });
+          }
+        })
+        .catch(() => undefined);
+    },
+    [effectiveShopClanId, selectedClanId, shop?.id, shopAnalyticsWisdom.diagnosisCode]
+  );
+  const publicInventoryRate = analyticsRate(occupiedPublicProductSlotCount, publicProductSlotsTotal);
+  const vaultInventoryRate = analyticsRate(vaultProducts.length, 6);
+  const openDemandSignals = useMemo(
+    () =>
+      openDemandRows
+        .filter((row) => safeStr(row?.status || "open").toLowerCase() === "open")
+        .slice(0, 3),
+    [openDemandRows]
+  );
+  const demandContextHints = useMemo(
+    () => buildShopDemandContextHints(openDemandSignals, publicProducts),
+    [openDemandSignals, publicProducts]
+  );
+  const openDemandSignalCount = openDemandRows.filter(
+    (row) => safeStr(row?.status || "open").toLowerCase() === "open"
+  ).length;
+  const demandContextLabel = openDemandSignalCount
+    ? `${openDemandSignalCount} open community demand signal${openDemandSignalCount === 1 ? "" : "s"}`
+    : "No open Demand Box signal in this community yet";
+  const demandOverlapLabel = demandContextHints.some((hint) => hint.terms.length > 0)
+    ? "Some requests mention words already visible in your shop. Treat this as a possible overlap only."
+    : "No product-word overlap is visible yet. Read Demand Box before changing products.";
   const communityName = useMemo(() => {
     return firstTruthy(
       shop?.marketplace_name,
@@ -4143,7 +4848,7 @@ export default function ShopControlPage() {
                   >
                     {marketplaceShopsFeatureOffText}
                   </div>
-                ) : null}
+              ) : null}
                 {roscaCyclesFeatureOff ? (
                   <div
                     style={{
@@ -4159,7 +4864,7 @@ export default function ShopControlPage() {
                   >
                     {roscaCyclesFeatureOffText}
                   </div>
-                ) : null}
+              ) : null}
               </div>
             ) : null}
             <div style={{ marginTop: 12, ...controlGrid(isCompact, 168) }}>
@@ -4887,71 +5592,237 @@ export default function ShopControlPage() {
       {activeOwnerLayer === "summary" ? (
       <section
         id="shop-control-counts"
-        style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 82%, #FFF7D8 100%)")}
+        style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 52%, #EAF4FF 78%, #FFF7D8 100%)")}
       >
-        <div style={sectionLabel()}>Shop summary</div>
+        <div style={sectionLabel()}>Shop analytics</div>
+        <div
+          style={{
+            marginTop: 10,
+            borderRadius: 24,
+            border: "1px solid rgba(255,255,255,0.28)",
+            background:
+              shopAnalyticsWisdom.tone === "warning"
+                ? "linear-gradient(135deg, #09223A 0%, #124F82 58%, #276E4A 100%)"
+                : shopAnalyticsWisdom.tone === "quiet"
+                  ? "linear-gradient(135deg, #071827 0%, #0B2D4A 64%, #8C6829 100%)"
+                  : "linear-gradient(135deg, #08233A 0%, #1269AD 62%, #2E9B62 100%)",
+            color: "#FFFFFF",
+            padding: isCompact ? 16 : 18,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "46px minmax(0, 1fr)" : "58px minmax(0, 1fr) 160px",
+            gap: isCompact ? 12 : 16,
+            alignItems: "center",
+            boxShadow: "0 18px 34px rgba(4,18,31,0.22), inset 0 1px 0 rgba(255,255,255,0.18)",
+          }}
+        >
+          <div
+            aria-hidden="true"
+            style={{
+              width: isCompact ? 46 : 58,
+              height: isCompact ? 46 : 58,
+              borderRadius: 18,
+              display: "grid",
+              placeItems: "center",
+              background: "rgba(255,255,255,0.16)",
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.22)",
+            }}
+          >
+            <GsnLegacyIcon name="chart" size={isCompact ? 34 : 42} />
+          </div>
+          <div>
+            <div style={{ fontSize: isCompact ? 13 : 15, fontWeight: 850, opacity: 0.88 }}>
+              {shopAnalyticsWisdom.state}:
+            </div>
+            <div style={{ marginTop: 4, fontSize: isCompact ? 21 : 27, fontWeight: 950, lineHeight: 1.08 }}>
+              {shopAnalyticsWisdom.headline}
+            </div>
+            <div style={{ marginTop: 8, fontSize: isCompact ? 13 : 15, lineHeight: 1.45, opacity: 0.9 }}>
+              {shopAnalyticsWisdom.detail}
+            </div>
+          </div>
+          {!isCompact ? (
+            <div style={{ textAlign: "right", fontSize: 14, lineHeight: 1.35, fontWeight: 800, opacity: 0.9 }}>
+              Every signal needs context.
+            </div>
+          ) : null}
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
+            ...statTile(),
+            background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,251,255,0.94) 100%)",
+            borderRadius: 22,
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <div style={{ color: "#061827", fontSize: isCompact ? 19 : 23, fontWeight: 950 }}>
+              Key Metrics
+            </div>
+            <div style={{ color: "#27496A", fontSize: 13, fontWeight: 850 }}>Last 7 days</div>
+          </div>
+          <div
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr 1fr" : "repeat(4, minmax(0, 1fr))",
+              gap: 12,
+            }}
+            aria-label="Shop owner key analytics metrics"
+          >
+            <ShopAnalyticsMetricCard icon="tag" label="Public items" value={`${occupiedPublicProductSlotCount} / ${publicProductSlotsTotal}`} detail={occupiedPublicProductSlotCount >= publicProductSlotsTotal ? "All published" : "Public shop blocks"} accent="green" />
+            <ShopAnalyticsMetricCard icon="vault" label="Vault" value={`${vaultProducts.length} / 6`} detail={vaultProducts.length > 0 ? "Private offers" : "No vault items yet"} accent="purple" />
+            <ShopAnalyticsMetricCard icon="megaphone" label="Spotlights" value={activeSpotlights.length} detail={activeSpotlights.length > 0 ? "Active spotlight" : "No active spotlight"} accent="gold" />
+            <ShopAnalyticsMetricCard icon="user" label="Followers" value={shopFollowerCount} detail={shopFollowerCount > 0 ? "Notification audience" : "No followers yet"} accent="blue" />
+            <ShopAnalyticsMetricCard icon="document" label="Follower notices" value={followerNotices7Days} detail={followerNoticesYearToDate > followerNotices7Days ? `${followerNoticesYearToDate} this year` : "Sent last 7 days"} accent="purple" />
+            <ShopAnalyticsMetricCard icon="community" label="Notice visits" value={followerNoticeResponseVisitors} detail={followerNoticeResponseVisits > followerNoticeResponseVisitors ? `${followerNoticeResponseVisits} total visits` : "From follower notices"} accent="blue" />
+            <ShopAnalyticsMetricCard icon="copy" label="Shared links" value={shareActions7Days} detail="Prepared shares" accent="gold" />
+            <ShopAnalyticsMetricCard icon="community" label="Visitors" value={attentionVisitors7Days} detail={attentionShopVisits7Days > attentionVisitors7Days ? `${attentionShopVisits7Days} total visits` : "Last 7 days"} accent="blue" />
+            <ShopAnalyticsMetricCard icon="shop" label="Product opens" value={attentionProductOpens7Days} detail="Opened shop blocks" accent="green" />
+            <ShopAnalyticsMetricCard icon="phone" label="Contact taps" value={attentionContactTaps7Days} detail="Buyer intent signal only" accent="red" />
+            <ShopAnalyticsMetricCard icon="document" label="Trade records" value={tradeOutcomeRecords7Days} detail={tradeOutcomeReleasedRecords > 0 ? `${tradeOutcomeReleasedRecords} released` : "Protected evidence"} accent="green" />
+            <ShopAnalyticsMetricCard icon="eye" label="Spotlight seen" value={attentionSpotlightImpressions7Days} detail={`Potential audience: ${attentionPossibleSpotlightReach}`} accent="navy" />
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
+            ...statTile(),
+            borderRadius: 22,
+            background: "linear-gradient(180deg, #FFFFFF 0%, #F4FAFF 100%)",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+            <div>
+              <div style={{ color: "#061827", fontSize: isCompact ? 19 : 23, fontWeight: 950 }}>
+                From View to Contact
+              </div>
+              <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.35 }}>
+                Your shop's attention-to-action funnel
+              </div>
+            </div>
+            <div
+              style={{
+                borderRadius: 16,
+                background: "linear-gradient(180deg, #EAF4FF 0%, #DCEBFF 100%)",
+                color: "#153A61",
+                padding: "8px 12px",
+                fontSize: 12,
+                fontWeight: 850,
+                lineHeight: 1.35,
+                maxWidth: isCompact ? "100%" : 260,
+              }}
+            >
+              {attentionPossibleSpotlightReach} people could see your spotlight. {attentionSpotlightImpressions7Days} saw it, {attentionVisitors7Days} visited, and {attentionContactTaps7Days} took action.
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 16,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "repeat(5, minmax(0, 1fr))",
+              gap: 8,
+            }}
+          >
+            <ShopAnalyticsFunnelStep icon="eye" label="Potential Audience" value={attentionPossibleSpotlightReach} detail="People who may see your spotlight" rateLabel="Reach base" strong />
+            <ShopAnalyticsFunnelStep icon="community" label="Spotlight Seen" value={attentionSpotlightImpressions7Days} detail="People saw your spotlight" rateLabel={`${formatAnalyticsRate(attentionSpotlightImpressions7Days, attentionPossibleSpotlightReach)} of reach`} strong />
+            <ShopAnalyticsFunnelStep icon="user" label="Visitors" value={attentionVisitors7Days} detail="Unique visitors" rateLabel={`${formatAnalyticsRate(attentionVisitors7Days, attentionSpotlightImpressions7Days)} of seen`} />
+            <ShopAnalyticsFunnelStep icon="shop" label="Product Opens" value={attentionProductOpens7Days} detail="Opened shop blocks" rateLabel={`${formatAnalyticsRate(attentionProductOpens7Days, attentionVisitors7Days)} of visitors`} />
+            <ShopAnalyticsFunnelStep icon="phone" label="Contact Taps" value={attentionContactTaps7Days} detail="Buyer intent signal only" rateLabel={`${formatAnalyticsRate(attentionContactTaps7Days, attentionVisitors7Days)} of visitors`} />
+          </div>
+        </div>
 
         <div
           style={{
             marginTop: 14,
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr 1fr" : "repeat(4, minmax(0, 1fr))",
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 0.92fr)",
             gap: 12,
           }}
         >
-          <div style={statTile()}>
-            <div style={sectionLabel()}>Public items</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#0B1F33",
-                fontSize: 24,
-                fontWeight: 900,
-              }}
-            >
-              {occupiedPublicProductSlotCount} / {publicProductSlotsTotal}
+          <div style={{ ...statTile(), minHeight: 210 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
+              <div style={{ color: "#061827", fontSize: 19, fontWeight: 950 }}>Visitor Activity - Last 7 Days</div>
+              <div style={{ color: "#27496A", fontSize: 13, fontWeight: 850, textAlign: "right" }}>Total<br />{attentionVisitors7Days}</div>
             </div>
+            {attentionDailyActivityRows.length > 0 ? (
+              <div
+                style={{
+                  marginTop: 16,
+                  height: 126,
+                  display: "grid",
+                  gridTemplateColumns: `repeat(${attentionDailyActivityRows.length}, minmax(0, 1fr))`,
+                  gap: 8,
+                  alignItems: "end",
+                  borderBottom: "1px solid rgba(18,58,89,0.16)",
+                  backgroundImage: "linear-gradient(rgba(18,58,89,0.08) 1px, transparent 1px)",
+                  backgroundSize: "100% 32px",
+                }}
+                aria-label="Daily unique shop visitors"
+              >
+                {attentionDailyActivityRows.map((row) => {
+                  const value = row.visitors || row.visits;
+                  const height = Math.max(4, Math.round((value / attentionDailyMaxVisitors) * 92));
+                  return (
+                    <div key={row.date || `day-${shortAnalyticsDateLabel(row.date)}`} style={{ display: "grid", gap: 6, justifyItems: "center", alignItems: "end" }}>
+                      <div
+                        title={`${value} visitor${value === 1 ? "" : "s"}`}
+                        style={{
+                          width: "72%",
+                          minWidth: 10,
+                          maxWidth: 28,
+                          height,
+                          borderRadius: "8px 8px 2px 2px",
+                          background: value > 0 ? "linear-gradient(180deg, #4DA3F0 0%, #1D72C9 100%)" : "rgba(29,114,201,0.18)",
+                          boxShadow: value > 0 ? "0 8px 16px rgba(29,114,201,0.18)" : "none",
+                        }}
+                      />
+                      <div style={{ color: "#526579", fontSize: 11, fontWeight: 800, textAlign: "center" }}>
+                        {shortAnalyticsDateLabel(row.date)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{ ...helperText(), marginTop: 18 }}>
+                Daily history will appear after new shop attention events are recorded.
+              </div>
+            )}
           </div>
 
-          <div style={statTile()}>
-            <div style={sectionLabel()}>Vault</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#0B1F33",
-                fontSize: 24,
-                fontWeight: 900,
-              }}
-            >
-              {vaultProducts.length} / 6
-            </div>
-          </div>
-
-          <div style={statTile()}>
-            <div style={sectionLabel()}>Spotlights</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#0B1F33",
-                fontSize: 24,
-                fontWeight: 900,
-              }}
-            >
-              {activeSpotlights.length}
-            </div>
-          </div>
-
-          <div style={statTile()}>
-            <div style={sectionLabel()}>Vault links</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#0B1F33",
-                fontSize: 24,
-                fontWeight: 900,
-              }}
-            >
-              {vaultLinks.length}
+          <div style={{ ...statTile(), minHeight: 210 }}>
+            <div style={{ color: "#061827", fontSize: 19, fontWeight: 950 }}>Inventory Visibility</div>
+            <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              {[
+                { label: "Public Items", value: `${occupiedPublicProductSlotCount} / ${publicProductSlotsTotal}`, rate: publicInventoryRate, color: "#2E9B62", note: occupiedPublicProductSlotCount >= publicProductSlotsTotal ? "All items are published" : "Some public slots are empty" },
+                { label: "Vault", value: `${vaultProducts.length} / 6`, rate: vaultInventoryRate, color: "#4D7DE0", note: vaultProducts.length > 0 ? "Vault offers ready" : "No vault items yet" },
+              ].map((item) => (
+                <div key={item.label} style={{ display: "grid", justifyItems: "center", textAlign: "center", gap: 8 }}>
+                  <div
+                    style={{
+                      width: 94,
+                      height: 94,
+                      borderRadius: "50%",
+                      display: "grid",
+                      placeItems: "center",
+                      background: `conic-gradient(${item.color} ${item.rate}%, rgba(18,58,89,0.12) 0)`,
+                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.84)",
+                    }}
+                  >
+                    <div style={{ width: 68, height: 68, borderRadius: "50%", background: "#FFFFFF", display: "grid", placeItems: "center", color: "#061827", fontSize: 19, fontWeight: 950 }}>
+                      {item.rate}%
+                    </div>
+                  </div>
+                  <div style={{ color: "#061827", fontSize: 20, fontWeight: 950 }}>{item.value}</div>
+                  <div style={{ color: "#27496A", fontSize: 13, fontWeight: 900 }}>{item.label}</div>
+                  <div style={{ borderRadius: 999, padding: "5px 10px", background: "rgba(255,255,255,0.78)", color: item.color, fontSize: 11, fontWeight: 850 }}>
+                    {item.note}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -4960,52 +5831,405 @@ export default function ShopControlPage() {
           style={{
             marginTop: 14,
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr 1fr" : "repeat(4, minmax(0, 1fr))",
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
             gap: 12,
           }}
-          aria-label="Shop attention signals for the last seven days"
         >
-          <div style={statTile()}>
-            <div style={sectionLabel()}>Visitors</div>
-            <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 24, fontWeight: 900 }}>
-              {attentionVisitors7Days}
+          <div style={{ ...statTile(), minHeight: 170 }}>
+            <div style={{ color: "#061827", fontSize: 19, fontWeight: 950 }}>Spotlight Performance</div>
+            <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "74px 1fr 1fr 1fr", gap: 12, alignItems: "center" }}>
+              <div style={shopAnalyticsIconTile("gold")} aria-hidden="true">
+                <GsnLegacyIcon name="megaphone" size={34} />
+              </div>
+              <div>
+                <div style={{ color: "#061827", fontSize: 23, fontWeight: 950 }}>{activeSpotlights.length}</div>
+                <div style={{ ...helperText(), fontSize: 12, lineHeight: 1.2 }}>Spotlights</div>
+              </div>
+              <div>
+                <div style={{ color: "#061827", fontSize: 23, fontWeight: 950 }}>{attentionSpotlightImpressions7Days}</div>
+                <div style={{ ...helperText(), fontSize: 12, lineHeight: 1.2 }}>Seen</div>
+              </div>
+              <div>
+                <div style={{ color: "#061827", fontSize: 23, fontWeight: 950 }}>{attentionPossibleSpotlightReach}</div>
+                <div style={{ ...helperText(), fontSize: 12, lineHeight: 1.2 }}>Possible Reach</div>
+              </div>
             </div>
-            <div style={{ ...helperText(), marginTop: 6, fontSize: 12 }}>Last 7 days</div>
+            <div style={{ marginTop: 14, borderRadius: 16, padding: 12, background: "linear-gradient(180deg, #EAF4FF 0%, #DCEBFF 100%)", color: "#17426B", fontSize: 13, fontWeight: 800, lineHeight: 1.45 }}>
+              {attentionSpotlightShopClicks7Days > 0
+                ? `${attentionSpotlightShopClicks7Days} spotlight tap${attentionSpotlightShopClicks7Days === 1 ? "" : "s"} opened your shop from the feed.`
+                : "Your spotlight is getting measured. Turn attention into product opens with a stronger thumbnail or call-to-action."}
+            </div>
           </div>
 
-          <div style={statTile()}>
-            <div style={sectionLabel()}>Product opens</div>
-            <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 24, fontWeight: 900 }}>
-              {attentionProductOpens7Days}
+          <div style={{ ...statTile(), minHeight: 210 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+              <div>
+                <div style={{ color: "#061827", fontSize: 19, fontWeight: 950 }}>Recorded trade outcomes</div>
+                <div style={{ ...helperText(), fontSize: 12 }}>Protected trade evidence linked to this shop or seller.</div>
+              </div>
+              <span style={badge(tradeOutcomeRecords7Days > 0)}>Evidence only</span>
             </div>
-            <div style={{ ...helperText(), marginTop: 6, fontSize: 12 }}>Opened shop blocks</div>
+            <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+              {[
+                ["Protected records", tradeOutcomeRecords7Days],
+                ["Shop linked", tradeOutcomeShopLinkedRecords],
+                ["Seller side", tradeOutcomeSellerSideRecords],
+                ["Released", tradeOutcomeReleasedRecords],
+                ["Payment claimed", tradeOutcomePaymentClaimedRecords],
+                ["Receipt confirmed", tradeOutcomeReceiptConfirmedRecords],
+                ["Disputes", tradeOutcomeDisputeRecords],
+                ["Unresolved", tradeOutcomeUnresolvedRecords],
+              ].map(([label, value]) => (
+                <div key={`trade-outcome-${label}`} style={{ borderRadius: 14, background: "linear-gradient(180deg, #F8FBFF 0%, #EEF6FF 100%)", border: "1px solid rgba(18,58,89,0.10)", padding: "9px 10px" }}>
+                  <div style={{ color: "#385773", fontSize: 11, fontWeight: 850, lineHeight: 1.2 }}>{label}</div>
+                  <div style={{ color: "#061827", fontSize: 20, fontWeight: 950, lineHeight: 1.05, marginTop: 5 }}>{value}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 12, borderTop: "1px solid rgba(18,58,89,0.10)", paddingTop: 10 }}>
+              <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Recent protected records</div>
+              {tradeOutcomeRecentRows.length ? (
+                <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
+                  {tradeOutcomeRecentRows.map((row) => (
+                    <div key={`trade-outcome-recent-${row.tradeId || row.tradeCode || row.itemTitle}`} style={{ borderRadius: 12, background: "rgba(239,247,255,0.82)", border: "1px solid rgba(18,58,89,0.08)", padding: "7px 8px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, color: "#24415C", fontSize: 11, fontWeight: 900 }}>
+                        <span>{row.itemTitle}</span>
+                        <span>{row.linkedToShop ? "Shop" : "Seller"}</span>
+                      </div>
+                      <div style={{ marginTop: 3, color: "#5A6F84", fontSize: 10.5, fontWeight: 750, lineHeight: 1.35 }}>
+                        Status {firstTruthy(row.status, "open")} / payment {firstTruthy(row.paymentStatus, "not started")} / release {firstTruthy(row.releaseStatus, "not requested")}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ marginTop: 6, color: "#385773", fontSize: 12, fontWeight: 800, lineHeight: 1.4 }}>
+                  No protected trade record is linked yet. Attention can be growing before formal trade evidence appears.
+                </div>
+              )}
+            </div>
+            <div style={{ marginTop: 10, color: "#5A6F84", fontSize: 11, fontWeight: 750, lineHeight: 1.4 }}>
+              {tradeOutcomeBoundary}
+            </div>
+          </div>
+          <div style={{ ...statTile(), minHeight: 210 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+              <div>
+                <div style={{ color: "#061827", fontSize: 19, fontWeight: 950 }}>Traffic sources</div>
+                <div style={{ ...helperText(), fontSize: 12 }}>Where attention was recorded in the last 7 days.</div>
+              </div>
+              <span style={badge(attentionSourceBreakdownRows.length > 0)}>Attention only</span>
+            </div>
+            <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+              {attentionSourceBreakdownRows.length ? (
+                attentionSourceBreakdownRows.map((row) => (
+                  <div key={`traffic-source-${row.source || row.label}`} style={{ borderRadius: 14, background: "linear-gradient(180deg, #F8FBFF 0%, #EEF6FF 100%)", border: "1px solid rgba(18,58,89,0.10)", padding: "9px 10px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                      <div style={{ color: "#061827", fontSize: 13, fontWeight: 900 }}>{row.label}</div>
+                      <div style={{ color: "#0F5EAA", fontSize: 13, fontWeight: 950 }}>{row.totalEvents}</div>
+                    </div>
+                    <div style={{ marginTop: 5, color: "#385773", fontSize: 11, fontWeight: 750, lineHeight: 1.35 }}>
+                      Visits {row.shopVisits} / opens {row.productOpens} / spotlight {row.spotlightViews} / contacts {row.contactTaps}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ color: "#385773", fontSize: 13, fontWeight: 800, lineHeight: 1.4 }}>
+                  No source breakdown is available yet. Share or publish once, then check again after people have had time to respond.
+                </div>
+              )}
+            </div>
+            <div style={{ marginTop: 12, borderTop: "1px solid rgba(18,58,89,0.10)", paddingTop: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Follower notice trail</div>
+                <div style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 900 }}>{followerNotices7Days} sent</div>
+              </div>
+              <div style={{ marginTop: 5, color: "#385773", fontSize: 11, fontWeight: 750, lineHeight: 1.4 }}>
+                {followerNoticeDeliveryLabel}
+              </div>
+              {followerNoticeKindRows.length ? (
+                <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
+                  {followerNoticeKindRows.map((row) => (
+                    <div key={`follower-notice-${row.kind || row.label}`} style={{ display: "flex", justifyContent: "space-between", gap: 10, color: "#24415C", fontSize: 11, fontWeight: 850 }}>
+                      <span>{row.label}</span>
+                      <span>{row.count}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <div style={{ marginTop: 12, borderTop: "1px solid rgba(18,58,89,0.10)", paddingTop: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Share action trail</div>
+                <div style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 900 }}>{shareActions7Days} prepared</div>
+              </div>
+              {shareActionChannelRows.length ? (
+                <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
+                  {shareActionChannelRows.map((row) => (
+                    <div key={`share-action-${row.source || row.label}`} style={{ display: "flex", justifyContent: "space-between", gap: 10, color: "#24415C", fontSize: 11, fontWeight: 850 }}>
+                      <span>{row.label}</span>
+                      <span>{row.count}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ marginTop: 5, color: "#385773", fontSize: 11, fontWeight: 750, lineHeight: 1.4 }}>
+                  No tracked share action yet. Copy or share the shop link to start measuring distribution attempts.
+                </div>
+              )}
+            </div>
+            <div style={{ marginTop: 8, borderRadius: 12, background: "rgba(239,247,255,0.82)", border: "1px solid rgba(18,58,89,0.08)", padding: "7px 8px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, color: "#24415C", fontSize: 11, fontWeight: 900 }}>
+                  <span>Follower notice response</span>
+                  <span>{followerNoticeResponseVisitors} visitors</span>
+                </div>
+                <div style={{ marginTop: 3, color: "#5A6F84", fontSize: 10.5, fontWeight: 750, lineHeight: 1.35 }}>
+                  Visits {followerNoticeResponseVisits} / opens {followerNoticeResponseProductOpens} / taps {followerNoticeResponseContactTaps}
+                </div>
+                {followerNoticeResponseKindRows.length ? (
+                  <div style={{ marginTop: 6, display: "grid", gap: 4 }}>
+                    {followerNoticeResponseKindRows.map((row) => (
+                      <div key={`follower-response-${row.kind || row.label}`} style={{ display: "flex", justifyContent: "space-between", gap: 8, color: "#385773", fontSize: 10.5, fontWeight: 800 }}>
+                        <span>{row.label}</span>
+                        <span>{row.totalEvents}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+            </div>
+            <div style={{ marginTop: 10, color: "#5A6F84", fontSize: 11, fontWeight: 750, lineHeight: 1.4 }}>
+              {followerNoticeBoundary} {followerNoticeResponseBoundary}
+            </div>
+            <div style={{ marginTop: 12, borderTop: "1px solid rgba(18,58,89,0.10)", paddingTop: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Share response</div>
+                <div style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 900 }}>{shareResponseVisits} visits</div>
+              </div>
+              <div style={{ marginTop: 5, color: "#385773", fontSize: 11, fontWeight: 750, lineHeight: 1.4 }}>
+                {shareResponseVisitors} unique visitors / {shareResponseProductOpens} opens / {shareResponseContactTaps} contact taps from attributed links.
+              </div>
+              {shareResponseChannelRows.length ? (
+                <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
+                  {shareResponseChannelRows.map((row) => (
+                    <div key={`share-response-${row.source || row.label}`} style={{ borderRadius: 12, background: "rgba(239,247,255,0.82)", border: "1px solid rgba(18,58,89,0.08)", padding: "7px 8px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, color: "#24415C", fontSize: 11, fontWeight: 900 }}>
+                        <span>{row.label}</span>
+                        <span>{row.totalEvents}</span>
+                      </div>
+                      <div style={{ marginTop: 3, color: "#5A6F84", fontSize: 10.5, fontWeight: 750, lineHeight: 1.35 }}>
+                        Visits {row.visits} / unique {row.visitors} / opens {row.productOpens} / taps {row.contactTaps}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <div style={{ marginTop: 10, color: "#5A6F84", fontSize: 11, fontWeight: 750, lineHeight: 1.4 }}>
+              {shareActionBoundary}
+            </div>
+            <div style={{ marginTop: 10, color: "#5A6F84", fontSize: 11, fontWeight: 750, lineHeight: 1.4 }}>
+              {shareResponseBoundary}
+            </div>
+            <div style={{ marginTop: 10, color: "#5A6F84", fontSize: 11, fontWeight: 750, lineHeight: 1.4 }}>
+              Source counts show where attention was recorded, not who bought or paid.
+            </div>
           </div>
 
-          <div style={statTile()}>
-            <div style={sectionLabel()}>Contact taps</div>
-            <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 24, fontWeight: 900 }}>
-              {attentionContactTaps7Days}
+          <div style={{ ...statTile(), minHeight: 250 }}>
+            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <GsnLegacyIcon name="spark" size={34} />
+              <div>
+                <div style={{ color: "#061827", fontSize: 19, fontWeight: 950 }}>Market Intelligence</div>
+                <div style={{ ...helperText(), fontSize: 12 }}>Evidence first, recommendation second.</div>
+              </div>
             </div>
-            <div style={{ ...helperText(), marginTop: 6, fontSize: 12 }}>Buyer intent signal only</div>
-          </div>
-
-          <div style={statTile()}>
-            <div style={sectionLabel()}>Spotlight seen</div>
-            <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 24, fontWeight: 900 }}>
-              {attentionSpotlightImpressions7Days}
+            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <span style={badge(shopAnalyticsWisdom.confidence === "high")}>Confidence: {shopAnalyticsWisdom.confidence}</span>
+              <span style={badge(shopAnalyticsWisdom.diagnosisCode !== "GATHERING_DATA")}>{shopAnalyticsWisdom.diagnosisCode.replace(/_/g, " ")}</span>
+              <span style={badge(shopMarketIntelligenceSummary.workCount > 0)}>Spine: {shopMarketIntelligenceSummary.headline}</span>
             </div>
-            <div style={{ ...helperText(), marginTop: 6, fontSize: 12 }}>
-              Possible reach: {attentionPossibleSpotlightReach}
+            <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+              <div style={{ color: "#24415C", fontSize: 13, fontWeight: 850, lineHeight: 1.4 }}>
+                <strong style={{ color: "#061827" }}>Observation:</strong> {shopAnalyticsWisdom.observation}
+              </div>
+              <div style={{ color: "#24415C", fontSize: 13, fontWeight: 850, lineHeight: 1.4 }}>
+                <strong style={{ color: "#061827" }}>Interpretation:</strong> {shopAnalyticsWisdom.interpretation}
+              </div>
+              <div style={{ borderRadius: 14, padding: 11, background: "linear-gradient(180deg, #F7FBFF 0%, #EAF4FF 100%)", color: "#17426B", fontSize: 12, fontWeight: 800, lineHeight: 1.4 }}>
+                Recheck: {shopAnalyticsWisdom.recheckPoint}
+              </div>
             </div>
+            <div
+              style={{
+                marginTop: 12,
+                borderRadius: 16,
+                border: "1px solid rgba(15,94,170,0.16)",
+                background: "linear-gradient(180deg, #F8FBFF 0%, #EAF4FF 100%)",
+                padding: 12,
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 10,
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <div>
+                <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Recommended next move</div>
+                <div style={{ marginTop: 4, color: "#385773", fontSize: 12, fontWeight: 800, lineHeight: 1.4 }}>
+                  {marketIntelligencePrimaryAction.detail}
+                </div>
+              </div>
+              <StableCtaLink
+                to={marketIntelligencePrimaryAction.to}
+                onClick={() => trackMarketIntelligenceAction(marketIntelligencePrimaryAction.actionKey)}
+                debugId="shop-control.market-intelligence.primary-action"
+                stableHeight={38}
+                style={{
+                  borderRadius: 999,
+                  padding: "0 13px",
+                  background: "#FFFFFF",
+                  color: "#0F5EAA",
+                  border: "1px solid rgba(15,94,170,0.18)",
+                  fontSize: 12,
+                  fontWeight: 900,
+                  boxShadow: "0 8px 16px rgba(8,38,67,0.08)",
+                }}
+              >
+                {marketIntelligencePrimaryAction.label}
+              </StableCtaLink>
+            </div>
+            <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+              {shopAnalyticsWisdom.actions.slice(0, 3).map((item, index) => {
+                const actionKey = marketIntelligenceActionKey(item, index);
+                const actionLogged = loggedRecommendationActionKeys.has(actionKey);
+                return (
+                  <div key={`${item}-${index}`} style={{ display: "grid", gridTemplateColumns: "28px minmax(0, 1fr)", gap: 8, alignItems: "start" }}>
+                    <div
+                      aria-hidden="true"
+                      style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: 999,
+                        display: "grid",
+                        placeItems: "center",
+                        background: index === 0 ? "#2E9B62" : "#F2C766",
+                        color: index === 0 ? "#FFFFFF" : "#061827",
+                        fontSize: 12,
+                        fontWeight: 950,
+                      }}
+                    >
+                      {index + 1}
+                    </div>
+                    <div>
+                      <div style={{ color: "#24415C", fontSize: 13, fontWeight: 800, lineHeight: 1.35 }}>{item}</div>
+                      <SubtleButton
+                        onClick={() => trackMarketIntelligenceAction(actionKey)}
+                        stableHeight={32}
+                        minWidth={110}
+                        debugId={`shop-control.market-intelligence.actioned.${actionKey}`}
+                        style={{ marginTop: 7, borderRadius: 999, fontSize: 11, fontWeight: 900, padding: "0 11px" }}
+                      >
+                        {actionLogged ? "Logged tried" : "Mark tried"}
+                      </SubtleButton>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div
+              style={{
+                marginTop: 12,
+                borderRadius: 16,
+                border: "1px solid rgba(214,170,69,0.20)",
+                background: "linear-gradient(180deg, #FFFDF6 0%, #FFF6D7 100%)",
+                padding: 12,
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <div>
+                  <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Demand Box context</div>
+                  <div style={{ marginTop: 4, color: "#5A4720", fontSize: 12, fontWeight: 800, lineHeight: 1.4 }}>
+                    {demandContextLabel}. {demandOverlapLabel} This is market reading only; it is not buyer proof or automatic product matching.
+                  </div>
+                </div>
+                <StableCtaLink
+                  to={routes.demandBox}
+                  onClick={() => trackMarketIntelligenceAction("open_demand_box")}
+                  debugId="shop-control.market-intelligence.demand-box"
+                  stableHeight={38}
+                  style={{
+                    borderRadius: 999,
+                    padding: "0 13px",
+                    background: "#FFFFFF",
+                    color: "#0F5EAA",
+                    border: "1px solid rgba(15,94,170,0.18)",
+                    fontSize: 12,
+                    fontWeight: 900,
+                    boxShadow: "0 8px 16px rgba(8,38,67,0.08)",
+                  }}
+                >
+                  Open Demand Box
+                </StableCtaLink>
+              </div>
+              {demandContextHints.length ? (
+                <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
+                  {demandContextHints.map((hint) => (
+                    <div key={`demand-context-${hint.row.id}`} style={{ color: "#385773", fontSize: 12, fontWeight: 750, lineHeight: 1.35 }}>
+                      {firstTruthy(hint.row.title, hint.row.category, "Community request")}
+                      {hint.terms.length ? ` - possible overlap: ${hint.terms.join(", ")}` : ""}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <div style={{ marginTop: 12, borderRadius: 14, padding: 11, background: "rgba(239,247,255,0.80)", border: "1px solid rgba(18,58,89,0.08)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Advice action trail</div>
+                <div style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 900 }}>{recommendationActions7Days} logged</div>
+              </div>
+              <div style={{ marginTop: 5, color: "#385773", fontSize: 12, fontWeight: 780, lineHeight: 1.4 }}>
+                Tracks whether the owner acted on Market Intelligence guidance in the last 7 days.
+              </div>
+              {recommendationActionRows.length ? (
+                <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
+                  {recommendationActionRows.map((row) => (
+                    <div key={`recommendation-action-${row.action || row.label}`} style={{ display: "flex", justifyContent: "space-between", gap: 10, color: "#24415C", fontSize: 11, fontWeight: 850 }}>
+                      <span>{row.label}</span>
+                      <span>{row.count}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              <div style={{ marginTop: 8, color: "#5A6F84", fontSize: 11, fontWeight: 750, lineHeight: 1.4 }}>
+                {recommendationActionBoundary}
+              </div>
+            </div>
+            <details style={{ marginTop: 12 }}>
+              <StableDisclosureSummary debugId="shop-control.market-intelligence.why" stableHeight={40} style={{ color: "#0F5EAA", fontSize: 13, fontWeight: 900, cursor: "pointer" }}>Why this advice?</StableDisclosureSummary>
+              <div style={{ marginTop: 8, color: "#385773", fontSize: 12, fontWeight: 750, lineHeight: 1.45 }}>
+                {shopAnalyticsWisdom.why} This reading is packaged through the shared Attention Spine signal engine, so it does not create a separate shop-only priority system. Demand Box context is read from the existing marketplace request lane, not a separate matching engine.
+              </div>
+            </details>
           </div>
         </div>
 
-        <div style={{ marginTop: 12, ...helperText(), maxWidth: 780 }}>
+        <div
+          style={{
+            marginTop: 14,
+            borderRadius: 16,
+            border: "1px solid rgba(18,58,89,0.10)",
+            background: "rgba(234,244,255,0.76)",
+            color: "#385773",
+            padding: "11px 14px",
+            fontSize: 13,
+            fontWeight: 750,
+            lineHeight: 1.45,
+          }}
+        >
           Visitors, views, opens, and taps are attention signals. They are not buyers, sales, payment proof, verification, or a trust score.
         </div>
       </section>
       ) : null}
-
       {activeOwnerLayer === "vault" ? (
       <section
         id="shop-control-vault"
@@ -5182,7 +6406,7 @@ export default function ShopControlPage() {
                       {labelWithIcon(
                         "eye",
                         <>
-                          {Number(item.views_used || 0)} / {Number(item.max_views || 0) || "∞"}
+                          {Number(item.views_used || 0)} / {Number(item.max_views || 0) || "Unlimited"}
                         </>
                       )}
                     </span>

@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 from typing import Any, Dict, Literal, Optional
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from fastapi.responses import JSONResponse
@@ -42,6 +43,7 @@ from app.services.community_domain_feature_policy import (
     require_domain_vault_enabled,
 )
 from app.services.notification_service import create_notification
+from app.services.web_push_service import dispatch_web_push_for_notifications
 from app.services.trust_events_services import log_trust_event
 from app.services.vault_domain_service import (
     archive_vault_offer_for_product,
@@ -595,7 +597,7 @@ def _create_marketplace_listing_review_notifications(
             kind=MARKETPLACE_LISTING_SUBMISSION_EVENT,
             title="Marketplace listing waiting for review",
             message=f"A member submitted {summary} for marketplace approval.",
-            action_url=action_url,
+            action_url=attributed_action_url,
             action_label="Review listing",
             commit=False,
             refresh=False,
@@ -1155,15 +1157,16 @@ def _publish_marketplace_product_submission(
         refresh=False,
     )
 
-    follower_notifications_created = 0
+    follower_notification_rows: list[Notification] = []
     if visibility_mode == VISIBILITY_COMMUNITY:
         shop_name = _public_identity_name(getattr(shop, "name", None), fallback="A shop you follow")
-        follower_notifications_created = _notify_shop_followers(
+        product_name = _public_identity_name(getattr(product, "name", None), fallback="a new product")
+        follower_notification_rows = _notify_shop_followers(
             db,
             shop=shop,
             kind="marketplace.shop.product_created",
-            title="Shop update",
-            message=f"{shop_name} added a new product.",
+            title=f"{shop_name} posted",
+            message=f"{shop_name} posted {product_name}. Open it from your GSN updates.",
             action_url=_shop_public_action_url(
                 db,
                 shop=shop,
@@ -1172,7 +1175,9 @@ def _publish_marketplace_product_submission(
             ),
             clan_ids=[int(clan_id)],
         )
+    follower_notifications_created = len(follower_notification_rows)
     db.commit()
+    dispatch_web_push_for_notifications(db, follower_notification_rows)
     db.refresh(event)
     return (
         product,
@@ -1433,6 +1438,8 @@ def _shop_public_action_url(
     clan_id: Optional[int] = None,
     product_id: Optional[int] = None,
     broadcast_id: Optional[int] = None,
+    source: Optional[str] = None,
+    notice_kind: Optional[str] = None,
 ) -> str:
     owner = db.query(User).filter(User.id == int(shop.owner_user_id)).first()
     gmfn_id = _safe_str(getattr(owner, "gmfn_id", None))
@@ -1445,8 +1452,25 @@ def _shop_public_action_url(
         params.append(f"product_id={int(product_id)}")
     if broadcast_id is not None and int(broadcast_id) > 0:
         params.append(f"broadcast_id={int(broadcast_id)}")
+    safe_source = _safe_str(source)[:80]
+    if safe_source:
+        params.append(f"gsn_source={quote(safe_source, safe='')}")
+    safe_notice_kind = _safe_str(notice_kind)[:120]
+    if safe_notice_kind:
+        params.append(f"gsn_notice={quote(safe_notice_kind, safe='')}")
 
     return f"{path}?{'&'.join(params)}" if params else path
+
+
+def _shop_notice_action_url(action_url: str, kind: str) -> str:
+    base_url = (_safe_str(action_url, "/app/shop") or "/app/shop")[:500]
+    if "gsn_source=" in base_url or "gsn_notice=" in base_url:
+        return base_url
+    separator = "&" if "?" in base_url else "?"
+    return (
+        f"{base_url}{separator}"
+        f"gsn_source=shop_follower_notice&gsn_notice={quote(_safe_str(kind)[:120], safe='')}"
+    )
 
 
 def _shop_notice_already_exists(
@@ -1477,7 +1501,7 @@ def _notify_shop_followers(
     message: str,
     action_url: str,
     clan_ids: Optional[list[int]] = None,
-) -> int:
+) -> list[Notification]:
     follower_rows = (
         db.query(ShopFollower)
         .filter(ShopFollower.shop_id == int(shop.id))
@@ -1485,7 +1509,8 @@ def _notify_shop_followers(
         .all()
     )
 
-    created = 0
+    attributed_action_url = _shop_notice_action_url(action_url, kind)
+    created_rows: list[Notification] = []
     seen_user_ids: set[int] = set()
     for follower in follower_rows:
         follower_user_id = int(follower.follower_user_id)
@@ -1505,24 +1530,24 @@ def _notify_shop_followers(
             db,
             user_id=follower_user_id,
             kind=kind,
-            action_url=action_url,
+            action_url=attributed_action_url,
         ):
             continue
 
-        create_notification(
+        row = create_notification(
             db,
             user_id=follower_user_id,
             kind=kind,
             title=title,
             message=message,
-            action_url=action_url,
-            action_label="Open shop",
+            action_url=attributed_action_url,
+            action_label="Open post",
             commit=False,
             refresh=False,
         )
-        created += 1
+        created_rows.append(row)
 
-    return created
+    return created_rows
 
 
 def _get_canonical_shop_by_owner(
@@ -3973,14 +3998,16 @@ def create_marketplace_product(
         commit=False,
         refresh=False,
     )
+    follower_notification_rows: list[Notification] = []
     if visibility_mode == VISIBILITY_COMMUNITY:
         shop_name = _public_identity_name(getattr(shop, "name", None), fallback="A shop you follow")
-        _notify_shop_followers(
+        product_name = _public_identity_name(getattr(product, "name", None), fallback="a new product")
+        follower_notification_rows = _notify_shop_followers(
             db,
             shop=shop,
             kind="marketplace.shop.product_created",
-            title="Shop update",
-            message=f"{shop_name} added a new product.",
+            title=f"{shop_name} posted",
+            message=f"{shop_name} posted {product_name}. Open it from your GSN updates.",
             action_url=_shop_public_action_url(
                 db,
                 shop=shop,
@@ -3990,6 +4017,7 @@ def create_marketplace_product(
             clan_ids=[resolved_clan_id],
         )
     db.commit()
+    dispatch_web_push_for_notifications(db, follower_notification_rows)
 
     return {
         "ok": True,
@@ -4416,6 +4444,7 @@ def update_marketplace_product(
         changed = True
 
     if changed:
+        follower_notification_rows: list[Notification] = []
         try:
             db.add(product)
             db.flush()
@@ -4499,12 +4528,16 @@ def update_marketplace_product(
                         getattr(notify_shop, "name", None),
                         fallback="A shop you follow",
                     )
-                    _notify_shop_followers(
+                    product_name = _public_identity_name(
+                        getattr(product, "name", None),
+                        fallback="a shop offer",
+                    )
+                    follower_notification_rows = _notify_shop_followers(
                         db,
                         shop=notify_shop,
                         kind="marketplace.shop.product_updated",
-                        title="Shop offer updated",
-                        message=f"{shop_name} updated a shop offer.",
+                        title=f"{shop_name} updated a post",
+                        message=f"{shop_name} updated {product_name}. Open it from your GSN updates.",
                         action_url=_shop_public_action_url(
                             db,
                             shop=notify_shop,
@@ -4514,6 +4547,7 @@ def update_marketplace_product(
                         clan_ids=[resolved_clan_id],
                     )
             db.commit()
+            dispatch_web_push_for_notifications(db, follower_notification_rows)
             db.refresh(product)
         except ValueError as exc:
             db.rollback()
@@ -4978,12 +5012,13 @@ def repost_marketplace_product(
         refresh=False,
     )
     shop_name = _public_identity_name(getattr(shop, "name", None), fallback="A shop you follow")
-    _notify_shop_followers(
+    product_name = _public_identity_name(getattr(product, "name", None), fallback="a shop item")
+    follower_notification_rows = _notify_shop_followers(
         db,
         shop=shop,
         kind="marketplace.shop.spotlight_created",
-        title="Shop spotlight",
-        message=f"{shop_name} placed a shop item in Spotlight.",
+        title=f"{shop_name} posted a spotlight",
+        message=f"{shop_name} placed {product_name} in Spotlight. Open it from your GSN updates.",
         action_url=_shop_public_action_url(
             db,
             shop=shop,
@@ -4994,6 +5029,7 @@ def repost_marketplace_product(
         clan_ids=[target_clan_id],
     )
     db.commit()
+    dispatch_web_push_for_notifications(db, follower_notification_rows)
     db.refresh(repost)
     db.refresh(broadcast)
 
@@ -5405,13 +5441,14 @@ def create_marketplace_broadcast(
         (x for x in created_items if int(x.clan_id) == int(resolved_clan_id)),
         created_items[0],
     )
+    follower_notification_rows: list[Notification] = []
     if canonical_shop is not None:
         shop_name = _public_identity_name(
             getattr(canonical_shop, "name", None),
             fallback="A shop you follow",
         )
         spotlight_publish = priority_mode == SPOTLIGHT_PAID
-        _notify_shop_followers(
+        follower_notification_rows = _notify_shop_followers(
             db,
             shop=canonical_shop,
             kind=(
@@ -5419,11 +5456,15 @@ def create_marketplace_broadcast(
                 if spotlight_publish
                 else "marketplace.shop.broadcast_created"
             ),
-            title="Shop spotlight" if spotlight_publish else "Shop update",
-            message=(
-                f"{shop_name} posted a new shop spotlight."
+            title=(
+                f"{shop_name} posted a spotlight"
                 if spotlight_publish
-                else f"{shop_name} posted a new shop update."
+                else f"{shop_name} posted an update"
+            ),
+            message=(
+                f"{shop_name} posted a new shop spotlight. Open it from your GSN updates."
+                if spotlight_publish
+                else f"{shop_name} posted a new shop update. Open it from your GSN updates."
             ),
             action_url=_shop_public_action_url(
                 db,
@@ -5434,6 +5475,7 @@ def create_marketplace_broadcast(
             clan_ids=target_clan_ids,
         )
     db.commit()
+    dispatch_web_push_for_notifications(db, follower_notification_rows)
 
     return {
         "ok": True,

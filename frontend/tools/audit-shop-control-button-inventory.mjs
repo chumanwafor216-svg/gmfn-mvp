@@ -37,10 +37,10 @@ const findings = [];
 const expectedSourceActions = {
   PrimaryButton: 12,
   SecondaryButton: 24,
-  SubtleButton: 2,
+  SubtleButton: 3,
   StableButton: 3,
-  StableCtaLink: 7,
-  total: 48,
+  StableCtaLink: 9,
+  total: 51,
 };
 const expectedNativeFieldCount = 26;
 const expectedFileInputActionRoots = 2;
@@ -421,12 +421,12 @@ if (/letterSpacing:\s*[1-9]/.test(shopControlSource)) {
   });
 }
 
-if (/â|�/.test(shopControlSource)) {
+if (/ÃƒÂ¢|Ã¯Â¿Â½/.test(shopControlSource)) {
   findings.push({
     file: shopControlFile,
-    line: lineAt(shopControlSource, shopControlSource.search(/â|�/)),
+    line: lineAt(shopControlSource, shopControlSource.search(/ÃƒÂ¢|Ã¯Â¿Â½/)),
     message: "Shop Control must not show mojibake/broken encoding characters in user-facing copy.",
-    text: shopControlSource.match(/.*(?:â|�).*/)?.[0]?.trim() || "",
+    text: shopControlSource.match(/.*(?:ÃƒÂ¢|Ã¯Â¿Â½).*/)?.[0]?.trim() || "",
   });
 }
 

@@ -190,12 +190,12 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
-    /buildGsnPublicShopLinkMessage[\s\S]*function buildPublicShopMessage[\s\S]*message: buildPublicShopMessage\(absoluteShopShareLink\)[\s\S]*socialMessage: `\$\{firstMeaningful\([\s\S]*?Public shop record\. Open the shop link\.[\s\S]*socialUrl: firstMeaningful\([\s\S]*?publicShopSocialPreviewUrl[\s\S]*buttonLabel="Share"[\s\S]*buttonKind="primary"[\s\S]*debugId="shop-gallery\.share-shop"[\s\S]*debugId="shop-gallery\.owner-contact\.choose"/,
+    /buildGsnPublicShopLinkMessage[\s\S]*appendShopShareAttribution[\s\S]*attributedShopShareLink[\s\S]*function buildPublicShopMessage[\s\S]*message: buildPublicShopMessage\(attributedShopShareLink \|\| absoluteShopShareLink\)[\s\S]*socialMessage: `\$\{firstMeaningful\([\s\S]*?Public shop record\. Open the shop link\.[\s\S]*socialUrl: attributedShopSocialLink[\s\S]*buttonLabel="Share"[\s\S]*buttonKind="primary"[\s\S]*debugId="shop-gallery\.share-shop"[\s\S]*debugId="shop-gallery\.owner-contact\.choose"/,
     "Public Shop Share must open the social chooser with compact public-shop text and backend social-preview URL.",
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
-    /async function copyShopLink\(\)[\s\S]*safeCopy\([\s\S]*buildPublicShopMessage\(absoluteShopShareLink\)[\s\S]*GSN public shop invitation copied\./,
+    /async function copyShopLink\(\)[\s\S]*const shareLink = attributedShopShareLink \|\| absoluteShopShareLink[\s\S]*safeCopy\(buildPublicShopMessage\(shareLink\)\)[\s\S]*trackShopShareAction\("copy_shop_link", shareLink\)[\s\S]*GSN public shop invitation copied\./,
     "Public Shop Copy action must copy compact public-shop link text, not a full formal paper.",
   ],
   [
@@ -205,7 +205,7 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
-    /const productSocialUrl = publicShopSocialPreviewUrl\([\s\S]*const socialMessage = \[[\s\S]*Open \$\{blockLabel\} on GSN\.[\s\S]*message: buildPublicShopMessage\(productUrl, productTitle\),[\s\S]*socialMessage,[\s\S]*socialUrl: productSocialUrl,[\s\S]*showBlockPlacementAction \? \([\s\S]*<SocialTagShareButton[\s\S]*target=\{buildProductSocialShareTarget\(product\)\}[\s\S]*debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}/,
+    /const productSocialUrl = appendShopShareAttribution\([\s\S]*publicShopSocialPreviewUrl\([\s\S]*"share_product"[\s\S]*const socialMessage = \[[\s\S]*Open \$\{blockLabel\} on GSN\.[\s\S]*message: buildPublicShopMessage\(productUrl, productTitle\),[\s\S]*socialMessage,[\s\S]*socialUrl: productSocialUrl,[\s\S]*showBlockPlacementAction \? \([\s\S]*<SocialTagShareButton[\s\S]*target=\{buildProductSocialShareTarget\(product\)\}[\s\S]*debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}[\s\S]*trackShopShareAction\([\s\S]*"share_product"/,
     "Shop Diary block social sharing must stay owner-only and use compact link text plus backend social-preview URL.",
   ],
   [

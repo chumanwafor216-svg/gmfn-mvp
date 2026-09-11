@@ -24,6 +24,10 @@ WEB_PUSH_NOTIFICATION_KINDS = {
     "community_domain.notice.posted",
     "marketplace.listing.submitted",
     "marketplace.listing.review_decided",
+    "marketplace.shop.broadcast_created",
+    "marketplace.shop.product_created",
+    "marketplace.shop.product_updated",
+    "marketplace.shop.spotlight_created",
 }
 
 

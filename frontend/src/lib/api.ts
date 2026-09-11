@@ -6143,7 +6143,9 @@ export async function recordMarketplaceAttentionEvent(payload: {
     | "product_open"
     | "spotlight_impression"
     | "spotlight_shop_click"
-    | "contact_tap";
+    | "contact_tap"
+    | "share_action"
+    | "recommendation_actioned";
   shop_id?: number | null;
   product_id?: number | null;
   broadcast_id?: number | null;

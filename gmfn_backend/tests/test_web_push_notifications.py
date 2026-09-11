@@ -7,7 +7,7 @@ from app.main import app
 from app.db.database import SessionLocal
 from app.db.models import Clan, ClanMembership, User
 from app.db.notification_models import Notification, WebPushSubscription
-from app.services.web_push_service import dispatch_web_push_for_notification
+from app.services.web_push_service import WEB_PUSH_NOTIFICATION_KINDS, dispatch_web_push_for_notification
 
 
 def _seed_push_notice_community() -> None:
@@ -411,6 +411,15 @@ def test_marketplace_listing_review_notifications_are_web_push_allowed(monkeypat
     ]
     assert sent_payloads[0]["payload"]["action_label"] == "Review listing"
     assert sent_payloads[1]["payload"]["action_label"] == "Open Marketplace"
+
+
+def test_shop_follower_notifications_are_web_push_allowed():
+    assert {
+        "marketplace.shop.broadcast_created",
+        "marketplace.shop.product_created",
+        "marketplace.shop.product_updated",
+        "marketplace.shop.spotlight_created",
+    }.issubset(WEB_PUSH_NOTIFICATION_KINDS)
 
 
 def test_official_notice_dispatches_web_push_to_registered_member(
