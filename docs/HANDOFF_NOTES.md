@@ -1,11 +1,11 @@
-## 2026-09-11 - Pillar of Hope pilot intake email draft prepared (local)
+## 2026-09-11 - Pillar of Hope pilot intake email draft updated (local)
 
-- Status: Gmail draft prepared in the existing Felix/Pillar of Hope thread; not sent because the safety reviewer required explicit approval of the exact payload and recipient before sending.
-- Gmail draft id: `r-3768560555913906788`; Gmail message id: `1a09170aa6439a31`.
+- Status: Updated Gmail draft prepared in the existing Felix/Pillar of Hope thread; not sent until founder confirms exact draft id and recipient at send time.
+- Current Gmail draft id: `r-8958806702853699935`; supersedes draft `r-3768560555913906788`.
 - Evidence note added: `docs/GSN_PILLAR_OF_HOPE_COMMUNITY_DOMAIN_PILOT_INTAKE_EMAIL_2026-09-11.md` records the non-private wording and attached intake-form text.
 - Draft purpose: pilot-only Community Domain setup questions for Pillar of Hope, with no fee at this stage, no adoption/payment/endorsement claim, no permanent free-package promise, and a clear right for either side to pause/change/stop the pilot.
-- Boundary included: Business Gateway and RGU are mentioned only as business-development/customer-discovery preparation context, not endorsement of GSN or Pillar of Hope.
-- Next action: founder must explicitly approve sending this exact draft to the confirmed Felix recipient before `_send_draft` may be used.
+- Boundary included: Business Gateway Aberdeen City & Shire and the Robert Gordon University Startup Accelerator / Innovation route are mentioned only as business-development/customer-discovery preparation context, not endorsement of GSN or Pillar of Hope.
+- Next action: founder must explicitly approve sending draft `r-8958806702853699935` to the confirmed Felix recipient before `_send_draft` may be used.
 ## 2026-09-11 - Steward setup identity and Spotlight boundary corrected (local)
 
 - Status: Docs-only protocol correction; not pushed or deployed yet.
