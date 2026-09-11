@@ -552,6 +552,7 @@ type PayInAccountDraft = {
 
 
 export type NoticeTone = "success" | "error";
+type MarketplaceNoticeModalMode = "notice" | "market_need_pulse";
 
 type SectionState = Record<MarketplaceSectionKey, boolean>;
 
@@ -4164,6 +4165,8 @@ export default function MarketplacePage() {
   const [marketplaceNoticeSettingsSaving, setMarketplaceNoticeSettingsSaving] =
     useState(false);
   const [marketplaceNoticeModalOpen, setMarketplaceNoticeModalOpen] = useState(false);
+  const [marketplaceNoticeModalMode, setMarketplaceNoticeModalMode] =
+    useState<MarketplaceNoticeModalMode>("notice");
   const [marketplaceNoticePosting, setMarketplaceNoticePosting] = useState(false);
   const [marketplaceListingReviewSubmissions, setMarketplaceListingReviewSubmissions] = useState<
     MarketplaceListingReviewSubmission[]
@@ -4357,6 +4360,12 @@ export default function MarketplacePage() {
   const routeFocus = useMemo(() => {
     const query = new URLSearchParams(location.search);
     return safeStr(query.get("focus")).toLowerCase();
+  }, [location.search]);
+  const routeAskMarketPulse = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    return ["1", "true", "yes", "market_need_pulse"].includes(
+      safeStr(query.get("ask_market") || query.get("market_need_pulse")).toLowerCase()
+    );
   }, [location.search]);
   const routeRepostHandoffProduct = useMemo(
     () =>
@@ -5024,6 +5033,8 @@ export default function MarketplacePage() {
     options?: {
       expiry_policy?: "standard" | "urgent" | "event" | "pinned";
       expires_at?: string;
+      notice_mode?: MarketplaceNoticeModalMode;
+      availability_enabled?: boolean;
     }
   ) {
     if (!activeCommunityId) {
@@ -5033,10 +5044,10 @@ export default function MarketplacePage() {
 
     setMarketplaceNoticePosting(true);
     try {
-      await createCommunityNotice({ clan_id: activeCommunityId, body, ...options });
+      const res = await createCommunityNotice({ clan_id: activeCommunityId, body, ...options });
       await loadMarketplaceNotices();
       setMarketplaceNoticeModalOpen(false);
-      showNotice("success", "Marketplace announcement posted.");
+      showNotice("success", safeStr(res?.message) || "Marketplace announcement posted.");
     } catch (err: any) {
       showNotice(
         "error",
@@ -7113,6 +7124,37 @@ export default function MarketplacePage() {
     activeCommunityId &&
       (activeNoticePostingPolicy === "members" || isMarketplaceNoticeOfficer)
   );
+
+  useEffect(() => {
+    const hash = safeStr(location.hash).replace(/^#/, "");
+    if (hash !== "marketplace-official-board") return;
+    const landingToken = `${location.pathname}${location.search}#${hash}:${
+      activeCommunityId || ""
+    }`;
+    if (routeHashLandingAppliedRef.current === landingToken) return;
+    routeHashLandingAppliedRef.current = landingToken;
+
+    setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "board"));
+    setSectionsOpen(focusedMarketplaceSectionState("board"));
+
+    if (routeAskMarketPulse && canPostMarketplaceNotice) {
+      setMarketplaceNoticeModalMode("market_need_pulse");
+      setMarketplaceNoticeModalOpen(true);
+    }
+
+    scheduleMarketplaceSectionScroll("marketplace-official-board", {
+      force: true,
+    });
+    clearMarketplaceHash();
+  }, [
+    location.hash,
+    location.pathname,
+    location.search,
+    activeCommunityId,
+    canPostMarketplaceNotice,
+    routeAskMarketPulse,
+    scheduleMarketplaceSectionScroll,
+  ]);
   const canManageMarketplaceNoticeSettings = Boolean(
     activeCommunityId && isMarketplaceNoticeOfficer
   );
@@ -8309,6 +8351,7 @@ export default function MarketplacePage() {
             communityName={activeCommunityName}
             busy={marketplaceNoticePosting}
             postingPolicy={activeNoticePostingPolicy}
+            mode={marketplaceNoticeModalMode}
             onClose={() => setMarketplaceNoticeModalOpen(false)}
             onSubmit={submitMarketplaceNotice}
           />
@@ -9101,7 +9144,10 @@ export default function MarketplacePage() {
             marketplaceListingReviewBusyId={marketplaceListingReviewBusyId}
             marketplaceSurfaceTouchProps={marketplaceSurfaceTouchProps}
             onPostAnnouncement={(event) =>
-              runMarketplaceAction(event, () => setMarketplaceNoticeModalOpen(true))
+              runMarketplaceAction(event, () => {
+                setMarketplaceNoticeModalMode("notice");
+                setMarketplaceNoticeModalOpen(true);
+              })
             }
             onUpdateNoticePolicy={updateMarketplaceNoticePolicy}
             onToggleBoard={(event) => toggleSectionFromButton(event, "board")}

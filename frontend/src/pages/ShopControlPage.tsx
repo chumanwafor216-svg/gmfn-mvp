@@ -120,6 +120,9 @@ type ProductRecord = {
   block_number?: number | string | null;
   is_active?: boolean;
   created_at?: string | null;
+  category?: string | null;
+  categories?: string[] | string | null;
+  service_category?: string | null;
   shop_product_slots_free?: number | null;
   shop_product_slots_extra?: number | null;
   shop_product_slots_total?: number | null;
@@ -478,6 +481,13 @@ function routeTarget(
   }).to as string;
 }
 
+function appendRouteQueryParam(to: string, key: string, value: string): string {
+  const [baseAndQuery, hash = ""] = to.split("#");
+  const separator = baseAndQuery.includes("?") ? "&" : "?";
+  const query = `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+  return `${baseAndQuery}${separator}${query}${hash ? `#${hash}` : ""}`;
+}
+
 function isMerchantReleaseControlTarget(targetId: unknown): boolean {
   const normalized = safeStr(targetId).replace(/^#/, "").toLowerCase();
   return (
@@ -530,6 +540,7 @@ function firstTruthy(...values: unknown[]): string {
 
 function marketIntelligenceActionKey(value: unknown, index: number): string {
   const text = safeStr(value).toLowerCase();
+  if (text.includes("ask community")) return "ask_community";
   if (text.includes("demand box") || text.includes("demand")) return "open_demand_box";
   if (text.includes("protected trade") || text.includes("trade evidence") || text.includes("receipt evidence")) return "review_trade_evidence";
   if (text.includes("thumbnail") || text.includes("call-to-action") || text.includes("call to action")) return "improve_thumbnail";
@@ -556,12 +567,52 @@ const SHOP_DEMAND_CONTEXT_STOP_WORDS = new Set([
   "request",
   "sale",
   "sell",
+  "service",
   "shop",
   "the",
   "this",
   "want",
   "with",
 ]);
+
+const SHOP_SENSITIVE_DEMAND_TERMS = new Set([
+  "asylum",
+  "benefit",
+  "benefits",
+  "child",
+  "children",
+  "crisis",
+  "debt",
+  "doctor",
+  "health",
+  "hospital",
+  "immigration",
+  "legal",
+  "medicine",
+  "mental",
+  "safeguarding",
+  "shelter",
+  "visa",
+  "welfare",
+]);
+
+type ShopCommunityNeedOpportunityState =
+  | "DIRECT_DEMAND_MATCH"
+  | "INSUFFICIENT_EVIDENCE"
+  | "STRONG_CAPABILITY_MATCH";
+
+type ShopCommunityNeedOpportunity = {
+  row: MarketplaceRequestItem;
+  terms: string[];
+  state: ShopCommunityNeedOpportunityState;
+  stateLabel: string;
+  confidence: "Low" | "Medium";
+  categoryLabel: string;
+  evidence: string;
+  reason: string;
+  primaryAction: "Respond in Demand Box" | "Read Demand Box" | "Add clearer offer";
+  reviewTrigger: string;
+};
 
 function marketContextTokens(...values: unknown[]): Set<string> {
   const text = values.map((value) => safeStr(value).toLowerCase()).join(" ");
@@ -573,6 +624,28 @@ function marketContextTokens(...values: unknown[]): Set<string> {
       (token) => token.length >= 3 && !SHOP_DEMAND_CONTEXT_STOP_WORDS.has(token)
     );
   return new Set(tokens);
+}
+
+function demandCategoryToken(value: unknown): string {
+  return safeStr(value).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function isSensitiveDemandSignal(row: MarketplaceRequestItem): boolean {
+  const tokens = marketContextTokens(row.title, row.category, row.description, row.area);
+  return [...tokens].some((token) => SHOP_SENSITIVE_DEMAND_TERMS.has(token));
+}
+
+function productCapabilityTokens(products: ProductRecord[]): Set<string> {
+  return marketContextTokens(
+    ...products.flatMap((item) => [
+      item.name,
+      item.description,
+      item.price,
+      item.category,
+      item.categories,
+      item.service_category,
+    ])
+  );
 }
 
 function sharedMarketContextTerms(
@@ -587,9 +660,7 @@ function sharedMarketContextTerms(
   );
   if (!demandTokens.size) return [];
 
-  const productTokens = marketContextTokens(
-    ...products.flatMap((item) => [item.name, item.description, item.price])
-  );
+  const productTokens = productCapabilityTokens(products);
   if (!productTokens.size) return [];
 
   return [...demandTokens]
@@ -597,21 +668,82 @@ function sharedMarketContextTerms(
     .slice(0, 4);
 }
 
-type ShopDemandContextHint = {
-  row: MarketplaceRequestItem;
-  terms: string[];
-};
-
-function buildShopDemandContextHints(
-  rows: MarketplaceRequestItem[],
+function demandCategoryMatchesProducts(
+  demand: MarketplaceRequestItem,
   products: ProductRecord[]
-): ShopDemandContextHint[] {
-  return rows
-    .map((row) => ({ row, terms: sharedMarketContextTerms(row, products) }))
-    .sort((a, b) => b.terms.length - a.terms.length)
-    .slice(0, 3);
+): boolean {
+  const demandCategory = demandCategoryToken(demand.category);
+  if (!demandCategory) return false;
+
+  return products.some((item) => {
+    const productCategoryText = demandCategoryToken([
+      item.category,
+      item.categories,
+      item.service_category,
+      item.name,
+      item.description,
+    ]);
+    return Boolean(
+      productCategoryText &&
+        (productCategoryText.includes(demandCategory) ||
+          demandCategory.includes(productCategoryText))
+    );
+  });
 }
 
+function buildShopCommunityNeedOpportunities(
+  rows: MarketplaceRequestItem[],
+  products: ProductRecord[]
+): ShopCommunityNeedOpportunity[] {
+  return rows
+    .filter((row) => !isSensitiveDemandSignal(row))
+    .map((row) => {
+      const terms = sharedMarketContextTerms(row, products);
+      const categoryMatch = demandCategoryMatchesProducts(row, products);
+      const hasCapabilitySignal = terms.length > 0 || categoryMatch;
+      const confidence: "Low" | "Medium" =
+        terms.length >= 2 || (categoryMatch && terms.length >= 1) ? "Medium" : "Low";
+      const state: ShopCommunityNeedOpportunityState = hasCapabilitySignal
+        ? categoryMatch
+          ? "STRONG_CAPABILITY_MATCH"
+          : "DIRECT_DEMAND_MATCH"
+        : "INSUFFICIENT_EVIDENCE";
+      const primaryAction: ShopCommunityNeedOpportunity["primaryAction"] =
+        hasCapabilitySignal ? "Respond in Demand Box" : "Read Demand Box";
+
+      return {
+        row,
+        terms,
+        state,
+        stateLabel:
+          state === "STRONG_CAPABILITY_MATCH"
+            ? "Strong capability match"
+            : state === "DIRECT_DEMAND_MATCH"
+              ? "Direct demand match"
+              : "Insufficient evidence",
+        confidence,
+        categoryLabel: firstTruthy(row.category, "Community need"),
+        evidence: hasCapabilitySignal
+          ? "One active Demand Box request; one request, not a trend."
+          : "One active request exists, but this shop link is not clear yet.",
+        reason: hasCapabilitySignal
+          ? "This may fit your shop because the request shares category or wording with your public offers."
+          : "Read the request before changing products; the current evidence is too small for an offer decision.",
+        primaryAction,
+        reviewTrigger: hasCapabilitySignal
+          ? "Review after you respond, create an offer, or receive five more product opens."
+          : "Watch the category or validate later with Ask Community when that governed pulse is ready.",
+      };
+    })
+    .sort((a, b) => {
+      const score = (item: ShopCommunityNeedOpportunity) =>
+        (item.state === "STRONG_CAPABILITY_MATCH" ? 3 : item.state === "DIRECT_DEMAND_MATCH" ? 2 : 1) *
+          10 +
+        item.terms.length;
+      return score(b) - score(a);
+    })
+    .slice(0, 3);
+}
 function extractPublicBlockNumber(description: string): number {
   const match = safeStr(description).match(/^\[BLOCK:(\d{1,2})\]\s*/i);
   const value = Number(match?.[1] || 0);
@@ -1540,6 +1672,16 @@ export default function ShopControlPage() {
         "demandBox",
         effectiveShopClanId,
         "shop-control.route.demand-box"
+      ),
+      askCommunity: appendRouteQueryParam(
+        routeTarget(
+          "marketplace",
+          effectiveShopClanId,
+          "shop-control.route.ask-community",
+          { hash: "marketplace-official-board" }
+        ),
+        "ask_market",
+        "1"
       ),
       tradeEvidence: routeTarget(
         "marketplace",
@@ -2493,8 +2635,8 @@ export default function ShopControlPage() {
         .slice(0, 3),
     [openDemandRows]
   );
-  const demandContextHints = useMemo(
-    () => buildShopDemandContextHints(openDemandSignals, publicProducts),
+  const communityNeedOpportunities = useMemo(
+    () => buildShopCommunityNeedOpportunities(openDemandSignals, publicProducts),
     [openDemandSignals, publicProducts]
   );
   const openDemandSignalCount = openDemandRows.filter(
@@ -2503,9 +2645,12 @@ export default function ShopControlPage() {
   const demandContextLabel = openDemandSignalCount
     ? `${openDemandSignalCount} open community demand signal${openDemandSignalCount === 1 ? "" : "s"}`
     : "No open Demand Box signal in this community yet";
-  const demandOverlapLabel = demandContextHints.some((hint) => hint.terms.length > 0)
-    ? "Some requests mention words already visible in your shop. Treat this as a possible overlap only."
-    : "No product-word overlap is visible yet. Read Demand Box before changing products.";
+  const sensitiveDemandSignalCount = openDemandSignals.filter(isSensitiveDemandSignal).length;
+  const demandOverlapLabel = communityNeedOpportunities.some(
+    (opportunity) => opportunity.state !== "INSUFFICIENT_EVIDENCE"
+  )
+    ? "Some requests share a category or wording with your public offers. Treat this as a direct request, not community-wide demand."
+    : "No clear shop-to-request link is visible yet. Read Demand Box before changing products.";
   const communityName = useMemo(() => {
     return firstTruthy(
       shop?.marketplace_name,
@@ -6146,39 +6291,101 @@ export default function ShopControlPage() {
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <div>
-                  <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Demand Box context</div>
+                <div>
+                  <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Community Needs</div>
                   <div style={{ marginTop: 4, color: "#5A4720", fontSize: 12, fontWeight: 800, lineHeight: 1.4 }}>
-                    {demandContextLabel}. {demandOverlapLabel} This is market reading only; it is not buyer proof or automatic product matching.
+                    {demandContextLabel}. {demandOverlapLabel} Market Wisdom reads Demand Box as structured community context only; it is not buyer proof, sales proof, or automatic product matching.
                   </div>
                 </div>
-                <StableCtaLink
-                  to={routes.demandBox}
-                  onClick={() => trackMarketIntelligenceAction("open_demand_box")}
-                  debugId="shop-control.market-intelligence.demand-box"
-                  stableHeight={38}
-                  style={{
-                    borderRadius: 999,
-                    padding: "0 13px",
-                    background: "#FFFFFF",
-                    color: "#0F5EAA",
-                    border: "1px solid rgba(15,94,170,0.18)",
-                    fontSize: 12,
-                    fontWeight: 900,
-                    boxShadow: "0 8px 16px rgba(8,38,67,0.08)",
-                  }}
-                >
-                  Open Demand Box
-                </StableCtaLink>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                  <StableCtaLink
+                    to={routes.askCommunity}
+                    onClick={() => trackMarketIntelligenceAction("ask_community")}
+                    debugId="shop-control.market-intelligence.ask-community"
+                    stableHeight={38}
+                    style={{
+                      borderRadius: 999,
+                      padding: "0 13px",
+                      background: "#0F5EAA",
+                      color: "#FFFFFF",
+                      border: "1px solid rgba(15,94,170,0.18)",
+                      fontSize: 12,
+                      fontWeight: 900,
+                      boxShadow: "0 8px 16px rgba(8,38,67,0.08)",
+                    }}
+                  >
+                    Ask Community
+                  </StableCtaLink>
+                  <StableCtaLink
+                    to={routes.demandBox}
+                    onClick={() => trackMarketIntelligenceAction("open_demand_box")}
+                    debugId="shop-control.market-intelligence.demand-box"
+                    stableHeight={38}
+                    style={{
+                      borderRadius: 999,
+                      padding: "0 13px",
+                      background: "#FFFFFF",
+                      color: "#0F5EAA",
+                      border: "1px solid rgba(15,94,170,0.18)",
+                      fontSize: 12,
+                      fontWeight: 900,
+                      boxShadow: "0 8px 16px rgba(8,38,67,0.08)",
+                    }}
+                  >
+                    Open Demand Box
+                  </StableCtaLink>
+                </div>
               </div>
-              {demandContextHints.length ? (
-                <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
-                  {demandContextHints.map((hint) => (
-                    <div key={`demand-context-${hint.row.id}`} style={{ color: "#385773", fontSize: 12, fontWeight: 750, lineHeight: 1.35 }}>
-                      {firstTruthy(hint.row.title, hint.row.category, "Community request")}
-                      {hint.terms.length ? ` - possible overlap: ${hint.terms.join(", ")}` : ""}
+              {communityNeedOpportunities.length ? (
+                <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                  {communityNeedOpportunities.map((opportunity) => (
+                    <div
+                      key={`community-need-${opportunity.row.id}`}
+                      style={{
+                        borderRadius: 14,
+                        border: "1px solid rgba(122,89,16,0.14)",
+                        background: "rgba(255,255,255,0.72)",
+                        padding: 10,
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ color: "#061827", fontSize: 13, fontWeight: 950, lineHeight: 1.25 }}>
+                            {firstTruthy(opportunity.row.title, opportunity.categoryLabel, "Community request")}
+                          </div>
+                          <div style={{ marginTop: 3, color: "#5A4720", fontSize: 11, fontWeight: 850 }}>
+                            {opportunity.categoryLabel}
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                          <span style={{ ...badge(opportunity.state !== "INSUFFICIENT_EVIDENCE"), fontSize: 10 }}>
+                            {opportunity.stateLabel}
+                          </span>
+                          <span style={{ ...badge(opportunity.confidence === "Medium"), fontSize: 10 }}>
+                            {opportunity.confidence} confidence
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ marginTop: 8, display: "grid", gap: 5, color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.4 }}>
+                        <div><strong style={{ color: "#061827" }}>Evidence:</strong> {opportunity.evidence}</div>
+                        <div><strong style={{ color: "#061827" }}>Why it may match:</strong> {opportunity.reason}</div>
+                        <div><strong style={{ color: "#061827" }}>Action:</strong> {opportunity.primaryAction}</div>
+                        <div><strong style={{ color: "#061827" }}>Review:</strong> {opportunity.reviewTrigger}</div>
+                        {opportunity.terms.length ? (
+                          <div><strong style={{ color: "#061827" }}>Shared words:</strong> {opportunity.terms.join(", ")}</div>
+                        ) : null}
+                      </div>
                     </div>
                   ))}
+                </div>
+              ) : (
+                <div style={{ marginTop: 10, color: "#385773", fontSize: 12, fontWeight: 760, lineHeight: 1.4 }}>
+                  No commercial Community Needs card is ready from current Demand Box records. This may mean there is no open request, the link to your shop is unclear, or a sensitive/support need was kept out of shop opportunity guidance.
+                </div>
+              )}
+              {sensitiveDemandSignalCount > 0 ? (
+                <div style={{ marginTop: 8, color: "#7A4A00", fontSize: 11, fontWeight: 800, lineHeight: 1.4 }}>
+                  {sensitiveDemandSignalCount} sensitive or support-related request{sensitiveDemandSignalCount === 1 ? " was" : "s were"} not shown as a commercial opportunity.
                 </div>
               ) : null}
             </div>
@@ -6207,7 +6414,7 @@ export default function ShopControlPage() {
             <details style={{ marginTop: 12 }}>
               <StableDisclosureSummary debugId="shop-control.market-intelligence.why" stableHeight={40} style={{ color: "#0F5EAA", fontSize: 13, fontWeight: 900, cursor: "pointer" }}>Why this advice?</StableDisclosureSummary>
               <div style={{ marginTop: 8, color: "#385773", fontSize: 12, fontWeight: 750, lineHeight: 1.45 }}>
-                {shopAnalyticsWisdom.why} This reading is packaged through the shared Attention Spine signal engine, so it does not create a separate shop-only priority system. Demand Box context is read from the existing marketplace request lane, not a separate matching engine.
+                {shopAnalyticsWisdom.why} This reading is packaged through the shared Attention Spine signal engine, so it does not create a separate shop-only priority system. Community Needs is read from the existing Demand Box request lane, not a separate matching engine or survey system.
               </div>
             </details>
           </div>

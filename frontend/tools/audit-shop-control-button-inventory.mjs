@@ -39,8 +39,8 @@ const expectedSourceActions = {
   SecondaryButton: 24,
   SubtleButton: 3,
   StableButton: 3,
-  StableCtaLink: 9,
-  total: 51,
+  StableCtaLink: 10,
+  total: 52,
 };
 const expectedNativeFieldCount = 26;
 const expectedFileInputActionRoots = 2;

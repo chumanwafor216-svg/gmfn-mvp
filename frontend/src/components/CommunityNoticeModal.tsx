@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { StableButton } from "./StableButton";
 import {
   uploadMarketplaceImageFile,
@@ -15,6 +15,7 @@ import {
 } from "../lib/spotlightMediaPrep";
 
 type NoticeAttachmentKind = "link" | "video" | "poster" | "document";
+type CommunityNoticeModalMode = "notice" | "market_need_pulse";
 
 type Props = {
   open: boolean;
@@ -22,6 +23,7 @@ type Props = {
   busy?: boolean;
   postingPolicy?: "members" | "admins" | string;
   submitMode?: "post" | "review";
+  mode?: CommunityNoticeModalMode;
   clanId?: number | null;
   onClose: () => void;
   onSubmit: (
@@ -35,6 +37,7 @@ type Props = {
       attachment_url?: string | null;
       attachment_label?: string | null;
       attachment_kind?: NoticeAttachmentKind | null;
+      notice_mode?: CommunityNoticeModalMode;
     }
   ) => Promise<void> | void;
 };
@@ -85,6 +88,7 @@ export default function CommunityNoticeModal({
   busy = false,
   postingPolicy = "members",
   submitMode = "post",
+  mode = "notice",
   clanId = null,
   onClose,
   onSubmit,
@@ -95,7 +99,8 @@ export default function CommunityNoticeModal({
   const [expiryPolicy, setExpiryPolicy] = useState<NoticeExpiryPolicy>("standard");
   const [eventExpiresAt, setEventExpiresAt] = useState("");
   const [publicQrEnabled, setPublicQrEnabled] = useState(false);
-  const [availabilityEnabled, setAvailabilityEnabled] = useState(false);
+  const isMarketNeedPulse = mode === "market_need_pulse";
+  const [availabilityEnabled, setAvailabilityEnabled] = useState(isMarketNeedPulse);
   const [attachmentPanelOpen, setAttachmentPanelOpen] = useState(false);
   const [attachmentKind, setAttachmentKind] = useState<NoticeAttachmentKind>("link");
   const [attachmentUrl, setAttachmentUrl] = useState("");
@@ -108,6 +113,12 @@ export default function CommunityNoticeModal({
   const attachmentUrlTrimmed = attachmentUrl.trim();
   const attachmentUrlInvalid = Boolean(attachmentUrlTrimmed) && !isAllowedAttachmentUrl(attachmentUrlTrimmed);
   const eventExpiryMissing = expiryPolicy === "event" && !eventExpiresAt;
+  useEffect(() => {
+    if (open && isMarketNeedPulse) {
+      setAvailabilityEnabled(true);
+    }
+  }, [isMarketNeedPulse, open]);
+
   const blocked =
     words > 50 ||
     !body.trim() ||
@@ -182,7 +193,8 @@ export default function CommunityNoticeModal({
           ? new Date(eventExpiresAt).toISOString()
           : undefined,
       public_qr_enabled: publicQrEnabled,
-      availability_enabled: availabilityEnabled,
+      availability_enabled: isMarketNeedPulse || availabilityEnabled,
+      notice_mode: isMarketNeedPulse ? "market_need_pulse" : "notice",
       full_body: includeFullBody ? fullBody.trim() || null : undefined,
       attachment_url: attachmentUrlTrimmed || undefined,
       attachment_label: attachmentUrlTrimmed ? attachmentLabel.trim() || undefined : undefined,
@@ -204,15 +216,17 @@ export default function CommunityNoticeModal({
       style={overlayStyle}
       role="dialog"
       aria-modal="true"
-      aria-label={isReviewSubmission ? "Submit community record" : "Post community notice"}
+      aria-label={isMarketNeedPulse ? "Ask community question" : isReviewSubmission ? "Submit community record" : "Post community notice"}
     >
       <div style={modalStyle}>
-        <div style={eyebrowStyle}>Community announcement</div>
+        <div style={eyebrowStyle}>{isMarketNeedPulse ? "Community need pulse" : "Community announcement"}</div>
         <h3 style={titleStyle}>
-          {isReviewSubmission ? "Submit for review" : "Post to"} {communityName || "this community"}
+          {isMarketNeedPulse ? "Ask" : isReviewSubmission ? "Submit for review" : "Post to"} {communityName || "this community"}
         </h3>
         <p style={copyStyle}>
-          {isReviewSubmission
+          {isMarketNeedPulse
+            ? "Ask one simple market-need question. Members answer yes, maybe, or no. GSN records a demand signal, not a buyer list or sales proof."
+            : isReviewSubmission
             ? "Keep it short. GSN records your submission, then a community officer approves it before it appears on the active board."
             : "Keep it short. GSN records who posted it and links your verified public WhatsApp contact when you have chosen to show one. Expired notices leave the active board but stay in Community Memory."}
         </p>
@@ -221,7 +235,7 @@ export default function CommunityNoticeModal({
           value={body}
           onChange={(event) => setBody(event.target.value)}
           maxLength={500}
-          placeholder="Meeting Saturday 4 pm."
+          placeholder={isMarketNeedPulse ? "Do you need this service this month?" : "Meeting Saturday 4 pm."}
           style={textareaStyle}
         />
 
@@ -394,15 +408,21 @@ export default function CommunityNoticeModal({
 
         {!isReviewSubmission ? (
           <>
-            <label style={checkboxRowStyle}>
-              <input
-                type="checkbox"
-                checked={availabilityEnabled}
-                onChange={(event) => setAvailabilityEnabled(event.target.checked)}
-                disabled={busy}
-              />
-              <span>Ask members if they are available</span>
-            </label>
+            {isMarketNeedPulse ? (
+              <div style={checkboxRowStyle}>
+                <span>Collect yes, maybe, or no responses</span>
+              </div>
+            ) : (
+              <label style={checkboxRowStyle}>
+                <input
+                  type="checkbox"
+                  checked={availabilityEnabled}
+                  onChange={(event) => setAvailabilityEnabled(event.target.checked)}
+                  disabled={busy}
+                />
+                <span>Ask members if they are available</span>
+              </label>
+            )}
             <label style={checkboxRowStyle}>
               <input
                 type="checkbox"
@@ -437,7 +457,7 @@ export default function CommunityNoticeModal({
             <span style={fullWords > 600 ? warningStyle : chipStyle}>{fullWords}/600 full words</span>
           ) : null}
           <span style={chipStyle}>No comments</span>
-          <span style={chipStyle}>{availabilityEnabled ? "Availability poll" : "No attendance poll"}</span>
+          <span style={chipStyle}>{isMarketNeedPulse ? "Need pulse" : availabilityEnabled ? "Availability poll" : "No attendance poll"}</span>
           {attachmentUrlTrimmed ? <span style={chipStyle}>Attachment ready</span> : null}
         </div>
 
@@ -461,7 +481,7 @@ export default function CommunityNoticeModal({
             stableHeight={48}
             kind="primary"
           >
-            {isReviewSubmission ? "Submit record" : "Post notice"}
+            {isMarketNeedPulse ? "Ask Community" : isReviewSubmission ? "Submit record" : "Post notice"}
           </StableButton>
         </div>
       </div>

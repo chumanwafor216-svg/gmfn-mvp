@@ -160421,3 +160421,24 @@ Operational note:
 - Guardrails: `frontend/tools/audit-spotlight-system-feed.mjs` cages the notice URL tags, backend response summary, frontend board display, and backend test assertions.
 - Truth boundary: follower notice counts prove distribution rows only; follower notice response proves attributed attention after an opened notice link only. Neither proves push delivery, a buyer, payment, delivery, sales, verification, or trust score.
 - Verification: backend py_compile passed; focused backend bundle passed (`5 passed`); targeted frontend ESLint passed; `npm --prefix frontend run audit:shop-control-button-inventory` passed; `npm --prefix frontend run audit:spotlight-system-feed` passed; `npm --prefix frontend run build` passed.
+
+## 2026-09-11 - Shop Market Intelligence Community Needs Patch 1 (local)
+
+- Status: Local implementation complete and verified; not pushed/deployed under the current batch freeze.
+- Owner trigger: owner supplied the Community Demand Signal Protocol and asked to add the capability without duplicating Demand Box, Market Wisdom, Marketplace, TrustEvent, or Trust Passport engines.
+- Existing engine reused: Shop Control reads open Demand Box records through the existing `listMarketplaceRequests` API. No new marketplace, survey engine, trust score, backend table, or event taxonomy was added in this patch.
+- Frontend route affected: `/app/shop-control#shop-control-counts`, inside the owner-only Shop Control Market Intelligence board.
+- Product decision implemented: the former `Demand Box context` panel is now `Community Needs`, showing up to three compact opportunity cards with state, confidence, evidence, why it may match the shop, one action, and a review trigger.
+- Truth boundary: one Demand Box request is labelled as `one request, not a trend`; cards do not claim buyers, sales, community-wide demand, payment proof, verification, or automatic product matching.
+- Safety boundary: simple sensitive/support keyword filtering keeps health, immigration/asylum, debt, welfare/crisis, safeguarding, children, medicine, and related requests out of commercial opportunity guidance.
+- Future patches intentionally not built yet: Ask Community one-question pulse, aggregate privacy thresholds, offer/Spotlight creation from opportunity, opportunity attribution, no-result search aggregation, repeated/seasonal patterns, and cross-domain opportunity matching.
+- Guardrail: `frontend/tools/audit-spotlight-system-feed.mjs` now cages Community Needs as a Demand Box reuse layer with individual-request wording and sensitive-request exclusion.
+- Verification passed: targeted frontend ESLint; `npm --prefix frontend run build`; `npm --prefix frontend run audit:spotlight-system-feed`; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:protected-button-freeze`.
+### 2026-09-11 - Shop Market Intelligence Ask Community Pulse (local)
+- Implemented the first governed "Ask Community" pulse by reusing the existing Community Notice Board and availability-response engine; no duplicate demand engine or survey table was added.
+- Shop Control Market Intelligence now has an owner-facing `Ask Community` CTA in Community Needs. It routes to Marketplace with `ask_market=1#marketplace-official-board`, opens the official board, and opens the Community Notice composer in market-need-pulse mode when the user has posting permission.
+- `CommunityNoticeModal` now supports `notice` and `market_need_pulse` modes. Pulse mode auto-enables yes/maybe/no responses and frames the result as a demand signal, not a buyer list or sales proof.
+- Backend `community_notices.py` persists `notice_mode`, `notice_kind`, and `market_need_pulse` metadata on direct posts and review-approved posts. Pulse responses reuse `/community-notices/{notice_event_id}/availability` with `market_need_pulse_response` metadata.
+- Community Home now labels market pulse responses as `I need this`, `Maybe later`, and `No need` instead of meeting availability labels.
+- Verification: `npm exec eslint ...`, `npm --prefix frontend run build`, `npm --prefix frontend run audit:shop-control-button-inventory`, `audit:marketplace-button-inventory`, `audit:spotlight-system-feed`, `audit:community-home-button-inventory`, `audit:protected-button-freeze`, `python -m py_compile ...`, and `python -m pytest gmfn_backend\tests\test_community_notices.py -q` all passed locally.
+- Still local only. Not pushed or deployed in this step.

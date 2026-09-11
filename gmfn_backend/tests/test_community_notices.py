@@ -399,6 +399,52 @@ def test_event_notice_availability_response_updates_live_bulletin(client, overri
 
 
 
+def test_market_need_pulse_reuses_notice_availability_engine(client, override_current_user):
+    _seed_notice_community()
+
+    pulse_res = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Do you need school uniform tailoring this month?",
+            "availability_enabled": False,
+            "notice_mode": "market_need_pulse",
+        },
+    )
+    assert pulse_res.status_code == 200, pulse_res.text
+    payload = pulse_res.json()
+    notice = payload["notice"]
+    assert payload["message"] == "Community need question posted to the Community Notice Board."
+    assert "not a buyer list or sales proof" in payload["boundary"]
+    assert notice["notice_mode"] == "market_need_pulse"
+    assert notice["notice_kind"] == "market_need_pulse"
+    assert notice["market_need_pulse"] is True
+    assert notice["availability_enabled"] is True
+    assert notice["availability_summary"] == {
+        "yes": 0,
+        "maybe": 0,
+        "no": 0,
+        "total": 0,
+        "planning_ready": False,
+        "own_response": None,
+    }
+
+    response_res = client.post(
+        f"/community-notices/{notice['event_id']}/availability",
+        json={"clan_id": 1, "response": "yes"},
+    )
+    assert response_res.status_code == 200, response_res.text
+    assert response_res.json()["message"] == "Community need response saved."
+    assert response_res.json()["availability_summary"]["yes"] == 1
+
+    list_res = client.get("/community-notices", params={"clan_id": 1})
+    assert list_res.status_code == 200, list_res.text
+    listed_notice = list_res.json()["notices"][0]
+    assert listed_notice["notice_mode"] == "market_need_pulse"
+    assert listed_notice["notice_kind"] == "market_need_pulse"
+    assert listed_notice["market_need_pulse"] is True
+    assert listed_notice["availability_summary"]["own_response"] == "yes"
+
 def test_notice_acknowledgement_roll_call_is_admin_only(client, override_current_user):
     _seed_notice_community()
 

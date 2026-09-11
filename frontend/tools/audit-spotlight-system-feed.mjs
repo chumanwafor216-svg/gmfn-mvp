@@ -206,19 +206,36 @@ assertContains(
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
   /listMarketplaceRequests\([\s\S]*?status: "open"[\s\S]*?mine_only: false[\s\S]*?limit: 12/,
-  "Shop Control Market Intelligence must read Demand Box context from the existing marketplace request lane."
+  "Shop Control Market Intelligence must read Demand Box records from the existing marketplace request lane."
 );
 
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /Demand Box context[\s\S]*?not buyer proof or automatic product matching[\s\S]*?to=\{routes\.demandBox\}[\s\S]*?shop-control\.market-intelligence\.demand-box/,
-  "Shop Control Demand Box context must route to Demand Box while avoiding automatic buyer-match claims."
+  /direct request, not community-wide demand[\s\S]*?Community Needs[\s\S]*?not buyer proof, sales proof, or automatic product matching[\s\S]*?to=\{routes\.askCommunity\}[\s\S]*?shop-control\.market-intelligence\.ask-community[\s\S]*?to=\{routes\.demandBox\}[\s\S]*?shop-control\.market-intelligence\.demand-box/,
+  "Shop Control Community Needs must route to Demand Box while avoiding buyer, sales, or community-wide demand claims."
 );
 
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /SHOP_DEMAND_CONTEXT_STOP_WORDS[\s\S]*?marketContextTokens[\s\S]*?buildShopDemandContextHints[\s\S]*?possible overlap only[\s\S]*?possible overlap:/,
-  "Shop Control Demand Box context may show word-overlap hints, but must keep them framed as possible overlap only."
+  /SHOP_DEMAND_CONTEXT_STOP_WORDS[\s\S]*?SHOP_SENSITIVE_DEMAND_TERMS[\s\S]*?DIRECT_DEMAND_MATCH[\s\S]*?INSUFFICIENT_EVIDENCE[\s\S]*?buildShopCommunityNeedOpportunities[\s\S]*?one request, not a trend[\s\S]*?sensitive or support-related request/,
+  "Shop Control Community Needs must reuse Demand Box records, label individual requests, and filter sensitive needs from commercial opportunity guidance."
+);
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /askCommunity: appendRouteQueryParam[\s\S]*?marketplace-official-board[\s\S]*?"ask_market"[\s\S]*?"1"/,
+  "Shop Control Ask Community must route into the existing Marketplace official board pulse lane."
+);
+
+assertContains(
+  "frontend/src/pages/MarketplacePage.tsx",
+  /routeAskMarketPulse[\s\S]*?ask_market[\s\S]*?market_need_pulse[\s\S]*?marketplace-official-board[\s\S]*?setMarketplaceNoticeModalMode\("market_need_pulse"\)[\s\S]*?setMarketplaceNoticeModalOpen\(true\)/,
+  "Marketplace must open the existing Community Notice composer in market need pulse mode from the governed routeback."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_notices.py",
+  /NOTICE_MODE_MARKET_NEED_PULSE[\s\S]*?CommunityNoticeIn[\s\S]*?notice_mode: Literal\["notice", "market_need_pulse"\][\s\S]*?availability_enabled = bool\(payload\.availability_enabled\) or is_market_need_pulse[\s\S]*?COMMUNITY_NOTICE_EVENT[\s\S]*?market_need_pulse[\s\S]*?market_need_pulse_response/,
+  "Market need pulses must reuse Community Notice posting and availability-response engines, not a new demand engine."
 );
 
 assertContains(

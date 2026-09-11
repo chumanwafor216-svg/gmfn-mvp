@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import GSNBrandMark from "../components/GSNBrandMark";
 import type {
@@ -214,6 +214,7 @@ type CommunityNoticeItem = {
     own_acknowledged?: boolean | null;
   } | null;
   notice_kind?: string | null;
+  market_need_pulse?: boolean | null;
   interest_summary?: {
     yes?: number | string | null;
     maybe?: number | string | null;
@@ -1725,7 +1726,13 @@ function isCommunityDomainNotice(item: CommunityNoticeItem | null | undefined): 
   return Boolean(source === "community_domain_notice_board" || scope === "community_domain" || kind.includes("domain"));
 }
 
+function isMarketNeedPulseNotice(item: CommunityNoticeItem | null | undefined): boolean {
+  const kind = safeStr(item?.notice_kind).toLowerCase();
+  return Boolean(item?.market_need_pulse || kind === "market_need_pulse");
+}
+
 function noticeKindLabel(item: CommunityNoticeItem | null | undefined): string {
+  if (isMarketNeedPulseNotice(item)) return "Community need pulse";
   if (isMeetingNotice(item)) return "Meeting planning";
   if (isMarketplaceNotice(item)) return "Marketplace";
   const source = safeStr(item?.source).toLowerCase();
@@ -1748,6 +1755,13 @@ function noticeAvailabilitySummary(item: CommunityNoticeItem | null | undefined)
 function meetingInterestParts(item: CommunityNoticeItem | null | undefined): Array<[string, number]> {
   if (!noticeSupportsAvailability(item)) return [];
   const summary = noticeAvailabilitySummary(item);
+  if (isMarketNeedPulseNotice(item)) {
+    return [
+      ["Need it", noticeNumber(summary.yes)],
+      ["Maybe later", noticeNumber(summary.maybe)],
+      ["No need", noticeNumber(summary.no)],
+    ];
+  }
   return [
     ["Available", noticeNumber(summary.yes)],
     ["Not sure", noticeNumber(summary.maybe)],
@@ -1761,6 +1775,7 @@ function meetingPlanningLine(item: CommunityNoticeItem | null | undefined): stri
   const total = noticeNumber(summary.total);
   const status = isMeetingNotice(item) ? firstTruthy(item?.planning_status) : "";
   if (total > 0) return status || `${total} member${total === 1 ? "" : "s"} responded`;
+  if (isMarketNeedPulseNotice(item)) return "Waiting for need responses";
   return status || "Waiting for member responses";
 }
 
@@ -3717,7 +3732,12 @@ export default function CommunityHomePage() {
       applyCommunityNoticeListResponse(res);
       showNotice(
         "success",
-        firstTruthy(result?.message, "Availability response recorded. Planning count updated.")
+        firstTruthy(
+          result?.message,
+          isMarketNeedPulseNotice(noticeItem)
+            ? "Community need response recorded."
+            : "Availability response recorded. Planning count updated."
+        )
       );
     } catch (error: any) {
       showNotice(
@@ -3740,11 +3760,17 @@ export default function CommunityHomePage() {
     }
 
     const ownInterest = meetingOwnInterest(noticeItem);
-    const options: Array<[MeetingInterestResponse, string]> = [
-      ["yes", "Available"],
-      ["maybe", "Not sure"],
-      ["no", "Not available"],
-    ];
+    const options: Array<[MeetingInterestResponse, string]> = isMarketNeedPulseNotice(noticeItem)
+      ? [
+          ["yes", "I need this"],
+          ["maybe", "Maybe later"],
+          ["no", "No need"],
+        ]
+      : [
+          ["yes", "Available"],
+          ["maybe", "Not sure"],
+          ["no", "Not available"],
+        ];
 
     return (
       <span

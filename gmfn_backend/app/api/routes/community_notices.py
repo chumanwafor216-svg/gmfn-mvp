@@ -64,6 +64,9 @@ NOTICE_POSTING_POLICIES = {
     NOTICE_POSTING_POLICY_MEMBERS,
     NOTICE_POSTING_POLICY_ADMINS,
 }
+NOTICE_MODE_NOTICE = "notice"
+NOTICE_MODE_MARKET_NEED_PULSE = "market_need_pulse"
+NOTICE_MODES = {NOTICE_MODE_NOTICE, NOTICE_MODE_MARKET_NEED_PULSE}
 NOTICE_EXPIRY_STANDARD = "standard"
 NOTICE_EXPIRY_URGENT = "urgent"
 NOTICE_EXPIRY_EVENT = "event"
@@ -325,6 +328,9 @@ def _normalize_notice_posting_policy(value: Any) -> str:
     policy = _safe_str(value, NOTICE_POSTING_POLICY_MEMBERS).lower()
     return policy if policy in NOTICE_POSTING_POLICIES else NOTICE_POSTING_POLICY_MEMBERS
 
+def _normalize_notice_mode(value: Any) -> str:
+    mode = _safe_str(value, NOTICE_MODE_NOTICE).lower()
+    return mode if mode in NOTICE_MODES else NOTICE_MODE_NOTICE
 
 def _normalize_notice_expiry_policy(value: Any) -> str:
     policy = _safe_str(value, NOTICE_EXPIRY_STANDARD).lower()
@@ -980,6 +986,9 @@ def _event_to_notice(
         "notice_id": f"TE-{int(event.id)}",
         "event_id": int(event.id),
         "source": _safe_str(meta.get("source"), COMMUNITY_NOTICE_SOURCE),
+        "notice_mode": _normalize_notice_mode(meta.get("notice_mode")),
+        "notice_kind": _safe_str(meta.get("notice_kind"), "official_notice"),
+        "market_need_pulse": bool(meta.get("market_need_pulse")),
         "clan_id": clan_id,
         **source_payload,
         "body": body,
@@ -1415,6 +1424,7 @@ class CommunityNoticeIn(BaseModel):
     attachment_url: Optional[str] = Field(default=None, max_length=MAX_NOTICE_ATTACHMENT_URL_LENGTH)
     attachment_label: Optional[str] = Field(default=None, max_length=MAX_NOTICE_ATTACHMENT_LABEL_LENGTH)
     attachment_kind: Optional[Literal["link", "video", "poster", "document"]] = "link"
+    notice_mode: Literal["notice", "market_need_pulse"] = NOTICE_MODE_NOTICE
 
     @field_validator("clan_id", mode="before")
     @classmethod
@@ -1426,10 +1436,10 @@ class CommunityNoticeIn(BaseModel):
     def _reject_non_text_notice_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_text_value(value, info.field_name)
 
-    @field_validator("expiry_policy", mode="before")
+    @field_validator("expiry_policy", "notice_mode", mode="before")
     @classmethod
-    def _reject_non_text_expiry_policy(cls, value: Any) -> Any:
-        return _reject_non_text_value(value, "expiry_policy")
+    def _reject_non_text_notice_selectors(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
     @field_validator("body")
     @classmethod
@@ -1753,6 +1763,9 @@ def create_notice(
     attachment_label = _safe_str(payload.attachment_label, "Open attachment")
     attachment_kind = _safe_str(payload.attachment_kind, "link")
     expiry_policy = _normalize_notice_expiry_policy(payload.expiry_policy)
+    notice_mode = _normalize_notice_mode(payload.notice_mode)
+    is_market_need_pulse = notice_mode == NOTICE_MODE_MARKET_NEED_PULSE
+    availability_enabled = bool(payload.availability_enabled) or is_market_need_pulse
     try:
         expires_at = _notice_expires_at(expiry_policy, payload.expires_at)
     except ValueError as exc:
@@ -1786,7 +1799,10 @@ def create_notice(
                 "comments_enabled": False,
                 "reactions_enabled": False,
                 "thread_enabled": False,
-                "availability_enabled": bool(payload.availability_enabled),
+                "availability_enabled": availability_enabled,
+                "notice_mode": notice_mode,
+                "notice_kind": "market_need_pulse" if is_market_need_pulse else "official_notice",
+                "market_need_pulse": is_market_need_pulse,
                 "community_records_policy": records_policy,
                 **poster_contact,
             },
@@ -1843,7 +1859,10 @@ def create_notice(
             "comments_enabled": False,
             "reactions_enabled": False,
             "thread_enabled": False,
-            "availability_enabled": bool(payload.availability_enabled),
+            "availability_enabled": availability_enabled,
+            "notice_mode": notice_mode,
+            "notice_kind": "market_need_pulse" if is_market_need_pulse else "official_notice",
+            "market_need_pulse": is_market_need_pulse,
             "trust_delta": "0.00",
             "community_records_policy": records_policy,
             **_community_notice_public_meta(bool(payload.public_qr_enabled)),
@@ -1864,12 +1883,20 @@ def create_notice(
         "community_records_policy": records_policy,
         "notification_kind": COMMUNITY_NOTICE_EVENT,
         "notifications_created": int(notifications_created),
-        "message": "Community announcement posted to the Community Notice Board.",
+        "message": (
+            "Community need question posted to the Community Notice Board."
+            if is_market_need_pulse
+            else "Community announcement posted to the Community Notice Board."
+        ),
         "expiry_policy": expiry_policy,
         "expires_at": _iso(expires_at),
         "boundary": (
-            "The notice belongs to this selected community or marketplace only. "
-            "Notifications are created only for active members of this selected "
+            (
+                "This market question collects yes, maybe, or no responses as a community demand signal; it is not a buyer list or sales proof. "
+                if is_market_need_pulse
+                else "The notice belongs to this selected community or marketplace only. "
+            )
+            + "Notifications are created only for active members of this selected "
             "community; it does not broadcast to other marketplaces, communities, "
             "domains, or public visitors. Expired notices leave the active board "
             "but remain in Community Memory."
@@ -2315,7 +2342,7 @@ def record_notice_availability(
     if _notice_is_expired(meta, created_at=getattr(notice_event, "created_at", None)):
         raise HTTPException(status_code=409, detail="This notice has already left the active board")
     if not _notice_availability_enabled(meta):
-        raise HTTPException(status_code=409, detail="Availability is only open for event-date announcements")
+        raise HTTPException(status_code=409, detail="Responses are only open for event-date announcements or community need questions")
 
     notice_source_event_type = _safe_str(getattr(notice_event, "event_type", None))
     notice_source = (
@@ -2331,7 +2358,7 @@ def record_notice_availability(
         subject_user_id=int(current_user.id),
         meta={
             "source": notice_source,
-            "reason": "community_notice_availability_response",
+            "reason": "market_need_pulse_response" if bool(meta.get("market_need_pulse")) else "community_notice_availability_response",
             "notice_source_event_type": notice_source_event_type,
             "notice_event_id": int(notice_event_id),
             "notice_id": f"TE-{int(notice_event_id)}",
@@ -2349,7 +2376,11 @@ def record_notice_availability(
             notice_event_id=int(notice_event_id),
             viewer_user_id=int(current_user.id),
         ),
-        "message": "Availability response saved.",
+        "message": (
+            "Community need response saved."
+            if bool(meta.get("market_need_pulse"))
+            else "Availability response saved."
+        ),
     }
 
 

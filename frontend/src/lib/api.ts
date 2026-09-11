@@ -1422,6 +1422,7 @@ export async function createCommunityNotice(payload: {
   attachment_url?: string | null;
   attachment_label?: string | null;
   attachment_kind?: "link" | "video" | "poster" | "document" | null;
+  notice_mode?: "notice" | "market_need_pulse";
 }): Promise<any> {
   return httpJson("/community-notices", "POST", payload);
 }
