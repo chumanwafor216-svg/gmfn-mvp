@@ -1498,6 +1498,19 @@ def _community_steward_setup_preview(
     }
 
 
+def _admin_utc_datetime(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _pilot_data_cleanup_broadcast_is_open(broadcast: MarketplaceBroadcast, *, now: datetime) -> bool:
+    expires_at = getattr(broadcast, "expires_at", None)
+    if expires_at is None:
+        return True
+    return _admin_utc_datetime(expires_at) > _admin_utc_datetime(now)
+
+
 def _pilot_data_cleanup_counts(db: Session, *, clan_id: int, now: Optional[datetime] = None) -> dict[str, int]:
     current_time = now or datetime.now(timezone.utc)
     shops_total = db.query(MarketplaceShop).filter(MarketplaceShop.clan_id == int(clan_id)).count()
@@ -1512,12 +1525,10 @@ def _pilot_data_cleanup_counts(db: Session, *, clan_id: int, now: Optional[datet
         .filter(MarketplaceProduct.clan_id == int(clan_id), MarketplaceProduct.is_active.is_(True))
         .count()
     )
-    broadcasts_total = db.query(MarketplaceBroadcast).filter(MarketplaceBroadcast.clan_id == int(clan_id)).count()
-    broadcasts_open = (
-        db.query(MarketplaceBroadcast)
-        .filter(MarketplaceBroadcast.clan_id == int(clan_id))
-        .filter((MarketplaceBroadcast.expires_at.is_(None)) | (MarketplaceBroadcast.expires_at > current_time))
-        .count()
+    broadcasts = db.query(MarketplaceBroadcast).filter(MarketplaceBroadcast.clan_id == int(clan_id)).all()
+    broadcasts_total = len(broadcasts)
+    broadcasts_open = sum(
+        1 for broadcast in broadcasts if _pilot_data_cleanup_broadcast_is_open(broadcast, now=current_time)
     )
     return {
         "shops_total": int(shops_total),

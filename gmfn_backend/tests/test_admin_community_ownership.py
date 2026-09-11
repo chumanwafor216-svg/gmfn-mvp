@@ -1135,7 +1135,7 @@ def _seed_pilot_cleanup_case() -> None:
                     message='Real public pilot broadcast.',
                     image_url='https://example.com/broadcast.jpg',
                     video_url='https://example.com/broadcast.mp4',
-                    expires_at=datetime.now(timezone.utc) + timedelta(days=1),
+                    expires_at=(datetime.now(timezone.utc) + timedelta(days=1)).replace(tzinfo=None),
                 ),
             ]
         )
@@ -1291,6 +1291,9 @@ def test_pilot_data_cleanup_execute_scrubs_public_marketplace_without_deleting_h
         assert broadcast.image_url is None
         assert broadcast.video_url is None
         assert broadcast.expires_at is not None
+
+        visible = list_visible_user_clans(db=db, user=db.get(User, 2))
+        assert all(row.id != 51 for row in visible)
 
         event = db.query(TrustEvent).filter(TrustEvent.event_type == 'community.pilot_data_cleaned').one()
         assert event.clan_id == 51
