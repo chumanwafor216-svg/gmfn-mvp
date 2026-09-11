@@ -160503,3 +160503,10 @@ Operational note:
 - Frontend route affected: `/app/command-center/community-ownership` now includes a Pilot data cleanup section between steward setup and ordinary lifecycle controls.
 - Guardrails: `gmfn_backend/tests/test_admin_community_ownership.py` covers read-only preview, confirmation gating, and non-destructive cleanup; `frontend/tools/audit-admin-route-guards.mjs` cages the route, wrapper, UI controls, and no-erasure/no-delete boundary.
 - Devil truth: this solves controlled pilot cleanup, not legal GDPR erasure, irreversible deletion, or duplicate-name recreation. For a real organisation continuing under its owner, use steward setup plus owner repair/release instead.
+## 2026-09-11 - Community ownership case chooser added
+
+- Status: Implemented and verified locally; not pushed/deployed in this slice.
+- Owner trigger: After adding steward setup, owner repair/release, lifecycle close, and pilot cleanup, the next risk was admins choosing the wrong action for transfer, prepared setup, test-data cleanup, or organisation exit.
+- Frontend route affected: `/app/command-center/community-ownership` now opens with a compact Case chooser explaining which existing engine to use: Owner repair for transfer/release, Steward setup for prepared shells, Pilot cleanup for public setup/test traces, and Lifecycle close for organisation exit.
+- Boundary: This does not add another backend engine or duplicate account logic. It reduces misuse of the existing engines and keeps the truth boundary visible: no legal erasure, no silent deletion, and no proof of organisation acceptance.
+- Guardrail: `frontend/tools/audit-admin-route-guards.mjs` now cages the Case chooser and its boundary language.

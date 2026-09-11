@@ -729,6 +729,52 @@ export default function AdminCommunityOwnershipPage() {
           </div>
         </section>
 
+        <section style={card("#FFFBEB")}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div>
+              <div style={label()}>Case chooser</div>
+              <h2 style={{ margin: "6px 0 0", color: "#0B1F33", fontSize: 22 }}>Choose the right action</h2>
+            </div>
+            <div style={{ ...helper(), maxWidth: 430 }}>
+              Use the existing engine that matches the real-life case. This prevents cleanup, transfer, and exit decisions from being mixed together.
+            </div>
+          </div>
+
+          <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+            <div style={soft("#FFFFFF")}>
+              <div style={label()}>Transfer or release</div>
+              <div style={{ marginTop: 6, color: "#0B1F33", fontSize: 18, fontWeight: 1000 }}>Owner repair</div>
+              <div style={{ marginTop: 8, ...helper() }}>
+                Use when the real owner is ready and proof has been checked. This can release a steward setup to active.
+              </div>
+            </div>
+            <div style={soft("#FFFFFF")}>
+              <div style={label()}>Prepare first</div>
+              <div style={{ marginTop: 6, color: "#0B1F33", fontSize: 18, fontWeight: 1000 }}>Steward setup</div>
+              <div style={{ marginTop: 8, ...helper() }}>
+                Use when GSN prepares an organisation shell from a brief before the representative accepts ownership.
+              </div>
+            </div>
+            <div style={soft("#FFFFFF")}>
+              <div style={label()}>Test data used</div>
+              <div style={{ marginTop: 6, color: "#0B1F33", fontSize: 18, fontWeight: 1000 }}>Pilot cleanup</div>
+              <div style={{ marginTop: 8, ...helper() }}>
+                Use when public example details, shops, products, or spotlights should be cleaned while history stays preserved.
+              </div>
+            </div>
+            <div style={soft("#FFFFFF")}>
+              <div style={label()}>Organisation leaving</div>
+              <div style={{ marginTop: 6, color: "#0B1F33", fontSize: 18, fontWeight: 1000 }}>Lifecycle close</div>
+              <div style={{ marginTop: 8, ...helper() }}>
+                Use when the community or domain should stop normal operation. This keeps the name and audit trail reserved.
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 12, ...institutionalInnerCard("#FFFFFF"), ...helper() }}>
+            Truth boundary: none of these actions is legal erasure, a silent deletion, or proof that an organisation accepted GSN. Those decisions must stay separate.
+          </div>
+        </section>
         <section style={card("#F8FBFF")}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
             <div>

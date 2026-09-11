@@ -1157,6 +1157,7 @@ Must show:
 - community lookup by name
 - owner lookup by member identity signal
 - exact community and owner selection
+- compact case chooser separating owner repair, steward setup, pilot cleanup, and lifecycle close/suspend decisions
 - steward setup preview/record controls for preparing a hidden organisation/community shell before owner acceptance
 - pilot data cleanup preview/record controls for cleaning public-facing setup/test data while preserving audit history
 - ordinary community lifecycle preview/record controls for active, dormant, or closed status
@@ -1169,6 +1170,7 @@ Must show:
 
 Rules:
 - Route is `/app/command-center/community-ownership` and must remain platform-admin only.
+- The case chooser must map each real-life case to the existing engine: owner repair for transfer/release, steward setup for prepared shells, pilot cleanup for public setup/test traces, and lifecycle close/suspend for organisation exit.
 - The tool must not delete the existing community, erase prior admins, or remove historical evidence.
 - Steward setup can reserve and prepare a hidden ordinary community shell from a supplied brief. It must keep status `steward_setup`, stay hidden from normal member lists, and avoid claiming verified ownership until proof-checked owner repair releases it.
 - Steward setup must not overwrite an active community name, publish the community, delete evidence, remove members, or transfer ownership.

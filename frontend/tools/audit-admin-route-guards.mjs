@@ -189,6 +189,19 @@ assertContains(
 assertContains(
   adminPageFile,
   adminPageSource,
+  /Case chooser[\s\S]*?Owner repair[\s\S]*?Steward setup[\s\S]*?Pilot cleanup[\s\S]*?Lifecycle close/,
+  "Admin Community Ownership page must explain which existing engine to use for transfer, steward setup, cleanup, and exit cases."
+);
+
+assertContains(
+  adminPageFile,
+  adminPageSource,
+  /none of these actions is legal erasure[\s\S]*?silent deletion[\s\S]*?organisation accepted GSN/,
+  "Admin Community Ownership case chooser must keep the erasure, deletion, and acceptance boundary visible."
+);
+assertContains(
+  adminPageFile,
+  adminPageSource,
   /Steward setup[\s\S]*?Preview steward setup[\s\S]*?Record steward setup/,
   "Admin Community Ownership page must expose steward setup preview and record controls."
 );
