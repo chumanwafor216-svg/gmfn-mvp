@@ -3452,7 +3452,7 @@ export default function ShopGalleryPage() {
                 placeItems: "center",
                 justifySelf: "center",
                 alignSelf: isCompact ? "start" : "center",
-                gridRow: isCompact ? "1 / span 3" : undefined,
+                gridRow: isCompact ? shopFollowState.isOwner ? "1 / span 2" : "1 / span 3" : undefined,
                 background:
                   "radial-gradient(circle at 36% 30%, rgba(255,255,255,0.95) 0%, rgba(246,196,83,0.18) 46%, rgba(4,24,43,0.92) 100%)",
                 border: "1px solid rgba(214,170,69,0.58)",
@@ -3592,11 +3592,11 @@ export default function ShopGalleryPage() {
                   display: "grid",
                   gridTemplateColumns: isCompact
                     ? shopFollowState.isOwner
-                      ? "max-content minmax(118px, 1fr)"
+                      ? "minmax(0, 0.72fr) minmax(0, 1.28fr)"
                       : "minmax(0, 1fr)"
                     : "minmax(0, 1fr) auto",
-                  gridColumn: isCompact ? "2" : undefined,
-                  gap: isCompact ? 6 : 10,
+                  gridColumn: isCompact ? shopFollowState.isOwner ? "1 / -1" : "2" : undefined,
+                  gap: isCompact ? shopFollowState.isOwner ? 8 : 6 : 10,
                   alignItems: "center",
                   minHeight: isCompact ? 30 : 54,
                 }}
@@ -3605,12 +3605,12 @@ export default function ShopGalleryPage() {
                 <div
                   style={{
                     minHeight: isCompact ? 30 : 44,
-                    width: "fit-content",
+                    width: isCompact && shopFollowState.isOwner ? "100%" : "fit-content",
                     maxWidth: "100%",
                     justifySelf: "start",
                     display: "inline-flex",
                     alignItems: "center",
-                    justifyContent: "flex-start",
+                    justifyContent: isCompact && shopFollowState.isOwner ? "center" : "flex-start",
                     gap: isCompact ? 5 : 8,
                     padding: isCompact ? "4px 8px" : "8px 12px",
                     borderRadius: 999,
@@ -3760,7 +3760,9 @@ export default function ShopGalleryPage() {
                     gap: isCompact ? 6 : 8,
                     minWidth: 0,
                     padding: isCompact ? "6px 8px" : undefined,
-                    whiteSpace: "nowrap",
+                    justifyContent: "flex-start",
+                    whiteSpace: "normal",
+                    textOverflow: "clip",
                   }}
                 >
                   {inlineShopIcon("chart", "#FFFFFF", isCompact ? 12 : 15)}

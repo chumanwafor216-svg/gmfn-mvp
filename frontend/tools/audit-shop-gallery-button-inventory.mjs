@@ -270,7 +270,7 @@ assertContains(
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact \? "96px minmax\(0, 1fr\)" : "220px minmax\(0, 1fr\)"[\s\S]*?data-public-shop-signboard-icon="true"[\s\S]*?width: isCompact \? 92 : 206[\s\S]*?height: isCompact \? 92 : 206[\s\S]*?borderRadius: isCompact \? 24 : "50%"[\s\S]*?gridRow: isCompact \? "1 \/ span 3" : undefined[\s\S]*?overflow: "hidden"/,
+  /gridTemplateColumns: isCompact \? "96px minmax\(0, 1fr\)" : "220px minmax\(0, 1fr\)"[\s\S]*?data-public-shop-signboard-icon="true"[\s\S]*?width: isCompact \? 92 : 206[\s\S]*?height: isCompact \? 92 : 206[\s\S]*?borderRadius: isCompact \? 24 : "50%"[\s\S]*?gridRow: isCompact \? shopFollowState\.isOwner \? "1 \/ span 2" : "1 \/ span 3" : undefined[\s\S]*?overflow: "hidden"/,
   "Public Shop signboard mobile icon must reserve its own rail and stay clipped inside its tile."
 );
 
@@ -285,7 +285,7 @@ assertContains(
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact\s*\? shopFollowState\.isOwner\s*\? "max-content minmax\(118px, 1fr\)"[\s\S]*?gap: isCompact \? 6 : 10[\s\S]*?stableHeight=\{isCompact \? 50 : 46\}[\s\S]*?debugId="shop-gallery\.owner\.shop-analytics"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?View insights/,
+  /gridTemplateColumns: isCompact\s*\? shopFollowState\.isOwner\s*\? "minmax\(0, 0\.72fr\) minmax\(0, 1\.28fr\)"[\s\S]*?gridColumn: isCompact \? shopFollowState\.isOwner \? "1 \/ -1" : "2" : undefined[\s\S]*?gap: isCompact \? shopFollowState\.isOwner \? 8 : 6 : 10[\s\S]*?stableHeight=\{isCompact \? 50 : 46\}[\s\S]*?debugId="shop-gallery\.owner\.shop-analytics"[\s\S]*?whiteSpace: "normal"[\s\S]*?View insights/,
   "Public Shop owner compact signboard must place follower count and a two-line Shop analytics shortcut in one balanced phone row."
 );
 assertContains(

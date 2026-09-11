@@ -160550,3 +160550,13 @@ Operational note:
 - Existing engine reused: no share route, Vault route, analytics engine, or backend behavior was duplicated. The existing social share chooser and Vault-request preview link remain the source of truth.
 - Truth boundary: this is mobile presentation and request-language polish only. It does not expose private Vault stock, grant Vault access, prove offers exist, or count sales.
 - Verification passed: `npm --prefix frontend run audit:shop-gallery-button-inventory`; `npm --prefix frontend run audit:share-tag-actions`; `npm --prefix frontend run audit:link-contracts`; targeted frontend ESLint; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build` outside the sandbox after prior sandboxed esbuild spawn issues.
+
+## 2026-09-11 - Public Shop owner analytics phone unclipping (local)
+
+- Status: Local frontend polish implemented and verified; not pushed or deployed yet.
+- Owner trigger: owner mobile screenshot showed the owner-only `Shop analytics` shortcut still clipping as `Shop anal...` on phone.
+- Frontend route affected: `/shop/:gmfnId` through `frontend/src/pages/ShopGalleryPage.tsx`.
+- Product behavior changed: on compact owner view, the shop image now spans only the title/category rows, and the follower plus Shop analytics row uses the full signboard width below them. The analytics shortcut keeps `Shop analytics / View insights` and no longer forces the text into the narrow right column.
+- Guardrail changed: `frontend/tools/audit-shop-gallery-button-inventory.mjs` now cages the owner-only full-width follower/analytics phone row and conditional icon-row span.
+- Truth boundary: visual/layout polish only. It does not change analytics data, follower counts, owner-only visibility, Vault behavior, Share behavior, or Demand Bus/Ask Community routes.
+- Verification passed: targeted frontend ESLint; `npm --prefix frontend run audit:shop-gallery-button-inventory`; `npm --prefix frontend run audit:link-contracts`; `npm --prefix frontend run audit:share-tag-actions`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`.
