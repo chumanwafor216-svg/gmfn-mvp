@@ -6122,6 +6122,69 @@ export async function getMarketplaceShopFollowStatus(shopId: number): Promise<an
   );
 }
 
+const MARKETPLACE_ATTENTION_SESSION_KEY = "gsn_marketplace_attention_session_v1";
+
+function marketplaceAttentionSessionKey(): string {
+  const existing = readStorage(MARKETPLACE_ATTENTION_SESSION_KEY);
+  if (existing) return existing;
+
+  const randomPart =
+    typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const next = `marketplace-${randomPart}`;
+  writeStorage(MARKETPLACE_ATTENTION_SESSION_KEY, next);
+  return next;
+}
+
+export async function recordMarketplaceAttentionEvent(payload: {
+  event_type:
+    | "shop_visit"
+    | "product_open"
+    | "spotlight_impression"
+    | "spotlight_shop_click"
+    | "contact_tap";
+  shop_id?: number | null;
+  product_id?: number | null;
+  broadcast_id?: number | null;
+  clan_id?: number | null;
+  source?: string | null;
+  source_path?: string | null;
+  client_event_id?: string | null;
+}): Promise<any> {
+  const sourcePath =
+    payload.source_path ??
+    (typeof window !== "undefined"
+      ? `${window.location.pathname}${window.location.search}${window.location.hash}`
+      : undefined);
+
+  return httpJson(
+    "/marketplace/analytics/attention",
+    "POST",
+    {
+      ...payload,
+      source: payload.source || "public_shop",
+      source_path: sourcePath,
+      session_key: marketplaceAttentionSessionKey(),
+    },
+    { header_clan_id: null, quiet: true, timeoutMs: 8000 }
+  );
+}
+
+export async function getMarketplaceShopAttentionSummary(
+  shopId: number,
+  params?: { days?: number }
+): Promise<any> {
+  return httpJson(
+    `/marketplace/analytics/shops/${encodeURIComponent(String(shopId))}/summary${buildQuery({
+      days: params?.days ?? 30,
+    })}`,
+    "GET",
+    undefined,
+    { header_clan_id: null }
+  );
+}
+
 export async function createMarketplaceProduct(payload: {
   clan_id?: number | null;
   shop_id: number;

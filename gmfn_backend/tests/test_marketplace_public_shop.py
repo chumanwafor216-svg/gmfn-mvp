@@ -12,6 +12,7 @@ from app.db.database import engine
 from app.db.models import (
     FeatureEntitlement,
     FeatureUsageEvent,
+    MarketplaceAttentionEvent,
     MarketplaceBroadcast,
     MarketplaceProduct,
     MarketplaceProductRepost,
@@ -27,6 +28,7 @@ def _ensure_marketplace_tables() -> None:
     MarketplaceProduct.__table__.create(bind=engine, checkfirst=True)
     MarketplaceBroadcast.__table__.create(bind=engine, checkfirst=True)
     MarketplaceProductRepost.__table__.create(bind=engine, checkfirst=True)
+    MarketplaceAttentionEvent.__table__.create(bind=engine, checkfirst=True)
     ShopFollower.__table__.create(bind=engine, checkfirst=True)
     TrustEvent.__table__.create(bind=engine, checkfirst=True)
     Notification.__table__.create(bind=engine, checkfirst=True)
@@ -5045,3 +5047,173 @@ def test_shop_product_create_notifies_visible_followers_only(client, monkeypatch
     assert notices[0].message == "Visible Follow Shop added a new product."
     assert notices[0].action_label == "Open shop"
     assert "product_id=" in notices[0].action_url
+
+
+def test_marketplace_attention_records_public_views_and_owner_summary(client, monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "pytest-marketplace-attention-secret")
+    _ensure_marketplace_tables()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES
+                    (1, 'attention-owner@example.com', 'hashed', 'Attention Owner', 'user', 'GMFN-U-ATTOWNER'),
+                    (2, 'attention-viewer@example.com', 'hashed', 'Attention Viewer', 'user', 'GMFN-U-ATTVIEWER')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Attention Clan', 'Attention Marketplace', 'ATTN1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES
+                    (1, 1, 1, 'member', 0),
+                    (2, 1, 2, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'Attention Shop', 'Seller attention test', 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_products (
+                    id, clan_id, shop_id, seller_user_id, title, description,
+                    visibility_mode, is_active
+                ) VALUES (
+                    1, 1, 1, 1, 'Attention Product', 'A visible product',
+                    'community_visible', 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_broadcasts (
+                    id, clan_id, author_user_id, shop_id, message, priority_mode,
+                    visibility_scope, expires_at
+                ) VALUES (
+                    1, 1, 1, 1, 'Attention spotlight', 'free',
+                    'direct_communities', :expires_at
+                )
+                """
+            ),
+            {"expires_at": datetime.now(timezone.utc) + timedelta(hours=2)},
+        )
+
+    event_payloads = [
+        {"event_type": "shop_visit", "shop_id": 1, "clan_id": 1, "source": "public_shop", "session_key": "visitor-a"},
+        {"event_type": "product_open", "shop_id": 1, "product_id": 1, "clan_id": 1, "source": "public_shop", "session_key": "visitor-a"},
+        {"event_type": "spotlight_impression", "shop_id": 1, "broadcast_id": 1, "clan_id": 1, "source": "public_shop_spotlight", "session_key": "visitor-a"},
+        {"event_type": "spotlight_shop_click", "shop_id": 1, "broadcast_id": 1, "clan_id": 1, "source": "public_shop_spotlight", "session_key": "visitor-a"},
+        {"event_type": "contact_tap", "shop_id": 1, "product_id": 1, "clan_id": 1, "source": "product", "session_key": "visitor-a"},
+    ]
+    for payload in event_payloads:
+        response = client.post("/marketplace/analytics/attention", json=payload)
+        assert response.status_code == 200, response.text
+        assert response.json()["recorded"] is True
+        assert response.json()["boundary_note"]
+
+    duplicate = client.post("/marketplace/analytics/attention", json=event_payloads[0])
+    assert duplicate.status_code == 200, duplicate.text
+    assert duplicate.json()["recorded"] is False
+    assert duplicate.json()["deduped"] is True
+
+    owner_token = create_access_token({"sub": "attention-owner@example.com"})
+    summary = client.get(
+        "/marketplace/analytics/shops/1/summary?days=30",
+        headers={"Authorization": f"Bearer {owner_token}"},
+    )
+    assert summary.status_code == 200, summary.text
+    body = summary.json()
+    today = body["periods"]["today"]
+    assert today["shop_visits"] == 1
+    assert today["unique_shop_visitors"] == 1
+    assert today["product_opens"] == 1
+    assert today["spotlight_impressions"] == 1
+    assert today["unique_spotlight_viewers"] == 1
+    assert today["spotlight_shop_clicks"] == 1
+    assert today["contact_taps"] == 1
+    assert body["spotlight"]["active_spotlights"] == 1
+    assert body["spotlight"]["possible_member_reach"] == 2
+    assert body["spotlight"]["reach_label"] == "Possible member reach, not confirmed views"
+    assert body["top_products"] == [
+        {"product_id": 1, "name": "Attention Product", "opens": 1}
+    ]
+    assert "not buyers" in body["boundary_note"]
+
+    with engine.begin() as conn:
+        trust_attention_events = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM trust_events
+                WHERE event_type LIKE 'marketplace.%attention%'
+                   OR event_type LIKE 'marketplace.%visit%'
+                   OR event_type LIKE 'marketplace.%impression%'
+                """
+            )
+        ).scalar_one()
+    assert int(trust_attention_events) == 0
+
+
+def test_marketplace_attention_summary_is_owner_only(client, monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "pytest-marketplace-attention-owner-secret")
+    _ensure_marketplace_tables()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (id, email, hashed_password, display_name, role, gmfn_id)
+                VALUES
+                    (1, 'attention-owner@example.com', 'hashed', 'Attention Owner', 'user', 'GMFN-U-ATTOWNER'),
+                    (2, 'attention-other@example.com', 'hashed', 'Attention Other', 'user', 'GMFN-U-ATTOTHER')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Attention Clan', 'Attention Marketplace', 'ATTN2')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (id, clan_id, owner_user_id, shop_name, description, is_active)
+                VALUES (1, 1, 1, 'Attention Shop', 'Owner only summary', 1)
+                """
+            )
+        )
+
+    other_token = create_access_token({"sub": "attention-other@example.com"})
+    forbidden = client.get(
+        "/marketplace/analytics/shops/1/summary",
+        headers={"Authorization": f"Bearer {other_token}"},
+    )
+    assert forbidden.status_code == 403, forbidden.text
+    assert forbidden.json()["detail"] == "Only the shop owner can view this shop attention summary"

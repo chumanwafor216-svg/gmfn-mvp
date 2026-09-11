@@ -21,6 +21,7 @@ import {
   getPublicMarketplaceShopByGmfnId,
   getSelectedClanId,
   getStoredGmfnId,
+  recordMarketplaceAttentionEvent,
   safeCopy,
   unfollowMarketplaceShop,
 } from "../lib/api";
@@ -92,6 +93,7 @@ type ShopProduct = {
 
 type ShopBroadcast = {
   id?: number;
+  shopId?: number;
   imageUrl: string;
   videoUrl: string;
   message: string;
@@ -884,6 +886,9 @@ function normalizeBroadcast(raw: any): ShopBroadcast | null {
 
   return {
     id: positiveNumber(src?.id) || undefined,
+    shopId:
+      positiveNumber(src?.shop_id || src?.shopId || src?.source_shop_id || src?.sourceShopId) ||
+      undefined,
     imageUrl: resolveImageSrc(
       src?.source_product_image_url ||
         src?.sourceProductImageUrl ||
@@ -2204,6 +2209,53 @@ export default function ShopGalleryPage() {
     };
   }, [effectiveShop?.followerCount, effectiveShop?.id]);
 
+  const trackMarketplaceAttention = useCallback(
+    function trackMarketplaceAttention(
+      eventType: Parameters<typeof recordMarketplaceAttentionEvent>[0]["event_type"],
+      payload: Omit<Parameters<typeof recordMarketplaceAttentionEvent>[0], "event_type"> = {},
+      options?: { allowShopFallback?: boolean }
+    ) {
+      const allowShopFallback = options?.allowShopFallback !== false;
+      const explicitShopId = positiveNumber(payload.shop_id);
+      const fallbackShopId = allowShopFallback ? positiveNumber(effectiveShop?.id) : 0;
+      const shopId = explicitShopId || fallbackShopId;
+      if (!shopId) return;
+
+      const clanId = positiveNumber(payload.clan_id) || positiveNumber(effectiveShop?.clanId) || undefined;
+
+      void recordMarketplaceAttentionEvent({
+        ...payload,
+        event_type: eventType,
+        shop_id: shopId,
+        clan_id: clanId,
+      }).catch(() => undefined);
+    },
+    [effectiveShop?.clanId, effectiveShop?.id]
+  );
+
+  useEffect(() => {
+    if (loading || error) return;
+    const shopId = positiveNumber(effectiveShop?.id);
+    if (!shopId) return;
+
+    trackMarketplaceAttention("shop_visit", {
+      source: "public_shop_gallery",
+    });
+  }, [effectiveShop?.id, error, loading, trackMarketplaceAttention]);
+
+  useEffect(() => {
+    if (loading || error || openProductId === null) return;
+    const openedProduct = products.find(
+      (product) => (product.id ?? product.slotNumber) === openProductId
+    );
+    if (!openedProduct) return;
+
+    trackMarketplaceAttention("product_open", {
+      product_id: positiveNumber(openedProduct.id) || undefined,
+      source: "public_shop_product",
+    });
+  }, [error, loading, openProductId, products, trackMarketplaceAttention]);
+
   const handleFollowShop = useCallback(async () => {
     const shopId = positiveNumber(effectiveShop?.id);
     if (!getAccessToken()) {
@@ -2406,6 +2458,24 @@ export default function ShopGalleryPage() {
       ),
     };
   }, [miniSpotlight]);
+
+  useEffect(() => {
+    if (loading || error || !miniSpotlight) return;
+    const spotlightShopId = positiveNumber(miniSpotlight.shopId);
+    if (!spotlightShopId) return;
+
+    trackMarketplaceAttention(
+      "spotlight_impression",
+      {
+        shop_id: spotlightShopId,
+        broadcast_id: positiveNumber(miniSpotlight.id) || undefined,
+        product_id: positiveNumber(miniSpotlight.sourceProductId) || undefined,
+        clan_id: positiveNumber(miniSpotlight.sourceClanId) || undefined,
+        source: "public_shop_spotlight",
+      },
+      { allowShopFallback: false }
+    );
+  }, [error, loading, miniSpotlight, trackMarketplaceAttention]);
 
   const publicShopSpotlightActive = Boolean(miniSpotlight);
 
@@ -2774,6 +2844,11 @@ export default function ShopGalleryPage() {
   }
 
   function contactOwnerAboutProduct(product: ShopProduct) {
+    trackMarketplaceAttention("contact_tap", {
+      product_id: positiveNumber(product.id) || undefined,
+      source: "public_shop_product_contact",
+    });
+
     const productTitle = productDisplayTitle(product);
     const blockLabel = publicShopBlockLabel(product);
     const message = `Hello, I am asking about ${productTitle} (${blockLabel}) in your GSN public shop.`;
@@ -2828,6 +2903,8 @@ export default function ShopGalleryPage() {
   }
 
   function callOwnerPhone() {
+    trackMarketplaceAttention("contact_tap", { source: "public_shop_phone_contact" });
+
     const phoneUrl = buildPhoneCallUrl(effectiveShop?.whatsapp);
     if (!phoneUrl || typeof window === "undefined") {
       setNotice({
@@ -2846,6 +2923,8 @@ export default function ShopGalleryPage() {
   }
 
   async function contactOwnerByWhatsApp() {
+    trackMarketplaceAttention("contact_tap", { source: "public_shop_whatsapp_contact" });
+
     const shopTitle = firstMeaningful(
       effectiveShop?.shopName,
       effectiveShop?.ownerName,
@@ -2993,6 +3072,21 @@ export default function ShopGalleryPage() {
   }
 
   function contactSpotlightOwnerByWhatsApp() {
+    const spotlightShopId = positiveNumber(miniSpotlight?.shopId);
+    const spotlightAttentionPayload = {
+      shop_id: spotlightShopId || undefined,
+      broadcast_id: positiveNumber(miniSpotlight?.id) || undefined,
+      product_id: positiveNumber(miniSpotlight?.sourceProductId) || undefined,
+      clan_id: positiveNumber(miniSpotlight?.sourceClanId) || undefined,
+      source: "public_shop_spotlight_contact",
+    };
+    trackMarketplaceAttention("spotlight_shop_click", spotlightAttentionPayload, {
+      allowShopFallback: false,
+    });
+    trackMarketplaceAttention("contact_tap", spotlightAttentionPayload, {
+      allowShopFallback: false,
+    });
+
     const spotlightTitle = firstMeaningful(
       miniSpotlightView.detail,
       miniSpotlight?.message,

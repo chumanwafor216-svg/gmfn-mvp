@@ -19,6 +19,7 @@ import {
   getPublicMarketplaceShopByGmfnId,
   getMe,
   getMarketplaceShopByGmfnId,
+  getMarketplaceShopAttentionSummary,
   getMyMarketplaceShop,
   getMyIdentityRisk,
   getSelectedClanId,
@@ -175,6 +176,30 @@ type CommunityPackageStatus = {
   clan_id?: number | null;
   shop_id?: number | null;
   packages?: CommunityPackageStatusItem[];
+};
+
+type ShopAttentionPeriod = {
+  shop_visits?: number | null;
+  unique_shop_visitors?: number | null;
+  product_opens?: number | null;
+  spotlight_impressions?: number | null;
+  unique_spotlight_viewers?: number | null;
+  spotlight_shop_clicks?: number | null;
+  contact_taps?: number | null;
+};
+
+type ShopAttentionSummary = {
+  periods?: {
+    today?: ShopAttentionPeriod;
+    last_7_days?: ShopAttentionPeriod;
+    requested?: ShopAttentionPeriod;
+  };
+  spotlight?: {
+    active_count?: number | null;
+    possible_member_reach?: number | null;
+    possible_reach_label?: string | null;
+  };
+  boundary_note?: string | null;
 };
 
 type RoscaRoundSummary = {
@@ -998,6 +1023,8 @@ export default function ShopControlPage() {
   const [expectedPayments, setExpectedPayments] = useState<ExpectedPaymentRecord[]>([]);
   const [communityPackageStatus, setCommunityPackageStatus] =
     useState<CommunityPackageStatus | null>(null);
+  const [shopAttentionSummary, setShopAttentionSummary] =
+    useState<ShopAttentionSummary | null>(null);
   const [roscaCycles, setRoscaCycles] = useState<RoscaCycleSummary[]>([]);
   const [communityMeetings, setCommunityMeetings] = useState<CommunityMeetingRecord[]>(
     []
@@ -1496,6 +1523,7 @@ export default function ShopControlPage() {
           packageStatusRes,
           roscaCyclesRes,
           communityMeetingsRes,
+          attentionSummaryRes,
         ] =
           await Promise.all([
           apiJson<any>(
@@ -1510,6 +1538,7 @@ export default function ShopControlPage() {
           apiJson<any>(packageStatusPath).catch(() => null),
           apiJson<any>(roscaCyclesPath).catch(() => null),
           apiJson<any>(communityMeetingsPath).catch(() => null),
+          getMarketplaceShopAttentionSummary(shopItem.id, { days: 30 }).catch(() => null),
         ]).finally(() => {
           if (!background) setDetailsLoading(false);
         });
@@ -1540,6 +1569,9 @@ export default function ShopControlPage() {
         setCommunityPackageStatus(
           (packageStatusRes || null) as CommunityPackageStatus | null
         );
+        setShopAttentionSummary(
+          (attentionSummaryRes || null) as ShopAttentionSummary | null
+        );
         setRoscaCycles(
           Array.isArray(roscaCyclesRes?.cycles)
             ? (roscaCyclesRes.cycles as RoscaCycleSummary[])
@@ -1557,6 +1589,7 @@ export default function ShopControlPage() {
         setExpectedPayments([]);
         setTrustSlipFeature(null);
         setCommunityPackageStatus(null);
+        setShopAttentionSummary(null);
         setRoscaCycles([]);
         setCommunityMeetings([]);
       }
@@ -1747,6 +1780,27 @@ export default function ShopControlPage() {
     })[0];
   }, [activeSpotlights]);
 
+  const attentionLast7Days = shopAttentionSummary?.periods?.last_7_days || {};
+  const attentionVisitors7Days = safePositiveNumber(
+    attentionLast7Days.unique_shop_visitors,
+    0
+  );
+  const attentionProductOpens7Days = safePositiveNumber(
+    attentionLast7Days.product_opens,
+    0
+  );
+  const attentionContactTaps7Days = safePositiveNumber(
+    attentionLast7Days.contact_taps,
+    0
+  );
+  const attentionSpotlightImpressions7Days = safePositiveNumber(
+    attentionLast7Days.spotlight_impressions,
+    0
+  );
+  const attentionPossibleSpotlightReach = safePositiveNumber(
+    shopAttentionSummary?.spotlight?.possible_member_reach,
+    0
+  );
   const communityName = useMemo(() => {
     return firstTruthy(
       shop?.marketplace_name,
@@ -4900,6 +4954,54 @@ export default function ShopControlPage() {
               {vaultLinks.length}
             </div>
           </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr 1fr" : "repeat(4, minmax(0, 1fr))",
+            gap: 12,
+          }}
+          aria-label="Shop attention signals for the last seven days"
+        >
+          <div style={statTile()}>
+            <div style={sectionLabel()}>Visitors</div>
+            <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 24, fontWeight: 900 }}>
+              {attentionVisitors7Days}
+            </div>
+            <div style={{ ...helperText(), marginTop: 6, fontSize: 12 }}>Last 7 days</div>
+          </div>
+
+          <div style={statTile()}>
+            <div style={sectionLabel()}>Product opens</div>
+            <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 24, fontWeight: 900 }}>
+              {attentionProductOpens7Days}
+            </div>
+            <div style={{ ...helperText(), marginTop: 6, fontSize: 12 }}>Opened shop blocks</div>
+          </div>
+
+          <div style={statTile()}>
+            <div style={sectionLabel()}>Contact taps</div>
+            <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 24, fontWeight: 900 }}>
+              {attentionContactTaps7Days}
+            </div>
+            <div style={{ ...helperText(), marginTop: 6, fontSize: 12 }}>Buyer intent signal only</div>
+          </div>
+
+          <div style={statTile()}>
+            <div style={sectionLabel()}>Spotlight seen</div>
+            <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 24, fontWeight: 900 }}>
+              {attentionSpotlightImpressions7Days}
+            </div>
+            <div style={{ ...helperText(), marginTop: 6, fontSize: 12 }}>
+              Possible reach: {attentionPossibleSpotlightReach}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 12, ...helperText(), maxWidth: 780 }}>
+          Visitors, views, opens, and taps are attention signals. They are not buyers, sales, payment proof, verification, or a trust score.
         </div>
       </section>
       ) : null}

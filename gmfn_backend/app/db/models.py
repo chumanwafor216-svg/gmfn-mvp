@@ -3290,6 +3290,72 @@ class MarketplaceProductRepost(Base):
     )
 
 
+class MarketplaceAttentionEvent(Base):
+    __tablename__ = "marketplace_attention_events"
+
+    __table_args__ = (
+        Index("ix_marketplace_attention_shop_type_created", "shop_id", "event_type", "created_at"),
+        Index("ix_marketplace_attention_product_type_created", "product_id", "event_type", "created_at"),
+        Index("ix_marketplace_attention_broadcast_type_created", "broadcast_id", "event_type", "created_at"),
+        Index("ix_marketplace_attention_owner_created", "shop_owner_user_id", "created_at"),
+        Index("ix_marketplace_attention_unique_viewer", "event_type", "viewer_user_id", "anonymous_key_hash"),
+        UniqueConstraint("dedupe_key", name="uq_marketplace_attention_dedupe_key"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    event_type: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+
+    shop_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("marketplace_shops.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    product_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("marketplace_products.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    broadcast_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("marketplace_broadcasts.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    clan_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("clans.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    shop_owner_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    viewer_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    anonymous_key_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
+    user_agent_hash: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    source: Mapped[str] = mapped_column(
+        String(40),
+        nullable=False,
+        default="public_shop",
+        server_default="public_shop",
+        index=True,
+    )
+    source_path: Mapped[Optional[str]] = mapped_column(String(240), nullable=True)
+    dedupe_key: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
 class MarketWisdomSource(Base):
     __tablename__ = "market_wisdom_sources"
 
