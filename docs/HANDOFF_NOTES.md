@@ -160442,3 +160442,14 @@ Operational note:
 - Community Home now labels market pulse responses as `I need this`, `Maybe later`, and `No need` instead of meeting availability labels.
 - Verification: `npm exec eslint ...`, `npm --prefix frontend run build`, `npm --prefix frontend run audit:shop-control-button-inventory`, `audit:marketplace-button-inventory`, `audit:spotlight-system-feed`, `audit:community-home-button-inventory`, `audit:protected-button-freeze`, `python -m py_compile ...`, and `python -m pytest gmfn_backend\tests\test_community_notices.py -q` all passed locally.
 - Still local only. Not pushed or deployed in this step.
+## 2026-09-11 - Shop Analytics Six Collapsible Sections (local)
+
+- Status: Implementation complete and verified for the current pilot publish path.
+- Owner trigger: owner clarified that Shop Analytics should use six separate buttons/sections, not five, and should avoid exposing the whole analytics board at once on phone.
+- Frontend route affected: `/app/shop-control#shop-control-counts`. The owner-only Shop Analytics hero remains visible, followed by six compact section buttons: Key Metrics, View to Contact, Visitor Activity, Trade Outcome, Traffic Sources, and Market Intelligence.
+- UX behavior changed: analytics details are hidden until a section is opened. Opening a section closes the previous one because the page stores one `activeAnalyticsPanel` key; tapping the same section collapses it again.
+- Mobile fit repair: key metric cards now use smaller fixed icon tiles, reduced value type, `minWidth: 0`, and overflow wrapping so cards stay inside the phone grid instead of clipping horizontally.
+- Demand Box route affected: `/app/demand-box`. The hero now includes `Ask Community`, routing to Marketplace with `ask_market=1#marketplace-official-board` so it reuses the existing Community Notice / market-need pulse path.
+- Guardrails: Shop Control button inventory was rebased for the one mapped analytics panel `StableButton`; Spotlight system feed audit now cages all six panel keys and per-section display gates; Demand Box audit now cages the Ask Community route and button.
+- Truth boundary: the collapsed sections improve reading and navigation only. Analytics still show attention, response, and protected evidence signals; they do not prove buyers, sales, payment, delivery, verification, or trust score.
+- Verification passed: targeted frontend ESLint; `npm --prefix frontend run audit:shop-control-button-inventory`; `npm --prefix frontend run audit:spotlight-system-feed`; `npm --prefix frontend run audit:demand-box-front-package`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`. `git diff --check` reported only line-ending normalization warnings.

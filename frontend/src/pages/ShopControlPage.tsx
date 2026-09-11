@@ -8,6 +8,7 @@ import PaymentProofSubmissionPanel from "../components/PaymentProofSubmissionPan
 import {
   PrimaryButton,
   SecondaryButton,
+  StableButton,
   StableCtaLink,
   StableDisclosureSummary,
   SubtleButton,
@@ -458,6 +459,27 @@ type ShopControlLayerKey =
   | "vault"
   | "summary";
 
+type ShopAnalyticsPanelKey =
+  | "key-metrics"
+  | "view-contact"
+  | "visitor-activity"
+  | "trade-outcomes"
+  | "traffic-sources"
+  | "market-intelligence";
+
+const SHOP_ANALYTICS_PANELS: Array<{
+  key: ShopAnalyticsPanelKey;
+  label: string;
+  detail: string;
+  icon: GsnIconName;
+}> = [
+  { key: "key-metrics", label: "Key Metrics", detail: "Last 7 days", icon: "chart" },
+  { key: "view-contact", label: "View to Contact", detail: "Attention funnel", icon: "eye" },
+  { key: "visitor-activity", label: "Visitor Activity", detail: "Visits and spotlight", icon: "community" },
+  { key: "trade-outcomes", label: "Trade Outcome", detail: "Evidence records", icon: "document" },
+  { key: "traffic-sources", label: "Traffic Sources", detail: "Where attention came from", icon: "copy" },
+  { key: "market-intelligence", label: "Market Intelligence", detail: "What to do next", icon: "spark" },
+];
 function safeStr(value: unknown): string {
   return String(value ?? "").trim();
 }
@@ -1181,6 +1203,9 @@ function shopAnalyticsMetricCardStyle(accent: AnalyticsAccent): React.CSSPropert
   const palette = ANALYTICS_ACCENTS[accent];
   return {
     ...statTile(),
+    minWidth: 0,
+    overflow: "hidden",
+    padding: 10,
     minHeight: 112,
     display: "grid",
     alignContent: "space-between",
@@ -1192,9 +1217,9 @@ function shopAnalyticsMetricCardStyle(accent: AnalyticsAccent): React.CSSPropert
 function shopAnalyticsIconTile(accent: AnalyticsAccent): React.CSSProperties {
   const palette = ANALYTICS_ACCENTS[accent];
   return {
-    width: 42,
-    height: 42,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 14,
     display: "grid",
     placeItems: "center",
     color: palette.color,
@@ -1219,13 +1244,13 @@ function ShopAnalyticsMetricCard({
   return (
     <div style={shopAnalyticsMetricCardStyle(accent)}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start" }}>
-        <div style={shopAnalyticsIconTile(accent)} aria-hidden="true">
-          <GsnLegacyIcon name={icon} size={30} />
+        <div style={{ ...shopAnalyticsIconTile(accent), flex: "0 0 auto", width: 36, height: 36, borderRadius: 14 }} aria-hidden="true">
+          <GsnLegacyIcon name={icon} size={24} />
         </div>
-        <div style={{ ...sectionLabel(), flex: "1 1 auto", textAlign: "right", lineHeight: 1.2 }}>{label}</div>
+        <div style={{ ...sectionLabel(), flex: "1 1 0", minWidth: 0, textAlign: "right", lineHeight: 1.15, fontSize: 10.5, overflowWrap: "anywhere" }}>{label}</div>
       </div>
       <div>
-        <div style={{ color: "#061827", fontSize: 28, fontWeight: 950, lineHeight: 1 }}>{value}</div>
+        <div style={{ color: "#061827", fontSize: 26, fontWeight: 950, lineHeight: 1, overflowWrap: "anywhere" }}>{value}</div>
         <div style={{ ...helperText(), marginTop: 8, fontSize: 12, lineHeight: 1.35 }}>{detail}</div>
       </div>
     </div>
@@ -1488,6 +1513,8 @@ export default function ShopControlPage() {
   const [vaultLinks, setVaultLinks] = useState<VaultLinkRecord[]>([]);
   const [activeOwnerLayer, setActiveOwnerLayer] =
     useState<ShopControlLayerKey>("overview");
+  const [activeAnalyticsPanel, setActiveAnalyticsPanel] =
+    useState<ShopAnalyticsPanelKey | "">("");
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const [expectedPayments, setExpectedPayments] = useState<ExpectedPaymentRecord[]>([]);
   const [communityPackageStatus, setCommunityPackageStatus] =
@@ -5791,10 +5818,84 @@ export default function ShopControlPage() {
             </div>
           ) : null}
         </div>
-
         <div
           style={{
             marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact
+              ? "repeat(2, minmax(0, 1fr))"
+              : "repeat(3, minmax(0, 1fr))",
+            gap: 10,
+          }}
+          aria-label="Shop analytics sections"
+        >
+          {SHOP_ANALYTICS_PANELS.map((panel) => {
+            const active = activeAnalyticsPanel === panel.key;
+            return (
+              <StableButton
+                key={panel.key}
+                type="button"
+                debugId={`shop-control.analytics-panel.${panel.key}`}
+                stableHeight={isCompact ? 58 : 60}
+                onClick={() =>
+                  setActiveAnalyticsPanel((current) =>
+                    current === panel.key ? "" : panel.key
+                  )
+                }
+                style={{
+                  justifyContent: "flex-start",
+                  gap: 9,
+                  minWidth: 0,
+                  padding: "8px 10px",
+                  borderRadius: 18,
+                  color: active ? "#FFFFFF" : "#0B2D4A",
+                  background: active
+                    ? "linear-gradient(135deg, #08233A 0%, #0F5EAA 100%)"
+                    : "linear-gradient(180deg, #FFFFFF 0%, #F5FAFF 100%)",
+                  border: active
+                    ? "1px solid rgba(255,255,255,0.22)"
+                    : "1px solid rgba(18,58,89,0.12)",
+                  boxShadow: active
+                    ? "0 14px 26px rgba(7,24,39,0.16)"
+                    : "0 10px 20px rgba(7,24,39,0.07)",
+                  textAlign: "left",
+                }}
+              >
+                {inlineIcon(panel.icon, active ? "#F2C766" : "#0F5EAA", 15)}
+                <span style={{ display: "grid", gap: 2, minWidth: 0 }}>
+                  <span style={{ fontSize: 12, fontWeight: 950, lineHeight: 1.15, whiteSpace: "normal" }}>
+                    {panel.label}
+                  </span>
+                  <span style={{ fontSize: 10.5, fontWeight: 800, lineHeight: 1.15, opacity: 0.78, whiteSpace: "normal" }}>
+                    {panel.detail}
+                  </span>
+                </span>
+              </StableButton>
+            );
+          })}
+        </div>
+
+        {!activeAnalyticsPanel ? (
+          <div
+            style={{
+              marginTop: 12,
+              borderRadius: 16,
+              border: "1px solid rgba(18,58,89,0.10)",
+              background: "rgba(255,255,255,0.74)",
+              color: "#385773",
+              padding: "11px 14px",
+              fontSize: 13,
+              fontWeight: 800,
+              lineHeight: 1.4,
+            }}
+          >
+            Open one analytics section at a time.
+          </div>
+        ) : null}
+        <div
+          style={{
+            marginTop: 14,
+            display: activeAnalyticsPanel === "key-metrics" ? "block" : "none",
             ...statTile(),
             background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,251,255,0.94) 100%)",
             borderRadius: 22,
@@ -5833,6 +5934,7 @@ export default function ShopControlPage() {
         <div
           style={{
             marginTop: 14,
+            display: activeAnalyticsPanel === "view-contact" ? "block" : "none",
             ...statTile(),
             borderRadius: 22,
             background: "linear-gradient(180deg, #FFFFFF 0%, #F4FAFF 100%)",
@@ -5882,12 +5984,12 @@ export default function ShopControlPage() {
         <div
           style={{
             marginTop: 14,
-            display: "grid",
+            display: activeAnalyticsPanel === "key-metrics" || activeAnalyticsPanel === "visitor-activity" ? "grid" : "none",
             gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 0.92fr)",
             gap: 12,
           }}
         >
-          <div style={{ ...statTile(), minHeight: 210 }}>
+          <div style={{ ...statTile(), minHeight: 210, display: activeAnalyticsPanel === "visitor-activity" ? "block" : "none" }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
               <div style={{ color: "#061827", fontSize: 19, fontWeight: 950 }}>Visitor Activity - Last 7 Days</div>
               <div style={{ color: "#27496A", fontSize: 13, fontWeight: 850, textAlign: "right" }}>Total<br />{attentionVisitors7Days}</div>
@@ -5938,7 +6040,7 @@ export default function ShopControlPage() {
             )}
           </div>
 
-          <div style={{ ...statTile(), minHeight: 210 }}>
+          <div style={{ ...statTile(), minHeight: 210, display: activeAnalyticsPanel === "key-metrics" ? "block" : "none" }}>
             <div style={{ color: "#061827", fontSize: 19, fontWeight: 950 }}>Inventory Visibility</div>
             <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               {[
@@ -5975,12 +6077,12 @@ export default function ShopControlPage() {
         <div
           style={{
             marginTop: 14,
-            display: "grid",
+            display: ["visitor-activity", "trade-outcomes", "traffic-sources", "market-intelligence"].includes(activeAnalyticsPanel) ? "grid" : "none",
             gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
             gap: 12,
           }}
         >
-          <div style={{ ...statTile(), minHeight: 170 }}>
+          <div style={{ ...statTile(), minHeight: 170, display: activeAnalyticsPanel === "visitor-activity" ? "block" : "none" }}>
             <div style={{ color: "#061827", fontSize: 19, fontWeight: 950 }}>Spotlight Performance</div>
             <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "74px 1fr 1fr 1fr", gap: 12, alignItems: "center" }}>
               <div style={shopAnalyticsIconTile("gold")} aria-hidden="true">
@@ -6006,7 +6108,7 @@ export default function ShopControlPage() {
             </div>
           </div>
 
-          <div style={{ ...statTile(), minHeight: 210 }}>
+          <div style={{ ...statTile(), minHeight: 210, display: activeAnalyticsPanel === "trade-outcomes" ? "block" : "none" }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
               <div>
                 <div style={{ color: "#061827", fontSize: 19, fontWeight: 950 }}>Recorded trade outcomes</div>
@@ -6057,7 +6159,7 @@ export default function ShopControlPage() {
               {tradeOutcomeBoundary}
             </div>
           </div>
-          <div style={{ ...statTile(), minHeight: 210 }}>
+          <div style={{ ...statTile(), minHeight: 210, display: activeAnalyticsPanel === "traffic-sources" ? "block" : "none" }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
               <div>
                 <div style={{ color: "#061827", fontSize: 19, fontWeight: 950 }}>Traffic sources</div>
@@ -6180,7 +6282,7 @@ export default function ShopControlPage() {
             </div>
           </div>
 
-          <div style={{ ...statTile(), minHeight: 250 }}>
+          <div style={{ ...statTile(), minHeight: 250, display: activeAnalyticsPanel === "market-intelligence" ? "block" : "none" }}>
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
               <GsnLegacyIcon name="spark" size={34} />
               <div>

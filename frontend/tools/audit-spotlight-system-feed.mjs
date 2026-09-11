@@ -225,6 +225,17 @@ assertContains(
   /askCommunity: appendRouteQueryParam[\s\S]*?marketplace-official-board[\s\S]*?"ask_market"[\s\S]*?"1"/,
   "Shop Control Ask Community must route into the existing Marketplace official board pulse lane."
 );
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /SHOP_ANALYTICS_PANELS[\s\S]*?key: "key-metrics"[\s\S]*?key: "view-contact"[\s\S]*?key: "visitor-activity"[\s\S]*?key: "trade-outcomes"[\s\S]*?key: "traffic-sources"[\s\S]*?key: "market-intelligence"[\s\S]*?activeAnalyticsPanel[\s\S]*?shop-control\.analytics-panel\.\$\{panel\.key\}/,
+  "Shop Analytics must expose six compact section buttons instead of dumping every analytics board at once."
+);
+
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /Open one analytics section at a time[\s\S]*?display: activeAnalyticsPanel === "key-metrics"[\s\S]*?display: activeAnalyticsPanel === "view-contact"[\s\S]*?display: activeAnalyticsPanel === "visitor-activity"[\s\S]*?display: activeAnalyticsPanel === "trade-outcomes"[\s\S]*?display: activeAnalyticsPanel === "traffic-sources"[\s\S]*?display: activeAnalyticsPanel === "market-intelligence"/,
+  "Shop Analytics sections must stay independently collapsible so phone users read one block at a time."
+);
 
 assertContains(
   "frontend/src/pages/MarketplacePage.tsx",

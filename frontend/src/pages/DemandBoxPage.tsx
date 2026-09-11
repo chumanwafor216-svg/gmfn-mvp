@@ -488,9 +488,17 @@ function isMineRow(row: DemandRow, me: any): boolean {
 function routeTarget(
   intent: CtaIntent,
   communityId: number,
-  debugId: string
+  debugId: string,
+  extra: { hash?: string } = {}
 ): string {
-  return String(resolveCtaTarget(intent, { communityId, debugId }).to);
+  return String(resolveCtaTarget(intent, { communityId, debugId, ...extra }).to);
+}
+
+function appendRouteQueryParam(to: string, key: string, value: string): string {
+  const [baseAndQuery, hash = ""] = to.split("#");
+  const separator = baseAndQuery.includes("?") ? "&" : "?";
+  const query = `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+  return `${baseAndQuery}${separator}${query}${hash ? `#${hash}` : ""}`;
 }
 
 export default function DemandBoxPage() {
@@ -511,6 +519,13 @@ export default function DemandBoxPage() {
       dashboard: routeTarget("dashboard", selectedClanId, "demand-box.nav.dashboard"),
       community: routeTarget("communityHome", selectedClanId, "demand-box.open-community"),
       marketplace: routeTarget("marketplace", selectedClanId, "demand-box.return"),
+      askCommunity: appendRouteQueryParam(
+        routeTarget("marketplace", selectedClanId, "demand-box.ask-community", {
+          hash: "marketplace-official-board",
+        }),
+        "ask_market",
+        "1"
+      ),
       notifications: routeTarget(
         "notifications",
         selectedClanId,
@@ -1431,6 +1446,14 @@ export default function DemandBoxPage() {
               >
                 {demandIconText("document", "Create demand", 20)}
               </SecondaryButton>
+              <StableCtaLink
+                to={routes.askCommunity}
+                debugId="demand-box.ask-community"
+                stableHeight={isCompact ? 52 : 54}
+                style={demandActionStyle(isCompact ? 52 : 54)}
+              >
+                {demandIconText("community", "Ask Community", 20)}
+              </StableCtaLink>
               <StableCtaLink
                 to={demandReturnTo}
                 debugId="demand-box.return"

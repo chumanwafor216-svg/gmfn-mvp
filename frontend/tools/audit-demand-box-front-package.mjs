@@ -103,6 +103,14 @@ function requirePattern(pattern, message) {
     "Demand Box return action must keep its stable debug id.",
   ],
   [
+    /askCommunity: appendRouteQueryParam[\s\S]*?marketplace-official-board[\s\S]*?"ask_market"[\s\S]*?"1"/,
+    "Demand Box Ask Community must route into the existing Marketplace official-board pulse lane.",
+  ],
+  [
+    /to=\{routes\.askCommunity\}[\s\S]*?debugId="demand-box\.ask-community"[\s\S]*?Ask Community/,
+    "Demand Box hero must expose the Ask Community action without creating a separate demand engine.",
+  ],
+  [
     /debugId="demand-box\.hero-dashboard"/,
     "Demand Box dashboard escape must keep its stable debug id.",
   ],
