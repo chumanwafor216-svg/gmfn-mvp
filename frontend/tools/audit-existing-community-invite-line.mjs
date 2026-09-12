@@ -202,7 +202,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ClansPage.tsx",
-  /import[\s\S]*?isCommunityQrPolicyKey[\s\S]*?type InviteState = \{[\s\S]*?qrPolicyKey\?: CommunityQrPolicyKey \| null;[\s\S]*?const rawQrPolicyKey = safeStr\(raw\?\.qr_policy_key \|\| extraSearchParams\.qr_policy\);[\s\S]*?const qrPolicyKey = isCommunityQrPolicyKey\(rawQrPolicyKey\)[\s\S]*?qrPolicyKey,[\s\S]*?const inviteQrPolicy = inviteState\?\.qrPolicyKey[\s\S]*?communityQrPolicyByKey\(inviteState\.qrPolicyKey\)[\s\S]*?Current policy: \{inviteQrPolicy\.label\}[\s\S]*?\{inviteQrPolicy\.scanCopy\}[\s\S]*?\{inviteQrPolicy\.sheetIntro\}[\s\S]*?\{inviteQrPolicy\.boundary\}[\s\S]*?Policy: \{inviteQrPolicy\.label\}/,
+  /import[\s\S]*?isCommunityQrPolicyKey[\s\S]*?type InviteState = \{[\s\S]*?qrPolicyKey\?: CommunityQrPolicyKey \| null;[\s\S]*?raw\?\.invite_expires_at \|\| raw\?\.expires_at \|\| raw\?\.expiry[\s\S]*?const rawQrPolicyKey = safeStr\(raw\?\.qr_policy_key \|\| extraSearchParams\.qr_policy\);[\s\S]*?const qrPolicyKey = isCommunityQrPolicyKey\(rawQrPolicyKey\)[\s\S]*?qrPolicyKey,[\s\S]*?const inviteQrPolicy = inviteState\?\.qrPolicyKey[\s\S]*?communityQrPolicyByKey\(inviteState\.qrPolicyKey\)[\s\S]*?Current policy: \{inviteQrPolicy\.label\}[\s\S]*?\{inviteQrPolicy\.scanCopy\}[\s\S]*?\{inviteQrPolicy\.sheetIntro\}[\s\S]*?\{inviteQrPolicy\.boundary\}[\s\S]*?Policy: \{inviteQrPolicy\.label\}[\s\S]*?QR expiry:/,
   "Community QR packages must snapshot the generated QR policy and use that policy for the visible QR card, QR sheet, copied announcement, and handover even if the dropdown changes later."
 );
 assertContains(

@@ -1,3 +1,11 @@
+## 2026-09-12 - QR package expiry surfaced locally
+
+- Status: Verified local frontend continuation after local commit `dcf5c013`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Frontend truth fix: `ClansPage` now reads backend `invite_expires_at` when building invite state, so community QR packages prepared through `/clans/{clan_id}/invite-link` retain their expiry instead of silently omitting it.
+- Handover surface: copied QR handover text now includes `QR expiry` when available, and the QR sheet executive handover chips show the same expiry.
+- Regression cage: `frontend/tools/audit-existing-community-invite-line.mjs` now asserts that community QR packages read `invite_expires_at` and keep expiry visible in generated materials.
+- Verification passed: `npm exec eslint src/pages/ClansPage.tsx tools/audit-existing-community-invite-line.mjs`, `npm --prefix frontend run audit:existing-community-invite-line`, `npm --prefix frontend run build`, and `git diff --check -- frontend\src\pages\ClansPage.tsx frontend\tools\audit-existing-community-invite-line.mjs`.
+- Devil truth: this prevents stale QR handover confusion, but it still does not revoke printed paper automatically, prove phone ownership, add OTP, verify dues, or create legal membership evidence.
 ## 2026-09-12 - QR package policy snapshot caged locally
 
 - Status: Verified local frontend continuation after local commit `a80ffaff`; not pushed or deployed under the current batch-mode pipeline freeze.

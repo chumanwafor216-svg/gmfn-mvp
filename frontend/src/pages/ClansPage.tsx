@@ -428,7 +428,7 @@ function buildInviteState(
       message: shortMessage,
     }) || baseLink;
   const link = addInviteSearchParams(personalizedLink, extraSearchParams);
-  const expiresAt = safeStr(raw?.expires_at || raw?.expiry || "");
+  const expiresAt = safeStr(raw?.invite_expires_at || raw?.expires_at || raw?.expiry || "");
   const rawQrPolicyKey = safeStr(raw?.qr_policy_key || extraSearchParams.qr_policy);
   const qrPolicyKey = isCommunityQrPolicyKey(rawQrPolicyKey)
     ? rawQrPolicyKey
@@ -897,12 +897,14 @@ export default function ClansPage() {
     const title = selectedCommunity ? communityName(selectedCommunity) : "this community";
     const link = safeStr(inviteState?.link || "");
     const code = safeStr(inviteState?.code || "");
+    const expiry = safeStr(inviteState?.expiresAt || "");
 
     return [
       `GSN community QR handover: ${title}`,
       `Entry policy: ${inviteQrPolicy.label}`,
       `Pre-approved entries active: ${activeQrPreApprovals.length}`,
       code ? `Invite code: ${code}` : "",
+      expiry ? `QR expiry: ${safeDateTime(expiry)}` : "",
       link ? `Join link: ${link}` : "",
       "Operating steps:",
       "1. Share the QR or link only from the agreed community channel.",
@@ -2410,6 +2412,7 @@ export default function ClansPage() {
                 }}
               >
                 <span>Policy: {inviteQrPolicy.label}</span>
+                {inviteState.expiresAt ? <span>QR expiry: {safeDateTime(inviteState.expiresAt)}</span> : null}
                 <span>Active pre-approved: {activeQrPreApprovals.length}</span>
                 <span>Approved access is not verified membership.</span>
               </div>
