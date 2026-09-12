@@ -1,3 +1,12 @@
+## 2026-09-12 - Activation success copy restored locally
+
+- Status: Verified local frontend continuation after local commit `8cddd2a4`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Frozen-file reason: `MemberActivationPage` is caged by entry/auth audits, but the QR auto-approved scanner route can land on activation, and the frozen audit was failing before this correction.
+- Frontend correction: activation success copy now uses the expected visible contract language: `Membership activated. Verify this phone next...` for unverified phones and `Set private recovery next...` for verified users.
+- Behavior impact: no activation route, auth, token, or backend logic was changed; this only restores the screen language required by the existing entry/auth contract.
+- Verification passed: `npm --prefix frontend run audit:entry-auth`, `npm --prefix frontend run audit:member-entry-actions`, `npm exec eslint src/pages/JoinEntryPage.tsx src/pages/MemberActivationPage.tsx src/lib/api.ts`, `npm --prefix frontend run audit:existing-community-invite-line`, `npm --prefix frontend run build`, and `git diff --check -- frontend\src\pages\JoinEntryPage.tsx frontend\src\pages\MemberActivationPage.tsx`.
+- Devil truth: this removes a real red audit mark but does not add OTP, phone possession proof, private recovery completion itself, or any stronger identity verification.
+
 ## 2026-09-12 - QR pre-approved scanner routing fixed locally
 
 - Status: Verified local frontend continuation after local commit `8b77e7a6`; not pushed or deployed under the current batch-mode pipeline freeze.

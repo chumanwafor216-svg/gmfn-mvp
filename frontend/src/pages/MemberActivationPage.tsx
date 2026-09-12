@@ -861,8 +861,8 @@ export default function MemberActivationPage() {
       const needsPhoneVerification = !phoneVerified;
       const nextRoute = needsPhoneVerification ? routes.identityPhone : routes.identityRecovery;
       const nextMessage = needsPhoneVerification
-        ? "GSN account activated. Verify this phone next so TrustSlip can issue your code and QR."
-        : "GSN account activated. Set private recovery next so this GSN ID can be recovered safely before community growth begins.";
+        ? "Membership activated. Verify this phone next so TrustSlip can issue your code and QR."
+        : "Set private recovery next so this GSN ID can be recovered safely before community growth begins.";
 
       setActivated(true);
       setPhoneVerificationRequired(needsPhoneVerification);
