@@ -2183,6 +2183,15 @@ export default function ClansPage() {
                         </SecondaryButton>
                       ) : null}
 
+                      {inviteState.code ? (
+                        <SecondaryButton
+                          style={btn(false)}
+                          onClick={() => copyText(inviteState.code || "", "code")}
+                          debugId="clans.invite.copy-code"
+                        >
+                          {copied === "code" ? "Copied code" : "Copy invite code"}
+                        </SecondaryButton>
+                      ) : null}
                       {currentInviteShareText() && !isQrInvitePackage ? (
                         <SecondaryButton
                           style={btn(false)}

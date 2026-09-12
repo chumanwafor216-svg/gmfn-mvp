@@ -226,6 +226,10 @@ assertContains(
   "The printable community QR sheet must show the manual invite-code fallback before the policy boundary for people who cannot scan the QR."
 );assertContains(
   "frontend/src/pages/ClansPage.tsx",
+  /debugId="clans\.invite\.copy-link"[\s\S]*?\{inviteState\.code \? \([\s\S]*?copyText\(inviteState\.code \|\| "", "code"\)[\s\S]*?debugId="clans\.invite\.copy-code"[\s\S]*?Copy invite code/,
+  "Ready invite packages must keep a one-tap Copy invite code action next to Copy link so the manual fallback is operational, not just visible."
+);assertContains(
+  "frontend/src/pages/ClansPage.tsx",
   /function communityQrHandoverText\(\): string \{[\s\S]*?"1\. Share the QR, link, or invite code only from the agreed community channel\."[\s\S]*?"2\. If scanning fails, help the member enter the invite code through GSN Join Existing Community\."[\s\S]*?"5\. Tell members the truth: approval opens community access, but verification is separate\."/,
   "The copied QR handover must tell executives how to use the manual invite-code fallback without weakening the approval-versus-verification boundary."
 );

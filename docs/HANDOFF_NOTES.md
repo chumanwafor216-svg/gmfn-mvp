@@ -1,3 +1,12 @@
+## 2026-09-12 - Ready invite copy-code action added locally
+
+- Status: Verified local frontend continuation after local commit `a677caba`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Frontend usability fix: `ClansPage` ready invite packages now show a one-tap `Copy invite code` action next to `Copy link` whenever an invite code exists.
+- QR adoption impact: the manual fallback path is now operational for executives helping members with failed QR scans, old phones, shared devices, or poor connectivity.
+- Scope boundary: this applies to ready invite packages only and does not change backend invite creation, QR policy, approval, or verification logic.
+- Regression cage: `frontend/tools/audit-existing-community-invite-line.mjs` now asserts the copy-code action beside the copy-link action.
+- Verification passed: `npm exec eslint src/pages/ClansPage.tsx tools/audit-existing-community-invite-line.mjs`, `npm --prefix frontend run audit:existing-community-invite-line`, `npm --prefix frontend run build`, and `git diff --check -- frontend\src\pages\ClansPage.tsx frontend\tools\audit-existing-community-invite-line.mjs`.
+- Devil truth: making codes easier to copy also makes them easier to forward. This is acceptable only because invite codes start a reviewed request; they are not proof of membership, phone ownership, dues, or identity.
 ## 2026-09-12 - QR manual-code instructions clarified locally
 
 - Status: Verified local frontend continuation after local commit `c1184f51`; not pushed or deployed under the current batch-mode pipeline freeze.
