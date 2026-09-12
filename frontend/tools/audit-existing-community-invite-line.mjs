@@ -206,6 +206,11 @@ assertContains(
   "Community QR packages must snapshot the generated QR policy and use that policy for the visible QR card, QR sheet, copied announcement, and handover even if the dropdown changes later."
 );
 assertContains(
+  "frontend/src/pages/ClansPage.tsx",
+  /function communityQrAnnouncementText\(\): string \{[\s\S]*?const expiry = safeStr\(inviteState\?\.expiresAt \|\| ""\);[\s\S]*?expiry \? `QR expiry: \$\{safeDateTime\(expiry\)\}` : ""[\s\S]*?link \? `Join link: \$\{link\}` : ""/,
+  "Copied community QR announcements must include the package expiry before the join link so WhatsApp and bulletin shares do not look permanent."
+);
+assertContains(
   "gmfn_backend/app/api/routes/clans.py",
   /def create_join_request\([\s\S]*?submitted_existing_gmfn_id = _safe_str\(payload\.existing_gmfn_id\)\.upper\(\)[\s\S]*?claimed_existing_identity_user[\s\S]*?existing_identity_join = bool\([\s\S]*?claimed_existing_identity_user is not None[\s\S]*?existing_gsn_id_required[\s\S]*?Enter that GSN ID/,
   "Backend join-request creation must reuse typed existing GSN IDs and block duplicate-phone creation without requiring the invite recipient to sign in."

@@ -1,3 +1,11 @@
+## 2026-09-12 - QR announcement expiry added locally
+
+- Status: Verified local frontend continuation after local commit `740c9fa2`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Frontend truth fix: copied community QR announcements now include `QR expiry` before the join link when the generated package has an expiry.
+- Scope: this aligns the WhatsApp/bulletin-facing QR announcement with the QR handover and QR sheet expiry already surfaced in `ClansPage`.
+- Regression cage: `frontend/tools/audit-existing-community-invite-line.mjs` now asserts that `communityQrAnnouncementText` includes package expiry before the join link.
+- Verification passed: `npm exec eslint src/pages/ClansPage.tsx tools/audit-existing-community-invite-line.mjs`, `npm --prefix frontend run audit:existing-community-invite-line`, `npm --prefix frontend run build`, and `git diff --check -- frontend\src\pages\ClansPage.tsx frontend\tools\audit-existing-community-invite-line.mjs`.
+- Devil truth: this makes copied announcements less misleading, but it still cannot stop somebody reposting an old screenshot or printed QR after expiry, and it does not add OTP, dues proof, ID proof, or legal membership verification.
 ## 2026-09-12 - QR package expiry surfaced locally
 
 - Status: Verified local frontend continuation after local commit `dcf5c013`; not pushed or deployed under the current batch-mode pipeline freeze.

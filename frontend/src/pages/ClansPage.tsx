@@ -876,12 +876,14 @@ export default function ClansPage() {
   function communityQrAnnouncementText(): string {
     const title = selectedCommunity ? communityName(selectedCommunity) : "this community";
     const link = safeStr(inviteState?.link || "");
+    const expiry = safeStr(inviteState?.expiresAt || "");
 
     return [
       `${title} is opening GSN community access.`,
       "Scan the QR code or use the link to begin your join request.",
       inviteQrPolicy.announcement,
       inviteQrPolicy.boundary,
+      expiry ? `QR expiry: ${safeDateTime(expiry)}` : "",
       link ? `Join link: ${link}` : "",
       "Sent through GSN",
     ]
