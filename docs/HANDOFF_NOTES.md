@@ -1,3 +1,12 @@
+## 2026-09-12 - QR bulk import preview tightened locally
+
+- Status: Verified local frontend continuation after local commit `659afe32`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Frontend parser: skips the generated CSV/template header row instead of counting it as an ignored person line.
+- Frontend preview: bulk panel now shows ready/ignored counts and the first few parsed rows before import, so an executive can catch obvious paste mistakes before clicking `Import list`.
+- Safety: Import button only enables when the preview finds at least one phone, email, or GSN ID.
+- Verification passed: `npm exec eslint src/pages/ClansPage.tsx src/lib/api.ts`, `npm --prefix frontend run audit:existing-community-invite-line`, and `npm --prefix frontend run build`.
+- Devil truth: this preview is still the frontend's best-effort parser; the backend remains the source of truth. It is not OTP, identity proof, a payment check, or a full spreadsheet validation engine.
+
 ## 2026-09-12 - QR pre-approved CSV/template helper added locally
 
 - Status: Verified local frontend continuation after local commit `cf644c0d`; not pushed or deployed under the current batch-mode pipeline freeze.

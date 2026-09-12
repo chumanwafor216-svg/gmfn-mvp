@@ -289,6 +289,15 @@ function parseQrPreApprovalBulkText(raw: string) {
     .forEach((line) => {
       const cleanLine = safeStr(line);
       if (!cleanLine) return;
+      const lowerLine = cleanLine.toLowerCase();
+      if (
+        lowerLine.includes("name") &&
+        lowerLine.includes("phone") &&
+        lowerLine.includes("email") &&
+        (lowerLine.includes("gsn") || lowerLine.includes("gmfn"))
+      ) {
+        return;
+      }
       const parts = cleanLine
         .split(/[|,\t]/)
         .map((part) => safeStr(part))
@@ -598,6 +607,15 @@ export default function ClansPage() {
     (item) => safeStr(item.status || "active") === "active"
   );
   const recentQrPreApprovals = qrPreApprovals.slice(0, 4);
+  const qrPreApprovalBulkPreview = useMemo(
+    () => parseQrPreApprovalBulkText(qrPreApprovalBulkText),
+    [qrPreApprovalBulkText]
+  );
+  const qrPreApprovalBulkCanImport =
+    Boolean(selectedCommunityId) &&
+    !qrPreApprovalSaving &&
+    !qrPreApprovalBulkSaving &&
+    qrPreApprovalBulkPreview.entries.length > 0;
   const routes = useMemo(
     () => ({
       dashboard: routeTarget("dashboard", selectedCommunityId, "clans.route.dashboard"),
@@ -1679,6 +1697,52 @@ export default function ClansPage() {
                     rows={5}
                     style={{ ...textareaStyle(), minHeight: 110 }}
                   />
+                  {safeStr(qrPreApprovalBulkText) ? (
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: 8,
+                        borderRadius: 12,
+                        background: "rgba(248,251,255,0.78)",
+                        border: "1px solid rgba(36,26,18,0.08)",
+                        padding: "10px 12px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 8,
+                          flexWrap: "wrap",
+                          color: "#6B5D50",
+                          fontSize: 12,
+                          fontWeight: 850,
+                        }}
+                      >
+                        <span>{qrPreApprovalBulkPreview.entries.length} ready</span>
+                        {qrPreApprovalBulkPreview.ignored ? (
+                          <span>{qrPreApprovalBulkPreview.ignored} ignored</span>
+                        ) : null}
+                      </div>
+                      {qrPreApprovalBulkPreview.entries.length ? (
+                        <div style={{ display: "grid", gap: 6 }}>
+                          {qrPreApprovalBulkPreview.entries.slice(0, 3).map((entry, index) => {
+                            const title = safeStr(
+                              entry.display_name || entry.gmfn_id || entry.phone_e164 || entry.email || "Ready entry"
+                            );
+                            const detail = safeStr(entry.gmfn_id || entry.phone_e164 || entry.email || "Ready for matching");
+                            return (
+                              <div
+                                key={`${title}-${detail}-${index}`}
+                                style={{ color: "#241A12", fontSize: 12, fontWeight: 800 }}
+                              >
+                                {title} - {detail}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                   <div
                     style={{
                       display: "flex",
@@ -1694,10 +1758,10 @@ export default function ClansPage() {
                     <SecondaryButton
                       type="button"
                       onClick={() => void handleBulkSaveQrPreApprovals()}
-                      disabled={!selectedCommunityId || qrPreApprovalSaving || qrPreApprovalBulkSaving}
+                      disabled={!qrPreApprovalBulkCanImport}
                       debugId="clans.qr-preapproval.bulk-save"
                       style={{
-                        ...btn(false, !selectedCommunityId || qrPreApprovalSaving || qrPreApprovalBulkSaving),
+                        ...btn(false, !qrPreApprovalBulkCanImport),
                         width: isCompact ? "100%" : undefined,
                       }}
                     >
