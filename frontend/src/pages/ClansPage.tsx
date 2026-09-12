@@ -887,7 +887,7 @@ export default function ClansPage() {
 
     return [
       `${title} is opening GSN community access.`,
-      "Scan the QR code or use the link to begin your join request.",
+      "Scan the QR code, use the link, or enter the invite code in GSN Join Existing Community to begin your join request.",
       inviteQrPolicy.announcement,
       inviteQrPolicy.boundary,
       code ? `Invite code: ${code}` : "",
@@ -917,10 +917,11 @@ export default function ClansPage() {
       expiry ? `QR expiry: ${safeDateTime(expiry)}` : "",
       link ? `Join link: ${link}` : "",
       "Operating steps:",
-      "1. Share the QR or link only from the agreed community channel.",
-      "2. Add known members to the pre-approved list before a public meeting if fast entry is needed.",
-      "3. Watch join requests after sharing; strict and market policies still require proper review.",
-      "4. Tell members the truth: approval opens community access, but verification is separate.",
+      "1. Share the QR, link, or invite code only from the agreed community channel.",
+      "2. If scanning fails, help the member enter the invite code through GSN Join Existing Community.",
+      "3. Add known members to the pre-approved list before a public meeting if fast entry is needed.",
+      "4. Watch join requests after sharing; strict and market policies still require proper review.",
+      "5. Tell members the truth: approval opens community access, but verification is separate.",
       `Boundary: ${inviteQrPolicy.boundary}`,
       "Sent through GSN",
     ]
@@ -2400,6 +2401,8 @@ export default function ClansPage() {
                   }}
                 >
                   Manual fallback invite code: {inviteState.code}
+                  <br />
+                  Use this in GSN Join Existing Community if scanning fails.
                 </div>
               ) : null}
 

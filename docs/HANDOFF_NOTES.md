@@ -1,3 +1,12 @@
+## 2026-09-12 - QR manual-code instructions clarified locally
+
+- Status: Verified local frontend continuation after local commit `c1184f51`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Frontend truth fix: community QR announcements now tell members they can scan the QR, use the link, or enter the invite code in GSN Join Existing Community.
+- QR sheet fix: the printable QR sheet now explains that the manual fallback invite code should be used in GSN Join Existing Community if scanning fails.
+- Handover fix: copied executive handover steps now include the invite-code route and explicitly tell executives how to help a member when scanning fails.
+- Regression cage: `frontend/tools/audit-existing-community-invite-line.mjs` now asserts the manual-code instructions in the announcement, printable QR sheet, and copied handover.
+- Verification passed: `npm exec eslint src/pages/ClansPage.tsx tools/audit-existing-community-invite-line.mjs`, `npm --prefix frontend run audit:existing-community-invite-line`, `npm --prefix frontend run build`, and `git diff --check -- frontend\src\pages\ClansPage.tsx frontend\tools\audit-existing-community-invite-line.mjs`.
+- Devil truth: this makes the fallback usable, but a manual code is still shareable. It improves access, not proof. Real protection still depends on expiry, retired QR packages, admin review, and later verification.
 ## 2026-09-12 - QR manual invite-code fallback surfaced locally
 
 - Status: Verified local frontend continuation after local commit `90cff476`; not pushed or deployed under the current batch-mode pipeline freeze.
