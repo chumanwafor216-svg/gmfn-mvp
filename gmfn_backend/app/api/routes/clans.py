@@ -31,6 +31,7 @@ from app.db.notification_models import Notification
 from app.db.models import (
     Clan,
     ClanInvite,
+    ClanQrPreApproval,
     ClanJoinRequest,
     ClanJoinVote,
     ClanMembership,
@@ -294,6 +295,28 @@ def _reject_bool_float_body_identifier(value: Any, field_name: str) -> Any:
     if isinstance(value, float):
         raise ValueError(f"{field_name} must be an integer id, not a float.")
     return value
+
+
+class ClanQrPreApprovalIn(BaseModel):
+    display_name: Optional[str] = Field(default=None, max_length=160)
+    phone_e164: Optional[str] = Field(default=None, max_length=32)
+    email: Optional[str] = Field(default=None, max_length=255)
+    gmfn_id: Optional[str] = Field(default=None, max_length=64)
+    approval_note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("display_name", "phone_e164", "email", "gmfn_id", "approval_note", mode="before")
+    @classmethod
+    def _reject_non_text_fields(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_body_value(value, info.field_name)
+
+
+class ClanQrPreApprovalStatusIn(BaseModel):
+    status: str = Field(..., pattern="^(active|inactive)$")
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def _reject_non_text_status(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_body_value(value, info.field_name)
 
 
 class CommunityAffiliationRequestIn(BaseModel):
@@ -1935,6 +1958,150 @@ def _qr_policy_notification_suffix(qr_policy_key: Optional[str]) -> str:
     return f" QR entry policy: {label}."
 
 
+
+def _normalize_qr_phone(value: Any) -> str:
+    raw = _safe_str(value)
+    digits = "".join(ch for ch in raw if ch.isdigit())
+    if not digits:
+        return ""
+    return f"+{digits}" if raw.startswith("+") else digits
+
+
+def _normalize_qr_preapproval_value(match_type: str, value: Any) -> str:
+    key = _safe_str(match_type).lower()
+    if key == "phone":
+        return _normalize_qr_phone(value)
+    if key == "email":
+        return _safe_str(value).lower()
+    if key == "gmfn_id":
+        return _safe_str(value).upper()
+    return ""
+
+
+def _qr_preapproval_input_match(payload: ClanQrPreApprovalIn) -> tuple[str, str]:
+    candidates = (
+        ("gmfn_id", payload.gmfn_id),
+        ("phone", payload.phone_e164),
+        ("email", payload.email),
+    )
+    for match_type, value in candidates:
+        match_value = _normalize_qr_preapproval_value(match_type, value)
+        if match_value:
+            return match_type, match_value
+    raise HTTPException(
+        status_code=422,
+        detail={
+            "code": "qr_preapproval_identifier_required",
+            "message": "Add a phone number, email, or existing GSN ID before saving this pre-approved member.",
+        },
+    )
+
+
+def _qr_preapproval_out(row: ClanQrPreApproval) -> dict[str, Any]:
+    return {
+        "id": int(row.id),
+        "clan_id": int(row.clan_id),
+        "display_name": _safe_str(row.display_name) or None,
+        "phone_e164": _safe_str(row.phone_e164) or None,
+        "email": _safe_str(row.email) or None,
+        "gmfn_id": _safe_str(row.gmfn_id) or None,
+        "match_type": _safe_str(row.match_type),
+        "match_value": _safe_str(row.match_value),
+        "approval_note": _safe_str(row.approval_note) or None,
+        "status": _safe_str(row.status, "active"),
+        "added_by_user_id": int(row.added_by_user_id),
+        "matched_user_id": int(row.matched_user_id) if row.matched_user_id else None,
+        "matched_join_request_id": (
+            int(row.matched_join_request_id) if row.matched_join_request_id else None
+        ),
+        "matched_at": row.matched_at,
+        "created_at": row.created_at,
+        "updated_at": row.updated_at,
+    }
+
+
+def _qr_preapproval_join_candidates(
+    payload: JoinApplicationIn,
+    *,
+    applicant_user: Optional[User],
+) -> list[tuple[str, str]]:
+    raw_candidates = [
+        ("gmfn_id", payload.existing_gmfn_id),
+        ("gmfn_id", getattr(applicant_user, "gmfn_id", None)),
+        ("phone", payload.phone_e164),
+        ("phone", getattr(applicant_user, "phone_e164", None)),
+        ("email", getattr(applicant_user, "email", None)),
+    ]
+    candidates: list[tuple[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for match_type, raw_value in raw_candidates:
+        value = _normalize_qr_preapproval_value(match_type, raw_value)
+        if not value:
+            continue
+        pair = (match_type, value)
+        if pair in seen:
+            continue
+        seen.add(pair)
+        candidates.append(pair)
+    return candidates
+
+
+def _find_qr_preapproval_match(
+    db: Session,
+    *,
+    clan_id: int,
+    payload: JoinApplicationIn,
+    applicant_user: Optional[User],
+) -> Optional[ClanQrPreApproval]:
+    for match_type, match_value in _qr_preapproval_join_candidates(
+        payload,
+        applicant_user=applicant_user,
+    ):
+        row = (
+            db.query(ClanQrPreApproval)
+            .filter(
+                ClanQrPreApproval.clan_id == int(clan_id),
+                ClanQrPreApproval.status == "active",
+                ClanQrPreApproval.match_type == match_type,
+                ClanQrPreApproval.match_value == match_value,
+            )
+            .order_by(ClanQrPreApproval.created_at.desc(), ClanQrPreApproval.id.desc())
+            .first()
+        )
+        if row is not None:
+            return row
+    return None
+
+
+def _mark_qr_preapproval_matched(
+    db: Session,
+    *,
+    preapproval: ClanQrPreApproval,
+    applicant_user: User,
+    join_request: ClanJoinRequest,
+) -> None:
+    preapproval.matched_user_id = int(applicant_user.id)
+    preapproval.matched_join_request_id = int(join_request.id)
+    preapproval.matched_at = datetime.now(timezone.utc)
+    db.add(preapproval)
+    log_trust_event(
+        db,
+        event_type="join_request.qr_preapproval_matched",
+        clan_id=int(join_request.clan_id),
+        actor_user_id=int(applicant_user.id),
+        subject_user_id=int(applicant_user.id),
+        meta={
+            "reason": "qr_preapproved_member_matched",
+            "join_request_id": int(join_request.id),
+            "preapproval_id": int(preapproval.id),
+            "match_type": _safe_str(preapproval.match_type),
+            "match_value": _safe_str(preapproval.match_value),
+            "invite_id": int(join_request.invite_id) if join_request.invite_id else None,
+        },
+        dedupe_key=f"qr-preapproval-matched:{int(preapproval.id)}:{int(join_request.id)}",
+    )
+
+
 def _join_request_out(db: Session, req: ClanJoinRequest) -> dict[str, Any]:
     clan = db.get(Clan, int(req.clan_id))
     inviter = (
@@ -1945,6 +2112,12 @@ def _join_request_out(db: Session, req: ClanJoinRequest) -> dict[str, Any]:
         db.get(User, int(req.applicant_user_id)) if req.applicant_user_id else None
     )
     stats = _current_join_status(db, join_request=req)
+    qr_preapproval_match = (
+        db.query(ClanQrPreApproval)
+        .filter(ClanQrPreApproval.matched_join_request_id == int(req.id))
+        .order_by(ClanQrPreApproval.matched_at.desc(), ClanQrPreApproval.id.desc())
+        .first()
+    )
     governance_profile = (
         _community_governance_profile_for_clan(db, clan_id=int(clan.id))
         if clan is not None
@@ -1966,6 +2139,11 @@ def _join_request_out(db: Session, req: ClanJoinRequest) -> dict[str, Any]:
         "invite_id": (int(req.invite_id) if req.invite_id is not None else None),
         "invite_code": (invite.code if invite else None),
         "qr_policy_key": (_safe_str(getattr(invite, "qr_policy_key", None)) or None),
+        "qr_preapproval_match": (
+            _qr_preapproval_out(qr_preapproval_match)
+            if qr_preapproval_match is not None
+            else None
+        ),
         "invited_by_user_id": (
             int(req.invited_by_user_id) if req.invited_by_user_id is not None else None
         ),
@@ -2196,6 +2374,12 @@ def _join_request_status_payload(
     invite = db.get(ClanInvite, int(req.invite_id)) if req.invite_id else None
     qr_policy_key = _safe_str(getattr(invite, "qr_policy_key", None)) if invite else ""
     stats = _current_join_status(db, join_request=req)
+    qr_preapproval_match = (
+        db.query(ClanQrPreApproval)
+        .filter(ClanQrPreApproval.matched_join_request_id == int(req.id))
+        .order_by(ClanQrPreApproval.matched_at.desc(), ClanQrPreApproval.id.desc())
+        .first()
+    )
     governance_profile = (
         _community_governance_profile_for_clan(db, clan_id=int(clan.id))
         if clan is not None
@@ -2262,6 +2446,17 @@ def _join_request_status_payload(
         "invite_code": getattr(invite, "code", None) if invite else None,
         "qr_policy_key": qr_policy_key or None,
         "qr_policy_label": _qr_policy_label(qr_policy_key) if qr_policy_key else None,
+        "qr_preapproved": qr_preapproval_match is not None,
+        "qr_preapproval_match": (
+            {
+                "id": int(qr_preapproval_match.id),
+                "display_name": _safe_str(qr_preapproval_match.display_name) or None,
+                "match_type": _safe_str(qr_preapproval_match.match_type),
+                "matched_at": qr_preapproval_match.matched_at,
+            }
+            if qr_preapproval_match is not None
+            else None
+        ),
         "invited_by_user_id": int(req.invited_by_user_id) if req.invited_by_user_id else None,
         "invited_by_email": (getattr(inviter, "email", None) if inviter else None),
         "invited_by_display": (_member_display(inviter) if inviter else None),
@@ -4256,6 +4451,102 @@ def create_join_request(
     db.commit()
     db.refresh(join_request)
 
+    qr_preapproval_match = (
+        _find_qr_preapproval_match(
+            db,
+            clan_id=int(clan.id),
+            payload=payload,
+            applicant_user=applicant_user,
+        )
+        if invite_row is not None
+        else None
+    )
+    if qr_preapproval_match is not None:
+        _mark_qr_preapproval_matched(
+            db,
+            preapproval=qr_preapproval_match,
+            applicant_user=applicant_user,
+            join_request=join_request,
+        )
+        db.commit()
+        db.refresh(qr_preapproval_match)
+        log_trust_event(
+            db,
+            event_type=TrustEventType.INVITE_ACCEPTED,
+            clan_id=int(clan.id),
+            actor_user_id=int(applicant_user.id),
+            subject_user_id=int(applicant_user.id),
+            meta={
+                "reason": "preapproved_qr_join_request_created",
+                "invite_code": invite_code,
+                "invite_id": int(invite_row.id) if invite_row else None,
+                "qr_policy_key": qr_policy_key,
+                "join_request_id": int(join_request.id),
+                "preapproval_id": int(qr_preapproval_match.id),
+                "match_type": _safe_str(qr_preapproval_match.match_type),
+                "user_id": int(applicant_user.id),
+                "gmfn_id": _safe_str(getattr(applicant_user, "gmfn_id", None)) or None,
+                "identity_reused": existing_identity_join,
+                "community_admission_status": "approved_by_preapproval",
+            },
+            dedupe_key=f"join-request-created:{int(join_request.id)}",
+        )
+        approval_result = _approve_join_request(
+            db,
+            join_request=join_request,
+            request=request,
+        )
+        join_request = (
+            db.query(ClanJoinRequest)
+            .filter(ClanJoinRequest.id == int(join_request.id))
+            .first()
+        )
+        return {
+            "ok": True,
+            "result_status": "preapproved_request_approved",
+            "message": (
+                "Join request matched a community pre-approval and was approved. "
+                "Verification can still be requested later."
+            ),
+            "community_id": int(clan.id),
+            "community_code": _community_code(clan.id),
+            "community_name": clan.name,
+            "marketplace_name": getattr(clan, "marketplace_name", None),
+            "qr_policy_key": qr_policy_key,
+            "qr_preapproval_match": _qr_preapproval_out(qr_preapproval_match),
+            "user_id": int(applicant_user.id),
+            "gmfn_id": _safe_str(getattr(applicant_user, "gmfn_id", None)) or None,
+            "existing_identity": existing_identity_join,
+            "identity_reused": existing_identity_join,
+            "approval_result": approval_result,
+            "request": _join_request_out(db, join_request),
+            "applicant_profile": {
+                "first_name": _safe_str(payload.first_name) or None,
+                "surname": _safe_str(payload.surname) or None,
+                "phone_e164": submitted_phone or None,
+                "country": _safe_str(payload.country) or None,
+                "date_of_birth": _safe_str(payload.date_of_birth) or None,
+                "birth_country": _safe_str(payload.birth_country or payload.country) or None,
+                "birth_place": _safe_str(payload.birth_place) or None,
+                "country_of_origin": _safe_str(payload.country_of_origin) or None,
+                "residential_area": _safe_str(payload.residential_area) or None,
+                "business_name": payload.business_name,
+                "note": payload.note,
+                "rules_accepted": bool(payload.rules_accepted),
+                "governance_preset_key_acknowledged": (
+                    _safe_str(payload.governance_preset_key_acknowledged) or None
+                ),
+            },
+            "lineage": {
+                "origin_community_id": int(clan.id),
+                "origin_community_code": _community_code(clan.id),
+                "origin_community_name": clan.name,
+                "invited_by_user_id": invited_by_user_id,
+                "invite_id": int(invite_row.id) if invite_row else None,
+                "qr_policy_key": qr_policy_key,
+            },
+        }
+
     reviewers = _active_reviewer_memberships(db, clan_id=int(clan.id))
     applicant_label = (
         _member_display(applicant_user)
@@ -4374,6 +4665,148 @@ def create_join_request(
             "qr_policy_key": qr_policy_key,
         },
     }
+
+@router.get("/{clan_id}/qr-preapprovals", response_model=dict[str, Any])
+def list_clan_qr_preapprovals(
+    clan_id: int,
+    db: Session = Depends(get_db),
+    clan_ctx: tuple = Depends(get_current_clan_membership),
+):
+    clan, _membership, _current_user = _require_clan_admin(clan_ctx)
+    if int(clan.id) != int(clan_id):
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    rows = (
+        db.query(ClanQrPreApproval)
+        .filter(ClanQrPreApproval.clan_id == int(clan_id))
+        .order_by(ClanQrPreApproval.created_at.desc(), ClanQrPreApproval.id.desc())
+        .all()
+    )
+    active_count = sum(1 for row in rows if _safe_str(row.status, "active") == "active")
+    return {
+        "items": [_qr_preapproval_out(row) for row in rows],
+        "total": len(rows),
+        "active_count": active_count,
+        "community_id": int(clan.id),
+        "community_code": _community_code(clan.id, clan=clan),
+        "community_name": _safe_str(getattr(clan, "name", None)),
+    }
+
+
+@router.post("/{clan_id}/qr-preapprovals", response_model=dict[str, Any], status_code=201)
+def create_clan_qr_preapproval(
+    clan_id: int,
+    payload: ClanQrPreApprovalIn,
+    db: Session = Depends(get_db),
+    clan_ctx: tuple = Depends(get_current_clan_membership),
+):
+    clan, _membership, current_user = _require_clan_admin(clan_ctx)
+    if int(clan.id) != int(clan_id):
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    match_type, match_value = _qr_preapproval_input_match(payload)
+    existing = (
+        db.query(ClanQrPreApproval)
+        .filter(
+            ClanQrPreApproval.clan_id == int(clan_id),
+            ClanQrPreApproval.match_type == match_type,
+            ClanQrPreApproval.match_value == match_value,
+        )
+        .first()
+    )
+    if existing is not None:
+        existing.display_name = _safe_str(payload.display_name) or existing.display_name
+        existing.phone_e164 = _normalize_qr_phone(payload.phone_e164) or existing.phone_e164
+        existing.email = _safe_str(payload.email).lower() or existing.email
+        existing.gmfn_id = _safe_str(payload.gmfn_id).upper() or existing.gmfn_id
+        existing.approval_note = _safe_str(payload.approval_note) or existing.approval_note
+        existing.status = "active"
+        db.add(existing)
+        db.commit()
+        db.refresh(existing)
+        row = existing
+        created = False
+    else:
+        row = ClanQrPreApproval(
+            clan_id=int(clan_id),
+            added_by_user_id=int(current_user.id),
+            match_type=match_type,
+            match_value=match_value,
+            display_name=_safe_str(payload.display_name) or None,
+            phone_e164=_normalize_qr_phone(payload.phone_e164) or None,
+            email=_safe_str(payload.email).lower() or None,
+            gmfn_id=_safe_str(payload.gmfn_id).upper() or None,
+            approval_note=_safe_str(payload.approval_note) or None,
+            status="active",
+        )
+        db.add(row)
+        db.commit()
+        db.refresh(row)
+        created = True
+
+    log_trust_event(
+        db,
+        event_type="community.qr_preapproval_saved",
+        clan_id=int(clan_id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta={
+            "reason": "community_qr_preapproval_saved",
+            "preapproval_id": int(row.id),
+            "match_type": _safe_str(row.match_type),
+            "created": created,
+        },
+        dedupe_key=f"qr-preapproval-saved:{int(row.id)}:{_safe_str(row.updated_at)}",
+    )
+    return {
+        "ok": True,
+        "created": created,
+        "item": _qr_preapproval_out(row),
+    }
+
+
+@router.patch("/{clan_id}/qr-preapprovals/{preapproval_id}", response_model=dict[str, Any])
+def update_clan_qr_preapproval_status(
+    clan_id: int,
+    preapproval_id: int,
+    payload: ClanQrPreApprovalStatusIn,
+    db: Session = Depends(get_db),
+    clan_ctx: tuple = Depends(get_current_clan_membership),
+):
+    clan, _membership, current_user = _require_clan_admin(clan_ctx)
+    if int(clan.id) != int(clan_id):
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    row = (
+        db.query(ClanQrPreApproval)
+        .filter(
+            ClanQrPreApproval.id == int(preapproval_id),
+            ClanQrPreApproval.clan_id == int(clan_id),
+        )
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="QR pre-approval not found")
+
+    row.status = _safe_str(payload.status).lower()
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    log_trust_event(
+        db,
+        event_type="community.qr_preapproval_status_changed",
+        clan_id=int(clan_id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta={
+            "reason": "community_qr_preapproval_status_changed",
+            "preapproval_id": int(row.id),
+            "status": _safe_str(row.status),
+            "match_type": _safe_str(row.match_type),
+        },
+        dedupe_key=f"qr-preapproval-status:{int(row.id)}:{_safe_str(row.status)}:{_safe_str(row.updated_at)}",
+    )
+    return {"ok": True, "item": _qr_preapproval_out(row)}
 
 @router.get("/{clan_id}/join-requests", response_model=dict[str, Any])
 def list_join_requests(

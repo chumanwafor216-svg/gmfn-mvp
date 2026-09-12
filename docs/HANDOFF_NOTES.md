@@ -1,3 +1,13 @@
+## 2026-09-12 - QR pre-approved entry list added locally
+
+- Status: Local backend/frontend continuation after commit `f7b824f5`; no commit, push, deploy, OTP provider, bulk import, payment-ledger check, stall registry, permit database, or real identity verification added in this follow-up yet.
+- Backend data model: added `ClanQrPreApproval` and migration `20260912_clan_qr_preapprovals` for community-owned pre-approved scan entries keyed by normalized phone, email, or existing GSN ID.
+- Backend routes: admins can list, create/upsert, and mark QR pre-approval entries active/inactive through `/clans/{clan_id}/qr-preapprovals`.
+- Join behavior: public QR/invite join requests now check active community pre-approvals after creating the request; a match calls the normal `_approve_join_request` engine, creates membership/activation package as appropriate, records the matched pre-approval, and does not notify reviewers for manual approval.
+- Frontend setup: `ClansPage` now includes a compact Pre-approved entry panel inside the Invite package card, with save, active count, recent entries, and turn-off controls.
+- Regression coverage: added tests for admin pre-approval management and automatic approval of a matching pre-approved phone scan.
+- Verification passed: `python -m pytest -q gmfn_backend\tests\test_join_requests.py` (70 passed), Python compile checks for touched backend modules/migration, `npm exec eslint src/pages/ClansPage.tsx src/lib/api.ts`, `npm --prefix frontend run audit:existing-community-invite-line`, and `npm --prefix frontend run build`.
+- Devil truth: this is a pre-approved identifier match, not proof that the person holding the phone/email is the rightful person. OTP, bulk upload, stronger duplicate safeguards, payment/dues evidence, and admin audit UI still need proper follow-up work before calling this a complete onboarding governance system.
 ## 2026-09-12 - Marketplace QR policy now blocks blind approval
 
 - Status: Local backend/frontend continuation; no commit, push, deploy, OTP provider, pre-approved-list gate, real dues ledger, or auto/bulk approval engine added.

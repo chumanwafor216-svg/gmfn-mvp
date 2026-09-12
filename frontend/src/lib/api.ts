@@ -1780,6 +1780,49 @@ export async function createClanInvite(
   );
 }
 
+export type ClanQrPreApprovalPayload = {
+  display_name?: string | null;
+  phone_e164?: string | null;
+  email?: string | null;
+  gmfn_id?: string | null;
+  approval_note?: string | null;
+};
+
+export async function listClanQrPreApprovals(clanId: number): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(clanId))}/qr-preapprovals`,
+    "GET",
+    undefined,
+    { header_clan_id: clanId }
+  );
+}
+
+export async function createClanQrPreApproval(
+  clanId: number,
+  payload: ClanQrPreApprovalPayload
+): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(clanId))}/qr-preapprovals`,
+    "POST",
+    payload,
+    { header_clan_id: clanId }
+  );
+}
+
+export async function updateClanQrPreApprovalStatus(
+  clanId: number,
+  preapprovalId: number,
+  status: "active" | "inactive"
+): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(clanId))}/qr-preapprovals/${encodeURIComponent(
+      String(preapprovalId)
+    )}`,
+    "PATCH",
+    { status },
+    { header_clan_id: clanId }
+  );
+}
 export async function listClanMembers(clanId: number): Promise<any> {
   return httpJson(
     `/clans/${encodeURIComponent(String(clanId))}/members`,

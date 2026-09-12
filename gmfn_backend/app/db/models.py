@@ -1584,6 +1584,72 @@ class ClanInvite(Base):
     )
 
 
+class ClanQrPreApproval(Base):
+    __tablename__ = "clan_qr_preapprovals"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "clan_id",
+            "match_type",
+            "match_value",
+            name="uq_clan_qr_preapproval_match",
+        ),
+        Index("ix_clan_qr_preapprovals_clan_status", "clan_id", "status"),
+        Index("ix_clan_qr_preapprovals_match", "match_type", "match_value"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    clan_id: Mapped[int] = mapped_column(
+        ForeignKey("clans.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    added_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    match_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    match_value: Mapped[str] = mapped_column(String(160), nullable=False)
+    display_name: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)
+    phone_e164: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    gmfn_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    approval_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="active",
+        server_default="active",
+        index=True,
+    )
+    matched_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    matched_join_request_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("clan_join_requests.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    matched_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
 class ClanJoinRequest(Base):
     __tablename__ = "clan_join_requests"
 

@@ -24,12 +24,15 @@ import {
 import {
   createClan,
   createClanInvite,
+  createClanQrPreApproval,
   getClanInviteLink,
   getMe,
+  listClanQrPreApprovals,
   getSelectedClanId,
   listMyClans,
   safeCopy,
   selectClan,
+  updateClanQrPreApprovalStatus,
 } from "../lib/api";
 
 type CommunityItem = {
@@ -60,6 +63,20 @@ type InviteState = {
   fallbackGuideUrl?: string | null;
   packagedShareText?: string | null;
   whatsappShareText?: string | null;
+};
+
+type QrPreApprovalItem = {
+  id?: number;
+  display_name?: string | null;
+  phone_e164?: string | null;
+  email?: string | null;
+  gmfn_id?: string | null;
+  match_type?: string | null;
+  match_value?: string | null;
+  approval_note?: string | null;
+  status?: string | null;
+  matched_join_request_id?: number | null;
+  matched_at?: string | null;
 };
 function overlayShell(): React.CSSProperties {
   return {
@@ -414,6 +431,17 @@ export default function ClansPage() {
   const [inviteComposerOpen, setInviteComposerOpen] = useState(false);
   const [qrSheetOpen, setQrSheetOpen] = useState(false);
   const [qrPolicyKey, setQrPolicyKey] = useState<CommunityQrPolicyKey>("reviewed_access");
+  const [qrPreApprovals, setQrPreApprovals] = useState<QrPreApprovalItem[]>([]);
+  const [qrPreApprovalLoading, setQrPreApprovalLoading] = useState(false);
+  const [qrPreApprovalSaving, setQrPreApprovalSaving] = useState(false);
+  const [qrPreApprovalMessage, setQrPreApprovalMessage] = useState("");
+  const [qrPreApprovalForm, setQrPreApprovalForm] = useState({
+    display_name: "",
+    phone_e164: "",
+    email: "",
+    gmfn_id: "",
+    approval_note: "",
+  });
 
   const [communityNameInput, setCommunityNameInput] = useState(
     safeStr(createCommunityState?.name)
@@ -465,6 +493,30 @@ export default function ClansPage() {
     loadCommunities();
   }, []);
 
+  async function loadQrPreApprovals(clanId: number) {
+    if (!clanId) {
+      setQrPreApprovals([]);
+      return;
+    }
+    setQrPreApprovalLoading(true);
+    try {
+      const res = await listClanQrPreApprovals(clanId);
+      setQrPreApprovals(Array.isArray(res?.items) ? res.items : []);
+    } catch {
+      setQrPreApprovals([]);
+    } finally {
+      setQrPreApprovalLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!selectedCommunityId) {
+      setQrPreApprovals([]);
+      return;
+    }
+    void loadQrPreApprovals(selectedCommunityId);
+  }, [selectedCommunityId]);
+
   const selectedCommunity = useMemo(() => {
     return (
       communities.find((item) => Number(item?.id || 0) === selectedCommunityId) ||
@@ -477,6 +529,10 @@ export default function ClansPage() {
     ? extractMembers(selectedCommunity).length
     : 0;
   const selectedQrPolicy = communityQrPolicyByKey(qrPolicyKey);
+  const activeQrPreApprovals = qrPreApprovals.filter(
+    (item) => safeStr(item.status || "active") === "active"
+  );
+  const recentQrPreApprovals = qrPreApprovals.slice(0, 4);
   const routes = useMemo(
     () => ({
       dashboard: routeTarget("dashboard", selectedCommunityId, "clans.route.dashboard"),
@@ -509,6 +565,65 @@ export default function ClansPage() {
       setInviteState(null);
       setQrSheetOpen(false);
       setCreateMessage("");
+      setQrPreApprovalMessage("");
+    }
+  }
+
+  function updateQrPreApprovalForm(field: keyof typeof qrPreApprovalForm, value: string) {
+    setQrPreApprovalForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  async function handleSaveQrPreApproval() {
+    if (!selectedCommunityId) return;
+
+    const payload = {
+      display_name: safeStr(qrPreApprovalForm.display_name) || null,
+      phone_e164: safeStr(qrPreApprovalForm.phone_e164) || null,
+      email: safeStr(qrPreApprovalForm.email) || null,
+      gmfn_id: safeStr(qrPreApprovalForm.gmfn_id) || null,
+      approval_note: safeStr(qrPreApprovalForm.approval_note) || null,
+    };
+
+    if (!payload.phone_e164 && !payload.email && !payload.gmfn_id) {
+      setQrPreApprovalMessage("Add a phone number, email, or GSN ID first.");
+      return;
+    }
+
+    setQrPreApprovalSaving(true);
+    setQrPreApprovalMessage("");
+    try {
+      const res = await createClanQrPreApproval(selectedCommunityId, payload);
+      setQrPreApprovalMessage(
+        res?.created ? "Pre-approved entry saved." : "Pre-approved entry updated."
+      );
+      setQrPreApprovalForm({
+        display_name: "",
+        phone_e164: "",
+        email: "",
+        gmfn_id: "",
+        approval_note: "",
+      });
+      await loadQrPreApprovals(selectedCommunityId);
+    } catch (err: any) {
+      setQrPreApprovalMessage(err?.message || "Could not save this pre-approved entry.");
+    } finally {
+      setQrPreApprovalSaving(false);
+    }
+  }
+
+  async function handleDeactivateQrPreApproval(item: QrPreApprovalItem) {
+    const id = Number(item.id || 0);
+    if (!selectedCommunityId || !id) return;
+    setQrPreApprovalSaving(true);
+    setQrPreApprovalMessage("");
+    try {
+      await updateClanQrPreApprovalStatus(selectedCommunityId, id, "inactive");
+      setQrPreApprovalMessage("Pre-approved entry turned off.");
+      await loadQrPreApprovals(selectedCommunityId);
+    } catch (err: any) {
+      setQrPreApprovalMessage(err?.message || "Could not update this pre-approved entry.");
+    } finally {
+      setQrPreApprovalSaving(false);
     }
   }
 
@@ -1274,6 +1389,162 @@ export default function ClansPage() {
             >
               Personal invite
             </SecondaryButton>
+          </div>
+        </div>
+
+        <div style={{ ...softCard(), marginTop: 16 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 0.9fr) minmax(0, 1.1fr)",
+              gap: 14,
+              alignItems: "start",
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 1000, color: "#241A12" }}>
+                Pre-approved entry
+              </div>
+              <div
+                style={{
+                  marginTop: 6,
+                  color: "#6B5D50",
+                  fontSize: 13,
+                  lineHeight: 1.65,
+                  fontWeight: 750,
+                }}
+              >
+                Add people the community already accepts. If their scan matches phone, email, or GSN ID, GSN approves the join request and still keeps verification separate.
+              </div>
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                  color: "#6B5D50",
+                  fontSize: 13,
+                  fontWeight: 850,
+                }}
+              >
+                <span>{activeQrPreApprovals.length} active</span>
+                <span>{qrPreApprovals.length} total</span>
+                {qrPreApprovalLoading ? <span>Loading...</span> : null}
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gap: 10 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                  gap: 10,
+                }}
+              >
+                <input
+                  value={qrPreApprovalForm.display_name}
+                  onChange={(event) => updateQrPreApprovalForm("display_name", event.target.value)}
+                  placeholder="Name"
+                  style={inputStyle()}
+                />
+                <input
+                  value={qrPreApprovalForm.phone_e164}
+                  onChange={(event) => updateQrPreApprovalForm("phone_e164", event.target.value)}
+                  placeholder="Phone number"
+                  style={inputStyle()}
+                />
+                <input
+                  value={qrPreApprovalForm.email}
+                  onChange={(event) => updateQrPreApprovalForm("email", event.target.value)}
+                  placeholder="Email"
+                  style={inputStyle()}
+                />
+                <input
+                  value={qrPreApprovalForm.gmfn_id}
+                  onChange={(event) => updateQrPreApprovalForm("gmfn_id", event.target.value)}
+                  placeholder="GSN ID"
+                  style={inputStyle()}
+                />
+              </div>
+              <input
+                value={qrPreApprovalForm.approval_note}
+                onChange={(event) => updateQrPreApprovalForm("approval_note", event.target.value)}
+                placeholder="Approval note"
+                style={inputStyle()}
+              />
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ color: "#6B5D50", fontSize: 13, fontWeight: 800 }}>
+                  {qrPreApprovalMessage || "Match uses phone, email, or existing GSN ID."}
+                </div>
+                <PrimaryButton
+                  type="button"
+                  onClick={() => void handleSaveQrPreApproval()}
+                  disabled={!selectedCommunityId || qrPreApprovalSaving}
+                  busy={qrPreApprovalSaving}
+                  busyLabel="Saving..."
+                  debugId="clans.qr-preapproval.save"
+                  style={{ ...btn(true, !selectedCommunityId || qrPreApprovalSaving), width: isCompact ? "100%" : undefined }}
+                >
+                  Save pre-approval
+                </PrimaryButton>
+              </div>
+
+              {recentQrPreApprovals.length ? (
+                <div style={{ display: "grid", gap: 8 }}>
+                  {recentQrPreApprovals.map((item) => {
+                    const isActive = safeStr(item.status || "active") === "active";
+                    const title = safeStr(
+                      item.display_name || item.gmfn_id || item.phone_e164 || item.email || "Pre-approved member"
+                    );
+                    const detail = safeStr(
+                      item.gmfn_id || item.phone_e164 || item.email || item.match_value || "Ready for matching"
+                    );
+                    return (
+                      <div
+                        key={item.id || `${item.match_type}-${item.match_value}`}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+                          gap: 8,
+                          alignItems: "center",
+                          padding: "10px 12px",
+                          borderRadius: 14,
+                          background: "rgba(255,255,255,0.72)",
+                          border: "1px solid rgba(36,26,18,0.08)",
+                        }}
+                      >
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ color: "#241A12", fontWeight: 950 }}>{title}</div>
+                          <div style={{ marginTop: 2, color: "#6B5D50", fontSize: 12, fontWeight: 750 }}>
+                            {isActive ? "Active" : "Inactive"} - {detail}
+                            {item.matched_join_request_id ? " - matched" : ""}
+                          </div>
+                        </div>
+                        {isActive ? (
+                          <SecondaryButton
+                            type="button"
+                            onClick={() => void handleDeactivateQrPreApproval(item)}
+                            disabled={qrPreApprovalSaving}
+                            debugId="clans.qr-preapproval.deactivate"
+                            style={{ ...btn(false, qrPreApprovalSaving), width: isCompact ? "100%" : undefined }}
+                          >
+                            Turn off
+                          </SecondaryButton>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
 

@@ -13,7 +13,7 @@ from app.core import auth
 from app.core import clan_auth
 from app.core.security import create_access_token
 from app.db.database import SessionLocal
-from app.db.models import Clan, ClanInvite, ClanJoinRequest, ClanMembership, TrustEvent, User
+from app.db.models import Clan, ClanInvite, ClanJoinRequest, ClanMembership, ClanQrPreApproval, TrustEvent, User
 from app.db.notification_models import Notification
 from app.db.verification_models import IdentityVerificationCheck
 from app.main import app
@@ -98,6 +98,126 @@ def _join_payload(invite_code: str) -> dict[str, str]:
         "note": "With God all things are possible",
     }
 
+
+def test_admin_can_manage_qr_preapproved_entry(client, override_clan_ctx_admin):
+    _seed_join_context()
+
+    create_res = client.post(
+        "/clans/1/qr-preapprovals",
+        json={
+            "display_name": "Ada Market",
+            "phone_e164": "+234 801 111 2222",
+            "approval_note": "Known stall holder",
+        },
+        headers={"X-Clan-Id": "1"},
+    )
+    assert create_res.status_code == 201, create_res.text
+    created = create_res.json()
+    assert created["created"] is True
+    item = created["item"]
+    assert item["match_type"] == "phone"
+    assert item["match_value"] == "+2348011112222"
+    assert item["status"] == "active"
+
+    update_res = client.post(
+        "/clans/1/qr-preapprovals",
+        json={
+            "display_name": "Ada Market Updated",
+            "phone_e164": "+2348011112222",
+            "approval_note": "Still known",
+        },
+        headers={"X-Clan-Id": "1"},
+    )
+    assert update_res.status_code == 201, update_res.text
+    updated = update_res.json()
+    assert updated["created"] is False
+    assert updated["item"]["display_name"] == "Ada Market Updated"
+
+    list_res = client.get("/clans/1/qr-preapprovals", headers={"X-Clan-Id": "1"})
+    assert list_res.status_code == 200, list_res.text
+    listed = list_res.json()
+    assert listed["total"] == 1
+    assert listed["active_count"] == 1
+
+    off_res = client.patch(
+        f"/clans/1/qr-preapprovals/{item['id']}",
+        json={"status": "inactive"},
+        headers={"X-Clan-Id": "1"},
+    )
+    assert off_res.status_code == 200, off_res.text
+    assert off_res.json()["item"]["status"] == "inactive"
+
+
+def test_public_qr_join_request_auto_approves_preapproved_phone(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="preapproved-code",
+                qr_policy_key="reviewed_access",
+                is_active=True,
+                max_uses=25,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.add(
+            ClanQrPreApproval(
+                id=1,
+                clan_id=1,
+                added_by_user_id=1,
+                match_type="phone",
+                match_value="+2348011112222",
+                display_name="Ada Market",
+                phone_e164="+2348011112222",
+                approval_note="Known member before QR rollout",
+                status="active",
+            )
+        )
+        db.commit()
+
+    res = client.post(
+        "/clans/join-requests",
+        json={
+            "invite_code": "preapproved-code",
+            "first_name": "Ada",
+            "surname": "Market",
+            "phone_e164": "+234 801 111 2222",
+            "country": "Nigeria",
+        },
+    )
+    assert res.status_code == 201, res.text
+    data = res.json()
+    assert data["result_status"] == "preapproved_request_approved"
+    assert data["approval_result"]["status"] == "approved"
+    assert data["approval_result"]["activation_required"] is True
+    assert data["request"]["status"] == "approved"
+    assert data["request"]["qr_preapproval_match"]["id"] == 1
+
+    with SessionLocal() as db:
+        join_request = db.query(ClanJoinRequest).one()
+        preapproval = db.get(ClanQrPreApproval, 1)
+        assert join_request.status == "approved"
+        assert preapproval is not None
+        assert preapproval.matched_join_request_id == join_request.id
+        assert preapproval.matched_user_id == join_request.applicant_user_id
+        assert preapproval.matched_at is not None
+        assert db.query(ClanMembership).filter_by(clan_id=1, user_id=2).count() == 1
+        assert db.query(clans_route.ClanJoinVote).filter_by(join_request_id=join_request.id).count() == 0
+        approval_notice = (
+            db.query(Notification)
+            .filter(
+                Notification.user_id == join_request.applicant_user_id,
+                Notification.kind == "approval_success",
+            )
+            .first()
+        )
+        assert approval_notice is not None
 
 def test_public_join_request_accepts_clan_invite_record_code(client, override_clan_ctx_admin):
     _seed_join_context()
