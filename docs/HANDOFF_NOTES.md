@@ -1,3 +1,12 @@
+## 2026-09-12 - QR handover brief added locally
+
+- Status: Verified local frontend continuation after local commit `aaf43859`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Frontend setup: `ClansPage` QR invite package now has a `Copy handover` action alongside the QR sheet/announcement actions.
+- QR sheet: added a compact executive handover block with channel discipline, pre-approved-entry use, request review, and the approved-access-versus-verified-membership boundary.
+- Operating copy: the copied handover brief includes community name, selected QR entry policy, active pre-approved count, invite code/link, operating steps, and the policy boundary.
+- Verification passed: `npm exec eslint src/pages/ClansPage.tsx src/lib/api.ts`, `npm --prefix frontend run audit:existing-community-invite-line`, `npm --prefix frontend run build`, and `git diff --check -- frontend\src\pages\ClansPage.tsx`.
+- Devil truth: this improves handover discipline only. It does not create legal authority, OTP proof, payment/dues validation, or a real identity-verification engine.
+
 ## 2026-09-12 - QR bulk import preview tightened locally
 
 - Status: Verified local frontend continuation after local commit `659afe32`; not pushed or deployed under the current batch-mode pipeline freeze.

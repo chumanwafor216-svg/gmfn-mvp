@@ -877,6 +877,33 @@ export default function ClansPage() {
     copyText(communityQrAnnouncementText(), "qr-announcement");
   }
 
+  function communityQrHandoverText(): string {
+    const title = selectedCommunity ? communityName(selectedCommunity) : "this community";
+    const link = safeStr(inviteState?.link || "");
+    const code = safeStr(inviteState?.code || "");
+
+    return [
+      `GSN community QR handover: ${title}`,
+      `Entry policy: ${selectedQrPolicy.label}`,
+      `Pre-approved entries active: ${activeQrPreApprovals.length}`,
+      code ? `Invite code: ${code}` : "",
+      link ? `Join link: ${link}` : "",
+      "Operating steps:",
+      "1. Share the QR or link only from the agreed community channel.",
+      "2. Add known members to the pre-approved list before a public meeting if fast entry is needed.",
+      "3. Watch join requests after sharing; strict and market policies still require proper review.",
+      "4. Tell members the truth: approval opens community access, but verification is separate.",
+      `Boundary: ${selectedQrPolicy.boundary}`,
+      "Sent through GSN",
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  function copyCommunityQrHandover() {
+    copyText(communityQrHandoverText(), "qr-handover");
+  }
+
   function printCommunityQrSheet() {
     window.print();
   }
@@ -2142,6 +2169,16 @@ export default function ClansPage() {
                         </SecondaryButton>
                       ) : null}
 
+                      {inviteState.link ? (
+                        <SecondaryButton
+                          style={btn(false)}
+                          onClick={copyCommunityQrHandover}
+                          debugId="clans.invite.copy-qr-handover"
+                        >
+                          {copied === "qr-handover" ? "Copied handover" : "Copy handover"}
+                        </SecondaryButton>
+                      ) : null}
+
                       {inviteState.guideUrl ? (
                         <SecondaryButton
                           style={btn(false)}
@@ -2205,8 +2242,8 @@ export default function ClansPage() {
             style={{
               ...modalCard(),
               width: "min(100%, 560px)",
-              maxHeight: isCompact ? "calc(100svh - 32px)" : undefined,
-              overflowY: isCompact ? "auto" : "hidden",
+              maxHeight: "calc(100svh - 32px)",
+              overflowY: "auto",
             }}
           >
             <div style={{ ...darkPanel(), marginBottom: 16 }}>
@@ -2311,6 +2348,42 @@ export default function ClansPage() {
 
             <div
               style={{
+                ...softCard("#F8FBFF"),
+                marginTop: 14,
+                display: "grid",
+                gap: 12,
+              }}
+            >
+              <div style={sectionLabel()}>Executive handover</div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr 1fr",
+                  gap: 8,
+                }}
+              >
+                <div style={card("#FFFFFF")}>Share the QR or link from the agreed community channel.</div>
+                <div style={card("#FFFFFF")}>Use pre-approved entries for known members who need fast access.</div>
+                <div style={card("#FFFFFF")}>Review requests and verify membership before sensitive benefits.</div>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                  color: "#6B5D50",
+                  fontSize: 12,
+                  fontWeight: 850,
+                }}
+              >
+                <span>Policy: {selectedQrPolicy.label}</span>
+                <span>Active pre-approved: {activeQrPreApprovals.length}</span>
+                <span>Approved access is not verified membership.</span>
+              </div>
+            </div>
+
+            <div
+              style={{
                 marginTop: 14,
                 display: "flex",
                 gap: 10,
@@ -2331,6 +2404,13 @@ export default function ClansPage() {
                 debugId="clans.qr-sheet.copy-announcement"
               >
                 {copied === "qr-announcement" ? "Copied announcement" : "Copy announcement"}
+              </SecondaryButton>
+              <SecondaryButton
+                onClick={copyCommunityQrHandover}
+                style={{ ...btn(false), width: isCompact ? "100%" : undefined }}
+                debugId="clans.qr-sheet.copy-handover"
+              >
+                {copied === "qr-handover" ? "Copied handover" : "Copy handover"}
               </SecondaryButton>
               <PrimaryButton
                 onClick={printCommunityQrSheet}
