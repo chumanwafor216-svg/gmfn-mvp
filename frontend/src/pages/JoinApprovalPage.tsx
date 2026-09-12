@@ -10,6 +10,7 @@ import {
   StableCtaLink,
 } from "../components/StableButton";
 import { getJoinApprovalStatus } from "../lib/api";
+import { communityQrPolicyByKey, isCommunityQrPolicyKey } from "../lib/communityQrPolicies";
 import { navigateToCta, resolveCtaTarget, type CtaTarget } from "../lib/ctaTargets";
 import {
   institutionalPageCard,
@@ -31,6 +32,8 @@ type ApprovalStatus = {
   community_name?: string | null;
   community_code?: string | null;
   marketplace_name?: string | null;
+  qr_policy_key?: string | null;
+  qr_policy_label?: string | null;
   reviewed_at?: string | null;
   approved_at?: string | null;
   activated_at?: string | null;
@@ -342,7 +345,7 @@ export default function JoinApprovalPage() {
     if (safeStr(data?.message)) return safeStr(data?.message);
 
     if (status === "approved") {
-      return "Your request has been approved. Continue to activation to set your password and recovery protection.";
+      return "Your request has been approved for activation. This is not verified membership yet. Continue to activation to set your password and recovery protection.";
     }
 
     if (status === "pending") {
@@ -363,6 +366,11 @@ export default function JoinApprovalPage() {
   const marketplaceLabel = useMemo(() => {
     return safeStr(data?.marketplace_name || "");
   }, [data]);
+
+  const qrPolicy = useMemo(() => {
+    const key = data?.qr_policy_key;
+    return isCommunityQrPolicyKey(key) ? communityQrPolicyByKey(key) : null;
+  }, [data?.qr_policy_key]);
 
   const requestLabel = useMemo(() => {
     return safeStr(data?.request_id || requestId || "Not available yet");
@@ -641,6 +649,11 @@ export default function JoinApprovalPage() {
                     {approvalIconText("shop", <>Community / Market: {marketplaceLabel}</>, 22)}
                   </span>
                 ) : null}
+                {qrPolicy ? (
+                  <span style={badge(false)}>
+                    {approvalIconText("join-person-plus", <>Entry policy: {qrPolicy.label}</>, 22)}
+                  </span>
+                ) : null}
                 {safeStr(data?.community_code) ? (
                   <span style={badge(false)}>
                     {approvalIconText("id", <>Community ID: {safeStr(data?.community_code)}</>, 22)}
@@ -736,6 +749,27 @@ export default function JoinApprovalPage() {
                   </div>
                 ) : null}
 
+                {qrPolicy ? (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>
+                      {approvalIconText("join-person-plus", "QR entry policy", 22)}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#F8FBFF",
+                        fontWeight: 1000,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      {qrPolicy.label}
+                    </div>
+                    <div style={{ marginTop: 8, ...helperText() }}>
+                      {qrPolicy.boundary}
+                    </div>
+                  </div>
+                ) : null}
+
                 {reviewedAt ? (
                   <div style={softCard()}>
                     <div style={sectionLabel()}>
@@ -806,7 +840,7 @@ export default function JoinApprovalPage() {
 
               <div style={{ marginTop: 10, ...helperText() }}>
                 {status === "approved"
-                  ? "Activation is the correct next step. It protects the account before community use continues."
+                  ? "Activation is the correct next step. It protects the account before community use continues; verification can still follow."
                   : status === "pending"
                   ? "You can return later to check this status again."
                   : status === "rejected"

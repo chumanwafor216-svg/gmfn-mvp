@@ -1739,9 +1739,14 @@ export async function devBootstrapClan(): Promise<any> {
   return httpJson("/clans/dev/bootstrap", "POST");
 }
 
-export async function getClanInviteLink(clanId: number): Promise<any> {
+export async function getClanInviteLink(
+  clanId: number,
+  params: { qr_policy_key?: string | null } = {}
+): Promise<any> {
   return httpJson(
-    `/clans/${encodeURIComponent(String(clanId))}/invite-link`,
+    `/clans/${encodeURIComponent(String(clanId))}/invite-link${buildQuery({
+      qr_policy_key: params.qr_policy_key,
+    })}`,
     "GET",
     undefined,
     { header_clan_id: clanId }
@@ -1764,6 +1769,7 @@ export async function createClanInvite(
   clanId: number,
   payload?: {
     relationship_evidence?: ClanInviteRelationshipEvidencePayload | null;
+    qr_policy_key?: string | null;
   }
 ): Promise<any> {
   return httpJson(

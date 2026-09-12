@@ -141,7 +141,7 @@ function friendlyActivationError(err: any): {
         tone: "warning",
         title: "Activation is still pending",
         message:
-          "This membership is not ready for password setup yet. Return to approval status and use the latest GSN ID or request ID shown there.",
+          "This access request is not ready for password setup yet. Return to approval status and use the latest GSN ID or request ID shown there.",
       },
     };
   }
@@ -172,7 +172,7 @@ function friendlyActivationError(err: any): {
       message:
         rawMessage && !rawMessage.startsWith("{")
           ? rawMessage
-          : "Check that the GSN ID or request ID belongs to the approved membership, then try again.",
+          : "Check that the GSN ID or request ID belongs to the approved access request, then try again.",
     },
   };
 }
@@ -762,7 +762,7 @@ export default function MemberActivationPage() {
       showNotice(
         {
           tone: "warning",
-          title: "Add approved GSN ID or request ID",
+          title: "Add GSN ID or request ID",
           message:
             "Enter either the GSN ID shown after approval or the request ID from approval status. You do not need both if one of them is already filled in.",
         },
@@ -861,8 +861,8 @@ export default function MemberActivationPage() {
       const needsPhoneVerification = !phoneVerified;
       const nextRoute = needsPhoneVerification ? routes.identityPhone : routes.identityRecovery;
       const nextMessage = needsPhoneVerification
-        ? "Membership activated. Verify this phone next so TrustSlip can issue your code and QR."
-        : "Membership activated. Set private recovery next so this GSN ID can be recovered safely before community growth begins.";
+        ? "GSN account activated. Verify this phone next so TrustSlip can issue your code and QR."
+        : "GSN account activated. Set private recovery next so this GSN ID can be recovered safely before community growth begins.";
 
       setActivated(true);
       setPhoneVerificationRequired(needsPhoneVerification);
@@ -1065,15 +1065,15 @@ export default function MemberActivationPage() {
                   Activation guide
                 </div>
                 <div style={{ color: "#FFFFFF", fontSize: 21, fontWeight: 1000 }}>
-                  Approved member path
+                  Approved access path
                 </div>
                 <div style={{ color: "#C8D8EA", lineHeight: 1.65, marginTop: 8 }}>
-                  Use this page only when your community approval is ready. Confirm the approved GSN ID and request ID, then create your secure password.
+                  Use this page only when your community approval is ready. Confirm the GSN ID and request ID, then create your secure password. Verification can still continue after activation.
                 </div>
               </div>
             ) : null}
 
-            <div style={{ ...eyebrow(), marginBottom: 18 }}>Member Activation</div>
+            <div style={{ ...eyebrow(), marginBottom: 18 }}>GSN Activation</div>
             <h1
               style={{
                 margin: 0,
@@ -1098,7 +1098,7 @@ export default function MemberActivationPage() {
                 fontWeight: 520,
               }}
             >
-              Your community approval is ready. Confirm your details and create a secure password to open your GSN account.
+              Your community approval is ready. Confirm your details and create a secure password to open your GSN account. Verification can still continue after activation.
             </p>
 
             {(initialGmfnId || initialRequestId) && (
@@ -1245,7 +1245,7 @@ export default function MemberActivationPage() {
                   <ActivationIcon name="info" size={isCompact ? 20 : 23} />
                 </span>
                 <span style={infoTextStyle("primary", isCompact)}>
-                  Use the approved GSN ID and request ID linked to your membership.
+                  Use the GSN ID and request ID linked to your approved access request.
                 </span>
                 <span style={ghostIconStyle(isCompact)}>
                   <ActivationIcon name="community" size={34} />

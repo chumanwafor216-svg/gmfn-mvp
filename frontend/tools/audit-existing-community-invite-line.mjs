@@ -124,7 +124,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /import GSNBrandMark[\s\S]*?function BrandedInvitationPaper[\s\S]*?<GSNBrandMark[\s\S]*?Community invitation[\s\S]*?Official GSN invite[\s\S]*?<BrandedInvitationPaper/,
+  /import GSNBrandMark[\s\S]*?function BrandedInvitationPaper[\s\S]*?<GSNBrandMark[\s\S]*?(?:Community invitation|Community access request)[\s\S]*?(?:Official GSN invite|Official GSN access)[\s\S]*?<BrandedInvitationPaper/,
   "Existing-community invites must render as a branded GSN invitation paper with a visible GSN mark/watermark, not a plain message block."
 );
 

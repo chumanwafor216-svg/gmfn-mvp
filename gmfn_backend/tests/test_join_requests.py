@@ -99,7 +99,7 @@ def _join_payload(invite_code: str) -> dict[str, str]:
     }
 
 
-def test_public_join_request_accepts_clan_invite_record_code(client):
+def test_public_join_request_accepts_clan_invite_record_code(client, override_clan_ctx_admin):
     _seed_join_context()
 
     with SessionLocal() as db:
@@ -109,6 +109,7 @@ def test_public_join_request_accepts_clan_invite_record_code(client):
                 clan_id=1,
                 created_by_user_id=1,
                 code="package-code",
+                qr_policy_key="strict_entry",
                 is_active=True,
                 max_uses=3,
                 uses=0,
@@ -118,6 +119,11 @@ def test_public_join_request_accepts_clan_invite_record_code(client):
         )
         db.commit()
 
+    preview_res = client.get("/clans/join-invite/preview?code=package-code")
+
+    assert preview_res.status_code == 200, preview_res.text
+    assert preview_res.json()["qr_policy_key"] == "strict_entry"
+
     res = client.post("/clans/join-requests", json=_join_payload("package-code"))
 
     assert res.status_code == 201, res.text
@@ -125,8 +131,35 @@ def test_public_join_request_accepts_clan_invite_record_code(client):
     assert data["ok"] is True
     assert data["community_name"] == "Aberdeen City ICA"
     assert data["request"]["invite_id"] == 1
+    assert data["request"]["qr_policy_key"] == "strict_entry"
+    assert data["qr_policy_key"] == "strict_entry"
     assert data["lineage"]["invite_id"] == 1
+    assert data["lineage"]["qr_policy_key"] == "strict_entry"
     assert data["lineage"]["invited_by_user_id"] == 1
+
+    list_res = client.get("/clans/1/join-requests")
+    assert list_res.status_code == 200, list_res.text
+    assert list_res.json()["items"][0]["qr_policy_key"] == "strict_entry"
+
+    approval_status_res = client.get(
+        f"/clans/join-requests/{data['request']['id']}/status"
+    )
+    assert approval_status_res.status_code == 200, approval_status_res.text
+    approval_status = approval_status_res.json()
+    assert approval_status["invite_id"] == 1
+    assert approval_status["invite_code"] == "package-code"
+    assert approval_status["qr_policy_key"] == "strict_entry"
+    assert approval_status["qr_policy_label"] == "Strict school / professional body"
+
+    phone_status_res = client.get(
+        "/clans/join-invite/request-status"
+        "?code=package-code&phone_e164=%2B2349071733533&community_code=GMFN-C-000001"
+    )
+    assert phone_status_res.status_code == 200, phone_status_res.text
+    phone_status = phone_status_res.json()
+    assert phone_status["found"] is True
+    assert phone_status["qr_policy_key"] == "strict_entry"
+    assert phone_status["qr_policy_label"] == "Strict school / professional body"
 
     with SessionLocal() as db:
         invite = db.get(ClanInvite, 1)
@@ -136,9 +169,62 @@ def test_public_join_request_accepts_clan_invite_record_code(client):
         assert invite.uses == 1
         assert join_request is not None
         assert join_request.invite_id == 1
+        notification = (
+            db.query(Notification)
+            .filter(Notification.kind == "approval_request")
+            .first()
+        )
+        assert notification is not None
+        assert "QR entry policy: Strict school / professional body." in notification.message
         assert applicant is not None
         assert applicant.display_name == "Arinze Nnamani"
 
+
+def test_public_join_request_accepts_minimal_qr_applicant_details(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="qr-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    res = client.post(
+        "/clans/join-requests",
+        json={
+            "invite_code": "qr-code",
+            "first_name": "Ngozi",
+            "surname": "Okafor",
+            "phone_e164": "+2348070001111",
+            "country": "Nigeria",
+        },
+    )
+
+    assert res.status_code == 201, res.text
+    data = res.json()
+    assert data["ok"] is True
+    assert data["result_status"] == "pending_request_created"
+    assert data["community_name"] == "Aberdeen City ICA"
+    assert data["applicant_profile"]["date_of_birth"] is None
+    assert data["applicant_profile"]["birth_place"] is None
+
+    with SessionLocal() as db:
+        join_request = db.query(ClanJoinRequest).first()
+        applicant = db.get(User, int(data["user_id"]))
+        assert join_request is not None
+        assert join_request.status == "pending"
+        assert applicant is not None
+        assert applicant.display_name == "Ngozi Okafor"
 
 def test_public_join_request_exposes_governance_profile_to_review_surfaces(
     client,
@@ -2643,6 +2729,224 @@ def test_admin_can_pilot_approve_join_request_without_waiting_for_threshold(
         assert approval_notice.action_url == f"/activate-membership?gmfn_id={applicant.gmfn_id}&request_id=1"
 
 
+def test_strict_qr_policy_requires_multi_reviewer_due_process(
+    client,
+    override_clan_ctx_admin,
+):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        applicant = User(
+            id=2,
+            email="pending@example.com",
+            hashed_password="hashed",
+            role="user",
+        )
+        reviewer = User(
+            id=3,
+            email="reviewer@example.com",
+            hashed_password="hashed",
+            role="user",
+        )
+        db.add_all([applicant, reviewer])
+        db.flush()
+        db.add(
+            ClanMembership(
+                id=2,
+                clan_id=1,
+                user_id=3,
+                role="user",
+                personal_pool_balance=0,
+            )
+        )
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="strict-code",
+                qr_policy_key="strict_entry",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.add(
+            ClanJoinRequest(
+                id=1,
+                clan_id=1,
+                applicant_user_id=2,
+                invite_id=1,
+                invited_by_user_id=1,
+                status="pending",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    pilot_res = client.post(
+        "/clans/1/join-requests/1/pilot-approve",
+        headers={"X-Clan-Id": "1"},
+    )
+    assert pilot_res.status_code == 409, pilot_res.text
+    pilot_detail = pilot_res.json()["detail"]
+    assert pilot_detail["code"] == "qr_policy_requires_standard_review"
+    assert pilot_detail["qr_policy_key"] == "strict_entry"
+    assert pilot_detail["required_approvals"] == 2
+
+    def fake_admin_user():
+        return SimpleNamespace(
+            id=1,
+            email="admin@example.com",
+            hashed_password="hashed",
+            role="admin",
+        )
+
+    def fake_reviewer_user():
+        return SimpleNamespace(
+            id=3,
+            email="reviewer@example.com",
+            hashed_password="hashed",
+            role="user",
+        )
+
+    try:
+        app.dependency_overrides[auth.get_current_user] = fake_admin_user
+        first_vote = client.post(
+            "/clans/1/join-requests/1/vote",
+            json={"vote": "approve", "reason_code": "known_member"},
+        )
+        assert first_vote.status_code == 200, first_vote.text
+        first_data = first_vote.json()
+        assert first_data["approved_now"] is False
+        assert first_data["request"]["status"] == "pending"
+        assert first_data["request"]["required_approvals"] == 2
+        assert first_data["request"]["base_required_approvals"] == 1
+        assert first_data["request"]["qr_policy_required_approval_floor"] == 2
+        assert first_data["request"]["qr_policy_review_guardrail"]["pilot_override_blocked"] is True
+
+        app.dependency_overrides[auth.get_current_user] = fake_reviewer_user
+        second_vote = client.post(
+            "/clans/1/join-requests/1/vote",
+            json={"vote": "approve", "reason_code": "known_member"},
+        )
+        assert second_vote.status_code == 200, second_vote.text
+        second_data = second_vote.json()
+        assert second_data["approved_now"] is True
+        assert second_data["approval_result"]["status"] == "approved"
+        assert second_data["request"]["status"] == "approved"
+    finally:
+        app.dependency_overrides.pop(auth.get_current_user, None)
+
+
+def test_market_qr_policy_requires_market_check_reason_before_approval(
+    client,
+    override_clan_ctx_admin,
+):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        applicant = User(
+            id=2,
+            email="market-applicant@example.com",
+            hashed_password="hashed",
+            role="user",
+        )
+        db.add(applicant)
+        db.flush()
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="market-code",
+                qr_policy_key="market_access",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.add(
+            ClanJoinRequest(
+                id=1,
+                clan_id=1,
+                applicant_user_id=2,
+                invite_id=1,
+                invited_by_user_id=1,
+                status="pending",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    pilot_res = client.post(
+        "/clans/1/join-requests/1/pilot-approve",
+        headers={"X-Clan-Id": "1"},
+    )
+    assert pilot_res.status_code == 409, pilot_res.text
+    pilot_detail = pilot_res.json()["detail"]
+    assert pilot_detail["code"] == "qr_policy_requires_standard_review"
+    assert pilot_detail["qr_policy_key"] == "market_access"
+    assert pilot_detail["qr_policy_review_guardrail"]["pilot_override_blocked"] is True
+
+    def fake_admin_user():
+        return SimpleNamespace(
+            id=1,
+            email="admin@example.com",
+            hashed_password="hashed",
+            role="admin",
+        )
+
+    try:
+        app.dependency_overrides[auth.get_current_user] = fake_admin_user
+        blocked_vote = client.post(
+            "/clans/1/join-requests/1/vote",
+            json={
+                "vote": "approve",
+                "reason_code": "know_directly",
+                "reason_text": "I know this person directly.",
+            },
+        )
+        assert blocked_vote.status_code == 422, blocked_vote.text
+        blocked_detail = blocked_vote.json()["detail"]
+        assert blocked_detail["code"] == "market_access_approval_check_required"
+        assert blocked_detail["qr_policy_key"] == "market_access"
+        assert "market_dues_or_permit_checked" in blocked_detail["allowed_reason_codes"]
+
+        with SessionLocal() as db:
+            assert db.query(clans_route.ClanJoinVote).filter_by(join_request_id=1).count() == 0
+            req = db.get(ClanJoinRequest, 1)
+            assert req is not None
+            assert req.status == "pending"
+
+        approved_vote = client.post(
+            "/clans/1/join-requests/1/vote",
+            json={
+                "vote": "approve",
+                "reason_code": "market_dues_or_permit_checked",
+                "reason_text": "I checked dues, stall, shop, permit, or organiser records.",
+            },
+        )
+        assert approved_vote.status_code == 200, approved_vote.text
+        approved_data = approved_vote.json()
+        assert approved_data["approved_now"] is True
+        assert approved_data["approval_result"]["status"] == "approved"
+        assert approved_data["request"]["status"] == "approved"
+        assert approved_data["request"]["qr_policy_key"] == "market_access"
+        assert (
+            approved_data["request"]["qr_policy_review_guardrail"][
+                "requires_payment_or_permit_check"
+            ]
+            is True
+        )
+    finally:
+        app.dependency_overrides.pop(auth.get_current_user, None)
+
+
 def test_approving_existing_member_join_request_does_not_create_activation(
     client,
     override_clan_ctx_admin,
@@ -3330,6 +3634,50 @@ def test_invites_create_route_rejects_malformed_relationship_evidence(
         assert res.status_code == 422, (field_name, res.text)
         assert f"{field_name} must be an integer" in res.text
 
+def test_qr_invite_routes_reject_unknown_policy_keys(client):
+    _seed_join_context()
+
+    token = create_access_token({"sub": "admin@example.com"})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    def fake_clan_ctx():
+        clan = SimpleNamespace(
+            id=1,
+            name="Aberdeen City ICA",
+            marketplace_name="Aberdeen city marketplace",
+        )
+        membership = SimpleNamespace(role="admin", clan_id=1, user_id=1)
+        current_user = SimpleNamespace(id=1, email="admin@example.com")
+        return clan, membership, current_user
+
+    app.dependency_overrides[clan_auth.get_current_clan_membership] = fake_clan_ctx
+
+    try:
+        app_invite_res = client.post(
+            "/invites/clans/1",
+            json={"qr_policy_key": "market-place"},
+            headers=headers,
+        )
+        assert app_invite_res.status_code == 422, app_invite_res.text
+        assert "Invalid QR entry policy" in app_invite_res.text
+
+        community_invite_res = client.post(
+            "/clans/1/invite",
+            json={"qr_policy_key": "market-place"},
+        )
+        assert community_invite_res.status_code == 422, community_invite_res.text
+        assert "Invalid QR entry policy" in community_invite_res.text
+
+        invite_link_res = client.get(
+            "/clans/1/invite-link?qr_policy_key=market-place"
+        )
+        assert invite_link_res.status_code == 422, invite_link_res.text
+        assert "Invalid QR entry policy" in invite_link_res.text
+
+        with SessionLocal() as db:
+            assert db.query(ClanInvite).count() == 0
+    finally:
+        app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)
 
 def test_member_can_read_existing_marketplace_join_link_without_refresh_power(
     client,
@@ -3421,7 +3769,7 @@ def test_member_get_invite_link_without_live_invite_auto_prepares_shareable_link
     app.dependency_overrides[clan_auth.get_current_clan_membership] = fake_clan_ctx
 
     try:
-        res = client.get("/clans/1/invite-link")
+        res = client.get("/clans/1/invite-link?qr_policy_key=market_access")
         assert res.status_code == 200, res.text
         data = res.json()
 
@@ -3430,11 +3778,20 @@ def test_member_get_invite_link_without_live_invite_auto_prepares_shareable_link
         assert data["requires_admin_refresh"] is False
         assert "Any active member may share it" in data["message"]
         assert data["invite_link"]
+        assert data["qr_policy_key"] == "market_access"
+        assert (
+            "QR entry policy: Marketplace dues / permit access" in data["invite_text"]
+        )
+        assert (
+            "Community approval and later verification can still apply"
+            in data["invite_text"]
+        )
         assert data["invited_by_user_id"] == 2
 
         with SessionLocal() as db:
             invite = db.query(ClanInvite).filter(ClanInvite.clan_id == 1).one()
             assert invite.created_by_user_id == 2
+            assert invite.qr_policy_key == "market_access"
             assert invite.max_uses == 0
     finally:
         app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)

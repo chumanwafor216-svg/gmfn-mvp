@@ -22,6 +22,12 @@ _INVITE_CREATE_BUCKET: dict[tuple[int, int], list[float]] = {}
 _JOIN_BUCKET: dict[int, list[float]] = {}
 PUBLIC_FRONTEND_ORIGIN = "https://gmfn-frontend.onrender.com"
 SUSPENDED_PUBLIC_FRONTEND_HOSTS = {"frontend.onrender.com"}
+COMMUNITY_QR_POLICY_KEYS = {
+    "open_growth",
+    "reviewed_access",
+    "strict_entry",
+    "market_access",
+}
 
 
 def _bucket_prune(ts_list: list[float], window_seconds: int) -> list[float]:
@@ -145,6 +151,15 @@ def api_join_link(request: Request, code: str) -> str:
     return str(request.base_url).rstrip("/") + f"/invites/share/{code}"
 
 
+def clean_community_qr_policy_key(raw: Optional[str]) -> Optional[str]:
+    value = str(raw or "").strip()
+    if not value:
+        return None
+    if value not in COMMUNITY_QR_POLICY_KEYS:
+        raise HTTPException(status_code=422, detail="Invalid QR entry policy")
+    return value
+
+
 def _clean_invite_relationship_evidence(raw: Optional[dict[str, Any]]) -> Optional[dict[str, Any]]:
     if not isinstance(raw, dict):
         return None
@@ -193,6 +208,7 @@ def create_clan_invite(
     expires_at: Optional[datetime] = None,
     max_uses: Optional[int] = None,
     relationship_evidence: Optional[dict[str, Any]] = None,
+    qr_policy_key: Optional[str] = None,
 ) -> ClanInvite:
     clan = db.get(Clan, clan_id)
     if not clan:
@@ -202,11 +218,13 @@ def create_clan_invite(
     _rate_limit_create_invite(int(created_by_user.id), int(clan_id), limit=20, window_seconds=3600)
 
     safe_expires_at = _utc_aware(expires_at)
+    safe_qr_policy_key = clean_community_qr_policy_key(qr_policy_key)
 
     invite = ClanInvite(
         clan_id=clan_id,
         created_by_user_id=created_by_user.id,
         code=secrets.token_urlsafe(10),
+        qr_policy_key=safe_qr_policy_key,
         expires_at=safe_expires_at,
         max_uses=0,
         uses=0,
@@ -222,6 +240,7 @@ def create_clan_invite(
     trust_meta = {
         "reason": "invite_created",
         "invite_code": invite.code,
+        "qr_policy_key": safe_qr_policy_key,
         "max_uses": None,
         "expires_at": invite.expires_at.isoformat() if invite.expires_at else None,
     }
@@ -275,6 +294,7 @@ def preview_invite(db: Session, *, code: str) -> dict:
 
     return {
         "code": invite.code,
+        "qr_policy_key": getattr(invite, "qr_policy_key", None),
         "clan_id": clan.id,
         "clan_name": clan.name,
         "is_active": invite.is_active,
@@ -409,6 +429,7 @@ def join_clan_by_invite_code(db: Session, *, code: str, user: User):
             "reason": "invite_join_success",
             "note": f"User joined clan #{clan.id} via invite code {invite.code}.",
             "invite_code": invite.code,
+            "qr_policy_key": getattr(invite, "qr_policy_key", None),
             "invited_by_user_id": inviter_id,
             "invite_id": int(invite.id),
             "uses_after": invite.uses,
@@ -465,6 +486,7 @@ def join_clan_by_invite_code(db: Session, *, code: str, user: User):
         "user_id": int(user.id),
         "gmfn_id": getattr(user, "gmfn_id", None),
         "result_status": "joined_successfully",
+        "qr_policy_key": getattr(invite, "qr_policy_key", None),
         "existing_identity": True,
         "identity_reused": True,
     }

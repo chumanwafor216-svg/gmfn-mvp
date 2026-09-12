@@ -63,6 +63,12 @@ class ClanInviteCreate(BaseModel):
     expires_at: Optional[datetime] = None
     max_uses: Optional[int] = Field(default=None, ge=1)
     relationship_evidence: Optional[ClanInviteRelationshipEvidence] = None
+    qr_policy_key: Optional[str] = Field(default=None, max_length=32)
+
+    @field_validator("qr_policy_key", mode="before")
+    @classmethod
+    def _reject_non_text_qr_policy_key(cls, value: Any) -> Any:
+        return _reject_non_text_value(value, "qr_policy_key")
 
     @field_validator("max_uses", mode="before")
     @classmethod
@@ -75,6 +81,7 @@ class ClanInviteOut(BaseModel):
     clan_id: int
     created_by_user_id: int
     code: str
+    qr_policy_key: Optional[str] = None
     is_active: bool
     max_uses: Optional[int] = None
     uses: int
@@ -109,6 +116,7 @@ class JoinByInviteOut(BaseModel):
 
 class InvitePreviewOut(BaseModel):
     code: str
+    qr_policy_key: Optional[str] = None
     clan_id: int
     clan_name: str
     is_active: bool

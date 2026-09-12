@@ -1,3 +1,167 @@
+## 2026-09-12 - Marketplace QR policy now blocks blind approval
+
+- Status: Local backend/frontend continuation; no commit, push, deploy, OTP provider, pre-approved-list gate, real dues ledger, or auto/bulk approval engine added.
+- Backend enforcement: `market_access` QR join requests now reject approval votes unless the reason code records market, dues, stall, shop, permit, or organiser-check evidence. Blind direct-knowledge approval returns `422 market_access_approval_check_required` without saving a vote.
+- Backend guard: `market_access` also blocks pilot admin override with `409 qr_policy_requires_standard_review`, so marketplace onboarding must pass through ordinary approval voting.
+- Frontend review surface: `CommunityJoinRequestsPage` now disables admin override for marketplace QR requests and narrows approval reasons to market/dues/permit evidence when the backend guardrail marks a payment-or-permit check as required.
+- Regression coverage: added `test_market_qr_policy_requires_market_check_reason_before_approval`; full join-request suite now passes with 68 tests.
+- Verification passed: `python -m pytest -q gmfn_backend\tests\test_join_requests.py` (68 passed), Python compile checks for touched backend modules, frontend ESLint for touched QR/status pages, `npm --prefix frontend run audit:existing-community-invite-line`, and `npm --prefix frontend run build`.
+- Devil truth: this is still attested evidence, not automatic verification. It does not yet check an actual payment ledger, stall registry, permit database, pre-approved member list, or OTP identity proof.
+
+## 2026-09-12 - Strict QR policy now affects approval due process
+
+- Status: Local backend/frontend continuation; no commit, push, deploy, OTP provider, pre-approved-list gate, dues gate, or general auto/bulk approval engine added.
+- Backend enforcement: `_current_join_status` now derives QR review guardrails from the invite-owned `qr_policy_key`; `strict_entry` raises the required approval floor to 2 whenever more than one activated reviewer is available.
+- Backend guard: `/clans/{clan_id}/join-requests/{join_request_id}/pilot-approve` now rejects admin pilot override for strict QR requests when multiple activated reviewers exist, returning `409 qr_policy_requires_standard_review` with the required approval count and guardrail payload.
+- Backend contract: join-request list/status payloads now expose `base_required_approvals`, `qr_policy_required_approval_floor`, and `qr_policy_review_guardrail`, so review UIs can explain policy-driven thresholds.
+- Frontend review surface: `CommunityJoinRequestsPage` now shows the QR guardrail summary and disables the Admin override button for strict multi-reviewer QR requests, replacing it with a standard-review cue.
+- Regression coverage: added `test_strict_qr_policy_requires_multi_reviewer_due_process`, proving strict QR requests remain pending after one approval, reject pilot override, and approve only after the second reviewer approval.
+- Verification passed: `python -m pytest -q gmfn_backend\tests\test_join_requests.py` (68 passed), `python -m py_compile gmfn_backend\app\api\routes\clans.py gmfn_backend\app\api\routes\invites.py gmfn_backend\app\services\invites_service.py gmfn_backend\app\schemas\invites.py`, `npm exec eslint src/pages/CommunityJoinRequestsPage.tsx src/pages/JoinRequestPendingPage.tsx src/pages/JoinApprovalPage.tsx src/lib/communityQrPolicies.ts`, `npm --prefix frontend run audit:existing-community-invite-line`, and `npm --prefix frontend run build`.
+- Devil truth: strict QR now has real due-process behavior. Open and reviewed policies are still mostly advisory; market dues/permit approval now requires a reviewer attestation reason, but real payment-ledger checks, pre-approved membership lists, OTP, and safe auto/bulk approval still need their own data models and routes.
+
+## 2026-09-12 - QR policy follows applicant status screens
+
+- Status: Local backend/frontend continuation; no commit, push, deploy, auto-approval engine, pre-approved-list gate, dues gate, or OTP provider added.
+- Backend contract: `_join_request_status_payload` now returns the invite provenance (`invite_id`, `invite_code`) plus `qr_policy_key` and `qr_policy_label`, so `/clans/join-requests/{join_request_id}/status` and found `/clans/join-invite/request-status` responses keep the community QR policy attached after submission.
+- Public status context: not-found phone status responses for a valid invite also include the invite policy when available, so the scan/request context is still explainable even before a matching pending request is found.
+- Frontend status surfaces: `JoinRequestPendingPage` now shows the entry policy in request facts plus the policy boundary; `JoinApprovalPage` shows the policy badge and detail card when the status payload includes a recognized policy.
+- Regression coverage: `test_public_join_request_accepts_clan_invite_record_code` now checks both applicant status routes preserve the strict QR policy and readable label.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\clans.py gmfn_backend\app\api\routes\invites.py gmfn_backend\app\services\invites_service.py gmfn_backend\app\schemas\invites.py`, `python -m pytest -q gmfn_backend\tests\test_join_requests.py` (66 passed), `npm exec eslint src/pages/JoinRequestPendingPage.tsx src/pages/JoinApprovalPage.tsx src/lib/communityQrPolicies.ts`, `npm --prefix frontend run audit:existing-community-invite-line`, and `npm --prefix frontend run build`.
+- Devil truth: this closes policy visibility across applicant status, but it still does not implement the actual enforcement engines: OTP, dues/payment gates, pre-approved lists, role-specific evidence requirements, or safe auto/bulk approval.
+
+## 2026-09-12 - QR policy key validation covered across invite routes
+
+- Status: Local backend test/safety continuation; no commit, push, deploy, auto-approval engine, pre-approved-list gate, dues gate, or OTP provider added.
+- Safety rule: unknown QR policy keys such as `market-place` are rejected with `422 Invalid QR entry policy` instead of silently creating an invite with no persisted policy.
+- Route coverage: regression test now covers `/invites/clans/{clan_id}`, `/clans/{clan_id}/invite`, and `/clans/{clan_id}/invite-link`.
+- Data integrity check: the invalid-policy test asserts no `ClanInvite` row is created after those rejected calls.
+- Verification passed: `python -m pytest -q gmfn_backend\tests\test_join_requests.py` (66 passed) and `python -m py_compile gmfn_backend\app\api\routes\clans.py gmfn_backend\app\api\routes\invites.py gmfn_backend\app\services\invites_service.py gmfn_backend\app\schemas\invites.py`.
+- Devil truth: this protects the allowed policy vocabulary, but it still does not enforce what each policy means operationally.
+
+## 2026-09-12 - QR policy included in backend invite text
+
+- Status: Local backend continuation; no commit, push, deploy, auto-approval engine, pre-approved-list gate, dues gate, or OTP provider added.
+- Backend share text: `_build_invite_text` now accepts the persisted `qr_policy_key` and includes the matching QR policy label plus the approval/verification boundary when present.
+- Route coverage: both `/clans/{clan_id}/invite` and `/clans/{clan_id}/invite-link` pass the stored invite policy into the generated `invite_text` response.
+- Regression coverage: `test_member_get_invite_link_without_live_invite_auto_prepares_shareable_link` now requests `market_access` and verifies the generated invite text, API response, and stored invite all keep the market QR policy.
+- Verification passed: `python -m pytest -q gmfn_backend\tests\test_join_requests.py` (65 passed) and `python -m py_compile gmfn_backend\app\api\routes\clans.py`.
+- Devil truth: this improves share-message honesty. It still does not enforce dues, permits, identity evidence, or pre-approved membership lists.
+
+## 2026-09-12 - QR policy added to reviewer notifications and compact review rows
+
+- Status: Local backend/frontend continuation; no commit, push, deploy, auto-approval engine, pre-approved-list gate, dues gate, or OTP provider added.
+- Backend notification context: reviewer `approval_request` notifications now append `QR entry policy: <label>.` when the join request came through an invite with a recognized `qr_policy_key`.
+- Frontend compact review context: collapsed mobile join-request rows now show the QR policy badge, so an executive can see open/admin/strict/dues context before opening the full card.
+- Test coverage: the persisted QR policy regression now also checks the reviewer notification message includes the strict QR policy label.
+- Verification passed: `python -m pytest -q gmfn_backend\tests\test_join_requests.py` (65 passed), `npm exec eslint src/pages/CommunityJoinRequestsPage.tsx src/lib/communityQrPolicies.ts`, `python -m py_compile gmfn_backend\app\api\routes\clans.py`, `npm --prefix frontend run audit:existing-community-invite-line`, and `npm --prefix frontend run build`.
+- Devil truth: this improves operational awareness only. It still does not stop a reviewer from ignoring the policy, and it does not implement automatic checks for dues, permits, pre-approved lists, or required evidence.
+
+## 2026-09-12 - QR policy is visible in join-request review
+
+- Status: Local backend/frontend continuation; no commit, push, deploy, auto-approval engine, pre-approved-list gate, dues gate, or OTP provider added.
+- Owner trigger: continued QR onboarding architecture after deciding each community type can choose a different QR entry posture.
+- Backend contract: `_join_request_out` now includes the invite-owned `qr_policy_key`, so `/clans/{clan_id}/join-requests` preserves the QR policy in the executive review queue.
+- Frontend review surface: `CommunityJoinRequestsPage` now imports the shared QR policy helper and shows a compact `QR entry policy` panel for review items with a recognized persisted policy.
+- Test coverage: `test_public_join_request_accepts_clan_invite_record_code` now verifies the same persisted QR policy appears in preview, public join creation response, lineage, nested request payload, and admin join-request list response.
+- Verification passed: `python -m pytest -q gmfn_backend\tests\test_join_requests.py` (65 passed), `npm exec eslint src/pages/CommunityJoinRequestsPage.tsx src/lib/communityQrPolicies.ts`, `python -m py_compile gmfn_backend\app\api\routes\clans.py`, `npm --prefix frontend run audit:existing-community-invite-line`, and `npm --prefix frontend run build`.
+- Devil truth: this is visibility and continuity, not enforcement. A strict QR policy still depends on the human/admin process unless we add real policy gates for pre-approved identities, dues/permits, evidence requirements, and auto/bulk approval settings.
+## 2026-09-12 - QR policy now persists on invite records
+
+- Status: Local backend/frontend continuation; no commit, push, deploy, OTP provider, pre-approved-list gate, dues gate, or auto-approval engine added.
+- Owner trigger: continued community QR adoption work after recognizing that a `qr_policy` URL parameter can be changed by anyone.
+- Backend persistence: added nullable `qr_policy_key` to `ClanInvite` plus Alembic migration `20260912_add_clan_invite_qr_policy_key.py`.
+- Backend contract: invite creation, invite-link generation, invite preview, secondary `/invites` routes, join-request response, lineage, and trust-event metadata now carry the invite-owned `qr_policy_key` when present.
+- Frontend contract: `getClanInviteLink` accepts `qr_policy_key`; `ClansPage` sends the selected QR policy to the backend when creating a community QR pack; `JoinEntryPage` prefers the backend preview policy over the URL query fallback.
+- Compatibility: existing invite links and non-QR invite calls still work with `qr_policy_key = null`; old QR links with only query parameters still show the policy card as a display fallback.
+- Verification passed: `python -m pytest -q gmfn_backend\tests\test_join_requests.py` (65 passed), `npm exec eslint src/lib/api.ts src/lib/communityQrPolicies.ts src/pages/ClansPage.tsx src/pages/JoinEntryPage.tsx`, `npm --prefix frontend run audit:existing-community-invite-line`, `npm --prefix frontend run build`, `python -m py_compile ...`, and `git diff --check` for touched files.
+- Devil truth: this prevents the UI from trusting a tampered query parameter once the invite preview loads, but it still does not enforce different approval rules. Real policy enforcement still needs per-community onboarding settings, pre-approved identity/phone/email lists, dues/permit checks, evidence requirements, and admin audit controls.
+
+## 2026-09-12 - QR policy now travels to scan landing page
+
+- Status: Local frontend continuation; no backend enforcement, schema migration, commit, push, deploy, OTP, or production release performed.
+- Owner trigger: continued community QR adoption work after adding frontend QR policy presets.
+- Shared helper: added `frontend/src/lib/communityQrPolicies.ts` as the single frontend source for QR policy keys, labels, badges, summary copy, scan copy, announcement copy, and boundaries.
+- Generator change: `ClansPage` now appends `qr_policy` to the generated community QR link for the selected preset, and keeps the full policy link in copied/printed QR materials.
+- Scan landing change: `JoinEntryPage` reads recognized `qr_policy` / `entry_policy` values and shows a matching `QR entry policy` card after the general access boundary.
+- Compatibility: missing or unknown QR policy values show no extra policy card, so existing invite links retain the normal generic join/request experience.
+- Verification passed: `npm exec eslint src/lib/communityQrPolicies.ts src/pages/ClansPage.tsx src/pages/JoinEntryPage.tsx`, `npm --prefix frontend run audit:existing-community-invite-line`, `npm --prefix frontend run build`, and `git diff --check -- frontend\src\lib\communityQrPolicies.ts frontend\src\pages\ClansPage.tsx frontend\src\pages\JoinEntryPage.tsx`.
+- Devil truth: the scanner now sees the selected policy, but the backend still treats the request through the same existing invite/join-request path. Real enforcement still needs persisted onboarding settings and approval/dues/evidence gates.
+
+## 2026-09-12 - Community QR policy presets added
+
+- Status: Local frontend packaging update; no backend policy persistence, schema migration, commit, push, deploy, OTP, pre-approved-list gate, or auto-approval engine added.
+- Owner trigger: continued community QR onboarding work after the first QR implementation.
+- Frontend change: `ClansPage` now includes a `QR entry policy` selector before generating a community QR pack.
+- Presets: `Open NGO / church growth`, `Reviewed community access`, `Strict school / professional body`, and `Marketplace dues / permit access`.
+- Behavior: the selected preset changes the QR pack announcement, scan copy, printed sheet intro, policy badge, and approval-vs-verification boundary.
+- Boundary: this is language and operational packaging only. It does not enforce the selected policy in the backend; all QR requests still travel through the existing invite/join-request path.
+- Verification passed: `npm exec eslint src/pages/ClansPage.tsx`, `npm --prefix frontend run audit:existing-community-invite-line`, `npm --prefix frontend run build`, and `git diff --check -- frontend\src\pages\ClansPage.tsx`.
+- Devil truth: this is the right reversible next step, but it will not stop an admin from approving the wrong person. Real enforcement still needs persisted community onboarding settings, optional pre-approved identity lists, dues/permit gates, audit logs, and tests.
+## 2026-09-12 - QR approval copy separated from verification
+
+- Status: Local QR/adoption implementation and copy alignment; no schema migration, commit, push, deploy, or production release performed.
+- Owner trigger: continued community QR onboarding work after choosing separation from WhatsApp and treating QR as the official GSN access doorway.
+- Frontend change: `CommunityJoinRequestsPage`, `JoinApprovalPage`, `JoinRequestPendingPage`, `MemberActivationPage`, and `ActivateMembershipPage` now avoid saying an approved access request is already verified membership.
+- Boundary now shown in flow: QR/link starts a request; admin approval opens activation/entry; later verification can still be required for trusted membership, sensitive benefits, marketplace trust, or formal decisions.
+- Earlier QR work in this batch: `ClansPage` can generate a community join QR pack using the existing invite link route, and `JoinEntryPage` makes date of birth/place of birth optional for first QR request while keeping name, phone, and country required.
+- Backend change in this batch: public join request validation now accepts minimal QR applicant details and keeps extra evidence for progressive completion.
+- Verification passed: `python -m pytest -q gmfn_backend\tests\test_join_requests.py` (65 passed), `npm exec eslint src/pages/CommunityJoinRequestsPage.tsx src/pages/MemberActivationPage.tsx src/pages/ActivateMembershipPage.tsx src/pages/JoinApprovalPage.tsx src/pages/JoinRequestPendingPage.tsx`, `npm --prefix frontend run audit:existing-community-invite-line`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Devil truth: this is UX/business-language discipline, not a new permission model. Some backend objects may still be named membership internally; the visible product promise now avoids claiming verified membership before evidence exists.
+## 2026-09-12 - QR scan landing page now states access boundary clearly
+
+- Status: Local frontend/audit update; no backend schema, commit, push, deploy, or production behavior changed in this slice.
+- Owner trigger: continued community QR work after making the QR request form lighter, with the next risk being user misunderstanding after scan.
+- Frontend change: `frontend/src/pages/JoinEntryPage.tsx` now labels the visible paper as `Community access request`, changes the surrounding block to `Community access`, and adds an `Access boundary` card directly below the branded invitation paper.
+- Boundary shown to applicants: a QR code or invite link starts a request only. It does not confirm membership and does not verify identity. The page now explains that community review happens first and stronger evidence can be requested later before verified status, sensitive benefits, marketplace trust, or official decisions.
+- Audit update: `frontend/tools/audit-existing-community-invite-line.mjs` now accepts the new access wording while still requiring the branded GSN invitation/access paper, visible GSN mark, existing-vs-new split, and no sign-in detour regression.
+- Verification passed: `npm exec eslint src/pages/JoinEntryPage.tsx src/pages/ClansPage.tsx tools/audit-existing-community-invite-line.mjs`, `npm --prefix frontend run audit:existing-community-invite-line`, and `npm --prefix frontend run build`.
+- Devil truth: this improves user understanding, but it still depends on the approval and verification screens enforcing the same distinction. If later screens use loose language like `approved member` when they mean `unverified approved access`, the model will drift.
+## 2026-09-12 - QR scan join request made lighter for new applicants
+
+- Status: Local frontend/backend implementation; no schema, commit, push, deploy, or production behavior changed yet.
+- Owner trigger: continued the community QR work after deciding that scan onboarding must be simple enough for broad adoption while keeping approval and verification separate.
+- Backend change: `gmfn_backend/app/api/routes/clans.py` now lets a new public join request start with first name, surname, phone number, and country. Date of birth and place of birth remain accepted as optional identity evidence, but they no longer block the first QR join request.
+- Frontend change: `frontend/src/pages/JoinEntryPage.tsx` no longer disables `Submit request` for missing date of birth or place of birth. Those fields are now labelled optional, with guidance that extra identity details can be completed later and are not government verification.
+- Test coverage added: `gmfn_backend/tests/test_join_requests.py` now includes a minimal QR applicant regression test proving that name + phone + country can create a pending join request.
+- Verification passed: `python -m pytest -q gmfn_backend\tests\test_join_requests.py`, `npm exec eslint src/pages/JoinEntryPage.tsx src/pages/ClansPage.tsx`, `npm --prefix frontend run audit:existing-community-invite-line`, and `npm --prefix frontend run build`.
+- Devil truth: this improves adoption, but it weakens first-pass duplicate-identity matching when birth details are skipped. The compensation is that approval remains pending, verification is still separate, and stronger evidence can be requested before trusted status, dues benefits, marketplace privileges, or sensitive community access.
+
+## 2026-09-12 - Community QR package added to community creation page
+
+- Status: Local frontend implementation; no backend route, schema, commit, push, deploy, or public production behavior changed yet.
+- Owner trigger: founder decided to start by building QR for communities before final Pillar of Hope steward setup and handover.
+- Frontend change: `frontend/src/pages/ClansPage.tsx` now has a `Create community QR` path in the Invite package area. It calls the existing `getClanInviteLink` client, uses the existing backend invite-link route, renders a `qrcode.react` QR code for the generated join link, and offers a QR sheet plus copyable announcement text.
+- Product behavior: the QR opens the existing `/start/join/{invite_code}` journey through the official invite link. It starts a join request and does not approve membership automatically.
+- Adoption boundary: `Personal invite` remains available for receiver-specific invite text, while the community QR is the general meeting/poster/WhatsApp fallback link for broad onboarding. The copied announcement says joining still requires community approval and approval is not verified membership.
+- Verification passed: `npm --prefix frontend run build`, `npm --prefix frontend run audit:existing-community-invite-line`, and `npm exec eslint src/pages/ClansPage.tsx` from `frontend`.
+- Devil truth: this is now a practical QR pack, but it is still not the final steward handover product. `Print or save` uses the browser print flow from the modal; there is no dedicated PDF generator, owner acceptance receipt, steward release checklist, QR analytics, or one-click Pillar of Hope setup bundle yet.
+
+## 2026-09-12 - WhatsApp Bridge repurposed; existing-community join stays QR/invite controlled
+
+- Status: Docs-only strategy amendment; no product code, backend route, frontend route, schema, deploy, commit, push, or public route behavior changed.
+- Owner trigger: founder concluded the WhatsApp/GSN separation model and clarified that the already-created WhatsApp Bridge can still serve another purpose.
+- Product amendment: broad WhatsApp advertising may route people to `Create your community`, Community Domain setup, or public GSN objects such as shop links, shop QR codes, Spotlight links, notice links, and public verification records.
+- Membership boundary: joining an existing community should not happen through a generic WhatsApp bridge. Existing-community entry should remain via community QR, short invite link, pre-approved list, admin approval, dues policy, and verification policy.
+- Shop/public object rule: individual shops and public records may have their own QR/link, but each link should land on that exact shop/record/item rather than exposing a broad GSN bridge menu.
+- Adoption doctrine remains: WhatsApp advertises; QR/invite onboards; GSN contains official value; executives drive adoption; members join because the benefits live in GSN.
+- Financial/adoption note: marketplaces may have clearer direct revenue from dues/vendor verification. Churches/NGOs may gain more from organization, accountability, retention, crowd effect, reports, and trust evidence than from direct member fees. Do not assume every sector monetizes membership the same way.
+- Docs updated: `docs/GSN_WHATSAPP_ADVERTISING_QR_ONBOARDING_DECISION_2026-09-12.md` and `docs/GSN_WHATSAPP_BRIDGE_PROTOCOL_2026-09-11.md`.
+- Devil truth: the broad bridge is useful for public promotion and creation, but dangerous for controlled membership if it makes existing-community joining feel generic or bypasses community governance.
+
+## 2026-09-12 - WhatsApp separated from GSN; QR onboarding becomes adoption baseline
+
+- Status: Docs-only strategy capture; no product code, backend route, frontend route, schema, deploy, commit, push, or native-app install behavior changed.
+- Owner trigger: founder paused the morning brainstorming and asked to save the discussion before returning later to design the model properly.
+- Current product decision: use WhatsApp only for advertising, reminders, and public promotion of GSN. Do not use WhatsApp as the primary workflow bridge. The working line is `Keep conversation in WhatsApp. Keep community value in GSN.`
+- Supersedes earlier bridge framing: the broad WhatsApp Bridge/page/link model remains historical context and possible legacy signpost, but the current doctrine is clean separation. GSN should not feel like a WhatsApp add-on or inferior reply layer.
+- QR onboarding baseline: every community should eventually have a GSN QR code and fallback short link. Scan should open the correct community entry journey immediately, with the organization already known by GSN, instead of dropping the user into generic signup.
+- Technical truth: QR cannot silently install a normal iOS/Android app. The honest target is scan -> open GSN web/PWA or installed app -> enter the correct community onboarding flow. Install/Add to Home Screen can come after value is shown.
+- Approval/verification distinction captured: having GSN is not membership; joining/requesting is not approval; approval is not the same as verification. NGOs may approve broad participation, while verification should confirm true membership or evidence-backed standing.
+- Adoption model: executives adopt because GSN reduces administration, announcements, dues records, meeting summaries, grant evidence, member ID/verification work, shops, and assistance handling. Members adopt because GSN holds notices, shops, assistance, dues history, identity, opportunities, and community value.
+- Dedicated note added: `docs/GSN_WHATSAPP_ADVERTISING_QR_ONBOARDING_DECISION_2026-09-12.md`.
+- Next brainstorm: design the simple community Invite Members/QR surface, QR access levels, approval queue, verification queue, old-phone fallback link, scan/join analytics, and progressive profile completion after entry.
+- Devil truth: clean separation may start slower, but it is stronger only if executives stop placing full official value in WhatsApp. If WhatsApp still contains the complete official workflow, GSN adoption will remain optional.
+
 ## 2026-09-11 - WhatsApp Bridge discoverability added locally
 
 - Owner trigger: owner asked where the WhatsApp Bridge lives and said it should be part of every community delivery, especially Community tools for groups like Pillar of Hope.

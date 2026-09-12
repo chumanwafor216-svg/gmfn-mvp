@@ -53,6 +53,7 @@ def create_invite(
             if payload.relationship_evidence
             else None
         ),
+        qr_policy_key=payload.qr_policy_key,
     )
 
     return {
@@ -60,6 +61,7 @@ def create_invite(
         "clan_id": invite.clan_id,
         "created_by_user_id": invite.created_by_user_id,
         "code": invite.code,
+        "qr_policy_key": invite.qr_policy_key,
         "is_active": invite.is_active,
         "max_uses": None,
         "uses": invite.uses,
@@ -93,6 +95,7 @@ def get_clan_invites(
             "clan_id": inv.clan_id,
             "created_by_user_id": inv.created_by_user_id,
             "code": inv.code,
+            "qr_policy_key": inv.qr_policy_key,
             "is_active": inv.is_active,
             "max_uses": None,
             "uses": inv.uses,

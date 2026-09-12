@@ -51,6 +51,7 @@ from app.api.routes.entry import (
 )
 from app.services.invites_service import (
     api_join_link,
+    clean_community_qr_policy_key,
     create_clan_invite,
 )
 from app.services.global_identity_service import ensure_user_gmfn_id
@@ -274,6 +275,7 @@ class InviteSettingsUpdateIn(BaseModel):
 
 class ClanInviteCreateBody(BaseModel):
     relationship_evidence: Optional[ClanInviteRelationshipEvidence] = None
+    qr_policy_key: Optional[str] = Field(default=None, max_length=32)
 
 
 def _reject_non_text_body_value(value: Any, field_name: str) -> Any:
@@ -460,6 +462,14 @@ _DEFAULT_VOTE_REASON_TEXT = {
 }
 
 
+_MARKET_ACCESS_APPROVAL_REASON_CODES = {
+    "known_from_marketplace",
+    "market_dues_or_permit_checked",
+    "market_permit_checked",
+    "dues_checked",
+}
+
+
 def _clean_vote_reason(payload: VoteJoinRequestIn) -> dict[str, str]:
     vote = _safe_str(payload.vote).lower()
     reason_code = _safe_str(payload.reason_code).lower().replace(" ", "_")
@@ -473,6 +483,36 @@ def _clean_vote_reason(payload: VoteJoinRequestIn) -> dict[str, str]:
         "reason_text": (reason_text or _DEFAULT_VOTE_REASON_TEXT.get(vote, "Reason recorded."))[:240],
     }
 
+
+
+def _raise_if_qr_policy_vote_blocked(
+    db: Session,
+    *,
+    join_request: ClanJoinRequest,
+    vote: str,
+    vote_reason: dict[str, str],
+) -> None:
+    qr_policy_key = _join_request_qr_policy_key(db, join_request)
+    if qr_policy_key != "market_access" or _safe_str(vote).lower() != "approve":
+        return
+
+    reason_code = _safe_str(vote_reason.get("reason_code")).lower()
+    if reason_code in _MARKET_ACCESS_APPROVAL_REASON_CODES:
+        return
+
+    raise HTTPException(
+        status_code=422,
+        detail={
+            "code": "market_access_approval_check_required",
+            "message": (
+                "Marketplace QR approval must record a market, dues, stall, "
+                "shop, permit, or organiser-check reason before activation."
+            ),
+            "request_id": int(join_request.id),
+            "qr_policy_key": qr_policy_key,
+            "allowed_reason_codes": sorted(_MARKET_ACCESS_APPROVAL_REASON_CODES),
+        },
+    )
 
 def _invite_preview_payload(
     *,
@@ -488,6 +528,7 @@ def _invite_preview_payload(
     max_uses = None
     invite_id = None
     invite_code = None
+    qr_policy_key = None
 
     governance_profile = None
     if clan is not None:
@@ -501,6 +542,7 @@ def _invite_preview_payload(
     if invite_row is not None:
         invite_id = int(invite_row.id)
         invite_code = invite_row.code
+        qr_policy_key = _safe_str(getattr(invite_row, 'qr_policy_key', None)) or None
         expires_at = _effective_invite_expires_at(
             created_at=getattr(invite_row, "created_at", None),
             expires_at=getattr(invite_row, "expires_at", None),
@@ -523,6 +565,7 @@ def _invite_preview_payload(
         "message": message,
         "invite_id": invite_id,
         "invite_code": invite_code,
+        "qr_policy_key": qr_policy_key,
         "community_id": int(clan.id) if clan is not None else None,
         "community_code": _community_code(clan.id, clan=clan) if clan is not None else None,
         "community_name": getattr(clan, "name", None) if clan is not None else None,
@@ -1575,9 +1618,15 @@ def _retire_active_clan_invites(
 def _invite_matches_share_policy(
     invite: ClanInvite,
     *,
-    desired_max_uses: int,
+    desired_max_uses: Optional[int],
     strict: bool,
+    desired_qr_policy_key: Optional[str] = None,
 ) -> bool:
+    if (
+        desired_qr_policy_key
+        and _safe_str(getattr(invite, "qr_policy_key", None)) != desired_qr_policy_key
+    ):
+        return False
     return True
 
 
@@ -1700,6 +1749,77 @@ def _external_registration_record_payload(row: TrustEvent) -> dict[str, Any]:
 _ensure_user_gmfn_id = ensure_user_gmfn_id
 
 
+def _join_request_qr_policy_key(db: Session, join_request: ClanJoinRequest) -> str:
+    if not join_request.invite_id:
+        return ""
+    invite = db.get(ClanInvite, int(join_request.invite_id))
+    return _safe_str(getattr(invite, "qr_policy_key", None)) if invite else ""
+
+
+def _qr_policy_required_approval_floor(
+    qr_policy_key: Optional[str],
+    *,
+    active_reviewers: int,
+) -> int:
+    key = _safe_str(qr_policy_key)
+    if key == "strict_entry" and active_reviewers > 1:
+        return 2
+    return 1
+
+
+def _qr_policy_review_guardrail(qr_policy_key: Optional[str]) -> dict[str, Any]:
+    key = _safe_str(qr_policy_key)
+    if key == "open_growth":
+        return {
+            "approval_posture": "open_growth",
+            "summary": "Broad approval is acceptable, but verification remains separate.",
+            "requires_manual_review": True,
+            "requires_later_verification": True,
+            "requires_payment_or_permit_check": False,
+            "strict_multi_reviewer_review": False,
+            "pilot_override_blocked": False,
+        }
+    if key == "strict_entry":
+        return {
+            "approval_posture": "strict_entry",
+            "summary": "Use stronger due process before activation when more than one reviewer is available.",
+            "requires_manual_review": True,
+            "requires_later_verification": True,
+            "requires_payment_or_permit_check": False,
+            "strict_multi_reviewer_review": True,
+            "pilot_override_blocked": True,
+        }
+    if key == "market_access":
+        return {
+            "approval_posture": "market_access",
+            "summary": "Check organiser, dues, stall, shop, or permit records before relying on membership status.",
+            "requires_manual_review": True,
+            "requires_later_verification": True,
+            "requires_payment_or_permit_check": True,
+            "strict_multi_reviewer_review": False,
+            "pilot_override_blocked": True,
+        }
+    if key == "reviewed_access":
+        return {
+            "approval_posture": "reviewed_access",
+            "summary": "An executive review is required before activation; verification can follow later.",
+            "requires_manual_review": True,
+            "requires_later_verification": True,
+            "requires_payment_or_permit_check": False,
+            "strict_multi_reviewer_review": False,
+            "pilot_override_blocked": False,
+        }
+    return {
+        "approval_posture": None,
+        "summary": None,
+        "requires_manual_review": True,
+        "requires_later_verification": True,
+        "requires_payment_or_permit_check": False,
+        "strict_multi_reviewer_review": False,
+        "pilot_override_blocked": False,
+    }
+
+
 def _current_join_status(
     db: Session,
     *,
@@ -1731,7 +1851,8 @@ def _current_join_status(
     total_votes = len(votes)
 
     active_reviewers = len(reviewer_rows)
-    required = max(
+    qr_policy_key = _join_request_qr_policy_key(db, join_request)
+    base_required = max(
         1,
         int(
             (Decimal(active_reviewers) * JOIN_APPROVAL_RATIO).to_integral_value(
@@ -1739,6 +1860,14 @@ def _current_join_status(
             )
         ),
     )
+    required_floor = _qr_policy_required_approval_floor(
+        qr_policy_key,
+        active_reviewers=active_reviewers,
+    )
+    required = max(base_required, required_floor)
+    if active_reviewers > 0:
+        required = min(required, active_reviewers)
+    guardrail = _qr_policy_review_guardrail(qr_policy_key)
 
     return {
         "approvals": approvals,
@@ -1749,6 +1878,9 @@ def _current_join_status(
         "active_membership_count": active_membership_count,
         "active_reviewer_count": active_reviewers,
         "required_approvals": required,
+        "base_required_approvals": base_required,
+        "qr_policy_required_approval_floor": required_floor,
+        "qr_policy_review_guardrail": guardrail,
         "threshold_ratio": str(JOIN_APPROVAL_RATIO),
         "eligible_reviewers": [
             {
@@ -1784,6 +1916,25 @@ def _active_reviewer_memberships(
     return [(membership, user) for membership, user in rows if _is_reviewer_eligible_user(user)]
 
 
+_QR_POLICY_NOTIFICATION_LABELS = {
+    "open_growth": "Open NGO / church growth",
+    "reviewed_access": "Reviewed community access",
+    "strict_entry": "Strict school / professional body",
+    "market_access": "Marketplace dues / permit access",
+}
+
+
+def _qr_policy_label(qr_policy_key: Optional[str]) -> Optional[str]:
+    return _QR_POLICY_NOTIFICATION_LABELS.get(_safe_str(qr_policy_key))
+
+
+def _qr_policy_notification_suffix(qr_policy_key: Optional[str]) -> str:
+    label = _qr_policy_label(qr_policy_key)
+    if not label:
+        return ""
+    return f" QR entry policy: {label}."
+
+
 def _join_request_out(db: Session, req: ClanJoinRequest) -> dict[str, Any]:
     clan = db.get(Clan, int(req.clan_id))
     inviter = (
@@ -1814,6 +1965,7 @@ def _join_request_out(db: Session, req: ClanJoinRequest) -> dict[str, Any]:
         "applicant_gmfn_id": (getattr(applicant, "gmfn_id", None) if applicant else None),
         "invite_id": (int(req.invite_id) if req.invite_id is not None else None),
         "invite_code": (invite.code if invite else None),
+        "qr_policy_key": (_safe_str(getattr(invite, "qr_policy_key", None)) or None),
         "invited_by_user_id": (
             int(req.invited_by_user_id) if req.invited_by_user_id is not None else None
         ),
@@ -1830,6 +1982,9 @@ def _join_request_out(db: Session, req: ClanJoinRequest) -> dict[str, Any]:
         "active_membership_count": stats["active_membership_count"],
         "active_reviewer_count": stats["active_reviewer_count"],
         "required_approvals": stats["required_approvals"],
+        "base_required_approvals": stats["base_required_approvals"],
+        "qr_policy_required_approval_floor": stats["qr_policy_required_approval_floor"],
+        "qr_policy_review_guardrail": stats["qr_policy_review_guardrail"],
         "threshold_ratio": stats["threshold_ratio"],
         "eligible_reviewers": stats["eligible_reviewers"],
     }
@@ -2038,6 +2193,8 @@ def _join_request_status_payload(
         if req.invited_by_user_id is not None
         else None
     )
+    invite = db.get(ClanInvite, int(req.invite_id)) if req.invite_id else None
+    qr_policy_key = _safe_str(getattr(invite, "qr_policy_key", None)) if invite else ""
     stats = _current_join_status(db, join_request=req)
     governance_profile = (
         _community_governance_profile_for_clan(db, clan_id=int(clan.id))
@@ -2101,6 +2258,10 @@ def _join_request_status_payload(
         "community_name": (getattr(clan, "name", None) if clan else None),
         "marketplace_name": (getattr(clan, "marketplace_name", None) if clan else None),
         "governance_profile": governance_profile,
+        "invite_id": int(req.invite_id) if req.invite_id else None,
+        "invite_code": getattr(invite, "code", None) if invite else None,
+        "qr_policy_key": qr_policy_key or None,
+        "qr_policy_label": _qr_policy_label(qr_policy_key) if qr_policy_key else None,
         "invited_by_user_id": int(req.invited_by_user_id) if req.invited_by_user_id else None,
         "invited_by_email": (getattr(inviter, "email", None) if inviter else None),
         "invited_by_display": (_member_display(inviter) if inviter else None),
@@ -2133,6 +2294,9 @@ def _join_request_status_payload(
         "active_membership_count": stats["active_membership_count"],
         "active_reviewer_count": stats["active_reviewer_count"],
         "required_approvals": stats["required_approvals"],
+        "base_required_approvals": stats["base_required_approvals"],
+        "qr_policy_required_approval_floor": stats["qr_policy_required_approval_floor"],
+        "qr_policy_review_guardrail": stats["qr_policy_review_guardrail"],
         "threshold_ratio": stats["threshold_ratio"],
         "eligible_reviewers": stats["eligible_reviewers"],
         "next_step": (
@@ -2397,6 +2561,7 @@ def _build_invite_text(
     clan: Clan,
     invite_link: str,
     inviter: Optional[User],
+    qr_policy_key: Optional[str] = None,
 ) -> str:
     inviter_name = _member_display(inviter)
     clan_name = _safe_str(clan.name, "our GSN community")
@@ -2414,6 +2579,14 @@ def _build_invite_text(
 
     if marketplace_name:
         lines.append(f"Community / Market: {marketplace_name}")
+
+    policy_label = _qr_policy_label(qr_policy_key)
+    if policy_label:
+        lines.append(f"QR entry policy: {policy_label}")
+        lines.append(
+            "This starts an access request only. Community approval and later "
+            "verification can still apply."
+        )
 
     lines.extend(
         [
@@ -3307,6 +3480,7 @@ def create_invite(
             if payload and payload.relationship_evidence
             else None
         ),
+        qr_policy_key=payload.qr_policy_key if payload else None,
     )
 
     share_link = _frontend_community_join_link(
@@ -3326,6 +3500,7 @@ def create_invite(
         "invited_by_display": _member_display(current_user),
         "code": inv.code,
         "invite_code": inv.code,
+        "qr_policy_key": getattr(inv, "qr_policy_key", None),
         "created_at": inv.created_at,
         "expires_at": inv.expires_at,
         "is_active": bool(inv.is_active),
@@ -3342,6 +3517,7 @@ def create_invite(
             clan=clan,
             invite_link=share_link,
             inviter=current_user,
+            qr_policy_key=getattr(inv, "qr_policy_key", None),
         ),
     }
 
@@ -3352,6 +3528,7 @@ def get_invite_link(
     request: Request,
     days: Optional[int] = None,
     max_uses: Optional[int] = None,
+    qr_policy_key: Optional[str] = None,
     db: Session = Depends(get_db),
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
@@ -3363,6 +3540,7 @@ def get_invite_link(
     can_refresh_invite = True
     max_uses_norm = None
     strict_max_uses = False
+    desired_qr_policy_key = clean_community_qr_policy_key(qr_policy_key)
 
     latest_invite = _latest_usable_clan_invite(db, clan_id=int(clan.id))
 
@@ -3370,6 +3548,7 @@ def get_invite_link(
         latest_invite,
         desired_max_uses=max_uses_norm,
         strict=strict_max_uses,
+        desired_qr_policy_key=desired_qr_policy_key,
     ):
         latest_invite = None
 
@@ -3382,6 +3561,7 @@ def get_invite_link(
             created_by_user=current_user,
             expires_at=expires_at,
             max_uses=None,
+            qr_policy_key=desired_qr_policy_key,
         )
 
     if latest_invite is not None:
@@ -3407,6 +3587,7 @@ def get_invite_link(
             "invited_by_email": getattr(invite_creator, "email", None),
             "invited_by_display": _member_display(invite_creator),
             "invite_code": latest_invite.code,
+            "qr_policy_key": getattr(latest_invite, "qr_policy_key", None),
             "invite_created_at": latest_invite.created_at,
             "invite_expires_at": latest_invite.expires_at,
             "invite_max_uses": None,
@@ -3429,6 +3610,7 @@ def get_invite_link(
                 clan=clan,
                 invite_link=share_link,
                 inviter=invite_creator,
+                qr_policy_key=getattr(latest_invite, "qr_policy_key", None),
             ),
         }
 
@@ -3582,8 +3764,17 @@ def get_join_invite_request_status(
         invite_code=invite_code,
         community_code=community_code,
     )
+    request_qr_policy_key = (
+        _safe_str(getattr(_invite_row, "qr_policy_key", None)) if _invite_row else ""
+    )
+    request_qr_policy = {
+        "qr_policy_key": request_qr_policy_key or None,
+        "qr_policy_label": _qr_policy_label(request_qr_policy_key)
+        if request_qr_policy_key
+        else None,
+    }
     if clan is None:
-        return {"ok": True, "found": False}
+        return {"ok": True, "found": False, **request_qr_policy}
 
     pending_email = _pending_applicant_email(phone)
     applicant = (
@@ -3605,6 +3796,7 @@ def get_join_invite_request_status(
             "community_code": _community_code(clan.id, clan=clan),
             "community_name": getattr(clan, "name", None),
             "marketplace_name": getattr(clan, "marketplace_name", None),
+            **request_qr_policy,
         }
 
     join_request = (
@@ -3624,6 +3816,7 @@ def get_join_invite_request_status(
             "community_code": _community_code(clan.id, clan=clan),
             "community_name": getattr(clan, "name", None),
             "marketplace_name": getattr(clan, "marketplace_name", None),
+            **request_qr_policy,
         }
 
     return {
@@ -3781,6 +3974,9 @@ def create_join_request(
 
         invited_by_user_id = int(inviter_membership.user_id) if inviter_membership else None
 
+    qr_policy_key = _safe_str(getattr(invite_row, 'qr_policy_key', None)) if invite_row else None
+    qr_policy_key = qr_policy_key or None
+
     governance_profile = _community_governance_profile_for_clan(
         db,
         clan_id=int(clan.id),
@@ -3883,8 +4079,6 @@ def create_join_request(
                 ("surname", payload.surname),
                 ("phone_e164", payload.phone_e164),
                 ("country", payload.country),
-                ("date_of_birth", payload.date_of_birth),
-                ("birth_place", payload.birth_place),
             )
             if not _safe_str(value)
         ]
@@ -3893,7 +4087,10 @@ def create_join_request(
                 status_code=422,
                 detail={
                     "code": "new_applicant_details_required",
-                    "message": "New applicants must provide basic join request details.",
+                    "message": (
+                        "New applicants must provide name, phone, and country. "
+                        "Extra identity details can be completed after the request starts."
+                    ),
                     "missing_fields": missing_fields,
                 },
             )
@@ -4070,6 +4267,7 @@ def create_join_request(
         )
         or _member_display(applicant_user)
     )
+    reviewer_notification_policy_suffix = _qr_policy_notification_suffix(qr_policy_key)
 
     notified_user_ids: set[int] = set()
     for reviewer, reviewer_user in reviewers:
@@ -4085,6 +4283,7 @@ def create_join_request(
             message=(
                 f"{applicant_label} wants to join {clan.name} "
                 f"({ _community_code(clan.id, clan=clan) })."
+                f"{reviewer_notification_policy_suffix}"
             ),
             action_url=(
                 f"/app/community/{clan.id}/join-requests"
@@ -4108,6 +4307,7 @@ def create_join_request(
             ),
             "invite_code": invite_code,
             "invite_id": int(invite_row.id) if invite_row else None,
+            "qr_policy_key": qr_policy_key,
             "join_request_id": int(join_request.id),
             "user_id": int(applicant_user.id),
             "gmfn_id": _safe_str(getattr(applicant_user, "gmfn_id", None)) or None,
@@ -4142,6 +4342,7 @@ def create_join_request(
         "community_code": _community_code(clan.id),
         "community_name": clan.name,
         "marketplace_name": getattr(clan, "marketplace_name", None),
+        "qr_policy_key": qr_policy_key,
         "user_id": int(applicant_user.id),
         "gmfn_id": _safe_str(getattr(applicant_user, "gmfn_id", None)) or None,
         "existing_identity": existing_identity_join,
@@ -4170,6 +4371,7 @@ def create_join_request(
             "origin_community_name": clan.name,
             "invited_by_user_id": invited_by_user_id,
             "invite_id": int(invite_row.id) if invite_row else None,
+            "qr_policy_key": qr_policy_key,
         },
     }
 
@@ -4255,6 +4457,12 @@ def vote_join_request(
         }
 
     vote_reason = _clean_vote_reason(payload)
+    _raise_if_qr_policy_vote_blocked(
+        db,
+        join_request=req,
+        vote=payload.vote,
+        vote_reason=vote_reason,
+    )
 
     existing_vote = (
         db.query(ClanJoinVote)
@@ -4387,6 +4595,35 @@ def pilot_approve_join_request(
             "community_code": _community_code(clan_id),
             "request": _join_request_out(db, req),
         }
+
+    stats = _current_join_status(db, join_request=req)
+    guardrail = stats.get("qr_policy_review_guardrail") or {}
+    qr_policy_key = _join_request_qr_policy_key(db, req)
+    pilot_override_blocked = bool(
+        guardrail.get("pilot_override_blocked")
+        and (
+            qr_policy_key == "market_access"
+            or stats["active_reviewer_count"] > 1
+        )
+    )
+    if pilot_override_blocked:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "qr_policy_requires_standard_review",
+                "message": (
+                    "This QR policy requires standard review before activation. "
+                    "Use ordinary approval voting instead of pilot override."
+                ),
+                "community_id": int(clan_id),
+                "community_code": _community_code(clan_id),
+                "request_id": int(req.id),
+                "qr_policy_key": qr_policy_key or None,
+                "required_approvals": stats["required_approvals"],
+                "active_reviewer_count": stats["active_reviewer_count"],
+                "qr_policy_review_guardrail": guardrail,
+            },
+        )
 
     existing_vote = (
         db.query(ClanJoinVote)

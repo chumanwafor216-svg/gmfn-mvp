@@ -1547,6 +1547,8 @@ class ClanInvite(Base):
         nullable=False,
     )
 
+    qr_policy_key: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=False,

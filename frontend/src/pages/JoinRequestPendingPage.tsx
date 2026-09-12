@@ -4,6 +4,7 @@ import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { RealLifeMeaningGuide } from "../components/RealLifeMeaningGuide";
 import { CardActionRow, StableCtaLink } from "../components/StableButton";
 import { getJoinApprovalStatus } from "../lib/api";
+import { communityQrPolicyByKey, isCommunityQrPolicyKey } from "../lib/communityQrPolicies";
 import { resolveCtaTarget, type CtaTarget } from "../lib/ctaTargets";
 import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 
@@ -505,6 +506,10 @@ export default function JoinRequestPendingPage() {
     [approvals, requiredApprovals]
   );
   const identityReused = Boolean(liveStatus?.existing_identity || liveStatus?.identity_reused);
+  const qrPolicy = useMemo(() => {
+    const key = liveStatus?.qr_policy_key || searchParams.get("qr_policy_key");
+    return isCommunityQrPolicyKey(key) ? communityQrPolicyByKey(key) : null;
+  }, [liveStatus?.qr_policy_key, searchParams]);
   const eligibleReviewers = useMemo<ReviewerLine[]>(() => {
     const rows = Array.isArray(liveStatus?.eligible_reviewers)
       ? liveStatus.eligible_reviewers
@@ -663,9 +668,10 @@ export default function JoinRequestPendingPage() {
           value: marketplaceName || `${communityName} Marketplace`,
         },
         { icon: "details" as IconName, label: "Community ID", value: communityCode },
+        { icon: "entry" as IconName, label: "Entry policy", value: qrPolicy?.label || "" },
         { icon: "request" as IconName, label: "Request ID", value: requestId },
       ].filter((row) => safeStr(row.value)),
-    [communityCode, communityName, marketplaceName, requestId]
+    [communityCode, communityName, marketplaceName, qrPolicy, requestId]
   );
 
   return (
@@ -805,6 +811,22 @@ export default function JoinRequestPendingPage() {
               </div>
             ))}
           </div>
+          {qrPolicy ? (
+            <div
+              style={{
+                marginTop: 14,
+                borderRadius: 18,
+                border: "1px solid rgba(242,199,102,0.24)",
+                background: "rgba(242,199,102,0.08)",
+                padding: 14,
+              }}
+            >
+              <div style={sectionLabel()}>QR entry boundary</div>
+              <div style={{ marginTop: 8, ...mutedText(14), color: "#F7E7B3" }}>
+                {qrPolicy.boundary}
+              </div>
+            </div>
+          ) : null}
         </section>
 
         <section>
@@ -841,8 +863,8 @@ export default function JoinRequestPendingPage() {
                 icon: "decision" as IconName,
                 title: "Decision",
                 body: identityReused
-                  ? "If approved, your existing GSN ID is reused."
-                  : "If approved, your GSN ID is issued.",
+                  ? "If approved, your existing GSN ID is reused for activation. Verified status can still require evidence."
+                  : "If approved, your GSN ID is issued for activation. Verified status can still require evidence.",
               },
               {
                 step: "3",

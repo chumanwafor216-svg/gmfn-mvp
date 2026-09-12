@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
@@ -12,12 +13,18 @@ import { navigateWithOrigin } from "../lib/nav";
 import { publicFrontendUrl } from "../lib/publicLinks";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
+  COMMUNITY_QR_POLICIES,
+  communityQrPolicyByKey,
+  type CommunityQrPolicyKey,
+} from "../lib/communityQrPolicies";
+import {
   buildGsnInviteLinkMessage,
   buildGsnInviteLinkPackage,
 } from "../lib/gsnSnapshotPaper";
 import {
   createClan,
   createClanInvite,
+  getClanInviteLink,
   getMe,
   getSelectedClanId,
   listMyClans,
@@ -54,7 +61,6 @@ type InviteState = {
   packagedShareText?: string | null;
   whatsappShareText?: string | null;
 };
-
 function overlayShell(): React.CSSProperties {
   return {
     position: "fixed",
@@ -291,18 +297,37 @@ function routeTarget(
   return resolveCtaTarget(intent, { communityId, debugId, ...extra }).to as string;
 }
 
+function addInviteSearchParams(
+  rawLink: string,
+  params: Record<string, string | null | undefined>
+): string {
+  const direct = safeStr(rawLink);
+  if (!direct) return "";
+
+  try {
+    const url = new URL(direct, publicFrontendUrl("/"));
+    Object.entries(params).forEach(([key, value]) => {
+      const cleanValue = safeStr(value);
+      if (cleanValue) url.searchParams.set(key, cleanValue);
+    });
+    return publicFrontendUrl(`${url.pathname}${url.search}${url.hash}`);
+  } catch {
+    return direct;
+  }
+}
 function buildInviteState(
   raw: any,
   senderName: string,
   receiverField: string,
   shortMessage: string,
-  selectedCommunityName: string
+  selectedCommunityName: string,
+  extraSearchParams: Record<string, string | null | undefined> = {}
 ): InviteState {
   const code = safeStr(raw?.code || raw?.invite_code || "");
   const baseLink =
     normalizedJoinInviteUrl(raw) ||
     canonicalJoinInviteUrl(code);
-  const link =
+  const personalizedLink =
     personalizedJoinInviteUrl(baseLink, {
       inviterName: senderName,
       recipientName: receiverField,
@@ -310,10 +335,12 @@ function buildInviteState(
       marketplaceName: selectedCommunityName,
       message: shortMessage,
     }) || baseLink;
+  const link = addInviteSearchParams(personalizedLink, extraSearchParams);
   const expiresAt = safeStr(raw?.expires_at || raw?.expiry || "");
   const guideUrl = buildGuideUrl();
   const fallbackGuideUrl = buildGuideFallbackUrl();
-  const shareLink = compactJoinInviteUrl(link) || link;
+  const hasExtraSearchParams = Object.values(extraSearchParams).some((value) => safeStr(value));
+  const shareLink = hasExtraSearchParams ? link : compactJoinInviteUrl(link) || link;
 
   const personalNote = safeStr(shortMessage);
   const receiver = safeStr(receiverField);
@@ -385,6 +412,8 @@ export default function ClansPage() {
   const [inviteState, setInviteState] = useState<InviteState | null>(null);
   const [copied, setCopied] = useState("");
   const [inviteComposerOpen, setInviteComposerOpen] = useState(false);
+  const [qrSheetOpen, setQrSheetOpen] = useState(false);
+  const [qrPolicyKey, setQrPolicyKey] = useState<CommunityQrPolicyKey>("reviewed_access");
 
   const [communityNameInput, setCommunityNameInput] = useState(
     safeStr(createCommunityState?.name)
@@ -447,6 +476,7 @@ export default function ClansPage() {
   const selectedCommunityMemberCount = selectedCommunity
     ? extractMembers(selectedCommunity).length
     : 0;
+  const selectedQrPolicy = communityQrPolicyByKey(qrPolicyKey);
   const routes = useMemo(
     () => ({
       dashboard: routeTarget("dashboard", selectedCommunityId, "clans.route.dashboard"),
@@ -477,6 +507,7 @@ export default function ClansPage() {
     } finally {
       setSelectedCommunityId(clanId);
       setInviteState(null);
+      setQrSheetOpen(false);
       setCreateMessage("");
     }
   }
@@ -513,6 +544,37 @@ export default function ClansPage() {
     }
   }
 
+  async function handleCreateCommunityQrPack() {
+    if (!selectedCommunityId || !selectedCommunity) return;
+
+    setInviteLoading(true);
+    try {
+      const res = await getClanInviteLink(selectedCommunityId, { qr_policy_key: qrPolicyKey });
+      const source = res || {};
+      const nextInviteState = buildInviteState(
+        source,
+        senderName,
+        "",
+        selectedQrPolicy.announcement,
+        communityName(selectedCommunity),
+        { qr_policy: qrPolicyKey }
+      );
+
+      if (!safeStr(nextInviteState.link) || !safeStr(nextInviteState.code)) {
+        throw new Error(
+          "GSN could not prepare a community QR link yet. Please try again."
+        );
+      }
+
+      setInviteState(nextInviteState);
+      setInviteComposerOpen(false);
+    } catch {
+      setInviteState(null);
+    } finally {
+      setInviteLoading(false);
+    }
+  }
+
   function copyText(value: string, tag: string) {
     const text = safeStr(value);
     if (!text) return;
@@ -527,6 +589,30 @@ export default function ClansPage() {
     if (!text) return;
 
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
+  }
+
+  function communityQrAnnouncementText(): string {
+    const title = selectedCommunity ? communityName(selectedCommunity) : "this community";
+    const link = safeStr(inviteState?.link || "");
+
+    return [
+      `${title} is opening GSN community access.`,
+      "Scan the QR code or use the link to begin your join request.",
+      selectedQrPolicy.announcement,
+      selectedQrPolicy.boundary,
+      link ? `Join link: ${link}` : "",
+      "Sent through GSN",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+  }
+
+  function copyCommunityQrAnnouncement() {
+    copyText(communityQrAnnouncementText(), "qr-announcement");
+  }
+
+  function printCommunityQrSheet() {
+    window.print();
   }
 
   async function handleCreateCommunity(e: React.FormEvent) {
@@ -1118,24 +1204,77 @@ export default function ClansPage() {
                 lineHeight: 1.7,
               }}
             >
-              Create a join package for your current community with sender,
-              receiver, message, guide link, share-ready copy, and WhatsApp copy.
+              Create a QR and join package for your current community. People can scan it to request access; approval still stays with the community. Choose the entry policy before sharing.
             </div>
           </div>
 
-          <PrimaryButton
+          <div
             style={{
-              ...btn(true, !selectedCommunityId || inviteLoading),
+              display: "grid",
+              gap: 8,
+              minWidth: isCompact ? "100%" : 280,
+              flex: isCompact ? undefined : "1 1 280px",
+            }}
+          >
+            <div style={sectionLabel()}>QR entry policy</div>
+            <select
+              value={qrPolicyKey}
+              onChange={(event) =>
+                setQrPolicyKey(event.target.value as CommunityQrPolicyKey)
+              }
+              style={{ ...inputStyle(), fontWeight: 900 }}
+              aria-label="QR entry policy"
+            >
+              {COMMUNITY_QR_POLICIES.map((policy) => (
+                <option key={policy.key} value={policy.key}>
+                  {policy.label}
+                </option>
+              ))}
+            </select>
+            <div
+              style={{
+                color: "#6B5D50",
+                fontSize: 13,
+                lineHeight: 1.55,
+                fontWeight: 750,
+              }}
+            >
+              {selectedQrPolicy.summary}
+            </div>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
               width: isCompact ? "100%" : undefined,
             }}
-            onClick={() => setInviteComposerOpen(true)}
-            disabled={!selectedCommunityId || inviteLoading}
-            busy={inviteLoading}
-            busyLabel="Creating..."
-            debugId="clans.invite.open-form.top"
           >
-            Open invite form
-          </PrimaryButton>
+            <PrimaryButton
+              style={{
+                ...btn(true, !selectedCommunityId || inviteLoading),
+                width: isCompact ? "100%" : undefined,
+              }}
+              onClick={() => void handleCreateCommunityQrPack()}
+              disabled={!selectedCommunityId || inviteLoading}
+              busy={inviteLoading}
+              busyLabel="Creating..."
+              debugId="clans.invite.create-community-qr.top"
+            >
+              Create community QR
+            </PrimaryButton>
+            <SecondaryButton
+              style={{
+                ...btn(false, !selectedCommunityId || inviteLoading),
+                width: isCompact ? "100%" : undefined,
+              }}
+              onClick={() => setInviteComposerOpen(true)}
+              disabled={!selectedCommunityId || inviteLoading}
+              debugId="clans.invite.open-form.top"
+            >
+              Personal invite
+            </SecondaryButton>
+          </div>
         </div>
 
         <div
@@ -1190,20 +1329,37 @@ export default function ClansPage() {
                 before the join package is generated.
               </div>
 
-              <div>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+              >
                 <PrimaryButton
                   style={{
                     ...btn(true, !selectedCommunityId || inviteLoading),
                     width: isCompact ? "100%" : undefined,
                   }}
-                  onClick={() => setInviteComposerOpen(true)}
+                  onClick={() => void handleCreateCommunityQrPack()}
                   disabled={!selectedCommunityId || inviteLoading}
                   busy={inviteLoading}
                   busyLabel="Creating..."
+                  debugId="clans.invite.create-community-qr.summary"
+                >
+                  Create community QR
+                </PrimaryButton>
+                <SecondaryButton
+                  style={{
+                    ...btn(false, !selectedCommunityId || inviteLoading),
+                    width: isCompact ? "100%" : undefined,
+                  }}
+                  onClick={() => setInviteComposerOpen(true)}
+                  disabled={!selectedCommunityId || inviteLoading}
                   debugId="clans.invite.open-form.summary"
                 >
-                  Open invite form
-                </PrimaryButton>
+                  Personal invite
+                </SecondaryButton>
               </div>
             </div>
           </div>
@@ -1234,11 +1390,57 @@ export default function ClansPage() {
                       lineHeight: 1.7,
                     }}
                   >
-                    This package uses your current community plus the guide link
-                    and fallback PDF.
+                    Show this QR at a meeting or send the link. It starts a join request; it does not approve membership. Current policy: {selectedQrPolicy.label}.
                   </div>
 
                   <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                    {inviteState.link ? (
+                      <div
+                        style={{
+                          borderRadius: 16,
+                          border: "1px solid rgba(190,143,55,0.22)",
+                          background: "#FFFFFF",
+                          padding: isCompact ? 14 : 16,
+                          display: "grid",
+                          gap: 12,
+                          justifyItems: "center",
+                        }}
+                      >
+                        <div style={{ ...sectionLabel(), textAlign: "center" }}>
+                          Community join QR
+                        </div>
+                        <div
+                          style={{
+                            borderRadius: 14,
+                            border: "1px solid rgba(7,23,44,0.10)",
+                            background: "#FFFFFF",
+                            padding: 10,
+                            lineHeight: 0,
+                          }}
+                        >
+                          <QRCodeSVG
+                            value={inviteState.link}
+                            size={isCompact ? 168 : 196}
+                            bgColor="#FFFFFF"
+                            fgColor="#07172C"
+                            level="M"
+                            marginSize={1}
+                          />
+                        </div>
+                        <div
+                          style={{
+                            color: "#5F5143",
+                            fontSize: 13,
+                            fontWeight: 800,
+                            lineHeight: 1.5,
+                            textAlign: "center",
+                            maxWidth: 300,
+                          }}
+                        >
+                          {selectedQrPolicy.scanCopy}
+                        </div>
+                      </div>
+                    ) : null}
                     {inviteState.code ? (
                       <div>
                         <div
@@ -1374,6 +1576,28 @@ export default function ClansPage() {
                         </SecondaryButton>
                       ) : null}
 
+                      {inviteState.link ? (
+                        <SecondaryButton
+                          style={btn(false)}
+                          onClick={copyCommunityQrAnnouncement}
+                          debugId="clans.invite.copy-qr-announcement"
+                        >
+                          {copied === "qr-announcement"
+                            ? "Copied announcement"
+                            : "Copy announcement"}
+                        </SecondaryButton>
+                      ) : null}
+
+                      {inviteState.link ? (
+                        <SecondaryButton
+                          style={btn(false)}
+                          onClick={() => setQrSheetOpen(true)}
+                          debugId="clans.invite.open-qr-sheet"
+                        >
+                          QR sheet
+                        </SecondaryButton>
+                      ) : null}
+
                       {inviteState.guideUrl ? (
                         <SecondaryButton
                           style={btn(false)}
@@ -1423,9 +1647,7 @@ export default function ClansPage() {
                     fontSize: 14,
                   }}
                 >
-                  Open the invite form when you are ready. The package will
-                  include sender, receiver, message, guide link, and share-ready
-                  copy.
+                  Create the community QR when you are ready. The package includes the join link, WhatsApp copy, selected policy, and approval-verification boundary.
                 </div>
               </div>
             )}
@@ -1433,6 +1655,150 @@ export default function ClansPage() {
         </div>
       </div>
 
+      {qrSheetOpen && inviteState?.link ? (
+        <div style={{ ...overlayShell(), padding: isCompact ? 10 : 18 }}>
+          <div
+            style={{
+              ...modalCard(),
+              width: "min(100%, 560px)",
+              maxHeight: isCompact ? "calc(100svh - 32px)" : undefined,
+              overflowY: isCompact ? "auto" : "hidden",
+            }}
+          >
+            <div style={{ ...darkPanel(), marginBottom: 16 }}>
+              <div style={sectionLabel()}>GSN community access</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#241A12",
+                  fontSize: isCompact ? 24 : 28,
+                  fontWeight: 1000,
+                  lineHeight: 1.12,
+                }}
+              >
+                {selectedCommunity ? communityName(selectedCommunity) : "Community QR"}
+              </div>
+              <div
+                style={{
+                  marginTop: 10,
+                  color: "#5F5143",
+                  fontSize: 14,
+                  lineHeight: 1.6,
+                }}
+              >
+                {selectedQrPolicy.sheetIntro}
+              </div>
+            </div>
+
+            <div
+              style={{
+                ...softCard("#FFFFFF"),
+                display: "grid",
+                gap: 14,
+                justifyItems: "center",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                }}
+              >
+                <span style={badge(true)}>
+                  {selectedCommunity ? communityIdentity(selectedCommunity) : "Community ID"}
+                </span>
+                <span style={badge(false)}>Request access</span>
+                <span style={badge(false)}>Approval required</span>
+                <span style={badge(false)}>{selectedQrPolicy.badge}</span>
+              </div>
+
+              <div
+                style={{
+                  borderRadius: 18,
+                  border: "1px solid rgba(7,23,44,0.10)",
+                  background: "#FFFFFF",
+                  padding: 12,
+                  lineHeight: 0,
+                  boxShadow: "0 12px 28px rgba(7,23,44,0.08)",
+                }}
+              >
+                <QRCodeSVG
+                  value={inviteState.link}
+                  size={isCompact ? 220 : 260}
+                  bgColor="#FFFFFF"
+                  fgColor="#07172C"
+                  level="M"
+                  marginSize={1}
+                />
+              </div>
+
+              <div
+                style={{
+                  width: "100%",
+                  borderRadius: 14,
+                  border: "1px solid rgba(128,91,44,0.10)",
+                  background: "#F8FBFF",
+                  padding: 12,
+                  color: "#241A12",
+                  fontSize: 13,
+                  fontWeight: 800,
+                  lineHeight: 1.55,
+                  textAlign: "center",
+                  wordBreak: "break-word",
+                  boxSizing: "border-box",
+                }}
+              >
+                {inviteState.link}
+              </div>
+
+              <div
+                style={{
+                  color: "#5F5143",
+                  fontSize: 13,
+                  lineHeight: 1.55,
+                  textAlign: "center",
+                }}
+              >
+                {selectedQrPolicy.boundary}
+              </div>
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+                justifyContent: "flex-end",
+              }}
+            >
+              <SecondaryButton
+                onClick={() => setQrSheetOpen(false)}
+                style={{ ...btn(false), width: isCompact ? "100%" : undefined }}
+                debugId="clans.qr-sheet.close"
+              >
+                Close
+              </SecondaryButton>
+              <SecondaryButton
+                onClick={copyCommunityQrAnnouncement}
+                style={{ ...btn(false), width: isCompact ? "100%" : undefined }}
+                debugId="clans.qr-sheet.copy-announcement"
+              >
+                {copied === "qr-announcement" ? "Copied announcement" : "Copy announcement"}
+              </SecondaryButton>
+              <PrimaryButton
+                onClick={printCommunityQrSheet}
+                style={{ ...btn(true), width: isCompact ? "100%" : undefined }}
+                debugId="clans.qr-sheet.print"
+              >
+                Print or save
+              </PrimaryButton>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {inviteComposerOpen ? (
         <div style={{ ...overlayShell(), padding: isCompact ? 10 : 18 }}>
           <div

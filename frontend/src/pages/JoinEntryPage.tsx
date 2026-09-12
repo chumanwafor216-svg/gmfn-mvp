@@ -28,6 +28,10 @@ import {
 } from "../lib/api";
 import { resolveCtaTarget, type CtaTarget } from "../lib/ctaTargets";
 import {
+  communityQrPolicyByKey,
+  isCommunityQrPolicyKey,
+} from "../lib/communityQrPolicies";
+import {
   ENTRY_INVITE_CODE_KEY,
   readStorage,
   writeStorage,
@@ -1067,7 +1071,7 @@ function BrandedInvitationPaper({
           <div style={{ minWidth: 0 }}>
             <div style={invitationPaperEyebrowStyle()}>Global Support Network</div>
             <div style={invitationPaperTitleStyle(isCompact)}>
-              Community invitation
+              Community access request
             </div>
           </div>
         </div>
@@ -1089,7 +1093,7 @@ function BrandedInvitationPaper({
         </div>
 
         <div style={invitationPaperFooterStyle()}>
-          <span>Official GSN invite</span>
+          <span>Official GSN access</span>
           <span>One identity. Community review.</span>
         </div>
       </div>
@@ -1161,6 +1165,13 @@ export default function JoinEntryPage() {
 
   const communityCode = useMemo(() => {
     return cleanText(searchParams.get("community_code") || "");
+  }, [searchParams]);
+
+
+  const qrPolicyKey = useMemo(() => {
+    return cleanText(
+      searchParams.get("qr_policy") || searchParams.get("entry_policy") || ""
+    );
   }, [searchParams]);
 
   const restoredJoinDraft = useMemo(() => {
@@ -1250,6 +1261,20 @@ export default function JoinEntryPage() {
   });
   const [invitePreview, setInvitePreview] = useState<any>(null);
   const [inviteChecking, setInviteChecking] = useState(false);
+
+  const previewQrPolicyKey = useMemo(() => {
+    return cleanText(invitePreview?.qr_policy_key || "");
+  }, [invitePreview]);
+
+  const effectiveQrPolicyKey = isCommunityQrPolicyKey(previewQrPolicyKey)
+    ? previewQrPolicyKey
+    : qrPolicyKey;
+
+  const selectedQrPolicy = useMemo(() => {
+    return isCommunityQrPolicyKey(effectiveQrPolicyKey)
+      ? communityQrPolicyByKey(effectiveQrPolicyKey)
+      : null;
+  }, [effectiveQrPolicyKey]);
   const [currentMember, setCurrentMember] = useState<any>(null);
   const [currentMemberChecked, setCurrentMemberChecked] = useState(false);
 
@@ -1444,8 +1469,6 @@ export default function JoinEntryPage() {
     !!cleanText(surname) &&
     !!cleanText(phone) &&
     !!cleanText(country) &&
-    !!cleanText(dateOfBirth) &&
-    !!cleanText(birthPlace) &&
     !busy;
   const canSubmitExistingGsn =
     !!effectiveInviteCode &&
@@ -1841,13 +1864,6 @@ export default function JoinEntryPage() {
       if (!safeCountry) {
         throw new Error("Enter country.");
       }
-      if (!safeDateOfBirth) {
-        throw new Error("Enter date of birth.");
-      }
-      if (!safeBirthPlace) {
-        throw new Error("Enter place of birth.");
-      }
-
       const res = await submitJoinRequest(
         {
           invite_code: safeInviteCode,
@@ -2331,7 +2347,7 @@ export default function JoinEntryPage() {
                   color: "#0B1F33",
                 }}
               >
-                Invitation message
+                Community access
               </div>
             </div>
 
@@ -2397,6 +2413,94 @@ export default function JoinEntryPage() {
                 isCompact={isCompact}
               />
 
+              <div style={{ marginTop: 14, ...innerCard("#FFF8E6") }}>
+                <div style={labelText()}>
+                  {joinEntryIconText("check", "Access boundary", 20)}
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 1000,
+                    fontSize: 16,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  A QR code or invite link starts a request. It does not confirm
+                  membership, and it does not verify identity.
+                </div>
+                <div
+                  style={{
+                    marginTop: 10,
+                    display: "flex",
+                    gap: 8,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <span style={badge(true)}>
+                    {joinEntryIconText("navigation", "Request access", 18)}
+                  </span>
+                  <span style={badge(false)}>
+                    {joinEntryIconText("check", "Approval required", 18)}
+                  </span>
+                  <span style={badge(false)}>
+                    {joinEntryIconText("id", "Verification later", 18)}
+                  </span>
+                </div>
+                <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                  The community reviews who enters. Stronger evidence can be
+                  requested later before verified status, sensitive benefits,
+                  marketplace trust, or official community decisions.
+                </div>
+              </div>
+
+
+              {selectedQrPolicy ? (
+                <div style={{ marginTop: 14, ...innerCard("#F8FBFF") }}>
+                  <div style={labelText()}>
+                    {joinEntryIconText("navigation", "QR entry policy", 20)}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B1F33",
+                      fontWeight: 1000,
+                      fontSize: 16,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {selectedQrPolicy.label}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      display: "flex",
+                      gap: 8,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span style={badge(true)}>
+                      {joinEntryIconText("check", selectedQrPolicy.badge, 18)}
+                    </span>
+                    <span style={badge(false)}>
+                      {joinEntryIconText("id", "Verification separate", 18)}
+                    </span>
+                  </div>
+                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                    {selectedQrPolicy.announcement}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      color: "#6B7F95",
+                      fontSize: 13,
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    {selectedQrPolicy.boundary}
+                  </div>
+                </div>
+              ) : null}
               {inviteGovernanceProfile ? (
                 <div style={{ marginTop: 14, ...innerCard("#F8FBFF") }}>
                   <div style={labelText()}>
@@ -3091,7 +3195,7 @@ export default function JoinEntryPage() {
                 }}
               >
                 <div>
-                  <div style={labelText()}>Date of birth</div>
+                  <div style={labelText()}>Date of birth (optional)</div>
                   <input
                     type="date"
                     value={dateOfBirth}
@@ -3101,7 +3205,7 @@ export default function JoinEntryPage() {
                 </div>
 
                 <div>
-                  <div style={labelText()}>Place of birth</div>
+                  <div style={labelText()}>Place of birth (optional)</div>
                   <input
                     value={birthPlace}
                     onChange={(e) => setBirthPlace(e.target.value)}
@@ -3163,8 +3267,10 @@ export default function JoinEntryPage() {
               </div>
 
               <div style={{ marginTop: 12, ...noticeStyle("info") }}>
-                Used only to help avoid duplicate GSN identities. This is not
-                government verification.
+                Extra identity details help the community and GSN avoid
+                duplicate identities. You can complete them now or improve them
+                later after the request starts. This is not government
+                verification.
               </div>
 
               <div style={{ marginTop: 12 }}>

@@ -16,6 +16,10 @@ import {
   voteOnJoinRequest,
 } from "../lib/api";
 import { navigateToCta, resolveCtaTarget, type CtaTarget } from "../lib/ctaTargets";
+import {
+  communityQrPolicyByKey,
+  isCommunityQrPolicyKey,
+} from "../lib/communityQrPolicies";
 
 type JoinRequestItem = {
   id: number;
@@ -30,6 +34,7 @@ type JoinRequestItem = {
   applicant_gmfn_id?: string | null;
   invite_id?: number | null;
   invite_code?: string | null;
+  qr_policy_key?: string | null;
   invited_by_user_id?: number | null;
   invited_by_email?: string | null;
   invited_by_display?: string | null;
@@ -42,6 +47,17 @@ type JoinRequestItem = {
   total_votes?: number;
   active_member_count?: number;
   required_approvals?: number;
+  base_required_approvals?: number;
+  qr_policy_required_approval_floor?: number;
+  qr_policy_review_guardrail?: {
+    approval_posture?: string | null;
+    summary?: string | null;
+    requires_manual_review?: boolean;
+    requires_later_verification?: boolean;
+    requires_payment_or_permit_check?: boolean;
+    strict_multi_reviewer_review?: boolean;
+    pilot_override_blocked?: boolean;
+  } | null;
   threshold_ratio?: string;
   governance_profile?: any;
 };
@@ -248,16 +264,24 @@ type VoteReasonOption = {
   text: string;
 };
 
+const MARKET_ACCESS_APPROVAL_REASON_OPTIONS: VoteReasonOption[] = [
+  {
+    code: "market_dues_or_permit_checked",
+    text: "I checked dues, stall, shop, permit, or organiser records.",
+  },
+  {
+    code: "known_from_marketplace",
+    text: "I know this person from market, trade, or service dealings.",
+  },
+];
+
 const JOIN_VOTE_REASON_OPTIONS: Record<JoinVoteDecision, VoteReasonOption[]> = {
   approve: [
     {
       code: "know_directly",
       text: "I know this person directly and can support the request.",
     },
-    {
-      code: "known_from_marketplace",
-      text: "I know this person from market, trade, or service dealings.",
-    },
+    ...MARKET_ACCESS_APPROVAL_REASON_OPTIONS,
     {
       code: "known_from_family_or_group",
       text: "I know this person through family, school, faith, or group life.",
@@ -543,6 +567,20 @@ function governanceProfileRequirementText(profile: any): string {
   return "Use the recorded setup as review context; it does not replace your decision.";
 }
 
+function qrPolicyReviewContext(
+  item: JoinRequestItem | undefined | null
+): { badge: string; label: string; text: string; guardrail?: string } | null {
+  const key = safeStr(item?.qr_policy_key);
+  if (!isCommunityQrPolicyKey(key)) return null;
+  const policy = communityQrPolicyByKey(key);
+  return {
+    badge: policy.badge,
+    label: policy.label,
+    text: policy.boundary,
+    guardrail: safeStr(item?.qr_policy_review_guardrail?.summary),
+  };
+}
+
 function approvalProgress(item: JoinRequestItem | undefined | null): {
   approvals: number;
   required: number;
@@ -564,7 +602,7 @@ function approvalProgressText(item: JoinRequestItem | undefined | null): string 
 
 function approvalNextStepText(item: JoinRequestItem | undefined | null): string {
   const progress = approvalProgress(item);
-  if (friendlyStatus(item?.status) === "approved") return "Request is approved.";
+  if (friendlyStatus(item?.status) === "approved") return "Access request is approved; verification can still follow.";
   if (friendlyStatus(item?.status) === "rejected") return "Request is rejected.";
   if (progress.remaining <= 0) return "The community decision is ready.";
   return `${progress.remaining} more approval${progress.remaining === 1 ? "" : "s"} needed.`;
@@ -730,13 +768,27 @@ export default function CommunityJoinRequestsPage() {
     [clanNum]
   );
 
-  function selectedVoteReason(requestId: number, vote: JoinVoteDecision): VoteReasonOption {
-    const options = JOIN_VOTE_REASON_OPTIONS[vote];
+  function voteReasonOptions(
+    item: JoinRequestItem | undefined | null,
+    vote: JoinVoteDecision
+  ): VoteReasonOption[] {
+    if (
+      vote === "approve" &&
+      item?.qr_policy_review_guardrail?.requires_payment_or_permit_check
+    ) {
+      return MARKET_ACCESS_APPROVAL_REASON_OPTIONS;
+    }
+    return JOIN_VOTE_REASON_OPTIONS[vote];
+  }
+
+  function selectedVoteReason(
+    requestId: number,
+    vote: JoinVoteDecision,
+    item?: JoinRequestItem | null
+  ): VoteReasonOption {
+    const options = voteReasonOptions(item, vote);
     const selectedCode = safeStr(voteReasonCodes[requestId]);
-    return (
-      options.find((item) => item.code === selectedCode) ||
-      options[0]
-    );
+    return options.find((reason) => reason.code === selectedCode) || options[0];
   }
 
   async function handleVote(requestId: number, vote: JoinVoteDecision) {
@@ -750,7 +802,8 @@ export default function CommunityJoinRequestsPage() {
 
       await selectClan(clanNum).catch(() => null);
 
-      const reason = selectedVoteReason(requestId, vote);
+      const item = items.find((request) => request.id === requestId) || null;
+      const reason = selectedVoteReason(requestId, vote, item);
       const res = (await voteOnJoinRequest(requestId, vote, {
         reason_code: reason.code,
         reason_text: reason.text,
@@ -1147,7 +1200,7 @@ export default function CommunityJoinRequestsPage() {
           data-gsn-activation-handoff="admin-share"
         >
           <div style={{ fontWeight: 1000, fontSize: 18, color: "#0B1F33" }}>
-            {iconText("approve", "Approved member activation handoff")}
+            {iconText("approve", "Approved access activation handoff")}
           </div>
 
           <div
@@ -1159,8 +1212,8 @@ export default function CommunityJoinRequestsPage() {
               fontWeight: 800,
             }}
           >
-            This package is for the approved member, not your own next step.
-            Send it to the person you approved so they can activate their GSN ID.
+            This package is for the approved applicant, not your own next step.
+            Send it to the person you approved so they can activate their GSN ID. Verification can still be required later.
           </div>
 
           <div
@@ -1177,7 +1230,7 @@ export default function CommunityJoinRequestsPage() {
             }}
           >
             {[
-              ["Approved GSN ID", safeStr(activationPack.gmfn_id)],
+              ["GSN ID for activation", safeStr(activationPack.gmfn_id)],
               ["Community", safeStr(activationPack.community_name || "Not available yet")],
               ["Community ID", safeStr(activationPack.community_code || "No community ID yet")],
             ].map(([label, value]) => (
@@ -1235,7 +1288,7 @@ export default function CommunityJoinRequestsPage() {
               onClick={() =>
                 void copyActivationText(
                   safeStr(activationPack.activation_message || ""),
-                  "Copied activation message. Send it to the approved member."
+                  "Copied activation message. Send it to the approved applicant."
                 )
               }
               debugId="community-join-requests.copy-activation-message"
@@ -1250,7 +1303,7 @@ export default function CommunityJoinRequestsPage() {
               onClick={() =>
                 void copyActivationText(
                   safeStr(activationPack.activation_link || ""),
-                  "Copied activation link. Send it to the approved member."
+                  "Copied activation link. Send it to the approved applicant."
                 )
               }
               debugId="community-join-requests.copy-activation-link"
@@ -1292,7 +1345,7 @@ export default function CommunityJoinRequestsPage() {
                   letterSpacing: 0.35,
                 }}
               >
-                MESSAGE FOR APPROVED MEMBER
+                MESSAGE FOR APPROVED APPLICANT
               </div>
 
               <div
@@ -1377,6 +1430,12 @@ export default function CommunityJoinRequestsPage() {
         {visibleItems.map((item) => {
           const status = friendlyStatus(item.status);
           const isPending = status === "pending";
+          const qrGuardrail = item.qr_policy_review_guardrail || null;
+          const pilotOverrideBlocked = Boolean(
+            qrGuardrail?.pilot_override_blocked &&
+              (qrGuardrail.approval_posture === "market_access" ||
+                Number(item.active_member_count || 0) > 1)
+          );
           const isBusy = busyId === item.id;
           const applicantLabel = safeStr(
             item.applicant_name ||
@@ -1389,6 +1448,7 @@ export default function CommunityJoinRequestsPage() {
             item.governance_profile && typeof item.governance_profile === "object"
               ? item.governance_profile
               : null;
+          const qrPolicyContext = qrPolicyReviewContext(item);
           const shouldCollapse = isCompact && activeRequestId !== null && !isActive;
 
           if (shouldCollapse) {
@@ -1431,6 +1491,20 @@ export default function CommunityJoinRequestsPage() {
                   >
                     {applicantLabel}
                   </div>
+                  {qrPolicyContext ? (
+                    <div
+                      style={{
+                        marginTop: 6,
+                        color: "#1D4ED8",
+                        fontSize: 12,
+                        fontWeight: 1000,
+                        lineHeight: 1.25,
+                        overflowWrap: "break-word",
+                      }}
+                    >
+                      {qrPolicyContext.badge}
+                    </div>
+                  ) : null}
                 </div>
                 <SecondaryButton
                   type="button"
@@ -1543,6 +1617,54 @@ export default function CommunityJoinRequestsPage() {
                   ))}
                 </div>
               </div>
+              {qrPolicyContext ? (
+                <div
+                  style={{
+                    marginTop: 14,
+                    padding: 12,
+                    borderRadius: 12,
+                    border: "1px solid rgba(34,120,242,0.20)",
+                    background: "#EFF6FF",
+                  }}
+                >
+                  <div style={sectionLabel("#1D4ED8")}>QR entry policy</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#0B1F33",
+                      fontWeight: 1000,
+                      fontSize: 15,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {qrPolicyContext.label}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 6,
+                      color: "#1E3A8A",
+                      lineHeight: 1.65,
+                      fontSize: 14,
+                      fontWeight: 750,
+                    }}
+                  >
+                    {qrPolicyContext.text}
+                  </div>
+                  {qrPolicyContext.guardrail ? (
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#1D4ED8",
+                        lineHeight: 1.65,
+                        fontSize: 14,
+                        fontWeight: 850,
+                      }}
+                    >
+                      {qrPolicyContext.guardrail}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
 
               {governanceProfile ? (
                 <div
@@ -1640,9 +1762,11 @@ export default function CommunityJoinRequestsPage() {
                           fontSize: 14,
                         }}
                       >
-                        This bypasses the normal approval count. Use it only when
-                        pilot testing or community admin judgement must move the
-                        member journey forward.
+                        {pilotOverrideBlocked
+                          ? qrGuardrail?.approval_posture === "market_access"
+                            ? "Marketplace QR entry requires standard voting with a market, dues, stall, shop, permit, or organiser check; admin override is disabled."
+                            : "Strict QR entry requires standard multi-reviewer approval here; admin override is disabled."
+                          : "This bypasses the normal approval count. Use it only when pilot testing or community admin judgement must move the member journey forward."}
                       </div>
                     </div>
                   ) : null}
@@ -1668,7 +1792,7 @@ export default function CommunityJoinRequestsPage() {
                           }));
                           setVoteReasonCodes((prev) => ({
                             ...prev,
-                            [item.id]: JOIN_VOTE_REASON_OPTIONS[nextVote][0].code,
+                            [item.id]: voteReasonOptions(item, nextVote)[0].code,
                           }));
                         }}
                         style={{
@@ -1694,9 +1818,7 @@ export default function CommunityJoinRequestsPage() {
                       <select
                         value={
                           voteReasonCodes[item.id] ||
-                          JOIN_VOTE_REASON_OPTIONS[
-                            voteDecisions[item.id] || "approve"
-                          ][0].code
+                          voteReasonOptions(item, voteDecisions[item.id] || "approve")[0].code
                         }
                         onChange={(event) =>
                           setVoteReasonCodes((prev) => ({
@@ -1716,9 +1838,7 @@ export default function CommunityJoinRequestsPage() {
                           background: "#FFFFFF",
                         }}
                       >
-                        {JOIN_VOTE_REASON_OPTIONS[
-                          voteDecisions[item.id] || "approve"
-                        ].map((reason) => (
+                        {voteReasonOptions(item, voteDecisions[item.id] || "approve").map((reason) => (
                           <option key={reason.code} value={reason.code}>
                             {reason.text}
                           </option>
@@ -1786,7 +1906,7 @@ export default function CommunityJoinRequestsPage() {
                       <SecondaryButton
                         type="button"
                         onClick={() => handlePilotApprove(item.id)}
-                        disabled={isBusy}
+                        disabled={isBusy || pilotOverrideBlocked}
                         busy={isBusy}
                         busyLabel="Working..."
                         stableHeight={58}
@@ -1794,7 +1914,7 @@ export default function CommunityJoinRequestsPage() {
                         style={decisionButtonStyle("reject")}
                         fullWidth
                       >
-                        {iconText("shield", "Admin override")}
+                        {iconText("shield", pilotOverrideBlocked ? "Standard review" : "Admin override")}
                       </SecondaryButton>
                     ) : null}
                   </CardActionRow>

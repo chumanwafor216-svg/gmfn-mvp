@@ -447,10 +447,10 @@ export default function ActivateMembershipPage() {
                     Activation guide
                   </div>
                   <div style={{ marginBottom: 8, color: "#10253B", fontWeight: 1000, fontSize: 22 }}>
-                    Approved member path
+                    Approved access path
                   </div>
                   <div style={helperText()}>
-                    Use this page only when your identity has already been approved and you are creating your first password for entry into the workspace.
+                    Use this page only when your community approval is ready and you are creating your first password. Activation opens access; it is not full verification.
                   </div>
                 </div>
               ) : null}
@@ -468,7 +468,7 @@ export default function ActivateMembershipPage() {
                   <div style={{ ...labelText(), marginBottom: 14 }}>Activation form</div>
 
                   <div style={{ marginBottom: 10, color: "#0B1F33", fontWeight: 1000, fontSize: 22 }}>
-                    Finish your member activation
+                    Finish your GSN activation
                   </div>
 
                   {(initialGmfnId || requestId) && (
