@@ -882,6 +882,7 @@ export default function ClansPage() {
   function communityQrAnnouncementText(): string {
     const title = selectedCommunity ? communityName(selectedCommunity) : "this community";
     const link = safeStr(inviteState?.link || "");
+    const code = safeStr(inviteState?.code || "");
     const expiry = safeStr(inviteState?.expiresAt || "");
 
     return [
@@ -889,6 +890,7 @@ export default function ClansPage() {
       "Scan the QR code or use the link to begin your join request.",
       inviteQrPolicy.announcement,
       inviteQrPolicy.boundary,
+      code ? `Invite code: ${code}` : "",
       expiry ? `QR expiry: ${safeDateTime(expiry)}` : "",
       link ? `Join link: ${link}` : "",
       "Sent through GSN",
@@ -2380,6 +2382,26 @@ export default function ClansPage() {
               >
                 {inviteState.link}
               </div>
+
+              {inviteState.code ? (
+                <div
+                  style={{
+                    width: "100%",
+                    borderRadius: 14,
+                    border: "1px solid rgba(190,143,55,0.24)",
+                    background: "#FFF8E6",
+                    padding: 12,
+                    color: "#241A12",
+                    fontSize: 13,
+                    fontWeight: 850,
+                    lineHeight: 1.55,
+                    textAlign: "center",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  Manual fallback invite code: {inviteState.code}
+                </div>
+              ) : null}
 
               <div
                 style={{

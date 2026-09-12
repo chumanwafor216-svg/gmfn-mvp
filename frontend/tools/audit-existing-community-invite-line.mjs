@@ -207,7 +207,7 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ClansPage.tsx",
-  /function communityQrAnnouncementText\(\): string \{[\s\S]*?const expiry = safeStr\(inviteState\?\.expiresAt \|\| ""\);[\s\S]*?expiry \? `QR expiry: \$\{safeDateTime\(expiry\)\}` : ""[\s\S]*?link \? `Join link: \$\{link\}` : ""/,
+  /function communityQrAnnouncementText\(\): string \{[\s\S]*?const code = safeStr\(inviteState\?\.code \|\| ""\);[\s\S]*?const expiry = safeStr\(inviteState\?\.expiresAt \|\| ""\);[\s\S]*?code \? `Invite code: \$\{code\}` : ""[\s\S]*?expiry \? `QR expiry: \$\{safeDateTime\(expiry\)\}` : ""[\s\S]*?link \? `Join link: \$\{link\}` : ""/,
   "Copied community QR announcements must include the package expiry before the join link so WhatsApp and bulletin shares do not look permanent."
 );
 assertContains(
@@ -218,6 +218,10 @@ assertContains(
   "frontend/src/pages/ClansPage.tsx",
   /const isQrInvitePackage = Boolean\(inviteState\?\.qrPolicyKey\);[\s\S]*?\{isQrInvitePackage \? "Community QR ready" : "Personal invite ready"\}[\s\S]*?\{isQrInvitePackage \? "Community join QR" : "Personal invite QR"\}[\s\S]*?\{currentInviteShareText\(\) && !isQrInvitePackage \? \([\s\S]*?debugId="clans\.invite\.copy-package"[\s\S]*?\{isQrInvitePackage && inviteState\.link \? \([\s\S]*?debugId="clans\.invite\.copy-qr-announcement"[\s\S]*?\{isQrInvitePackage && inviteState\.link \? \([\s\S]*?debugId="clans\.invite\.open-qr-sheet"[\s\S]*?\{isQrInvitePackage && inviteState\.link \? \([\s\S]*?debugId="clans\.invite\.copy-qr-handover"[\s\S]*?\{qrSheetOpen && isQrInvitePackage && inviteState\?\.link \? \(/,
   "ClansPage must keep QR-package operating actions separate from personal invites so QR announcements, QR sheet, and QR handover cannot appear for ordinary personal invite links."
+);assertContains(
+  "frontend/src/pages/ClansPage.tsx",
+  /\{qrSheetOpen && isQrInvitePackage && inviteState\?\.link \? \([\s\S]*?Manual fallback invite code: \{inviteState\.code\}[\s\S]*?\{inviteQrPolicy\.boundary\}/,
+  "The printable community QR sheet must show the manual invite-code fallback before the policy boundary for people who cannot scan the QR."
 );
 assertContains(
   "gmfn_backend/app/api/routes/clans.py",

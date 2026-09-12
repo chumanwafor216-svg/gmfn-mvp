@@ -1,3 +1,12 @@
+## 2026-09-12 - QR manual invite-code fallback surfaced locally
+
+- Status: Verified local frontend continuation after local commit `90cff476`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Frontend truth fix: copied community QR announcements now include the invite code as a manual fallback before expiry and join link.
+- QR sheet fix: the printable community QR sheet now shows `Manual fallback invite code` under the QR/link block so old phones, failed scans, or assisted onboarding can still use the package.
+- Handover alignment: the QR handover already carried the invite code; announcement, sheet, and handover now agree on the fallback route.
+- Regression cage: `frontend/tools/audit-existing-community-invite-line.mjs` now asserts the announcement invite-code line and the printable QR sheet manual fallback block.
+- Verification passed: `npm exec eslint src/pages/ClansPage.tsx tools/audit-existing-community-invite-line.mjs`, `npm --prefix frontend run audit:existing-community-invite-line`, `npm --prefix frontend run build`, and `git diff --check -- frontend\src\pages\ClansPage.tsx frontend\tools\audit-existing-community-invite-line.mjs`.
+- Devil truth: this improves access for people who cannot scan, but it also means invite codes can be copied by humans. The protection is still expiry, invite retirement, admin review, and later verification, not secrecy alone.
 ## 2026-09-12 - QR package actions separated from personal invites locally
 
 - Status: Verified local frontend continuation after local commit `930c970d`; not pushed or deployed under the current batch-mode pipeline freeze.
