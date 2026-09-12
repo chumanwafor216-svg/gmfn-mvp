@@ -64,6 +64,7 @@ type InviteState = {
   fallbackGuideUrl?: string | null;
   packagedShareText?: string | null;
   whatsappShareText?: string | null;
+  retiredQrPolicyInvites?: number;
 };
 
 type QrPreApprovalItem = {
@@ -426,6 +427,10 @@ function buildInviteState(
     }) || baseLink;
   const link = addInviteSearchParams(personalizedLink, extraSearchParams);
   const expiresAt = safeStr(raw?.expires_at || raw?.expiry || "");
+  const retiredQrPolicyInvites = Math.max(
+    0,
+    Number(raw?.retired_qr_policy_invites || 0)
+  );
   const guideUrl = buildGuideUrl();
   const fallbackGuideUrl = buildGuideFallbackUrl();
   const hasExtraSearchParams = Object.values(extraSearchParams).some((value) => safeStr(value));
@@ -468,6 +473,7 @@ function buildInviteState(
     fallbackGuideUrl,
     packagedShareText,
     whatsappShareText: compactShareText,
+    retiredQrPolicyInvites,
   };
 }
 
@@ -1964,6 +1970,23 @@ export default function ClansPage() {
                     Show this QR at a meeting or send the link. It starts a join request; it does not approve membership. Current policy: {selectedQrPolicy.label}.
                   </div>
 
+                  {Number(inviteState.retiredQrPolicyInvites || 0) > 0 ? (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        borderRadius: 14,
+                        border: "1px solid rgba(214,170,69,0.28)",
+                        background: "rgba(243,208,106,0.14)",
+                        color: "#5F410D",
+                        fontSize: 13,
+                        fontWeight: 900,
+                        lineHeight: 1.55,
+                        padding: "10px 12px",
+                      }}
+                    >
+                      Older QR policy package retired. Use this new QR sheet and announcement going forward.
+                    </div>
+                  ) : null}
                   <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
                     {inviteState.link ? (
                       <div

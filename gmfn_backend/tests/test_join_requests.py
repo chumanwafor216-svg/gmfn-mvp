@@ -3977,6 +3977,7 @@ def test_member_get_invite_link_without_live_invite_auto_prepares_shareable_link
         assert "Any active member may share it" in data["message"]
         assert data["invite_link"]
         assert data["qr_policy_key"] == "market_access"
+        assert data["retired_qr_policy_invites"] == 0
         assert (
             "QR entry policy: Marketplace dues / permit access" in data["invite_text"]
         )
@@ -4066,6 +4067,7 @@ def test_member_get_invite_link_retires_old_qr_policy_invites(client):
 
         assert data["invite_status"] == "ready"
         assert data["qr_policy_key"] == "strict_entry"
+        assert data["retired_qr_policy_invites"] == 1
         assert new_code != "old-open-qr-code"
         assert (
             "QR entry policy: Strict school / professional body" in data["invite_text"]

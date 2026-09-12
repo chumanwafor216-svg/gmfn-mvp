@@ -1673,9 +1673,6 @@ def _retire_active_clan_qr_policy_invites(
         invite.revoked_at = now
         retired += 1
 
-    if retired:
-        db.commit()
-
     return retired
 
 
@@ -3779,6 +3776,7 @@ def get_invite_link(
     desired_qr_policy_key = clean_community_qr_policy_key(qr_policy_key)
 
     latest_invite = _latest_usable_clan_invite(db, clan_id=int(clan.id))
+    retired_qr_policy_invites = 0
 
     if can_refresh_invite and latest_invite is not None and not _invite_matches_share_policy(
         latest_invite,
@@ -3786,7 +3784,7 @@ def get_invite_link(
         strict=strict_max_uses,
         desired_qr_policy_key=desired_qr_policy_key,
     ):
-        _retire_active_clan_qr_policy_invites(
+        retired_qr_policy_invites = _retire_active_clan_qr_policy_invites(
             db,
             clan_id=int(clan.id),
             desired_qr_policy_key=desired_qr_policy_key,
@@ -3837,6 +3835,7 @@ def get_invite_link(
             "invite_source": "clan_invite",
             "can_refresh_invite": bool(can_refresh_invite),
             "requires_admin_refresh": False,
+            "retired_qr_policy_invites": int(retired_qr_policy_invites),
             "message": (
                 "Official join link ready. Any active member may share it, and "
                 "every join request still goes through community review."

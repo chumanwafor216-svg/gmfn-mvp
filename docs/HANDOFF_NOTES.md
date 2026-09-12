@@ -1,3 +1,13 @@
+## 2026-09-12 - QR policy retirement notice surfaced locally
+
+- Status: Verified local backend/frontend continuation after local commit `eafe942e`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Backend contract: `/clans/{clan_id}/invite-link` now returns `retired_qr_policy_invites` so callers know when older QR-policy packages were retired while preparing a new policy-specific QR.
+- Atomicity cleanup: the QR-policy retire helper no longer commits by itself; the new invite creation commit now carries the retirement and new QR package together.
+- Frontend surface: `ClansPage` reads `retired_qr_policy_invites` into invite state and shows a compact notice when an older QR policy package was retired, telling the executive to use the new QR sheet and announcement going forward.
+- Regression coverage: invite-link tests assert `retired_qr_policy_invites` is `0` for first QR creation and `1` when an old open-growth QR is replaced by a strict-entry QR.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\clans.py gmfn_backend\tests\test_join_requests.py`, `python -m pytest -q gmfn_backend\tests\test_join_requests.py -k "invite_link and qr_policy"` (1 passed, 71 deselected), `python -m pytest -q gmfn_backend\tests\test_join_requests.py` (72 passed), `npm exec eslint src/pages/ClansPage.tsx src/lib/api.ts`, `npm --prefix frontend run audit:existing-community-invite-line`, `npm --prefix frontend run build`, and `git diff --check` for touched code files.
+- Devil truth: this makes QR policy rotation visible and cleaner, but it still does not create OTP, identity proof, payment/dues verification, permit checks, or a legal membership-verification engine.
+
 ## 2026-09-12 - Stale QR policy invites retired locally
 
 - Status: Verified local backend continuation after local commit `9792fb02`; not pushed or deployed under the current batch-mode pipeline freeze.
