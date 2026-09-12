@@ -255,6 +255,23 @@ assertContains(
   "Backend tests must keep coverage for public typed-GSN-ID reuse and unknown-GSN-ID rejection."
 );
 
+assertContains(
+  "frontend/src/lib/api.ts",
+  /export async function getJoinInvitePreview\([\s\S]*?qr_policy\?: string \| null;[\s\S]*?entry_policy\?: string \| null;[\s\S]*?qr_policy: options\?\.qr_policy \?\? undefined,[\s\S]*?entry_policy: options\?\.entry_policy \?\? undefined,[\s\S]*?export async function getJoinInviteRequestStatus\([\s\S]*?qr_policy\?: string \| null;[\s\S]*?entry_policy\?: string \| null;[\s\S]*?qr_policy: options\?\.qr_policy \?\? undefined,[\s\S]*?entry_policy: options\?\.entry_policy \?\? undefined,/,
+  "Join invite preview and request-status API helpers must preserve QR policy context for stale QR recovery."
+);
+
+assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /const qrPolicyKey = useMemo\([\s\S]*?searchParams\.get\("qr_policy"\) \|\| searchParams\.get\("entry_policy"\)[\s\S]*?getJoinInvitePreview\(inviteCode, \{[\s\S]*?community_code: communityCode \|\| undefined,[\s\S]*?qr_policy: qrPolicyKey \|\| undefined,[\s\S]*?\}, \[inviteCode, communityCode, qrPolicyKey\]\);[\s\S]*?getJoinInviteRequestStatus\(safeInviteCode, safePhone, \{[\s\S]*?community_code: communityCode \|\| undefined,[\s\S]*?qr_policy: effectiveQrPolicyKey \|\| undefined,[\s\S]*?effectiveQrPolicyKey,/,
+  "Join Entry must pass QR policy context into preview and status checks so retired QR recovery keeps the intended onboarding mode."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/clans.py",
+  /def preview_join_invite\([\s\S]*?qr_policy: Optional\[str\] = None,[\s\S]*?entry_policy: Optional\[str\] = None,[\s\S]*?desired_qr_policy_key = _public_qr_policy_hint\(qr_policy, entry_policy\)[\s\S]*?def get_join_invite_request_status\([\s\S]*?qr_policy: Optional\[str\] = None,[\s\S]*?entry_policy: Optional\[str\] = None,[\s\S]*?_public_qr_policy_hint\(qr_policy, entry_policy\)/,
+  "Backend preview and request-status routes must accept QR policy as a non-authoritative recovery hint."
+);
 if (findings.length > 0) {
   console.error("Existing-community invite line audit failed:");
   for (const finding of findings) {

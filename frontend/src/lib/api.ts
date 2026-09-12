@@ -1950,12 +1950,16 @@ export async function getJoinInvitePreview(
   code: string,
   options?: {
     community_code?: string | null;
+    qr_policy?: string | null;
+    entry_policy?: string | null;
   }
 ): Promise<any> {
   return httpJson(
     `/clans/join-invite/preview${buildQuery({
       code,
       community_code: options?.community_code ?? undefined,
+      qr_policy: options?.qr_policy ?? undefined,
+      entry_policy: options?.entry_policy ?? undefined,
     })}`,
     "GET",
     undefined,
@@ -1968,6 +1972,8 @@ export async function getJoinInviteRequestStatus(
   phone_e164: string,
   options?: {
     community_code?: string | null;
+    qr_policy?: string | null;
+    entry_policy?: string | null;
   }
 ): Promise<any> {
   return httpJson(
@@ -1975,6 +1981,8 @@ export async function getJoinInviteRequestStatus(
       code,
       phone_e164,
       community_code: options?.community_code ?? undefined,
+      qr_policy: options?.qr_policy ?? undefined,
+      entry_policy: options?.entry_policy ?? undefined,
     })}`,
     "GET",
     undefined,

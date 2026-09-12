@@ -4023,6 +4023,8 @@ def get_join_invite_request_status(
     phone_e164: str,
     request: Request,
     community_code: Optional[str] = None,
+    qr_policy: Optional[str] = None,
+    entry_policy: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
     invite_code = _safe_str(code)
@@ -4037,7 +4039,9 @@ def get_join_invite_request_status(
         community_code=community_code,
     )
     request_qr_policy_key = (
-        _safe_str(getattr(_invite_row, "qr_policy_key", None)) if _invite_row else ""
+        _safe_str(getattr(_invite_row, "qr_policy_key", None))
+        if _invite_row
+        else (_public_qr_policy_hint(qr_policy, entry_policy) or "")
     )
     request_qr_policy = {
         "qr_policy_key": request_qr_policy_key or None,

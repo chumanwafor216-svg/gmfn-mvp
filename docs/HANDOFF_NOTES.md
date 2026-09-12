@@ -1,3 +1,13 @@
+## 2026-09-12 - Join Entry sends QR policy recovery context locally
+
+- Status: Verified local backend/frontend continuation; not pushed or deployed under the current batch-mode pipeline freeze.
+- Frontend truth fix: `JoinEntryPage` now passes its preserved `qr_policy` context into invite preview and request-status checks instead of only reading it for display.
+- Shared API contract: `getJoinInvitePreview` and `getJoinInviteRequestStatus` now accept and send optional `qr_policy` / `entry_policy` params.
+- Backend status fix: `/clans/join-invite/request-status` now accepts the same QR policy hint used by preview, so no-row status responses can still explain the intended QR operating mode.
+- Regression cages: `frontend/tools/audit-existing-community-invite-line.mjs` now protects the frontend helper wiring, Join Entry call wiring, and backend hint parameters; backend tests cover request-status hint fallback.
+- Scope boundary: no submit behavior, approval rule, preapproval match, verification rule, schema, migration, auth, or activation logic changed.
+- Verification passed: `python -m pytest -q gmfn_backend\tests\test_join_requests.py` (74 passed), focused QR tests, `python -m py_compile gmfn_backend\app\api\routes\clans.py`, `npm exec eslint src/pages/JoinEntryPage.tsx src/lib/api.ts tools/audit-existing-community-invite-line.mjs`, `npm --prefix frontend run audit:existing-community-invite-line`, `npm --prefix frontend run audit:entry-auth`, `npm --prefix frontend run audit:member-entry-actions`, and `npm --prefix frontend run build`.
+- Devil truth: this wires the context end-to-end for preview/status recovery, but QR policy is still not proof. It remains a routing/explanation hint unless backed by invite rows, community review, preapproval, and later verification.
 ## 2026-09-12 - QR preview recovery prefers policy context locally
 
 - Status: Verified local backend continuation; not pushed or deployed under the current batch-mode pipeline freeze.

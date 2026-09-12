@@ -1447,6 +1447,7 @@ export default function JoinEntryPage() {
 
     getJoinInvitePreview(inviteCode, {
       community_code: communityCode || undefined,
+      qr_policy: qrPolicyKey || undefined,
     })
       .then((out) => {
         if (!alive) return;
@@ -1464,7 +1465,7 @@ export default function JoinEntryPage() {
     return () => {
       alive = false;
     };
-  }, [inviteCode, communityCode]);
+  }, [inviteCode, communityCode, qrPolicyKey]);
 
   useEffect(() => {
     let alive = true;
@@ -1788,6 +1789,7 @@ export default function JoinEntryPage() {
     const timeoutId = window.setTimeout(() => {
       getJoinInviteRequestStatus(safeInviteCode, safePhone, {
         community_code: communityCode || undefined,
+        qr_policy: effectiveQrPolicyKey || undefined,
       })
         .then((out) => {
           if (!alive) return;
@@ -1809,6 +1811,7 @@ export default function JoinEntryPage() {
     communityCode,
     continueExistingRequest,
     effectiveInviteCode,
+    effectiveQrPolicyKey,
     inviteBlocked,
     inviteChecking,
     inviteReady,

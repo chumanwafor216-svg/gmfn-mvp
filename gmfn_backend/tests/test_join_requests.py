@@ -765,6 +765,26 @@ def test_public_join_invite_preview_prefers_qr_policy_recovery_hint(client):
     assert "newer live invitation" in data["message"].lower()
 
 
+def test_public_join_invite_request_status_uses_qr_policy_hint_without_invite_row(client):
+    _seed_join_context()
+
+    res = client.get(
+        "/clans/join-invite/request-status"
+        "?code=missing-code"
+        "&phone_e164=%2B447700900123"
+        "&community_code=GMFN-C-000001"
+        "&qr_policy=strict_entry"
+    )
+
+    assert res.status_code == 200, res.text
+    data = res.json()
+    assert data["ok"] is True
+    assert data["found"] is False
+    assert data["community_id"] == 1
+    assert data["qr_policy_key"] == "strict_entry"
+    assert data["qr_policy_label"] == "Strict school / professional body"
+
+
 def test_shareable_join_invite_max_uses_defaults_to_reusable_value():
     clan = Clan(id=1, invite_max_uses=None)
 
