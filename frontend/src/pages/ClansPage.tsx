@@ -919,7 +919,7 @@ export default function ClansPage() {
       "Operating steps:",
       "1. Share the QR, link, or invite code only from the agreed community channel.",
       "2. If scanning fails, help the member enter the invite code through GSN Join Existing Community.",
-      "3. Add known members to the pre-approved list before a public meeting if fast entry is needed.",
+      "3. Add known members to the pre-approved list before a public meeting; open and reviewed QR can fast-track them, while strict and market QR still need review.",
       "4. Watch join requests after sharing; strict and market policies still require proper review.",
       "5. Tell members the truth: approval opens community access, but verification is separate.",
       `Boundary: ${inviteQrPolicy.boundary}`,
@@ -1621,7 +1621,7 @@ export default function ClansPage() {
                   fontWeight: 750,
                 }}
               >
-                Add people the community already accepts. If their scan matches phone, email, or GSN ID, GSN approves the join request and still keeps verification separate.
+                Add people the community already accepts. Open or reviewed QR can approve a matching entry quickly; strict and market QR use the match as reviewer evidence before access.
               </div>
               <div
                 style={{
@@ -2444,7 +2444,7 @@ export default function ClansPage() {
                 }}
               >
                 <div style={card("#FFFFFF")}>Share the QR or link from the agreed community channel.</div>
-                <div style={card("#FFFFFF")}>Use pre-approved entries for known members who need fast access.</div>
+                <div style={card("#FFFFFF")}>Use pre-approved entries for fast access only where the QR policy allows it.</div>
                 <div style={card("#FFFFFF")}>Review requests and verify membership before sensitive benefits.</div>
               </div>
               <div

@@ -297,6 +297,79 @@ def test_public_qr_join_request_auto_approves_preapproved_phone(client):
         )
         assert approval_notice is not None
 
+
+def test_market_qr_preapproval_records_match_without_auto_approval(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="market-preapproved-code",
+                qr_policy_key="market_access",
+                is_active=True,
+                max_uses=25,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.add(
+            ClanQrPreApproval(
+                id=1,
+                clan_id=1,
+                added_by_user_id=1,
+                match_type="phone",
+                match_value="+2348011112222",
+                display_name="Ada Market",
+                phone_e164="+2348011112222",
+                approval_note="Known trader before QR rollout",
+                status="active",
+            )
+        )
+        db.commit()
+
+    res = client.post(
+        "/clans/join-requests",
+        json={
+            "invite_code": "market-preapproved-code",
+            "first_name": "Ada",
+            "surname": "Market",
+            "phone_e164": "+234 801 111 2222",
+            "country": "Nigeria",
+        },
+    )
+
+    assert res.status_code == 201, res.text
+    data = res.json()
+    assert data["result_status"] == "pending_request_created"
+    assert data["request"]["status"] == "pending"
+    assert data["request"]["qr_policy_key"] == "market_access"
+    assert data["request"]["qr_preapproval_match"]["id"] == 1
+
+    with SessionLocal() as db:
+        join_request = db.query(ClanJoinRequest).one()
+        preapproval = db.get(ClanQrPreApproval, 1)
+        assert join_request.status == "pending"
+        assert preapproval is not None
+        assert preapproval.matched_join_request_id == join_request.id
+        assert preapproval.matched_user_id == join_request.applicant_user_id
+        assert preapproval.matched_at is not None
+        assert db.query(ClanMembership).filter_by(clan_id=1, user_id=2).count() == 0
+        approval_notice = (
+            db.query(Notification)
+            .filter(
+                Notification.user_id == 1,
+                Notification.kind == "approval_request",
+            )
+            .first()
+        )
+        assert approval_notice is not None
+        assert "Marketplace dues / permit access" in approval_notice.message
+
+
 def test_public_join_request_accepts_clan_invite_record_code(client, override_clan_ctx_admin):
     _seed_join_context()
 

@@ -2012,6 +2012,10 @@ def _qr_policy_notification_suffix(qr_policy_key: Optional[str]) -> str:
     return f" QR entry policy: {label}."
 
 
+def _qr_preapproval_allows_auto_approval(qr_policy_key: Optional[str]) -> bool:
+    key = _safe_str(qr_policy_key)
+    return key in {"", "open_growth", "reviewed_access"}
+
 
 def _normalize_qr_phone(value: Any) -> str:
     raw = _safe_str(value)
@@ -4551,96 +4555,97 @@ def create_join_request(
         )
         db.commit()
         db.refresh(qr_preapproval_match)
-        log_trust_event(
-            db,
-            event_type=TrustEventType.INVITE_ACCEPTED,
-            clan_id=int(clan.id),
-            actor_user_id=int(applicant_user.id),
-            subject_user_id=int(applicant_user.id),
-            meta={
-                "reason": "preapproved_qr_join_request_created",
-                "invite_code": invite_code,
-                "invite_id": int(invite_row.id) if invite_row else None,
-                "qr_policy_key": qr_policy_key,
-                "join_request_id": int(join_request.id),
-                "preapproval_id": int(qr_preapproval_match.id),
-                "match_type": _safe_str(qr_preapproval_match.match_type),
-                "user_id": int(applicant_user.id),
-                "gmfn_id": _safe_str(getattr(applicant_user, "gmfn_id", None)) or None,
-                "identity_reused": existing_identity_join,
-                "community_admission_status": "approved_by_preapproval",
-            },
-            dedupe_key=f"join-request-created:{int(join_request.id)}",
-        )
-        approval_result = _approve_join_request(
-            db,
-            join_request=join_request,
-            request=request,
-        )
-        join_request = (
-            db.query(ClanJoinRequest)
-            .filter(ClanJoinRequest.id == int(join_request.id))
-            .first()
-        )
-        status_payload = _join_request_status_payload(db, request, join_request)
-        return {
-            "ok": True,
-            "result_status": "preapproved_request_approved",
-            "message": (
-                "Join request matched a community pre-approval and was approved. "
-                "Verification can still be requested later."
-            ),
-            "request_id": status_payload["request_id"],
-            "status": status_payload["status"],
-            "community_id": status_payload["community_id"],
-            "community_code": status_payload["community_code"],
-            "community_name": status_payload["community_name"],
-            "marketplace_name": status_payload.get("marketplace_name"),
-            "qr_policy_key": qr_policy_key,
-            "qr_policy_label": status_payload.get("qr_policy_label"),
-            "qr_preapproved": True,
-            "qr_preapproval_match": _qr_preapproval_out(qr_preapproval_match),
-            "pending_status_path": status_payload.get("pending_status_path"),
-            "approval_path": status_payload.get("approval_path"),
-            "result_channel": status_payload.get("result_channel"),
-            "result_path": status_payload.get("result_path"),
-            "activation_path": status_payload.get("activation_path"),
-            "activation_link": status_payload.get("activation_link"),
-            "activation_message": status_payload.get("activation_message"),
-            "activation_required": status_payload.get("activation_required"),
-            "activation_delivery_status": status_payload.get("activation_delivery_status"),
-            "user_id": int(applicant_user.id),
-            "gmfn_id": status_payload.get("gmfn_id") or _safe_str(getattr(applicant_user, "gmfn_id", None)) or None,
-            "existing_identity": status_payload.get("existing_identity", existing_identity_join),
-            "identity_reused": status_payload.get("identity_reused", existing_identity_join),
-            "approval_result": approval_result,
-            "request": _join_request_out(db, join_request),
-            "applicant_profile": {
-                "first_name": _safe_str(payload.first_name) or None,
-                "surname": _safe_str(payload.surname) or None,
-                "phone_e164": submitted_phone or None,
-                "country": _safe_str(payload.country) or None,
-                "date_of_birth": _safe_str(payload.date_of_birth) or None,
-                "birth_country": _safe_str(payload.birth_country or payload.country) or None,
-                "birth_place": _safe_str(payload.birth_place) or None,
-                "country_of_origin": _safe_str(payload.country_of_origin) or None,
-                "residential_area": _safe_str(payload.residential_area) or None,
-                "business_name": payload.business_name,
-                "note": payload.note,
-                "rules_accepted": bool(payload.rules_accepted),
-                "governance_preset_key_acknowledged": (
-                    _safe_str(payload.governance_preset_key_acknowledged) or None
+        if _qr_preapproval_allows_auto_approval(qr_policy_key):
+            log_trust_event(
+                db,
+                event_type=TrustEventType.INVITE_ACCEPTED,
+                clan_id=int(clan.id),
+                actor_user_id=int(applicant_user.id),
+                subject_user_id=int(applicant_user.id),
+                meta={
+                    "reason": "preapproved_qr_join_request_created",
+                    "invite_code": invite_code,
+                    "invite_id": int(invite_row.id) if invite_row else None,
+                    "qr_policy_key": qr_policy_key,
+                    "join_request_id": int(join_request.id),
+                    "preapproval_id": int(qr_preapproval_match.id),
+                    "match_type": _safe_str(qr_preapproval_match.match_type),
+                    "user_id": int(applicant_user.id),
+                    "gmfn_id": _safe_str(getattr(applicant_user, "gmfn_id", None)) or None,
+                    "identity_reused": existing_identity_join,
+                    "community_admission_status": "approved_by_preapproval",
+                },
+                dedupe_key=f"join-request-created:{int(join_request.id)}",
+            )
+            approval_result = _approve_join_request(
+                db,
+                join_request=join_request,
+                request=request,
+            )
+            join_request = (
+                db.query(ClanJoinRequest)
+                .filter(ClanJoinRequest.id == int(join_request.id))
+                .first()
+            )
+            status_payload = _join_request_status_payload(db, request, join_request)
+            return {
+                "ok": True,
+                "result_status": "preapproved_request_approved",
+                "message": (
+                    "Join request matched a community pre-approval and was approved. "
+                    "Verification can still be requested later."
                 ),
-            },
-            "lineage": {
-                "origin_community_id": int(clan.id),
-                "origin_community_code": _community_code(clan.id),
-                "origin_community_name": clan.name,
-                "invited_by_user_id": invited_by_user_id,
-                "invite_id": int(invite_row.id) if invite_row else None,
+                "request_id": status_payload["request_id"],
+                "status": status_payload["status"],
+                "community_id": status_payload["community_id"],
+                "community_code": status_payload["community_code"],
+                "community_name": status_payload["community_name"],
+                "marketplace_name": status_payload.get("marketplace_name"),
                 "qr_policy_key": qr_policy_key,
-            },
-        }
+                "qr_policy_label": status_payload.get("qr_policy_label"),
+                "qr_preapproved": True,
+                "qr_preapproval_match": _qr_preapproval_out(qr_preapproval_match),
+                "pending_status_path": status_payload.get("pending_status_path"),
+                "approval_path": status_payload.get("approval_path"),
+                "result_channel": status_payload.get("result_channel"),
+                "result_path": status_payload.get("result_path"),
+                "activation_path": status_payload.get("activation_path"),
+                "activation_link": status_payload.get("activation_link"),
+                "activation_message": status_payload.get("activation_message"),
+                "activation_required": status_payload.get("activation_required"),
+                "activation_delivery_status": status_payload.get("activation_delivery_status"),
+                "user_id": int(applicant_user.id),
+                "gmfn_id": status_payload.get("gmfn_id") or _safe_str(getattr(applicant_user, "gmfn_id", None)) or None,
+                "existing_identity": status_payload.get("existing_identity", existing_identity_join),
+                "identity_reused": status_payload.get("identity_reused", existing_identity_join),
+                "approval_result": approval_result,
+                "request": _join_request_out(db, join_request),
+                "applicant_profile": {
+                    "first_name": _safe_str(payload.first_name) or None,
+                    "surname": _safe_str(payload.surname) or None,
+                    "phone_e164": submitted_phone or None,
+                    "country": _safe_str(payload.country) or None,
+                    "date_of_birth": _safe_str(payload.date_of_birth) or None,
+                    "birth_country": _safe_str(payload.birth_country or payload.country) or None,
+                    "birth_place": _safe_str(payload.birth_place) or None,
+                    "country_of_origin": _safe_str(payload.country_of_origin) or None,
+                    "residential_area": _safe_str(payload.residential_area) or None,
+                    "business_name": payload.business_name,
+                    "note": payload.note,
+                    "rules_accepted": bool(payload.rules_accepted),
+                    "governance_preset_key_acknowledged": (
+                        _safe_str(payload.governance_preset_key_acknowledged) or None
+                    ),
+                },
+                "lineage": {
+                    "origin_community_id": int(clan.id),
+                    "origin_community_code": _community_code(clan.id),
+                    "origin_community_name": clan.name,
+                    "invited_by_user_id": invited_by_user_id,
+                    "invite_id": int(invite_row.id) if invite_row else None,
+                    "qr_policy_key": qr_policy_key,
+                },
+            }
 
     reviewers = _active_reviewer_memberships(db, clan_id=int(clan.id))
     applicant_label = (

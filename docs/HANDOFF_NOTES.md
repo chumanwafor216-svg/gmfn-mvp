@@ -1,3 +1,13 @@
+## 2026-09-12 - Strict and market QR preapprovals stay review-first locally
+
+- Status: Verified local backend/frontend continuation; not pushed or deployed under the current batch-mode pipeline freeze.
+- Backend guard: `_qr_preapproval_allows_auto_approval` now limits automatic approval after a QR preapproval match to blank, `open_growth`, and `reviewed_access` QR policies.
+- Strict/market behavior: `strict_entry` and `market_access` preapproval matches still record the match on the join request, but the request remains pending for reviewer decision and notification.
+- Frontend copy: `ClansPage` now tells executives that open/reviewed QR can fast-track known members, while strict/market QR uses preapproval as reviewer evidence before access.
+- Regression proof: added `test_market_qr_preapproval_records_match_without_auto_approval` while preserving the existing reviewed-access preapproval auto-approval test.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\clans.py`, `python -m pytest -q gmfn_backend\tests\test_join_requests.py` (75 passed), `npm --prefix frontend run audit:existing-community-invite-line`, `npm exec eslint src/pages/ClansPage.tsx tools/audit-existing-community-invite-line.mjs`, `npm --prefix frontend run audit:entry-auth`, `npm --prefix frontend run audit:member-entry-actions`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Devil truth: this is still not OTP, phone possession, legal ID, dues or permit proof, or verified membership. It is only a community-held recognition signal used differently by QR policy.
+
 ## 2026-09-12 - Join Entry sends QR policy recovery context locally
 
 - Status: Verified local backend/frontend continuation; not pushed or deployed under the current batch-mode pipeline freeze.

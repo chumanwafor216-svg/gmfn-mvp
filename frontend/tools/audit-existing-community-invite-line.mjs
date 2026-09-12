@@ -240,7 +240,7 @@ assertContains(
   "Ready invite packages must keep a one-tap Copy invite code action next to Copy link so the manual fallback is operational, not just visible."
 );assertContains(
   "frontend/src/pages/ClansPage.tsx",
-  /function communityQrHandoverText\(\): string \{[\s\S]*?"1\. Share the QR, link, or invite code only from the agreed community channel\."[\s\S]*?"2\. If scanning fails, help the member enter the invite code through GSN Join Existing Community\."[\s\S]*?"5\. Tell members the truth: approval opens community access, but verification is separate\."/,
+  /function communityQrHandoverText\(\): string \{[\s\S]*?"1\. Share the QR, link, or invite code only from the agreed community channel\."[\s\S]*?"2\. If scanning fails, help the member enter the invite code through GSN Join Existing Community\."[\s\S]*?open and reviewed QR can fast-track them, while strict and market QR still need review[\s\S]*?"5\. Tell members the truth: approval opens community access, but verification is separate\."/,
   "The copied QR handover must tell executives how to use the manual invite-code fallback without weakening the approval-versus-verification boundary."
 );
 assertContains(
@@ -271,6 +271,17 @@ assertContains(
   "gmfn_backend/app/api/routes/clans.py",
   /def preview_join_invite\([\s\S]*?qr_policy: Optional\[str\] = None,[\s\S]*?entry_policy: Optional\[str\] = None,[\s\S]*?desired_qr_policy_key = _public_qr_policy_hint\(qr_policy, entry_policy\)[\s\S]*?def get_join_invite_request_status\([\s\S]*?qr_policy: Optional\[str\] = None,[\s\S]*?entry_policy: Optional\[str\] = None,[\s\S]*?_public_qr_policy_hint\(qr_policy, entry_policy\)/,
   "Backend preview and request-status routes must accept QR policy as a non-authoritative recovery hint."
+);
+assertContains(
+  "gmfn_backend/app/api/routes/clans.py",
+  /def _qr_preapproval_allows_auto_approval\(qr_policy_key: Optional\[str\]\) -> bool:[\s\S]*?return key in \{"", "open_growth", "reviewed_access"\}[\s\S]*?if qr_preapproval_match is not None:[\s\S]*?if _qr_preapproval_allows_auto_approval\(qr_policy_key\):[\s\S]*?preapproved_request_approved/,
+  "QR pre-approved entries must only auto-approve open/reviewed QR policies; strict and market QR matches remain reviewer evidence."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_join_requests.py",
+  /test_public_qr_join_request_auto_approves_preapproved_phone[\s\S]*?qr_policy_key="reviewed_access"[\s\S]*?preapproved_request_approved[\s\S]*?test_market_qr_preapproval_records_match_without_auto_approval[\s\S]*?qr_policy_key="market_access"[\s\S]*?pending_request_created[\s\S]*?qr_preapproval_match"\]\["id"\] == 1/,
+  "Backend tests must prove reviewed QR preapproval can auto-approve while market QR preapproval remains pending evidence."
 );
 if (findings.length > 0) {
   console.error("Existing-community invite line audit failed:");
