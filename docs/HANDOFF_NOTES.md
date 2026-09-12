@@ -1,3 +1,11 @@
+## 2026-09-12 - QR pre-approved CSV/template helper added locally
+
+- Status: Verified local frontend continuation after local commit `cf644c0d`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Frontend setup: `ClansPage` bulk preapproval panel now supports choosing a small `.csv`, `.tsv`, or `.txt` file and loading its contents into the reviewed import box.
+- Template helper: added a browser-generated `gsn-pre-approved-members-template.csv` download with columns for name, phone, email, GSN ID, and approval note.
+- UX boundary: file loading only prepares the textarea; the executive still clicks `Import list`, and the backend still enforces the real normalization, duplicate handling, and skipped-row rules.
+- Verification passed: `npm exec eslint src/pages/ClansPage.tsx src/lib/api.ts`, `npm --prefix frontend run audit:existing-community-invite-line`, and `npm --prefix frontend run build`.
+- Devil truth: this is not full Excel import, not server-side CSV attachment storage, and not a perfect quoted-CSV parser. It is a practical helper for small secretary lists, with the backend remaining the authority.
 ## 2026-09-12 - QR pre-approved bulk import added locally
 
 - Status: Verified local continuation after deployed commit `ec5ed508`; not pushed or deployed yet under the current batch-mode pipeline freeze.

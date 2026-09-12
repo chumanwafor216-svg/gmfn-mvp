@@ -701,6 +701,49 @@ export default function ClansPage() {
       setQrPreApprovalBulkSaving(false);
     }
   }
+  function handleDownloadQrPreApprovalTemplate() {
+    const rows = [
+      "Name,Phone number,Email,GSN ID,Approval note",
+      "Ada Market,+2348011112222,,,Known member",
+      "John Trader,,john@example.com,,Paid dues",
+      "Existing Member,,,GSN-10293,Already has GSN ID",
+    ];
+    const blob = new Blob([rows.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "gsn-pre-approved-members-template.csv";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setQrPreApprovalMessage("Template prepared for your member list.");
+  }
+
+  async function handleQrPreApprovalFileUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.size > 256 * 1024) {
+      setQrPreApprovalMessage("Use a smaller file for this quick import.");
+      event.target.value = "";
+      return;
+    }
+    try {
+      const body = await file.text();
+      const cleanBody = safeStr(body);
+      setQrPreApprovalBulkText(cleanBody);
+      const parsed = parseQrPreApprovalBulkText(cleanBody);
+      setQrPreApprovalMessage(
+        parsed.entries.length
+          ? `Loaded ${parsed.entries.length} usable entries from ${file.name}.`
+          : "No usable phone, email, or GSN ID found in that file."
+      );
+    } catch {
+      setQrPreApprovalMessage("Could not read that file. Try pasting the list instead.");
+    } finally {
+      event.target.value = "";
+    }
+  }
   async function handleDeactivateQrPreApproval(item: QrPreApprovalItem) {
     const id = Number(item.id || 0);
     if (!selectedCommunityId || !id) return;
@@ -1606,6 +1649,29 @@ export default function ClansPage() {
                   Paste many at once
                 </summary>
                 <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+                      gap: 10,
+                      alignItems: "center",
+                    }}
+                  >
+                    <input
+                      type="file"
+                      accept=".csv,.txt,.tsv,text/csv,text/plain"
+                      onChange={handleQrPreApprovalFileUpload}
+                      style={inputStyle()}
+                    />
+                    <SecondaryButton
+                      type="button"
+                      onClick={handleDownloadQrPreApprovalTemplate}
+                      debugId="clans.qr-preapproval.template"
+                      style={{ ...btn(false), width: isCompact ? "100%" : undefined }}
+                    >
+                      Download template
+                    </SecondaryButton>
+                  </div>
                   <textarea
                     value={qrPreApprovalBulkText}
                     onChange={(event) => setQrPreApprovalBulkText(event.target.value)}
