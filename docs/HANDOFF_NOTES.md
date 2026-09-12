@@ -1,3 +1,12 @@
+## 2026-09-12 - Normalized join links preserve QR policy locally
+
+- Status: Verified local frontend continuation after local commit `a3d243d3`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Shared link truth fix: `normalizedJoinInviteUrl` now preserves backend QR policy payloads (`qr_policy_key`, `qr_policy`, or `entry_policy`) as the join-page query param `qr_policy`.
+- QR package impact: future screens that consume a backend invite payload through the shared normalizer will not silently drop the QR approval model before the member lands on Join Entry.
+- Scope boundary: no backend route, schema, approval rule, verification rule, or invite expiry rule changed; this is a frontend URL-context preservation fix.
+- Regression cage: `frontend/tools/audit-link-contracts.mjs` now asserts that normalized join invite links carry QR entry policy context.
+- Verification passed: `npm exec eslint src/lib/joinLinks.ts tools/audit-link-contracts.mjs`, `npm --prefix frontend run audit:link-contracts`, `npm --prefix frontend run audit:existing-community-invite-line`, `npm --prefix frontend run build`, and `git diff --check -- frontend\src\lib\joinLinks.ts frontend\tools\audit-link-contracts.mjs`.
+- Devil truth: this protects policy context in URLs, but URL policy is still display/routing context. The backend invite row remains the authority for the real QR policy and approval model.
 ## 2026-09-12 - Join Entry manual-code QR context preserved locally
 
 - Status: Verified local frontend continuation after local commit `285754ce`; not pushed or deployed under the current batch-mode pipeline freeze.

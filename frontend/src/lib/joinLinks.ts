@@ -154,6 +154,11 @@ export function normalizedJoinInviteUrl(payload: any): string {
     const communityCode = firstTruthy(payload?.community_code);
     const communityName = firstTruthy(payload?.community_name);
     const marketplaceName = firstTruthy(payload?.marketplace_name);
+    const qrPolicyKey = firstTruthy(
+      payload?.qr_policy_key,
+      payload?.qr_policy,
+      payload?.entry_policy
+    );
     const inviterName = firstTruthy(
       payload?.inviter_name,
       payload?.invited_by_display,
@@ -163,6 +168,7 @@ export function normalizedJoinInviteUrl(payload: any): string {
     if (communityCode) params.set("community_code", communityCode);
     if (communityName) params.set("community_name", communityName);
     if (marketplaceName) params.set("marketplace_name", marketplaceName);
+    if (qrPolicyKey) params.set("qr_policy", qrPolicyKey);
     if (inviterName) params.set("inviter_name", inviterName);
 
     const query = params.toString();

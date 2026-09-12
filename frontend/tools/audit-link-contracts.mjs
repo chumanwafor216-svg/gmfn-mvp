@@ -630,6 +630,11 @@ assertContains(
   /return shareablePublicFrontendUrl\(`\/start\/join\/\$\{encodeURIComponent\(cleanCode\)\}`\);/,
   "Invite links must normalize to the public join route while staying on the current dev origin during phone testing."
 );
+assertContains(
+  "src/lib/joinLinks.ts",
+  /export function normalizedJoinInviteUrl\(payload: any\): string \{[\s\S]*?const qrPolicyKey = firstTruthy\([\s\S]*?payload\?\.qr_policy_key,[\s\S]*?payload\?\.qr_policy,[\s\S]*?payload\?\.entry_policy[\s\S]*?if \(qrPolicyKey\) params\.set\("qr_policy", qrPolicyKey\);/,
+  "Normalized join invite links must preserve backend QR entry policy context as qr_policy so QR packages do not lose their approval model."
+);
 
 assertContains(
   "src/lib/joinLinks.ts",
