@@ -319,6 +319,10 @@ class ClanQrPreApprovalStatusIn(BaseModel):
         return _reject_non_text_body_value(value, info.field_name)
 
 
+class ClanQrPreApprovalBulkIn(BaseModel):
+    entries: list[ClanQrPreApprovalIn] = Field(..., min_length=1, max_length=250)
+
+
 class CommunityAffiliationRequestIn(BaseModel):
     parent_community_key: str = Field(..., min_length=1, max_length=64)
     request_note: Optional[str] = Field(default=None, max_length=500)
@@ -4693,17 +4697,13 @@ def list_clan_qr_preapprovals(
     }
 
 
-@router.post("/{clan_id}/qr-preapprovals", response_model=dict[str, Any], status_code=201)
-def create_clan_qr_preapproval(
+def _upsert_qr_preapproval(
+    db: Session,
+    *,
     clan_id: int,
+    current_user: User,
     payload: ClanQrPreApprovalIn,
-    db: Session = Depends(get_db),
-    clan_ctx: tuple = Depends(get_current_clan_membership),
-):
-    clan, _membership, current_user = _require_clan_admin(clan_ctx)
-    if int(clan.id) != int(clan_id):
-        raise HTTPException(status_code=403, detail="Not allowed")
-
+) -> tuple[ClanQrPreApproval, bool]:
     match_type, match_value = _qr_preapproval_input_match(payload)
     existing = (
         db.query(ClanQrPreApproval)
@@ -4722,27 +4722,43 @@ def create_clan_qr_preapproval(
         existing.approval_note = _safe_str(payload.approval_note) or existing.approval_note
         existing.status = "active"
         db.add(existing)
-        db.commit()
-        db.refresh(existing)
-        row = existing
-        created = False
-    else:
-        row = ClanQrPreApproval(
-            clan_id=int(clan_id),
-            added_by_user_id=int(current_user.id),
-            match_type=match_type,
-            match_value=match_value,
-            display_name=_safe_str(payload.display_name) or None,
-            phone_e164=_normalize_qr_phone(payload.phone_e164) or None,
-            email=_safe_str(payload.email).lower() or None,
-            gmfn_id=_safe_str(payload.gmfn_id).upper() or None,
-            approval_note=_safe_str(payload.approval_note) or None,
-            status="active",
-        )
-        db.add(row)
-        db.commit()
-        db.refresh(row)
-        created = True
+        return existing, False
+
+    row = ClanQrPreApproval(
+        clan_id=int(clan_id),
+        added_by_user_id=int(current_user.id),
+        match_type=match_type,
+        match_value=match_value,
+        display_name=_safe_str(payload.display_name) or None,
+        phone_e164=_normalize_qr_phone(payload.phone_e164) or None,
+        email=_safe_str(payload.email).lower() or None,
+        gmfn_id=_safe_str(payload.gmfn_id).upper() or None,
+        approval_note=_safe_str(payload.approval_note) or None,
+        status="active",
+    )
+    db.add(row)
+    return row, True
+
+
+@router.post("/{clan_id}/qr-preapprovals", response_model=dict[str, Any], status_code=201)
+def create_clan_qr_preapproval(
+    clan_id: int,
+    payload: ClanQrPreApprovalIn,
+    db: Session = Depends(get_db),
+    clan_ctx: tuple = Depends(get_current_clan_membership),
+):
+    clan, _membership, current_user = _require_clan_admin(clan_ctx)
+    if int(clan.id) != int(clan_id):
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    row, created = _upsert_qr_preapproval(
+        db,
+        clan_id=int(clan_id),
+        current_user=current_user,
+        payload=payload,
+    )
+    db.commit()
+    db.refresh(row)
 
     log_trust_event(
         db,
@@ -4762,6 +4778,106 @@ def create_clan_qr_preapproval(
         "ok": True,
         "created": created,
         "item": _qr_preapproval_out(row),
+    }
+
+
+@router.post("/{clan_id}/qr-preapprovals/bulk", response_model=dict[str, Any], status_code=201)
+def bulk_create_clan_qr_preapprovals(
+    clan_id: int,
+    payload: ClanQrPreApprovalBulkIn,
+    db: Session = Depends(get_db),
+    clan_ctx: tuple = Depends(get_current_clan_membership),
+):
+    clan, _membership, current_user = _require_clan_admin(clan_ctx)
+    if int(clan.id) != int(clan_id):
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    saved: list[ClanQrPreApproval] = []
+    skipped: list[dict[str, Any]] = []
+    created_count = 0
+    updated_count = 0
+    seen: set[tuple[str, str]] = set()
+
+    for index, entry in enumerate(payload.entries, start=1):
+        try:
+            match_type, match_value = _qr_preapproval_input_match(entry)
+        except HTTPException:
+            skipped.append(
+                {
+                    "line": index,
+                    "display_name": _safe_str(entry.display_name) or None,
+                    "reason": "Add phone, email, or GSN ID.",
+                }
+            )
+            continue
+
+        pair = (match_type, match_value)
+        if pair in seen:
+            skipped.append(
+                {
+                    "line": index,
+                    "display_name": _safe_str(entry.display_name) or None,
+                    "match_type": match_type,
+                    "match_value": match_value,
+                    "reason": "Duplicate in this import.",
+                }
+            )
+            continue
+        seen.add(pair)
+
+        row, created = _upsert_qr_preapproval(
+            db,
+            clan_id=int(clan_id),
+            current_user=current_user,
+            payload=entry,
+        )
+        saved.append(row)
+        if created:
+            created_count += 1
+        else:
+            updated_count += 1
+
+    if not saved:
+        db.rollback()
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "qr_preapproval_bulk_empty",
+                "message": "No usable pre-approved entries were found in this import.",
+                "skipped": skipped[:25],
+            },
+        )
+
+    db.commit()
+    for row in saved[:10]:
+        db.refresh(row)
+
+    log_trust_event(
+        db,
+        event_type="community.qr_preapproval_bulk_saved",
+        clan_id=int(clan_id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta={
+            "reason": "community_qr_preapproval_bulk_saved",
+            "created_count": created_count,
+            "updated_count": updated_count,
+            "skipped_count": len(skipped),
+            "total_received": len(payload.entries),
+        },
+        dedupe_key=(
+            f"qr-preapproval-bulk:{int(clan_id)}:{int(current_user.id)}:"
+            f"{created_count}:{updated_count}:{len(skipped)}:{datetime.now(timezone.utc).isoformat()}"
+        ),
+    )
+    return {
+        "ok": True,
+        "created_count": created_count,
+        "updated_count": updated_count,
+        "skipped_count": len(skipped),
+        "total_received": len(payload.entries),
+        "items": [_qr_preapproval_out(row) for row in saved[:10]],
+        "skipped": skipped[:25],
     }
 
 

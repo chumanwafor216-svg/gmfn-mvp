@@ -1809,6 +1809,18 @@ export async function createClanQrPreApproval(
   );
 }
 
+export async function bulkCreateClanQrPreApprovals(
+  clanId: number,
+  entries: ClanQrPreApprovalPayload[]
+): Promise<any> {
+  return httpJson(
+    `/clans/${encodeURIComponent(String(clanId))}/qr-preapprovals/bulk`,
+    "POST",
+    { entries },
+    { header_clan_id: clanId }
+  );
+}
+
 export async function updateClanQrPreApprovalStatus(
   clanId: number,
   preapprovalId: number,

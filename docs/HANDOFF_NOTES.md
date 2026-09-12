@@ -1,3 +1,12 @@
+## 2026-09-12 - QR pre-approved bulk import added locally
+
+- Status: Verified local continuation after deployed commit `ec5ed508`; not pushed or deployed yet under the current batch-mode pipeline freeze.
+- Backend route: added `/clans/{clan_id}/qr-preapprovals/bulk` for admin-only partial-success import of up to 250 pre-approved entries at a time.
+- Backend behavior: bulk import reuses the single-entry preapproval normalization/upsert rules, reactivates existing matches, skips duplicate lines within the same import, and skips name-only entries instead of pretending a name proves membership.
+- Frontend setup: `ClansPage` now has a collapsed `Paste many at once` panel inside the existing Pre-approved entry card, with one-person-per-line parsing for name + phone/email/GSN ID formats.
+- Regression coverage: added `test_admin_can_bulk_import_qr_preapproved_entries`; full join-request suite now passes with 71 tests.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\clans.py gmfn_backend\tests\test_join_requests.py`, `python -m pytest -q gmfn_backend\tests\test_join_requests.py` (71 passed), `npm exec eslint src/pages/ClansPage.tsx src/lib/api.ts`, `npm --prefix frontend run audit:existing-community-invite-line`, and `npm --prefix frontend run build`.
+- Devil truth: this solves secretary/executive list entry speed, not identity proof. It still does not provide OTP, file upload/CSV attachment parsing, payment/dues verification, permit/stall checks, or a full admin audit screen.
 ## 2026-09-12 - QR pre-approved entry list committed and deployed
 
 - Status: Feature commit `00852cb2` was pushed to `main`; GitHub Actions run `34712921549` completed successfully with frontend Render deploy `dep-daiq336ojv1c73e7i3fg` live and API Render deploy `dep-daiq48ojo6nc73ftrc30` live. No OTP provider, bulk import, payment-ledger check, stall registry, permit database, or real identity verification was added in this follow-up.

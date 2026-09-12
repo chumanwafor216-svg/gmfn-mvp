@@ -22,6 +22,7 @@ import {
   buildGsnInviteLinkPackage,
 } from "../lib/gsnSnapshotPaper";
 import {
+  bulkCreateClanQrPreApprovals,
   createClan,
   createClanInvite,
   createClanQrPreApproval,
@@ -272,6 +273,68 @@ function safeDateTime(x: any): string {
   return d.toLocaleString();
 }
 
+function parseQrPreApprovalBulkText(raw: string) {
+  const entries: Array<{
+    display_name?: string | null;
+    phone_e164?: string | null;
+    email?: string | null;
+    gmfn_id?: string | null;
+    approval_note?: string | null;
+  }> = [];
+  let ignored = 0;
+
+  safeStr(raw)
+    .split(/\r?\n/)
+    .slice(0, 250)
+    .forEach((line) => {
+      const cleanLine = safeStr(line);
+      if (!cleanLine) return;
+      const parts = cleanLine
+        .split(/[|,\t]/)
+        .map((part) => safeStr(part))
+        .filter(Boolean);
+      const entry = {
+        display_name: "",
+        phone_e164: "",
+        email: "",
+        gmfn_id: "",
+        approval_note: "",
+      };
+
+      parts.forEach((part) => {
+        const digitCount = (part.match(/\d/g) || []).length;
+        const looksLikePhone = digitCount >= 7 && /^[+\d\s().-]+$/.test(part);
+        const looksLikeEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(part);
+        const looksLikeGsnId = /^(GSN|GMFN|GMFM|GSM)[\s-]?[A-Z0-9-]{3,}$/i.test(part);
+
+        if (!entry.email && looksLikeEmail) {
+          entry.email = part;
+        } else if (!entry.phone_e164 && looksLikePhone) {
+          entry.phone_e164 = part;
+        } else if (!entry.gmfn_id && looksLikeGsnId) {
+          entry.gmfn_id = part;
+        } else if (!entry.display_name) {
+          entry.display_name = part;
+        } else {
+          entry.approval_note = safeStr(`${entry.approval_note} ${part}`);
+        }
+      });
+
+      if (!entry.phone_e164 && !entry.email && !entry.gmfn_id) {
+        ignored += 1;
+        return;
+      }
+      entries.push({
+        display_name: entry.display_name || null,
+        phone_e164: entry.phone_e164 || null,
+        email: entry.email || null,
+        gmfn_id: entry.gmfn_id || null,
+        approval_note: entry.approval_note || null,
+      });
+    });
+
+  return { entries, ignored };
+}
 function communityName(item: any): string {
   return safeStr(item?.display_name || item?.name || item?.title || "Community");
 }
@@ -442,6 +505,8 @@ export default function ClansPage() {
     gmfn_id: "",
     approval_note: "",
   });
+  const [qrPreApprovalBulkText, setQrPreApprovalBulkText] = useState("");
+  const [qrPreApprovalBulkSaving, setQrPreApprovalBulkSaving] = useState(false);
 
   const [communityNameInput, setCommunityNameInput] = useState(
     safeStr(createCommunityState?.name)
@@ -611,6 +676,31 @@ export default function ClansPage() {
     }
   }
 
+  async function handleBulkSaveQrPreApprovals() {
+    if (!selectedCommunityId) return;
+    const parsed = parseQrPreApprovalBulkText(qrPreApprovalBulkText);
+    if (!parsed.entries.length) {
+      setQrPreApprovalMessage("Paste at least one line with phone, email, or GSN ID.");
+      return;
+    }
+
+    setQrPreApprovalBulkSaving(true);
+    setQrPreApprovalMessage("");
+    try {
+      const res = await bulkCreateClanQrPreApprovals(selectedCommunityId, parsed.entries);
+      const created = Number(res?.created_count || 0);
+      const updated = Number(res?.updated_count || 0);
+      const skipped = Number(res?.skipped_count || 0) + parsed.ignored;
+      const skippedText = skipped ? ` ${skipped} skipped.` : "";
+      setQrPreApprovalMessage(`Bulk import saved: ${created} new, ${updated} updated.${skippedText}`);
+      setQrPreApprovalBulkText("");
+      await loadQrPreApprovals(selectedCommunityId);
+    } catch (err: any) {
+      setQrPreApprovalMessage(err?.message || "Could not import these pre-approved entries.");
+    } finally {
+      setQrPreApprovalBulkSaving(false);
+    }
+  }
   async function handleDeactivateQrPreApproval(item: QrPreApprovalItem) {
     const id = Number(item.id || 0);
     if (!selectedCommunityId || !id) return;
@@ -1497,6 +1587,59 @@ export default function ClansPage() {
                 </PrimaryButton>
               </div>
 
+              <details
+                style={{
+                  borderRadius: 14,
+                  border: "1px solid rgba(36,26,18,0.08)",
+                  background: "rgba(255,255,255,0.62)",
+                  padding: "10px 12px",
+                }}
+              >
+                <summary
+                  style={{
+                    color: "#241A12",
+                    cursor: "pointer",
+                    fontSize: 13,
+                    fontWeight: 950,
+                  }}
+                >
+                  Paste many at once
+                </summary>
+                <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                  <textarea
+                    value={qrPreApprovalBulkText}
+                    onChange={(event) => setQrPreApprovalBulkText(event.target.value)}
+                    placeholder={"Ada Market, +234 801 111 2222\nJohn Trader | john@example.com | Paid dues\nGSN-10293"}
+                    rows={5}
+                    style={{ ...textareaStyle(), minHeight: 110 }}
+                  />
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 10,
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div style={{ color: "#6B5D50", fontSize: 12, fontWeight: 800 }}>
+                      One person per line. GSN ignores name-only lines.
+                    </div>
+                    <SecondaryButton
+                      type="button"
+                      onClick={() => void handleBulkSaveQrPreApprovals()}
+                      disabled={!selectedCommunityId || qrPreApprovalSaving || qrPreApprovalBulkSaving}
+                      debugId="clans.qr-preapproval.bulk-save"
+                      style={{
+                        ...btn(false, !selectedCommunityId || qrPreApprovalSaving || qrPreApprovalBulkSaving),
+                        width: isCompact ? "100%" : undefined,
+                      }}
+                    >
+                      {qrPreApprovalBulkSaving ? "Importing..." : "Import list"}
+                    </SecondaryButton>
+                  </div>
+                </div>
+              </details>
               {recentQrPreApprovals.length ? (
                 <div style={{ display: "grid", gap: 8 }}>
                   {recentQrPreApprovals.map((item) => {

@@ -148,6 +148,78 @@ def test_admin_can_manage_qr_preapproved_entry(client, override_clan_ctx_admin):
     assert off_res.json()["item"]["status"] == "inactive"
 
 
+def test_admin_can_bulk_import_qr_preapproved_entries(client, override_clan_ctx_admin):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(
+            ClanQrPreApproval(
+                id=1,
+                clan_id=1,
+                added_by_user_id=1,
+                match_type="phone",
+                match_value="+2348011112222",
+                display_name="Old Ada",
+                phone_e164="+2348011112222",
+                approval_note="Old record",
+                status="inactive",
+            )
+        )
+        db.commit()
+
+    bulk_res = client.post(
+        "/clans/1/qr-preapprovals/bulk",
+        json={
+            "entries": [
+                {
+                    "display_name": "Ada Market Updated",
+                    "phone_e164": "+234 801 111 2222",
+                    "approval_note": "Still accepted",
+                },
+                {
+                    "display_name": "Email Member",
+                    "email": "MEMBER@Example.COM",
+                },
+                {
+                    "display_name": "GSN Member",
+                    "gmfn_id": "gsn-4455",
+                },
+                {
+                    "display_name": "Name Only",
+                },
+                {
+                    "display_name": "Duplicate Ada",
+                    "phone_e164": "+2348011112222",
+                },
+            ]
+        },
+        headers={"X-Clan-Id": "1"},
+    )
+    assert bulk_res.status_code == 201, bulk_res.text
+    data = bulk_res.json()
+    assert data["created_count"] == 2
+    assert data["updated_count"] == 1
+    assert data["skipped_count"] == 2
+    assert data["total_received"] == 5
+    assert len(data["skipped"]) == 2
+
+    list_res = client.get("/clans/1/qr-preapprovals", headers={"X-Clan-Id": "1"})
+    assert list_res.status_code == 200, list_res.text
+    listed = list_res.json()
+    assert listed["total"] == 3
+    assert listed["active_count"] == 3
+
+    with SessionLocal() as db:
+        rows = db.query(ClanQrPreApproval).all()
+        assert len(rows) == 3
+        old = db.get(ClanQrPreApproval, 1)
+        assert old is not None
+        assert old.status == "active"
+        assert old.display_name == "Ada Market Updated"
+        assert old.approval_note == "Still accepted"
+        assert db.query(ClanQrPreApproval).filter_by(match_type="email", match_value="member@example.com").count() == 1
+        assert db.query(ClanQrPreApproval).filter_by(match_type="gmfn_id", match_value="GSN-4455").count() == 1
+
 def test_public_qr_join_request_auto_approves_preapproved_phone(client):
     _seed_join_context()
 
