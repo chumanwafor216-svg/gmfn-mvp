@@ -266,6 +266,12 @@ def test_public_qr_join_request_auto_approves_preapproved_phone(client):
     assert res.status_code == 201, res.text
     data = res.json()
     assert data["result_status"] == "preapproved_request_approved"
+    assert data["status"] == "approved"
+    assert data["result_channel"] == "activation-ready"
+    assert data["activation_required"] is True
+    assert "activate-membership" in data["activation_path"]
+    assert str(data["request_id"]) in data["activation_path"]
+    assert data["pending_status_path"].endswith(f"request_id={data['request_id']}")
     assert data["approval_result"]["status"] == "approved"
     assert data["approval_result"]["activation_required"] is True
     assert data["request"]["status"] == "approved"

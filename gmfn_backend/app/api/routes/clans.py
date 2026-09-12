@@ -4505,6 +4505,7 @@ def create_join_request(
             .filter(ClanJoinRequest.id == int(join_request.id))
             .first()
         )
+        status_payload = _join_request_status_payload(db, request, join_request)
         return {
             "ok": True,
             "result_status": "preapproved_request_approved",
@@ -4512,16 +4513,29 @@ def create_join_request(
                 "Join request matched a community pre-approval and was approved. "
                 "Verification can still be requested later."
             ),
-            "community_id": int(clan.id),
-            "community_code": _community_code(clan.id),
-            "community_name": clan.name,
-            "marketplace_name": getattr(clan, "marketplace_name", None),
+            "request_id": status_payload["request_id"],
+            "status": status_payload["status"],
+            "community_id": status_payload["community_id"],
+            "community_code": status_payload["community_code"],
+            "community_name": status_payload["community_name"],
+            "marketplace_name": status_payload.get("marketplace_name"),
             "qr_policy_key": qr_policy_key,
+            "qr_policy_label": status_payload.get("qr_policy_label"),
+            "qr_preapproved": True,
             "qr_preapproval_match": _qr_preapproval_out(qr_preapproval_match),
+            "pending_status_path": status_payload.get("pending_status_path"),
+            "approval_path": status_payload.get("approval_path"),
+            "result_channel": status_payload.get("result_channel"),
+            "result_path": status_payload.get("result_path"),
+            "activation_path": status_payload.get("activation_path"),
+            "activation_link": status_payload.get("activation_link"),
+            "activation_message": status_payload.get("activation_message"),
+            "activation_required": status_payload.get("activation_required"),
+            "activation_delivery_status": status_payload.get("activation_delivery_status"),
             "user_id": int(applicant_user.id),
-            "gmfn_id": _safe_str(getattr(applicant_user, "gmfn_id", None)) or None,
-            "existing_identity": existing_identity_join,
-            "identity_reused": existing_identity_join,
+            "gmfn_id": status_payload.get("gmfn_id") or _safe_str(getattr(applicant_user, "gmfn_id", None)) or None,
+            "existing_identity": status_payload.get("existing_identity", existing_identity_join),
+            "identity_reused": status_payload.get("identity_reused", existing_identity_join),
             "approval_result": approval_result,
             "request": _join_request_out(db, join_request),
             "applicant_profile": {

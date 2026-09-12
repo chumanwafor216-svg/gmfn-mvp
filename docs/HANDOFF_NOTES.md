@@ -1,3 +1,12 @@
+## 2026-09-12 - QR pre-approved backend routing contract flattened locally
+
+- Status: Verified local backend continuation after local commit `4309f037`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Backend contract: auto-approved QR preapproval join responses now expose top-level `request_id`, `status`, `result_channel`, `result_path`, `pending_status_path`, `approval_path`, `activation_path`, `activation_link`, `activation_required`, and `activation_delivery_status` instead of requiring clients to dig into nested `approval_result`.
+- Reuse: the response now reuses `_join_request_status_payload` after `_approve_join_request`, keeping the immediate join response aligned with the public status route.
+- Regression coverage: `test_public_qr_join_request_auto_approves_preapproved_phone` now asserts the top-level activation routing contract for a pre-approved scanner.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\clans.py gmfn_backend\tests\test_join_requests.py`, `python -m pytest -q gmfn_backend\tests\test_join_requests.py -k preapproved` (3 passed, 68 deselected), and `python -m pytest -q gmfn_backend\tests\test_join_requests.py` (71 passed).
+- Devil truth: this improves API contract clarity for clients. It still does not prove phone ownership, identity, dues, permits, or real-world membership; it only makes the approved route impossible to miss.
+
 ## 2026-09-12 - Activation success copy restored locally
 
 - Status: Verified local frontend continuation after local commit `8cddd2a4`; not pushed or deployed under the current batch-mode pipeline freeze.
