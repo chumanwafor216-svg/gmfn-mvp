@@ -1208,7 +1208,18 @@ export default function JoinEntryPage() {
   function openManualInviteCode() {
     const nextCode = cleanText(manualInviteCode);
     if (!nextCode) return;
-    navigate(`/join/${encodeURIComponent(nextCode)}`, { replace: true });
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.delete("invite");
+    nextSearchParams.delete("code");
+    nextSearchParams.delete("invite_code");
+    nextSearchParams.delete("join_code");
+    const preservedSearch = nextSearchParams.toString();
+    navigate(
+      `/join/${encodeURIComponent(nextCode)}${preservedSearch ? `?${preservedSearch}` : ""}`,
+      {
+        replace: true,
+      }
+    );
   }
 
   useEffect(() => {

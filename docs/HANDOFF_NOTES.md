@@ -1,3 +1,12 @@
+## 2026-09-12 - Join Entry manual-code QR context preserved locally
+
+- Status: Verified local frontend continuation after local commit `285754ce`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Frontend truth fix: `JoinEntryPage` manual invite-code navigation now preserves existing QR/community query context when routing to `/join/{code}`.
+- Stale-code cleanup: the manual-code action drops only invite-code alias query params (`invite`, `code`, `invite_code`, `join_code`) so the typed code becomes the source of truth while `community_code`, `qr_policy`, `entry_policy`, and other QR context can survive.
+- Frozen-file reason: `JoinEntryPage` is in the entry/auth protected band, so this was kept route-local and checked against the entry/auth and member-entry audits.
+- Regression cage: `frontend/tools/audit-existing-community-invite-line.mjs` now separately asserts the visible manual-code fallback UI and the QR-context-preserving manual-code navigation contract.
+- Verification passed: `npm exec eslint src/pages/JoinEntryPage.tsx tools/audit-existing-community-invite-line.mjs`, `npm --prefix frontend run audit:existing-community-invite-line`, `npm --prefix frontend run audit:entry-auth`, `npm --prefix frontend run audit:member-entry-actions`, `npm --prefix frontend run build`, and `git diff --check -- frontend\src\pages\JoinEntryPage.tsx frontend\tools\audit-existing-community-invite-line.mjs docs\HANDOFF_NOTES.md`.
+- Devil truth: preserving QR context makes manual entry less lossy, but it still does not prove the member, the phone number, or the right to belong. It only protects the route context around a reviewed request starter.
 ## 2026-09-12 - Join Entry manual-code fallback copy aligned locally
 
 - Status: Verified local frontend continuation after local commit `1072bb15`; not pushed or deployed under the current batch-mode pipeline freeze.

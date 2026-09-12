@@ -128,6 +128,12 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
+  /function openManualInviteCode\(\)[\s\S]*?new URLSearchParams\(searchParams\)[\s\S]*?nextSearchParams\.delete\("invite"\)[\s\S]*?nextSearchParams\.delete\("code"\)[\s\S]*?nextSearchParams\.delete\("invite_code"\)[\s\S]*?nextSearchParams\.delete\("join_code"\)[\s\S]*?preservedSearch[\s\S]*?\?\$\{preservedSearch\}/,
+  "Manual invite-code navigation must preserve QR/community query context while dropping stale invite-code aliases."
+);
+
+assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
   /import GSNBrandMark[\s\S]*?function BrandedInvitationPaper[\s\S]*?<GSNBrandMark[\s\S]*?(?:Community invitation|Community access request)[\s\S]*?(?:Official GSN invite|Official GSN access)[\s\S]*?<BrandedInvitationPaper/,
   "Existing-community invites must render as a branded GSN invitation paper with a visible GSN mark/watermark, not a plain message block."
 );
