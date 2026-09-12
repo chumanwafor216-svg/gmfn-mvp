@@ -1,3 +1,13 @@
+## 2026-09-12 - QR pre-approved scanner routing fixed locally
+
+- Status: Verified local frontend continuation after local commit `8b77e7a6`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Scanner flow: `JoinEntryPage` now normalizes join submission responses before routing, so auto-approved QR preapproval responses can use nested `approval_result` activation/community data instead of falling through to the ordinary pending path.
+- Coverage in UI logic: new applicant, signed-in existing identity, and typed existing GSN ID submissions now all route immediately when the backend returns `approved` or `rejected` status.
+- Adoption impact: a pre-approved scanner who is approved immediately should be sent onward to activation or community access instead of being told to wait unnecessarily.
+- Verification passed: `npm exec eslint src/pages/JoinEntryPage.tsx src/lib/api.ts`, `npm --prefix frontend run audit:member-entry-actions`, `npm --prefix frontend run audit:existing-community-invite-line`, `npm --prefix frontend run build`, and `git diff --check -- frontend\src\pages\JoinEntryPage.tsx`.
+- Known unrelated audit failure: `npm --prefix frontend run audit:entry-auth` still fails on `src/pages/MemberActivationPage.tsx` with the existing activation/phone-verification/private-recovery expected-pattern check. `MemberActivationPage.tsx` was not modified in this continuation.
+- Devil truth: this is a routing correctness fix only. It does not add OTP, prove phone possession, prove legal identity, or verify dues/permits/membership evidence.
+
 ## 2026-09-12 - QR handover brief added locally
 
 - Status: Verified local frontend continuation after local commit `aaf43859`; not pushed or deployed under the current batch-mode pipeline freeze.

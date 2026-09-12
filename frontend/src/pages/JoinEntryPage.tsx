@@ -886,6 +886,68 @@ function activationRouteFor(result: any, currentSearch: string): string {
   );
 }
 
+function joinResultForRouting(result: any): any {
+  const request = result?.request || {};
+  const approval = result?.approval_result || {};
+  const requestId = cleanText(result?.request_id || request?.id || approval?.request_id || "");
+  const status = cleanText(result?.status || request?.status || approval?.status || "pending").toLowerCase();
+  const activationRequired =
+    result?.activation_required ??
+    approval?.activation_required ??
+    (status === "approved" ? true : undefined);
+  const activationPath = cleanText(
+    result?.activation_path || approval?.activation_path || request?.activation_path || ""
+  );
+  const approvalPath = cleanText(
+    result?.approval_path || approval?.approval_path || (requestId ? `/join-approval/${requestId}` : "")
+  );
+  const pendingStatusPath = cleanText(
+    result?.pending_status_path ||
+      approval?.pending_status_path ||
+      (requestId ? `/pending-approval?request_id=${encodeURIComponent(requestId)}` : "")
+  );
+  let resultChannel = cleanText(result?.result_channel || approval?.result_channel || "").toLowerCase();
+  if (!resultChannel) {
+    if (status === "approved") {
+      resultChannel = activationRequired === false ? "approved-existing-member" : "activation-ready";
+    } else if (status === "rejected") {
+      resultChannel = "request-rejected";
+    } else {
+      resultChannel = "pending-review";
+    }
+  }
+
+  let resultPath = cleanText(result?.result_path || approval?.result_path || "");
+  if (!resultPath) {
+    if (resultChannel === "activation-ready") {
+      resultPath = activationPath;
+    } else if (resultChannel === "request-rejected") {
+      resultPath = approvalPath;
+    } else if (resultChannel === "pending-review") {
+      resultPath = pendingStatusPath;
+    }
+  }
+
+  return {
+    ...approval,
+    ...result,
+    request_id: requestId,
+    status,
+    gmfn_id: cleanText(result?.gmfn_id || approval?.gmfn_id || request?.applicant_gmfn_id || ""),
+    community_id: cleanText(result?.community_id || approval?.community_id || request?.clan_id || ""),
+    community_code: cleanText(result?.community_code || approval?.community_code || ""),
+    community_name: cleanText(result?.community_name || approval?.community_name || request?.clan_name || ""),
+    marketplace_name: cleanText(result?.marketplace_name || approval?.marketplace_name || ""),
+    activation_path: activationPath,
+    activation_link: cleanText(result?.activation_link || approval?.activation_link || ""),
+    approval_path: approvalPath,
+    pending_status_path: pendingStatusPath,
+    result_channel: resultChannel,
+    result_path: resultPath,
+    activation_required: activationRequired,
+  };
+}
+
 function joinInviteHelpMessage(
   rawMessage: string,
   blocked: boolean
@@ -1888,15 +1950,26 @@ export default function JoinEntryPage() {
         }
       );
 
+      const routedResult = joinResultForRouting(res);
       const existingRequest =
         Boolean(res?.existing_request) ||
         Boolean(res?.existing_pending_request) ||
         /_request_exists$/.test(cleanText(res?.code).toLowerCase());
 
       if (existingRequest) {
-        storeExistingRequest(res);
+        storeExistingRequest(routedResult);
         clearJoinEntryDraft(inviteCode, communityCode);
-        if (continueExistingRequest(res)) {
+        if (continueExistingRequest(routedResult)) {
+          return;
+        }
+      }
+
+      const routedStatus = cleanText(routedResult.status).toLowerCase();
+      if (routedStatus === "approved" || routedStatus === "rejected") {
+        setSuccess(res);
+        storeExistingRequest(routedResult);
+        clearJoinEntryDraft(inviteCode, communityCode);
+        if (continueExistingRequest(routedResult)) {
           return;
         }
       }
@@ -1999,15 +2072,26 @@ export default function JoinEntryPage() {
           : undefined,
       });
 
+      const routedResult = joinResultForRouting(res);
       const existingRequest =
         Boolean(res?.existing_request) ||
         Boolean(res?.existing_pending_request) ||
         /_request_exists$/.test(cleanText(res?.code).toLowerCase());
 
       if (existingRequest) {
-        storeExistingRequest(res);
+        storeExistingRequest(routedResult);
         clearJoinEntryDraft(inviteCode, communityCode);
-        if (continueExistingRequest(res)) {
+        if (continueExistingRequest(routedResult)) {
+          return;
+        }
+      }
+
+      const routedStatus = cleanText(routedResult.status).toLowerCase();
+      if (routedStatus === "approved" || routedStatus === "rejected") {
+        setSuccess(res);
+        storeExistingRequest(routedResult);
+        clearJoinEntryDraft(inviteCode, communityCode);
+        if (continueExistingRequest(routedResult)) {
           return;
         }
       }
@@ -2116,15 +2200,26 @@ export default function JoinEntryPage() {
         { includeAuth: false }
       );
 
+      const routedResult = joinResultForRouting(res);
       const existingRequest =
         Boolean(res?.existing_request) ||
         Boolean(res?.existing_pending_request) ||
         /_request_exists$/.test(cleanText(res?.code).toLowerCase());
 
       if (existingRequest) {
-        storeExistingRequest(res);
+        storeExistingRequest(routedResult);
         clearJoinEntryDraft(inviteCode, communityCode);
-        if (continueExistingRequest(res)) {
+        if (continueExistingRequest(routedResult)) {
+          return;
+        }
+      }
+
+      const routedStatus = cleanText(routedResult.status).toLowerCase();
+      if (routedStatus === "approved" || routedStatus === "rejected") {
+        setSuccess(res);
+        storeExistingRequest(routedResult);
+        clearJoinEntryDraft(inviteCode, communityCode);
+        if (continueExistingRequest(routedResult)) {
           return;
         }
       }
