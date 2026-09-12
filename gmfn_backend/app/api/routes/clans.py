@@ -1642,6 +1642,43 @@ def _retire_active_clan_invites(
     return retired
 
 
+def _retire_active_clan_qr_policy_invites(
+    db: Session,
+    *,
+    clan_id: int,
+    desired_qr_policy_key: Optional[str],
+) -> int:
+    desired = _safe_str(desired_qr_policy_key)
+    if not desired:
+        return 0
+
+    rows = (
+        db.query(ClanInvite)
+        .filter(ClanInvite.clan_id == int(clan_id))
+        .filter(ClanInvite.qr_policy_key.isnot(None))
+        .order_by(ClanInvite.created_at.desc(), ClanInvite.id.desc())
+        .all()
+    )
+
+    retired = 0
+    now = datetime.now(timezone.utc)
+    for invite in rows:
+        if not bool(getattr(invite, "is_active", True)):
+            continue
+        if getattr(invite, "revoked_at", None) is not None:
+            continue
+        if _safe_str(getattr(invite, "qr_policy_key", None)) == desired:
+            continue
+        invite.is_active = False
+        invite.revoked_at = now
+        retired += 1
+
+    if retired:
+        db.commit()
+
+    return retired
+
+
 def _invite_matches_share_policy(
     invite: ClanInvite,
     *,
@@ -3749,6 +3786,11 @@ def get_invite_link(
         strict=strict_max_uses,
         desired_qr_policy_key=desired_qr_policy_key,
     ):
+        _retire_active_clan_qr_policy_invites(
+            db,
+            clan_id=int(clan.id),
+            desired_qr_policy_key=desired_qr_policy_key,
+        )
         latest_invite = None
 
     if latest_invite is None:

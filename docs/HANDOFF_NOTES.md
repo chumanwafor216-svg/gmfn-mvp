@@ -1,3 +1,13 @@
+## 2026-09-12 - Stale QR policy invites retired locally
+
+- Status: Verified local backend continuation after local commit `9792fb02`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Backend guard: `/clans/{clan_id}/invite-link` now retires older active QR-policy invites when preparing a QR package with a different requested QR policy.
+- Scope boundary: ordinary non-QR invitation links are left active; the retirement targets stale QR-governance packages so an old open-growth QR does not continue operating after the community prepares a stricter QR.
+- Public recovery: scanning an old retired QR invite with the community code can recover to the newer live invite instead of dead-ending.
+- Regression coverage: `test_member_get_invite_link_retires_old_qr_policy_invites` proves stale QR-policy invites are retired, ordinary invites remain active, and old QR preview recovers to the new strict policy invite.
+- Verification passed: `python -m py_compile gmfn_backend\app\api\routes\clans.py gmfn_backend\tests\test_join_requests.py`, `python -m pytest -q gmfn_backend\tests\test_join_requests.py -k "invite_link and qr_policy"` (1 passed, 71 deselected), `python -m pytest -q gmfn_backend\tests\test_join_requests.py` (72 passed), and `git diff --check -- gmfn_backend\app\api\routes\clans.py gmfn_backend\tests\test_join_requests.py`.
+- Devil truth: this improves QR governance after policy change. It still does not prove identity, phone possession, dues, permits, or real-world membership, and any old QR without a community code may still need the normal fresh-link recovery path.
+
 ## 2026-09-12 - QR scanner routing audit cage added locally
 
 - Status: Verified local frontend audit continuation after local commit `94adcc60`; not pushed or deployed under the current batch-mode pipeline freeze.

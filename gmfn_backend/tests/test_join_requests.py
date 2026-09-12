@@ -3995,6 +3995,117 @@ def test_member_get_invite_link_without_live_invite_auto_prepares_shareable_link
         app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)
 
 
+def test_member_get_invite_link_retires_old_qr_policy_invites(client):
+    _seed_join_context()
+    now = datetime.now(timezone.utc)
+
+    with SessionLocal() as db:
+        db.add(
+            User(
+                id=2,
+                email="member-qr-policy-refresh@example.com",
+                hashed_password="hashed",
+            )
+        )
+        db.add(
+            ClanMembership(
+                id=2,
+                clan_id=1,
+                user_id=2,
+                role="member",
+                personal_pool_balance=0,
+            )
+        )
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="old-open-qr-code",
+                qr_policy_key="open_growth",
+                is_active=True,
+                max_uses=0,
+                uses=0,
+                created_at=now - timedelta(minutes=10),
+                expires_at=now + timedelta(days=7),
+            )
+        )
+        db.add(
+            ClanInvite(
+                id=2,
+                clan_id=1,
+                created_by_user_id=1,
+                code="ordinary-live-code",
+                qr_policy_key=None,
+                is_active=True,
+                max_uses=0,
+                uses=0,
+                created_at=now - timedelta(minutes=5),
+                expires_at=now + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    def fake_clan_ctx():
+        clan = SimpleNamespace(
+            id=1,
+            name="Aberdeen City ICA",
+            marketplace_name="Aberdeen city marketplace",
+        )
+        membership = SimpleNamespace(role="member", clan_id=1, user_id=2)
+        current_user = SimpleNamespace(id=2, email="member@example.com")
+        return clan, membership, current_user
+
+    app.dependency_overrides[clan_auth.get_current_clan_membership] = fake_clan_ctx
+
+    try:
+        res = client.get("/clans/1/invite-link?qr_policy_key=strict_entry")
+        assert res.status_code == 200, res.text
+        data = res.json()
+        new_code = data["invite_code"]
+
+        assert data["invite_status"] == "ready"
+        assert data["qr_policy_key"] == "strict_entry"
+        assert new_code != "old-open-qr-code"
+        assert (
+            "QR entry policy: Strict school / professional body" in data["invite_text"]
+        )
+
+        with SessionLocal() as db:
+            invites = (
+                db.query(ClanInvite)
+                .filter(ClanInvite.clan_id == 1)
+                .order_by(ClanInvite.created_at.asc(), ClanInvite.id.asc())
+                .all()
+            )
+
+            assert len(invites) == 3
+            assert invites[0].code == "old-open-qr-code"
+            assert invites[0].qr_policy_key == "open_growth"
+            assert invites[0].is_active is False
+            assert invites[0].revoked_at is not None
+            assert invites[1].code == "ordinary-live-code"
+            assert invites[1].qr_policy_key is None
+            assert invites[1].is_active is True
+            assert invites[1].revoked_at is None
+            assert invites[2].code == new_code
+            assert invites[2].qr_policy_key == "strict_entry"
+            assert invites[2].is_active is True
+            assert invites[2].revoked_at is None
+
+        preview_res = client.get(
+            "/clans/join-invite/preview?code=old-open-qr-code&community_code=GMFN-C-000001"
+        )
+        assert preview_res.status_code == 200, preview_res.text
+        preview = preview_res.json()
+        assert preview["valid"] is True
+        assert preview["status"] == "ready"
+        assert preview["invite_code"] == new_code
+        assert preview["qr_policy_key"] == "strict_entry"
+        assert "newer live invitation" in preview["message"].lower()
+    finally:
+        app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)
+
 def test_invite_settings_patch_rejects_malformed_controls_before_policy_update(
     client,
 ):
