@@ -202,7 +202,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ClansPage.tsx",
-  /import[\s\S]*?isCommunityQrPolicyKey[\s\S]*?type InviteState = \{[\s\S]*?qrPolicyKey\?: CommunityQrPolicyKey \| null;[\s\S]*?raw\?\.invite_expires_at \|\| raw\?\.expires_at \|\| raw\?\.expiry[\s\S]*?const rawQrPolicyKey = safeStr\(raw\?\.qr_policy_key \|\| extraSearchParams\.qr_policy\);[\s\S]*?const qrPolicyKey = isCommunityQrPolicyKey\(rawQrPolicyKey\)[\s\S]*?qrPolicyKey,[\s\S]*?const inviteQrPolicy = inviteState\?\.qrPolicyKey[\s\S]*?communityQrPolicyByKey\(inviteState\.qrPolicyKey\)[\s\S]*?Current policy: \{inviteQrPolicy\.label\}[\s\S]*?\{inviteQrPolicy\.scanCopy\}[\s\S]*?\{inviteQrPolicy\.sheetIntro\}[\s\S]*?\{inviteQrPolicy\.boundary\}[\s\S]*?Policy: \{inviteQrPolicy\.label\}[\s\S]*?QR expiry:/,
+  /import[\s\S]*?isCommunityQrPolicyKey[\s\S]*?type InviteState = \{[\s\S]*?qrPolicyKey\?: CommunityQrPolicyKey \| null;[\s\S]*?raw\?\.invite_expires_at \|\| raw\?\.expires_at \|\| raw\?\.expiry[\s\S]*?const rawQrPolicyKey = safeStr\(raw\?\.qr_policy_key \|\| extraSearchParams\.qr_policy\);[\s\S]*?const qrPolicyKey = isCommunityQrPolicyKey\(rawQrPolicyKey\)[\s\S]*?qrPolicyKey,[\s\S]*?const inviteQrPolicy = inviteState\?\.qrPolicyKey[\s\S]*?communityQrPolicyByKey\(inviteState\.qrPolicyKey\)[\s\S]*?const isQrInvitePackage = Boolean\(inviteState\?\.qrPolicyKey\);[\s\S]*?Current policy: \$\{inviteQrPolicy\.label\}[\s\S]*?inviteQrPolicy\.scanCopy[\s\S]*?\{inviteQrPolicy\.sheetIntro\}[\s\S]*?\{inviteQrPolicy\.boundary\}[\s\S]*?Policy: \{inviteQrPolicy\.label\}[\s\S]*?QR expiry:/,
   "Community QR packages must snapshot the generated QR policy and use that policy for the visible QR card, QR sheet, copied announcement, and handover even if the dropdown changes later."
 );
 assertContains(
@@ -212,8 +212,12 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ClansPage.tsx",
-  /function currentInviteShareText\(\): string \{[\s\S]*?if \(inviteState\?\.qrPolicyKey\) return communityQrAnnouncementText\(\);[\s\S]*?return safeStr\(inviteState\?\.whatsappShareText \|\| ""\);[\s\S]*?function shareViaWhatsApp\(\) \{[\s\S]*?const text = currentInviteShareText\(\);[\s\S]*?\{currentInviteShareText\(\)\}[\s\S]*?copyText\(currentInviteShareText\(\), "share"\)/,
+  /function currentInviteShareText\(\): string \{[\s\S]*?if \(isQrInvitePackage\) return communityQrAnnouncementText\(\);[\s\S]*?return safeStr\(inviteState\?\.whatsappShareText \|\| ""\);[\s\S]*?function shareViaWhatsApp\(\) \{[\s\S]*?const text = currentInviteShareText\(\);[\s\S]*?\{currentInviteShareText\(\)\}[\s\S]*?copyText\(currentInviteShareText\(\), "share"\)/,
   "Community QR packages must use the QR announcement text for the preview, copy-share action, and WhatsApp share action while personal invites keep the compact generic invite text."
+);assertContains(
+  "frontend/src/pages/ClansPage.tsx",
+  /const isQrInvitePackage = Boolean\(inviteState\?\.qrPolicyKey\);[\s\S]*?\{isQrInvitePackage \? "Community QR ready" : "Personal invite ready"\}[\s\S]*?\{isQrInvitePackage \? "Community join QR" : "Personal invite QR"\}[\s\S]*?\{currentInviteShareText\(\) && !isQrInvitePackage \? \([\s\S]*?debugId="clans\.invite\.copy-package"[\s\S]*?\{isQrInvitePackage && inviteState\.link \? \([\s\S]*?debugId="clans\.invite\.copy-qr-announcement"[\s\S]*?\{isQrInvitePackage && inviteState\.link \? \([\s\S]*?debugId="clans\.invite\.open-qr-sheet"[\s\S]*?\{isQrInvitePackage && inviteState\.link \? \([\s\S]*?debugId="clans\.invite\.copy-qr-handover"[\s\S]*?\{qrSheetOpen && isQrInvitePackage && inviteState\?\.link \? \(/,
+  "ClansPage must keep QR-package operating actions separate from personal invites so QR announcements, QR sheet, and QR handover cannot appear for ordinary personal invite links."
 );
 assertContains(
   "gmfn_backend/app/api/routes/clans.py",

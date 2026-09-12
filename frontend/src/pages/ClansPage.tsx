@@ -619,6 +619,7 @@ export default function ClansPage() {
   const inviteQrPolicy = inviteState?.qrPolicyKey
     ? communityQrPolicyByKey(inviteState.qrPolicyKey)
     : communityQrPolicyByKey("reviewed_access");
+  const isQrInvitePackage = Boolean(inviteState?.qrPolicyKey);
   const activeQrPreApprovals = qrPreApprovals.filter(
     (item) => safeStr(item.status || "active") === "active"
   );
@@ -867,7 +868,7 @@ export default function ClansPage() {
   }
 
   function currentInviteShareText(): string {
-    if (inviteState?.qrPolicyKey) return communityQrAnnouncementText();
+    if (isQrInvitePackage) return communityQrAnnouncementText();
     return safeStr(inviteState?.whatsappShareText || "");
   }
 
@@ -1975,7 +1976,7 @@ export default function ClansPage() {
                       fontSize: 16,
                     }}
                   >
-                    Invitation ready
+                    {isQrInvitePackage ? "Community QR ready" : "Personal invite ready"}
                   </div>
 
                   <div
@@ -1986,10 +1987,12 @@ export default function ClansPage() {
                       lineHeight: 1.7,
                     }}
                   >
-                    Show this QR at a meeting or send the link. It starts a join request; it does not approve membership. Current policy: {inviteQrPolicy.label}.
+                    {isQrInvitePackage
+                      ? `Show this QR at a meeting or send the link. It starts a join request; it does not approve membership. Current policy: ${inviteQrPolicy.label}.`
+                      : "Send this named invite to one person. It starts their join request and still leaves the community in control of approval."}
                   </div>
 
-                  {Number(inviteState.retiredQrPolicyInvites || 0) > 0 ? (
+                  {isQrInvitePackage && Number(inviteState.retiredQrPolicyInvites || 0) > 0 ? (
                     <div
                       style={{
                         marginTop: 12,
@@ -2020,7 +2023,7 @@ export default function ClansPage() {
                         }}
                       >
                         <div style={{ ...sectionLabel(), textAlign: "center" }}>
-                          Community join QR
+                          {isQrInvitePackage ? "Community join QR" : "Personal invite QR"}
                         </div>
                         <div
                           style={{
@@ -2050,7 +2053,9 @@ export default function ClansPage() {
                             maxWidth: 300,
                           }}
                         >
-                          {inviteQrPolicy.scanCopy}
+                          {isQrInvitePackage
+                            ? inviteQrPolicy.scanCopy
+                            : "Scan or open this link to start this named join request. The community still reviews it before access."}
                         </div>
                       </div>
                     ) : null}
@@ -2175,7 +2180,7 @@ export default function ClansPage() {
                         </SecondaryButton>
                       ) : null}
 
-                      {currentInviteShareText() ? (
+                      {currentInviteShareText() && !isQrInvitePackage ? (
                         <SecondaryButton
                           style={btn(false)}
                           onClick={() =>
@@ -2189,7 +2194,7 @@ export default function ClansPage() {
                         </SecondaryButton>
                       ) : null}
 
-                      {inviteState.link ? (
+                      {isQrInvitePackage && inviteState.link ? (
                         <SecondaryButton
                           style={btn(false)}
                           onClick={copyCommunityQrAnnouncement}
@@ -2201,7 +2206,7 @@ export default function ClansPage() {
                         </SecondaryButton>
                       ) : null}
 
-                      {inviteState.link ? (
+                      {isQrInvitePackage && inviteState.link ? (
                         <SecondaryButton
                           style={btn(false)}
                           onClick={() => setQrSheetOpen(true)}
@@ -2211,7 +2216,7 @@ export default function ClansPage() {
                         </SecondaryButton>
                       ) : null}
 
-                      {inviteState.link ? (
+                      {isQrInvitePackage && inviteState.link ? (
                         <SecondaryButton
                           style={btn(false)}
                           onClick={copyCommunityQrHandover}
@@ -2278,7 +2283,7 @@ export default function ClansPage() {
         </div>
       </div>
 
-      {qrSheetOpen && inviteState?.link ? (
+      {qrSheetOpen && isQrInvitePackage && inviteState?.link ? (
         <div style={{ ...overlayShell(), padding: isCompact ? 10 : 18 }}>
           <div
             style={{

@@ -1,3 +1,12 @@
+## 2026-09-12 - QR package actions separated from personal invites locally
+
+- Status: Verified local frontend continuation after local commit `930c970d`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Frontend truth fix: `ClansPage` now uses `isQrInvitePackage` to distinguish community QR packages from ordinary personal invites in the ready-invite panel.
+- UI boundary: community QR packages show QR operating copy, QR announcement, QR sheet, and QR handover actions; personal invites show personal-invite wording and keep the compact copy/share path without QR governance tools.
+- Safety impact: a personal invite link can no longer expose QR-only operating materials that imply a selected community QR policy was generated for that package.
+- Regression cage: `frontend/tools/audit-existing-community-invite-line.mjs` now asserts the QR/personal action split, QR sheet guard, and updated QR policy snapshot wording.
+- Verification passed: `npm exec eslint src/pages/ClansPage.tsx tools/audit-existing-community-invite-line.mjs`, `npm --prefix frontend run audit:existing-community-invite-line`, `npm --prefix frontend run build`, and `git diff --check -- frontend\src\pages\ClansPage.tsx frontend\tools\audit-existing-community-invite-line.mjs`.
+- Devil truth: this is a UI honesty and handover-discipline fix. It does not add OTP, prove phone ownership, prevent forwarded QR screenshots, verify payment/dues/permits, or create legal membership evidence.
 ## 2026-09-12 - QR WhatsApp share uses announcement locally
 
 - Status: Verified local frontend continuation after local commit `19632d2a`; not pushed or deployed under the current batch-mode pipeline freeze.
