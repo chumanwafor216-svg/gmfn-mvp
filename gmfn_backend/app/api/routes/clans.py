@@ -2710,6 +2710,7 @@ def _frontend_community_join_link(
     clan: Clan,
     invite_code: str,
     inviter: Optional[User] = None,
+    qr_policy_key: Optional[str] = None,
 ) -> str:
     origin = _frontend_origin(request)
     safe_invite_code = quote(str(invite_code or "").strip(), safe="")
@@ -2719,6 +2720,7 @@ def _frontend_community_join_link(
         "community_name": _safe_str(getattr(clan, "name", None)),
         "marketplace_name": _safe_str(getattr(clan, "marketplace_name", None)),
         "inviter_name": _member_display(inviter),
+        "qr_policy": _safe_str(qr_policy_key),
     }
     query = urlencode({k: v for k, v in query_params.items() if _safe_str(v)})
     return f"{origin}/start/join/{safe_invite_code}?{query}" if query else f"{origin}/start/join/{safe_invite_code}"
@@ -3721,6 +3723,7 @@ def create_invite(
         clan=clan,
         invite_code=inv.code,
         inviter=current_user,
+        qr_policy_key=getattr(inv, "qr_policy_key", None),
     )
 
     return {
@@ -3815,6 +3818,7 @@ def get_invite_link(
             clan=clan,
             invite_code=latest_invite.code,
             inviter=invite_creator,
+            qr_policy_key=getattr(latest_invite, "qr_policy_key", None),
         )
 
         return {

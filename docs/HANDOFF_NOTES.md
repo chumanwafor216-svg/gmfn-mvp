@@ -1,3 +1,12 @@
+## 2026-09-12 - Backend QR invite links carry policy context locally
+
+- Status: Verified local backend/frontend continuation after local commit `d82f35fb`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Backend truth fix: `_frontend_community_join_link` now accepts `qr_policy_key` and includes it in generated join links as the public query param `qr_policy`.
+- QR package impact: `/clans/{clan_id}/invite` and `/clans/{clan_id}/invite-link` now return self-contained QR policy links, instead of relying only on frontend normalization to re-add the policy context.
+- Scope boundary: no invite approval, expiry, retirement, preapproval, verification, membership, schema, or migration logic changed.
+- Regression proof: the QR invite-link tests now assert that generated backend links contain `qr_policy=market_access` and `qr_policy=strict_entry` for matching QR packages.
+- Verification passed: `python -m pytest -q gmfn_backend\tests\test_join_requests.py::test_member_get_invite_link_without_live_invite_auto_prepares_shareable_link gmfn_backend\tests\test_join_requests.py::test_member_get_invite_link_retires_old_qr_policy_invites`, `python -m py_compile gmfn_backend\app\api\routes\clans.py`, `npm --prefix frontend run audit:link-contracts`, `npm --prefix frontend run audit:existing-community-invite-line`, and `git diff --check -- gmfn_backend\app\api\routes\clans.py gmfn_backend\tests\test_join_requests.py docs\HANDOFF_NOTES.md`.
+- Devil truth: this makes backend-generated QR links more complete, but query params are still informational context. The backend invite row remains the authority, and QR still does not identify the person.
 ## 2026-09-12 - Compact join links preserve QR operating context locally
 
 - Status: Verified local frontend continuation after local commit `e68f6f8f`; not pushed or deployed under the current batch-mode pipeline freeze.
