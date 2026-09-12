@@ -866,8 +866,13 @@ export default function ClansPage() {
     window.setTimeout(() => setCopied(""), 1400);
   }
 
+  function currentInviteShareText(): string {
+    if (inviteState?.qrPolicyKey) return communityQrAnnouncementText();
+    return safeStr(inviteState?.whatsappShareText || "");
+  }
+
   function shareViaWhatsApp() {
-    const text = safeStr(inviteState?.whatsappShareText || "");
+    const text = currentInviteShareText();
     if (!text) return;
 
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
@@ -2121,7 +2126,7 @@ export default function ClansPage() {
                       </div>
                     ) : null}
 
-                    {inviteState.whatsappShareText ? (
+                    {currentInviteShareText() ? (
                       <div>
                         <div
                           style={{
@@ -2148,7 +2153,7 @@ export default function ClansPage() {
                             lineHeight: 1.7,
                           }}
                         >
-                          {inviteState.whatsappShareText}
+                          {currentInviteShareText()}
                         </div>
                       </div>
                     ) : null}
@@ -2170,11 +2175,11 @@ export default function ClansPage() {
                         </SecondaryButton>
                       ) : null}
 
-                      {inviteState.whatsappShareText ? (
+                      {currentInviteShareText() ? (
                         <SecondaryButton
                           style={btn(false)}
                           onClick={() =>
-                            copyText(inviteState.whatsappShareText || "", "share")
+                            copyText(currentInviteShareText(), "share")
                           }
                           debugId="clans.invite.copy-package"
                         >
@@ -2232,7 +2237,7 @@ export default function ClansPage() {
                         </SecondaryButton>
                       ) : null}
 
-                      {inviteState.whatsappShareText ? (
+                      {currentInviteShareText() ? (
                         <PrimaryButton
                           style={{ ...btn(true), width: isCompact ? "100%" : undefined }}
                           onClick={shareViaWhatsApp}

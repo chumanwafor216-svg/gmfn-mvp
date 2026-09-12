@@ -1,3 +1,12 @@
+## 2026-09-12 - QR WhatsApp share uses announcement locally
+
+- Status: Verified local frontend continuation after local commit `19632d2a`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Frontend truth fix: `ClansPage` now routes QR-package sharing through `currentInviteShareText`, so QR packages use the QR announcement text with policy, boundary, expiry, and join link.
+- Personal-invite boundary: personal invites without an encoded `qrPolicyKey` still use the compact generic invite text instead of the QR announcement.
+- UI impact: the Share message preview, Copy share message action, and Share on WhatsApp button now use the same QR-aware share source.
+- Regression cage: `frontend/tools/audit-existing-community-invite-line.mjs` now asserts the QR-aware share helper and copy/share wiring.
+- Verification passed: `npm exec eslint src/pages/ClansPage.tsx tools/audit-existing-community-invite-line.mjs`, `npm --prefix frontend run audit:existing-community-invite-line`, `npm --prefix frontend run build`, and `git diff --check -- frontend\src\pages\ClansPage.tsx frontend\tools\audit-existing-community-invite-line.mjs`.
+- Devil truth: this fixes WhatsApp share content only. It does not add OTP, stop people forwarding old screenshots, prove phone ownership, verify dues/permits, or create legal membership evidence.
 ## 2026-09-12 - QR announcement expiry added locally
 
 - Status: Verified local frontend continuation after local commit `740c9fa2`; not pushed or deployed under the current batch-mode pipeline freeze.
