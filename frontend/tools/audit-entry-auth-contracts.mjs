@@ -190,6 +190,12 @@ assertContains(
   "Typed existing-GSN invite submission must send first name, surname, and phone with the GSN ID for community recognition."
 );
 
+assertContains(
+  "src/pages/JoinEntryPage.tsx",
+  /function joinResultForRouting\(result: any\): any \{[\s\S]*?const approval = result\?\.approval_result \|\| \{\};[\s\S]*?const requestId = cleanText\(result\?\.request_id \|\| request\?\.id \|\| approval\?\.request_id \|\| ""\);[\s\S]*?const activationPath = cleanText\([\s\S]*?result\?\.activation_path \|\| approval\?\.activation_path \|\| request\?\.activation_path \|\| ""[\s\S]*?result_channel: resultChannel,[\s\S]*?const routedResult = joinResultForRouting\(res\);[\s\S]*?const routedStatus = cleanText\(routedResult.status\).toLowerCase\(\);[\s\S]*?if \(routedStatus === "approved" \|\| routedStatus === "rejected"\) \{[\s\S]*?continueExistingRequest\(routedResult\)/,
+  "Logged-out invite entry must route auto-approved QR preapproval responses using flattened approval/result fields before falling through to pending."
+);
+
 assertNotContains(
   "src/pages/JoinEntryPage.tsx",
   /Sign in \/ use GSN ID|Sign in to reuse|Open sign in|Sign in again|signInConflictCta|I am new/,

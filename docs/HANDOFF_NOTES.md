@@ -1,3 +1,11 @@
+## 2026-09-12 - QR scanner routing audit cage added locally
+
+- Status: Verified local frontend audit continuation after local commit `94adcc60`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Frontend audit: `frontend/tools/audit-entry-auth-contracts.mjs` now checks `JoinEntryPage` keeps the QR auto-approved result normalizer and routes approved/rejected responses before falling through to pending review.
+- Regression reason: protects against a future edit that would bury `approval_result` again and send pre-approved scanners to the waiting path after backend approval.
+- Verification passed: `npm --prefix frontend run audit:entry-auth`, `npm --prefix frontend run audit:member-entry-actions`, `npm exec eslint tools/audit-entry-auth-contracts.mjs src/pages/JoinEntryPage.tsx`, `npm --prefix frontend run build`, and `git diff --check -- frontend\tools\audit-entry-auth-contracts.mjs`.
+- Devil truth: this is a regression cage, not product capability. It does not add OTP, phone possession proof, identity proof, dues/payment checks, permits, or membership verification.
+
 ## 2026-09-12 - QR pre-approved backend routing contract flattened locally
 
 - Status: Verified local backend continuation after local commit `4309f037`; not pushed or deployed under the current batch-mode pipeline freeze.
