@@ -957,7 +957,7 @@ function joinInviteHelpMessage(
 
   if (!blocked) {
     return (
-      "This page opened without a usable GSN invite code. Ask the person who invited you to send the latest GSN join link again."
+      "This page opened without a usable GSN invite code. Enter the invite code from the QR sheet below, or ask the person who invited you to send the latest GSN join link again."
     );
   }
 
@@ -1426,7 +1426,7 @@ export default function JoinEntryPage() {
         valid: false,
         status: "missing",
         message:
-          "This page opened without a usable GSN invite code. Ask the person who invited you to send the latest join link again.",
+          "This page opened without a usable GSN invite code. Enter the invite code from the QR sheet below, or ask the person who invited you to send the latest GSN join link again.",
       });
       return;
     }
@@ -3088,7 +3088,7 @@ export default function JoinEntryPage() {
             {!inviteCode || inviteBlocked ? (
               <div style={{ marginTop: 18, ...noticeStyle("error") }}>
                 <div style={{ fontWeight: 1000, marginBottom: 8 }}>
-                  {inviteBlocked ? "Fresh invite link needed." : "Join link needed."}
+                  {inviteBlocked ? "Fresh invite link needed." : "Invite code or join link needed."}
                 </div>
                 <div>{inviteHelpMessage}</div>
                 {!inviteCode ? (

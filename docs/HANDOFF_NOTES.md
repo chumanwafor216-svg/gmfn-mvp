@@ -1,3 +1,12 @@
+## 2026-09-12 - Join Entry manual-code fallback copy aligned locally
+
+- Status: Verified local frontend continuation after local commit `1072bb15`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Frontend truth fix: `JoinEntryPage` now says `Invite code or join link needed` when opened without an invite code, matching the community QR manual fallback route.
+- Member guidance: the missing-code helper now tells members to enter the invite code from the QR sheet below, or ask for the latest GSN join link.
+- Frozen-file reason: `JoinEntryPage` is in the entry/auth protected band, so this was kept to copy only and checked against the entry/auth and member-entry audits.
+- Regression cage: `frontend/tools/audit-existing-community-invite-line.mjs` now asserts the no-link/manual-code copy, invite-code input, and `Check code` action.
+- Verification passed: `npm exec eslint src/pages/JoinEntryPage.tsx tools/audit-existing-community-invite-line.mjs`, `npm --prefix frontend run audit:existing-community-invite-line`, `npm --prefix frontend run audit:entry-auth`, `npm --prefix frontend run audit:member-entry-actions`, `npm --prefix frontend run build`, and `git diff --check -- frontend\src\pages\JoinEntryPage.tsx frontend\tools\audit-existing-community-invite-line.mjs`.
+- Devil truth: this makes the fallback path easier to understand, but it does not make manual invite codes secure. They remain shareable request starters, not verified membership, phone ownership, or identity proof.
 ## 2026-09-12 - Ready invite copy-code action added locally
 
 - Status: Verified local frontend continuation after local commit `a677caba`; not pushed or deployed under the current batch-mode pipeline freeze.

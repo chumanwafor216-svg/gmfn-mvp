@@ -120,6 +120,10 @@ assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
   /inviteAcknowledged[\s\S]*?debugId="join-entry\.acknowledge-invite"[\s\S]*?Continue[\s\S]*?\{inviteAcknowledged \? \([\s\S]*?Join request form/,
   "Existing-community invites must show the invitation first and only open the request area after the invite is acknowledged."
+);assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /function joinInviteHelpMessage\([\s\S]*?Enter the invite code from the QR sheet below[\s\S]*?Invite code or join link needed\.[\s\S]*?value=\{manualInviteCode\}[\s\S]*?placeholder="Enter invite code"[\s\S]*?debugId="join-entry\.manual-code\.open"[\s\S]*?Check code/,
+  "Join Entry must support the QR manual-code fallback with clear no-link copy, invite-code input, and Check code action."
 );
 
 assertContains(
