@@ -1,3 +1,13 @@
+## 2026-09-12 - QR preview recovery prefers policy context locally
+
+- Status: Verified local backend continuation; not pushed or deployed under the current batch-mode pipeline freeze.
+- Backend truth fix: `/clans/join-invite/preview` now accepts public `qr_policy` / `entry_policy` context as a non-authoritative hint when recovering from retired, inactive, expired, legacy, or community-code invite scans.
+- Recovery behavior: `_ready_join_preview_for_clan` and `_latest_usable_clan_invite` now prefer a live invite with the hinted QR policy before falling back to the latest usable community invite.
+- QR package impact: a retired strict-entry or marketplace QR scan is less likely to drift into a newer ordinary invite during recovery, preserving the executive's intended onboarding mode.
+- Scope boundary: no approval rule, verification rule, preapproval match, invite creation, expiry, schema, migration, auth, or membership activation logic changed.
+- Regression proof: added `test_public_join_invite_preview_prefers_qr_policy_recovery_hint`, proving an old strict QR recovers to a live strict QR even when a newer ordinary invite exists.
+- Verification passed: `python -m pytest -q gmfn_backend\tests\test_join_requests.py` (73 passed), focused recovery tests, `python -m py_compile gmfn_backend\app\api\routes\clans.py`.
+- Devil truth: URL QR policy remains a hint only. The invite row, admin review, preapproval list, approval votes, and later verification remain the authority; this does not add OTP or prove the scanner's identity.
 ## 2026-09-12 - Backend QR invite links carry policy context locally
 
 - Status: Verified local backend/frontend continuation after local commit `d82f35fb`; not pushed or deployed under the current batch-mode pipeline freeze.

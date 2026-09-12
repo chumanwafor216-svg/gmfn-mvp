@@ -698,6 +698,73 @@ def test_public_join_invite_preview_recovers_from_retired_invite_code(client):
     assert "newer live invitation" in data["message"].lower()
 
 
+def test_public_join_invite_preview_prefers_qr_policy_recovery_hint(client):
+    _seed_join_context()
+    now = datetime.now(timezone.utc)
+
+    with SessionLocal() as db:
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="old-strict-qr-code",
+                qr_policy_key="strict_entry",
+                is_active=False,
+                revoked_at=now - timedelta(minutes=5),
+                max_uses=100,
+                uses=0,
+                created_at=now - timedelta(minutes=30),
+                expires_at=now + timedelta(days=7),
+            )
+        )
+        db.add(
+            ClanInvite(
+                id=2,
+                clan_id=1,
+                created_by_user_id=1,
+                code="live-strict-qr-code",
+                qr_policy_key="strict_entry",
+                is_active=True,
+                max_uses=100,
+                uses=0,
+                created_at=now - timedelta(minutes=10),
+                expires_at=now + timedelta(days=7),
+            )
+        )
+        db.add(
+            ClanInvite(
+                id=3,
+                clan_id=1,
+                created_by_user_id=1,
+                code="newer-ordinary-code",
+                qr_policy_key=None,
+                is_active=True,
+                max_uses=100,
+                uses=0,
+                created_at=now,
+                expires_at=now + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    res = client.get(
+        "/clans/join-invite/preview"
+        "?code=old-strict-qr-code"
+        "&community_code=GMFN-C-000001"
+        "&qr_policy=strict_entry"
+    )
+
+    assert res.status_code == 200, res.text
+    data = res.json()
+    assert data["ok"] is True
+    assert data["valid"] is True
+    assert data["status"] == "ready"
+    assert data["invite_code"] == "live-strict-qr-code"
+    assert data["qr_policy_key"] == "strict_entry"
+    assert "newer live invitation" in data["message"].lower()
+
+
 def test_shareable_join_invite_max_uses_defaults_to_reusable_value():
     clan = Clan(id=1, invite_max_uses=None)
 

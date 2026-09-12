@@ -51,6 +51,7 @@ from app.api.routes.entry import (
     _identity_profile_payload_for_entry,
 )
 from app.services.invites_service import (
+    COMMUNITY_QR_POLICY_KEYS,
     api_join_link,
     clean_community_qr_policy_key,
     create_clan_invite,
@@ -1591,7 +1592,10 @@ def _latest_usable_clan_invite(
     db: Session,
     *,
     clan_id: int,
+    desired_qr_policy_key: Optional[str] = None,
 ) -> Optional[ClanInvite]:
+    desired = _safe_str(desired_qr_policy_key)
+    fallback: Optional[ClanInvite] = None
     rows = (
         db.query(ClanInvite)
         .filter(ClanInvite.clan_id == int(clan_id))
@@ -1608,9 +1612,13 @@ def _latest_usable_clan_invite(
             continue
         if _is_clan_invite_used_up(invite):
             continue
+        if desired and _safe_str(getattr(invite, "qr_policy_key", None)) != desired:
+            if fallback is None:
+                fallback = invite
+            continue
         return invite
 
-    return None
+    return fallback
 
 
 def _retire_active_clan_invites(
@@ -1987,6 +1995,14 @@ _QR_POLICY_NOTIFICATION_LABELS = {
 
 def _qr_policy_label(qr_policy_key: Optional[str]) -> Optional[str]:
     return _QR_POLICY_NOTIFICATION_LABELS.get(_safe_str(qr_policy_key))
+
+
+def _public_qr_policy_hint(*values: Optional[str]) -> Optional[str]:
+    for raw in values:
+        value = _safe_str(raw)
+        if value in COMMUNITY_QR_POLICY_KEYS:
+            return value
+    return None
 
 
 def _qr_policy_notification_suffix(qr_policy_key: Optional[str]) -> str:
@@ -2731,12 +2747,17 @@ def _ready_join_preview_for_clan(
     *,
     clan: Clan,
     message: str,
+    desired_qr_policy_key: Optional[str] = None,
 ) -> Optional[dict[str, Any]]:
     disabled, domain = _domain_member_invites_disabled(db, clan=clan)
     if disabled:
         return _disabled_domain_invite_preview(clan=clan, domain=domain)
 
-    latest_invite = _latest_usable_clan_invite(db, clan_id=int(clan.id))
+    latest_invite = _latest_usable_clan_invite(
+        db,
+        clan_id=int(clan.id),
+        desired_qr_policy_key=desired_qr_policy_key,
+    )
     if latest_invite is not None:
         invited_by_user_id = getattr(latest_invite, "created_by_user_id", None)
         return _invite_preview_payload(
@@ -3865,9 +3886,12 @@ def get_invite_link(
 def preview_join_invite(
     code: str,
     community_code: Optional[str] = None,
+    qr_policy: Optional[str] = None,
+    entry_policy: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
     invite_code = (code or "").strip()
+    desired_qr_policy_key = _public_qr_policy_hint(qr_policy, entry_policy)
     if not invite_code:
         return _invite_preview_payload(
             valid=False,
@@ -3899,6 +3923,7 @@ def preview_join_invite(
                 db,
                 clan=clan,
                 message="A newer live invitation was found for this community. You can continue with your join request.",
+                desired_qr_policy_key=desired_qr_policy_key,
             )
             if recovered and _safe_str(recovered.get("invite_code")) != invite_code:
                 return recovered
@@ -3916,6 +3941,7 @@ def preview_join_invite(
                 db,
                 clan=clan,
                 message="A newer live invitation was found for this community. You can continue with your join request.",
+                desired_qr_policy_key=desired_qr_policy_key,
             )
             if recovered and _safe_str(recovered.get("invite_code")) != invite_code:
                 return recovered
@@ -3947,6 +3973,7 @@ def preview_join_invite(
             db,
             clan=legacy_clan,
             message="We found the latest live invitation for this community. You can continue with your join request.",
+            desired_qr_policy_key=desired_qr_policy_key,
         )
         if recovered is not None:
             return recovered
@@ -3978,6 +4005,7 @@ def preview_join_invite(
             db,
             clan=community_clan,
             message="We found the latest live invitation for this community. You can continue with your join request.",
+            desired_qr_policy_key=desired_qr_policy_key,
         )
         if recovered is not None:
             return recovered
