@@ -1,3 +1,12 @@
+## 2026-09-12 - Compact join links preserve QR operating context locally
+
+- Status: Verified local frontend continuation after local commit `e68f6f8f`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Shared link truth fix: `compactJoinInviteUrl` now strips personal/share clutter while preserving the operational query keys `community_code`, `qr_policy`, and `entry_policy`.
+- QR adoption impact: WhatsApp-friendly compact invite messages can stay short without dropping the community target or QR approval model needed by Join Entry.
+- Scope boundary: no backend route, invite row, approval rule, verification rule, or expiry logic changed; this only changes frontend URL compaction.
+- Regression cage: `frontend/tools/audit-link-contracts.mjs` now asserts compact join links preserve allowed invite context and still reject unrelated fallback routes.
+- Verification passed: `npm exec eslint src/lib/joinLinks.ts tools/audit-link-contracts.mjs`, `npm --prefix frontend run audit:link-contracts`, `npm --prefix frontend run audit:existing-community-invite-line`, `npm --prefix frontend run build`, and `git diff --check -- frontend\src\lib\joinLinks.ts frontend\tools\audit-link-contracts.mjs`.
+- Devil truth: this prevents helper-level context loss, but it does not make QR links private or authoritative. Backend invite state, expiry, retirement, approval, and verification still decide what happens.
 ## 2026-09-12 - Normalized join links preserve QR policy locally
 
 - Status: Verified local frontend continuation after local commit `a3d243d3`; not pushed or deployed under the current batch-mode pipeline freeze.

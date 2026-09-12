@@ -635,11 +635,17 @@ assertContains(
   /export function normalizedJoinInviteUrl\(payload: any\): string \{[\s\S]*?const qrPolicyKey = firstTruthy\([\s\S]*?payload\?\.qr_policy_key,[\s\S]*?payload\?\.qr_policy,[\s\S]*?payload\?\.entry_policy[\s\S]*?if \(qrPolicyKey\) params\.set\("qr_policy", qrPolicyKey\);/,
   "Normalized join invite links must preserve backend QR entry policy context as qr_policy so QR packages do not lose their approval model."
 );
+assertContains(
+  "src/lib/joinLinks.ts",
+  /function compactJoinInviteContextQuery\(rawLink: string\): string \{[\s\S]*?\["community_code", "qr_policy", "entry_policy"\][\s\S]*?params\.set\(key, value\)[\s\S]*?if \(code\) return `\$\{canonicalJoinInviteUrl\(code\)\}\$\{contextQuery\}`;/,
+  "Compact join invite links must strip personal invite clutter while preserving community_code and QR policy context."
+);
+
 
 assertContains(
   "src/lib/joinLinks.ts",
-  /if \(isJoinInviteLink\(direct\)\) return canonicalPublicFrontendUrl\(direct\);\s*return "";/,
-  "Invite normalization must reject unrelated fallback links such as Finance or Marketplace routes."
+  /if \(!isJoinInviteLink\(direct\)\) return "";[\s\S]*?return canonicalPublicFrontendUrl\(`\$\{url\.pathname\}\$\{contextQuery\}`\);/,
+  "Invite normalization must reject unrelated fallback links such as Finance or Marketplace routes while preserving allowed invite context."
 );
 
 assertContains(

@@ -58,18 +58,34 @@ export function canonicalJoinInviteUrl(code: string): string {
   return shareablePublicFrontendUrl(`/start/join/${encodeURIComponent(cleanCode)}`);
 }
 
+function compactJoinInviteContextQuery(rawLink: string): string {
+  try {
+    const url = new URL(rawLink, publicFrontendOrigin());
+    const params = new URLSearchParams();
+    ["community_code", "qr_policy", "entry_policy"].forEach((key) => {
+      const value = safeText(url.searchParams.get(key));
+      if (value) params.set(key, value);
+    });
+    const query = params.toString();
+    return query ? `?${query}` : "";
+  } catch {
+    return "";
+  }
+}
+
 export function compactJoinInviteUrl(rawLink: string): string {
   const direct = safeText(rawLink);
   if (!direct) return "";
 
+  const contextQuery = compactJoinInviteContextQuery(direct);
   const code = inviteCodeFromLink(direct);
-  if (code) return canonicalJoinInviteUrl(code);
+  if (code) return `${canonicalJoinInviteUrl(code)}${contextQuery}`;
 
   if (!isJoinInviteLink(direct)) return "";
 
   try {
     const url = new URL(direct, publicFrontendOrigin());
-    return canonicalPublicFrontendUrl(url.pathname);
+    return canonicalPublicFrontendUrl(`${url.pathname}${contextQuery}`);
   } catch {
     return "";
   }
