@@ -1,3 +1,12 @@
+## 2026-09-12 - QR package policy snapshot caged locally
+
+- Status: Verified local frontend continuation after local commit `a80ffaff`; not pushed or deployed under the current batch-mode pipeline freeze.
+- Frontend truth fix: `ClansPage` now stores the generated invite package `qr_policy_key` in `InviteState` and uses that snapshot for the visible QR card, QR sheet, copied QR announcement, and copied handover.
+- Drift prevention: changing the QR policy dropdown after a QR package is created no longer changes the displayed/copied policy language for the already-created package.
+- Personal-invite boundary: ordinary personal invites without an encoded QR policy now fall back to standard reviewed access language instead of borrowing whatever policy is selected in the QR dropdown.
+- Regression cage: `frontend/tools/audit-existing-community-invite-line.mjs` now asserts the QR policy snapshot contract on `ClansPage`.
+- Verification passed: `npm exec eslint src/pages/ClansPage.tsx tools/audit-existing-community-invite-line.mjs`, `npm --prefix frontend run audit:existing-community-invite-line`, `npm --prefix frontend run build`, and `git diff --check -- frontend\src\pages\ClansPage.tsx frontend\tools\audit-existing-community-invite-line.mjs`.
+- Devil truth: this fixes policy-label truth in generated QR materials only. It does not add OTP, payment/dues proof, legal membership verification, ID checks, or a separate community-domain handover authority record.
 ## 2026-09-12 - QR policy retirement notice surfaced locally
 
 - Status: Verified local backend/frontend continuation after local commit `eafe942e`; not pushed or deployed under the current batch-mode pipeline freeze.

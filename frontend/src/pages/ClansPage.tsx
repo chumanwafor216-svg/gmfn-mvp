@@ -15,6 +15,7 @@ import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
   COMMUNITY_QR_POLICIES,
   communityQrPolicyByKey,
+  isCommunityQrPolicyKey,
   type CommunityQrPolicyKey,
 } from "../lib/communityQrPolicies";
 import {
@@ -64,6 +65,7 @@ type InviteState = {
   fallbackGuideUrl?: string | null;
   packagedShareText?: string | null;
   whatsappShareText?: string | null;
+  qrPolicyKey?: CommunityQrPolicyKey | null;
   retiredQrPolicyInvites?: number;
 };
 
@@ -427,6 +429,10 @@ function buildInviteState(
     }) || baseLink;
   const link = addInviteSearchParams(personalizedLink, extraSearchParams);
   const expiresAt = safeStr(raw?.expires_at || raw?.expiry || "");
+  const rawQrPolicyKey = safeStr(raw?.qr_policy_key || extraSearchParams.qr_policy);
+  const qrPolicyKey = isCommunityQrPolicyKey(rawQrPolicyKey)
+    ? rawQrPolicyKey
+    : null;
   const retiredQrPolicyInvites = Math.max(
     0,
     Number(raw?.retired_qr_policy_invites || 0)
@@ -473,6 +479,7 @@ function buildInviteState(
     fallbackGuideUrl,
     packagedShareText,
     whatsappShareText: compactShareText,
+    qrPolicyKey,
     retiredQrPolicyInvites,
   };
 }
@@ -609,6 +616,9 @@ export default function ClansPage() {
     ? extractMembers(selectedCommunity).length
     : 0;
   const selectedQrPolicy = communityQrPolicyByKey(qrPolicyKey);
+  const inviteQrPolicy = inviteState?.qrPolicyKey
+    ? communityQrPolicyByKey(inviteState.qrPolicyKey)
+    : communityQrPolicyByKey("reviewed_access");
   const activeQrPreApprovals = qrPreApprovals.filter(
     (item) => safeStr(item.status || "active") === "active"
   );
@@ -870,8 +880,8 @@ export default function ClansPage() {
     return [
       `${title} is opening GSN community access.`,
       "Scan the QR code or use the link to begin your join request.",
-      selectedQrPolicy.announcement,
-      selectedQrPolicy.boundary,
+      inviteQrPolicy.announcement,
+      inviteQrPolicy.boundary,
       link ? `Join link: ${link}` : "",
       "Sent through GSN",
     ]
@@ -890,7 +900,7 @@ export default function ClansPage() {
 
     return [
       `GSN community QR handover: ${title}`,
-      `Entry policy: ${selectedQrPolicy.label}`,
+      `Entry policy: ${inviteQrPolicy.label}`,
       `Pre-approved entries active: ${activeQrPreApprovals.length}`,
       code ? `Invite code: ${code}` : "",
       link ? `Join link: ${link}` : "",
@@ -899,7 +909,7 @@ export default function ClansPage() {
       "2. Add known members to the pre-approved list before a public meeting if fast entry is needed.",
       "3. Watch join requests after sharing; strict and market policies still require proper review.",
       "4. Tell members the truth: approval opens community access, but verification is separate.",
-      `Boundary: ${selectedQrPolicy.boundary}`,
+      `Boundary: ${inviteQrPolicy.boundary}`,
       "Sent through GSN",
     ]
       .filter(Boolean)
@@ -1967,7 +1977,7 @@ export default function ClansPage() {
                       lineHeight: 1.7,
                     }}
                   >
-                    Show this QR at a meeting or send the link. It starts a join request; it does not approve membership. Current policy: {selectedQrPolicy.label}.
+                    Show this QR at a meeting or send the link. It starts a join request; it does not approve membership. Current policy: {inviteQrPolicy.label}.
                   </div>
 
                   {Number(inviteState.retiredQrPolicyInvites || 0) > 0 ? (
@@ -2031,7 +2041,7 @@ export default function ClansPage() {
                             maxWidth: 300,
                           }}
                         >
-                          {selectedQrPolicy.scanCopy}
+                          {inviteQrPolicy.scanCopy}
                         </div>
                       </div>
                     ) : null}
@@ -2290,7 +2300,7 @@ export default function ClansPage() {
                   lineHeight: 1.6,
                 }}
               >
-                {selectedQrPolicy.sheetIntro}
+                {inviteQrPolicy.sheetIntro}
               </div>
             </div>
 
@@ -2315,7 +2325,7 @@ export default function ClansPage() {
                 </span>
                 <span style={badge(false)}>Request access</span>
                 <span style={badge(false)}>Approval required</span>
-                <span style={badge(false)}>{selectedQrPolicy.badge}</span>
+                <span style={badge(false)}>{inviteQrPolicy.badge}</span>
               </div>
 
               <div
@@ -2365,7 +2375,7 @@ export default function ClansPage() {
                   textAlign: "center",
                 }}
               >
-                {selectedQrPolicy.boundary}
+                {inviteQrPolicy.boundary}
               </div>
             </div>
 
@@ -2399,7 +2409,7 @@ export default function ClansPage() {
                   fontWeight: 850,
                 }}
               >
-                <span>Policy: {selectedQrPolicy.label}</span>
+                <span>Policy: {inviteQrPolicy.label}</span>
                 <span>Active pre-approved: {activeQrPreApprovals.length}</span>
                 <span>Approved access is not verified membership.</span>
               </div>

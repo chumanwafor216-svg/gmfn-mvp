@@ -201,6 +201,11 @@ assertContains(
 );
 
 assertContains(
+  "frontend/src/pages/ClansPage.tsx",
+  /import[\s\S]*?isCommunityQrPolicyKey[\s\S]*?type InviteState = \{[\s\S]*?qrPolicyKey\?: CommunityQrPolicyKey \| null;[\s\S]*?const rawQrPolicyKey = safeStr\(raw\?\.qr_policy_key \|\| extraSearchParams\.qr_policy\);[\s\S]*?const qrPolicyKey = isCommunityQrPolicyKey\(rawQrPolicyKey\)[\s\S]*?qrPolicyKey,[\s\S]*?const inviteQrPolicy = inviteState\?\.qrPolicyKey[\s\S]*?communityQrPolicyByKey\(inviteState\.qrPolicyKey\)[\s\S]*?Current policy: \{inviteQrPolicy\.label\}[\s\S]*?\{inviteQrPolicy\.scanCopy\}[\s\S]*?\{inviteQrPolicy\.sheetIntro\}[\s\S]*?\{inviteQrPolicy\.boundary\}[\s\S]*?Policy: \{inviteQrPolicy\.label\}/,
+  "Community QR packages must snapshot the generated QR policy and use that policy for the visible QR card, QR sheet, copied announcement, and handover even if the dropdown changes later."
+);
+assertContains(
   "gmfn_backend/app/api/routes/clans.py",
   /def create_join_request\([\s\S]*?submitted_existing_gmfn_id = _safe_str\(payload\.existing_gmfn_id\)\.upper\(\)[\s\S]*?claimed_existing_identity_user[\s\S]*?existing_identity_join = bool\([\s\S]*?claimed_existing_identity_user is not None[\s\S]*?existing_gsn_id_required[\s\S]*?Enter that GSN ID/,
   "Backend join-request creation must reuse typed existing GSN IDs and block duplicate-phone creation without requiring the invite recipient to sign in."
