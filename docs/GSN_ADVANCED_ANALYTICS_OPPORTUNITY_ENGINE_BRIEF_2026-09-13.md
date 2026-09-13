@@ -4,7 +4,7 @@
 
 The full `Opportunity Engine` belongs under Analytics as a paid `Advanced Analytics` capability.
 
-It should not be introduced as another Community Domain screen, a stream chat, a lightweight chatbot, a member conversation room, or a WhatsApp replacement. Community Domain remains one of the strongest contexts feeding the engine, but the product home should be Analytics because the engine analyses business activity, marketplace movement, DemandBox patterns, community signals, trust evidence, and external environmental change.
+It should not be introduced as another Community Domain screen, a stream chat, a lightweight chatbot, a member conversation room, or a WhatsApp replacement. Community Domain remains one of the strongest contexts feeding the engine, but the product home should be Analytics because the engine analyses the total GSN operating field: business activity, marketplace movement, DemandBox patterns, community signals, trust evidence, relationship signals, person-to-person activity, and external environmental change.
 
 Working label: `Opportunity Engine`.
 
@@ -55,6 +55,38 @@ A GSN environment already produces signals:
 - what finance, support, verification, or delivery friction keeps returning
 
 The Opportunity Engine turns those signals into structured intelligence: facts first, evidence second, cautious interpretation third, suggested opportunities last.
+
+## Total operating field
+
+The Opportunity Engine should read the totality of GSN, not one feature in isolation.
+
+It should be able to reason across:
+
+- `Trust Graph` - who is connected, which relationships carry evidence, and where trust pathways are weak or strong
+- `TrustPassport` - the fuller evidence story behind a person, community, shop, or institution
+- `TrustSlip` - current, portable proof signals and what they make possible or risky
+- `DemandBox` - what people are asking for, repeating, failing to find, or requesting from the community
+- `Marketplace` - what is listed, viewed, ignored, contacted, fulfilled, repeated, or missing
+- `Spotlight` - what is promoted, seen, opened, shared, and acted on
+- `Shop Diary` - business media, product movement, owner effort, and customer response signals
+- `Community Home` - active community context, governance posture, bulletins, membership movement, and next-action patterns
+- `Community Domain` - the governed institutional setting, permissions, service configuration, and public/community operating rhythm
+- `People interactions` - who the user is talking to, who is talking to the user, what requests or responses keep appearing, and what relationship evidence is forming
+- `Place and environment` - the communities, local areas, markets, organisations, churches, schools, associations, or neighbourhoods where the user operates
+- `External context` - outside public signals such as economy, policy, weather, events, local demand, local supply, funding, demographic shifts, and competitor movement, always cited where possible
+
+The engine should connect what is happening inside GSN with what is happening outside the user, while keeping the analysis grounded in the same GSN community or operating environment. The goal is not to make broad generic predictions. The goal is to say: based on this user's GSN evidence, this community's activity, this local environment, and the wider outside signals, these are the opportunities, risks, and possible directions that appear to be forming.
+
+The output should support different time horizons:
+
+- now
+- next 90 days
+- next 1 year
+- next 2 years
+- next 5 years
+- next 10 years
+
+Every forecast must remain cautious. The engine may say `this may happen`, `this pattern may be forming`, or `this could be an opportunity`. It must not say the future is guaranteed.
 
 ## Placement model
 
