@@ -206,6 +206,11 @@ assertContains(
 );
 assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
+  /export type OpportunityEngineUnitEconomicsReadiness[\s\S]*?export function buildShopOpportunityEngineUnitEconomicsReadiness[\s\S]*?CAC\/LTV readiness[\s\S]*?Readiness only\. This is not CAC, not LTV, not ROI, not profit, and not investor-grade unit economics yet\./,
+  "Shop Opportunity Engine must expose CAC/LTV readiness without claiming true unit economics."
+);
+assertContains(
+  "frontend/src/lib/shopAnalyticsWisdom.ts",
   /export type OpportunityEngineLensRow[\s\S]*?export function buildShopOpportunityEngineLensRows[\s\S]*?Economic demand[\s\S]*?Social movement[\s\S]*?Trust and safety[\s\S]*?Governance and outside context[\s\S]*?No political, health, legal, or external-market conclusion/,
   "Shop Opportunity Engine must expose local analysis lenses while blocking unwired external-context overclaims."
 );
@@ -218,6 +223,11 @@ assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
   /buildShopOpportunityEnginePackageReadiness\([\s\S]*?opportunityEnginePackageReadiness\.title[\s\S]*?Included[\s\S]*?Unlocks[\s\S]*?opportunityEnginePackageReadiness\.boundary/,
   "Shop Control analytics must render the Advanced Analytics package readiness card inside the Opportunity Engine panel."
+);
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /buildShopOpportunityEngineUnitEconomicsReadiness[\s\S]*?opportunityEngineUnitEconomicsReadiness\.title[\s\S]*?CAC side[\s\S]*?LTV side[\s\S]*?shop-control\.opportunity-engine\.unit-economics[\s\S]*?Unit economics evidence[\s\S]*?opportunityEngineUnitEconomicsReadiness\.boundary/,
+  "Shop Control must render CAC/LTV readiness inside Advanced Analytics without claiming the ratio is calculated."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",

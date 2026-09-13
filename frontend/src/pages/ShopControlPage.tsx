@@ -70,6 +70,7 @@ import {
   buildShopOpportunityEngineLensRows,
   buildShopOpportunityEnginePackageReadiness,
   buildShopOpportunityEngineSignalTiles,
+  buildShopOpportunityEngineUnitEconomicsReadiness,
   buildShopOpportunityEngineWisdomSnapshot,
   buildShopSellerHelper,
   formatAnalyticsRate,
@@ -2845,6 +2846,31 @@ export default function ShopControlPage() {
       opportunityEngineSignalTiles.length,
       shopAnalyticsWisdom,
       tradeOutcomeRecords7Days,
+    ]
+  );
+  const opportunityEngineUnitEconomicsReadiness = useMemo(
+    () =>
+      buildShopOpportunityEngineUnitEconomicsReadiness({
+        visitors: attentionVisitors7Days,
+        productOpens: attentionProductOpens7Days,
+        contactTaps: attentionContactTaps7Days,
+        followers: shopFollowerCount,
+        tradeRecords: tradeOutcomeRecords7Days,
+        releasedTradeRecords: tradeOutcomeReleasedRecords,
+        paymentClaimedTradeRecords: tradeOutcomePaymentClaimedRecords,
+        receiptConfirmedTradeRecords: tradeOutcomeReceiptConfirmedRecords,
+        demandSignalCount: openDemandSignalCount,
+      }),
+    [
+      attentionContactTaps7Days,
+      attentionProductOpens7Days,
+      attentionVisitors7Days,
+      openDemandSignalCount,
+      shopFollowerCount,
+      tradeOutcomePaymentClaimedRecords,
+      tradeOutcomeReceiptConfirmedRecords,
+      tradeOutcomeRecords7Days,
+      tradeOutcomeReleasedRecords,
     ]
   );
   const opportunityEnginePackageReadiness = useMemo(
@@ -6605,6 +6631,38 @@ export default function ShopControlPage() {
                 <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Evidence:</strong> {opportunityEngineWisdomSnapshot.evidence}</div>
                 <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Use:</strong> {opportunityEngineWisdomSnapshot.useIn}</div>
                 <div style={{ color: "#5A6F84", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}>{opportunityEngineWisdomSnapshot.cadence} {opportunityEngineWisdomSnapshot.boundary}</div>
+              </div>
+              <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.84)", border: "1px solid rgba(15,94,170,0.12)", padding: 10, display: "grid", gap: 7 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>{opportunityEngineUnitEconomicsReadiness.title}</div>
+                  <span style={{ ...badge(opportunityEngineUnitEconomicsReadiness.status === "Ready to estimate"), fontSize: 10 }}>{opportunityEngineUnitEconomicsReadiness.status}</span>
+                </div>
+                <div style={{ color: "#24415C", fontSize: 11.5, fontWeight: 820, lineHeight: 1.35 }}>{opportunityEngineUnitEconomicsReadiness.summary}</div>
+                <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+                  <div style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 9, display: "grid", gap: 4 }}>
+                    <div style={{ color: "#0F5EAA", fontSize: 10.5, fontWeight: 950, textTransform: "uppercase", letterSpacing: 0 }}>CAC side</div>
+                    <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}>{opportunityEngineUnitEconomicsReadiness.cacSide}</div>
+                  </div>
+                  <div style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 9, display: "grid", gap: 4 }}>
+                    <div style={{ color: "#0F5EAA", fontSize: 10.5, fontWeight: 950, textTransform: "uppercase", letterSpacing: 0 }}>LTV side</div>
+                    <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}>{opportunityEngineUnitEconomicsReadiness.ltvSide}</div>
+                  </div>
+                </div>
+                <details style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(18,58,89,0.08)", padding: "3px 9px 9px" }}>
+                  <StableDisclosureSummary debugId="shop-control.opportunity-engine.unit-economics" stableHeight={34} style={{ color: "#0F5EAA", fontSize: 11.5, fontWeight: 950, cursor: "pointer" }}>
+                    Unit economics evidence
+                  </StableDisclosureSummary>
+                  <div style={{ marginTop: 6, display: "grid", gap: 5 }}>
+                    {opportunityEngineUnitEconomicsReadiness.currentEvidence.map((item) => (
+                      <div key={`opportunity-unit-current-${item}`} style={{ color: "#24415C", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}>{item}</div>
+                    ))}
+                    {opportunityEngineUnitEconomicsReadiness.missingEvidence.map((item) => (
+                      <div key={`opportunity-unit-missing-${item}`} style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}>Missing: {item}</div>
+                    ))}
+                  </div>
+                </details>
+                <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Next:</strong> {opportunityEngineUnitEconomicsReadiness.nextStep}</div>
+                <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}>{opportunityEngineUnitEconomicsReadiness.boundary}</div>
               </div>
               <div style={{ borderRadius: 16, background: "linear-gradient(180deg, #FFFDF6 0%, #FFF7DE 100%)", border: "1px solid rgba(214,170,69,0.22)", padding: 10, display: "grid", gap: 8 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>

@@ -151,6 +151,30 @@ export type OpportunityEnginePackageReadiness = {
   boundary: string;
 };
 
+export type OpportunityEngineUnitEconomicsReadiness = {
+  title: string;
+  status: "Not ready" | "Partial" | "Ready to estimate";
+  summary: string;
+  cacSide: string;
+  ltvSide: string;
+  currentEvidence: string[];
+  missingEvidence: string[];
+  nextStep: string;
+  boundary: string;
+};
+
+export type ShopOpportunityEngineUnitEconomicsInput = {
+  visitors?: number | null;
+  productOpens?: number | null;
+  contactTaps?: number | null;
+  followers?: number | null;
+  tradeRecords?: number | null;
+  releasedTradeRecords?: number | null;
+  paymentClaimedTradeRecords?: number | null;
+  receiptConfirmedTradeRecords?: number | null;
+  demandSignalCount?: number | null;
+};
+
 export type ShopOpportunityEnginePackageInput = {
   snapshot: OpportunityEngineWisdomSnapshot;
   fieldMap: OpportunityEngineFieldMapItem[];
@@ -941,6 +965,66 @@ export function buildShopOpportunityEngineWisdomSnapshot({
       ? "Review weekly while the pilot is gathering."
       : "Review after the next Spotlight run, DemandBox request, or protected trade record.",
     boundary: "Snapshot only. It is not an AI decision, sales proof, public trend claim, or command to change products.",
+  };
+}
+
+export function buildShopOpportunityEngineUnitEconomicsReadiness({
+  visitors,
+  productOpens,
+  contactTaps,
+  followers,
+  tradeRecords,
+  releasedTradeRecords,
+  paymentClaimedTradeRecords,
+  receiptConfirmedTradeRecords,
+  demandSignalCount,
+}: ShopOpportunityEngineUnitEconomicsInput): OpportunityEngineUnitEconomicsReadiness {
+  const shopVisitors = positiveNumber(visitors);
+  const productInterest = positiveNumber(productOpens);
+  const contactIntent = positiveNumber(contactTaps);
+  const repeatAudience = positiveNumber(followers);
+  const protectedRecords = positiveNumber(tradeRecords);
+  const releasedRecords = positiveNumber(releasedTradeRecords);
+  const paymentSignals = positiveNumber(paymentClaimedTradeRecords);
+  const receiptSignals = positiveNumber(receiptConfirmedTradeRecords);
+  const demandSignals = positiveNumber(demandSignalCount);
+  const outcomeSignals = releasedRecords + paymentSignals + receiptSignals;
+  const hasAcquisitionTrail = shopVisitors > 0 || productInterest > 0 || contactIntent > 0 || repeatAudience > 0;
+  const hasOutcomeTrail = protectedRecords > 0 || outcomeSignals > 0;
+  const status: OpportunityEngineUnitEconomicsReadiness["status"] = hasAcquisitionTrail && hasOutcomeTrail
+    ? "Ready to estimate"
+    : hasAcquisitionTrail || hasOutcomeTrail || demandSignals > 0
+      ? "Partial"
+      : "Not ready";
+
+  return {
+    title: "CAC/LTV readiness",
+    status,
+    summary: status === "Ready to estimate"
+      ? "GSN has early acquisition and outcome evidence, but still needs cost and repeat-value records before a real CAC/LTV ratio."
+      : status === "Partial"
+        ? "GSN has part of the signal trail, but not enough to compare customer acquisition cost against lifetime value."
+        : "GSN cannot estimate CAC/LTV until traffic, cost, outcome, and repeat-customer evidence exist.",
+    cacSide: hasAcquisitionTrail
+      ? `${shopVisitors} visitors, ${productInterest} product opens, ${contactIntent} contact taps, and ${repeatAudience} followers can describe attention and intent.`
+      : "No acquisition trail yet. CAC needs tracked outreach cost, channel, visits, contact intent, and owner effort.",
+    ltvSide: hasOutcomeTrail
+      ? `${protectedRecords} protected records, ${releasedRecords} releases, ${paymentSignals} payment signals, and ${receiptSignals} receipt confirmations can begin the value trail.`
+      : "No value trail yet. LTV needs completed outcomes, repeat purchases, retention, margin, support cost, and trust evidence.",
+    currentEvidence: [
+      `Acquisition signals: ${shopVisitors + productInterest + contactIntent + repeatAudience}`,
+      `Outcome signals: ${protectedRecords + outcomeSignals}`,
+      `DemandBox signals: ${demandSignals}`,
+    ],
+    missingEvidence: [
+      "Paid or effort cost by channel before a true CAC calculation.",
+      "Completed sale value, margin, repeat purchase, and retention before a true LTV calculation.",
+      "Enough records over time to avoid treating one contact or one sale as a business model.",
+    ],
+    nextStep: hasAcquisitionTrail
+      ? "Start recording the cost or effort behind each promoted channel, then connect serious outcomes to Protected Trade or TrustSlip evidence."
+      : "Create one measurable visibility path first, then record whether it produces contact and protected outcomes.",
+    boundary: "Readiness only. This is not CAC, not LTV, not ROI, not profit, and not investor-grade unit economics yet.",
   };
 }
 
