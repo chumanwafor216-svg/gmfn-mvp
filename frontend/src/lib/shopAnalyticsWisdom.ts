@@ -966,27 +966,27 @@ export function buildShopOpportunityEngineUnitEconomicsReadiness({
       : "Not ready";
 
   return {
-    title: "CAC/LTV readiness",
+    title: "Cost and repeat-value readiness",
     status,
     summary: status === "Ready to estimate"
-      ? "GSN has early acquisition and outcome evidence, but still needs cost and repeat-value records before a real CAC/LTV ratio."
+      ? "GSN has early attention and outcome evidence, but still needs cost and repeat-value records before any CAC/LTV ratio."
       : status === "Partial"
-        ? "GSN has part of the signal trail, but not enough to compare customer acquisition cost against lifetime value."
-        : "GSN cannot estimate CAC/LTV until traffic, cost, outcome, and repeat-customer evidence exist.",
+        ? "GSN has part of the signal trail, but not enough to compare acquisition effort against repeat value."
+        : "GSN cannot estimate unit economics until traffic, cost, outcome, and repeat-customer evidence exist.",
     cacSide: hasAcquisitionTrail
       ? `${shopVisitors} visitors, ${productInterest} product opens, ${contactIntent} contact taps, and ${repeatAudience} followers can describe attention and intent.`
-      : "No acquisition trail yet. CAC needs tracked outreach cost, channel, visits, contact intent, and owner effort.",
+      : "No acquisition trail yet. Acquisition cost needs tracked outreach cost, channel, visits, contact intent, and owner effort.",
     ltvSide: hasOutcomeTrail
       ? `${protectedRecords} protected records, ${releasedRecords} releases, ${paymentSignals} payment signals, and ${receiptSignals} receipt confirmations can begin the value trail.`
-      : "No value trail yet. LTV needs completed outcomes, repeat purchases, retention, margin, support cost, and trust evidence.",
+      : "No value trail yet. Repeat value needs completed outcomes, repeat purchases, retention, margin, support cost, and trust evidence.",
     currentEvidence: [
       `Acquisition signals: ${shopVisitors + productInterest + contactIntent + repeatAudience}`,
       `Outcome signals: ${protectedRecords + outcomeSignals}`,
       `DemandBox signals: ${demandSignals}`,
     ],
     missingEvidence: [
-      "Paid or effort cost by channel before a true CAC calculation.",
-      "Completed sale value, margin, repeat purchase, and retention before a true LTV calculation.",
+      "Paid or effort cost by channel before a true acquisition-cost calculation.",
+      "Completed sale value, margin, repeat purchase, and retention before a true lifetime-value calculation.",
       "Enough records over time to avoid treating one contact or one sale as a business model.",
     ],
     nextStep: hasAcquisitionTrail

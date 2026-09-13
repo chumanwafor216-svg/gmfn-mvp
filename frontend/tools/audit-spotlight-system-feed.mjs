@@ -175,13 +175,13 @@ assertContains(
 );
 assertContains(
   "gmfn_backend/app/api/routes/marketplace_analytics.py",
-  /unit_economics_readiness = \{[\s\S]*?"title": "CAC\/LTV readiness"[\s\S]*?"current_evidence": \[[\s\S]*?DemandBox signals[\s\S]*?"missing_evidence": \[[\s\S]*?true CAC calculation[\s\S]*?"boundary": "Readiness only\. This is not CAC, not LTV, not ROI, not profit, and not investor-grade unit economics yet\."[\s\S]*?"unit_economics_readiness": unit_economics_readiness/,
-  "Shop owner analytics API must expose CAC/LTV readiness without claiming true unit economics."
+  /unit_economics_readiness = \{[\s\S]*?"title": "Cost and repeat-value readiness"[\s\S]*?"current_evidence": \[[\s\S]*?DemandBox signals[\s\S]*?"missing_evidence": \[[\s\S]*?true acquisition-cost calculation[\s\S]*?"boundary": "Readiness only\. This is not CAC, not LTV, not ROI, not profit, and not investor-grade unit economics yet\."[\s\S]*?"unit_economics_readiness": unit_economics_readiness/,
+  "Shop owner analytics API must expose cost and repeat-value readiness without claiming true unit economics."
 );
 assertContains(
   "gmfn_backend/app/api/routes/marketplace_analytics.py",
   /measurement_plan = \[[\s\S]*?"step": "Capture acquisition cost"[\s\S]*?"metric": "CAC input"[\s\S]*?"step": "Connect value outcomes"[\s\S]*?"metric": "LTV input"[\s\S]*?"step": "Review sample quality"[\s\S]*?not a business model[\s\S]*?"measurement_plan": measurement_plan/,
-  "Shop owner analytics API must expose a CAC/LTV measurement plan before claiming real unit economics."
+  "Shop owner analytics API must expose a cost and repeat-value plan before claiming real unit economics."
 );
 assertContains(
   "gmfn_backend/app/api/routes/marketplace_analytics.py",
@@ -216,7 +216,7 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /Review windows[\s\S]*?Opportunity lenses[\s\S]*?Opportunity reading[\s\S]*?CAC\/LTV measurement plan[\s\S]*?Evidence capture checklist[\s\S]*?Experiment review cadence[\s\S]*?Current evidence snapshot[\s\S]*?Reviewed signal cards[\s\S]*?Small experiment plan/,
+  /Review windows[\s\S]*?Opportunity lenses[\s\S]*?Opportunity reading[\s\S]*?Cost and repeat-value plan[\s\S]*?Evidence capture checklist[\s\S]*?Experiment review cadence[\s\S]*?Current evidence snapshot[\s\S]*?Reviewed signal cards[\s\S]*?Small experiment plan/,
   "Shop Control Advanced Analytics must keep the owner-facing evidence, review, and experiment surface."
 );
 assertLineNotContains(
@@ -241,8 +241,8 @@ assertContains(
 );
 assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
-  /export type OpportunityEngineUnitEconomicsReadiness[\s\S]*?export function buildShopOpportunityEngineUnitEconomicsReadiness[\s\S]*?CAC\/LTV readiness[\s\S]*?Readiness only\. This is not CAC, not LTV, not ROI, not profit, and not investor-grade unit economics yet\./,
-  "Shop Opportunity Engine must expose CAC/LTV readiness without claiming true unit economics."
+  /export type OpportunityEngineUnitEconomicsReadiness[\s\S]*?export function buildShopOpportunityEngineUnitEconomicsReadiness[\s\S]*?Cost and repeat-value readiness[\s\S]*?Readiness only\. This is not CAC, not LTV, not ROI, not profit, and not investor-grade unit economics yet\./,
+  "Shop Opportunity Engine must expose cost and repeat-value readiness without claiming true unit economics."
 );
 assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
@@ -251,18 +251,18 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /buildShopOpportunityEngineUnitEconomicsReadiness[\s\S]*?opportunityEngineUnitEconomicsReadiness\.title[\s\S]*?CAC side[\s\S]*?LTV side[\s\S]*?shop-control\.opportunity-engine\.unit-economics[\s\S]*?Unit economics evidence[\s\S]*?opportunityEngineUnitEconomicsReadiness\.boundary/,
-  "Shop Control must render CAC/LTV readiness inside Advanced Analytics without claiming the ratio is calculated."
+  /buildShopOpportunityEngineUnitEconomicsReadiness[\s\S]*?opportunityEngineUnitEconomicsReadiness\.title[\s\S]*?Acquisition side[\s\S]*?Repeat-value side[\s\S]*?shop-control\.opportunity-engine\.unit-economics[\s\S]*?Unit economics evidence[\s\S]*?opportunityEngineUnitEconomicsReadiness\.boundary/,
+  "Shop Control must render cost and repeat-value readiness inside Advanced Analytics without claiming the ratio is calculated."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
   /unit_economics_readiness\?:[\s\S]*?backendUnitEconomicsReadiness = shopAttentionSummary\?\.opportunity_engine\?\.unit_economics_readiness[\s\S]*?localOpportunityEngineUnitEconomicsReadiness[\s\S]*?current_evidence[\s\S]*?missing_evidence[\s\S]*?opportunityEngineUnitEconomicsReadiness\.boundary/,
-  "Shop Control must prefer backend CAC/LTV readiness while keeping the local readiness fallback."
+  "Shop Control must prefer backend cost and repeat-value readiness while keeping the local readiness fallback."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /measurement_plan\?: Array[\s\S]*?opportunityEngineMeasurementPlanRows[\s\S]*?shop-control\.opportunity-engine\.measurement-plan[\s\S]*?CAC\/LTV measurement plan[\s\S]*?Owner action:[\s\S]*?This is preparation, not a final CAC\/LTV ratio\./,
-  "Shop Control must render the backend CAC/LTV measurement plan as a collapsed detail."
+  /measurement_plan\?: Array[\s\S]*?opportunityEngineMeasurementPlanRows[\s\S]*?shop-control\.opportunity-engine\.measurement-plan[\s\S]*?Cost and repeat-value plan[\s\S]*?Owner action:[\s\S]*?This is preparation, not a final unit-economics ratio\./,
+  "Shop Control must render the backend cost and repeat-value plan as a collapsed detail."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
@@ -271,13 +271,13 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /capture_checklist\?: Array[\s\S]*?opportunityEngineCaptureChecklistRows[\s\S]*?shop-control\.opportunity-engine\.capture-checklist[\s\S]*?Evidence capture checklist[\s\S]*?Capture now:[\s\S]*?Later source:[\s\S]*?Capture discipline is not proof of CAC\/LTV\./,
-  "Shop Control must render the evidence capture checklist as an Advanced Analytics detail without claiming CAC/LTV proof."
+  /capture_checklist\?: Array[\s\S]*?opportunityEngineCaptureChecklistRows[\s\S]*?shop-control\.opportunity-engine\.capture-checklist[\s\S]*?Evidence capture checklist[\s\S]*?Capture now:[\s\S]*?Later source:[\s\S]*?Capture discipline is not proof of cost or repeat value\./,
+  "Shop Control must render the evidence capture checklist as an Advanced Analytics detail without claiming cost or repeat-value proof."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /review_cadence\?: Array[\s\S]*?opportunityEngineReviewCadenceRows[\s\S]*?shop-control\.opportunity-engine\.review-cadence[\s\S]*?Experiment review cadence[\s\S]*?Review now:[\s\S]*?Evidence required:[\s\S]*?Upgrade rule:[\s\S]*?Review cadence is not CAC\/LTV proof or a forecast\./,
-  "Shop Control must render the experiment review cadence without claiming CAC/LTV proof or a forecast."
+  /review_cadence\?: Array[\s\S]*?opportunityEngineReviewCadenceRows[\s\S]*?shop-control\.opportunity-engine\.review-cadence[\s\S]*?Experiment review cadence[\s\S]*?Review now:[\s\S]*?Evidence required:[\s\S]*?Upgrade rule:[\s\S]*?Review cadence is not cost or repeat-value proof or a forecast\./,
+  "Shop Control must render the experiment review cadence without claiming cost or repeat-value proof or a forecast."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",

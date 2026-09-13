@@ -6692,11 +6692,11 @@ export default function ShopControlPage() {
                 <div style={{ color: "#24415C", fontSize: 11.5, fontWeight: 820, lineHeight: 1.35 }}>{opportunityEngineUnitEconomicsReadiness.summary}</div>
                 <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                   <div style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 9, display: "grid", gap: 4 }}>
-                    <div style={{ color: "#0F5EAA", fontSize: 10.5, fontWeight: 950, textTransform: "uppercase", letterSpacing: 0 }}>CAC side</div>
+                    <div style={{ color: "#0F5EAA", fontSize: 10.5, fontWeight: 950, textTransform: "uppercase", letterSpacing: 0 }}>Acquisition side</div>
                     <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}>{opportunityEngineUnitEconomicsReadiness.cacSide}</div>
                   </div>
                   <div style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 9, display: "grid", gap: 4 }}>
-                    <div style={{ color: "#0F5EAA", fontSize: 10.5, fontWeight: 950, textTransform: "uppercase", letterSpacing: 0 }}>LTV side</div>
+                    <div style={{ color: "#0F5EAA", fontSize: 10.5, fontWeight: 950, textTransform: "uppercase", letterSpacing: 0 }}>Repeat-value side</div>
                     <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}>{opportunityEngineUnitEconomicsReadiness.ltvSide}</div>
                   </div>
                 </div>
@@ -6717,7 +6717,7 @@ export default function ShopControlPage() {
                 {opportunityEngineMeasurementPlanRows.length > 0 ? (
                   <details style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(18,58,89,0.08)", padding: "3px 9px 9px" }}>
                     <StableDisclosureSummary debugId="shop-control.opportunity-engine.measurement-plan" stableHeight={34} style={{ color: "#0F5EAA", fontSize: 11.5, fontWeight: 950, cursor: "pointer" }}>
-                      CAC/LTV measurement plan
+                      Cost and repeat-value plan
                     </StableDisclosureSummary>
                     <div style={{ marginTop: 6, display: "grid", gap: 7 }}>
                       {opportunityEngineMeasurementPlanRows.map((item, index) => (
@@ -6728,7 +6728,7 @@ export default function ShopControlPage() {
                           </div>
                           <div style={{ color: "#385773", fontSize: 10.5, fontWeight: 760, lineHeight: 1.35 }}><strong>Reads:</strong> {item.reads || "No source note available."}</div>
                           <div style={{ color: "#385773", fontSize: 10.5, fontWeight: 760, lineHeight: 1.35 }}><strong>Owner action:</strong> {item.owner_action || "Record the missing evidence before treating this as a metric."}</div>
-                          <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "This is preparation, not a final CAC/LTV ratio."}</div>
+                          <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "This is preparation, not a final unit-economics ratio."}</div>
                         </div>
                       ))}
                     </div>
@@ -6751,7 +6751,7 @@ export default function ShopControlPage() {
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Capture now:</strong> {item.capture_now || "Record the missing evidence before using this as a metric."}</div>
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Why:</strong> {item.why || "This keeps the Opportunity Engine evidence-led."}</div>
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Later source:</strong> {item.later_source || "A governed backend record when built."}</div>
-                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Capture discipline is not proof of CAC/LTV."}</div>
+                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Capture discipline is not proof of cost or repeat value."}</div>
                       </div>
                     ))}
                   </div>
@@ -6772,7 +6772,7 @@ export default function ShopControlPage() {
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Review now:</strong> {item.review_now || "Review the current evidence before changing the claim."}</div>
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Evidence required:</strong> {item.evidence_required || "Comparable records over time."}</div>
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Upgrade rule:</strong> {item.upgrade_rule || "Upgrade the claim only after repeated evidence exists."}</div>
-                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Review cadence is not CAC/LTV proof or a forecast."}</div>
+                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Review cadence is not cost or repeat-value proof or a forecast."}</div>
                       </div>
                     ))}
                   </div>

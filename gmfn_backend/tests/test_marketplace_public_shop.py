@@ -5593,13 +5593,13 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert "DemandBox" in demand_output_card["signal"]
     assert "must not be presented as market size" in demand_output_card["risk"]
     unit_economics = opportunity_engine["unit_economics_readiness"]
-    assert unit_economics["title"] == "CAC/LTV readiness"
+    assert unit_economics["title"] == "Cost and repeat-value readiness"
     assert unit_economics["status"] == "Ready to estimate"
-    assert "real CAC/LTV ratio" in unit_economics["summary"]
+    assert "any CAC/LTV ratio" in unit_economics["summary"]
     assert "visitors" in unit_economics["cac_side"]
     assert "protected records" in unit_economics["ltv_side"]
     assert "DemandBox signals: 0" in unit_economics["current_evidence"]
-    assert "true CAC calculation" in unit_economics["missing_evidence"][0]
+    assert "true acquisition-cost calculation" in unit_economics["missing_evidence"][0]
     assert "not CAC, not LTV" in unit_economics["boundary"]
     measurement_plan = opportunity_engine["measurement_plan"]
     assert measurement_plan[0]["step"] == "Capture acquisition cost"

@@ -523,24 +523,24 @@ def _opportunity_engine_summary(
     ]
     live_count = sum(1 for row in signal_groups if row["status"] == "Live")
     unit_economics_readiness = {
-        "title": "CAC/LTV readiness",
+        "title": "Cost and repeat-value readiness",
         "status": unit_economics_status,
         "summary": (
-            "GSN has early acquisition and outcome evidence, but still needs cost and repeat-value records before a real CAC/LTV ratio."
+            "GSN has early attention and outcome evidence, but still needs cost and repeat-value records before any CAC/LTV ratio."
             if unit_economics_status == "Ready to estimate"
-            else "GSN has part of the signal trail, but not enough to compare customer acquisition cost against lifetime value."
+            else "GSN has part of the signal trail, but not enough to compare acquisition effort against repeat value."
             if unit_economics_status == "Partial"
-            else "GSN cannot estimate CAC/LTV until traffic, cost, outcome, and repeat-customer evidence exist."
+            else "GSN cannot estimate unit economics until traffic, cost, outcome, and repeat-customer evidence exist."
         ),
         "cac_side": (
             f"{shop_visits} visitors, {product_opens} product opens, {contact_taps} contact taps, and {int(follower_count or 0)} followers can describe attention and intent."
             if has_acquisition_trail
-            else "No acquisition trail yet. CAC needs tracked outreach cost, channel, visits, contact intent, and owner effort."
+            else "No acquisition trail yet. Acquisition cost needs tracked outreach cost, channel, visits, contact intent, and owner effort."
         ),
         "ltv_side": (
             f"{protected_trade_records} protected records, {released_trade_records} releases, {payment_claimed_records} payment signals, and {receipt_confirmed_records} receipt confirmations can begin the value trail."
             if has_outcome_trail
-            else "No value trail yet. LTV needs completed outcomes, repeat purchases, retention, margin, support cost, and trust evidence."
+            else "No value trail yet. Repeat value needs completed outcomes, repeat purchases, retention, margin, support cost, and trust evidence."
         ),
         "current_evidence": [
             f"Acquisition signals: {acquisition_signals}",
@@ -548,8 +548,8 @@ def _opportunity_engine_summary(
             f"DemandBox signals: {open_demand}",
         ],
         "missing_evidence": [
-            "Paid or effort cost by channel before a true CAC calculation.",
-            "Completed sale value, margin, repeat purchase, and retention before a true LTV calculation.",
+            "Paid or effort cost by channel before a true acquisition-cost calculation.",
+            "Completed sale value, margin, repeat purchase, and retention before a true lifetime-value calculation.",
             "Enough records over time to avoid treating one contact or one sale as a business model.",
         ],
         "next_step": (
