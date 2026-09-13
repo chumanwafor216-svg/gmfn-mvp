@@ -175,6 +175,11 @@ assertContains(
 );
 assertContains(
   "gmfn_backend/app/api/routes/marketplace_analytics.py",
+  /measurement_plan = \[[\s\S]*?"step": "Capture acquisition cost"[\s\S]*?"metric": "CAC input"[\s\S]*?"step": "Connect value outcomes"[\s\S]*?"metric": "LTV input"[\s\S]*?"step": "Review sample quality"[\s\S]*?not a business model[\s\S]*?"measurement_plan": measurement_plan/,
+  "Shop owner analytics API must expose a CAC/LTV measurement plan before claiming real unit economics."
+);
+assertContains(
+  "gmfn_backend/app/api/routes/marketplace_analytics.py",
   /evidence_ledger = \[[\s\S]*?"source": "Marketplace and Shop Diary"[\s\S]*?"source": "DemandBox"[\s\S]*?"source": "TrustPassport, TrustSlip, Trust Graph"[\s\S]*?"source": "External context"[\s\S]*?"status": "Blocked"[\s\S]*?"evidence_ledger": evidence_ledger/,
   "Shop owner analytics API must expose the Opportunity Engine evidence ledger without wiring private trust or external context prematurely."
 );
@@ -243,6 +248,11 @@ assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
   /unit_economics_readiness\?:[\s\S]*?backendUnitEconomicsReadiness = shopAttentionSummary\?\.opportunity_engine\?\.unit_economics_readiness[\s\S]*?localOpportunityEngineUnitEconomicsReadiness[\s\S]*?current_evidence[\s\S]*?missing_evidence[\s\S]*?opportunityEngineUnitEconomicsReadiness\.boundary/,
   "Shop Control must prefer backend CAC/LTV readiness while keeping the local readiness fallback."
+);
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /measurement_plan\?: Array[\s\S]*?opportunityEngineMeasurementPlanRows[\s\S]*?shop-control\.opportunity-engine\.measurement-plan[\s\S]*?CAC\/LTV measurement plan[\s\S]*?Owner action:[\s\S]*?This is preparation, not a final CAC\/LTV ratio\./,
+  "Shop Control must render the backend CAC/LTV measurement plan as a collapsed detail."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
@@ -486,7 +496,7 @@ assertContains(
 );
 assertContains(
   "gmfn_backend/tests/test_marketplace_public_shop.py",
-  /opportunity_engine = body\["opportunity_engine"\][\s\S]*?opportunity_engine\["aggregator_ready"\] is True[\s\S]*?opportunity_coverage\["governed_outside_context"\] is False[\s\S]*?opportunity_engine\["signal_groups"\]\[2\]\["label"\] == "DemandBox"[\s\S]*?len\(opportunity_engine\["output_cards"\]\) == 3[\s\S]*?"must not be presented as market size"[\s\S]*?unit_economics = opportunity_engine\["unit_economics_readiness"\][\s\S]*?"not CAC, not LTV"[\s\S]*?ledger_rows = opportunity_engine\["evidence_ledger"\][\s\S]*?"External context"[\s\S]*?"Blocked"[\s\S]*?"not saved AI inference"/,
+  /opportunity_engine = body\["opportunity_engine"\][\s\S]*?opportunity_engine\["aggregator_ready"\] is True[\s\S]*?opportunity_coverage\["governed_outside_context"\] is False[\s\S]*?opportunity_engine\["signal_groups"\]\[2\]\["label"\] == "DemandBox"[\s\S]*?len\(opportunity_engine\["output_cards"\]\) == 3[\s\S]*?"must not be presented as market size"[\s\S]*?unit_economics = opportunity_engine\["unit_economics_readiness"\][\s\S]*?"not CAC, not LTV"[\s\S]*?measurement_plan = opportunity_engine\["measurement_plan"\][\s\S]*?"Capture acquisition cost"[\s\S]*?"Mark repeat value"[\s\S]*?ledger_rows = opportunity_engine\["evidence_ledger"\][\s\S]*?"External context"[\s\S]*?"Blocked"[\s\S]*?"not saved AI inference"/,
   "Backend analytics tests must lock the Opportunity Engine computed-summary boundary."
 );
 assertContains(

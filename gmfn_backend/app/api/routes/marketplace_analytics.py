@@ -559,6 +559,48 @@ def _opportunity_engine_summary(
         ),
         "boundary": "Readiness only. This is not CAC, not LTV, not ROI, not profit, and not investor-grade unit economics yet.",
     }
+    measurement_plan = [
+        {
+            "step": "Capture acquisition cost",
+            "metric": "CAC input",
+            "currently_available": False,
+            "reads": "No cash-cost, airtime, data, helper-cost, or owner-effort cost table is wired into this shop summary yet.",
+            "owner_action": "Record the channel, spend, airtime/data, helper cost, and time behind each promoted shop push before comparing CAC with LTV.",
+            "boundary": "Visits are not free acquisition if real owner effort or money was spent to create them.",
+        },
+        {
+            "step": "Trace the acquisition path",
+            "metric": "Channel-to-contact path",
+            "currently_available": has_acquisition_trail,
+            "reads": "Shop visits, product opens, contact taps, follower count, share response, and Spotlight attention events.",
+            "owner_action": "Keep using attributed shop links, Spotlight posts, follower notices, and contact taps so GSN can see which path produced serious contact.",
+            "boundary": "Attention describes possible intent; it is not a buyer, payment, or delivery proof.",
+        },
+        {
+            "step": "Connect value outcomes",
+            "metric": "LTV input",
+            "currently_available": has_outcome_trail,
+            "reads": "ProtectedTradeRecord rows linked by shop_id or seller_user_id, including released, payment-claimed, and receipt-confirmed states.",
+            "owner_action": "Move serious sales or support outcomes through Protected Trade or TrustSlip evidence so the value trail is not only chat or memory.",
+            "boundary": "A protected record starts evidence; it is not profit, margin, satisfaction, or lifetime value by itself.",
+        },
+        {
+            "step": "Mark repeat value",
+            "metric": "Retention input",
+            "currently_available": False,
+            "reads": "No repeat-customer, margin, retention, or support-cost trail is wired into this shop summary yet.",
+            "owner_action": "Later connect repeat buyer outcomes, margin, support cost, and retention windows before calling anything LTV.",
+            "boundary": "One sale, one contact, or one release cannot define lifetime value.",
+        },
+        {
+            "step": "Review sample quality",
+            "metric": "Decision quality",
+            "currently_available": attention_events >= 5 and protected_trade_records > 0,
+            "reads": "The current seven-day attention window, DemandBox count, protected records, and recommendation action trail.",
+            "owner_action": "Use small experiments until repeated records over time show the same direction.",
+            "boundary": "Tiny samples are learning signals, not a business model, investor metric, or guarantee.",
+        },
+    ]
     evidence_ledger = [
         {
             "source": "Marketplace and Shop Diary",
@@ -651,6 +693,7 @@ def _opportunity_engine_summary(
         "output_cards": output_cards,
         "unit_economics_readiness": unit_economics_readiness,
         "evidence_ledger": evidence_ledger,
+        "measurement_plan": measurement_plan,
         "field_coverage": {
             "shop_and_marketplace": active_products > 0,
             "spotlight_attention": active_spotlights > 0 or spotlight_impressions > 0,

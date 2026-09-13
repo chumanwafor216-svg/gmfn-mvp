@@ -5602,6 +5602,17 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert "DemandBox signals: 0" in unit_economics["current_evidence"]
     assert "true CAC calculation" in unit_economics["missing_evidence"][0]
     assert "not CAC, not LTV" in unit_economics["boundary"]
+    measurement_plan = opportunity_engine["measurement_plan"]
+    assert measurement_plan[0]["step"] == "Capture acquisition cost"
+    assert measurement_plan[0]["metric"] == "CAC input"
+    assert measurement_plan[0]["currently_available"] is False
+    assert "owner effort" in measurement_plan[0]["reads"]
+    assert measurement_plan[1]["currently_available"] is True
+    assert measurement_plan[2]["metric"] == "LTV input"
+    assert measurement_plan[2]["currently_available"] is True
+    assert measurement_plan[3]["step"] == "Mark repeat value"
+    assert measurement_plan[4]["step"] == "Review sample quality"
+    assert "not a business model" in measurement_plan[4]["boundary"]
     ledger_rows = opportunity_engine["evidence_ledger"]
     assert ledger_rows[0]["source"] == "Marketplace and Shop Diary"
     assert ledger_rows[2]["source"] == "DemandBox"

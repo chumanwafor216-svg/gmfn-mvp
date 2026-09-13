@@ -386,6 +386,14 @@ type ShopAttentionSummary = {
       reads?: string | null;
       privacy_boundary?: string | null;
     }> | null;
+    measurement_plan?: Array<{
+      step?: string | null;
+      metric?: string | null;
+      currently_available?: boolean | null;
+      reads?: string | null;
+      owner_action?: string | null;
+      boundary?: string | null;
+    }> | null;
   } | null;
   daily_activity?: ShopAttentionDailyActivity[] | null;
   source_breakdown?: ShopAttentionSourceBreakdown[] | null;
@@ -2952,6 +2960,9 @@ export default function ShopControlPage() {
     : [];
   const opportunityEngineEvidenceLedgerRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.evidence_ledger)
     ? shopAttentionSummary.opportunity_engine.evidence_ledger
+    : [];
+  const opportunityEngineMeasurementPlanRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.measurement_plan)
+    ? shopAttentionSummary.opportunity_engine.measurement_plan
     : [];
   const opportunityEngineGapRows = useMemo(
     () =>
@@ -6697,6 +6708,26 @@ export default function ShopControlPage() {
                   </div>
                 </details>
                 <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Next:</strong> {opportunityEngineUnitEconomicsReadiness.nextStep}</div>
+                {opportunityEngineMeasurementPlanRows.length > 0 ? (
+                  <details style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(18,58,89,0.08)", padding: "3px 9px 9px" }}>
+                    <StableDisclosureSummary debugId="shop-control.opportunity-engine.measurement-plan" stableHeight={34} style={{ color: "#0F5EAA", fontSize: 11.5, fontWeight: 950, cursor: "pointer" }}>
+                      CAC/LTV measurement plan
+                    </StableDisclosureSummary>
+                    <div style={{ marginTop: 6, display: "grid", gap: 7 }}>
+                      {opportunityEngineMeasurementPlanRows.map((item, index) => (
+                        <div key={`opportunity-measurement-${item.step || index}`} style={{ borderRadius: 13, background: "#F8FBFF", border: "1px solid rgba(15,94,170,0.10)", padding: 9, display: "grid", gap: 4 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                            <span style={{ color: "#061827", fontSize: 11.5, fontWeight: 950 }}>{item.step || "Measurement step"}</span>
+                            <span style={{ ...badge(Boolean(item.currently_available)), fontSize: 10 }}>{item.metric || "Metric"}</span>
+                          </div>
+                          <div style={{ color: "#385773", fontSize: 10.5, fontWeight: 760, lineHeight: 1.35 }}><strong>Reads:</strong> {item.reads || "No source note available."}</div>
+                          <div style={{ color: "#385773", fontSize: 10.5, fontWeight: 760, lineHeight: 1.35 }}><strong>Owner action:</strong> {item.owner_action || "Record the missing evidence before treating this as a metric."}</div>
+                          <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "This is preparation, not a final CAC/LTV ratio."}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                ) : null}
                 <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}>{opportunityEngineUnitEconomicsReadiness.boundary}</div>
               </div>
               <div style={{ borderRadius: 16, background: "linear-gradient(180deg, #FFFDF6 0%, #FFF7DE 100%)", border: "1px solid rgba(214,170,69,0.22)", padding: 10, display: "grid", gap: 8 }}>
