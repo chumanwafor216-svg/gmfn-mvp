@@ -85,6 +85,25 @@ export type ShopOpportunityEngineGuidanceInput = {
   hasAttentionSignal?: boolean;
 };
 
+export type ShopOpportunityEngineSignalTile = {
+  label: string;
+  value: string;
+  detail: string;
+  live: boolean;
+  icon: string;
+};
+
+export type ShopOpportunityEngineSignalInput = {
+  publicItems?: number | null;
+  publicSlots?: number | null;
+  spotlightSeen?: number | null;
+  activeSpotlights?: number | null;
+  demandSignalCount?: number | null;
+  tradeRecords?: number | null;
+  communityName?: string | null;
+  hasCommunityContext?: boolean;
+};
+
 function positiveNumber(value: unknown): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
@@ -613,6 +632,70 @@ export function buildShopSellerHelper(wisdom: ShopAnalyticsWisdom): ShopSellerHe
       };
   }
 }
+export function buildShopOpportunityEngineSignalTiles({
+  publicItems,
+  publicSlots,
+  spotlightSeen,
+  activeSpotlights,
+  demandSignalCount,
+  tradeRecords,
+  communityName,
+  hasCommunityContext,
+}: ShopOpportunityEngineSignalInput): ShopOpportunityEngineSignalTile[] {
+  const visiblePublicItems = positiveNumber(publicItems);
+  const totalPublicSlots = positiveNumber(publicSlots);
+  const spotlightViews = positiveNumber(spotlightSeen);
+  const liveSpotlights = positiveNumber(activeSpotlights);
+  const openDemandSignals = positiveNumber(demandSignalCount);
+  const protectedTradeRecords = positiveNumber(tradeRecords);
+  const communityLabel = String(communityName || "Selected community").trim() || "Selected community";
+
+  return [
+    {
+      label: "Shop and Marketplace",
+      value: totalPublicSlots ? `${visiblePublicItems}/${totalPublicSlots} public` : `${visiblePublicItems} public`,
+      detail: "Reads visible offers, shop blocks, and public shelf readiness.",
+      live: visiblePublicItems > 0,
+      icon: "marketplace",
+    },
+    {
+      label: "Spotlight attention",
+      value: spotlightViews ? `${spotlightViews} seen` : liveSpotlights ? "Live, gathering" : "Not live",
+      detail: "Reads broadcast reach and attention before calling anything a market pattern.",
+      live: spotlightViews > 0 || liveSpotlights > 0,
+      icon: "megaphone",
+    },
+    {
+      label: "DemandBox",
+      value: openDemandSignals ? `${openDemandSignals} open` : "No open signal",
+      detail: "Reads request context as evidence of stated need, not proof of buyers or sales.",
+      live: openDemandSignals > 0,
+      icon: "briefcase",
+    },
+    {
+      label: "Trade evidence",
+      value: protectedTradeRecords ? `${protectedTradeRecords} records` : "No records yet",
+      detail: "Reads protected outcomes without claiming payment, delivery, or satisfaction proof.",
+      live: protectedTradeRecords > 0,
+      icon: "document",
+    },
+    {
+      label: "Community context",
+      value: communityLabel,
+      detail: "Keeps the reading tied to the selected community, not the whole public internet.",
+      live: Boolean(hasCommunityContext),
+      icon: "community",
+    },
+    {
+      label: "Trust layer",
+      value: "Next wiring",
+      detail: "Trust Graph, TrustPassport, TrustSlip, member interactions, and outside context are planned inputs for the full engine.",
+      live: false,
+      icon: "shield",
+    },
+  ];
+}
+
 export function buildShopOpportunityEngineGuidanceRows({
   wisdom,
   primaryActionLabel,

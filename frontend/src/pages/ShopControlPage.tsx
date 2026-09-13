@@ -65,6 +65,7 @@ import {
   buildShopAnalyticsWisdom,
   buildShopMarketIntelligenceSummary,
   buildShopOpportunityEngineGuidanceRows,
+  buildShopOpportunityEngineSignalTiles,
   buildShopSellerHelper,
   formatAnalyticsRate,
 } from "../lib/shopAnalyticsWisdom";
@@ -638,13 +639,6 @@ type ShopCommunityNeedOpportunity = {
   reviewTrigger: string;
 };
 
-type OpportunityEngineSignalTile = {
-  label: string;
-  value: string;
-  detail: string;
-  live: boolean;
-  icon: GsnIconName;
-};
 
 
 function marketContextTokens(...values: unknown[]): Set<string> {
@@ -2716,57 +2710,18 @@ export default function ShopControlPage() {
     );
   }, [shop]);
 
-  const opportunityEngineSignalTiles = useMemo<OpportunityEngineSignalTile[]>(
-    () => [
-      {
-        label: "Shop and Marketplace",
-        value: publicProductSlotsTotal
-          ? `${occupiedPublicProductSlotCount}/${publicProductSlotsTotal} public`
-          : `${occupiedPublicProductSlotCount} public`,
-        detail: "Reads visible offers, shop blocks, and public shelf readiness.",
-        live: occupiedPublicProductSlotCount > 0,
-        icon: "marketplace",
-      },
-      {
-        label: "Spotlight attention",
-        value: attentionSpotlightImpressions7Days
-          ? `${attentionSpotlightImpressions7Days} seen`
-          : activeSpotlights.length
-            ? "Live, gathering"
-            : "Not live",
-        detail: "Reads broadcast reach and attention before calling anything a market pattern.",
-        live: attentionSpotlightImpressions7Days > 0 || activeSpotlights.length > 0,
-        icon: "megaphone",
-      },
-      {
-        label: "DemandBox",
-        value: openDemandSignalCount ? `${openDemandSignalCount} open` : "No open signal",
-        detail: "Reads request context as evidence of stated need, not proof of buyers or sales.",
-        live: openDemandSignalCount > 0,
-        icon: "briefcase",
-      },
-      {
-        label: "Trade evidence",
-        value: tradeOutcomeRecords7Days ? `${tradeOutcomeRecords7Days} records` : "No records yet",
-        detail: "Reads protected outcomes without claiming payment, delivery, or satisfaction proof.",
-        live: tradeOutcomeRecords7Days > 0,
-        icon: "document",
-      },
-      {
-        label: "Community context",
-        value: communityName,
-        detail: "Keeps the reading tied to the selected community, not the whole public internet.",
-        live: Boolean(effectiveShopClanId || selectedClanId),
-        icon: "community",
-      },
-      {
-        label: "Trust layer",
-        value: "Next wiring",
-        detail: "Trust Graph, TrustPassport, TrustSlip, member interactions, and outside context are planned inputs for the full engine.",
-        live: false,
-        icon: "shield",
-      },
-    ],
+  const opportunityEngineSignalTiles = useMemo(
+    () =>
+      buildShopOpportunityEngineSignalTiles({
+        publicItems: occupiedPublicProductSlotCount,
+        publicSlots: publicProductSlotsTotal,
+        spotlightSeen: attentionSpotlightImpressions7Days,
+        activeSpotlights: activeSpotlights.length,
+        demandSignalCount: openDemandSignalCount,
+        tradeRecords: tradeOutcomeRecords7Days,
+        communityName,
+        hasCommunityContext: Boolean(effectiveShopClanId || selectedClanId),
+      }),
     [
       activeSpotlights.length,
       attentionSpotlightImpressions7Days,
@@ -6442,7 +6397,7 @@ export default function ShopControlPage() {
               <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                 {opportunityEngineSignalTiles.map((item) => (
                   <div key={`opportunity-engine-${item.label}`} style={{ borderRadius: 14, background: "rgba(255,255,255,0.78)", border: "1px solid rgba(18,58,89,0.08)", padding: 10, display: "grid", gridTemplateColumns: "32px minmax(0, 1fr)", gap: 8, alignItems: "start" }}>
-                    <GsnLegacyIcon name={item.icon} size={30} />
+                    <GsnLegacyIcon name={item.icon as GsnIconName} size={30} />
                     <div style={{ minWidth: 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                         <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.label}</span>

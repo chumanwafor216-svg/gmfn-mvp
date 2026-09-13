@@ -171,6 +171,11 @@ assertContains(
 );
 assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
+  /export type ShopOpportunityEngineSignalTile[\s\S]*?export function buildShopOpportunityEngineSignalTiles[\s\S]*?Shop and Marketplace[\s\S]*?Spotlight attention[\s\S]*?DemandBox[\s\S]*?Trust Graph[\s\S]*?TrustPassport[\s\S]*?TrustSlip/,
+  "Shop Opportunity Engine signal readiness tiles must live in shared analytics logic and keep total-GSN next-wiring boundaries."
+);
+assertContains(
+  "frontend/src/lib/shopAnalyticsWisdom.ts",
   /export type OpportunityEngineGuidanceRow[\s\S]*?export function buildShopOpportunityEngineGuidanceRows[\s\S]*?DemandBox[\s\S]*?TrustPassport[\s\S]*?TrustSlip[\s\S]*?Use this as guidance, not certainty/,
   "Shop Opportunity Engine guidance must live in shared analytics logic and keep cautious DemandBox, TrustPassport, and TrustSlip boundaries."
 );
