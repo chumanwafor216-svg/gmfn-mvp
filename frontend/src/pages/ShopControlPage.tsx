@@ -66,6 +66,7 @@ import {
   buildShopMarketIntelligenceSummary,
   buildShopOpportunityEngineFieldMap,
   buildShopOpportunityEngineGuidanceRows,
+  buildShopOpportunityEngineLensRows,
   buildShopOpportunityEnginePackageReadiness,
   buildShopOpportunityEngineSignalTiles,
   buildShopOpportunityEngineWisdomSnapshot,
@@ -2824,6 +2825,33 @@ export default function ShopControlPage() {
       opportunityEngineLiveSignalCount,
       opportunityEngineSignalTiles.length,
       opportunityEngineWisdomSnapshot,
+    ]
+  );
+  const opportunityEngineLensRows = useMemo(
+    () =>
+      buildShopOpportunityEngineLensRows({
+        wisdom: shopAnalyticsWisdom,
+        demandSignalCount: openDemandSignalCount,
+        tradeRecords: tradeOutcomeRecords7Days,
+        liveSignalCount: opportunityEngineLiveSignalCount,
+        signalGroupCount: opportunityEngineSignalTiles.length,
+        hasCommunityContext: Boolean(effectiveShopClanId || selectedClanId),
+        hasAttentionSignal:
+          attentionSpotlightImpressions7Days > 0 ||
+          attentionVisitors7Days > 0 ||
+          attentionProductOpens7Days > 0,
+      }),
+    [
+      attentionProductOpens7Days,
+      attentionSpotlightImpressions7Days,
+      attentionVisitors7Days,
+      effectiveShopClanId,
+      openDemandSignalCount,
+      opportunityEngineLiveSignalCount,
+      opportunityEngineSignalTiles.length,
+      selectedClanId,
+      shopAnalyticsWisdom,
+      tradeOutcomeRecords7Days,
     ]
   );
   const featurePayments = useMemo(() => {
@@ -6478,6 +6506,29 @@ export default function ShopControlPage() {
                     {label}
                   </span>
                 ))}
+              </div>
+              <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(18,58,89,0.08)", padding: 10, display: "grid", gap: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Opportunity lenses</div>
+                  <span style={{ ...badge(opportunityEngineLiveSignalCount >= 3), fontSize: 10 }}>local GSN reading</span>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+                  {opportunityEngineLensRows.map((item) => (
+                    <div key={`opportunity-lens-${item.lens}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 10, display: "grid", gridTemplateColumns: "30px minmax(0, 1fr)", gap: 8, alignItems: "start" }}>
+                      <GsnLegacyIcon name={item.icon as GsnIconName} size={28} />
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.label}</span>
+                          <span style={{ ...badge(item.status === "Live"), fontSize: 10 }}>{item.status}</span>
+                        </div>
+                        <div style={{ marginTop: 4, color: "#24415C", fontSize: 11.5, fontWeight: 820, lineHeight: 1.35 }}>{item.reading}</div>
+                        <div style={{ marginTop: 4, color: "#5A6F84", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Evidence:</strong> {item.evidence}</div>
+                        <div style={{ marginTop: 3, color: "#5A6F84", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Next:</strong> {item.nextStep}</div>
+                        <div style={{ marginTop: 3, color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}>{item.boundary}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
               <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(18,58,89,0.08)", padding: 10, display: "grid", gap: 8 }}>
                 <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Opportunity reading</div>

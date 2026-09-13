@@ -158,6 +158,34 @@ export type ShopOpportunityEnginePackageInput = {
   signalGroupCount?: number | null;
 };
 
+export type OpportunityEngineLensCode =
+  | "economic_demand"
+  | "social_movement"
+  | "trust_safety"
+  | "operations"
+  | "governance_context";
+
+export type OpportunityEngineLensRow = {
+  lens: OpportunityEngineLensCode;
+  label: string;
+  status: "Live" | "Watch" | "Next";
+  reading: string;
+  evidence: string;
+  nextStep: string;
+  boundary: string;
+  icon: string;
+};
+
+export type ShopOpportunityEngineLensInput = {
+  wisdom: ShopAnalyticsWisdom;
+  demandSignalCount?: number | null;
+  tradeRecords?: number | null;
+  liveSignalCount?: number | null;
+  signalGroupCount?: number | null;
+  hasCommunityContext?: boolean;
+  hasAttentionSignal?: boolean;
+};
+
 function positiveNumber(value: unknown): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
@@ -928,6 +956,85 @@ export function buildShopOpportunityEnginePackageReadiness({
       : "Next backend/data wiring: billing gate, saved reports, and governed AI-assisted inference.",
     boundary: "Not charged yet, not auto-published, and not a replacement for human business judgement or proper research.",
   };
+}
+
+export function buildShopOpportunityEngineLensRows({
+  wisdom,
+  demandSignalCount,
+  tradeRecords,
+  liveSignalCount,
+  signalGroupCount,
+  hasCommunityContext,
+  hasAttentionSignal,
+}: ShopOpportunityEngineLensInput): OpportunityEngineLensRow[] {
+  const openDemandSignals = positiveNumber(demandSignalCount);
+  const protectedTradeRecords = positiveNumber(tradeRecords);
+  const liveSignals = positiveNumber(liveSignalCount);
+  const signalGroups = positiveNumber(signalGroupCount);
+  const hasDemand = openDemandSignals > 0;
+  const hasTrade = protectedTradeRecords > 0;
+  const hasWideSignal = liveSignals >= 3;
+
+  return [
+    {
+      lens: "economic_demand",
+      label: "Economic demand",
+      status: hasDemand ? "Live" : hasAttentionSignal ? "Watch" : "Next",
+      reading: hasDemand
+        ? "Visible requests may show what people are asking for before supply catches up."
+        : "No direct DemandBox pressure is visible yet, so economic reading must stay cautious.",
+      evidence: hasDemand ? `${openDemandSignals} open DemandBox signal${openDemandSignals === 1 ? "" : "s"}.` : wisdom.observation,
+      nextStep: hasDemand ? "Compare requests with public shop offers before changing stock." : "Use Spotlight and public offers to gather demand evidence first.",
+      boundary: "Demand is a signal, not guaranteed buyers, sales, or lifetime value.",
+      icon: "marketplace",
+    },
+    {
+      lens: "social_movement",
+      label: "Social movement",
+      status: hasCommunityContext ? "Live" : "Next",
+      reading: hasCommunityContext
+        ? "The reading is tied to one selected community instead of the whole internet."
+        : "Community context is missing, so social movement cannot be read properly yet.",
+      evidence: hasCommunityContext ? `${liveSignals} of ${signalGroups || 1} local signal group${(signalGroups || 1) === 1 ? "" : "s"} live.` : "No selected community context is available.",
+      nextStep: "Keep readings community-scoped before comparing behaviour across wider GSN areas.",
+      boundary: "This is not a public popularity claim or demographic conclusion.",
+      icon: "community",
+    },
+    {
+      lens: "trust_safety",
+      label: "Trust and safety",
+      status: hasTrade ? "Live" : "Watch",
+      reading: hasTrade
+        ? "Protected records can begin to show whether attention is becoming real accountable activity."
+        : "Trust evidence is still thin until TrustSlip and protected trade outcomes accumulate.",
+      evidence: hasTrade ? `${protectedTradeRecords} protected trade record${protectedTradeRecords === 1 ? "" : "s"}.` : "No protected trade record is visible in this analytics window.",
+      nextStep: hasTrade ? "Review outcomes before increasing promotion." : "Protect serious buyer/seller outcomes when they happen.",
+      boundary: "Trust reading is evidence guidance, not approval, guarantee, or risk removal.",
+      icon: "shield",
+    },
+    {
+      lens: "operations",
+      label: "Operations",
+      status: hasAttentionSignal ? "Live" : "Watch",
+      reading: hasAttentionSignal
+        ? "Attention data can guide the next small operating adjustment."
+        : "Operations should not be changed heavily before the next measured attention signal.",
+      evidence: hasWideSignal ? `${liveSignals} of ${signalGroups} Opportunity Engine signals are live.` : wisdom.interpretation,
+      nextStep: wisdom.primaryActionLabel,
+      boundary: "Operational advice remains a test suggestion, not certainty.",
+      icon: "spark",
+    },
+    {
+      lens: "governance_context",
+      label: "Governance and outside context",
+      status: "Next",
+      reading: "Policy, events, health, school, church, association, and local outside-context signals are not connected to this pilot slice yet.",
+      evidence: "Current slice only reads governed in-GSN activity already visible to this analytics panel.",
+      nextStep: "Add approved external-context inputs only after privacy, source, and governance rules are defined.",
+      boundary: "No political, health, legal, or external-market conclusion is being made here.",
+      icon: "document",
+    },
+  ];
 }
 
 function urgencyForShopMarketIntelligence(

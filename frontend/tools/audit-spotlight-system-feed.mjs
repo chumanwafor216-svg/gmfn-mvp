@@ -195,9 +195,19 @@ assertContains(
   "Shop Opportunity Engine must describe Advanced Analytics as a paid feature candidate without claiming billing is active."
 );
 assertContains(
+  "frontend/src/lib/shopAnalyticsWisdom.ts",
+  /export type OpportunityEngineLensRow[\s\S]*?export function buildShopOpportunityEngineLensRows[\s\S]*?Economic demand[\s\S]*?Social movement[\s\S]*?Trust and safety[\s\S]*?Governance and outside context[\s\S]*?No political, health, legal, or external-market conclusion/,
+  "Shop Opportunity Engine must expose local analysis lenses while blocking unwired external-context overclaims."
+);
+assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
   /buildShopOpportunityEnginePackageReadiness\([\s\S]*?opportunityEnginePackageReadiness\.title[\s\S]*?Included[\s\S]*?Unlocks[\s\S]*?opportunityEnginePackageReadiness\.boundary/,
   "Shop Control analytics must render the Advanced Analytics package readiness card inside the Opportunity Engine panel."
+);
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /buildShopOpportunityEngineLensRows\([\s\S]*?Opportunity lenses[\s\S]*?local GSN reading[\s\S]*?opportunityEngineLensRows\.map[\s\S]*?item\.boundary/,
+  "Shop Control analytics must render Opportunity Engine lenses inside the existing Advanced Analytics panel."
 );
 assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
