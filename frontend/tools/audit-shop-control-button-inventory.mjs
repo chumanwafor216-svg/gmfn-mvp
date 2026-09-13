@@ -38,9 +38,9 @@ const expectedSourceActions = {
   PrimaryButton: 12,
   SecondaryButton: 24,
   SubtleButton: 3,
-  StableButton: 4,
+  StableButton: 5,
   StableCtaLink: 10,
-  total: 53,
+  total: 54,
 };
 const expectedNativeFieldCount = 26;
 const expectedFileInputActionRoots = 2;
@@ -249,6 +249,7 @@ const expectedActionOrder = [
   "shop-control.details.save",
   "shop-control.details.manage-products",
   "shop-control.analytics-panel.${panel.key}",
+  "shop-control.opportunity-engine.panel.${panel.key}",
   "shop-control.vault-layer.manage-offers",
   "shop-control.vault-layer.create-link",
   "shop-control.vault-link.${item.id}.copy",

@@ -561,6 +561,15 @@ type ShopAnalyticsPanelKey =
   | "traffic-sources"
   | "market-intelligence";
 
+type OpportunityEnginePanelKey =
+  | "overview"
+  | "signals"
+  | "lenses"
+  | "wisdom"
+  | "return-evidence"
+  | "community-needs"
+  | "experiments";
+
 const SHOP_ANALYTICS_PANELS: Array<{
   key: ShopAnalyticsPanelKey;
   label: string;
@@ -1627,6 +1636,8 @@ export default function ShopControlPage() {
     useState<ShopControlLayerKey>("overview");
   const [activeAnalyticsPanel, setActiveAnalyticsPanel] =
     useState<ShopAnalyticsPanelKey | "">("");
+  const [activeOpportunityEnginePanel, setActiveOpportunityEnginePanel] =
+    useState<OpportunityEnginePanelKey>("overview");
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const [expectedPayments, setExpectedPayments] = useState<ExpectedPaymentRecord[]>([]);
   const [communityPackageStatus, setCommunityPackageStatus] =
@@ -6593,6 +6604,46 @@ export default function ShopControlPage() {
               <span style={badge(shopMarketIntelligenceSummary.workCount > 0)}>Spine: {shopMarketIntelligenceSummary.headline}</span>
               <span style={badge(opportunityEngineLiveSignalCount >= 3)}>Advanced Analytics: {opportunityEngineLiveSignalCount}/{opportunityEngineSignalTiles.length} live</span>
             </div>
+            <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(7, minmax(0, 1fr))", gap: 8 }} aria-label="Opportunity Engine sections">
+              {[
+                { key: "overview", label: "Overview", detail: "Economic picture", icon: "chart" },
+                { key: "signals", label: "Signals", detail: "What changed", icon: "eye" },
+                { key: "lenses", label: "Lenses", detail: "Economic/social", icon: "shield" },
+                { key: "wisdom", label: "Wisdom", detail: "Time windows", icon: "document" },
+                { key: "return-evidence", label: "Return evidence", detail: "Effort/repeat", icon: "financeInstitution" },
+                { key: "community-needs", label: "Community needs", detail: "DemandBox", icon: "briefcase" },
+                { key: "experiments", label: "Experiments", detail: "Tests", icon: "spark" },
+              ].map((panel) => {
+                const active = activeOpportunityEnginePanel === panel.key;
+                return (
+                  <StableButton
+                    key={`opportunity-engine-panel-${panel.key}`}
+                    type="button"
+                    debugId={`shop-control.opportunity-engine.panel.${panel.key}`}
+                    stableHeight={isCompact ? 58 : 60}
+                    onClick={() => setActiveOpportunityEnginePanel(panel.key as OpportunityEnginePanelKey)}
+                    style={{
+                      justifyContent: "flex-start",
+                      gap: 8,
+                      minWidth: 0,
+                      padding: "8px 9px",
+                      borderRadius: 16,
+                      color: active ? "#FFFFFF" : "#0B2D4A",
+                      background: active ? "linear-gradient(135deg, #08233A 0%, #0F5EAA 100%)" : "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)",
+                      border: active ? "1px solid rgba(255,255,255,0.20)" : "1px solid rgba(18,58,89,0.12)",
+                      boxShadow: active ? "0 12px 22px rgba(7,24,39,0.16)" : "0 8px 16px rgba(7,24,39,0.06)",
+                      textAlign: "left",
+                    }}
+                  >
+                    {inlineIcon(panel.icon as GsnIconName, active ? "#F2C766" : "#0F5EAA", 14)}
+                    <span style={{ display: "grid", gap: 2, minWidth: 0 }}>
+                      <span style={{ fontSize: 11.5, fontWeight: 950, lineHeight: 1.12, whiteSpace: "normal" }}>{panel.label}</span>
+                      <span style={{ fontSize: 10, fontWeight: 800, lineHeight: 1.12, opacity: 0.78, whiteSpace: "normal" }}>{panel.detail}</span>
+                    </span>
+                  </StableButton>
+                );
+              })}
+            </div>
             <div
               style={{
                 marginTop: 12,
@@ -6606,7 +6657,7 @@ export default function ShopControlPage() {
             >
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
                 <div>
-                  <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Advanced Analytics snapshot</div>
+                  <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Economic overview</div>
                   <div style={{ marginTop: 4, color: "#385773", fontSize: 12, fontWeight: 800, lineHeight: 1.4 }}>
                     This reads current shop, Spotlight, DemandBox, trade evidence, and selected community context. Wider guidance stays blocked until more verified records and governed context exist.
                   </div>
@@ -6623,12 +6674,22 @@ export default function ShopControlPage() {
                         <span style={{ ...badge(item.live), fontSize: 10 }}>{item.live ? "Live" : "Next"}</span>
                       </div>
                       <div style={{ marginTop: 3, color: item.live ? "#0F5EAA" : "#5A6F84", fontSize: 12, fontWeight: 900, lineHeight: 1.3 }}>{item.value}</div>
+                      <div style={{ marginTop: 6, height: 7, borderRadius: 999, background: "rgba(18,58,89,0.08)", overflow: "hidden" }} aria-hidden="true">
+                        <div
+                          style={{
+                            width: item.live ? "72%" : "18%",
+                            height: "100%",
+                            borderRadius: 999,
+                            background: item.live ? "linear-gradient(90deg, #2E9B62 0%, #0F5EAA 100%)" : "linear-gradient(90deg, #D8E5F4 0%, #EEF5FC 100%)",
+                          }}
+                        />
+                      </div>
                       <div style={{ marginTop: 3, color: "#5A6F84", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}>{item.detail}</div>
                     </div>
                   </div>
                 ))}
               </div>
-              <div style={{ display: "flex", gap: 7, flexWrap: "wrap", alignItems: "center" }}>
+              <div style={{ display: activeOpportunityEnginePanel === "wisdom" ? "flex" : "none", gap: 7, flexWrap: "wrap", alignItems: "center" }}>
                 <span style={{ color: "#24415C", fontSize: 11, fontWeight: 950 }}>Review windows</span>
                 {opportunityEngineHorizonLabels.map((label) => (
                   <span key={`opportunity-horizon-${label}`} style={{ borderRadius: 999, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "5px 8px", color: "#24415C", fontSize: 10.5, fontWeight: 900 }}>
@@ -6636,7 +6697,7 @@ export default function ShopControlPage() {
                   </span>
                 ))}
               </div>
-              <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(18,58,89,0.08)", padding: 10, display: "grid", gap: 8 }}>
+              <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(18,58,89,0.08)", padding: 10, display: activeOpportunityEnginePanel === "lenses" ? "grid" : "none", gap: 8 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Opportunity lenses</div>
                   <span style={{ ...badge(opportunityEngineLiveSignalCount >= 3), fontSize: 10 }}>local GSN reading</span>
@@ -6659,7 +6720,7 @@ export default function ShopControlPage() {
                   ))}
                 </div>
               </div>
-              <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(18,58,89,0.08)", padding: 10, display: "grid", gap: 8 }}>
+              <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(18,58,89,0.08)", padding: 10, display: activeOpportunityEnginePanel === "wisdom" ? "grid" : "none", gap: 8 }}>
                 <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Opportunity reading</div>
                 {opportunityEngineGuidanceRows.map((row) => (
                   <div key={`opportunity-reading-${row.horizon}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: "8px 10px", display: "grid", gap: 4 }}>
@@ -6673,7 +6734,7 @@ export default function ShopControlPage() {
                   </div>
                 ))}
               </div>
-              <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.84)", border: "1px solid rgba(214,170,69,0.20)", padding: 10, display: "grid", gap: 6 }}>
+              <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.84)", border: "1px solid rgba(214,170,69,0.20)", padding: 10, display: activeOpportunityEnginePanel === "wisdom" ? "grid" : "none", gap: 6 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>{opportunityEngineWisdomSnapshot.title}</div>
                   <span style={{ ...badge(opportunityEngineLiveSignalCount >= 3), fontSize: 10 }}>review before publishing</span>
@@ -6684,7 +6745,7 @@ export default function ShopControlPage() {
                 <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Use:</strong> {opportunityEngineWisdomSnapshot.useIn}</div>
                 <div style={{ color: "#5A6F84", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}>{opportunityEngineWisdomSnapshot.cadence} {opportunityEngineWisdomSnapshot.boundary}</div>
               </div>
-              <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.84)", border: "1px solid rgba(15,94,170,0.12)", padding: 10, display: "grid", gap: 7 }}>
+              <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.84)", border: "1px solid rgba(15,94,170,0.12)", padding: 10, display: activeOpportunityEnginePanel === "return-evidence" ? "grid" : "none", gap: 7 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>{opportunityEngineUnitEconomicsReadiness.title}</div>
                   <span style={{ ...badge(opportunityEngineUnitEconomicsReadiness.status === "Ready to estimate"), fontSize: 10 }}>{opportunityEngineUnitEconomicsReadiness.status}</span>
@@ -6737,7 +6798,7 @@ export default function ShopControlPage() {
                 <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}>{opportunityEngineUnitEconomicsReadiness.boundary}</div>
               </div>
               {opportunityEngineCaptureChecklistRows.length > 0 ? (
-                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px" }}>
+                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px", display: activeOpportunityEnginePanel === "experiments" ? "block" : "none" }}>
                   <StableDisclosureSummary debugId="shop-control.opportunity-engine.capture-checklist" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
                     Evidence capture checklist
                   </StableDisclosureSummary>
@@ -6758,7 +6819,7 @@ export default function ShopControlPage() {
                 </details>
               ) : null}
               {opportunityEngineReviewCadenceRows.length > 0 ? (
-                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px" }}>
+                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px", display: activeOpportunityEnginePanel === "experiments" ? "block" : "none" }}>
                   <StableDisclosureSummary debugId="shop-control.opportunity-engine.review-cadence" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
                     Experiment review cadence
                   </StableDisclosureSummary>
@@ -6779,7 +6840,7 @@ export default function ShopControlPage() {
                 </details>
               ) : null}
               {shopAttentionSummary?.opportunity_engine?.snapshot ? (
-                <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.84)", border: "1px solid rgba(15,94,170,0.12)", padding: 10, display: "grid", gap: 5 }}>
+                <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.84)", border: "1px solid rgba(15,94,170,0.12)", padding: 10, display: activeOpportunityEnginePanel === "experiments" ? "grid" : "none", gap: 5 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                     <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>{shopAttentionSummary.opportunity_engine.snapshot.title || "Current evidence snapshot"}</div>
                     <span style={{ ...badge(Boolean(shopAttentionSummary.opportunity_engine.aggregator_ready)), fontSize: 10 }}>{shopAttentionSummary.opportunity_engine.engine_state || "computed summary"}</span>
@@ -6791,7 +6852,7 @@ export default function ShopControlPage() {
                 </div>
               ) : null}
               {opportunityEngineEvidenceLedgerRows.length > 0 ? (
-                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px" }}>
+                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px", display: activeOpportunityEnginePanel === "experiments" ? "block" : "none" }}>
                   <StableDisclosureSummary debugId="shop-control.opportunity-engine.evidence-ledger" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
                     Evidence ledger
                   </StableDisclosureSummary>
@@ -6810,7 +6871,7 @@ export default function ShopControlPage() {
                 </details>
               ) : null}
               {opportunityEngineBackendOutputCards.length > 0 ? (
-                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px" }}>
+                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px", display: activeOpportunityEnginePanel === "experiments" ? "block" : "none" }}>
                   <StableDisclosureSummary debugId="shop-control.opportunity-engine.output-cards" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
                     Reviewed signal cards
                   </StableDisclosureSummary>
@@ -6834,7 +6895,7 @@ export default function ShopControlPage() {
                 </details>
               ) : null}
               {opportunityEngineExperimentPlanRows.length > 0 ? (
-                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px" }}>
+                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px", display: activeOpportunityEnginePanel === "experiments" ? "block" : "none" }}>
                   <StableDisclosureSummary debugId="shop-control.opportunity-engine.experiment-plan" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
                     Small experiment plan
                   </StableDisclosureSummary>
@@ -6889,7 +6950,7 @@ export default function ShopControlPage() {
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+            <div style={{ marginTop: 12, display: activeOpportunityEnginePanel === "signals" ? "grid" : "none", gap: 10 }}>
               <div style={{ color: "#24415C", fontSize: 13, fontWeight: 850, lineHeight: 1.4 }}>
                 <strong style={{ color: "#061827" }}>Observation:</strong> {shopAnalyticsWisdom.observation}
               </div>
@@ -6907,7 +6968,7 @@ export default function ShopControlPage() {
                 border: "1px solid rgba(15,94,170,0.16)",
                 background: "linear-gradient(180deg, #F8FBFF 0%, #EAF4FF 100%)",
                 padding: 12,
-                display: "flex",
+                display: activeOpportunityEnginePanel === "signals" ? "flex" : "none",
                 justifyContent: "space-between",
                 gap: 10,
                 alignItems: "center",
@@ -6939,7 +7000,7 @@ export default function ShopControlPage() {
                 {marketIntelligencePrimaryAction.label}
               </StableCtaLink>
             </div>
-            <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+            <div style={{ marginTop: 12, display: activeOpportunityEnginePanel === "signals" ? "grid" : "none", gap: 8 }}>
               {shopAnalyticsWisdom.actions.slice(0, 3).map((item, index) => {
                 const actionKey = marketIntelligenceActionKey(item, index);
                 const actionLogged = loggedRecommendationActionKeys.has(actionKey);
@@ -6984,6 +7045,7 @@ export default function ShopControlPage() {
                 border: "1px solid rgba(214,170,69,0.20)",
                 background: "linear-gradient(180deg, #FFFDF6 0%, #FFF6D7 100%)",
                 padding: 12,
+                display: activeOpportunityEnginePanel === "community-needs" ? "block" : "none",
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
@@ -7085,7 +7147,7 @@ export default function ShopControlPage() {
                 </div>
               ) : null}
             </div>
-            <div style={{ marginTop: 12, borderRadius: 14, padding: 11, background: "rgba(239,247,255,0.80)", border: "1px solid rgba(18,58,89,0.08)" }}>
+            <div style={{ marginTop: 12, borderRadius: 14, padding: 11, background: "rgba(239,247,255,0.80)", border: "1px solid rgba(18,58,89,0.08)", display: activeOpportunityEnginePanel === "signals" ? "block" : "none" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                 <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Advice action trail</div>
                 <div style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 900 }}>{recommendationActions7Days} logged</div>
@@ -7107,7 +7169,7 @@ export default function ShopControlPage() {
                 {recommendationActionBoundary}
               </div>
             </div>
-            <details style={{ marginTop: 12 }}>
+            <details style={{ marginTop: 12, display: activeOpportunityEnginePanel === "signals" ? "block" : "none" }}>
               <StableDisclosureSummary debugId="shop-control.market-intelligence.why" stableHeight={40} style={{ color: "#0F5EAA", fontSize: 13, fontWeight: 900, cursor: "pointer" }}>Why this advice?</StableDisclosureSummary>
               <div style={{ marginTop: 8, color: "#385773", fontSize: 12, fontWeight: 750, lineHeight: 1.45 }}>
                 {shopAnalyticsWisdom.why} This reading is packaged through the shared Attention Spine signal engine, so it does not create a separate shop-only priority system. Community Needs is read from the existing DemandBox request lane, not a separate matching engine or survey system.

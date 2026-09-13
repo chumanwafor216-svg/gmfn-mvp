@@ -311,8 +311,8 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /Opportunity Engine \/ Market Intelligence[\s\S]*?Advanced Analytics snapshot[\s\S]*?Opportunity reading[\s\S]*?may change as evidence changes/,
-  "Shop Control analytics must render the Opportunity Engine reading inside the existing Market Intelligence lane."
+  /Opportunity Engine \/ Market Intelligence[\s\S]*?shop-control\.opportunity-engine\.panel\.\$\{panel\.key\}[\s\S]*?Economic overview[\s\S]*?Opportunity reading[\s\S]*?may change as evidence changes/,
+  "Shop Control analytics must render the compact Opportunity Engine lane selector and reading inside the existing Market Intelligence lane."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
