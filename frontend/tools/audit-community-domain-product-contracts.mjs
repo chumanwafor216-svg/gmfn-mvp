@@ -1586,8 +1586,8 @@ assertContains(
 
 assertContains(
   "src/App.tsx",
-  /path="\/poh"[\s\S]*\/community-domain\/purchase\?demo=pillar-of-hope[\s\S]*path="\/pillar-of-hope-demo"[\s\S]*\/community-domain\/purchase\?demo=pillar-of-hope/,
-  "App routes must keep short Pillar of Hope demo aliases pointed at the Community Domain purchase preset.",
+  /path="\/poh"[\s\S]*\/community-domain\/purchase\?demo=pillar-of-hope[\s\S]*path="\/pillar-of-hope"[\s\S]*\/community-domain\/purchase\?demo=pillar-of-hope[\s\S]*path="\/pillar-of-hope-demo"[\s\S]*\/community-domain\/purchase\?demo=pillar-of-hope/,
+  "App routes must keep Pillar of Hope trial aliases pointed at the Community Domain purchase preset.",
   { frontend: true }
 );
 
@@ -1607,8 +1607,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /PILLAR_OF_HOPE_DEMO_PROFILE[\s\S]*Saturday community fitness with Snapfit Aberdeen[\s\S]*food support[\s\S]*low-cost household items[\s\S]*health education seminars[\s\S]*stateName: "Scotland \/ Aberdeen"[\s\S]*templateKey: "ngo_project_network"[\s\S]*setExistingDomainName\(demoDraft\.domainName \|\| ""\)[\s\S]*GSN is checking the domain name[\s\S]*checkCommunityDomainAvailability\(requestedDemoName\)[\s\S]*Pillar of Hope domain name is available[\s\S]*Pillar of Hope profile[\s\S]*\{demoProfile\}/,
-  "Pillar of Hope demo preset must fill the lookup code, auto-check real availability, and visibly show the charity profile, not only hidden draft metadata.",
+  /PILLAR_OF_HOPE_DEMO_PROFILE[\s\S]*Saturday community fitness with Snapfit Aberdeen[\s\S]*food support[\s\S]*low-cost household items[\s\S]*health education seminars[\s\S]*PILLAR_OF_HOPE_TRIAL_SETUP_TOGGLES[\s\S]*member_shops: true[\s\S]*contributions: false[\s\S]*stateName: "Scotland \/ Aberdeen"[\s\S]*templateKey: "ngo_project_network"[\s\S]*domainSetupToggles: PILLAR_OF_HOPE_TRIAL_SETUP_TOGGLES[\s\S]*setExistingDomainName\(demoDraft\.domainName \|\| ""\)[\s\S]*Handover stays blocked until written approval or assent is attached[\s\S]*checkCommunityDomainAvailability\(requestedDemoName\)[\s\S]*Handover and verification still require written approval or assent[\s\S]*Pillar of Hope profile[\s\S]*\{demoProfile\}/,
+  "Pillar of Hope trial preset must fill the setup choices, lookup code, auto-check real availability, and visibly keep the approval/handover boundary.",
   { frontend: true }
 );
 
@@ -2803,14 +2803,14 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /DOMAIN_PURCHASE_MOBILE_FACTS[\s\S]*Community first[\s\S]*Domain after[\s\S]*Pilot no payment[\s\S]*purchaseReviewMode[\s\S]*!purchaseReviewMode \?[\s\S]*DOMAIN_PURCHASE_MOBILE_FACTS\.map[\s\S]*DOMAIN_ENGINE_POINTS\.map[\s\S]*Requested domain name[\s\S]*debugId="community-domain-purchase\.check-domain"[\s\S]*Kind of community[\s\S]*display: purchaseReviewMode \? "grid" : "none"[\s\S]*2\. Availability[\s\S]*Domain details[\s\S]*3\. Pilot reservation[\s\S]*community-domain-purchase\.create-draft[\s\S]*4\. Pilot payment[\s\S]*community-domain-purchase\.check-another-name[\s\S]*community-domain-purchase\.other-paths[\s\S]*community-domain-purchase\.open-create-community[\s\S]*community-domain-purchase\.lookup-existing-domain/,
+  /DOMAIN_PURCHASE_MOBILE_FACTS[\s\S]*Community first[\s\S]*Domain after[\s\S]*Pilot no payment[\s\S]*purchaseReviewMode[\s\S]*!purchaseReviewMode \?[\s\S]*DOMAIN_PURCHASE_MOBILE_FACTS\.map[\s\S]*DOMAIN_ENGINE_POINTS\.map[\s\S]*Requested domain name[\s\S]*debugId="community-domain-purchase\.check-domain"[\s\S]*Kind of community[\s\S]*display: purchaseReviewMode \? "grid" : "none"[\s\S]*2\. Availability[\s\S]*Domain details[\s\S]*3\. Trial setup[\s\S]*community-domain-purchase\.create-draft[\s\S]*4\. Pilot payment[\s\S]*community-domain-purchase\.check-another-name[\s\S]*community-domain-purchase\.other-paths[\s\S]*community-domain-purchase\.open-create-community[\s\S]*community-domain-purchase\.lookup-existing-domain/,
   "Community Domain purchase must split into a focused name-check state and a second availability/draft/payment review state while keeping alternate Committee/existing-domain paths collapsed.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /DOMAIN_PURCHASE_MOBILE_FACTS[\s\S]*Community first[\s\S]*Domain after[\s\S]*Pilot no payment[\s\S]*needsLocalCommunityFirst[\s\S]*Pillar of Hope needs the normal GSN community first[\s\S]*Create Domain draft[\s\S]*Local community first[\s\S]*Pillar of Hope needs its local community record and GSN number before the Domain layer is filled[\s\S]*community-domain-purchase\.open-create-community-first[\s\S]*Create GSN community first[\s\S]*Create the normal GSN community first[\s\S]*Draft and quote state[\s\S]*!needsLocalCommunityFirst \? \([\s\S]*community-domain-purchase\.create-draft/,
+  /DOMAIN_PURCHASE_MOBILE_FACTS[\s\S]*Community first[\s\S]*Domain after[\s\S]*Pilot no payment[\s\S]*needsLocalCommunityFirst[\s\S]*Pillar of Hope needs the normal GSN community first[\s\S]*Create Domain draft[\s\S]*Local community first[\s\S]*Pillar of Hope needs its local community record and GSN number before the Domain layer is filled[\s\S]*community-domain-purchase\.open-create-community-first[\s\S]*Create GSN community first[\s\S]*Create the Domain draft as a steward trial[\s\S]*Handover stays blocked until Felix or Pillar gives written approval[\s\S]*Draft and quote state[\s\S]*Blocked until written approval[\s\S]*!needsLocalCommunityFirst \? \([\s\S]*community-domain-purchase\.create-draft/,
   "Community Domain purchase must gate first-time domain setup behind the normal local GSN community anchor.",
   { frontend: true }
 );

@@ -1131,7 +1131,7 @@ try {
     "Availability result",
     "Not checked",
     "Draft and quote state",
-    "Waiting for owner",
+    "Trial ready",
     "Create GSN community first",
   ]) {
     if (!purchaseText.includes(label)) {

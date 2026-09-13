@@ -65,6 +65,16 @@ const DEFAULT_COMMUNITY_DOMAIN_TEMPLATE_KEY = "ngo_project_network";
 const PILLAR_OF_HOPE_DEMO_PROFILE =
   "Pillar of Hope supports families in Aberdeen through Saturday community fitness with Snapfit Aberdeen, food support for families in need, low-cost household items, and health education seminars for women and families.";
 
+const PILLAR_OF_HOPE_TRIAL_SETUP_TOGGLES: Partial<DomainSetupToggles> = {
+  member_invites: true,
+  official_announcements: true,
+  member_shops: true,
+  contributions: false,
+  welfare_cycles: false,
+  demand_box: true,
+  private_records: true,
+};
+
 const PILLAR_OF_HOPE_DEMO_DRAFT: PurchaseDraftSnapshot = {
   organizationName: "Pillar of Hope",
   domainName: "pillar-of-hope",
@@ -72,6 +82,7 @@ const PILLAR_OF_HOPE_DEMO_DRAFT: PurchaseDraftSnapshot = {
   stateName: "Scotland / Aberdeen",
   templateKey: "ngo_project_network",
   publicProfile: PILLAR_OF_HOPE_DEMO_PROFILE,
+  domainSetupToggles: PILLAR_OF_HOPE_TRIAL_SETUP_TOGGLES,
 };
 
 const FALLBACK_TEMPLATES: TemplateOption[] = [
@@ -857,7 +868,7 @@ export default function CommunityDomainPurchasePage() {
       setDraftResult(null);
       setQuoteResult(null);
       setMessage(
-        "Pillar of Hope trial fields and profile are filled. GSN is checking the domain name."
+        "Pillar of Hope trial setup is filled. Handover stays blocked until written approval or assent is attached."
       );
 
 
@@ -880,7 +891,7 @@ export default function CommunityDomainPurchasePage() {
             setAvailability(result);
             setMessage(
               result?.available
-                ? "Pillar of Hope domain name is available. Create the normal GSN community first if it is not already under this owner."
+                ? "Pillar of Hope trial setup is ready to reserve. Handover and verification still require written approval or assent in chat/email plus the proper papers."
                 : availabilityReasonText(result?.reason)
             );
           })
@@ -2015,7 +2026,7 @@ export default function CommunityDomainPurchasePage() {
                   </section>
 
                   <section style={stepCard()}>
-                    <div style={labelText()}>3. Pilot reservation</div>
+                    <div style={labelText()}>3. Trial setup</div>
                     <div
                       style={{
                         ...statusPill(
@@ -2028,7 +2039,7 @@ export default function CommunityDomainPurchasePage() {
                         justifySelf: "start",
                       }}
                     >
-                      {draftResult ? "Pilot reserved" : "Waiting for owner"}
+                      {draftResult ? "Pilot reserved" : "Trial ready"}
                     </div>
                     {draftResult?.community_domain ? (
                       <div style={{ display: "grid", gap: 8 }}>
@@ -2050,6 +2061,12 @@ export default function CommunityDomainPurchasePage() {
                             {draftResult.community_domain.verification_status}
                           </strong>
                         </div>
+                        <div style={detailRow()}>
+                          <span>Handover</span>
+                          <strong style={detailValue()}>
+                            Blocked until written approval
+                          </strong>
+                        </div>
                       </div>
                     ) : (
                       <div style={{ display: "grid", gap: 0 }}>
@@ -2059,11 +2076,11 @@ export default function CommunityDomainPurchasePage() {
                         </div>
                         <div style={stepLine()}>
                           <span style={smallLineIcon()}>2</span>
-                          <span>Then continue Domain setup under that same owner.</span>
+                          <span>Create the Domain draft as a steward trial under that same owner.</span>
                         </div>
                         <div style={stepLine()}>
                           <span style={smallLineIcon()}>3</span>
-                          <span>Pilot name reservation is active. Payment is suspended; ownership verification is still separate.</span>
+                          <span>Handover stays blocked until Felix or Pillar gives written approval or assent in chat/email and the papers are attached.</span>
                         </div>
                       </div>
                     )}
@@ -2133,7 +2150,7 @@ export default function CommunityDomainPurchasePage() {
                       </div>
                       <div style={stepLine()}>
                         <span style={smallLineIcon()}>3</span>
-                        <span>This page does not confirm verification.</span>
+                        <span>This page does not confirm verification or handover.</span>
                       </div>
                     </div>
                     <EntryActionButton
@@ -2197,7 +2214,7 @@ export default function CommunityDomainPurchasePage() {
                 <div style={{ display: "grid", gap: 10, minWidth: 0 }}>
                   <div style={labelText(false)}>Draft and quote state</div>
                   <div style={statusPill(draftResult ? "ready" : "waiting")}>
-                    {draftResult ? "Pilot reserved" : "Waiting for owner"}
+                    {draftResult ? "Pilot reserved" : "Trial ready"}
                   </div>
                   <div
                     style={{
@@ -2216,9 +2233,11 @@ export default function CommunityDomainPurchasePage() {
                         <br />
                         Verification:{" "}
                         <strong>{draftResult.community_domain.verification_status}</strong>
+                        <br />
+                        Handover: <strong>Blocked until written approval</strong>
                       </>
                     ) : (
-                      "Signed-in owners create or choose the normal GSN community first. The Domain draft then follows that local community anchor."
+                      "Signed-in owners create or choose the normal GSN community first. The trial setup can then reserve the Domain draft, but handover waits for written approval or assent."
                     )}
                   </div>
                   {quoteResult ? (
