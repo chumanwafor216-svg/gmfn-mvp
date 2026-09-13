@@ -170,7 +170,7 @@ Rules:
 - Picture tool rails must be anchored to their own frame button wrapper, not to the whole card.
 - Remove must clear the saved account profile picture, not only hide it locally.
 - Dashboard must stay a reflector / command centre, not a content dump.
-- Focus Commitments is the lightweight promise-to-proof layer for personal and community-facing follow-through. It may track what was promised, who promised, review cadence, progress, privacy level, and an outside-tool link.
+- Focus Commitments is the lightweight promise-to-evidence layer for personal and community-facing follow-through. It may track what was promised, who promised, review cadence, progress, privacy level, and an outside-tool link.
 - Focus Commitments may support community promise categories such as volunteer, payment, delivery, follow-up, project, and attendance, because those are the common chaotic commitments that move through WhatsApp groups, paper notes, secretaries, and meetings.
 - Focus Commitments must keep lightweight due-date intelligence: urgent items due tomorrow, due today, overdue, or review-due rise first and show red/yellow/green traffic-light labels with plain-language follow-up guidance.
 - Focus Commitments must not become a full CRM, payment processor, loan ledger, WhatsApp scraper, or verified legal evidence system without a separate backend/governance review.
@@ -1173,15 +1173,15 @@ Rules:
 - Route is `/app/command-center/community-ownership` and must remain platform-admin only.
 - The case chooser must map each real-life case to the existing engine: owner repair for transfer/release, steward setup for prepared shells, pilot cleanup for public setup/test traces, and lifecycle close/suspend for organisation exit.
 - The tool must not delete the existing community, erase prior admins, or remove historical evidence.
-- Steward setup can reserve and prepare a hidden ordinary community shell from a supplied brief. It must keep status `steward_setup`, stay hidden from normal member lists, and avoid claiming verified ownership until proof-checked owner repair releases it.
+- Steward setup can reserve and prepare a hidden ordinary community shell from a supplied brief. It must keep status `steward_setup`, stay hidden from normal member lists, and avoid claiming verified ownership until evidence-checked owner repair releases it.
 - Steward setup must not overwrite an active community name, publish the community, delete evidence, remove members, or transfer ownership.
-- Pilot data cleanup can close an ordinary community, clear public community/marketplace text, and archive related shops, products, and spotlights when real/test details were used during setup. It must preserve the community record, users, memberships, identity records, trust events, and name reservation; it must not be treated as legal erasure, hard delete, duplicate-name freeing, or proof that the organisation accepted GSN.
+- Pilot data cleanup can close an ordinary community, clear public community/marketplace text, and archive related shops, products, and spotlights when real/test details were used during setup. It must preserve the community record, users, memberships, identity records, trust events, and name reservation; it must not be treated as legal erasure, hard delete, duplicate-name freeing, or evidence that the organisation accepted GSN.
 - Ordinary community lifecycle can mark an example/setup community `active`, `dormant`, or `closed`; dormant/closed communities must stop appearing in normal member community lists while the community name, memberships, and trust-event history stay preserved.
 - Ordinary community lifecycle must not transfer ownership, remove members, create a Community Domain/payment, or globally ban an identity.
 - Preview must be read-only.
 - Execute must require evidence confirmation and a reviewer note.
 - Successful owner-repair execution records the selected user as `created_by_user_id`, ensures an active admin membership, and logs a trust event for audit.
-- If owner repair is executed against a `steward_setup` community, proof confirmation releases that community to `active`; dormant/closed communities are not automatically reactivated by ordinary transfer.
+- If owner repair is executed against a `steward_setup` community, evidence confirmation releases that community to `active`; dormant/closed communities are not automatically reactivated by ordinary transfer.
 - If the rightful owner has a recorded onboarding intake but no GSN identity because the duplicate community name blocked account creation, lookup may show that intake as a repair source. Preview must remain read-only; execute must create the missing GSN identity from recorded intake evidence before assigning ownership.
 - Redirect aliases may preserve `community_name` and `owner_query` query parameters so Command Centre can open directly to a case such as Pillar of Hope/Felix.
 ## SupportPage
@@ -1279,7 +1279,7 @@ Must show:
 
 Rules:
 - Do not scrape, read, or import WhatsApp group conversation.
-- Do not claim WhatsApp delivery, read receipt, vote proof, or member consent.
+- Do not claim WhatsApp delivery, read receipt, vote evidence, or member consent.
 - Do not expose GSN internal feature pointers, source tools, admin tools,
   creation screens, membership gates, Community Domain setup, Demand Box,
   Ask Community, shop management, Spotlight management, reports, approval, or

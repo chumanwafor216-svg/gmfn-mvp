@@ -1436,7 +1436,7 @@ assertContains(
 );
 assertContains(
   "clansPage",
-  /Share message[\s\S]*?\{inviteState\.whatsappShareText\}[\s\S]*?copyText\(inviteState\.whatsappShareText \|\| "", "share"\)[\s\S]*?Copy share message[\s\S]*?clans\.invite\.share-whatsapp/,
+  /function currentInviteShareText\(\): string \{[\s\S]*?if \(isQrInvitePackage\) return communityQrAnnouncementText\(\);[\s\S]*?return safeStr\(inviteState\?\.whatsappShareText \|\| ""\);[\s\S]*?Share message[\s\S]*?\{currentInviteShareText\(\)\}[\s\S]*?copyText\(currentInviteShareText\(\), "share"\)[\s\S]*?Copy share message[\s\S]*?clans\.invite\.share-whatsapp/,
   "Legacy Clans must show, copy, and WhatsApp-share the compact invite message instead of the full formal invite paper."
 );
 assertNotContains(
@@ -1506,7 +1506,7 @@ assertContains(
 );
 assertContains(
   "publicShop",
-  /function copyShopLink[\s\S]*?safeCopy\([\s\S]*?buildPublicShopMessage\(absoluteShopShareLink\)[\s\S]*?GSN public shop invitation copied\./,
+  /function copyShopLink[\s\S]*?const shareLink = attributedShopShareLink \|\| absoluteShopShareLink;[\s\S]*?safeCopy\(buildPublicShopMessage\(shareLink\)\)[\s\S]*?trackShopShareAction\("copy_shop_link", shareLink\)[\s\S]*?GSN public shop invitation copied\./,
   "Public Shop direct Copy action must copy compact GSN public shop link text."
 );
 assertContains(
