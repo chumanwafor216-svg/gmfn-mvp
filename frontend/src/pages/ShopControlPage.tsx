@@ -355,6 +355,18 @@ type ShopAttentionSummary = {
       count?: number | null;
       evidence?: string | null;
     }> | null;
+    output_cards?: Array<{
+      lens?: string | null;
+      signal?: string | null;
+      evidence?: string | null;
+      interpretation?: string | null;
+      opportunity?: string | null;
+      risk?: string | null;
+      time_horizon?: string | null;
+      confidence?: string | null;
+      suggested_next_step?: string | null;
+      human_review?: string | null;
+    }> | null;
   } | null;
   daily_activity?: ShopAttentionDailyActivity[] | null;
   source_breakdown?: ShopAttentionSourceBreakdown[] | null;
@@ -2877,6 +2889,9 @@ export default function ShopControlPage() {
       tradeOutcomeRecords7Days,
     ]
   );
+  const opportunityEngineBackendOutputCards = Array.isArray(shopAttentionSummary?.opportunity_engine?.output_cards)
+    ? shopAttentionSummary.opportunity_engine.output_cards
+    : [];
   const opportunityEngineGapRows = useMemo(
     () =>
       buildShopOpportunityEngineGapRows({
@@ -6629,6 +6644,30 @@ export default function ShopControlPage() {
                   <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Next:</strong> {shopAttentionSummary.opportunity_engine.snapshot.next_step}</div>
                   <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}>{shopAttentionSummary.opportunity_engine.boundary_label}</div>
                 </div>
+              ) : null}
+              {opportunityEngineBackendOutputCards.length > 0 ? (
+                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px" }}>
+                  <StableDisclosureSummary debugId="shop-control.opportunity-engine.output-cards" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
+                    Backend output cards
+                  </StableDisclosureSummary>
+                  <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                    {opportunityEngineBackendOutputCards.map((item, index) => (
+                      <div key={`opportunity-output-${item.lens || index}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 10, display: "grid", gap: 5 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.lens || "Opportunity card"}</span>
+                          <span style={{ ...badge(item.confidence === "medium" || item.confidence === "high"), fontSize: 10 }}>{item.confidence || "low"} confidence</span>
+                        </div>
+                        <div style={{ color: "#061827", fontSize: 11.5, fontWeight: 850, lineHeight: 1.35 }}><strong>Signal:</strong> {item.signal}</div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Evidence:</strong> {item.evidence}</div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Interpretation:</strong> {item.interpretation}</div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Opportunity:</strong> {item.opportunity}</div>
+                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Risk:</strong> {item.risk}</div>
+                        <div style={{ color: "#5A6F84", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Time horizon:</strong> {item.time_horizon || "now"}. <strong>Next:</strong> {item.suggested_next_step}</div>
+                        <div style={{ color: "#5A6F84", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}>{item.human_review || "Owner reviews before acting or publishing."}</div>
+                      </div>
+                    ))}
+                  </div>
+                </details>
               ) : null}
               <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(122,89,16,0.12)", padding: "4px 10px 10px" }}>
                 <StableDisclosureSummary debugId="shop-control.opportunity-engine.build-gaps" stableHeight={38} style={{ color: "#7A5910", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>

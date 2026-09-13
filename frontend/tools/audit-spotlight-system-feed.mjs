@@ -164,6 +164,11 @@ assertContains(
   "Shop owner analytics API must expose an owner-only Opportunity Engine computed summary without claiming saved AI, external context, billing, or sales proof."
 );
 assertContains(
+  "gmfn_backend/app/api/routes/marketplace_analytics.py",
+  /output_cards = \[[\s\S]*?"lens": "Signals"[\s\S]*?"lens": "Market"[\s\S]*?"lens": "Trust and risk"[\s\S]*?"human_review": "Owner reviews before acting or publishing\."[\s\S]*?"output_cards": output_cards/,
+  "Shop owner analytics API must expose deterministic Opportunity Engine output cards using the reviewed output-card contract."
+);
+assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
   /spotlightSeen === 0 \|\| spotlightSeen < 5 \|\| spotlightIsFresh[\s\S]*?diagnosisCode: "GATHERING_DATA"[\s\S]*?headline: "distribution is still low; conversion cannot yet be judged\."/,
   "Shop Market Intelligence must treat fresh or tiny-sample spotlight data as gathering data, not product failure."
@@ -216,8 +221,13 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /opportunity_engine\?:[\s\S]*?aggregator_ready\?: boolean[\s\S]*?field_coverage\?: Record[\s\S]*?shopAttentionSummary\?\.opportunity_engine\?\.snapshot[\s\S]*?shopAttentionSummary\.opportunity_engine\.boundary_label/,
+  /opportunity_engine\?:[\s\S]*?aggregator_ready\?: boolean[\s\S]*?field_coverage\?: Record[\s\S]*?output_cards\?: Array[\s\S]*?shopAttentionSummary\?\.opportunity_engine\?\.snapshot[\s\S]*?shopAttentionSummary\.opportunity_engine\.boundary_label/,
   "Shop Control must type and render the backend Opportunity Engine owner-summary snapshot when present."
+);
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /opportunityEngineBackendOutputCards[\s\S]*?shop-control\.opportunity-engine\.output-cards[\s\S]*?Backend output cards[\s\S]*?Signal:[\s\S]*?Evidence:[\s\S]*?Interpretation:[\s\S]*?Opportunity:[\s\S]*?Risk:[\s\S]*?Time horizon:[\s\S]*?Owner reviews before acting or publishing\./,
+  "Shop Control must render backend Opportunity Engine output cards as collapsed reviewed evidence cards."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
@@ -446,7 +456,7 @@ assertContains(
 );
 assertContains(
   "gmfn_backend/tests/test_marketplace_public_shop.py",
-  /opportunity_engine = body\["opportunity_engine"\][\s\S]*?opportunity_engine\["aggregator_ready"\] is True[\s\S]*?opportunity_coverage\["governed_outside_context"\] is False[\s\S]*?opportunity_engine\["signal_groups"\]\[2\]\["label"\] == "DemandBox"[\s\S]*?"not saved AI inference"/,
+  /opportunity_engine = body\["opportunity_engine"\][\s\S]*?opportunity_engine\["aggregator_ready"\] is True[\s\S]*?opportunity_coverage\["governed_outside_context"\] is False[\s\S]*?opportunity_engine\["signal_groups"\]\[2\]\["label"\] == "DemandBox"[\s\S]*?len\(opportunity_engine\["output_cards"\]\) == 3[\s\S]*?"must not be presented as market size"[\s\S]*?"not saved AI inference"/,
   "Backend analytics tests must lock the Opportunity Engine computed-summary boundary."
 );
 assertContains(

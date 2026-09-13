@@ -504,6 +504,44 @@ def _opportunity_engine_summary(
         },
     ]
     live_count = sum(1 for row in signal_groups if row["status"] == "Live")
+    output_cards = [
+        {
+            "lens": "Signals",
+            "signal": f"{attention_events} shop-attention events were recorded in the last 7 days.",
+            "evidence": "Last-7-days shop visits, product opens, Spotlight impressions, Spotlight shop clicks, and contact taps.",
+            "interpretation": "This may show whether the offer is receiving attention before GSN claims demand or sales.",
+            "opportunity": "Tune one visible offer, price, or buyer instruction and recheck the next attention window.",
+            "risk": "Views and taps can be curiosity only; they are not buyer proof, payment proof, or fulfilment proof.",
+            "time_horizon": "now",
+            "confidence": "medium" if attention_events >= 5 else "low",
+            "suggested_next_step": "Review the strongest public item and keep the next experiment small.",
+            "human_review": "Owner reviews before acting or publishing.",
+        },
+        {
+            "lens": "Market",
+            "signal": f"{open_demand} open DemandBox requests are visible in this shop community.",
+            "evidence": "Open non-expired MarketplaceRequest rows scoped to the selected community.",
+            "interpretation": "DemandBox can become a local demand clue when requests repeat, but zero or tiny counts are still only a gap signal.",
+            "opportunity": "Compare the shop's public offers with the next real community request before adding more promotion.",
+            "risk": "One request, or no request, must not be presented as market size or guaranteed customer demand.",
+            "time_horizon": "90 days",
+            "confidence": "medium" if open_demand >= 3 else "low",
+            "suggested_next_step": "Watch for repeated community requests before treating this as a product direction.",
+            "human_review": "Owner reviews before acting or publishing.",
+        },
+        {
+            "lens": "Trust and risk",
+            "signal": f"{protected_trade_records} protected trade records are linked in the last 7 days.",
+            "evidence": "ProtectedTradeRecord rows linked by shop_id or seller_user_id in this analytics window.",
+            "interpretation": "Outcome evidence may be forming when protected records exist, but the record state decides what it proves.",
+            "opportunity": "Use resolved protected records to learn what buyers actually completed or where trust broke down.",
+            "risk": "Protected trade activity is not automatic sales proof and must not hide unresolved or disputed records.",
+            "time_horizon": "now",
+            "confidence": "medium" if protected_trade_records > 0 else "low",
+            "suggested_next_step": "Open unresolved or recent protected records before increasing traffic pressure.",
+            "human_review": "Owner reviews before acting or publishing.",
+        },
+    ]
 
     return {
         "aggregator_ready": True,
@@ -511,6 +549,7 @@ def _opportunity_engine_summary(
         "live_signal_count": live_count,
         "signal_group_count": len(signal_groups),
         "signal_groups": signal_groups,
+        "output_cards": output_cards,
         "field_coverage": {
             "shop_and_marketplace": active_products > 0,
             "spotlight_attention": active_spotlights > 0 or spotlight_impressions > 0,

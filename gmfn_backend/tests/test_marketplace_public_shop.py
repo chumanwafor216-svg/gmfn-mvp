@@ -5583,6 +5583,16 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert opportunity_coverage["saved_reports"] is False
     assert opportunity_coverage["billing_gate"] is False
     assert opportunity_engine["signal_groups"][2]["label"] == "DemandBox"
+    assert len(opportunity_engine["output_cards"]) == 3
+    first_output_card = opportunity_engine["output_cards"][0]
+    assert first_output_card["lens"] == "Signals"
+    assert "shop-attention events" in first_output_card["signal"]
+    assert "not buyer proof" in first_output_card["risk"]
+    assert first_output_card["human_review"] == "Owner reviews before acting or publishing."
+    demand_output_card = opportunity_engine["output_cards"][1]
+    assert demand_output_card["lens"] == "Market"
+    assert "DemandBox" in demand_output_card["signal"]
+    assert "must not be presented as market size" in demand_output_card["risk"]
     assert "owner-summary signal groups are live" in opportunity_engine["snapshot"]["headline"]
     assert "not saved AI inference" in opportunity_engine["boundary_label"]
     assert "marketplace_requests" in opportunity_engine["count_method"]
