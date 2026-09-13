@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi import HTTPException
@@ -408,6 +409,76 @@ def test_marketplace_request_status_rejects_non_positive_request_id(
 
     assert response.status_code == 422, response.text
     assert "request_id" in response.text
+
+
+def test_marketplace_request_allows_five_open_requests_per_user_per_24_hours(
+    client,
+    override_current_user,
+):
+    _seed_primary_clan()
+
+    for index in range(5):
+        response = client.post(
+            "/marketplace/requests",
+            json={
+                "clan_id": 1,
+                "title": f"Need community item {index + 1}",
+                "description": "Testing the pilot Demandbox quota.",
+            },
+        )
+        assert response.status_code == 200, response.text
+
+    blocked = client.post(
+        "/marketplace/requests",
+        json={
+            "clan_id": 1,
+            "title": "Need community item 6",
+            "description": "This should wait for the next quota window.",
+        },
+    )
+
+    assert blocked.status_code == 400, blocked.text
+    assert "5 active Demandbox requests in 24 hours" in blocked.json()["detail"]
+    assert _marketplace_request_counts() == (5, 5)
+
+
+def test_marketplace_request_quota_ignores_open_requests_older_than_24_hours(
+    client,
+    override_current_user,
+):
+    _seed_primary_clan()
+    old_created_at = datetime.now(timezone.utc) - timedelta(hours=25)
+    future_expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+
+    with engine.begin() as conn:
+        for index in range(5):
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO marketplace_requests
+                        (clan_id, user_id, title, description, urgency, status, created_at, expires_at)
+                    VALUES
+                        (1, 1, :title, 'Older open pilot request.', 'medium', 'open', :created_at, :expires_at)
+                    """
+                ),
+                {
+                    "title": f"Older Demandbox request {index + 1}",
+                    "created_at": old_created_at,
+                    "expires_at": future_expires_at,
+                },
+            )
+
+    response = client.post(
+        "/marketplace/requests",
+        json={
+            "clan_id": 1,
+            "title": "Fresh community item",
+            "description": "This should pass because older open requests are outside the 24-hour quota.",
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    assert _marketplace_request_counts() == (6, 1)
 
 
 def test_marketplace_request_requires_community_when_user_has_many():

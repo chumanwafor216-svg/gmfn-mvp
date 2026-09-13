@@ -21,7 +21,8 @@ from app.schemas.marketplace_requests import (
 
 router = APIRouter(prefix="/marketplace/requests", tags=["marketplace-requests"])
 
-MAX_ACTIVE_REQUESTS = 2
+MAX_REQUESTS_PER_USER_24H = 5
+REQUEST_QUOTA_WINDOW_HOURS = 24
 DEFAULT_EXPIRY_HOURS = 48
 
 
@@ -55,13 +56,15 @@ def _cleanup_expired_requests(db: Session) -> None:
         db.commit()
 
 
-def _active_request_count(db: Session, user_id: int) -> int:
+def _recent_open_request_count(db: Session, user_id: int) -> int:
     now = _now_utc()
+    window_start = now - timedelta(hours=REQUEST_QUOTA_WINDOW_HOURS)
     return (
         db.query(MarketplaceRequest)
         .filter(
             MarketplaceRequest.user_id == user_id,
             MarketplaceRequest.status == "open",
+            MarketplaceRequest.created_at >= window_start,
             (
                 (MarketplaceRequest.expires_at.is_(None))
                 | (MarketplaceRequest.expires_at >= now)
@@ -263,11 +266,14 @@ def create_marketplace_request(
 
     _cleanup_expired_requests(db)
 
-    active_count = _active_request_count(db, current_user.id)
-    if active_count >= MAX_ACTIVE_REQUESTS:
+    recent_open_count = _recent_open_request_count(db, current_user.id)
+    if recent_open_count >= MAX_REQUESTS_PER_USER_24H:
         raise HTTPException(
             status_code=400,
-            detail="You already have 2 active requests. Close one or wait for expiry before posting another.",
+            detail=(
+                "You already have 5 active Demandbox requests in 24 hours. "
+                "Close one or wait before posting another."
+            ),
         )
 
     expires_in_hours = payload.expires_in_hours or DEFAULT_EXPIRY_HOURS

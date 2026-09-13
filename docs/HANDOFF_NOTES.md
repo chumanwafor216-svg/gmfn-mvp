@@ -161143,3 +161143,13 @@ Operational note:
 - Error behavior changed: the shared notice composer now shows submit failures inside the open modal and preserves typed text; parent submitters rethrow caught API errors so the modal does not clear a failed post as if it succeeded.
 - Truth boundary: this does not add chat, tagging, threaded replies, or a new communication lane. The backend still enforces the existing active Demand Box request limit unless product ownership decides that Community Ask needs its own quota or lifecycle.
 - Verification passed: targeted frontend ESLint and `npm --prefix frontend run build`.
+
+## 2026-09-13 - Demandbox pilot quota raised to five per 24 hours
+
+- Status: Backend quota correction implemented and verified locally; deploy pending from this commit.
+- Owner trigger: owner clarified that Demandbox should support more early pilot activity and asked to move from two active posts to five per person within 24 hours while leaving full chat/tagging for later discussion.
+- Backend route affected: `POST /marketplace/requests` in `gmfn_backend/app/api/routes/marketplace_requests.py`.
+- Product behavior changed: Demandbox now allows up to five open requests per user in a rolling 24-hour window. The sixth open request inside that window is blocked with a clear Demandbox quota message.
+- Boundary preserved: older open requests outside the 24-hour window no longer consume today's creation quota, but they still remain visible/open until fulfilled, cancelled, or expired by normal lifecycle rules.
+- Truth boundary: this does not add chat, member tagging, threaded replies, WhatsApp forwarding automation, or a new communication lane. It only widens the existing Demandbox posting allowance for pilot testing.
+- Verification passed: `python -m pytest gmfn_backend/tests/test_marketplace_requests.py` and `python -m pytest gmfn_backend/tests/test_community_communication_protocol.py`.
