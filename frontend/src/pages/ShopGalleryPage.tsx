@@ -3482,16 +3482,16 @@ export default function ShopGalleryPage() {
                   color: "#061827",
                   fontFamily:
                     "'Inter', 'Segoe UI', 'Arial Black', Arial, sans-serif",
-                  fontSize: isCompact ? 22 : 44,
-                  lineHeight: isCompact ? 1.02 : 1,
+                  fontSize: isCompact ? 20 : 44,
+                  lineHeight: isCompact ? 1.12 : 1,
                   fontWeight: 950,
-                  textTransform: "uppercase",
+                  textTransform: isCompact ? "none" : "uppercase",
                   letterSpacing: 0,
                   textShadow:
                     isCompact
                       ? "0 1px 0 rgba(255,255,255,0.96), 0 7px 14px rgba(8,38,67,0.12)"
                       : "0 1px 0 rgba(255,255,255,0.94), 0 12px 22px rgba(8,38,67,0.10)",
-                  padding: isCompact ? "3px 7px 4px" : 0,
+                  padding: isCompact ? "5px 8px 6px" : 0,
                   borderRadius: isCompact ? 10 : 0,
                   borderLeft: isCompact ? "3px solid rgba(214,170,69,0.72)" : "none",
                   background: isCompact
@@ -3501,9 +3501,9 @@ export default function ShopGalleryPage() {
                   overflow: isCompact ? "visible" : "hidden",
                   textOverflow: isCompact ? "clip" : "ellipsis",
                   display: "-webkit-box",
-                  WebkitLineClamp: isCompact ? 2 : 2,
+                  WebkitLineClamp: isCompact ? 3 : 2,
                   WebkitBoxOrient: "vertical" as any,
-                  overflowWrap: "normal",
+                  overflowWrap: "anywhere",
                   wordBreak: "normal",
                   textAlign: isCompact ? "left" : "inherit",
                 }}
@@ -3611,13 +3611,14 @@ export default function ShopGalleryPage() {
                 {!shopFollowState.isOwner ? (
                   <div
                     style={{
-                      display: isCompact ? "none" : "grid",
+                      display: "grid",
                       gridTemplateColumns:
                         shopFollowState.isFollowing && shopFollowSignedIn
                           ? "minmax(0, 1fr) minmax(0, 1fr)"
                           : "minmax(0, 1fr)",
                       gap: isCompact ? 6 : 8,
                       minWidth: isCompact ? 0 : 280,
+                      width: "100%",
                     }}
                   >
                     {!shopFollowSignedIn ? (
@@ -4918,8 +4919,8 @@ export default function ShopGalleryPage() {
               overflow: "hidden",
               borderRadius: isCompact ? 18 : 26,
               padding: isCompact ? 8 : 22,
-              height: isCompact ? 300 : undefined,
-              minHeight: isCompact ? 300 : undefined,
+              height: isCompact ? "auto" : undefined,
+              minHeight: isCompact ? 340 : undefined,
               border: "1px solid rgba(255,255,255,0.92)",
               background:
                 isCompact
@@ -4938,8 +4939,8 @@ export default function ShopGalleryPage() {
                   : "minmax(0, 1fr) 310px",
                 gap: isCompact ? 8 : 18,
                 alignItems: "stretch",
-                height: isCompact ? 284 : undefined,
-                minHeight: isCompact ? 284 : undefined,
+                height: isCompact ? "auto" : undefined,
+                minHeight: isCompact ? 324 : undefined,
                 padding: 0,
               }}
             >
@@ -5034,14 +5035,14 @@ export default function ShopGalleryPage() {
                     fontSize: isCompact ? 20 : 34,
                     fontWeight: 950,
                     lineHeight: isCompact ? 1.04 : 1.04,
-                    textTransform: "uppercase",
+                    textTransform: isCompact ? "none" : "uppercase",
                     minWidth: 0,
                     overflow: "hidden",
                     textOverflow: "clip",
                     display: "-webkit-box",
                     WebkitLineClamp: isCompact ? 2 : 3,
                     WebkitBoxOrient: "vertical" as any,
-                    overflowWrap: "normal",
+                    overflowWrap: "anywhere",
                     wordBreak: "normal",
                   }}
                 >
@@ -5125,8 +5126,8 @@ export default function ShopGalleryPage() {
                     mediaStyle={{
                       width: "100%",
                       height: "100%",
-                      objectFit: "cover",
-                      objectPosition: isCompact ? "center 35%" : "center",
+                      objectFit: "contain",
+                      objectPosition: "center",
                     }}
                   />
                 ) : heroImage ? (
@@ -5137,7 +5138,7 @@ export default function ShopGalleryPage() {
                       width: "100%",
                       height: isCompact ? "100%" : 178,
                       minHeight: isCompact ? 196 : undefined,
-                      objectFit: "cover",
+                      objectFit: "contain",
                       display: "block",
                     }}
                   />
@@ -5583,7 +5584,7 @@ export default function ShopGalleryPage() {
                           mediaStyle={{
                             width: "100%",
                             height: "100%",
-                            objectFit: "cover",
+                            objectFit: "contain",
                             objectPosition: "center",
                           }}
                         />
@@ -5601,7 +5602,7 @@ export default function ShopGalleryPage() {
                           style={{
                             width: "100%",
                             height: "100%",
-                            objectFit: "cover",
+                            objectFit: "contain",
                             display: "block",
                           }}
                         />

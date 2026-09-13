@@ -289,8 +289,8 @@ assertContains(
   "Public Shop owner compact signboard must keep follower count and Analytics as equal-width phone pills."
 );
 assertContains(
-  /shopFollowState\.isOwner[\s\S]*?display: isCompact \? "none" : "grid"[\s\S]*?debugId="shop-gallery\.public-shop\.sign-in-follow"/,
-  "Public Shop compact signboard must not place the follow button between identity and facts on phones."
+  /shopFollowState\.isOwner[\s\S]*?display: "grid"[\s\S]*?debugId="shop-gallery\.public-shop\.sign-in-follow"/,
+  "Public Shop compact signboard must keep the follow/sign-in action visible on phones.",
 );
 
 assertContains(
@@ -411,8 +411,8 @@ assertContains(
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?height: isCompact \? 300 : undefined[\s\S]*?minHeight: isCompact \? 300 : undefined[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"[\s\S]*?gridRow: isCompact \? "2" : "1"[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?!isCompact \? \([\s\S]*?WebkitLineClamp: 3[\s\S]*?: null\}[\s\S]*?minHeight: isCompact \? 196 : 178[\s\S]*?height: isCompact \? 196 : "auto"[\s\S]*?gridRow: "1"[\s\S]*?objectPosition: isCompact \? "center 35%" : "center"/,
-  "Public Shop Spotlight phone layout must keep a fixed-height compact stacked card, hide phone detail copy, keep one WhatsApp action in the badge row, reserve the taller media frame, and bias compact media upward for faces."
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?height: isCompact \? "auto" : undefined[\s\S]*?minHeight: isCompact \? 340 : undefined[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"[\s\S]*?gridRow: isCompact \? "2" : "1"[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?!isCompact \? \([\s\S]*?WebkitLineClamp: 3[\s\S]*?: null\}[\s\S]*?minHeight: isCompact \? 196 : 178[\s\S]*?height: isCompact \? 196 : "auto"[\s\S]*?gridRow: "1"[\s\S]*?objectFit: "contain"[\s\S]*?objectPosition: "center"/,
+  "Public Shop Spotlight phone layout must keep a stacked card, hide phone detail copy, keep one WhatsApp action in the badge row, reserve the taller media frame, and preserve media proportions.",
 );
 
 assertContains(
