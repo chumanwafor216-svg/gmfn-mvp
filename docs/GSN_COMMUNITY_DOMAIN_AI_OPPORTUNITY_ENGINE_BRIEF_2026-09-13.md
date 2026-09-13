@@ -1,8 +1,14 @@
 # GSN Community Domain AI Opportunity Engine Brief - 2026-09-13
 
+## Superseded placement note
+
+This brief's original placement is superseded by `docs/GSN_ADVANCED_ANALYTICS_OPPORTUNITY_ENGINE_BRIEF_2026-09-13.md`.
+
+Owner correction on 2026-09-13: the full `Opportunity Engine` should live under `Analytics` -> `Advanced Analytics`, not as another Community Domain screen. Community Domain remains a governed data context and institutional lens, while small snapshots may later feed `Market Wisdom` as a fifth trail if that frozen surface is explicitly scoped for the change.
+
 ## Product decision
 
-The AI opportunity engine is a paid Community Domain command-centre capability. It is not a stream chat, not a member chat room, and not a replacement for WhatsApp conversation.
+Superseded: the original placement below treated the AI opportunity engine as a paid Community Domain command-centre capability. That placement has been corrected. Use the Advanced Analytics brief for future implementation planning.
 
 Working label: `Opportunity Engine`.
 

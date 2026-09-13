@@ -34,9 +34,10 @@ For canonical product-language work, user-visible wording, or naming cleanup, al
 
 - `docs/GSN_CANONICAL_PRODUCT_LANGUAGE_2026-09-13.md`
 
-For Community Domain AI, opportunity intelligence, paid foresight, or research-command-centre work, also read:
+For Opportunity Engine, Advanced Analytics, opportunity intelligence, paid foresight, or research-command-centre work, also read:
 
-- `docs/GSN_COMMUNITY_DOMAIN_AI_OPPORTUNITY_ENGINE_BRIEF_2026-09-13.md`
+- `docs/GSN_ADVANCED_ANALYTICS_OPPORTUNITY_ENGINE_BRIEF_2026-09-13.md`
+- `docs/GSN_COMMUNITY_DOMAIN_AI_OPPORTUNITY_ENGINE_BRIEF_2026-09-13.md` (superseded placement note; keep for history)
 
 For innovation-case, investor, policy, TrustSlip, merchant-verification, or
 development-finance explanation work, also read:
