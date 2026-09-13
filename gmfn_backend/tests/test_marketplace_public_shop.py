@@ -5623,6 +5623,17 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert "Pause promotion" in experiment_plan[2]["stop_rule"]
     assert experiment_plan[3]["title"] == "Cost note discipline"
     assert "not accounting" in experiment_plan[3]["boundary"]
+    advanced_lanes = opportunity_engine["advanced_lanes"]
+    assert len(advanced_lanes) == 10
+    assert advanced_lanes[0]["label"] == "Signals"
+    assert advanced_lanes[0]["status"] == "Live"
+    assert advanced_lanes[2]["label"] == "Economic"
+    assert "Not financial advice" in advanced_lanes[2]["boundary"]
+    assert advanced_lanes[7]["label"] == "Place and Environment"
+    assert advanced_lanes[7]["status"] == "Blocked"
+    assert "No external-market" in advanced_lanes[7]["boundary"]
+    assert advanced_lanes[9]["label"] == "Next Moves"
+    assert advanced_lanes[9]["status"] == "Live"
     ledger_rows = opportunity_engine["evidence_ledger"]
     assert ledger_rows[0]["source"] == "Marketplace and Shop Diary"
     assert ledger_rows[2]["source"] == "DemandBox"
