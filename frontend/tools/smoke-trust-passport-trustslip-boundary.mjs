@@ -478,6 +478,26 @@ async function closeChecked(state, label) {
 async function openMoreLimits(page) {
   await page.locator("summary").filter({ hasText: "More limits" }).first().click();
 }
+async function openTrustSlipHolderFromSetup(page, options = {}) {
+  await expect(page.locator('[data-gsn-trustslip-setup-only="true"]')).toBeVisible({
+    timeout: 30000,
+  });
+  await expect(page.getByText("Choose purpose and community first.", { exact: true })).toBeVisible();
+
+  if (options.setupOnly) return false;
+
+  const openCurrent = page.locator('[data-cta-id="trust-slip.setup.open-current"]');
+  if (await openCurrent.count()) {
+    await openCurrent.first().click();
+  } else {
+    await page.locator('[data-cta-id="trust-slip.setup.submit"]').click();
+  }
+
+  await expect(page.getByText("TrustSlip holder", { exact: true })).toBeVisible({
+    timeout: 30000,
+  });
+  return true;
+}
 
 async function assertTrustSlipQrCarriesSelectedDecisionPack(page, baseURL) {
   const expectedPath = `/t/${encodeURIComponent(trustSlipCode)}`;
@@ -489,7 +509,7 @@ async function assertTrustSlipQrCarriesSelectedDecisionPack(page, baseURL) {
     verification_scope: "community_specific",
   };
 
-  const publicPackLink = page.locator('[data-cta-id="trust-slip.public-decision-pack.open"]').first();
+  const publicPackLink = page.getByRole("link", { name: "Open link" }).first();
   await expect(publicPackLink).toBeVisible({ timeout: 30000 });
   const publicPackHref = await publicPackLink.getAttribute("href");
   if (!publicPackHref) {
@@ -497,7 +517,7 @@ async function assertTrustSlipQrCarriesSelectedDecisionPack(page, baseURL) {
   }
 
   const qrLocator = page.locator("[data-gsn-trustslip-qr-value]");
-  await expect(qrLocator.first()).toBeVisible({ timeout: 30000 });
+  await expect(qrLocator.first()).toHaveAttribute("data-gsn-trustslip-qr-value", /decision_pack=employment_decision/, { timeout: 30000 });
   await expect
     .poll(async () => {
       const values = await qrLocator.evaluateAll((nodes) =>
@@ -817,19 +837,17 @@ async function runTrustSlipScenario(browser, baseURL) {
     timeout: 60000,
   });
 
-  await expect(state.page.getByText("TrustSlip holder", { exact: true })).toBeVisible({
-    timeout: 30000,
-  });
+  const setupPackSelect = state.page.locator(
+    '[data-gsn-trustslip-purpose-mobile-select="setup"] select'
+  );
+  await expect(setupPackSelect).toHaveCount(1);
+  await expect(setupPackSelect).toBeVisible();
+  await expect(setupPackSelect.locator("option")).toHaveCount(10);
+  await setupPackSelect.selectOption("employment_decision");
+  await openTrustSlipHolderFromSetup(state.page);
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]')).toHaveCount(1);
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trust-passport"]')).toHaveCount(0);
-  const mobilePackSelect = state.page.locator(
-    '[data-gsn-trustslip-purpose-mobile-select="true"] select'
-  );
-  await expect(mobilePackSelect).toHaveCount(1);
-  await expect(mobilePackSelect).toBeVisible();
   await expect(state.page.locator('[data-gsn-trustslip-purpose-desktop-buttons="true"]')).toHaveCount(0);
-  await expect(mobilePackSelect.locator("option")).toHaveCount(10);
-  await mobilePackSelect.selectOption("employment_decision");
   const selectedPackSummary = state.page.locator(
     '[data-gsn-trustslip-purpose-selected-summary="true"]'
   );
@@ -838,127 +856,58 @@ async function runTrustSlipScenario(browser, baseURL) {
     "Is there enough evidence to continue an employment conversation?"
   );
   await expect(selectedPackSummary).toContainText("Role, consistency");
-  const mechanicsDrawer = state.page.locator(
-    '[data-gsn-trustslip-decision-pack-mechanics="collapsed"]'
-  );
-  await expect(mechanicsDrawer).toHaveCount(1);
-  await expect(mechanicsDrawer).toContainText("Pack evidence mechanics");
-  await expect(mechanicsDrawer).toContainText(
-    "Open for expected evidence, connected sources, gaps, and limits."
-  );
   await assertTrustSlipQrCarriesSelectedDecisionPack(state.page, baseURL);
-  const decisionBoundary = state.page.locator(
-    '[data-gsn-trustslip-decision-boundary="compact"]'
-  );
-  await expect(decisionBoundary).toBeHidden();
-  await state.page.locator('[data-cta-id="trust-slip.toggle-decision-pack-mechanics"]').click();
-  await expect(
-    state.page.locator('[data-gsn-trustslip-decision-pack-mechanics="open"]')
-  ).toHaveCount(1);
-  await expect(decisionBoundary).toBeVisible();
-  await expect(decisionBoundary).toContainText("Decision Boundary");
-  await expect(decisionBoundary).toContainText("Public link");
-  await expect(decisionBoundary).toContainText("Private preview");
-  await expect(decisionBoundary).toContainText("Consent log");
-  await expect(decisionBoundary).toContainText("Final decision");
-  await expect(decisionBoundary).toContainText("does not remove risk");
-  const privatePreviewDrawer = state.page.locator(
-    '[data-gsn-trustslip-private-preview-drawer="collapsed"]'
-  );
-  await expect(privatePreviewDrawer).toHaveCount(1);
-  await expect(privatePreviewDrawer).toContainText("Holder preview and history");
-  await expect(privatePreviewDrawer).toContainText(
-    "Open for private preview, consent exports, and public read history."
-  );
-  await expect(state.page.locator('[data-gsn-holder-private-decision-pack-evidence="true"]')).toBeHidden();
-  await expect(state.page.locator('[data-gsn-decision-pack-access-ledger="holder"]')).toBeHidden();
+  await expect(state.page.locator('[data-gsn-trustslip-paper-pack-shell="true"]')).toBeVisible();
+  await expect(state.page.locator('[data-gsn-trustslip-paper-pack-buttons="true"]')).toBeVisible();
+  await expect(state.page.locator('[data-cta-id="trust-slip.paper-pack.share"]')).toBeVisible();
+  await expect(state.page.locator('[data-cta-id="trust-slip.paper-pack.holder"]')).toBeVisible();
+  await expect(state.page.locator('[data-cta-id="trust-slip.paper-pack.community"]')).toBeVisible();
+  await expect(state.page.locator('[data-cta-id="trust-slip.paper-pack.evidence"]')).toBeVisible();
+  await expect(state.page.locator('[data-cta-id="trust-slip.paper-pack.limits"]')).toBeVisible();
   const privateReadsBeforeOpen = privateDecisionPackReadCount(state.requestLog);
   if (privateReadsBeforeOpen !== 0) {
     throw new Error(
-      `TrustSlip loaded private Decision Pack reads before the holder opened the drawer: ${privateReadsBeforeOpen}`
+      `TrustSlip loaded private Decision Pack reads before the holder opened a private drawer: ${privateReadsBeforeOpen}`
     );
   }
-  await state.page.locator('[data-cta-id="trust-slip.toggle-private-decision-pack-preview"]').click();
+
+  await state.page.locator('[data-cta-id="trust-slip.paper-pack.limits"]').click();
+  const limitsPanel = state.page.locator('[data-gsn-trustslip-paper-pack-panel="limits"]');
+  await expect(limitsPanel).toBeVisible();
+  await expect(limitsPanel.getByText("This TrustSlip confirms", { exact: true })).toBeVisible();
+  await expect(limitsPanel.getByText("This TrustSlip does not confirm", { exact: true })).toBeVisible();
   await expect(
-    state.page.locator('[data-gsn-trustslip-private-preview-drawer="open"]')
-  ).toHaveCount(1);
-  await expect(state.page.locator('[data-gsn-holder-private-decision-pack-evidence="true"]')).toBeVisible();
-  await expect(state.page.locator('[data-gsn-decision-pack-access-ledger="holder"]')).toBeVisible();
-  await waitForRequest(
-    state.requestLog,
-    (entry) => entry.method === "GET" && entry.path === "/trust-slips/me/decision-pack-evidence",
-    "TrustSlip private Decision Pack evidence request after drawer open"
-  );
-  await waitForRequest(
-    state.requestLog,
-    (entry) => entry.method === "GET" && entry.path === "/trust-slips/me/decision-pack-accesses",
-    "TrustSlip private Decision Pack access history request after drawer open"
-  );
-  await waitForRequest(
-    state.requestLog,
-    (entry) => entry.method === "GET" && entry.path === "/trust-slips/me/decision-pack-consent-shares",
-    "TrustSlip private Decision Pack consent history request after drawer open"
-  );
-  await expect(state.page.getByText("This TrustSlip confirms", { exact: true })).toHaveCount(1);
-  await expect(state.page.getByText("This TrustSlip does not confirm", { exact: true })).toHaveCount(1);
-  await state.page.locator("summary").filter({ hasText: "More security details" }).first().click();
+    limitsPanel.getByText("Bank approval, credit approval, payment movement, or escrow", { exact: true })
+  ).toBeVisible();
+  await limitsPanel.locator("summary").filter({ hasText: "More limits" }).first().click();
   await expect(
-    state.page.getByText(
+    limitsPanel.getByText("Authority to release goods, money, credit, or services", {
+      exact: true,
+    })
+  ).toBeVisible();
+  await expect(
+    limitsPanel.getByText("Private Trust Passport history, private notes, private contacts, or admin records", {
+      exact: true,
+    })
+  ).toBeVisible();
+  await expect(limitsPanel.getByText("Audit Details", { exact: true })).toBeVisible();
+  await limitsPanel.locator("summary").filter({ hasText: "More security details" }).first().click();
+  await expect(
+    limitsPanel.getByText(
       "This TrustSlip is a short portable summary. It does not expose the holder's private Trust Passport, private notes, contacts, or admin records.",
       { exact: true }
     )
   ).toBeVisible();
-  await expect(
-    state.page.getByText("Bank approval, credit approval, payment movement, or escrow", { exact: true })
-  ).toBeVisible();
-  await openMoreLimits(state.page);
-  await expect(
-    state.page.getByText("Authority to release goods, money, credit, or services", {
-      exact: true,
-    })
-  ).toBeVisible();
-  await expect(
-    state.page.getByText("Private Trust Passport history, private notes, private contacts, or admin records", {
-      exact: true,
-    })
-  ).toBeVisible();
-  await expect(
-    state.page.getByText("Bank approval, credit approval, payment movement, or escrow", {
-      exact: true,
-    })
-  ).toBeVisible();
-  await expect(
-    state.page.locator('[data-gsn-trustslip-holder-decision-boundary="compact"]')
-  ).toContainText("Credit approval");
-  await expect(
-    state.page.locator('[data-gsn-trustslip-holder-decision-boundary="compact"]')
-  ).toContainText("No");
 
-  await expect(
-    state.page.locator('[data-gsn-trustslip-holder-decision-boundary="compact"]')
-  ).toContainText("Final decision");
-  await expect(
-    state.page.locator('[data-gsn-trustslip-holder-decision-boundary="compact"]')
-  ).toContainText("Yours");
-  const collapsedPracticalEvidence = state.page.locator(
-    '[data-gsn-trustslip-holder-practical-evidence="collapsed"]'
-  );
-  await expect(collapsedPracticalEvidence).toHaveCount(1);
-  await expect(collapsedPracticalEvidence).toContainText("Practical evidence summary");
-  await expect(collapsedPracticalEvidence).toContainText(
-    "Open for wider evidence context after the main TrustSlip paper."
-  );
+  await state.page.locator('[data-cta-id="trust-slip.paper-pack.evidence"]').click();
+  const evidencePanel = state.page.locator('[data-gsn-trustslip-paper-pack-panel="evidence"]');
+  await expect(evidencePanel).toBeVisible();
+  await expect(evidencePanel.getByText("Evidence pack", { exact: true })).toBeVisible();
   await expect(
     state.page.getByText("This section separates the primary community anchor from wider evidence context, so the recipient does not mistake one community label for the whole judgement.", {
       exact: false,
     })
   ).toHaveCount(0);
-  await state.page.locator('[data-cta-id="trust-slip.toggle-practical-evidence"]').click();
-  await expect(
-    state.page.getByText("This section separates the primary community anchor from wider evidence context, so the recipient does not mistake one community label for the whole judgement.", {
-      exact: false,
-    })
-  ).toBeVisible();
 
   await waitForRequest(
     state.requestLog,
@@ -984,14 +933,30 @@ async function runTrustSlipStateScenario(browser, baseURL, scenario) {
     timeout: 60000,
   });
 
-  await expect(state.page.getByText("TrustSlip holder", { exact: true })).toBeVisible({
-    timeout: 30000,
+  const holderOpened = await openTrustSlipHolderFromSetup(state.page, {
+    setupOnly: Boolean(scenario.setupOnly),
   });
-  await expect(state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]')).toHaveCount(1);
-  await expect(state.page.locator('[data-gsn-trust-document-certificate="trust-passport"]')).toHaveCount(0);
+  if (holderOpened) {
+    await expect(state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]')).toHaveCount(1);
+    await expect(state.page.locator('[data-gsn-trust-document-certificate="trust-passport"]')).toHaveCount(0);
+
+    if (scenario.paperPack) {
+      await state.page.locator(`[data-cta-id="trust-slip.paper-pack.${scenario.paperPack}"]`).click();
+      const packPanel = state.page.locator(`[data-gsn-trustslip-paper-pack-panel="${scenario.paperPack}"]`);
+      await expect(packPanel).toBeVisible();
+      if (scenario.openMoreLimits) {
+        await packPanel.locator("summary").filter({ hasText: "More limits" }).first().click();
+      }
+      if (scenario.openSecurityDetails) {
+        await packPanel.locator("summary").filter({ hasText: "More security details" }).first().click();
+      }
+    }
+  } else {
+    await expect(state.page.locator('[data-gsn-trust-document-certificate="trust-passport"]')).toHaveCount(0);
+  }
 
   for (const text of scenario.visibleText) {
-    await expect(state.page.getByText(text, { exact: false }).first()).toBeVisible();
+    await expect(state.page.getByText(text, { exact: false }).filter({ visible: true }).first()).toBeVisible();
   }
 
   await waitForRequest(
@@ -1035,11 +1000,11 @@ async function main() {
           expires_at: "2026-01-01T08:00:00.000Z",
         },
       },
+      paperPack: "limits",
       visibleText: [
         "Needs refresh",
         "Refresh before anyone relies on it",
         "Current TrustSlip state",
-        "Do not rely on this TrustSlip until it is refreshed and checked again.",
       ],
     });
     await runTrustSlipStateScenario(browser, baseURL, {
@@ -1052,7 +1017,6 @@ async function main() {
       visibleText: [
         "Revoked",
         "Do not rely until cleared",
-        "Do not rely on this TrustSlip until it is refreshed and checked again.",
       ],
     });
     await runTrustSlipStateScenario(browser, baseURL, {
@@ -1065,7 +1029,6 @@ async function main() {
       visibleText: [
         "Frozen",
         "Do not rely until cleared",
-        "Do not rely on this TrustSlip until it is refreshed and checked again.",
       ],
     });
     await runTrustSlipStateScenario(browser, baseURL, {
@@ -1086,11 +1049,12 @@ async function main() {
           phone_verified: false,
         },
       },
+      setupOnly: true,
       visibleText: [
-        "Phone check needed",
-        "No public TrustSlip code is available yet.",
+        "TrustSlip setup",
+        "Choose purpose and community first.",
+        "The full TrustSlip opens after GSN refreshes it for this exact choice.",
         "Verify phone",
-        "Code not ready",
       ],
     });
     await runTrustSlipStateScenario(browser, baseURL, {
@@ -1105,6 +1069,8 @@ async function main() {
         token: "",
         public_verify_url: "",
       },
+      paperPack: "limits",
+      openSecurityDetails: true,
       visibleText: [
         "Preparing",
         "Waiting for a public code",
@@ -1158,13 +1124,11 @@ async function main() {
             "This active membership record has no current witness validity window. Ask for member witnesses, TrustSlip, or live community confirmation before a serious decision.",
         },
       },
+      paperPack: "evidence",
       visibleText: [
-        "Evidence building",
         "Use with caution",
-        "Evidence still building",
-        "Practical evidence summary",
-        "Open for wider evidence context after the main TrustSlip paper.",
-        "Joined / witness not started",
+        "Evidence pack",
+        "No participation evidence shown",
       ],
     });
 
