@@ -65,6 +65,7 @@ import {
   buildShopAnalyticsWisdom,
   buildShopMarketIntelligenceSummary,
   buildShopOpportunityEngineFieldMap,
+  buildShopOpportunityEngineGapRows,
   buildShopOpportunityEngineGuidanceRows,
   buildShopOpportunityEngineLensRows,
   buildShopOpportunityEnginePackageReadiness,
@@ -2853,6 +2854,19 @@ export default function ShopControlPage() {
       shopAnalyticsWisdom,
       tradeOutcomeRecords7Days,
     ]
+  );
+  const opportunityEngineGapRows = useMemo(
+    () =>
+      buildShopOpportunityEngineGapRows({
+        fieldMap: opportunityEngineFieldMap,
+        lensRows: opportunityEngineLensRows,
+        hasBillingGate: false,
+        hasSavedReports: false,
+        hasBackendAggregator: false,
+        hasGovernedOutsideContext: false,
+        hasAiInference: false,
+      }),
+    [opportunityEngineFieldMap, opportunityEngineLensRows]
   );
   const featurePayments = useMemo(() => {
     return expectedPayments.filter((item) =>
@@ -6582,6 +6596,24 @@ export default function ShopControlPage() {
                 <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Next:</strong> {opportunityEnginePackageReadiness.nextBuildStep}</div>
                 <div style={{ color: "#7A4A00", fontSize: 11, fontWeight: 820, lineHeight: 1.35 }}>{opportunityEnginePackageReadiness.boundary}</div>
               </div>
+              <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(122,89,16,0.12)", padding: "4px 10px 10px" }}>
+                <StableDisclosureSummary debugId="shop-control.opportunity-engine.build-gaps" stableHeight={38} style={{ color: "#7A5910", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
+                  Build gaps before full engine
+                </StableDisclosureSummary>
+                <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                  {opportunityEngineGapRows.map((item) => (
+                    <div key={`opportunity-gap-${item.area}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(214,170,69,0.16)", padding: 10, display: "grid", gap: 5 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                        <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.area}</span>
+                        <span style={{ ...badge(item.status === "Partial"), fontSize: 10 }}>{item.status}</span>
+                      </div>
+                      <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Why:</strong> {item.whyItMatters}</div>
+                      <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Build:</strong> {item.nextBuildStep}</div>
+                      <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Risk:</strong> {item.riskIfSkipped}</div>
+                    </div>
+                  ))}
+                </div>
+              </details>
               <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(18,58,89,0.08)", padding: "4px 10px 10px" }}>
                 <StableDisclosureSummary debugId="shop-control.opportunity-engine.field-map" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
                   Total GSN field map

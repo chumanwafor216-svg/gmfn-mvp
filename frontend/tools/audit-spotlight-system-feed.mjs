@@ -200,6 +200,11 @@ assertContains(
   "Shop Opportunity Engine must expose local analysis lenses while blocking unwired external-context overclaims."
 );
 assertContains(
+  "frontend/src/lib/shopAnalyticsWisdom.ts",
+  /export type OpportunityEngineGapRow[\s\S]*?export function buildShopOpportunityEngineGapRows[\s\S]*?Backend evidence aggregator[\s\S]*?Saved reports and history[\s\S]*?Billing and entitlement gate[\s\S]*?Governed outside context[\s\S]*?AI-assisted inference/,
+  "Shop Opportunity Engine must keep a visible gap register before claiming the full backend, paid, external-context, or AI engine exists."
+);
+assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
   /buildShopOpportunityEnginePackageReadiness\([\s\S]*?opportunityEnginePackageReadiness\.title[\s\S]*?Included[\s\S]*?Unlocks[\s\S]*?opportunityEnginePackageReadiness\.boundary/,
   "Shop Control analytics must render the Advanced Analytics package readiness card inside the Opportunity Engine panel."
@@ -208,6 +213,11 @@ assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
   /buildShopOpportunityEngineLensRows\([\s\S]*?Opportunity lenses[\s\S]*?local GSN reading[\s\S]*?opportunityEngineLensRows\.map[\s\S]*?item\.boundary/,
   "Shop Control analytics must render Opportunity Engine lenses inside the existing Advanced Analytics panel."
+);
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /buildShopOpportunityEngineGapRows\([\s\S]*?hasBillingGate: false[\s\S]*?hasAiInference: false[\s\S]*?shop-control\.opportunity-engine\.build-gaps[\s\S]*?Build gaps before full engine[\s\S]*?opportunityEngineGapRows\.map/,
+  "Shop Control analytics must render the Opportunity Engine build-gap register as a collapsed detail."
 );
 assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",

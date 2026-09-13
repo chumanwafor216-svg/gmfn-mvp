@@ -186,6 +186,24 @@ export type ShopOpportunityEngineLensInput = {
   hasAttentionSignal?: boolean;
 };
 
+export type OpportunityEngineGapRow = {
+  area: string;
+  status: "Partial" | "Missing" | "Blocked";
+  whyItMatters: string;
+  nextBuildStep: string;
+  riskIfSkipped: string;
+};
+
+export type ShopOpportunityEngineGapInput = {
+  fieldMap: OpportunityEngineFieldMapItem[];
+  lensRows: OpportunityEngineLensRow[];
+  hasBillingGate?: boolean;
+  hasSavedReports?: boolean;
+  hasBackendAggregator?: boolean;
+  hasGovernedOutsideContext?: boolean;
+  hasAiInference?: boolean;
+};
+
 function positiveNumber(value: unknown): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
@@ -1033,6 +1051,58 @@ export function buildShopOpportunityEngineLensRows({
       nextStep: "Add approved external-context inputs only after privacy, source, and governance rules are defined.",
       boundary: "No political, health, legal, or external-market conclusion is being made here.",
       icon: "document",
+    },
+  ];
+}
+
+export function buildShopOpportunityEngineGapRows({
+  fieldMap,
+  lensRows,
+  hasBillingGate,
+  hasSavedReports,
+  hasBackendAggregator,
+  hasGovernedOutsideContext,
+  hasAiInference,
+}: ShopOpportunityEngineGapInput): OpportunityEngineGapRow[] {
+  const nextFieldAreas = fieldMap.filter((item) => item.status === "Next").map((item) => item.area);
+  const nextLensLabels = lensRows.filter((item) => item.status === "Next").map((item) => item.label);
+  const missingContext = [...nextFieldAreas, ...nextLensLabels].filter(Boolean).join(", ") || "no missing field registered";
+
+  return [
+    {
+      area: "Backend evidence aggregator",
+      status: hasBackendAggregator ? "Partial" : "Missing",
+      whyItMatters: "The frontend can explain current signals, but a real Opportunity Engine needs one governed backend record of what it read and when.",
+      nextBuildStep: "Create an analytics snapshot endpoint that stores source counts, field coverage, and reviewed guidance per shop/community window.",
+      riskIfSkipped: "The reading remains demo-only and cannot become auditable paid analytics.",
+    },
+    {
+      area: "Saved reports and history",
+      status: hasSavedReports ? "Partial" : "Missing",
+      whyItMatters: "Opportunity guidance becomes more useful when owners can compare this week, last month, and the next review point.",
+      nextBuildStep: "Persist weekly Opportunity Engine snapshots with version, reviewer, evidence window, and owner-visible report status.",
+      riskIfSkipped: "Users see advice once, then lose the memory needed to judge whether it worked.",
+    },
+    {
+      area: "Billing and entitlement gate",
+      status: hasBillingGate ? "Partial" : "Missing",
+      whyItMatters: "Advanced Analytics is a paid-feature candidate, but the app must not charge or restrict access until entitlement rules exist.",
+      nextBuildStep: "Add a feature entitlement for Advanced Analytics before hiding, selling, or metering any Opportunity Engine report.",
+      riskIfSkipped: "The product may promise a paid feature without a clean access, refund, or support boundary.",
+    },
+    {
+      area: "Governed outside context",
+      status: hasGovernedOutsideContext ? "Partial" : "Missing",
+      whyItMatters: `Current missing field: ${missingContext}. External signals must be sourced and permissioned before they shape advice.`,
+      nextBuildStep: "Define approved source categories, freshness rules, geography boundaries, and sensitive-topic exclusions before connecting external context.",
+      riskIfSkipped: "The engine could sound like it knows public reality when it only knows local in-GSN activity.",
+    },
+    {
+      area: "AI-assisted inference",
+      status: hasAiInference ? "Partial" : "Blocked",
+      whyItMatters: "AI should help compare patterns and produce opportunity hypotheses, but only after the source, privacy, and audit trail are stable.",
+      nextBuildStep: "Start with reviewed prompts over saved snapshots, then require confidence, evidence citations, and human review before publication.",
+      riskIfSkipped: "The product either stays shallow or jumps into unsafe advice without enough proof.",
     },
   ];
 }
