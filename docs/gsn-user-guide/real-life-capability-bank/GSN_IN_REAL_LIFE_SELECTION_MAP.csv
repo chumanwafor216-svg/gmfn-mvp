@@ -1,0 +1,45 @@
+id,title,audiences,status_boundary
+1,Recognised Community Identity,"church, school, ngo, cooperative, family",Foundational capability; confirm live setup steps in the verified self-service guide before public demonstration.
+2,Governed Membership and Joining,"church, school, ngo, cooperative, family",Foundational where the community wants controlled participation.
+3,Invite Links and QR Entry,"church, school, ngo, cooperative, family",On-demand where invite or QR routes are available.
+4,Official Bulletin and Announcement Surface,"church, school, ngo, cooperative, family",Configurable/on-demand depending on community setup.
+5,"Acknowledgement, Availability and Response Signals","church, school, ngo, cooperative, family",Capability direction; use only where the live product exposes these actions.
+6,Meeting Lifecycle Support,"church, school, ngo, cooperative, family","Composite capability from announcements, attendance, records, roles and documents."
+7,Digital Attendance and Sign-In,"church, school, ngo, cooperative, family","Capability direction tied to QR, member and record flows."
+8,"Permanent Minutes, Decisions and Action Memory","church, school, ngo, cooperative, family",Planned/composite unless the current record screen confirms full minutes support.
+9,"Heavy Documents, Downloads and Bridges","church, school, ngo, cooperative, family","Capability direction linked to bulletin, public links and attachment support."
+10,"Roles, Permissions and Approval Paths","church, school, ngo, cooperative, family",Foundational governance capability; exact controls must follow current permissions.
+11,Leadership Continuity and Handover,"church, school, ngo, cooperative, family","Composite capability from identity, records, roles, documents and activity history."
+12,"Projects, Visits and Collective Initiatives","church, school, ngo, cooperative, family","Capability direction using bulletin, roles, attendance, contributions and follow-up records."
+13,Welfare and Support Coordination,"church, school, ngo, cooperative, family",Composite capability; financial handling remains non-custodial unless a lawful payment rail exists.
+14,Member Business and Service Presence,"church, school, ngo, cooperative, family",Configurable where Shop and product/service setup are live.
+15,"Products, Services, Images and Contact Clarity","church, school, ngo, cooperative, family",Foundational for shops and marketplace visibility.
+16,Spotlight Visibility Without Chat Flooding,"church, school, ngo, cooperative, family",On-demand promotional capability when Spotlight is configured and active.
+17,"Public Sharing, QR and Repost Links","church, school, ngo, cooperative, family",On-demand public-link capability where enabled.
+18,Community Bulletin Bridge to WhatsApp and Social Channels,"church, school, ngo, cooperative, family",Planned/configurable governance bridge unless live integration is confirmed.
+19,DemandBox for Structured Need and Demand,"church, school, ngo, cooperative, family",On-demand action. Canonical spelling: DemandBox.
+20,Ask Community Routed to DemandBox,"church, school, ngo, cooperative, family","Recent correction target: Ask Community should route to DemandBox, not pollute community bulletin."
+21,Private Response Through Contact Paths,"church, school, ngo, cooperative, family",On-demand/configurable depending on contact fields and public view.
+22,Cross-Community Opportunity Movement,"ngo, cooperative, family",Capability direction requiring permission and community rules.
+23,Private Vault and Controlled Offers,"cooperative, family, ngo",Partial/on-demand where private vault links exist.
+24,Buyer-Seller Terms Before Money or Goods Move,"cooperative, ngo, family","Capability direction around TrustSlip, evidence and release-before-payment concepts."
+25,Merchant Context Without False Guarantees,"church, school, ngo, cooperative, family","Automatic/derived where shop, ID and trust records exist."
+26,TrustEvents as Activity Memory,"church, school, ngo, cooperative, family",Automatic/derived where TrustEvent logic is live.
+27,TrustTimeline and Long-Term Memory,"church, school, ngo, cooperative, family",Derived/advanced where timeline surfaces exist.
+28,TrustPassport From Existing Evidence,"church, school, ngo, cooperative, family",Automatic/derived where TrustPassport is live. Canonical spelling: TrustPassport.
+29,Purpose-Specific TrustSlip,"church, school, ngo, cooperative, family",User triggers on demand from eligible evidence. Canonical spelling: TrustSlip.
+30,Public Verification Links Instead of Old Screenshots,"church, school, ngo, cooperative, family",On-demand public verification where routes exist.
+31,Shop Control and Business Analytics,"cooperative, family, ngo, church, school","Automatic/derived once shop, products, Spotlight and activity exist."
+32,Market Wisdom Snapshot,"cooperative, family, ngo, church, school",Automatic/derived insight layer where Market Wisdom is live.
+33,Opportunity Engine as Advanced Evidence-Led Analytics,"cooperative, family, ngo",Advanced/experimental analytics surface; not a separate setup flow unless the live product requires one.
+34,Phone Notifications and Action Alerts,"church, school, ngo, cooperative, family",Planned/integration capability unless push notifications are confirmed live.
+35,Trust Savings and ROSCA Support,"cooperative, family, ngo, church",Capability direction/non-custodial unless finance workflows confirm more.
+36,Contribution Tracking and Reconciliation Evidence,"church, school, ngo, cooperative, family",Capability direction/non-custodial record layer.
+37,Emergency Support With Accountability,"church, school, ngo, cooperative, family",Composite/planned depending on current support flows.
+38,Diaspora Trust Bridge,"family, church, ngo, cooperative","Capability direction using identity, public verification, TrustSlip and controlled links."
+39,Service Work and Informal Hiring Support,"cooperative, ngo, family, church, school","Capability direction from shop, service profile, TrustSlip and community evidence."
+40,"Schools, Youth Groups and Consent-Sensitive Events","school, ngo, church",Audience-specific capability direction requiring strict permissions.
+41,"Church Programmes, Offering, Volunteers and Follow-Up",church,Audience-specific composite capability; payment handling depends on lawful integrations.
+42,NGO and Charity Activity Proof,"ngo, church, school","Audience-specific composite capability from projects, attendance, documents, contributions and outcomes."
+43,Cooperative and Market Resource Pooling,"cooperative, family, ngo","Capability direction using membership, contributions, shops, DemandBox and records."
+44,Commitment Builder and Follow-Through,"church, school, ngo, cooperative, family","Capability direction/derived from tasks, responses and repeated actions."

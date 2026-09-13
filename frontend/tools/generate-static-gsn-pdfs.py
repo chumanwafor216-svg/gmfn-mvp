@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from io import BytesIO
 from pathlib import Path
@@ -230,21 +230,25 @@ CAPABILITY_EXPLANATIONS = {
     "DemandBox": (
         "Real-world decision: people need work, goods, services, stock, help, "
         "or buyers before the right person knows they exist. Risk: opportunity "
-        "is missed when demand stays hidden inside private chats or late "
-        "conversations. GSN changes the decision by making demand visible early "
-        "enough to match need and supply. Tools: DemandBox, marketplace needs, "
-        "public shop, and community broadcast. Evidence left: need or offer "
-        "post, placement, requester context, and response trail."
+        "is missed when demand is buried in private chats or pushed into the "
+        "official bulletin. GSN changes the decision by routing Ask Community "
+        "and local needs into DemandBox with requester context, response path, "
+        "and evidence boundary. Tools: Ask Community, DemandBox, marketplace "
+        "needs, public shop, and community bulletin bridge. Evidence left: need "
+        "or offer post, placement, requester context, response path, and visible "
+        "boundary."
     ),
     "Community Economic Power": (
         "Real-world decision: a community may hold identity, trade, support, "
-        "finance, trust, and opportunity records in disconnected places. Risk: "
-        "the community cannot see its own economic power or protect members "
-        "consistently. GSN changes the decision by connecting records into one "
-        "operating layer while separating personal, shop, and institutional "
-        "claims. Tools: community home, marketplace, finance, Trust Passport, "
-        "and Community Domain. Evidence left: community identity, activity, "
-        "marketplace records, finance evidence, and trust records."
+        "finance, demand, meeting, trust, and opportunity records in disconnected "
+        "places. Risk: the community cannot see its own economic power, preserve "
+        "memory, or protect members consistently. GSN changes the decision by "
+        "connecting records into one operating layer while separating personal, "
+        "shop, and institutional claims. Tools: community home, marketplace, "
+        "finance, DemandBox, Market Wisdom, Shop Control, Trust Passport, and "
+        "Community Domain. Evidence left: community identity, activity, marketplace "
+        "records, demand signals, finance evidence, analytics readings, and trust "
+        "records."
     ),
     "Commitment Builder": (
         "Real-world decision: people make savings, repayment, retirement "
@@ -257,15 +261,18 @@ CAPABILITY_EXPLANATIONS = {
         "signal."
     ),
     "Institutional Community Domain": (
-        "Real-world decision: schools, unions, churches, cooperatives, markets, "
-        "and associations need membership, roles, branches, policies, and public "
-        "claims. Risk: if institutional identity is mixed with personal "
-        "marketplaces, authority and public trust become confusing. GSN changes "
-        "the decision with a Community Domain for governance, membership, "
-        "services, and controlled claims. Tools: Community Domain, settings, "
-        "governance roles, service panels, and public community record. Evidence "
-        "left: domain identity, member placement, unit records, roles, service "
-        "status, and public claim."
+        "Real-world decision: schools, churches, NGOs, cooperatives, markets, "
+        "families, unions, and associations need identity, membership, bulletins, "
+        "meetings, attendance, documents, roles, policies, services, and public "
+        "claims. Risk: if institutional identity is mixed with personal marketplaces "
+        "or ordinary chat, authority, memory, handover, and public trust become "
+        "confusing. GSN changes the decision with a Community Domain for governed "
+        "membership, QR entry, official bulletin, meeting evidence, document links, "
+        "services, and controlled public claims. Tools: Community Domain, Bulletin, "
+        "QR Entry, Meeting Record, Document Links, Governance Roles, and Public "
+        "Community Record. Evidence left: domain identity, member placement, bulletin "
+        "notices, attendance and meeting evidence, document links, role structure, "
+        "service status, and controlled public claim."
     ),
 }
 
@@ -369,10 +376,11 @@ def build_executive_summary_pdf() -> bytes:
     line("")
     line("Strategic gap GSN is built for", size=12, gap=16, bold=True)
     paragraph(
-        "Modern SaaS, e-commerce, and community platforms often move activity online without carrying the "
-        "real trust history that makes people reliable in their communities. GSN addresses that gap by "
-        "connecting community evidence, portable trust identity, decision support, evidence-backed commerce, "
-        "community capital, and commitment discipline in one institutional layer.",
+        "Modern SaaS, e-commerce, chat groups, and community platforms often move activity online without "
+        "carrying the real trust history, meeting memory, participation evidence, and governed identity that "
+        "make people and institutions reliable. GSN addresses that gap by connecting community evidence, "
+        "portable trust identity, decision support, evidence-backed commerce, DemandBox signals, community "
+        "capital, institutional memory, and commitment discipline in one institutional layer.",
         size=9,
         gap=12,
         max_chars=100,

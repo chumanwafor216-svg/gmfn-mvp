@@ -1,4 +1,4 @@
-export type GmfnCapabilityCategory =
+﻿export type GmfnCapabilityCategory =
   | "trade"
   | "visibility"
   | "finance"
@@ -282,14 +282,14 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
   {
     id: 20,
     title: "DemandBox",
-    proverb: "DemandBox makes real needs visible before the market misses them.",
+    proverb: "DemandBox keeps real needs structured before chat noise buries them.",
     gmfn:
-      "GSN helps demand become readable and actionable so opportunity can meet need with less friction.",
+      "GSN helps demand, Ask Community requests, and local support signals become readable without turning the official bulletin into a mixed conversation feed.",
     category: "trade",
     tone: "focus",
     priority: 7,
     decisionGuideLine:
-      "Before opportunity is missed, make demand visible with requester context, placement, and response trail.",
+      "Before opportunity is missed, route the ask into DemandBox with requester context, placement, response path, and evidence boundary.",
   },
   {
     id: 21,
@@ -326,20 +326,20 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     id: 23,
     title: "Institutional Community Domain",
     proverb:
-      "Institutional Community Domain helps a real organization run with clearer structure, evidence, and boundaries.",
+      "Institutional Community Domain helps a real organization preserve identity, meetings, announcements, evidence, and handover.",
     gmfn:
-      "GSN helps schools, unions, churches, cooperatives, markets, and associations organize members, branches, roles, evidence, governance, and public identity without confusing them with personal marketplaces.",
+      "GSN helps schools, churches, cooperatives, markets, unions, NGOs, families, and associations organize members, roles, announcements, meeting evidence, documents, QR entry, governance, services, and public identity without confusing them with personal marketplaces.",
     category: "community",
     tone: "focus",
     priority: 8,
     whatItIs:
       "Institutional Community Domain is the larger organized-community layer for schools, unions, churches, cooperatives, markets, associations, and similar bodies.",
     howItWorks:
-      "A domain can hold the institution's public identity, operating units, member placement, policies, evidence maps, service lanes, participation records, and controlled public claims in one structured space.",
+      "A domain can hold the institution's public identity, operating units, member placement, policies, bulletin notices, meeting and attendance records, document links, evidence maps, service lanes, participation records, and controlled public claims in one structured space.",
     whyItMatters:
-      "It separates institutional communities from personal marketplaces, so people can see whether they are dealing with a real organized body, a branch under that body, or an ordinary marketplace community.",
+      "It separates institutional communities from personal marketplaces and gives leaders a memory that can survive handover, so people can see whether they are dealing with a real organized body, a branch under that body, or an ordinary marketplace community.",
     decisionGuideLine:
-      "Keep institutional membership, roles, branches, services, governance, and public claims separate from personal marketplaces.",
+      "Keep institutional membership, announcements, meetings, attendance, roles, services, governance, and public claims separate from personal marketplaces.",
   },
 ] as const;
 

@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useMemo, useState } from "react";
+﻿import React, { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import NextActionGuide, {
   type NextActionGuideItem,
@@ -540,7 +540,7 @@ const PUBLIC_CAPABILITY_LINES: Record<number, string> = {
   2: "Keeps shops, buyers, followers, shelf items, and public shop records tied to visible community evidence.",
   3: "Lets a member or shop carry a readable trust record beyond one marketplace or local community.",
   4: "Surfaces weak evidence, missing witness renewal, inactive records, and caution signs before people act.",
-  5: "Gives approved shop updates a clearer place to be seen without pretending visibility is verification.",
+  5: "Gives approved shop updates a clearer place to be seen while keeping the shop record and media attached.",
   6: "Lets better recorded trust earn better reach while still showing the limits of the record.",
   7: "Keeps one public shop identity connected across marketplaces, shelves, spotlight, WhatsApp, and verification.",
   8: "Turns support requests into recorded drafts with amount, purpose, duration, supporters, and fit signals.",
@@ -555,10 +555,10 @@ const PUBLIC_CAPABILITY_LINES: Record<number, string> = {
   17: "Gives one shop a public home for shelf items, spotlight, WhatsApp, verification, and trust signals.",
   18: "Helps informal service work become visible through demand, evidence, community context, and follow-up.",
   19: "Helps work decisions read public identity, record strength, and community evidence before commitment.",
-  20: "Lets people post local needs or offers so demand is visible before opportunity is missed.",
-  21: "Connects community identity, marketplace activity, finance evidence, and trust records into one working layer.",
+  20: "Routes Ask Community and local needs into DemandBox so the bulletin stays official and demand stays structured.",
+  21: "Connects identity, marketplace activity, finance evidence, DemandBox, trust records, and analytics into one working layer.",
   22: "Turns savings, repayment, business, retirement, and personal goals into clearer commitments and follow-through.",
-  23: "Gives schools, unions, churches, cooperatives, markets, and associations a structured domain for members, roles, branches, evidence, policies, and public claims.",
+  23: "Gives schools, churches, NGOs, cooperatives, markets, families, and associations a structured domain for members, bulletins, meetings, attendance, documents, roles, evidence, policies, and public claims.",
 };
 
 const CAPABILITY_ICON_NAMES: Record<number, GsnIconName> = {
@@ -792,11 +792,11 @@ const CAPABILITY_MAP_DETAILS: Record<number, CapabilityMapDetail> = {
     category: "Visibility & Opportunity",
     realWorld: "People need work, goods, services, stock, help, or buyers before the right person knows they exist.",
     danger: "Opportunity can be missed simply because demand stayed hidden inside private chats or late conversations.",
-    decision: "GSN makes demand visible early enough for members to match needs, supply, and opportunity.",
-    tools: "DemandBox -> Marketplace Needs -> Public Shop -> Community Broadcast.",
-    where: "Marketplace -> DemandBox; Dashboard -> What Matters Now.",
-    evidence: "Need or offer post, community placement, requester context, and response trail.",
-    summary: "Makes demand visible so members can match needs, supply, and opportunity earlier.",
+    decision: "GSN routes Ask Community and local needs into DemandBox so demand becomes visible while official bulletin space stays protected.",
+    tools: "Ask Community -> DemandBox -> Marketplace Needs -> Public Shop -> Community Bulletin Bridge.",
+    where: "Marketplace -> DemandBox; Community -> Ask Community; Dashboard -> What Matters Now.",
+    evidence: "Need or offer post, community placement, requester context, response path, and evidence boundary.",
+    summary: "Keeps community asks structured in DemandBox instead of burying them in the official bulletin.",
   },
   21: {
     category: "Community & Membership",
@@ -822,11 +822,11 @@ const CAPABILITY_MAP_DETAILS: Record<number, CapabilityMapDetail> = {
     category: "Community & Membership",
     realWorld: "Schools, unions, churches, cooperatives, markets, and associations need membership, roles, branches, policies, and public claims.",
     danger: "If institutional identity is mixed with personal marketplaces, authority, evidence, and public trust become confusing.",
-    decision: "GSN gives institutions a Community Domain so governance, membership, services, and public claims stay structured.",
-    tools: "Community Domain -> Domain Settings -> Governance Roles -> Service Panels -> Public Community Record.",
-    where: "Community -> Community Domain; Profile -> Route list; Community -> Settings.",
-    evidence: "Domain identity, member placement, branch/unit records, role structure, service status, and controlled public claim.",
-    summary: "Helps schools, unions, churches, cooperatives, markets, and associations operate with institutional structure.",
+    decision: "GSN gives institutions a Community Domain so governance, membership, bulletins, meetings, attendance, documents, services, and public claims stay structured.",
+    tools: "Community Domain -> Bulletin -> QR Entry -> Meeting Record -> Document Links -> Governance Roles -> Public Community Record.",
+    where: "Community -> Community Domain; Community -> Bulletin; Community -> Settings; Profile -> Route list.",
+    evidence: "Domain identity, member placement, bulletin notices, attendance/meeting evidence, document links, role structure, service status, and controlled public claim.",
+    summary: "Helps schools, churches, NGOs, cooperatives, markets, families, and associations preserve institutional memory and handover.",
   },
 };
 

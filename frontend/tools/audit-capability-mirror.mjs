@@ -1,4 +1,4 @@
-/* global console, process */
+﻿/* global console, process */
 
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -222,7 +222,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /5: "Gives approved shop updates a clearer place to be seen without pretending visibility is verification\."[\s\S]*?8: "Turns support requests into recorded drafts with amount, purpose, duration, supporters, and fit signals\."[\s\S]*?17: "Gives one shop a public home for shelf items, spotlight, WhatsApp, verification, and trust signals\."[\s\S]*?18: "Helps informal service work become visible through demand, evidence, community context, and follow-up\."[\s\S]*?23: "Gives schools, unions, churches, cooperatives, markets, and associations a structured domain/,
+  /5: "Gives approved shop updates a clearer place to be seen while keeping the shop record and media attached\."[\s\S]*?8: "Turns support requests into recorded drafts with amount, purpose, duration, supporters, and fit signals\."[\s\S]*?17: "Gives one shop a public home for shelf items, spotlight, WhatsApp, verification, and trust signals\."[\s\S]*?18: "Helps informal service work become visible through demand, evidence, community context, and follow-up\."[\s\S]*?23: "Gives schools, churches, NGOs, cooperatives, markets, families, and associations a structured domain/,
   "The capability visible card lines must avoid implying that public visibility, lending, shop presence, service work, or institutional domains are already verified trust."
 );
 

@@ -1,4 +1,4 @@
-# GSN Document To System Gap Review
+﻿# GSN Document To System Gap Review
 
 Date: 2026-06-26
 
@@ -21,7 +21,7 @@ Truth: the documents are broader than the MVP in trade protection, paid/API veri
 
 ## Current Institutional Mirror State
 
-As of this cleanup, the public executive-summary paper now presents **23 things GSN does**, not the old 21-capability mirror. It includes Commitment Builder as capability 22 and Institutional Community Domain as capability 23 because the repo now treats organized institutional communities as a distinct GSN capability.
+As of the latest cleanup, the public executive-summary paper still presents **23 core things GSN helps people decide and do** so the public form remains readable. That 23-item mirror now points toward the broader current reality: the separate `GSN in Real Life` capability bank contains **44 practical modules** for churches, schools, NGOs, cooperatives, markets, families, diaspora groups, shops, DemandBox, Spotlight, bulletins, meetings, attendance, documents, handover, trust evidence, Market Wisdom, Shop Control, and Opportunity Engine framing. Commitment Builder remains capability 22 and Institutional Community Domain remains capability 23 because the repo treats organised institutional communities as a distinct GSN capability.
 
 This closes the outsider-facing institutional-presentation gap around capability count, branding, and system explanation. It does **not** mean every future integration is live. The remaining explicit boundary is paid/API verification and regulated automation: API-paid verification, automatic payout, and full protected trade-release rails must not be claimed as live until the active environment proves them end to end.
 
