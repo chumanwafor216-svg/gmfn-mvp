@@ -5126,7 +5126,7 @@ export default function ShopGalleryPage() {
                     mediaStyle={{
                       width: "100%",
                       height: "100%",
-                      objectFit: "contain",
+                      objectFit: "cover",
                       objectPosition: "center",
                     }}
                   />
@@ -5138,7 +5138,8 @@ export default function ShopGalleryPage() {
                       width: "100%",
                       height: isCompact ? "100%" : 178,
                       minHeight: isCompact ? 196 : undefined,
-                      objectFit: "contain",
+                      objectFit: "cover",
+                      objectPosition: "center",
                       display: "block",
                     }}
                   />
@@ -5584,7 +5585,7 @@ export default function ShopGalleryPage() {
                           mediaStyle={{
                             width: "100%",
                             height: "100%",
-                            objectFit: "contain",
+                            objectFit: "cover",
                             objectPosition: "center",
                           }}
                         />
@@ -5602,7 +5603,8 @@ export default function ShopGalleryPage() {
                           style={{
                             width: "100%",
                             height: "100%",
-                            objectFit: "contain",
+                            objectFit: "cover",
+                            objectPosition: "center",
                             display: "block",
                           }}
                         />

@@ -409,6 +409,10 @@ assertContains(
   /const diaryOpenDockHeight = isCompact \? 92 : 104;[\s\S]*?padding: isProductOpen[\s\S]*?\? "7px 9px"[\s\S]*?: "9px 12px"[\s\S]*?maxHeight: isProductOpen[\s\S]*?\? diaryOpenDockHeight[\s\S]*?: diaryClosedDockHeight[\s\S]*?minHeight: isProductOpen[\s\S]*?\? diaryOpenDockHeight[\s\S]*?: diaryClosedDockHeight/,
   "Public Shop opened diary cards must keep a compact info dock so the existing block gives more height to the media window."
 );
+assertContains(
+  /visibleProducts\.map\(\(product, index\) => \{[\s\S]*?<SpotlightMediaFrame[\s\S]*?mediaStyle=\{\{[\s\S]*?objectFit: "cover"[\s\S]*?objectPosition: "center"[\s\S]*?\}\}[\s\S]*?productImageUrl \? \([\s\S]*?<img[\s\S]*?objectFit: "cover"[\s\S]*?objectPosition: "center"/,
+  "Public Shop diary media must fill the opened screen without distortion instead of leaving portrait side bars."
+);
 
 assertContains(
   /className="public-shop-section public-shop-spotlight"[\s\S]*?border: "1px solid rgba\(255,255,255,0\.92\)"[\s\S]*?linear-gradient\(135deg, #FFFFFF 0%, #F7FBFF 56%, #EEF6FF 100%\)/,
@@ -416,8 +420,8 @@ assertContains(
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?height: isCompact \? "auto" : undefined[\s\S]*?minHeight: isCompact \? 340 : undefined[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"[\s\S]*?gridRow: isCompact \? "2" : "1"[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?!isCompact \? \([\s\S]*?WebkitLineClamp: 3[\s\S]*?: null\}[\s\S]*?minHeight: isCompact \? 196 : 178[\s\S]*?height: isCompact \? 196 : "auto"[\s\S]*?gridRow: "1"[\s\S]*?objectFit: "contain"[\s\S]*?objectPosition: "center"/,
-  "Public Shop Spotlight phone layout must keep a stacked card, hide phone detail copy, keep one WhatsApp action in the badge row, reserve the taller media frame, and preserve media proportions.",
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?height: isCompact \? "auto" : undefined[\s\S]*?minHeight: isCompact \? 340 : undefined[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"[\s\S]*?gridRow: isCompact \? "2" : "1"[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?!isCompact \? \([\s\S]*?WebkitLineClamp: 3[\s\S]*?: null\}[\s\S]*?minHeight: isCompact \? 196 : 178[\s\S]*?height: isCompact \? 196 : "auto"[\s\S]*?gridRow: "1"[\s\S]*?objectFit: "cover"[\s\S]*?objectPosition: "center"/,
+  "Public Shop Spotlight phone layout must keep a stacked card, hide phone detail copy, keep one WhatsApp action in the badge row, reserve the taller media frame, and fill the media screen without stretching.",
 );
 
 assertContains(
