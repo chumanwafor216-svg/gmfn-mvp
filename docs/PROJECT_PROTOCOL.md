@@ -30,6 +30,14 @@ For Marketplace page-composition work specifically, also read:
 
 - `docs/MARKETPLACE_PAGE_BLUEPRINT_2026-04-20.md`
 
+For canonical product-language work, user-visible wording, or naming cleanup, also read:
+
+- `docs/GSN_CANONICAL_PRODUCT_LANGUAGE_2026-09-13.md`
+
+For Community Domain AI, opportunity intelligence, paid foresight, or research-command-centre work, also read:
+
+- `docs/GSN_COMMUNITY_DOMAIN_AI_OPPORTUNITY_ENGINE_BRIEF_2026-09-13.md`
+
 For innovation-case, investor, policy, TrustSlip, merchant-verification, or
 development-finance explanation work, also read:
 

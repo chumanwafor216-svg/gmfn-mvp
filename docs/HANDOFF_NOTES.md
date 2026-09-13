@@ -161153,3 +161153,12 @@ Operational note:
 - Boundary preserved: older open requests outside the 24-hour window no longer consume today's creation quota, but they still remain visible/open until fulfilled, cancelled, or expired by normal lifecycle rules.
 - Truth boundary: this does not add chat, member tagging, threaded replies, WhatsApp forwarding automation, or a new communication lane. It only widens the existing Demandbox posting allowance for pilot testing.
 - Verification passed: `python -m pytest gmfn_backend/tests/test_marketplace_requests.py` and `python -m pytest gmfn_backend/tests/test_community_communication_protocol.py`.
+
+## 2026-09-13 - Canonical product language and Opportunity Engine brief
+
+- Status: Docs-only product decision recorded; no runtime feature built in this slice.
+- Owner trigger: owner clarified canonical product words should be written as `DemandBox`, `TrustSlip`, and `TrustPassport`, and that the AI opportunity/research capability should be a paid Community Domain command-centre feature rather than stream chat.
+- Added `docs/GSN_CANONICAL_PRODUCT_LANGUAGE_2026-09-13.md` to define canonical product-word spelling and the compatibility boundary for older code/docs/routes.
+- Added `docs/GSN_COMMUNITY_DOMAIN_AI_OPPORTUNITY_ENGINE_BRIEF_2026-09-13.md` to define the paid `Opportunity Engine` concept, research grounding, PESTLE/foresight lanes, output-card contract, data boundary, and devil-truth risk boundary.
+- Updated `docs/PROJECT_PROTOCOL.md` so naming work and Community Domain AI/opportunity-intelligence work route through those decision docs first.
+- Truth boundary: no chat, tagging, AI screen, paid billing gate, backend inference route, external-source ingestion, or OpenAI API integration was built yet. This records the intended product direction before implementation.
