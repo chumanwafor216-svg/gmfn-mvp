@@ -5659,6 +5659,17 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert "Not charged yet" in commercial_checkpoints[2]["boundary"]
     assert commercial_checkpoints[3]["stage"] == "Retention and LTV proof"
     assert "LTV is not available" in commercial_checkpoints[3]["boundary"]
+    access_model = opportunity_engine["access_model"]
+    assert len(access_model) == 3
+    assert access_model[0]["level"] == "Free owner preview"
+    assert access_model[0]["status"] == "Live"
+    assert "not a full Advanced Analytics subscription" in access_model[0]["boundary"]
+    assert access_model[1]["level"] == "Paid Advanced Analytics candidate"
+    assert access_model[1]["status"] == "Next"
+    assert "Not active billing" in access_model[1]["boundary"]
+    assert access_model[2]["level"] == "Governed intelligence add-on"
+    assert access_model[2]["status"] == "Blocked"
+    assert "do not sell" in access_model[2]["boundary"]
     ledger_rows = opportunity_engine["evidence_ledger"]
     assert ledger_rows[0]["source"] == "Marketplace and Shop Diary"
     assert ledger_rows[2]["source"] == "DemandBox"

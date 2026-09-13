@@ -429,6 +429,14 @@ type ShopAttentionSummary = {
       pricing_signal?: string | null;
       boundary?: string | null;
     }> | null;
+    access_model?: Array<{
+      level?: string | null;
+      status?: string | null;
+      includes?: string | null;
+      excluded?: string | null;
+      why?: string | null;
+      boundary?: string | null;
+    }> | null;
   } | null;
   daily_activity?: ShopAttentionDailyActivity[] | null;
   source_breakdown?: ShopAttentionSourceBreakdown[] | null;
@@ -3010,6 +3018,9 @@ export default function ShopControlPage() {
     : [];
   const opportunityEngineCommercialCheckpointRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.commercial_checkpoints)
     ? shopAttentionSummary.opportunity_engine.commercial_checkpoints
+    : [];
+  const opportunityEngineAccessModelRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.access_model)
+    ? shopAttentionSummary.opportunity_engine.access_model
     : [];
   const opportunityEngineGapRows = useMemo(
     () =>
@@ -6861,6 +6872,27 @@ export default function ShopControlPage() {
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Owner value:</strong> {item.owner_value || "Clearer decisions from GSN activity."}</div>
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Pricing signal:</strong> {item.pricing_signal || "Repeat use and willingness to pay must be observed."}</div>
                         <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Not charged yet and not proof of CAC/LTV."}</div>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              ) : null}
+              {opportunityEngineAccessModelRows.length > 0 ? (
+                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(122,89,16,0.14)", padding: "4px 10px 10px" }}>
+                  <StableDisclosureSummary debugId="shop-control.opportunity-engine.access-model" stableHeight={38} style={{ color: "#7A5910", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
+                    Free vs paid access model
+                  </StableDisclosureSummary>
+                  <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                    {opportunityEngineAccessModelRows.map((item, index) => (
+                      <div key={`opportunity-access-${item.level || index}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(214,170,69,0.16)", padding: 10, display: "grid", gap: 5 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.level || "Access level"}</span>
+                          <span style={{ ...badge(item.status === "Live"), fontSize: 10 }}>{item.status || "Next"}</span>
+                        </div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Includes:</strong> {item.includes || "A small reviewed evidence view."}</div>
+                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Excludes:</strong> {item.excluded || "Paid and governed capabilities remain off until built."}</div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Why:</strong> {item.why || "Protects the pilot from overclaiming while showing real value."}</div>
+                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Not a billing entitlement or full AI feature."}</div>
                       </div>
                     ))}
                   </div>

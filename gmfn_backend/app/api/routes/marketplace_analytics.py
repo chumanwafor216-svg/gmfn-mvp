@@ -829,6 +829,32 @@ def _opportunity_engine_summary(
             "boundary": "LTV is not available until repeat paid value and retention are measured over time.",
         },
     ]
+    access_model = [
+        {
+            "level": "Free owner preview",
+            "status": "Live" if live_count > 0 else "Next",
+            "includes": "One current computed summary, visible signal counts, simple Market Intelligence guidance, and caution boundaries.",
+            "excluded": "No saved report history, no AI-assisted forecast, no external context, no CAC/LTV ratio, and no private trust inference.",
+            "why": "Lets a shop owner understand GSN value before paying, while keeping claims small and auditable.",
+            "boundary": "Free preview is evidence reading only; it is not a full Advanced Analytics subscription.",
+        },
+        {
+            "level": "Paid Advanced Analytics candidate",
+            "status": "Next",
+            "includes": "Saved reviewed reports, repeated experiments, cost notes, retention tracking, and owner-specific opportunity readings.",
+            "excluded": "No automatic legal, medical, financial, political, or investment advice; no unreviewed private identity conclusions.",
+            "why": "This becomes chargeable only when it repeatedly saves effort or improves owner decisions.",
+            "boundary": "Not active billing and not an entitlement until the billing gate and report history exist.",
+        },
+        {
+            "level": "Governed intelligence add-on",
+            "status": "Blocked",
+            "includes": "External context, AI-assisted inference, cross-feature pattern review, and community-level opportunity analysis after governance rules exist.",
+            "excluded": "No outside-market claims, sensitive-topic analysis, cross-community profiling, or automatic publication from the current summary.",
+            "why": "This is where the larger Opportunity Engine may grow, but only after source, consent, role, and review controls are real.",
+            "boundary": "Blocked in this slice; do not sell, demo, or describe it as live functionality.",
+        },
+    ]
     evidence_ledger = [
         {
             "source": "Marketplace and Shop Diary",
@@ -926,6 +952,7 @@ def _opportunity_engine_summary(
         "advanced_lanes": advanced_lanes,
         "feature_touchpoints": feature_touchpoints,
         "commercial_checkpoints": commercial_checkpoints,
+        "access_model": access_model,
         "field_coverage": {
             "shop_and_marketplace": active_products > 0,
             "spotlight_attention": active_spotlights > 0 or spotlight_impressions > 0,
