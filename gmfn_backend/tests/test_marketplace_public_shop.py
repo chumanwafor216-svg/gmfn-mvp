@@ -5702,7 +5702,7 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert report_readiness[0]["status"] == "Computed only"
     assert "No saved Advanced Analytics report" in report_readiness[0]["boundary"]
     assert report_readiness[1]["requirement"] == "Human review trail"
-    assert "No automatic AI advice" in report_readiness[1]["boundary"]
+    assert "No automatic advice" in report_readiness[1]["boundary"]
     assert report_readiness[2]["requirement"] == "Evidence lock"
     assert report_readiness[2]["status"] == "Partial"
     assert "saved historical report" in report_readiness[2]["boundary"]
@@ -5722,9 +5722,9 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert "not a conclusion" in claim_ladder[2]["boundary"]
     assert claim_ladder[3]["claim_level"] == "Opportunity candidate"
     assert "not present it as a forecast" in claim_ladder[3]["cannot_say"]
-    assert claim_ladder[4]["claim_level"] == "Paid recommendation"
+    assert claim_ladder[4]["claim_level"] == "Paid reviewed guidance"
     assert claim_ladder[4]["status"] == "Blocked"
-    assert "Do not claim live paid AI" in claim_ladder[4]["cannot_say"]
+    assert "Do not claim live paid intelligence" in claim_ladder[4]["cannot_say"]
     ledger_rows = opportunity_engine["evidence_ledger"]
     assert ledger_rows[0]["source"] == "Marketplace and Shop Diary"
     assert ledger_rows[2]["source"] == "DemandBox"
@@ -5735,7 +5735,7 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert ledger_rows[5]["status"] == "Blocked"
     assert "No political" in ledger_rows[5]["privacy_boundary"]
     assert "owner-summary signal groups are live" in opportunity_engine["snapshot"]["headline"]
-    assert "not saved AI inference" in opportunity_engine["boundary_label"]
+    assert "not a saved reviewed report" in opportunity_engine["boundary_label"]
     assert "marketplace_requests" in opportunity_engine["count_method"]
     source_breakdown = body["source_breakdown"]
     source_rows = {row["source"]: row for row in source_breakdown}

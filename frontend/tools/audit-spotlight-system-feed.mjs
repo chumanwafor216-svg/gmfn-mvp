@@ -160,8 +160,8 @@ assertContains(
 );
 assertContains(
   "gmfn_backend/app/api/routes/marketplace_analytics.py",
-  /def _opportunity_engine_summary\([\s\S]*?"label": "DemandBox"[\s\S]*?"aggregator_ready": True[\s\S]*?"governed_outside_context": False[\s\S]*?"ai_inference": False[\s\S]*?"boundary_label": "Computed owner analytics only\. This is not saved AI inference/,
-  "Shop owner analytics API must expose an owner-only Opportunity Engine computed summary without claiming saved AI, external context, billing, or sales proof."
+  /def _opportunity_engine_summary\([\s\S]*?"label": "DemandBox"[\s\S]*?"aggregator_ready": True[\s\S]*?"governed_outside_context": False[\s\S]*?"ai_inference": False[\s\S]*?"boundary_label": "Computed owner analytics only\. This is not a saved reviewed report/,
+  "Shop owner analytics API must expose an owner-only Opportunity Engine computed summary without claiming saved reviewed report, external context, billing, or sales proof."
 );
 assertContains(
   "gmfn_backend/app/api/routes/marketplace_analytics.py",
@@ -215,12 +215,12 @@ assertContains(
 );
 assertContains(
   "gmfn_backend/app/api/routes/marketplace_analytics.py",
-  /report_readiness = \[[\s\S]*?"requirement": "Saved report identity"[\s\S]*?No saved Advanced Analytics report[\s\S]*?"requirement": "Human review trail"[\s\S]*?No automatic AI advice[\s\S]*?"requirement": "Cost and retention notes"[\s\S]*?CAC\/LTV remains readiness[\s\S]*?"requirement": "Entitlement and privacy rules"[\s\S]*?Do not sell[\s\S]*?"report_readiness": report_readiness/,
+  /report_readiness = \[[\s\S]*?"requirement": "Saved report identity"[\s\S]*?No saved Advanced Analytics report[\s\S]*?"requirement": "Human review trail"[\s\S]*?No automatic advice[\s\S]*?"requirement": "Cost and retention notes"[\s\S]*?CAC\/LTV remains readiness[\s\S]*?"requirement": "Entitlement and privacy rules"[\s\S]*?Do not sell[\s\S]*?"report_readiness": report_readiness/,
   "Shop owner analytics API must expose saved-report readiness before presenting Advanced Analytics as a paid report product."
 );
 assertContains(
   "gmfn_backend/app/api/routes/marketplace_analytics.py",
-  /claim_ladder = \[[\s\S]*?"claim_level": "Observed activity"[\s\S]*?not proof of sales[\s\S]*?"claim_level": "Directional signal"[\s\S]*?product-market fit[\s\S]*?"claim_level": "Testable hypothesis"[\s\S]*?not a conclusion[\s\S]*?"claim_level": "Paid recommendation"[\s\S]*?Do not claim live paid AI[\s\S]*?"claim_ladder": claim_ladder/,
+  /claim_ladder = \[[\s\S]*?"claim_level": "Observed activity"[\s\S]*?not proof of sales[\s\S]*?"claim_level": "Directional signal"[\s\S]*?product-market fit[\s\S]*?"claim_level": "Testable hypothesis"[\s\S]*?not a conclusion[\s\S]*?"claim_level": "Paid reviewed guidance"[\s\S]*?Do not claim live paid intelligence[\s\S]*?"claim_ladder": claim_ladder/,
   "Shop owner analytics API must expose a claim ladder that prevents demo language from overstating signals as proof."
 );
 assertContains(
@@ -251,8 +251,8 @@ assertContains(
 );
 assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
-  /export type OpportunityEngineWisdomSnapshot[\s\S]*?export function buildShopOpportunityEngineWisdomSnapshot[\s\S]*?Market Wisdom snapshot feed[\s\S]*?Snapshot only\. It is not an AI decision/,
-  "Shop Opportunity Engine must expose a reviewed wisdom snapshot contract without claiming AI decisions or sales proof."
+  /export type OpportunityEngineWisdomSnapshot[\s\S]*?export function buildShopOpportunityEngineWisdomSnapshot[\s\S]*?Market Wisdom snapshot feed[\s\S]*?Snapshot only\. It is not an automatic decision/,
+  "Shop Opportunity Engine must expose a reviewed wisdom snapshot contract without claiming automatic decisions or sales proof."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
@@ -276,8 +276,8 @@ assertContains(
 );
 assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
-  /export type OpportunityEngineGapRow[\s\S]*?export function buildShopOpportunityEngineGapRows[\s\S]*?Backend evidence aggregator[\s\S]*?Saved reports and history[\s\S]*?Billing and entitlement gate[\s\S]*?Governed outside context[\s\S]*?AI-assisted inference/,
-  "Shop Opportunity Engine must keep a visible gap register before claiming the full backend, paid, external-context, or AI engine exists."
+  /export type OpportunityEngineGapRow[\s\S]*?export function buildShopOpportunityEngineGapRows[\s\S]*?Backend evidence aggregator[\s\S]*?Saved reports and history[\s\S]*?Billing and entitlement gate[\s\S]*?Governed outside context[\s\S]*?Reviewed pattern reading/,
+  "Shop Opportunity Engine must keep a visible gap register before claiming the full backend, paid, external-context, or intelligence engine exists."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
@@ -321,8 +321,8 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /access_model\?: Array[\s\S]*?opportunityEngineAccessModelRows[\s\S]*?shop-control\.opportunity-engine\.access-model[\s\S]*?Free vs paid access model[\s\S]*?Includes:[\s\S]*?Excludes:[\s\S]*?Not a billing entitlement or full AI feature\./,
-  "Shop Control must render the free-vs-paid Opportunity Engine access model without claiming the paid AI layer is live."
+  /access_model\?: Array[\s\S]*?opportunityEngineAccessModelRows[\s\S]*?shop-control\.opportunity-engine\.access-model[\s\S]*?Free vs paid access model[\s\S]*?Includes:[\s\S]*?Excludes:[\s\S]*?Not a billing entitlement or full paid intelligence feature\./,
+  "Shop Control must render the free-vs-paid Opportunity Engine access model without claiming the paid intelligence layer is live."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
@@ -586,7 +586,7 @@ assertContains(
 );
 assertContains(
   "gmfn_backend/tests/test_marketplace_public_shop.py",
-  /opportunity_engine = body\["opportunity_engine"\][\s\S]*?opportunity_engine\["aggregator_ready"\] is True[\s\S]*?opportunity_coverage\["governed_outside_context"\] is False[\s\S]*?opportunity_engine\["signal_groups"\]\[2\]\["label"\] == "DemandBox"[\s\S]*?len\(opportunity_engine\["output_cards"\]\) == 3[\s\S]*?"must not be presented as market size"[\s\S]*?unit_economics = opportunity_engine\["unit_economics_readiness"\][\s\S]*?"not CAC, not LTV"[\s\S]*?measurement_plan = opportunity_engine\["measurement_plan"\][\s\S]*?"Capture acquisition cost"[\s\S]*?"Mark repeat value"[\s\S]*?experiment_plan = opportunity_engine\["experiment_plan"\][\s\S]*?"One-offer clarity test"[\s\S]*?"Cost note discipline"[\s\S]*?advanced_lanes = opportunity_engine\["advanced_lanes"\][\s\S]*?"Place and Environment"[\s\S]*?"Blocked"[\s\S]*?feature_touchpoints = opportunity_engine\["feature_touchpoints"\][\s\S]*?"TrustPassport and TrustSlip"[\s\S]*?"No trust score"[\s\S]*?"Notifications and WhatsApp Bridge"[\s\S]*?"No automatic WhatsApp"[\s\S]*?commercial_checkpoints = opportunity_engine\["commercial_checkpoints"\][\s\S]*?"Paid package readiness"[\s\S]*?"Not charged yet"[\s\S]*?"Retention and LTV proof"[\s\S]*?"LTV is not available"[\s\S]*?access_model = opportunity_engine\["access_model"\][\s\S]*?"Free owner preview"[\s\S]*?"Paid Advanced Analytics candidate"[\s\S]*?"Governed intelligence add-on"[\s\S]*?"Blocked"[\s\S]*?capture_checklist = opportunity_engine\["capture_checklist"\][\s\S]*?"Acquisition cost"[\s\S]*?"Serious contact"[\s\S]*?"Repeat value"[\s\S]*?review_cadence = opportunity_engine\["review_cadence"\][\s\S]*?"Every shop push"[\s\S]*?"7-day review"[\s\S]*?"30-day review"[\s\S]*?"90-day review"[\s\S]*?report_readiness = opportunity_engine\["report_readiness"\][\s\S]*?"Saved report identity"[\s\S]*?"Human review trail"[\s\S]*?"Cost and retention notes"[\s\S]*?"Entitlement and privacy rules"[\s\S]*?claim_ladder = opportunity_engine\["claim_ladder"\][\s\S]*?"Observed activity"[\s\S]*?"Directional signal"[\s\S]*?"Testable hypothesis"[\s\S]*?"Paid recommendation"[\s\S]*?ledger_rows = opportunity_engine\["evidence_ledger"\][\s\S]*?"External context"[\s\S]*?"Blocked"[\s\S]*?"not saved AI inference"/,
+  /opportunity_engine = body\["opportunity_engine"\][\s\S]*?opportunity_engine\["aggregator_ready"\] is True[\s\S]*?opportunity_coverage\["governed_outside_context"\] is False[\s\S]*?opportunity_engine\["signal_groups"\]\[2\]\["label"\] == "DemandBox"[\s\S]*?len\(opportunity_engine\["output_cards"\]\) == 3[\s\S]*?"must not be presented as market size"[\s\S]*?unit_economics = opportunity_engine\["unit_economics_readiness"\][\s\S]*?"not CAC, not LTV"[\s\S]*?measurement_plan = opportunity_engine\["measurement_plan"\][\s\S]*?"Capture acquisition cost"[\s\S]*?"Mark repeat value"[\s\S]*?experiment_plan = opportunity_engine\["experiment_plan"\][\s\S]*?"One-offer clarity test"[\s\S]*?"Cost note discipline"[\s\S]*?advanced_lanes = opportunity_engine\["advanced_lanes"\][\s\S]*?"Place and Environment"[\s\S]*?"Blocked"[\s\S]*?feature_touchpoints = opportunity_engine\["feature_touchpoints"\][\s\S]*?"TrustPassport and TrustSlip"[\s\S]*?"No trust score"[\s\S]*?"Notifications and WhatsApp Bridge"[\s\S]*?"No automatic WhatsApp"[\s\S]*?commercial_checkpoints = opportunity_engine\["commercial_checkpoints"\][\s\S]*?"Paid package readiness"[\s\S]*?"Not charged yet"[\s\S]*?"Retention and LTV proof"[\s\S]*?"LTV is not available"[\s\S]*?access_model = opportunity_engine\["access_model"\][\s\S]*?"Free owner preview"[\s\S]*?"Paid Advanced Analytics candidate"[\s\S]*?"Governed intelligence add-on"[\s\S]*?"Blocked"[\s\S]*?capture_checklist = opportunity_engine\["capture_checklist"\][\s\S]*?"Acquisition cost"[\s\S]*?"Serious contact"[\s\S]*?"Repeat value"[\s\S]*?review_cadence = opportunity_engine\["review_cadence"\][\s\S]*?"Every shop push"[\s\S]*?"7-day review"[\s\S]*?"30-day review"[\s\S]*?"90-day review"[\s\S]*?report_readiness = opportunity_engine\["report_readiness"\][\s\S]*?"Saved report identity"[\s\S]*?"Human review trail"[\s\S]*?"Cost and retention notes"[\s\S]*?"Entitlement and privacy rules"[\s\S]*?claim_ladder = opportunity_engine\["claim_ladder"\][\s\S]*?"Observed activity"[\s\S]*?"Directional signal"[\s\S]*?"Testable hypothesis"[\s\S]*?"Paid reviewed guidance"[\s\S]*?ledger_rows = opportunity_engine\["evidence_ledger"\][\s\S]*?"External context"[\s\S]*?"Blocked"[\s\S]*?"not a saved reviewed report"/,
   "Backend analytics tests must lock the Opportunity Engine computed-summary boundary."
 );
 assertContains(

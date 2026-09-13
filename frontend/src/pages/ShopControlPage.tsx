@@ -6680,7 +6680,7 @@ export default function ShopControlPage() {
               <GsnLegacyIcon name="spark" size={34} />
               <div>
                 <div style={{ color: "#061827", fontSize: 19, fontWeight: 950 }}>Opportunity Engine / Market Intelligence</div>
-                <div style={{ ...helperText(), fontSize: 12 }}>Advanced Analytics. Evidence first, recommendation second.</div>
+                <div style={{ ...helperText(), fontSize: 12 }}>Advanced Analytics. Evidence first, next test second.</div>
               </div>
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -6936,7 +6936,7 @@ export default function ShopControlPage() {
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Includes:</strong> {item.includes || "A small reviewed evidence view."}</div>
                         <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Excludes:</strong> {item.excluded || "Paid and governed capabilities remain off until built."}</div>
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Why:</strong> {item.why || "Protects the pilot from overclaiming while showing real value."}</div>
-                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Not a billing entitlement or full AI feature."}</div>
+                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Not a billing entitlement or full paid intelligence feature."}</div>
                       </div>
                     ))}
                   </div>

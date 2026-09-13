@@ -964,7 +964,7 @@ export function buildShopOpportunityEngineWisdomSnapshot({
     cadence: liveSignals >= 3 || openDemandSignals || protectedTradeRecords
       ? "Review weekly while the pilot is gathering."
       : "Review after the next Spotlight run, DemandBox request, or protected trade record.",
-    boundary: "Snapshot only. It is not an AI decision, sales proof, public trend claim, or command to change products.",
+    boundary: "Snapshot only. It is not an automatic decision, sales proof, public trend claim, or command to change products.",
   };
 }
 
@@ -1055,7 +1055,7 @@ export function buildShopOpportunityEnginePackageReadiness({
     ],
     nextBuildStep: nextAreas.length
       ? `Next backend/data wiring: ${nextAreas.join(", ")}.`
-      : "Next backend/data wiring: billing gate, saved reports, and governed AI-assisted inference.",
+      : "Next backend/data wiring: billing gate, saved reports, and governed reviewed pattern reading.",
     boundary: "Not charged yet, not auto-published, and not a replacement for human business judgement or proper research.",
   };
 }
@@ -1182,9 +1182,9 @@ export function buildShopOpportunityEngineGapRows({
       riskIfSkipped: "The engine could sound like it knows public reality when it only knows local in-GSN activity.",
     },
     {
-      area: "AI-assisted inference",
+      area: "Reviewed pattern reading",
       status: hasAiInference ? "Partial" : "Blocked",
-      whyItMatters: "AI should help compare patterns and produce opportunity hypotheses, but only after the source, privacy, and audit trail are stable.",
+      whyItMatters: "Reviewed intelligence should help compare patterns and produce opportunity hypotheses, but only after the source, privacy, and audit trail are stable.",
       nextBuildStep: "Start with reviewed prompts over saved snapshots, then require confidence, evidence citations, and human review before publication.",
       riskIfSkipped: "The product either stays shallow or jumps into unsafe advice without enough proof.",
     },

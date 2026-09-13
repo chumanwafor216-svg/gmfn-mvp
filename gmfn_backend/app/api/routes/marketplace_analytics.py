@@ -518,7 +518,7 @@ def _opportunity_engine_summary(
             "label": "Advice action trail",
             "status": "Live" if recommendation_action_count > 0 else "Next",
             "count": recommendation_action_count,
-            "evidence": "Owner recommendation_actioned events from the existing marketplace attention table.",
+            "evidence": "Owner advice-action events from the existing marketplace attention table.",
         },
     ]
     live_count = sum(1 for row in signal_groups if row["status"] == "Live")
@@ -654,7 +654,7 @@ def _opportunity_engine_summary(
             "status": "Live" if live_count > 0 else "Next",
             "reads": "Existing owner summary signal groups, attention counts, DemandBox count, protected records, and recommendation actions.",
             "unlocks": "Shows what changed recently before any opportunity claim is made.",
-            "boundary": "Computed owner summary only; not saved AI, not external research, and not a guarantee.",
+            "boundary": "Computed owner summary only; not a saved reviewed report, not external research, and not a guarantee.",
         },
         {
             "key": "market",
@@ -693,7 +693,7 @@ def _opportunity_engine_summary(
             "label": "Governance",
             "status": "Partial" if clan_id is not None else "Next",
             "reads": "Selected community context only; no governed role, consent, policy, or publication workflow is wired into this shop slice.",
-            "unlocks": "Prepares community or institutional review before publishing wider recommendations.",
+            "unlocks": "Prepares community or institutional review before publishing wider guidance.",
             "boundary": "Not approval, delegated authority, legal mandate, or community decision evidence.",
         },
         {
@@ -702,7 +702,7 @@ def _opportunity_engine_summary(
             "status": "Partial" if protected_trade_records > 0 else "Next",
             "reads": "Protected Trade states and truthful analytics boundaries.",
             "unlocks": "Flags where unresolved evidence or risky claims should stop promotion from scaling.",
-            "boundary": "Not legal advice, compliance approval, dispute judgment, or regulated recommendation.",
+            "boundary": "Not legal advice, compliance approval, dispute judgment, or regulated guidance.",
         },
         {
             "key": "place_environment",
@@ -767,7 +767,7 @@ def _opportunity_engine_summary(
             "status": "Next",
             "reads": "Not wired into this shop Opportunity Engine slice yet.",
             "can_help": "Later, relationship evidence can show where trust movement is strong enough for referral, guarantee, or support workflows.",
-            "next_wiring": "Add permissioned graph summaries with role and consent controls before any recommendation uses them.",
+            "next_wiring": "Add permissioned graph summaries with role and consent controls before any guidance uses them.",
             "boundary": "No private relationship map, social ranking, or cross-silo discovery is created.",
         },
         {
@@ -834,7 +834,7 @@ def _opportunity_engine_summary(
             "level": "Free owner preview",
             "status": "Live" if live_count > 0 else "Next",
             "includes": "One current computed summary, visible signal counts, simple Market Intelligence guidance, and caution boundaries.",
-            "excluded": "No saved report history, no AI-assisted forecast, no external context, no CAC/LTV ratio, and no private trust inference.",
+            "excluded": "No saved report history, no automated forecast, no external context, no CAC/LTV ratio, and no private trust conclusion.",
             "why": "Lets a shop owner understand GSN value before paying, while keeping claims small and auditable.",
             "boundary": "Free preview is evidence reading only; it is not a full Advanced Analytics subscription.",
         },
@@ -849,7 +849,7 @@ def _opportunity_engine_summary(
         {
             "level": "Governed intelligence add-on",
             "status": "Blocked",
-            "includes": "External context, AI-assisted inference, cross-feature pattern review, and community-level opportunity analysis after governance rules exist.",
+            "includes": "External context, reviewed cross-feature pattern reading, and community-level opportunity analysis after governance rules exist.",
             "excluded": "No outside-market claims, sensitive-topic analysis, cross-community profiling, or automatic publication from the current summary.",
             "why": "This is where the larger Opportunity Engine may grow, but only after source, consent, role, and review controls are real.",
             "boundary": "Blocked in this slice; do not sell, demo, or describe it as live functionality.",
@@ -949,7 +949,7 @@ def _opportunity_engine_summary(
             "status": "Required",
             "current_state": "Cards say owner reviews before acting, but no review decision, reviewer, or approval note is saved here.",
             "needed_before_paid": "Record who reviewed the report, what was accepted, what was rejected, and what was safe to publish or act on.",
-            "boundary": "No automatic AI advice, instruction, or publication approval is created.",
+            "boundary": "No automatic advice, instruction, or publication approval is created.",
         },
         {
             "requirement": "Evidence lock",
@@ -994,7 +994,7 @@ def _opportunity_engine_summary(
             "claim_level": "Testable hypothesis",
             "status": "Next",
             "can_say": "GSN can suggest one small experiment, such as clarifying an offer or comparing DemandBox need with a shop item.",
-            "cannot_say": "Do not describe the experiment as advice that will work or as an AI decision.",
+            "cannot_say": "Do not describe the experiment as advice that will work or as an automatic decision.",
             "evidence_to_upgrade": "Run the test for the stated window, change one thing, and capture contact, outcome, and cost evidence.",
             "boundary": "A hypothesis is a test, not a conclusion.",
         },
@@ -1007,10 +1007,10 @@ def _opportunity_engine_summary(
             "boundary": "The owner decides after reviewing evidence; GSN must not overrule context.",
         },
         {
-            "claim_level": "Paid recommendation",
+            "claim_level": "Paid reviewed guidance",
             "status": "Blocked",
             "can_say": "This can become a paid Advanced Analytics product only after the report, review, entitlement, and privacy controls exist.",
-            "cannot_say": "Do not claim live paid AI, external-market intelligence, CAC/LTV ratio, or private trust inference from this slice.",
+            "cannot_say": "Do not claim live paid intelligence, external-market intelligence, CAC/LTV ratio, or private trust conclusion from this slice.",
             "evidence_to_upgrade": "Build saved reports, billing entitlement, governed external context, consent rules, and repeat-value proof first.",
             "boundary": "Blocked until the paid product contract and evidence controls are real.",
         },
@@ -1135,7 +1135,7 @@ def _opportunity_engine_summary(
             "evidence": "Computed from the existing shop analytics summary, DemandBox request count, protected trade records, and marketplace attention events.",
             "next_step": "Persist reviewed snapshots before treating this as a saved paid Advanced Analytics report.",
         },
-        "boundary_label": "Computed owner analytics only. This is not saved AI inference, billing entitlement, external-context research, sales proof, or a trust score.",
+        "boundary_label": "Computed owner analytics only. This is not a saved reviewed report, billing entitlement, external-context research, sales proof, or a trust score.",
         "count_method": "Owner-only computed summary from marketplace_products, marketplace_broadcasts, marketplace_requests, marketplace_attention_events, and protected_trade_records.",
     }
 
