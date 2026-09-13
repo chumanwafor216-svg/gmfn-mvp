@@ -67,6 +67,7 @@ import {
   buildShopOpportunityEngineFieldMap,
   buildShopOpportunityEngineGuidanceRows,
   buildShopOpportunityEngineSignalTiles,
+  buildShopOpportunityEngineWisdomSnapshot,
   buildShopSellerHelper,
   formatAnalyticsRate,
 } from "../lib/shopAnalyticsWisdom";
@@ -2782,6 +2783,27 @@ export default function ShopControlPage() {
       demandContextLabel,
       marketIntelligencePrimaryAction.label,
       openDemandSignalCount,
+      opportunityEngineLiveSignalCount,
+      opportunityEngineSignalTiles.length,
+      shopAnalyticsWisdom,
+      tradeOutcomeRecords7Days,
+    ]
+  );
+  const opportunityEngineWisdomSnapshot = useMemo(
+    () =>
+      buildShopOpportunityEngineWisdomSnapshot({
+        wisdom: shopAnalyticsWisdom,
+        guidanceRows: opportunityEngineGuidanceRows,
+        fieldMap: opportunityEngineFieldMap,
+        liveSignalCount: opportunityEngineLiveSignalCount,
+        signalGroupCount: opportunityEngineSignalTiles.length,
+        demandSignalCount: openDemandSignalCount,
+        tradeRecords: tradeOutcomeRecords7Days,
+      }),
+    [
+      openDemandSignalCount,
+      opportunityEngineFieldMap,
+      opportunityEngineGuidanceRows,
       opportunityEngineLiveSignalCount,
       opportunityEngineSignalTiles.length,
       shopAnalyticsWisdom,
@@ -6454,6 +6476,17 @@ export default function ShopControlPage() {
                     <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Next:</strong> {row.nextStep}</div>
                   </div>
                 ))}
+              </div>
+              <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.84)", border: "1px solid rgba(214,170,69,0.20)", padding: 10, display: "grid", gap: 6 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>{opportunityEngineWisdomSnapshot.title}</div>
+                  <span style={{ ...badge(opportunityEngineLiveSignalCount >= 3), fontSize: 10 }}>review before publishing</span>
+                </div>
+                <div style={{ color: "#061827", fontSize: 12, fontWeight: 880, lineHeight: 1.35 }}>{opportunityEngineWisdomSnapshot.headline}</div>
+                <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Insight:</strong> {opportunityEngineWisdomSnapshot.insight}</div>
+                <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Evidence:</strong> {opportunityEngineWisdomSnapshot.evidence}</div>
+                <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Use:</strong> {opportunityEngineWisdomSnapshot.useIn}</div>
+                <div style={{ color: "#5A6F84", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}>{opportunityEngineWisdomSnapshot.cadence} {opportunityEngineWisdomSnapshot.boundary}</div>
               </div>
               <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(18,58,89,0.08)", padding: "4px 10px 10px" }}>
                 <StableDisclosureSummary debugId="shop-control.opportunity-engine.field-map" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>

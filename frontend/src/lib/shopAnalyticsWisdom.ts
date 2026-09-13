@@ -121,6 +121,26 @@ export type ShopOpportunityEngineFieldMapInput = {
   hasAttentionSignal?: boolean;
 };
 
+export type OpportunityEngineWisdomSnapshot = {
+  title: string;
+  headline: string;
+  insight: string;
+  evidence: string;
+  useIn: string;
+  cadence: string;
+  boundary: string;
+};
+
+export type ShopOpportunityEngineWisdomSnapshotInput = {
+  wisdom: ShopAnalyticsWisdom;
+  guidanceRows: OpportunityEngineGuidanceRow[];
+  fieldMap: OpportunityEngineFieldMapItem[];
+  liveSignalCount?: number | null;
+  signalGroupCount?: number | null;
+  demandSignalCount?: number | null;
+  tradeRecords?: number | null;
+};
+
 function positiveNumber(value: unknown): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
@@ -824,6 +844,41 @@ export function buildShopOpportunityEngineGuidanceRows({
       nextStep: "Use this as guidance, not certainty, until the full GSN field is connected.",
     },
   ];
+}
+
+export function buildShopOpportunityEngineWisdomSnapshot({
+  wisdom,
+  guidanceRows,
+  fieldMap,
+  liveSignalCount,
+  signalGroupCount,
+  demandSignalCount,
+  tradeRecords,
+}: ShopOpportunityEngineWisdomSnapshotInput): OpportunityEngineWisdomSnapshot {
+  const liveSignals = positiveNumber(liveSignalCount);
+  const signalGroups = positiveNumber(signalGroupCount) || fieldMap.length;
+  const openDemandSignals = positiveNumber(demandSignalCount);
+  const protectedTradeRecords = positiveNumber(tradeRecords);
+  const ninetyDayRow = guidanceRows.find((row) => row.horizon === "90 days") || guidanceRows[1] || guidanceRows[0];
+  const liveAreas = fieldMap.filter((item) => item.status === "Live").map((item) => item.area);
+  const liveAreaLabel = liveAreas.length ? liveAreas.join(", ") : "no broad live field yet";
+  const strongestEvidence = protectedTradeRecords
+    ? `${protectedTradeRecords} protected trade record${protectedTradeRecords === 1 ? "" : "s"}`
+    : openDemandSignals
+      ? `${openDemandSignals} open DemandBox signal${openDemandSignals === 1 ? "" : "s"}`
+      : `${liveSignals} of ${signalGroups} signal group${signalGroups === 1 ? "" : "s"} live`;
+
+  return {
+    title: "Market Wisdom snapshot feed",
+    headline: `Opportunity Engine snapshot: ${wisdom.headline}`,
+    insight: ninetyDayRow?.insight || wisdom.interpretation,
+    evidence: `${strongestEvidence}; live areas: ${liveAreaLabel}.`,
+    useIn: "Feeds a short Market Wisdom or Business Wisdom line after review; full evidence stays in Advanced Analytics.",
+    cadence: liveSignals >= 3 || openDemandSignals || protectedTradeRecords
+      ? "Review weekly while the pilot is gathering."
+      : "Review after the next Spotlight run, DemandBox request, or protected trade record.",
+    boundary: "Snapshot only. It is not an AI decision, sales proof, public trend claim, or command to change products.",
+  };
 }
 
 function urgencyForShopMarketIntelligence(
