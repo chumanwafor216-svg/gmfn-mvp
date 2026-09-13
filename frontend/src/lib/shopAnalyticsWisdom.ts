@@ -141,6 +141,23 @@ export type ShopOpportunityEngineWisdomSnapshotInput = {
   tradeRecords?: number | null;
 };
 
+export type OpportunityEnginePackageReadiness = {
+  title: string;
+  status: string;
+  commercialUse: string;
+  included: string[];
+  unlocks: string[];
+  nextBuildStep: string;
+  boundary: string;
+};
+
+export type ShopOpportunityEnginePackageInput = {
+  snapshot: OpportunityEngineWisdomSnapshot;
+  fieldMap: OpportunityEngineFieldMapItem[];
+  liveSignalCount?: number | null;
+  signalGroupCount?: number | null;
+};
+
 function positiveNumber(value: unknown): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
@@ -878,6 +895,38 @@ export function buildShopOpportunityEngineWisdomSnapshot({
       ? "Review weekly while the pilot is gathering."
       : "Review after the next Spotlight run, DemandBox request, or protected trade record.",
     boundary: "Snapshot only. It is not an AI decision, sales proof, public trend claim, or command to change products.",
+  };
+}
+
+export function buildShopOpportunityEnginePackageReadiness({
+  snapshot,
+  fieldMap,
+  liveSignalCount,
+  signalGroupCount,
+}: ShopOpportunityEnginePackageInput): OpportunityEnginePackageReadiness {
+  const liveSignals = positiveNumber(liveSignalCount);
+  const signalGroups = positiveNumber(signalGroupCount) || fieldMap.length;
+  const nextAreas = fieldMap.filter((item) => item.status === "Next").map((item) => item.area);
+  const liveEnoughForPilot = liveSignals >= 3;
+
+  return {
+    title: "Advanced Analytics package",
+    status: liveEnoughForPilot ? "Pilot-ready preview" : "Pilot preview, still gathering",
+    commercialUse: "Paid feature candidate for shop owners and community operators who want opportunity guidance from their own GSN activity.",
+    included: [
+      snapshot.headline,
+      "Evidence-led Opportunity Engine reading across shop, Spotlight, DemandBox, trade evidence, and community context.",
+      "Reviewed snapshot that can feed Market Wisdom or Business Wisdom without exposing the full analytics workspace.",
+    ],
+    unlocks: [
+      "90-day action reading for what to test next.",
+      "One-year and multi-year direction once TrustPassport, TrustSlip, member interaction, and outside-context wiring are added.",
+      "A cleaner path to paid Advanced Analytics before full API monetisation is ready.",
+    ],
+    nextBuildStep: nextAreas.length
+      ? `Next backend/data wiring: ${nextAreas.join(", ")}.`
+      : "Next backend/data wiring: billing gate, saved reports, and governed AI-assisted inference.",
+    boundary: "Not charged yet, not auto-published, and not a replacement for human business judgement or proper research.",
   };
 }
 

@@ -191,6 +191,16 @@ assertContains(
 );
 assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
+  /export type OpportunityEnginePackageReadiness[\s\S]*?export function buildShopOpportunityEnginePackageReadiness[\s\S]*?Advanced Analytics package[\s\S]*?Paid feature candidate[\s\S]*?Not charged yet/,
+  "Shop Opportunity Engine must describe Advanced Analytics as a paid feature candidate without claiming billing is active."
+);
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /buildShopOpportunityEnginePackageReadiness\([\s\S]*?opportunityEnginePackageReadiness\.title[\s\S]*?Included[\s\S]*?Unlocks[\s\S]*?opportunityEnginePackageReadiness\.boundary/,
+  "Shop Control analytics must render the Advanced Analytics package readiness card inside the Opportunity Engine panel."
+);
+assertContains(
+  "frontend/src/lib/shopAnalyticsWisdom.ts",
   /export type ShopOpportunityEngineSignalTile[\s\S]*?export function buildShopOpportunityEngineSignalTiles[\s\S]*?Shop and Marketplace[\s\S]*?Spotlight attention[\s\S]*?DemandBox[\s\S]*?Trust Graph[\s\S]*?TrustPassport[\s\S]*?TrustSlip/,
   "Shop Opportunity Engine signal readiness tiles must live in shared analytics logic and keep total-GSN next-wiring boundaries."
 );

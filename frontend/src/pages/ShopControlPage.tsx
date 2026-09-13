@@ -66,6 +66,7 @@ import {
   buildShopMarketIntelligenceSummary,
   buildShopOpportunityEngineFieldMap,
   buildShopOpportunityEngineGuidanceRows,
+  buildShopOpportunityEnginePackageReadiness,
   buildShopOpportunityEngineSignalTiles,
   buildShopOpportunityEngineWisdomSnapshot,
   buildShopSellerHelper,
@@ -2808,6 +2809,21 @@ export default function ShopControlPage() {
       opportunityEngineSignalTiles.length,
       shopAnalyticsWisdom,
       tradeOutcomeRecords7Days,
+    ]
+  );
+  const opportunityEnginePackageReadiness = useMemo(
+    () =>
+      buildShopOpportunityEnginePackageReadiness({
+        snapshot: opportunityEngineWisdomSnapshot,
+        fieldMap: opportunityEngineFieldMap,
+        liveSignalCount: opportunityEngineLiveSignalCount,
+        signalGroupCount: opportunityEngineSignalTiles.length,
+      }),
+    [
+      opportunityEngineFieldMap,
+      opportunityEngineLiveSignalCount,
+      opportunityEngineSignalTiles.length,
+      opportunityEngineWisdomSnapshot,
     ]
   );
   const featurePayments = useMemo(() => {
@@ -6487,6 +6503,33 @@ export default function ShopControlPage() {
                 <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Evidence:</strong> {opportunityEngineWisdomSnapshot.evidence}</div>
                 <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Use:</strong> {opportunityEngineWisdomSnapshot.useIn}</div>
                 <div style={{ color: "#5A6F84", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}>{opportunityEngineWisdomSnapshot.cadence} {opportunityEngineWisdomSnapshot.boundary}</div>
+              </div>
+              <div style={{ borderRadius: 16, background: "linear-gradient(180deg, #FFFDF6 0%, #FFF7DE 100%)", border: "1px solid rgba(214,170,69,0.22)", padding: 10, display: "grid", gap: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>{opportunityEnginePackageReadiness.title}</div>
+                  <span style={{ ...badge(opportunityEngineLiveSignalCount >= 3), fontSize: 10 }}>{opportunityEnginePackageReadiness.status}</span>
+                </div>
+                <div style={{ color: "#5A4720", fontSize: 11.5, fontWeight: 820, lineHeight: 1.4 }}>{opportunityEnginePackageReadiness.commercialUse}</div>
+                <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+                  <div style={{ borderRadius: 14, background: "rgba(255,255,255,0.78)", border: "1px solid rgba(122,89,16,0.12)", padding: 9 }}>
+                    <div style={{ color: "#7A5910", fontSize: 10.5, fontWeight: 950, textTransform: "uppercase", letterSpacing: 0 }}>Included</div>
+                    <div style={{ marginTop: 5, display: "grid", gap: 5 }}>
+                      {opportunityEnginePackageReadiness.included.map((item) => (
+                        <div key={`opportunity-package-included-${item}`} style={{ color: "#24415C", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}>{item}</div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ borderRadius: 14, background: "rgba(255,255,255,0.78)", border: "1px solid rgba(122,89,16,0.12)", padding: 9 }}>
+                    <div style={{ color: "#7A5910", fontSize: 10.5, fontWeight: 950, textTransform: "uppercase", letterSpacing: 0 }}>Unlocks</div>
+                    <div style={{ marginTop: 5, display: "grid", gap: 5 }}>
+                      {opportunityEnginePackageReadiness.unlocks.map((item) => (
+                        <div key={`opportunity-package-unlocks-${item}`} style={{ color: "#24415C", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}>{item}</div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Next:</strong> {opportunityEnginePackageReadiness.nextBuildStep}</div>
+                <div style={{ color: "#7A4A00", fontSize: 11, fontWeight: 820, lineHeight: 1.35 }}>{opportunityEnginePackageReadiness.boundary}</div>
               </div>
               <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(18,58,89,0.08)", padding: "4px 10px 10px" }}>
                 <StableDisclosureSummary debugId="shop-control.opportunity-engine.field-map" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
