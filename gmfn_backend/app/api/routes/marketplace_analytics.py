@@ -564,7 +564,7 @@ def _opportunity_engine_summary(
             "step": "Capture promotion effort",
             "metric": "Promotion-cost input",
             "currently_available": False,
-            "reads": "No cash-cost, airtime, data, helper-cost, or owner-effort cost table is wired into this shop summary yet.",
+            "reads": "No cash-cost, airtime, data, helper-cost, or owner effort cost table is wired into this shop summary yet.",
             "owner_action": "Record the channel, spend, airtime/data, helper cost, and time behind each promoted shop push before comparing promotion effort with repeat value.",
             "boundary": "Visits are not free acquisition if real owner effort or money was spent to create them.",
         },
