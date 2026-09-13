@@ -855,6 +855,53 @@ def _opportunity_engine_summary(
             "boundary": "Blocked in this slice; do not sell, demo, or describe it as live functionality.",
         },
     ]
+    capture_checklist = [
+        {
+            "category": "Acquisition cost",
+            "status": "Missing",
+            "records_now": 0,
+            "capture_now": "For each shop push, record channel, cash spend, airtime or data, helper cost, owner time, and date.",
+            "why": "CAC cannot be discussed honestly until GSN knows what it cost to create attention or contact.",
+            "later_source": "A future owner cost table or campaign note attached to each promoted link or Spotlight push.",
+            "boundary": "Views are not free if money, airtime, data, or owner effort created them.",
+        },
+        {
+            "category": "Serious contact",
+            "status": "Live" if contact_taps > 0 else "Next",
+            "records_now": contact_taps,
+            "capture_now": "Keep contact taps linked to the product, source path, and campaign window before treating a contact as useful intent.",
+            "why": "This separates curiosity from people who took the next action toward buying, support, or verification.",
+            "later_source": "Marketplace attention events, attributed links, and follow-up outcome notes.",
+            "boundary": "A tap is not a buyer, payment, delivery, or agreement.",
+        },
+        {
+            "category": "Protected outcome",
+            "status": "Live" if protected_trade_records > 0 else "Next",
+            "records_now": protected_trade_records,
+            "capture_now": "Move serious deals, support outcomes, or trust-dependent work into Protected Trade or TrustSlip evidence where suitable.",
+            "why": "LTV and retention need outcome evidence, not only chat, memory, or public attention.",
+            "later_source": "ProtectedTradeRecord states, TrustSlip decisions, receipt confirmations, and dispute outcomes.",
+            "boundary": "A record state is evidence, not automatic profit, satisfaction, or legal proof.",
+        },
+        {
+            "category": "Repeat value",
+            "status": "Missing",
+            "records_now": 0,
+            "capture_now": "Mark whether the same buyer, member, or requester returns within a defined period and what value or support cost followed.",
+            "why": "LTV needs repeat value, retention, margin, and support cost over time.",
+            "later_source": "Future repeat-customer, renewal, margin, support-cost, and retention records.",
+            "boundary": "One completed action cannot define lifetime value.",
+        },
+        {
+            "category": "Decision review",
+            "status": "Partial" if attention_events > 0 else "Next",
+            "records_now": attention_events,
+            "capture_now": "After each small experiment, record what changed, what stayed the same, and whether the evidence improved.",
+            "why": "This turns Advanced Analytics into a learning loop instead of a one-off report.",
+            "later_source": "Saved reviewed reports, experiment history, owner action trail, and Market Wisdom snapshot cadence.",
+            "boundary": "A review note is guidance discipline, not an instruction or guarantee.",
+        },
+    ]
     evidence_ledger = [
         {
             "source": "Marketplace and Shop Diary",
@@ -953,6 +1000,7 @@ def _opportunity_engine_summary(
         "feature_touchpoints": feature_touchpoints,
         "commercial_checkpoints": commercial_checkpoints,
         "access_model": access_model,
+        "capture_checklist": capture_checklist,
         "field_coverage": {
             "shop_and_marketplace": active_products > 0,
             "spotlight_attention": active_spotlights > 0 or spotlight_impressions > 0,

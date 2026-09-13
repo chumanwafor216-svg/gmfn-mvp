@@ -437,6 +437,15 @@ type ShopAttentionSummary = {
       why?: string | null;
       boundary?: string | null;
     }> | null;
+    capture_checklist?: Array<{
+      category?: string | null;
+      status?: string | null;
+      records_now?: number | null;
+      capture_now?: string | null;
+      why?: string | null;
+      later_source?: string | null;
+      boundary?: string | null;
+    }> | null;
   } | null;
   daily_activity?: ShopAttentionDailyActivity[] | null;
   source_breakdown?: ShopAttentionSourceBreakdown[] | null;
@@ -3021,6 +3030,9 @@ export default function ShopControlPage() {
     : [];
   const opportunityEngineAccessModelRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.access_model)
     ? shopAttentionSummary.opportunity_engine.access_model
+    : [];
+  const opportunityEngineCaptureChecklistRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.capture_checklist)
+    ? shopAttentionSummary.opportunity_engine.capture_checklist
     : [];
   const opportunityEngineGapRows = useMemo(
     () =>
@@ -6893,6 +6905,27 @@ export default function ShopControlPage() {
                         <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Excludes:</strong> {item.excluded || "Paid and governed capabilities remain off until built."}</div>
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Why:</strong> {item.why || "Protects the pilot from overclaiming while showing real value."}</div>
                         <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Not a billing entitlement or full AI feature."}</div>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              ) : null}
+              {opportunityEngineCaptureChecklistRows.length > 0 ? (
+                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px" }}>
+                  <StableDisclosureSummary debugId="shop-control.opportunity-engine.capture-checklist" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
+                    Evidence capture checklist
+                  </StableDisclosureSummary>
+                  <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                    {opportunityEngineCaptureChecklistRows.map((item, index) => (
+                      <div key={`opportunity-capture-${item.category || index}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 10, display: "grid", gap: 5 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.category || "Evidence category"}</span>
+                          <span style={{ ...badge(item.status === "Live"), fontSize: 10 }}>{item.status || "Next"} / {safePositiveNumber(item.records_now)} records</span>
+                        </div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Capture now:</strong> {item.capture_now || "Record the missing evidence before using this as a metric."}</div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Why:</strong> {item.why || "This keeps the Opportunity Engine evidence-led."}</div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Later source:</strong> {item.later_source || "A governed backend record when built."}</div>
+                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Capture discipline is not proof of CAC/LTV."}</div>
                       </div>
                     ))}
                   </div>

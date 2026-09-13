@@ -5670,6 +5670,19 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert access_model[2]["level"] == "Governed intelligence add-on"
     assert access_model[2]["status"] == "Blocked"
     assert "do not sell" in access_model[2]["boundary"]
+    capture_checklist = opportunity_engine["capture_checklist"]
+    assert len(capture_checklist) == 5
+    assert capture_checklist[0]["category"] == "Acquisition cost"
+    assert capture_checklist[0]["status"] == "Missing"
+    assert "cash spend" in capture_checklist[0]["capture_now"]
+    assert "not free" in capture_checklist[0]["boundary"]
+    assert capture_checklist[1]["category"] == "Serious contact"
+    assert capture_checklist[1]["records_now"] == 1
+    assert "not a buyer" in capture_checklist[1]["boundary"]
+    assert capture_checklist[3]["category"] == "Repeat value"
+    assert capture_checklist[3]["status"] == "Missing"
+    assert "lifetime value" in capture_checklist[3]["boundary"]
+    assert capture_checklist[4]["category"] == "Decision review"
     ledger_rows = opportunity_engine["evidence_ledger"]
     assert ledger_rows[0]["source"] == "Marketplace and Shop Diary"
     assert ledger_rows[2]["source"] == "DemandBox"
