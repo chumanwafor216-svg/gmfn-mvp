@@ -66,8 +66,8 @@ const PILLAR_OF_HOPE_DEMO_PROFILE =
   "Pillar of Hope supports families in Aberdeen through Saturday community fitness with Snapfit Aberdeen, food support for families in need, low-cost household items, and health education seminars for women and families.";
 
 const PILLAR_OF_HOPE_DEMO_DRAFT: PurchaseDraftSnapshot = {
-  organizationName: "Pillar of Hope Demo",
-  domainName: "pillar-of-hope-demo",
+  organizationName: "Pillar of Hope",
+  domainName: "pillar-of-hope",
   country: "United Kingdom",
   stateName: "Scotland / Aberdeen",
   templateKey: "ngo_project_network",
@@ -857,7 +857,7 @@ export default function CommunityDomainPurchasePage() {
       setDraftResult(null);
       setQuoteResult(null);
       setMessage(
-        "Pillar of Hope demo fields and profile are filled. GSN is checking the domain name."
+        "Pillar of Hope trial fields and profile are filled. GSN is checking the domain name."
       );
 
 

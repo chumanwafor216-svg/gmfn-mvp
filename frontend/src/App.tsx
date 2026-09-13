@@ -883,6 +883,12 @@ export default function App() {
         }
       />
       <Route
+        path="/pillar-of-hope"
+        element={
+          <PreserveRedirect to="/community-domain/purchase?demo=pillar-of-hope" />
+        }
+      />
+      <Route
         path="/pillar-of-hope-demo"
         element={
           <PreserveRedirect to="/community-domain/purchase?demo=pillar-of-hope" />
