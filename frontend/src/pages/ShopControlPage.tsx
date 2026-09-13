@@ -421,6 +421,14 @@ type ShopAttentionSummary = {
       next_wiring?: string | null;
       boundary?: string | null;
     }> | null;
+    commercial_checkpoints?: Array<{
+      stage?: string | null;
+      status?: string | null;
+      requires?: string | null;
+      owner_value?: string | null;
+      pricing_signal?: string | null;
+      boundary?: string | null;
+    }> | null;
   } | null;
   daily_activity?: ShopAttentionDailyActivity[] | null;
   source_breakdown?: ShopAttentionSourceBreakdown[] | null;
@@ -2999,6 +3007,9 @@ export default function ShopControlPage() {
     : [];
   const opportunityEngineFeatureTouchpointRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.feature_touchpoints)
     ? shopAttentionSummary.opportunity_engine.feature_touchpoints
+    : [];
+  const opportunityEngineCommercialCheckpointRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.commercial_checkpoints)
+    ? shopAttentionSummary.opportunity_engine.commercial_checkpoints
     : [];
   const opportunityEngineGapRows = useMemo(
     () =>
@@ -6829,6 +6840,27 @@ export default function ShopControlPage() {
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Can help:</strong> {item.can_help || "Future reviewed analytics."}</div>
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Next wiring:</strong> {item.next_wiring || "Add governed evidence before expanding this lane."}</div>
                         <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Owner reviews before acting or publishing."}</div>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              ) : null}
+              {opportunityEngineCommercialCheckpointRows.length > 0 ? (
+                <details style={{ borderRadius: 16, background: "linear-gradient(180deg, #FFFFFF 0%, #FFF9EA 100%)", border: "1px solid rgba(214,170,69,0.20)", padding: "4px 10px 10px" }}>
+                  <StableDisclosureSummary debugId="shop-control.opportunity-engine.commercial-checkpoints" stableHeight={38} style={{ color: "#7A5910", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
+                    Commercial readiness checkpoints
+                  </StableDisclosureSummary>
+                  <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                    {opportunityEngineCommercialCheckpointRows.map((item, index) => (
+                      <div key={`opportunity-commercial-${item.stage || index}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(214,170,69,0.16)", padding: 10, display: "grid", gap: 5 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.stage || "Commercial checkpoint"}</span>
+                          <span style={{ ...badge(item.status === "Live"), fontSize: 10 }}>{item.status || "Next"}</span>
+                        </div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Requires:</strong> {item.requires || "A governed evidence rule before charging."}</div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Owner value:</strong> {item.owner_value || "Clearer decisions from GSN activity."}</div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Pricing signal:</strong> {item.pricing_signal || "Repeat use and willingness to pay must be observed."}</div>
+                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Not charged yet and not proof of CAC/LTV."}</div>
                       </div>
                     ))}
                   </div>

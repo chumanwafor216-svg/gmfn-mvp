@@ -795,6 +795,40 @@ def _opportunity_engine_summary(
             "boundary": "No automatic WhatsApp/social/email delivery or phone vibration is live from this summary.",
         },
     ]
+    commercial_checkpoints = [
+        {
+            "stage": "Pilot value proof",
+            "status": "Live" if live_count > 0 else "Next",
+            "requires": "Owner can see useful signals from real GSN activity without manual storytelling.",
+            "owner_value": "Shows what to test next and what not to claim yet.",
+            "pricing_signal": "People ask to keep using the reading after the demo or after the first shop test.",
+            "boundary": "Do not charge as full Advanced Analytics until saved reports, permission rules, and repeat review exist.",
+        },
+        {
+            "stage": "Evidence quality",
+            "status": "Partial" if has_acquisition_trail or has_outcome_trail else "Next",
+            "requires": "Acquisition signals, outcome signals, DemandBox patterns, and sample-size warnings are visible together.",
+            "owner_value": "Prevents bad decisions from one view, one request, or founder memory.",
+            "pricing_signal": "Owner trusts the evidence enough to change a listing, offer, or outreach plan inside GSN.",
+            "boundary": "This is decision support, not proof of sales, profit, CAC/LTV, market size, or customer satisfaction.",
+        },
+        {
+            "stage": "Paid package readiness",
+            "status": "Next",
+            "requires": "Billing gate, entitlements, saved reviewed reports, report history, and clear free-vs-paid limits.",
+            "owner_value": "Makes Advanced Analytics feel like a dependable business tool rather than a one-time insight.",
+            "pricing_signal": "Owner returns weekly or monthly for reviewed opportunity readings and measurable next tests.",
+            "boundary": "Not charged yet from this summary and not an entitlement record.",
+        },
+        {
+            "stage": "Retention and LTV proof",
+            "status": "Next",
+            "requires": "Repeat use, repeat outcomes, margin or value notes, support cost, and churn or renewal evidence.",
+            "owner_value": "Shows whether the feature deserves ongoing payment instead of only initial excitement.",
+            "pricing_signal": "The same owner keeps paying because the guidance repeatedly improves decisions or saves effort.",
+            "boundary": "LTV is not available until repeat paid value and retention are measured over time.",
+        },
+    ]
     evidence_ledger = [
         {
             "source": "Marketplace and Shop Diary",
@@ -891,6 +925,7 @@ def _opportunity_engine_summary(
         "experiment_plan": experiment_plan,
         "advanced_lanes": advanced_lanes,
         "feature_touchpoints": feature_touchpoints,
+        "commercial_checkpoints": commercial_checkpoints,
         "field_coverage": {
             "shop_and_marketplace": active_products > 0,
             "spotlight_attention": active_spotlights > 0 or spotlight_impressions > 0,

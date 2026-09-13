@@ -5647,6 +5647,18 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert feature_touchpoints[7]["feature"] == "Notifications and WhatsApp Bridge"
     assert feature_touchpoints[7]["status"] == "Next"
     assert "No automatic WhatsApp" in feature_touchpoints[7]["boundary"]
+    commercial_checkpoints = opportunity_engine["commercial_checkpoints"]
+    assert len(commercial_checkpoints) == 4
+    assert commercial_checkpoints[0]["stage"] == "Pilot value proof"
+    assert commercial_checkpoints[0]["status"] == "Live"
+    assert "Do not charge" in commercial_checkpoints[0]["boundary"]
+    assert commercial_checkpoints[1]["stage"] == "Evidence quality"
+    assert "not proof of sales" in commercial_checkpoints[1]["boundary"]
+    assert commercial_checkpoints[2]["stage"] == "Paid package readiness"
+    assert commercial_checkpoints[2]["status"] == "Next"
+    assert "Not charged yet" in commercial_checkpoints[2]["boundary"]
+    assert commercial_checkpoints[3]["stage"] == "Retention and LTV proof"
+    assert "LTV is not available" in commercial_checkpoints[3]["boundary"]
     ledger_rows = opportunity_engine["evidence_ledger"]
     assert ledger_rows[0]["source"] == "Marketplace and Shop Diary"
     assert ledger_rows[2]["source"] == "DemandBox"
