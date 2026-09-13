@@ -170,7 +170,7 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/pages/ClansPage.tsx",
-    /buildGsnInviteLinkMessage[\s\S]*whatsappShareText: compactShareText[\s\S]*Share message[\s\S]*copyText\(inviteState\.whatsappShareText \|\| "", "share"\)[\s\S]*Copy share message[\s\S]*Share on WhatsApp/,
+    /buildGsnInviteLinkMessage[\s\S]*whatsappShareText: compactShareText[\s\S]*function currentInviteShareText\(\): string \{[\s\S]*if \(isQrInvitePackage\) return communityQrAnnouncementText\(\);[\s\S]*return safeStr\(inviteState\?\.whatsappShareText \|\| ""\);[\s\S]*Share message[\s\S]*copyText\(currentInviteShareText\(\), "share"\)[\s\S]*Copy share message[\s\S]*Share on WhatsApp/,
     "Community invite sharing must show and copy the compact invite message, not the full formal invite paper.",
   ],
   [

@@ -762,7 +762,7 @@ export default function MemberActivationPage() {
       showNotice(
         {
           tone: "warning",
-          title: "Add GSN ID or request ID",
+          title: "Add approved GSN ID or request ID",
           message:
             "Enter either the GSN ID shown after approval or the request ID from approval status. You do not need both if one of them is already filled in.",
         },
@@ -862,7 +862,7 @@ export default function MemberActivationPage() {
       const nextRoute = needsPhoneVerification ? routes.identityPhone : routes.identityRecovery;
       const nextMessage = needsPhoneVerification
         ? "Membership activated. Verify this phone next so TrustSlip can issue your code and QR."
-        : "Set private recovery next so this GSN ID can be recovered safely before community growth begins.";
+        : "Membership activated. Set private recovery next so this GSN ID can be recovered safely before community growth begins.";
 
       setActivated(true);
       setPhoneVerificationRequired(needsPhoneVerification);

@@ -1200,7 +1200,7 @@ export default function CommunityJoinRequestsPage() {
           data-gsn-activation-handoff="admin-share"
         >
           <div style={{ fontWeight: 1000, fontSize: 18, color: "#0B1F33" }}>
-            {iconText("approve", "Approved access activation handoff")}
+            {iconText("approve", "Approved member activation handoff")}
           </div>
 
           <div
@@ -1212,7 +1212,7 @@ export default function CommunityJoinRequestsPage() {
               fontWeight: 800,
             }}
           >
-            This package is for the approved applicant, not your own next step.
+            This package is for the approved member, not your own next step.
             Send it to the person you approved so they can activate their GSN ID. Verification can still be required later.
           </div>
 
@@ -1288,7 +1288,7 @@ export default function CommunityJoinRequestsPage() {
               onClick={() =>
                 void copyActivationText(
                   safeStr(activationPack.activation_message || ""),
-                  "Copied activation message. Send it to the approved applicant."
+                  "Copied activation message. Send it to the approved member."
                 )
               }
               debugId="community-join-requests.copy-activation-message"
@@ -1303,7 +1303,7 @@ export default function CommunityJoinRequestsPage() {
               onClick={() =>
                 void copyActivationText(
                   safeStr(activationPack.activation_link || ""),
-                  "Copied activation link. Send it to the approved applicant."
+                  "Copied activation link. Send it to the approved member."
                 )
               }
               debugId="community-join-requests.copy-activation-link"
@@ -1345,7 +1345,7 @@ export default function CommunityJoinRequestsPage() {
                   letterSpacing: 0.35,
                 }}
               >
-                MESSAGE FOR APPROVED APPLICANT
+                MESSAGE FOR APPROVED MEMBER
               </div>
 
               <div

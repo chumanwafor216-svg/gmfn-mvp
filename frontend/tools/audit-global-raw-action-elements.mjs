@@ -80,7 +80,7 @@ function assertNoUnexpectedRawActionElements(fullPath) {
     }
   }
 
-  const fileInputPattern = /<input\b[\s\S]*?type=["']file["'][\s\S]*?\/>/g;
+  const fileInputPattern = /<input\b(?:(?!<input\b)[\s\S])*?type=["']file["'](?:(?!<input\b)[\s\S])*?\/>/g;
   let inputMatch;
   while ((inputMatch = fileInputPattern.exec(text))) {
     const block = inputMatch[0];

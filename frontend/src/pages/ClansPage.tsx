@@ -1735,6 +1735,8 @@ export default function ClansPage() {
                       type="file"
                       accept=".csv,.txt,.tsv,text/csv,text/plain"
                       onChange={handleQrPreApprovalFileUpload}
+                      data-gmfn-action-root="true"
+                      data-cta-id="clans.qr-preapproval.bulk-upload"
                       style={inputStyle()}
                     />
                     <SecondaryButton
