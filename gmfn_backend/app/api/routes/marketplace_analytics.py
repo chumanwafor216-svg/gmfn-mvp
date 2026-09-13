@@ -828,7 +828,7 @@ def _opportunity_engine_summary(
             "title": "Current evidence snapshot",
             "headline": f"{live_count} of {len(signal_groups)} owner-summary signal groups are live.",
             "evidence": "Computed from the existing shop analytics summary, DemandBox request count, protected trade records, and marketplace attention events.",
-            "next_step": "Persist reviewed snapshots before treating this as a saved paid Advanced Analytics report.",
+            "next_step": "Persist reviewed snapshots before treating this as a saved Advanced Analytics report.",
         },
         "boundary_label": "Computed owner analytics only. This is not a saved reviewed report, billing entitlement, external-context research, sales proof, or a trust score.",
         "count_method": "Owner-only computed summary from marketplace_products, marketplace_broadcasts, marketplace_requests, marketplace_attention_events, and protected_trade_records.",

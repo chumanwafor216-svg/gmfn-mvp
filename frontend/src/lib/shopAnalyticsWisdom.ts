@@ -840,7 +840,7 @@ export function buildShopOpportunityEngineSignalTiles({
     {
       label: "Trust layer",
       value: "Next wiring",
-      detail: "Trust Graph, TrustPassport, TrustSlip, member interactions, and outside context are planned inputs for the full engine.",
+      detail: "Wider trust, member, and outside-context signals stay blocked until governed records exist.",
       live: false,
       icon: "shield",
     },
@@ -924,11 +924,11 @@ export function buildShopOpportunityEngineWisdomSnapshot({
       : `${liveSignals} of ${signalGroups} signal group${signalGroups === 1 ? "" : "s"} live`;
 
   return {
-    title: "Market Wisdom snapshot feed",
-    headline: `Opportunity Engine snapshot: ${wisdom.headline}`,
+    title: "Market Wisdom snapshot",
+    headline: `Current reading: ${wisdom.headline}`,
     insight: ninetyDayRow?.insight || wisdom.interpretation,
     evidence: `${strongestEvidence}; live areas: ${liveAreaLabel}.`,
-    useIn: "Feeds a short Market Wisdom or Business Wisdom line after review; full evidence stays in Advanced Analytics.",
+    useIn: "Use as a short owner note after review; full evidence stays in Advanced Analytics.",
     cadence: liveSignals >= 3 || openDemandSignals || protectedTradeRecords
       ? "Review weekly while the pilot is gathering."
       : "Review after the next Spotlight run, DemandBox request, or protected trade record.",

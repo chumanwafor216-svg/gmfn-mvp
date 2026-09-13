@@ -6608,7 +6608,7 @@ export default function ShopControlPage() {
                 <div>
                   <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Advanced Analytics snapshot</div>
                   <div style={{ marginTop: 4, color: "#385773", fontSize: 12, fontWeight: 800, lineHeight: 1.4 }}>
-                    First slice reads shop, Spotlight, DemandBox, trade evidence, and selected community context. Full Opportunity Engine wiring will add Trust Graph, TrustPassport, TrustSlip, member interaction, and governed outside-context signals before it claims wider guidance.
+                    This reads current shop, Spotlight, DemandBox, trade evidence, and selected community context. Wider guidance stays blocked until more verified records and governed context exist.
                   </div>
                 </div>
                 <span style={badge(opportunityEngineLiveSignalCount >= 3)}>{opportunityEngineLiveSignalCount} live signals</span>
@@ -6823,7 +6823,7 @@ export default function ShopControlPage() {
                         </div>
                         <div style={{ color: "#061827", fontSize: 11.5, fontWeight: 850, lineHeight: 1.35 }}><strong>Signal:</strong> {item.signal}</div>
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Evidence:</strong> {item.evidence}</div>
-                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Interpretation:</strong> {item.interpretation}</div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Reading:</strong> {item.interpretation}</div>
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Opportunity:</strong> {item.opportunity}</div>
                         <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Risk:</strong> {item.risk}</div>
                         <div style={{ color: "#5A6F84", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Time horizon:</strong> {item.time_horizon || "now"}. <strong>Next:</strong> {item.suggested_next_step}</div>
@@ -6894,7 +6894,7 @@ export default function ShopControlPage() {
                 <strong style={{ color: "#061827" }}>Observation:</strong> {shopAnalyticsWisdom.observation}
               </div>
               <div style={{ color: "#24415C", fontSize: 13, fontWeight: 850, lineHeight: 1.4 }}>
-                <strong style={{ color: "#061827" }}>Interpretation:</strong> {shopAnalyticsWisdom.interpretation}
+                <strong style={{ color: "#061827" }}>Reading:</strong> {shopAnalyticsWisdom.interpretation}
               </div>
               <div style={{ borderRadius: 14, padding: 11, background: "linear-gradient(180deg, #F7FBFF 0%, #EAF4FF 100%)", color: "#17426B", fontSize: 12, fontWeight: 800, lineHeight: 1.4 }}>
                 Recheck: {shopAnalyticsWisdom.recheckPoint}

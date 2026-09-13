@@ -211,7 +211,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /Market Intelligence[\s\S]*?Observation:[\s\S]*?Interpretation:[\s\S]*?Recheck:[\s\S]*?Why this advice\?/,
+  /Market Intelligence[\s\S]*?Observation:[\s\S]*?Reading:[\s\S]*?Recheck:[\s\S]*?Why this advice\?/,
   "Shop Control analytics must show explainable Market Intelligence inside the owner analytics board."
 );
 assertContains(
@@ -231,7 +231,7 @@ assertContains(
 );
 assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
-  /export type OpportunityEngineWisdomSnapshot[\s\S]*?export function buildShopOpportunityEngineWisdomSnapshot[\s\S]*?Market Wisdom snapshot feed[\s\S]*?Snapshot only\. It is not an automatic decision/,
+  /export type OpportunityEngineWisdomSnapshot[\s\S]*?export function buildShopOpportunityEngineWisdomSnapshot[\s\S]*?Market Wisdom snapshot[\s\S]*?Snapshot only\. It is not an automatic decision/,
   "Shop Opportunity Engine must expose a reviewed wisdom snapshot contract without claiming automatic decisions or sales proof."
 );
 assertContains(
@@ -291,7 +291,7 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /opportunityEngineBackendOutputCards[\s\S]*?shop-control\.opportunity-engine\.output-cards[\s\S]*?Reviewed signal cards[\s\S]*?Signal:[\s\S]*?Evidence:[\s\S]*?Interpretation:[\s\S]*?Opportunity:[\s\S]*?Risk:[\s\S]*?Time horizon:[\s\S]*?Owner reviews before acting or publishing\./,
+  /opportunityEngineBackendOutputCards[\s\S]*?shop-control\.opportunity-engine\.output-cards[\s\S]*?Reviewed signal cards[\s\S]*?Signal:[\s\S]*?Evidence:[\s\S]*?Reading:[\s\S]*?Opportunity:[\s\S]*?Risk:[\s\S]*?Time horizon:[\s\S]*?Owner reviews before acting or publishing\./,
   "Shop Control must render Opportunity Engine output cards as collapsed reviewed evidence cards without backend wording."
 );
 assertContains(
@@ -301,7 +301,7 @@ assertContains(
 );
 assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
-  /export type ShopOpportunityEngineSignalTile[\s\S]*?export function buildShopOpportunityEngineSignalTiles[\s\S]*?Shop and Marketplace[\s\S]*?Spotlight attention[\s\S]*?DemandBox[\s\S]*?Trust Graph[\s\S]*?TrustPassport[\s\S]*?TrustSlip/,
+  /export type ShopOpportunityEngineSignalTile[\s\S]*?export function buildShopOpportunityEngineSignalTiles[\s\S]*?Shop and Marketplace[\s\S]*?Spotlight attention[\s\S]*?DemandBox[\s\S]*?Wider trust[\s\S]*?outside-context signals stay blocked/,
   "Shop Opportunity Engine signal readiness tiles must live in shared analytics logic and keep total-GSN next-wiring boundaries."
 );
 assertContains(
