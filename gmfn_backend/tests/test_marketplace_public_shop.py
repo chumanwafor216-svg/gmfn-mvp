@@ -5566,6 +5566,26 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert trade_outcomes["recent_records"][0]["linked_to_shop"] is True
     assert "not automatic sales" in trade_outcomes["boundary_label"]
     assert "protected_trade_records" in trade_outcomes["count_method"]
+    opportunity_engine = body["opportunity_engine"]
+    assert opportunity_engine["aggregator_ready"] is True
+    assert opportunity_engine["engine_state"] == "computed_owner_summary"
+    assert opportunity_engine["live_signal_count"] == 5
+    assert opportunity_engine["signal_group_count"] == 6
+    opportunity_coverage = opportunity_engine["field_coverage"]
+    assert opportunity_coverage["shop_and_marketplace"] is True
+    assert opportunity_coverage["spotlight_attention"] is True
+    assert opportunity_coverage["demand_box"] is False
+    assert opportunity_coverage["protected_trade"] is True
+    assert opportunity_coverage["community_context"] is True
+    assert opportunity_coverage["advice_action_trail"] is True
+    assert opportunity_coverage["governed_outside_context"] is False
+    assert opportunity_coverage["ai_inference"] is False
+    assert opportunity_coverage["saved_reports"] is False
+    assert opportunity_coverage["billing_gate"] is False
+    assert opportunity_engine["signal_groups"][2]["label"] == "DemandBox"
+    assert "owner-summary signal groups are live" in opportunity_engine["snapshot"]["headline"]
+    assert "not saved AI inference" in opportunity_engine["boundary_label"]
+    assert "marketplace_requests" in opportunity_engine["count_method"]
     source_breakdown = body["source_breakdown"]
     source_rows = {row["source"]: row for row in source_breakdown}
     assert source_rows["public_shop"]["label"] == "Public shop"

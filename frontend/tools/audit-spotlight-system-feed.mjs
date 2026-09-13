@@ -159,6 +159,11 @@ assertContains(
   "Shop owner analytics API must expose follower count with truthful boundary wording."
 );
 assertContains(
+  "gmfn_backend/app/api/routes/marketplace_analytics.py",
+  /def _opportunity_engine_summary\([\s\S]*?"label": "DemandBox"[\s\S]*?"aggregator_ready": True[\s\S]*?"governed_outside_context": False[\s\S]*?"ai_inference": False[\s\S]*?"boundary_label": "Computed owner analytics only\. This is not saved AI inference/,
+  "Shop owner analytics API must expose an owner-only Opportunity Engine computed summary without claiming saved AI, external context, billing, or sales proof."
+);
+assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
   /spotlightSeen === 0 \|\| spotlightSeen < 5 \|\| spotlightIsFresh[\s\S]*?diagnosisCode: "GATHERING_DATA"[\s\S]*?headline: "distribution is still low; conversion cannot yet be judged\."/,
   "Shop Market Intelligence must treat fresh or tiny-sample spotlight data as gathering data, not product failure."
@@ -211,12 +216,17 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
+  /opportunity_engine\?:[\s\S]*?aggregator_ready\?: boolean[\s\S]*?field_coverage\?: Record[\s\S]*?shopAttentionSummary\?\.opportunity_engine\?\.snapshot[\s\S]*?shopAttentionSummary\.opportunity_engine\.boundary_label/,
+  "Shop Control must type and render the backend Opportunity Engine owner-summary snapshot when present."
+);
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
   /buildShopOpportunityEngineLensRows\([\s\S]*?Opportunity lenses[\s\S]*?local GSN reading[\s\S]*?opportunityEngineLensRows\.map[\s\S]*?item\.boundary/,
   "Shop Control analytics must render Opportunity Engine lenses inside the existing Advanced Analytics panel."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /buildShopOpportunityEngineGapRows\([\s\S]*?hasBillingGate: false[\s\S]*?hasAiInference: false[\s\S]*?shop-control\.opportunity-engine\.build-gaps[\s\S]*?Build gaps before full engine[\s\S]*?opportunityEngineGapRows\.map/,
+  /buildShopOpportunityEngineGapRows\([\s\S]*?hasBillingGate: Boolean\(shopAttentionSummary\?\.opportunity_engine\?\.field_coverage\?\.billing_gate\)[\s\S]*?hasAiInference: Boolean\(shopAttentionSummary\?\.opportunity_engine\?\.field_coverage\?\.ai_inference\)[\s\S]*?shop-control\.opportunity-engine\.build-gaps[\s\S]*?Build gaps before full engine[\s\S]*?opportunityEngineGapRows\.map/,
   "Shop Control analytics must render the Opportunity Engine build-gap register as a collapsed detail."
 );
 assertContains(
@@ -333,7 +343,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/marketplace_analytics.py",
-  /ProtectedTradeRecord[\s\S]*?def _protected_trade_outcome_summary\([\s\S]*?protected_trade_records linked by shop_id or seller_user_id within the last 7 days\.[\s\S]*?"trade_outcomes": _protected_trade_outcome_summary/,
+  /ProtectedTradeRecord[\s\S]*?def _protected_trade_outcome_summary\([\s\S]*?protected_trade_records linked by shop_id or seller_user_id within the last 7 days\.[\s\S]*?trade_outcomes = _protected_trade_outcome_summary[\s\S]*?"trade_outcomes": trade_outcomes/,
   "Shop owner analytics API must summarize protected trade outcome records through the existing Protected Trade engine."
 );
 
@@ -407,7 +417,7 @@ assertContains(
 );
 assertContains(
   "gmfn_backend/app/api/routes/marketplace_analytics.py",
-  /EVENT_SHARE_ACTION = "share_action"[\s\S]*?EVENT_RECOMMENDATION_ACTIONED = "recommendation_actioned"[\s\S]*?def _share_action_summary[\s\S]*?event_type=share_action[\s\S]*?def _recommendation_action_summary[\s\S]*?event_type=recommendation_actioned[\s\S]*?def _share_response_summary[\s\S]*?source_path includes share attribution parameters[\s\S]*?"share_actions": _share_action_summary[\s\S]*?"share_response": _share_response_summary[\s\S]*?"recommendation_actions": _recommendation_action_summary/,
+  /EVENT_SHARE_ACTION = "share_action"[\s\S]*?EVENT_RECOMMENDATION_ACTIONED = "recommendation_actioned"[\s\S]*?def _share_action_summary[\s\S]*?event_type=share_action[\s\S]*?def _recommendation_action_summary[\s\S]*?event_type=recommendation_actioned[\s\S]*?def _share_response_summary[\s\S]*?source_path includes share attribution parameters[\s\S]*?recommendation_actions = _recommendation_action_summary[\s\S]*?"share_actions": _share_action_summary[\s\S]*?"share_response": _share_response_summary[\s\S]*?"recommendation_actions": recommendation_actions/,
   "Shop owner analytics API must summarize tracked share attempts and owner advice actions through the existing attention-event engine."
 );
 
@@ -433,6 +443,11 @@ assertContains(
   "gmfn_backend/tests/test_marketplace_public_shop.py",
   /"event_type": "share_action"[\s\S]*?gsn_share=copy_shop_link[\s\S]*?"event_type": "recommendation_actioned"[\s\S]*?recommendation_actions = body\["recommendation_actions"\][\s\S]*?Opened Demand Box[\s\S]*?"shop_gallery_share" not in source_rows[\s\S]*?"shop_market_intelligence" not in source_rows/,
   "Backend analytics tests must lock share attribution, recommendation action logging, and boundary wording."
+);
+assertContains(
+  "gmfn_backend/tests/test_marketplace_public_shop.py",
+  /opportunity_engine = body\["opportunity_engine"\][\s\S]*?opportunity_engine\["aggregator_ready"\] is True[\s\S]*?opportunity_coverage\["governed_outside_context"\] is False[\s\S]*?opportunity_engine\["signal_groups"\]\[2\]\["label"\] == "DemandBox"[\s\S]*?"not saved AI inference"/,
+  "Backend analytics tests must lock the Opportunity Engine computed-summary boundary."
 );
 assertContains(
   "gmfn_backend/app/api/routes/marketplace.py",

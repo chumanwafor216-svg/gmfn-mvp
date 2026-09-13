@@ -21,6 +21,7 @@ from app.db.models import (
     MarketplaceAttentionEvent,
     MarketplaceBroadcast,
     MarketplaceProduct,
+    MarketplaceRequest,
     MarketplaceShop,
     ProtectedTradeRecord,
     ShopFollower,
@@ -406,6 +407,130 @@ def _recommendation_action_summary(db: Session, *, shop_id: int, since: datetime
         "by_action": action_rows[:8],
         "boundary_label": "Recommendation actions mean the shop owner tapped or marked advice as tried; they do not prove the advice produced sales.",
         "count_method": "Existing marketplace attention events with event_type=recommendation_actioned and Market Intelligence action parameters.",
+    }
+
+
+def _open_demand_count_for_shop_community(db: Session, *, shop: MarketplaceShop, now: datetime) -> int:
+    clan_id = _safe_positive_int(getattr(shop, "clan_id", None))
+    if clan_id is None:
+        return 0
+    return (
+        db.query(MarketplaceRequest)
+        .filter(
+            MarketplaceRequest.clan_id == clan_id,
+            MarketplaceRequest.status == "open",
+            (MarketplaceRequest.expires_at.is_(None)) | (MarketplaceRequest.expires_at >= now),
+        )
+        .count()
+    )
+
+
+def _active_shop_product_count(db: Session, *, shop_id: int) -> int:
+    return (
+        db.query(MarketplaceProduct)
+        .filter(
+            MarketplaceProduct.shop_id == int(shop_id),
+            MarketplaceProduct.is_active.is_(True),
+        )
+        .count()
+    )
+
+
+def _opportunity_engine_summary(
+    db: Session,
+    *,
+    shop: MarketplaceShop,
+    now: datetime,
+    period_last_7_days: dict[str, Any],
+    spotlight: dict[str, Any],
+    recommendation_actions: dict[str, Any],
+    trade_outcomes: dict[str, Any],
+) -> dict[str, Any]:
+    shop_id = int(shop.id)
+    clan_id = _safe_positive_int(getattr(shop, "clan_id", None))
+    active_products = _active_shop_product_count(db, shop_id=shop_id)
+    open_demand = _open_demand_count_for_shop_community(db, shop=shop, now=now)
+    active_spotlights = int(spotlight.get("active_spotlights") or 0)
+    spotlight_impressions = int(period_last_7_days.get("spotlight_impressions") or 0)
+    attention_events = sum(
+        int(period_last_7_days.get(key) or 0)
+        for key in ("shop_visits", "product_opens", "spotlight_impressions", "spotlight_shop_clicks", "contact_taps")
+    )
+    protected_trade_records = int(trade_outcomes.get("last_7_days") or 0)
+    recommendation_action_count = int(recommendation_actions.get("last_7_days") or 0)
+
+    signal_groups = [
+        {
+            "key": "shop_marketplace",
+            "label": "Shop and Marketplace",
+            "status": "Live" if active_products > 0 else "Next",
+            "count": active_products,
+            "evidence": "Active shop products counted from marketplace_products for this shop.",
+        },
+        {
+            "key": "spotlight_attention",
+            "label": "Spotlight attention",
+            "status": "Live" if active_spotlights > 0 or spotlight_impressions > 0 else "Next",
+            "count": spotlight_impressions,
+            "evidence": "Active spotlights plus last-7-days spotlight impressions from marketplace attention events.",
+        },
+        {
+            "key": "demand_box",
+            "label": "DemandBox",
+            "status": "Live" if open_demand > 0 else "Next",
+            "count": open_demand,
+            "evidence": "Open non-expired MarketplaceRequest rows scoped to the shop community.",
+        },
+        {
+            "key": "protected_trade",
+            "label": "Protected trade evidence",
+            "status": "Live" if protected_trade_records > 0 else "Next",
+            "count": protected_trade_records,
+            "evidence": "ProtectedTradeRecord rows linked by shop_id or seller_user_id in this window.",
+        },
+        {
+            "key": "community_context",
+            "label": "Community context",
+            "status": "Live" if clan_id is not None else "Next",
+            "count": 1 if clan_id is not None else 0,
+            "evidence": "The shop has a selected clan_id context for local readings.",
+        },
+        {
+            "key": "advice_action_trail",
+            "label": "Advice action trail",
+            "status": "Live" if recommendation_action_count > 0 else "Next",
+            "count": recommendation_action_count,
+            "evidence": "Owner recommendation_actioned events from the existing marketplace attention table.",
+        },
+    ]
+    live_count = sum(1 for row in signal_groups if row["status"] == "Live")
+
+    return {
+        "aggregator_ready": True,
+        "engine_state": "computed_owner_summary",
+        "live_signal_count": live_count,
+        "signal_group_count": len(signal_groups),
+        "signal_groups": signal_groups,
+        "field_coverage": {
+            "shop_and_marketplace": active_products > 0,
+            "spotlight_attention": active_spotlights > 0 or spotlight_impressions > 0,
+            "demand_box": open_demand > 0,
+            "protected_trade": protected_trade_records > 0,
+            "community_context": clan_id is not None,
+            "advice_action_trail": recommendation_action_count > 0,
+            "governed_outside_context": False,
+            "ai_inference": False,
+            "saved_reports": False,
+            "billing_gate": False,
+        },
+        "snapshot": {
+            "title": "Opportunity Engine backend snapshot",
+            "headline": f"{live_count} of {len(signal_groups)} owner-summary signal groups are live.",
+            "evidence": "Computed from the existing shop analytics summary, DemandBox request count, protected trade records, and marketplace attention events.",
+            "next_step": "Persist reviewed snapshots before treating this as a saved paid Advanced Analytics report.",
+        },
+        "boundary_label": "Computed owner analytics only. This is not saved AI inference, billing entitlement, external-context research, sales proof, or a trust score.",
+        "count_method": "Owner-only computed summary from marketplace_products, marketplace_broadcasts, marketplace_requests, marketplace_attention_events, and protected_trade_records.",
     }
 
 def _share_response_summary(db: Session, *, shop_id: int, since: datetime) -> dict[str, Any]:
@@ -1064,18 +1189,23 @@ def get_marketplace_shop_attention_summary(
         if row.product_id is not None
     ]
     follower_count = _shop_follower_count(db, shop_id=int(shop.id))
-
+    today_period = _period_summary(db, shop_id=int(shop.id), since=today_start)
+    last_7_days_period = _period_summary(db, shop_id=int(shop.id), since=last_7_days)
+    requested_period = _period_summary(db, shop_id=int(shop.id), since=requested_start)
+    spotlight_summary = _active_spotlight_reach(db, shop_id=int(shop.id), now=now)
+    recommendation_actions = _recommendation_action_summary(db, shop_id=int(shop.id), since=last_7_days)
+    trade_outcomes = _protected_trade_outcome_summary(db, shop=shop, since=last_7_days)
     return {
         "ok": True,
         "shop_id": int(shop.id),
         "shop_owner_user_id": _safe_positive_int(getattr(shop, "owner_user_id", None)),
         "days": int(days),
         "periods": {
-            "today": _period_summary(db, shop_id=int(shop.id), since=today_start),
-            "last_7_days": _period_summary(db, shop_id=int(shop.id), since=last_7_days),
-            "requested": _period_summary(db, shop_id=int(shop.id), since=requested_start),
+            "today": today_period,
+            "last_7_days": last_7_days_period,
+            "requested": requested_period,
         },
-        "spotlight": _active_spotlight_reach(db, shop_id=int(shop.id), now=now),
+        "spotlight": spotlight_summary,
         "followers": {
             "follower_count": follower_count,
             "followers_count": follower_count,
@@ -1096,8 +1226,17 @@ def get_marketplace_shop_attention_summary(
         ),
         "share_actions": _share_action_summary(db, shop_id=int(shop.id), since=last_7_days),
         "share_response": _share_response_summary(db, shop_id=int(shop.id), since=last_7_days),
-        "recommendation_actions": _recommendation_action_summary(db, shop_id=int(shop.id), since=last_7_days),
-        "trade_outcomes": _protected_trade_outcome_summary(db, shop=shop, since=last_7_days),
+        "recommendation_actions": recommendation_actions,
+        "trade_outcomes": trade_outcomes,
+        "opportunity_engine": _opportunity_engine_summary(
+            db,
+            shop=shop,
+            now=now,
+            period_last_7_days=last_7_days_period,
+            spotlight=spotlight_summary,
+            recommendation_actions=recommendation_actions,
+            trade_outcomes=trade_outcomes,
+        ),
         "source_breakdown": _source_breakdown_summary(db, shop_id=int(shop.id), since=last_7_days),
         "top_products": top_products,
         "boundary_note": "Visitors, views, and taps help a seller improve the shop. They are not buyers, sales, verification, payment evidence, or trust score.",

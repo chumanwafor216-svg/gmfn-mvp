@@ -334,6 +334,28 @@ type ShopAttentionSummary = {
       linked_to_shop?: boolean | null;
     }> | null;
   } | null;
+  opportunity_engine?: {
+    aggregator_ready?: boolean | null;
+    engine_state?: string | null;
+    live_signal_count?: number | null;
+    signal_group_count?: number | null;
+    boundary_label?: string | null;
+    count_method?: string | null;
+    snapshot?: {
+      title?: string | null;
+      headline?: string | null;
+      evidence?: string | null;
+      next_step?: string | null;
+    } | null;
+    field_coverage?: Record<string, boolean | null | undefined> | null;
+    signal_groups?: Array<{
+      key?: string | null;
+      label?: string | null;
+      status?: string | null;
+      count?: number | null;
+      evidence?: string | null;
+    }> | null;
+  } | null;
   daily_activity?: ShopAttentionDailyActivity[] | null;
   source_breakdown?: ShopAttentionSourceBreakdown[] | null;
   boundary_note?: string | null;
@@ -2860,13 +2882,13 @@ export default function ShopControlPage() {
       buildShopOpportunityEngineGapRows({
         fieldMap: opportunityEngineFieldMap,
         lensRows: opportunityEngineLensRows,
-        hasBillingGate: false,
-        hasSavedReports: false,
-        hasBackendAggregator: false,
-        hasGovernedOutsideContext: false,
-        hasAiInference: false,
+        hasBillingGate: Boolean(shopAttentionSummary?.opportunity_engine?.field_coverage?.billing_gate),
+        hasSavedReports: Boolean(shopAttentionSummary?.opportunity_engine?.field_coverage?.saved_reports),
+        hasBackendAggregator: Boolean(shopAttentionSummary?.opportunity_engine?.aggregator_ready),
+        hasGovernedOutsideContext: Boolean(shopAttentionSummary?.opportunity_engine?.field_coverage?.governed_outside_context),
+        hasAiInference: Boolean(shopAttentionSummary?.opportunity_engine?.field_coverage?.ai_inference),
       }),
-    [opportunityEngineFieldMap, opportunityEngineLensRows]
+    [opportunityEngineFieldMap, opportunityEngineLensRows, shopAttentionSummary?.opportunity_engine]
   );
   const featurePayments = useMemo(() => {
     return expectedPayments.filter((item) =>
@@ -6596,6 +6618,18 @@ export default function ShopControlPage() {
                 <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Next:</strong> {opportunityEnginePackageReadiness.nextBuildStep}</div>
                 <div style={{ color: "#7A4A00", fontSize: 11, fontWeight: 820, lineHeight: 1.35 }}>{opportunityEnginePackageReadiness.boundary}</div>
               </div>
+              {shopAttentionSummary?.opportunity_engine?.snapshot ? (
+                <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.84)", border: "1px solid rgba(15,94,170,0.12)", padding: 10, display: "grid", gap: 5 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                    <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>{shopAttentionSummary.opportunity_engine.snapshot.title || "Opportunity Engine backend snapshot"}</div>
+                    <span style={{ ...badge(Boolean(shopAttentionSummary.opportunity_engine.aggregator_ready)), fontSize: 10 }}>{shopAttentionSummary.opportunity_engine.engine_state || "computed summary"}</span>
+                  </div>
+                  <div style={{ color: "#24415C", fontSize: 11.5, fontWeight: 820, lineHeight: 1.35 }}>{shopAttentionSummary.opportunity_engine.snapshot.headline}</div>
+                  <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Evidence:</strong> {shopAttentionSummary.opportunity_engine.snapshot.evidence}</div>
+                  <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Next:</strong> {shopAttentionSummary.opportunity_engine.snapshot.next_step}</div>
+                  <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}>{shopAttentionSummary.opportunity_engine.boundary_label}</div>
+                </div>
+              ) : null}
               <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(122,89,16,0.12)", padding: "4px 10px 10px" }}>
                 <StableDisclosureSummary debugId="shop-control.opportunity-engine.build-gaps" stableHeight={38} style={{ color: "#7A5910", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
                   Build gaps before full engine
