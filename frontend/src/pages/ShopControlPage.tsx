@@ -368,6 +368,17 @@ type ShopAttentionSummary = {
       suggested_next_step?: string | null;
       human_review?: string | null;
     }> | null;
+    unit_economics_readiness?: {
+      title?: string | null;
+      status?: "Not ready" | "Partial" | "Ready to estimate" | string | null;
+      summary?: string | null;
+      cac_side?: string | null;
+      ltv_side?: string | null;
+      current_evidence?: string[] | null;
+      missing_evidence?: string[] | null;
+      next_step?: string | null;
+      boundary?: string | null;
+    } | null;
   } | null;
   daily_activity?: ShopAttentionDailyActivity[] | null;
   source_breakdown?: ShopAttentionSourceBreakdown[] | null;
@@ -2848,7 +2859,7 @@ export default function ShopControlPage() {
       tradeOutcomeRecords7Days,
     ]
   );
-  const opportunityEngineUnitEconomicsReadiness = useMemo(
+  const localOpportunityEngineUnitEconomicsReadiness = useMemo(
     () =>
       buildShopOpportunityEngineUnitEconomicsReadiness({
         visitors: attentionVisitors7Days,
@@ -2873,6 +2884,20 @@ export default function ShopControlPage() {
       tradeOutcomeReleasedRecords,
     ]
   );
+  const backendUnitEconomicsReadiness = shopAttentionSummary?.opportunity_engine?.unit_economics_readiness;
+  const opportunityEngineUnitEconomicsReadiness = backendUnitEconomicsReadiness
+    ? {
+        title: firstTruthy(backendUnitEconomicsReadiness.title, localOpportunityEngineUnitEconomicsReadiness.title),
+        status: firstTruthy(backendUnitEconomicsReadiness.status, localOpportunityEngineUnitEconomicsReadiness.status),
+        summary: firstTruthy(backendUnitEconomicsReadiness.summary, localOpportunityEngineUnitEconomicsReadiness.summary),
+        cacSide: firstTruthy(backendUnitEconomicsReadiness.cac_side, localOpportunityEngineUnitEconomicsReadiness.cacSide),
+        ltvSide: firstTruthy(backendUnitEconomicsReadiness.ltv_side, localOpportunityEngineUnitEconomicsReadiness.ltvSide),
+        currentEvidence: Array.isArray(backendUnitEconomicsReadiness.current_evidence) ? backendUnitEconomicsReadiness.current_evidence : localOpportunityEngineUnitEconomicsReadiness.currentEvidence,
+        missingEvidence: Array.isArray(backendUnitEconomicsReadiness.missing_evidence) ? backendUnitEconomicsReadiness.missing_evidence : localOpportunityEngineUnitEconomicsReadiness.missingEvidence,
+        nextStep: firstTruthy(backendUnitEconomicsReadiness.next_step, localOpportunityEngineUnitEconomicsReadiness.nextStep),
+        boundary: firstTruthy(backendUnitEconomicsReadiness.boundary, localOpportunityEngineUnitEconomicsReadiness.boundary),
+      }
+    : localOpportunityEngineUnitEconomicsReadiness;
   const opportunityEnginePackageReadiness = useMemo(
     () =>
       buildShopOpportunityEnginePackageReadiness({

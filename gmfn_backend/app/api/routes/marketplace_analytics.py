@@ -445,6 +445,7 @@ def _opportunity_engine_summary(
     spotlight: dict[str, Any],
     recommendation_actions: dict[str, Any],
     trade_outcomes: dict[str, Any],
+    follower_count: int,
 ) -> dict[str, Any]:
     shop_id = int(shop.id)
     clan_id = _safe_positive_int(getattr(shop, "clan_id", None))
@@ -452,12 +453,29 @@ def _opportunity_engine_summary(
     open_demand = _open_demand_count_for_shop_community(db, shop=shop, now=now)
     active_spotlights = int(spotlight.get("active_spotlights") or 0)
     spotlight_impressions = int(period_last_7_days.get("spotlight_impressions") or 0)
+    shop_visits = int(period_last_7_days.get("shop_visits") or 0)
+    product_opens = int(period_last_7_days.get("product_opens") or 0)
+    contact_taps = int(period_last_7_days.get("contact_taps") or 0)
     attention_events = sum(
         int(period_last_7_days.get(key) or 0)
         for key in ("shop_visits", "product_opens", "spotlight_impressions", "spotlight_shop_clicks", "contact_taps")
     )
     protected_trade_records = int(trade_outcomes.get("last_7_days") or 0)
+    released_trade_records = int(trade_outcomes.get("released_records") or 0)
+    payment_claimed_records = int(trade_outcomes.get("payment_claimed_or_recorded") or 0)
+    receipt_confirmed_records = int(trade_outcomes.get("receipt_confirmed") or 0)
     recommendation_action_count = int(recommendation_actions.get("last_7_days") or 0)
+    acquisition_signals = shop_visits + product_opens + contact_taps + max(int(follower_count or 0), 0)
+    outcome_signals = protected_trade_records + released_trade_records + payment_claimed_records + receipt_confirmed_records
+    has_acquisition_trail = acquisition_signals > 0
+    has_outcome_trail = outcome_signals > 0
+    unit_economics_status = (
+        "Ready to estimate"
+        if has_acquisition_trail and has_outcome_trail
+        else "Partial"
+        if has_acquisition_trail or has_outcome_trail or open_demand > 0
+        else "Not ready"
+    )
 
     signal_groups = [
         {
@@ -504,6 +522,43 @@ def _opportunity_engine_summary(
         },
     ]
     live_count = sum(1 for row in signal_groups if row["status"] == "Live")
+    unit_economics_readiness = {
+        "title": "CAC/LTV readiness",
+        "status": unit_economics_status,
+        "summary": (
+            "GSN has early acquisition and outcome evidence, but still needs cost and repeat-value records before a real CAC/LTV ratio."
+            if unit_economics_status == "Ready to estimate"
+            else "GSN has part of the signal trail, but not enough to compare customer acquisition cost against lifetime value."
+            if unit_economics_status == "Partial"
+            else "GSN cannot estimate CAC/LTV until traffic, cost, outcome, and repeat-customer evidence exist."
+        ),
+        "cac_side": (
+            f"{shop_visits} visitors, {product_opens} product opens, {contact_taps} contact taps, and {int(follower_count or 0)} followers can describe attention and intent."
+            if has_acquisition_trail
+            else "No acquisition trail yet. CAC needs tracked outreach cost, channel, visits, contact intent, and owner effort."
+        ),
+        "ltv_side": (
+            f"{protected_trade_records} protected records, {released_trade_records} releases, {payment_claimed_records} payment signals, and {receipt_confirmed_records} receipt confirmations can begin the value trail."
+            if has_outcome_trail
+            else "No value trail yet. LTV needs completed outcomes, repeat purchases, retention, margin, support cost, and trust evidence."
+        ),
+        "current_evidence": [
+            f"Acquisition signals: {acquisition_signals}",
+            f"Outcome signals: {outcome_signals}",
+            f"DemandBox signals: {open_demand}",
+        ],
+        "missing_evidence": [
+            "Paid or effort cost by channel before a true CAC calculation.",
+            "Completed sale value, margin, repeat purchase, and retention before a true LTV calculation.",
+            "Enough records over time to avoid treating one contact or one sale as a business model.",
+        ],
+        "next_step": (
+            "Start recording the cost or effort behind each promoted channel, then connect serious outcomes to Protected Trade or TrustSlip evidence."
+            if has_acquisition_trail
+            else "Create one measurable visibility path first, then record whether it produces contact and protected outcomes."
+        ),
+        "boundary": "Readiness only. This is not CAC, not LTV, not ROI, not profit, and not investor-grade unit economics yet.",
+    }
     output_cards = [
         {
             "lens": "Signals",
@@ -550,6 +605,7 @@ def _opportunity_engine_summary(
         "signal_group_count": len(signal_groups),
         "signal_groups": signal_groups,
         "output_cards": output_cards,
+        "unit_economics_readiness": unit_economics_readiness,
         "field_coverage": {
             "shop_and_marketplace": active_products > 0,
             "spotlight_attention": active_spotlights > 0 or spotlight_impressions > 0,
@@ -1275,6 +1331,7 @@ def get_marketplace_shop_attention_summary(
             spotlight=spotlight_summary,
             recommendation_actions=recommendation_actions,
             trade_outcomes=trade_outcomes,
+            follower_count=follower_count,
         ),
         "source_breakdown": _source_breakdown_summary(db, shop_id=int(shop.id), since=last_7_days),
         "top_products": top_products,

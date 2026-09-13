@@ -169,6 +169,11 @@ assertContains(
   "Shop owner analytics API must expose deterministic Opportunity Engine output cards using the reviewed output-card contract."
 );
 assertContains(
+  "gmfn_backend/app/api/routes/marketplace_analytics.py",
+  /unit_economics_readiness = \{[\s\S]*?"title": "CAC\/LTV readiness"[\s\S]*?"current_evidence": \[[\s\S]*?DemandBox signals[\s\S]*?"missing_evidence": \[[\s\S]*?true CAC calculation[\s\S]*?"boundary": "Readiness only\. This is not CAC, not LTV, not ROI, not profit, and not investor-grade unit economics yet\."[\s\S]*?"unit_economics_readiness": unit_economics_readiness/,
+  "Shop owner analytics API must expose CAC/LTV readiness without claiming true unit economics."
+);
+assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
   /spotlightSeen === 0 \|\| spotlightSeen < 5 \|\| spotlightIsFresh[\s\S]*?diagnosisCode: "GATHERING_DATA"[\s\S]*?headline: "distribution is still low; conversion cannot yet be judged\."/,
   "Shop Market Intelligence must treat fresh or tiny-sample spotlight data as gathering data, not product failure."
@@ -228,6 +233,11 @@ assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
   /buildShopOpportunityEngineUnitEconomicsReadiness[\s\S]*?opportunityEngineUnitEconomicsReadiness\.title[\s\S]*?CAC side[\s\S]*?LTV side[\s\S]*?shop-control\.opportunity-engine\.unit-economics[\s\S]*?Unit economics evidence[\s\S]*?opportunityEngineUnitEconomicsReadiness\.boundary/,
   "Shop Control must render CAC/LTV readiness inside Advanced Analytics without claiming the ratio is calculated."
+);
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /unit_economics_readiness\?:[\s\S]*?backendUnitEconomicsReadiness = shopAttentionSummary\?\.opportunity_engine\?\.unit_economics_readiness[\s\S]*?localOpportunityEngineUnitEconomicsReadiness[\s\S]*?current_evidence[\s\S]*?missing_evidence[\s\S]*?opportunityEngineUnitEconomicsReadiness\.boundary/,
+  "Shop Control must prefer backend CAC/LTV readiness while keeping the local readiness fallback."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
@@ -466,7 +476,7 @@ assertContains(
 );
 assertContains(
   "gmfn_backend/tests/test_marketplace_public_shop.py",
-  /opportunity_engine = body\["opportunity_engine"\][\s\S]*?opportunity_engine\["aggregator_ready"\] is True[\s\S]*?opportunity_coverage\["governed_outside_context"\] is False[\s\S]*?opportunity_engine\["signal_groups"\]\[2\]\["label"\] == "DemandBox"[\s\S]*?len\(opportunity_engine\["output_cards"\]\) == 3[\s\S]*?"must not be presented as market size"[\s\S]*?"not saved AI inference"/,
+  /opportunity_engine = body\["opportunity_engine"\][\s\S]*?opportunity_engine\["aggregator_ready"\] is True[\s\S]*?opportunity_coverage\["governed_outside_context"\] is False[\s\S]*?opportunity_engine\["signal_groups"\]\[2\]\["label"\] == "DemandBox"[\s\S]*?len\(opportunity_engine\["output_cards"\]\) == 3[\s\S]*?"must not be presented as market size"[\s\S]*?unit_economics = opportunity_engine\["unit_economics_readiness"\][\s\S]*?"not CAC, not LTV"[\s\S]*?"not saved AI inference"/,
   "Backend analytics tests must lock the Opportunity Engine computed-summary boundary."
 );
 assertContains(
