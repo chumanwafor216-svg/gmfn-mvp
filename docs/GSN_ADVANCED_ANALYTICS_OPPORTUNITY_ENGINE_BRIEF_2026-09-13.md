@@ -54,7 +54,9 @@ A GSN environment already produces signals:
 - what goods and services appear informally before they become businesses
 - what finance, support, verification, or delivery friction keeps returning
 
-The Opportunity Engine turns those signals into structured intelligence: facts first, evidence second, cautious interpretation third, suggested opportunities last.
+The Opportunity Engine turns those signals into structured intelligence: facts first, evidence second, cautious reading third, suggested opportunities last.
+
+User-facing pilot rule: do not label the feature as `AI interpretation`. The visible product language should be `Reading`, `Opportunity reading`, or `Advanced Analytics`. AI may assist the analysis later, but the customer should experience the result as GSN reading its own governed evidence, not as a chatbot or oracle.
 
 ## Total operating field
 
@@ -157,7 +159,7 @@ Each Advanced Analytics output card should include:
 
 - `Signal` - what GSN observed
 - `Evidence` - which internal records or external sources support the observation
-- `Interpretation` - what it may mean, using cautious language
+- `Reading` - what it may mean, using cautious language
 - `Opportunity` - what could be built, sold, organised, tested, or funded
 - `Risk` - what could go wrong or be misunderstood
 - `Time horizon` - now, 90 days, 1 year, 5 years, or 10 years
@@ -167,7 +169,7 @@ Each Advanced Analytics output card should include:
 
 ## Data boundary
 
-The engine must use structured GSN records first. External information must be cited and treated as context, not secret knowledge. AI suggestions must not pretend to be legal advice, medical advice, financial advice, political instruction, guarantee, diagnosis, proof of demand, or proof of future success.
+The engine must use structured GSN records first. External information must be cited and treated as context, not secret knowledge. AI-assisted suggestions, when added, must not be exposed as private certainty and must not pretend to be legal advice, medical advice, financial advice, political instruction, guarantee, diagnosis, proof of demand, or proof of future success.
 
 The engine must not become surveillance. It should analyse patterns, records, and operating signals. It must avoid hidden personal scoring, public shaming, identity exposure, or cross-community leakage.
 
@@ -184,7 +186,7 @@ The paid product can package:
 - market gap report
 - community needs evidence pack
 - launch experiment plan
-- CAC/LTV and conversion interpretation when enough data exists
+- promotion-cost, repeat-value, and conversion readings when enough records exist
 
 ## Notification workstream boundary
 
