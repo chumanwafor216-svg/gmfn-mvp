@@ -5696,6 +5696,21 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert review_cadence[3]["cadence"] == "90-day review"
     assert "lifetime value" in review_cadence[3]["upgrade_rule"]
     assert "forecast or guarantee" in review_cadence[3]["boundary"]
+    report_readiness = opportunity_engine["report_readiness"]
+    assert len(report_readiness) == 5
+    assert report_readiness[0]["requirement"] == "Saved report identity"
+    assert report_readiness[0]["status"] == "Computed only"
+    assert "No saved Advanced Analytics report" in report_readiness[0]["boundary"]
+    assert report_readiness[1]["requirement"] == "Human review trail"
+    assert "No automatic AI advice" in report_readiness[1]["boundary"]
+    assert report_readiness[2]["requirement"] == "Evidence lock"
+    assert report_readiness[2]["status"] == "Partial"
+    assert "saved historical report" in report_readiness[2]["boundary"]
+    assert report_readiness[3]["requirement"] == "Cost and retention notes"
+    assert "CAC/LTV remains readiness" in report_readiness[3]["boundary"]
+    assert report_readiness[4]["requirement"] == "Entitlement and privacy rules"
+    assert report_readiness[4]["status"] == "Blocked"
+    assert "Do not sell" in report_readiness[4]["boundary"]
     ledger_rows = opportunity_engine["evidence_ledger"]
     assert ledger_rows[0]["source"] == "Marketplace and Shop Diary"
     assert ledger_rows[2]["source"] == "DemandBox"

@@ -454,6 +454,13 @@ type ShopAttentionSummary = {
       upgrade_rule?: string | null;
       boundary?: string | null;
     }> | null;
+    report_readiness?: Array<{
+      requirement?: string | null;
+      status?: string | null;
+      current_state?: string | null;
+      needed_before_paid?: string | null;
+      boundary?: string | null;
+    }> | null;
   } | null;
   daily_activity?: ShopAttentionDailyActivity[] | null;
   source_breakdown?: ShopAttentionSourceBreakdown[] | null;
@@ -3044,6 +3051,9 @@ export default function ShopControlPage() {
     : [];
   const opportunityEngineReviewCadenceRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.review_cadence)
     ? shopAttentionSummary.opportunity_engine.review_cadence
+    : [];
+  const opportunityEngineReportReadinessRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.report_readiness)
+    ? shopAttentionSummary.opportunity_engine.report_readiness
     : [];
   const opportunityEngineGapRows = useMemo(
     () =>
@@ -6958,6 +6968,26 @@ export default function ShopControlPage() {
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Evidence required:</strong> {item.evidence_required || "Comparable records over time."}</div>
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Upgrade rule:</strong> {item.upgrade_rule || "Upgrade the claim only after repeated evidence exists."}</div>
                         <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Review cadence is not CAC/LTV proof or a forecast."}</div>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              ) : null}
+              {opportunityEngineReportReadinessRows.length > 0 ? (
+                <details style={{ borderRadius: 16, background: "linear-gradient(180deg, #FFFFFF 0%, #FFF9EA 100%)", border: "1px solid rgba(214,170,69,0.20)", padding: "4px 10px 10px" }}>
+                  <StableDisclosureSummary debugId="shop-control.opportunity-engine.report-readiness" stableHeight={38} style={{ color: "#7A5910", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
+                    Saved report readiness
+                  </StableDisclosureSummary>
+                  <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                    {opportunityEngineReportReadinessRows.map((item, index) => (
+                      <div key={`opportunity-report-${item.requirement || index}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(214,170,69,0.16)", padding: 10, display: "grid", gap: 5 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.requirement || "Report requirement"}</span>
+                          <span style={{ ...badge(item.status === "Partial" || item.status === "Computed only"), fontSize: 10 }}>{item.status || "Next"}</span>
+                        </div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Current state:</strong> {item.current_state || "This report capability is not active yet."}</div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Needed before paid:</strong> {item.needed_before_paid || "Persisted review and access rules are required first."}</div>
+                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "No saved report, entitlement, CAC/LTV proof, or private intelligence is created here."}</div>
                       </div>
                     ))}
                   </div>

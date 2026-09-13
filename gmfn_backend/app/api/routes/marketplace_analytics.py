@@ -936,6 +936,43 @@ def _opportunity_engine_summary(
             "boundary": "Ninety days can show direction; it still must not become a forecast or guarantee without governed review.",
         },
     ]
+    report_readiness = [
+        {
+            "requirement": "Saved report identity",
+            "status": "Computed only",
+            "current_state": "The current Opportunity Engine reading is built during the analytics request and is not stored as a report.",
+            "needed_before_paid": "Persist report id, owner id, shop id, community scope, source window, created time, and reviewed version.",
+            "boundary": "No saved Advanced Analytics report or report history exists from this summary yet.",
+        },
+        {
+            "requirement": "Human review trail",
+            "status": "Required",
+            "current_state": "Cards say owner reviews before acting, but no review decision, reviewer, or approval note is saved here.",
+            "needed_before_paid": "Record who reviewed the report, what was accepted, what was rejected, and what was safe to publish or act on.",
+            "boundary": "No automatic AI advice, instruction, or publication approval is created.",
+        },
+        {
+            "requirement": "Evidence lock",
+            "status": "Partial" if live_count > 0 else "Next",
+            "current_state": "The summary lists current source counts and boundaries, but the evidence snapshot is not frozen for later comparison.",
+            "needed_before_paid": "Save source counts, source names, date window, privacy boundary, and changed inputs so later reports can be compared honestly.",
+            "boundary": "A live count can change; it must not be quoted later as if it were a saved historical report.",
+        },
+        {
+            "requirement": "Cost and retention notes",
+            "status": "Missing",
+            "current_state": "Cost, margin, repeat value, retention, and support-cost records are not wired into this shop summary.",
+            "needed_before_paid": "Attach owner cost notes, outcome value, margin estimate, support effort, repeat buyer, and retention markers.",
+            "boundary": "Without these records, CAC/LTV remains readiness language only.",
+        },
+        {
+            "requirement": "Entitlement and privacy rules",
+            "status": "Blocked",
+            "current_state": "No billing entitlement, report-sharing role, consent rule, or private-trust exposure rule is active in this summary.",
+            "needed_before_paid": "Define who can create, view, export, share, and revoke paid reports before any subscription gate is turned on.",
+            "boundary": "Do not sell or expose private intelligence until access, consent, and privacy controls are built.",
+        },
+    ]
     evidence_ledger = [
         {
             "source": "Marketplace and Shop Diary",
@@ -1036,6 +1073,7 @@ def _opportunity_engine_summary(
         "access_model": access_model,
         "capture_checklist": capture_checklist,
         "review_cadence": review_cadence,
+        "report_readiness": report_readiness,
         "field_coverage": {
             "shop_and_marketplace": active_products > 0,
             "spotlight_attention": active_spotlights > 0 or spotlight_impressions > 0,
