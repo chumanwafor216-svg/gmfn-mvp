@@ -171,6 +171,16 @@ assertContains(
 );
 assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
+  /export type OpportunityEngineFieldMapItem[\s\S]*?export function buildShopOpportunityEngineFieldMap[\s\S]*?Marketplace and Shop Diary[\s\S]*?DemandBox[\s\S]*?TrustPassport and TrustSlip[\s\S]*?People interaction[\s\S]*?Finance, support, and outside context/,
+  "Shop Opportunity Engine field map must describe the total GSN operating field without becoming a separate screen."
+);
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /shop-control\.opportunity-engine\.field-map[\s\S]*?Total GSN field map[\s\S]*?opportunityEngineFieldMap\.map/,
+  "Shop Control analytics must expose the total GSN field map as a collapsed Opportunity Engine detail."
+);
+assertContains(
+  "frontend/src/lib/shopAnalyticsWisdom.ts",
   /export type ShopOpportunityEngineSignalTile[\s\S]*?export function buildShopOpportunityEngineSignalTiles[\s\S]*?Shop and Marketplace[\s\S]*?Spotlight attention[\s\S]*?DemandBox[\s\S]*?Trust Graph[\s\S]*?TrustPassport[\s\S]*?TrustSlip/,
   "Shop Opportunity Engine signal readiness tiles must live in shared analytics logic and keep total-GSN next-wiring boundaries."
 );

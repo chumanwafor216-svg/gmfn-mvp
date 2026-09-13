@@ -104,6 +104,23 @@ export type ShopOpportunityEngineSignalInput = {
   hasCommunityContext?: boolean;
 };
 
+export type OpportunityEngineFieldMapItem = {
+  area: string;
+  status: "Live" | "Next";
+  summary: string;
+  reads: string;
+  opens: string;
+  icon: string;
+};
+
+export type ShopOpportunityEngineFieldMapInput = {
+  hasShopSignals?: boolean;
+  hasDemandSignals?: boolean;
+  hasTradeEvidence?: boolean;
+  hasCommunityContext?: boolean;
+  hasAttentionSignal?: boolean;
+};
+
 function positiveNumber(value: unknown): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
@@ -632,6 +649,65 @@ export function buildShopSellerHelper(wisdom: ShopAnalyticsWisdom): ShopSellerHe
       };
   }
 }
+export function buildShopOpportunityEngineFieldMap({
+  hasShopSignals,
+  hasDemandSignals,
+  hasTradeEvidence,
+  hasCommunityContext,
+  hasAttentionSignal,
+}: ShopOpportunityEngineFieldMapInput): OpportunityEngineFieldMapItem[] {
+  return [
+    {
+      area: "Marketplace and Shop Diary",
+      status: hasShopSignals || hasAttentionSignal ? "Live" : "Next",
+      summary: "Shows what is being offered, opened, shared, and contacted.",
+      reads: "Public shelf, Shop Diary media, Spotlight response, share response, and contact taps.",
+      opens: "Guides which offers to clarify, repeat, protect, or stop pushing.",
+      icon: "marketplace",
+    },
+    {
+      area: "DemandBox",
+      status: hasDemandSignals ? "Live" : "Next",
+      summary: "Shows stated needs without pretending one request is the whole market.",
+      reads: "Open community requests, categories, wording overlap, sensitive-demand filtering, and request status.",
+      opens: "Guides whether to respond, ask the community, or validate before stocking more.",
+      icon: "briefcase",
+    },
+    {
+      area: "TrustPassport and TrustSlip",
+      status: hasTradeEvidence ? "Live" : "Next",
+      summary: "Turns serious activity into trust evidence when records exist.",
+      reads: "Protected trade records now; TrustPassport, TrustSlip, and Trust Graph are the next deeper inputs.",
+      opens: "Guides what must be verified before stronger claims, credit, partnership, or handover decisions.",
+      icon: "shield",
+    },
+    {
+      area: "Community Home and Domain",
+      status: hasCommunityContext ? "Live" : "Next",
+      summary: "Keeps opportunity tied to the real community, not a loose public feed.",
+      reads: "Selected community, governed feature state, Community Bulletin, member routes, and domain policies as they connect.",
+      opens: "Guides community-level decisions such as what to announce, enable, pause, or hand over.",
+      icon: "community",
+    },
+    {
+      area: "People interaction",
+      status: "Next",
+      summary: "Will connect structured member-to-member signals without becoming an open chat feed.",
+      reads: "Tagged DemandBox actions, protected replies, confirmations, follow-through, and role-bound interactions.",
+      opens: "Guides who needs a private prompt, record update, confirmation, or governed next action.",
+      icon: "user",
+    },
+    {
+      area: "Finance, support, and outside context",
+      status: "Next",
+      summary: "Will compare internal GSN signals with governed wider context before long-range guidance.",
+      reads: "Finance readiness, support patterns, location/community context, and approved external economic or social signals.",
+      opens: "Guides paid Advanced Analytics, opportunity warnings, and longer-term planning without making guarantees.",
+      icon: "financeInstitution",
+    },
+  ];
+}
+
 export function buildShopOpportunityEngineSignalTiles({
   publicItems,
   publicSlots,

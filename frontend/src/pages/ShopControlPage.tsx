@@ -64,6 +64,7 @@ import {
   analyticsRate,
   buildShopAnalyticsWisdom,
   buildShopMarketIntelligenceSummary,
+  buildShopOpportunityEngineFieldMap,
   buildShopOpportunityEngineGuidanceRows,
   buildShopOpportunityEngineSignalTiles,
   buildShopSellerHelper,
@@ -2735,6 +2736,29 @@ export default function ShopControlPage() {
     ]
   );
   const opportunityEngineLiveSignalCount = opportunityEngineSignalTiles.filter((item) => item.live).length;
+  const opportunityEngineFieldMap = useMemo(
+    () =>
+      buildShopOpportunityEngineFieldMap({
+        hasShopSignals: occupiedPublicProductSlotCount > 0,
+        hasDemandSignals: openDemandSignalCount > 0,
+        hasTradeEvidence: tradeOutcomeRecords7Days > 0,
+        hasCommunityContext: Boolean(effectiveShopClanId || selectedClanId),
+        hasAttentionSignal:
+          attentionSpotlightImpressions7Days > 0 ||
+          attentionVisitors7Days > 0 ||
+          attentionProductOpens7Days > 0,
+      }),
+    [
+      attentionProductOpens7Days,
+      attentionSpotlightImpressions7Days,
+      attentionVisitors7Days,
+      effectiveShopClanId,
+      occupiedPublicProductSlotCount,
+      openDemandSignalCount,
+      selectedClanId,
+      tradeOutcomeRecords7Days,
+    ]
+  );
   const opportunityEngineHorizonLabels = ["Now", "90 days", "1 year", "2 years", "5 years"];
   const opportunityEngineGuidanceRows = useMemo(
     () =>
@@ -6431,6 +6455,27 @@ export default function ShopControlPage() {
                   </div>
                 ))}
               </div>
+              <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(18,58,89,0.08)", padding: "4px 10px 10px" }}>
+                <StableDisclosureSummary debugId="shop-control.opportunity-engine.field-map" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
+                  Total GSN field map
+                </StableDisclosureSummary>
+                <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                  {opportunityEngineFieldMap.map((item) => (
+                    <div key={`opportunity-field-${item.area}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 10, display: "grid", gridTemplateColumns: "32px minmax(0, 1fr)", gap: 8, alignItems: "start" }}>
+                      <GsnLegacyIcon name={item.icon as GsnIconName} size={30} />
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.area}</span>
+                          <span style={{ ...badge(item.status === "Live"), fontSize: 10 }}>{item.status}</span>
+                        </div>
+                        <div style={{ marginTop: 4, color: "#24415C", fontSize: 11.5, fontWeight: 820, lineHeight: 1.35 }}>{item.summary}</div>
+                        <div style={{ marginTop: 4, color: "#5A6F84", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Reads:</strong> {item.reads}</div>
+                        <div style={{ marginTop: 3, color: "#5A6F84", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Opens:</strong> {item.opens}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </details>
             </div>
             <div
               style={{
