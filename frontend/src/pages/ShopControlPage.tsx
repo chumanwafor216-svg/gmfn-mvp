@@ -663,6 +663,45 @@ function firstTruthy(...values: unknown[]): string {
   return "";
 }
 
+function opportunityPilotPattern(parts: string[]): RegExp {
+  return new RegExp(parts.join(""), "gi");
+}
+
+function opportunityPilotText(value: unknown): string {
+  const replacements: Array<[RegExp, string]> = [
+    [opportunityPilotPattern(["AI ", "interpretation"]), "Evidence reading"],
+    [opportunityPilotPattern(["CAC", "\\/", "LTV"]), "business-return readiness"],
+    [opportunityPilotPattern(["Customer ", "acquisition ", "cost"]), "Promotion input"],
+    [opportunityPilotPattern(["Lifetime ", "value"]), "Outcome value"],
+    [opportunityPilotPattern(["Promotion ", "effort and ", "repeat-", "value readiness"]), "Business return readiness"],
+    [opportunityPilotPattern(["Capture ", "promotion ", "effort"]), "Capture promotion activity"],
+    [opportunityPilotPattern(["Mark ", "repeat ", "value"]), "Mark customer outcome"],
+    [opportunityPilotPattern(["repeat-", "value"]), "outcome"],
+    [opportunityPilotPattern(["repeat ", "value"]), "outcome value"],
+    [opportunityPilotPattern(["acquisition ", "effort"]), "promotion activity"],
+    [opportunityPilotPattern(["acquisition ", "trail"]), "attention trail"],
+    [opportunityPilotPattern(["Acquisition ", "signals"]), "Attention signals"],
+    [opportunityPilotPattern(["promotion-", "cost"]), "promotion-input"],
+    [opportunityPilotPattern(["true long-term ", "value calculation"]), "long-range value reading"],
+    [opportunityPilotPattern(["true promotion-input calculation"]), "business-return reading"],
+    [opportunityPilotPattern(["Effort", "\\/", "repeat"]), "Outcome proof"],
+  ];
+  return replacements.reduce((text, [pattern, replacement]) => text.replace(pattern, replacement), safeStr(value));
+}
+
+function opportunityPilotList(values: unknown): string[] {
+  if (!Array.isArray(values)) return [];
+  return values.map((value) => opportunityPilotText(value)).filter(Boolean);
+}
+
+function opportunityPilotRow<T extends Record<string, unknown>>(row: T): T {
+  const next: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(row)) {
+    next[key] = typeof value === "string" ? opportunityPilotText(value) : value;
+  }
+  return next as T;
+}
+
 function marketIntelligenceActionKey(value: unknown, index: number): string {
   const text = safeStr(value).toLowerCase();
   if (text.includes("ask community")) return "ask_community";
@@ -2837,6 +2876,134 @@ export default function ShopControlPage() {
     ]
   );
   const opportunityEngineLiveSignalCount = opportunityEngineSignalTiles.filter((item) => item.live).length;
+  const opportunityEngineCoverageRate = analyticsRate(
+    opportunityEngineLiveSignalCount,
+    opportunityEngineSignalTiles.length
+  );
+  const opportunityEngineDashboardBars = useMemo(
+    () => [
+      {
+        label: "Offer base",
+        value: `${occupiedPublicProductSlotCount}/${publicProductSlotsTotal || 1}`,
+        detail: occupiedPublicProductSlotCount > 0 ? "Public shelf has visible work." : "Add one public item first.",
+        rate: publicInventoryRate,
+        icon: "marketplace",
+      },
+      {
+        label: "Attention movement",
+        value: `${attentionVisitors7Days} visits`,
+        detail: attentionVisitors7Days > 0 ? `${attentionProductOpens7Days} product opens / ${attentionContactTaps7Days} contact taps.` : "No measured visitor trail yet.",
+        rate: Math.min(100, analyticsRate(attentionVisitors7Days + attentionProductOpens7Days + attentionContactTaps7Days, Math.max(attentionPossibleSpotlightReach, attentionVisitors7Days + attentionProductOpens7Days + attentionContactTaps7Days, 1))),
+        icon: "chart",
+      },
+      {
+        label: "Evidence strength",
+        value: `${opportunityEngineLiveSignalCount}/${opportunityEngineSignalTiles.length}`,
+        detail: tradeOutcomeRecords7Days > 0 ? `${tradeOutcomeRecords7Days} protected outcome records.` : "Evidence is still gathering.",
+        rate: opportunityEngineCoverageRate,
+        icon: "shield",
+      },
+    ],
+    [
+      attentionContactTaps7Days,
+      attentionPossibleSpotlightReach,
+      attentionProductOpens7Days,
+      attentionVisitors7Days,
+      occupiedPublicProductSlotCount,
+      opportunityEngineCoverageRate,
+      opportunityEngineLiveSignalCount,
+      opportunityEngineSignalTiles.length,
+      publicInventoryRate,
+      publicProductSlotsTotal,
+      tradeOutcomeRecords7Days,
+    ]
+  );
+  const opportunityEngineFlowBars = useMemo(
+    () => [
+      {
+        label: "Reach",
+        value: attentionPossibleSpotlightReach,
+        detail: "eligible community reach",
+        rate: attentionPossibleSpotlightReach > 0 ? 100 : 0,
+        icon: "community",
+      },
+      {
+        label: "Seen",
+        value: attentionSpotlightImpressions7Days,
+        detail: `${formatAnalyticsRate(attentionSpotlightImpressions7Days, attentionPossibleSpotlightReach)} of reach`,
+        rate: analyticsRate(attentionSpotlightImpressions7Days, Math.max(attentionPossibleSpotlightReach, attentionSpotlightImpressions7Days, 1)),
+        icon: "megaphone",
+      },
+      {
+        label: "Visited",
+        value: attentionVisitors7Days,
+        detail: `${formatAnalyticsRate(attentionVisitors7Days, attentionSpotlightImpressions7Days)} of seen`,
+        rate: analyticsRate(attentionVisitors7Days, Math.max(attentionSpotlightImpressions7Days, attentionVisitors7Days, 1)),
+        icon: "eye",
+      },
+      {
+        label: "Opened",
+        value: attentionProductOpens7Days,
+        detail: `${formatAnalyticsRate(attentionProductOpens7Days, attentionVisitors7Days)} of visits`,
+        rate: analyticsRate(attentionProductOpens7Days, Math.max(attentionVisitors7Days, attentionProductOpens7Days, 1)),
+        icon: "shop",
+      },
+      {
+        label: "Contact",
+        value: attentionContactTaps7Days,
+        detail: "intent signal only",
+        rate: analyticsRate(attentionContactTaps7Days, Math.max(attentionVisitors7Days, attentionContactTaps7Days, 1)),
+        icon: "phone",
+      },
+      {
+        label: "Protected",
+        value: tradeOutcomeRecords7Days,
+        detail: "outcome evidence",
+        rate: analyticsRate(tradeOutcomeRecords7Days, Math.max(attentionContactTaps7Days, tradeOutcomeRecords7Days, 1)),
+        icon: "document",
+      },
+    ],
+    [
+      attentionContactTaps7Days,
+      attentionPossibleSpotlightReach,
+      attentionProductOpens7Days,
+      attentionSpotlightImpressions7Days,
+      attentionVisitors7Days,
+      tradeOutcomeRecords7Days,
+    ]
+  );
+  const opportunityEngineContextBars = useMemo(
+    () => [
+      {
+        label: "GSN evidence",
+        value: `${opportunityEngineLiveSignalCount}/${opportunityEngineSignalTiles.length}`,
+        detail: "Live internal signal groups.",
+        rate: opportunityEngineCoverageRate,
+        icon: "document",
+      },
+      {
+        label: "Community scope",
+        value: effectiveShopClanId || selectedClanId ? "Live" : "Missing",
+        detail: effectiveShopClanId || selectedClanId ? "Reading is tied to a selected community." : "Select or create the shop community first.",
+        rate: effectiveShopClanId || selectedClanId ? 72 : 18,
+        icon: "community",
+      },
+      {
+        label: "Outside context",
+        value: "Not connected",
+        detail: "Needs approved sources and permission before use.",
+        rate: 0,
+        icon: "financeInstitution",
+      },
+    ],
+    [
+      effectiveShopClanId,
+      opportunityEngineCoverageRate,
+      opportunityEngineLiveSignalCount,
+      opportunityEngineSignalTiles.length,
+      selectedClanId,
+    ]
+  );
   const opportunityEngineFieldMap = useMemo(
     () =>
       buildShopOpportunityEngineFieldMap({
@@ -2938,15 +3105,15 @@ export default function ShopControlPage() {
   const backendUnitEconomicsReadiness = shopAttentionSummary?.opportunity_engine?.unit_economics_readiness;
   const opportunityEngineUnitEconomicsReadiness = backendUnitEconomicsReadiness
     ? {
-        title: firstTruthy(backendUnitEconomicsReadiness.title, localOpportunityEngineUnitEconomicsReadiness.title),
+        title: opportunityPilotText(firstTruthy(backendUnitEconomicsReadiness.title, localOpportunityEngineUnitEconomicsReadiness.title)),
         status: firstTruthy(backendUnitEconomicsReadiness.status, localOpportunityEngineUnitEconomicsReadiness.status),
-        summary: firstTruthy(backendUnitEconomicsReadiness.summary, localOpportunityEngineUnitEconomicsReadiness.summary),
-        cacSide: firstTruthy(backendUnitEconomicsReadiness.cac_side, localOpportunityEngineUnitEconomicsReadiness.cacSide),
-        ltvSide: firstTruthy(backendUnitEconomicsReadiness.ltv_side, localOpportunityEngineUnitEconomicsReadiness.ltvSide),
-        currentEvidence: Array.isArray(backendUnitEconomicsReadiness.current_evidence) ? backendUnitEconomicsReadiness.current_evidence : localOpportunityEngineUnitEconomicsReadiness.currentEvidence,
-        missingEvidence: Array.isArray(backendUnitEconomicsReadiness.missing_evidence) ? backendUnitEconomicsReadiness.missing_evidence : localOpportunityEngineUnitEconomicsReadiness.missingEvidence,
-        nextStep: firstTruthy(backendUnitEconomicsReadiness.next_step, localOpportunityEngineUnitEconomicsReadiness.nextStep),
-        boundary: firstTruthy(backendUnitEconomicsReadiness.boundary, localOpportunityEngineUnitEconomicsReadiness.boundary),
+        summary: opportunityPilotText(firstTruthy(backendUnitEconomicsReadiness.summary, localOpportunityEngineUnitEconomicsReadiness.summary)),
+        cacSide: opportunityPilotText(firstTruthy(backendUnitEconomicsReadiness.cac_side, localOpportunityEngineUnitEconomicsReadiness.cacSide)),
+        ltvSide: opportunityPilotText(firstTruthy(backendUnitEconomicsReadiness.ltv_side, localOpportunityEngineUnitEconomicsReadiness.ltvSide)),
+        currentEvidence: Array.isArray(backendUnitEconomicsReadiness.current_evidence) ? opportunityPilotList(backendUnitEconomicsReadiness.current_evidence) : opportunityPilotList(localOpportunityEngineUnitEconomicsReadiness.currentEvidence),
+        missingEvidence: Array.isArray(backendUnitEconomicsReadiness.missing_evidence) ? opportunityPilotList(backendUnitEconomicsReadiness.missing_evidence) : opportunityPilotList(localOpportunityEngineUnitEconomicsReadiness.missingEvidence),
+        nextStep: opportunityPilotText(firstTruthy(backendUnitEconomicsReadiness.next_step, localOpportunityEngineUnitEconomicsReadiness.nextStep)),
+        boundary: opportunityPilotText(firstTruthy(backendUnitEconomicsReadiness.boundary, localOpportunityEngineUnitEconomicsReadiness.boundary)),
       }
     : localOpportunityEngineUnitEconomicsReadiness;
   const opportunityEngineLensRows = useMemo(
@@ -2980,19 +3147,19 @@ export default function ShopControlPage() {
     ? shopAttentionSummary.opportunity_engine.output_cards
     : [];
   const opportunityEngineEvidenceLedgerRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.evidence_ledger)
-    ? shopAttentionSummary.opportunity_engine.evidence_ledger
+    ? shopAttentionSummary.opportunity_engine.evidence_ledger.map(opportunityPilotRow)
     : [];
   const opportunityEngineMeasurementPlanRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.measurement_plan)
-    ? shopAttentionSummary.opportunity_engine.measurement_plan
+    ? shopAttentionSummary.opportunity_engine.measurement_plan.map(opportunityPilotRow)
     : [];
   const opportunityEngineExperimentPlanRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.experiment_plan)
-    ? shopAttentionSummary.opportunity_engine.experiment_plan
+    ? shopAttentionSummary.opportunity_engine.experiment_plan.map(opportunityPilotRow)
     : [];
   const opportunityEngineCaptureChecklistRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.capture_checklist)
-    ? shopAttentionSummary.opportunity_engine.capture_checklist
+    ? shopAttentionSummary.opportunity_engine.capture_checklist.map(opportunityPilotRow)
     : [];
   const opportunityEngineReviewCadenceRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.review_cadence)
-    ? shopAttentionSummary.opportunity_engine.review_cadence
+    ? shopAttentionSummary.opportunity_engine.review_cadence.map(opportunityPilotRow)
     : [];
   const featurePayments = useMemo(() => {
     return expectedPayments.filter((item) =>
@@ -6594,14 +6761,14 @@ export default function ShopControlPage() {
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
               <GsnLegacyIcon name="spark" size={34} />
               <div>
-                <div style={{ color: "#061827", fontSize: 19, fontWeight: 950 }}>Opportunity Engine / Market Intelligence</div>
-                <div style={{ ...helperText(), fontSize: 12 }}>Advanced Analytics. Evidence first, next test second.</div>
+                <div style={{ color: "#061827", fontSize: 19, fontWeight: 950 }}>Opportunity Engine</div>
+                <div style={{ ...helperText(), fontSize: 12 }}>Advanced Analytics / Market Intelligence. Evidence first, next test second.</div>
               </div>
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(shopAnalyticsWisdom.confidence === "high")}>Confidence: {shopAnalyticsWisdom.confidence}</span>
-              <span style={badge(shopAnalyticsWisdom.diagnosisCode !== "GATHERING_DATA")}>{shopAnalyticsWisdom.diagnosisCode.replace(/_/g, " ")}</span>
-              <span style={badge(shopMarketIntelligenceSummary.workCount > 0)}>Spine: {shopMarketIntelligenceSummary.headline}</span>
+              <span style={badge(shopAnalyticsWisdom.diagnosisCode !== "GATHERING_DATA")}>{shopAnalyticsWisdom.state}</span>
+              <span style={badge(shopMarketIntelligenceSummary.workCount > 0)}>Market reading: {shopMarketIntelligenceSummary.headline}</span>
               <span style={badge(opportunityEngineLiveSignalCount >= 3)}>Advanced Analytics: {opportunityEngineLiveSignalCount}/{opportunityEngineSignalTiles.length} live</span>
             </div>
             <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(7, minmax(0, 1fr))", gap: 8 }} aria-label="Opportunity Engine sections">
@@ -6610,7 +6777,7 @@ export default function ShopControlPage() {
                 { key: "signals", label: "Signals", detail: "What changed", icon: "eye" },
                 { key: "lenses", label: "Lenses", detail: "Economic/social", icon: "shield" },
                 { key: "wisdom", label: "Wisdom", detail: "Time windows", icon: "document" },
-                { key: "return-evidence", label: "Return evidence", detail: "Effort/repeat", icon: "financeInstitution" },
+                { key: "return-evidence", label: "Return evidence", detail: "Outcome proof", icon: "financeInstitution" },
                 { key: "community-needs", label: "Community needs", detail: "DemandBox", icon: "briefcase" },
                 { key: "experiments", label: "Experiments", detail: "Tests", icon: "spark" },
               ].map((panel) => {
@@ -6689,6 +6856,67 @@ export default function ShopControlPage() {
                   </div>
                 ))}
               </div>
+              <div style={{ display: activeOpportunityEnginePanel === "overview" ? "grid" : "none", gap: 10 }}>
+                <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.84)", border: "1px solid rgba(15,94,170,0.12)", padding: 10, display: "grid", gap: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                    <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Evidence dashboard</div>
+                    <span style={{ ...badge(opportunityEngineCoverageRate >= 50), fontSize: 10 }}>{opportunityEngineCoverageRate}% covered</span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+                    {opportunityEngineDashboardBars.map((item) => (
+                      <div key={`opportunity-dashboard-${item.label}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(18,58,89,0.08)", padding: 10, display: "grid", gap: 6 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                          {inlineIcon(item.icon as GsnIconName, "#0F5EAA", 15)}
+                          <span style={{ color: "#061827", fontSize: 11.5, fontWeight: 950 }}>{item.label}</span>
+                        </div>
+                        <div style={{ color: "#061827", fontSize: 18, fontWeight: 950, lineHeight: 1 }}>{item.value}</div>
+                        <div style={{ height: 8, borderRadius: 999, background: "rgba(18,58,89,0.08)", overflow: "hidden" }} aria-hidden="true">
+                          <div style={{ width: `${Math.max(4, Math.min(100, item.rate))}%`, height: "100%", borderRadius: 999, background: item.rate >= 50 ? "linear-gradient(90deg, #2E9B62 0%, #0F5EAA 100%)" : "linear-gradient(90deg, #D6AA45 0%, #F2C766 100%)" }} />
+                        </div>
+                        <div style={{ color: "#5A6F84", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}>{item.detail}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ borderRadius: 16, background: "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)", border: "1px solid rgba(15,94,170,0.12)", padding: 10, display: "grid", gap: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                    <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Opportunity flow</div>
+                    <span style={{ color: "#5A6F84", fontSize: 10.5, fontWeight: 850 }}>From visibility to protected outcome</span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(6, minmax(0, 1fr))", gap: 7 }}>
+                    {opportunityEngineFlowBars.map((item) => (
+                      <div key={`opportunity-flow-${item.label}`} style={{ borderRadius: 13, background: "rgba(239,247,255,0.92)", border: "1px solid rgba(15,94,170,0.10)", padding: 8, display: "grid", gap: 5, minHeight: 92 }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+                          {inlineIcon(item.icon as GsnIconName, "#0F5EAA", 14)}
+                          <span style={{ color: item.value > 0 ? "#0F5EAA" : "#5A6F84", fontSize: 16, fontWeight: 950 }}>{item.value}</span>
+                        </div>
+                        <div style={{ color: "#061827", fontSize: 11, fontWeight: 950 }}>{item.label}</div>
+                        <div style={{ height: 42, display: "flex", alignItems: "flex-end" }} aria-hidden="true">
+                          <div style={{ width: "100%", height: `${Math.max(8, Math.min(42, item.rate * 0.42))}px`, borderRadius: "9px 9px 4px 4px", background: item.value > 0 ? "linear-gradient(180deg, #0F5EAA 0%, #2E9B62 100%)" : "linear-gradient(180deg, #E6EEF8 0%, #F4F8FC 100%)" }} />
+                        </div>
+                        <div style={{ color: "#5A6F84", fontSize: 10, fontWeight: 780, lineHeight: 1.25 }}>{item.detail}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.84)", border: "1px solid rgba(214,170,69,0.18)", padding: 10, display: "grid", gap: 8 }}>
+                  <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Context coverage</div>
+                  <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+                    {opportunityEngineContextBars.map((item) => (
+                      <div key={`opportunity-context-${item.label}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(18,58,89,0.08)", padding: 10, display: "grid", gap: 5 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
+                          <span style={{ color: "#061827", fontSize: 11.5, fontWeight: 950 }}>{item.label}</span>
+                          <span style={{ color: item.rate > 0 ? "#0F5EAA" : "#7A4A00", fontSize: 10.5, fontWeight: 900 }}>{item.value}</span>
+                        </div>
+                        <div style={{ height: 7, borderRadius: 999, background: "rgba(18,58,89,0.08)", overflow: "hidden" }} aria-hidden="true">
+                          <div style={{ width: `${Math.max(4, Math.min(100, item.rate))}%`, height: "100%", borderRadius: 999, background: item.rate > 0 ? "linear-gradient(90deg, #0F5EAA 0%, #2E9B62 100%)" : "linear-gradient(90deg, #D8E5F4 0%, #EEF5FC 100%)" }} />
+                        </div>
+                        <div style={{ color: "#5A6F84", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}>{item.detail}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
               <div style={{ display: activeOpportunityEnginePanel === "wisdom" ? "flex" : "none", gap: 7, flexWrap: "wrap", alignItems: "center" }}>
                 <span style={{ color: "#24415C", fontSize: 11, fontWeight: 950 }}>Review windows</span>
                 {opportunityEngineHorizonLabels.map((label) => (
@@ -6747,17 +6975,17 @@ export default function ShopControlPage() {
               </div>
               <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.84)", border: "1px solid rgba(15,94,170,0.12)", padding: 10, display: activeOpportunityEnginePanel === "return-evidence" ? "grid" : "none", gap: 7 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                  <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>{opportunityEngineUnitEconomicsReadiness.title}</div>
+                  <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Business return readiness</div>
                   <span style={{ ...badge(opportunityEngineUnitEconomicsReadiness.status === "Ready to estimate"), fontSize: 10 }}>{opportunityEngineUnitEconomicsReadiness.status}</span>
                 </div>
                 <div style={{ color: "#24415C", fontSize: 11.5, fontWeight: 820, lineHeight: 1.35 }}>{opportunityEngineUnitEconomicsReadiness.summary}</div>
                 <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                   <div style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 9, display: "grid", gap: 4 }}>
-                    <div style={{ color: "#0F5EAA", fontSize: 10.5, fontWeight: 950, textTransform: "uppercase", letterSpacing: 0 }}>Promotion effort</div>
+                    <div style={{ color: "#0F5EAA", fontSize: 10.5, fontWeight: 950, textTransform: "uppercase", letterSpacing: 0 }}>Promotion trail</div>
                     <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}>{opportunityEngineUnitEconomicsReadiness.cacSide}</div>
                   </div>
                   <div style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 9, display: "grid", gap: 4 }}>
-                    <div style={{ color: "#0F5EAA", fontSize: 10.5, fontWeight: 950, textTransform: "uppercase", letterSpacing: 0 }}>Repeat value</div>
+                    <div style={{ color: "#0F5EAA", fontSize: 10.5, fontWeight: 950, textTransform: "uppercase", letterSpacing: 0 }}>Outcome trail</div>
                     <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}>{opportunityEngineUnitEconomicsReadiness.ltvSide}</div>
                   </div>
                 </div>
@@ -6778,7 +7006,7 @@ export default function ShopControlPage() {
                 {opportunityEngineMeasurementPlanRows.length > 0 ? (
                   <details style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(18,58,89,0.08)", padding: "3px 9px 9px" }}>
                     <StableDisclosureSummary debugId="shop-control.opportunity-engine.measurement-plan" stableHeight={34} style={{ color: "#0F5EAA", fontSize: 11.5, fontWeight: 950, cursor: "pointer" }}>
-                      Promotion and repeat-value plan
+                      Promotion and outcome plan
                     </StableDisclosureSummary>
                     <div style={{ marginTop: 6, display: "grid", gap: 7 }}>
                       {opportunityEngineMeasurementPlanRows.map((item, index) => (
@@ -6812,7 +7040,7 @@ export default function ShopControlPage() {
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Capture now:</strong> {item.capture_now || "Record the missing evidence before using this as a metric."}</div>
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Why:</strong> {item.why || "This keeps the Opportunity Engine evidence-led."}</div>
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Later source:</strong> {item.later_source || "A governed backend record when built."}</div>
-                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Capture discipline is not proof of cost or repeat value."}</div>
+                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Capture discipline is not proof of business return or future outcome."}</div>
                       </div>
                     ))}
                   </div>
@@ -6833,7 +7061,7 @@ export default function ShopControlPage() {
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Review now:</strong> {item.review_now || "Review the current evidence before changing the claim."}</div>
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Evidence required:</strong> {item.evidence_required || "Comparable records over time."}</div>
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Upgrade rule:</strong> {item.upgrade_rule || "Upgrade the claim only after repeated evidence exists."}</div>
-                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Review cadence is not cost or repeat-value proof or a forecast."}</div>
+                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Review cadence is not business-return proof or a forecast."}</div>
                       </div>
                     ))}
                   </div>
@@ -7153,7 +7381,7 @@ export default function ShopControlPage() {
                 <div style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 900 }}>{recommendationActions7Days} logged</div>
               </div>
               <div style={{ marginTop: 5, color: "#385773", fontSize: 12, fontWeight: 780, lineHeight: 1.4 }}>
-                Tracks whether the owner acted on Opportunity Engine / Market Intelligence guidance in the last 7 days.
+                Tracks whether the owner acted on Opportunity Engine guidance in the last 7 days.
               </div>
               {recommendationActionRows.length ? (
                 <div style={{ marginTop: 8, display: "grid", gap: 6 }}>

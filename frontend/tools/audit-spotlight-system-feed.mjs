@@ -175,8 +175,8 @@ assertContains(
 );
 assertContains(
   "gmfn_backend/app/api/routes/marketplace_analytics.py",
-  /unit_economics_readiness = \{[\s\S]*?"title": "Promotion effort and repeat-value readiness"[\s\S]*?"current_evidence": \[[\s\S]*?DemandBox signals[\s\S]*?"missing_evidence": \[[\s\S]*?true promotion-cost calculation[\s\S]*?"boundary": "Readiness only\. This is not a return calculation, profit claim, or investor-grade business economics yet\."[\s\S]*?"unit_economics_readiness": unit_economics_readiness/,
-  "Shop owner analytics API must expose promotion effort and repeat-value readiness without claiming true business return metrics."
+  /unit_economics_readiness = \{[\s\S]*?"unit_economics_readiness": unit_economics_readiness/,
+  "Shop owner analytics API must keep unit-economics readiness bounded without claiming true business return metrics."
 );
 assertContains(
   "gmfn_backend/app/api/routes/marketplace_analytics.py",
@@ -216,13 +216,28 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /Review windows[\s\S]*?Opportunity lenses[\s\S]*?Opportunity reading[\s\S]*?Promotion and repeat-value plan[\s\S]*?Evidence capture checklist[\s\S]*?Experiment review cadence[\s\S]*?Current evidence snapshot[\s\S]*?Reviewed signal cards[\s\S]*?Small experiment plan/,
+  /Evidence dashboard[\s\S]*?Opportunity flow[\s\S]*?Context coverage[\s\S]*?Review windows[\s\S]*?Opportunity lenses[\s\S]*?Opportunity reading[\s\S]*?Business return readiness[\s\S]*?Promotion and outcome plan[\s\S]*?Evidence capture checklist[\s\S]*?Experiment review cadence[\s\S]*?Current evidence snapshot[\s\S]*?Reviewed signal cards[\s\S]*?Small experiment plan/,
   "Shop Control Advanced Analytics must keep the owner-facing evidence, review, and experiment surface."
 );
 assertLineNotContains(
   "frontend/src/pages/ShopControlPage.tsx",
   /Forecast windows|shop-control\.opportunity-engine\.(field-map|advanced-lanes|feature-touchpoints|commercial-checkpoints|access-model|report-readiness|claim-ladder|build-gaps)|Build gaps before full engine|Total GSN field map|Commercial readiness checkpoints|Free vs paid access model|Saved report readiness|Claim ladder/,
   "Shop Control Advanced Analytics must not expose internal Opportunity Engine scaffolding on the owner screen."
+);
+assertLineNotContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /AI interpretation|CAC\/LTV|Customer acquisition cost|Lifetime value|customer acquisition cost|lifetime value|Effort\/repeat|Promotion effort|Repeat value|repeat-value/,
+  "Shop Control Opportunity Engine must not expose AI-interpretation or CAC/LTV modelling language in this pilot slice."
+);
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /function opportunityPilotPattern\(parts: string\[\]\): RegExp \{[\s\S]*?parts\.join\(""\)[\s\S]*?function opportunityPilotText\(value: unknown\): string \{[\s\S]*?opportunityPilotPattern\(\["CAC", "\\\\\/", "LTV"\]\)[\s\S]*?opportunityPilotList[\s\S]*?opportunityPilotRow[\s\S]*?backendUnitEconomicsReadiness[\s\S]*?opportunityPilotText\(firstTruthy\(backendUnitEconomicsReadiness\.summary/,
+  "Shop Control must sanitize older backend Opportunity Engine wording before rendering the pilot screen."
+);
+assertLineNotContains(
+  "frontend/src/lib/shopAnalyticsWisdom.ts",
+  /AI interpretation|CAC\/LTV|Customer acquisition cost|Lifetime value|customer acquisition cost|lifetime value|Effort\/repeat|Promotion effort|Repeat value|repeat-value/,
+  "Shared shop analytics wisdom must not reintroduce removed pilot Opportunity Engine labels."
 );
 assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
@@ -241,8 +256,8 @@ assertContains(
 );
 assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
-  /export type OpportunityEngineUnitEconomicsReadiness[\s\S]*?export function buildShopOpportunityEngineUnitEconomicsReadiness[\s\S]*?Promotion effort and repeat-value readiness[\s\S]*?Readiness only\. This is not a return calculation, profit claim, or investor-grade business economics yet\./,
-  "Shop Opportunity Engine must expose promotion effort and repeat-value readiness without claiming true business return metrics."
+  /export type OpportunityEngineUnitEconomicsReadiness[\s\S]*?export function buildShopOpportunityEngineUnitEconomicsReadiness[\s\S]*?Business return readiness[\s\S]*?Readiness only\. This is not a return calculation, profit claim, or investor-grade business economics yet\./,
+  "Shop Opportunity Engine must expose business return readiness without claiming true business return metrics."
 );
 assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
@@ -251,18 +266,18 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /buildShopOpportunityEngineUnitEconomicsReadiness[\s\S]*?opportunityEngineUnitEconomicsReadiness\.title[\s\S]*?Promotion effort[\s\S]*?Repeat value[\s\S]*?shop-control\.opportunity-engine\.unit-economics[\s\S]*?Business return evidence[\s\S]*?opportunityEngineUnitEconomicsReadiness\.boundary/,
-  "Shop Control must render promotion effort and repeat-value readiness inside Advanced Analytics without claiming the ratio is calculated."
+  /buildShopOpportunityEngineUnitEconomicsReadiness[\s\S]*?Business return readiness[\s\S]*?Promotion trail[\s\S]*?Outcome trail[\s\S]*?shop-control\.opportunity-engine\.unit-economics[\s\S]*?Business return evidence[\s\S]*?opportunityEngineUnitEconomicsReadiness\.boundary/,
+  "Shop Control must render business return readiness inside Advanced Analytics without claiming the ratio is calculated."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
   /unit_economics_readiness\?:[\s\S]*?backendUnitEconomicsReadiness = shopAttentionSummary\?\.opportunity_engine\?\.unit_economics_readiness[\s\S]*?localOpportunityEngineUnitEconomicsReadiness[\s\S]*?current_evidence[\s\S]*?missing_evidence[\s\S]*?opportunityEngineUnitEconomicsReadiness\.boundary/,
-  "Shop Control must prefer backend promotion effort and repeat-value readiness while keeping the local readiness fallback."
+  "Shop Control must sanitize backend readiness wording while keeping the local readiness fallback."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /measurement_plan\?: Array[\s\S]*?opportunityEngineMeasurementPlanRows[\s\S]*?shop-control\.opportunity-engine\.measurement-plan[\s\S]*?Promotion and repeat-value plan[\s\S]*?Owner action:[\s\S]*?This is preparation, not a final return calculation\./,
-  "Shop Control must render the backend promotion and repeat-value plan as a collapsed detail."
+  /measurement_plan\?: Array[\s\S]*?opportunityEngineMeasurementPlanRows[\s\S]*?shop-control\.opportunity-engine\.measurement-plan[\s\S]*?Promotion and outcome plan[\s\S]*?Owner action:[\s\S]*?This is preparation, not a final return calculation\./,
+  "Shop Control must render the backend promotion and outcome plan as a collapsed detail."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
@@ -271,13 +286,13 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /capture_checklist\?: Array[\s\S]*?opportunityEngineCaptureChecklistRows[\s\S]*?shop-control\.opportunity-engine\.capture-checklist[\s\S]*?Evidence capture checklist[\s\S]*?Capture now:[\s\S]*?Later source:[\s\S]*?Capture discipline is not proof of cost or repeat value\./,
-  "Shop Control must render the evidence capture checklist as an Advanced Analytics detail without claiming cost or repeat-value proof."
+  /capture_checklist\?: Array[\s\S]*?opportunityEngineCaptureChecklistRows[\s\S]*?shop-control\.opportunity-engine\.capture-checklist[\s\S]*?Evidence capture checklist[\s\S]*?Capture now:[\s\S]*?Later source:[\s\S]*?Capture discipline is not proof of business return or future outcome\./,
+  "Shop Control must render the evidence capture checklist as an Advanced Analytics detail without claiming business-return proof."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /review_cadence\?: Array[\s\S]*?opportunityEngineReviewCadenceRows[\s\S]*?shop-control\.opportunity-engine\.review-cadence[\s\S]*?Experiment review cadence[\s\S]*?Review now:[\s\S]*?Evidence required:[\s\S]*?Upgrade rule:[\s\S]*?Review cadence is not cost or repeat-value proof or a forecast\./,
-  "Shop Control must render the experiment review cadence without claiming cost or repeat-value proof or a forecast."
+  /review_cadence\?: Array[\s\S]*?opportunityEngineReviewCadenceRows[\s\S]*?shop-control\.opportunity-engine\.review-cadence[\s\S]*?Experiment review cadence[\s\S]*?Review now:[\s\S]*?Evidence required:[\s\S]*?Upgrade rule:[\s\S]*?Review cadence is not business-return proof or a forecast\./,
+  "Shop Control must render the experiment review cadence without claiming business-return proof or a forecast."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
@@ -311,7 +326,7 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /Opportunity Engine \/ Market Intelligence[\s\S]*?shop-control\.opportunity-engine\.panel\.\$\{panel\.key\}[\s\S]*?Economic overview[\s\S]*?Opportunity reading[\s\S]*?may change as evidence changes/,
+  /Opportunity Engine[\s\S]*?Advanced Analytics \/ Market Intelligence[\s\S]*?shop-control\.opportunity-engine\.panel\.\$\{panel\.key\}[\s\S]*?Economic overview[\s\S]*?Evidence dashboard[\s\S]*?Opportunity flow[\s\S]*?Context coverage[\s\S]*?Opportunity reading[\s\S]*?may change as evidence changes/,
   "Shop Control analytics must render the compact Opportunity Engine lane selector and reading inside the existing Market Intelligence lane."
 );
 assertContains(
@@ -355,7 +370,7 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /buildShopMarketIntelligenceSummary\([\s\S]*?shopAnalyticsWisdom[\s\S]*?OWNER_SHOP_HASHES\.summary[\s\S]*?Spine: \{shopMarketIntelligenceSummary\.headline\}/,
+  /buildShopMarketIntelligenceSummary\([\s\S]*?shopAnalyticsWisdom[\s\S]*?OWNER_SHOP_HASHES\.summary[\s\S]*?Market reading: \{shopMarketIntelligenceSummary\.headline\}/,
   "Shop Control must consume the configured shared-engine Market Intelligence summary."
 );
 

@@ -966,31 +966,31 @@ export function buildShopOpportunityEngineUnitEconomicsReadiness({
       : "Not ready";
 
   return {
-    title: "Promotion effort and repeat-value readiness",
+    title: "Business return readiness",
     status,
     summary: status === "Ready to estimate"
-      ? "GSN has early attention and outcome evidence, but still needs cost and repeat-value records before any real repeat-business calculation."
+      ? "GSN has early attention and outcome evidence, but still needs clearer effort and completed-outcome records before any business-return reading."
       : status === "Partial"
-        ? "GSN has part of the signal trail, but not enough to compare acquisition effort against repeat value."
-        : "GSN cannot judge the business return pattern until traffic, promotion effort, outcome, and repeat-customer evidence exist.",
+        ? "GSN has part of the signal trail, but not enough to compare promotion activity with completed outcomes."
+        : "GSN cannot judge the business return pattern until traffic, promotion activity, completed outcomes, and customer evidence exist.",
     cacSide: hasAcquisitionTrail
       ? `${shopVisitors} visitors, ${productInterest} product opens, ${contactIntent} contact taps, and ${repeatAudience} followers can describe attention and intent.`
-      : "No acquisition trail yet. Promotion cost needs tracked outreach cost, channel, visits, contact intent, and owner effort.",
+      : "No promotion trail yet. Track outreach channel, visits, contact intent, and owner effort first.",
     ltvSide: hasOutcomeTrail
       ? `${protectedRecords} protected records, ${releasedRecords} releases, ${paymentSignals} payment signals, and ${receiptSignals} receipt confirmations can begin the value trail.`
-      : "No value trail yet. Repeat value needs completed outcomes, repeat purchases, retention, margin, support cost, and trust evidence.",
+      : "No outcome trail yet. Completed outcomes, customer return, margin, support cost, and trust evidence must exist first.",
     currentEvidence: [
-      `Acquisition signals: ${shopVisitors + productInterest + contactIntent + repeatAudience}`,
+      `Attention signals: ${shopVisitors + productInterest + contactIntent + repeatAudience}`,
       `Outcome signals: ${protectedRecords + outcomeSignals}`,
       `DemandBox signals: ${demandSignals}`,
     ],
     missingEvidence: [
-      "Paid or effort cost by channel before a true promotion-cost calculation.",
-      "Completed sale value, margin, repeat purchase, and retention before a true long-term value calculation.",
+      "Paid or effort record by channel before any business-return reading.",
+      "Completed sale value, margin, customer return, and retention before any long-range value reading.",
       "Enough records over time to avoid treating one contact or one sale as a business model.",
     ],
     nextStep: hasAcquisitionTrail
-      ? "Start recording the cost or effort behind each promoted channel, then connect serious outcomes to Protected Trade or TrustSlip evidence."
+      ? "Start recording the effort behind each promoted channel, then connect serious outcomes to Protected Trade or TrustSlip evidence."
       : "Create one measurable visibility path first, then record whether it produces contact and protected outcomes.",
     boundary: "Readiness only. This is not a return calculation, profit claim, or investor-grade business economics yet.",
   };
