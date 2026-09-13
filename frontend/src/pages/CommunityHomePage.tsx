@@ -2280,7 +2280,9 @@ export default function CommunityHomePage() {
   );
   const activeCommunityNotices = useMemo(() => {
     const nowMs = noticeExpiryNowMs;
-    return communityNotices.filter((item) => isNoticeVisibleOnBoard(item, nowMs));
+    return communityNotices.filter(
+      (item) => isNoticeVisibleOnBoard(item, nowMs) && !isMarketNeedPulseNotice(item)
+    );
   }, [communityNotices, noticeExpiryNowMs]);
   const selectedCommunityNoticeIndexSafe =
     activeCommunityNotices.length > 0
@@ -2424,7 +2426,9 @@ export default function CommunityHomePage() {
       nextIndex: Number.isFinite(nextIndex) ? nextIndex : -1,
     };
   }, [activeCommunityNotices, noticeExpiryNowMs, pendingCommunityNoticeReviewCount]);
-  const communityPreviousAnnouncementItems = communityPreviousAnnouncements.slice(0, 10);
+  const communityPreviousAnnouncementItems = communityPreviousAnnouncements
+    .filter((item) => !isMarketNeedPulseNotice(item))
+    .slice(0, 10);
   const showCommunityBulletinSettings = Boolean(
     canManageCommunityNoticeSettings ||
       communityNoticeLogItems.length > 0 ||
@@ -6452,14 +6456,14 @@ export default function CommunityHomePage() {
                     {
                       icon: "phone",
                       id: "whatsapp-bridge",
-                      title: "WhatsApp Bridge",
+                      title: "Domain bulletin bridge",
                       detail:
-                        "Copy the group signpost and send members into the right GSN action.",
+                        "Share public bulletin output to WhatsApp, social, or email without exposing internal tools.",
                       onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                         openSelectedCommunityRoute(
                           event,
                           routes.whatsappBridge,
-                          "Choose a community first, then open the WhatsApp Bridge."
+                          "Choose a community first, then open the Domain bulletin bridge."
                         ),
                     },
                     {

@@ -115,8 +115,12 @@ function requirePattern(pattern, message) {
     "Demand Box form must show Ask Community as a Demand type beside normal demand posting.",
   ],
   [
-    /createCommunityNotice[\s\S]*?notice_mode: "market_need_pulse"[\s\S]*?availability_enabled: true/,
-    "Demand Box Ask Community must reuse the governed Community Notice market-need pulse engine.",
+    /submitMarketNeedPulse[\s\S]*?createMarketplaceRequest[\s\S]*?category: "Community Ask"[\s\S]*?Community question posted in Demand Box/,
+    "Demand Box Ask Community must post into Demand Box requests, not the Community Bulletin notice engine.",
+  ],
+  [
+    /pulseDestination="demand_box"/,
+    "Demand Box Ask Community modal must use Demand Box destination wording and controls.",
   ],
   [
     /debugId="demand-box\.hero-dashboard"/,
@@ -165,6 +169,10 @@ function requirePattern(pattern, message) {
 ].forEach(([pattern, message]) => requirePattern(pattern, message));
 
 [
+  [
+    /createCommunityNotice[\s\S]*?notice_mode: "market_need_pulse"/,
+    "Demand Box Ask Community must not post into Community Notice Board as a market-need pulse.",
+  ],
   [
     /Ask clearly\. Let your trust speak before people answer\./,
     "Demand Box must not restore the old tall hero sentence.",

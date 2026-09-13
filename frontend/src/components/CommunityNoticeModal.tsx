@@ -25,6 +25,7 @@ type Props = {
   postingPolicy?: "members" | "admins" | string;
   submitMode?: "post" | "review";
   mode?: CommunityNoticeModalMode;
+  pulseDestination?: "notice_board" | "demand_box";
   clanId?: number | null;
   onClose: () => void;
   onSubmit: (
@@ -90,6 +91,7 @@ export default function CommunityNoticeModal({
   postingPolicy = "members",
   submitMode = "post",
   mode = "notice",
+  pulseDestination = "notice_board",
   clanId = null,
   onClose,
   onSubmit,
@@ -101,6 +103,7 @@ export default function CommunityNoticeModal({
   const [eventExpiresAt, setEventExpiresAt] = useState("");
   const [publicQrEnabled, setPublicQrEnabled] = useState(false);
   const isMarketNeedPulse = mode === "market_need_pulse";
+  const isDemandBoxPulse = isMarketNeedPulse && pulseDestination === "demand_box";
   const [availabilityEnabled, setAvailabilityEnabled] = useState(isMarketNeedPulse);
   const [attachmentPanelOpen, setAttachmentPanelOpen] = useState(false);
   const [attachmentKind, setAttachmentKind] = useState<NoticeAttachmentKind>("link");
@@ -225,8 +228,10 @@ export default function CommunityNoticeModal({
           {isMarketNeedPulse ? "Ask" : isReviewSubmission ? "Submit for review" : "Post to"} {communityName || "this community"}
         </h3>
         <p style={copyStyle}>
-          {isMarketNeedPulse
-            ? "Ask one simple market-need question from Demand Box. Members answer yes, maybe, or no. GSN records a demand signal, not a buyer list or sales proof."
+          {isDemandBoxPulse
+            ? "Ask one simple community-need question. GSN posts it in Demand Box, where responders use the private contact path instead of turning the Community Bulletin into a reply thread."
+            : isMarketNeedPulse
+            ? "Ask one simple market-need question from the official board. Members answer yes, maybe, or no. GSN records a demand signal, not a buyer list or sales proof."
             : isReviewSubmission
             ? "Keep it short. GSN records your submission, then a community officer approves it before it appears on the active board."
             : "Keep it short. GSN records who posted it and links your verified public WhatsApp contact when you have chosen to show one. Expired notices leave the active board but stay in Community Memory."}
@@ -411,7 +416,11 @@ export default function CommunityNoticeModal({
           <>
             {isMarketNeedPulse ? (
               <div style={checkboxRowStyle}>
-                <span>Collect yes, maybe, or no responses</span>
+                <span>
+                  {isDemandBoxPulse
+                    ? "Responses stay in Demand Box or the approved private contact path"
+                    : "Collect yes, maybe, or no responses"}
+                </span>
               </div>
             ) : (
               <label style={checkboxRowStyle}>
@@ -424,22 +433,26 @@ export default function CommunityNoticeModal({
                 <span>Ask members if they are available</span>
               </label>
             )}
-            <label style={checkboxRowStyle}>
-              <input
-                type="checkbox"
-                checked={publicQrEnabled}
-                onChange={(event) => setPublicQrEnabled(event.target.checked)}
-                disabled={busy}
-              />
-              <span>Create public QR for this message</span>
-            </label>
+            {!isDemandBoxPulse ? (
+              <label style={checkboxRowStyle}>
+                <input
+                  type="checkbox"
+                  checked={publicQrEnabled}
+                  onChange={(event) => setPublicQrEnabled(event.target.checked)}
+                  disabled={busy}
+                />
+                <span>Create public QR for this message</span>
+              </label>
+            ) : null}
           </>
         ) : null}
 
         <div style={metaRowStyle}>
           <span style={words > 50 ? warningStyle : chipStyle}>{words}/50 words</span>
           <span style={chipStyle}>
-            {isReviewSubmission
+            {isDemandBoxPulse
+              ? "Demand Box request"
+              : isReviewSubmission
               ? "Admin review required"
               : postingPolicy === "admins"
               ? "Admin-only board"
@@ -458,7 +471,7 @@ export default function CommunityNoticeModal({
             <span style={fullWords > 600 ? warningStyle : chipStyle}>{fullWords}/600 full words</span>
           ) : null}
           <span style={chipStyle}>No comments</span>
-          <span style={chipStyle}>{isMarketNeedPulse ? "Need pulse" : availabilityEnabled ? "Availability poll" : "No attendance poll"}</span>
+          <span style={chipStyle}>{isDemandBoxPulse ? "Private response path" : isMarketNeedPulse ? "Need pulse" : availabilityEnabled ? "Availability poll" : "No attendance poll"}</span>
           {attachmentUrlTrimmed ? <span style={chipStyle}>Attachment ready</span> : null}
         </div>
 

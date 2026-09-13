@@ -505,8 +505,8 @@ assertContains(
   "Community Home ROSCA row must keep its Marketplace wording and selected-community route explanation."
 );
 assertContains(
-  /whatsappBridge:\s*routeWithCommunity\(APP_ROUTES\.WHATSAPP_BRIDGE, selectedClanId\)[\s\S]*?id: "whatsapp-bridge"[\s\S]*?title: "WhatsApp Bridge"[\s\S]*?routes\.whatsappBridge[\s\S]*?"Choose a community first, then open the WhatsApp Bridge\."/,
-  "Community Home WhatsApp Bridge row must stay in Work tools and use the selected-community route guard."
+  /whatsappBridge:\s*routeWithCommunity\(APP_ROUTES\.WHATSAPP_BRIDGE, selectedClanId\)[\s\S]*?id: "whatsapp-bridge"[\s\S]*?title: "Domain bulletin bridge"[\s\S]*?routes\.whatsappBridge[\s\S]*?"Choose a community first, then open the Domain bulletin bridge\."/,
+  "Community Home Domain bulletin bridge row must stay in Work tools and use the selected-community route guard."
 );
 
 
@@ -616,6 +616,14 @@ assertContains(
 assertContains(
   /COMMUNITY_NOTICE_ACTIVE_LIMIT = 10[\s\S]*?listCommunityNotices\(communityNoticeListParams\(clanId\)\)[\s\S]*?function renderCommunityBulletinNoticeSelector[\s\S]*?Announcement \$\{selectedCommunityNoticeIndexSafe \+ 1\} of \$\{items\.length\}[\s\S]*?\{selectedCommunityNoticeIndexSafe \+ 1\}\/\{items\.length\}[\s\S]*?debugId=\{`community-home\.bulletin\.notice-select\.\$\{index \+ 1\}`\}[\s\S]*?setSelectedCommunityNoticeIndex\(index\)/,
   "Community Home Bulletin must fetch up to ten active notices and show a numbered active-announcement selector instead of hiding extra live items."
+);
+assertContains(
+  /const activeCommunityNotices = useMemo\(\(\) => \{[\s\S]*?isNoticeVisibleOnBoard\(item, nowMs\)[\s\S]*?!isMarketNeedPulseNotice\(item\)/,
+  "Community Home must derive active notices from the visible notice-board filter and exclude Demand Box Ask Community pulses."
+);
+assertContains(
+  /const communityPreviousAnnouncementItems = communityPreviousAnnouncements[\s\S]*?\.filter\(\(item\) => !isMarketNeedPulseNotice\(item\)\)[\s\S]*?\.slice\(0, 10\)/,
+  "Community Home previous announcements must exclude Demand Box Ask Community pulses."
 );
 if (findings.length > 0) {
   console.error("Community Home button inventory audit failed:");

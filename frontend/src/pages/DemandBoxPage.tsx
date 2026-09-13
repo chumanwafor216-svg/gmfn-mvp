@@ -15,7 +15,6 @@ import {
   institutionalSoftCard,
 } from "../lib/institutionalSurface";
 import {
-  createCommunityNotice,
   createMarketplaceRequest,
   getCurrentClan,
   getMe,
@@ -454,6 +453,56 @@ function buildDemandDescription(
   }
 
   return parts.join("\n\n") || undefined;
+}
+
+function demandTitleFromAskCommunity(body: string): string {
+  const text = safeStr(body);
+  if (text.length <= 170) return text;
+  return `${text.slice(0, 167).trim()}...`;
+}
+
+function demandExpiryHoursFromAskCommunity(options?: {
+  expiry_policy?: DemandNoticeExpiryPolicy;
+  expires_at?: string;
+}): number {
+  const explicitExpiry = safeStr(options?.expires_at);
+  if (explicitExpiry) {
+    const expiresAt = new Date(explicitExpiry).getTime();
+    const now = Date.now();
+    if (Number.isFinite(expiresAt) && expiresAt > now) {
+      return Math.min(168, Math.max(1, Math.ceil((expiresAt - now) / 3600000)));
+    }
+  }
+
+  if (options?.expiry_policy === "urgent") return 48;
+  if (options?.expiry_policy === "pinned") return 168;
+  return 72;
+}
+
+function buildAskCommunityDemandDescription(
+  body: string,
+  options?: {
+    full_body?: string | null;
+    attachment_url?: string | null;
+    attachment_label?: string | null;
+    attachment_kind?: "link" | "video" | "poster" | "document" | null;
+  }
+): string {
+  const parts = [
+    "Community Ask posted through Demand Box. Responses should stay in Demand Box or the requester's approved private contact path, not on the Community Bulletin.",
+  ];
+  const fullBody = safeStr(options?.full_body);
+  if (fullBody && fullBody !== safeStr(body)) {
+    parts.push(fullBody);
+  }
+
+  const attachmentUrl = safeStr(options?.attachment_url);
+  if (attachmentUrl) {
+    const attachmentLabel = firstTruthy(options?.attachment_label, options?.attachment_kind, "attachment");
+    parts.push(`Attachment: ${attachmentLabel} - ${attachmentUrl}`);
+  }
+
+  return parts.join("\n\n");
 }
 
 function demandContactMessage(row: DemandRow, currentCommunityName: string): string {
@@ -1008,24 +1057,30 @@ export default function DemandBoxPage() {
       return;
     }
 
+    const questionTitle = demandTitleFromAskCommunity(body);
+    if (!questionTitle) {
+      showNotice("error", "Add the community question first.");
+      return;
+    }
+
     setMarketNeedPulsePosting(true);
     try {
-      const res = await createCommunityNotice({
+      await createMarketplaceRequest({
         clan_id: selectedClanId,
-        body,
-        ...options,
-        notice_mode: "market_need_pulse",
-        availability_enabled: true,
+        title: questionTitle,
+        description: buildAskCommunityDemandDescription(body, options),
+        category: "Community Ask",
+        urgency: "medium",
+        whatsapp_number: safeStr(whatsappNumber) || undefined,
+        expires_in_hours: demandExpiryHoursFromAskCommunity(options),
       });
       setMarketNeedPulseOpen(false);
-      showNotice(
-        "success",
-        safeStr(res?.message) || "Community question posted as a Demand Box signal."
-      );
+      await loadPage();
+      showNotice("success", "Community question posted in Demand Box.");
     } catch (err: any) {
       showNotice(
         "error",
-        safeStr(err?.message) || "Community question could not be posted."
+        safeStr(err?.message) || "Community question could not be posted in Demand Box."
       );
     } finally {
       setMarketNeedPulsePosting(false);
@@ -1452,6 +1507,7 @@ export default function DemandBoxPage() {
             communityName={currentCommunityName}
             busy={marketNeedPulsePosting}
             mode="market_need_pulse"
+            pulseDestination="demand_box"
             clanId={selectedClanId}
             onClose={() => setMarketNeedPulseOpen(false)}
             onSubmit={submitMarketNeedPulse}

@@ -2,8 +2,11 @@
 
 ## Purpose
 
-The WhatsApp Bridge lets a community keep everyday conversation in WhatsApp while
-GSN keeps the structured record, decision, and action trail.
+The Community Domain Bulletin Bridge lets a community keep everyday conversation in WhatsApp while
+GSN keeps the structured record, decision, and action trail. Its current role is
+limited to broadcasting already-published Community Domain bulletin outputs. It is not a
+fallback public doorway, internal feature directory, creation screen, or duplicate
+workflow surface.
 
 ## Product Rule
 
@@ -11,19 +14,19 @@ WhatsApp is the conversation room. GSN is the organised action room.
 
 Updated owner decision: the broad bridge page is not the primary product
 pattern. The safer primary pattern is a feature-specific public share link.
-WhatsApp, Facebook, TikTok, email, and other channels should carry the exact GSN
+WhatsApp, Facebook, Instagram, TikTok, email, and other channels should carry the exact GSN
 action link created by the GSN feature, not a general doorway into Community
 Home or internal GSN architecture.
 
-The former broad bridge concept may remain as an optional community signpost,
-but it must not be treated as the main operating surface.
-2026-09-12 amendment: the broad WhatsApp Bridge should be repurposed as a public
-advertising and creation doorway, not an existing-community joining doorway. It
-may promote `Create your community`, Community Domain setup, and public GSN
-objects such as shop links, shop QR codes, Spotlight links, notice links, and
-public verification records. Existing-community membership should remain under
-community QR, invite link, pre-approved list, admin approval, dues policy, and
-verification policy.
+The former broad bridge concept is now retired as a visible product surface.
+2026-09-13 amendment: the bridge must not expose internal platform architecture,
+creation routes, source tools, membership gates, Community Domain setup, Demand
+Box, Ask Community, shop management, Spotlight management, reports, approval, or
+verification functions. It must also skip Ask Community / market-need-pulse records because those are Demand Box requests, not Community Domain bulletin outputs. Its safe use is broadcasting the public output of an
+action that already happened in GSN, beginning with Community Bulletin public
+notice links. The governed future version may forward to approved WhatsApp,
+Facebook, Instagram, TikTok, or email channels, but only after each channel has
+proper authorization, consent/privacy rules, and a delivery audit trail.
 
 
 ## Feature-Specific Link Model
@@ -48,8 +51,8 @@ The share flow should be:
 1. The owner/admin creates the real item inside GSN.
 2. GSN records and shows it to GSN members through the normal in-app surfaces.
 3. GSN offers Copy Link, Copy WhatsApp Message, and where supported Share.
-4. The owner/admin posts the message into WhatsApp, Facebook, TikTok, email, or
-   another channel.
+4. The owner/admin posts the message into WhatsApp, Facebook, Instagram, TikTok,
+   email, or another channel.
 5. The recipient opens the exact GSN item.
 6. If response is enabled, the recipient answers through public-safe buttons or
    is asked to sign in/join GSN for member-level response.
@@ -83,7 +86,7 @@ are on or off for that community:
 - Demand Box receiving;
 - Ask Community receiving.
 
-Demand Box and Ask Community may be active as receiving channels, but they
+Demand Box and Ask Community may be active as receiving channels. Ask Community should create or surface a Demand Box request, with private responder contact handled by Demand Box, not the Community Bulletin. They
 should not appear as public WhatsApp Bridge menu buttons. Members should send
 from their own GSN Demand Box or Ask Community handle. If the target community
 has turned receiving off, GSN should block delivery and explain that the
@@ -112,10 +115,10 @@ menu.
 
 ## Three Anchor Model
 
-1. GSN Bridge Page
-   - The real home of the bridge.
-   - Contains the permanent GSN link and buttons into existing GSN tools.
-   - Does not move when WhatsApp conversation moves.
+1. Community Domain Bulletin Bridge
+   - The internal broadcast helper for public Community Domain bulletin outputs.
+   - Contains no public bridge doorway and no internal source-tool directory.
+   - Shares only an already-created public bulletin/output link.
 
 2. WhatsApp Group Description
    - Holds the permanent bridge link as the stable signpost.
@@ -132,9 +135,12 @@ treated as the bridge home.
 
 The first implementation is link-based:
 
-- GSN prepares/copies bridge text for the owner or admin.
-- The owner/admin posts it into WhatsApp.
-- Members tap the link and complete the action inside GSN.
+- GSN prepares/copies bulletin broadcast text for the owner or admin only after
+  a public bulletin/output link exists.
+- The owner/admin posts that exact public bulletin link to WhatsApp, Facebook,
+  Instagram, TikTok, email, or another channel.
+- Members tap the public bulletin link to view the output, then open GSN for any
+  reply, acknowledgement, interest, approval, or verification action.
 - GSN records only what happens inside GSN.
 
 The bridge must not:

@@ -1,4 +1,4 @@
-﻿# Screen Specs
+# Screen Specs
 
 ## Global Decision-First Screen Rule
 
@@ -402,6 +402,7 @@ Must show:
   - ordinary Community notices keep the main board short, but officers may attach longer public-safe full notice details and request a public QR link; QR-enabled notices expose `Open QR link` inside Details, public URL and GSN-uploaded video/poster attachments expose one `Open attachment` action, and the public route must hide private sender/contact/roll-call data
   - Bulletin attachments support public `http/https` links plus GSN-uploaded poster images and short videos through the existing governed media upload path. Direct document-file upload is still not enabled; document attachments must use a public document link until a governed public-document storage route exists.
   - shows one central live announcement feed across all ordinary Communities where the signed-in member has active membership, plus eligible linked official Community Domain notices for those communities
+  - Ask Community / market-need-pulse records must not render as Community Bulletin announcements by default; they belong in Demand Box unless a later governed community setting explicitly converts the bulletin into a one-way communication arena.
   - posting, settings, review, and roll-call management stay local to the selected/source community; central reading must not turn a local notice into a cross-community broadcast
   - ordinary Community notices and Community Domain official notices keep their separate posting/governance rules, but read into this shared board instead of becoming duplicate announcement engines
   - expired announcements leave the live board and remain visible in a compact previous-announcements trail capped at 10 items
@@ -1261,32 +1262,42 @@ Overbuilt systems to simplify on the first surface:
 Route: `/app/whatsapp-bridge` (`/whatsapp-bridge` redirects here).
 
 Purpose:
-Let a signed-in community owner, admin, or member share one stable GSN bridge
-link into WhatsApp while keeping official actions inside existing GSN engines.
+Let a signed-in community owner, admin, or member broadcast already-published
+Community Domain bulletin outputs to approved external channels. The bridge is
+not a general signpost, not a join route, not a creation route, and not a
+directory of GSN internal features.
 
 Must show:
-- WhatsApp Bridge title
-- clear statement that GSN is the real action home
-- permanent bridge link for the selected community when available
-- Copy Bridge Message action
-- Share to WhatsApp action
-- destination buttons for Community Domain, Notice Board, Demand Box, Ask
-  Community, Meeting Response, Attendance, Shop Gallery, Spotlight, and Reports
-- visible entry from Community Home -> Verification tools -> Work tools
-- WhatsApp anchor guidance for group description and pinned message
+- Community Domain Bulletin Bridge title
+- clear statement that it broadcasts approved public bulletins only
+- latest selected-community public bulletin link when one exists
+- Copy Bulletin Message action, enabled only when a public bulletin link exists
+- Share to WhatsApp action, enabled only when a public bulletin link exists
+- a no-bulletin-ready state when no public bulletin output exists
+- channel-governance framing for WhatsApp, social pages, and email groups
 - decision boundary that GSN records only actions completed inside GSN
 
 Rules:
 - Do not scrape, read, or import WhatsApp group conversation.
 - Do not claim WhatsApp delivery, read receipt, vote proof, or member consent.
-- Demand Box must stay written as `Demand Box`.
-- Ask Community must route into Demand Box question mode, not a separate engine.
-- The bridge page is the stable home; Community Home Work tools is the in-app
-  doorway; WhatsApp group description and pinned message are signposts only.
+- Do not expose GSN internal feature pointers, source tools, admin tools,
+  creation screens, membership gates, Community Domain setup, Demand Box,
+  Ask Community, shop management, Spotlight management, reports, approval, or
+  verification functions inside the bridge.
+- The bridge must not expose a broad public menu for Demand Box or Ask Community.
+- The bridge must not share itself as a fallback public doorway.
+- The bridge must skip Ask Community / market-need-pulse records even if legacy data still exposes a public notice path; Demand Box owns those requests.
+- The only outward link from this page should be an already-created public
+  bulletin/output link such as `/community-notices/:publicCode`.
+- Automatic multi-channel forwarding requires governed channel connections,
+  account authorization, consent/privacy review, and a delivery audit trail; do
+  not present that as live until those integrations exist.
+- Replies, acknowledgements, interest, approval, and verification must happen
+  inside the owning GSN screen.
 - WhatsApp Status may be a reminder only because it disappears.
 
 Primary action:
 
 ```text
-Copy Bridge Message
+Copy Bulletin Message
 ```
