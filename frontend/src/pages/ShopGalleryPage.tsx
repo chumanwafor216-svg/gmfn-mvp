@@ -5483,7 +5483,7 @@ export default function ShopGalleryPage() {
                   : 44;
                 const diaryMediaControlHeight = isCompact ? 36 : 40;
                 const diaryClosedDockHeight = isCompact ? 58 : 68;
-                const diaryOpenDockHeight = isCompact ? 126 : 132;
+                const diaryOpenDockHeight = isCompact ? 92 : 104;
                 const diaryOpenActionCount = showBlockPlacementAction ? 4 : 2;
 
                 return (
@@ -5633,8 +5633,8 @@ export default function ShopGalleryPage() {
                         minWidth: 0,
                         padding: isProductOpen
                           ? isCompact
-                            ? "9px 10px"
-                            : "11px 13px"
+                            ? "7px 9px"
+                            : "9px 12px"
                           : isCompact
                           ? "6px 7px"
                           : "7px 9px",
@@ -5649,7 +5649,7 @@ export default function ShopGalleryPage() {
                         gridTemplateRows: isProductOpen
                           ? "auto auto auto"
                           : "auto auto",
-                        gap: isProductOpen ? (isCompact ? 4 : 5) : "2px 7px",
+                        gap: isProductOpen ? (isCompact ? 3 : 4) : "2px 7px",
                         alignContent: "end",
                         background:
                           isProductOpen
@@ -5674,7 +5674,7 @@ export default function ShopGalleryPage() {
                           fontWeight: 950,
                           fontSize: isProductOpen
                             ? isCompact
-                              ? 18
+                              ? 17
                               : 20
                             : isCompact
                             ? 13
@@ -5695,8 +5695,8 @@ export default function ShopGalleryPage() {
                           style={{
                             color: "#526C84",
                             fontWeight: 650,
-                            fontSize: isCompact ? 13 : 14,
-                            lineHeight: 1.18,
+                            fontSize: isCompact ? 12 : 13,
+                            lineHeight: 1.12,
                             gridColumn: "1 / -1",
                             gridRow: "2",
                             display: "-webkit-box",

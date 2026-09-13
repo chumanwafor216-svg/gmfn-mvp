@@ -406,6 +406,11 @@ assertContains(
 );
 
 assertContains(
+  /const diaryOpenDockHeight = isCompact \? 92 : 104;[\s\S]*?padding: isProductOpen[\s\S]*?\? "7px 9px"[\s\S]*?: "9px 12px"[\s\S]*?maxHeight: isProductOpen[\s\S]*?\? diaryOpenDockHeight[\s\S]*?: diaryClosedDockHeight[\s\S]*?minHeight: isProductOpen[\s\S]*?\? diaryOpenDockHeight[\s\S]*?: diaryClosedDockHeight/,
+  "Public Shop opened diary cards must keep a compact info dock so the existing block gives more height to the media window."
+);
+
+assertContains(
   /className="public-shop-section public-shop-spotlight"[\s\S]*?border: "1px solid rgba\(255,255,255,0\.92\)"[\s\S]*?linear-gradient\(135deg, #FFFFFF 0%, #F7FBFF 56%, #EEF6FF 100%\)/,
   "Public Shop Spotlight must keep polished white brand framing instead of cream/brown framing."
 );
