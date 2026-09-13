@@ -55,8 +55,8 @@ const SERVICE_DETAIL_OPTIONS: Array<{
   },
   {
     key: "evidence",
-    label: "Evidence",
-    note: "Open evidence records, release, relay, notices, and mobility readiness.",
+    label: "Evidence readiness",
+    note: "Review record, release, relay, notice, and mobility readiness.",
   },
 ];
 

@@ -9,6 +9,7 @@ const files = {
   app: "src/App.tsx",
   api: "src/lib/api.ts",
   dashboard: "src/pages/CommunityDomainDashboardPage.tsx",
+  serviceFocusPanel: "src/pages/communityDomainDashboard/ServiceFocusPanel.tsx",
   trustEvidencePanels:
     "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
   package: "package.json",
@@ -121,17 +122,22 @@ assertContains(
 );
 
 assertContains(
-  "dashboard",
-  /type ServiceDetailKey = "readiness" \| "local" \| "boundaries" \| "trust" \| "evidence"[\s\S]*?key: "evidence"[\s\S]*?label: "Evidence"[\s\S]*?note: "Open evidence records, release, relay, notices, and mobility readiness\."/,
-  "Community Domain dashboard must label the evidence tab as readiness, not issued evidence."
+  "serviceFocusPanel",
+  /type ServiceDetailKey =\s*\| "readiness"[\s\S]*?\| "evidence"[\s\S]*?key: "evidence"[\s\S]*?label: "Evidence readiness"[\s\S]*?note: "Review record, release, relay, notice, and mobility readiness\."/,
+  "Community Domain service focus must label the evidence tab as readiness, not issued evidence."
 );
 
 assertContains(
   "dashboard",
-  /lazy\([\s\S]*?import\("\.\/communityDomainDashboard\/TrustEvidenceReadinessPanels"\)[\s\S]*?getCommunityDomainEvidenceRecordReadiness[\s\S]*?getCommunityDomainEvidenceReleaseReadiness[\s\S]*?getCommunityDomainTrustRelayReadiness[\s\S]*?getCommunityDomainNotificationScopeReadiness[\s\S]*?getCommunityDomainTrustMobility[\s\S]*?CommunityDomainTrustEvidenceReadinessPanels[\s\S]*?evidenceRecordReadiness=\{evidenceRecordReadiness\}[\s\S]*?evidenceReleaseReadiness=\{evidenceReleaseReadiness\}[\s\S]*?trustRelayReadiness=\{trustRelayReadiness\}[\s\S]*?notificationScopeReadiness=\{notificationScopeReadiness\}[\s\S]*?trustMobility=\{trustMobility\}/,
-  "Community Domain dashboard must load and pass the evidence readiness data into the dedicated readiness panels."
+  /getCommunityDomainEvidenceRecordReadiness[\s\S]*?getCommunityDomainEvidenceReleaseReadiness[\s\S]*?getCommunityDomainTrustRelayReadiness[\s\S]*?getCommunityDomainNotificationScopeReadiness[\s\S]*?getCommunityDomainTrustMobility[\s\S]*?CommunityDomainServiceFocusPanel[\s\S]*?evidenceRecordReadiness,[\s\S]*?evidenceReleaseReadiness,[\s\S]*?notificationScopeReadiness,[\s\S]*?trustMobility,[\s\S]*?trustRelayReadiness,/,
+  "Community Domain dashboard must load evidence readiness data and pass it into the service focus panel."
 );
 
+assertContains(
+  "serviceFocusPanel",
+  /lazy\([\s\S]*?import\("\.\/TrustEvidenceReadinessPanels"\)[\s\S]*?evidenceRecordReadiness: UnknownRecord \| null[\s\S]*?evidenceReleaseReadiness: UnknownRecord \| null[\s\S]*?notificationScopeReadiness: UnknownRecord \| null[\s\S]*?trustMobility: UnknownRecord \| null[\s\S]*?trustRelayReadiness: UnknownRecord \| null[\s\S]*?CommunityDomainTrustEvidenceReadinessPanels[\s\S]*?evidenceRecordReadiness=\{evidenceRecordReadiness\}[\s\S]*?evidenceReleaseReadiness=\{evidenceReleaseReadiness\}[\s\S]*?trustRelayReadiness=\{trustRelayReadiness\}[\s\S]*?notificationScopeReadiness=\{notificationScopeReadiness\}[\s\S]*?trustMobility=\{trustMobility\}/,
+  "Community Domain service focus must render the dedicated evidence readiness panels with the readiness payloads."
+);
 assertContains(
   "dashboard",
   /Setup view only[\s\S]*?does not confirm payment, activate the domain,[\s\S]*?verify ownership, or expose private records/,
