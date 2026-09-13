@@ -170,6 +170,16 @@ assertContains(
   "Shop Control analytics must show explainable Market Intelligence inside the owner analytics board."
 );
 assertContains(
+  "frontend/src/lib/shopAnalyticsWisdom.ts",
+  /export type OpportunityEngineGuidanceRow[\s\S]*?export function buildShopOpportunityEngineGuidanceRows[\s\S]*?DemandBox[\s\S]*?TrustPassport[\s\S]*?TrustSlip[\s\S]*?Use this as guidance, not certainty/,
+  "Shop Opportunity Engine guidance must live in shared analytics logic and keep cautious DemandBox, TrustPassport, and TrustSlip boundaries."
+);
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /Opportunity Engine \/ Market Intelligence[\s\S]*?Advanced Analytics snapshot[\s\S]*?Opportunity reading[\s\S]*?may change as evidence changes/,
+  "Shop Control analytics must render the Opportunity Engine reading inside the existing Market Intelligence lane."
+);
+assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
   /recordMarketplaceAttentionEvent[\s\S]*?"recommendation_actioned"[\s\S]*?shop_market_intelligence[\s\S]*?shop-control\.market-intelligence\.actioned[\s\S]*?Mark tried[\s\S]*?Advice action trail[\s\S]*?\{recommendationActionBoundary\}/,
   "Shop Control Market Intelligence must record owner advice actions through the existing attention-event engine with a truthful boundary."

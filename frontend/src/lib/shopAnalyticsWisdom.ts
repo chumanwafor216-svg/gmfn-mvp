@@ -67,6 +67,24 @@ export type ShopAnalyticsWisdom = {
   why: string;
 };
 
+export type OpportunityEngineGuidanceRow = {
+  horizon: string;
+  insight: string;
+  evidence: string;
+  nextStep: string;
+};
+
+export type ShopOpportunityEngineGuidanceInput = {
+  wisdom: ShopAnalyticsWisdom;
+  primaryActionLabel?: string | null;
+  demandSignalCount?: number | null;
+  demandContextLabel?: string | null;
+  tradeRecords?: number | null;
+  liveSignalCount?: number | null;
+  signalGroupCount?: number | null;
+  hasAttentionSignal?: boolean;
+};
+
 function positiveNumber(value: unknown): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
@@ -595,6 +613,60 @@ export function buildShopSellerHelper(wisdom: ShopAnalyticsWisdom): ShopSellerHe
       };
   }
 }
+export function buildShopOpportunityEngineGuidanceRows({
+  wisdom,
+  primaryActionLabel,
+  demandSignalCount,
+  demandContextLabel,
+  tradeRecords,
+  liveSignalCount,
+  signalGroupCount,
+  hasAttentionSignal,
+}: ShopOpportunityEngineGuidanceInput): OpportunityEngineGuidanceRow[] {
+  const openDemandSignals = positiveNumber(demandSignalCount);
+  const protectedTradeRecords = positiveNumber(tradeRecords);
+  const liveSignals = positiveNumber(liveSignalCount);
+  const signalGroups = positiveNumber(signalGroupCount);
+  const hasDemandSignal = openDemandSignals > 0;
+  const hasTradeEvidence = protectedTradeRecords > 0;
+  const shortTermInsight = hasDemandSignal
+    ? "Repeated requests may show where the community is asking before the shop owner stocks or promotes more."
+    : "Without open DemandBox signals, short-term opportunity should come from measured attention, not assumption.";
+  const evidenceInsight = hasTradeEvidence
+    ? "Protected records may show which offers are becoming real work, but they still need separate fulfilment review."
+    : "The engine cannot learn lasting value until protected trade or TrustSlip evidence starts to appear.";
+  const longTermInsight = signalGroups > 0 && liveSignals >= 3
+    ? "As more GSN signals connect, patterns may become useful for one-year and five-year community planning."
+    : "The current field is still thin; long-range guidance must wait for wider TrustPassport, TrustSlip, and interaction history.";
+
+  return [
+    {
+      horizon: "Now",
+      insight: `Current reading: ${wisdom.headline}`,
+      evidence: wisdom.observation,
+      nextStep: primaryActionLabel || wisdom.primaryActionLabel,
+    },
+    {
+      horizon: "90 days",
+      insight: shortTermInsight,
+      evidence: hasDemandSignal ? demandContextLabel || `${openDemandSignals} open DemandBox signal${openDemandSignals === 1 ? "" : "s"}` : wisdom.interpretation,
+      nextStep: hasDemandSignal ? "Compare DemandBox requests with public offers." : "Keep testing Spotlight and shop share response.",
+    },
+    {
+      horizon: "1 year",
+      insight: evidenceInsight,
+      evidence: hasTradeEvidence ? `${protectedTradeRecords} protected record${protectedTradeRecords === 1 ? "" : "s"} in this window.` : "No protected trade record is visible in this analytics window.",
+      nextStep: hasTradeEvidence ? "Review which records produced repeatable trust." : "Protect serious buyer/seller outcomes when they happen.",
+    },
+    {
+      horizon: "2-5 years",
+      insight: longTermInsight,
+      evidence: hasAttentionSignal && signalGroups > 0 ? `${liveSignals} of ${signalGroups} signal groups are live today.` : "Attention and trust evidence are still gathering.",
+      nextStep: "Use this as guidance, not certainty, until the full GSN field is connected.",
+    },
+  ];
+}
+
 function urgencyForShopMarketIntelligence(
   wisdom: ShopAnalyticsWisdom
 ): AttentionSpineUrgency {

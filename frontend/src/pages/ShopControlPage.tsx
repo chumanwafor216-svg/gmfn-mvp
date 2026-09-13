@@ -64,6 +64,7 @@ import {
   analyticsRate,
   buildShopAnalyticsWisdom,
   buildShopMarketIntelligenceSummary,
+  buildShopOpportunityEngineGuidanceRows,
   buildShopSellerHelper,
   formatAnalyticsRate,
 } from "../lib/shopAnalyticsWisdom";
@@ -645,12 +646,6 @@ type OpportunityEngineSignalTile = {
   icon: GsnIconName;
 };
 
-type OpportunityEngineGuidanceRow = {
-  horizon: string;
-  insight: string;
-  evidence: string;
-  nextStep: string;
-};
 
 function marketContextTokens(...values: unknown[]): Set<string> {
   const text = values.map((value) => safeStr(value).toLowerCase()).join(" ");
@@ -2786,60 +2781,34 @@ export default function ShopControlPage() {
   );
   const opportunityEngineLiveSignalCount = opportunityEngineSignalTiles.filter((item) => item.live).length;
   const opportunityEngineHorizonLabels = ["Now", "90 days", "1 year", "2 years", "5 years"];
-  const opportunityEngineGuidanceRows = useMemo<OpportunityEngineGuidanceRow[]>(() => {
-    const hasDemandSignal = openDemandSignalCount > 0;
-    const hasTradeEvidence = tradeOutcomeRecords7Days > 0;
-    const hasAttentionSignal = attentionSpotlightImpressions7Days > 0 || attentionVisitors7Days > 0 || attentionProductOpens7Days > 0;
-    const shortTermInsight = hasDemandSignal
-      ? "Repeated requests may show where the community is asking before the shop owner stocks or promotes more."
-      : "Without open DemandBox signals, short-term opportunity should come from measured attention, not assumption.";
-    const evidenceInsight = hasTradeEvidence
-      ? "Protected records may show which offers are becoming real work, but they still need separate fulfilment review."
-      : "The engine cannot learn lasting value until protected trade or TrustSlip evidence starts to appear.";
-    const longTermInsight = opportunityEngineLiveSignalCount >= 3
-      ? "As more GSN signals connect, patterns may become useful for one-year and five-year community planning."
-      : "The current field is still thin; long-range guidance must wait for wider TrustPassport, TrustSlip, and interaction history.";
-
-    return [
-      {
-        horizon: "Now",
-        insight: `Current reading: ${shopAnalyticsWisdom.headline}`,
-        evidence: shopAnalyticsWisdom.observation,
-        nextStep: marketIntelligencePrimaryAction.label,
-      },
-      {
-        horizon: "90 days",
-        insight: shortTermInsight,
-        evidence: hasDemandSignal ? demandContextLabel : shopAnalyticsWisdom.interpretation,
-        nextStep: hasDemandSignal ? "Compare DemandBox requests with public offers." : "Keep testing Spotlight and shop share response.",
-      },
-      {
-        horizon: "1 year",
-        insight: evidenceInsight,
-        evidence: hasTradeEvidence ? `${tradeOutcomeRecords7Days} protected record${tradeOutcomeRecords7Days === 1 ? "" : "s"} in this window.` : "No protected trade record is visible in this analytics window.",
-        nextStep: hasTradeEvidence ? "Review which records produced repeatable trust." : "Protect serious buyer/seller outcomes when they happen.",
-      },
-      {
-        horizon: "2-5 years",
-        insight: longTermInsight,
-        evidence: hasAttentionSignal ? `${opportunityEngineLiveSignalCount} of ${opportunityEngineSignalTiles.length} signal groups are live today.` : "Attention and trust evidence are still gathering.",
-        nextStep: "Use this as guidance, not certainty, until the full GSN field is connected.",
-      },
-    ];
-  }, [
-    attentionProductOpens7Days,
-    attentionSpotlightImpressions7Days,
-    attentionVisitors7Days,
-    demandContextLabel,
-    marketIntelligencePrimaryAction.label,
-    openDemandSignalCount,
-    opportunityEngineLiveSignalCount,
-    opportunityEngineSignalTiles.length,
-    shopAnalyticsWisdom.headline,
-    shopAnalyticsWisdom.interpretation,
-    shopAnalyticsWisdom.observation,
-    tradeOutcomeRecords7Days,
-  ]);
+  const opportunityEngineGuidanceRows = useMemo(
+    () =>
+      buildShopOpportunityEngineGuidanceRows({
+        wisdom: shopAnalyticsWisdom,
+        primaryActionLabel: marketIntelligencePrimaryAction.label,
+        demandSignalCount: openDemandSignalCount,
+        demandContextLabel,
+        tradeRecords: tradeOutcomeRecords7Days,
+        liveSignalCount: opportunityEngineLiveSignalCount,
+        signalGroupCount: opportunityEngineSignalTiles.length,
+        hasAttentionSignal:
+          attentionSpotlightImpressions7Days > 0 ||
+          attentionVisitors7Days > 0 ||
+          attentionProductOpens7Days > 0,
+      }),
+    [
+      attentionProductOpens7Days,
+      attentionSpotlightImpressions7Days,
+      attentionVisitors7Days,
+      demandContextLabel,
+      marketIntelligencePrimaryAction.label,
+      openDemandSignalCount,
+      opportunityEngineLiveSignalCount,
+      opportunityEngineSignalTiles.length,
+      shopAnalyticsWisdom,
+      tradeOutcomeRecords7Days,
+    ]
+  );
   const featurePayments = useMemo(() => {
     return expectedPayments.filter((item) =>
       [
