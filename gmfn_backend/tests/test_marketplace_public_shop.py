@@ -5571,17 +5571,16 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert opportunity_engine["engine_state"] == "computed_owner_summary"
     assert opportunity_engine["live_signal_count"] == 5
     assert opportunity_engine["signal_group_count"] == 6
-    opportunity_coverage = opportunity_engine["field_coverage"]
-    assert opportunity_coverage["shop_and_marketplace"] is True
-    assert opportunity_coverage["spotlight_attention"] is True
-    assert opportunity_coverage["demand_box"] is False
-    assert opportunity_coverage["protected_trade"] is True
-    assert opportunity_coverage["community_context"] is True
-    assert opportunity_coverage["advice_action_trail"] is True
-    assert opportunity_coverage["governed_outside_context"] is False
-    assert opportunity_coverage["ai_inference"] is False
-    assert opportunity_coverage["saved_reports"] is False
-    assert opportunity_coverage["billing_gate"] is False
+    internal_only_keys = {
+        "field_coverage",
+        "advanced_lanes",
+        "feature_touchpoints",
+        "commercial_checkpoints",
+        "access_model",
+        "report_readiness",
+        "claim_ladder",
+    }
+    assert internal_only_keys.isdisjoint(opportunity_engine.keys())
     assert opportunity_engine["signal_groups"][2]["label"] == "DemandBox"
     assert len(opportunity_engine["output_cards"]) == 3
     first_output_card = opportunity_engine["output_cards"][0]
@@ -5623,53 +5622,6 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert "Pause promotion" in experiment_plan[2]["stop_rule"]
     assert experiment_plan[3]["title"] == "Cost note discipline"
     assert "not accounting" in experiment_plan[3]["boundary"]
-    advanced_lanes = opportunity_engine["advanced_lanes"]
-    assert len(advanced_lanes) == 10
-    assert advanced_lanes[0]["label"] == "Signals"
-    assert advanced_lanes[0]["status"] == "Live"
-    assert advanced_lanes[2]["label"] == "Economic"
-    assert "Not financial advice" in advanced_lanes[2]["boundary"]
-    assert advanced_lanes[7]["label"] == "Place and Environment"
-    assert advanced_lanes[7]["status"] == "Blocked"
-    assert "No external-market" in advanced_lanes[7]["boundary"]
-    assert advanced_lanes[9]["label"] == "Next Moves"
-    assert advanced_lanes[9]["status"] == "Live"
-    feature_touchpoints = opportunity_engine["feature_touchpoints"]
-    assert len(feature_touchpoints) == 8
-    assert feature_touchpoints[0]["feature"] == "Shop Diary and Marketplace"
-    assert feature_touchpoints[0]["status"] == "Live"
-    assert "Attention is not sales proof" in feature_touchpoints[0]["boundary"]
-    assert feature_touchpoints[1]["feature"] == "DemandBox"
-    assert "buyer list" in feature_touchpoints[1]["boundary"]
-    assert feature_touchpoints[3]["feature"] == "TrustPassport and TrustSlip"
-    assert feature_touchpoints[3]["status"] == "Next"
-    assert "No trust score" in feature_touchpoints[3]["boundary"]
-    assert feature_touchpoints[7]["feature"] == "Notifications and WhatsApp Bridge"
-    assert feature_touchpoints[7]["status"] == "Next"
-    assert "No automatic WhatsApp" in feature_touchpoints[7]["boundary"]
-    commercial_checkpoints = opportunity_engine["commercial_checkpoints"]
-    assert len(commercial_checkpoints) == 4
-    assert commercial_checkpoints[0]["stage"] == "Pilot value proof"
-    assert commercial_checkpoints[0]["status"] == "Live"
-    assert "Do not charge" in commercial_checkpoints[0]["boundary"]
-    assert commercial_checkpoints[1]["stage"] == "Evidence quality"
-    assert "not proof of sales" in commercial_checkpoints[1]["boundary"]
-    assert commercial_checkpoints[2]["stage"] == "Paid package readiness"
-    assert commercial_checkpoints[2]["status"] == "Next"
-    assert "Not charged yet" in commercial_checkpoints[2]["boundary"]
-    assert commercial_checkpoints[3]["stage"] == "Retention and LTV proof"
-    assert "LTV is not available" in commercial_checkpoints[3]["boundary"]
-    access_model = opportunity_engine["access_model"]
-    assert len(access_model) == 3
-    assert access_model[0]["level"] == "Free owner preview"
-    assert access_model[0]["status"] == "Live"
-    assert "not a full Advanced Analytics subscription" in access_model[0]["boundary"]
-    assert access_model[1]["level"] == "Paid Advanced Analytics candidate"
-    assert access_model[1]["status"] == "Next"
-    assert "Not active billing" in access_model[1]["boundary"]
-    assert access_model[2]["level"] == "Governed intelligence add-on"
-    assert access_model[2]["status"] == "Blocked"
-    assert "do not sell" in access_model[2]["boundary"]
     capture_checklist = opportunity_engine["capture_checklist"]
     assert len(capture_checklist) == 5
     assert capture_checklist[0]["category"] == "Acquisition cost"
@@ -5696,35 +5648,6 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert review_cadence[3]["cadence"] == "90-day review"
     assert "lifetime value" in review_cadence[3]["upgrade_rule"]
     assert "forecast or guarantee" in review_cadence[3]["boundary"]
-    report_readiness = opportunity_engine["report_readiness"]
-    assert len(report_readiness) == 5
-    assert report_readiness[0]["requirement"] == "Saved report identity"
-    assert report_readiness[0]["status"] == "Computed only"
-    assert "No saved Advanced Analytics report" in report_readiness[0]["boundary"]
-    assert report_readiness[1]["requirement"] == "Human review trail"
-    assert "No automatic advice" in report_readiness[1]["boundary"]
-    assert report_readiness[2]["requirement"] == "Evidence lock"
-    assert report_readiness[2]["status"] == "Partial"
-    assert "saved historical report" in report_readiness[2]["boundary"]
-    assert report_readiness[3]["requirement"] == "Cost and retention notes"
-    assert "CAC/LTV remains readiness" in report_readiness[3]["boundary"]
-    assert report_readiness[4]["requirement"] == "Entitlement and privacy rules"
-    assert report_readiness[4]["status"] == "Blocked"
-    assert "Do not sell" in report_readiness[4]["boundary"]
-    claim_ladder = opportunity_engine["claim_ladder"]
-    assert len(claim_ladder) == 5
-    assert claim_ladder[0]["claim_level"] == "Observed activity"
-    assert claim_ladder[0]["status"] == "Live"
-    assert "not proof of sales" in claim_ladder[0]["cannot_say"]
-    assert claim_ladder[1]["claim_level"] == "Directional signal"
-    assert "product-market fit" in claim_ladder[1]["cannot_say"]
-    assert claim_ladder[2]["claim_level"] == "Testable hypothesis"
-    assert "not a conclusion" in claim_ladder[2]["boundary"]
-    assert claim_ladder[3]["claim_level"] == "Opportunity candidate"
-    assert "not present it as a forecast" in claim_ladder[3]["cannot_say"]
-    assert claim_ladder[4]["claim_level"] == "Paid reviewed guidance"
-    assert claim_ladder[4]["status"] == "Blocked"
-    assert "Do not claim live paid intelligence" in claim_ladder[4]["cannot_say"]
     ledger_rows = opportunity_engine["evidence_ledger"]
     assert ledger_rows[0]["source"] == "Marketplace and Shop Diary"
     assert ledger_rows[2]["source"] == "DemandBox"

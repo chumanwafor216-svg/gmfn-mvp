@@ -346,7 +346,6 @@ type ShopAttentionSummary = {
       evidence?: string | null;
       next_step?: string | null;
     } | null;
-    field_coverage?: Record<string, boolean | null | undefined> | null;
     signal_groups?: Array<{
       key?: string | null;
       label?: string | null;
@@ -403,38 +402,6 @@ type ShopAttentionSummary = {
       stop_rule?: string | null;
       boundary?: string | null;
     }> | null;
-    advanced_lanes?: Array<{
-      key?: string | null;
-      label?: string | null;
-      status?: string | null;
-      reads?: string | null;
-      unlocks?: string | null;
-      boundary?: string | null;
-    }> | null;
-    feature_touchpoints?: Array<{
-      feature?: string | null;
-      status?: string | null;
-      reads?: string | null;
-      can_help?: string | null;
-      next_wiring?: string | null;
-      boundary?: string | null;
-    }> | null;
-    commercial_checkpoints?: Array<{
-      stage?: string | null;
-      status?: string | null;
-      requires?: string | null;
-      owner_value?: string | null;
-      pricing_signal?: string | null;
-      boundary?: string | null;
-    }> | null;
-    access_model?: Array<{
-      level?: string | null;
-      status?: string | null;
-      includes?: string | null;
-      excluded?: string | null;
-      why?: string | null;
-      boundary?: string | null;
-    }> | null;
     capture_checklist?: Array<{
       category?: string | null;
       status?: string | null;
@@ -450,21 +417,6 @@ type ShopAttentionSummary = {
       review_now?: string | null;
       evidence_required?: string | null;
       upgrade_rule?: string | null;
-      boundary?: string | null;
-    }> | null;
-    report_readiness?: Array<{
-      requirement?: string | null;
-      status?: string | null;
-      current_state?: string | null;
-      needed_before_paid?: string | null;
-      boundary?: string | null;
-    }> | null;
-    claim_ladder?: Array<{
-      claim_level?: string | null;
-      status?: string | null;
-      can_say?: string | null;
-      cannot_say?: string | null;
-      evidence_to_upgrade?: string | null;
       boundary?: string | null;
     }> | null;
   } | null;
