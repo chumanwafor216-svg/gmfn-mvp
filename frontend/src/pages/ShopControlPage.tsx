@@ -446,6 +446,14 @@ type ShopAttentionSummary = {
       later_source?: string | null;
       boundary?: string | null;
     }> | null;
+    review_cadence?: Array<{
+      cadence?: string | null;
+      status?: string | null;
+      review_now?: string | null;
+      evidence_required?: string | null;
+      upgrade_rule?: string | null;
+      boundary?: string | null;
+    }> | null;
   } | null;
   daily_activity?: ShopAttentionDailyActivity[] | null;
   source_breakdown?: ShopAttentionSourceBreakdown[] | null;
@@ -3033,6 +3041,9 @@ export default function ShopControlPage() {
     : [];
   const opportunityEngineCaptureChecklistRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.capture_checklist)
     ? shopAttentionSummary.opportunity_engine.capture_checklist
+    : [];
+  const opportunityEngineReviewCadenceRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.review_cadence)
+    ? shopAttentionSummary.opportunity_engine.review_cadence
     : [];
   const opportunityEngineGapRows = useMemo(
     () =>
@@ -6926,6 +6937,27 @@ export default function ShopControlPage() {
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Why:</strong> {item.why || "This keeps the Opportunity Engine evidence-led."}</div>
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Later source:</strong> {item.later_source || "A governed backend record when built."}</div>
                         <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Capture discipline is not proof of CAC/LTV."}</div>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              ) : null}
+              {opportunityEngineReviewCadenceRows.length > 0 ? (
+                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px" }}>
+                  <StableDisclosureSummary debugId="shop-control.opportunity-engine.review-cadence" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
+                    Experiment review cadence
+                  </StableDisclosureSummary>
+                  <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                    {opportunityEngineReviewCadenceRows.map((item, index) => (
+                      <div key={`opportunity-review-${item.cadence || index}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 10, display: "grid", gap: 5 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.cadence || "Review cadence"}</span>
+                          <span style={{ ...badge(item.status === "Live"), fontSize: 10 }}>{item.status || "Next"}</span>
+                        </div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Review now:</strong> {item.review_now || "Review the current evidence before changing the claim."}</div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Evidence required:</strong> {item.evidence_required || "Comparable records over time."}</div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Upgrade rule:</strong> {item.upgrade_rule || "Upgrade the claim only after repeated evidence exists."}</div>
+                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Review cadence is not CAC/LTV proof or a forecast."}</div>
                       </div>
                     ))}
                   </div>

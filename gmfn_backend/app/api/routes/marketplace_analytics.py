@@ -902,6 +902,40 @@ def _opportunity_engine_summary(
             "boundary": "A review note is guidance discipline, not an instruction or guarantee.",
         },
     ]
+    review_cadence = [
+        {
+            "cadence": "Every shop push",
+            "status": "Missing cost trail",
+            "review_now": "Record channel, cash cost, airtime or data, helper cost, owner effort, and date beside each promoted shop or Spotlight push.",
+            "evidence_required": "A campaign note that can be compared with views, product opens, contact taps, and protected outcomes in the same window.",
+            "upgrade_rule": "Only compare channels after cost, serious contact, and at least one outcome signal can be seen together.",
+            "boundary": "Do not call views efficient until cost, contact, and outcome evidence are visible together.",
+        },
+        {
+            "cadence": "7-day review",
+            "status": "Live" if attention_events > 0 else "Next",
+            "review_now": "Compare attention, product opens, contact taps, recommendation actions, and the single offer detail changed during the test.",
+            "evidence_required": "At least one comparable seven-day window after changing only one visible offer detail.",
+            "upgrade_rule": "Repeat the same direction in more than one window before treating it as demand evidence.",
+            "boundary": "One week is a learning window, not market proof, sales proof, CAC, or LTV.",
+        },
+        {
+            "cadence": "30-day review",
+            "status": "Partial" if has_acquisition_trail or has_outcome_trail else "Next",
+            "review_now": "Check CAC inputs, serious contacts, protected outcomes, unresolved cases, and support effort before scaling promotion.",
+            "evidence_required": "Channel cost notes, serious contact trail, resolved outcome evidence, and support-cost notes.",
+            "upgrade_rule": "Estimate CAC/LTV only when repeat cost, repeat outcome, and retention records exist.",
+            "boundary": "A 30-day view is still not investor-grade unit economics or a paid entitlement by itself.",
+        },
+        {
+            "cadence": "90-day review",
+            "status": "Next",
+            "review_now": "Look for repeat buyers, repeat DemandBox patterns, recurring support needs, and owner return usage of Advanced Analytics.",
+            "evidence_required": "Repeat-customer, repeat-request, retention, margin, support-cost, and saved reviewed-report records.",
+            "upgrade_rule": "Only discuss lifetime value after repeat value and retention can be traced across more than one cycle.",
+            "boundary": "Ninety days can show direction; it still must not become a forecast or guarantee without governed review.",
+        },
+    ]
     evidence_ledger = [
         {
             "source": "Marketplace and Shop Diary",
@@ -1001,6 +1035,7 @@ def _opportunity_engine_summary(
         "commercial_checkpoints": commercial_checkpoints,
         "access_model": access_model,
         "capture_checklist": capture_checklist,
+        "review_cadence": review_cadence,
         "field_coverage": {
             "shop_and_marketplace": active_products > 0,
             "spotlight_attention": active_spotlights > 0 or spotlight_impressions > 0,

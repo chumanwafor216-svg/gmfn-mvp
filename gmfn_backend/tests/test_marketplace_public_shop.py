@@ -5683,6 +5683,19 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert capture_checklist[3]["status"] == "Missing"
     assert "lifetime value" in capture_checklist[3]["boundary"]
     assert capture_checklist[4]["category"] == "Decision review"
+    review_cadence = opportunity_engine["review_cadence"]
+    assert len(review_cadence) == 4
+    assert review_cadence[0]["cadence"] == "Every shop push"
+    assert "cost" in review_cadence[0]["review_now"]
+    assert "Do not call views efficient" in review_cadence[0]["boundary"]
+    assert review_cadence[1]["cadence"] == "7-day review"
+    assert review_cadence[1]["status"] == "Live"
+    assert "One week is a learning window" in review_cadence[1]["boundary"]
+    assert review_cadence[2]["cadence"] == "30-day review"
+    assert "Estimate CAC/LTV only" in review_cadence[2]["upgrade_rule"]
+    assert review_cadence[3]["cadence"] == "90-day review"
+    assert "lifetime value" in review_cadence[3]["upgrade_rule"]
+    assert "forecast or guarantee" in review_cadence[3]["boundary"]
     ledger_rows = opportunity_engine["evidence_ledger"]
     assert ledger_rows[0]["source"] == "Marketplace and Shop Diary"
     assert ledger_rows[2]["source"] == "DemandBox"

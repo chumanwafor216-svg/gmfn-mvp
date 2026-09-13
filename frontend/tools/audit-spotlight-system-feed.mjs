@@ -210,6 +210,11 @@ assertContains(
 );
 assertContains(
   "gmfn_backend/app/api/routes/marketplace_analytics.py",
+  /review_cadence = \[[\s\S]*?"cadence": "Every shop push"[\s\S]*?Do not call views efficient[\s\S]*?"cadence": "7-day review"[\s\S]*?One week is a learning window[\s\S]*?"cadence": "30-day review"[\s\S]*?Estimate CAC\/LTV only[\s\S]*?"cadence": "90-day review"[\s\S]*?forecast or guarantee[\s\S]*?"review_cadence": review_cadence/,
+  "Shop owner analytics API must expose experiment review cadence before upgrading CAC/LTV or demand claims."
+);
+assertContains(
+  "gmfn_backend/app/api/routes/marketplace_analytics.py",
   /evidence_ledger = \[[\s\S]*?"source": "Marketplace and Shop Diary"[\s\S]*?"source": "DemandBox"[\s\S]*?"source": "TrustPassport, TrustSlip, Trust Graph"[\s\S]*?"source": "External context"[\s\S]*?"status": "Blocked"[\s\S]*?"evidence_ledger": evidence_ledger/,
   "Shop owner analytics API must expose the Opportunity Engine evidence ledger without wiring private trust or external context prematurely."
 );
@@ -313,6 +318,11 @@ assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
   /capture_checklist\?: Array[\s\S]*?opportunityEngineCaptureChecklistRows[\s\S]*?shop-control\.opportunity-engine\.capture-checklist[\s\S]*?Evidence capture checklist[\s\S]*?Capture now:[\s\S]*?Later source:[\s\S]*?Capture discipline is not proof of CAC\/LTV\./,
   "Shop Control must render the evidence capture checklist as an Advanced Analytics detail without claiming CAC/LTV proof."
+);
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /review_cadence\?: Array[\s\S]*?opportunityEngineReviewCadenceRows[\s\S]*?shop-control\.opportunity-engine\.review-cadence[\s\S]*?Experiment review cadence[\s\S]*?Review now:[\s\S]*?Evidence required:[\s\S]*?Upgrade rule:[\s\S]*?Review cadence is not CAC\/LTV proof or a forecast\./,
+  "Shop Control must render the experiment review cadence without claiming CAC/LTV proof or a forecast."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
@@ -556,7 +566,7 @@ assertContains(
 );
 assertContains(
   "gmfn_backend/tests/test_marketplace_public_shop.py",
-  /opportunity_engine = body\["opportunity_engine"\][\s\S]*?opportunity_engine\["aggregator_ready"\] is True[\s\S]*?opportunity_coverage\["governed_outside_context"\] is False[\s\S]*?opportunity_engine\["signal_groups"\]\[2\]\["label"\] == "DemandBox"[\s\S]*?len\(opportunity_engine\["output_cards"\]\) == 3[\s\S]*?"must not be presented as market size"[\s\S]*?unit_economics = opportunity_engine\["unit_economics_readiness"\][\s\S]*?"not CAC, not LTV"[\s\S]*?measurement_plan = opportunity_engine\["measurement_plan"\][\s\S]*?"Capture acquisition cost"[\s\S]*?"Mark repeat value"[\s\S]*?experiment_plan = opportunity_engine\["experiment_plan"\][\s\S]*?"One-offer clarity test"[\s\S]*?"Cost note discipline"[\s\S]*?advanced_lanes = opportunity_engine\["advanced_lanes"\][\s\S]*?"Place and Environment"[\s\S]*?"Blocked"[\s\S]*?feature_touchpoints = opportunity_engine\["feature_touchpoints"\][\s\S]*?"TrustPassport and TrustSlip"[\s\S]*?"No trust score"[\s\S]*?"Notifications and WhatsApp Bridge"[\s\S]*?"No automatic WhatsApp"[\s\S]*?commercial_checkpoints = opportunity_engine\["commercial_checkpoints"\][\s\S]*?"Paid package readiness"[\s\S]*?"Not charged yet"[\s\S]*?"Retention and LTV proof"[\s\S]*?"LTV is not available"[\s\S]*?access_model = opportunity_engine\["access_model"\][\s\S]*?"Free owner preview"[\s\S]*?"Paid Advanced Analytics candidate"[\s\S]*?"Governed intelligence add-on"[\s\S]*?"Blocked"[\s\S]*?capture_checklist = opportunity_engine\["capture_checklist"\][\s\S]*?"Acquisition cost"[\s\S]*?"Serious contact"[\s\S]*?"Repeat value"[\s\S]*?ledger_rows = opportunity_engine\["evidence_ledger"\][\s\S]*?"External context"[\s\S]*?"Blocked"[\s\S]*?"not saved AI inference"/,
+  /opportunity_engine = body\["opportunity_engine"\][\s\S]*?opportunity_engine\["aggregator_ready"\] is True[\s\S]*?opportunity_coverage\["governed_outside_context"\] is False[\s\S]*?opportunity_engine\["signal_groups"\]\[2\]\["label"\] == "DemandBox"[\s\S]*?len\(opportunity_engine\["output_cards"\]\) == 3[\s\S]*?"must not be presented as market size"[\s\S]*?unit_economics = opportunity_engine\["unit_economics_readiness"\][\s\S]*?"not CAC, not LTV"[\s\S]*?measurement_plan = opportunity_engine\["measurement_plan"\][\s\S]*?"Capture acquisition cost"[\s\S]*?"Mark repeat value"[\s\S]*?experiment_plan = opportunity_engine\["experiment_plan"\][\s\S]*?"One-offer clarity test"[\s\S]*?"Cost note discipline"[\s\S]*?advanced_lanes = opportunity_engine\["advanced_lanes"\][\s\S]*?"Place and Environment"[\s\S]*?"Blocked"[\s\S]*?feature_touchpoints = opportunity_engine\["feature_touchpoints"\][\s\S]*?"TrustPassport and TrustSlip"[\s\S]*?"No trust score"[\s\S]*?"Notifications and WhatsApp Bridge"[\s\S]*?"No automatic WhatsApp"[\s\S]*?commercial_checkpoints = opportunity_engine\["commercial_checkpoints"\][\s\S]*?"Paid package readiness"[\s\S]*?"Not charged yet"[\s\S]*?"Retention and LTV proof"[\s\S]*?"LTV is not available"[\s\S]*?access_model = opportunity_engine\["access_model"\][\s\S]*?"Free owner preview"[\s\S]*?"Paid Advanced Analytics candidate"[\s\S]*?"Governed intelligence add-on"[\s\S]*?"Blocked"[\s\S]*?capture_checklist = opportunity_engine\["capture_checklist"\][\s\S]*?"Acquisition cost"[\s\S]*?"Serious contact"[\s\S]*?"Repeat value"[\s\S]*?review_cadence = opportunity_engine\["review_cadence"\][\s\S]*?"Every shop push"[\s\S]*?"7-day review"[\s\S]*?"30-day review"[\s\S]*?"90-day review"[\s\S]*?ledger_rows = opportunity_engine\["evidence_ledger"\][\s\S]*?"External context"[\s\S]*?"Blocked"[\s\S]*?"not saved AI inference"/,
   "Backend analytics tests must lock the Opportunity Engine computed-summary boundary."
 );
 assertContains(
