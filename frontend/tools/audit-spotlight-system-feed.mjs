@@ -240,14 +240,19 @@ assertContains(
   "Shop Control analytics must show explainable Market Intelligence inside the owner analytics board."
 );
 assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /Review windows[\s\S]*?Opportunity lenses[\s\S]*?Opportunity reading[\s\S]*?CAC\/LTV measurement plan[\s\S]*?Evidence capture checklist[\s\S]*?Experiment review cadence[\s\S]*?Current evidence snapshot[\s\S]*?Reviewed signal cards[\s\S]*?Small experiment plan/,
+  "Shop Control Advanced Analytics must keep the owner-facing evidence, review, and experiment surface."
+);
+assertLineNotContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /Forecast windows|shop-control\.opportunity-engine\.(field-map|advanced-lanes|feature-touchpoints|commercial-checkpoints|access-model|report-readiness|claim-ladder|build-gaps)|Build gaps before full engine|Total GSN field map|Commercial readiness checkpoints|Free vs paid access model|Saved report readiness|Claim ladder/,
+  "Shop Control Advanced Analytics must not expose internal Opportunity Engine scaffolding on the owner screen."
+);
+assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
   /export type OpportunityEngineFieldMapItem[\s\S]*?export function buildShopOpportunityEngineFieldMap[\s\S]*?Marketplace and Shop Diary[\s\S]*?DemandBox[\s\S]*?TrustPassport and TrustSlip[\s\S]*?People interaction[\s\S]*?Finance, support, and outside context/,
   "Shop Opportunity Engine field map must describe the total GSN operating field without becoming a separate screen."
-);
-assertContains(
-  "frontend/src/pages/ShopControlPage.tsx",
-  /shop-control\.opportunity-engine\.field-map[\s\S]*?Total GSN field map[\s\S]*?opportunityEngineFieldMap\.map/,
-  "Shop Control analytics must expose the total GSN field map as a collapsed Opportunity Engine detail."
 );
 assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
@@ -277,12 +282,7 @@ assertContains(
 assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
   /export type OpportunityEngineGapRow[\s\S]*?export function buildShopOpportunityEngineGapRows[\s\S]*?Backend evidence aggregator[\s\S]*?Saved reports and history[\s\S]*?Billing and entitlement gate[\s\S]*?Governed outside context[\s\S]*?Reviewed pattern reading/,
-  "Shop Opportunity Engine must keep a visible gap register before claiming the full backend, paid, external-context, or intelligence engine exists."
-);
-assertContains(
-  "frontend/src/pages/ShopControlPage.tsx",
-  /buildShopOpportunityEnginePackageReadiness\([\s\S]*?opportunityEnginePackageReadiness\.title[\s\S]*?Included[\s\S]*?Unlocks[\s\S]*?opportunityEnginePackageReadiness\.boundary/,
-  "Shop Control analytics must render the Advanced Analytics package readiness card inside the Opportunity Engine panel."
+  "Shop Opportunity Engine must keep an internal gap register before claiming the full backend, paid, external-context, or intelligence engine exists."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
@@ -306,26 +306,6 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /advanced_lanes\?: Array[\s\S]*?opportunityEngineAdvancedLaneRows[\s\S]*?shop-control\.opportunity-engine\.advanced-lanes[\s\S]*?Advanced Analytics lane map[\s\S]*?Unlocks:[\s\S]*?Boundary:/,
-  "Shop Control must render backend Advanced Analytics lanes as a collapsed map inside Opportunity Engine."
-);
-assertContains(
-  "frontend/src/pages/ShopControlPage.tsx",
-  /feature_touchpoints\?: Array[\s\S]*?opportunityEngineFeatureTouchpointRows[\s\S]*?shop-control\.opportunity-engine\.feature-touchpoints[\s\S]*?Feature touchpoints[\s\S]*?Can help:[\s\S]*?Next wiring:[\s\S]*?Boundary:/,
-  "Shop Control must render backend Opportunity Engine feature touchpoints as a collapsed Advanced Analytics detail."
-);
-assertContains(
-  "frontend/src/pages/ShopControlPage.tsx",
-  /commercial_checkpoints\?: Array[\s\S]*?opportunityEngineCommercialCheckpointRows[\s\S]*?shop-control\.opportunity-engine\.commercial-checkpoints[\s\S]*?Commercial readiness checkpoints[\s\S]*?Owner value:[\s\S]*?Pricing signal:[\s\S]*?Not charged yet and not proof of CAC\/LTV\./,
-  "Shop Control must render commercial readiness checkpoints without presenting Advanced Analytics as already billed."
-);
-assertContains(
-  "frontend/src/pages/ShopControlPage.tsx",
-  /access_model\?: Array[\s\S]*?opportunityEngineAccessModelRows[\s\S]*?shop-control\.opportunity-engine\.access-model[\s\S]*?Free vs paid access model[\s\S]*?Includes:[\s\S]*?Excludes:[\s\S]*?Not a billing entitlement or full paid intelligence feature\./,
-  "Shop Control must render the free-vs-paid Opportunity Engine access model without claiming the paid intelligence layer is live."
-);
-assertContains(
-  "frontend/src/pages/ShopControlPage.tsx",
   /capture_checklist\?: Array[\s\S]*?opportunityEngineCaptureChecklistRows[\s\S]*?shop-control\.opportunity-engine\.capture-checklist[\s\S]*?Evidence capture checklist[\s\S]*?Capture now:[\s\S]*?Later source:[\s\S]*?Capture discipline is not proof of CAC\/LTV\./,
   "Shop Control must render the evidence capture checklist as an Advanced Analytics detail without claiming CAC/LTV proof."
 );
@@ -333,16 +313,6 @@ assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
   /review_cadence\?: Array[\s\S]*?opportunityEngineReviewCadenceRows[\s\S]*?shop-control\.opportunity-engine\.review-cadence[\s\S]*?Experiment review cadence[\s\S]*?Review now:[\s\S]*?Evidence required:[\s\S]*?Upgrade rule:[\s\S]*?Review cadence is not CAC\/LTV proof or a forecast\./,
   "Shop Control must render the experiment review cadence without claiming CAC/LTV proof or a forecast."
-);
-assertContains(
-  "frontend/src/pages/ShopControlPage.tsx",
-  /report_readiness\?: Array[\s\S]*?opportunityEngineReportReadinessRows[\s\S]*?shop-control\.opportunity-engine\.report-readiness[\s\S]*?Saved report readiness[\s\S]*?Current state:[\s\S]*?Needed before paid:[\s\S]*?No saved report, entitlement, CAC\/LTV proof, or private intelligence is created here\./,
-  "Shop Control must render saved-report readiness without claiming persistence, entitlement, CAC/LTV proof, or private intelligence."
-);
-assertContains(
-  "frontend/src/pages/ShopControlPage.tsx",
-  /claim_ladder\?: Array[\s\S]*?opportunityEngineClaimLadderRows[\s\S]*?shop-control\.opportunity-engine\.claim-ladder[\s\S]*?Claim ladder[\s\S]*?Can say:[\s\S]*?Cannot say:[\s\S]*?Do not upgrade this into proof, forecast, or advice\.[\s\S]*?Evidence to upgrade:/,
-  "Shop Control must render the Opportunity Engine claim ladder as demo-safe guidance, not proof or forecast."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
@@ -356,18 +326,13 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /opportunityEngineBackendOutputCards[\s\S]*?shop-control\.opportunity-engine\.output-cards[\s\S]*?Backend output cards[\s\S]*?Signal:[\s\S]*?Evidence:[\s\S]*?Interpretation:[\s\S]*?Opportunity:[\s\S]*?Risk:[\s\S]*?Time horizon:[\s\S]*?Owner reviews before acting or publishing\./,
-  "Shop Control must render backend Opportunity Engine output cards as collapsed reviewed evidence cards."
+  /opportunityEngineBackendOutputCards[\s\S]*?shop-control\.opportunity-engine\.output-cards[\s\S]*?Reviewed signal cards[\s\S]*?Signal:[\s\S]*?Evidence:[\s\S]*?Interpretation:[\s\S]*?Opportunity:[\s\S]*?Risk:[\s\S]*?Time horizon:[\s\S]*?Owner reviews before acting or publishing\./,
+  "Shop Control must render Opportunity Engine output cards as collapsed reviewed evidence cards without backend wording."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
   /buildShopOpportunityEngineLensRows\([\s\S]*?Opportunity lenses[\s\S]*?local GSN reading[\s\S]*?opportunityEngineLensRows\.map[\s\S]*?item\.boundary/,
   "Shop Control analytics must render Opportunity Engine lenses inside the existing Advanced Analytics panel."
-);
-assertContains(
-  "frontend/src/pages/ShopControlPage.tsx",
-  /buildShopOpportunityEngineGapRows\([\s\S]*?hasBillingGate: Boolean\(shopAttentionSummary\?\.opportunity_engine\?\.field_coverage\?\.billing_gate\)[\s\S]*?hasAiInference: Boolean\(shopAttentionSummary\?\.opportunity_engine\?\.field_coverage\?\.ai_inference\)[\s\S]*?shop-control\.opportunity-engine\.build-gaps[\s\S]*?Build gaps before full engine[\s\S]*?opportunityEngineGapRows\.map/,
-  "Shop Control analytics must render the Opportunity Engine build-gap register as a collapsed detail."
 );
 assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",

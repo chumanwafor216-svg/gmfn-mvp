@@ -1130,7 +1130,7 @@ def _opportunity_engine_summary(
             "billing_gate": False,
         },
         "snapshot": {
-            "title": "Opportunity Engine backend snapshot",
+            "title": "Current evidence snapshot",
             "headline": f"{live_count} of {len(signal_groups)} owner-summary signal groups are live.",
             "evidence": "Computed from the existing shop analytics summary, DemandBox request count, protected trade records, and marketplace attention events.",
             "next_step": "Persist reviewed snapshots before treating this as a saved paid Advanced Analytics report.",

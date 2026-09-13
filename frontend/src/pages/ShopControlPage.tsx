@@ -65,10 +65,8 @@ import {
   buildShopAnalyticsWisdom,
   buildShopMarketIntelligenceSummary,
   buildShopOpportunityEngineFieldMap,
-  buildShopOpportunityEngineGapRows,
   buildShopOpportunityEngineGuidanceRows,
   buildShopOpportunityEngineLensRows,
-  buildShopOpportunityEnginePackageReadiness,
   buildShopOpportunityEngineSignalTiles,
   buildShopOpportunityEngineUnitEconomicsReadiness,
   buildShopOpportunityEngineWisdomSnapshot,
@@ -2988,21 +2986,6 @@ export default function ShopControlPage() {
         boundary: firstTruthy(backendUnitEconomicsReadiness.boundary, localOpportunityEngineUnitEconomicsReadiness.boundary),
       }
     : localOpportunityEngineUnitEconomicsReadiness;
-  const opportunityEnginePackageReadiness = useMemo(
-    () =>
-      buildShopOpportunityEnginePackageReadiness({
-        snapshot: opportunityEngineWisdomSnapshot,
-        fieldMap: opportunityEngineFieldMap,
-        liveSignalCount: opportunityEngineLiveSignalCount,
-        signalGroupCount: opportunityEngineSignalTiles.length,
-      }),
-    [
-      opportunityEngineFieldMap,
-      opportunityEngineLiveSignalCount,
-      opportunityEngineSignalTiles.length,
-      opportunityEngineWisdomSnapshot,
-    ]
-  );
   const opportunityEngineLensRows = useMemo(
     () =>
       buildShopOpportunityEngineLensRows({
@@ -3042,43 +3025,12 @@ export default function ShopControlPage() {
   const opportunityEngineExperimentPlanRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.experiment_plan)
     ? shopAttentionSummary.opportunity_engine.experiment_plan
     : [];
-  const opportunityEngineAdvancedLaneRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.advanced_lanes)
-    ? shopAttentionSummary.opportunity_engine.advanced_lanes
-    : [];
-  const opportunityEngineFeatureTouchpointRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.feature_touchpoints)
-    ? shopAttentionSummary.opportunity_engine.feature_touchpoints
-    : [];
-  const opportunityEngineCommercialCheckpointRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.commercial_checkpoints)
-    ? shopAttentionSummary.opportunity_engine.commercial_checkpoints
-    : [];
-  const opportunityEngineAccessModelRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.access_model)
-    ? shopAttentionSummary.opportunity_engine.access_model
-    : [];
   const opportunityEngineCaptureChecklistRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.capture_checklist)
     ? shopAttentionSummary.opportunity_engine.capture_checklist
     : [];
   const opportunityEngineReviewCadenceRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.review_cadence)
     ? shopAttentionSummary.opportunity_engine.review_cadence
     : [];
-  const opportunityEngineReportReadinessRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.report_readiness)
-    ? shopAttentionSummary.opportunity_engine.report_readiness
-    : [];
-  const opportunityEngineClaimLadderRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.claim_ladder)
-    ? shopAttentionSummary.opportunity_engine.claim_ladder
-    : [];
-  const opportunityEngineGapRows = useMemo(
-    () =>
-      buildShopOpportunityEngineGapRows({
-        fieldMap: opportunityEngineFieldMap,
-        lensRows: opportunityEngineLensRows,
-        hasBillingGate: Boolean(shopAttentionSummary?.opportunity_engine?.field_coverage?.billing_gate),
-        hasSavedReports: Boolean(shopAttentionSummary?.opportunity_engine?.field_coverage?.saved_reports),
-        hasBackendAggregator: Boolean(shopAttentionSummary?.opportunity_engine?.aggregator_ready),
-        hasGovernedOutsideContext: Boolean(shopAttentionSummary?.opportunity_engine?.field_coverage?.governed_outside_context),
-        hasAiInference: Boolean(shopAttentionSummary?.opportunity_engine?.field_coverage?.ai_inference),
-      }),
-    [opportunityEngineFieldMap, opportunityEngineLensRows, shopAttentionSummary?.opportunity_engine]
-  );
   const featurePayments = useMemo(() => {
     return expectedPayments.filter((item) =>
       [
@@ -6725,7 +6677,7 @@ export default function ShopControlPage() {
                 ))}
               </div>
               <div style={{ display: "flex", gap: 7, flexWrap: "wrap", alignItems: "center" }}>
-                <span style={{ color: "#24415C", fontSize: 11, fontWeight: 950 }}>Forecast windows</span>
+                <span style={{ color: "#24415C", fontSize: 11, fontWeight: 950 }}>Review windows</span>
                 {opportunityEngineHorizonLabels.map((label) => (
                   <span key={`opportunity-horizon-${label}`} style={{ borderRadius: 999, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "5px 8px", color: "#24415C", fontSize: 10.5, fontWeight: 900 }}>
                     {label}
@@ -6832,116 +6784,6 @@ export default function ShopControlPage() {
                 ) : null}
                 <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}>{opportunityEngineUnitEconomicsReadiness.boundary}</div>
               </div>
-              <div style={{ borderRadius: 16, background: "linear-gradient(180deg, #FFFDF6 0%, #FFF7DE 100%)", border: "1px solid rgba(214,170,69,0.22)", padding: 10, display: "grid", gap: 8 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                  <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>{opportunityEnginePackageReadiness.title}</div>
-                  <span style={{ ...badge(opportunityEngineLiveSignalCount >= 3), fontSize: 10 }}>{opportunityEnginePackageReadiness.status}</span>
-                </div>
-                <div style={{ color: "#5A4720", fontSize: 11.5, fontWeight: 820, lineHeight: 1.4 }}>{opportunityEnginePackageReadiness.commercialUse}</div>
-                <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
-                  <div style={{ borderRadius: 14, background: "rgba(255,255,255,0.78)", border: "1px solid rgba(122,89,16,0.12)", padding: 9 }}>
-                    <div style={{ color: "#7A5910", fontSize: 10.5, fontWeight: 950, textTransform: "uppercase", letterSpacing: 0 }}>Included</div>
-                    <div style={{ marginTop: 5, display: "grid", gap: 5 }}>
-                      {opportunityEnginePackageReadiness.included.map((item) => (
-                        <div key={`opportunity-package-included-${item}`} style={{ color: "#24415C", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}>{item}</div>
-                      ))}
-                    </div>
-                  </div>
-                  <div style={{ borderRadius: 14, background: "rgba(255,255,255,0.78)", border: "1px solid rgba(122,89,16,0.12)", padding: 9 }}>
-                    <div style={{ color: "#7A5910", fontSize: 10.5, fontWeight: 950, textTransform: "uppercase", letterSpacing: 0 }}>Unlocks</div>
-                    <div style={{ marginTop: 5, display: "grid", gap: 5 }}>
-                      {opportunityEnginePackageReadiness.unlocks.map((item) => (
-                        <div key={`opportunity-package-unlocks-${item}`} style={{ color: "#24415C", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}>{item}</div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Next:</strong> {opportunityEnginePackageReadiness.nextBuildStep}</div>
-                <div style={{ color: "#7A4A00", fontSize: 11, fontWeight: 820, lineHeight: 1.35 }}>{opportunityEnginePackageReadiness.boundary}</div>
-              </div>
-              {opportunityEngineAdvancedLaneRows.length > 0 ? (
-                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px" }}>
-                  <StableDisclosureSummary debugId="shop-control.opportunity-engine.advanced-lanes" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
-                    Advanced Analytics lane map
-                  </StableDisclosureSummary>
-                  <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
-                    {opportunityEngineAdvancedLaneRows.map((item, index) => (
-                      <div key={`opportunity-lane-${item.key || item.label || index}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 10, display: "grid", gap: 5 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                          <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.label || "Advanced lane"}</span>
-                          <span style={{ ...badge(item.status === "Live"), fontSize: 10 }}>{item.status || "Next"}</span>
-                        </div>
-                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Reads:</strong> {item.reads || "No source note available."}</div>
-                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Unlocks:</strong> {item.unlocks || "Future reviewed analytics."}</div>
-                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Owner reviews before acting or publishing."}</div>
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              ) : null}
-              {opportunityEngineFeatureTouchpointRows.length > 0 ? (
-                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px" }}>
-                  <StableDisclosureSummary debugId="shop-control.opportunity-engine.feature-touchpoints" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
-                    Feature touchpoints
-                  </StableDisclosureSummary>
-                  <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
-                    {opportunityEngineFeatureTouchpointRows.map((item, index) => (
-                      <div key={`opportunity-feature-${item.feature || index}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 10, display: "grid", gap: 5 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                          <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.feature || "GSN feature"}</span>
-                          <span style={{ ...badge(item.status === "Live"), fontSize: 10 }}>{item.status || "Next"}</span>
-                        </div>
-                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Reads:</strong> {item.reads || "No source note available."}</div>
-                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Can help:</strong> {item.can_help || "Future reviewed analytics."}</div>
-                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Next wiring:</strong> {item.next_wiring || "Add governed evidence before expanding this lane."}</div>
-                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Owner reviews before acting or publishing."}</div>
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              ) : null}
-              {opportunityEngineCommercialCheckpointRows.length > 0 ? (
-                <details style={{ borderRadius: 16, background: "linear-gradient(180deg, #FFFFFF 0%, #FFF9EA 100%)", border: "1px solid rgba(214,170,69,0.20)", padding: "4px 10px 10px" }}>
-                  <StableDisclosureSummary debugId="shop-control.opportunity-engine.commercial-checkpoints" stableHeight={38} style={{ color: "#7A5910", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
-                    Commercial readiness checkpoints
-                  </StableDisclosureSummary>
-                  <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
-                    {opportunityEngineCommercialCheckpointRows.map((item, index) => (
-                      <div key={`opportunity-commercial-${item.stage || index}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(214,170,69,0.16)", padding: 10, display: "grid", gap: 5 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                          <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.stage || "Commercial checkpoint"}</span>
-                          <span style={{ ...badge(item.status === "Live"), fontSize: 10 }}>{item.status || "Next"}</span>
-                        </div>
-                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Requires:</strong> {item.requires || "A governed evidence rule before charging."}</div>
-                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Owner value:</strong> {item.owner_value || "Clearer decisions from GSN activity."}</div>
-                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Pricing signal:</strong> {item.pricing_signal || "Repeat use and willingness to pay must be observed."}</div>
-                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Not charged yet and not proof of CAC/LTV."}</div>
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              ) : null}
-              {opportunityEngineAccessModelRows.length > 0 ? (
-                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(122,89,16,0.14)", padding: "4px 10px 10px" }}>
-                  <StableDisclosureSummary debugId="shop-control.opportunity-engine.access-model" stableHeight={38} style={{ color: "#7A5910", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
-                    Free vs paid access model
-                  </StableDisclosureSummary>
-                  <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
-                    {opportunityEngineAccessModelRows.map((item, index) => (
-                      <div key={`opportunity-access-${item.level || index}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(214,170,69,0.16)", padding: 10, display: "grid", gap: 5 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                          <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.level || "Access level"}</span>
-                          <span style={{ ...badge(item.status === "Live"), fontSize: 10 }}>{item.status || "Next"}</span>
-                        </div>
-                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Includes:</strong> {item.includes || "A small reviewed evidence view."}</div>
-                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Excludes:</strong> {item.excluded || "Paid and governed capabilities remain off until built."}</div>
-                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Why:</strong> {item.why || "Protects the pilot from overclaiming while showing real value."}</div>
-                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Not a billing entitlement or full paid intelligence feature."}</div>
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              ) : null}
               {opportunityEngineCaptureChecklistRows.length > 0 ? (
                 <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px" }}>
                   <StableDisclosureSummary debugId="shop-control.opportunity-engine.capture-checklist" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
@@ -6984,51 +6826,10 @@ export default function ShopControlPage() {
                   </div>
                 </details>
               ) : null}
-              {opportunityEngineReportReadinessRows.length > 0 ? (
-                <details style={{ borderRadius: 16, background: "linear-gradient(180deg, #FFFFFF 0%, #FFF9EA 100%)", border: "1px solid rgba(214,170,69,0.20)", padding: "4px 10px 10px" }}>
-                  <StableDisclosureSummary debugId="shop-control.opportunity-engine.report-readiness" stableHeight={38} style={{ color: "#7A5910", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
-                    Saved report readiness
-                  </StableDisclosureSummary>
-                  <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
-                    {opportunityEngineReportReadinessRows.map((item, index) => (
-                      <div key={`opportunity-report-${item.requirement || index}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(214,170,69,0.16)", padding: 10, display: "grid", gap: 5 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                          <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.requirement || "Report requirement"}</span>
-                          <span style={{ ...badge(item.status === "Partial" || item.status === "Computed only"), fontSize: 10 }}>{item.status || "Next"}</span>
-                        </div>
-                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Current state:</strong> {item.current_state || "This report capability is not active yet."}</div>
-                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Needed before paid:</strong> {item.needed_before_paid || "Persisted review and access rules are required first."}</div>
-                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "No saved report, entitlement, CAC/LTV proof, or private intelligence is created here."}</div>
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              ) : null}
-              {opportunityEngineClaimLadderRows.length > 0 ? (
-                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px" }}>
-                  <StableDisclosureSummary debugId="shop-control.opportunity-engine.claim-ladder" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
-                    Claim ladder
-                  </StableDisclosureSummary>
-                  <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
-                    {opportunityEngineClaimLadderRows.map((item, index) => (
-                      <div key={`opportunity-claim-${item.claim_level || index}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 10, display: "grid", gap: 5 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                          <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.claim_level || "Claim level"}</span>
-                          <span style={{ ...badge(item.status === "Live"), fontSize: 10 }}>{item.status || "Next"}</span>
-                        </div>
-                        <div style={{ color: "#24415C", fontSize: 11, fontWeight: 820, lineHeight: 1.35 }}><strong>Can say:</strong> {item.can_say || "Only the current evidence can be described."}</div>
-                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Cannot say:</strong> {item.cannot_say || "Do not upgrade this into proof, forecast, or advice."}</div>
-                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Evidence to upgrade:</strong> {item.evidence_to_upgrade || "Repeated evidence and human review are required."}</div>
-                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Owner reviews before acting or publishing."}</div>
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              ) : null}
               {shopAttentionSummary?.opportunity_engine?.snapshot ? (
                 <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.84)", border: "1px solid rgba(15,94,170,0.12)", padding: 10, display: "grid", gap: 5 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                    <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>{shopAttentionSummary.opportunity_engine.snapshot.title || "Opportunity Engine backend snapshot"}</div>
+                    <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>{shopAttentionSummary.opportunity_engine.snapshot.title || "Current evidence snapshot"}</div>
                     <span style={{ ...badge(Boolean(shopAttentionSummary.opportunity_engine.aggregator_ready)), fontSize: 10 }}>{shopAttentionSummary.opportunity_engine.engine_state || "computed summary"}</span>
                   </div>
                   <div style={{ color: "#24415C", fontSize: 11.5, fontWeight: 820, lineHeight: 1.35 }}>{shopAttentionSummary.opportunity_engine.snapshot.headline}</div>
@@ -7059,7 +6860,7 @@ export default function ShopControlPage() {
               {opportunityEngineBackendOutputCards.length > 0 ? (
                 <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px" }}>
                   <StableDisclosureSummary debugId="shop-control.opportunity-engine.output-cards" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
-                    Backend output cards
+                    Reviewed signal cards
                   </StableDisclosureSummary>
                   <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
                     {opportunityEngineBackendOutputCards.map((item, index) => (
@@ -7104,45 +6905,6 @@ export default function ShopControlPage() {
                   </div>
                 </details>
               ) : null}
-              <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(122,89,16,0.12)", padding: "4px 10px 10px" }}>
-                <StableDisclosureSummary debugId="shop-control.opportunity-engine.build-gaps" stableHeight={38} style={{ color: "#7A5910", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
-                  Build gaps before full engine
-                </StableDisclosureSummary>
-                <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
-                  {opportunityEngineGapRows.map((item) => (
-                    <div key={`opportunity-gap-${item.area}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(214,170,69,0.16)", padding: 10, display: "grid", gap: 5 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                        <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.area}</span>
-                        <span style={{ ...badge(item.status === "Partial"), fontSize: 10 }}>{item.status}</span>
-                      </div>
-                      <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Why:</strong> {item.whyItMatters}</div>
-                      <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Build:</strong> {item.nextBuildStep}</div>
-                      <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Risk:</strong> {item.riskIfSkipped}</div>
-                    </div>
-                  ))}
-                </div>
-              </details>
-              <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(18,58,89,0.08)", padding: "4px 10px 10px" }}>
-                <StableDisclosureSummary debugId="shop-control.opportunity-engine.field-map" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
-                  Total GSN field map
-                </StableDisclosureSummary>
-                <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
-                  {opportunityEngineFieldMap.map((item) => (
-                    <div key={`opportunity-field-${item.area}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 10, display: "grid", gridTemplateColumns: "32px minmax(0, 1fr)", gap: 8, alignItems: "start" }}>
-                      <GsnLegacyIcon name={item.icon as GsnIconName} size={30} />
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                          <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.area}</span>
-                          <span style={{ ...badge(item.status === "Live"), fontSize: 10 }}>{item.status}</span>
-                        </div>
-                        <div style={{ marginTop: 4, color: "#24415C", fontSize: 11.5, fontWeight: 820, lineHeight: 1.35 }}>{item.summary}</div>
-                        <div style={{ marginTop: 4, color: "#5A6F84", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Reads:</strong> {item.reads}</div>
-                        <div style={{ marginTop: 3, color: "#5A6F84", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Opens:</strong> {item.opens}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </details>
             </div>
             <div
               style={{
