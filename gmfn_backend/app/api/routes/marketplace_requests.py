@@ -158,7 +158,7 @@ def _visible_user_ids_for_marketplace_requests(
     clan_id: int | None = None,
 ) -> list[int]:
     """
-    System-level visibility rule for Demand Box:
+    System-level visibility rule for DemandBox:
 
     - Request ownership is user-level (one member creates the request)
     - Visibility is membership-driven
@@ -271,7 +271,7 @@ def create_marketplace_request(
         raise HTTPException(
             status_code=400,
             detail=(
-                "You already have 5 active Demandbox requests in 24 hours. "
+                "You already have 5 active DemandBox requests in 24 hours. "
                 "Close one or wait before posting another."
             ),
         )

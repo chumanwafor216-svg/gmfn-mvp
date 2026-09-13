@@ -362,24 +362,24 @@ assertContains(
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
   /listMarketplaceRequests\([\s\S]*?status: "open"[\s\S]*?mine_only: false[\s\S]*?limit: 12/,
-  "Shop Control Market Intelligence must read Demand Box records from the existing marketplace request lane."
+  "Shop Control Market Intelligence must read DemandBox records from the existing marketplace request lane."
 );
 
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
   /direct request, not community-wide demand[\s\S]*?Community Needs[\s\S]*?not buyer proof, sales proof, or automatic product matching[\s\S]*?to=\{routes\.askCommunity\}[\s\S]*?shop-control\.market-intelligence\.ask-community[\s\S]*?to=\{routes\.demandBox\}[\s\S]*?shop-control\.market-intelligence\.demand-box/,
-  "Shop Control Community Needs must route to Demand Box while avoiding buyer, sales, or community-wide demand claims."
+  "Shop Control Community Needs must route to DemandBox while avoiding buyer, sales, or community-wide demand claims."
 );
 
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
   /SHOP_DEMAND_CONTEXT_STOP_WORDS[\s\S]*?SHOP_SENSITIVE_DEMAND_TERMS[\s\S]*?DIRECT_DEMAND_MATCH[\s\S]*?INSUFFICIENT_EVIDENCE[\s\S]*?buildShopCommunityNeedOpportunities[\s\S]*?one request, not a trend[\s\S]*?sensitive or support-related request/,
-  "Shop Control Community Needs must reuse Demand Box records, label individual requests, and filter sensitive needs from commercial opportunity guidance."
+  "Shop Control Community Needs must reuse DemandBox records, label individual requests, and filter sensitive needs from commercial opportunity guidance."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
   /askCommunity: appendRouteQueryParam[\s\S]*?routeTarget\([\s\S]*?"demandBox"[\s\S]*?"shop-control\.route\.ask-community"[\s\S]*?"mode"[\s\S]*?"ask_community"/,
-  "Shop Control Ask Community must route into Demand Box question mode, while reusing the existing market need pulse engine."
+  "Shop Control Ask Community must route into DemandBox question mode, while reusing the existing market need pulse engine."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
@@ -511,7 +511,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/tests/test_marketplace_public_shop.py",
-  /"event_type": "share_action"[\s\S]*?gsn_share=copy_shop_link[\s\S]*?"event_type": "recommendation_actioned"[\s\S]*?recommendation_actions = body\["recommendation_actions"\][\s\S]*?Opened Demand Box[\s\S]*?"shop_gallery_share" not in source_rows[\s\S]*?"shop_market_intelligence" not in source_rows/,
+  /"event_type": "share_action"[\s\S]*?gsn_share=copy_shop_link[\s\S]*?"event_type": "recommendation_actioned"[\s\S]*?recommendation_actions = body\["recommendation_actions"\][\s\S]*?Opened DemandBox[\s\S]*?"shop_gallery_share" not in source_rows[\s\S]*?"shop_market_intelligence" not in source_rows/,
   "Backend analytics tests must lock share attribution, recommendation action logging, and boundary wording."
 );
 assertContains(

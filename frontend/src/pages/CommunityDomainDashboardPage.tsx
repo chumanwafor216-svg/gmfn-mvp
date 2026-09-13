@@ -548,7 +548,7 @@ const DOMAIN_FEATURE_POLICY_ROWS: Array<{
   },
   {
     key: "demand_box",
-    label: "Demand Box",
+    label: "DemandBox",
     note: "Needs, support requests, and community help.",
     defaultMode: "members_submit_admin_approves",
     icon: "phone-contact",
@@ -1265,7 +1265,7 @@ function domainFeatureRouteEffect(featureKey: DomainFeaturePolicyKey): string {
     return "When off: Spotlight broadcast and paid Spotlight payment actions are blocked; paid credit pricing stays separate.";
   }
   if (featureKey === "demand_box") {
-    return "When off: new Demand Box requests are blocked; existing requests can still be read or closed.";
+    return "When off: new DemandBox requests are blocked; existing requests can still be read or closed.";
   }
   if (featureKey === "vault") {
     return "When off: private Vault content and active Vault access-link creation are blocked; paid slot entitlement, expiry, and privacy rules stay separate.";
@@ -9357,7 +9357,7 @@ export default function CommunityDomainDashboardPage() {
                                 This rule controls notices, member invites,
                                 marketplace shops, Shop Diary updates, payments and
                                 contributions, ROSCA cycle actions, Spotlight
-                                broadcast/payment actions, Demand Box posting, and
+                                broadcast/payment actions, DemandBox posting, and
                                 private Vault publishing/link creation. Paid Vault
                                 slot entitlement, link expiry, and privacy controls
                                 stay in their separate service plans.

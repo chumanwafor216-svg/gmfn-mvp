@@ -1295,7 +1295,7 @@ const routeRevealChecks = [
     file: demandBoxPagePath,
     source: demandBoxPageSource,
     label:
-      "Demand Box create reveal must use shared no-jump reveal instead of raw scrollIntoView",
+      "DemandBox create reveal must use shared no-jump reveal instead of raw scrollIntoView",
     pattern:
       /import \{ revealElementWithoutJump \} from "\.\.\/lib\/mobileRevealStability";[\s\S]*?const revealDemandCreate = useCallback\([\s\S]*?revealElementWithoutJump\(target, \{[\s\S]*?surface: "demand-box"[\s\S]*?reason: "create-reveal"/,
     forbidden: /revealDemandCreate[\s\S]*?scrollIntoView/,

@@ -115,13 +115,13 @@ assertContains(
 
 assertContains(
   "decisionPacks",
-  /expectedEvidence[\s\S]*?gsnSources[\s\S]*?missingLinks[\s\S]*?refusesToClaim[\s\S]*?confirmationReasonType[\s\S]*?confirmationQuestion[\s\S]*?Employment Decision Pack[\s\S]*?Demand Box[\s\S]*?employment_role_check[\s\S]*?Housing Decision Pack[\s\S]*?Previous landlord[\s\S]*?housing_reference_check[\s\S]*?Trade or Skilled Work Decision Pack[\s\S]*?Customer-confirmed completed-job record[\s\S]*?trade_skill_check/,
+  /expectedEvidence[\s\S]*?gsnSources[\s\S]*?missingLinks[\s\S]*?refusesToClaim[\s\S]*?confirmationReasonType[\s\S]*?confirmationQuestion[\s\S]*?Employment Decision Pack[\s\S]*?DemandBox[\s\S]*?employment_role_check[\s\S]*?Housing Decision Pack[\s\S]*?Previous landlord[\s\S]*?housing_reference_check[\s\S]*?Trade or Skilled Work Decision Pack[\s\S]*?Customer-confirmed completed-job record[\s\S]*?trade_skill_check/,
   "Shared Decision Pack catalog must map real recipient questions to expected evidence, GSN sources, missing links, community-confirmation prompts, and overclaim boundaries."
 );
 
 assertContains(
   "decisionMatrix",
-  /Employment[\s\S]*?Demand Box[\s\S]*?Housing[\s\S]*?Community-living conduct[\s\S]*?Housing conduct confirmation question[\s\S]*?Trade or Skilled Work[\s\S]*?Customer-confirmed completed-job record[\s\S]*?Backend parity/,
+  /Employment[\s\S]*?DemandBox[\s\S]*?Housing[\s\S]*?Community-living conduct[\s\S]*?Housing conduct confirmation question[\s\S]*?Trade or Skilled Work[\s\S]*?Customer-confirmed completed-job record[\s\S]*?Backend parity/,
   "Public Decision Pack evidence matrix doc must preserve real-world employment, housing, trade, and backend parity gaps."
 );
 
@@ -192,7 +192,7 @@ assertContains(
 assertContains(
   "viewModel",
   /type DecisionPackDemandRequestOutcomePointer[\s\S]*?demandRequestOutcomePointers: DecisionPackDemandRequestOutcomePointer\[\][\s\S]*?source\.demand_request_outcome_pointers[\s\S]*?demandRequestOutcomeBoundaryNote/,
-  "Public TrustSlip Verify view model must preserve aggregate Demand Box request-outcome pointer rows and their boundary note."
+  "Public TrustSlip Verify view model must preserve aggregate DemandBox request-outcome pointer rows and their boundary note."
 );
 
 assertContains(
@@ -436,7 +436,7 @@ assertContains(
 
 assertContains(
   "backendDecisionPacks",
-  /class DecisionPackDefinition:[\s\S]*?expected_evidence: tuple\[str, \.\.\.\][\s\S]*?gsn_sources: tuple\[dict\[str, str\], \.\.\.\][\s\S]*?missing_links: tuple\[str, \.\.\.\][\s\S]*?refuses_to_claim: tuple\[str, \.\.\.\][\s\S]*?confirmation_reason_type: str[\s\S]*?confirmation_question: str[\s\S]*?Employment Decision Pack[\s\S]*?Demand Box[\s\S]*?employment_role_check[\s\S]*?Housing Decision Pack[\s\S]*?Previous landlord[\s\S]*?housing_reference_check[\s\S]*?Trade or Skilled Work Decision Pack[\s\S]*?Customer-confirmed completed-job record[\s\S]*?trade_skill_check/,
+  /class DecisionPackDefinition:[\s\S]*?expected_evidence: tuple\[str, \.\.\.\][\s\S]*?gsn_sources: tuple\[dict\[str, str\], \.\.\.\][\s\S]*?missing_links: tuple\[str, \.\.\.\][\s\S]*?refuses_to_claim: tuple\[str, \.\.\.\][\s\S]*?confirmation_reason_type: str[\s\S]*?confirmation_question: str[\s\S]*?Employment Decision Pack[\s\S]*?DemandBox[\s\S]*?employment_role_check[\s\S]*?Housing Decision Pack[\s\S]*?Previous landlord[\s\S]*?housing_reference_check[\s\S]*?Trade or Skilled Work Decision Pack[\s\S]*?Customer-confirmed completed-job record[\s\S]*?trade_skill_check/,
   "Backend Decision Pack catalog must carry the same evidence/source/gap/boundary matrix and community-confirmation prompts as the frontend selector."
 );
 assertContains(
@@ -474,7 +474,7 @@ assertContains(
 assertContains(
   "backendDecisionPacks",
   /MarketplaceRequest[\s\S]*?DEMAND_REQUEST_OUTCOME_PACKS[\s\S]*?_decision_pack_demand_request_outcome_pointers[\s\S]*?demand_request_outcome_gap[\s\S]*?demand_box_request_outcome[\s\S]*?demand_request_outcome_pointers[\s\S]*?demand_request_outcome_boundary_note/,
-  "Backend Decision Pack evidence extract must surface aggregate Demand Box request outcomes without exposing request content, contacts, quotes, or responder/job proof overclaims."
+  "Backend Decision Pack evidence extract must surface aggregate DemandBox request outcomes without exposing request content, contacts, quotes, or responder/job proof overclaims."
 );
 
 assertContains(
@@ -541,7 +541,7 @@ assertContains(
 assertContains(
   "backendDecisionPackTests",
   /test_public_verify_trade_pack_surfaces_demand_box_request_outcomes_without_private_request_details[\s\S]*?MarketplaceRequest[\s\S]*?demand_box_request_outcome[\s\S]*?demand_request_outcome_boundary_note[\s\S]*?PRIVATE PLUMBING DEMAND TITLE[\s\S]*?whatsapp_number[\s\S]*?responder_user_id[\s\S]*?trust_score/,
-  "Backend tests must prove Decision Packs surface aggregate Demand Box request outcomes without exposing request titles, descriptions, contacts, quote text, responder raw IDs, or trust scores."
+  "Backend tests must prove Decision Packs surface aggregate DemandBox request outcomes without exposing request titles, descriptions, contacts, quote text, responder raw IDs, or trust scores."
 );
 
 assertContains(

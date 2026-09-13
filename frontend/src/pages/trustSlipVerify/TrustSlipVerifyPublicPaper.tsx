@@ -1649,7 +1649,7 @@ export default function TrustSlipVerifyPublicPaper({
     { title: "Guarantee/support outcomes", rows: decisionPackGuaranteeOutcomeRows },
     { title: "Fulfilment/correction outcomes", rows: decisionPackFulfillmentOutcomeRows },
     { title: "Completed work/customer confirmation", rows: decisionPackCompletedWorkRows },
-    { title: "Demand Box request outcomes", rows: decisionPackDemandRequestOutcomeRows },
+    { title: "DemandBox request outcomes", rows: decisionPackDemandRequestOutcomeRows },
     { title: "Community witness outcomes", rows: decisionPackConfirmationPointerRows },
     { title: "Issue resolution pointers", rows: decisionPackIssueResolutionRows },
     { title: "Private review needed", rows: decisionPackPrivateReviewDisplayRows },

@@ -63,7 +63,7 @@ const capabilityTitles = [
   "One Global Shop",
   "Service Economy Participation",
   "Trust-Based Hiring",
-  "Demand Box",
+  "DemandBox",
   "Community Economic Power",
   "Commitment Builder",
   "Institutional Community Domain",
@@ -318,7 +318,7 @@ for (const [pattern, label] of [
   [/path="withdrawal-instructions"\s+element=\{<WithdrawalInstructionsPage \/>/, "Money Out"],
   [/path="loans"\s+element=\{<LoansPage \/>/, "Loans"],
   [/path="marketplace"\s+element=\{<MarketplacePage \/>/, "Marketplace"],
-  [/path="demand-box"\s+element=\{<DemandBoxPage \/>/, "Demand Box"],
+  [/path="demand-box"\s+element=\{<DemandBoxPage \/>/, "DemandBox"],
   [/path="shop"\s+element=\{<PreserveRedirect to=\{APP_ROUTES\.SHOP_ME\} \/>/, "Shop"],
 ]) {
   assertContains(

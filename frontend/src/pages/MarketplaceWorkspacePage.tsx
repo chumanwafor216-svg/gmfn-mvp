@@ -1537,7 +1537,7 @@ export default function MarketplaceWorkspacePage() {
                   debugId={demandBoxCta.debugId}
                   style={workspaceActionStyle()}
                 >
-                  Open Demand Box
+                  Open DemandBox
                 </StableCtaLink>
                 <StableCtaLink
                   to={workspaceCtaPath(marketplaceCta)}

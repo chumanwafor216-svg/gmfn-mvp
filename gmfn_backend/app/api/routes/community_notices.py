@@ -1734,8 +1734,8 @@ def list_notices(
         "demand_signal_count": int(demand_signal_count),
         "demand_signals": demand_signals,
         "demand_signal_boundary": (
-            "Demand signals are read-only pointers from this community's Demand Box. "
-            "Responding stays in Demand Box; the Official Board does not create a "
+            "Demand signals are read-only pointers from this community's DemandBox. "
+            "Responding stays in DemandBox; the Official Board does not create a "
             "second request, response thread, payment approval, or release authority."
         ),
         "boundary": (

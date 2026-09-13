@@ -598,7 +598,7 @@ def test_community_notice_board_lists_demand_box_signals_without_response_thread
     assert body["thread_enabled"] is False
     assert body["demand_signals_enabled"] is True
     assert body["demand_signal_count"] == 1
-    assert "Responding stays in Demand Box" in body["demand_signal_boundary"]
+    assert "Responding stays in DemandBox" in body["demand_signal_boundary"]
 
     signal = body["demand_signals"][0]
     assert signal["source"] == "demand_box"

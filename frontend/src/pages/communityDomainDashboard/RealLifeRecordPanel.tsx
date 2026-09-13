@@ -1177,7 +1177,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                   <option value="programme">Programme</option>
                                   <option value="workshop">Workshop</option>
                                   <option value="announcement">Announcement</option>
-                                  <option value="demand_box">Demand Box</option>
+                                  <option value="demand_box">DemandBox</option>
                                 </select>
                                 <input
                                   value={responseChannelDraft.window_days}

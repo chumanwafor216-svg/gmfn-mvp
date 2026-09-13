@@ -189,7 +189,7 @@ def _seed_community_domain_feature_policy(
                     'domain_admin_review',
                     'owner_admin',
                     'active',
-                    'Demand Box route feature policy test',
+                    'DemandBox route feature policy test',
                     :config_json,
                     1,
                     CURRENT_TIMESTAMP,
@@ -273,7 +273,7 @@ def test_marketplace_request_create_respects_disabled_community_domain_demand_bo
     detail = response.json()["detail"]
     assert detail["code"] == "community_domain_feature_disabled"
     assert detail["feature_key"] == "demand_box"
-    assert "post new Demand Box requests" in detail["message"]
+    assert "post new DemandBox requests" in detail["message"]
     assert _marketplace_request_counts() == (0, 0)
 
 
@@ -423,7 +423,7 @@ def test_marketplace_request_allows_five_open_requests_per_user_per_24_hours(
             json={
                 "clan_id": 1,
                 "title": f"Need community item {index + 1}",
-                "description": "Testing the pilot Demandbox quota.",
+                "description": "Testing the pilot DemandBox quota.",
             },
         )
         assert response.status_code == 200, response.text
@@ -438,7 +438,7 @@ def test_marketplace_request_allows_five_open_requests_per_user_per_24_hours(
     )
 
     assert blocked.status_code == 400, blocked.text
-    assert "5 active Demandbox requests in 24 hours" in blocked.json()["detail"]
+    assert "5 active DemandBox requests in 24 hours" in blocked.json()["detail"]
     assert _marketplace_request_counts() == (5, 5)
 
 
@@ -462,7 +462,7 @@ def test_marketplace_request_quota_ignores_open_requests_older_than_24_hours(
                     """
                 ),
                 {
-                    "title": f"Older Demandbox request {index + 1}",
+                    "title": f"Older DemandBox request {index + 1}",
                     "created_at": old_created_at,
                     "expires_at": future_expires_at,
                 },

@@ -135,7 +135,7 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
     gsnSources: [
       { label: "Trust Passport", route: "/app/trust", evidence: "full signed-in work and evidence story" },
       { label: "Shop / Service profile", route: "/app/shop/me", evidence: "declared services, categories, media, public shop face" },
-      { label: "Demand Box", route: "/app/demand-box", evidence: "requests answered, quotes, demand response trail" },
+      { label: "DemandBox", route: "/app/demand-box", evidence: "requests answered, quotes, demand response trail" },
       { label: "Community Confirmation", route: "/community-confirmations", evidence: "ask who has seen this work before" },
     ],
     missingLinks: [
@@ -183,13 +183,13 @@ export const GSN_DECISION_PACKS: readonly DecisionPackDefinition[] = [
     focus: "Observed service activity, community evidence, visible disputes or cautions, and confirmation before work begins.",
     expectedEvidence: [
       "Declared trade/service category such as plumbing, repairs, cleaning, delivery, or sales",
-      "Shop, advert, Demand Box, quote, or work-response trail",
+      "Shop, advert, DemandBox, quote, or work-response trail",
       "Customer or community witness that the work happened",
       "Completion, complaint, or issue-resolution outcome where recorded",
     ],
     gsnSources: [
       { label: "Shop Gallery", route: "/app/shop/me", evidence: "public service profile, media, categories, shop identity" },
-      { label: "Demand Box", route: "/app/demand-box", evidence: "requests, responses, quotes, service need trail" },
+      { label: "DemandBox", route: "/app/demand-box", evidence: "requests, responses, quotes, service need trail" },
       { label: "Marketplace", route: "/app/marketplace", evidence: "community where the advert/work relationship began" },
       { label: "Merchant Verification", route: "/app/trust-slip", evidence: "community recognition and trade boundary" },
     ],

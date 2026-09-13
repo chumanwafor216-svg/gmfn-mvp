@@ -523,7 +523,7 @@ export default function TrustSlipDecisionPackPrivatePreview({
                           lineHeight: 1.15,
                         }}
                       >
-                        Demand Box request outcomes
+                        DemandBox request outcomes
                       </div>
                       {privateDecisionPackDemandRequestOutcomePointers.map((pointer) => (
                         <div

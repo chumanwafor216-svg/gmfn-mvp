@@ -183,7 +183,7 @@ const DOMAIN_SETUP_TOGGLE_OPTIONS: Array<{
   },
   {
     key: "demand_box",
-    label: "Demand Box",
+    label: "DemandBox",
     summary: "Prepare a place to collect needs, requests, and supply gaps.",
     priority: "core",
   },

@@ -345,13 +345,13 @@ assertContains(
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
   /COMMUNITY_DOMAIN_RESPONSE_CHANNEL_EVENT[\s\S]*community_domain\.response_channel\.opened[\s\S]*COMMUNITY_DOMAIN_RESPONSE_EVENT[\s\S]*community_domain\.response\.recorded[\s\S]*CommunityDomainResponseChannelIn[\s\S]*\/\{community_domain_id\}\/response-channels[\s\S]*\/public\/response-channels\/\{public_code\}[\s\S]*\/responses[\s\S]*COMMUNITY_DOMAIN_FEATURE_DEMAND_BOX[\s\S]*COMMUNITY_DOMAIN_RESPONSE_BOUNDARY/,
-  "Backend must expose Demand Box-governed Community Domain response QR windows and signed-in member responses with privacy boundaries."
+  "Backend must expose DemandBox-governed Community Domain response QR windows and signed-in member responses with privacy boundaries."
 );
 
 assertContains(
   "gmfn_backend/tests/test_community_domain_collection_instructions.py",
   /test_church_response_qr_records_member_question_and_follow_up_preference[\s\S]*\/community-domains\/821\/response-channels[\s\S]*\/responses[\s\S]*preferred_follow_up_channel[\s\S]*whatsapp[\s\S]*responder_user_id[\s\S]*not in body[\s\S]*test_church_response_qr_respects_disabled_demand_box_policy[\s\S]*demand_box/,
-  "Backend tests must prove response QR records signed-in member questions privately and respects the Demand Box feature gate."
+  "Backend tests must prove response QR records signed-in member questions privately and respects the DemandBox feature gate."
 );
 
 assertContains(
@@ -1858,7 +1858,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /upsertCommunityDomainPolicy[\s\S]*DOMAIN_FEATURE_POLICY_ROWS[\s\S]*announcement_board[\s\S]*demand_box[\s\S]*spotlight[\s\S]*shop_diary[\s\S]*vault[\s\S]*marketplace_shops[\s\S]*member_invites[\s\S]*payments_contributions[\s\S]*rosca_cycles[\s\S]*domain\.feature_policy[\s\S]*domain\.features\.configure[\s\S]*Domain service rules[\s\S]*governed marketplace[\s\S]*community-domain-dashboard\.setup-feature-policy-notes-toggle[\s\S]*setupFeaturePolicyNotesOpen[\s\S]*Close policy notes[\s\S]*Open policy notes[\s\S]*What this controls[\s\S]*This rule controls notices, member invites,[\s\S]*marketplace shops, Shop Diary updates, payments and[\s\S]*contributions, ROSCA cycle actions, Spotlight[\s\S]*broadcast\/payment actions, Demand Box posting, and[\s\S]*private Vault publishing\/link creation[\s\S]*Paid Vault[\s\S]*separate service plans[\s\S]*Rule in use[\s\S]*Current service rule[\s\S]*activeSetupFeaturePolicyRow[\s\S]*community-domain-dashboard\.setup-feature-policy-rule-toggle[\s\S]*setupFeaturePolicyRuleChooserOpen[\s\S]*Close service rules[\s\S]*Change service rule[\s\S]*setupFeaturePolicyRuleChooserOpen \? \([\s\S]*community-domain-dashboard\.setup-feature-policy-rule\.\$\{row\.key\}[\s\S]*featurePolicyDraft\.features\[activeSetupFeaturePolicyRow\.key\][\s\S]*activeSetupFeaturePolicyRow\.key === "spotlight"[\s\S]*community-domain-dashboard\.setup-spotlight-slots-toggle[\s\S]*setupSpotlightSlotsOpen[\s\S]*Close slot numbers[\s\S]*Edit slot numbers/,
+  /upsertCommunityDomainPolicy[\s\S]*DOMAIN_FEATURE_POLICY_ROWS[\s\S]*announcement_board[\s\S]*demand_box[\s\S]*spotlight[\s\S]*shop_diary[\s\S]*vault[\s\S]*marketplace_shops[\s\S]*member_invites[\s\S]*payments_contributions[\s\S]*rosca_cycles[\s\S]*domain\.feature_policy[\s\S]*domain\.features\.configure[\s\S]*Domain service rules[\s\S]*governed marketplace[\s\S]*community-domain-dashboard\.setup-feature-policy-notes-toggle[\s\S]*setupFeaturePolicyNotesOpen[\s\S]*Close policy notes[\s\S]*Open policy notes[\s\S]*What this controls[\s\S]*This rule controls notices, member invites,[\s\S]*marketplace shops, Shop Diary updates, payments and[\s\S]*contributions, ROSCA cycle actions, Spotlight[\s\S]*broadcast\/payment actions, DemandBox posting, and[\s\S]*private Vault publishing\/link creation[\s\S]*Paid Vault[\s\S]*separate service plans[\s\S]*Rule in use[\s\S]*Current service rule[\s\S]*activeSetupFeaturePolicyRow[\s\S]*community-domain-dashboard\.setup-feature-policy-rule-toggle[\s\S]*setupFeaturePolicyRuleChooserOpen[\s\S]*Close service rules[\s\S]*Change service rule[\s\S]*setupFeaturePolicyRuleChooserOpen \? \([\s\S]*community-domain-dashboard\.setup-feature-policy-rule\.\$\{row\.key\}[\s\S]*featurePolicyDraft\.features\[activeSetupFeaturePolicyRow\.key\][\s\S]*activeSetupFeaturePolicyRow\.key === "spotlight"[\s\S]*community-domain-dashboard\.setup-spotlight-slots-toggle[\s\S]*setupSpotlightSlotsOpen[\s\S]*Close slot numbers[\s\S]*Edit slot numbers/,
   "Community Domain setup must keep marketplace/community feature families available under domain policy while hiding enforcement notes, service-rule choices, and Spotlight slot numbers behind focused controls.",
   { frontend: true }
 );
@@ -1892,7 +1892,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /domainFeatureIsOff[\s\S]*domainFeatureRouteEffect[\s\S]*When off: Official Board posting cannot be used[\s\S]*When off: First Circle and member invites cannot be used[\s\S]*shop identity creation and editing are blocked[\s\S]*product, public gallery block, and shop content updates are blocked[\s\S]*linked payment instructions and money-in actions are blocked[\s\S]*ROSCA cycle actions are blocked[\s\S]*Spotlight broadcast and paid Spotlight payment actions are blocked[\s\S]*paid credit pricing stays separate[\s\S]*new Demand Box requests are blocked[\s\S]*existing requests can still be read or closed[\s\S]*featureKey === "vault"[\s\S]*private Vault content and active Vault access-link creation are blocked[\s\S]*paid slot entitlement[\s\S]*stay separate[\s\S]*Planning rule only: saved as the domain rule[\s\S]*memberInvitesOff[\s\S]*Member Invites are off in this Community Domain policy[\s\S]*First Circle is blocked by this domain policy[\s\S]*Member Invites off/,
+  /domainFeatureIsOff[\s\S]*domainFeatureRouteEffect[\s\S]*When off: Official Board posting cannot be used[\s\S]*When off: First Circle and member invites cannot be used[\s\S]*shop identity creation and editing are blocked[\s\S]*product, public gallery block, and shop content updates are blocked[\s\S]*linked payment instructions and money-in actions are blocked[\s\S]*ROSCA cycle actions are blocked[\s\S]*Spotlight broadcast and paid Spotlight payment actions are blocked[\s\S]*paid credit pricing stays separate[\s\S]*new DemandBox requests are blocked[\s\S]*existing requests can still be read or closed[\s\S]*featureKey === "vault"[\s\S]*private Vault content and active Vault access-link creation are blocked[\s\S]*paid slot entitlement[\s\S]*stay separate[\s\S]*Planning rule only: saved as the domain rule[\s\S]*memberInvitesOff[\s\S]*Member Invites are off in this Community Domain policy[\s\S]*First Circle is blocked by this domain policy[\s\S]*Member Invites off/,
   "Community Domain dashboard must block the First Circle invite action when Member Invites are disabled instead of letting the owner enter a dead invite path.",
   { frontend: true }
 );
@@ -1956,7 +1956,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/services/community_domain_feature_policy.py",
-  /COMMUNITY_DOMAIN_FEATURE_POLICY_KEY = "domain\.feature_policy"[\s\S]*COMMUNITY_DOMAIN_FEATURE_MARKETPLACE_SHOPS = "marketplace_shops"[\s\S]*COMMUNITY_DOMAIN_FEATURE_PAYMENTS_CONTRIBUTIONS = "payments_contributions"[\s\S]*COMMUNITY_DOMAIN_FEATURE_ROSCA_CYCLES = "rosca_cycles"[\s\S]*COMMUNITY_DOMAIN_FEATURE_SHOP_DIARY = "shop_diary"[\s\S]*COMMUNITY_DOMAIN_FEATURE_SPOTLIGHT = "spotlight"[\s\S]*COMMUNITY_DOMAIN_FEATURE_DEMAND_BOX = "demand_box"[\s\S]*COMMUNITY_DOMAIN_FEATURE_VAULT = "vault"[\s\S]*def community_domain_feature_mode_for_clan[\s\S]*CommunityDomainPolicy\.policy_key == COMMUNITY_DOMAIN_FEATURE_POLICY_KEY[\s\S]*def require_domain_payments_contributions_enabled[\s\S]*Community Domain subscription[\s\S]*separate setup[\s\S]*payment route[\s\S]*def require_domain_rosca_cycles_enabled[\s\S]*paid ROSCA yearly service[\s\S]*feature switch controls whether ROSCA cycles may[\s\S]*def require_domain_marketplace_shops_enabled[\s\S]*create or edit shop identities[\s\S]*def require_domain_shop_diary_enabled[\s\S]*product, public gallery block, and shop content[\s\S]*def require_domain_spotlight_enabled[\s\S]*free or paid Spotlight broadcasts[\s\S]*separate service rail[\s\S]*def require_domain_demand_box_enabled[\s\S]*post new Demand Box requests[\s\S]*read or closed[\s\S]*def require_domain_vault_enabled[\s\S]*private Vault content[\s\S]*access links[\s\S]*Paid[\s\S]*separate service rails/,
+  /COMMUNITY_DOMAIN_FEATURE_POLICY_KEY = "domain\.feature_policy"[\s\S]*COMMUNITY_DOMAIN_FEATURE_MARKETPLACE_SHOPS = "marketplace_shops"[\s\S]*COMMUNITY_DOMAIN_FEATURE_PAYMENTS_CONTRIBUTIONS = "payments_contributions"[\s\S]*COMMUNITY_DOMAIN_FEATURE_ROSCA_CYCLES = "rosca_cycles"[\s\S]*COMMUNITY_DOMAIN_FEATURE_SHOP_DIARY = "shop_diary"[\s\S]*COMMUNITY_DOMAIN_FEATURE_SPOTLIGHT = "spotlight"[\s\S]*COMMUNITY_DOMAIN_FEATURE_DEMAND_BOX = "demand_box"[\s\S]*COMMUNITY_DOMAIN_FEATURE_VAULT = "vault"[\s\S]*def community_domain_feature_mode_for_clan[\s\S]*CommunityDomainPolicy\.policy_key == COMMUNITY_DOMAIN_FEATURE_POLICY_KEY[\s\S]*def require_domain_payments_contributions_enabled[\s\S]*Community Domain subscription[\s\S]*separate setup[\s\S]*payment route[\s\S]*def require_domain_rosca_cycles_enabled[\s\S]*paid ROSCA yearly service[\s\S]*feature switch controls whether ROSCA cycles may[\s\S]*def require_domain_marketplace_shops_enabled[\s\S]*create or edit shop identities[\s\S]*def require_domain_shop_diary_enabled[\s\S]*product, public gallery block, and shop content[\s\S]*def require_domain_spotlight_enabled[\s\S]*free or paid Spotlight broadcasts[\s\S]*separate service rail[\s\S]*def require_domain_demand_box_enabled[\s\S]*post new DemandBox requests[\s\S]*read or closed[\s\S]*def require_domain_vault_enabled[\s\S]*private Vault content[\s\S]*access links[\s\S]*Paid[\s\S]*separate service rails/,
   "Shared Community Domain feature policy service must expose payments_contributions, rosca_cycles, shop_diary, spotlight, demand_box, marketplace_shops, and vault feature keys while preserving separate subscription/service boundaries."
 );
 
@@ -1976,19 +1976,19 @@ assertContains(
 assertContains(
   "gmfn_backend/app/api/routes/marketplace_requests.py",
   /require_domain_demand_box_enabled[\s\S]*def create_marketplace_request[\s\S]*_require_request_clan[\s\S]*require_domain_demand_box_enabled[\s\S]*MarketplaceRequest\(/,
-  "Demand Box creation must obey linked Community Domain demand_box policy before writing request rows or notifications."
+  "DemandBox creation must obey linked Community Domain demand_box policy before writing request rows or notifications."
 );
 
 assertContains(
   "gmfn_backend/tests/test_marketplace_requests.py",
-  /test_marketplace_request_create_respects_disabled_community_domain_demand_box_policy[\s\S]*feature_key="demand_box"[\s\S]*\/marketplace\/requests[\s\S]*status_code == 403[\s\S]*"feature_key"\] == "demand_box"[\s\S]*post new Demand Box requests[\s\S]*_marketplace_request_counts\(\) == \(0, 0\)/,
-  "Marketplace request tests must prove disabled demand_box policy blocks Demand Box creation before request rows or notifications are created."
+  /test_marketplace_request_create_respects_disabled_community_domain_demand_box_policy[\s\S]*feature_key="demand_box"[\s\S]*\/marketplace\/requests[\s\S]*status_code == 403[\s\S]*"feature_key"\] == "demand_box"[\s\S]*post new DemandBox requests[\s\S]*_marketplace_request_counts\(\) == \(0, 0\)/,
+  "Marketplace request tests must prove disabled demand_box policy blocks DemandBox creation before request rows or notifications are created."
 );
 
 assertContains(
   "src/pages/DemandBoxPage.tsx",
-  /listMyCommunityDomains[\s\S]*function handleCreateDemand[\s\S]*if \(demandBoxFeatureOff\)[\s\S]*showNotice\("error", demandBoxFeatureOffText\)[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"demand_box"[\s\S]*demandBoxFeatureOff[\s\S]*demandBoxFeatureOffText[\s\S]*Existing Demand Box requests can still be\s+reviewed or closed[\s\S]*new requests are paused by this domain policy[\s\S]*disabled=\{creating\}/,
-  "Demand Box page must read Community Domain feature policy, explain paused Demand Box posting, block new request creation in the handler, and leave existing requests visible.",
+  /listMyCommunityDomains[\s\S]*function handleCreateDemand[\s\S]*if \(demandBoxFeatureOff\)[\s\S]*showNotice\("error", demandBoxFeatureOffText\)[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"demand_box"[\s\S]*demandBoxFeatureOff[\s\S]*demandBoxFeatureOffText[\s\S]*Existing DemandBox requests can still be\s+reviewed or closed[\s\S]*new requests are paused by this domain policy[\s\S]*disabled=\{creating\}/,
+  "DemandBox page must read Community Domain feature policy, explain paused DemandBox posting, block new request creation in the handler, and leave existing requests visible.",
   { frontend: true }
 );
 
@@ -3200,7 +3200,7 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceFocusPanel.tsx",
-  /activeServiceDetail === "boundaries"[\s\S]*Marketplace rule[\s\S]*Shared services, governed here[\s\S]*community-domain-dashboard\.service-rule-details-toggle[\s\S]*serviceRuleDetailsOpen[\s\S]*community-domain-dashboard\.service-rule-details-panel[\s\S]*packageCapacityFacts\.map[\s\S]*packageTariffBoundaryText[\s\S]*packageBillingStatusFacts\.map[\s\S]*manual review[\s\S]*Domain service rules control who\s+can\s+use Spotlight, Demand Box, shops, Shop Diary, Vault,\s+ROSCA,\s+invites, and contribution tools here/,
+  /activeServiceDetail === "boundaries"[\s\S]*Marketplace rule[\s\S]*Shared services, governed here[\s\S]*community-domain-dashboard\.service-rule-details-toggle[\s\S]*serviceRuleDetailsOpen[\s\S]*community-domain-dashboard\.service-rule-details-panel[\s\S]*packageCapacityFacts\.map[\s\S]*packageTariffBoundaryText[\s\S]*packageBillingStatusFacts\.map[\s\S]*manual review[\s\S]*Domain service rules control who\s+can\s+use Spotlight, DemandBox, shops, Shop Diary, Vault,\s+ROSCA,\s+invites, and contribution tools here/,
   "Lazy ServiceFocusPanel must keep package allowance, feature permission, and future tariff automation truth inside the Boundaries view behind the closed rule-details drawer instead of repeating it across every service view.",
   { frontend: true }
 );

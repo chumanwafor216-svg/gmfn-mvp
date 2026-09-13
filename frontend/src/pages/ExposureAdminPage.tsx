@@ -736,7 +736,7 @@ export default function ExposureAdminPage() {
         .filter(Boolean)
         .join(" | "),
       route: routes.demandBox,
-      routeLabel: "Open Demand Box",
+      routeLabel: "Open DemandBox",
     }));
 
     const poolQueue = pendingPool.slice(0, 4).map((row) => ({

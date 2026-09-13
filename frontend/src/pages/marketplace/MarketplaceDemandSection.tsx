@@ -287,7 +287,7 @@ export default function MarketplaceDemandSection({
                 overflowWrap: "break-word",
               }}
             >
-              Demand Box
+              DemandBox
             </div>
             <div style={{ marginTop: 6, ...helperText() }}>
               Local needs and offers, separate from ROSCA savings and Support
@@ -357,7 +357,7 @@ export default function MarketplaceDemandSection({
                 gridColumn: isCompact ? "1 / -1" : undefined,
               }}
             >
-              Open Demand Box
+              Open DemandBox
             </StableButton>
           </div>
         </div>

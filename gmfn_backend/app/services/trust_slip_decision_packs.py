@@ -122,7 +122,7 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
         gsn_sources=(
             {"label": "Trust Passport", "route": "/app/trust", "evidence": "full signed-in work and evidence story"},
             {"label": "Shop / Service profile", "route": "/app/shop/me", "evidence": "declared services, categories, media, public shop face"},
-            {"label": "Demand Box", "route": "/app/demand-box", "evidence": "requests answered, quotes, demand response trail"},
+            {"label": "DemandBox", "route": "/app/demand-box", "evidence": "requests answered, quotes, demand response trail"},
             {"label": "Community Confirmation", "route": "/community-confirmations", "evidence": "ask who has seen this work before"},
         ),
         missing_links=(
@@ -173,13 +173,13 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
         focus="Observed service activity, community evidence, visible disputes or cautions, and confirmation before work begins.",
         expected_evidence=(
             "Declared trade/service category such as plumbing, repairs, cleaning, delivery, or sales",
-            "Shop, advert, Demand Box, quote, or work-response trail",
+            "Shop, advert, DemandBox, quote, or work-response trail",
             "Customer or community witness that the work happened",
             "Completion, complaint, or issue-resolution outcome where recorded",
         ),
         gsn_sources=(
             {"label": "Shop Gallery", "route": "/app/shop/me", "evidence": "public service profile, media, categories, shop identity"},
-            {"label": "Demand Box", "route": "/app/demand-box", "evidence": "requests, responses, quotes, service need trail"},
+            {"label": "DemandBox", "route": "/app/demand-box", "evidence": "requests, responses, quotes, service need trail"},
             {"label": "Marketplace", "route": "/app/marketplace", "evidence": "community where the advert/work relationship began"},
             {"label": "Merchant Verification", "route": "/app/trust-slip", "evidence": "community recognition and trade boundary"},
         ),
@@ -1866,7 +1866,7 @@ def _decision_pack_completed_work_pointers(
                 value="No completed-work or customer-confirmation pointer is visible for this Decision Pack yet.",
                 source="trust_events+marketplace_reviews",
                 count=0,
-                decision_use="Ask for customer-confirmed completed work, Demand Box outcome history, job media tied to confirmation, or live community confirmation before relying.",
+                decision_use="Ask for customer-confirmed completed work, DemandBox outcome history, job media tied to confirmation, or live community confirmation before relying.",
             )
         ]
 
@@ -1924,12 +1924,12 @@ def _decision_pack_demand_request_outcome_pointers(
         return [
             _record_pointer_row(
                 key="demand_request_outcome_gap",
-                label="Demand Box request outcomes",
+                label="DemandBox request outcomes",
                 status="gap",
-                value="No Demand Box request outcome pointer is visible for this Decision Pack yet.",
+                value="No DemandBox request outcome pointer is visible for this Decision Pack yet.",
                 source="marketplace_requests",
                 count=0,
-                decision_use="Ask for Demand Box response records, quote-to-job history, customer confirmation, or live community confirmation before relying on demand-response claims.",
+                decision_use="Ask for DemandBox response records, quote-to-job history, customer confirmation, or live community confirmation before relying on demand-response claims.",
             )
         ]
 
@@ -1954,7 +1954,7 @@ def _decision_pack_demand_request_outcome_pointers(
         if bool(getattr(row, "allow_trust_credit", False)):
             trust_credit_allowed += 1
 
-    value = f"{len(request_rows)} Demand Box request outcome pointer{'s' if len(request_rows) != 1 else ''} found"
+    value = f"{len(request_rows)} DemandBox request outcome pointer{'s' if len(request_rows) != 1 else ''} found"
     if fulfilled:
         value = f"{value}; {fulfilled} fulfilled or closed as met"
     if cancelled:
@@ -1971,7 +1971,7 @@ def _decision_pack_demand_request_outcome_pointers(
     return [
         _record_pointer_row(
             key="demand_box_request_outcome",
-            label="Demand Box request outcomes",
+            label="DemandBox request outcomes",
             status="caution" if open_count or expired else "available",
             value=value,
             source="marketplace_requests",
@@ -2382,7 +2382,7 @@ def build_decision_pack_private_evidence_extract(
         "completed_work_pointers": completed_work_pointers,
         "completed_work_boundary_note": "Completed-work/customer-confirmation pointers are aggregate work-outcome evidence only. They do not expose customer identities, reviewer identities, review text, notes, addresses, item details, prices, ratings by person, private metadata, licences, insurance, home-safety approval, or future work quality.",
         "demand_request_outcome_pointers": demand_request_outcome_pointers,
-        "demand_request_outcome_boundary_note": "Demand Box request-outcome pointers are aggregate requester-side demand evidence only. They do not expose requester identities, responder identities, request titles, descriptions, areas, phone numbers, quotes, addresses, prices, private notes, Demand Box codes, or proof that the holder responded to, was hired for, or completed work.",
+        "demand_request_outcome_boundary_note": "DemandBox request-outcome pointers are aggregate requester-side demand evidence only. They do not expose requester identities, responder identities, request titles, descriptions, areas, phone numbers, quotes, addresses, prices, private notes, DemandBox codes, or proof that the holder responded to, was hired for, or completed work.",
         "confirmation_pointers": confirmation_pointers,
         "confirmation_pointer_boundary_note": "Community witness outcomes are aggregate evidence pointers only. They do not expose responders, private notes, licences, guarantees, approvals, or final decisions.",
         "issue_resolution_pointers": issue_resolution_pointers,
@@ -2493,7 +2493,7 @@ def build_decision_pack_evidence_extract(
     )
     return {
         "source": "trust_events_redacted_extract",
-        "source_note": "Aggregated from public-safe TrustEvent categories plus declared, connected-record, housing conduct/readiness, guarantee/support outcome, protected-trade fulfilment/correction outcome, completed-work/customer-confirmation outcome, Demand Box request-outcome, community-witness outcome, and issue-resolution pointers where relevant. Raw TrustEvents, actor details, notes, metadata, amounts, payment references, borrower or guarantor identities, buyer or seller identities, trade codes, item details, customer or reviewer identities, review text, addresses, prices, landlords, accommodation providers, rent amounts, request titles, request descriptions, request areas, phone numbers, quotes, responder identities, private dispute details, and private contacts are not exposed publicly.",
+        "source_note": "Aggregated from public-safe TrustEvent categories plus declared, connected-record, housing conduct/readiness, guarantee/support outcome, protected-trade fulfilment/correction outcome, completed-work/customer-confirmation outcome, DemandBox request-outcome, community-witness outcome, and issue-resolution pointers where relevant. Raw TrustEvents, actor details, notes, metadata, amounts, payment references, borrower or guarantor identities, buyer or seller identities, trade codes, item details, customer or reviewer identities, review text, addresses, prices, landlords, accommodation providers, rent amounts, request titles, request descriptions, request areas, phone numbers, quotes, responder identities, private dispute details, and private contacts are not exposed publicly.",
         "evidence_scope": _decision_pack_evidence_scope(
             active_community_ids=active_community_ids,
             primary_clan_id=getattr(slip, "clan_id", None),
@@ -2512,7 +2512,7 @@ def build_decision_pack_evidence_extract(
         "completed_work_pointers": completed_work_pointers,
         "completed_work_boundary_note": "Completed-work/customer-confirmation pointers are aggregate work-outcome evidence only. They do not expose customer identities, reviewer identities, review text, notes, addresses, item details, prices, ratings by person, private metadata, licences, insurance, home-safety approval, or future work quality.",
         "demand_request_outcome_pointers": demand_request_outcome_pointers,
-        "demand_request_outcome_boundary_note": "Demand Box request-outcome pointers are aggregate requester-side demand evidence only. They do not expose requester identities, responder identities, request titles, descriptions, areas, phone numbers, quotes, addresses, prices, private notes, Demand Box codes, or proof that the holder responded to, was hired for, or completed work.",
+        "demand_request_outcome_boundary_note": "DemandBox request-outcome pointers are aggregate requester-side demand evidence only. They do not expose requester identities, responder identities, request titles, descriptions, areas, phone numbers, quotes, addresses, prices, private notes, DemandBox codes, or proof that the holder responded to, was hired for, or completed work.",
         "confirmation_pointers": confirmation_pointers,
         "confirmation_pointer_boundary_note": "Community witness outcomes are aggregate evidence pointers only. They do not expose responders, private notes, licences, guarantees, approvals, or final decisions.",
         "issue_resolution_pointers": issue_resolution_pointers,
@@ -2676,9 +2676,9 @@ def build_decision_pack_profile(
         demand_request_outcome_signal = [
             {
                 "key": "demand_box_request_outcome_pointer",
-                "label": "Demand Box request outcome",
+                "label": "DemandBox request outcome",
                 "status": _clean(first_demand_pointer.get("status"), limit=32) or "available",
-                "value": _clean(first_demand_pointer.get("value"), limit=260) or "Demand Box request outcome evidence is visible.",
+                "value": _clean(first_demand_pointer.get("value"), limit=260) or "DemandBox request outcome evidence is visible.",
                 "decision_use": "Treat this as aggregate requester-side demand history. It does not prove the holder responded to someone else, quoted for work, was hired, or completed work.",
             }
         ]

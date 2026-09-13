@@ -236,13 +236,13 @@ export default function CommunityNoticeModal({
       aria-label={isMarketNeedPulse ? "Ask community question" : isReviewSubmission ? "Submit community record" : "Post community notice"}
     >
       <div style={modalStyle}>
-        <div style={eyebrowStyle}>{isMarketNeedPulse ? "Demand Box question" : "Community announcement"}</div>
+        <div style={eyebrowStyle}>{isMarketNeedPulse ? "DemandBox question" : "Community announcement"}</div>
         <h3 style={titleStyle}>
           {isMarketNeedPulse ? "Ask" : isReviewSubmission ? "Submit for review" : "Post to"} {communityName || "this community"}
         </h3>
         <p style={copyStyle}>
           {isDemandBoxPulse
-            ? "Ask one simple community-need question. GSN posts it in Demand Box, where responders use the private contact path instead of turning the Community Bulletin into a reply thread."
+            ? "Ask one simple community-need question. GSN posts it in DemandBox, where responders use the private contact path instead of turning the Community Bulletin into a reply thread."
             : isMarketNeedPulse
             ? "Ask one simple market-need question from the official board. Members answer yes, maybe, or no. GSN records a demand signal, not a buyer list or sales proof."
             : isReviewSubmission
@@ -433,7 +433,7 @@ export default function CommunityNoticeModal({
               <div style={checkboxRowStyle}>
                 <span>
                   {isDemandBoxPulse
-                    ? "Responses stay in Demand Box or the approved private contact path"
+                    ? "Responses stay in DemandBox or the approved private contact path"
                     : "Collect yes, maybe, or no responses"}
                 </span>
               </div>
@@ -466,7 +466,7 @@ export default function CommunityNoticeModal({
           <span style={words > 50 ? warningStyle : chipStyle}>{words}/50 words</span>
           <span style={chipStyle}>
             {isDemandBoxPulse
-              ? "Demand Box request"
+              ? "DemandBox request"
               : isReviewSubmission
               ? "Admin review required"
               : postingPolicy === "admins"

@@ -32,170 +32,170 @@ function requirePattern(pattern, message) {
 [
   [
     /function demandHeroActionRowStyle\(isCompact: boolean\)/,
-    "Demand Box hero actions must use the compact two-row phone grid.",
+    "DemandBox hero actions must use the compact two-row phone grid.",
   ],
   [
     /function demandHeroPrimaryActionStyle\(isCompact: boolean\)/,
-    "Demand Box primary hero action must be able to span the phone row.",
+    "DemandBox primary hero action must be able to span the phone row.",
   ],
   [
     /Ask clearly from \{currentCommunityName\}\./,
-    "Demand Box hero copy must stay community-specific and short.",
+    "DemandBox hero copy must stay community-specific and short.",
   ],
   [
     /Post one real need, keep the community context attached, and close\s+it when it is answered\./,
-    "Demand Box hero helper must stay compact and practical.",
+    "DemandBox hero helper must stay compact and practical.",
   ],
   [
     /Current state/,
-    "Demand Box must expose a compact current-state card.",
+    "DemandBox must expose a compact current-state card.",
   ],
   [
     /Mine: \{myOpenRows\.length\}/,
-    "Demand Box current-state card must show the user's open demand count.",
+    "DemandBox current-state card must show the user's open demand count.",
   ],
   [
     /Community: \{visibleRows\.length\}/,
-    "Demand Box current-state card must show community visible demand count.",
+    "DemandBox current-state card must show community visible demand count.",
   ],
   [
     /Next: post or review/,
-    "Demand Box current-state card must show a simple next step.",
+    "DemandBox current-state card must show a simple next step.",
   ],
   [
     /Create only one clear request at a time\. Mark it fulfilled or\s+cancel it when the need is resolved\./,
-    "Demand Box must keep one active request guidance visible.",
+    "DemandBox must keep one active request guidance visible.",
   ],
   [
     /debugId="demand-box\.change-community\.summary"/,
-    "Demand Box community switching must stay collapsed behind a stable disclosure.",
+    "DemandBox community switching must stay collapsed behind a stable disclosure.",
   ],
   [
     /<span>Change community<\/span>/,
-    "Demand Box community chooser summary must keep the short label.",
+    "DemandBox community chooser summary must keep the short label.",
   ],
   [
     /<span style=\{badge\(false\)\}>Evidence optional<\/span>/,
-    "Demand Box form context must use compact evidence chips.",
+    "DemandBox form context must use compact evidence chips.",
   ],
   [
     /<span style=\{badge\(false\)\}>Payment terms optional<\/span>/,
-    "Demand Box form context must use compact payment chips.",
+    "DemandBox form context must use compact payment chips.",
   ],
   [
     /minHeight: 82/,
-    "Demand Box explanation textarea must stay compact on phone.",
+    "DemandBox explanation textarea must stay compact on phone.",
   ],
   [
     /disabled=\{creating\}/,
-    "Demand Box post button must allow an in-place missing-title response instead of silently disabling.",
+    "DemandBox post button must allow an in-place missing-title response instead of silently disabling.",
   ],
   [
     /debugId="demand-box\.post"/,
-    "Demand Box post action must keep its stable debug id.",
+    "DemandBox post action must keep its stable debug id.",
   ],
   [
     /debugId="demand-box\.create"/,
-    "Demand Box create action must keep its stable debug id.",
+    "DemandBox create action must keep its stable debug id.",
   ],
   [
     /debugId="demand-box\.return"/,
-    "Demand Box return action must keep its stable debug id.",
+    "DemandBox return action must keep its stable debug id.",
   ],
   [
     /askCommunity: appendRouteQueryParam[\s\S]*?routeTarget\("demandBox", selectedClanId, "demand-box\.ask-community"\)[\s\S]*?"mode"[\s\S]*?"ask_community"/,
-    "Demand Box Ask Community must route into Demand Box question mode, not a separate Marketplace modal path.",
+    "DemandBox Ask Community must route into DemandBox question mode, not a separate Marketplace modal path.",
   ],
   [
     /to=\{routes\.askCommunity\}[\s\S]*?debugId="demand-box\.ask-community"[\s\S]*?Ask Community/,
-    "Demand Box hero must expose the Ask Community action without creating a separate demand engine.",
+    "DemandBox hero must expose the Ask Community action without creating a separate demand engine.",
   ],
   [
     /debugId="demand-box\.mode\.normal-demand"[\s\S]*?Post demand[\s\S]*?debugId="demand-box\.ask-community\.inline"[\s\S]*?Ask Community/,
-    "Demand Box form must show Ask Community as a Demand type beside normal demand posting.",
+    "DemandBox form must show Ask Community as a Demand type beside normal demand posting.",
   ],
   [
-    /submitMarketNeedPulse[\s\S]*?createMarketplaceRequest[\s\S]*?category: "Community Ask"[\s\S]*?Community question posted in Demand Box/,
-    "Demand Box Ask Community must post into Demand Box requests, not the Community Bulletin notice engine.",
+    /submitMarketNeedPulse[\s\S]*?createMarketplaceRequest[\s\S]*?category: "Community Ask"[\s\S]*?Community question posted in DemandBox/,
+    "DemandBox Ask Community must post into DemandBox requests, not the Community Bulletin notice engine.",
   ],
   [
     /pulseDestination="demand_box"/,
-    "Demand Box Ask Community modal must use Demand Box destination wording and controls.",
+    "DemandBox Ask Community modal must use DemandBox destination wording and controls.",
   ],
   [
     /debugId="demand-box\.hero-dashboard"/,
-    "Demand Box dashboard escape must keep its stable debug id.",
+    "DemandBox dashboard escape must keep its stable debug id.",
   ],
   [
     /debugId=\{`demand-box\.request\.\$\{row\?\.id \|\| index\}\.fulfilled`\}/,
-    "Demand Box fulfilled actions must keep stable dynamic debug ids.",
+    "DemandBox fulfilled actions must keep stable dynamic debug ids.",
   ],
   [
     /debugId=\{`demand-box\.request\.\$\{row\?\.id \|\| index\}\.cancelled`\}/,
-    "Demand Box cancel actions must keep stable dynamic debug ids.",
+    "DemandBox cancel actions must keep stable dynamic debug ids.",
   ],
   [
     /const visiblePreview = useMemo\(\(\) => visibleRows\.slice\(0, 1\), \[visibleRows\]\)/,
-    "Demand Box must show only one visible community demand before the drawer.",
+    "DemandBox must show only one visible community demand before the drawer.",
   ],
   [
     /const extraVisibleRows = useMemo\(\(\) => visibleRows\.slice\(1, 5\), \[visibleRows\]\)/,
-    "Demand Box must tuck additional community demand into a bounded drawer preview.",
+    "DemandBox must tuck additional community demand into a bounded drawer preview.",
   ],
   [
     /const extraMyOpenRows = useMemo\(\(\) => myOpenRows\.slice\(1\), \[myOpenRows\]\)/,
-    "Demand Box must tuck additional personal demand behind a drawer.",
+    "DemandBox must tuck additional personal demand behind a drawer.",
   ],
   [
     /myOpenRows\.slice\(0, 1\)\.map/,
-    "Demand Box must show only the first live personal demand before the drawer.",
+    "DemandBox must show only the first live personal demand before the drawer.",
   ],
   [
     /debugId="demand-box\.more-my-demand\.summary"/,
-    "Demand Box must keep additional personal demand behind a stable disclosure.",
+    "DemandBox must keep additional personal demand behind a stable disclosure.",
   ],
   [
     /debugId="demand-box\.my-demand\.summary"[\s\S]*?<span>Open my demand<\/span>[\s\S]*?myOpenRows\.slice\(0, 1\)\.map/,
-    "Demand Box personal demand preview must sit behind the compact Open my demand drawer.",
+    "DemandBox personal demand preview must sit behind the compact Open my demand drawer.",
   ],
   [
     /debugId="demand-box\.community-demand\.summary"[\s\S]*?<span>Open community demand<\/span>[\s\S]*?visiblePreview\.map/,
-    "Demand Box community demand preview must sit behind the compact Open community demand drawer.",
+    "DemandBox community demand preview must sit behind the compact Open community demand drawer.",
   ],
   [
     /debugId="demand-box\.more-visible-demand\.summary"/,
-    "Demand Box must keep additional community demand behind a stable disclosure.",
+    "DemandBox must keep additional community demand behind a stable disclosure.",
   ],
 ].forEach(([pattern, message]) => requirePattern(pattern, message));
 
 [
   [
     /createCommunityNotice[\s\S]*?notice_mode: "market_need_pulse"/,
-    "Demand Box Ask Community must not post into Community Notice Board as a market-need pulse.",
+    "DemandBox Ask Community must not post into Community Notice Board as a market-need pulse.",
   ],
   [
     /Ask clearly\. Let your trust speak before people answer\./,
-    "Demand Box must not restore the old tall hero sentence.",
+    "DemandBox must not restore the old tall hero sentence.",
   ],
   [
     /How demand works/,
-    "Demand Box must not restore the old explainer card heading.",
+    "DemandBox must not restore the old explainer card heading.",
   ],
   [
     /disabled=\{creating \|\| !safeStr\(title\)\}/,
-    "Demand Box post button must not hide validation feedback behind a disabled state.",
+    "DemandBox post button must not hide validation feedback behind a disabled state.",
   ],
   [
     /institutionalStatTile/,
-    "Demand Box must not restore the old exposed stat-tile stack.",
+    "DemandBox must not restore the old exposed stat-tile stack.",
   ],
   [
     /visibleRows\.slice\(0, 6\)/,
-    "Demand Box must not restore the six-card community demand preview.",
+    "DemandBox must not restore the six-card community demand preview.",
   ],
   [
     /myOpenRows\.map\(\(row, index\) =>/,
-    "Demand Box must not restore the all-open-personal-demand stack.",
+    "DemandBox must not restore the all-open-personal-demand stack.",
   ],
 ].forEach(([pattern, message]) => {
   const index = source.search(pattern);
@@ -203,7 +203,7 @@ function requirePattern(pattern, message) {
 });
 
 if (findings.length > 0) {
-  console.error("Demand Box front package audit failed:");
+  console.error("DemandBox front package audit failed:");
   for (const finding of findings) {
     console.error(
       `- ${finding.file}:${finding.line} ${finding.message}\n  ${finding.text}`
@@ -212,4 +212,4 @@ if (findings.length > 0) {
   process.exit(1);
 }
 
-console.log("Demand Box front package audit passed.");
+console.log("DemandBox front package audit passed.");

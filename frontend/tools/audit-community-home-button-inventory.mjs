@@ -521,8 +521,8 @@ assertContains(
 );
 
 assertLayoutContains(
-  /if \(pathname\.startsWith\("\/app\/community"\)\) \{[\s\S]*?return uniqueNavItems\(\[[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?makeShopControlItem\(\)[\s\S]*?Demand Box[\s\S]*?Finance[\s\S]*?Notifications[\s\S]*?\]\);/,
-  "Community Home page tools must keep the five route-local navigator actions: Public Shop, Shop Control, Demand Box, Finance, and Notifications."
+  /if \(pathname\.startsWith\("\/app\/community"\)\) \{[\s\S]*?return uniqueNavItems\(\[[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?makeShopControlItem\(\)[\s\S]*?DemandBox[\s\S]*?Finance[\s\S]*?Notifications[\s\S]*?\]\);/,
+  "Community Home page tools must keep the five route-local navigator actions: Public Shop, Shop Control, DemandBox, Finance, and Notifications."
 );
 
 assertLayoutContains(
@@ -619,11 +619,11 @@ assertContains(
 );
 assertContains(
   /const activeCommunityNotices = useMemo\(\(\) => \{[\s\S]*?isNoticeVisibleOnBoard\(item, nowMs\)[\s\S]*?!isMarketNeedPulseNotice\(item\)/,
-  "Community Home must derive active notices from the visible notice-board filter and exclude Demand Box Ask Community pulses."
+  "Community Home must derive active notices from the visible notice-board filter and exclude DemandBox Ask Community pulses."
 );
 assertContains(
   /const communityPreviousAnnouncementItems = communityPreviousAnnouncements[\s\S]*?\.filter\(\(item\) => !isMarketNeedPulseNotice\(item\)\)[\s\S]*?\.slice\(0, 10\)/,
-  "Community Home previous announcements must exclude Demand Box Ask Community pulses."
+  "Community Home previous announcements must exclude DemandBox Ask Community pulses."
 );
 if (findings.length > 0) {
   console.error("Community Home button inventory audit failed:");

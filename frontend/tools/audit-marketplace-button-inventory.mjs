@@ -622,7 +622,7 @@ if (!tradeEvidenceSection) {
       file: marketplaceFile,
       line: lineAt(source.indexOf(tradeEvidenceSection)),
       message: "Marketplace Trade Evidence lane must not restore the old explainer and three-card instruction stack.",
-      text: "The compact Trade lane should show status chips, Demand Box, visible members, and a tucked-away member disclosure.",
+      text: "The compact Trade lane should show status chips, DemandBox, visible members, and a tucked-away member disclosure.",
     });
   }
 
@@ -697,7 +697,7 @@ if (!demandSection) {
   findings.push({
     file: marketplaceFile,
     line: 1,
-    message: "Marketplace Demand Box section was not found for scoped button auditing.",
+    message: "Marketplace DemandBox section was not found for scoped button auditing.",
     text: "Expected id=\"marketplace-demand-box\" before id=\"marketplace-loans-support\".",
   });
 } else {
@@ -713,21 +713,21 @@ if (!demandSection) {
     findings.push({
       file: marketplaceFile,
       line: lineAt(source.indexOf(demandSection)),
-      message: "Marketplace Demand Box section must expose only the audited demand actions in order.",
+      message: "Marketplace DemandBox section must expose only the audited demand actions in order.",
       text: `found=${demandActionIds.join(", ") || "none"}`,
     });
   }
 
   if (
-    !/marketplace\.demand\.module[\s\S]*?Local needs and offers[\s\S]*?Use this when people here should see what is needed, wanted,[\s\S]*?Open Demand Box/.test(
+    !/marketplace\.demand\.module[\s\S]*?Local needs and offers[\s\S]*?Use this when people here should see what is needed, wanted,[\s\S]*?Open DemandBox/.test(
       demandSection
     )
   ) {
     findings.push({
       file: marketplaceFile,
       line: lineAt(source.indexOf(demandSection)),
-      message: "Marketplace Demand Box section must stay a concise local request launcher.",
-      text: "Expected local needs/offers department shell and Open Demand Box action.",
+      message: "Marketplace DemandBox section must stay a concise local request launcher.",
+      text: "Expected local needs/offers department shell and Open DemandBox action.",
     });
   }
 }

@@ -1465,7 +1465,7 @@ export default function ClansPage() {
                     debugId="clans.next.demand-box"
                     style={{ ...btn(false), width: isCompact ? "100%" : undefined }}
                   >
-                    Demand Box
+                    DemandBox
                   </StableCtaLink>
                   <StableCtaLink
                     to={routes.shop}

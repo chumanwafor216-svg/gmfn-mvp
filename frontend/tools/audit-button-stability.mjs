@@ -872,19 +872,19 @@ assertNotContains(
 assertContains(
   "src/pages/DemandBoxPage.tsx",
   /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function demandIconText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon[\s\S]*?name=\{name\}[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="demand-box\.open-community"[\s\S]*?debugId="demand-box\.create"[\s\S]*?demandIconText\("document", "Create demand", 20\)[\s\S]*?debugId="demand-box\.post"[\s\S]*?demandIconText\("document", "Post demand", 20\)[\s\S]*?debugId="demand-box\.open-notifications"[\s\S]*?demandIconText\("alert", "Notifications", 20\)[\s\S]*?debugId="demand-box\.more-detail"[\s\S]*?debugId=\{`demand-box\.request\.\$\{row\?\.id \|\| index\}\.fulfilled`\}[\s\S]*?demandIconText\("check", "Fulfilled", 20\)[\s\S]*?debugId="demand-box\.bottom-dashboard"[\s\S]*?demandIconText\("home", "Dashboard", 20\)/,
-  "Demand Box must use shared stable primitives, shared 3D icon helpers, and shared CTA resolution for community selection, create/post, disclosure, status updates, and route actions."
+  "DemandBox must use shared stable primitives, shared 3D icon helpers, and shared CTA resolution for community selection, create/post, disclosure, status updates, and route actions."
 );
 
 assertContains(
   "src/pages/DemandBoxPage.tsx",
   /function demandActionRowStyle\([\s\S]*?gridAutoRows: `\$\{height\}px`[\s\S]*?overflowAnchor: "none"[\s\S]*?transition: "none"[\s\S]*?function demandActionStyle\(height = 54\)[\s\S]*?height,[\s\S]*?minHeight: height,[\s\S]*?maxHeight: height,[\s\S]*?whiteSpace: "nowrap"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?transition: "none"[\s\S]*?stableHeight=\{54\}[\s\S]*?debugId="demand-box\.post"[\s\S]*?style=\{demandActionStyle\(54\)\}/,
-  "Demand Box action rows must reserve fixed phone-safe row heights, no-wrap icon labels, and fixed button heights for create/post/status/route actions."
+  "DemandBox action rows must reserve fixed phone-safe row heights, no-wrap icon labels, and fixed button heights for create/post/status/route actions."
 );
 
 assertNotContains(
   "src/pages/DemandBoxPage.tsx",
   /(import OriginLink|function (primaryBtn|secondaryBtn|subtleBtn|whiteActionBtn|communityChoiceBtn|buttonGuardProps)\(|guardButtonPress|buttonGuardProps\(|primaryBtn\(|secondaryBtn\(|subtleBtn\(|whiteActionBtn\(|communityChoiceBtn\(|brandStableTapTarget|<button|<summary|<a\s|to="\/app|homeTo="\/app|backTo="\/app|>\s*Open notifications\s*<|>\s*Mark fulfilled\s*<|>\s*Cancel demand\s*<)/,
-  "Demand Box must not keep local/raw button, summary, link, tap-target primitives, hard-coded app route CTAs, or old long text-only demand action labels after migration."
+  "DemandBox must not keep local/raw button, summary, link, tap-target primitives, hard-coded app route CTAs, or old long text-only demand action labels after migration."
 );
 
 assertContains(

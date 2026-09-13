@@ -64,7 +64,7 @@ const TRUST_SLIP_SHARE_PURPOSES: TrustSlipSharePurpose[] = [
     label: "For work",
     decisionPack: "employment_decision",
     purpose: "Help someone decide if you are ready for work.",
-    recordSummary: "work activity, shop or Demand Box records, and community support",
+    recordSummary: "work activity, shop or DemandBox records, and community support",
   },
   {
     key: "housing",
@@ -452,7 +452,7 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
         "Prepare the WhatsApp signpost, then send members into the right GSN action.",
       actions: [
         makeCommunityItem(),
-        { label: "Demand Box", to: "/app/demand-box" },
+        { label: "DemandBox", to: "/app/demand-box" },
         makeMarketplaceItem(),
       ],
     };
@@ -460,7 +460,7 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
 
   if (pathname === "/app/demand-box") {
     return {
-      title: "Demand Box",
+      title: "DemandBox",
       hint:
         "Post or finish this need first. You can return to Marketplace when you are done.",
       actions: [
@@ -702,7 +702,7 @@ function getSpecialRouteMeta(
   if (pathname === "/app/demand-box") {
     return {
       section: "Focused task",
-      page: "Demand Box",
+      page: "DemandBox",
     };
   }
 
@@ -898,7 +898,7 @@ function getPageActions(
     return uniqueNavItems([
       makeShopGalleryItem(myShopGalleryTo, myShopGalleryDisabled),
       makeShopControlItem(),
-      { label: "Demand Box", to: "/app/demand-box" },
+      { label: "DemandBox", to: "/app/demand-box" },
       { label: "Finance", to: "/app/finance" },
       { label: "Notifications", to: "/app/notifications" },
       makeHelpDeskItem(),
@@ -963,7 +963,7 @@ function getPageActions(
       makeMarketplaceItem(),
       makeCommunityItem(),
       { label: "Loan Support", to: "/app/loans" },
-      { label: "Demand Box", to: "/app/demand-box" },
+      { label: "DemandBox", to: "/app/demand-box" },
       makeHelpDeskItem(),
     ]);
   }

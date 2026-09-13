@@ -5546,7 +5546,7 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert recommendation_actions["by_action"] == [
         {
             "action": "open_demand_box",
-            "label": "Opened Demand Box",
+            "label": "Opened DemandBox",
             "count": 1,
             "diagnosis": "GATHERING_DATA",
         }

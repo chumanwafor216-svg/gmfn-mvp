@@ -2027,7 +2027,7 @@ function normalizeTrustSlipDecisionPackEvidence(raw: any): TrustSlipDecisionPack
     ? extract.demand_request_outcome_pointers
         .map((row: any) => ({
           key: firstTruthy(row?.key),
-          label: firstTruthy(row?.label, "Demand Box request outcomes"),
+          label: firstTruthy(row?.label, "DemandBox request outcomes"),
           status: firstTruthy(row?.status),
           value: firstTruthy(row?.value),
           source: firstTruthy(row?.source),

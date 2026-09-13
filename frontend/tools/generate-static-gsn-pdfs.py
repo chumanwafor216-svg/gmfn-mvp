@@ -43,7 +43,7 @@ CAPABILITIES = [
     "One Global Shop",
     "Service Economy Participation",
     "Trust-Based Hiring",
-    "Demand Box",
+    "DemandBox",
     "Community Economic Power",
     "Commitment Builder",
     "Institutional Community Domain",
@@ -140,7 +140,7 @@ CAPABILITY_EXPLANATIONS = {
         "can be delayed, while a false request can pull money away from safer "
         "decisions. GSN changes the decision by putting identity, community "
         "confirmation, TrustSlip, and need record together. Tools: TrustSlip, "
-        "community confirmation, Demand Box, support request, and identity "
+        "community confirmation, DemandBox, support request, and identity "
         "record. Evidence left: urgent need record, member identity, "
         "confirmation, TrustSlip code, and response."
     ),
@@ -227,12 +227,12 @@ CAPABILITY_EXPLANATIONS = {
         "Evidence left: identity status, role evidence, activity, TrustSlip, "
         "and confirmation note."
     ),
-    "Demand Box": (
+    "DemandBox": (
         "Real-world decision: people need work, goods, services, stock, help, "
         "or buyers before the right person knows they exist. Risk: opportunity "
         "is missed when demand stays hidden inside private chats or late "
         "conversations. GSN changes the decision by making demand visible early "
-        "enough to match need and supply. Tools: Demand Box, marketplace needs, "
+        "enough to match need and supply. Tools: DemandBox, marketplace needs, "
         "public shop, and community broadcast. Evidence left: need or offer "
         "post, placement, requester context, and response trail."
     ),

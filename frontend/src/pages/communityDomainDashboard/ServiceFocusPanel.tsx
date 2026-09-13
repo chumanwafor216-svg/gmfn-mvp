@@ -481,7 +481,7 @@ export default function CommunityDomainServiceFocusPanel({ data }: Props) {
               </div>
               <div style={{ ...helperText(), fontSize: 13 }}>
                 {packageBillingAdminAction} Domain service rules control who can
-                use Spotlight, Demand Box, shops, Shop Diary, Vault, ROSCA,
+                use Spotlight, DemandBox, shops, Shop Diary, Vault, ROSCA,
                 invites, and contribution tools here.
               </div>
             </div>

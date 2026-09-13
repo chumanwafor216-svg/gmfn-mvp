@@ -855,7 +855,7 @@ function normalizeNoticeCtaLabel(ctaTo: string, rawLabel: any): string {
   }
 
   if (targetPath === GUIDANCE_TARGETS.DEMAND_BOX && genericLabel) {
-    return "Open Demand Box";
+    return "Open DemandBox";
   }
 
   if (
@@ -1632,7 +1632,7 @@ function buildRecoveryPath(params: {
         staleDemandCount === 1
           ? "One open demand has gone stale and needs a follow-up, update, or close decision."
           : `${staleDemandCount} open demands have gone stale and need follow-up, update, or closure.`,
-      ctaLabel: "Open Demand Box",
+      ctaLabel: "Open DemandBox",
       ctaTo: GUIDANCE_TARGETS.DEMAND_BOX,
       severity: "important",
       todayText: pickVariant(
@@ -2050,7 +2050,7 @@ function buildNextBestStep(params: {
         openDemandCount === 1
           ? "You have one open demand that may need follow-up or closure."
           : `You have ${openDemandCount} open demands that may need follow-up or closure.`,
-      ctaLabel: "Open Demand Box",
+      ctaLabel: "Open DemandBox",
       ctaTo: GUIDANCE_TARGETS.DEMAND_BOX,
       severity: "normal",
       todayText: pickVariant(
@@ -2449,7 +2449,7 @@ function buildWeeklyFocus(params: {
         params.voice,
         params.openDemandCount
       ),
-      ctaLabel: "Open Demand Box",
+      ctaLabel: "Open DemandBox",
       ctaTo: GUIDANCE_TARGETS.DEMAND_BOX,
     };
   }

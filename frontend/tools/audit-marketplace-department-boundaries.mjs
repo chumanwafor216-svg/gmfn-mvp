@@ -175,18 +175,18 @@ const membersToDemandSection = sectionBetween(
 );
 
 if (!membersToDemandSection.text) {
-  addFinding(-1, "Members & Shops section must exist before Demand Box.");
+  addFinding(-1, "Members & Shops section must exist before DemandBox.");
 } else if (!membersToDemandSection.text.includes("marketplace.members.visible-members-module")) {
   addFinding(
     membersToDemandSection.start,
-    "Visible Members must stay inside the Members & Shops section before Demand Box.",
+    "Visible Members must stay inside the Members & Shops section before DemandBox.",
     "Expected marketplace.members.visible-members-module before id=\"marketplace-demand-box\"."
   );
 }
 
 assertNotContains(
   /marketplace\.members\.demand-box|Post a local need or offer request for this marketplace/,
-  "Demand Box must not be embedded inside Trade Evidence or Visible Members."
+  "DemandBox must not be embedded inside Trade Evidence or Visible Members."
 );
 
 assertContains(

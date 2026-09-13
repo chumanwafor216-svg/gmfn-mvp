@@ -141,7 +141,7 @@ assertNotContains(
   marketplaceFile,
   marketplaceSource,
   /Quick Actions|debugId="marketplace\.tile\.trust"|debugId="marketplace\.tile\.demand"|Trust preparing/g,
-  "Marketplace front package must not expose the removed Quick Actions card, old Trust tile, Demand Box tile, or Trust preparing fallback."
+  "Marketplace front package must not expose the removed Quick Actions card, old Trust tile, DemandBox tile, or Trust preparing fallback."
 );
 
 [
@@ -245,21 +245,21 @@ assertContains(
   marketplaceFile,
   marketplaceSource,
   /id: "demand"[\s\S]*?intent: "demandBox"[\s\S]*?visible: false/,
-  "Demand Box must remain searchable but hidden from the visible More button grid."
+  "DemandBox must remain searchable but hidden from the visible More button grid."
 );
 
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /id="marketplace-demand-box"[\s\S]*?Local needs and offers, separate from ROSCA savings and Support\s+requests\.[\s\S]*?marketplace\.demand\.module[\s\S]*?marketplaceDepartmentShellStyle\("demand", isCompact\)[\s\S]*?Local needs and offers[\s\S]*?debugId="marketplace\.demand\.open"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Open Demand Box/,
-  "Demand Box must remain a separate marketplace-local department without appearing as a hero/front tile."
+  /id="marketplace-demand-box"[\s\S]*?Local needs and offers, separate from ROSCA savings and Support\s+requests\.[\s\S]*?marketplace\.demand\.module[\s\S]*?marketplaceDepartmentShellStyle\("demand", isCompact\)[\s\S]*?Local needs and offers[\s\S]*?debugId="marketplace\.demand\.open"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Open DemandBox/,
+  "DemandBox must remain a separate marketplace-local department without appearing as a hero/front tile."
 );
 
 assertNotContains(
   marketplaceFile,
   marketplaceSource,
   /debugId="marketplace\.members\.demand-box"|Post a local need or offer request for this marketplace/,
-  "Demand Box must not be embedded inside the Trade Evidence lane."
+  "DemandBox must not be embedded inside the Trade Evidence lane."
 );
 
 assertContains(

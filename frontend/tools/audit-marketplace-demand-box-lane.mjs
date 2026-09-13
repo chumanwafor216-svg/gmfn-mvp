@@ -60,7 +60,7 @@ const iconMapBlock =
 if (!/id: "demand"[\s\S]*?intent: "demandBox"[\s\S]*?visible: false/.test(intentItemsBlock)) {
   addFinding(
     source.indexOf(intentItemsBlock),
-    "Demand Box must stay searchable from More but hidden from the visible More button grid.",
+    "DemandBox must stay searchable from More but hidden from the visible More button grid.",
     intentItemsBlock
   );
 }
@@ -68,7 +68,7 @@ if (!/id: "demand"[\s\S]*?intent: "demandBox"[\s\S]*?visible: false/.test(intent
 if (!/demand: "marketplace"/.test(iconMapBlock)) {
   addFinding(
     source.indexOf(iconMapBlock),
-    "Demand Box must use a trade/request icon, not the Spotlight megaphone.",
+    "DemandBox must use a trade/request icon, not the Spotlight megaphone.",
     iconMapBlock
   );
 }
@@ -88,11 +88,11 @@ const trustedTradeSection = sectionBetween(
 );
 
 if (!trustedTradeSection.text) {
-  addFinding(-1, "Trade & Shops section must exist before Demand Box.");
-} else if (/Demand Box|marketplace\.members\.demand-box|Post a local need or offer request for this marketplace/.test(trustedTradeSection.text)) {
+  addFinding(-1, "Trade & Shops section must exist before DemandBox.");
+} else if (/DemandBox|marketplace\.members\.demand-box|Post a local need or offer request for this marketplace/.test(trustedTradeSection.text)) {
   addFinding(
     trustedTradeSection.start,
-    "Demand Box must not be embedded inside the Trade & Shops lane.",
+    "DemandBox must not be embedded inside the Trade & Shops lane.",
     trustedTradeSection.text
   );
 }
@@ -103,22 +103,22 @@ const demandSection = sectionBetween(
 );
 
 if (!demandSection.text) {
-  addFinding(-1, "Demand Box section must exist before Support.");
+  addFinding(-1, "DemandBox section must exist before Support.");
 } else {
   [
     /id: "demand"[\s\S]*?intent: "demandBox"[\s\S]*?visible: false/,
     /demand: "marketplace"/,
     /id="marketplace-demand-box"/,
     /<MarketplaceGlyph name="demand" size=\{26\} \/>/,
-    /Demand Box[\s\S]*?Local needs and offers, separate from ROSCA savings and Support[\s\S]*?requests[\s\S]*?Standalone lane/,
+    /DemandBox[\s\S]*?Local needs and offers, separate from ROSCA savings and Support[\s\S]*?requests[\s\S]*?Standalone lane/,
     /Local needs and offers[\s\S]*?what is needed, wanted,[\s\S]*?available, or being sourced/,
     /debugId="marketplace\.demand\.toggle"/,
-    /debugId="marketplace\.demand\.open"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Open Demand Box/,
+    /debugId="marketplace\.demand\.open"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Open DemandBox/,
   ].forEach((pattern) => {
     if (!pattern.test(source) && !pattern.test(demandSection.text)) {
       addFinding(
         demandSection.start,
-        "Demand Box must be a separate marketplace-local lane with a direct route action.",
+        "DemandBox must be a separate marketplace-local lane with a direct route action.",
         pattern.toString()
       );
     }
@@ -127,14 +127,14 @@ if (!demandSection.text) {
   if (/debugId="marketplace\.tile\.demand"/.test(source)) {
     addFinding(
       source.search(/debugId="marketplace\.tile\.demand"/),
-      "Demand Box must remain an inner lane, not return as a front tile.",
+      "DemandBox must remain an inner lane, not return as a front tile.",
       "Demand is searchable from More and opens through marketplace.demand.open."
     );
   }
 }
 
 if (findings.length > 0) {
-  console.error("Marketplace Demand Box lane audit failed:");
+  console.error("Marketplace DemandBox lane audit failed:");
   for (const finding of findings) {
     console.error(
       `- ${finding.file}:${finding.line} ${finding.message}\n  ${finding.text}`
@@ -143,4 +143,4 @@ if (findings.length > 0) {
   process.exit(1);
 }
 
-console.log("Marketplace Demand Box lane audit passed.");
+console.log("Marketplace DemandBox lane audit passed.");

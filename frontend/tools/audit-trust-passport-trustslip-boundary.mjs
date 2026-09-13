@@ -372,7 +372,7 @@ assertContains(
 );
 assertContains(
   "decisionPacks",
-  /DecisionPackConfirmationMechanics[\s\S]*?expectedEvidence[\s\S]*?gsnSources[\s\S]*?missingLinks[\s\S]*?refusesToClaim[\s\S]*?confirmationReasonType[\s\S]*?confirmationQuestion[\s\S]*?Employment Decision Pack[\s\S]*?Demand Box[\s\S]*?employment_role_check[\s\S]*?Housing Decision Pack[\s\S]*?Previous landlord[\s\S]*?housing_reference_check[\s\S]*?Trade or Skilled Work Decision Pack[\s\S]*?Customer-confirmed completed-job record[\s\S]*?trade_skill_check[\s\S]*?decisionPackConfirmationMechanics[\s\S]*?promise-keeping[\s\S]*?Society-equivalent conduct evidence/,
+  /DecisionPackConfirmationMechanics[\s\S]*?expectedEvidence[\s\S]*?gsnSources[\s\S]*?missingLinks[\s\S]*?refusesToClaim[\s\S]*?confirmationReasonType[\s\S]*?confirmationQuestion[\s\S]*?Employment Decision Pack[\s\S]*?DemandBox[\s\S]*?employment_role_check[\s\S]*?Housing Decision Pack[\s\S]*?Previous landlord[\s\S]*?housing_reference_check[\s\S]*?Trade or Skilled Work Decision Pack[\s\S]*?Customer-confirmed completed-job record[\s\S]*?trade_skill_check[\s\S]*?decisionPackConfirmationMechanics[\s\S]*?promise-keeping[\s\S]*?Society-equivalent conduct evidence/,
   "Decision Pack catalog must map purpose questions to expected evidence, GSN sources, missing architecture, community-confirmation prompts, and explicit overclaim boundaries."
 );
 assertContains(
@@ -452,8 +452,8 @@ assertContains(
 );
 assertContains(
   "trustSlipWithPrivatePreview",
-  /TrustSlipDecisionPackDemandRequestOutcomePointer[\s\S]*?demandRequestOutcomePointers[\s\S]*?extract\?\.demand_request_outcome_pointers[\s\S]*?privateDecisionPackDemandRequestOutcomePointers[\s\S]*?data-gsn-holder-decision-pack-demand-request-outcome-pointers="true"[\s\S]*?Demand Box request outcomes[\s\S]*?demandRequestOutcomeBoundaryNote/,
-  "TrustSlip holder private Decision Pack preview must show aggregate Demand Box request outcomes separately from TrustEvent categories."
+  /TrustSlipDecisionPackDemandRequestOutcomePointer[\s\S]*?demandRequestOutcomePointers[\s\S]*?extract\?\.demand_request_outcome_pointers[\s\S]*?privateDecisionPackDemandRequestOutcomePointers[\s\S]*?data-gsn-holder-decision-pack-demand-request-outcome-pointers="true"[\s\S]*?DemandBox request outcomes[\s\S]*?demandRequestOutcomeBoundaryNote/,
+  "TrustSlip holder private Decision Pack preview must show aggregate DemandBox request outcomes separately from TrustEvent categories."
 );
 
 assertContains(
@@ -469,7 +469,7 @@ assertContains(
 );
 assertContains(
   "decisionMatrix",
-  /Employment[\s\S]*?Demand Box[\s\S]*?Housing[\s\S]*?Community-living conduct[\s\S]*?Housing conduct confirmation question[\s\S]*?Trade or Skilled Work[\s\S]*?Customer-confirmed completed-job record[\s\S]*?Backend parity/,
+  /Employment[\s\S]*?DemandBox[\s\S]*?Housing[\s\S]*?Community-living conduct[\s\S]*?Housing conduct confirmation question[\s\S]*?Trade or Skilled Work[\s\S]*?Customer-confirmed completed-job record[\s\S]*?Backend parity/,
   "Decision Pack evidence matrix doc must preserve the owner examples and missing-app architecture gaps."
 );
 

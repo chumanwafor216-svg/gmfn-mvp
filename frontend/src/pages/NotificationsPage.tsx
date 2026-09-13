@@ -491,7 +491,7 @@ function normalizeNotificationCtaLabel(
   }
 
   if (targetPath === NOTIFICATION_TARGETS.DEMAND_BOX && genericLabel) {
-    return "Open Demand Box";
+    return "Open DemandBox";
   }
 
   if (targetPath === NOTIFICATION_TARGETS.TRUST && normalizedTarget.includes("focus=repair")) {

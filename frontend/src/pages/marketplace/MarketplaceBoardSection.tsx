@@ -771,11 +771,11 @@ export default function MarketplaceBoardSection({
               }}
             >
               <div style={{ minWidth: 0 }}>
-                <div style={sectionLabel()}>Demand Box signals</div>
+                <div style={sectionLabel()}>DemandBox signals</div>
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
                   Open needs from this community only. These are read-only
                   pointers; responding, contact, terms, and closure stay inside
-                  Demand Box.
+                  DemandBox.
                 </div>
               </div>
               <span style={stableStatusPillStyle(Boolean(marketplaceDemandSignalCount))}>
@@ -788,7 +788,7 @@ export default function MarketplaceBoardSection({
             <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
               {marketplaceNoticesLoading ? (
                 <div style={{ ...helperText(), fontSize: 13 }}>
-                  Checking Demand Box signals.
+                  Checking DemandBox signals.
                 </div>
               ) : marketplaceDemandSignals.length ? (
                 marketplaceDemandSignals.map((signal, index) => {
@@ -853,7 +853,7 @@ export default function MarketplaceBoardSection({
                           </span>
                         ) : null}
                         <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
-                          Respond in Demand Box
+                          Respond in DemandBox
                         </span>
                       </div>
                     </div>
@@ -876,11 +876,11 @@ export default function MarketplaceBoardSection({
                       lineHeight: 1.3,
                     }}
                   >
-                    No open Demand Box signals.
+                    No open DemandBox signals.
                   </div>
                   <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
                     When a member posts a need, the board can point to the
-                    Demand Box without becoming another response screen.
+                    DemandBox without becoming another response screen.
                   </div>
                 </div>
               )}

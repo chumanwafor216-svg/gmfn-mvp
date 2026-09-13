@@ -857,7 +857,7 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     id: "demand",
     label: "Post a need",
     detail: "Tell this marketplace what is needed.",
-    technical: "Demand Box",
+    technical: "DemandBox",
     to: "",
     intent: "demandBox",
     tone: "soft",
@@ -1040,7 +1040,7 @@ function marketplaceWisdomActionFor(
     return makeAction(
       "demand",
       "marketplace-demand-box",
-      "Open Demand Box",
+      "Open DemandBox",
       "Turn the market need into one clear local request or offer.",
       "demand",
       "#8A5A08",

@@ -243,8 +243,8 @@ assertContains(
 
 assertContains(
   files.communityNotices,
-  /MarketplaceRequest[\s\S]*?def _notice_board_demand_signals[\s\S]*?"demand_signals_enabled": True[\s\S]*?"demand_signal_count"[\s\S]*?"demand_signals"[\s\S]*?"Responding stays in Demand Box/,
-  "Marketplace/community notice-list responses must include read-only Demand Box signals without turning them into notices."
+  /MarketplaceRequest[\s\S]*?def _notice_board_demand_signals[\s\S]*?"demand_signals_enabled": True[\s\S]*?"demand_signal_count"[\s\S]*?"demand_signals"[\s\S]*?"Responding stays in DemandBox/,
+  "Marketplace/community notice-list responses must include read-only DemandBox signals without turning them into notices."
 );
 
 assertContains(
@@ -398,8 +398,8 @@ assertContains(
 
 assertContains(
   files.marketplacePage,
-  /Demand Box signals[\s\S]*?read-only\s+[\s\S]*?pointers[\s\S]*?responding, contact, terms, and closure stay[\s\S]*?inside[\s\S]*?Demand Box[\s\S]*?Respond in Demand Box/,
-  "Marketplace Official Board must show Demand Box signals as read-only pointers, not as a second response surface."
+  /DemandBox signals[\s\S]*?read-only\s+[\s\S]*?pointers[\s\S]*?responding, contact, terms, and closure stay[\s\S]*?inside[\s\S]*?DemandBox[\s\S]*?Respond in DemandBox/,
+  "Marketplace Official Board must show DemandBox signals as read-only pointers, not as a second response surface."
 );
 
 assertContains(

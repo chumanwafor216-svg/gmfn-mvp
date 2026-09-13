@@ -489,7 +489,7 @@ function buildAskCommunityDemandDescription(
   }
 ): string {
   const parts = [
-    "Community Ask posted through Demand Box. Responses should stay in Demand Box or the requester's approved private contact path, not on the Community Bulletin.",
+    "Community Ask posted through DemandBox. Responses should stay in DemandBox or the requester's approved private contact path, not on the Community Bulletin.",
   ];
   const fullBody = safeStr(options?.full_body);
   if (fullBody && fullBody !== safeStr(body)) {
@@ -508,7 +508,7 @@ function buildAskCommunityDemandDescription(
 function demandContactMessage(row: DemandRow, currentCommunityName: string): string {
   return [
     `Hello ${requesterName(row)}.`,
-    `I saw your GSN Demand Box request: ${firstTruthy(row?.title, "Community demand request")}.`,
+    `I saw your GSN DemandBox request: ${firstTruthy(row?.title, "Community demand request")}.`,
     `Community: ${currentCommunityName}.`,
   ].join("\n");
 }
@@ -754,7 +754,7 @@ export default function DemandBoxPage() {
     }
 
     window.open(chatUrl, "_blank", "noopener,noreferrer");
-    showNotice("success", "WhatsApp chat opened for this Demand Box request.");
+    showNotice("success", "WhatsApp chat opened for this DemandBox request.");
   }
 
   function openDemandWhatsAppCall(row: DemandRow) {
@@ -769,7 +769,7 @@ export default function DemandBoxPage() {
     }
 
     window.location.href = callUrl;
-    showNotice("success", "Call path opened for this Demand Box request.");
+    showNotice("success", "Call path opened for this DemandBox request.");
   }
 
   function buildDemandRequestPaper(
@@ -794,7 +794,7 @@ export default function DemandBoxPage() {
         ? "Trust-credit preference: requester is open to trust credit where appropriate."
         : "",
       row?.whatsapp_number
-        ? "Public contact path: WhatsApp contact is available from this Demand Box request."
+        ? "Public contact path: WhatsApp contact is available from this DemandBox request."
         : "",
       requesterTrustPostureLabel(row)
         ? `Visible trust posture: ${requesterTrustPostureLabel(row)}`
@@ -816,12 +816,12 @@ export default function DemandBoxPage() {
         { label: "Requester GSN ID", value: requesterGsnId },
         { label: "Community", value: currentCommunityName },
         { label: "Community ID", value: selectedClanId || "" },
-        { label: "Page", value: "Demand Box" },
+        { label: "Page", value: "DemandBox" },
         { label: "Audience", value: scope === "owner" ? "request owner" : "community responder" },
       ],
       bodyLines: details,
       privacyNote:
-        "Privacy: only request facts already visible on this Demand Box page are shown.",
+        "Privacy: only request facts already visible on this DemandBox page are shown.",
       limitationNote:
         "Limitation: request evidence only. Not approval to release goods, credit, money, or service, not a bank guarantee, and not proof that the request was fulfilled.",
     });
@@ -1015,7 +1015,7 @@ export default function DemandBoxPage() {
     demandBoxDomainFeatureMatch
   );
   const demandBoxFeatureOffText = communityDomainFeatureOffMessage(
-    "Demand Box",
+    "DemandBox",
     demandBoxDomainFeatureMatch?.domainName || currentCommunityName
   );
 
@@ -1076,11 +1076,11 @@ export default function DemandBoxPage() {
       });
       setMarketNeedPulseOpen(false);
       await loadPage();
-      showNotice("success", "Community question posted in Demand Box.");
+      showNotice("success", "Community question posted in DemandBox.");
     } catch (err: any) {
       showNotice(
         "error",
-        safeStr(err?.message) || "Community question could not be posted in Demand Box."
+        safeStr(err?.message) || "Community question could not be posted in DemandBox."
       );
       throw err;
     } finally {
@@ -1210,9 +1210,9 @@ export default function DemandBoxPage() {
         }}
       >
         <PageTopNav
-          sectionLabel="Demand Box"
-          title="Demand Box"
-          subtitle="Loading Demand Box..."
+          sectionLabel="DemandBox"
+          title="DemandBox"
+          subtitle="Loading DemandBox..."
           homeTo={routes.dashboard}
           homeLabel="Dashboard"
           backTo={demandReturnTo}
@@ -1231,7 +1231,7 @@ export default function DemandBoxPage() {
             }}
           >
             <GsnLegacyIcon name="refresh" size={30} />
-            <span>Loading Demand Box...</span>
+            <span>Loading DemandBox...</span>
           </div>
         </section>
       </div>
@@ -1250,8 +1250,8 @@ export default function DemandBoxPage() {
         }}
       >
         <PageTopNav
-          sectionLabel="Demand Box"
-          title="Demand Box"
+          sectionLabel="DemandBox"
+          title="DemandBox"
           subtitle="Choose the community before posting your personal request."
           homeTo={routes.dashboard}
           homeLabel="Dashboard"
@@ -1330,7 +1330,7 @@ export default function DemandBoxPage() {
             ) : (
               <div style={{ color: "#D7E3F1", lineHeight: 1.8 }}>
                 No community is available yet. Create or join a community first,
-                then return to Demand Box.
+                then return to DemandBox.
               </div>
             )}
 
@@ -1370,7 +1370,7 @@ export default function DemandBoxPage() {
         }}
       >
         <PageTopNav
-          sectionLabel="Demand Box"
+          sectionLabel="DemandBox"
           title="Choose community"
           subtitle="Community Home holds all your communities. Pick the one this demand should come from."
           homeTo={routes.dashboard}
@@ -1482,11 +1482,11 @@ export default function DemandBoxPage() {
       }}
     >
       <PageTopNav
-        sectionLabel="Demand Box"
+        sectionLabel="DemandBox"
         title={
           isCreateMode
-            ? `${currentCommunityName} Demand Box`
-            : "Demand Box"
+            ? `${currentCommunityName} DemandBox`
+            : "DemandBox"
         }
         subtitle={
           isCreateMode
@@ -1879,7 +1879,7 @@ export default function DemandBoxPage() {
               ...noticeCard("error"),
             }}
           >
-            {demandBoxFeatureOffText} Existing Demand Box requests can still be
+            {demandBoxFeatureOffText} Existing DemandBox requests can still be
             reviewed or closed; new requests are paused by this domain policy.
           </div>
         ) : null}

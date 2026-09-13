@@ -1482,27 +1482,27 @@ assertContains(
 assertContains(
   "demandBox",
   /buildDemandRequestPaper[\s\S]*?Reader boundary: confirm identity evidence, TrustSlip context, price, availability, and fit before acting\.[\s\S]*?Do not treat this request paper as release authority for goods, money, credit, or service\.[\s\S]*?buildGsnSnapshotPaper[\s\S]*?GSN Demand Request Paper[\s\S]*?not proof that the request was fulfilled/,
-  "Demand Box request copies must use a branded GSN demand request paper with a release-authority boundary."
+  "DemandBox request copies must use a branded GSN demand request paper with a release-authority boundary."
 );
 assertContains(
   "demandBox",
-  /Public contact path: WhatsApp contact is available from this Demand Box request\.[\s\S]*?Contact path: WhatsApp/,
-  "Demand Box public request contact language must describe the GSN contact path, not expose the raw WhatsApp number as the record."
+  /Public contact path: WhatsApp contact is available from this DemandBox request\.[\s\S]*?Contact path: WhatsApp/,
+  "DemandBox public request contact language must describe the GSN contact path, not expose the raw WhatsApp number as the record."
 );
 assertNotContains(
   "demandBox",
   /Visible contact:\s*\$\{|Contact:\s*\{safeStr\(row\?\.whatsapp_number\)\}/g,
-  "Demand Box public request papers and badges must not expose raw WhatsApp numbers as visible contact labels."
+  "DemandBox public request papers and badges must not expose raw WhatsApp numbers as visible contact labels."
 );
 assertContains(
   "demandBox",
   /demand-box\.request\.\$\{row\?\.id \|\| index\}\.copy-paper[\s\S]*?demand-box\.request\.\$\{row\?\.id \|\| debugIndex\}\.copy-paper/,
-  "Demand Box owned request cards must expose stable Copy paper actions."
+  "DemandBox owned request cards must expose stable Copy paper actions."
 );
 assertContains(
   "demandBox",
   /demand-box\.visible-request\.\$\{row\?\.id \|\| index\}\.copy-paper[\s\S]*?demand-box\.visible-request\.\$\{row\?\.id \|\| debugIndex\}\.copy-paper/,
-  "Demand Box community-visible request cards must expose stable Copy paper actions."
+  "DemandBox community-visible request cards must expose stable Copy paper actions."
 );
 assertContains(
   "publicShop",

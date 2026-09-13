@@ -51,7 +51,7 @@ That structure is directionally present in the repo through:
 - Trust Passport / Trust score surfaces
 - TrustSlip and public verification
 - Community verification
-- Marketplace, Demand Box, Shop, Spotlight, Vault
+- Marketplace, DemandBox, Shop, Spotlight, Vault
 - Money In, Money Out, Loans, Guarantors, Repayments
 
 ## Capability Mirror
@@ -63,7 +63,7 @@ That structure is directionally present in the repo through:
 | Trust Passport / TrustSlip | Implemented | `/app/trust`, `/app/trust-slip`, public verify routes, trust slip backend services | Needs continued audit of public/private evidence boundaries. |
 | Community Verification | Implemented/partial | public community verification routes and community confirmation pages | Verifier quality and dispute consequence logic is still not a full institutional-grade trust court. |
 | Release Before Payment | Partial | capability copy exists in `frontend/src/lib/gmfnCapabilities.ts`; evidence-backed trade references exist | Not a full trade transaction workflow yet. No complete escrow, release command, merchant release guarantee, or dispute lifecycle. |
-| Evidence-Backed Buying and Selling | Partial | Marketplace, Shop, TrustSlip, Demand Box, Vault | Still mostly trust presentation and marketplace presence, not a complete protected buying/selling lane. |
+| Evidence-Backed Buying and Selling | Partial | Marketplace, Shop, TrustSlip, DemandBox, Vault | Still mostly trust presentation and marketplace presence, not a complete protected buying/selling lane. |
 | Cross-Community Trade | Partial | Marketplace routes, portable shop identity, public shop routes | Cross-community trade exists more as visibility and identity than full transaction settlement. |
 | Fraud Reduction Before Action | Partial | TrustSlip, verification, trust policy, dispute service, append-only dispute routes, admin dispute review | Pilot can use support email plus backend/admin review. Later work is a mature fraud case UI and deterministic escalation workflow. |
 | Spotlight Visibility | Implemented | Shop Control, Spotlight routes, paid/free spotlight notes | Payment activation and ranking logic should remain audited. |
@@ -79,9 +79,9 @@ That structure is directionally present in the repo through:
 | Portable Trust Identity | Implemented | Trust Passport, TrustSlip, public verification | Continue to keep GSN ID and community context visible on action screens. |
 | Reputation Mobility | Partial | trust score, TrustSlip, marketplace/shop portability | Needs clearer rules for what reputation can do in decisions. |
 | One Global Shop | Implemented/partial | public shop, shop control, gallery, vault | Needs continued phone stability and less owner-tool clutter. |
-| Service Economy Participation | Pilot-ready presentation layer | shop/service categories, Demand Box, marketplace requests, TrustSlip | Present TrustSlip/Trust Passport as evidence for work and service decisions. Dedicated service-work lifecycle can come later. |
-| Trust-Based Hiring | Pilot-ready presentation layer | Trust Passport, TrustSlip, Demand Box, public verification | Existing trust evidence can support hiring judgement. Dedicated hiring/employer workflow can come later. |
-| Demand Box | Implemented/partial | `/app/demand-box`, marketplace request backend | Good base exists; still needs simpler focus and stronger connection to evidence-backed trade. |
+| Service Economy Participation | Pilot-ready presentation layer | shop/service categories, DemandBox, marketplace requests, TrustSlip | Present TrustSlip/Trust Passport as evidence for work and service decisions. Dedicated service-work lifecycle can come later. |
+| Trust-Based Hiring | Pilot-ready presentation layer | Trust Passport, TrustSlip, DemandBox, public verification | Existing trust evidence can support hiring judgement. Dedicated hiring/employer workflow can come later. |
+| DemandBox | Implemented/partial | `/app/demand-box`, marketplace request backend | Good base exists; still needs simpler focus and stronger connection to evidence-backed trade. |
 | Community Economic Power | Pilot-ready with current readings | dashboard, finance, community summaries, trust command centre, pool/contribution/support readings | Current summaries can carry pilot. Deeper tailored analytics and exportable institutional reports can come later. |
 | Commitment Builder | Institutional mirror aligned | `frontend/src/lib/gmfnCapabilities.ts` capability 22, Commitment Builder notes, and `frontend/tools/generate-static-gsn-pdfs.py` public executive summary generator | Dedicated goal/commitment workflows can deepen over time, but the outsider-facing 23-capability institutional mirror now includes it. |
 | Institutional Community Domain | Institutional mirror aligned | `frontend/src/lib/gmfnCapabilities.ts` capability 23, Community Domain dashboard/purchase routes, community-domain API routes, and `frontend/tools/generate-static-gsn-pdfs.py` public executive summary generator | The product lane exists for organized bodies such as schools, unions, churches, cooperatives, markets, and associations. It must remain distinct from personal marketplace communities so public claims, branches, roles, policies, and member placement are not confused with ordinary shop/community activity. |
@@ -149,7 +149,7 @@ Main gap:
 4. Money Out still needs a clean pilot/manual payout frame and a later automatic payout bridge.
 5. The documents understate operational finance plumbing already in the repo.
 6. The old uploaded institutional PDF stopped at 21, but the repo and regenerated public executive summary now include Commitment Builder as capability 22 and Institutional Community Domain as capability 23.
-7. Diaspora, hiring, service economy, and community economic power can be pilot-mirrored through Trust Passport, TrustSlip, public verification, shop/services, Demand Box, current community finance/trust summaries, and commitment discipline. Dedicated vertical flows can come later.
+7. Diaspora, hiring, service economy, and community economic power can be pilot-mirrored through Trust Passport, TrustSlip, public verification, shop/services, DemandBox, current community finance/trust summaries, and commitment discipline. Dedicated vertical flows can come later.
 8. Paid/API verification, automatic payout, and full protected trade-release rails remain integration boundaries and must not be presented as live until proven in the deployed environment.
 
 ## Safest Next Priorities

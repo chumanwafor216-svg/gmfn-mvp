@@ -279,7 +279,7 @@ export function getDashboardAppUsageEntryFromLocation(
   if (path === "/app/demand-box") {
     return {
       key: "demand-box",
-      label: "Demand Box",
+      label: "DemandBox",
       detail: "Your demand page.",
       to: "/app/demand-box",
     };

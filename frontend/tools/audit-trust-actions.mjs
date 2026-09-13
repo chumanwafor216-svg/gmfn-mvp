@@ -1564,31 +1564,31 @@ assertNotContains(
 assertNotContains(
   "src/pages/DemandBoxPage.tsx",
   /Response proof expected|proof expectation|what proof|No extra proof/i,
-  "Demand Box must frame response requirements as evidence expectations, not blanket certainty."
+  "DemandBox must frame response requirements as evidence expectations, not blanket certainty."
 );
 
 assertContains(
   "src/pages/DemandBoxPage.tsx",
   /Trust-credit openness[\s\S]*?is a request preference, not approval to release goods, credit, or[\s\S]*?money\./,
-  "Demand Box trust-credit language must separate request preference from release approval."
+  "DemandBox trust-credit language must separate request preference from release approval."
 );
 
 assertNotContains(
   "src/pages/DemandBoxPage.tsx",
   /Trust credit allowed|Allow trust credit where appropriate/,
-  "Demand Box must not describe trust credit preference as approval or allowance."
+  "DemandBox must not describe trust credit preference as approval or allowance."
 );
 
 assertContains(
   "src/pages/DemandBoxPage.tsx",
   /cancel it when the need is resolved/,
-  "Demand Box must describe non-finance need closure as resolved, not settled."
+  "DemandBox must describe non-finance need closure as resolved, not settled."
 );
 
 assertNotContains(
   "src/pages/DemandBoxPage.tsx",
   /need is settled/i,
-  "Demand Box must not use settlement language for non-finance demand closure."
+  "DemandBox must not use settlement language for non-finance demand closure."
 );
 
 assertContains(

@@ -9,7 +9,7 @@ export const HUMANIZED = {
   askToJoin: "Ask to join",
   joinCommunity: "Join a Community",
   openMarketplace: "Open Marketplace",
-  openDemandBox: "Open Demand Box",
+  openDemandBox: "Open DemandBox",
 
   // Status
   pending: "The community is reviewing your request",
@@ -21,7 +21,7 @@ export const HUMANIZED = {
   spotlightTitle: "Show what you have — your people will see it.",
   marketplaceHeader: "Show what you have. Find what you need. Let your people see it.",
 
-  // Demand Box
+  // DemandBox
   demandTitle: "Say what you need — your people will respond.",
   demandHelper: "Post what you need, where you need it, and how you can pay.",
   paymentLabel: "How can you pay? Cash, trust, or both.",

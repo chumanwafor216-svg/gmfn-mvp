@@ -328,7 +328,7 @@ def _query_value_from_path(source_path: Optional[str], *keys: str, max_length: i
 def _recommendation_action_label(value: str) -> str:
     normalized = _safe_str(value, "market_intelligence_action", max_length=80).lower()
     labels = {
-        "open_demand_box": "Opened Demand Box",
+        "open_demand_box": "Opened DemandBox",
         "mark_tried": "Marked advice tried",
         "improve_products": "Improve products",
         "improve_thumbnail": "Improve thumbnail or call-to-action",

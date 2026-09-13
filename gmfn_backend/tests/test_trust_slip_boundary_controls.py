@@ -443,12 +443,12 @@ def test_public_verify_decision_pack_short_label_canonicalizes_like_frontend(
     assert profile["decision_pack"] == "employment_decision"
     assert "community_activity" in profile["evidence_filter"]
     assert "Declared work role or skill" in profile["expected_evidence"][0]
-    assert any(row["label"] == "Demand Box" for row in profile["gsn_sources"])
+    assert any(row["label"] == "DemandBox" for row in profile["gsn_sources"])
     assert "Completed work record with customer confirmation" in profile["missing_links"]
     assert "Right to work" in profile["refuses_to_claim"]
     assert any(row["key"] == "expected_evidence_1" for row in profile["relevant_signals"])
     assert any(row["key"] == "missing_link_1" for row in profile["gaps_to_check"])
-    assert "Demand Box" in " ".join(profile["recommended_checks"])
+    assert "DemandBox" in " ".join(profile["recommended_checks"])
     assert "Right to work" in profile["boundary_note"]
     prompt = profile["community_confirmation_prompt"]
     assert prompt["reason_type"] == "employment_role_check"
@@ -504,7 +504,7 @@ def test_public_verify_decision_pack_matrix_answers_housing_and_trade_questions(
     assert trade_response.status_code == 200, trade_response.text
     trade_profile = trade_response.json()["decision_pack_profile"]
     assert "Declared trade/service category" in trade_profile["expected_evidence"][0]
-    assert any(row["label"] == "Demand Box" for row in trade_profile["gsn_sources"])
+    assert any(row["label"] == "DemandBox" for row in trade_profile["gsn_sources"])
     assert "Customer-confirmed completed-job record" in trade_profile["missing_links"]
     assert "Trade licence" in trade_profile["refuses_to_claim"]
     assert "Trade licence" in trade_profile["boundary_note"]
@@ -1569,7 +1569,7 @@ def test_public_verify_trade_pack_surfaces_demand_box_request_outcomes_without_p
     demand = pointers["demand_box_request_outcome"]
     assert demand["status"] == "caution"
     assert demand["evidence_count"] == 3
-    assert "3 Demand Box request outcome pointers found" in demand["value"]
+    assert "3 DemandBox request outcome pointers found" in demand["value"]
     assert "1 fulfilled or closed as met" in demand["value"]
     assert "1 cancelled or withdrawn" in demand["value"]
     assert "1 still open or pending" in demand["value"]

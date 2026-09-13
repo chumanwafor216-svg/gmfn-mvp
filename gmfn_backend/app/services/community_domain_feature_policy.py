@@ -157,9 +157,9 @@ def require_domain_demand_box_enabled(
         db,
         clan_id=int(clan_id),
         feature_key=COMMUNITY_DOMAIN_FEATURE_DEMAND_BOX,
-        feature_label="Demand Box",
+        feature_label="DemandBox",
         boundary_message=(
-            "This controls whether members may post new Demand Box requests "
+            "This controls whether members may post new DemandBox requests "
             "inside the domain. Existing requests can still be read or closed "
             "so old demand rows do not get stuck open."
         ),

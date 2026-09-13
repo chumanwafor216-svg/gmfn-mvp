@@ -281,8 +281,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
   },
   {
     id: 20,
-    title: "Demand Box",
-    proverb: "Demand Box makes real needs visible before the market misses them.",
+    title: "DemandBox",
+    proverb: "DemandBox makes real needs visible before the market misses them.",
     gmfn:
       "GSN helps demand become readable and actionable so opportunity can meet need with less friction.",
     category: "trade",

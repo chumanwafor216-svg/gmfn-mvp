@@ -519,11 +519,11 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
     demandRequestOutcomePointers: demandRequestOutcomePointers
       .map((pointer: any) => ({
         key: firstTruthy(pointer?.key, pointer?.label),
-        label: firstTruthy(pointer?.label, "Demand Box request outcomes"),
+        label: firstTruthy(pointer?.label, "DemandBox request outcomes"),
         status: firstTruthy(pointer?.status, "not_shown"),
         value: firstTruthy(
           pointer?.value,
-          "No Demand Box request outcome pointer is visible for this Decision Pack yet."
+          "No DemandBox request outcome pointer is visible for this Decision Pack yet."
         ),
         source: firstTruthy(pointer?.source, "marketplace_requests"),
         evidenceCount: firstNumberLike(pointer?.evidence_count),
@@ -536,7 +536,7 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
       .slice(0, 4),
     demandRequestOutcomeBoundaryNote: firstTruthy(
       source.demand_request_outcome_boundary_note,
-      "Demand Box request-outcome pointers are aggregate requester-side demand evidence only. They do not expose requester identities, responder identities, request titles, descriptions, areas, phone numbers, quotes, addresses, prices, private notes, Demand Box codes, or proof that the holder responded to, was hired for, or completed work."
+      "DemandBox request-outcome pointers are aggregate requester-side demand evidence only. They do not expose requester identities, responder identities, request titles, descriptions, areas, phone numbers, quotes, addresses, prices, private notes, DemandBox codes, or proof that the holder responded to, was hired for, or completed work."
     ),
     confirmationPointers: confirmationPointers
       .map((pointer: any) => ({

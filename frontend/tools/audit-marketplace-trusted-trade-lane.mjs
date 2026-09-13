@@ -234,11 +234,11 @@ if (!tradeEvidenceSection.text) {
     );
   }
 
-  if (/Demand Box|marketplace\.members\.demand-box|Post a local need or offer request for this marketplace/.test(tradeEvidenceSection.text)) {
+  if (/DemandBox|marketplace\.members\.demand-box|Post a local need or offer request for this marketplace/.test(tradeEvidenceSection.text)) {
     addFinding(
       tradeEvidenceSection.start,
-      "Trade Evidence detail section must not embed Demand Box.",
-      "Demand Box owns its own marketplace-local lane between Trade & Shops and Support."
+      "Trade Evidence detail section must not embed DemandBox.",
+      "DemandBox owns its own marketplace-local lane between Trade & Shops and Support."
     );
   }
 
@@ -246,7 +246,7 @@ if (!tradeEvidenceSection.text) {
     addFinding(
       tradeEvidenceSection.start,
       "Trade Evidence detail section must not restore the old explainer and three-card instruction stack.",
-      "The compact Trade lane should show status chips, Demand Box, visible members, and a tucked-away member disclosure."
+      "The compact Trade lane should show status chips, DemandBox, visible members, and a tucked-away member disclosure."
     );
   }
 
@@ -273,7 +273,7 @@ const memberShopSection = sectionBetween(
 );
 
 if (!memberShopSection.text) {
-  addFinding(-1, "Members & Shops detail section must exist before Demand Box.");
+  addFinding(-1, "Members & Shops detail section must exist before DemandBox.");
 } else {
   [
     /Community Members & Shops/,
@@ -327,7 +327,7 @@ if (demandSection.text) {
     if (!pattern.test(demandSection.text)) {
       addFinding(
         demandSection.start,
-        "Demand Box must remain a visibly separate marketplace department.",
+        "DemandBox must remain a visibly separate marketplace department.",
         pattern.toString()
       );
     }

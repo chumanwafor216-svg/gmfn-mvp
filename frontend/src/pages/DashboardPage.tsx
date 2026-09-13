@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import GSNBrandMark from "../components/GSNBrandMark";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PictureFrameToolsControl from "../components/PictureFrameToolsControl";
@@ -899,7 +899,7 @@ function dashboardSectionSignal(label: string): DashboardSignalName {
       return "trust";
     case "Your Spotlight":
       return "spotlight";
-    case "Your Demand Box":
+    case "Your DemandBox":
       return "package";
     case "What needs your attention":
     case "What Matters Now":
@@ -2460,7 +2460,7 @@ function dashboardNoticeSource(text: string, target: string): string {
     ]) ||
     to.includes("/app/demand-box")
   ) {
-    return "Your Demand Box";
+    return "Your DemandBox";
   }
 
   if (
@@ -2545,8 +2545,8 @@ function dashboardNoticeScore(
     source === "Your Trust Events" ||
     source === "Community Voting"
       ? 20
-      : source === "Demand Box" ||
-        source === "Your Demand Box" ||
+      : source === "DemandBox" ||
+        source === "Your DemandBox" ||
         source === "Open Finance" ||
         source === "Your Finance" ||
         source === "Support Path" ||
@@ -2867,7 +2867,7 @@ function buildMostUsedAppFallback(params: {
     },
     "demand-box": {
       key: "demand-box",
-      label: "Your Demand Box",
+      label: "Your DemandBox",
       detail: "Ask for goods, service, support, or follow-up.",
       to: DASHBOARD_TARGETS.DEMAND_BOX,
       count: 0,
@@ -3161,7 +3161,7 @@ function buildPriorityRoutes(params: {
             } are waiting in the queue.`,
       primaryRoute: {
         key: "demand-box",
-        label: "Open your Demand Box",
+        label: "Open your DemandBox",
         detail: "Respond to visible need signals before they drift.",
         to: DASHBOARD_TARGETS.DEMAND_BOX,
         reason: "Opportunity and responsibility are both gathering here.",
@@ -4500,8 +4500,8 @@ export default function DashboardPage() {
           "response required",
         ])
           ? "actNow"
-          : source === "Demand Box" ||
-            source === "Your Demand Box" ||
+          : source === "DemandBox" ||
+            source === "Your DemandBox" ||
             source === "Open Finance" ||
             source === "Your Finance" ||
             source === "Support Path" ||
@@ -4574,11 +4574,11 @@ export default function DashboardPage() {
                 } visible`,
           detail:
             urgentCount > 0
-              ? "Urgent requests are active in your Demand Box. Review the highest-pressure requests before they drift further."
-              : "Open requests are active in your Demand Box. Review what is moving and decide whether you need to respond.",
-          ctaLabel: "Open your Demand Box",
+              ? "Urgent requests are active in your DemandBox. Review the highest-pressure requests before they drift further."
+              : "Open requests are active in your DemandBox. Review what is moving and decide whether you need to respond.",
+          ctaLabel: "Open your DemandBox",
           ctaTo: DASHBOARD_TARGETS.DEMAND_BOX,
-          source: "Your Demand Box",
+          source: "Your DemandBox",
           bucket: urgentCount > 0 ? "actNow" : "dueSoon",
           scoreBoost: urgentCount > 0 ? 14 : 8,
         })
@@ -5098,7 +5098,7 @@ export default function DashboardPage() {
       ? "Create your demand"
       : urgentDemandItems.length > 0
       ? "Open urgent demand"
-      : "Open your Demand Box";
+      : "Open your DemandBox";
   const demandCommunityLabel = currentCommunityName(currentClan, selectedClanId);
   const demandRequesterId = safeStr(currentDemandItem?.requester_gmfn_id || "");
   const demandRequesterTrust = safeStr(
@@ -5113,7 +5113,7 @@ export default function DashboardPage() {
     ? "A person's request is live in your community."
     : "Create your demand when you need help.";
   const demandGuideBody =
-    "Your Demand Box is personal: you say what you need, and your GSN evidence signal shows who is asking. Your community name shows where you are sending it from. Payment terms and TrustSlip expectations help both sides agree before work starts.";
+    "Your DemandBox is personal: you say what you need, and your GSN evidence signal shows who is asking. Your community name shows where you are sending it from. Payment terms and TrustSlip expectations help both sides agree before work starts.";
 
   const demandSurfaceChrome = useMemo(() => {
     if (urgentDemandItems.length > 0) {
@@ -5340,7 +5340,7 @@ export default function DashboardPage() {
     }
 
     if (demandItems.length > 0) {
-      return "Your Demand Box is active. Read the current need before you act.";
+      return "Your DemandBox is active. Read the current need before you act.";
     }
 
     if (pendingRequests.length > 0) {
@@ -6023,7 +6023,7 @@ export default function DashboardPage() {
         detail: "Find work, ask for service, promote, or open your shop face.",
         items: [
           { label: "Marketplace", to: DASHBOARD_TARGETS.MARKETPLACE },
-          { label: "Demand Box", to: DASHBOARD_TARGETS.DEMAND_BOX },
+          { label: "DemandBox", to: DASHBOARD_TARGETS.DEMAND_BOX },
           { label: "Spotlight", to: DASHBOARD_TARGETS.COMMUNITY_SPOTLIGHT },
           { label: "Shop", to: DASHBOARD_TARGETS.SHOP_ME },
         ],
@@ -10964,7 +10964,7 @@ export default function DashboardPage() {
             )}
           >
             <DashboardSignalIcon
-              name={dashboardSectionSignal("Your Demand Box")}
+              name={dashboardSectionSignal("Your DemandBox")}
               size={isPhone ? 19 : 21}
               strokeWidth={2.3}
             />
@@ -10972,7 +10972,7 @@ export default function DashboardPage() {
 
           <span style={{ minWidth: 0 }}>
             <span style={dashboardAccordionTitleStyle}>
-              Your Demand Box
+              Your DemandBox
             </span>
             <span style={dashboardAccordionSummaryStyle}>
               {demandItems.length > 0
@@ -11174,7 +11174,7 @@ export default function DashboardPage() {
                   >
                     <DashboardSignalIcon name="trust" size={isPhone ? 16 : 18} />
                   </span>
-                  Demand Box Response
+                  DemandBox Response
                 </div>
 
                 <div
@@ -11269,7 +11269,7 @@ export default function DashboardPage() {
                   Item detail:{" "}
                   {safeStr(
                     currentDemandItem.description ||
-                      "Open your Demand Box to read the full request."
+                      "Open your DemandBox to read the full request."
                   )}
                 </div>
 
@@ -11473,7 +11473,7 @@ export default function DashboardPage() {
                     }}
                   >
                     <DashboardSignalIcon name="package" size={isPhone ? 18 : 20} />
-                    Open your Demand Box
+                    Open your DemandBox
                     <span aria-hidden="true" style={{ marginLeft: "auto", color: "#D6AA45" }}>
                       ›
                     </span>
