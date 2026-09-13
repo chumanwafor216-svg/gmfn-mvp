@@ -125,6 +125,7 @@ let dailyInsightInFlight: Promise<any> | null = null;
 let dailyInsightCache: TimedCache<any> | null = null;
 const startupSectionInFlight = new Map<string, Promise<any>>();
 const startupSectionCache = new Map<string, TimedCache<any>>();
+const startupSectionInvalidatedAt = new Map<string, number>();
 
 function readTimedCacheWithin<T>(
   cache: TimedCache<T> | null,
@@ -159,6 +160,11 @@ function startupSectionCacheKey(label: string, payload?: unknown): string {
   return `${label}:${stableCacheValue(payload ?? {})}`;
 }
 
+function startupSectionLabelFromKey(key: string): string {
+  const marker = key.indexOf(":");
+  return marker >= 0 ? key.slice(0, marker) : key;
+}
+
 async function cachedStartupSectionRead<T>(
   key: string,
   loader: () => Promise<T>
@@ -173,13 +179,18 @@ async function cachedStartupSectionRead<T>(
   const current = startupSectionInFlight.get(key);
   if (current) return current as Promise<T>;
 
+  const loadStartedAt = Date.now();
   const next = loader()
     .then((out) => {
-      startupSectionCache.set(key, {
-        key,
-        value: out,
-        storedAt: Date.now(),
-      });
+      const label = startupSectionLabelFromKey(key);
+      const invalidatedAt = startupSectionInvalidatedAt.get(label) || 0;
+      if (invalidatedAt <= loadStartedAt) {
+        startupSectionCache.set(key, {
+          key,
+          value: out,
+          storedAt: Date.now(),
+        });
+      }
       return out;
     })
     .finally(() => {
@@ -188,6 +199,17 @@ async function cachedStartupSectionRead<T>(
 
   startupSectionInFlight.set(key, next);
   return next;
+}
+
+function clearStartupSectionCacheByLabel(label: string): void {
+  const prefix = `${label}:`;
+  startupSectionInvalidatedAt.set(label, Date.now());
+  for (const key of Array.from(startupSectionCache.keys())) {
+    if (key.startsWith(prefix)) startupSectionCache.delete(key);
+  }
+  for (const key of Array.from(startupSectionInFlight.keys())) {
+    if (key.startsWith(prefix)) startupSectionInFlight.delete(key);
+  }
 }
 
 function clearStartupReadCache(): void {
@@ -7733,12 +7755,13 @@ export async function createMarketplaceRequest(payload: {
   const effectiveClanId =
     payload?.clan_id === undefined ? getSelectedClanId() : payload?.clan_id;
 
-  return httpJson("/marketplace/requests", "POST", {
+  const created = await httpJson("/marketplace/requests", "POST", {
     ...payload,
     clan_id: effectiveClanId ?? undefined,
   });
+  clearStartupSectionCacheByLabel("listMarketplaceRequests");
+  return created;
 }
-
 export async function getMarketplaceRequest(
   requestId: number,
   clanId?: number | null
@@ -7757,13 +7780,14 @@ export async function updateMarketplaceRequestStatus(
   requestId: number,
   status: "fulfilled" | "cancelled"
 ): Promise<MarketplaceRequestItem> {
-  return httpJson(
+  const updated = await httpJson(
     `/marketplace/requests/${encodeURIComponent(String(requestId))}/status`,
     "POST",
     { status }
   );
+  clearStartupSectionCacheByLabel("listMarketplaceRequests");
+  return updated;
 }
-
 export type TrustEventsQuery = {
   clan_id?: number;
   user_id?: number;

@@ -5053,6 +5053,7 @@ export default function MarketplacePage() {
         "error",
         marketplaceErrorMessage(err, "Official notice could not be posted.")
       );
+      throw err;
     } finally {
       setMarketplaceNoticePosting(false);
     }

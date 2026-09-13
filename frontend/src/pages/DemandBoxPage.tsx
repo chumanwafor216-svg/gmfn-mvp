@@ -1082,6 +1082,7 @@ export default function DemandBoxPage() {
         "error",
         safeStr(err?.message) || "Community question could not be posted in Demand Box."
       );
+      throw err;
     } finally {
       setMarketNeedPulsePosting(false);
     }

@@ -3489,6 +3489,7 @@ export default function CommunityDomainDashboardPage() {
       setMessage(
         errorDetailMessage(err, "GSN could not post this Community Domain notice.")
       );
+      throw err;
     } finally {
       setDomainNoticePosting(false);
     }

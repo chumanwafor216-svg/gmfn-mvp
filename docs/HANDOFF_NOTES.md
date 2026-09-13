@@ -161133,3 +161133,13 @@ Operational note:
 - Guardrail changed: `frontend/tools/audit-link-contracts.mjs` now fails if the Vault request text reintroduces `publicVaultRequestPreviewUrl` or `absoluteVaultRequestPreviewLink`.
 - Truth boundary: this does not remove the backend `/share/vault-request/:gmfnId` preview helper, expose private Vault stock, grant Vault access, or create buyer/sales proof. It only stops visitor request copy from advertising the full shop.
 - Verification passed: targeted frontend ESLint; `npm --prefix frontend run audit:link-contracts`; `npm --prefix frontend run audit:shop-gallery-button-inventory`; `npm --prefix frontend run audit:share-tag-actions`; `npm --prefix frontend run audit:button-stability`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`.
+
+## 2026-09-13 - Ask Community post reliability correction
+
+- Status: Frontend correction implemented and verified locally; deploy pending from this commit.
+- Owner trigger: owner reported that Ask Community appeared not to post and asked to fix that before discussing any chat/tagging feature.
+- Frontend routes affected: `/app/demand-box` via `DemandBoxPage.tsx`; shared community notice composer via `CommunityNoticeModal.tsx`; shared marketplace request API cache via `api.ts`.
+- Product behavior changed: successful Demand Box/Ask Community creates now clear the cached `listMarketplaceRequests` reads before reload, so the new `Community Ask` row can appear immediately instead of hiding behind a stale 15-second startup cache.
+- Error behavior changed: the shared notice composer now shows submit failures inside the open modal and preserves typed text; parent submitters rethrow caught API errors so the modal does not clear a failed post as if it succeeded.
+- Truth boundary: this does not add chat, tagging, threaded replies, or a new communication lane. The backend still enforces the existing active Demand Box request limit unless product ownership decides that Community Ask needs its own quota or lifecycle.
+- Verification passed: targeted frontend ESLint and `npm --prefix frontend run build`.

@@ -112,6 +112,7 @@ export default function CommunityNoticeModal({
   const [attachmentUploadMessage, setAttachmentUploadMessage] = useState("");
   const [attachmentUploading, setAttachmentUploading] = useState(false);
   const [attachmentError, setAttachmentError] = useState("");
+  const [submitError, setSubmitError] = useState("");
   const words = useMemo(() => countWords(body), [body]);
   const fullWords = useMemo(() => countWords(fullBody), [fullBody]);
   const attachmentUrlTrimmed = attachmentUrl.trim();
@@ -120,6 +121,9 @@ export default function CommunityNoticeModal({
   useEffect(() => {
     if (open && isMarketNeedPulse) {
       setAvailabilityEnabled(true);
+    }
+    if (open) {
+      setSubmitError("");
     }
   }, [isMarketNeedPulse, open]);
 
@@ -190,20 +194,29 @@ export default function CommunityNoticeModal({
 
   async function submitNotice() {
     if (blocked) return;
-    await onSubmit(body.trim(), {
-      expiry_policy: expiryPolicy,
-      expires_at:
-        expiryPolicy === "event" && eventExpiresAt
-          ? new Date(eventExpiresAt).toISOString()
-          : undefined,
-      public_qr_enabled: publicQrEnabled,
-      availability_enabled: isMarketNeedPulse || availabilityEnabled,
-      notice_mode: isMarketNeedPulse ? "market_need_pulse" : "notice",
-      full_body: includeFullBody ? fullBody.trim() || null : undefined,
-      attachment_url: attachmentUrlTrimmed || undefined,
-      attachment_label: attachmentUrlTrimmed ? attachmentLabel.trim() || undefined : undefined,
-      attachment_kind: attachmentUrlTrimmed ? attachmentKind : undefined,
-    });
+    setSubmitError("");
+    try {
+      await onSubmit(body.trim(), {
+        expiry_policy: expiryPolicy,
+        expires_at:
+          expiryPolicy === "event" && eventExpiresAt
+            ? new Date(eventExpiresAt).toISOString()
+            : undefined,
+        public_qr_enabled: publicQrEnabled,
+        availability_enabled: isMarketNeedPulse || availabilityEnabled,
+        notice_mode: isMarketNeedPulse ? "market_need_pulse" : "notice",
+        full_body: includeFullBody ? fullBody.trim() || null : undefined,
+        attachment_url: attachmentUrlTrimmed || undefined,
+        attachment_label: attachmentUrlTrimmed ? attachmentLabel.trim() || undefined : undefined,
+        attachment_kind: attachmentUrlTrimmed ? attachmentKind : undefined,
+      });
+    } catch (error: any) {
+      setSubmitError(
+        String(error?.detail?.message || error?.detail || error?.message || error)
+          .trim() || "This message could not be posted. Please check the notice and try again."
+      );
+      return;
+    }
     setBody("");
     setExpiryPolicy("standard");
     setIncludeFullBody(false);
@@ -244,6 +257,8 @@ export default function CommunityNoticeModal({
           placeholder={isMarketNeedPulse ? "Do you need this service this month?" : "Meeting Saturday 4 pm."}
           style={textareaStyle}
         />
+
+        {submitError ? <p style={submitErrorStyle}>{submitError}</p> : null}
 
         <StableButton
           type="button"
@@ -646,6 +661,16 @@ const successTextStyle: React.CSSProperties = {
 const errorTextStyle: React.CSSProperties = {
   ...attachmentHelpStyle,
   color: "#7F1D1D",
+};
+
+const submitErrorStyle: React.CSSProperties = {
+  ...errorTextStyle,
+  marginTop: 8,
+  padding: "9px 10px",
+  borderRadius: 12,
+  border: "1px solid rgba(185,28,28,0.20)",
+  background: "#FFFAFA",
+  fontSize: 12.5,
 };
 
 const checkboxRowStyle: React.CSSProperties = {

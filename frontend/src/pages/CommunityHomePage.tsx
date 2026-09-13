@@ -4375,6 +4375,7 @@ export default function CommunityHomePage() {
         "error",
         gsnGovernanceErrorMessage(error, "This notice could not be posted. Check posting permission and length.")
       );
+      throw error;
     } finally {
       setNoticePosting(false);
     }
