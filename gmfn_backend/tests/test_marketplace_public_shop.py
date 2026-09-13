@@ -5602,6 +5602,15 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert "DemandBox signals: 0" in unit_economics["current_evidence"]
     assert "true CAC calculation" in unit_economics["missing_evidence"][0]
     assert "not CAC, not LTV" in unit_economics["boundary"]
+    ledger_rows = opportunity_engine["evidence_ledger"]
+    assert ledger_rows[0]["source"] == "Marketplace and Shop Diary"
+    assert ledger_rows[2]["source"] == "DemandBox"
+    assert ledger_rows[2]["records"] == 0
+    assert ledger_rows[4]["source"] == "TrustPassport, TrustSlip, Trust Graph"
+    assert ledger_rows[4]["status"] == "Next"
+    assert ledger_rows[5]["source"] == "External context"
+    assert ledger_rows[5]["status"] == "Blocked"
+    assert "No political" in ledger_rows[5]["privacy_boundary"]
     assert "owner-summary signal groups are live" in opportunity_engine["snapshot"]["headline"]
     assert "not saved AI inference" in opportunity_engine["boundary_label"]
     assert "marketplace_requests" in opportunity_engine["count_method"]

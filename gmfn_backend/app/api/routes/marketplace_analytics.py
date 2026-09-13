@@ -559,6 +559,50 @@ def _opportunity_engine_summary(
         ),
         "boundary": "Readiness only. This is not CAC, not LTV, not ROI, not profit, and not investor-grade unit economics yet.",
     }
+    evidence_ledger = [
+        {
+            "source": "Marketplace and Shop Diary",
+            "status": "Live" if active_products > 0 else "Next",
+            "records": active_products,
+            "reads": "Active marketplace_products rows for this shop.",
+            "privacy_boundary": "Owner analytics only; does not expose private buyer identity or prove sales.",
+        },
+        {
+            "source": "Spotlight attention",
+            "status": "Live" if active_spotlights > 0 or spotlight_impressions > 0 else "Next",
+            "records": spotlight_impressions,
+            "reads": "Active marketplace_broadcasts plus marketplace_attention_events in this window.",
+            "privacy_boundary": "Counts attention events; not full identity, payment, or delivery proof.",
+        },
+        {
+            "source": "DemandBox",
+            "status": "Live" if open_demand > 0 else "Next",
+            "records": open_demand,
+            "reads": "Open non-expired marketplace_requests rows in the selected community.",
+            "privacy_boundary": "Request count only; no private response thread or personal scoring exposed.",
+        },
+        {
+            "source": "Protected Trade",
+            "status": "Live" if protected_trade_records > 0 else "Next",
+            "records": protected_trade_records,
+            "reads": "ProtectedTradeRecord rows linked by shop_id or seller_user_id.",
+            "privacy_boundary": "Evidence state only; not automatic sales, receipt, dispute, or satisfaction proof.",
+        },
+        {
+            "source": "TrustPassport, TrustSlip, Trust Graph",
+            "status": "Next",
+            "records": 0,
+            "reads": "Not wired into this shop Opportunity Engine slice yet.",
+            "privacy_boundary": "No trust score, identity exposure, or cross-community relationship inference is made.",
+        },
+        {
+            "source": "External context",
+            "status": "Blocked",
+            "records": 0,
+            "reads": "Not connected until source, geography, sensitive-topic, and review rules exist.",
+            "privacy_boundary": "No political, health, legal, financial, or outside-market conclusion is made.",
+        },
+    ]
     output_cards = [
         {
             "lens": "Signals",
@@ -606,6 +650,7 @@ def _opportunity_engine_summary(
         "signal_groups": signal_groups,
         "output_cards": output_cards,
         "unit_economics_readiness": unit_economics_readiness,
+        "evidence_ledger": evidence_ledger,
         "field_coverage": {
             "shop_and_marketplace": active_products > 0,
             "spotlight_attention": active_spotlights > 0 or spotlight_impressions > 0,

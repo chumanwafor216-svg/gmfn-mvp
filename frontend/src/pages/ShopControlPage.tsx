@@ -379,6 +379,13 @@ type ShopAttentionSummary = {
       next_step?: string | null;
       boundary?: string | null;
     } | null;
+    evidence_ledger?: Array<{
+      source?: string | null;
+      status?: string | null;
+      records?: number | null;
+      reads?: string | null;
+      privacy_boundary?: string | null;
+    }> | null;
   } | null;
   daily_activity?: ShopAttentionDailyActivity[] | null;
   source_breakdown?: ShopAttentionSourceBreakdown[] | null;
@@ -2942,6 +2949,9 @@ export default function ShopControlPage() {
   );
   const opportunityEngineBackendOutputCards = Array.isArray(shopAttentionSummary?.opportunity_engine?.output_cards)
     ? shopAttentionSummary.opportunity_engine.output_cards
+    : [];
+  const opportunityEngineEvidenceLedgerRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.evidence_ledger)
+    ? shopAttentionSummary.opportunity_engine.evidence_ledger
     : [];
   const opportunityEngineGapRows = useMemo(
     () =>
@@ -6727,6 +6737,25 @@ export default function ShopControlPage() {
                   <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Next:</strong> {shopAttentionSummary.opportunity_engine.snapshot.next_step}</div>
                   <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}>{shopAttentionSummary.opportunity_engine.boundary_label}</div>
                 </div>
+              ) : null}
+              {opportunityEngineEvidenceLedgerRows.length > 0 ? (
+                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px" }}>
+                  <StableDisclosureSummary debugId="shop-control.opportunity-engine.evidence-ledger" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
+                    Evidence ledger
+                  </StableDisclosureSummary>
+                  <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                    {opportunityEngineEvidenceLedgerRows.map((item, index) => (
+                      <div key={`opportunity-ledger-${item.source || index}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 10, display: "grid", gap: 5 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.source || "Evidence source"}</span>
+                          <span style={{ ...badge(item.status === "Live"), fontSize: 10 }}>{item.status || "Next"} / {safePositiveNumber(item.records)} records</span>
+                        </div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Reads:</strong> {item.reads || "No source note available."}</div>
+                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.privacy_boundary || "Owner reviews before acting or publishing."}</div>
+                      </div>
+                    ))}
+                  </div>
+                </details>
               ) : null}
               {opportunityEngineBackendOutputCards.length > 0 ? (
                 <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px" }}>
