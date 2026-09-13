@@ -973,6 +973,48 @@ def _opportunity_engine_summary(
             "boundary": "Do not sell or expose private intelligence until access, consent, and privacy controls are built.",
         },
     ]
+    claim_ladder = [
+        {
+            "claim_level": "Observed activity",
+            "status": "Live" if live_count > 0 else "Next",
+            "can_say": "GSN can show recorded shop activity, attention events, DemandBox count, protected records, and current source boundaries.",
+            "cannot_say": "This is not proof of sales, profit, market size, satisfaction, CAC, LTV, or community approval.",
+            "evidence_to_upgrade": "Repeat the observation across comparable windows and keep the source counts attached.",
+            "boundary": "Use this level for demos today.",
+        },
+        {
+            "claim_level": "Directional signal",
+            "status": "Partial" if has_acquisition_trail or open_demand > 0 or has_outcome_trail else "Next",
+            "can_say": "A pattern may be forming when attention, serious contact, DemandBox, or protected outcomes repeat in the same direction.",
+            "cannot_say": "Do not call a single view spike, request, or contact real demand or product-market fit.",
+            "evidence_to_upgrade": "Show repeated records, comparable windows, and at least one connected outcome or cost note.",
+            "boundary": "Signal language must stay cautious and reversible.",
+        },
+        {
+            "claim_level": "Testable hypothesis",
+            "status": "Next",
+            "can_say": "GSN can suggest one small experiment, such as clarifying an offer or comparing DemandBox need with a shop item.",
+            "cannot_say": "Do not describe the experiment as advice that will work or as an AI decision.",
+            "evidence_to_upgrade": "Run the test for the stated window, change one thing, and capture contact, outcome, and cost evidence.",
+            "boundary": "A hypothesis is a test, not a conclusion.",
+        },
+        {
+            "claim_level": "Opportunity candidate",
+            "status": "Next",
+            "can_say": "A repeated signal with cleaner outcomes may point to an opportunity worth owner review.",
+            "cannot_say": "Do not present it as a forecast, guaranteed market, investment case, or instruction to spend money.",
+            "evidence_to_upgrade": "Add saved reports, human review, cost trail, repeat value, retention, and privacy-safe source history.",
+            "boundary": "The owner decides after reviewing evidence; GSN must not overrule context.",
+        },
+        {
+            "claim_level": "Paid recommendation",
+            "status": "Blocked",
+            "can_say": "This can become a paid Advanced Analytics product only after the report, review, entitlement, and privacy controls exist.",
+            "cannot_say": "Do not claim live paid AI, external-market intelligence, CAC/LTV ratio, or private trust inference from this slice.",
+            "evidence_to_upgrade": "Build saved reports, billing entitlement, governed external context, consent rules, and repeat-value proof first.",
+            "boundary": "Blocked until the paid product contract and evidence controls are real.",
+        },
+    ]
     evidence_ledger = [
         {
             "source": "Marketplace and Shop Diary",
@@ -1074,6 +1116,7 @@ def _opportunity_engine_summary(
         "capture_checklist": capture_checklist,
         "review_cadence": review_cadence,
         "report_readiness": report_readiness,
+        "claim_ladder": claim_ladder,
         "field_coverage": {
             "shop_and_marketplace": active_products > 0,
             "spotlight_attention": active_spotlights > 0 or spotlight_impressions > 0,

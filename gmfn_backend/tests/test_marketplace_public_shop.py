@@ -5711,6 +5711,20 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert report_readiness[4]["requirement"] == "Entitlement and privacy rules"
     assert report_readiness[4]["status"] == "Blocked"
     assert "Do not sell" in report_readiness[4]["boundary"]
+    claim_ladder = opportunity_engine["claim_ladder"]
+    assert len(claim_ladder) == 5
+    assert claim_ladder[0]["claim_level"] == "Observed activity"
+    assert claim_ladder[0]["status"] == "Live"
+    assert "not proof of sales" in claim_ladder[0]["cannot_say"]
+    assert claim_ladder[1]["claim_level"] == "Directional signal"
+    assert "product-market fit" in claim_ladder[1]["cannot_say"]
+    assert claim_ladder[2]["claim_level"] == "Testable hypothesis"
+    assert "not a conclusion" in claim_ladder[2]["boundary"]
+    assert claim_ladder[3]["claim_level"] == "Opportunity candidate"
+    assert "not present it as a forecast" in claim_ladder[3]["cannot_say"]
+    assert claim_ladder[4]["claim_level"] == "Paid recommendation"
+    assert claim_ladder[4]["status"] == "Blocked"
+    assert "Do not claim live paid AI" in claim_ladder[4]["cannot_say"]
     ledger_rows = opportunity_engine["evidence_ledger"]
     assert ledger_rows[0]["source"] == "Marketplace and Shop Diary"
     assert ledger_rows[2]["source"] == "DemandBox"

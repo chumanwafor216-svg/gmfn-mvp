@@ -461,6 +461,14 @@ type ShopAttentionSummary = {
       needed_before_paid?: string | null;
       boundary?: string | null;
     }> | null;
+    claim_ladder?: Array<{
+      claim_level?: string | null;
+      status?: string | null;
+      can_say?: string | null;
+      cannot_say?: string | null;
+      evidence_to_upgrade?: string | null;
+      boundary?: string | null;
+    }> | null;
   } | null;
   daily_activity?: ShopAttentionDailyActivity[] | null;
   source_breakdown?: ShopAttentionSourceBreakdown[] | null;
@@ -3054,6 +3062,9 @@ export default function ShopControlPage() {
     : [];
   const opportunityEngineReportReadinessRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.report_readiness)
     ? shopAttentionSummary.opportunity_engine.report_readiness
+    : [];
+  const opportunityEngineClaimLadderRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.claim_ladder)
+    ? shopAttentionSummary.opportunity_engine.claim_ladder
     : [];
   const opportunityEngineGapRows = useMemo(
     () =>
@@ -6988,6 +6999,27 @@ export default function ShopControlPage() {
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Current state:</strong> {item.current_state || "This report capability is not active yet."}</div>
                         <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Needed before paid:</strong> {item.needed_before_paid || "Persisted review and access rules are required first."}</div>
                         <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "No saved report, entitlement, CAC/LTV proof, or private intelligence is created here."}</div>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              ) : null}
+              {opportunityEngineClaimLadderRows.length > 0 ? (
+                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px" }}>
+                  <StableDisclosureSummary debugId="shop-control.opportunity-engine.claim-ladder" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
+                    Claim ladder
+                  </StableDisclosureSummary>
+                  <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                    {opportunityEngineClaimLadderRows.map((item, index) => (
+                      <div key={`opportunity-claim-${item.claim_level || index}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 10, display: "grid", gap: 5 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.claim_level || "Claim level"}</span>
+                          <span style={{ ...badge(item.status === "Live"), fontSize: 10 }}>{item.status || "Next"}</span>
+                        </div>
+                        <div style={{ color: "#24415C", fontSize: 11, fontWeight: 820, lineHeight: 1.35 }}><strong>Can say:</strong> {item.can_say || "Only the current evidence can be described."}</div>
+                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Cannot say:</strong> {item.cannot_say || "Do not upgrade this into proof, forecast, or advice."}</div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Evidence to upgrade:</strong> {item.evidence_to_upgrade || "Repeated evidence and human review are required."}</div>
+                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "Owner reviews before acting or publishing."}</div>
                       </div>
                     ))}
                   </div>
