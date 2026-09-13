@@ -175,13 +175,13 @@ assertContains(
 );
 assertContains(
   "gmfn_backend/app/api/routes/marketplace_analytics.py",
-  /unit_economics_readiness = \{[\s\S]*?"title": "Cost and repeat-value readiness"[\s\S]*?"current_evidence": \[[\s\S]*?DemandBox signals[\s\S]*?"missing_evidence": \[[\s\S]*?true acquisition-cost calculation[\s\S]*?"boundary": "Readiness only\. This is not CAC, not LTV, not ROI, not profit, and not investor-grade unit economics yet\."[\s\S]*?"unit_economics_readiness": unit_economics_readiness/,
-  "Shop owner analytics API must expose cost and repeat-value readiness without claiming true unit economics."
+  /unit_economics_readiness = \{[\s\S]*?"title": "Promotion effort and repeat-value readiness"[\s\S]*?"current_evidence": \[[\s\S]*?DemandBox signals[\s\S]*?"missing_evidence": \[[\s\S]*?true promotion-cost calculation[\s\S]*?"boundary": "Readiness only\. This is not a return calculation, profit claim, or investor-grade business economics yet\."[\s\S]*?"unit_economics_readiness": unit_economics_readiness/,
+  "Shop owner analytics API must expose promotion effort and repeat-value readiness without claiming true business return metrics."
 );
 assertContains(
   "gmfn_backend/app/api/routes/marketplace_analytics.py",
-  /measurement_plan = \[[\s\S]*?"step": "Capture acquisition cost"[\s\S]*?"metric": "CAC input"[\s\S]*?"step": "Connect value outcomes"[\s\S]*?"metric": "LTV input"[\s\S]*?"step": "Review sample quality"[\s\S]*?not a business model[\s\S]*?"measurement_plan": measurement_plan/,
-  "Shop owner analytics API must expose a cost and repeat-value plan before claiming real unit economics."
+  /measurement_plan = \[[\s\S]*?"step": "Capture promotion effort"[\s\S]*?"metric": "Promotion-cost input"[\s\S]*?"step": "Connect value outcomes"[\s\S]*?"metric": "Repeat-value input"[\s\S]*?"step": "Review sample quality"[\s\S]*?not a business model[\s\S]*?"measurement_plan": measurement_plan/,
+  "Shop owner analytics API must expose a promotion and repeat-value plan before claiming real business return metrics."
 );
 assertContains(
   "gmfn_backend/app/api/routes/marketplace_analytics.py",
@@ -190,13 +190,13 @@ assertContains(
 );
 assertContains(
   "gmfn_backend/app/api/routes/marketplace_analytics.py",
-  /capture_checklist = \[[\s\S]*?"category": "Acquisition cost"[\s\S]*?cash spend[\s\S]*?not free[\s\S]*?"category": "Serious contact"[\s\S]*?not a buyer[\s\S]*?"category": "Repeat value"[\s\S]*?lifetime value[\s\S]*?"capture_checklist": capture_checklist/,
-  "Shop owner analytics API must expose evidence capture tasks before claiming CAC, LTV, or retention are measurable."
+  /capture_checklist = \[[\s\S]*?"category": "Promotion cost"[\s\S]*?cash spend[\s\S]*?not free[\s\S]*?"category": "Serious contact"[\s\S]*?not a buyer[\s\S]*?"category": "Repeat value"[\s\S]*?long-term value[\s\S]*?"capture_checklist": capture_checklist/,
+  "Shop owner analytics API must expose evidence capture tasks before claiming return calculation, repeat value, or retention are measurable."
 );
 assertContains(
   "gmfn_backend/app/api/routes/marketplace_analytics.py",
-  /review_cadence = \[[\s\S]*?"cadence": "Every shop push"[\s\S]*?Do not call views efficient[\s\S]*?"cadence": "7-day review"[\s\S]*?One week is a learning window[\s\S]*?"cadence": "30-day review"[\s\S]*?Estimate CAC\/LTV only[\s\S]*?"cadence": "90-day review"[\s\S]*?forecast or guarantee[\s\S]*?"review_cadence": review_cadence/,
-  "Shop owner analytics API must expose experiment review cadence before upgrading CAC/LTV or demand claims."
+  /review_cadence = \[[\s\S]*?"cadence": "Every shop push"[\s\S]*?Do not call views efficient[\s\S]*?"cadence": "7-day review"[\s\S]*?One week is a learning window[\s\S]*?"cadence": "30-day review"[\s\S]*?Estimate return patterns only[\s\S]*?"cadence": "90-day review"[\s\S]*?forecast or guarantee[\s\S]*?"review_cadence": review_cadence/,
+  "Shop owner analytics API must expose experiment review cadence before upgrading return-pattern or demand claims."
 );
 assertContains(
   "gmfn_backend/app/api/routes/marketplace_analytics.py",
@@ -216,7 +216,7 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /Review windows[\s\S]*?Opportunity lenses[\s\S]*?Opportunity reading[\s\S]*?Cost and repeat-value plan[\s\S]*?Evidence capture checklist[\s\S]*?Experiment review cadence[\s\S]*?Current evidence snapshot[\s\S]*?Reviewed signal cards[\s\S]*?Small experiment plan/,
+  /Review windows[\s\S]*?Opportunity lenses[\s\S]*?Opportunity reading[\s\S]*?Promotion and repeat-value plan[\s\S]*?Evidence capture checklist[\s\S]*?Experiment review cadence[\s\S]*?Current evidence snapshot[\s\S]*?Reviewed signal cards[\s\S]*?Small experiment plan/,
   "Shop Control Advanced Analytics must keep the owner-facing evidence, review, and experiment surface."
 );
 assertLineNotContains(
@@ -241,8 +241,8 @@ assertContains(
 );
 assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
-  /export type OpportunityEngineUnitEconomicsReadiness[\s\S]*?export function buildShopOpportunityEngineUnitEconomicsReadiness[\s\S]*?Cost and repeat-value readiness[\s\S]*?Readiness only\. This is not CAC, not LTV, not ROI, not profit, and not investor-grade unit economics yet\./,
-  "Shop Opportunity Engine must expose cost and repeat-value readiness without claiming true unit economics."
+  /export type OpportunityEngineUnitEconomicsReadiness[\s\S]*?export function buildShopOpportunityEngineUnitEconomicsReadiness[\s\S]*?Promotion effort and repeat-value readiness[\s\S]*?Readiness only\. This is not a return calculation, profit claim, or investor-grade business economics yet\./,
+  "Shop Opportunity Engine must expose promotion effort and repeat-value readiness without claiming true business return metrics."
 );
 assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
@@ -251,18 +251,18 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /buildShopOpportunityEngineUnitEconomicsReadiness[\s\S]*?opportunityEngineUnitEconomicsReadiness\.title[\s\S]*?Acquisition side[\s\S]*?Repeat-value side[\s\S]*?shop-control\.opportunity-engine\.unit-economics[\s\S]*?Unit economics evidence[\s\S]*?opportunityEngineUnitEconomicsReadiness\.boundary/,
-  "Shop Control must render cost and repeat-value readiness inside Advanced Analytics without claiming the ratio is calculated."
+  /buildShopOpportunityEngineUnitEconomicsReadiness[\s\S]*?opportunityEngineUnitEconomicsReadiness\.title[\s\S]*?Promotion effort[\s\S]*?Repeat value[\s\S]*?shop-control\.opportunity-engine\.unit-economics[\s\S]*?Business return evidence[\s\S]*?opportunityEngineUnitEconomicsReadiness\.boundary/,
+  "Shop Control must render promotion effort and repeat-value readiness inside Advanced Analytics without claiming the ratio is calculated."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
   /unit_economics_readiness\?:[\s\S]*?backendUnitEconomicsReadiness = shopAttentionSummary\?\.opportunity_engine\?\.unit_economics_readiness[\s\S]*?localOpportunityEngineUnitEconomicsReadiness[\s\S]*?current_evidence[\s\S]*?missing_evidence[\s\S]*?opportunityEngineUnitEconomicsReadiness\.boundary/,
-  "Shop Control must prefer backend cost and repeat-value readiness while keeping the local readiness fallback."
+  "Shop Control must prefer backend promotion effort and repeat-value readiness while keeping the local readiness fallback."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
-  /measurement_plan\?: Array[\s\S]*?opportunityEngineMeasurementPlanRows[\s\S]*?shop-control\.opportunity-engine\.measurement-plan[\s\S]*?Cost and repeat-value plan[\s\S]*?Owner action:[\s\S]*?This is preparation, not a final unit-economics ratio\./,
-  "Shop Control must render the backend cost and repeat-value plan as a collapsed detail."
+  /measurement_plan\?: Array[\s\S]*?opportunityEngineMeasurementPlanRows[\s\S]*?shop-control\.opportunity-engine\.measurement-plan[\s\S]*?Promotion and repeat-value plan[\s\S]*?Owner action:[\s\S]*?This is preparation, not a final return calculation\./,
+  "Shop Control must render the backend promotion and repeat-value plan as a collapsed detail."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
@@ -516,7 +516,7 @@ assertContains(
 );
 assertContains(
   "gmfn_backend/tests/test_marketplace_public_shop.py",
-  /opportunity_engine = body\["opportunity_engine"\][\s\S]*?opportunity_engine\["aggregator_ready"\] is True[\s\S]*?internal_only_keys = \{[\s\S]*?"field_coverage"[\s\S]*?assert internal_only_keys\.isdisjoint\(opportunity_engine\.keys\(\)\)[\s\S]*?opportunity_engine\["signal_groups"\]\[2\]\["label"\] == "DemandBox"[\s\S]*?len\(opportunity_engine\["output_cards"\]\) == 3[\s\S]*?"must not be presented as market size"[\s\S]*?unit_economics = opportunity_engine\["unit_economics_readiness"\][\s\S]*?"not CAC, not LTV"[\s\S]*?measurement_plan = opportunity_engine\["measurement_plan"\][\s\S]*?"Capture acquisition cost"[\s\S]*?"Mark repeat value"[\s\S]*?experiment_plan = opportunity_engine\["experiment_plan"\][\s\S]*?"One-offer clarity test"[\s\S]*?"Cost note discipline"[\s\S]*?capture_checklist = opportunity_engine\["capture_checklist"\][\s\S]*?"Acquisition cost"[\s\S]*?"Serious contact"[\s\S]*?"Repeat value"[\s\S]*?review_cadence = opportunity_engine\["review_cadence"\][\s\S]*?"Every shop push"[\s\S]*?"7-day review"[\s\S]*?"30-day review"[\s\S]*?"90-day review"[\s\S]*?ledger_rows = opportunity_engine\["evidence_ledger"\][\s\S]*?"External context"[\s\S]*?"Blocked"[\s\S]*?"not a saved reviewed report"/,
+  /opportunity_engine = body\["opportunity_engine"\][\s\S]*?opportunity_engine\["aggregator_ready"\] is True[\s\S]*?internal_only_keys = \{[\s\S]*?"field_coverage"[\s\S]*?assert internal_only_keys\.isdisjoint\(opportunity_engine\.keys\(\)\)[\s\S]*?opportunity_engine\["signal_groups"\]\[2\]\["label"\] == "DemandBox"[\s\S]*?len\(opportunity_engine\["output_cards"\]\) == 3[\s\S]*?"must not be presented as market size"[\s\S]*?unit_economics = opportunity_engine\["unit_economics_readiness"\][\s\S]*?"not a return calculation"[\s\S]*?measurement_plan = opportunity_engine\["measurement_plan"\][\s\S]*?"Capture promotion effort"[\s\S]*?"Mark repeat value"[\s\S]*?experiment_plan = opportunity_engine\["experiment_plan"\][\s\S]*?"One-offer clarity test"[\s\S]*?"Cost note discipline"[\s\S]*?capture_checklist = opportunity_engine\["capture_checklist"\][\s\S]*?"Promotion cost"[\s\S]*?"Serious contact"[\s\S]*?"Repeat value"[\s\S]*?review_cadence = opportunity_engine\["review_cadence"\][\s\S]*?"Every shop push"[\s\S]*?"7-day review"[\s\S]*?"30-day review"[\s\S]*?"90-day review"[\s\S]*?ledger_rows = opportunity_engine\["evidence_ledger"\][\s\S]*?"External context"[\s\S]*?"Blocked"[\s\S]*?"not a saved reviewed report"/,
   "Backend analytics tests must lock the Opportunity Engine computed-summary boundary."
 );
 assertContains(

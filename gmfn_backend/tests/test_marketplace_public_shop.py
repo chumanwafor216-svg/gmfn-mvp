@@ -5593,21 +5593,21 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert "DemandBox" in demand_output_card["signal"]
     assert "must not be presented as market size" in demand_output_card["risk"]
     unit_economics = opportunity_engine["unit_economics_readiness"]
-    assert unit_economics["title"] == "Cost and repeat-value readiness"
+    assert unit_economics["title"] == "Promotion effort and repeat-value readiness"
     assert unit_economics["status"] == "Ready to estimate"
-    assert "any CAC/LTV ratio" in unit_economics["summary"]
+    assert "any real repeat-business calculation" in unit_economics["summary"]
     assert "visitors" in unit_economics["cac_side"]
     assert "protected records" in unit_economics["ltv_side"]
     assert "DemandBox signals: 0" in unit_economics["current_evidence"]
-    assert "true acquisition-cost calculation" in unit_economics["missing_evidence"][0]
-    assert "not CAC, not LTV" in unit_economics["boundary"]
+    assert "true promotion-cost calculation" in unit_economics["missing_evidence"][0]
+    assert "not a return calculation" in unit_economics["boundary"]
     measurement_plan = opportunity_engine["measurement_plan"]
-    assert measurement_plan[0]["step"] == "Capture acquisition cost"
-    assert measurement_plan[0]["metric"] == "CAC input"
+    assert measurement_plan[0]["step"] == "Capture promotion effort"
+    assert measurement_plan[0]["metric"] == "Promotion-cost input"
     assert measurement_plan[0]["currently_available"] is False
     assert "owner effort" in measurement_plan[0]["reads"]
     assert measurement_plan[1]["currently_available"] is True
-    assert measurement_plan[2]["metric"] == "LTV input"
+    assert measurement_plan[2]["metric"] == "Repeat-value input"
     assert measurement_plan[2]["currently_available"] is True
     assert measurement_plan[3]["step"] == "Mark repeat value"
     assert measurement_plan[4]["step"] == "Review sample quality"
@@ -5624,7 +5624,7 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert "not accounting" in experiment_plan[3]["boundary"]
     capture_checklist = opportunity_engine["capture_checklist"]
     assert len(capture_checklist) == 5
-    assert capture_checklist[0]["category"] == "Acquisition cost"
+    assert capture_checklist[0]["category"] == "Promotion cost"
     assert capture_checklist[0]["status"] == "Missing"
     assert "cash spend" in capture_checklist[0]["capture_now"]
     assert "not free" in capture_checklist[0]["boundary"]
@@ -5633,7 +5633,7 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert "not a buyer" in capture_checklist[1]["boundary"]
     assert capture_checklist[3]["category"] == "Repeat value"
     assert capture_checklist[3]["status"] == "Missing"
-    assert "lifetime value" in capture_checklist[3]["boundary"]
+    assert "long-term value" in capture_checklist[3]["boundary"]
     assert capture_checklist[4]["category"] == "Decision review"
     review_cadence = opportunity_engine["review_cadence"]
     assert len(review_cadence) == 4
@@ -5644,9 +5644,9 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert review_cadence[1]["status"] == "Live"
     assert "One week is a learning window" in review_cadence[1]["boundary"]
     assert review_cadence[2]["cadence"] == "30-day review"
-    assert "Estimate CAC/LTV only" in review_cadence[2]["upgrade_rule"]
+    assert "Estimate return patterns only" in review_cadence[2]["upgrade_rule"]
     assert review_cadence[3]["cadence"] == "90-day review"
-    assert "lifetime value" in review_cadence[3]["upgrade_rule"]
+    assert "long-term value" in review_cadence[3]["upgrade_rule"]
     assert "forecast or guarantee" in review_cadence[3]["boundary"]
     ledger_rows = opportunity_engine["evidence_ledger"]
     assert ledger_rows[0]["source"] == "Marketplace and Shop Diary"

@@ -966,16 +966,16 @@ export function buildShopOpportunityEngineUnitEconomicsReadiness({
       : "Not ready";
 
   return {
-    title: "Cost and repeat-value readiness",
+    title: "Promotion effort and repeat-value readiness",
     status,
     summary: status === "Ready to estimate"
-      ? "GSN has early attention and outcome evidence, but still needs cost and repeat-value records before any CAC/LTV ratio."
+      ? "GSN has early attention and outcome evidence, but still needs cost and repeat-value records before any real repeat-business calculation."
       : status === "Partial"
         ? "GSN has part of the signal trail, but not enough to compare acquisition effort against repeat value."
-        : "GSN cannot estimate unit economics until traffic, cost, outcome, and repeat-customer evidence exist.",
+        : "GSN cannot judge the business return pattern until traffic, promotion effort, outcome, and repeat-customer evidence exist.",
     cacSide: hasAcquisitionTrail
       ? `${shopVisitors} visitors, ${productInterest} product opens, ${contactIntent} contact taps, and ${repeatAudience} followers can describe attention and intent.`
-      : "No acquisition trail yet. Acquisition cost needs tracked outreach cost, channel, visits, contact intent, and owner effort.",
+      : "No acquisition trail yet. Promotion cost needs tracked outreach cost, channel, visits, contact intent, and owner effort.",
     ltvSide: hasOutcomeTrail
       ? `${protectedRecords} protected records, ${releasedRecords} releases, ${paymentSignals} payment signals, and ${receiptSignals} receipt confirmations can begin the value trail.`
       : "No value trail yet. Repeat value needs completed outcomes, repeat purchases, retention, margin, support cost, and trust evidence.",
@@ -985,14 +985,14 @@ export function buildShopOpportunityEngineUnitEconomicsReadiness({
       `DemandBox signals: ${demandSignals}`,
     ],
     missingEvidence: [
-      "Paid or effort cost by channel before a true acquisition-cost calculation.",
-      "Completed sale value, margin, repeat purchase, and retention before a true lifetime-value calculation.",
+      "Paid or effort cost by channel before a true promotion-cost calculation.",
+      "Completed sale value, margin, repeat purchase, and retention before a true long-term value calculation.",
       "Enough records over time to avoid treating one contact or one sale as a business model.",
     ],
     nextStep: hasAcquisitionTrail
       ? "Start recording the cost or effort behind each promoted channel, then connect serious outcomes to Protected Trade or TrustSlip evidence."
       : "Create one measurable visibility path first, then record whether it produces contact and protected outcomes.",
-    boundary: "Readiness only. This is not CAC, not LTV, not ROI, not profit, and not investor-grade unit economics yet.",
+    boundary: "Readiness only. This is not a return calculation, profit claim, or investor-grade business economics yet.",
   };
 }
 
@@ -1024,7 +1024,7 @@ export function buildShopOpportunityEngineLensRows({
         : "No direct DemandBox pressure is visible yet, so economic reading must stay cautious.",
       evidence: hasDemand ? `${openDemandSignals} open DemandBox signal${openDemandSignals === 1 ? "" : "s"}.` : wisdom.observation,
       nextStep: hasDemand ? "Compare requests with public shop offers before changing stock." : "Use Spotlight and public offers to gather demand evidence first.",
-      boundary: "Demand is a signal, not guaranteed buyers, sales, or lifetime value.",
+      boundary: "Demand is a signal, not guaranteed buyers, sales, or long-term value.",
       icon: "marketplace",
     },
     {

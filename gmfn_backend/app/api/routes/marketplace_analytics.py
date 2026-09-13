@@ -523,19 +523,19 @@ def _opportunity_engine_summary(
     ]
     live_count = sum(1 for row in signal_groups if row["status"] == "Live")
     unit_economics_readiness = {
-        "title": "Cost and repeat-value readiness",
+        "title": "Promotion effort and repeat-value readiness",
         "status": unit_economics_status,
         "summary": (
-            "GSN has early attention and outcome evidence, but still needs cost and repeat-value records before any CAC/LTV ratio."
+            "GSN has early attention and outcome evidence, but still needs cost and repeat-value records before any real repeat-business calculation."
             if unit_economics_status == "Ready to estimate"
             else "GSN has part of the signal trail, but not enough to compare acquisition effort against repeat value."
             if unit_economics_status == "Partial"
-            else "GSN cannot estimate unit economics until traffic, cost, outcome, and repeat-customer evidence exist."
+            else "GSN cannot judge the business return pattern until traffic, promotion effort, outcome, and repeat-customer evidence exist."
         ),
         "cac_side": (
             f"{shop_visits} visitors, {product_opens} product opens, {contact_taps} contact taps, and {int(follower_count or 0)} followers can describe attention and intent."
             if has_acquisition_trail
-            else "No acquisition trail yet. Acquisition cost needs tracked outreach cost, channel, visits, contact intent, and owner effort."
+            else "No acquisition trail yet. Promotion cost needs tracked outreach cost, channel, visits, contact intent, and owner effort."
         ),
         "ltv_side": (
             f"{protected_trade_records} protected records, {released_trade_records} releases, {payment_claimed_records} payment signals, and {receipt_confirmed_records} receipt confirmations can begin the value trail."
@@ -548,8 +548,8 @@ def _opportunity_engine_summary(
             f"DemandBox signals: {open_demand}",
         ],
         "missing_evidence": [
-            "Paid or effort cost by channel before a true acquisition-cost calculation.",
-            "Completed sale value, margin, repeat purchase, and retention before a true lifetime-value calculation.",
+            "Paid or effort cost by channel before a true promotion-cost calculation.",
+            "Completed sale value, margin, repeat purchase, and retention before a true long-term value calculation.",
             "Enough records over time to avoid treating one contact or one sale as a business model.",
         ],
         "next_step": (
@@ -557,15 +557,15 @@ def _opportunity_engine_summary(
             if has_acquisition_trail
             else "Create one measurable visibility path first, then record whether it produces contact and protected outcomes."
         ),
-        "boundary": "Readiness only. This is not CAC, not LTV, not ROI, not profit, and not investor-grade unit economics yet.",
+        "boundary": "Readiness only. This is not a return calculation, profit claim, or investor-grade business economics yet.",
     }
     measurement_plan = [
         {
-            "step": "Capture acquisition cost",
-            "metric": "CAC input",
+            "step": "Capture promotion effort",
+            "metric": "Promotion-cost input",
             "currently_available": False,
             "reads": "No cash-cost, airtime, data, helper-cost, or owner-effort cost table is wired into this shop summary yet.",
-            "owner_action": "Record the channel, spend, airtime/data, helper cost, and time behind each promoted shop push before comparing CAC with LTV.",
+            "owner_action": "Record the channel, spend, airtime/data, helper cost, and time behind each promoted shop push before comparing promotion effort with repeat value.",
             "boundary": "Visits are not free acquisition if real owner effort or money was spent to create them.",
         },
         {
@@ -578,19 +578,19 @@ def _opportunity_engine_summary(
         },
         {
             "step": "Connect value outcomes",
-            "metric": "LTV input",
+            "metric": "Repeat-value input",
             "currently_available": has_outcome_trail,
             "reads": "ProtectedTradeRecord rows linked by shop_id or seller_user_id, including released, payment-claimed, and receipt-confirmed states.",
             "owner_action": "Move serious sales or support outcomes through Protected Trade or TrustSlip evidence so the value trail is not only chat or memory.",
-            "boundary": "A protected record starts evidence; it is not profit, margin, satisfaction, or lifetime value by itself.",
+            "boundary": "A protected record starts evidence; it is not profit, margin, satisfaction, or long-term value by itself.",
         },
         {
             "step": "Mark repeat value",
             "metric": "Retention input",
             "currently_available": False,
             "reads": "No repeat-customer, margin, retention, or support-cost trail is wired into this shop summary yet.",
-            "owner_action": "Later connect repeat buyer outcomes, margin, support cost, and retention windows before calling anything LTV.",
-            "boundary": "One sale, one contact, or one release cannot define lifetime value.",
+            "owner_action": "Later connect repeat buyer outcomes, margin, support cost, and retention windows before calling anything repeat-value strength.",
+            "boundary": "One sale, one contact, or one release cannot define long-term value.",
         },
         {
             "step": "Review sample quality",
@@ -633,27 +633,27 @@ def _opportunity_engine_summary(
             "review_window": "now",
             "success_signal": "A promoted offer also has clean completion evidence, not only clicks.",
             "stop_rule": "Pause promotion if records show unresolved, disputed, or unclear outcomes.",
-            "boundary": "Completion evidence is stronger than attention, but still not profit, LTV, or satisfaction by itself.",
+            "boundary": "Completion evidence is stronger than attention, but still not profit, repeat value, or satisfaction by itself.",
         },
         {
             "title": "Cost note discipline",
-            "trigger": "CAC cannot be calculated until owner cost and effort are captured beside traffic.",
+            "trigger": "Promotion cost cannot be judged until owner cost and effort are captured beside traffic.",
             "hypothesis": "A cheap channel that produces serious contact may beat a noisy channel that only creates views.",
             "metric": "Cost or effort per serious contact",
             "owner_action": "For each push, record channel, spend, airtime/data, helper cost, and owner time in the operating notes until a formal cost table exists.",
             "review_window": "30 days",
             "success_signal": "The owner can compare attention and outcomes against actual effort, not just total views.",
             "stop_rule": "Do not call a channel efficient until cost, contact, and outcome are all visible together.",
-            "boundary": "This is measurement discipline, not accounting, tax advice, ROI, or investor-grade CAC.",
+            "boundary": "This is measurement discipline, not accounting, tax advice, ROI, or investor-grade acquisition metric.",
         },
     ]
     capture_checklist = [
         {
-            "category": "Acquisition cost",
+            "category": "Promotion cost",
             "status": "Missing",
             "records_now": 0,
             "capture_now": "For each shop push, record channel, cash spend, airtime or data, helper cost, owner time, and date.",
-            "why": "CAC cannot be discussed honestly until GSN knows what it cost to create attention or contact.",
+            "why": "Promotion cost cannot be discussed honestly until GSN knows what it cost to create attention or contact.",
             "later_source": "A future owner cost table or campaign note attached to each promoted link or Spotlight push.",
             "boundary": "Views are not free if money, airtime, data, or owner effort created them.",
         },
@@ -671,7 +671,7 @@ def _opportunity_engine_summary(
             "status": "Live" if protected_trade_records > 0 else "Next",
             "records_now": protected_trade_records,
             "capture_now": "Move serious deals, support outcomes, or trust-dependent work into Protected Trade or TrustSlip evidence where suitable.",
-            "why": "LTV and retention need outcome evidence, not only chat, memory, or public attention.",
+            "why": "Repeat value and retention need outcome evidence, not only chat, memory, or public attention.",
             "later_source": "ProtectedTradeRecord states, TrustSlip decisions, receipt confirmations, and dispute outcomes.",
             "boundary": "A record state is evidence, not automatic profit, satisfaction, or legal proof.",
         },
@@ -680,9 +680,9 @@ def _opportunity_engine_summary(
             "status": "Missing",
             "records_now": 0,
             "capture_now": "Mark whether the same buyer, member, or requester returns within a defined period and what value or support cost followed.",
-            "why": "LTV needs repeat value, retention, margin, and support cost over time.",
+            "why": "Repeat value needs retention, margin, and support cost over time.",
             "later_source": "Future repeat-customer, renewal, margin, support-cost, and retention records.",
-            "boundary": "One completed action cannot define lifetime value.",
+            "boundary": "One completed action cannot define long-term value.",
         },
         {
             "category": "Decision review",
@@ -709,22 +709,22 @@ def _opportunity_engine_summary(
             "review_now": "Compare attention, product opens, contact taps, recommendation actions, and the single offer detail changed during the test.",
             "evidence_required": "At least one comparable seven-day window after changing only one visible offer detail.",
             "upgrade_rule": "Repeat the same direction in more than one window before treating it as demand evidence.",
-            "boundary": "One week is a learning window, not market proof, sales proof, CAC, or LTV.",
+            "boundary": "One week is a learning window, not market proof, sales proof, promotion efficiency, or repeat-value proof.",
         },
         {
             "cadence": "30-day review",
             "status": "Partial" if has_acquisition_trail or has_outcome_trail else "Next",
-            "review_now": "Check CAC inputs, serious contacts, protected outcomes, unresolved cases, and support effort before scaling promotion.",
+            "review_now": "Check promotion-cost inputs, serious contacts, protected outcomes, unresolved cases, and support effort before scaling promotion.",
             "evidence_required": "Channel cost notes, serious contact trail, resolved outcome evidence, and support-cost notes.",
-            "upgrade_rule": "Estimate CAC/LTV only when repeat cost, repeat outcome, and retention records exist.",
-            "boundary": "A 30-day view is still not investor-grade unit economics or a paid entitlement by itself.",
+            "upgrade_rule": "Estimate return patterns only when repeat cost, repeat outcome, and retention records exist.",
+            "boundary": "A 30-day view is still not investor-grade business evidence or a paid entitlement by itself.",
         },
         {
             "cadence": "90-day review",
             "status": "Next",
             "review_now": "Look for repeat buyers, repeat DemandBox patterns, recurring support needs, and owner return usage of Advanced Analytics.",
             "evidence_required": "Repeat-customer, repeat-request, retention, margin, support-cost, and saved reviewed-report records.",
-            "upgrade_rule": "Only discuss lifetime value after repeat value and retention can be traced across more than one cycle.",
+            "upgrade_rule": "Only discuss long-term value after repeat value and retention can be traced across more than one cycle.",
             "boundary": "Ninety days can show direction; it still must not become a forecast or guarantee without governed review.",
         },
     ]
