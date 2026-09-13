@@ -729,6 +729,72 @@ def _opportunity_engine_summary(
             "boundary": "Next moves are optional experiments, not orders or proof that the test will work.",
         },
     ]
+    feature_touchpoints = [
+        {
+            "feature": "Shop Diary and Marketplace",
+            "status": "Live" if active_products > 0 else "Next",
+            "reads": "Active products, public shop visits, product opens, contact taps, followers, and Spotlight traffic.",
+            "can_help": "Shows which offers deserve clearer copy, price testing, or a small visibility experiment.",
+            "next_wiring": "Add cost and channel notes so attention can be compared with acquisition effort.",
+            "boundary": "Attention is not sales proof, CAC, LTV, or market size.",
+        },
+        {
+            "feature": "DemandBox",
+            "status": "Live" if open_demand > 0 else "Next",
+            "reads": "Open non-expired community requests that are scoped to the shop community.",
+            "can_help": "Compares repeated needs with public offers before creating more promotion.",
+            "next_wiring": "Add matching evidence between requests, shop offers, and completed protected outcomes.",
+            "boundary": "A request is a demand clue, not a buyer list, promise, or community-wide vote.",
+        },
+        {
+            "feature": "Protected Trade",
+            "status": "Live" if protected_trade_records > 0 else "Next",
+            "reads": "Protected trade state counts linked by shop_id or seller_user_id.",
+            "can_help": "Checks whether promoted attention is supported by cleaner completion evidence.",
+            "next_wiring": "Connect unresolved, released, payment, receipt, and dispute states to opportunity review.",
+            "boundary": "A protected record is evidence state, not automatic satisfaction, profit, or legal judgment.",
+        },
+        {
+            "feature": "TrustPassport and TrustSlip",
+            "status": "Next",
+            "reads": "Not wired into this shop Opportunity Engine slice yet.",
+            "can_help": "Later, verified identity and decision evidence can help explain why some offers or people should be handled more carefully.",
+            "next_wiring": "Add governed trust-evidence summaries without exposing private documents, scores, or cross-community identity.",
+            "boundary": "No trust score, private document, personal risk label, or identity inference is exposed here.",
+        },
+        {
+            "feature": "Trust Graph",
+            "status": "Next",
+            "reads": "Not wired into this shop Opportunity Engine slice yet.",
+            "can_help": "Later, relationship evidence can show where trust movement is strong enough for referral, guarantee, or support workflows.",
+            "next_wiring": "Add permissioned graph summaries with role and consent controls before any recommendation uses them.",
+            "boundary": "No private relationship map, social ranking, or cross-silo discovery is created.",
+        },
+        {
+            "feature": "Community Home and Bulletin",
+            "status": "Partial" if clan_id is not None else "Next",
+            "reads": "Selected community context only in this shop slice.",
+            "can_help": "Frames opportunity readings inside the owner-selected community instead of treating all GSN activity as one market.",
+            "next_wiring": "Add governed bulletin/share-output evidence only after publication settings are explicit.",
+            "boundary": "This is not community approval, not public broadcast proof, and not a permission to post externally.",
+        },
+        {
+            "feature": "Market Wisdom",
+            "status": "Partial" if live_count > 0 else "Next",
+            "reads": "Reviewed summaries can later provide a small Market Wisdom snapshot after human review.",
+            "can_help": "Turns evidence into cautious weekly learning without changing the frozen dashboard presentation.",
+            "next_wiring": "Persist reviewed snapshots and cadence rules before feeding the dashboard wisdom lane.",
+            "boundary": "This does not modify frozen Market Wisdom UI and does not publish automatic advice.",
+        },
+        {
+            "feature": "Notifications and WhatsApp Bridge",
+            "status": "Next",
+            "reads": "No push-notification, vibration, social-forwarding, or delivery-state table is wired here yet.",
+            "can_help": "Later, real-time alerts and external bulletin links can bring people back to GSN action pages.",
+            "next_wiring": "Build notification permissions, delivery logs, and bridge-output rules before automation.",
+            "boundary": "No automatic WhatsApp/social/email delivery or phone vibration is live from this summary.",
+        },
+    ]
     evidence_ledger = [
         {
             "source": "Marketplace and Shop Diary",
@@ -824,6 +890,7 @@ def _opportunity_engine_summary(
         "measurement_plan": measurement_plan,
         "experiment_plan": experiment_plan,
         "advanced_lanes": advanced_lanes,
+        "feature_touchpoints": feature_touchpoints,
         "field_coverage": {
             "shop_and_marketplace": active_products > 0,
             "spotlight_attention": active_spotlights > 0 or spotlight_impressions > 0,

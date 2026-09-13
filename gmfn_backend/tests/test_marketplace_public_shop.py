@@ -5634,6 +5634,19 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert "No external-market" in advanced_lanes[7]["boundary"]
     assert advanced_lanes[9]["label"] == "Next Moves"
     assert advanced_lanes[9]["status"] == "Live"
+    feature_touchpoints = opportunity_engine["feature_touchpoints"]
+    assert len(feature_touchpoints) == 8
+    assert feature_touchpoints[0]["feature"] == "Shop Diary and Marketplace"
+    assert feature_touchpoints[0]["status"] == "Live"
+    assert "Attention is not sales proof" in feature_touchpoints[0]["boundary"]
+    assert feature_touchpoints[1]["feature"] == "DemandBox"
+    assert "buyer list" in feature_touchpoints[1]["boundary"]
+    assert feature_touchpoints[3]["feature"] == "TrustPassport and TrustSlip"
+    assert feature_touchpoints[3]["status"] == "Next"
+    assert "No trust score" in feature_touchpoints[3]["boundary"]
+    assert feature_touchpoints[7]["feature"] == "Notifications and WhatsApp Bridge"
+    assert feature_touchpoints[7]["status"] == "Next"
+    assert "No automatic WhatsApp" in feature_touchpoints[7]["boundary"]
     ledger_rows = opportunity_engine["evidence_ledger"]
     assert ledger_rows[0]["source"] == "Marketplace and Shop Diary"
     assert ledger_rows[2]["source"] == "DemandBox"
