@@ -479,7 +479,7 @@ const SHOP_ANALYTICS_PANELS: Array<{
   { key: "visitor-activity", label: "Visitor Activity", detail: "Visits and spotlight", icon: "community" },
   { key: "trade-outcomes", label: "Trade Outcome", detail: "Evidence records", icon: "document" },
   { key: "traffic-sources", label: "Traffic Sources", detail: "Where attention came from", icon: "copy" },
-  { key: "market-intelligence", label: "Market Intelligence", detail: "What to do next", icon: "spark" },
+  { key: "market-intelligence", label: "Opportunity Engine", detail: "Advanced Analytics", icon: "spark" },
 ];
 function safeStr(value: unknown): string {
   return String(value ?? "").trim();
@@ -633,8 +633,16 @@ type ShopCommunityNeedOpportunity = {
   categoryLabel: string;
   evidence: string;
   reason: string;
-  primaryAction: "Respond in Demand Box" | "Read Demand Box" | "Add clearer offer";
+  primaryAction: "Respond in DemandBox" | "Read DemandBox" | "Add clearer offer";
   reviewTrigger: string;
+};
+
+type OpportunityEngineSignalTile = {
+  label: string;
+  value: string;
+  detail: string;
+  live: boolean;
+  icon: GsnIconName;
 };
 
 function marketContextTokens(...values: unknown[]): Set<string> {
@@ -732,7 +740,7 @@ function buildShopCommunityNeedOpportunities(
           : "DIRECT_DEMAND_MATCH"
         : "INSUFFICIENT_EVIDENCE";
       const primaryAction: ShopCommunityNeedOpportunity["primaryAction"] =
-        hasCapabilitySignal ? "Respond in Demand Box" : "Read Demand Box";
+        hasCapabilitySignal ? "Respond in DemandBox" : "Read DemandBox";
 
       return {
         row,
@@ -747,7 +755,7 @@ function buildShopCommunityNeedOpportunities(
         confidence,
         categoryLabel: firstTruthy(row.category, "Community need"),
         evidence: hasCapabilitySignal
-          ? "One active Demand Box request; one request, not a trend."
+          ? "One active DemandBox request; one request, not a trend."
           : "One active request exists, but this shop link is not clear yet.",
         reason: hasCapabilitySignal
           ? "This may fit your shop because the request shares category or wording with your public offers."
@@ -2691,13 +2699,13 @@ export default function ShopControlPage() {
   ).length;
   const demandContextLabel = openDemandSignalCount
     ? `${openDemandSignalCount} open community demand signal${openDemandSignalCount === 1 ? "" : "s"}`
-    : "No open Demand Box signal in this community yet";
+    : "No open DemandBox signal in this community yet";
   const sensitiveDemandSignalCount = openDemandSignals.filter(isSensitiveDemandSignal).length;
   const demandOverlapLabel = communityNeedOpportunities.some(
     (opportunity) => opportunity.state !== "INSUFFICIENT_EVIDENCE"
   )
     ? "Some requests share a category or wording with your public offers. Treat this as a direct request, not community-wide demand."
-    : "No clear shop-to-request link is visible yet. Read Demand Box before changing products.";
+    : "No clear shop-to-request link is visible yet. Read DemandBox before changing products.";
   const communityName = useMemo(() => {
     return firstTruthy(
       shop?.marketplace_name,
@@ -2706,6 +2714,71 @@ export default function ShopControlPage() {
     );
   }, [shop]);
 
+  const opportunityEngineSignalTiles = useMemo<OpportunityEngineSignalTile[]>(
+    () => [
+      {
+        label: "Shop and Marketplace",
+        value: publicProductSlotsTotal
+          ? `${occupiedPublicProductSlotCount}/${publicProductSlotsTotal} public`
+          : `${occupiedPublicProductSlotCount} public`,
+        detail: "Reads visible offers, shop blocks, and public shelf readiness.",
+        live: occupiedPublicProductSlotCount > 0,
+        icon: "marketplace",
+      },
+      {
+        label: "Spotlight attention",
+        value: attentionSpotlightImpressions7Days
+          ? `${attentionSpotlightImpressions7Days} seen`
+          : activeSpotlights.length
+            ? "Live, gathering"
+            : "Not live",
+        detail: "Reads broadcast reach and attention before calling anything a market pattern.",
+        live: attentionSpotlightImpressions7Days > 0 || activeSpotlights.length > 0,
+        icon: "megaphone",
+      },
+      {
+        label: "DemandBox",
+        value: openDemandSignalCount ? `${openDemandSignalCount} open` : "No open signal",
+        detail: "Reads request context as evidence of stated need, not proof of buyers or sales.",
+        live: openDemandSignalCount > 0,
+        icon: "briefcase",
+      },
+      {
+        label: "Trade evidence",
+        value: tradeOutcomeRecords7Days ? `${tradeOutcomeRecords7Days} records` : "No records yet",
+        detail: "Reads protected outcomes without claiming payment, delivery, or satisfaction proof.",
+        live: tradeOutcomeRecords7Days > 0,
+        icon: "document",
+      },
+      {
+        label: "Community context",
+        value: communityName,
+        detail: "Keeps the reading tied to the selected community, not the whole public internet.",
+        live: Boolean(effectiveShopClanId || selectedClanId),
+        icon: "community",
+      },
+      {
+        label: "Trust layer",
+        value: "Next wiring",
+        detail: "Trust Graph, TrustPassport, TrustSlip, member interactions, and outside context are planned inputs for the full engine.",
+        live: false,
+        icon: "shield",
+      },
+    ],
+    [
+      activeSpotlights.length,
+      attentionSpotlightImpressions7Days,
+      communityName,
+      effectiveShopClanId,
+      occupiedPublicProductSlotCount,
+      openDemandSignalCount,
+      publicProductSlotsTotal,
+      selectedClanId,
+      tradeOutcomeRecords7Days,
+    ]
+  );
+  const opportunityEngineLiveSignalCount = opportunityEngineSignalTiles.filter((item) => item.live).length;
+  const opportunityEngineHorizonLabels = ["Now", "90 days", "1 year", "2 years", "5 years"];
   const featurePayments = useMemo(() => {
     return expectedPayments.filter((item) =>
       [
@@ -6306,14 +6379,59 @@ export default function ShopControlPage() {
             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
               <GsnLegacyIcon name="spark" size={34} />
               <div>
-                <div style={{ color: "#061827", fontSize: 19, fontWeight: 950 }}>Market Intelligence</div>
-                <div style={{ ...helperText(), fontSize: 12 }}>Evidence first, recommendation second.</div>
+                <div style={{ color: "#061827", fontSize: 19, fontWeight: 950 }}>Opportunity Engine / Market Intelligence</div>
+                <div style={{ ...helperText(), fontSize: 12 }}>Advanced Analytics. Evidence first, recommendation second.</div>
               </div>
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(shopAnalyticsWisdom.confidence === "high")}>Confidence: {shopAnalyticsWisdom.confidence}</span>
               <span style={badge(shopAnalyticsWisdom.diagnosisCode !== "GATHERING_DATA")}>{shopAnalyticsWisdom.diagnosisCode.replace(/_/g, " ")}</span>
               <span style={badge(shopMarketIntelligenceSummary.workCount > 0)}>Spine: {shopMarketIntelligenceSummary.headline}</span>
+              <span style={badge(opportunityEngineLiveSignalCount >= 3)}>Advanced Analytics: {opportunityEngineLiveSignalCount}/{opportunityEngineSignalTiles.length} live</span>
+            </div>
+            <div
+              style={{
+                marginTop: 12,
+                borderRadius: 18,
+                border: "1px solid rgba(15,94,170,0.14)",
+                background: "linear-gradient(180deg, #F8FBFF 0%, #EDF6FF 100%)",
+                padding: 12,
+                display: "grid",
+                gap: 10,
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Advanced Analytics snapshot</div>
+                  <div style={{ marginTop: 4, color: "#385773", fontSize: 12, fontWeight: 800, lineHeight: 1.4 }}>
+                    First slice reads shop, Spotlight, DemandBox, trade evidence, and selected community context. Full Opportunity Engine wiring will add Trust Graph, TrustPassport, TrustSlip, member interaction, and governed outside-context signals before it claims wider guidance.
+                  </div>
+                </div>
+                <span style={badge(opportunityEngineLiveSignalCount >= 3)}>{opportunityEngineLiveSignalCount} live signals</span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+                {opportunityEngineSignalTiles.map((item) => (
+                  <div key={`opportunity-engine-${item.label}`} style={{ borderRadius: 14, background: "rgba(255,255,255,0.78)", border: "1px solid rgba(18,58,89,0.08)", padding: 10, display: "grid", gridTemplateColumns: "32px minmax(0, 1fr)", gap: 8, alignItems: "start" }}>
+                    <GsnLegacyIcon name={item.icon} size={30} />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                        <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.label}</span>
+                        <span style={{ ...badge(item.live), fontSize: 10 }}>{item.live ? "Live" : "Next"}</span>
+                      </div>
+                      <div style={{ marginTop: 3, color: item.live ? "#0F5EAA" : "#5A6F84", fontSize: 12, fontWeight: 900, lineHeight: 1.3 }}>{item.value}</div>
+                      <div style={{ marginTop: 3, color: "#5A6F84", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}>{item.detail}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "flex", gap: 7, flexWrap: "wrap", alignItems: "center" }}>
+                <span style={{ color: "#24415C", fontSize: 11, fontWeight: 950 }}>Forecast windows</span>
+                {opportunityEngineHorizonLabels.map((label) => (
+                  <span key={`opportunity-horizon-${label}`} style={{ borderRadius: 999, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "5px 8px", color: "#24415C", fontSize: 10.5, fontWeight: 900 }}>
+                    {label}
+                  </span>
+                ))}
+              </div>
             </div>
             <div
               style={{
@@ -6447,7 +6565,7 @@ export default function ShopControlPage() {
                 <div>
                   <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Community Needs</div>
                   <div style={{ marginTop: 4, color: "#5A4720", fontSize: 12, fontWeight: 800, lineHeight: 1.4 }}>
-                    {demandContextLabel}. {demandOverlapLabel} Market Wisdom reads Demand Box as structured community context only; it is not buyer proof, sales proof, or automatic product matching.
+                    {demandContextLabel}. {demandOverlapLabel} Opportunity Engine reads DemandBox as structured community context only; it is not buyer proof, sales proof, or automatic product matching.
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
@@ -6485,7 +6603,7 @@ export default function ShopControlPage() {
                       boxShadow: "0 8px 16px rgba(8,38,67,0.08)",
                     }}
                   >
-                    Open Demand Box
+                    Open DemandBox
                   </StableCtaLink>
                 </div>
               </div>
@@ -6533,7 +6651,7 @@ export default function ShopControlPage() {
                 </div>
               ) : (
                 <div style={{ marginTop: 10, color: "#385773", fontSize: 12, fontWeight: 760, lineHeight: 1.4 }}>
-                  No commercial Community Needs card is ready from current Demand Box records. This may mean there is no open request, the link to your shop is unclear, or a sensitive/support need was kept out of shop opportunity guidance.
+                  No commercial Community Needs card is ready from current DemandBox records. This may mean there is no open request, the link to your shop is unclear, or a sensitive/support need was kept out of shop opportunity guidance.
                 </div>
               )}
               {sensitiveDemandSignalCount > 0 ? (
@@ -6548,7 +6666,7 @@ export default function ShopControlPage() {
                 <div style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 900 }}>{recommendationActions7Days} logged</div>
               </div>
               <div style={{ marginTop: 5, color: "#385773", fontSize: 12, fontWeight: 780, lineHeight: 1.4 }}>
-                Tracks whether the owner acted on Market Intelligence guidance in the last 7 days.
+                Tracks whether the owner acted on Opportunity Engine / Market Intelligence guidance in the last 7 days.
               </div>
               {recommendationActionRows.length ? (
                 <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
@@ -6567,7 +6685,7 @@ export default function ShopControlPage() {
             <details style={{ marginTop: 12 }}>
               <StableDisclosureSummary debugId="shop-control.market-intelligence.why" stableHeight={40} style={{ color: "#0F5EAA", fontSize: 13, fontWeight: 900, cursor: "pointer" }}>Why this advice?</StableDisclosureSummary>
               <div style={{ marginTop: 8, color: "#385773", fontSize: 12, fontWeight: 750, lineHeight: 1.45 }}>
-                {shopAnalyticsWisdom.why} This reading is packaged through the shared Attention Spine signal engine, so it does not create a separate shop-only priority system. Community Needs is read from the existing Demand Box request lane, not a separate matching engine or survey system.
+                {shopAnalyticsWisdom.why} This reading is packaged through the shared Attention Spine signal engine, so it does not create a separate shop-only priority system. Community Needs is read from the existing DemandBox request lane, not a separate matching engine or survey system.
               </div>
             </details>
           </div>
