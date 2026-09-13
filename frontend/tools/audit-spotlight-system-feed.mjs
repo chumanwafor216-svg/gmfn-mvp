@@ -241,11 +241,6 @@ assertContains(
 );
 assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
-  /export type OpportunityEnginePackageReadiness[\s\S]*?export function buildShopOpportunityEnginePackageReadiness[\s\S]*?Advanced Analytics package[\s\S]*?Paid feature candidate[\s\S]*?Not charged yet/,
-  "Shop Opportunity Engine must describe Advanced Analytics as a paid feature candidate without claiming billing is active."
-);
-assertContains(
-  "frontend/src/lib/shopAnalyticsWisdom.ts",
   /export type OpportunityEngineUnitEconomicsReadiness[\s\S]*?export function buildShopOpportunityEngineUnitEconomicsReadiness[\s\S]*?CAC\/LTV readiness[\s\S]*?Readiness only\. This is not CAC, not LTV, not ROI, not profit, and not investor-grade unit economics yet\./,
   "Shop Opportunity Engine must expose CAC/LTV readiness without claiming true unit economics."
 );
@@ -253,11 +248,6 @@ assertContains(
   "frontend/src/lib/shopAnalyticsWisdom.ts",
   /export type OpportunityEngineLensRow[\s\S]*?export function buildShopOpportunityEngineLensRows[\s\S]*?Economic demand[\s\S]*?Social movement[\s\S]*?Trust and safety[\s\S]*?Governance and outside context[\s\S]*?No political, health, legal, or external-market conclusion/,
   "Shop Opportunity Engine must expose local analysis lenses while blocking unwired external-context overclaims."
-);
-assertContains(
-  "frontend/src/lib/shopAnalyticsWisdom.ts",
-  /export type OpportunityEngineGapRow[\s\S]*?export function buildShopOpportunityEngineGapRows[\s\S]*?Backend evidence aggregator[\s\S]*?Saved reports and history[\s\S]*?Billing and entitlement gate[\s\S]*?Governed outside context[\s\S]*?Reviewed pattern reading/,
-  "Shop Opportunity Engine must keep an internal gap register before claiming the full backend, paid, external-context, or intelligence engine exists."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",

@@ -141,15 +141,6 @@ export type ShopOpportunityEngineWisdomSnapshotInput = {
   tradeRecords?: number | null;
 };
 
-export type OpportunityEnginePackageReadiness = {
-  title: string;
-  status: string;
-  commercialUse: string;
-  included: string[];
-  unlocks: string[];
-  nextBuildStep: string;
-  boundary: string;
-};
 
 export type OpportunityEngineUnitEconomicsReadiness = {
   title: string;
@@ -175,12 +166,6 @@ export type ShopOpportunityEngineUnitEconomicsInput = {
   demandSignalCount?: number | null;
 };
 
-export type ShopOpportunityEnginePackageInput = {
-  snapshot: OpportunityEngineWisdomSnapshot;
-  fieldMap: OpportunityEngineFieldMapItem[];
-  liveSignalCount?: number | null;
-  signalGroupCount?: number | null;
-};
 
 export type OpportunityEngineLensCode =
   | "economic_demand"
@@ -210,23 +195,6 @@ export type ShopOpportunityEngineLensInput = {
   hasAttentionSignal?: boolean;
 };
 
-export type OpportunityEngineGapRow = {
-  area: string;
-  status: "Partial" | "Missing" | "Blocked";
-  whyItMatters: string;
-  nextBuildStep: string;
-  riskIfSkipped: string;
-};
-
-export type ShopOpportunityEngineGapInput = {
-  fieldMap: OpportunityEngineFieldMapItem[];
-  lensRows: OpportunityEngineLensRow[];
-  hasBillingGate?: boolean;
-  hasSavedReports?: boolean;
-  hasBackendAggregator?: boolean;
-  hasGovernedOutsideContext?: boolean;
-  hasAiInference?: boolean;
-};
 
 function positiveNumber(value: unknown): number {
   const n = Number(value || 0);
@@ -1028,37 +996,6 @@ export function buildShopOpportunityEngineUnitEconomicsReadiness({
   };
 }
 
-export function buildShopOpportunityEnginePackageReadiness({
-  snapshot,
-  fieldMap,
-  liveSignalCount,
-  signalGroupCount,
-}: ShopOpportunityEnginePackageInput): OpportunityEnginePackageReadiness {
-  const liveSignals = positiveNumber(liveSignalCount);
-  const signalGroups = positiveNumber(signalGroupCount) || fieldMap.length;
-  const nextAreas = fieldMap.filter((item) => item.status === "Next").map((item) => item.area);
-  const liveEnoughForPilot = liveSignals >= 3;
-
-  return {
-    title: "Advanced Analytics package",
-    status: liveEnoughForPilot ? "Pilot-ready preview" : "Pilot preview, still gathering",
-    commercialUse: "Paid feature candidate for shop owners and community operators who want opportunity guidance from their own GSN activity.",
-    included: [
-      snapshot.headline,
-      "Evidence-led Opportunity Engine reading across shop, Spotlight, DemandBox, trade evidence, and community context.",
-      "Reviewed snapshot that can feed Market Wisdom or Business Wisdom without exposing the full analytics workspace.",
-    ],
-    unlocks: [
-      "90-day action reading for what to test next.",
-      "One-year and multi-year direction once TrustPassport, TrustSlip, member interaction, and outside-context wiring are added.",
-      "A cleaner path to paid Advanced Analytics before full API monetisation is ready.",
-    ],
-    nextBuildStep: nextAreas.length
-      ? `Next backend/data wiring: ${nextAreas.join(", ")}.`
-      : "Next backend/data wiring: billing gate, saved reports, and governed reviewed pattern reading.",
-    boundary: "Not charged yet, not auto-published, and not a replacement for human business judgement or proper research.",
-  };
-}
 
 export function buildShopOpportunityEngineLensRows({
   wisdom,
@@ -1139,57 +1076,6 @@ export function buildShopOpportunityEngineLensRows({
   ];
 }
 
-export function buildShopOpportunityEngineGapRows({
-  fieldMap,
-  lensRows,
-  hasBillingGate,
-  hasSavedReports,
-  hasBackendAggregator,
-  hasGovernedOutsideContext,
-  hasAiInference,
-}: ShopOpportunityEngineGapInput): OpportunityEngineGapRow[] {
-  const nextFieldAreas = fieldMap.filter((item) => item.status === "Next").map((item) => item.area);
-  const nextLensLabels = lensRows.filter((item) => item.status === "Next").map((item) => item.label);
-  const missingContext = [...nextFieldAreas, ...nextLensLabels].filter(Boolean).join(", ") || "no missing field registered";
-
-  return [
-    {
-      area: "Backend evidence aggregator",
-      status: hasBackendAggregator ? "Partial" : "Missing",
-      whyItMatters: "The frontend can explain current signals, but a real Opportunity Engine needs one governed backend record of what it read and when.",
-      nextBuildStep: "Create an analytics snapshot endpoint that stores source counts, field coverage, and reviewed guidance per shop/community window.",
-      riskIfSkipped: "The reading remains demo-only and cannot become auditable paid analytics.",
-    },
-    {
-      area: "Saved reports and history",
-      status: hasSavedReports ? "Partial" : "Missing",
-      whyItMatters: "Opportunity guidance becomes more useful when owners can compare this week, last month, and the next review point.",
-      nextBuildStep: "Persist weekly Opportunity Engine snapshots with version, reviewer, evidence window, and owner-visible report status.",
-      riskIfSkipped: "Users see advice once, then lose the memory needed to judge whether it worked.",
-    },
-    {
-      area: "Billing and entitlement gate",
-      status: hasBillingGate ? "Partial" : "Missing",
-      whyItMatters: "Advanced Analytics is a paid-feature candidate, but the app must not charge or restrict access until entitlement rules exist.",
-      nextBuildStep: "Add a feature entitlement for Advanced Analytics before hiding, selling, or metering any Opportunity Engine report.",
-      riskIfSkipped: "The product may promise a paid feature without a clean access, refund, or support boundary.",
-    },
-    {
-      area: "Governed outside context",
-      status: hasGovernedOutsideContext ? "Partial" : "Missing",
-      whyItMatters: `Current missing field: ${missingContext}. External signals must be sourced and permissioned before they shape advice.`,
-      nextBuildStep: "Define approved source categories, freshness rules, geography boundaries, and sensitive-topic exclusions before connecting external context.",
-      riskIfSkipped: "The engine could sound like it knows public reality when it only knows local in-GSN activity.",
-    },
-    {
-      area: "Reviewed pattern reading",
-      status: hasAiInference ? "Partial" : "Blocked",
-      whyItMatters: "Reviewed intelligence should help compare patterns and produce opportunity hypotheses, but only after the source, privacy, and audit trail are stable.",
-      nextBuildStep: "Start with reviewed prompts over saved snapshots, then require confidence, evidence citations, and human review before publication.",
-      riskIfSkipped: "The product either stays shallow or jumps into unsafe advice without enough proof.",
-    },
-  ];
-}
 
 function urgencyForShopMarketIntelligence(
   wisdom: ShopAnalyticsWisdom
