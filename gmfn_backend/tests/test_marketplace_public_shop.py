@@ -5613,6 +5613,16 @@ def test_marketplace_attention_records_public_views_and_owner_summary(client, mo
     assert measurement_plan[3]["step"] == "Mark repeat value"
     assert measurement_plan[4]["step"] == "Review sample quality"
     assert "not a business model" in measurement_plan[4]["boundary"]
+    experiment_plan = opportunity_engine["experiment_plan"]
+    assert experiment_plan[0]["title"] == "One-offer clarity test"
+    assert experiment_plan[0]["metric"] == "Product opens to contact taps"
+    assert "not proof of demand" in experiment_plan[0]["boundary"]
+    assert experiment_plan[1]["title"] == "DemandBox fit check"
+    assert "one request" in experiment_plan[1]["stop_rule"]
+    assert experiment_plan[2]["title"] == "Protected outcome close-loop"
+    assert "Pause promotion" in experiment_plan[2]["stop_rule"]
+    assert experiment_plan[3]["title"] == "Cost note discipline"
+    assert "not accounting" in experiment_plan[3]["boundary"]
     ledger_rows = opportunity_engine["evidence_ledger"]
     assert ledger_rows[0]["source"] == "Marketplace and Shop Diary"
     assert ledger_rows[2]["source"] == "DemandBox"

@@ -394,6 +394,17 @@ type ShopAttentionSummary = {
       owner_action?: string | null;
       boundary?: string | null;
     }> | null;
+    experiment_plan?: Array<{
+      title?: string | null;
+      trigger?: string | null;
+      hypothesis?: string | null;
+      metric?: string | null;
+      owner_action?: string | null;
+      review_window?: string | null;
+      success_signal?: string | null;
+      stop_rule?: string | null;
+      boundary?: string | null;
+    }> | null;
   } | null;
   daily_activity?: ShopAttentionDailyActivity[] | null;
   source_breakdown?: ShopAttentionSourceBreakdown[] | null;
@@ -2963,6 +2974,9 @@ export default function ShopControlPage() {
     : [];
   const opportunityEngineMeasurementPlanRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.measurement_plan)
     ? shopAttentionSummary.opportunity_engine.measurement_plan
+    : [];
+  const opportunityEngineExperimentPlanRows = Array.isArray(shopAttentionSummary?.opportunity_engine?.experiment_plan)
+    ? shopAttentionSummary.opportunity_engine.experiment_plan
     : [];
   const opportunityEngineGapRows = useMemo(
     () =>
@@ -6807,6 +6821,30 @@ export default function ShopControlPage() {
                         <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Risk:</strong> {item.risk}</div>
                         <div style={{ color: "#5A6F84", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Time horizon:</strong> {item.time_horizon || "now"}. <strong>Next:</strong> {item.suggested_next_step}</div>
                         <div style={{ color: "#5A6F84", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}>{item.human_review || "Owner reviews before acting or publishing."}</div>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              ) : null}
+              {opportunityEngineExperimentPlanRows.length > 0 ? (
+                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px" }}>
+                  <StableDisclosureSummary debugId="shop-control.opportunity-engine.experiment-plan" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
+                    Small experiment plan
+                  </StableDisclosureSummary>
+                  <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                    {opportunityEngineExperimentPlanRows.map((item, index) => (
+                      <div key={`opportunity-experiment-${item.title || index}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 10, display: "grid", gap: 5 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.title || "Experiment"}</span>
+                          <span style={{ ...badge(Boolean(item.metric)), fontSize: 10 }}>{item.review_window || "review"}</span>
+                        </div>
+                        <div style={{ color: "#24415C", fontSize: 11, fontWeight: 800, lineHeight: 1.35 }}><strong>Trigger:</strong> {item.trigger || "A measurable signal changed."}</div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Hypothesis:</strong> {item.hypothesis || "Run a small test before treating this as a direction."}</div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Metric:</strong> {item.metric || "Measured GSN evidence"}</div>
+                        <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Owner action:</strong> {item.owner_action || "Keep the test small and review it before scaling."}</div>
+                        <div style={{ color: "#386641", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Success:</strong> {item.success_signal || "Evidence improves without overclaiming demand."}</div>
+                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Stop rule:</strong> {item.stop_rule || "Stop if the evidence does not improve."}</div>
+                        <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}><strong>Boundary:</strong> {item.boundary || "This is a test, not a guarantee."}</div>
                       </div>
                     ))}
                   </div>

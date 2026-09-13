@@ -180,6 +180,11 @@ assertContains(
 );
 assertContains(
   "gmfn_backend/app/api/routes/marketplace_analytics.py",
+  /experiment_plan = \[[\s\S]*?"title": "One-offer clarity test"[\s\S]*?"metric": "Product opens to contact taps"[\s\S]*?"title": "DemandBox fit check"[\s\S]*?"title": "Protected outcome close-loop"[\s\S]*?"title": "Cost note discipline"[\s\S]*?not accounting[\s\S]*?"experiment_plan": experiment_plan/,
+  "Shop owner analytics API must expose small experiment plans without claiming guaranteed demand or ROI."
+);
+assertContains(
+  "gmfn_backend/app/api/routes/marketplace_analytics.py",
   /evidence_ledger = \[[\s\S]*?"source": "Marketplace and Shop Diary"[\s\S]*?"source": "DemandBox"[\s\S]*?"source": "TrustPassport, TrustSlip, Trust Graph"[\s\S]*?"source": "External context"[\s\S]*?"status": "Blocked"[\s\S]*?"evidence_ledger": evidence_ledger/,
   "Shop owner analytics API must expose the Opportunity Engine evidence ledger without wiring private trust or external context prematurely."
 );
@@ -253,6 +258,11 @@ assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
   /measurement_plan\?: Array[\s\S]*?opportunityEngineMeasurementPlanRows[\s\S]*?shop-control\.opportunity-engine\.measurement-plan[\s\S]*?CAC\/LTV measurement plan[\s\S]*?Owner action:[\s\S]*?This is preparation, not a final CAC\/LTV ratio\./,
   "Shop Control must render the backend CAC/LTV measurement plan as a collapsed detail."
+);
+assertContains(
+  "frontend/src/pages/ShopControlPage.tsx",
+  /experiment_plan\?: Array[\s\S]*?opportunityEngineExperimentPlanRows[\s\S]*?shop-control\.opportunity-engine\.experiment-plan[\s\S]*?Small experiment plan[\s\S]*?Hypothesis:[\s\S]*?Stop rule:[\s\S]*?This is a test, not a guarantee\./,
+  "Shop Control must render backend Opportunity Engine experiments as collapsed measurable tests, not broad advice."
 );
 assertContains(
   "frontend/src/pages/ShopControlPage.tsx",
@@ -496,7 +506,7 @@ assertContains(
 );
 assertContains(
   "gmfn_backend/tests/test_marketplace_public_shop.py",
-  /opportunity_engine = body\["opportunity_engine"\][\s\S]*?opportunity_engine\["aggregator_ready"\] is True[\s\S]*?opportunity_coverage\["governed_outside_context"\] is False[\s\S]*?opportunity_engine\["signal_groups"\]\[2\]\["label"\] == "DemandBox"[\s\S]*?len\(opportunity_engine\["output_cards"\]\) == 3[\s\S]*?"must not be presented as market size"[\s\S]*?unit_economics = opportunity_engine\["unit_economics_readiness"\][\s\S]*?"not CAC, not LTV"[\s\S]*?measurement_plan = opportunity_engine\["measurement_plan"\][\s\S]*?"Capture acquisition cost"[\s\S]*?"Mark repeat value"[\s\S]*?ledger_rows = opportunity_engine\["evidence_ledger"\][\s\S]*?"External context"[\s\S]*?"Blocked"[\s\S]*?"not saved AI inference"/,
+  /opportunity_engine = body\["opportunity_engine"\][\s\S]*?opportunity_engine\["aggregator_ready"\] is True[\s\S]*?opportunity_coverage\["governed_outside_context"\] is False[\s\S]*?opportunity_engine\["signal_groups"\]\[2\]\["label"\] == "DemandBox"[\s\S]*?len\(opportunity_engine\["output_cards"\]\) == 3[\s\S]*?"must not be presented as market size"[\s\S]*?unit_economics = opportunity_engine\["unit_economics_readiness"\][\s\S]*?"not CAC, not LTV"[\s\S]*?measurement_plan = opportunity_engine\["measurement_plan"\][\s\S]*?"Capture acquisition cost"[\s\S]*?"Mark repeat value"[\s\S]*?experiment_plan = opportunity_engine\["experiment_plan"\][\s\S]*?"One-offer clarity test"[\s\S]*?"Cost note discipline"[\s\S]*?ledger_rows = opportunity_engine\["evidence_ledger"\][\s\S]*?"External context"[\s\S]*?"Blocked"[\s\S]*?"not saved AI inference"/,
   "Backend analytics tests must lock the Opportunity Engine computed-summary boundary."
 );
 assertContains(

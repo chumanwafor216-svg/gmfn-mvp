@@ -601,6 +601,52 @@ def _opportunity_engine_summary(
             "boundary": "Tiny samples are learning signals, not a business model, investor metric, or guarantee.",
         },
     ]
+    experiment_plan = [
+        {
+            "title": "One-offer clarity test",
+            "trigger": "Attention exists, but contact intent still needs proof.",
+            "hypothesis": "A clearer product title, price, or buyer instruction may improve the path from view to contact.",
+            "metric": "Product opens to contact taps",
+            "owner_action": "Change only one visible offer detail, then keep the next seven-day attention window comparable.",
+            "review_window": "7 days",
+            "success_signal": "Contact taps rise without needing more manual explanation outside GSN.",
+            "stop_rule": "Stop calling it product demand if views remain curiosity only and contact taps stay flat.",
+            "boundary": "This is an experiment suggestion, not proof of demand, buyer intent, or future sales.",
+        },
+        {
+            "title": "DemandBox fit check",
+            "trigger": "Community requests can reveal local need only when requests repeat or match shop capability.",
+            "hypothesis": "A repeated DemandBox pattern may point to an offer the shop can test safely.",
+            "metric": "Open DemandBox requests and matched shop offers",
+            "owner_action": "Compare the next real community request with one existing shop offer before creating a new product push.",
+            "review_window": "90 days",
+            "success_signal": "More than one independent request points to the same need or service gap.",
+            "stop_rule": "Do not treat one request or founder memory as market size.",
+            "boundary": "DemandBox is a signal lane, not a guaranteed customer list or community-wide vote.",
+        },
+        {
+            "title": "Protected outcome close-loop",
+            "trigger": "Protected Trade records exist, but outcome quality must be checked before scaling attention.",
+            "hypothesis": "Resolved trade evidence may show which offers deserve more traffic and which need trust repair.",
+            "metric": "Released, payment-claimed, and receipt-confirmed protected records",
+            "owner_action": "Review unresolved or recent protected records before increasing Spotlight or follower-notice pressure.",
+            "review_window": "now",
+            "success_signal": "A promoted offer also has clean completion evidence, not only clicks.",
+            "stop_rule": "Pause promotion if records show unresolved, disputed, or unclear outcomes.",
+            "boundary": "Completion evidence is stronger than attention, but still not profit, LTV, or satisfaction by itself.",
+        },
+        {
+            "title": "Cost note discipline",
+            "trigger": "CAC cannot be calculated until owner cost and effort are captured beside traffic.",
+            "hypothesis": "A cheap channel that produces serious contact may beat a noisy channel that only creates views.",
+            "metric": "Cost or effort per serious contact",
+            "owner_action": "For each push, record channel, spend, airtime/data, helper cost, and owner time in the operating notes until a formal cost table exists.",
+            "review_window": "30 days",
+            "success_signal": "The owner can compare attention and outcomes against actual effort, not just total views.",
+            "stop_rule": "Do not call a channel efficient until cost, contact, and outcome are all visible together.",
+            "boundary": "This is measurement discipline, not accounting, tax advice, ROI, or investor-grade CAC.",
+        },
+    ]
     evidence_ledger = [
         {
             "source": "Marketplace and Shop Diary",
@@ -694,6 +740,7 @@ def _opportunity_engine_summary(
         "unit_economics_readiness": unit_economics_readiness,
         "evidence_ledger": evidence_ledger,
         "measurement_plan": measurement_plan,
+        "experiment_plan": experiment_plan,
         "field_coverage": {
             "shop_and_marketplace": active_products > 0,
             "spotlight_attention": active_spotlights > 0 or spotlight_impressions > 0,
