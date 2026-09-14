@@ -243,8 +243,8 @@ assertTextIncludes(
 
 assertContains(
   "docs/community-setup-pack/GSN_CORE_CAPABILITY_SET_2026-09-14.md",
-  /This document replaces the old public habit of presenting GSN as a fixed-number capability list\.[\s\S]*?The 44-module `GSN in Real Life` bank remains useful, but it should not be the default public front\./,
-  "The setup pack must record the fixed-23 retirement and controlled full-bank boundary."
+  /This document replaces the old public habit of presenting GSN as a fixed-number capability list\.[\s\S]*?Strategic Application Lenses[\s\S]*?The expanded `GSN in Real Life` bank preserves the 44 original modules and adds Strategic Application Lenses, but it should not be the default public front\./,
+  "The setup pack must record the fixed-number retirement and controlled full-bank boundary with the 44-module preservation plus strategic lenses."
 );
 
 assertContains(

@@ -9,7 +9,7 @@ Linked setup/status authority: [../GSN_SELF_SERVICE_USER_GUIDE.md](../GSN_SELF_S
 
 ## How to Use This Document
 
-A complete modular bank of the real-life capabilities GSN can explain. It stretches beyond the old 23 items because the current product story has more practical doors than one public paper should carry.
+A complete modular bank of the real-life capabilities GSN can explain. It preserves the original 44 capability modules and adds Strategic Application Lenses that show how existing capabilities combine for larger institutional and societal uses.
 
 This is a capability and messaging guide, not the final feature-status authority. Some items are live, some are partial, and some are capability directions that must be checked against the verified self-service guide before public claims or handover.
 
@@ -898,3 +898,266 @@ Use this master bank like a menu. Do not send it all to everyone. Pick the modul
 **The small detail that makes it different:** Even a small promise becomes part of the trust memory when completed.
 
 **What not to overclaim:** Commitment records must remain fair and correctable; mistakes should not become permanent punishment.
+
+## Strategic Application Lenses
+
+These lenses are not separate papers and not separate products. They explain how multiple existing GSN capability modules can combine for larger institutional, organisational and societal uses. The GSN Command Centre is central because it is where authorised evidence from different GSN surfaces can become governed operational visibility.
+
+### Reconciled Status of the Strategic Lenses
+
+| No. | Lens | Product-truth status |
+| --- | --- | --- |
+| 45 | Instant Community Identity and Verification | Composite |
+| 46 | Relocation and New-Arrival Verification | Strategic direction |
+| 47 | Emergency Identity and Support Bridge | Planned |
+| 48 | Community-Based Public-Safety Support | Strategic direction |
+| 49 | Alternative Credit Evidence Pack | Composite |
+| 50 | Community Guarantee and Microfinance Support | Partial |
+| 51 | Circular Economy and Community Wealth-Building | Composite |
+| 52 | Institutional Verification Bridge | Composite |
+| 53 | Community Resilience and Early-Support Signals | Strategic direction |
+| 54 | GSN Command Centre for Organisations | Partial |
+| 55 | Government and Policymaker Planning Lens | Strategic direction |
+| 56 | Cross-Community and National Opportunity Intelligence | Strategic direction |
+
+Policy boundary: The GSN Command Centre organises authorised evidence for planning and review. It does not automatically identify criminals, determine creditworthiness, diagnose communities or make government policy.
+
+## 45. Instant Community Identity and Verification
+
+**Current truth boundary:** Composite - combines community identity, governed membership, invite/QR entry, Identity & Integrity, Trust Passport and public verification boundaries; live status depends on the route actually used.
+
+**The real-life problem:** People often need to know whether a group, member, shop, helper or organiser belongs to the real community before they respond, attend, contribute or trade.
+
+**What GSN adds:** GSN can combine community domain identity, member status, role boundaries, QR entry and evidence surfaces so recognition starts from a governed record instead of a forwarded chat claim.
+
+**Why it is important:** Fast recognition reduces confusion at the moment when a community is forming, distributing materials, receiving visitors or asking people to act.
+
+**Why the reader should care:**
+
+- **For management:** It gives leaders a cleaner process to supervise, delegate, prove and hand over instead of relying only on memory or scattered messages.
+- **For members:** It gives ordinary members a clearer way to see, respond, participate, sell, ask, verify or follow up without being trapped in long chat confusion.
+- **For the community body:** It turns activity into reusable memory, evidence and opportunity that can survive changing executives, phones and WhatsApp groups.
+
+**The small detail that makes it different:** The lens uses existing identity records first, then points to the right verification surface instead of creating a new proof paper.
+
+**What not to overclaim:** GSN can organise identity and verification evidence, but it does not by itself prove legal registration, citizenship, official ID validity or universal trustworthiness.
+
+## 46. Relocation and New-Arrival Verification
+
+**Current truth boundary:** Strategic direction - can be explained as a use-case lens using existing identity, membership, TrustSlip, Trust Passport and community-confirmation evidence; it is not a standalone relocation product.
+
+**The real-life problem:** A person arriving in a new city, school, church, association or market often starts again with no local recognition even when they have useful history elsewhere.
+
+**What GSN adds:** GSN can let approved evidence travel through bounded records so a receiving community can see the source, limits, current status and next verification step.
+
+**Why it is important:** New arrivals need a way to be recognised without exposing private history or forcing the new community to rely only on informal references.
+
+**Why the reader should care:**
+
+- **For management:** It gives leaders a cleaner process to supervise, delegate, prove and hand over instead of relying only on memory or scattered messages.
+- **For members:** It gives ordinary members a clearer way to see, respond, participate, sell, ask, verify or follow up without being trapped in long chat confusion.
+- **For the community body:** It turns activity into reusable memory, evidence and opportunity that can survive changing executives, phones and WhatsApp groups.
+
+**The small detail that makes it different:** The receiving group sees a current evidence summary and can ask for live confirmation when the decision is sensitive.
+
+**What not to overclaim:** This lens must not be presented as immigration clearance, right-to-work approval, safeguarding approval, tenancy approval or legal identity proof.
+
+## 47. Emergency Identity and Support Bridge
+
+**Current truth boundary:** Planned - uses existing support, identity, bulletin, welfare and verification records as a design direction; emergency-response authority is not live.
+
+**The real-life problem:** During illness, displacement, crisis, burial support, school emergency or family emergency, helpers need fast context but private details can easily spread too widely.
+
+**What GSN adds:** GSN can be used as a governed bridge where approved people read identity, community source, support request, responsible contacts, documents and follow-up evidence.
+
+**Why it is important:** Emergency support becomes safer when the right people see enough evidence to act without turning the whole community into a public notice board.
+
+**Why the reader should care:**
+
+- **For management:** It gives leaders a cleaner process to supervise, delegate, prove and hand over instead of relying only on memory or scattered messages.
+- **For members:** It gives ordinary members a clearer way to see, respond, participate, sell, ask, verify or follow up without being trapped in long chat confusion.
+- **For the community body:** It turns activity into reusable memory, evidence and opportunity that can survive changing executives, phones and WhatsApp groups.
+
+**The small detail that makes it different:** The Command Centre can later show authorised emergency-support queues, unresolved needs and response gaps when governance rules exist.
+
+**What not to overclaim:** GSN is not an ambulance, police system, medical diagnosis tool, legal emergency authority or automatic welfare entitlement system.
+
+## 48. Community-Based Public-Safety Support
+
+**Current truth boundary:** Strategic direction - requires lawful governance, safeguarding, reporting rules and human review before any public-safety use.
+
+**The real-life problem:** Communities sometimes see worrying patterns, unsafe situations or repeated incidents but ordinary chat can create rumours, accusations and privacy harm.
+
+**What GSN adds:** GSN can support authorised incident context, attendance records, official notices, support follow-up and escalation logs where the community has lawful rules.
+
+**Why it is important:** Safety-sensitive work needs evidence discipline, privacy and role control more than noise or public accusation.
+
+**Why the reader should care:**
+
+- **For management:** It gives leaders a cleaner process to supervise, delegate, prove and hand over instead of relying only on memory or scattered messages.
+- **For members:** It gives ordinary members a clearer way to see, respond, participate, sell, ask, verify or follow up without being trapped in long chat confusion.
+- **For the community body:** It turns activity into reusable memory, evidence and opportunity that can survive changing executives, phones and WhatsApp groups.
+
+**The small detail that makes it different:** The useful signal is not gossip; it is a governed record of what was reported, who may review it and what follow-up is allowed.
+
+**What not to overclaim:** GSN must not automatically identify criminals, publish allegations, replace police, replace safeguarding professionals or create public blacklists.
+
+## 49. Alternative Credit Evidence Pack
+
+**Current truth boundary:** Composite - combines contribution, repayment, support, TrustSlip, Trust Passport, shop, DemandBox and outcome evidence where recorded; it is not a credit score.
+
+**The real-life problem:** Many underbanked people have real responsibility history but little formal credit history that a lender or supporter can easily read.
+
+**What GSN adds:** GSN can organise contribution behaviour, repayment context, support history, trade records, community confirmation and evidence gaps into a bounded pack for review.
+
+**Why it is important:** Evidence can help a human or institution ask better questions without pretending informal history is the same as regulated credit data.
+
+**Why the reader should care:**
+
+- **For management:** It gives leaders a cleaner process to supervise, delegate, prove and hand over instead of relying only on memory or scattered messages.
+- **For members:** It gives ordinary members a clearer way to see, respond, participate, sell, ask, verify or follow up without being trapped in long chat confusion.
+- **For the community body:** It turns activity into reusable memory, evidence and opportunity that can survive changing executives, phones and WhatsApp groups.
+
+**The small detail that makes it different:** The pack should show what exists, what is missing, who the source is and what cannot be concluded.
+
+**What not to overclaim:** GSN does not determine creditworthiness, approve loans, guarantee repayment, replace credit bureaus or create bank-grade affordability checks.
+
+## 50. Community Guarantee and Microfinance Support
+
+**Current truth boundary:** Partial - some support, guarantor, contribution, repayment and finance-evidence paths exist, but regulated microfinance decisions and custody remain outside GSN.
+
+**The real-life problem:** Small finance support can collapse when guarantees, contributions, repayment expectations and responsibility are discussed informally.
+
+**What GSN adds:** GSN can organise who requested help, who backed it, what evidence exists, what repayment or support record followed and which gaps remain.
+
+**Why it is important:** Community finance becomes less political when records, roles and limits are visible to authorised reviewers.
+
+**Why the reader should care:**
+
+- **For management:** It gives leaders a cleaner process to supervise, delegate, prove and hand over instead of relying only on memory or scattered messages.
+- **For members:** It gives ordinary members a clearer way to see, respond, participate, sell, ask, verify or follow up without being trapped in long chat confusion.
+- **For the community body:** It turns activity into reusable memory, evidence and opportunity that can survive changing executives, phones and WhatsApp groups.
+
+**The small detail that makes it different:** The value is in evidence discipline: request, supporter, commitment, repayment context, outcome and dispute history stay connected.
+
+**What not to overclaim:** GSN is not a bank, deposit taker, regulated microfinance institution, escrow provider, lender, credit approver or payment guarantor.
+
+## 51. Circular Economy and Community Wealth-Building
+
+**Current truth boundary:** Composite - combines Marketplace, shops, DemandBox, projects, contributions, local services and outcome records; wealth impact requires separate accounting and review.
+
+**The real-life problem:** Money, goods, skills and support often leave the community because local supply, demand and trust context are not visible enough.
+
+**What GSN adds:** GSN can connect local shops, service providers, needs, projects, contribution activity and trade evidence so value circulation becomes easier to observe.
+
+**Why it is important:** A community can plan better when it sees what people offer, what people need, and which outcomes have records behind them.
+
+**Why the reader should care:**
+
+- **For management:** It gives leaders a cleaner process to supervise, delegate, prove and hand over instead of relying only on memory or scattered messages.
+- **For members:** It gives ordinary members a clearer way to see, respond, participate, sell, ask, verify or follow up without being trapped in long chat confusion.
+- **For the community body:** It turns activity into reusable memory, evidence and opportunity that can survive changing executives, phones and WhatsApp groups.
+
+**The small detail that makes it different:** DemandBox and Shop Control can show attention and stated needs, while outcome records are still needed before claiming value creation.
+
+**What not to overclaim:** GSN must not promise profit, investment return, poverty reduction, sales, delivery, satisfaction or long-term economic impact without external evidence.
+
+## 52. Institutional Verification Bridge
+
+**Current truth boundary:** Composite - can combine TrustSlip, public community records, member verification, documents and authorised exports; institution-specific approval workflows may still be planned.
+
+**The real-life problem:** Employers, schools, churches, NGOs, funders and partners may need a safer way to review community-backed evidence without receiving private raw records.
+
+**What GSN adds:** GSN can provide bounded public or authorised evidence views that show source, scope, status, gaps and next confirmation path.
+
+**Why it is important:** Institutions need verification discipline, but members also need privacy and protection from overexposure.
+
+**Why the reader should care:**
+
+- **For management:** It gives leaders a cleaner process to supervise, delegate, prove and hand over instead of relying only on memory or scattered messages.
+- **For members:** It gives ordinary members a clearer way to see, respond, participate, sell, ask, verify or follow up without being trapped in long chat confusion.
+- **For the community body:** It turns activity into reusable memory, evidence and opportunity that can survive changing executives, phones and WhatsApp groups.
+
+**The small detail that makes it different:** A public link, QR code or exported report should show exactly what it is allowed to show and what remains private.
+
+**What not to overclaim:** GSN does not issue government clearance, employment approval, school admission, professional licence, immigration decision or legal certification.
+
+## 53. Community Resilience and Early-Support Signals
+
+**Current truth boundary:** Strategic direction - uses demand, welfare, attendance, bulletin, project and support signals to suggest where follow-up may be needed after governance approval.
+
+**The real-life problem:** A community can miss early signs of stress: unanswered needs, weak participation, repeated requests, unsupported volunteers or failing projects.
+
+**What GSN adds:** GSN can help authorised leaders see patterns across local need, attendance, DemandBox, commitments, support requests and unresolved evidence gaps.
+
+**Why it is important:** Early support is cheaper, kinder and more effective when leaders see weak signals before they become crises.
+
+**Why the reader should care:**
+
+- **For management:** It gives leaders a cleaner process to supervise, delegate, prove and hand over instead of relying only on memory or scattered messages.
+- **For members:** It gives ordinary members a clearer way to see, respond, participate, sell, ask, verify or follow up without being trapped in long chat confusion.
+- **For the community body:** It turns activity into reusable memory, evidence and opportunity that can survive changing executives, phones and WhatsApp groups.
+
+**The small detail that makes it different:** The Command Centre should show areas requiring human investigation, not automatic diagnoses.
+
+**What not to overclaim:** GSN must not diagnose people or communities, predict harm, profile vulnerable members, or make public health, legal, political or policing conclusions.
+
+## 54. GSN Command Centre for Organisations
+
+**Current truth boundary:** Partial - command/admin dashboards and evidence surfaces exist, but organisation-wide governed reporting must be configured by role, permission, source and lawful purpose.
+
+**The real-life problem:** Leaders and institutions cannot manage what they cannot see, but uncontrolled visibility can expose private members and create false conclusions.
+
+**What GSN adds:** The GSN Command Centre is the central governed place where evidence from identity, membership, participation, DemandBox, shops, services, projects, welfare, emergency support, attendance, commitments, delivery, TrustSlip, Trust Passport, CCI, Shop Control, Market Wisdom and approved reports can become operational visibility.
+
+**Why it is important:** Larger programmes need one authorised review layer where managers can see what is working, what is missing, and what needs investigation without opening every private record.
+
+**Why the reader should care:**
+
+- **For management:** It gives leaders a cleaner process to supervise, delegate, prove and hand over instead of relying only on memory or scattered messages.
+- **For members:** It gives ordinary members a clearer way to see, respond, participate, sell, ask, verify or follow up without being trapped in long chat confusion.
+- **For the community body:** It turns activity into reusable memory, evidence and opportunity that can survive changing executives, phones and WhatsApp groups.
+
+**The small detail that makes it different:** The Command Centre should support governed dashboards, identity and membership visibility, local-need patterns, economic-activity signals, project and welfare coordination, attendance and commitment evidence, trust and verification evidence, lawful community/geographic comparisons, period trends, evidence gaps, exportable reports, and privacy, role and approval controls.
+
+**What not to overclaim:** The GSN Command Centre organises authorised evidence for planning and review. It does not automatically identify criminals, determine creditworthiness, diagnose communities or make government policy.
+
+## 55. Government and Policymaker Planning Lens
+
+**Current truth boundary:** Strategic direction - policy use is possible only from authorised, aggregated, lawful evidence exports and human review.
+
+**The real-life problem:** Public programmes often plan from stale surveys, political noise or incomplete field reports while local evidence remains scattered.
+
+**What GSN adds:** GSN can later provide authorised planning reports that summarise approved community evidence, needs, participation, economic signals and gaps without exposing private member records.
+
+**Why it is important:** Better planning starts with better evidence, but evidence must remain governed, contextual and challengeable.
+
+**Why the reader should care:**
+
+- **For management:** It gives leaders a cleaner process to supervise, delegate, prove and hand over instead of relying only on memory or scattered messages.
+- **For members:** It gives ordinary members a clearer way to see, respond, participate, sell, ask, verify or follow up without being trapped in long chat confusion.
+- **For the community body:** It turns activity into reusable memory, evidence and opportunity that can survive changing executives, phones and WhatsApp groups.
+
+**The small detail that makes it different:** The policy lens should be an export/review layer from the Command Centre, not a raw open dashboard for public browsing.
+
+**What not to overclaim:** GSN does not make government policy, decide eligibility, replace official statistics, certify public need, or publish demographic, political, health, legal or policing conclusions without lawful authority.
+
+## 56. Cross-Community and National Opportunity Intelligence
+
+**Current truth boundary:** Strategic direction - cross-community or national reading requires approved data governance, lawful aggregation, privacy controls and evidence-quality review.
+
+**The real-life problem:** Opportunities, shortages, demand, skills and support patterns can appear across communities, but raw comparison can easily become unfair or unsafe.
+
+**What GSN adds:** GSN can combine approved evidence from multiple communities to reveal opportunity patterns, repeated needs, service gaps, local enterprise signals and support pressure for authorised planners.
+
+**Why it is important:** When done lawfully, cross-community reading can help institutions direct support, training, services and investment attention more responsibly.
+
+**Why the reader should care:**
+
+- **For management:** It gives leaders a cleaner process to supervise, delegate, prove and hand over instead of relying only on memory or scattered messages.
+- **For members:** It gives ordinary members a clearer way to see, respond, participate, sell, ask, verify or follow up without being trapped in long chat confusion.
+- **For the community body:** It turns activity into reusable memory, evidence and opportunity that can survive changing executives, phones and WhatsApp groups.
+
+**The small detail that makes it different:** This lens depends on the Command Centre because only governed aggregation should decide which sources, periods, places and audiences are allowed.
+
+**What not to overclaim:** GSN must not create open surveillance, rank communities unfairly, expose private people, guarantee market demand, or make national economic, demographic, political, health or legal conclusions from thin data.

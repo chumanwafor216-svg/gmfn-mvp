@@ -8,7 +8,7 @@ Authenticity mark: GSN Original Community Setup Material | Source-controlled in 
 
 This document replaces the old public habit of presenting GSN as a fixed-number capability list.
 
-Use **GSN Core Capabilities** for public-facing app surfaces, executive summaries, first conversations, and ordinary client/member explanation. The larger `GSN in Real Life` bank remains the controlled setup source for deeper rollout, audience selection, upgrades and operator work.
+Use **GSN Core Capabilities** for public-facing app surfaces, executive summaries, first conversations, and ordinary client/member explanation. The larger `GSN in Real Life` bank remains the controlled setup source for deeper rollout, audience selection, upgrades, operator work and Strategic Application Lenses.
 
 Devil truth: this list explains durable product value. It is not a promise that every capability is live for every client, and it does not expose every internal module GSN can use.
 
@@ -62,7 +62,7 @@ Use the full core set for GSN positioning and app surfaces. For client distribut
 
 ## Controlled Full Bank
 
-The 44-module `GSN in Real Life` bank remains useful, but it should not be the default public front.
+The expanded `GSN in Real Life` bank preserves the 44 original modules and adds Strategic Application Lenses, but it should not be the default public front.
 
 Use the full bank only when:
 - the setup team is designing a rollout

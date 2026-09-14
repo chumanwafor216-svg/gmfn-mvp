@@ -5,7 +5,7 @@ Authenticity mark: GSN Original Community Setup Material | Source-controlled in 
 
 This folder contains the GSN in Real Life capability bank and audience-specific copies used by the maintained Community Setup Pack at `../../community-setup-pack/`.
 
-The master has 44 modules. The sector copies are filtered by audience relevance so a church, school, NGO, market, cooperative, family or diaspora contact receives only the material that fits their setup conversation.
+The master has 56 numbered entries: the original 44 capability modules plus Strategic Application Lenses 45-56. The sector copies are filtered by audience relevance so a church, school, NGO, market, cooperative, family or diaspora contact receives only the material that fits their setup conversation.
 
 Use the verified self-service guide as the truth source for live status, routes and setup steps. This folder is for practical explanation, sales conversations, pilot demos and client handover preparation.
 

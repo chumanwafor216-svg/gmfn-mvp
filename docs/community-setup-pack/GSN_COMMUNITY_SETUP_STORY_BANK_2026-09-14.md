@@ -49,4 +49,4 @@ Boundary: GSN does not decide family authority, legal inheritance, immigration s
 
 ## How To Use A Story
 
-Pick one story that matches the client. Add only the setup steps relevant to their first deployment. Do not flood a first conversation with the full 44-module master bank.
+Pick one story that matches the client. Add only the setup steps relevant to their first deployment. Do not flood a first conversation with the expanded 56-entry master bank; the original 44 modules are preserved there, with Strategic Application Lenses kept for deeper setup conversations.

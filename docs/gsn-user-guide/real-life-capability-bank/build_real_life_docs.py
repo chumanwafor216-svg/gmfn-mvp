@@ -1,4 +1,4 @@
-﻿import csv
+import csv
 import json
 from pathlib import Path
 
@@ -51,6 +51,10 @@ def module_text(item, index_label=None):
     return '\n'.join(lines)
 
 
+def status_label(item):
+    return str(item['status']).split(' - ')[0]
+
+
 def write_md(path, title, intro, items, selected=False):
     lines = [f"# {title}", '', SUBTITLE, '', f"Linked setup/status authority: [{GUIDE_LINK}]({GUIDE_LINK})", '']
     lines += ["## How to Use This Document", '']
@@ -59,11 +63,36 @@ def write_md(path, title, intro, items, selected=False):
     lines += ["Core principle: GSN presents organised evidence; the receiving person, organisation or community decides.", '']
     if selected:
         lines += ["Use this copy as an audience-specific conversation pack. It deliberately excludes many modules from the master bank so the receiver sees only what concerns them.", '']
+        lines += ["## Capability Modules", '']
+        for idx, item in enumerate(items, 1):
+            lines.append(module_text(item, idx))
     else:
         lines += ["Use this master bank like a menu. Do not send it all to everyone. Pick the modules that match the church, school, NGO, cooperative, market, family or diaspora conversation.", '']
-    lines += ["## Capability Modules", '']
-    for idx, item in enumerate(items, 1):
-        lines.append(module_text(item, idx if selected else None))
+        base_items = [item for item in items if item['id'] <= 44]
+        lens_items = [item for item in items if item['id'] >= 45]
+        lines += ["## Capability Modules", '']
+        for item in base_items:
+            lines.append(module_text(item))
+        if lens_items:
+            lines += [
+                "## Strategic Application Lenses",
+                '',
+                "These lenses are not separate papers and not separate products. They explain how multiple existing GSN capability modules can combine for larger institutional, organisational and societal uses. The GSN Command Centre is central because it is where authorised evidence from different GSN surfaces can become governed operational visibility.",
+                '',
+                "### Reconciled Status of the Strategic Lenses",
+                '',
+                "| No. | Lens | Product-truth status |",
+                "| --- | --- | --- |",
+            ]
+            for item in lens_items:
+                lines.append(f"| {item['id']} | {item['title']} | {status_label(item)} |")
+            lines += [
+                '',
+                "Policy boundary: The GSN Command Centre organises authorised evidence for planning and review. It does not automatically identify criminals, determine creditworthiness, diagnose communities or make government policy.",
+                '',
+            ]
+            for item in lens_items:
+                lines.append(module_text(item))
     path.write_text('\n'.join(lines).rstrip() + '\n', encoding='utf-8')
 
 
@@ -154,7 +183,7 @@ def main():
     (ROOT / 'GSN_IN_REAL_LIFE_SELECTION_MAP.json').write_text(json.dumps(items, indent=2), encoding='utf-8')
 
     readme = ROOT / 'README.md'
-    readme.write_text(f"# {TITLE}\n\nThis folder contains the real-life capability bank and audience-specific copies. The master has {len(items)} modules. The sector copies are intentionally smaller so each audience receives only what concerns them.\n\nUse the verified self-service guide as the truth source for live status, routes and setup steps. This folder is for practical explanation, sales conversations and pilot demos.\n\nFiles generated:\n" + ''.join(f"- {p.name}\n" for p in generated) + "- GSN_IN_REAL_LIFE_SELECTION_MAP.csv\n- GSN_IN_REAL_LIFE_SELECTION_MAP.json\n", encoding='utf-8')
+    readme.write_text(f"# {TITLE}\n\nThis folder contains the real-life capability bank and audience-specific copies. The master has {len(items)} numbered entries: the original 44 capability modules plus Strategic Application Lenses where present. The sector copies are intentionally smaller so each audience receives only what concerns them.\n\nUse the verified self-service guide as the truth source for live status, routes and setup steps. This folder is for practical explanation, sales conversations and pilot demos.\n\nFiles generated:\n" + ''.join(f"- {p.name}\n" for p in generated) + "- GSN_IN_REAL_LIFE_SELECTION_MAP.csv\n- GSN_IN_REAL_LIFE_SELECTION_MAP.json\n", encoding='utf-8')
 
     rendered = []
     for md in generated:
