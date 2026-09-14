@@ -313,7 +313,7 @@ assertContains(
 );
 
 assertContains(
-  /label: "Visible"[\s\S]*?label: "Portable"[\s\S]*?label: "Usable"[\s\S]*?data-dashboard-passport-feature-status="true"[\s\S]*?aria-label=\{`\$\{item\.label\}: Trust Passport status`\}[\s\S]*?cursor: "default"/,
+  /label: "Visible"[\s\S]*?label: "Portable"[\s\S]*?label: "Usable"[\s\S]*?data-dashboard-passport-feature-status="true"[\s\S]*?aria-label=\{`\$\{item\.label\}: Trust Passport status`\}[\s\S]*?onClick=\{\(event\) => event\.stopPropagation\(\)\}[\s\S]*?onPointerDown=\{\(event\) => event\.stopPropagation\(\)\}[\s\S]*?cursor: "default"/,
   "Dashboard Visible, Portable, and Usable passport features must render as passive status surfaces."
 );
 

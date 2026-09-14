@@ -242,7 +242,7 @@ assertContains(
 );
 
 assertContains(
-  /data-dashboard-passport-feature-status="true"[\s\S]*?aria-label=\{`\$\{item\.label\}: Trust Passport status`\}[\s\S]*?cursor: "default"/,
+  /data-dashboard-passport-feature-status="true"[\s\S]*?aria-label=\{`\$\{item\.label\}: Trust Passport status`\}[\s\S]*?onClick=\{\(event\) => event\.stopPropagation\(\)\}[\s\S]*?onPointerDown=\{\(event\) => event\.stopPropagation\(\)\}[\s\S]*?cursor: "default"/,
   "Dashboard Visible, Portable, and Usable passport feature tiles must be status-only surfaces, not Trust Passport route actions."
 );
 

@@ -8282,6 +8282,8 @@ export default function DashboardPage() {
                   data-dashboard-passport-feature-status="true"
                   key={item.label}
                   aria-label={`${item.label}: Trust Passport status`}
+                  onClick={(event) => event.stopPropagation()}
+                  onPointerDown={(event) => event.stopPropagation()}
                   style={dashboardStableActionFrame({
                     display: "grid",
                     gridTemplateRows: "auto auto 1fr",
