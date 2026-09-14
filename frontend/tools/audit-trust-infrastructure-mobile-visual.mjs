@@ -379,29 +379,46 @@ function pageAudit() {
 }
 
 async function collectRouteAudit(page, label) {
-  const result = await page.evaluate(pageAudit);
   const findings = [];
 
-  if (result.horizontalOverflow) {
-    findings.push(`horizontal overflow: scroll width ${result.scrollW}px on ${result.viewportW}px viewport`);
-  }
-  if (result.overflow.length > 0) {
-    findings.push(`visible elements outside viewport: ${JSON.stringify(result.overflow)}`);
-  }
-  if (result.crampedText.length > 0) {
-    findings.push(`narrow long text: ${JSON.stringify(result.crampedText)}`);
-  }
-  if (result.duplicateHeadings.length > 0) {
-    findings.push(`duplicate visible headings: ${JSON.stringify(result.duplicateHeadings)}`);
-  }
-  if (result.scrollH > result.viewportH * 9) {
-    findings.push(`phone surface is too long: ${result.scrollH}px on ${result.viewportH}px viewport`);
+  function addFindings(result, prefix = "") {
+    if (result.horizontalOverflow) {
+      findings.push(`${prefix}horizontal overflow: scroll width ${result.scrollW}px on ${result.viewportW}px viewport`);
+    }
+    if (result.overflow.length > 0) {
+      findings.push(`${prefix}visible elements outside viewport: ${JSON.stringify(result.overflow)}`);
+    }
+    if (result.crampedText.length > 0) {
+      findings.push(`${prefix}narrow long text: ${JSON.stringify(result.crampedText)}`);
+    }
+    if (result.duplicateHeadings.length > 0) {
+      findings.push(`${prefix}duplicate visible headings: ${JSON.stringify(result.duplicateHeadings)}`);
+    }
   }
 
-  return findings.length > 0 ? { label, findings } : null;
+  const firstResult = await page.evaluate(pageAudit);
+  const maxScrollY = Math.max(0, firstResult.scrollH - firstResult.viewportH);
+  const positions = Array.from(
+    new Set([0, 0.25, 0.5, 0.75, 1].map((ratio) => Math.round(maxScrollY * ratio)))
+  );
+
+  if (firstResult.scrollH > firstResult.viewportH * 9) {
+    findings.push(`phone surface is too long: ${firstResult.scrollH}px on ${firstResult.viewportH}px viewport`);
+  }
+
+  for (const scrollY of positions) {
+    await page.evaluate((nextY) => window.scrollTo(0, nextY), scrollY);
+    await page.waitForTimeout(160);
+    const result = await page.evaluate(pageAudit);
+    addFindings(result, scrollY > 0 ? `scrollY ${scrollY}: ` : "");
+  }
+
+  await page.evaluate(() => window.scrollTo(0, 0));
+
+  return findings.length > 0 ? { label, findings: findings.slice(0, 24) } : null;
 }
-
 async function collectPassiveTrustTapAudit(page, label) {
+  await page.evaluate(() => window.scrollTo(0, 0));
   const selector = '[data-gsn-inert-meter="true"], [data-dashboard-passport-feature-status="true"]';
   const before = new URL(page.url());
   const beforePath = before.pathname + before.search + before.hash;

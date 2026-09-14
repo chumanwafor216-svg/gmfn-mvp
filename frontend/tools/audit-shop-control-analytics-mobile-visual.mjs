@@ -358,6 +358,7 @@ function pageAudit() {
   const scrollH = scrollingElement.scrollHeight;
   const overflow = [];
   const crampedText = [];
+  const duplicateHeadings = [];
 
   function isVisible(element, rect, styles) {
     return (
@@ -450,6 +451,23 @@ function pageAudit() {
     }
   }
 
+  const headingCounts = new Map();
+  for (const heading of Array.from(document.querySelectorAll("h1, h2, h3, [data-gsn-major-block='true']"))) {
+    const styles = getComputedStyle(heading);
+    const rect = heading.getBoundingClientRect();
+    if (!isVisible(heading, rect, styles)) continue;
+
+    const text = (heading.textContent || "").replace(/\s+/g, " ").trim();
+    if (!text || text.length < 10) continue;
+    const normalized = text.toLowerCase();
+    headingCounts.set(normalized, (headingCounts.get(normalized) || 0) + 1);
+  }
+
+  for (const [heading, count] of headingCounts.entries()) {
+    if (count > 1) {
+      duplicateHeadings.push({ heading, count });
+    }
+  }
   return {
     path: location.pathname + location.search,
     viewportW,
@@ -459,6 +477,7 @@ function pageAudit() {
     horizontalOverflow: scrollW > viewportW + 2,
     overflow: overflow.slice(0, 12),
     crampedText: crampedText.slice(0, 12),
+    duplicateHeadings: duplicateHeadings.slice(0, 10),
   };
 }
 
@@ -490,25 +509,44 @@ async function tapDebug(page, debugId) {
 }
 
 async function collectPanelAudit(page, label) {
-  const result = await page.evaluate(pageAudit);
   const findings = [];
 
-  if (result.horizontalOverflow) {
-    findings.push(`horizontal overflow: scroll width ${result.scrollW}px on ${result.viewportW}px viewport`);
-  }
-  if (result.overflow.length > 0) {
-    findings.push(`visible elements outside viewport: ${JSON.stringify(result.overflow)}`);
-  }
-  if (result.crampedText.length > 0) {
-    findings.push(`narrow long text: ${JSON.stringify(result.crampedText)}`);
-  }
-  if (result.scrollH > result.viewportH * 8) {
-    findings.push(`phone surface is too long: ${result.scrollH}px on ${result.viewportH}px viewport`);
+  function addFindings(result, prefix = "") {
+    if (result.horizontalOverflow) {
+      findings.push(`${prefix}horizontal overflow: scroll width ${result.scrollW}px on ${result.viewportW}px viewport`);
+    }
+    if (result.overflow.length > 0) {
+      findings.push(`${prefix}visible elements outside viewport: ${JSON.stringify(result.overflow)}`);
+    }
+    if (result.crampedText.length > 0) {
+      findings.push(`${prefix}narrow long text: ${JSON.stringify(result.crampedText)}`);
+    }
+    if (result.duplicateHeadings.length > 0) {
+      findings.push(`${prefix}duplicate visible headings: ${JSON.stringify(result.duplicateHeadings)}`);
+    }
   }
 
-  return findings.length > 0 ? { label, findings } : null;
+  const firstResult = await page.evaluate(pageAudit);
+  const maxScrollY = Math.max(0, firstResult.scrollH - firstResult.viewportH);
+  const positions = Array.from(
+    new Set([0, 0.25, 0.5, 0.75, 1].map((ratio) => Math.round(maxScrollY * ratio)))
+  );
+
+  if (firstResult.scrollH > firstResult.viewportH * 8) {
+    findings.push(`phone surface is too long: ${firstResult.scrollH}px on ${firstResult.viewportH}px viewport`);
+  }
+
+  for (const scrollY of positions) {
+    await page.evaluate((nextY) => window.scrollTo(0, nextY), scrollY);
+    await page.waitForTimeout(160);
+    const result = await page.evaluate(pageAudit);
+    addFindings(result, scrollY > 0 ? `scrollY ${scrollY}: ` : "");
+  }
+
+  await page.evaluate(() => window.scrollTo(0, 0));
+
+  return findings.length > 0 ? { label, findings: findings.slice(0, 24) } : null;
 }
-
 const server = await createServer({
   root: frontendRoot,
   logLevel: "silent",
