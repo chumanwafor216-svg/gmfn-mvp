@@ -200,12 +200,36 @@ function requireApiPattern(pattern, message) {
     "DemandBox must expose the category/tag field in the main create form.",
   ],
   [
+    /function normalizeGsnMention\(value: string\): string[\s\S]*?Tagged GSN handle:/,
+    "DemandBox must normalize typed GSN handles into request text for backend tag resolution.",
+  ],
+  [
+    /const \[targetHandle, setTargetHandle\] = useState\(""\)/,
+    "DemandBox must keep an explicit member-handle field instead of expecting users to type hidden syntax.",
+  ],
+  [
+    /buildDemandDescription\(description, responseEvidence, targetHandle\)/,
+    "DemandBox normal request posting must include the optional tagged GSN handle.",
+  ],
+  [
+    /buildAskCommunityDemandDescription\(body, targetHandle, options\)/,
+    "DemandBox Ask Community posting must include the optional tagged GSN handle.",
+  ],
+  [
+    /Tag GSN member[\s\S]*?value=\{targetHandle\}[\s\S]*?placeholder="GSN-U-RESPONDER"[\s\S]*?Use a GSN ID, not a phone number/,
+    "DemandBox must expose a clear GSN member tag control in the create flow.",
+  ],
+  [
     /label: "Ask Community"[\s\S]*?key: "ask_community"|key: "ask_community"[\s\S]*?label: "Ask Community"/,
     "DemandBox must show Ask Community as its own queue lane instead of repeating the Community lane.",
   ],
   [
     /data-gsn-demand-routing-readiness="true"[\s\S]*?Matched GSN handles can route a notification to the tagged lane. Ranked queues, moderation rules, rate limits, saved assignments, and full list paging still need governed records work before/,
     "DemandBox must keep the large-community routing boundary collapsed and honest.",
+  ],
+  [
+    /Need types, Urgent, or Tagged to narrow the queue while full list controls are prepared\./,
+    "DemandBox overflow guidance must not expose raw implementation wording to users.",
   ],
   [
     /data-gsn-demand-category-buckets="true"/,
@@ -344,6 +368,10 @@ function requireApiPattern(pattern, message) {
   [
     /<div style=\{sectionLabel\(\)\}>Category<\/div>[\s\S]*?placeholder="Optional category"/,
     "DemandBox must not hide the need-type tag inside More detail again.",
+  ],
+  [
+    /cursor paging and direct handles are being built/,
+    "DemandBox must not expose raw implementation wording about unfinished cursor/direct-handle work.",
   ],
 ].forEach(([pattern, message]) => {
   const index = source.search(pattern);

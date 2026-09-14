@@ -524,13 +524,33 @@ function requesterTrustPostureLabel(row?: DemandRow | null): string {
   return label && label !== "Not shown" ? label : "";
 }
 
+function normalizeGsnMention(value: string): string {
+  const handle = safeStr(value)
+    .replace(/^@+/, "")
+    .split(/\s+/)[0]
+    .replace(/[^A-Za-z0-9_.-]/g, "");
+
+  return handle ? `@${handle}` : "";
+}
+
+function demandTaggedHandleLine(targetHandle: string): string {
+  const mention = normalizeGsnMention(targetHandle);
+  return mention ? `Tagged GSN handle: ${mention}.` : "";
+}
+
 function buildDemandDescription(
   description: string,
-  responseEvidence: string
+  responseEvidence: string,
+  targetHandle: string
 ): string | undefined {
   const body = safeStr(description);
   const evidence = safeStr(responseEvidence);
+  const taggedHandle = demandTaggedHandleLine(targetHandle);
   const parts = body ? [body] : [];
+
+  if (taggedHandle) {
+    parts.push(taggedHandle);
+  }
 
   if (evidence) {
     parts.push(`Response evidence expected: ${evidence}.`);
@@ -565,6 +585,7 @@ function demandExpiryHoursFromAskCommunity(options?: {
 
 function buildAskCommunityDemandDescription(
   body: string,
+  targetHandle: string,
   options?: {
     full_body?: string | null;
     attachment_url?: string | null;
@@ -578,6 +599,11 @@ function buildAskCommunityDemandDescription(
   const fullBody = safeStr(options?.full_body);
   if (fullBody && fullBody !== safeStr(body)) {
     parts.push(fullBody);
+  }
+
+  const taggedHandle = demandTaggedHandleLine(targetHandle);
+  if (taggedHandle) {
+    parts.push(taggedHandle);
   }
 
   const attachmentUrl = safeStr(options?.attachment_url);
@@ -696,6 +722,7 @@ export default function DemandBoxPage() {
   const [urgency, setUrgency] = useState("normal");
   const [area, setArea] = useState("");
   const [category, setCategory] = useState("");
+  const [targetHandle, setTargetHandle] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [expiresInHours, setExpiresInHours] = useState("72");
   const [paymentMode, setPaymentMode] = useState("");
@@ -1018,7 +1045,7 @@ export default function DemandBoxPage() {
     try {
       await createMarketplaceRequest({
         title: safeStr(title),
-        description: buildDemandDescription(description, responseEvidence),
+        description: buildDemandDescription(description, responseEvidence, targetHandle),
         category: safeStr(category) || undefined,
         urgency: safeStr(urgency) || undefined,
         area: safeStr(area) || undefined,
@@ -1034,6 +1061,7 @@ export default function DemandBoxPage() {
       setUrgency("normal");
       setArea("");
       setCategory("");
+      setTargetHandle("");
       setWhatsappNumber("");
       setExpiresInHours("72");
       setPaymentMode("");
@@ -1153,13 +1181,14 @@ export default function DemandBoxPage() {
       await createMarketplaceRequest({
         clan_id: selectedClanId,
         title: questionTitle,
-        description: buildAskCommunityDemandDescription(body, options),
+        description: buildAskCommunityDemandDescription(body, targetHandle, options),
         category: "Community Ask",
         urgency: "medium",
         whatsapp_number: safeStr(whatsappNumber) || undefined,
         expires_in_hours: demandExpiryHoursFromAskCommunity(options),
       });
       setMarketNeedPulseOpen(false);
+      setTargetHandle("");
       await loadPage();
       showNotice("success", "Community question posted in DemandBox.");
     } catch (err: any) {
@@ -2226,6 +2255,19 @@ export default function DemandBoxPage() {
               </div>
 
               <div>
+                <div style={sectionLabel()}>Tag GSN member</div>
+                <input
+                  value={targetHandle}
+                  onChange={(e) => setTargetHandle(e.target.value)}
+                  placeholder="GSN-U-RESPONDER"
+                  style={{ ...inputStyle(), marginTop: 8 }}
+                />
+                <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
+                  Optional. Use a GSN ID, not a phone number.
+                </div>
+              </div>
+
+              <div>
                 <div style={sectionLabel()}>Area / location</div>
                 <input
                   value={area}
@@ -2604,7 +2646,7 @@ export default function DemandBoxPage() {
               {(queueLaneRows[activeQueueLane] || []).length > (isCompact ? 12 : 24) ? (
                 <div style={{ ...helperText(), ...innerCard("#F8FBFF") }}>
                   Showing the first {isCompact ? 12 : 24} rows in this lane. Use
-                  Need types or Urgent to narrow the queue while cursor paging and direct handles are being built.
+                  Need types, Urgent, or Tagged to narrow the queue while full list controls are prepared.
                 </div>
               ) : null}
             </div>
