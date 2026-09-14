@@ -19,6 +19,10 @@ def _fake_current_user():
     return Obj(id=1, email="pytest@example.com", role="admin", gmfn_id="GSN-U-TEST")
 
 
+def _fake_second_user():
+    return Obj(id=2, email="responder@example.com", role="member", gmfn_id="GSN-U-RESPONDER")
+
+
 def _seed_primary_clan() -> None:
     with engine.begin() as conn:
         conn.execute(
@@ -76,6 +80,28 @@ def _seed_primary_clan() -> None:
         ).scalar()
         assert clan_count == 1
         assert membership_count == 1
+
+
+def _add_second_member_to_primary_clan() -> None:
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (id, email, hashed_password, role, gmfn_id)
+                VALUES (2, 'responder@example.com', 'hashed', 'member', 'GSN-U-RESPONDER')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships
+                    (clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 2, 'member', 0)
+                """
+            )
+        )
+
 
 
 def _add_second_clan_for_user() -> None:
@@ -246,9 +272,47 @@ def test_marketplace_request_stores_selected_community():
     assert data["clan_id"] == 1
     assert data["community_code"] == "GMFN-C-000001"
     assert data["clan_name"] == "Test Clan"
+    assert data["is_mine"] is True
+    assert data["mine"] is True
     assert len(rows) == 1
     assert rows[0].clan_id == 1
+    assert rows[0].is_mine is True
+    assert rows[0].mine is True
 
+
+def test_marketplace_request_marks_visible_community_rows_not_mine():
+    _seed_primary_clan()
+    _add_second_member_to_primary_clan()
+
+    with SessionLocal() as db:
+        marketplace_requests.create_marketplace_request(
+            MarketplaceRequestCreate(
+                clan_id=1,
+                title="Need food support",
+                description="Community member is checking available food support.",
+                category="food",
+            ),
+            db=db,
+            current_user=_fake_current_user(),
+        )
+
+        rows = marketplace_requests.list_marketplace_requests(
+            db=db,
+            current_user=_fake_second_user(),
+            status="open",
+            category=None,
+            urgency=None,
+            area=None,
+            mine_only=False,
+            clan_id=1,
+            limit=50,
+        )
+
+    assert len(rows) == 1
+    assert rows[0].requester_gmfn_id == "GSN-U-TEST"
+    assert rows[0].category == "food"
+    assert rows[0].is_mine is False
+    assert rows[0].mine is False
 
 def test_marketplace_request_create_respects_disabled_community_domain_demand_box_policy(
     client,

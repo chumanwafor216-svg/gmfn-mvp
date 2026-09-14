@@ -68,7 +68,7 @@ type DemandRow = {
 type NoticeTone = "success" | "error";
 type DemandPaperScope = "owner" | "community";
 type DemandNoticeExpiryPolicy = "standard" | "urgent" | "event" | "pinned";
-type DemandQueueLane = "for_me" | "community" | "mine" | "urgent" | "categories";
+type DemandQueueLane = "for_me" | "mine" | "ask_community" | "urgent" | "categories";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -409,6 +409,16 @@ function categoryLabel(row: DemandRow): string {
   return firstTruthy(row?.category, row?.area, "General");
 }
 
+function isAskCommunityDemand(row: DemandRow): boolean {
+  const category = safeStr(row?.category).toLowerCase();
+  const description = safeStr(row?.description).toLowerCase();
+  return (
+    category === "community ask" ||
+    category === "ask community" ||
+    description.includes("community ask posted through demandbox")
+  );
+}
+
 function uniqueDemandRows(rows: DemandRow[]): DemandRow[] {
   const seen = new Set<string>();
   const out: DemandRow[] = [];
@@ -732,13 +742,13 @@ export default function DemandBoxPage() {
           clan_id: effectiveClanId || undefined,
           mine_only: true,
           status: "open",
-          limit: 50,
+          limit: 200,
         }).catch(() => []),
         listMarketplaceRequests({
           clan_id: effectiveClanId || undefined,
           mine_only: false,
           status: "open",
-          limit: 50,
+          limit: 200,
         }).catch(() => []),
       ]);
 
@@ -1181,6 +1191,7 @@ export default function DemandBoxPage() {
     const busy = updatingDemandId === rowId;
     const canClose = options.canClose === true;
     const trustPosture = requesterTrustPostureLabel(row);
+    const fromAskCommunity = isAskCommunityDemand(row);
 
     return (
       <div key={rowKey} style={recordCard()}>
@@ -1227,7 +1238,10 @@ export default function DemandBoxPage() {
             flexWrap: "wrap",
           }}
         >
-          <span style={badge(false)}>Type: {categoryLabel(row)}</span>
+          <span style={badge(fromAskCommunity)}>
+            Source: {fromAskCommunity ? "Ask Community" : "DemandBox"}
+          </span>
+          <span style={badge(false)}>Need type: {categoryLabel(row)}</span>
           {scope === "community" ? (
             <span style={badge(false)}>By: {requesterName(row)}</span>
           ) : null}
@@ -1304,13 +1318,17 @@ export default function DemandBoxPage() {
   const shouldOpenDemandQueues = useMemo(() => {
     const params = new URLSearchParams(location.search);
     const queueMode = safeStr(params.get("queue") || "").toLowerCase();
-    return ["open", "queue", "all", "for_me", "community", "mine", "urgent", "categories"].includes(queueMode);
+    return ["open", "queue", "all", "for_me", "community", "mine", "ask_community", "ask-community", "urgent", "categories"].includes(queueMode);
   }, [location.search]);
   const allOpenRows = useMemo(
     () => uniqueDemandRows([...visibleRows, ...myOpenRows]),
     [myOpenRows, visibleRows]
   );
   const urgentRows = useMemo(() => allOpenRows.filter(isUrgentDemand), [allOpenRows]);
+  const askCommunityRows = useMemo(
+    () => allOpenRows.filter(isAskCommunityDemand),
+    [allOpenRows]
+  );
   const categoryBuckets = useMemo(() => {
     const buckets = new Map<string, DemandRow[]>();
 
@@ -1332,34 +1350,35 @@ export default function DemandBoxPage() {
   const queueLaneRows = useMemo<Record<DemandQueueLane, DemandRow[]>>(
     () => ({
       for_me: visibleRows,
-      community: visibleRows,
       mine: myOpenRows,
+      ask_community: askCommunityRows,
       urgent: urgentRows,
       categories: allOpenRows,
     }),
-    [allOpenRows, myOpenRows, urgentRows, visibleRows]
+    [allOpenRows, askCommunityRows, myOpenRows, urgentRows, visibleRows]
   );
   const queueLanes = useMemo<Array<{ key: DemandQueueLane; label: string; count: number; icon: GsnIconName; detail: string }>>(
     () => [
       { key: "for_me", label: "For me", count: visibleRows.length, icon: "community", detail: "Requests you can answer now" },
-      { key: "community", label: "Community", count: visibleRows.length, icon: "document", detail: "Open local needs" },
       { key: "mine", label: "Mine", count: myOpenRows.length, icon: "user", detail: "Needs you posted" },
+      { key: "ask_community", label: "Ask Community", count: askCommunityRows.length, icon: "community", detail: "Questions posted through DemandBox" },
       { key: "urgent", label: "Urgent", count: urgentRows.length, icon: "alert", detail: "Needs time attention" },
       { key: "categories", label: "Need types", count: categoryBuckets.length, icon: "tag", detail: "Grouped by need type" },
     ],
-    [categoryBuckets.length, myOpenRows.length, urgentRows.length, visibleRows.length]
+    [askCommunityRows.length, categoryBuckets.length, myOpenRows.length, urgentRows.length, visibleRows.length]
   );
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const queueMode = safeStr(params.get("queue") || "").toLowerCase();
-    const directLanes: DemandQueueLane[] = ["for_me", "community", "mine", "urgent", "categories"];
+    const directLanes: DemandQueueLane[] = ["for_me", "mine", "ask_community", "urgent", "categories"];
+    const normalizedQueueMode = queueMode === "ask-community" ? "ask_community" : queueMode;
 
-    if (directLanes.includes(queueMode as DemandQueueLane)) {
-      setActiveQueueLane(queueMode as DemandQueueLane);
+    if (directLanes.includes(normalizedQueueMode as DemandQueueLane)) {
+      setActiveQueueLane(normalizedQueueMode as DemandQueueLane);
       return;
     }
 
-    if (shouldOpenDemandQueues) {
+    if (queueMode === "community" || shouldOpenDemandQueues) {
       setActiveQueueLane("for_me");
     }
   }, [location.search, shouldOpenDemandQueues]);
@@ -2144,6 +2163,25 @@ export default function DemandBoxPage() {
                   style={{ ...inputStyle(), marginTop: 8 }}
                 />
               </div>
+              <div>
+                <div style={sectionLabel()}>Need type tag</div>
+                <input
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  placeholder="Food, vacancy, repair, transport"
+                  style={{ ...inputStyle(), marginTop: 8 }}
+                />
+              </div>
+
+              <div>
+                <div style={sectionLabel()}>Area / location</div>
+                <input
+                  value={area}
+                  onChange={(e) => setArea(e.target.value)}
+                  placeholder="Area"
+                  style={{ ...inputStyle(), marginTop: 8 }}
+                />
+              </div>
 
               <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
                 <div style={sectionLabel()}>Explain briefly</div>
@@ -2176,16 +2214,6 @@ export default function DemandBoxPage() {
                   <option value="high">High</option>
                   <option value="low">Low</option>
                 </select>
-              </div>
-
-              <div>
-                <div style={sectionLabel()}>Area / location</div>
-                <input
-                  value={area}
-                  onChange={(e) => setArea(e.target.value)}
-                  placeholder="Area"
-                  style={{ ...inputStyle(), marginTop: 8 }}
-                />
               </div>
 
               <div>
@@ -2286,15 +2314,6 @@ export default function DemandBoxPage() {
               </StableDisclosureSummary>
 
               <div style={{ padding: "0 18px 18px", display: "grid", gap: 12 }}>
-                <div>
-                  <div style={sectionLabel()}>Category</div>
-                  <input
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    placeholder="Optional category"
-                    style={{ ...inputStyle(), marginTop: 8 }}
-                  />
-                </div>
 
                 <div>
                   <div style={sectionLabel()}>Expiry in hours</div>
@@ -2366,6 +2385,7 @@ export default function DemandBoxPage() {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(visibleRows.length > 0)}>For me: {visibleRows.length}</span>
               <span style={badge(myOpenRows.length > 0)}>Mine: {myOpenRows.length}</span>
+              <span style={badge(askCommunityRows.length > 0)}>Ask: {askCommunityRows.length}</span>
               <span style={badge(urgentRows.length > 0)}>Urgent: {urgentRows.length}</span>
               <span style={badge(false)}>Loaded: {allOpenRows.length}</span>
             </div>
@@ -2428,8 +2448,32 @@ export default function DemandBoxPage() {
             </span>
             <span style={badge(false)}>Direct handles: planned</span>
             <span style={badge(false)}>Not a chat feed</span>
-            <span style={badge(false)}>Max loaded now: 50 per read</span>
+            <span style={badge(false)}>Max loaded now: 200 per read</span>
           </div>
+
+          <details
+            data-gsn-demand-routing-readiness="true"
+            style={{ ...detailsShell(), marginTop: 14 }}
+          >
+            <StableDisclosureSummary
+              style={detailsSummary()}
+              stableHeight={54}
+              debugId="demand-box.routing-readiness.summary"
+            >
+              <span>Routing readiness</span>
+              <span style={{ color: "#64748B", fontSize: 13 }}>Collapsed</span>
+            </StableDisclosureSummary>
+            <div style={{ padding: "0 14px 14px", display: "grid", gap: 10 }}>
+              <div style={{ ...innerCard("#FCFEFF"), display: "grid", gap: 8 }}>
+                <div style={{ color: "#0B1F33", fontWeight: 900 }}>
+                  Current pilot sorting uses the need-type tag, urgency, owner, and Ask Community source.
+                </div>
+                <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.55 }}>
+                  Direct member handles, routed assignments, ranked queues, moderation rules, and true backend paging still need a governed data-model slice before very large communities use DemandBox at full scale.
+                </div>
+              </div>
+            </div>
+          </details>
 
           {activeQueueLane === "categories" ? (
             <div
@@ -2505,8 +2549,7 @@ export default function DemandBoxPage() {
               {(queueLaneRows[activeQueueLane] || []).length > (isCompact ? 12 : 24) ? (
                 <div style={{ ...helperText(), ...innerCard("#F8FBFF") }}>
                   Showing the first {isCompact ? 12 : 24} rows in this lane. Use
-                  Need types or Urgent to narrow the queue while backend paging
-                  and direct handles are being built.
+                  Need types or Urgent to narrow the queue while cursor paging and direct handles are being built.
                 </div>
               ) : null}
             </div>

@@ -222,8 +222,10 @@ def _to_out(
     db: Session,
     row: MarketplaceRequest,
     user: User | None = None,
+    current_user_id: int | None = None,
 ) -> MarketplaceRequestOut:
     owner = row.user or db.get(User, int(row.user_id)) or user
+    is_mine = current_user_id is not None and int(row.user_id) == int(current_user_id)
     clan = db.get(Clan, int(row.clan_id)) if getattr(row, "clan_id", None) else None
     return MarketplaceRequestOut(
         id=row.id,
@@ -253,6 +255,8 @@ def _to_out(
             else None
         ),
         requester_trust_band=getattr(owner, "trust_band", None),
+        is_mine=is_mine,
+        mine=is_mine,
     )
 
 
@@ -335,7 +339,7 @@ def create_marketplace_request(
         action_label="View your post",
     )
 
-    return _to_out(db, row, current_user)
+    return _to_out(db, row, current_user, current_user_id=int(current_user.id))
 
 
 @router.get("", response_model=List[MarketplaceRequestOut])
@@ -413,7 +417,7 @@ def list_marketplace_requests(
 
     rows = q.order_by(MarketplaceRequest.created_at.desc()).limit(limit).all()
 
-    return [_to_out(db, row) for row in rows]
+    return [_to_out(db, row, current_user_id=int(current_user.id)) for row in rows]
 
 
 @router.get("/{request_id}", response_model=MarketplaceRequestOut)
@@ -462,7 +466,7 @@ def get_marketplace_request(
     if not row:
         raise HTTPException(status_code=404, detail="Request not found")
 
-    return _to_out(db, row)
+    return _to_out(db, row, current_user_id=int(current_user.id))
 
 
 @router.post("/{request_id}/status", response_model=MarketplaceRequestOut)
@@ -495,4 +499,4 @@ def update_marketplace_request_status(
     row.status = new_status
     db.commit()
     db.refresh(row)
-    return _to_out(db, row, current_user)
+    return _to_out(db, row, current_user, current_user_id=int(current_user.id))

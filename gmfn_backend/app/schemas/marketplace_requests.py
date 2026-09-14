@@ -103,5 +103,7 @@ class MarketplaceRequestOut(BaseModel):
     requester_email: Optional[str] = None
     requester_trust_score: Optional[float] = None
     requester_trust_band: Optional[str] = None
+    is_mine: bool = False
+    mine: bool = False
 
     model_config = ConfigDict(from_attributes=True)

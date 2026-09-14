@@ -103,7 +103,7 @@ function requirePattern(pattern, message) {
     "DemandBox return action must keep its stable debug id.",
   ],
   [
-    /type DemandQueueLane = "for_me" \| "community" \| "mine" \| "urgent" \| "categories"/,
+    /type DemandQueueLane = "for_me" \| "mine" \| "ask_community" \| "urgent" \| "categories"/,
     "DemandBox must define governed queue lanes instead of a flat hidden drawer model.",
   ],
   [
@@ -111,7 +111,7 @@ function requirePattern(pattern, message) {
     "DemandBox must default to the responder-facing For me lane.",
   ],
   [
-    /return \["open", "queue", "all", "for_me", "community", "mine", "urgent", "categories"\]\.includes\(queueMode\)/,
+    /return \["open", "queue", "all", "for_me", "community", "mine", "ask_community", "ask-community", "urgent", "categories"\]\.includes\(queueMode\)/,
     "DemandBox must recognize Dashboard queue links and direct lane links.",
   ],
   [
@@ -121,6 +121,14 @@ function requirePattern(pattern, message) {
   [
     /const urgentRows = useMemo\(\(\) => allOpenRows\.filter\(isUrgentDemand\), \[allOpenRows\]\)/,
     "DemandBox must expose an urgent lane derived from recorded urgency/expiry.",
+  ],
+  [
+    /function isAskCommunityDemand\(row: DemandRow\): boolean[\s\S]*?community ask posted through demandbox/,
+    "DemandBox must detect Ask Community rows from existing category/description truth.",
+  ],
+  [
+    /const askCommunityRows = useMemo\([\s\S]*?allOpenRows\.filter\(isAskCommunityDemand\)/,
+    "DemandBox must expose Ask Community as a separate visible lane.",
   ],
   [
     /const categoryBuckets = useMemo\(\(\) => \{[\s\S]*?categoryLabel\(row\)[\s\S]*?urgentCount: rows\.filter\(isUrgentDemand\)\.length/,
@@ -147,6 +155,18 @@ function requirePattern(pattern, message) {
     "DemandBox must render visible results for the selected lane.",
   ],
   [
+    /Need type tag[\s\S]*?value=\{category\}[\s\S]*?Food, vacancy, repair, transport/,
+    "DemandBox must expose the category/tag field in the main create form.",
+  ],
+  [
+    /label: "Ask Community"[\s\S]*?key: "ask_community"|key: "ask_community"[\s\S]*?label: "Ask Community"/,
+    "DemandBox must show Ask Community as its own queue lane instead of repeating the Community lane.",
+  ],
+  [
+    /data-gsn-demand-routing-readiness="true"[\s\S]*?Direct member handles, routed assignments, ranked queues, moderation rules, and true backend paging still need/,
+    "DemandBox must keep the large-community routing boundary collapsed and honest.",
+  ],
+  [
     /data-gsn-demand-category-buckets="true"/,
     "DemandBox must render a category bucket view for tag-like sorting.",
   ],
@@ -171,7 +191,7 @@ function requirePattern(pattern, message) {
     "DemandBox must state the anti-WhatsApp queue boundary.",
   ],
   [
-    /Max loaded now: 50 per read/,
+    /Max loaded now: 200 per read/,
     "DemandBox must surface the current list-size boundary while backend pagination/tag routing is pending.",
   ],
   [
@@ -252,6 +272,14 @@ function requirePattern(pattern, message) {
   [
     /debugId="demand-box\.more-my-demand\.summary"/,
     "DemandBox must not hide extra personal demand behind the old More drawer.",
+  ],
+  [
+    /key: "community", label: "Community"/,
+    "DemandBox must not restore a duplicate Community lane that repeats the For me queue.",
+  ],
+  [
+    /<div style=\{sectionLabel\(\)\}>Category<\/div>[\s\S]*?placeholder="Optional category"/,
+    "DemandBox must not hide the need-type tag inside More detail again.",
   ],
 ].forEach(([pattern, message]) => {
   const index = source.search(pattern);
