@@ -85,6 +85,21 @@ function assertShopContains(
   });
 }
 
+function assertShopDoesNotContain(
+  pattern,
+  message,
+  text = "Unexpected Shop Control pattern was found."
+) {
+  const index = shopControlSource.search(pattern);
+  if (index === -1) return;
+  findings.push({
+    file: shopControlFile,
+    line: lineAt(shopControlSource, index),
+    message,
+    text,
+  });
+}
+
 function assertLayoutContains(
   pattern,
   message,
@@ -430,6 +445,11 @@ assertShopContains(
   /function ShopEconomicEngineVisualPanel[\s\S]*?compactWorkingNow[\s\S]*?title: "Shop"[\s\S]*?title: "Community"[\s\S]*?Evidence only: not sales, payment, delivery or trust proof/,
   "Shop Control Economic overview must keep a compact mobile layout with short labels and one boundary line."
 );
+assertShopDoesNotContain(
+  /marginLeft: -46|marginRight: -46|width: \"calc\\(100% \\+ 92px\\)\"/,
+  "Shop Control compact visual panels must not overhang their parent container on phone.",
+  "Remove negative side margins and oversized calc widths from compact Advanced Analytics panels."
+);
 assertShopContains(
   /<ShopEconomicEngineVisualPanel[\s\S]*?liveSignalCount=\{opportunityEngineLiveSignalCount\}[\s\S]*?demandOpenCount=\{openDemandSignalCount\}[\s\S]*?trustRecordsReady=\{tradeOutcomeReleasedRecords > 0\}/,
   "Shop Control Opportunity Engine must wire the GSN Economic Engine overview to live shop signals."
@@ -513,6 +533,10 @@ assertShopContains(
 assertShopContains(
   /\? `\$\{demandContextLabel\}\. DemandBox is context only\.`/,
   "Shop Control Community Needs must keep short compact phone copy."
+);
+assertShopContains(
+  /isCompact \? \(\s*<>[\s\S]*?Read DemandBox before changing products\./,
+  "Shop Control Community Needs must keep compact demand-detail copy on phone."
 );
 assertShopContains(
   /<ShopBusinessReturnReadinessVisualPanel[\s\S]*?visitors=\{attentionVisitors7Days\}[\s\S]*?productOpens=\{attentionProductOpens7Days\}[\s\S]*?contactTaps=\{attentionContactTaps7Days\}[\s\S]*?tradeRecords=\{tradeOutcomeRecords7Days\}/,

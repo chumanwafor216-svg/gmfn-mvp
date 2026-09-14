@@ -2156,16 +2156,15 @@ function ShopEconomicEngineVisualPanel({
         aria-label="GSN Economic Engine visual overview"
         style={{
           marginTop: 8,
-          marginLeft: -46,
-          marginRight: -46,
-          width: "calc(100% + 92px)",
+          width: "100%",
+          boxSizing: "border-box",
           borderRadius: 20,
-          border: "1px solid rgba(15,94,170,0.05)",
+          border: "1px solid rgba(15,94,170,0.10)",
           background: "linear-gradient(180deg, #F4FBFF 0%, #FFFFFF 70%, #EEF8FF 100%)",
           padding: 9,
           display: "grid",
           gap: 8,
-          boxShadow: "0 10px 20px rgba(7,24,39,0.05)",
+          boxShadow: "0 6px 14px rgba(7,24,39,0.04)",
           overflow: "hidden",
         }}
       >
@@ -2500,16 +2499,15 @@ function ShopOpportunityLensesVisualPanel({
         aria-label="Opportunity lenses visual summary"
         style={{
           marginTop: 8,
-          marginLeft: -46,
-          marginRight: -46,
-          width: "calc(100% + 92px)",
+          width: "100%",
+          boxSizing: "border-box",
           borderRadius: 20,
-          border: "1px solid rgba(15,94,170,0.05)",
+          border: "1px solid rgba(15,94,170,0.10)",
           background: "linear-gradient(180deg, #F4FBFF 0%, #FFFFFF 64%, #EEF8FF 100%)",
           padding: 9,
           display: "grid",
           gap: 8,
-          boxShadow: "0 10px 20px rgba(7,24,39,0.05)",
+          boxShadow: "0 6px 14px rgba(7,24,39,0.04)",
           overflow: "hidden",
         }}
       >
@@ -2888,16 +2886,15 @@ function ShopBusinessReturnReadinessVisualPanel({
         aria-label="Business return readiness visual summary"
         style={{
           marginTop: 8,
-          marginLeft: -46,
-          marginRight: -46,
-          width: "calc(100% + 92px)",
+          width: "100%",
+          boxSizing: "border-box",
           borderRadius: 20,
-          border: "1px solid rgba(15,94,170,0.05)",
+          border: "1px solid rgba(15,94,170,0.10)",
           background: "linear-gradient(180deg, #F4FBFF 0%, #FFFFFF 66%, #FFF8E6 100%)",
           padding: 9,
           display: "grid",
           gap: 8,
-          boxShadow: "0 10px 20px rgba(7,24,39,0.05)",
+          boxShadow: "0 6px 14px rgba(7,24,39,0.04)",
           overflow: "hidden",
         }}
       >
@@ -3123,16 +3120,15 @@ function ShopOpportunityReadingVisualPanel({
         aria-label="Opportunity reading visual summary"
         style={{
           marginTop: 8,
-          marginLeft: -46,
-          marginRight: -46,
-          width: "calc(100% + 92px)",
+          width: "100%",
+          boxSizing: "border-box",
           borderRadius: 20,
-          border: "1px solid rgba(15,94,170,0.05)",
+          border: "1px solid rgba(15,94,170,0.10)",
           background: "linear-gradient(180deg, #F5FBFF 0%, #FFFFFF 66%, #EEF8FF 100%)",
           padding: 9,
           display: "grid",
           gap: 8,
-          boxShadow: "0 10px 20px rgba(7,24,39,0.05)",
+          boxShadow: "0 6px 14px rgba(7,24,39,0.04)",
           overflow: "hidden",
         }}
       >
@@ -3322,16 +3318,15 @@ function ShopEvidenceCaptureChecklistVisualPanel({
       aria-label="Evidence capture checklist visual summary"
       style={{
         marginTop: 8,
-        marginLeft: -46,
-        marginRight: -46,
-        width: "calc(100% + 92px)",
+        width: "100%",
+        boxSizing: "border-box",
         borderRadius: 20,
-        border: "1px solid rgba(15,94,170,0.05)",
+        border: "1px solid rgba(15,94,170,0.10)",
         background: "linear-gradient(180deg, #F5FBFF 0%, #FFFFFF 64%, #FFF9EA 100%)",
         padding: 9,
         display: "grid",
         gap: 8,
-        boxShadow: "0 10px 20px rgba(7,24,39,0.05)",
+        boxShadow: "0 6px 14px rgba(7,24,39,0.04)",
         overflow: "hidden",
       }}
     >
@@ -9541,15 +9536,15 @@ export default function ShopControlPage() {
                 </div>
               </div>
               {communityNeedOpportunities.length ? (
-                <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                <div style={{ marginTop: 10, display: "grid", gap: isCompact ? 7 : 8 }}>
                   {communityNeedOpportunities.map((opportunity) => (
                     <div
                       key={`community-need-${opportunity.row.id}`}
                       style={{
                         borderRadius: 14,
-                        border: "1px solid rgba(122,89,16,0.14)",
-                        background: "rgba(255,255,255,0.72)",
-                        padding: 10,
+                        border: isCompact ? "0" : "1px solid rgba(122,89,16,0.14)",
+                        background: isCompact ? "rgba(255,255,255,0.68)" : "rgba(255,255,255,0.72)",
+                        padding: isCompact ? 9 : 10,
                       }}
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
@@ -9570,14 +9565,23 @@ export default function ShopControlPage() {
                           </span>
                         </div>
                       </div>
-                      <div style={{ marginTop: 8, display: "grid", gap: 5, color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.4 }}>
-                        <div><strong style={{ color: "#061827" }}>Evidence:</strong> {opportunity.evidence}</div>
-                        <div><strong style={{ color: "#061827" }}>Why it may match:</strong> {opportunity.reason}</div>
-                        <div><strong style={{ color: "#061827" }}>Action:</strong> {opportunity.primaryAction}</div>
-                        <div><strong style={{ color: "#061827" }}>Review:</strong> {opportunity.reviewTrigger}</div>
-                        {opportunity.terms.length ? (
-                          <div><strong style={{ color: "#061827" }}>Shared words:</strong> {opportunity.terms.join(", ")}</div>
-                        ) : null}
+                      <div style={{ marginTop: 8, display: "grid", gap: isCompact ? 4 : 5, color: "#385773", fontSize: isCompact ? 10.8 : 11, fontWeight: 760, lineHeight: isCompact ? 1.28 : 1.4 }}>
+                        {isCompact ? (
+                          <>
+                            <div><strong style={{ color: "#061827" }}>Evidence:</strong> {opportunity.evidence}</div>
+                            <div><strong style={{ color: "#061827" }}>Next:</strong> Read DemandBox before changing products.</div>
+                          </>
+                        ) : (
+                          <>
+                            <div><strong style={{ color: "#061827" }}>Evidence:</strong> {opportunity.evidence}</div>
+                            <div><strong style={{ color: "#061827" }}>Why it may match:</strong> {opportunity.reason}</div>
+                            <div><strong style={{ color: "#061827" }}>Action:</strong> {opportunity.primaryAction}</div>
+                            <div><strong style={{ color: "#061827" }}>Review:</strong> {opportunity.reviewTrigger}</div>
+                            {opportunity.terms.length ? (
+                              <div><strong style={{ color: "#061827" }}>Shared words:</strong> {opportunity.terms.join(", ")}</div>
+                            ) : null}
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
