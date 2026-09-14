@@ -40,6 +40,10 @@ const protectedAudits = [
     script: "audit-dashboard-button-inventory.mjs",
   },
   {
+    label: "dashboard passive passport hitboxes",
+    script: "audit-dashboard-passport-hitboxes.mjs",
+  },
+  {
     label: "dashboard phone buttons",
     script: "audit-dashboard-phone-buttons.mjs",
   },

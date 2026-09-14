@@ -160,7 +160,8 @@
     "smoke:marketplace-hero": "node tools/smoke-marketplace-hero.mjs",
     "smoke:live-marketplace-join-form": "node tools/smoke-live-marketplace-join-form.mjs",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "audit:dashboard-passport-hitboxes": "node tools/audit-dashboard-passport-hitboxes.mjs"
   },
   "dependencies": {
     "qrcode.react": "^4.2.0",
