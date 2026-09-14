@@ -577,12 +577,12 @@ const SHOP_ANALYTICS_PANELS: Array<{
   detail: string;
   icon: GsnIconName;
 }> = [
-  { key: "key-metrics", label: "Key Metrics", detail: "Last 7 days", icon: "chart" },
-  { key: "view-contact", label: "View to Contact", detail: "Attention funnel", icon: "eye" },
-  { key: "visitor-activity", label: "Visitor Activity", detail: "Visits and spotlight", icon: "community" },
-  { key: "trade-outcomes", label: "Trade Outcome", detail: "Evidence records", icon: "document" },
-  { key: "traffic-sources", label: "Traffic Sources", detail: "Where attention came from", icon: "copy" },
-  { key: "market-intelligence", label: "Opportunity Engine", detail: "Advanced Analytics", icon: "spark" },
+  { key: "key-metrics", label: "Shop health", detail: "At a glance", icon: "chart" },
+  { key: "view-contact", label: "View to contact", detail: "Simple funnel", icon: "eye" },
+  { key: "visitor-activity", label: "People noticing", detail: "Visits and spotlight", icon: "community" },
+  { key: "trade-outcomes", label: "Protected trade", detail: "Evidence records", icon: "document" },
+  { key: "traffic-sources", label: "Share paths", detail: "Where attention came from", icon: "copy" },
+  { key: "market-intelligence", label: "Next proof", detail: "Learn before scale", icon: "spark" },
 ];
 function safeStr(value: unknown): string {
   return String(value ?? "").trim();
@@ -1472,6 +1472,340 @@ function ShopAnalyticsFunnelStep({
   );
 }
 
+function ShopVisualIconTile({
+  icon,
+  accent,
+  size = 44,
+}: {
+  icon: GsnIconName;
+  accent: AnalyticsAccent;
+  size?: number;
+}) {
+  const palette = ANALYTICS_ACCENTS[accent];
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        width: 66,
+        height: 66,
+        borderRadius: 22,
+        display: "grid",
+        placeItems: "center",
+        color: palette.color,
+        background: "rgba(255,255,255,0.82)",
+        boxShadow:
+          "0 14px 24px rgba(8,38,67,0.10), inset 0 1px 0 rgba(255,255,255,0.94), inset 0 -2px 0 rgba(8,40,72,0.05)",
+      }}
+    >
+      <GsnLegacyIcon name={icon} size={size} />
+    </div>
+  );
+}
+
+function ShopVisualSummaryCard({
+  icon,
+  label,
+  value,
+  accent,
+}: {
+  icon: GsnIconName;
+  label: string;
+  value: React.ReactNode;
+  accent: AnalyticsAccent;
+}) {
+  const palette = ANALYTICS_ACCENTS[accent];
+  return (
+    <div
+      style={{
+        borderRadius: 18,
+        border: `1px solid ${palette.border}`,
+        background: palette.bg,
+        padding: 12,
+        minHeight: 112,
+        display: "grid",
+        gridTemplateColumns: "68px minmax(0, 1fr)",
+        gap: 12,
+        alignItems: "center",
+        boxShadow: "0 12px 22px rgba(7,24,39,0.07)",
+      }}
+    >
+      <ShopVisualIconTile icon={icon} accent={accent} />
+      <div style={{ minWidth: 0 }}>
+        <div style={{ color: "#061827", fontSize: 18, fontWeight: 950, lineHeight: 1.08 }}>
+          {label}
+        </div>
+        <div
+          style={{
+            marginTop: 8,
+            display: "inline-flex",
+            maxWidth: "100%",
+            borderRadius: 999,
+            padding: "6px 12px",
+            color: palette.color,
+            background: "rgba(255,255,255,0.72)",
+            fontSize: 18,
+            fontWeight: 950,
+            lineHeight: 1,
+            overflowWrap: "anywhere",
+          }}
+        >
+          {value}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ShopVisualStep({
+  index,
+  icon,
+  label,
+  accent,
+}: {
+  index: number;
+  icon: GsnIconName;
+  label: string;
+  accent: AnalyticsAccent;
+}) {
+  return (
+    <div
+      style={{
+        borderRadius: 18,
+        border: "1px solid rgba(18,58,89,0.10)",
+        background: "rgba(255,255,255,0.82)",
+        padding: "12px 10px",
+        display: "grid",
+        justifyItems: "center",
+        gap: 8,
+        minHeight: 138,
+        textAlign: "center",
+        position: "relative",
+      }}
+    >
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          top: -12,
+          width: 30,
+          height: 30,
+          borderRadius: 999,
+          display: "grid",
+          placeItems: "center",
+          color: "#061827",
+          background: ANALYTICS_ACCENTS[accent].bg,
+          border: `1px solid ${ANALYTICS_ACCENTS[accent].border}`,
+          fontSize: 14,
+          fontWeight: 950,
+          boxShadow: "0 8px 14px rgba(7,24,39,0.08)",
+        }}
+      >
+        {index}
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <ShopVisualIconTile icon={icon} accent={accent} size={42} />
+      </div>
+      <div
+        style={{
+          borderRadius: 999,
+          padding: "7px 12px",
+          background: "#FFFFFF",
+          color: "#061827",
+          fontSize: 15,
+          fontWeight: 950,
+          lineHeight: 1.12,
+        }}
+      >
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function ShopEvidenceLayerStrip({ isCompact }: { isCompact: boolean }) {
+  const layers: Array<{ icon: GsnIconName; label: string; accent: AnalyticsAccent }> = [
+    { icon: "eye", label: "Attention", accent: "blue" },
+    { icon: "community", label: "Contact", accent: "gold" },
+    { icon: "document", label: "Outcome", accent: "green" },
+    { icon: "shield", label: "Repeat", accent: "red" },
+  ];
+
+  return (
+    <div
+      style={{
+        borderRadius: 20,
+        border: "1px solid rgba(18,58,89,0.12)",
+        background: "rgba(255,255,255,0.86)",
+        padding: isCompact ? 12 : 14,
+        display: "grid",
+        gap: 10,
+      }}
+    >
+      <div style={{ color: "#061827", fontSize: 18, fontWeight: 950 }}>Evidence grows in layers</div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(7, minmax(0, auto))",
+          gap: isCompact ? 10 : 12,
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        {layers.map((layer, index) => (
+          <React.Fragment key={`shop-evidence-layer-${layer.label}`}>
+            <div style={{ display: "grid", justifyItems: "center", gap: 7, textAlign: "center" }}>
+              <ShopVisualIconTile icon={layer.icon} accent={layer.accent} size={38} />
+              <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>{layer.label}</div>
+            </div>
+            {!isCompact && index < layers.length - 1 ? (
+              <div aria-hidden="true" style={{ color: "#7FA4C5", fontSize: 24, fontWeight: 950 }}>
+                {"->"}
+              </div>
+            ) : null}
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ShopLearnBeforeScalePanel({ isCompact }: { isCompact: boolean }) {
+  const prepSteps: Array<{ icon: GsnIconName; label: string; accent: AnalyticsAccent }> = [
+    { icon: "financeInstitution", label: "Record cost", accent: "gold" },
+    { icon: "spark", label: "One change", accent: "green" },
+    { icon: "document", label: "Set date", accent: "blue" },
+    { icon: "shield", label: "Save result", accent: "purple" },
+  ];
+  const learningWindows: Array<{ days: string; label: string; detail: string; icon: GsnIconName; accent: AnalyticsAccent }> = [
+    { days: "7 days", label: "Learn", detail: "Watch attention", icon: "eye", accent: "blue" },
+    { days: "30 days", label: "Compare", detail: "Cost, contact, outcome", icon: "community", accent: "green" },
+    { days: "90 days", label: "Pattern", detail: "Repeat behaviour", icon: "shield", accent: "red" },
+  ];
+
+  return (
+    <div
+      style={{
+        marginTop: 12,
+        borderRadius: 22,
+        border: "1px solid rgba(15,94,170,0.14)",
+        background: "linear-gradient(180deg, #F8FCFF 0%, #EAF7FF 60%, #FFF7D8 100%)",
+        padding: isCompact ? 12 : 14,
+        display: "grid",
+        gap: 12,
+        boxShadow: "0 14px 28px rgba(7,24,39,0.08)",
+      }}
+    >
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 170px",
+          gap: 12,
+          alignItems: "center",
+        }}
+      >
+        <div>
+          <div style={{ color: "#061827", fontSize: isCompact ? 28 : 34, fontWeight: 950, lineHeight: 1.02 }}>
+            Learn before you scale
+          </div>
+          <div style={{ marginTop: 8, color: "#385773", fontSize: 14, fontWeight: 850, lineHeight: 1.35 }}>
+            Test one change. Watch what happens.
+          </div>
+        </div>
+        <div
+          style={{
+            borderRadius: 20,
+            background: "rgba(255,255,255,0.82)",
+            border: "1px solid rgba(18,58,89,0.10)",
+            padding: 10,
+            display: "grid",
+            justifyItems: "center",
+            gap: 6,
+            textAlign: "center",
+          }}
+        >
+          <GsnSignalChart rate={42} active tone="green" compact={isCompact} label="Small tests chart" />
+          <div style={{ color: "#0B2D4A", fontSize: 12, fontWeight: 950 }}>Small tests. Big progress.</div>
+        </div>
+      </div>
+      <div style={{ color: "#061827", fontSize: 17, fontWeight: 950 }}>Before every push</div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
+          gap: 10,
+        }}
+      >
+        {prepSteps.map((step) => (
+          <div
+            key={`shop-scale-prep-${step.label}`}
+            style={{
+              borderRadius: 18,
+              background: ANALYTICS_ACCENTS[step.accent].bg,
+              border: `1px solid ${ANALYTICS_ACCENTS[step.accent].border}`,
+              padding: 10,
+              minHeight: 102,
+              display: "grid",
+              justifyItems: "center",
+              alignContent: "center",
+              gap: 8,
+              textAlign: "center",
+            }}
+          >
+            <ShopVisualIconTile icon={step.icon} accent={step.accent} size={36} />
+            <div style={{ color: "#061827", fontSize: 13, fontWeight: 950, lineHeight: 1.14 }}>{step.label}</div>
+          </div>
+        ))}
+      </div>
+      <div
+        style={{
+          justifySelf: "center",
+          borderRadius: 999,
+          background: "linear-gradient(180deg, #FFF4C6 0%, #F7D66D 100%)",
+          color: "#5B3C00",
+          padding: "9px 18px",
+          fontSize: 16,
+          fontWeight: 950,
+          textAlign: "center",
+          boxShadow: "0 10px 18px rgba(180,123,0,0.12)",
+        }}
+      >
+        Change one thing at a time.
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+          gap: 10,
+        }}
+      >
+        {learningWindows.map((item) => (
+          <div
+            key={`shop-learning-window-${item.days}`}
+            style={{
+              borderRadius: 20,
+              border: `1px solid ${ANALYTICS_ACCENTS[item.accent].border}`,
+              background: "rgba(255,255,255,0.84)",
+              padding: 12,
+              minHeight: 160,
+              display: "grid",
+              justifyItems: "center",
+              alignContent: "space-between",
+              gap: 8,
+              textAlign: "center",
+            }}
+          >
+            <div>
+              <div style={{ color: "#061827", fontSize: 23, fontWeight: 950, lineHeight: 1 }}>{item.days}</div>
+              <div style={{ marginTop: 4, color: ANALYTICS_ACCENTS[item.accent].color, fontSize: 17, fontWeight: 950 }}>{item.label}</div>
+            </div>
+            <ShopVisualIconTile icon={item.icon} accent={item.accent} size={38} />
+            <div style={{ color: "#385773", fontSize: 12, fontWeight: 850, lineHeight: 1.25 }}>{item.detail}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 function shortAnalyticsDateLabel(value: unknown): string {
   const text = safeStr(value);
   if (!text) return "Day";
@@ -6295,6 +6629,174 @@ export default function ShopControlPage() {
           ) : null}
         </div>
         <div
+          aria-label="Shop health visual summary"
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gap: 12,
+          }}
+        >
+          <div
+            style={{
+              borderRadius: 24,
+              border: "1px solid rgba(15,94,170,0.14)",
+              background: "linear-gradient(135deg, #EEF9FF 0%, #FFFFFF 52%, #FFF3C4 100%)",
+              padding: isCompact ? 14 : 16,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 220px",
+              gap: 14,
+              alignItems: "center",
+              boxShadow: "0 16px 30px rgba(7,24,39,0.08)",
+            }}
+          >
+            <div>
+              <div style={{ color: "#061827", fontSize: isCompact ? 30 : 36, fontWeight: 950, lineHeight: 1.02 }}>
+                Shop health at a glance
+              </div>
+              <div style={{ marginTop: 8, color: "#385773", fontSize: isCompact ? 15 : 17, fontWeight: 850, lineHeight: 1.35 }}>
+                Small data should make you patient.
+              </div>
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  borderRadius: 999,
+                  padding: "8px 13px",
+                  background: "rgba(255,255,255,0.78)",
+                  color: "#1F8A57",
+                  fontSize: 13,
+                  fontWeight: 950,
+                }}
+              >
+                {inlineIcon("shield", "#1F8A57", 15)} Evidence building
+              </div>
+            </div>
+            <div
+              style={{
+                borderRadius: 22,
+                border: "1px solid rgba(18,58,89,0.10)",
+                background: "rgba(255,255,255,0.78)",
+                padding: 12,
+                display: "grid",
+                justifyItems: "center",
+                gap: 8,
+                textAlign: "center",
+              }}
+            >
+              <ShopVisualIconTile icon="shop" accent="green" size={56} />
+              <GsnSignalChart
+                rate={publicInventoryRate}
+                active={publicInventoryRate > 0}
+                tone={publicInventoryRate >= 80 ? "green" : "gold"}
+                compact={isCompact}
+                label={`Shop readiness chart: ${publicInventoryRate} percent`}
+              />
+              <div style={{ color: "#0B2D4A", fontSize: 13, fontWeight: 950 }}>Keep going</div>
+            </div>
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "repeat(4, minmax(0, 1fr))",
+              gap: 10,
+            }}
+          >
+            <ShopVisualSummaryCard icon="shop" label="Shop items" value={`${occupiedPublicProductSlotCount} live`} accent="gold" />
+            <ShopVisualSummaryCard icon="eye" label="Spotlight" value={`${attentionSpotlightImpressions7Days} views`} accent="blue" />
+            <ShopVisualSummaryCard icon="community" label="DemandBox" value={openDemandSignalCount > 0 ? `${openDemandSignalCount} open` : "None yet"} accent="green" />
+            <ShopVisualSummaryCard icon="shield" label="Protected trade" value={tradeOutcomeRecords7Days > 0 ? `${tradeOutcomeRecords7Days} records` : "No records yet"} accent="purple" />
+          </div>
+          <div
+            style={{
+              borderRadius: 20,
+              border: "1px solid rgba(214,170,69,0.22)",
+              background: "linear-gradient(180deg, #FFF9E7 0%, #FFFFFF 100%)",
+              padding: 13,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "58px minmax(0, 1fr)" : "72px minmax(0, 1fr) 120px",
+              gap: 12,
+              alignItems: "center",
+            }}
+          >
+            <ShopVisualIconTile icon="chart" accent="gold" size={42} />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ color: "#061827", fontSize: 20, fontWeight: 950 }}>What this means</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  display: "inline-flex",
+                  borderRadius: 999,
+                  padding: "7px 13px",
+                  background: "rgba(247,214,109,0.46)",
+                  color: "#6D4A00",
+                  fontSize: 16,
+                  fontWeight: 950,
+                }}
+              >
+                Too early to judge
+              </div>
+              <div style={{ marginTop: 8, color: "#385773", fontSize: 13, fontWeight: 850, lineHeight: 1.35 }}>
+                Views show attention, not confirmed sales.
+              </div>
+            </div>
+            {!isCompact ? (
+              <div style={{ color: "#0F5EAA", fontSize: 17, fontWeight: 950, lineHeight: 1.15, textAlign: "center" }}>
+                Progress takes time
+              </div>
+            ) : null}
+          </div>
+          <div
+            style={{
+              borderRadius: 22,
+              border: "1px solid rgba(46,155,98,0.14)",
+              background: "linear-gradient(180deg, #F1FFF9 0%, #FFFFFF 100%)",
+              padding: isCompact ? 12 : 14,
+              display: "grid",
+              gap: 14,
+            }}
+          >
+            <div>
+              <div style={{ color: "#061827", fontSize: 22, fontWeight: 950 }}>Try this next</div>
+              <div style={{ marginTop: 4, color: "#385773", fontSize: 13, fontWeight: 850 }}>
+                A small plan helps you learn what works.
+              </div>
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                gap: isCompact ? 18 : 12,
+              }}
+            >
+              <ShopVisualStep index={1} icon="megaphone" label="Share once" accent="blue" />
+              <ShopVisualStep index={2} icon="document" label="Wait 7 days" accent="gold" />
+              <ShopVisualStep index={3} icon="community" label="Ask buyers" accent="green" />
+            </div>
+          </div>
+          <ShopEvidenceLayerStrip isCompact={isCompact} />
+          <div
+            style={{
+              borderRadius: 18,
+              border: "1px solid rgba(15,94,170,0.14)",
+              background: "linear-gradient(180deg, #F8FCFF 0%, #EAF4FF 100%)",
+              padding: 12,
+              display: "grid",
+              gridTemplateColumns: "54px minmax(0, 1fr)",
+              gap: 12,
+              alignItems: "center",
+              color: "#0B2D4A",
+              fontSize: 14,
+              fontWeight: 900,
+              lineHeight: 1.35,
+            }}
+          >
+            <ShopVisualIconTile icon="shield" accent="blue" size={38} />
+            <div>Attention is not proof of sales, payment, delivery or trust.</div>
+          </div>
+        </div>
+        <div
           style={{
             marginTop: 14,
             display: "grid",
@@ -6763,9 +7265,10 @@ export default function ShopControlPage() {
               <GsnLegacyIcon name="spark" size={34} />
               <div>
                 <div style={{ color: "#061827", fontSize: 19, fontWeight: 950 }}>Opportunity Engine</div>
-                <div style={{ ...helperText(), fontSize: 12 }}>Advanced Analytics / Market Intelligence. Evidence first, next test second.</div>
+                <div style={{ ...helperText(), fontSize: 12 }}>Advanced Analytics / Market Intelligence. Evidence first, one test next.</div>
               </div>
             </div>
+            <ShopLearnBeforeScalePanel isCompact={isCompact} />
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(shopAnalyticsWisdom.confidence === "high")}>Confidence: {shopAnalyticsWisdom.confidence}</span>
               <span style={badge(shopAnalyticsWisdom.diagnosisCode !== "GATHERING_DATA")}>{shopAnalyticsWisdom.state}</span>
@@ -6827,7 +7330,7 @@ export default function ShopControlPage() {
                 <div>
                   <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Economic overview</div>
                   <div style={{ marginTop: 4, color: "#385773", fontSize: 12, fontWeight: 800, lineHeight: 1.4 }}>
-                    This reads current shop, Spotlight, DemandBox, trade evidence, and selected community context. Wider guidance stays blocked until more verified records and governed context exist.
+                    GSN reads the shop, Spotlight, DemandBox and protected trade records. It waits for real evidence before making big claims.
                   </div>
                 </div>
                 <span style={badge(opportunityEngineLiveSignalCount >= 3)}>{opportunityEngineLiveSignalCount} live signals</span>

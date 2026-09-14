@@ -414,6 +414,30 @@ assertShopContains(
   "Shop Control textareas must keep fixed resize behavior so the shop details card does not move under touch."
 );
 
+assertShopContains(
+  /ShopVisualSummaryCard[\s\S]*?Shop health at a glance[\s\S]*?Shop items[\s\S]*?Spotlight[\s\S]*?DemandBox[\s\S]*?Protected trade/,
+  "Shop Control analytics must keep the picture-led shop health summary for low-literacy owner review."
+);
+
+assertShopContains(
+  /Try this next[\s\S]*?Share once[\s\S]*?Wait 7 days[\s\S]*?Ask buyers/,
+  "Shop Control analytics must keep the visual next-step plan."
+);
+
+assertShopContains(
+  /function ShopEvidenceLayerStrip[\s\S]*?Evidence grows in layers[\s\S]*?<ShopEvidenceLayerStrip isCompact=\{isCompact\}/,
+  "Shop Control analytics must keep the evidence layer strip."
+);
+
+assertShopContains(
+  /Attention is not proof of sales, payment, delivery or trust/,
+  "Shop Control analytics must keep the simple no-sales-proof boundary near the visual summary."
+);
+
+assertShopContains(
+  /function ShopLearnBeforeScalePanel[\s\S]*?Record cost[\s\S]*?One change[\s\S]*?Set date[\s\S]*?Save result[\s\S]*?7 days[\s\S]*?30 days[\s\S]*?90 days[\s\S]*?Learn before you scale[\s\S]*?<ShopLearnBeforeScalePanel isCompact=\{isCompact\}/,
+  "Opportunity Engine must keep the learn-before-scale picture panel with 7, 30, and 90 day windows."
+);
 if (/letterSpacing:\s*[1-9]/.test(shopControlSource)) {
   findings.push({
     file: shopControlFile,
@@ -423,12 +447,12 @@ if (/letterSpacing:\s*[1-9]/.test(shopControlSource)) {
   });
 }
 
-if (/ÃƒÂ¢|Ã¯Â¿Â½/.test(shopControlSource)) {
+if (/ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢|ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¿Ãƒâ€šÃ‚Â½/.test(shopControlSource)) {
   findings.push({
     file: shopControlFile,
-    line: lineAt(shopControlSource, shopControlSource.search(/ÃƒÂ¢|Ã¯Â¿Â½/)),
+    line: lineAt(shopControlSource, shopControlSource.search(/ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢|ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¿Ãƒâ€šÃ‚Â½/)),
     message: "Shop Control must not show mojibake/broken encoding characters in user-facing copy.",
-    text: shopControlSource.match(/.*(?:ÃƒÂ¢|Ã¯Â¿Â½).*/)?.[0]?.trim() || "",
+    text: shopControlSource.match(/.*(?:ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢|ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¿Ãƒâ€šÃ‚Â½).*/)?.[0]?.trim() || "",
   });
 }
 

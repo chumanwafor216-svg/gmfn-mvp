@@ -1,3 +1,13 @@
+## 2026-09-14 - Shop Control made more picture-led for low-literacy owners
+- Status: Verified local frontend UX update; no backend route, schema, auth, permission, payment, analytics event contract, Dashboard Market Wisdom, push, or deploy change was made.
+- Owner request: make the Shop Control/analytics pages closer to the supplied picture-led references because many users will be unbanked or underbanked and should not need to read long reports.
+- Files updated: `frontend/src/pages/ShopControlPage.tsx`, `frontend/tools/audit-shop-control-button-inventory.mjs`, and this handoff note.
+- Route/screen impact: `/app/shop-control` Shop Analytics now starts with a pictorial `Shop health at a glance` board showing shop items, Spotlight views, DemandBox, protected trade, `Too early to judge`, a three-step `Try this next` plan, and an evidence layer strip.
+- Advanced Analytics / Market Intelligence impact: the Opportunity Engine lane now opens with a `Learn before you scale` visual panel showing `Record cost`, `One change`, `Set date`, `Save result`, plus 7-day, 30-day, and 90-day learning windows before deeper analytics.
+- Guardrail: the existing Shop Control action inventory stayed unchanged: 12 PrimaryButton, 24 SecondaryButton, 3 SubtleButton, 5 StableButton, 10 StableCtaLink, 26 native fields, and 71 whole-route mobile action roots.
+- Verification passed: `npm --prefix frontend run audit:shop-control-button-inventory`, `npm --prefix frontend run audit:spotlight-system-feed`, and `npm --prefix frontend run build`.
+- Wider audit note: `npm --prefix frontend run audit:protected-button-freeze` passed the Shop Control sub-audit but still failed on pre-existing unrelated `MyGMFNAndIPage.tsx` issues: one raw anchor and two member/entry capability-copy contract checks.
+- Devil truth: this makes the screen easier to understand and closer to the supplied mockups, but it is not pasted artwork, not a new analytics engine, not sales/payment/delivery proof, and not evidence that a phone call or WhatsApp conversation completed after the user leaves GSN.
 ## 2026-09-14 - Setup pack QR links changed to direct PDFs
 - Status: Link hygiene follow-up completed locally after owner noticed phone QR/document links opening GitHub source pages.
 - Owner concern: opening a GitHub page from a PDF looked like a possible danger to GSN/GSM access and confused the intended client handoff experience.
