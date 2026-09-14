@@ -429,6 +429,21 @@ assertShopContains(
 assertShopContains(
   /<ShopEconomicEngineVisualPanel[\s\S]*?liveSignalCount=\{opportunityEngineLiveSignalCount\}[\s\S]*?demandOpenCount=\{openDemandSignalCount\}[\s\S]*?trustRecordsReady=\{tradeOutcomeReleasedRecords > 0\}/,
   "Shop Control Opportunity Engine must wire the GSN Economic Engine overview to live shop signals."
+);assertShopContains(
+  /function ShopOpportunityLensesVisualPanel[\s\S]*?Economic demand[\s\S]*?Social movement[\s\S]*?Operations[\s\S]*?Trust & safety[\s\S]*?Outside context[\s\S]*?Opportunity lenses[\s\S]*?Evidence boundaries/,
+  "Shop Control Opportunity Engine must keep the picture-led Opportunity lenses view."
+);
+assertShopContains(
+  /<ShopOpportunityLensesVisualPanel[\s\S]*?liveSignalCount=\{opportunityEngineLiveSignalCount\}[\s\S]*?demandOpenCount=\{openDemandSignalCount\}[\s\S]*?tradeRecords=\{tradeOutcomeRecords7Days\}/,
+  "Shop Control Opportunity lenses visual must stay wired to live shop signals."
+);
+assertShopContains(
+  /function ShopBusinessReturnReadinessVisualPanel[\s\S]*?Business return readiness[\s\S]*?Promotion trail[\s\S]*?Missing link[\s\S]*?Outcome trail[\s\S]*?Build the evidence[\s\S]*?Readiness only, not a return calculation/,
+  "Shop Control return evidence must keep the picture-led business return readiness view."
+);
+assertShopContains(
+  /<ShopBusinessReturnReadinessVisualPanel[\s\S]*?visitors=\{attentionVisitors7Days\}[\s\S]*?productOpens=\{attentionProductOpens7Days\}[\s\S]*?contactTaps=\{attentionContactTaps7Days\}[\s\S]*?tradeRecords=\{tradeOutcomeRecords7Days\}/,
+  "Shop Control business return readiness visual must stay wired to live shop signals."
 );
 assertShopContains(
   /ShopVisualSummaryCard[\s\S]*?Shop health at a glance[\s\S]*?Shop items[\s\S]*?Spotlight[\s\S]*?DemandBox[\s\S]*?Protected trade/,

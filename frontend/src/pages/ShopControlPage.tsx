@@ -2291,6 +2291,304 @@ function ShopEconomicEngineVisualPanel({
     </div>
   );
 }
+function ShopOpportunityLensesVisualPanel({
+  isCompact,
+  liveSignalCount,
+  signalGroupCount,
+  demandOpenCount,
+  tradeRecords,
+  hasCommunityContext,
+}: {
+  isCompact: boolean;
+  liveSignalCount: number;
+  signalGroupCount: number;
+  demandOpenCount: number;
+  tradeRecords: number;
+  hasCommunityContext: boolean;
+}) {
+  const totalSignals = Math.max(signalGroupCount, 1);
+  const lenses: Array<{
+    icon: GsnIconName;
+    title: string;
+    status: "Live" | "Watch" | "Next";
+    value: string;
+    next: string;
+    accent: AnalyticsAccent;
+  }> = [
+    {
+      icon: "shop",
+      title: "Economic demand",
+      status: demandOpenCount > 0 ? "Live" : "Next",
+      value: demandOpenCount > 0 ? `${demandOpenCount} open DemandBox request` : "No DemandBox request yet",
+      next: "Compare requests with shop offers",
+      accent: "green",
+    },
+    {
+      icon: "community",
+      title: "Social movement",
+      status: hasCommunityContext ? "Live" : "Next",
+      value: hasCommunityContext ? "Community-scoped reading" : "Select community context",
+      next: "Keep comparisons local",
+      accent: "green",
+    },
+    {
+      icon: "megaphone",
+      title: "Operations",
+      status: liveSignalCount >= 3 ? "Live" : "Watch",
+      value: `${liveSignalCount} of ${totalSignals} signals are live`,
+      next: "Test one small change",
+      accent: "blue",
+    },
+    {
+      icon: "shield",
+      title: "Trust & safety",
+      status: tradeRecords > 0 ? "Live" : "Watch",
+      value: tradeRecords > 0 ? `${tradeRecords} protected records` : "No protected trade records yet",
+      next: "Protect serious outcomes",
+      accent: "gold",
+    },
+    {
+      icon: "lock",
+      title: "Outside context",
+      status: "Next",
+      value: "Not connected to this pilot",
+      next: "Add only approved sources",
+      accent: "blue",
+    },
+  ];
+
+  const statusTone = (status: "Live" | "Watch" | "Next"): AnalyticsAccent =>
+    status === "Live" ? "green" : status === "Watch" ? "gold" : "blue";
+
+  return (
+    <div
+      aria-label="Opportunity lenses visual summary"
+      style={{
+        marginTop: 10,
+        borderRadius: 22,
+        border: "1px solid rgba(15,94,170,0.14)",
+        background: "linear-gradient(180deg, #F4FBFF 0%, #FFFFFF 58%, #EEF8FF 100%)",
+        padding: isCompact ? 12 : 14,
+        display: "grid",
+        gap: 12,
+        boxShadow: "0 14px 28px rgba(7,24,39,0.07)",
+      }}
+    >
+      <div style={{ textAlign: "center", display: "grid", justifyItems: "center", gap: 7 }}>
+        <div style={{ color: "#061827", fontSize: isCompact ? 28 : 34, fontWeight: 950, lineHeight: 1.03 }}>
+          Opportunity lenses
+        </div>
+        <div style={{ color: "#385773", fontSize: 14, fontWeight: 850, lineHeight: 1.35 }}>
+          What the evidence suggests and what to do next.
+        </div>
+        <div style={{ borderRadius: 999, padding: "8px 16px", background: "linear-gradient(180deg, #FFF1B8 0%, #F7D66D 100%)", color: "#5B3C00", fontSize: 14, fontWeight: 950 }}>
+          Local GSN reading
+        </div>
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 178px minmax(0, 1fr)",
+          gap: 12,
+          alignItems: "center",
+        }}
+      >
+        <div style={{ display: "grid", gap: 10 }}>
+          {lenses.slice(0, 2).map((item) => (
+            <div key={`visual-lens-left-${item.title}`} style={{ borderRadius: 18, border: `1px solid ${ANALYTICS_ACCENTS[item.accent].border}`, background: "rgba(255,255,255,0.88)", padding: 10, display: "grid", gap: 8, minHeight: 132 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "62px minmax(0, 1fr)", gap: 10, alignItems: "center" }}>
+                <ShopVisualIconTile icon={item.icon} accent={item.accent} size={40} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ color: "#061827", fontSize: 16, fontWeight: 950, lineHeight: 1.1 }}>{item.title}</div>
+                  <span style={{ ...badge(item.status === "Live"), marginTop: 6, display: "inline-flex" }}>{item.status}</span>
+                </div>
+              </div>
+              <div style={{ color: "#385773", fontSize: 13, fontWeight: 850, lineHeight: 1.28 }}>{item.value}</div>
+              <div style={{ borderRadius: 14, background: ANALYTICS_ACCENTS[item.accent].bg, color: "#0B2D4A", padding: "8px 10px", fontSize: 12, fontWeight: 950, lineHeight: 1.2 }}>{item.next} {"->"}</div>
+            </div>
+          ))}
+        </div>
+        <div
+          style={{
+            borderRadius: 999,
+            minHeight: 178,
+            display: "grid",
+            placeItems: "center",
+            textAlign: "center",
+            color: "#FFFFFF",
+            background: "radial-gradient(circle at 45% 26%, #22466D 0%, #08233A 56%, #061827 100%)",
+            border: "8px solid rgba(214,170,69,0.72)",
+            boxShadow: "0 18px 34px rgba(7,24,39,0.22)",
+            padding: 18,
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 17, fontWeight: 950, lineHeight: 1.05 }}>Opportunity View</div>
+            <div style={{ marginTop: 8, color: "#F7D66D", fontSize: 24, fontWeight: 950, lineHeight: 1 }}>{liveSignalCount} of {totalSignals}</div>
+            <div style={{ marginTop: 4, fontSize: 13, fontWeight: 850 }}>signals live</div>
+          </div>
+        </div>
+        <div style={{ display: "grid", gap: 10 }}>
+          {lenses.slice(2).map((item) => (
+            <div key={`visual-lens-right-${item.title}`} style={{ borderRadius: 18, border: `1px solid ${ANALYTICS_ACCENTS[item.accent].border}`, background: item.status === "Next" ? "#F7FBFF" : "rgba(255,255,255,0.88)", padding: 10, display: "grid", gap: 8, minHeight: 124 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "58px minmax(0, 1fr)", gap: 10, alignItems: "center" }}>
+                <ShopVisualIconTile icon={item.icon} accent={item.accent} size={38} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ color: "#061827", fontSize: 16, fontWeight: 950, lineHeight: 1.1 }}>{item.title}</div>
+                  <span style={{ ...badge(item.status === "Live"), marginTop: 6, display: "inline-flex", background: ANALYTICS_ACCENTS[statusTone(item.status)].bg }}>{item.status}</span>
+                </div>
+              </div>
+              <div style={{ color: "#385773", fontSize: 13, fontWeight: 850, lineHeight: 1.28 }}>{item.value}</div>
+              <div style={{ borderRadius: 14, background: ANALYTICS_ACCENTS[item.accent].bg, color: "#0B2D4A", padding: "8px 10px", fontSize: 12, fontWeight: 950, lineHeight: 1.2 }}>{item.next} {"->"}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+        {[
+          { status: "Live", text: "evidence exists", accent: "green" as AnalyticsAccent },
+          { status: "Watch", text: "evidence is thin", accent: "gold" as AnalyticsAccent },
+          { status: "Next", text: "not connected yet", accent: "blue" as AnalyticsAccent },
+        ].map((item) => (
+          <div key={`visual-lens-legend-${item.status}`} style={{ borderRadius: 999, background: "rgba(255,255,255,0.86)", border: "1px solid rgba(18,58,89,0.10)", padding: "10px 12px", display: "flex", alignItems: "center", gap: 10 }}>
+            <span aria-hidden="true" style={{ width: 30, height: 30, borderRadius: 999, background: ANALYTICS_ACCENTS[item.accent].color, boxShadow: "0 8px 16px rgba(7,24,39,0.12)" }} />
+            <span style={{ color: "#061827", fontSize: 12, fontWeight: 950 }}>{item.status}</span>
+            <span style={{ color: "#5A6F84", fontSize: 11, fontWeight: 820 }}>{item.text}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{ borderRadius: 18, border: "1px solid rgba(18,58,89,0.10)", background: "rgba(255,255,255,0.86)", padding: 12, display: "grid", gap: 10 }}>
+        <div style={{ color: "#061827", fontSize: 16, fontWeight: 950 }}>Evidence boundaries</div>
+        <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+          {["Demand is not guaranteed sales", "Trust evidence is not approval", "Local reading is not public conclusion"].map((text) => (
+            <div key={`visual-lens-boundary-${text}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(200,58,58,0.14)", padding: 10, display: "grid", gridTemplateColumns: "44px minmax(0, 1fr)", gap: 9, alignItems: "center" }}>
+              <ShopVisualIconTile icon="alert" accent="red" size={30} />
+              <div style={{ color: "#385773", fontSize: 12, fontWeight: 850, lineHeight: 1.25 }}>{text}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ShopBusinessReturnReadinessVisualPanel({
+  isCompact,
+  visitors,
+  productOpens,
+  contactTaps,
+  followers,
+  tradeRecords,
+  releasedTradeRecords,
+  readinessStatus,
+  readinessSummary,
+}: {
+  isCompact: boolean;
+  visitors: number;
+  productOpens: number;
+  contactTaps: number;
+  followers: number;
+  tradeRecords: number;
+  releasedTradeRecords: number;
+  readinessStatus: string;
+  readinessSummary: string;
+}) {
+  const promotionTrail: Array<{ icon: GsnIconName; label: string; value: number; accent: AnalyticsAccent }> = [
+    { icon: "community", label: "Visitors", value: visitors, accent: "green" },
+    { icon: "eye", label: "Product opens", value: productOpens, accent: "blue" },
+    { icon: "phone", label: "Contact taps", value: contactTaps, accent: "green" },
+    { icon: "community", label: "Follower", value: followers, accent: "purple" },
+  ];
+  const outcomeTrail: Array<{ icon: GsnIconName; label: string; value: string }> = [
+    { icon: "chart", label: "Outcomes", value: tradeRecords > 0 ? `${tradeRecords}` : "Missing" },
+    { icon: "shop", label: "Repeat purchases", value: "Missing" },
+    { icon: "community", label: "Retention", value: "Missing" },
+    { icon: "financeInstitution", label: "Margin", value: "Missing" },
+    { icon: "phone", label: "Support cost", value: "Missing" },
+  ];
+  const hasOutcomeTrail = tradeRecords > 0 || releasedTradeRecords > 0;
+
+  return (
+    <div
+      aria-label="Business return readiness visual summary"
+      style={{
+        marginTop: 10,
+        borderRadius: 22,
+        border: "1px solid rgba(15,94,170,0.14)",
+        background: "linear-gradient(180deg, #F2FBFF 0%, #FFFFFF 56%, #FFF8DD 100%)",
+        padding: isCompact ? 12 : 14,
+        display: "grid",
+        gap: 12,
+        boxShadow: "0 14px 28px rgba(7,24,39,0.07)",
+      }}
+    >
+      <div style={{ textAlign: "center", display: "grid", justifyItems: "center", gap: 7 }}>
+        <div style={{ color: "#061827", fontSize: isCompact ? 27 : 34, fontWeight: 950, lineHeight: 1.03 }}>
+          Business return readiness
+        </div>
+        <div style={{ color: "#385773", fontSize: 14, fontWeight: 850, lineHeight: 1.35 }}>
+          Attention is visible. Return is not proven yet.
+        </div>
+        <span style={{ ...badge(readinessStatus === "Ready to estimate"), fontSize: 12 }}>{readinessStatus}</span>
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 180px minmax(0, 1fr)",
+          gap: 12,
+          alignItems: "stretch",
+        }}
+      >
+        <div style={{ borderRadius: 20, border: "1px solid rgba(46,155,98,0.16)", background: "rgba(255,255,255,0.88)", padding: 12, display: "grid", gap: 9 }}>
+          <div style={{ justifySelf: "start", borderRadius: 999, background: "linear-gradient(180deg, #22A8C7 0%, #0F5EAA 100%)", color: "#FFFFFF", padding: "7px 12px", fontSize: 12, fontWeight: 950 }}>Promotion trail</div>
+          {promotionTrail.map((item) => (
+            <div key={`return-promotion-${item.label}`} style={{ display: "grid", gridTemplateColumns: "46px 44px minmax(0, 1fr)", gap: 8, alignItems: "center", borderBottom: "1px solid rgba(18,58,89,0.08)", paddingBottom: 7 }}>
+              <ShopVisualIconTile icon={item.icon} accent={item.accent} size={30} />
+              <div style={{ color: "#061827", fontSize: 24, fontWeight: 950, lineHeight: 1 }}>{item.value}</div>
+              <div style={{ color: "#385773", fontSize: 12, fontWeight: 850, lineHeight: 1.2 }}>{item.label}</div>
+            </div>
+          ))}
+          <div style={{ borderRadius: 14, background: "#E9FFF5", color: "#0C6542", padding: "8px 10px", fontSize: 12, fontWeight: 950, lineHeight: 1.2 }}>Shows attention and intent</div>
+        </div>
+        <div style={{ display: "grid", alignContent: "center", justifyItems: "center", gap: 10, textAlign: "center" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, width: "100%" }}>
+            <div style={{ borderRadius: 16, background: "linear-gradient(180deg, #FFF1B8 0%, #F9D76C 100%)", border: "1px solid rgba(180,123,0,0.20)", color: "#5B3C00", padding: 10, minHeight: 114, display: "grid", placeItems: "center", fontSize: 12, fontWeight: 950, lineHeight: 1.2 }}>1<br />Record promotion cost or effort</div>
+            <div style={{ borderRadius: 16, background: "linear-gradient(180deg, #FFF1B8 0%, #F9D76C 100%)", border: "1px solid rgba(180,123,0,0.20)", color: "#5B3C00", padding: 10, minHeight: 114, display: "grid", placeItems: "center", fontSize: 12, fontWeight: 950, lineHeight: 1.2 }}>2<br />Connect serious outcomes to protected trade</div>
+          </div>
+          <div style={{ color: "#7A4A00", fontSize: 13, fontWeight: 950 }}>Missing link</div>
+          <div aria-hidden="true" style={{ width: "100%", maxWidth: 154, height: 34, borderRadius: 999, borderTop: "6px dashed rgba(214,170,69,0.85)", borderBottom: "6px dashed rgba(214,170,69,0.45)" }} />
+        </div>
+        <div style={{ borderRadius: 20, border: "1px solid rgba(90,111,132,0.18)", background: "rgba(255,255,255,0.88)", padding: 12, display: "grid", gap: 8 }}>
+          <div style={{ justifySelf: "end", borderRadius: 999, background: "linear-gradient(180deg, #8CAAC8 0%, #526B87 100%)", color: "#FFFFFF", padding: "7px 12px", fontSize: 12, fontWeight: 950 }}>Outcome trail</div>
+          {outcomeTrail.map((item) => (
+            <div key={`return-outcome-${item.label}`} style={{ display: "grid", gridTemplateColumns: "42px minmax(0, 1fr)", gap: 8, alignItems: "center", opacity: item.value === "Missing" ? 0.62 : 1 }}>
+              <ShopVisualIconTile icon={item.icon} accent="blue" size={27} />
+              <div style={{ color: "#385773", fontSize: 12, fontWeight: 850, lineHeight: 1.2 }}>{item.label}</div>
+            </div>
+          ))}
+          <div style={{ borderRadius: 14, background: hasOutcomeTrail ? "#E9FFF5" : "#EEF3F8", color: hasOutcomeTrail ? "#0C6542" : "#526B87", padding: "8px 10px", fontSize: 12, fontWeight: 950, lineHeight: 1.2 }}>
+            {hasOutcomeTrail ? "Outcome evidence building" : "No value trail yet"}
+          </div>
+        </div>
+      </div>
+      <div style={{ borderRadius: 20, background: "rgba(255,255,255,0.88)", border: "1px solid rgba(18,58,89,0.10)", padding: 12, display: "grid", gap: 10 }}>
+        <div style={{ textAlign: "center", color: "#061827", fontSize: 17, fontWeight: 950 }}>Build the evidence</div>
+        <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 10 }}>
+          <ShopVisualStep index={1} icon="document" label="Record cost" accent="gold" />
+          <ShopVisualStep index={2} icon="shield" label="Protect outcome" accent="blue" />
+          <ShopVisualStep index={3} icon="chart" label="Compare value" accent="green" />
+        </div>
+        <div style={{ borderRadius: 16, background: "linear-gradient(180deg, #0F79D0 0%, #07559B 100%)", color: "#FFFFFF", minHeight: 52, display: "grid", placeItems: "center", padding: "12px 16px", fontSize: 14, fontWeight: 950, textAlign: "center" }}>
+          Promotion and outcome plan below
+        </div>
+      </div>
+      <div style={{ borderRadius: 16, border: "1px solid rgba(214,170,69,0.18)", background: "#FFF7D8", color: "#6B4600", padding: 12, display: "grid", gridTemplateColumns: "42px minmax(0, 1fr)", gap: 10, alignItems: "center", fontSize: 12, fontWeight: 900, lineHeight: 1.3 }}>
+        <ShopVisualIconTile icon="alert" accent="gold" size={30} />
+        <div>{readinessSummary} Readiness only, not a return calculation, profit claim or investor-grade evidence.</div>
+      </div>
+    </div>
+  );
+}
 function shortAnalyticsDateLabel(value: unknown): string {
   const text = safeStr(value);
   if (!text) return "Day";
@@ -7839,7 +8137,8 @@ export default function ShopControlPage() {
                 hasCommunityContext={Boolean(effectiveShopClanId || selectedClanId)}
                 tradeRecords={tradeOutcomeRecords7Days}
                 trustRecordsReady={tradeOutcomeReleasedRecords > 0}
-              />              <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+              />
+              <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                 {opportunityEngineSignalTiles.map((item) => (
                   <div key={`opportunity-engine-${item.label}`} style={{ borderRadius: 14, background: "rgba(255,255,255,0.78)", border: "1px solid rgba(18,58,89,0.08)", padding: 10, display: "grid", gridTemplateColumns: "32px minmax(0, 1fr)", gap: 8, alignItems: "start" }}>
                     <GsnLegacyIcon name={item.icon as GsnIconName} size={30} />
@@ -7950,6 +8249,14 @@ export default function ShopControlPage() {
                   <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Opportunity lenses</div>
                   <span style={{ ...badge(opportunityEngineLiveSignalCount >= 3), fontSize: 10 }}>local GSN reading</span>
                 </div>
+                <ShopOpportunityLensesVisualPanel
+                  isCompact={isCompact}
+                  liveSignalCount={opportunityEngineLiveSignalCount}
+                  signalGroupCount={opportunityEngineSignalTiles.length}
+                  demandOpenCount={openDemandSignalCount}
+                  tradeRecords={tradeOutcomeRecords7Days}
+                  hasCommunityContext={Boolean(effectiveShopClanId || selectedClanId)}
+                />
                 <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                   {opportunityEngineLensRows.map((item) => (
                     <div key={`opportunity-lens-${item.lens}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 10, display: "grid", gridTemplateColumns: "30px minmax(0, 1fr)", gap: 8, alignItems: "start" }}>
@@ -7999,6 +8306,17 @@ export default function ShopControlPage() {
                   <span style={{ ...badge(opportunityEngineUnitEconomicsReadiness.status === "Ready to estimate"), fontSize: 10 }}>{opportunityEngineUnitEconomicsReadiness.status}</span>
                 </div>
                 <div style={{ color: "#24415C", fontSize: 11.5, fontWeight: 820, lineHeight: 1.35 }}>{opportunityEngineUnitEconomicsReadiness.summary}</div>
+                <ShopBusinessReturnReadinessVisualPanel
+                  isCompact={isCompact}
+                  visitors={attentionVisitors7Days}
+                  productOpens={attentionProductOpens7Days}
+                  contactTaps={attentionContactTaps7Days}
+                  followers={shopFollowerCount}
+                  tradeRecords={tradeOutcomeRecords7Days}
+                  releasedTradeRecords={tradeOutcomeReleasedRecords}
+                  readinessStatus={opportunityEngineUnitEconomicsReadiness.status}
+                  readinessSummary={opportunityEngineUnitEconomicsReadiness.summary}
+                />
                 <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                   <div style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 9, display: "grid", gap: 4 }}>
                     <div style={{ color: "#0F5EAA", fontSize: 10.5, fontWeight: 950, textTransform: "uppercase", letterSpacing: 0 }}>Promotion trail</div>

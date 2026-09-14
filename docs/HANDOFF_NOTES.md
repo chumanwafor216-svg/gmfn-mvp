@@ -1,3 +1,11 @@
+## 2026-09-14 - Shop Control Opportunity lenses and return readiness made picture-led
+- Status: Verified local frontend UX update after the owner supplied the Opportunity lenses and Business return readiness reference images; no backend route, schema, auth, permission, payment, analytics event contract, Dashboard Market Wisdom, push, or deploy change was made in this pass.
+- Owner reference: `Opportunity lenses` with local GSN reading, economic demand, social movement, operations, trust and safety, outside context, live/watch/next legend, and evidence boundaries; `Business return readiness` with promotion trail, missing outcome bridge, outcome trail, build-the-evidence steps, and readiness-only boundary.
+- Files updated: `frontend/src/pages/ShopControlPage.tsx`, `frontend/tools/audit-shop-control-button-inventory.mjs`, and this handoff note.
+- Route/screen impact: `/app/shop-control` Opportunity Engine `Lenses` and `Return evidence` lanes now open with pictorial, low-reading visual summaries before deeper evidence rows.
+- Guardrail: no new button/action roots were added; the Shop Control inventory remains unchanged at 12 PrimaryButton, 24 SecondaryButton, 3 SubtleButton, 5 StableButton, 10 StableCtaLink, 26 native fields, and 71 whole-route mobile action roots.
+- Verification passed: `npm --prefix frontend run audit:shop-control-button-inventory`, `npm --prefix frontend run audit:spotlight-system-feed`, `npm --prefix frontend run build`, and `git diff --check` on touched files.
+- Devil truth: these panels improve understanding of existing signals. They do not prove demand, sales, payment, delivery, retention, margin, trust approval, bankability, future return, or investor-grade evidence.
 ## 2026-09-14 - Shop Control Economic Engine overview made picture-led
 - Status: Verified local frontend UX update after the owner supplied the Economic overview reference image; no backend route, schema, auth, permission, payment, analytics event contract, Dashboard Market Wisdom, push, or deploy change was made in this pass.
 - Owner reference: `Economic overview` with 4 live signals, central `GSN Economic Engine`, working-now cards for Shop & Marketplace, Spotlight, DemandBox, Community context, next-evidence cards for Trade evidence and Trust layer, and a recorded-evidence boundary.
