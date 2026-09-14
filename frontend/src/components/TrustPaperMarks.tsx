@@ -629,10 +629,11 @@ export function TrustPaperSecurityFooter({ text }: FooterProps) {
     <div
       style={{
         marginTop: 14,
-        marginLeft: -22,
-        marginRight: -22,
-        marginBottom: -22,
-        padding: "14px 20px",
+        marginLeft: 0,
+        marginRight: 0,
+        marginBottom: 0,
+        borderRadius: 16,
+        padding: "12px 14px",
         background: "linear-gradient(90deg, #061827 0%, #0B2D4A 100%)",
         color: "#F6D77A",
         display: "flex",

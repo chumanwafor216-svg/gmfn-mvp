@@ -21,8 +21,10 @@ const routes = [
   "/app/shop-assets",
   "/app/vault-control",
   "/app/finance",
+  "/app/trust",
   "/app/trust-passport",
   "/app/trust-slip",
+  "/app/trust-slip/verify",
   "/app/identity",
   "/app/open-trust-reading",
   "/app/cci-reading",
@@ -32,11 +34,20 @@ const routes = [
   "/app/loans",
   "/app/payment/loans/1",
   "/app/command-center",
+  "/app/command-center/bank-console",
+  "/app/command-center/revenue-allocation",
+  "/app/command-center/exposure",
   "/app/command-center/trust-analytics",
   "/app/command-center/trust-events",
   "/app/command-center/identity-risk",
   "/app/command-center/system-operations",
   "/app/command-center/trust-graph",
+  "/app/command-center/community-ownership",
+  "/app/command-center/incomplete-loans",
+  "/app/command-center/support",
+  "/t/TS-MOBILE-QC",
+  "/verify/community/GMFN-C-TRUST-QC",
+  "/community-confirmations/public/audit-token",
 ];
 
 function json(data, status = 200) {
@@ -365,6 +376,9 @@ function pageAudit() {
 
     const isFullyOffscreen = rect.right <= 0 || rect.left >= viewportW;
     const isInVisibleVerticalRange = rect.bottom > 0 && rect.top < viewportH;
+    const hasVisibleText = Boolean(
+      directText || element.getAttribute("placeholder") || (element instanceof HTMLInputElement ? element.value : "")
+    );
     const hasOwnLabel = Boolean(directText || explicitLabel);
     const isUnlabeledSvgPart = ["svg", "g", "path"].includes(element.tagName.toLowerCase()) && !hasOwnLabel;
     if (
@@ -400,7 +414,7 @@ function pageAudit() {
     const textLength = directText.length;
     const isAppShell = Boolean(element.closest("[aria-label='Bottom navigation'], [data-app-shell='true']"));
     const narrowWithLongText =
-      hasOwnLabel &&
+      hasVisibleText &&
       textLength >= 32 &&
       rect.width < 132 &&
       Number.parseFloat(styles.fontSize || "16") >= 14 &&
@@ -421,7 +435,7 @@ function pageAudit() {
       hiddenFromA11y ||
       !isInVisibleVerticalRange ||
       element.closest("button:disabled, [aria-disabled='true']") ||
-      (!directText && !explicitLabel) ||
+      !hasVisibleText ||
       rect.width <= 4 ||
       rect.height <= 4
     ) continue;
