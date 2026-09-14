@@ -2881,6 +2881,78 @@ function ShopBusinessReturnReadinessVisualPanel({
   const returnReady = readinessStatus === "Ready to estimate";
   const outcomeLabel = releasedTradeRecords > 0 ? `${releasedTradeRecords} released trade record${releasedTradeRecords === 1 ? "" : "s"}` : "Needs completed outcome evidence";
 
+  if (isCompact) {
+    const compactMissing = missingEvidence.slice(0, 4);
+    return (
+      <div
+        aria-label="Business return readiness visual summary"
+        style={{
+          marginTop: 8,
+          marginLeft: -46,
+          marginRight: -46,
+          width: "calc(100% + 92px)",
+          borderRadius: 20,
+          border: "1px solid rgba(15,94,170,0.05)",
+          background: "linear-gradient(180deg, #F4FBFF 0%, #FFFFFF 66%, #FFF8E6 100%)",
+          padding: 9,
+          display: "grid",
+          gap: 8,
+          boxShadow: "0 10px 20px rgba(7,24,39,0.05)",
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ display: "grid", gridTemplateColumns: "38px minmax(0, 1fr) auto", gap: 8, alignItems: "center" }}>
+          <div style={{ width: 38, height: 38, borderRadius: 14, background: "#FFF3C7", display: "grid", placeItems: "center" }}>
+            <GsnLegacyIcon name="chart" size={28} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ color: "#061827", fontSize: 21, fontWeight: 950, lineHeight: 1.05 }}>Return readiness</div>
+            <div style={{ color: "#385773", fontSize: 12.3, fontWeight: 850, lineHeight: 1.28 }}>Attention visible. Return not ready.</div>
+          </div>
+          <span style={{ ...badge(returnReady), fontSize: 9.5 }}>{returnReady ? "Ready" : "Partial"}</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 7 }}>
+          {promotionMetrics.map((item) => (
+            <div key={`return-compact-metric-${item.label}`} style={{ minWidth: 0, borderRadius: 14, background: ANALYTICS_ACCENTS[item.accent].bg, padding: 8, minHeight: 58, display: "grid", gridTemplateColumns: "24px minmax(0, 1fr)", gap: 7, alignItems: "center" }}>
+              <GsnLegacyIcon name={item.icon} size={23} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ color: "#061827", fontSize: 17, fontWeight: 950, lineHeight: 1 }}>{item.value}</div>
+                <div style={{ color: "#385773", fontSize: 10.8, fontWeight: 850, lineHeight: 1.12 }}>{item.label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ borderRadius: 14, background: "#FFF7DD", padding: 9, display: "grid", gridTemplateColumns: "28px minmax(0, 1fr)", gap: 8, alignItems: "center" }}>
+          <GsnLegacyIcon name="financeInstitution" size={24} />
+          <div style={{ color: "#6B4600", fontSize: 12, fontWeight: 900, lineHeight: 1.22 }}>Missing: cost, outcomes, repeat value.</div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 7 }}>
+          {compactMissing.map((item) => (
+            <div key={`return-compact-needed-${item.label}`} style={{ minWidth: 0, borderRadius: 13, background: "#FFFFFF", padding: "8px 9px", display: "grid", gridTemplateColumns: "22px minmax(0, 1fr)", gap: 7, alignItems: "center" }}>
+              <GsnLegacyIcon name={item.icon} size={21} />
+              <div style={{ color: "#061827", fontSize: 11.2, fontWeight: 950, lineHeight: 1.12 }}>{item.label}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "grid", gap: 6 }}>
+          {[
+            { icon: "document" as GsnIconName, label: "Record cost" },
+            { icon: "lock" as GsnIconName, label: "Link outcome" },
+            { icon: "chart" as GsnIconName, label: "Compare value" },
+          ].map((item, index) => (
+            <div key={`return-compact-step-${item.label}`} style={{ borderRadius: 13, background: index === 1 ? "#EAFBF5" : "#F2F7FF", padding: "8px 9px", display: "grid", gridTemplateColumns: "24px minmax(0, 1fr)", gap: 8, alignItems: "center" }}>
+              <GsnLegacyIcon name={item.icon} size={22} />
+              <div style={{ color: "#061827", fontSize: 12.2, fontWeight: 950, lineHeight: 1.12 }}>{index + 1}. {item.label}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ borderRadius: 14, background: "#FFF9E8", color: "#6B4600", padding: "9px 10px", fontSize: 12, fontWeight: 900, lineHeight: 1.3 }}>
+          Readiness only: not return, profit or investor-grade evidence.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       aria-label="Business return readiness visual summary"
@@ -3044,6 +3116,64 @@ function ShopOpportunityReadingVisualPanel({
       next: "Wait for the full GSN field",
     },
   ];
+
+  if (isCompact) {
+    return (
+      <div
+        aria-label="Opportunity reading visual summary"
+        style={{
+          marginTop: 8,
+          marginLeft: -46,
+          marginRight: -46,
+          width: "calc(100% + 92px)",
+          borderRadius: 20,
+          border: "1px solid rgba(15,94,170,0.05)",
+          background: "linear-gradient(180deg, #F5FBFF 0%, #FFFFFF 66%, #EEF8FF 100%)",
+          padding: 9,
+          display: "grid",
+          gap: 8,
+          boxShadow: "0 10px 20px rgba(7,24,39,0.05)",
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ display: "grid", gridTemplateColumns: "38px minmax(0, 1fr)", gap: 9, alignItems: "center" }}>
+          <div style={{ width: 38, height: 38, borderRadius: 14, background: "#EAF4FF", display: "grid", placeItems: "center" }}>
+            <GsnLegacyIcon name="eye" size={28} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ color: "#061827", fontSize: 21, fontWeight: 950, lineHeight: 1.05 }}>Opportunity reading</div>
+            <div style={{ color: "#385773", fontSize: 12.3, fontWeight: 850, lineHeight: 1.28 }}>Guidance changes with evidence.</div>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+          <span style={{ borderRadius: 999, padding: "7px 10px", background: "#EAF4FF", color: "#0F5EAA", fontSize: 11.5, fontWeight: 950 }}>Not a forecast</span>
+          <span style={{ borderRadius: 999, padding: "7px 10px", background: "linear-gradient(180deg, #FFF1B8 0%, #F7D66D 100%)", color: "#5B3C00", fontSize: 11.5, fontWeight: 950 }}>{liveSignalCount}/{totalSignals} live</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 7 }}>
+          {readingCards.map((item) => (
+            <div key={"opportunity-compact-reading-" + item.horizon} style={{ minWidth: 0, borderRadius: 14, background: ANALYTICS_ACCENTS[item.accent].bg, padding: 8, minHeight: 78, display: "grid", gap: 5 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "24px minmax(0, 1fr)", gap: 7, alignItems: "center" }}>
+                <GsnLegacyIcon name={item.icon} size={22} />
+                <div style={{ color: ANALYTICS_ACCENTS[item.accent].color, fontSize: 11.5, fontWeight: 950, lineHeight: 1.05, textTransform: "uppercase" }}>{item.horizon}</div>
+              </div>
+              <div style={{ color: "#061827", fontSize: 12.2, fontWeight: 950, lineHeight: 1.14 }}>{item.reading}</div>
+              <div style={{ color: "#385773", fontSize: 10.8, fontWeight: 850, lineHeight: 1.16 }}>{item.facts.slice(0, 2).join(" / ")}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ borderRadius: 14, background: "#FFFCF2", padding: 9, display: "grid", gridTemplateColumns: "28px minmax(0, 1fr)", gap: 8, alignItems: "center" }}>
+          <GsnLegacyIcon name="spark" size={24} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ color: "#061827", fontSize: 12.3, fontWeight: 950, lineHeight: 1.1 }}>{snapshotTitle || "Market Wisdom snapshot"}</div>
+            <div style={{ color: "#385773", fontSize: 11, fontWeight: 850, lineHeight: 1.16 }}>{snapshotHeadline || "Review before publishing."}</div>
+          </div>
+        </div>
+        <div style={{ borderRadius: 14, background: "#FFF9E8", color: "#6B4600", padding: "9px 10px", fontSize: 12, fontWeight: 900, lineHeight: 1.3 }}>
+          Snapshot only: not sales proof, public trend or automatic decision.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -8804,7 +8934,7 @@ export default function ShopControlPage() {
                   communityName={communityName}
                 />
               </div>
-              <div style={{ display: activeOpportunityEnginePanel === "wisdom" ? "flex" : "none", gap: 7, flexWrap: "wrap", alignItems: "center" }}>
+              <div style={{ display: activeOpportunityEnginePanel === "wisdom" && !isCompact ? "flex" : "none", gap: 7, flexWrap: "wrap", alignItems: "center" }}>
                 <span style={{ color: "#24415C", fontSize: 11, fontWeight: 950 }}>Review windows</span>
                 {opportunityEngineHorizonLabels.map((label) => (
                   <span key={`opportunity-horizon-${label}`} style={{ borderRadius: 999, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "5px 8px", color: "#24415C", fontSize: 10.5, fontWeight: 900 }}>
@@ -8843,7 +8973,7 @@ export default function ShopControlPage() {
                   ))}
                 </div>
               </div>
-              <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(18,58,89,0.08)", padding: 10, display: activeOpportunityEnginePanel === "wisdom" ? "grid" : "none", gap: 8 }}>
+              <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(18,58,89,0.08)", padding: 10, display: activeOpportunityEnginePanel === "wisdom" && !isCompact ? "grid" : "none", gap: 8 }}>
                 <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Opportunity reading</div>
                 {opportunityEngineGuidanceRows.map((row) => (
                   <div key={`opportunity-reading-${row.horizon}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: "8px 10px", display: "grid", gap: 4 }}>
@@ -8857,7 +8987,7 @@ export default function ShopControlPage() {
                   </div>
                 ))}
               </div>
-              <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.84)", border: "1px solid rgba(214,170,69,0.20)", padding: 10, display: activeOpportunityEnginePanel === "wisdom" ? "grid" : "none", gap: 6 }}>
+              <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.84)", border: "1px solid rgba(214,170,69,0.20)", padding: 10, display: activeOpportunityEnginePanel === "wisdom" && !isCompact ? "grid" : "none", gap: 6 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>{opportunityEngineWisdomSnapshot.title}</div>
                   <span style={{ ...badge(opportunityEngineLiveSignalCount >= 3), fontSize: 10 }}>review before publishing</span>
@@ -8869,11 +8999,11 @@ export default function ShopControlPage() {
                 <div style={{ color: "#5A6F84", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}>{opportunityEngineWisdomSnapshot.cadence} {opportunityEngineWisdomSnapshot.boundary}</div>
               </div>
               <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.84)", border: "1px solid rgba(15,94,170,0.12)", padding: 10, display: activeOpportunityEnginePanel === "return-evidence" ? "grid" : "none", gap: 7 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <div style={{ display: isCompact ? "none" : "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Business return readiness</div>
                   <span style={{ ...badge(opportunityEngineUnitEconomicsReadiness.status === "Ready to estimate"), fontSize: 10 }}>{opportunityEngineUnitEconomicsReadiness.status}</span>
                 </div>
-                <div style={{ color: "#24415C", fontSize: 11.5, fontWeight: 820, lineHeight: 1.35 }}>{opportunityEngineUnitEconomicsReadiness.summary}</div>
+                <div style={{ display: isCompact ? "none" : "block", color: "#24415C", fontSize: 11.5, fontWeight: 820, lineHeight: 1.35 }}>{opportunityEngineUnitEconomicsReadiness.summary}</div>
                 <ShopBusinessReturnReadinessVisualPanel
                   isCompact={isCompact}
                   visitors={attentionVisitors7Days}
@@ -8885,7 +9015,7 @@ export default function ShopControlPage() {
                   readinessStatus={opportunityEngineUnitEconomicsReadiness.status}
                   readinessSummary={opportunityEngineUnitEconomicsReadiness.summary}
                 />
-                <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+                <div style={{ display: isCompact ? "none" : "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                   <div style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 9, display: "grid", gap: 4 }}>
                     <div style={{ color: "#0F5EAA", fontSize: 10.5, fontWeight: 950, textTransform: "uppercase", letterSpacing: 0 }}>Promotion trail</div>
                     <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}>{opportunityEngineUnitEconomicsReadiness.cacSide}</div>
@@ -8895,7 +9025,7 @@ export default function ShopControlPage() {
                     <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}>{opportunityEngineUnitEconomicsReadiness.ltvSide}</div>
                   </div>
                 </div>
-                <details style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(18,58,89,0.08)", padding: "3px 9px 9px" }}>
+                <details style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(18,58,89,0.08)", padding: "3px 9px 9px", display: isCompact ? "none" : "block" }}>
                   <StableDisclosureSummary debugId="shop-control.opportunity-engine.unit-economics" stableHeight={34} style={{ color: "#0F5EAA", fontSize: 11.5, fontWeight: 950, cursor: "pointer" }}>
                     Business return evidence
                   </StableDisclosureSummary>
@@ -8908,16 +9038,16 @@ export default function ShopControlPage() {
                     ))}
                   </div>
                 </details>
-                <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Next:</strong> {opportunityEngineUnitEconomicsReadiness.nextStep}</div>
+                <div style={{ display: isCompact ? "none" : "block", color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Next:</strong> {opportunityEngineUnitEconomicsReadiness.nextStep}</div>
                 {opportunityEngineMeasurementPlanRows.length > 0 ? (
-                  <details style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(18,58,89,0.08)", padding: "3px 9px 9px" }}>
+                  <details style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(18,58,89,0.08)", padding: "3px 9px 9px", display: isCompact ? "none" : "block" }}>
                     <StableDisclosureSummary debugId="shop-control.opportunity-engine.measurement-plan" stableHeight={34} style={{ color: "#0F5EAA", fontSize: 11.5, fontWeight: 950, cursor: "pointer" }}>
                       Promotion and outcome plan
                     </StableDisclosureSummary>
                     <div style={{ marginTop: 6, display: "grid", gap: 7 }}>
                       {opportunityEngineMeasurementPlanRows.map((item, index) => (
                         <div key={`opportunity-measurement-${item.step || index}`} style={{ borderRadius: 13, background: "#F8FBFF", border: "1px solid rgba(15,94,170,0.10)", padding: 9, display: "grid", gap: 4 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                          <div style={{ display: isCompact ? "none" : "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                             <span style={{ color: "#061827", fontSize: 11.5, fontWeight: 950 }}>{item.step || "Measurement step"}</span>
                             <span style={{ ...badge(Boolean(item.currently_available)), fontSize: 10 }}>{item.metric || "Metric"}</span>
                           </div>
@@ -8929,7 +9059,7 @@ export default function ShopControlPage() {
                     </div>
                   </details>
                 ) : null}
-                <div style={{ color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}>{opportunityEngineUnitEconomicsReadiness.boundary}</div>
+                <div style={{ display: isCompact ? "none" : "block", color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}>{opportunityEngineUnitEconomicsReadiness.boundary}</div>
               </div>
               {opportunityEngineCaptureChecklistRows.length > 0 ? (
                 <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px", display: activeOpportunityEnginePanel === "experiments" ? "block" : "none" }}>
@@ -9060,7 +9190,7 @@ export default function ShopControlPage() {
                 border: "1px solid rgba(46,155,98,0.18)",
                 background: "linear-gradient(180deg, #F3FFF9 0%, #E8F8F1 100%)",
                 padding: 12,
-                display: "grid",
+                display: activeOpportunityEnginePanel === "signals" ? "grid" : "none",
                 gap: 10,
               }}
             >
@@ -9186,7 +9316,9 @@ export default function ShopControlPage() {
                 <div>
                   <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Community Needs</div>
                   <div style={{ marginTop: 4, color: "#5A4720", fontSize: 12, fontWeight: 800, lineHeight: 1.4 }}>
-                    {demandContextLabel}. {demandOverlapLabel} Opportunity Engine reads DemandBox as structured community context only; it is not buyer proof, sales proof, or automatic product matching.
+                    {isCompact
+                      ? `${demandContextLabel}. DemandBox is context only.`
+                      : `${demandContextLabel}. ${demandOverlapLabel} Opportunity Engine reads DemandBox as structured community context only; it is not buyer proof, sales proof, or automatic product matching.`}
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>

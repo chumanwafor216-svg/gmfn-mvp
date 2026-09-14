@@ -1,3 +1,10 @@
+## 2026-09-14 - Shop Control Advanced Analytics remaining phone panels compacted
+- Status: Verified local frontend UX cleanup after owner screenshots showed Advanced Analytics Return Evidence and Wisdom pages still had narrow containers, word pressure, repeated detail stacks, and too many visual walls on phone.
+- Files updated: `frontend/src/pages/ShopControlPage.tsx`, `frontend/tools/audit-shop-control-button-inventory.mjs`, and this handoff note.
+- Route/screen impact: `/app/shop-control#shop-control-counts` Advanced Analytics now gives Return readiness and Opportunity reading dedicated compact phone summaries, hides their repeated desktop evidence rows on phone, scopes Small Seller Helper to the Signals lane, and shortens Community Needs phone copy.
+- Guardrail: no Shop Control action count, backend route, schema, auth, permission, payment, analytics event contract, Dashboard Market Wisdom, or deployment configuration was changed.
+- Verification passed: `npm --prefix frontend run audit:shop-control-button-inventory`, `npm --prefix frontend run audit:spotlight-system-feed`, `npm --prefix frontend run build`, `git diff --check` on touched files, and a mocked Playwright 390px phone check covering Overview, Lenses, Wisdom, Return Evidence, Signals, and Community Needs with no horizontal overflow. The check confirmed Wisdom/Return repeated detail sections are hidden on phone.
+- Devil truth: this is a readability and mobile-density correction. It does not prove buyers, sales, payment, delivery, satisfaction, trust approval, return, profit, investor-grade evidence, or that a phone/WhatsApp conversation completed outside GSN.
 ## 2026-09-14 - Shop Control compact visual enhancement without repeats
 - Status: Local frontend UX refinement after owner review of the newest Economic overview / Opportunity lenses references. This pass enhances the already-built picture-led panels instead of adding another duplicate version.
 - Files updated: `frontend/src/pages/ShopControlPage.tsx`, `frontend/tools/audit-shop-control-button-inventory.mjs`, and this handoff note.

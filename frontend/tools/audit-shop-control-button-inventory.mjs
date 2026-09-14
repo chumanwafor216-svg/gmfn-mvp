@@ -467,12 +467,36 @@ assertShopContains(
   "Shop Control first trade record guide must stay wired to live protected-trade counts."
 );
 assertShopContains(
+  /function ShopBusinessReturnReadinessVisualPanel[\s\S]*?compactMissing = missingEvidence\.slice\(0, 4\)[\s\S]*?Return readiness[\s\S]*?Missing: cost, outcomes, repeat value\.[\s\S]*?Readiness only: not return, profit or investor-grade evidence/,
+  "Shop Control return evidence must keep a compact mobile business return view with one boundary."
+);
+assertShopContains(
   /function ShopBusinessReturnReadinessVisualPanel[\s\S]*?Business return readiness[\s\S]*?Promotion evidence[\s\S]*?Cost & effort[\s\S]*?Business return[\s\S]*?What is still needed[\s\S]*?Next: build the trail[\s\S]*?Readiness only/,
-  "Shop Control return evidence must keep the picture-led business return readiness view."
+  "Shop Control return evidence must keep the picture-led desktop business return readiness view."
+);
+assertShopContains(
+  /function ShopOpportunityReadingVisualPanel[\s\S]*?Opportunity reading[\s\S]*?Guidance changes with evidence\.[\s\S]*?Not a forecast[\s\S]*?Market Wisdom snapshot[\s\S]*?Snapshot only: not sales proof, public trend or automatic decision/,
+  "Shop Control Opportunity Engine Wisdom must keep a compact mobile opportunity reading view with one boundary."
 );
 assertShopContains(
   /function ShopOpportunityReadingVisualPanel[\s\S]*?Now[\s\S]*?90 days[\s\S]*?1 year[\s\S]*?2-5 years[\s\S]*?Opportunity reading[\s\S]*?Guidance, not a forecast[\s\S]*?Market Wisdom snapshot[\s\S]*?Snapshot only/,
-  "Shop Control Opportunity Engine Wisdom must keep the picture-led opportunity reading view."
+  "Shop Control Opportunity Engine Wisdom must keep the picture-led desktop opportunity reading view."
+);
+assertShopContains(
+  /activeOpportunityEnginePanel === "wisdom" && !isCompact[\s\S]*?Opportunity reading[\s\S]*?activeOpportunityEnginePanel === "wisdom" && !isCompact[\s\S]*?opportunityEngineWisdomSnapshot/,
+  "Shop Control Wisdom must hide repeated detailed reading rows on phone."
+);
+assertShopContains(
+  /activeOpportunityEnginePanel === "return-evidence"[\s\S]*?display: isCompact \? "none" : "flex"[\s\S]*?display: isCompact \? "none" : "block"[\s\S]*?ShopBusinessReturnReadinessVisualPanel[\s\S]*?display: isCompact \? "none" : "grid"[\s\S]*?shop-control\.opportunity-engine\.unit-economics/,
+  "Shop Control Return evidence must hide repeated desktop evidence rows on phone."
+);
+assertShopContains(
+  /display: activeOpportunityEnginePanel === "signals" \? "grid" : "none"[\s\S]*?Small Seller Helper/,
+  "Shop Control Small Seller Helper must stay scoped to the Signals lane."
+);
+assertShopContains(
+  /\? `\$\{demandContextLabel\}\. DemandBox is context only\.`/,
+  "Shop Control Community Needs must keep short compact phone copy."
 );
 assertShopContains(
   /<ShopBusinessReturnReadinessVisualPanel[\s\S]*?visitors=\{attentionVisitors7Days\}[\s\S]*?productOpens=\{attentionProductOpens7Days\}[\s\S]*?contactTaps=\{attentionContactTaps7Days\}[\s\S]*?tradeRecords=\{tradeOutcomeRecords7Days\}/,
