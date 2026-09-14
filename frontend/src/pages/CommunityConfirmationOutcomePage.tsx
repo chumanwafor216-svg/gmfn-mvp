@@ -4,6 +4,7 @@ import { useLocation, useParams } from "react-router-dom";
 import { PrimaryButton, SecondaryButton, StableCtaLink, StableDisclosureSummary } from "../components/StableButton";
 import CommunityProofPanel from "../components/CommunityProofPanel";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
+import GsnSignalChart from "../components/GsnSignalChart";
 import {
   TrustPaperAuthorityStrip,
   TrustPaperSecurityNote,
@@ -1409,26 +1410,13 @@ export default function CommunityConfirmationOutcomePage() {
                       {outcomeMeaning(status, confidence)}
                     </p>
                     {liveWindowOpen ? (
-                      <div
-                        aria-label="Community confirmation response progress"
-                        style={{
-                          width: "100%",
-                          height: 8,
-                          borderRadius: 999,
-                          overflow: "hidden",
-                          background: "rgba(8,35,58,0.10)",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: `${responseProgress}%`,
-                            height: "100%",
-                            borderRadius: 999,
-                            background: "#0B63D1",
-                            transition: "width 180ms ease",
-                          }}
-                        />
-                      </div>
+                      <GsnSignalChart
+                        rate={responseProgress}
+                        active={responseProgress > 0}
+                        tone="blue"
+                        compact={isCompactPaper}
+                        label={`Community confirmation response progress: ${responseProgress} percent`}
+                      />
                     ) : null}
                   </div>
                   <div

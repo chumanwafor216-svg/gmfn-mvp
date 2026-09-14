@@ -276,6 +276,19 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
+  /normalizeWhatsAppRecipient[\s\S]*?function contactSpotlightOwnerByWhatsApp\(\)[\s\S]*?spotlightContactMatchesCurrentShop[\s\S]*?trackMarketplaceAttention\("contact_tap", spotlightAttentionPayload, \{[\s\S]*?allowShopFallback/,
+  "Public Shop live Spotlight contact taps must remain counted through guarded shop attribution when phone browsers open WhatsApp."
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /type RequestOptions = \{[\s\S]*?keepalive\?: boolean;[\s\S]*?recordMarketplaceAttentionEvent[\s\S]*?keepalive: true/,
+  "Marketplace attention events must use keepalive so phone and WhatsApp handoffs do not cancel the count request."
+);
+
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
   /className="public-shop-section public-shop-spotlight"[\s\S]*?border: "1px solid rgba\(255,255,255,0\.92\)"[\s\S]*?linear-gradient\(135deg, #FFFFFF 0%, #F7FBFF 56%, #EEF6FF 100%\)/,
   "Public Shop Spotlight must keep polished white brand framing instead of cream/brown framing."
 );

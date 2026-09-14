@@ -14,6 +14,7 @@ import {
   SubtleButton,
 } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
+import GsnSignalChart from "../components/GsnSignalChart";
 import ShopAssetsPage from "./ShopAssetsPage";
 import {
   createMarketplaceShop,
@@ -2880,7 +2881,7 @@ export default function ShopControlPage() {
     opportunityEngineLiveSignalCount,
     opportunityEngineSignalTiles.length
   );
-  const opportunityEngineDashboardBars = useMemo(
+  const opportunityEngineDashboardCharts = useMemo(
     () => [
       {
         label: "Offer base",
@@ -2918,7 +2919,7 @@ export default function ShopControlPage() {
       tradeOutcomeRecords7Days,
     ]
   );
-  const opportunityEngineFlowBars = useMemo(
+  const opportunityEngineFlowCharts = useMemo(
     () => [
       {
         label: "Reach",
@@ -2972,7 +2973,7 @@ export default function ShopControlPage() {
       tradeOutcomeRecords7Days,
     ]
   );
-  const opportunityEngineContextBars = useMemo(
+  const opportunityEngineContextCharts = useMemo(
     () => [
       {
         label: "GSN evidence",
@@ -6863,16 +6864,20 @@ export default function ShopControlPage() {
                     <span style={{ ...badge(opportunityEngineCoverageRate >= 50), fontSize: 10 }}>{opportunityEngineCoverageRate}% covered</span>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-                    {opportunityEngineDashboardBars.map((item) => (
+                    {opportunityEngineDashboardCharts.map((item) => (
                       <div key={`opportunity-dashboard-${item.label}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(18,58,89,0.08)", padding: 10, display: "grid", gap: 6 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
                           {inlineIcon(item.icon as GsnIconName, "#0F5EAA", 15)}
                           <span style={{ color: "#061827", fontSize: 11.5, fontWeight: 950 }}>{item.label}</span>
                         </div>
                         <div style={{ color: "#061827", fontSize: 18, fontWeight: 950, lineHeight: 1 }}>{item.value}</div>
-                        <div style={{ height: 8, borderRadius: 999, background: "rgba(18,58,89,0.08)", overflow: "hidden" }} aria-hidden="true">
-                          <div style={{ width: `${Math.max(4, Math.min(100, item.rate))}%`, height: "100%", borderRadius: 999, background: item.rate >= 50 ? "linear-gradient(90deg, #2E9B62 0%, #0F5EAA 100%)" : "linear-gradient(90deg, #D6AA45 0%, #F2C766 100%)" }} />
-                        </div>
+                        <GsnSignalChart
+                          rate={item.rate}
+                          active={item.rate > 0}
+                          tone={item.rate >= 50 ? "green" : "gold"}
+                          compact={isCompact}
+                          label={`${item.label} chart: ${Math.round(Math.max(0, Math.min(100, item.rate)))} percent`}
+                        />
                         <div style={{ color: "#5A6F84", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}>{item.detail}</div>
                       </div>
                     ))}
@@ -6884,16 +6889,20 @@ export default function ShopControlPage() {
                     <span style={{ color: "#5A6F84", fontSize: 10.5, fontWeight: 850 }}>From visibility to protected outcome</span>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(6, minmax(0, 1fr))", gap: 7 }}>
-                    {opportunityEngineFlowBars.map((item) => (
+                    {opportunityEngineFlowCharts.map((item) => (
                       <div key={`opportunity-flow-${item.label}`} style={{ borderRadius: 13, background: "rgba(239,247,255,0.92)", border: "1px solid rgba(15,94,170,0.10)", padding: 8, display: "grid", gap: 5, minHeight: 92 }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
                           {inlineIcon(item.icon as GsnIconName, "#0F5EAA", 14)}
                           <span style={{ color: item.value > 0 ? "#0F5EAA" : "#5A6F84", fontSize: 16, fontWeight: 950 }}>{item.value}</span>
                         </div>
                         <div style={{ color: "#061827", fontSize: 11, fontWeight: 950 }}>{item.label}</div>
-                        <div style={{ height: 42, display: "flex", alignItems: "flex-end" }} aria-hidden="true">
-                          <div style={{ width: "100%", height: `${Math.max(8, Math.min(42, item.rate * 0.42))}px`, borderRadius: "9px 9px 4px 4px", background: item.value > 0 ? "linear-gradient(180deg, #0F5EAA 0%, #2E9B62 100%)" : "linear-gradient(180deg, #E6EEF8 0%, #F4F8FC 100%)" }} />
-                        </div>
+                        <GsnSignalChart
+                          rate={item.rate}
+                          active={item.value > 0}
+                          tone={item.value > 0 ? "blue" : "quiet"}
+                          compact
+                          label={`${item.label} flow chart: ${Math.round(Math.max(0, Math.min(100, item.rate)))} percent`}
+                        />
                         <div style={{ color: "#5A6F84", fontSize: 10, fontWeight: 780, lineHeight: 1.25 }}>{item.detail}</div>
                       </div>
                     ))}
@@ -6902,15 +6911,19 @@ export default function ShopControlPage() {
                 <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.84)", border: "1px solid rgba(214,170,69,0.18)", padding: 10, display: "grid", gap: 8 }}>
                   <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Context coverage</div>
                   <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-                    {opportunityEngineContextBars.map((item) => (
+                    {opportunityEngineContextCharts.map((item) => (
                       <div key={`opportunity-context-${item.label}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(18,58,89,0.08)", padding: 10, display: "grid", gap: 5 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center" }}>
                           <span style={{ color: "#061827", fontSize: 11.5, fontWeight: 950 }}>{item.label}</span>
                           <span style={{ color: item.rate > 0 ? "#0F5EAA" : "#7A4A00", fontSize: 10.5, fontWeight: 900 }}>{item.value}</span>
                         </div>
-                        <div style={{ height: 7, borderRadius: 999, background: "rgba(18,58,89,0.08)", overflow: "hidden" }} aria-hidden="true">
-                          <div style={{ width: `${Math.max(4, Math.min(100, item.rate))}%`, height: "100%", borderRadius: 999, background: item.rate > 0 ? "linear-gradient(90deg, #0F5EAA 0%, #2E9B62 100%)" : "linear-gradient(90deg, #D8E5F4 0%, #EEF5FC 100%)" }} />
-                        </div>
+                        <GsnSignalChart
+                          rate={item.rate}
+                          active={item.rate > 0}
+                          tone={item.rate > 0 ? "blue" : "quiet"}
+                          compact={isCompact}
+                          label={`${item.label} coverage chart: ${Math.round(Math.max(0, Math.min(100, item.rate)))} percent`}
+                        />
                         <div style={{ color: "#5A6F84", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}>{item.detail}</div>
                       </div>
                     ))}

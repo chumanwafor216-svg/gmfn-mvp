@@ -80,6 +80,7 @@ export type WelcomeIntent = "invited" | "founder" | "approved" | "existing";
 type RequestOptions = {
   header_clan_id?: number | null;
   includeAuth?: boolean;
+  keepalive?: boolean;
   quiet?: boolean;
   timeoutMs?: number;
 };
@@ -612,6 +613,7 @@ async function httpJson(
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
+      keepalive: options?.keepalive === true,
     },
     options?.timeoutMs ?? DEFAULT_JSON_TIMEOUT_MS
   );
@@ -6297,7 +6299,7 @@ export async function recordMarketplaceAttentionEvent(payload: {
       source_path: sourcePath,
       session_key: marketplaceAttentionSessionKey(),
     },
-    { header_clan_id: null, quiet: true, timeoutMs: 8000 }
+    { header_clan_id: null, keepalive: true, quiet: true, timeoutMs: 8000 }
   );
 }
 

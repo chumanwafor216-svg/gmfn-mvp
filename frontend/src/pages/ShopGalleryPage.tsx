@@ -35,7 +35,10 @@ import {
   publicShopUrl,
 } from "../lib/publicLinks";
 import { buildGsnPublicShopLinkMessage } from "../lib/gsnSnapshotPaper";
-import { buildWhatsAppChatUrl } from "../lib/whatsappLinks";
+import {
+  buildWhatsAppChatUrl,
+  normalizeWhatsAppRecipient,
+} from "../lib/whatsappLinks";
 import { getCachedShopProductMedia } from "../lib/shopProductMediaCache";
 import { ownerSurfaceIdentityMatches } from "../lib/ownerSurfaceIdentity";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
@@ -924,7 +927,19 @@ function normalizeBroadcast(raw: any): ShopBroadcast | null {
   return {
     id: positiveNumber(src?.id) || undefined,
     shopId:
-      positiveNumber(src?.shop_id || src?.shopId || src?.source_shop_id || src?.sourceShopId) ||
+      positiveNumber(
+        src?.shop_id ||
+          src?.shopId ||
+          src?.source_shop_id ||
+          src?.sourceShopId ||
+          src?.marketplace_shop_id ||
+          src?.marketplaceShopId ||
+          src?.published_shop_id ||
+          src?.publishedShopId ||
+          src?.shop?.id ||
+          src?.source_shop?.id ||
+          src?.sourceShop?.id
+      ) ||
       undefined,
     imageUrl: resolveImageSrc(
       src?.source_product_image_url ||
@@ -3210,20 +3225,6 @@ export default function ShopGalleryPage() {
 
   function contactSpotlightOwnerByWhatsApp() {
     const spotlightShopId = positiveNumber(miniSpotlight?.shopId);
-    const spotlightAttentionPayload = {
-      shop_id: spotlightShopId || undefined,
-      broadcast_id: positiveNumber(miniSpotlight?.id) || undefined,
-      product_id: positiveNumber(miniSpotlight?.sourceProductId) || undefined,
-      clan_id: positiveNumber(miniSpotlight?.sourceClanId) || undefined,
-      source: "public_shop_spotlight_contact",
-    };
-    trackMarketplaceAttention("spotlight_shop_click", spotlightAttentionPayload, {
-      allowShopFallback: false,
-    });
-    trackMarketplaceAttention("contact_tap", spotlightAttentionPayload, {
-      allowShopFallback: false,
-    });
-
     const spotlightTitle = firstMeaningful(
       miniSpotlightView.detail,
       miniSpotlight?.message,
@@ -3239,8 +3240,33 @@ export default function ShopGalleryPage() {
       miniSpotlightView.sourceShopWhatsApp,
       message
     );
+    const spotlightPhone = normalizeWhatsAppRecipient(
+      miniSpotlightView.sourceShopWhatsApp
+    );
+    const currentShopPhone = normalizeWhatsAppRecipient(effectiveShop?.whatsapp);
+    const spotlightName = safeStr(miniSpotlight?.sourceShopName).toLowerCase();
+    const currentShopName = safeStr(effectiveShop?.shopName).toLowerCase();
+    const spotlightContactMatchesCurrentShop =
+      !spotlightShopId &&
+      Boolean(chatUrl) &&
+      (Boolean(spotlightPhone && spotlightPhone === currentShopPhone) ||
+        Boolean(spotlightName && currentShopName && spotlightName === currentShopName));
+    const spotlightAttentionPayload = {
+      shop_id: spotlightShopId || undefined,
+      broadcast_id: positiveNumber(miniSpotlight?.id) || undefined,
+      product_id: positiveNumber(miniSpotlight?.sourceProductId) || undefined,
+      clan_id: positiveNumber(miniSpotlight?.sourceClanId) || undefined,
+      source: "public_shop_spotlight_contact",
+    };
+    const allowShopFallback = spotlightContactMatchesCurrentShop;
 
     if (chatUrl && typeof window !== "undefined") {
+      trackMarketplaceAttention("spotlight_shop_click", spotlightAttentionPayload, {
+        allowShopFallback,
+      });
+      trackMarketplaceAttention("contact_tap", spotlightAttentionPayload, {
+        allowShopFallback,
+      });
       const opened = window.open(chatUrl, "_blank", "noopener,noreferrer");
       setNotice({
         tone: opened ? "success" : "error",

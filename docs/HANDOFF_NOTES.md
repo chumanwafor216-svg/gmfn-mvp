@@ -1,4 +1,23 @@
-﻿## 2026-09-13 - 23-item public capability mirror updated to current reality
+## 2026-09-14 - Public Shop phone and Spotlight contact tap counting hardened
+- User reported testing a Spotlight/product share WhatsApp chat and phone call from a phone, but owner analytics did not show the contact count moving.
+- Confirmed backend already records and summarizes `contact_tap` under `/marketplace/analytics/attention`; targeted backend test passed.
+- Changed `frontend/src/lib/api.ts` so marketplace attention POSTs use `keepalive: true`, reducing mobile handoff loss when `tel:` or WhatsApp opens immediately after the tap.
+- Changed `frontend/src/pages/ShopGalleryPage.tsx` so live Spotlight WhatsApp contact records `spotlight_shop_click` and `contact_tap` only when a contact URL exists, accepts more shop-id aliases from Spotlight/share payloads, and uses a guarded fallback only when the Spotlight contact clearly matches the current shop.
+- Added `frontend/tools/audit-community-shop-actions.mjs` guards for Spotlight contact attribution and attention `keepalive`.
+- Truth boundary: GSN counts the in-app tap/open attempt. It still cannot prove a completed WhatsApp conversation or completed phone call after the visitor leaves GSN; 5-minute dedupe can also make repeat taps from the same visitor look unchanged.
+- Verification: `npm --prefix frontend run audit:community-shop-actions`, `npm --prefix frontend run audit:spotlight-system-feed`, `npm --prefix frontend run audit:shop-gallery-button-inventory`, `npm --prefix frontend run build`, and `gmfn_backend\.venv\Scripts\python.exe -m pytest gmfn_backend\tests\test_marketplace_public_shop.py::test_marketplace_attention_records_public_views_and_owner_summary` passed.
+
+## 2026-09-14 - Mixed chartlets replace flat visual bars
+
+- Status: Local frontend UX correction; no backend route, schema, auth, permission, payment, Market Wisdom, external analytics source, commit, push, or deploy change was made.
+- Owner request: replace ugly flat bars with a calmer combination of pie and bar chart visuals across affected screens.
+- Files updated: `frontend/src/components/GsnSignalChart.tsx`, `frontend/src/pages/ShopControlPage.tsx`, and `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`.
+- Route/screen impact: Shop Control Advanced Analytics / Opportunity Engine now uses reusable mixed donut-plus-bar chartlets for Evidence dashboard, Opportunity flow, and Context coverage. Public Community Confirmation outcome live-response progress now uses the same mixed chart visual instead of a single flat strip.
+- Guardrail: Dashboard Market Wisdom and non-chart status/bullet dots were not changed; Dashboard Market Wisdom remains frozen unless the owner explicitly asks to change that presentation model.
+- Verification passed: `npm --prefix frontend run audit:shop-control-button-inventory`, `npm --prefix frontend run audit:spotlight-system-feed`, `npm --prefix frontend run build`, and `git diff --check -- frontend\src\components\GsnSignalChart.tsx frontend\src\pages\ShopControlPage.tsx frontend\src\pages\CommunityConfirmationOutcomePage.tsx`.
+- Devil truth: these are better visual readings of existing percentages and counts. They are not new business-return calculations, external market intelligence, finance modelling, or proof of sales.
+
+## 2026-09-13 - 23-item public capability mirror updated to current reality
 
 - Status: Content-only frontend/docs/static-PDF update; no route, screen layout, component structure, backend route, schema, auth, permission, payment, AI provider, notification service, commit, push, or deploy change was made.
 - Owner request: keep the existing 23-item form/presentation, but update the meaning to reflect current GSN reality after the broader 44-module `GSN in Real Life` capability bank.
