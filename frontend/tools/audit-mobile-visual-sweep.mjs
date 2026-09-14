@@ -6,6 +6,7 @@ const baseUrl = process.env.GSN_AUDIT_BASE_URL || "http://127.0.0.1:5180";
 
 const routes = [
   "/cover",
+  "/welcome",
   "/login",
   "/join-approval/8",
   "/activate-membership?request_id=8&gsn_id=GMFN-U-0B5A2953",
@@ -23,6 +24,7 @@ const routes = [
   "/app/demand-box?queue=open",
   "/app/notifications",
   "/app/shop-control",
+  "/app/shop-control#shop-control-spotlight",
   "/app/shop-control/subscription-spotlight",
   "/app/shop-assets",
   "/app/vault-control",

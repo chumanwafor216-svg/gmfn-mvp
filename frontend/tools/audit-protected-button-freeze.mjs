@@ -120,6 +120,10 @@ const protectedAudits = [
     script: "audit-trust-admin-mobile-overflow.mjs",
   },
   {
+    label: "mobile visual route coverage",
+    script: "audit-mobile-visual-route-coverage.mjs",
+  },
+  {
     label: "trust infrastructure mobile visual",
     script: "audit-trust-infrastructure-mobile-visual.mjs",
   },
@@ -150,5 +154,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "\nProtected button freeze audit passed: Dashboard, Market Wisdom, Community Home, Shop Control, Marketplace touch blockers, existing-community invite line, Action Inbox, entry/auth, admin route guards, Trust/Admin mobile overflow, shared tap guard, and global stable-action hygiene are still caged."
+  "\nProtected button freeze audit passed: Dashboard, Market Wisdom, Community Home, Shop Control, Marketplace touch blockers, existing-community invite line, Action Inbox, entry/auth, admin route guards, Trust/Admin mobile overflow, mobile visual route coverage, shared tap guard, and global stable-action hygiene are still caged."
 );
