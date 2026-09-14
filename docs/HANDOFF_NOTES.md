@@ -1,3 +1,9 @@
+## 2026-09-14 - Shop Control compact visual enhancement without repeats
+- Status: Local frontend UX refinement after owner review of the newest Economic overview / Opportunity lenses references. This pass enhances the already-built picture-led panels instead of adding another duplicate version.
+- Files updated: `frontend/src/pages/ShopControlPage.tsx`, `frontend/tools/audit-shop-control-button-inventory.mjs`, and this handoff note.
+- Route/screen impact: `/app/shop-control#shop-control-counts` Advanced Analytics now gives the phone layout wider visual cards, shorter copy, fewer inner walls, one compact boundary per visual, and hides repeated detailed evidence rows on phone while keeping the richer detail on wider screens.
+- Guardrail: no Shop Control button/action count, backend route, schema, auth, permission, payment, analytics data contract, or deployment configuration was changed.
+- Devil truth: this is a readability and density fix. It does not prove buyers, sales, payment, delivery, satisfaction, trust approval, return, or investor-grade evidence.
 ## 2026-09-14 - Shop Control compact phone visual cleanup
 - Status: Verified local frontend UX correction after owner screenshots showed narrow mobile containers, word wrapping out of cards, and too many nested boundary/wall boxes in the picture-led Shop Control analytics panels.
 - Files updated: `frontend/src/pages/ShopControlPage.tsx`, `frontend/tools/audit-shop-control-button-inventory.mjs`, and this handoff note.

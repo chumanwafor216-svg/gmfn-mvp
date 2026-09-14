@@ -427,7 +427,7 @@ assertShopContains(
   "Shop Control Opportunity Engine must keep the recorded-evidence boundary on the GSN Economic Engine overview."
 );
 assertShopContains(
-  /function ShopEconomicEngineVisualPanel[\s\S]*?compactWorkingNow[\s\S]*?title: "Shop"[\s\S]*?title: "Community"[\s\S]*?Evidence recorded\. Not sales, payment, delivery, or trust proof/,
+  /function ShopEconomicEngineVisualPanel[\s\S]*?compactWorkingNow[\s\S]*?title: "Shop"[\s\S]*?title: "Community"[\s\S]*?Evidence only: not sales, payment, delivery or trust proof/,
   "Shop Control Economic overview must keep a compact mobile layout with short labels and one boundary line."
 );
 assertShopContains(
@@ -445,6 +445,18 @@ assertShopContains(
 assertShopContains(
   /<ShopOpportunityLensesVisualPanel[\s\S]*?liveSignalCount=\{opportunityEngineLiveSignalCount\}[\s\S]*?demandOpenCount=\{openDemandSignalCount\}[\s\S]*?tradeRecords=\{tradeOutcomeRecords7Days\}/,
   "Shop Control Opportunity lenses visual must stay wired to live shop signals."
+);
+assertShopContains(
+  /function ShopOpportunityLensesVisualPanel[\s\S]*?primaryLenses = compactLenses\.slice\(0, 4\)[\s\S]*?Governed sources only[\s\S]*?Local evidence only: not sales proof, trust approval, or a public conclusion/,
+  "Shop Control Opportunity lenses phone view must keep one compact collection and one boundary."
+);
+assertShopContains(
+  /opportunityEngineSignalTiles\.map[\s\S]*?display: activeOpportunityEnginePanel === "overview" && !isCompact \? "grid" : "none"/,
+  "Shop Control Economic overview must hide repeated detail stacks on phone."
+);
+assertShopContains(
+  /display: isCompact \? "none" : "grid"[\s\S]*?opportunityEngineLensRows\.map/,
+  "Shop Control Opportunity lenses must hide repeated lens detail rows on phone."
 );
 assertShopContains(
   /function ShopFirstTradeRecordVisualPanel[\s\S]*?Agree terms[\s\S]*?Release item[\s\S]*?Confirm payment[\s\S]*?Record outcome[\s\S]*?Build your first trade record[\s\S]*?Nothing recorded yet[\s\S]*?What counts as evidence[\s\S]*?A record supports a decision/,

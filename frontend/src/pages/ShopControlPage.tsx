@@ -2155,20 +2155,23 @@ function ShopEconomicEngineVisualPanel({
       <div
         aria-label="GSN Economic Engine visual overview"
         style={{
-          marginTop: 10,
-          borderRadius: 18,
-          border: "1px solid rgba(15,94,170,0.08)",
+          marginTop: 8,
+          marginLeft: -46,
+          marginRight: -46,
+          width: "calc(100% + 92px)",
+          borderRadius: 20,
+          border: "1px solid rgba(15,94,170,0.05)",
           background: "linear-gradient(180deg, #F4FBFF 0%, #FFFFFF 70%, #EEF8FF 100%)",
-          padding: 10,
+          padding: 9,
           display: "grid",
-          gap: 10,
+          gap: 8,
           boxShadow: "0 10px 20px rgba(7,24,39,0.05)",
           overflow: "hidden",
         }}
       >
         <div style={{ display: "grid", gap: 7 }}>
-          <div style={{ color: "#061827", fontSize: 24, fontWeight: 950, lineHeight: 1.05 }}>Economic overview</div>
-          <div style={{ color: "#385773", fontSize: 13, fontWeight: 850, lineHeight: 1.3 }}>Working now. Evidence next.</div>
+          <div style={{ color: "#061827", fontSize: 22, fontWeight: 950, lineHeight: 1.05 }}>Economic overview</div>
+          <div style={{ color: "#385773", fontSize: 12.5, fontWeight: 850, lineHeight: 1.3 }}>Current view. Build proof next.</div>
           <div
             style={{
               justifySelf: "start",
@@ -2188,8 +2191,8 @@ function ShopEconomicEngineVisualPanel({
             borderRadius: 18,
             background: "radial-gradient(circle at 26% 25%, #1AA6C9 0%, #0B5C9F 45%, #06223D 100%)",
             color: "#FFFFFF",
-            minHeight: 96,
-            padding: 14,
+            minHeight: 68,
+            padding: 10,
             display: "grid",
             alignContent: "center",
             gap: 2,
@@ -2197,64 +2200,64 @@ function ShopEconomicEngineVisualPanel({
             boxShadow: "inset 0 0 0 5px rgba(255,255,255,0.10)",
           }}
         >
-          <div style={{ fontSize: 30, fontWeight: 950, lineHeight: 1 }}>GSN</div>
-          <div style={{ fontSize: 14, fontWeight: 900, opacity: 0.88 }}>Economic Engine</div>
+          <div style={{ fontSize: 27, fontWeight: 950, lineHeight: 1 }}>GSN</div>
+          <div style={{ fontSize: 13, fontWeight: 900, opacity: 0.88 }}>Economic Engine</div>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 7 }}>
           {compactWorkingNow.map((item) => (
             <div
               key={`economic-compact-${item.title}`}
               style={{
                 minWidth: 0,
-                borderRadius: 15,
+                borderRadius: 14,
                 background: ANALYTICS_ACCENTS[item.accent].bg,
-                padding: 9,
+                padding: 8,
                 display: "grid",
-                gap: 7,
+                gap: 6,
                 alignContent: "start",
-                minHeight: 92,
+                minHeight: 74,
                 overflow: "hidden",
               }}
             >
-              <GsnLegacyIcon name={item.icon} size={28} />
-              <div style={{ color: "#061827", fontSize: 12.5, fontWeight: 950, lineHeight: 1.1 }}>{item.title}</div>
-              <div style={{ color: ANALYTICS_ACCENTS[item.accent].color, fontSize: 16, fontWeight: 950, lineHeight: 1.05, overflowWrap: "break-word" }}>{item.value}</div>
+              <GsnLegacyIcon name={item.icon} size={25} />
+              <div style={{ color: "#061827", fontSize: 12, fontWeight: 950, lineHeight: 1.1 }}>{item.title}</div>
+              <div style={{ color: ANALYTICS_ACCENTS[item.accent].color, fontSize: 15, fontWeight: 950, lineHeight: 1.05, overflowWrap: "break-word" }}>{item.value}</div>
             </div>
           ))}
         </div>
         <div style={{ color: "#385773", fontSize: 11.5, fontWeight: 950, textTransform: "uppercase" }}>Next evidence</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 7 }}>
           {compactNextEvidence.map((item) => (
             <div
               key={`economic-compact-next-${item.title}`}
               style={{
-                borderRadius: 15,
+                borderRadius: 14,
                 background: "rgba(255,255,255,0.86)",
-                padding: 9,
-                minHeight: 84,
+                padding: 8,
+                minHeight: 62,
                 display: "grid",
                 gap: 6,
                 minWidth: 0,
               }}
             >
-              <GsnLegacyIcon name={item.icon} size={26} />
-              <div style={{ color: "#061827", fontSize: 12.5, fontWeight: 950, lineHeight: 1.1 }}>{item.title}</div>
-              <div style={{ color: item.live ? "#1F8A57" : "#5A6F84", fontSize: 13, fontWeight: 900, lineHeight: 1.15 }}>{item.value}</div>
+              <GsnLegacyIcon name={item.icon} size={24} />
+              <div style={{ color: "#061827", fontSize: 12, fontWeight: 950, lineHeight: 1.1 }}>{item.title}</div>
+              <div style={{ color: item.live ? "#1F8A57" : "#5A6F84", fontSize: 12.5, fontWeight: 900, lineHeight: 1.15 }}>{item.value}</div>
             </div>
           ))}
         </div>
         <div
           style={{
             borderRadius: 14,
-            background: "rgba(255,255,255,0.82)",
-            padding: "10px 11px",
+            background: "#FFF9E8",
+            padding: "9px 10px",
             color: "#0B2D4A",
             fontSize: 12,
             fontWeight: 900,
             lineHeight: 1.3,
           }}
         >
-          Evidence recorded. Not sales, payment, delivery, or trust proof.
+          Evidence only: not sales, payment, delivery or trust proof.
         </div>
       </div>
     );
@@ -2489,94 +2492,93 @@ function ShopOpportunityLensesVisualPanel({
       { ...lenses[3], title: "Operations", value: `${liveSignalCount}/${totalSignals} live`, next: "Test change" },
       { ...lenses[4], title: "Outside", value: "Not added yet", next: "Approved inputs" },
     ];
+    const primaryLenses = compactLenses.slice(0, 4);
+    const outsideLens = compactLenses[4];
 
     return (
       <div
         aria-label="Opportunity lenses visual summary"
         style={{
-          marginTop: 10,
-          borderRadius: 18,
-          border: "1px solid rgba(15,94,170,0.08)",
-          background: "linear-gradient(180deg, #F4FBFF 0%, #FFFFFF 62%, #EEF8FF 100%)",
-          padding: 10,
+          marginTop: 8,
+          marginLeft: -46,
+          marginRight: -46,
+          width: "calc(100% + 92px)",
+          borderRadius: 20,
+          border: "1px solid rgba(15,94,170,0.05)",
+          background: "linear-gradient(180deg, #F4FBFF 0%, #FFFFFF 64%, #EEF8FF 100%)",
+          padding: 9,
           display: "grid",
-          gap: 10,
+          gap: 8,
           boxShadow: "0 10px 20px rgba(7,24,39,0.05)",
           overflow: "hidden",
         }}
       >
-        <div style={{ display: "grid", gap: 7 }}>
-          <div style={{ color: "#061827", fontSize: 24, fontWeight: 950, lineHeight: 1.05 }}>Opportunity lenses</div>
-          <div style={{ color: "#385773", fontSize: 13, fontWeight: 850, lineHeight: 1.3 }}>Read local signals first.</div>
-          <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-            <span style={{ borderRadius: 999, padding: "7px 11px", background: "linear-gradient(180deg, #FFF1B8 0%, #F7D66D 100%)", color: "#5B3C00", fontSize: 12, fontWeight: 950 }}>Local reading</span>
-            <span style={{ borderRadius: 999, padding: "7px 11px", background: "#F1F7FF", color: "#0F5EAA", fontSize: 12, fontWeight: 950 }}>{liveSignalCount}/{totalSignals} live</span>
+        <div style={{ display: "grid", gridTemplateColumns: "38px minmax(0, 1fr)", gap: 9, alignItems: "center" }}>
+          <div style={{ width: 38, height: 38, borderRadius: 14, background: "#EAF4FF", display: "grid", placeItems: "center" }}>
+            <GsnLegacyIcon name="chart" size={29} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ color: "#061827", fontSize: 22, fontWeight: 950, lineHeight: 1.05 }}>Opportunity lenses</div>
+            <div style={{ color: "#385773", fontSize: 12.5, fontWeight: 850, lineHeight: 1.3 }}>Use local evidence. One next step.</div>
           </div>
         </div>
-        <div
-          style={{
-            borderRadius: 18,
-            minHeight: 98,
-            display: "grid",
-            placeItems: "center",
-            textAlign: "center",
-            color: "#FFFFFF",
-            background: "radial-gradient(circle at 45% 26%, #3187D8 0%, #133D68 46%, #061827 100%)",
-            border: "5px solid rgba(214,170,69,0.62)",
-            padding: 12,
-          }}
-        >
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 950, lineHeight: 1.05, textTransform: "uppercase" }}>Local view</div>
-            <div style={{ marginTop: 5, color: "#F7D66D", fontSize: 24, fontWeight: 950, lineHeight: 1 }}>{liveSignalCount} of {totalSignals}</div>
-            <div style={{ marginTop: 2, fontSize: 12, fontWeight: 850 }}>signals live</div>
-          </div>
+        <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+          <span style={{ borderRadius: 999, padding: "7px 10px", background: "linear-gradient(180deg, #FFF1B8 0%, #F7D66D 100%)", color: "#5B3C00", fontSize: 11.5, fontWeight: 950 }}>Local reading</span>
+          <span style={{ borderRadius: 999, padding: "7px 10px", background: "#F1F7FF", color: "#0F5EAA", fontSize: 11.5, fontWeight: 950 }}>{liveSignalCount}/{totalSignals} live</span>
         </div>
-        <div style={{ display: "grid", gap: 7 }}>
-          {compactLenses.map((item) => (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 7 }}>
+          {primaryLenses.map((item) => (
             <div
               key={`visual-lens-compact-${item.title}`}
               style={{
                 minWidth: 0,
-                borderRadius: 15,
-                background: item.status === "Next" ? "#F7FBFF" : "rgba(255,255,255,0.88)",
+                borderRadius: 14,
+                background: item.status === "Next" ? "#F7FBFF" : ANALYTICS_ACCENTS[statusTone(item.status)].bg,
                 padding: 8,
                 display: "grid",
-                gridTemplateColumns: "30px minmax(0, 1fr) auto",
-                gap: 8,
+                gridTemplateColumns: "28px minmax(0, 1fr)",
+                gap: 7,
                 alignItems: "center",
-                minHeight: 66,
+                minHeight: 68,
                 overflow: "hidden",
               }}
             >
-              <GsnLegacyIcon name={item.icon} size={25} />
+              <GsnLegacyIcon name={item.icon} size={24} />
               <div style={{ minWidth: 0 }}>
-                <div style={{ color: "#061827", fontSize: 13, fontWeight: 950, lineHeight: 1.08 }}>{item.title}</div>
-                <div style={{ color: "#385773", fontSize: 11.5, fontWeight: 850, lineHeight: 1.18 }}>{item.value}</div>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 5, alignItems: "center" }}>
+                  <span style={{ color: "#061827", fontSize: 12.5, fontWeight: 950, lineHeight: 1.08 }}>{item.title}</span>
+                  <span style={{ color: ANALYTICS_ACCENTS[statusTone(item.status)].color, fontSize: 9.5, fontWeight: 950, whiteSpace: "nowrap" }}>{item.status}</span>
+                </div>
+                <div style={{ marginTop: 4, color: "#385773", fontSize: 11.2, fontWeight: 850, lineHeight: 1.16, overflowWrap: "break-word" }}>{item.value}</div>
               </div>
-              <span style={{ color: ANALYTICS_ACCENTS[statusTone(item.status)].color, fontSize: 10.5, fontWeight: 950, whiteSpace: "nowrap" }}>{item.status}</span>
             </div>
           ))}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 6 }}>
-          {[
-            { status: "Live", accent: "green" as AnalyticsAccent },
-            { status: "Watch", accent: "gold" as AnalyticsAccent },
-            { status: "Next", accent: "blue" as AnalyticsAccent },
-          ].map((item) => (
-            <div key={`visual-lens-compact-legend-${item.status}`} style={{ borderRadius: 999, background: "rgba(255,255,255,0.82)", padding: "8px 7px", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-              <span aria-hidden="true" style={{ width: 12, height: 12, borderRadius: 999, background: ANALYTICS_ACCENTS[item.accent].color }} />
-              <span style={{ color: "#061827", fontSize: 11.5, fontWeight: 950 }}>{item.status}</span>
-            </div>
-          ))}
+        <div
+          style={{
+            borderRadius: 14,
+            background: "linear-gradient(180deg, #F7FBFF 0%, #EEF5FC 100%)",
+            padding: 8,
+            display: "grid",
+            gridTemplateColumns: "30px minmax(0, 1fr) auto",
+            gap: 8,
+            alignItems: "center",
+            minHeight: 54,
+          }}
+        >
+          <GsnLegacyIcon name={outsideLens.icon} size={25} />
+          <div style={{ minWidth: 0 }}>
+            <div style={{ color: "#061827", fontSize: 12.5, fontWeight: 950, lineHeight: 1.08 }}>{outsideLens.title}</div>
+            <div style={{ color: "#385773", fontSize: 11.2, fontWeight: 850, lineHeight: 1.16 }}>Governed sources only</div>
+          </div>
+          <span style={{ color: ANALYTICS_ACCENTS.blue.color, fontSize: 10, fontWeight: 950, whiteSpace: "nowrap" }}>{outsideLens.status}</span>
         </div>
-        <div style={{ borderRadius: 14, background: "#FFF9E8", color: "#6B4600", padding: "10px 11px", fontSize: 12, fontWeight: 900, lineHeight: 1.3 }}>
+        <div style={{ borderRadius: 14, background: "#FFF9E8", color: "#6B4600", padding: "9px 10px", fontSize: 12, fontWeight: 900, lineHeight: 1.3 }}>
           Local evidence only: not sales proof, trust approval, or a public conclusion.
         </div>
       </div>
     );
   }
-
   return (
     <div
       aria-label="Opportunity lenses visual summary"
@@ -8688,7 +8690,7 @@ export default function ShopControlPage() {
                 tradeRecords={tradeOutcomeRecords7Days}
                 trustRecordsReady={tradeOutcomeReleasedRecords > 0}
               />
-              <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+              <div style={{ display: isCompact ? "none" : "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                 {opportunityEngineSignalTiles.map((item) => (
                   <div key={`opportunity-engine-${item.label}`} style={{ borderRadius: 14, background: "rgba(255,255,255,0.78)", border: "1px solid rgba(18,58,89,0.08)", padding: 10, display: "grid", gridTemplateColumns: "32px minmax(0, 1fr)", gap: 8, alignItems: "start" }}>
                     <GsnLegacyIcon name={item.icon as GsnIconName} size={30} />
@@ -8713,7 +8715,7 @@ export default function ShopControlPage() {
                   </div>
                 ))}
               </div>
-              <div style={{ display: activeOpportunityEnginePanel === "overview" ? "grid" : "none", gap: 10 }}>
+              <div style={{ display: activeOpportunityEnginePanel === "overview" && !isCompact ? "grid" : "none", gap: 10 }}>
                 <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.84)", border: "1px solid rgba(15,94,170,0.12)", padding: 10, display: "grid", gap: 8 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                     <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Evidence dashboard</div>
@@ -8786,7 +8788,7 @@ export default function ShopControlPage() {
                   </div>
                 </div>
               </div>
-                            <div style={{ display: activeOpportunityEnginePanel === "wisdom" ? "grid" : "none", gap: 10 }}>
+              <div style={{ display: activeOpportunityEnginePanel === "wisdom" ? "grid" : "none", gap: 10 }}>
                 <ShopOpportunityReadingVisualPanel
                   isCompact={isCompact}
                   spotlightSeen={attentionSpotlightImpressions7Days}
@@ -8801,7 +8803,8 @@ export default function ShopControlPage() {
                   snapshotUse={opportunityEngineWisdomSnapshot.useIn}
                   communityName={communityName}
                 />
-              </div><div style={{ display: activeOpportunityEnginePanel === "wisdom" ? "flex" : "none", gap: 7, flexWrap: "wrap", alignItems: "center" }}>
+              </div>
+              <div style={{ display: activeOpportunityEnginePanel === "wisdom" ? "flex" : "none", gap: 7, flexWrap: "wrap", alignItems: "center" }}>
                 <span style={{ color: "#24415C", fontSize: 11, fontWeight: 950 }}>Review windows</span>
                 {opportunityEngineHorizonLabels.map((label) => (
                   <span key={`opportunity-horizon-${label}`} style={{ borderRadius: 999, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "5px 8px", color: "#24415C", fontSize: 10.5, fontWeight: 900 }}>
@@ -8822,7 +8825,7 @@ export default function ShopControlPage() {
                   tradeRecords={tradeOutcomeRecords7Days}
                   hasCommunityContext={Boolean(effectiveShopClanId || selectedClanId)}
                 />
-                <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+                <div style={{ display: isCompact ? "none" : "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                   {opportunityEngineLensRows.map((item) => (
                     <div key={`opportunity-lens-${item.lens}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(15,94,170,0.10)", padding: 10, display: "grid", gridTemplateColumns: "30px minmax(0, 1fr)", gap: 8, alignItems: "start" }}>
                       <GsnLegacyIcon name={item.icon as GsnIconName} size={28} />
