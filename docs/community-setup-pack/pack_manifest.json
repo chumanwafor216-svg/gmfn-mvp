@@ -1,64 +1,166 @@
 {
-    "pack_name":  "GSN Community Setup Pack",
-    "document_date":  "2026-09-14",
-    "status":  "maintained_source_pack",
-    "authenticity_mark":  "GSN Original Community Setup Material | Source-controlled in gmfn_mvp/docs | Document date: 2026-09-14",
-    "source_assets":  [
-                          {
-                              "role":  "live_setup_guide",
-                              "path":  "../gsn-user-guide/GSN_SELF_SERVICE_USER_GUIDE.md",
-                              "distribution":  [
-                                                   "../gsn-user-guide/GSN_SELF_SERVICE_USER_GUIDE.docx",
-                                                   "../gsn-user-guide/GSN_SELF_SERVICE_USER_GUIDE.pdf"
-                                               ]
-                          },
-                          {
-                              "role":  "feature_inventory",
-                              "path":  "../gsn-user-guide/GSN_FEATURE_INVENTORY_AUDIT.md",
-                              "machine_readable":  [
-                                                       "../gsn-user-guide/GSN_FEATURE_INVENTORY.json",
-                                                       "../gsn-user-guide/GSN_FEATURE_INVENTORY.csv"
-                                                   ]
-                          },
-                          {
-                              "role":  "setup_dependency_map",
-                              "path":  "../gsn-user-guide/GSN_FEATURE_DEPENDENCY_AND_SETUP_MAP.md"
-                          },
-                          {
-                              "role":  "route_recovery_map",
-                              "path":  "../gsn-user-guide/GSN_ROUTE_AND_RECOVERY_MAP.md"
-                          },
-                          {
-                              "role":  "master_capability_bank",
-                              "path":  "../gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_MASTER_CAPABILITY_BANK.md",
-                              "machine_readable":  [
-                                                       "../gsn-user-guide/real-life-capability-bank/capabilities.jsonl",
-                                                       "../gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_SELECTION_MAP.json",
-                                                       "../gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_SELECTION_MAP.csv"
-                                                   ]
-                          },
-                          {
-                              "role":  "audience_pick_lists",
-                              "path":  "../gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_AUDIENCE_PICK_LISTS.md",
-                              "distribution":  [
-                                                   "../gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_AUDIENCE_PICK_LISTS.docx",
-                                                   "../gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_AUDIENCE_PICK_LISTS.pdf"
-                                               ]
-                          }
-                      ],
-    "audience_copies":  [
-                            "church_faith_group",
-                            "school_youth_organisation",
-                            "ngo_charity_community_organisation",
-                            "cooperative_market_business_network",
-                            "family_diaspora_association"
-                        ],
-    "update_rule":  [
-                        "Update source Markdown/JSON/CSV first.",
-                        "Regenerate DOCX/PDF distribution copies.",
-                        "Update this manifest when files are added, renamed, retired or moved.",
-                        "Record substantial updates in docs/HANDOFF_NOTES.md."
-                    ],
-    "truth_boundary":  "This pack explains GSN setup and handover. It is not legal proof, payment proof, buyer proof, trust proof or a guarantee that every capability is live for every client.",
-    "builder":  "docs/community-setup-pack/tools/build_distribution_documents.py"
+  "pack_name": "GSN Community Setup Pack",
+  "document_date": "2026-09-14",
+  "status": "maintained_source_pack",
+  "authenticity_mark": "GSN Original Community Setup Material | Source-controlled in gmfn_mvp/docs | Document date: 2026-09-14",
+  "source_assets": [
+    {
+      "role": "live_setup_guide",
+      "path": "../gsn-user-guide/GSN_SELF_SERVICE_USER_GUIDE.md",
+      "distribution": [
+        "../gsn-user-guide/GSN_SELF_SERVICE_USER_GUIDE.docx",
+        "../gsn-user-guide/GSN_SELF_SERVICE_USER_GUIDE.pdf"
+      ]
+    },
+    {
+      "role": "feature_inventory",
+      "path": "../gsn-user-guide/GSN_FEATURE_INVENTORY_AUDIT.md",
+      "machine_readable": [
+        "../gsn-user-guide/GSN_FEATURE_INVENTORY.json",
+        "../gsn-user-guide/GSN_FEATURE_INVENTORY.csv"
+      ]
+    },
+    {
+      "role": "setup_dependency_map",
+      "path": "../gsn-user-guide/GSN_FEATURE_DEPENDENCY_AND_SETUP_MAP.md"
+    },
+    {
+      "role": "route_recovery_map",
+      "path": "../gsn-user-guide/GSN_ROUTE_AND_RECOVERY_MAP.md"
+    },
+    {
+      "role": "master_capability_bank",
+      "path": "../gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_MASTER_CAPABILITY_BANK.md",
+      "machine_readable": [
+        "../gsn-user-guide/real-life-capability-bank/capabilities.jsonl",
+        "../gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_SELECTION_MAP.json",
+        "../gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_SELECTION_MAP.csv"
+      ]
+    },
+    {
+      "role": "audience_pick_lists",
+      "path": "../gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_AUDIENCE_PICK_LISTS.md",
+      "distribution": [
+        "../gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_AUDIENCE_PICK_LISTS.docx",
+        "../gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_AUDIENCE_PICK_LISTS.pdf"
+      ]
+    }
+  ],
+  "audience_copies": [
+    "church_faith_group",
+    "school_youth_organisation",
+    "ngo_charity_community_organisation",
+    "cooperative_market_business_network",
+    "family_diaspora_association"
+  ],
+  "update_rule": [
+    "Update source Markdown/JSON/CSV first.",
+    "Regenerate DOCX/PDF distribution copies.",
+    "Update this manifest when files are added, renamed, retired or moved.",
+    "Record substantial updates in docs/HANDOFF_NOTES.md."
+  ],
+  "truth_boundary": "This pack explains GSN setup and handover. It is not legal proof, payment proof, buyer proof, trust proof or a guarantee that every capability is live for every client.",
+  "builder": "docs/community-setup-pack/tools/build_distribution_documents.py",
+  "qr_download_index": {
+    "path": "docs/community-setup-pack/GSN_COMMUNITY_SETUP_QR_DOWNLOAD_INDEX_2026-09-14.md",
+    "distribution": [
+      "docs/community-setup-pack/GSN_COMMUNITY_SETUP_QR_DOWNLOAD_INDEX_2026-09-14.docx",
+      "docs/community-setup-pack/GSN_COMMUNITY_SETUP_QR_DOWNLOAD_INDEX_2026-09-14.pdf"
+    ]
+  },
+  "qr_assets": [
+    {
+      "id": "setup-guide-pdf",
+      "title": "What to Set Up, What It Does, and How to Use It",
+      "audience": "Leaders, admins and members",
+      "path": "docs/gsn-user-guide/GSN_SELF_SERVICE_USER_GUIDE.pdf",
+      "url": "https://raw.githubusercontent.com/chumanwafor216-svg/gmfn-mvp/main/docs/gsn-user-guide/GSN_SELF_SERVICE_USER_GUIDE.pdf",
+      "qr_png": "docs/community-setup-pack/qr-codes/setup-guide-pdf.png"
+    },
+    {
+      "id": "deployment-pack-index",
+      "title": "Community Setup Deployment Pack Index",
+      "audience": "GSN setup team and community leaders",
+      "path": "docs/community-setup-pack/GSN_COMMUNITY_SETUP_DEPLOYMENT_PACK_INDEX_2026-09-14.md",
+      "url": "https://github.com/chumanwafor216-svg/gmfn-mvp/blob/main/docs/community-setup-pack/GSN_COMMUNITY_SETUP_DEPLOYMENT_PACK_INDEX_2026-09-14.md",
+      "qr_png": "docs/community-setup-pack/qr-codes/deployment-pack-index.png"
+    },
+    {
+      "id": "client-handover-map",
+      "title": "Client Handover Map",
+      "audience": "Community owners, coordinators and client admins",
+      "path": "docs/community-setup-pack/GSN_COMMUNITY_SETUP_CLIENT_HANDOVER_MAP_2026-09-14.md",
+      "url": "https://github.com/chumanwafor216-svg/gmfn-mvp/blob/main/docs/community-setup-pack/GSN_COMMUNITY_SETUP_CLIENT_HANDOVER_MAP_2026-09-14.md",
+      "qr_png": "docs/community-setup-pack/qr-codes/client-handover-map.png"
+    },
+    {
+      "id": "story-bank",
+      "title": "Community Setup Story Bank",
+      "audience": "Sales, onboarding and community champions",
+      "path": "docs/community-setup-pack/GSN_COMMUNITY_SETUP_STORY_BANK_2026-09-14.md",
+      "url": "https://github.com/chumanwafor216-svg/gmfn-mvp/blob/main/docs/community-setup-pack/GSN_COMMUNITY_SETUP_STORY_BANK_2026-09-14.md",
+      "qr_png": "docs/community-setup-pack/qr-codes/story-bank.png"
+    },
+    {
+      "id": "master-capability-bank-pdf",
+      "title": "GSN in Real Life Master Capability Bank",
+      "audience": "Full setup/readiness conversations",
+      "path": "docs/gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_MASTER_CAPABILITY_BANK.pdf",
+      "url": "https://raw.githubusercontent.com/chumanwafor216-svg/gmfn-mvp/main/docs/gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_MASTER_CAPABILITY_BANK.pdf",
+      "qr_png": "docs/community-setup-pack/qr-codes/master-capability-bank-pdf.png"
+    },
+    {
+      "id": "audience-pick-lists-pdf",
+      "title": "Audience Pick Lists",
+      "audience": "Quick first-send version for all audiences",
+      "path": "docs/gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_AUDIENCE_PICK_LISTS.pdf",
+      "url": "https://raw.githubusercontent.com/chumanwafor216-svg/gmfn-mvp/main/docs/gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_AUDIENCE_PICK_LISTS.pdf",
+      "qr_png": "docs/community-setup-pack/qr-codes/audience-pick-lists-pdf.png"
+    },
+    {
+      "id": "church-faith-group-pdf",
+      "title": "Church and Faith Group Copy",
+      "audience": "Churches and faith groups",
+      "path": "docs/gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_CHURCH_FAITH_GROUP_COPY.pdf",
+      "url": "https://raw.githubusercontent.com/chumanwafor216-svg/gmfn-mvp/main/docs/gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_CHURCH_FAITH_GROUP_COPY.pdf",
+      "qr_png": "docs/community-setup-pack/qr-codes/church-faith-group-pdf.png"
+    },
+    {
+      "id": "school-youth-organisation-pdf",
+      "title": "School and Youth Organisation Copy",
+      "audience": "Schools and youth organisations",
+      "path": "docs/gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_SCHOOL_YOUTH_ORGANISATION_COPY.pdf",
+      "url": "https://raw.githubusercontent.com/chumanwafor216-svg/gmfn-mvp/main/docs/gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_SCHOOL_YOUTH_ORGANISATION_COPY.pdf",
+      "qr_png": "docs/community-setup-pack/qr-codes/school-youth-organisation-pdf.png"
+    },
+    {
+      "id": "ngo-charity-community-organisation-pdf",
+      "title": "NGO, Charity and Community Organisation Copy",
+      "audience": "NGOs, charities and community bodies",
+      "path": "docs/gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_NGO_CHARITY_COMMUNITY_ORGANISATION_COPY.pdf",
+      "url": "https://raw.githubusercontent.com/chumanwafor216-svg/gmfn-mvp/main/docs/gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_NGO_CHARITY_COMMUNITY_ORGANISATION_COPY.pdf",
+      "qr_png": "docs/community-setup-pack/qr-codes/ngo-charity-community-organisation-pdf.png"
+    },
+    {
+      "id": "cooperative-market-business-network-pdf",
+      "title": "Cooperative, Market and Business Network Copy",
+      "audience": "Cooperatives, markets and business groups",
+      "path": "docs/gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_COOPERATIVE_MARKET_BUSINESS_NETWORK_COPY.pdf",
+      "url": "https://raw.githubusercontent.com/chumanwafor216-svg/gmfn-mvp/main/docs/gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_COOPERATIVE_MARKET_BUSINESS_NETWORK_COPY.pdf",
+      "qr_png": "docs/community-setup-pack/qr-codes/cooperative-market-business-network-pdf.png"
+    },
+    {
+      "id": "family-diaspora-association-pdf",
+      "title": "Family, Diaspora and Association Copy",
+      "audience": "Families, diaspora groups and associations",
+      "path": "docs/gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_FAMILY_DIASPORA_ASSOCIATION_COPY.pdf",
+      "url": "https://raw.githubusercontent.com/chumanwafor216-svg/gmfn-mvp/main/docs/gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_FAMILY_DIASPORA_ASSOCIATION_COPY.pdf",
+      "qr_png": "docs/community-setup-pack/qr-codes/family-diaspora-association-pdf.png"
+    }
+  ],
+  "transfer_rule": [
+    "Give the audience the PDF/DOCX with the QR page when they may be reading on paper or another device.",
+    "Give the QR download index when one person needs to distribute multiple GSN setup articles to members by phone.",
+    "Replace GitHub raw/blob URLs with public hosted URLs if the repository is private or if clients should not touch GitHub."
+  ]
 }

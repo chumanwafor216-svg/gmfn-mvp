@@ -26,6 +26,7 @@ The pack has two sides:
 | Master capability bank | `../gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_MASTER_CAPABILITY_BANK.md` | Full menu of real-life GSN capabilities. Do not send whole master to every group. |
 | Audience selection map | `../gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_SELECTION_MAP.json` | Machine-readable map for choosing audience-specific modules. |
 | Audience pick lists | `../gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_AUDIENCE_PICK_LISTS.md` | Short first-send guide for choosing the right copy. |
+| QR download index | `GSN_COMMUNITY_SETUP_QR_DOWNLOAD_INDEX_2026-09-14.pdf` | Phone-friendly scan sheet for opening key setup articles without typing links. |
 
 ## Deployment Stage Use
 
@@ -33,6 +34,7 @@ The pack has two sides:
 
 Send:
 - one audience-specific `GSN in Real Life` copy
+- the QR download index when people will receive the material by phone or paper
 - the short audience pick-list if the organisation is still deciding scope
 - one or two relevant stories from `GSN_COMMUNITY_SETUP_STORY_BANK_2026-09-14.md`
 
@@ -66,6 +68,7 @@ Use the setup guide to walk through:
 Give the organisation:
 - member-safe setup guide
 - audience story copy
+- the QR download index or the QR page inside the selected PDF/DOCX
 - QR/invite instructions produced from the live app
 - clear support/recovery path
 

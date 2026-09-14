@@ -52,8 +52,20 @@ When the product changes, update in this order:
 4. Update the pack index and manifest if files are added, renamed or retired.
 5. Record the change in `../HANDOFF_NOTES.md`.
 
-## Builder
 
+## QR Transfer Pack
+
+The pack now includes phone-friendly QR transfer material:
+- `GSN_COMMUNITY_SETUP_QR_DOWNLOAD_INDEX_2026-09-14.md`
+- `GSN_COMMUNITY_SETUP_QR_DOWNLOAD_INDEX_2026-09-14.docx`
+- `GSN_COMMUNITY_SETUP_QR_DOWNLOAD_INDEX_2026-09-14.pdf`
+- `qr-codes/*.png`
+
+Each generated self-service or real-life distribution DOCX/PDF also ends with a `Scan to download this GSN article` page. Use that page when a printed or forwarded copy needs to move quickly onto a phone.
+
+Truth boundary: the QR codes currently point to GitHub `main` URLs. That keeps them upgradeable, but external recipients can use them only if the repository files are public or the same URLs are mirrored to a public download location. For private client distribution, replace the URLs with approved public hosting links before regenerating.
+
+## Builder
 Run this after source material changes:
 
 ```powershell

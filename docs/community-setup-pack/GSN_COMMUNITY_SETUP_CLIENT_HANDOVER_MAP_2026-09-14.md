@@ -10,7 +10,7 @@ Authenticity mark: GSN original community setup material, source-controlled in `
 |---|---|---|
 | Sponsor, founder or senior leader | Setup guide PDF, selected audience copy, deployment pack index summary | Helps them understand what GSN sets up and what decisions still belong to the organisation. |
 | Community/domain admin | Setup guide DOCX/PDF, dependency map, route/recovery map | Helps them operate setup, member entry, notices, shop controls and recovery paths. |
-| Ordinary members | Member-safe setup guide sections, audience story copy, live invite/QR link | Helps members join, respond, sell, ask, verify and recover without seeing internal tooling. |
+| Ordinary members | Member-safe setup guide sections, audience story copy, QR download sheet, live invite/QR link | Helps members join, respond, sell, ask, verify and recover without seeing internal tooling. |
 | Treasurer, welfare lead or finance steward | Setup guide sections on finance/trust/payment evidence plus route/recovery map | Helps them understand money/evidence boundaries without overclaiming payment automation. |
 | Shop or market coordinators | Shop setup, Public Shop, Spotlight, DemandBox and analytics sections | Helps sellers set up products/services and understand what counts as attention versus proof. |
 | External partner, funder or reviewer | Selected real-life copy, feature inventory summary, documentation issue register if formal due diligence is needed | Helps them see evidence discipline and current limits. |
@@ -19,6 +19,7 @@ Authenticity mark: GSN original community setup material, source-controlled in `
 
 Minimum bundle:
 - `GSN_SELF_SERVICE_USER_GUIDE.pdf`
+- `GSN_COMMUNITY_SETUP_QR_DOWNLOAD_INDEX_2026-09-14.pdf` when people need phone scanning instead of typed links
 - one audience-specific real-life copy
 - one current live app invite/QR/member entry instruction generated from the actual community
 - support/recovery contact path
@@ -40,11 +41,12 @@ Internal operator bundle:
 
 1. Choose the audience type: church, school/youth, NGO/charity, cooperative/market/business, family/diaspora/association.
 2. Send the audience copy first, not the full master bank.
-3. Confirm what the group is actually setting up: identity only, member entry, bulletin, shop/marketplace, finance/trust, or full Community Domain.
-4. Send the setup guide sections that match the confirmed setup.
-5. Generate live invite/QR/contact links from the current app for that exact community.
-6. Ask the client to distribute only member-safe material to members.
-7. Keep internal inventory, issue register and source JSON inside the GSN operator pack unless due diligence requires sharing.
+3. Include the QR download index or the per-document QR page when the recipient may open the material on a phone.
+4. Confirm what the group is actually setting up: identity only, member entry, bulletin, shop/marketplace, finance/trust, or full Community Domain.
+5. Send the setup guide sections that match the confirmed setup.
+6. Generate live invite/QR/contact links from the current app for that exact community.
+7. Ask the client to distribute only member-safe material to members.
+8. Keep internal inventory, issue register and source JSON inside the GSN operator pack unless due diligence requires sharing.
 
 ## What Clients Must Not Be Told
 

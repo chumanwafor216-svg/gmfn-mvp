@@ -44,8 +44,23 @@ For DOCX:
 For PDF:
 - include a faint diagonal watermark or visible footer authenticity line.
 
-## Version Discipline
 
+## QR Transfer Standard
+
+Every send-ready setup guide or audience copy should include a final QR page titled `Scan to download this GSN article`.
+
+The QR page should show:
+- the article name
+- the intended audience
+- the QR image
+- the direct URL in text for people who cannot scan
+- the access boundary explaining that the link works only when the file is public or shared through an approved mirror
+
+Keep the QR code images under `docs/community-setup-pack/qr-codes/` and regenerate them with `python docs/community-setup-pack/tools/build_distribution_documents.py` after changing any target URL.
+
+Devil truth: a QR code is convenience, not security. It makes transfer easier, but it does not prove the recipient is authorised and does not protect the document after it is opened.
+
+## Version Discipline
 When a document is updated:
 1. Update the document date.
 2. Update the source Markdown/JSON/CSV.

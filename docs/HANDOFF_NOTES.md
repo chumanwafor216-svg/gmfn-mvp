@@ -1,3 +1,13 @@
+## 2026-09-14 - QR transfer layer added to GSN Community Setup Pack
+- Status: Documentation/package transfer enhancement completed locally; no frontend route, backend route, schema, auth, payment, permission, production data, or app behavior change was made.
+- Owner request: make key GSN setup articles easy to move onto phones by scanning QR codes instead of forcing people to search folders or type links manually.
+- Files updated: `docs/community-setup-pack/tools/build_distribution_documents.py`, pack README/index/handover/authenticity docs, `pack_manifest.json`, the regenerated setup/real-life DOCX/PDF outputs, and new QR assets under `docs/community-setup-pack/qr-codes/`.
+- New transfer document: `docs/community-setup-pack/GSN_COMMUNITY_SETUP_QR_DOWNLOAD_INDEX_2026-09-14.md/.docx/.pdf` lists the key articles, intended audiences, direct URLs and QR codes.
+- Document behavior: every generated self-service or GSN in Real Life distribution DOCX/PDF now ends with a `Scan to download this GSN article` page with a QR code, intended audience, direct URL and access boundary.
+- QR target model: codes point to GitHub `main` raw/blob URLs so upgraded committed files stay reachable through the same QR path.
+- Devil truth: QR codes are transfer convenience, not security, legal proof, access control or anti-forwarding protection. External recipients can use the links only if the GitHub files are public or mirrored to a public approved download location.
+- Verification passed: builder reran successfully; `pack_manifest.json` parses; 11 QR PNGs are valid image files; DOCX ZIP inspection found embedded QR images and QR page text in each generated distribution DOCX; generated QR index DOCX/PDF and refreshed PDFs are non-empty; `git diff --check` passed.
+- Tooling limit: direct visual image opening and formal page-image DOCX/PDF render QA could not run in this environment because of the Windows sandbox/viewer limitation and missing render stack. Verification remains structural plus image-file validation.
 ## 2026-09-14 - GSN Community Setup Pack organized for deployment handover
 - Status: Documentation/package organization completed locally; no frontend feature, backend route, schema, auth, payment, permission, production data, Render deploy, or app behavior change was made.
 - Owner request: preserve the generated GSN setup materials, GSN in Real Life pack, master capabilities, audience stories, and "what to set up / how / what it does" documents as a maintained pack for community setup and client/member distribution.
