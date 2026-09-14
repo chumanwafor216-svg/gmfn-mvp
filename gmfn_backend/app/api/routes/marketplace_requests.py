@@ -282,17 +282,51 @@ def _mentioned_handles(row: MarketplaceRequest) -> list[str]:
     return found
 
 
+def _handle_key(value: str) -> str:
+    return _safe_text(value).lstrip("@").lower()
+
+
+def _mentioned_member_ids(db: Session, row: MarketplaceRequest) -> set[int]:
+    handle_keys = {_handle_key(handle) for handle in _mentioned_handles(row)}
+    handle_keys.discard("")
+    clan_id = getattr(row, "clan_id", None)
+    if not handle_keys or not clan_id:
+        return set()
+
+    rows = (
+        db.query(User.id, User.gmfn_id)
+        .join(ClanMembership, ClanMembership.user_id == User.id)
+        .filter(
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.left_at.is_(None),
+            User.gmfn_id.isnot(None),
+        )
+        .all()
+    )
+    return {
+        int(user_id)
+        for user_id, gmfn_id in rows
+        if _handle_key(str(gmfn_id)) in handle_keys
+    }
+
+
 def _request_queue_keys(
     row: MarketplaceRequest,
     *,
     current_user_id: int | None,
+    mentioned_member_ids: set[int] | None = None,
 ) -> list[str]:
     keys: list[str] = []
+    tagged_member_ids = mentioned_member_ids or set()
     is_mine = current_user_id is not None and int(row.user_id) == int(current_user_id)
     if is_mine:
         keys.append("mine")
     else:
         keys.append("for_me")
+    if current_user_id is not None and int(current_user_id) in tagged_member_ids:
+        keys.append("tagged_for_me")
+    if tagged_member_ids:
+        keys.append("direct_tag")
     if _is_ask_community_request(row):
         keys.append("ask_community")
     if _normalize_urgency(getattr(row, "urgency", None)) == "high":
@@ -303,24 +337,36 @@ def _request_queue_keys(
     return keys
 
 
-def _request_routing_status(row: MarketplaceRequest) -> str:
+def _request_routing_status(
+    row: MarketplaceRequest,
+    *,
+    mentioned_member_ids: set[int] | None = None,
+) -> str:
+    if mentioned_member_ids:
+        return "member_tagged"
     return "handle_text_detected" if _mentioned_handles(row) else "community_queue"
 
 
-def _request_routing_hint(row: MarketplaceRequest) -> str:
+def _request_routing_hint(
+    row: MarketplaceRequest,
+    *,
+    mentioned_member_ids: set[int] | None = None,
+) -> str:
+    if mentioned_member_ids:
+        return "Matched GSN member handles were routed to the tagged queue."
     if _mentioned_handles(row):
-        return "Handle text was detected, but direct person delivery still needs governed routing."
+        return "Handle text was detected, but no same-community GSN member was matched."
     if _is_ask_community_request(row):
         return "Visible in the Ask Community lane and the wider community queue."
     return "Visible through the community queue."
 
 
-def _request_action_url(row: MarketplaceRequest) -> str:
+def _request_action_url(row: MarketplaceRequest, queue: str | None = None) -> str:
     clan_id = getattr(row, "clan_id", None)
-    queue = "ask_community" if _is_ask_community_request(row) else "open"
+    queue_key = queue or ("ask_community" if _is_ask_community_request(row) else "open")
     if clan_id:
-        return f"/app/demand-box?clan_id={int(clan_id)}&queue={queue}"
-    return f"/app/demand-box?queue={queue}"
+        return f"/app/demand-box?clan_id={int(clan_id)}&queue={queue_key}"
+    return f"/app/demand-box?queue={queue_key}"
 
 
 def _to_out(
@@ -332,6 +378,10 @@ def _to_out(
     owner = row.user or db.get(User, int(row.user_id)) or user
     is_mine = current_user_id is not None and int(row.user_id) == int(current_user_id)
     clan = db.get(Clan, int(row.clan_id)) if getattr(row, "clan_id", None) else None
+    mentioned_member_ids = _mentioned_member_ids(db, row)
+    is_tagged_for_me = (
+        current_user_id is not None and int(current_user_id) in mentioned_member_ids
+    )
     return MarketplaceRequestOut(
         id=row.id,
         clan_id=getattr(row, "clan_id", None),
@@ -365,10 +415,22 @@ def _to_out(
         source=_request_source(row),
         source_label=_request_source_label(row),
         need_type=_request_need_type(row),
-        queue_keys=_request_queue_keys(row, current_user_id=current_user_id),
+        queue_keys=_request_queue_keys(
+            row,
+            current_user_id=current_user_id,
+            mentioned_member_ids=mentioned_member_ids,
+        ),
         mentioned_handles=_mentioned_handles(row),
-        routing_status=_request_routing_status(row),
-        routing_hint=_request_routing_hint(row),
+        mentioned_member_count=len(mentioned_member_ids),
+        is_tagged_for_me=is_tagged_for_me,
+        routing_status=_request_routing_status(
+            row,
+            mentioned_member_ids=mentioned_member_ids,
+        ),
+        routing_hint=_request_routing_hint(
+            row,
+            mentioned_member_ids=mentioned_member_ids,
+        ),
     )
 
 
@@ -426,18 +488,30 @@ def create_marketplace_request(
         current_user_id=current_user.id,
         clan_id=request_clan_id,
     )
+    mentioned_member_ids = _mentioned_member_ids(db, row)
+    target_user_ids = [
+        uid
+        for uid in visible_user_ids
+        if uid != current_user.id
+        and (not mentioned_member_ids or uid in mentioned_member_ids)
+    ]
 
-    for uid in visible_user_ids:
-        if uid == current_user.id:
-            continue
-
+    for uid in target_user_ids:
+        tagged_for_recipient = uid in mentioned_member_ids
         create_notification(
             db,
             user_id=uid,
-            kind="demand_new",
-            title="New request near you",
+            kind="demand_tagged" if tagged_for_recipient else "demand_new",
+            title=(
+                "Demand tagged for you"
+                if tagged_for_recipient
+                else "New request near you"
+            ),
             message=f"{current_user.email} needs: {payload.title}",
-            action_url=_request_action_url(row),
+            action_url=_request_action_url(
+                row,
+                "tagged" if tagged_for_recipient else None,
+            ),
             action_label="View request",
         )
 

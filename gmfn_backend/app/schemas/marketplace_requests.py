@@ -110,6 +110,8 @@ class MarketplaceRequestOut(BaseModel):
     need_type: str = "General"
     queue_keys: list[str] = Field(default_factory=list)
     mentioned_handles: list[str] = Field(default_factory=list)
+    mentioned_member_count: int = 0
+    is_tagged_for_me: bool = False
     routing_status: str = "community_queue"
     routing_hint: str = "Visible through the community queue."
 

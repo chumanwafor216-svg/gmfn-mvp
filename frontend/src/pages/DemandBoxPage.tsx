@@ -68,6 +68,8 @@ type DemandRow = {
   need_type?: string | null;
   queue_keys?: string[] | null;
   mentioned_handles?: string[] | null;
+  mentioned_member_count?: number | null;
+  is_tagged_for_me?: boolean | null;
   routing_status?: string | null;
   routing_hint?: string | null;
 };
@@ -75,7 +77,7 @@ type DemandRow = {
 type NoticeTone = "success" | "error";
 type DemandPaperScope = "owner" | "community";
 type DemandNoticeExpiryPolicy = "standard" | "urgent" | "event" | "pinned";
-type DemandQueueLane = "for_me" | "mine" | "ask_community" | "urgent" | "categories";
+type DemandQueueLane = "tagged" | "for_me" | "mine" | "ask_community" | "urgent" | "categories";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -429,7 +431,14 @@ function mentionedHandlesOf(row: DemandRow): string[] {
     : [];
 }
 
+function isTaggedForMe(row: DemandRow): boolean {
+  return row?.is_tagged_for_me === true || queueKeysOf(row).includes("tagged_for_me");
+}
+
 function routingLabel(row: DemandRow): string {
+  const status = safeStr(row?.routing_status).toLowerCase();
+  if (isTaggedForMe(row)) return "Tagged for you";
+  if (status === "member_tagged") return "Tagged member";
   if (mentionedHandlesOf(row).length > 0) return "Handle typed";
   if (isAskCommunityDemand(row)) return "Ask lane";
   return "Community queue";
@@ -1355,7 +1364,7 @@ export default function DemandBoxPage() {
   const shouldOpenDemandQueues = useMemo(() => {
     const params = new URLSearchParams(location.search);
     const queueMode = safeStr(params.get("queue") || "").toLowerCase();
-    return ["open", "queue", "all", "for_me", "community", "mine", "ask_community", "ask-community", "urgent", "categories"].includes(queueMode);
+    return ["open", "queue", "all", "tagged", "for_me", "community", "mine", "ask_community", "ask-community", "urgent", "categories"].includes(queueMode);
   }, [location.search]);
   const allOpenRows = useMemo(
     () => uniqueDemandRows([...visibleRows, ...myOpenRows]),
@@ -1364,6 +1373,10 @@ export default function DemandBoxPage() {
   const urgentRows = useMemo(() => allOpenRows.filter(isUrgentDemand), [allOpenRows]);
   const askCommunityRows = useMemo(
     () => allOpenRows.filter(isAskCommunityDemand),
+    [allOpenRows]
+  );
+  const taggedRows = useMemo(
+    () => allOpenRows.filter(isTaggedForMe),
     [allOpenRows]
   );
   const categoryBuckets = useMemo(() => {
@@ -1386,28 +1399,30 @@ export default function DemandBoxPage() {
   }, [allOpenRows]);
   const queueLaneRows = useMemo<Record<DemandQueueLane, DemandRow[]>>(
     () => ({
+      tagged: taggedRows,
       for_me: visibleRows,
       mine: myOpenRows,
       ask_community: askCommunityRows,
       urgent: urgentRows,
       categories: allOpenRows,
     }),
-    [allOpenRows, askCommunityRows, myOpenRows, urgentRows, visibleRows]
+    [allOpenRows, askCommunityRows, myOpenRows, taggedRows, urgentRows, visibleRows]
   );
   const queueLanes = useMemo<Array<{ key: DemandQueueLane; label: string; count: number; icon: GsnIconName; detail: string }>>(
     () => [
-      { key: "for_me", label: "For me", count: visibleRows.length, icon: "community", detail: "Requests you can answer now" },
+      { key: "tagged", label: "Tagged", count: taggedRows.length, icon: "tag", detail: "Requests mentioning your GSN ID" },
+      { key: "for_me", label: "Open", count: visibleRows.length, icon: "community", detail: "Community requests you can answer" },
       { key: "mine", label: "Mine", count: myOpenRows.length, icon: "user", detail: "Needs you posted" },
       { key: "ask_community", label: "Ask Community", count: askCommunityRows.length, icon: "community", detail: "Questions posted through DemandBox" },
       { key: "urgent", label: "Urgent", count: urgentRows.length, icon: "alert", detail: "Needs time attention" },
       { key: "categories", label: "Need types", count: categoryBuckets.length, icon: "tag", detail: "Grouped by need type" },
     ],
-    [askCommunityRows.length, categoryBuckets.length, myOpenRows.length, urgentRows.length, visibleRows.length]
+    [askCommunityRows.length, categoryBuckets.length, myOpenRows.length, taggedRows.length, urgentRows.length, visibleRows.length]
   );
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const queueMode = safeStr(params.get("queue") || "").toLowerCase();
-    const directLanes: DemandQueueLane[] = ["for_me", "mine", "ask_community", "urgent", "categories"];
+    const directLanes: DemandQueueLane[] = ["tagged", "for_me", "mine", "ask_community", "urgent", "categories"];
     const normalizedQueueMode = queueMode === "ask-community" ? "ask_community" : queueMode;
 
     if (directLanes.includes(normalizedQueueMode as DemandQueueLane)) {
@@ -2414,13 +2429,12 @@ export default function DemandBoxPage() {
                 See the right demand before it gets buried.
               </div>
               <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-                GSN shows demand as lanes, not chat. Direct member handles are
-                the next backend slice.
+                GSN shows demand as lanes, not chat. Matched GSN handles move into the Tagged lane.
               </div>
             </div>
 
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span style={badge(visibleRows.length > 0)}>For me: {visibleRows.length}</span>
+              <span style={badge(visibleRows.length > 0)}>Open: {visibleRows.length}</span>
               <span style={badge(myOpenRows.length > 0)}>Mine: {myOpenRows.length}</span>
               <span style={badge(askCommunityRows.length > 0)}>Ask: {askCommunityRows.length}</span>
               <span style={badge(urgentRows.length > 0)}>Urgent: {urgentRows.length}</span>
@@ -2481,9 +2495,9 @@ export default function DemandBoxPage() {
             }}
           >
             <span style={badge(true)}>
-              Active lane: {queueLanes.find((lane) => lane.key === activeQueueLane)?.label || "For me"}
+              Active lane: {queueLanes.find((lane) => lane.key === activeQueueLane)?.label || "Open"}
             </span>
-            <span style={badge(false)}>Direct handles: planned</span>
+            <span style={badge(taggedRows.length > 0)}>Tagged: {taggedRows.length}</span>
             <span style={badge(false)}>Not a chat feed</span>
             <span style={badge(false)}>Max loaded now: 200 per read</span>
           </div>
@@ -2503,10 +2517,10 @@ export default function DemandBoxPage() {
             <div style={{ padding: "0 14px 14px", display: "grid", gap: 10 }}>
               <div style={{ ...innerCard("#FCFEFF"), display: "grid", gap: 8 }}>
                 <div style={{ color: "#0B1F33", fontWeight: 900 }}>
-                  Current pilot sorting uses backend queue keys, need-type tag, urgency, owner, Ask Community source, and typed @handle text.
+                  Current pilot sorting uses saved queue signals, matched GSN handles, need type, urgency, owner, and Ask Community source.
                 </div>
                 <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.55 }}>
-                  Direct member handles, routed assignments, ranked queues, moderation rules, and true backend paging still need a governed data-model slice before very large communities use DemandBox at full scale.
+                  Matched GSN handles can route a notification to the tagged lane. Ranked queues, moderation rules, rate limits, saved assignments, and full list paging still need governed records work before very large communities use DemandBox at full scale.
                 </div>
               </div>
             </div>
@@ -2560,15 +2574,19 @@ export default function DemandBoxPage() {
             >
               {(queueLaneRows[activeQueueLane] || []).length === 0
                 ? renderQueueEmptyState(
-                    activeQueueLane === "mine" ? "document" : activeQueueLane === "urgent" ? "alert" : "community",
+                    activeQueueLane === "mine" ? "document" : activeQueueLane === "urgent" ? "alert" : activeQueueLane === "tagged" ? "tag" : "community",
                     activeQueueLane === "mine"
                       ? "You have no open demand right now."
                       : activeQueueLane === "urgent"
                         ? "No urgent demand is waiting right now."
-                        : "No visible demand is waiting right now.",
+                        : activeQueueLane === "tagged"
+                          ? "No tagged demand is waiting right now."
+                          : "No visible demand is waiting right now.",
                     activeQueueLane === "mine"
                       ? "Create one clear request when you need goods, service, support, or help."
-                      : "When someone in this community asks for help, their request will appear in the right lane."
+                      : activeQueueLane === "tagged"
+                        ? "When a request mentions your GSN ID and matches your community record, it appears here."
+                        : "When someone in this community asks for help, their request will appear in the right lane."
                   )
                 : (queueLaneRows[activeQueueLane] || [])
                     .slice(0, isCompact ? 12 : 24)

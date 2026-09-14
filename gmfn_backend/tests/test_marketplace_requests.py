@@ -279,6 +279,8 @@ def test_marketplace_request_stores_selected_community():
     assert data["need_type"] == "General"
     assert data["queue_keys"] == ["mine", "need_type:general"]
     assert data["mentioned_handles"] == []
+    assert data["mentioned_member_count"] == 0
+    assert data["is_tagged_for_me"] is False
     assert data["routing_status"] == "community_queue"
     assert data["routing_hint"] == "Visible through the community queue."
     assert len(rows) == 1
@@ -325,6 +327,8 @@ def test_marketplace_request_marks_visible_community_rows_not_mine():
     assert rows[0].need_type == "food"
     assert rows[0].queue_keys == ["for_me", "need_type:food"]
     assert rows[0].mentioned_handles == []
+    assert rows[0].mentioned_member_count == 0
+    assert rows[0].is_tagged_for_me is False
     assert rows[0].routing_status == "community_queue"
 
 
@@ -362,39 +366,129 @@ def test_marketplace_request_surfaces_ask_community_routing_metadata_and_links()
         )
 
     with engine.begin() as conn:
-        action_urls = conn.execute(
-            text("SELECT action_url FROM notifications ORDER BY id ASC")
-        ).scalars().all()
+        notices = conn.execute(
+            text(
+                """
+                SELECT user_id, kind, title, action_url
+                FROM notifications
+                ORDER BY id ASC
+                """
+            )
+        ).mappings().all()
 
     assert data["source"] == "ask_community"
     assert data["source_label"] == "Ask Community"
     assert data["need_type"] == "Community Ask"
     assert data["queue_keys"] == [
         "mine",
+        "direct_tag",
         "ask_community",
         "urgent",
         "need_type:community_ask",
     ]
     assert data["mentioned_handles"] == ["@GSN-U-RESPONDER"]
-    assert data["routing_status"] == "handle_text_detected"
-    assert "direct person delivery still needs governed routing" in data["routing_hint"]
+    assert data["mentioned_member_count"] == 1
+    assert data["is_tagged_for_me"] is False
+    assert data["routing_status"] == "member_tagged"
+    assert data["routing_hint"] == "Matched GSN member handles were routed to the tagged queue."
 
     assert len(rows) == 1
     assert rows[0].source == "ask_community"
     assert rows[0].source_label == "Ask Community"
     assert rows[0].queue_keys == [
         "for_me",
+        "tagged_for_me",
+        "direct_tag",
         "ask_community",
         "urgent",
         "need_type:community_ask",
     ]
     assert rows[0].mentioned_handles == ["@GSN-U-RESPONDER"]
-    assert rows[0].routing_status == "handle_text_detected"
-    assert action_urls == [
-        "/app/demand-box?clan_id=1&queue=ask_community",
-        "/app/demand-box?clan_id=1&queue=ask_community",
+    assert rows[0].mentioned_member_count == 1
+    assert rows[0].is_tagged_for_me is True
+    assert rows[0].routing_status == "member_tagged"
+    assert [dict(row) for row in notices] == [
+        {
+            "user_id": 2,
+            "kind": "demand_tagged",
+            "title": "Demand tagged for you",
+            "action_url": "/app/demand-box?clan_id=1&queue=tagged",
+        },
+        {
+            "user_id": 1,
+            "kind": "demand_posted",
+            "title": "Your request is live",
+            "action_url": "/app/demand-box?clan_id=1&queue=ask_community",
+        },
     ]
 
+def test_marketplace_request_keeps_unmatched_handles_as_text_only():
+    _seed_primary_clan()
+    _add_second_member_to_primary_clan()
+
+    with SessionLocal() as db:
+        response = marketplace_requests.create_marketplace_request(
+            MarketplaceRequestCreate(
+                clan_id=1,
+                title="Need transport help from @UNKNOWN-HANDLE",
+                description="Community Ask posted through DemandBox.",
+                category="Community Ask",
+            ),
+            db=db,
+            current_user=_fake_current_user(),
+        )
+        data = response.model_dump()
+
+        rows = marketplace_requests.list_marketplace_requests(
+            db=db,
+            current_user=_fake_second_user(),
+            status="open",
+            category=None,
+            urgency=None,
+            area=None,
+            mine_only=False,
+            clan_id=1,
+            limit=50,
+        )
+
+    with engine.begin() as conn:
+        notices = conn.execute(
+            text(
+                """
+                SELECT user_id, kind, title, action_url
+                FROM notifications
+                ORDER BY id ASC
+                """
+            )
+        ).mappings().all()
+
+    assert data["mentioned_handles"] == ["@UNKNOWN-HANDLE"]
+    assert data["mentioned_member_count"] == 0
+    assert data["is_tagged_for_me"] is False
+    assert data["routing_status"] == "handle_text_detected"
+    assert data["routing_hint"] == "Handle text was detected, but no same-community GSN member was matched."
+    assert data["queue_keys"] == ["mine", "ask_community", "need_type:community_ask"]
+
+    assert len(rows) == 1
+    assert rows[0].mentioned_handles == ["@UNKNOWN-HANDLE"]
+    assert rows[0].mentioned_member_count == 0
+    assert rows[0].is_tagged_for_me is False
+    assert rows[0].routing_status == "handle_text_detected"
+    assert rows[0].queue_keys == ["for_me", "ask_community", "need_type:community_ask"]
+    assert [dict(row) for row in notices] == [
+        {
+            "user_id": 2,
+            "kind": "demand_new",
+            "title": "New request near you",
+            "action_url": "/app/demand-box?clan_id=1&queue=ask_community",
+        },
+        {
+            "user_id": 1,
+            "kind": "demand_posted",
+            "title": "Your request is live",
+            "action_url": "/app/demand-box?clan_id=1&queue=ask_community",
+        },
+    ]
 
 def test_marketplace_request_create_respects_disabled_community_domain_demand_box_policy(
     client,

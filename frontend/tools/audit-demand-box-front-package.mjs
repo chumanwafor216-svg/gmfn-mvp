@@ -68,8 +68,8 @@ function requireApiPattern(pattern, message) {
     "DemandBox current-state card must show the user's open demand count.",
   ],
   [
-    /Community: \{visibleRows\.length\}/,
-    "DemandBox current-state card must show community visible demand count.",
+    /Open: \{visibleRows\.length\}/,
+    "DemandBox current-state card must show open visible demand count.",
   ],
   [
     /Next: post or review/,
@@ -116,7 +116,7 @@ function requireApiPattern(pattern, message) {
     "DemandBox return action must keep its stable debug id.",
   ],
   [
-    /type DemandQueueLane = "for_me" \| "mine" \| "ask_community" \| "urgent" \| "categories"/,
+    /type DemandQueueLane = "tagged" \| "for_me" \| "mine" \| "ask_community" \| "urgent" \| "categories"/,
     "DemandBox must define governed queue lanes instead of a flat hidden drawer model.",
   ],
   [
@@ -124,7 +124,7 @@ function requireApiPattern(pattern, message) {
     "DemandBox must default to the responder-facing For me lane.",
   ],
   [
-    /return \["open", "queue", "all", "for_me", "community", "mine", "ask_community", "ask-community", "urgent", "categories"\]\.includes\(queueMode\)/,
+    /return \["open", "queue", "all", "tagged", "for_me", "community", "mine", "ask_community", "ask-community", "urgent", "categories"\]\.includes\(queueMode\)/,
     "DemandBox must recognize Dashboard queue links and direct lane links.",
   ],
   [
@@ -144,20 +144,28 @@ function requireApiPattern(pattern, message) {
     "DemandBox must expose Ask Community as a separate visible lane.",
   ],
   [
+    /const taggedRows = useMemo\([\s\S]*?allOpenRows\.filter\(isTaggedForMe\)/,
+    "DemandBox must derive a separate tagged lane from resolved GSN handle metadata.",
+  ],
+  [
+    /key: "tagged"[\s\S]*?label: "Tagged"/,
+    "DemandBox must show tagged demand separately from the general open queue.",
+  ],
+  [
     /function queueKeysOf\(row: DemandRow\): string\[\][\s\S]*?queue_keys/,
-    "DemandBox must consume backend queue keys for large-community sorting.",
+    "DemandBox must consume saved queue keys for large-community sorting.",
   ],
   [
     /queueKeysOf\(row\)\.includes\("urgent"\)/,
-    "DemandBox urgent lane must respect backend queue keys before local fallbacks.",
+    "DemandBox urgent lane must respect saved queue keys before local fallbacks.",
   ],
   [
     /queueKeys\.includes\("ask_community"\)/,
-    "DemandBox Ask Community lane must respect backend queue keys before local fallbacks.",
+    "DemandBox Ask Community lane must respect saved queue keys before local fallbacks.",
   ],
   [
     /mentioned_handles\?: string\[\] \| null/,
-    "DemandBox must expose typed handle metadata without pretending direct delivery is complete.",
+    "DemandBox must expose typed handle metadata and keep delivery truth visible.",
   ],
   [
     /routing_status\?: string \| null/,
@@ -168,8 +176,8 @@ function requireApiPattern(pattern, message) {
     "DemandBox must group open rows by recorded demand category.",
   ],
   [
-    /const queueLaneRows = useMemo<Record<DemandQueueLane, DemandRow\[\]>>/,
-    "DemandBox must map every lane to a visible result set.",
+    /const queueLaneRows = useMemo<Record<DemandQueueLane, DemandRow\[\]>>[\s\S]*?tagged: taggedRows/,
+    "DemandBox must map every lane to a visible result set including Tagged.",
   ],
   [
     /setActiveQueueLane\(lane\.key\)/,
@@ -196,7 +204,7 @@ function requireApiPattern(pattern, message) {
     "DemandBox must show Ask Community as its own queue lane instead of repeating the Community lane.",
   ],
   [
-    /data-gsn-demand-routing-readiness="true"[\s\S]*?Direct member handles, routed assignments, ranked queues, moderation rules, and true backend paging still need/,
+    /data-gsn-demand-routing-readiness="true"[\s\S]*?Matched GSN handles can route a notification to the tagged lane. Ranked queues, moderation rules, rate limits, saved assignments, and full list paging still need governed records work before/,
     "DemandBox must keep the large-community routing boundary collapsed and honest.",
   ],
   [
@@ -216,8 +224,8 @@ function requireApiPattern(pattern, message) {
     "DemandBox cancel actions must keep stable dynamic debug ids through the shared renderer.",
   ],
   [
-    /Direct handles: planned/,
-    "DemandBox must be honest that direct member handles are not implemented yet.",
+    /Tagged: \{taggedRows\.length\}/,
+    "DemandBox must surface matched GSN handle routing without hiding it in text.",
   ],
   [
     /Not a chat feed/,
@@ -229,7 +237,7 @@ function requireApiPattern(pattern, message) {
   ],
   [
     /askCommunity: appendRouteQueryParam[\s\S]*?routeTarget\("demandBox", selectedClanId, "demand-box\.ask-community"\)[\s\S]*?"mode"[\s\S]*?"ask_community"/,
-    "DemandBox Ask Community must route into DemandBox question mode, not a separate Marketplace modal path.",
+    "DemandBox Ask Community must route into DemandBox question mode, not a separate Marketplace posting path.",
   ],
   [
     /to=\{routes\.askCommunity\}[\s\S]*?debugId="demand-box\.ask-community"[\s\S]*?Ask Community/,
@@ -256,7 +264,7 @@ function requireApiPattern(pattern, message) {
 [
   [
     /queue_keys\?: string\[\] \| null/,
-    "API request type must include backend queue keys.",
+    "API request type must include saved queue keys.",
   ],
   [
     /mentioned_handles\?: string\[\] \| null/,
@@ -265,6 +273,14 @@ function requireApiPattern(pattern, message) {
   [
     /routing_status\?: string \| null/,
     "API request type must include routing status metadata.",
+  ],
+  [
+    /is_tagged_for_me\?: boolean \| null/,
+    "API request type must include tagged-for-me metadata.",
+  ],
+  [
+    /mentioned_member_count\?: number \| null/,
+    "API request type must include matched-member count metadata.",
   ],
 ].forEach(([pattern, message]) => requireApiPattern(pattern, message));
 

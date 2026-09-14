@@ -7700,6 +7700,8 @@ export type MarketplaceRequestItem = {
   need_type?: string | null;
   queue_keys?: string[] | null;
   mentioned_handles?: string[] | null;
+  mentioned_member_count?: number | null;
+  is_tagged_for_me?: boolean | null;
   routing_status?: string | null;
   routing_hint?: string | null;
 };
