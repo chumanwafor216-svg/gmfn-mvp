@@ -103,18 +103,77 @@ function requirePattern(pattern, message) {
     "DemandBox return action must keep its stable debug id.",
   ],
   [
-    /const shouldOpenDemandQueues = useMemo\(\(\) => \{[\s\S]*?params\.get\("queue"\)[\s\S]*?\["open", "queue", "all"\]\.includes\(queueMode\)[\s\S]*?\}, \[location\.search\]\);/,
-    "DemandBox must recognize queue=open links from Dashboard.",
+    /type DemandQueueLane = "for_me" \| "community" \| "mine" \| "urgent" \| "categories"/,
+    "DemandBox must define governed queue lanes instead of a flat hidden drawer model.",
   ],
   [
-    /open=\{shouldOpenDemandQueues && myOpenRows\.length > 0 \? true : undefined\}[\s\S]*?debugId="demand-box\.my-demand\.summary"/,
-    "DemandBox personal demand drawer must open from the Dashboard queue link when rows exist.",
+    /const \[activeQueueLane, setActiveQueueLane\] = useState<DemandQueueLane>\("for_me"\)/,
+    "DemandBox must default to the responder-facing For me lane.",
   ],
   [
-    /open=\{shouldOpenDemandQueues && visibleRows\.length > 0 \? true : undefined\}[\s\S]*?debugId="demand-box\.community-demand\.summary"/,
-    "DemandBox community demand drawer must open from the Dashboard queue link when rows exist.",
+    /return \["open", "queue", "all", "for_me", "community", "mine", "urgent", "categories"\]\.includes\(queueMode\)/,
+    "DemandBox must recognize Dashboard queue links and direct lane links.",
   ],
-
+  [
+    /uniqueDemandRows\(\[\.\.\.visibleRows, \.\.\.myOpenRows\]\)/,
+    "DemandBox queue board must deduplicate visible and personal open rows.",
+  ],
+  [
+    /const urgentRows = useMemo\(\(\) => allOpenRows\.filter\(isUrgentDemand\), \[allOpenRows\]\)/,
+    "DemandBox must expose an urgent lane derived from recorded urgency/expiry.",
+  ],
+  [
+    /const categoryBuckets = useMemo\(\(\) => \{[\s\S]*?categoryLabel\(row\)[\s\S]*?urgentCount: rows\.filter\(isUrgentDemand\)\.length/,
+    "DemandBox must group open rows by recorded demand category.",
+  ],
+  [
+    /const queueLaneRows = useMemo<Record<DemandQueueLane, DemandRow\[\]>>/,
+    "DemandBox must map every lane to a visible result set.",
+  ],
+  [
+    /setActiveQueueLane\(lane\.key\)/,
+    "DemandBox lane buttons must switch the visible queue without hiding rows in a drawer.",
+  ],
+  [
+    /data-gsn-demand-queue-lanes="true"/,
+    "DemandBox must render the governed queue lane controls.",
+  ],
+  [
+    /debugId=\{`demand-box\.queue-lane\.\$\{lane\.key\}`\}/,
+    "DemandBox queue lane buttons must keep stable dynamic debug ids.",
+  ],
+  [
+    /data-gsn-demand-queue-results="true"/,
+    "DemandBox must render visible results for the selected lane.",
+  ],
+  [
+    /data-gsn-demand-category-buckets="true"/,
+    "DemandBox must render a category bucket view for tag-like sorting.",
+  ],
+  [
+    /function renderDemandRecord\(/,
+    "DemandBox must use one shared demand record renderer instead of duplicate old blocks.",
+  ],
+  [
+    /debugId=\{`\$\{debugBase\}\.fulfilled`\}/,
+    "DemandBox fulfilled actions must keep stable dynamic debug ids through the shared renderer.",
+  ],
+  [
+    /debugId=\{`\$\{debugBase\}\.cancelled`\}/,
+    "DemandBox cancel actions must keep stable dynamic debug ids through the shared renderer.",
+  ],
+  [
+    /Direct handles: planned/,
+    "DemandBox must be honest that direct member handles are not implemented yet.",
+  ],
+  [
+    /Not a chat feed/,
+    "DemandBox must state the anti-WhatsApp queue boundary.",
+  ],
+  [
+    /Max loaded now: 50 per read/,
+    "DemandBox must surface the current list-size boundary while backend pagination/tag routing is pending.",
+  ],
   [
     /askCommunity: appendRouteQueryParam[\s\S]*?routeTarget\("demandBox", selectedClanId, "demand-box\.ask-community"\)[\s\S]*?"mode"[\s\S]*?"ask_community"/,
     "DemandBox Ask Community must route into DemandBox question mode, not a separate Marketplace modal path.",
@@ -138,46 +197,6 @@ function requirePattern(pattern, message) {
   [
     /debugId="demand-box\.hero-dashboard"/,
     "DemandBox dashboard escape must keep its stable debug id.",
-  ],
-  [
-    /debugId=\{`demand-box\.request\.\$\{row\?\.id \|\| index\}\.fulfilled`\}/,
-    "DemandBox fulfilled actions must keep stable dynamic debug ids.",
-  ],
-  [
-    /debugId=\{`demand-box\.request\.\$\{row\?\.id \|\| index\}\.cancelled`\}/,
-    "DemandBox cancel actions must keep stable dynamic debug ids.",
-  ],
-  [
-    /const visiblePreview = useMemo\(\(\) => visibleRows\.slice\(0, 1\), \[visibleRows\]\)/,
-    "DemandBox must show only one visible community demand before the drawer.",
-  ],
-  [
-    /const extraVisibleRows = useMemo\(\(\) => visibleRows\.slice\(1, 5\), \[visibleRows\]\)/,
-    "DemandBox must tuck additional community demand into a bounded drawer preview.",
-  ],
-  [
-    /const extraMyOpenRows = useMemo\(\(\) => myOpenRows\.slice\(1\), \[myOpenRows\]\)/,
-    "DemandBox must tuck additional personal demand behind a drawer.",
-  ],
-  [
-    /myOpenRows\.slice\(0, 1\)\.map/,
-    "DemandBox must show only the first live personal demand before the drawer.",
-  ],
-  [
-    /debugId="demand-box\.more-my-demand\.summary"/,
-    "DemandBox must keep additional personal demand behind a stable disclosure.",
-  ],
-  [
-    /debugId="demand-box\.my-demand\.summary"[\s\S]*?<span>Open my demand<\/span>[\s\S]*?myOpenRows\.slice\(0, 1\)\.map/,
-    "DemandBox personal demand preview must sit behind the compact Open my demand drawer.",
-  ],
-  [
-    /debugId="demand-box\.community-demand\.summary"[\s\S]*?<span>Open community demand<\/span>[\s\S]*?visiblePreview\.map/,
-    "DemandBox community demand preview must sit behind the compact Open community demand drawer.",
-  ],
-  [
-    /debugId="demand-box\.more-visible-demand\.summary"/,
-    "DemandBox must keep additional community demand behind a stable disclosure.",
   ],
 ].forEach(([pattern, message]) => requirePattern(pattern, message));
 
@@ -207,8 +226,32 @@ function requirePattern(pattern, message) {
     "DemandBox must not restore the six-card community demand preview.",
   ],
   [
-    /myOpenRows\.map\(\(row, index\) =>/,
-    "DemandBox must not restore the all-open-personal-demand stack.",
+    /const visiblePreview = useMemo\(\(\) => visibleRows\.slice\(0, 1\), \[visibleRows\]\)/,
+    "DemandBox must not hide community demand behind the old one-visible-row preview.",
+  ],
+  [
+    /const extraVisibleRows = useMemo\(\(\) => visibleRows\.slice\(1, 5\), \[visibleRows\]\)/,
+    "DemandBox must not tuck additional community demand into the old bounded drawer preview.",
+  ],
+  [
+    /const extraMyOpenRows = useMemo\(\(\) => myOpenRows\.slice\(1\), \[myOpenRows\]\)/,
+    "DemandBox must not tuck additional personal demand behind the old drawer.",
+  ],
+  [
+    /myOpenRows\.slice\(0, 1\)\.map/,
+    "DemandBox must not show only the first live personal demand before a drawer.",
+  ],
+  [
+    /visiblePreview\.map/,
+    "DemandBox must not show only the first visible community demand before a drawer.",
+  ],
+  [
+    /debugId="demand-box\.more-visible-demand\.summary"/,
+    "DemandBox must not hide extra visible community demand behind the old More drawer.",
+  ],
+  [
+    /debugId="demand-box\.more-my-demand\.summary"/,
+    "DemandBox must not hide extra personal demand behind the old More drawer.",
   ],
 ].forEach(([pattern, message]) => {
   const index = source.search(pattern);

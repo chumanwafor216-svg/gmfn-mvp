@@ -871,8 +871,38 @@ assertNotContains(
 
 assertContains(
   "src/pages/DemandBoxPage.tsx",
-  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function demandIconText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon[\s\S]*?name=\{name\}[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="demand-box\.open-community"[\s\S]*?debugId="demand-box\.create"[\s\S]*?demandIconText\("document", "Create demand", 20\)[\s\S]*?debugId="demand-box\.post"[\s\S]*?demandIconText\("document", "Post demand", 20\)[\s\S]*?debugId="demand-box\.open-notifications"[\s\S]*?demandIconText\("alert", "Notifications", 20\)[\s\S]*?debugId="demand-box\.more-detail"[\s\S]*?debugId=\{`demand-box\.request\.\$\{row\?\.id \|\| index\}\.fulfilled`\}[\s\S]*?demandIconText\("check", "Fulfilled", 20\)[\s\S]*?debugId="demand-box\.bottom-dashboard"[\s\S]*?demandIconText\("home", "Dashboard", 20\)/,
-  "DemandBox must use shared stable primitives, shared 3D icon helpers, and shared CTA resolution for community selection, create/post, disclosure, status updates, and route actions."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";/,
+  "DemandBox must keep shared 3D icon and CTA resolution imports."
+);
+
+assertContains(
+  "src/pages/DemandBoxPage.tsx",
+  /function demandIconText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon[\s\S]*?name=\{name\}/,
+  "DemandBox button labels must keep shared 3D icon rendering."
+);
+
+assertContains(
+  "src/pages/DemandBoxPage.tsx",
+  /function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,/,
+  "DemandBox route links must stay resolved through the shared CTA target helper."
+);
+
+assertContains(
+  "src/pages/DemandBoxPage.tsx",
+  /debugId="demand-box\.open-community"[\s\S]*?debugId="demand-box\.create"[\s\S]*?demandIconText\("document", "Create demand", 20\)[\s\S]*?debugId="demand-box\.post"[\s\S]*?demandIconText\("document", "Post demand", 20\)[\s\S]*?debugId="demand-box\.open-notifications"[\s\S]*?demandIconText\("alert", "Notifications", 20\)[\s\S]*?debugId="demand-box\.more-detail"/,
+  "DemandBox create/post/notification/detail actions must keep stable shared primitives."
+);
+
+assertContains(
+  "src/pages/DemandBoxPage.tsx",
+  /function renderDemandRecord\([\s\S]*?debugId=\{`\$\{debugBase\}\.fulfilled`\}[\s\S]*?demandIconText\("check", "Fulfilled", 20\)[\s\S]*?debugId=\{`\$\{debugBase\}\.cancelled`\}/,
+  "DemandBox status actions must keep stable dynamic debug ids through the shared renderer."
+);
+
+assertContains(
+  "src/pages/DemandBoxPage.tsx",
+  /data-gsn-demand-queue-lanes="true"[\s\S]*?debugId=\{`demand-box\.queue-lane\.\$\{lane\.key\}`\}[\s\S]*?data-gsn-demand-queue-results="true"[\s\S]*?debugId="demand-box\.bottom-dashboard"[\s\S]*?demandIconText\("home", "Dashboard", 20\)/,
+  "DemandBox must keep governed queue lane buttons and stable bottom route actions."
 );
 
 assertContains(

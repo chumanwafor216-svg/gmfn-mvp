@@ -68,6 +68,7 @@ type DemandRow = {
 type NoticeTone = "success" | "error";
 type DemandPaperScope = "owner" | "community";
 type DemandNoticeExpiryPolicy = "standard" | "urgent" | "event" | "pinned";
+type DemandQueueLane = "for_me" | "community" | "mine" | "urgent" | "categories";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -391,6 +392,40 @@ function urgencyLabel(value?: string | null): string {
   return "Normal";
 }
 
+function isUrgentDemand(row: DemandRow): boolean {
+  if (safeStr(row?.urgency).toLowerCase() === "high") return true;
+
+  const expiresAt = safeStr(row?.expires_at);
+  if (!expiresAt) return false;
+
+  const time = new Date(expiresAt).getTime();
+  if (!Number.isFinite(time)) return false;
+
+  const hoursLeft = (time - Date.now()) / 3600000;
+  return hoursLeft > 0 && hoursLeft <= 24;
+}
+
+function categoryLabel(row: DemandRow): string {
+  return firstTruthy(row?.category, row?.area, "General");
+}
+
+function uniqueDemandRows(rows: DemandRow[]): DemandRow[] {
+  const seen = new Set<string>();
+  const out: DemandRow[] = [];
+
+  for (const row of rows) {
+    const key =
+      safeStr(row?.id) ||
+      [row?.title, row?.created_at, row?.requester_gmfn_id]
+        .map(safeStr)
+        .join("|");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(row);
+  }
+
+  return out;
+}
 function safeDateTime(x: any): string {
   const raw = safeStr(x);
   if (!raw) return "";
@@ -605,6 +640,7 @@ export default function DemandBoxPage() {
     useState<any>(null);
   const [myOpenRows, setMyOpenRows] = useState<DemandRow[]>([]);
   const [visibleRows, setVisibleRows] = useState<DemandRow[]>([]);
+  const [activeQueueLane, setActiveQueueLane] = useState<DemandQueueLane>("for_me");
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -1110,6 +1146,144 @@ export default function DemandBoxPage() {
     );
   }
 
+  function renderQueueEmptyState(
+    icon: GsnIconName,
+    titleText: string,
+    bodyText: string
+  ): React.ReactElement {
+    return (
+      <div
+        style={{
+          ...recordCard(),
+          display: "flex",
+          gap: 12,
+          alignItems: "flex-start",
+        }}
+      >
+        {demandEmptyStateIcon(icon)}
+        <div style={{ minWidth: 0 }}>
+          <div style={{ color: "#0B1F33", fontWeight: 900 }}>{titleText}</div>
+          <div style={{ marginTop: 8, ...helperText() }}>{bodyText}</div>
+        </div>
+      </div>
+    );
+  }
+
+  function renderDemandRecord(
+    row: DemandRow,
+    scope: DemandPaperScope,
+    debugBase: string,
+    options: { canClose?: boolean; index?: number } = {}
+  ): React.ReactElement {
+    const fallbackIndex = Number(options.index || 0);
+    const rowKey = safeStr(row?.id) || `${debugBase}.${fallbackIndex}`;
+    const rowId = Number(row?.id || 0);
+    const busy = updatingDemandId === rowId;
+    const canClose = options.canClose === true;
+    const trustPosture = requesterTrustPostureLabel(row);
+
+    return (
+      <div key={rowKey} style={recordCard()}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 10,
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
+        >
+          <div
+            style={{
+              color: "#0B1F33",
+              fontWeight: 900,
+              lineHeight: 1.32,
+              minWidth: 0,
+            }}
+          >
+            {firstTruthy(row?.title, "Need")}
+          </div>
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span style={badge(true)}>{urgencyLabel(row?.urgency)}</span>
+            {safeStr(row?.status) ? (
+              <span style={badge(false)}>{safeStr(row?.status)}</span>
+            ) : null}
+            {trustPosture && scope === "community" ? (
+              <span style={badge(false)}>Trust: {trustPosture}</span>
+            ) : null}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 8, ...helperText() }}>
+          {firstTruthy(row?.description, "No extra detail yet.")}
+        </div>
+
+        <div
+          style={{
+            marginTop: 10,
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+          }}
+        >
+          <span style={badge(false)}>Type: {categoryLabel(row)}</span>
+          {scope === "community" ? (
+            <span style={badge(false)}>By: {requesterName(row)}</span>
+          ) : null}
+          {safeStr(row?.requester_gmfn_id) && scope === "community" ? (
+            <span style={badge(false)}>GSN ID {safeStr(row?.requester_gmfn_id)}</span>
+          ) : null}
+          {safeStr(row?.whatsapp_number) ? (
+            <span style={badge(false)}>Contact path: WhatsApp</span>
+          ) : null}
+          {safeStr(row?.area) ? (
+            <span style={badge(false)}>Area: {safeStr(row?.area)}</span>
+          ) : null}
+          {safeStr(row?.payment_mode) ? (
+            <span style={badge(false)}>Terms: {safeStr(row?.payment_mode)}</span>
+          ) : null}
+          {row?.allow_trust_credit ? (
+            <span style={badge(false)}>Trust-credit requested</span>
+          ) : null}
+          {safeStr(row?.created_at) ? (
+            <span style={badge(false)}>{safeDateTime(row?.created_at)}</span>
+          ) : null}
+        </div>
+
+        <div style={demandActionRowStyle(isCompact, 54, 156, 12)}>
+          {canClose ? (
+            <>
+              <SecondaryButton
+                onClick={() => handleUpdateDemandStatus(row, "fulfilled")}
+                disabled={busy}
+                busy={busy}
+                busyLabel="Updating..."
+                debugId={`${debugBase}.fulfilled`}
+                style={demandActionStyle(54)}
+              >
+                {demandIconText("check", "Fulfilled", 20)}
+              </SecondaryButton>
+
+              <SubtleButton
+                onClick={() => handleUpdateDemandStatus(row, "cancelled")}
+                disabled={busy}
+                busy={busy}
+                busyLabel="Updating..."
+                debugId={`${debugBase}.cancelled`}
+                style={demandActionStyle(54)}
+              >
+                {demandIconText("lock", "Cancel", 20)}
+              </SubtleButton>
+            </>
+          ) : null}
+
+          {demandPaperAction(row, scope, `${debugBase}.copy-paper`)}
+          {demandContactActions(row, `${debugBase}.contact`)}
+        </div>
+      </div>
+    );
+  }
   const memberName = useMemo(() => {
     return (
       firstTruthy(
@@ -1123,10 +1297,6 @@ export default function DemandBoxPage() {
   }, [me]);
   const memberCciLabel = cciLabel(me);
 
-  const visiblePreview = useMemo(() => visibleRows.slice(0, 1), [visibleRows]);
-  const extraVisibleRows = useMemo(() => visibleRows.slice(1, 5), [visibleRows]);
-  const hiddenVisibleRowsCount = Math.max(visibleRows.length - 1, 0);
-  const extraMyOpenRows = useMemo(() => myOpenRows.slice(1), [myOpenRows]);
   const demandMode = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return safeStr(params.get("mode") || "").toLowerCase();
@@ -1134,8 +1304,65 @@ export default function DemandBoxPage() {
   const shouldOpenDemandQueues = useMemo(() => {
     const params = new URLSearchParams(location.search);
     const queueMode = safeStr(params.get("queue") || "").toLowerCase();
-    return ["open", "queue", "all"].includes(queueMode);
+    return ["open", "queue", "all", "for_me", "community", "mine", "urgent", "categories"].includes(queueMode);
   }, [location.search]);
+  const allOpenRows = useMemo(
+    () => uniqueDemandRows([...visibleRows, ...myOpenRows]),
+    [myOpenRows, visibleRows]
+  );
+  const urgentRows = useMemo(() => allOpenRows.filter(isUrgentDemand), [allOpenRows]);
+  const categoryBuckets = useMemo(() => {
+    const buckets = new Map<string, DemandRow[]>();
+
+    for (const row of allOpenRows) {
+      const label = categoryLabel(row);
+      const rows = buckets.get(label) || [];
+      rows.push(row);
+      buckets.set(label, rows);
+    }
+
+    return Array.from(buckets.entries())
+      .map(([label, rows]) => ({
+        label,
+        rows,
+        urgentCount: rows.filter(isUrgentDemand).length,
+      }))
+      .sort((a, b) => b.rows.length - a.rows.length || a.label.localeCompare(b.label));
+  }, [allOpenRows]);
+  const queueLaneRows = useMemo<Record<DemandQueueLane, DemandRow[]>>(
+    () => ({
+      for_me: visibleRows,
+      community: visibleRows,
+      mine: myOpenRows,
+      urgent: urgentRows,
+      categories: allOpenRows,
+    }),
+    [allOpenRows, myOpenRows, urgentRows, visibleRows]
+  );
+  const queueLanes = useMemo<Array<{ key: DemandQueueLane; label: string; count: number; icon: GsnIconName; detail: string }>>(
+    () => [
+      { key: "for_me", label: "For me", count: visibleRows.length, icon: "community", detail: "Requests you can answer now" },
+      { key: "community", label: "Community", count: visibleRows.length, icon: "document", detail: "Open local needs" },
+      { key: "mine", label: "Mine", count: myOpenRows.length, icon: "user", detail: "Needs you posted" },
+      { key: "urgent", label: "Urgent", count: urgentRows.length, icon: "alert", detail: "Needs time attention" },
+      { key: "categories", label: "Need types", count: categoryBuckets.length, icon: "tag", detail: "Grouped by need type" },
+    ],
+    [categoryBuckets.length, myOpenRows.length, urgentRows.length, visibleRows.length]
+  );
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const queueMode = safeStr(params.get("queue") || "").toLowerCase();
+    const directLanes: DemandQueueLane[] = ["for_me", "community", "mine", "urgent", "categories"];
+
+    if (directLanes.includes(queueMode as DemandQueueLane)) {
+      setActiveQueueLane(queueMode as DemandQueueLane);
+      return;
+    }
+
+    if (shouldOpenDemandQueues) {
+      setActiveQueueLane("for_me");
+    }
+  }, [location.search, shouldOpenDemandQueues]);
   const routeAskCommunityMode = ["ask_community", "ask-community", "market_need_pulse"].includes(demandMode);
   const hasLegacyCreateHash = location.hash === "#demand-box-create";
   const isCreateMode = demandMode === "create" || routeAskCommunityMode || hasLegacyCreateHash;
@@ -2107,543 +2334,183 @@ export default function DemandBoxPage() {
       </section>
 
       {!isCreateMode ? (
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
-          gap: 16,
-          alignItems: "start",
-        }}
-      >
-        <section style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>My live demand</div>
+        <section id="demand-box-queue-board" style={pageCard("#FFFFFF")}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              flexWrap: "wrap",
+              alignItems: "flex-start",
+            }}
+          >
+            <div style={{ minWidth: 0, flex: "1 1 320px" }}>
+              <div style={sectionLabel()}>Organised request queue</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontSize: isCompact ? 24 : 30,
+                  fontWeight: 900,
+                  lineHeight: 1.12,
+                }}
+              >
+                See the right demand before it gets buried.
+              </div>
+              <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
+                GSN shows demand as lanes, not chat. Direct member handles are
+                the next backend slice.
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <span style={badge(visibleRows.length > 0)}>For me: {visibleRows.length}</span>
+              <span style={badge(myOpenRows.length > 0)}>Mine: {myOpenRows.length}</span>
+              <span style={badge(urgentRows.length > 0)}>Urgent: {urgentRows.length}</span>
+              <span style={badge(false)}>Loaded: {allOpenRows.length}</span>
+            </div>
+          </div>
+
+          <div
+            data-gsn-demand-queue-lanes="true"
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "repeat(2, minmax(0, 1fr))"
+                : "repeat(5, minmax(0, 1fr))",
+              gap: 10,
+            }}
+          >
+            {queueLanes.map((lane) => {
+              const active = activeQueueLane === lane.key;
+              const Button = active ? PrimaryButton : SecondaryButton;
+
+              return (
+                <Button
+                  key={lane.key}
+                  onClick={() => setActiveQueueLane(lane.key)}
+                  debugId={`demand-box.queue-lane.${lane.key}`}
+                  style={{
+                    minHeight: 82,
+                    alignItems: "flex-start",
+                    justifyContent: "flex-start",
+                    textAlign: "left",
+                    padding: isCompact ? "10px" : "12px",
+                    gap: 8,
+                    whiteSpace: "normal",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  <GsnLegacyIcon name={lane.icon} size={26} />
+                  <span style={{ display: "grid", gap: 2, minWidth: 0 }}>
+                    <span style={{ fontWeight: 900 }}>{lane.label}</span>
+                    <span style={{ fontSize: 13, opacity: 0.9 }}>{lane.key === "categories" ? `${lane.count} groups` : `${lane.count} open`}</span>
+                  </span>
+                </Button>
+              );
+            })}
+          </div>
 
           <div
             style={{
-              marginTop: 10,
-              ...helperText(),
-              maxWidth: 760,
+              marginTop: 14,
+              ...innerCard("#F8FBFF"),
+              border: "1px solid rgba(13,95,168,0.1)",
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+              alignItems: "center",
             }}
           >
-            Keep only real needs open. When people have helped, or the need no
-            longer matters, close it cleanly.
+            <span style={badge(true)}>
+              Active lane: {queueLanes.find((lane) => lane.key === activeQueueLane)?.label || "For me"}
+            </span>
+            <span style={badge(false)}>Direct handles: planned</span>
+            <span style={badge(false)}>Not a chat feed</span>
+            <span style={badge(false)}>Max loaded now: 50 per read</span>
           </div>
 
-          <details
-            open={shouldOpenDemandQueues && myOpenRows.length > 0 ? true : undefined}
-            style={{ marginTop: 14, ...detailsShell() }}
-          >
-            <StableDisclosureSummary
-              style={detailsSummary()}
-              stableHeight={52}
-              debugId="demand-box.my-demand.summary"
+          {activeQueueLane === "categories" ? (
+            <div
+              data-gsn-demand-category-buckets="true"
+              style={{ marginTop: 14, display: "grid", gap: 12 }}
             >
-              <span>Open my demand</span>
-              <span style={{ color: "#64748B", fontSize: 13 }}>
-                {myOpenRows.length === 0 ? "None" : `${myOpenRows.length} open`}
-              </span>
-            </StableDisclosureSummary>
-
-            <div style={{ padding: "0 14px 14px", display: "grid", gap: 10 }}>
-            {myOpenRows.length === 0 ? (
-              <div
-                style={{
-                  ...recordCard(),
-                  display: "flex",
-                  gap: 12,
-                  alignItems: "flex-start",
-                }}
-              >
-                {demandEmptyStateIcon("document")}
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ color: "#0B1F33", fontWeight: 900 }}>
-                    No open demand right now.
-                  </div>
-                  <div style={{ marginTop: 8, ...helperText() }}>
-                    When you need goods, service, support, or help, create one
-                    clear demand from the right community.
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <>
-              {myOpenRows.slice(0, 1).map((row, index) => {
-                const rowId = Number(row?.id || 0);
-                const busy = updatingDemandId === rowId;
-
-                return (
-                  <div key={`${row?.id || index}`} style={recordCard()}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: 10,
-                        flexWrap: "wrap",
-                        alignItems: "center",
-                      }}
+              {categoryBuckets.length === 0
+                ? renderQueueEmptyState(
+                    "tag",
+                    "No demand category is open right now.",
+                    "When requests arrive, GSN will group them by the need type already recorded on the request."
+                  )
+                : categoryBuckets.map((bucket, bucketIndex) => (
+                    <details
+                      key={bucket.label}
+                      open={bucketIndex === 0 && !isCompact ? true : undefined}
+                      style={detailsShell()}
                     >
-                      <div
-                        style={{
-                          color: "#0B1F33",
-                          fontWeight: 900,
-                          lineHeight: 1.35,
-                        }}
+                      <StableDisclosureSummary
+                        style={detailsSummary()}
+                        stableHeight={54}
+                        debugId={`demand-box.category.${bucketIndex}.summary`}
                       >
-                        {firstTruthy(row?.title, "Need")}
-                      </div>
-
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <span style={badge(true)}>{urgencyLabel(row?.urgency)}</span>
-                        {safeStr(row?.status) ? (
-                          <span style={badge(false)}>{safeStr(row?.status)}</span>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <div style={{ marginTop: 8, ...helperText() }}>
-                      {firstTruthy(row?.description, "No extra detail yet.")}
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 10,
-                        display: "flex",
-                        gap: 8,
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      {safeStr(row?.area) ? (
-                        <span style={badge(false)}>Area: {safeStr(row?.area)}</span>
-                      ) : null}
-                      {safeStr(row?.payment_mode) ? (
-                        <span style={badge(false)}>
-                          Terms: {safeStr(row?.payment_mode)}
+                        <span>{bucket.label}</span>
+                        <span style={{ color: "#64748B", fontSize: 13 }}>
+                          {bucket.rows.length} open{bucket.urgentCount > 0 ? `, ${bucket.urgentCount} urgent` : ""}
                         </span>
-                      ) : null}
-                      {row?.allow_trust_credit ? (
-                        <span style={badge(false)}>Open to trust credit</span>
-                      ) : null}
-                      {safeStr(row?.created_at) ? (
-                        <span style={badge(false)}>
-                          {safeDateTime(row?.created_at)}
-                        </span>
-                      ) : null}
-                    </div>
+                      </StableDisclosureSummary>
 
-                    <div style={demandActionRowStyle(isCompact, 54, 160, 12)}>
-                      <SecondaryButton
-                        onClick={() => handleUpdateDemandStatus(row, "fulfilled")}
-                        disabled={busy}
-                        busy={busy}
-                        busyLabel="Updating..."
-                        debugId={`demand-box.request.${row?.id || index}.fulfilled`}
-                        style={demandActionStyle(54)}
-                      >
-                        {demandIconText("check", "Fulfilled", 20)}
-                      </SecondaryButton>
-
-                      <SubtleButton
-                        onClick={() => handleUpdateDemandStatus(row, "cancelled")}
-                        disabled={busy}
-                        busy={busy}
-                        busyLabel="Updating..."
-                        debugId={`demand-box.request.${row?.id || index}.cancelled`}
-                        style={demandActionStyle(54)}
-                      >
-                        {demandIconText("lock", "Cancel", 20)}
-                      </SubtleButton>
-
-                      {demandPaperAction(
-                        row,
-                        "owner",
-                        `demand-box.request.${row?.id || index}.copy-paper`
-                      )}
-                      {demandContactActions(
-                        row,
-                        `demand-box.request.${row?.id || index}.contact`
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {extraMyOpenRows.length > 0 ? (
-                <details open={shouldOpenDemandQueues ? true : undefined} style={detailsShell()}>
-                  <StableDisclosureSummary
-                    style={detailsSummary()}
-                    stableHeight={52}
-                    debugId="demand-box.more-my-demand.summary"
-                  >
-                    <span>More of my demand</span>
-                    <span style={{ color: "#64748B", fontSize: 13 }}>
-                      {extraMyOpenRows.length} more
-                    </span>
-                  </StableDisclosureSummary>
-
-                  <div style={{ padding: "0 14px 14px", display: "grid", gap: 10 }}>
-                    {extraMyOpenRows.map((row, index) => {
-                      const rowId = Number(row?.id || 0);
-                      const busy = updatingDemandId === rowId;
-                      const debugIndex = index + 1;
-
-                      return (
-                        <div key={`${row?.id || debugIndex}`} style={recordCard()}>
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              gap: 10,
-                              flexWrap: "wrap",
-                              alignItems: "center",
-                            }}
-                          >
-                            <div
-                              style={{
-                                color: "#0B1F33",
-                                fontWeight: 900,
-                                lineHeight: 1.35,
-                              }}
-                            >
-                              {firstTruthy(row?.title, "Need")}
-                            </div>
-
-                            <div
-                              style={{ display: "flex", gap: 8, flexWrap: "wrap" }}
-                            >
-                              <span style={badge(true)}>
-                                {urgencyLabel(row?.urgency)}
-                              </span>
-                              {safeStr(row?.status) ? (
-                                <span style={badge(false)}>
-                                  {safeStr(row?.status)}
-                                </span>
-                              ) : null}
-                            </div>
-                          </div>
-
-                          <div style={{ marginTop: 8, ...helperText() }}>
-                            {firstTruthy(row?.description, "No extra detail yet.")}
-                          </div>
-
-                          <div
-                            style={{
-                              marginTop: 10,
-                              display: "flex",
-                              gap: 8,
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            {safeStr(row?.area) ? (
-                              <span style={badge(false)}>
-                                Area: {safeStr(row?.area)}
-                              </span>
-                            ) : null}
-                            {safeStr(row?.payment_mode) ? (
-                              <span style={badge(false)}>
-                                Terms: {safeStr(row?.payment_mode)}
-                              </span>
-                            ) : null}
-                            {row?.allow_trust_credit ? (
-                              <span style={badge(false)}>Open to trust credit</span>
-                            ) : null}
-                            {safeStr(row?.created_at) ? (
-                              <span style={badge(false)}>
-                                {safeDateTime(row?.created_at)}
-                              </span>
-                            ) : null}
-                          </div>
-
-                          <div style={demandActionRowStyle(isCompact, 54, 160, 12)}>
-                            <SecondaryButton
-                              onClick={() =>
-                                handleUpdateDemandStatus(row, "fulfilled")
-                              }
-                              disabled={busy}
-                              busy={busy}
-                              busyLabel="Updating..."
-                              debugId={`demand-box.request.${row?.id || debugIndex}.fulfilled`}
-                              style={demandActionStyle(54)}
-                            >
-                              {demandIconText("check", "Fulfilled", 20)}
-                            </SecondaryButton>
-
-                            <SubtleButton
-                              onClick={() =>
-                                handleUpdateDemandStatus(row, "cancelled")
-                              }
-                              disabled={busy}
-                              busy={busy}
-                              busyLabel="Updating..."
-                              debugId={`demand-box.request.${row?.id || debugIndex}.cancelled`}
-                              style={demandActionStyle(54)}
-                            >
-                              {demandIconText("lock", "Cancel", 20)}
-                            </SubtleButton>
-
-                            {demandPaperAction(
-                              row,
-                              "owner",
-                              `demand-box.request.${row?.id || debugIndex}.copy-paper`
-                            )}
-                            {demandContactActions(
-                              row,
-                              `demand-box.request.${row?.id || debugIndex}.contact`
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </details>
-              ) : null}
-              </>
-            )}
-          </div>
-          </details>
-        </section>
-
-        <section style={pageCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Requests I can answer</div>
-
-          <div
-            style={{
-              marginTop: 10,
-              ...helperText(),
-              maxWidth: 760,
-            }}
-          >
-            These are open needs from people in your current community. Read the
-            trust signs before you decide how to respond. Trust-credit openness
-            is a request preference, not approval to release goods, credit, or
-            money.
-          </div>
-
-          <details
-            open={shouldOpenDemandQueues && visibleRows.length > 0 ? true : undefined}
-            style={{ marginTop: 14, ...detailsShell() }}
-          >
-            <StableDisclosureSummary
-              style={detailsSummary()}
-              stableHeight={52}
-              debugId="demand-box.community-demand.summary"
+                      <div style={{ padding: "0 14px 14px", display: "grid", gap: 10 }}>
+                        {bucket.rows.slice(0, 12).map((row, rowIndex) =>
+                          renderDemandRecord(
+                            row,
+                            isMineRow(row, me) ? "owner" : "community",
+                            `demand-box.category.${bucketIndex}.${row?.id || rowIndex}`,
+                            { canClose: isMineRow(row, me), index: rowIndex }
+                          )
+                        )}
+                      </div>
+                    </details>
+                  ))}
+            </div>
+          ) : (
+            <div
+              data-gsn-demand-queue-results="true"
+              style={{ marginTop: 14, display: "grid", gap: 12 }}
             >
-              <span>Open community demand</span>
-              <span style={{ color: "#64748B", fontSize: 13 }}>
-                {visibleRows.length === 0 ? "None" : `${visibleRows.length} visible`}
-              </span>
-            </StableDisclosureSummary>
-
-            <div style={{ padding: "0 14px 14px", display: "grid", gap: 10 }}>
-            {visiblePreview.length === 0 ? (
-              <div
-                style={{
-                  ...recordCard(),
-                  display: "flex",
-                  gap: 12,
-                  alignItems: "flex-start",
-                }}
-              >
-                {demandEmptyStateIcon("community")}
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ color: "#0B1F33", fontWeight: 900 }}>
-                    No visible demand is waiting right now.
-                  </div>
-                  <div style={{ marginTop: 8, ...helperText() }}>
-                    When someone in this community asks for help, their request
-                    will appear here with the identity and trust signs available.
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <>
-              {visiblePreview.map((row, index) => (
-                <div key={`${row?.id || index}`} style={recordCard()}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 10,
-                      flexWrap: "wrap",
-                      alignItems: "center",
-                    }}
-                  >
-                    <div
-                      style={{
-                        color: "#0B1F33",
-                        fontWeight: 900,
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      {firstTruthy(row?.title, "Need")}
-                    </div>
-
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <span style={badge(true)}>{urgencyLabel(row?.urgency)}</span>
-                      {requesterTrustPostureLabel(row) ? (
-                        <span style={badge(false)}>
-                          Trust posture: {requesterTrustPostureLabel(row)}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: 8, ...helperText() }}>
-                    {firstTruthy(row?.description, "No extra detail yet.")}
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 10,
-                      display: "flex",
-                      gap: 8,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <span style={badge(false)}>By: {requesterName(row)}</span>
-                    {safeStr(row?.requester_gmfn_id) ? (
-                      <span style={badge(false)}>
-                        GSN ID {safeStr(row?.requester_gmfn_id)}
-                      </span>
-                    ) : null}
-                    {safeStr(row?.whatsapp_number) ? (
-                      <span style={badge(false)}>Contact path: WhatsApp</span>
-                    ) : null}
-                    {safeStr(row?.area) ? (
-                      <span style={badge(false)}>Area: {safeStr(row?.area)}</span>
-                    ) : null}
-                    {safeStr(row?.payment_mode) ? (
-                      <span style={badge(false)}>
-                        Terms: {safeStr(row?.payment_mode)}
-                      </span>
-                    ) : null}
-                    {row?.allow_trust_credit ? (
-                      <span style={badge(false)}>Open to trust credit</span>
-                    ) : null}
-                  </div>
-
-                  <div style={demandActionRowStyle(isCompact, 54, 160, 12)}>
-                    {demandPaperAction(
-                      row,
-                      "community",
-                      `demand-box.visible-request.${row?.id || index}.copy-paper`
+              {(queueLaneRows[activeQueueLane] || []).length === 0
+                ? renderQueueEmptyState(
+                    activeQueueLane === "mine" ? "document" : activeQueueLane === "urgent" ? "alert" : "community",
+                    activeQueueLane === "mine"
+                      ? "You have no open demand right now."
+                      : activeQueueLane === "urgent"
+                        ? "No urgent demand is waiting right now."
+                        : "No visible demand is waiting right now.",
+                    activeQueueLane === "mine"
+                      ? "Create one clear request when you need goods, service, support, or help."
+                      : "When someone in this community asks for help, their request will appear in the right lane."
+                  )
+                : (queueLaneRows[activeQueueLane] || [])
+                    .slice(0, isCompact ? 12 : 24)
+                    .map((row, index) =>
+                      renderDemandRecord(
+                        row,
+                        activeQueueLane === "mine" || isMineRow(row, me) ? "owner" : "community",
+                        `demand-box.queue.${activeQueueLane}.${row?.id || index}`,
+                        {
+                          canClose: activeQueueLane === "mine" || isMineRow(row, me),
+                          index,
+                        }
+                      )
                     )}
-                    {demandContactActions(
-                      row,
-                      `demand-box.visible-request.${row?.id || index}.contact`
-                    )}
-                  </div>
+              {(queueLaneRows[activeQueueLane] || []).length > (isCompact ? 12 : 24) ? (
+                <div style={{ ...helperText(), ...innerCard("#F8FBFF") }}>
+                  Showing the first {isCompact ? 12 : 24} rows in this lane. Use
+                  Need types or Urgent to narrow the queue while backend paging
+                  and direct handles are being built.
                 </div>
-              ))}
-
-              {extraVisibleRows.length > 0 ? (
-                <details open={shouldOpenDemandQueues ? true : undefined} style={detailsShell()}>
-                  <StableDisclosureSummary
-                    style={detailsSummary()}
-                    stableHeight={52}
-                    debugId="demand-box.more-visible-demand.summary"
-                  >
-                    <span>More community demand</span>
-                    <span style={{ color: "#64748B", fontSize: 13 }}>
-                      {hiddenVisibleRowsCount} more
-                    </span>
-                  </StableDisclosureSummary>
-
-                  <div style={{ padding: "0 14px 14px", display: "grid", gap: 10 }}>
-                    {extraVisibleRows.map((row, index) => {
-                      const debugIndex = index + 1;
-
-                      return (
-                        <div key={`${row?.id || debugIndex}`} style={recordCard()}>
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              gap: 10,
-                              flexWrap: "wrap",
-                              alignItems: "center",
-                            }}
-                          >
-                            <div
-                              style={{
-                                color: "#0B1F33",
-                                fontWeight: 900,
-                                lineHeight: 1.35,
-                              }}
-                            >
-                              {firstTruthy(row?.title, "Need")}
-                            </div>
-
-                            <div
-                              style={{ display: "flex", gap: 8, flexWrap: "wrap" }}
-                            >
-                              <span style={badge(true)}>
-                                {urgencyLabel(row?.urgency)}
-                              </span>
-                              {requesterTrustPostureLabel(row) ? (
-                                <span style={badge(false)}>
-                                  Trust posture: {requesterTrustPostureLabel(row)}
-                                </span>
-                              ) : null}
-                            </div>
-                          </div>
-
-                          <div style={{ marginTop: 8, ...helperText() }}>
-                            {firstTruthy(row?.description, "No extra detail yet.")}
-                          </div>
-
-                          <div
-                            style={{
-                              marginTop: 10,
-                              display: "flex",
-                              gap: 8,
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            <span style={badge(false)}>By: {requesterName(row)}</span>
-                            {safeStr(row?.requester_gmfn_id) ? (
-                              <span style={badge(false)}>
-                                GSN ID {safeStr(row?.requester_gmfn_id)}
-                              </span>
-                            ) : null}
-                            {safeStr(row?.whatsapp_number) ? (
-                              <span style={badge(false)}>Contact path: WhatsApp</span>
-                            ) : null}
-                            {safeStr(row?.area) ? (
-                              <span style={badge(false)}>
-                                Area: {safeStr(row?.area)}
-                              </span>
-                            ) : null}
-                            {safeStr(row?.payment_mode) ? (
-                              <span style={badge(false)}>
-                                Terms: {safeStr(row?.payment_mode)}
-                              </span>
-                            ) : null}
-                            {row?.allow_trust_credit ? (
-                              <span style={badge(false)}>Open to trust credit</span>
-                            ) : null}
-                          </div>
-
-                          <div style={demandActionRowStyle(isCompact, 54, 160, 12)}>
-                            {demandPaperAction(
-                              row,
-                              "community",
-                              `demand-box.visible-request.${row?.id || debugIndex}.copy-paper`
-                            )}
-                            {demandContactActions(
-                              row,
-                              `demand-box.visible-request.${row?.id || debugIndex}.contact`
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </details>
               ) : null}
-              </>
-            )}
-          </div>
-          </details>
+            </div>
+          )}
 
           <div style={demandActionRowStyle(isCompact, 54, 156, 14)}>
             <StableCtaLink
@@ -2664,7 +2531,6 @@ export default function DemandBoxPage() {
             </StableCtaLink>
           </div>
         </section>
-      </section>
       ) : null}
     </div>
   );
