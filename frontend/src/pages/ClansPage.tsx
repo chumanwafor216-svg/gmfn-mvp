@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
-import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
+import { PrimaryButton, SecondaryButton, StableCtaLink, StableDisclosureSummary } from "../components/StableButton";
 import {
   canonicalJoinInviteUrl,
   compactJoinInviteUrl,
@@ -1712,7 +1712,8 @@ export default function ClansPage() {
                   padding: "10px 12px",
                 }}
               >
-                <summary
+                <StableDisclosureSummary
+                  debugId="clans.qr-preapproval.bulk.toggle"
                   style={{
                     color: "#241A12",
                     cursor: "pointer",
@@ -1721,7 +1722,7 @@ export default function ClansPage() {
                   }}
                 >
                   Paste many at once
-                </summary>
+                </StableDisclosureSummary>
                 <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                   <div
                     style={{

@@ -1447,7 +1447,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/ClansPage.tsx",
-  /import \{ PrimaryButton, SecondaryButton, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="clans\.quick\.community"[\s\S]*?debugId="clans\.create-community"[\s\S]*?debugId="clans\.next\.marketplace"[\s\S]*?debugId="clans\.invite\.open-form\.top"[\s\S]*?debugId="clans\.invite\.copy-link"[\s\S]*?debugId="clans\.invite\.open-guide"[\s\S]*?debugId="clans\.invite-modal\.create-package"[\s\S]*?debugId=\{`clans\.community\.\$\{id\}\.marketplace`\}/,
+  /import \{ PrimaryButton, SecondaryButton, StableCtaLink, StableDisclosureSummary \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="clans\.quick\.community"[\s\S]*?debugId="clans\.create-community"[\s\S]*?debugId="clans\.next\.marketplace"[\s\S]*?debugId="clans\.invite\.open-form\.top"[\s\S]*?debugId="clans\.invite\.copy-link"[\s\S]*?debugId="clans\.invite\.open-guide"[\s\S]*?debugId="clans\.invite-modal\.create-package"[\s\S]*?debugId=\{`clans\.community\.\$\{id\}\.marketplace`\}/,
   "Clans page must use shared stable CTA primitives and shared CTA resolution for community creation, selection, invite package, and route actions."
 );
 
