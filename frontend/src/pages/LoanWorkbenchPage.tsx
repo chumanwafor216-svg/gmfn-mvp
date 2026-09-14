@@ -1503,7 +1503,7 @@ export default function LoanWorkbenchPage() {
             </div>
           </div>
 
-          <div style={softCard("#FFFFFF")}>
+          <div style={softCard()}>
             <div style={sectionLabel()}>Current work item</div>
 
             <div

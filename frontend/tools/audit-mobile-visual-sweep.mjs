@@ -14,13 +14,24 @@ const routes = [
   "/pending-approval?request_id=8",
   "/app/dashboard",
   "/app/community",
+  "/app/community/1",
+  "/app/community/1/join-requests",
+  "/app/community-domain/1",
+  "/app/clans",
   "/app/marketplace",
+  "/app/marketplace/demand-box",
   "/app/demand-box?queue=open",
   "/app/notifications",
   "/app/shop-control",
+  "/app/shop-control/subscription-spotlight",
   "/app/shop-assets",
   "/app/vault-control",
   "/app/finance",
+  "/app/payment/pool?currency=NGN",
+  "/app/withdrawal-instructions",
+  "/app/payout-details",
+  "/app/payment-rails",
+  "/app/whatsapp-bridge",
   "/app/trust",
   "/app/trust-passport",
   "/app/trust-slip",
@@ -32,7 +43,17 @@ const routes = [
   "/app/community-confirmations",
   "/app/community-confirmations/policy",
   "/app/loans",
+  "/app/loan-readiness",
+  "/app/loan-suggestions",
+  "/app/loan-workbench",
+  "/app/loan-summary/1",
   "/app/payment/loans/1",
+  "/app/guarantor-inbox",
+  "/app/guarantor-earnings",
+  "/app/build-first-circle",
+  "/app/help",
+  "/app/my-gmfn-and-i",
+  "/app/my-gmfn-and-i?tab=settings",
   "/app/command-center",
   "/app/command-center/bank-console",
   "/app/command-center/revenue-allocation",
@@ -77,7 +98,13 @@ function isApiRequest(url) {
     "/trust",
     "/finance",
     "/payment-instructions",
+    "/payment-rails",
+    "/payout",
+    "/withdrawal",
     "/pool",
+    "/guarantor",
+    "/support",
+    "/subscription",
     "/protected-trades",
     "/rosca",
     "/trust-slips",
@@ -556,8 +583,9 @@ const findings = [];
 
 for (const route of routes) {
   try {
-    await page.goto(`${baseUrl}${route}`, { waitUntil: "networkidle", timeout: 15000 });
-    await page.waitForTimeout(700);
+    await page.goto(`${baseUrl}${route}`, { waitUntil: "domcontentloaded", timeout: 12000 });
+    await page.waitForLoadState("networkidle", { timeout: 1800 }).catch(() => {});
+    await page.waitForTimeout(500);
     const routeFindings = await collectRouteFindings(page);
 
     if (routeFindings.length > 0) {
