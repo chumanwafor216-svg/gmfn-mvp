@@ -76,6 +76,10 @@ const protectedAudits = [
     script: "audit-shop-control-button-inventory.mjs",
   },
   {
+    label: "shop control analytics mobile visual",
+    script: "audit-shop-control-analytics-mobile-visual.mjs",
+  },
+  {
     label: "action inbox button inventory",
     script: "audit-notifications-button-inventory.mjs",
   },
