@@ -68,8 +68,8 @@ function requireApiPattern(pattern, message) {
     "DemandBox current-state card must show the user's open demand count.",
   ],
   [
-    /Open: \{visibleRows\.length\}/,
-    "DemandBox current-state card must show open visible demand count.",
+    /All open: \{allOpenRows\.length\}/,
+    "DemandBox current-state card must show the full open demand count.",
   ],
   [
     /Next: post or review/,
@@ -116,12 +116,12 @@ function requireApiPattern(pattern, message) {
     "DemandBox return action must keep its stable debug id.",
   ],
   [
-    /type DemandQueueLane = "tagged" \| "for_me" \| "mine" \| "ask_community" \| "urgent" \| "categories"/,
-    "DemandBox must define governed queue lanes instead of a flat hidden drawer model.",
+    /type DemandQueueLane = "open" \| "tagged" \| "for_me" \| "mine" \| "ask_community" \| "urgent" \| "categories"/,
+    "DemandBox must define a full open queue plus governed lanes instead of a flat hidden drawer model.",
   ],
   [
-    /const \[activeQueueLane, setActiveQueueLane\] = useState<DemandQueueLane>\("for_me"\)/,
-    "DemandBox must default to the responder-facing For me lane.",
+    /const \[activeQueueLane, setActiveQueueLane\] = useState<DemandQueueLane>\("open"\)/,
+    "DemandBox must default to the full open queue so dashboard counts match visible rows.",
   ],
   [
     /return \["open", "queue", "all", "tagged", "for_me", "community", "mine", "ask_community", "ask-community", "urgent", "categories"\]\.includes\(queueMode\)/,
@@ -152,6 +152,18 @@ function requireApiPattern(pattern, message) {
     "DemandBox must show tagged demand separately from the general open queue.",
   ],
   [
+    /key: "open"[\s\S]*?label: "All open"[\s\S]*?count: allOpenRows\.length/,
+    "DemandBox must expose an All open lane whose count matches every loaded open row.",
+  ],
+  [
+    /const normalizedQueueMode = queueMode === "ask-community" \|\| queueMode === "community" \|\| queueMode === "queue" \|\| queueMode === "all" \? "open" : queueMode/,
+    "DemandBox dashboard queue links must land on the full open queue, not a filtered lane.",
+  ],
+  [
+    /if \(shouldOpenDemandQueues\) \{\s*setActiveQueueLane\("open"\);\s*\}/,
+    "DemandBox fallback queue links must keep all open requests visible.",
+  ],
+  [
     /function queueKeysOf\(row: DemandRow\): string\[\][\s\S]*?queue_keys/,
     "DemandBox must consume saved queue keys for large-community sorting.",
   ],
@@ -176,8 +188,8 @@ function requireApiPattern(pattern, message) {
     "DemandBox must group open rows by recorded demand category.",
   ],
   [
-    /const queueLaneRows = useMemo<Record<DemandQueueLane, DemandRow\[\]>>[\s\S]*?tagged: taggedRows/,
-    "DemandBox must map every lane to a visible result set including Tagged.",
+    /const queueLaneRows = useMemo<Record<DemandQueueLane, DemandRow\[\]>>[\s\S]*?open: allOpenRows,[\s\S]*?tagged: taggedRows/,
+    "DemandBox must map every lane to a visible result set including All open and Tagged.",
   ],
   [
     /setActiveQueueLane\(lane\.key\)/,

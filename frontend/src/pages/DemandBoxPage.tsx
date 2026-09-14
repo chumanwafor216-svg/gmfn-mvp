@@ -78,7 +78,7 @@ type DemandRow = {
 type NoticeTone = "success" | "error";
 type DemandPaperScope = "owner" | "community";
 type DemandNoticeExpiryPolicy = "standard" | "urgent" | "event" | "pinned";
-type DemandQueueLane = "tagged" | "for_me" | "mine" | "ask_community" | "urgent" | "categories";
+type DemandQueueLane = "open" | "tagged" | "for_me" | "mine" | "ask_community" | "urgent" | "categories";
 type DemandTagMember = { userId: number; gsnId: string; label: string; role: string };
 
 const DEMAND_BOX_PAGE_SIZE = 200;
@@ -735,7 +735,7 @@ export default function DemandBoxPage() {
   const [hasMoreVisibleRows, setHasMoreVisibleRows] = useState(false);
   const [loadingMoreVisibleRows, setLoadingMoreVisibleRows] = useState(false);
   const [tagMembers, setTagMembers] = useState<DemandTagMember[]>([]);
-  const [activeQueueLane, setActiveQueueLane] = useState<DemandQueueLane>("for_me");
+  const [activeQueueLane, setActiveQueueLane] = useState<DemandQueueLane>("open");
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -1560,6 +1560,7 @@ export default function DemandBoxPage() {
   }, [allOpenRows]);
   const queueLaneRows = useMemo<Record<DemandQueueLane, DemandRow[]>>(
     () => ({
+      open: allOpenRows,
       tagged: taggedRows,
       for_me: visibleRows,
       mine: myOpenRows,
@@ -1571,28 +1572,29 @@ export default function DemandBoxPage() {
   );
   const queueLanes = useMemo<Array<{ key: DemandQueueLane; label: string; count: number; icon: GsnIconName; detail: string }>>(
     () => [
+      { key: "open", label: "All open", count: allOpenRows.length, icon: "briefcase", detail: "Every loaded open request" },
       { key: "tagged", label: "Tagged", count: taggedRows.length, icon: "tag", detail: "Requests mentioning your GSN ID" },
-      { key: "for_me", label: "Open", count: visibleRows.length, icon: "community", detail: "Community requests you can answer" },
+      { key: "for_me", label: "For me", count: visibleRows.length, icon: "community", detail: "Community requests you can answer" },
       { key: "mine", label: "Mine", count: myOpenRows.length, icon: "user", detail: "Needs you posted" },
       { key: "ask_community", label: "Ask Community", count: askCommunityRows.length, icon: "community", detail: "Questions posted through DemandBox" },
       { key: "urgent", label: "Urgent", count: urgentRows.length, icon: "alert", detail: "Needs time attention" },
       { key: "categories", label: "Need types", count: categoryBuckets.length, icon: "tag", detail: "Grouped by need type" },
     ],
-    [askCommunityRows.length, categoryBuckets.length, myOpenRows.length, taggedRows.length, urgentRows.length, visibleRows.length]
+    [allOpenRows.length, askCommunityRows.length, categoryBuckets.length, myOpenRows.length, taggedRows.length, urgentRows.length, visibleRows.length]
   );
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const queueMode = safeStr(params.get("queue") || "").toLowerCase();
-    const directLanes: DemandQueueLane[] = ["tagged", "for_me", "mine", "ask_community", "urgent", "categories"];
-    const normalizedQueueMode = queueMode === "ask-community" ? "ask_community" : queueMode;
+    const directLanes: DemandQueueLane[] = ["open", "tagged", "for_me", "mine", "ask_community", "urgent", "categories"];
+    const normalizedQueueMode = queueMode === "ask-community" || queueMode === "community" || queueMode === "queue" || queueMode === "all" ? "open" : queueMode;
 
     if (directLanes.includes(normalizedQueueMode as DemandQueueLane)) {
       setActiveQueueLane(normalizedQueueMode as DemandQueueLane);
       return;
     }
 
-    if (queueMode === "community" || shouldOpenDemandQueues) {
-      setActiveQueueLane("for_me");
+    if (shouldOpenDemandQueues) {
+      setActiveQueueLane("open");
     }
   }, [location.search, shouldOpenDemandQueues]);
   const routeAskCommunityMode = ["ask_community", "ask-community", "market_need_pulse"].includes(demandMode);
@@ -2624,11 +2626,11 @@ export default function DemandBoxPage() {
             </div>
 
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span style={badge(visibleRows.length > 0)}>Open: {visibleRows.length}</span>
+              <span style={badge(allOpenRows.length > 0)}>All open: {allOpenRows.length}</span>
               <span style={badge(myOpenRows.length > 0)}>Mine: {myOpenRows.length}</span>
               <span style={badge(askCommunityRows.length > 0)}>Ask: {askCommunityRows.length}</span>
               <span style={badge(urgentRows.length > 0)}>Urgent: {urgentRows.length}</span>
-              <span style={badge(false)}>Loaded: {allOpenRows.length}</span>
+              <span style={badge(visibleRows.length > 0)}>For me: {visibleRows.length}</span>
               <span style={badge(hasMoreVisibleRows)}>More: {hasMoreVisibleRows ? "available" : "none shown"}</span>
             </div>
           </div>
@@ -2686,7 +2688,7 @@ export default function DemandBoxPage() {
             }}
           >
             <span style={badge(true)}>
-              Active lane: {queueLanes.find((lane) => lane.key === activeQueueLane)?.label || "Open"}
+              Active lane: {queueLanes.find((lane) => lane.key === activeQueueLane)?.label || "All open"}
             </span>
             <span style={badge(taggedRows.length > 0)}>Tagged: {taggedRows.length}</span>
             <span style={badge(false)}>Not a chat feed</span>
@@ -2772,12 +2774,16 @@ export default function DemandBoxPage() {
                         ? "No urgent demand is waiting right now."
                         : activeQueueLane === "tagged"
                           ? "No tagged demand is waiting right now."
-                          : "No visible demand is waiting right now.",
+                          : activeQueueLane === "for_me"
+                            ? "No responder-facing demand is waiting right now."
+                            : "No open demand is waiting right now.",
                     activeQueueLane === "mine"
                       ? "Create one clear request when you need goods, service, support, or help."
                       : activeQueueLane === "tagged"
                         ? "When a request mentions your GSN ID and matches your community record, it appears here."
-                        : "When someone in this community asks for help, their request will appear in the right lane."
+                        : activeQueueLane === "for_me"
+                          ? "Use All open when you need to see every loaded community request."
+                          : "When someone in this community asks for help, their request will appear here."
                   )
                 : (queueLaneRows[activeQueueLane] || [])
                     .slice(0, isCompact ? 12 : 24)
