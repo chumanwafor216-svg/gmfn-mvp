@@ -2486,8 +2486,8 @@ function ShopOpportunityLensesVisualPanel({
   if (isCompact) {
     const compactLenses = [
       { ...lenses[0], title: "Demand", value: demandOpenCount > 0 ? `${demandOpenCount} open need` : "No need yet", next: "Compare offers" },
-      { ...lenses[1], title: "Social", value: hasCommunityContext ? "Community selected" : "Choose community", next: "Keep local" },
-      { ...lenses[2], title: "Trust", value: tradeRecords > 0 ? `${tradeRecords} trade record${tradeRecords === 1 ? "" : "s"}` : "No record yet", next: "Protect outcomes" },
+      { ...lenses[1], title: "Social", value: hasCommunityContext ? "Community set" : "Choose community", next: "Keep local" },
+      { ...lenses[2], title: "Trust", value: tradeRecords > 0 ? `${tradeRecords} trade record${tradeRecords === 1 ? "" : "s"}` : "No trade yet", next: "Protect outcomes" },
       { ...lenses[3], title: "Operations", value: `${liveSignalCount}/${totalSignals} live`, next: "Test change" },
       { ...lenses[4], title: "Outside", value: "Not added yet", next: "Approved inputs" },
     ];
@@ -2524,7 +2524,7 @@ function ShopOpportunityLensesVisualPanel({
           <span style={{ borderRadius: 999, padding: "7px 10px", background: "linear-gradient(180deg, #FFF1B8 0%, #F7D66D 100%)", color: "#5B3C00", fontSize: 11.5, fontWeight: 950 }}>Local reading</span>
           <span style={{ borderRadius: 999, padding: "7px 10px", background: "#F1F7FF", color: "#0F5EAA", fontSize: 11.5, fontWeight: 950 }}>{liveSignalCount}/{totalSignals} live</span>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 7 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 7 }}>
           {primaryLenses.map((item) => (
             <div
               key={`visual-lens-compact-${item.title}`}
@@ -2532,23 +2532,21 @@ function ShopOpportunityLensesVisualPanel({
                 minWidth: 0,
                 borderRadius: 14,
                 background: item.status === "Next" ? "#F7FBFF" : ANALYTICS_ACCENTS[statusTone(item.status)].bg,
-                padding: 8,
+                padding: "8px 9px",
                 display: "grid",
-                gridTemplateColumns: "28px minmax(0, 1fr)",
-                gap: 7,
+                gridTemplateColumns: "34px minmax(0, 1fr) 48px",
+                gap: 8,
                 alignItems: "center",
-                minHeight: 68,
+                minHeight: 54,
                 overflow: "hidden",
               }}
             >
-              <GsnLegacyIcon name={item.icon} size={24} />
-              <div style={{ minWidth: 0 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 5, alignItems: "center" }}>
-                  <span style={{ color: "#061827", fontSize: 12.5, fontWeight: 950, lineHeight: 1.08 }}>{item.title}</span>
-                  <span style={{ color: ANALYTICS_ACCENTS[statusTone(item.status)].color, fontSize: 9.5, fontWeight: 950, whiteSpace: "nowrap" }}>{item.status}</span>
-                </div>
-                <div style={{ marginTop: 4, color: "#385773", fontSize: 11.2, fontWeight: 850, lineHeight: 1.16, overflowWrap: "break-word" }}>{item.value}</div>
+              <GsnLegacyIcon name={item.icon} size={25} />
+              <div style={{ minWidth: 0, display: "grid", gap: 2 }}>
+                <div style={{ color: "#061827", fontSize: 12.8, fontWeight: 950, lineHeight: 1.08 }}>{item.title}</div>
+                <div style={{ color: "#385773", fontSize: 11.2, fontWeight: 850, lineHeight: 1.14 }}>{item.value}</div>
               </div>
+              <span style={{ justifySelf: "end", borderRadius: 999, background: "rgba(255,255,255,0.72)", color: ANALYTICS_ACCENTS[statusTone(item.status)].color, padding: "5px 7px", fontSize: 9.5, fontWeight: 950, whiteSpace: "nowrap" }}>{item.status}</span>
             </div>
           ))}
         </div>
@@ -2556,20 +2554,20 @@ function ShopOpportunityLensesVisualPanel({
           style={{
             borderRadius: 14,
             background: "linear-gradient(180deg, #F7FBFF 0%, #EEF5FC 100%)",
-            padding: 8,
+            padding: "8px 9px",
             display: "grid",
-            gridTemplateColumns: "30px minmax(0, 1fr) auto",
+            gridTemplateColumns: "34px minmax(0, 1fr) 48px",
             gap: 8,
             alignItems: "center",
             minHeight: 54,
           }}
         >
           <GsnLegacyIcon name={outsideLens.icon} size={25} />
-          <div style={{ minWidth: 0 }}>
-            <div style={{ color: "#061827", fontSize: 12.5, fontWeight: 950, lineHeight: 1.08 }}>{outsideLens.title}</div>
-            <div style={{ color: "#385773", fontSize: 11.2, fontWeight: 850, lineHeight: 1.16 }}>Governed sources only</div>
+          <div style={{ minWidth: 0, display: "grid", gap: 2 }}>
+            <div style={{ color: "#061827", fontSize: 12.8, fontWeight: 950, lineHeight: 1.08 }}>{outsideLens.title}</div>
+            <div style={{ color: "#385773", fontSize: 11.2, fontWeight: 850, lineHeight: 1.14 }}>Governed sources only</div>
           </div>
-          <span style={{ color: ANALYTICS_ACCENTS.blue.color, fontSize: 10, fontWeight: 950, whiteSpace: "nowrap" }}>{outsideLens.status}</span>
+          <span style={{ justifySelf: "end", borderRadius: 999, background: "rgba(255,255,255,0.72)", color: ANALYTICS_ACCENTS.blue.color, padding: "5px 7px", fontSize: 9.5, fontWeight: 950, whiteSpace: "nowrap" }}>{outsideLens.status}</span>
         </div>
         <div style={{ borderRadius: 14, background: "#FFF9E8", color: "#6B4600", padding: "9px 10px", fontSize: 12, fontWeight: 900, lineHeight: 1.3 }}>
           Local evidence only: not sales proof, trust approval, or a public conclusion.
@@ -3145,15 +3143,15 @@ function ShopOpportunityReadingVisualPanel({
           <span style={{ borderRadius: 999, padding: "7px 10px", background: "#EAF4FF", color: "#0F5EAA", fontSize: 11.5, fontWeight: 950 }}>Not a forecast</span>
           <span style={{ borderRadius: 999, padding: "7px 10px", background: "linear-gradient(180deg, #FFF1B8 0%, #F7D66D 100%)", color: "#5B3C00", fontSize: 11.5, fontWeight: 950 }}>{liveSignalCount}/{totalSignals} live</span>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 7 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 7 }}>
           {readingCards.map((item) => (
-            <div key={"opportunity-compact-reading-" + item.horizon} style={{ minWidth: 0, borderRadius: 14, background: ANALYTICS_ACCENTS[item.accent].bg, padding: 8, minHeight: 78, display: "grid", gap: 5 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "24px minmax(0, 1fr)", gap: 7, alignItems: "center" }}>
-                <GsnLegacyIcon name={item.icon} size={22} />
-                <div style={{ color: ANALYTICS_ACCENTS[item.accent].color, fontSize: 11.5, fontWeight: 950, lineHeight: 1.05, textTransform: "uppercase" }}>{item.horizon}</div>
+            <div key={"opportunity-compact-reading-" + item.horizon} style={{ minWidth: 0, borderRadius: 14, background: ANALYTICS_ACCENTS[item.accent].bg, padding: "8px 9px", minHeight: 56, display: "grid", gridTemplateColumns: "28px 62px minmax(0, 1fr)", gap: 8, alignItems: "center" }}>
+              <GsnLegacyIcon name={item.icon} size={23} />
+              <div style={{ color: ANALYTICS_ACCENTS[item.accent].color, fontSize: 11.2, fontWeight: 950, lineHeight: 1.05, textTransform: "uppercase" }}>{item.horizon}</div>
+              <div style={{ minWidth: 0, display: "grid", gap: 2 }}>
+                <div style={{ color: "#061827", fontSize: 12.2, fontWeight: 950, lineHeight: 1.12 }}>{item.reading}</div>
+                <div style={{ color: "#385773", fontSize: 10.8, fontWeight: 850, lineHeight: 1.14 }}>{item.facts[0]}</div>
               </div>
-              <div style={{ color: "#061827", fontSize: 12.2, fontWeight: 950, lineHeight: 1.14 }}>{item.reading}</div>
-              <div style={{ color: "#385773", fontSize: 10.8, fontWeight: 850, lineHeight: 1.16 }}>{item.facts.slice(0, 2).join(" / ")}</div>
             </div>
           ))}
         </div>
@@ -3369,7 +3367,7 @@ function ShopEvidenceCaptureChecklistVisualPanel({
           </span>
         ))}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 7 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 7 }}>
         {compactRows.map((item, index) => {
           const status = compactOpportunityStatusLabel(item.status);
           const recordsNow = safePositiveNumber(item.records_now);
@@ -3382,28 +3380,21 @@ function ShopEvidenceCaptureChecklistVisualPanel({
                 minWidth: 0,
                 borderRadius: 14,
                 background: ANALYTICS_ACCENTS[accent].bg,
-                padding: 9,
+                padding: "8px 9px",
                 display: "grid",
-                gridTemplateColumns: "28px minmax(0, 1fr)",
-                gap: 7,
-                alignItems: "start",
+                gridTemplateColumns: "30px minmax(0, 1fr) 62px",
+                gap: 8,
+                alignItems: "center",
               }}
             >
               <GsnLegacyIcon name={rowIcons[index] || "document"} size={25} />
-              <div style={{ minWidth: 0, display: "grid", gap: 4 }}>
-                <div style={{ color: "#061827", fontSize: 12.2, fontWeight: 950, lineHeight: 1.12 }}>{safeStr(item.category) || "Evidence"}</div>
-                <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap" }}>
-                  <span style={{ color: isStarted ? "#1F8A57" : "#8A5B00", fontSize: 10.8, fontWeight: 950, lineHeight: 1 }}>
-                    {status}
-                  </span>
-                  <span style={{ color: "#5A6F84", fontSize: 10.3, fontWeight: 850, lineHeight: 1 }}>
-                    {recordsNow} rec.
-                  </span>
-                </div>
-                <div style={{ color: "#385773", fontSize: 10.8, fontWeight: 850, lineHeight: 1.15 }}>
-                  {safeStr(item.why) || "Keep the reading evidence-led."}
-                </div>
+              <div style={{ minWidth: 0, display: "grid", gap: 2 }}>
+                <div style={{ color: "#061827", fontSize: 12.4, fontWeight: 950, lineHeight: 1.1 }}>{safeStr(item.category) || "Evidence"}</div>
+                <div style={{ color: "#5A6F84", fontSize: 10.8, fontWeight: 850, lineHeight: 1.05 }}>{recordsNow} rec.</div>
               </div>
+              <span style={{ justifySelf: "end", borderRadius: 999, background: "rgba(255,255,255,0.72)", color: isStarted ? "#1F8A57" : "#8A5B00", padding: "5px 7px", fontSize: 9.8, fontWeight: 950, whiteSpace: "nowrap" }}>
+                {status}
+              </span>
             </div>
           );
         })}
@@ -9107,7 +9098,16 @@ export default function ShopControlPage() {
                   </span>
                 ))}
               </div>
-              <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(18,58,89,0.08)", padding: 10, display: activeOpportunityEnginePanel === "lenses" ? "grid" : "none", gap: 8 }}>
+              <div
+                style={{
+                  borderRadius: isCompact ? 0 : 16,
+                  background: isCompact ? "transparent" : "rgba(255,255,255,0.82)",
+                  border: isCompact ? "0" : "1px solid rgba(18,58,89,0.08)",
+                  padding: isCompact ? 0 : 10,
+                  display: activeOpportunityEnginePanel === "lenses" ? "grid" : "none",
+                  gap: 8,
+                }}
+              >
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Opportunity lenses</div>
                   <span style={{ ...badge(opportunityEngineLiveSignalCount >= 3), fontSize: 10 }}>local GSN reading</span>
@@ -9163,7 +9163,16 @@ export default function ShopControlPage() {
                 <div style={{ color: "#385773", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}><strong>Use:</strong> {opportunityEngineWisdomSnapshot.useIn}</div>
                 <div style={{ color: "#5A6F84", fontSize: 11, fontWeight: 760, lineHeight: 1.35 }}>{opportunityEngineWisdomSnapshot.cadence} {opportunityEngineWisdomSnapshot.boundary}</div>
               </div>
-              <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.84)", border: "1px solid rgba(15,94,170,0.12)", padding: 10, display: activeOpportunityEnginePanel === "return-evidence" ? "grid" : "none", gap: 7 }}>
+              <div
+                style={{
+                  borderRadius: isCompact ? 0 : 16,
+                  background: isCompact ? "transparent" : "rgba(255,255,255,0.84)",
+                  border: isCompact ? "0" : "1px solid rgba(15,94,170,0.12)",
+                  padding: isCompact ? 0 : 10,
+                  display: activeOpportunityEnginePanel === "return-evidence" ? "grid" : "none",
+                  gap: 7,
+                }}
+              >
                 <div style={{ display: isCompact ? "none" : "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Business return readiness</div>
                   <span style={{ ...badge(opportunityEngineUnitEconomicsReadiness.status === "Ready to estimate"), fontSize: 10 }}>{opportunityEngineUnitEconomicsReadiness.status}</span>

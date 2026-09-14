@@ -446,7 +446,7 @@ assertShopContains(
   "Shop Control Economic overview must keep a compact mobile layout with short labels and one boundary line."
 );
 assertShopDoesNotContain(
-  /marginLeft: -46|marginRight: -46|width: \"calc\\(100% \\+ 92px\\)\"/,
+  /marginLeft: -46|marginRight: -46|width: "calc\(100% \+ 92px\)"/,
   "Shop Control compact visual panels must not overhang their parent container on phone.",
   "Remove negative side margins and oversized calc widths from compact Advanced Analytics panels."
 );
@@ -578,6 +578,45 @@ assertShopContains(
   /border: isCompact \? "0" : "1px solid rgba\(15,94,170,0\.14\)"[\s\S]*?background: isCompact \? "transparent"[\s\S]*?padding: isCompact \? 0 : 12[\s\S]*?gap: isCompact \? 8 : 10/,
   "Shop Control Advanced Analytics active-lane wrapper must not draw an extra container wall on phone."
 );
+
+assertShopContains(
+  /primaryLenses\.map\(\(item\) => \([\s\S]*?gridTemplateColumns: "34px minmax\(0, 1fr\) 48px"[\s\S]*?justifySelf: "end"/,
+  "Shop Control compact Opportunity lenses must use relaxed full-width rows so status text cannot clip."
+);
+assertShopContains(
+  /opportunity-compact-reading-[\s\S]*?gridTemplateColumns: "28px 62px minmax\(0, 1fr\)"/,
+  "Shop Control compact Opportunity reading cards must use relaxed horizontal rows, not narrow two-column blocks."
+);
+assertShopContains(
+  /capture-compact-row-[\s\S]*?gridTemplateColumns: "30px minmax\(0, 1fr\) 62px"[\s\S]*?justifySelf: "end"/,
+  "Shop Control compact Evidence checklist rows must keep text in a relaxed middle column with a fixed trailing status pill."
+);
+assertShopContains(
+  /display: activeOpportunityEnginePanel === "lenses" \? "grid" : "none"[\s\S]*?borderRadius: isCompact \? 0 : 16|borderRadius: isCompact \? 0 : 16[\s\S]*?display: activeOpportunityEnginePanel === "lenses" \? "grid" : "none"/,
+  "Shop Control compact Opportunity lenses wrapper must not add a second container boundary."
+);
+assertShopContains(
+  /display: activeOpportunityEnginePanel === "return-evidence" \? "grid" : "none"[\s\S]*?borderRadius: isCompact \? 0 : 16|borderRadius: isCompact \? 0 : 16[\s\S]*?display: activeOpportunityEnginePanel === "return-evidence" \? "grid" : "none"/,
+  "Shop Control compact Business return wrapper must not add a second container boundary."
+);
+
+const compactCaptureStart = shopControlSource.indexOf('key={`capture-compact-row-${item.category || index}`}');
+const compactCaptureEnd = shopControlSource.indexOf('      <div style={{ borderRadius: 14, background: "#FFFFFF", padding: 9', compactCaptureStart);
+if (compactCaptureStart === -1 || compactCaptureEnd === -1 || compactCaptureEnd <= compactCaptureStart) {
+  findings.push({
+    file: shopControlFile,
+    line: 1,
+    message: "Shop Control compact Evidence checklist block could not be located for phone QC.",
+    text: "capture-compact-row",
+  });
+} else if (/safeStr\(item\.why\)/.test(shopControlSource.slice(compactCaptureStart, compactCaptureEnd))) {
+  findings.push({
+    file: shopControlFile,
+    line: lineAt(shopControlSource, compactCaptureStart),
+    message: "Shop Control compact Evidence checklist must not expose long why text inside tiny phone cards.",
+    text: "safeStr(item.why)",
+  });
+}
 assertShopContains(
   /display: activeOpportunityEnginePanel === "signals" && !isCompact \? "grid" : "none"[\s\S]*?Observation:[\s\S]*?display: activeOpportunityEnginePanel === "signals" && !isCompact \? "grid" : "none"[\s\S]*?shop-control\.market-intelligence\.actioned/,
   "Shop Control Signals lane must hide repeated desktop explanation/action stacks on phone."
