@@ -262,8 +262,13 @@ assertContains(
   "Dashboard My Pulse must read server-owned Attention Spine signals before adding local fallback signals."
 );
 assertContains(
-  /listMarketplaceRequests\(\{[\s\S]*?clan_id: selectedClanId \|\| undefined,[\s\S]*?status: "open"[\s\S]*?mine_only: false[\s\S]*?limit: 6[\s\S]*?\}\)[\s\S]*?\}, \[selectedClanId\]\);/,
-  "Dashboard DemandBox summary must be scoped to the selected community so its count matches the DemandBox queue."
+  /function isDashboardDemandMine\(item: DemandItem, user: any\): boolean \{[\s\S]*?requester_gmfn_id[\s\S]*?requester_email[\s\S]*?\}/,
+  "Dashboard must be able to separate the current user's own DemandBox rows from responder-facing rows."
+);
+
+assertContains(
+  /listMarketplaceRequests\(\{[\s\S]*?clan_id: selectedClanId \|\| undefined,[\s\S]*?status: "open"[\s\S]*?mine_only: false[\s\S]*?limit: 6[\s\S]*?\}\)[\s\S]*?const responderRows = Array\.isArray\(rows\)[\s\S]*?rows\.filter\(\(row\) => !isDashboardDemandMine\(row, me\)\)[\s\S]*?setDemandItems\(responderRows\);[\s\S]*?\}, \[me, selectedClanId\]\);/,
+  "Dashboard DemandBox summary must be scoped to the selected community and exclude own rows so its count matches the DemandBox Open queue."
 );
 
 assertContains(

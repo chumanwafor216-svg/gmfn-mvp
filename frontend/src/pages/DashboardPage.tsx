@@ -141,6 +141,9 @@ type JoinRequestItem = {
 
 type DemandItem = {
   id?: number;
+  is_mine?: boolean;
+  mine?: boolean;
+  requester_user_id?: number | string | null;
   title?: string;
   description?: string | null;
   status?: string;
@@ -1258,6 +1261,22 @@ function firstNumberLike(...values: unknown[]): number | null {
 function positiveNumber(value: unknown): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function isDashboardDemandMine(item: DemandItem, user: any): boolean {
+  if (item?.is_mine === true || item?.mine === true) return true;
+
+  const requesterUserId = positiveNumber(item?.requester_user_id);
+  const myUserId = positiveNumber(user?.id || user?.user_id || user?.userId);
+  if (requesterUserId && myUserId && requesterUserId === myUserId) return true;
+
+  const requesterGsnId = safeStr(item?.requester_gmfn_id).toUpperCase();
+  const myGsnId = safeStr(user?.gmfn_id || user?.gmfnId || user?.gsn_id).toUpperCase();
+  if (requesterGsnId && myGsnId && requesterGsnId === myGsnId) return true;
+
+  const requesterEmail = safeStr(item?.requester_email).toLowerCase();
+  const myEmail = safeStr(user?.email).toLowerCase();
+  return Boolean(requesterEmail && myEmail && requesterEmail === myEmail);
 }
 
 function spotlightPriceLine(price: unknown, currency: unknown): string {
@@ -4102,9 +4121,12 @@ export default function DashboardPage() {
         limit: 6,
       }).catch(() => []);
 
-      setDemandItems(Array.isArray(rows) ? rows : []);
+      const responderRows = Array.isArray(rows)
+        ? rows.filter((row) => !isDashboardDemandMine(row, me))
+        : [];
+      setDemandItems(responderRows);
     })();
-  }, [selectedClanId]);
+  }, [me, selectedClanId]);
 
   useEffect(() => {
     if (spotlights.length <= 1) return;
