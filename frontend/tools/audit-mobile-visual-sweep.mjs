@@ -15,11 +15,28 @@ const routes = [
   "/app/dashboard",
   "/app/community",
   "/app/marketplace",
+  "/app/demand-box?queue=open",
+  "/app/notifications",
   "/app/shop-control",
+  "/app/shop-assets",
+  "/app/vault-control",
   "/app/finance",
   "/app/trust-passport",
+  "/app/trust-slip",
+  "/app/identity",
+  "/app/open-trust-reading",
+  "/app/cci-reading",
+  "/app/trust-timeline",
+  "/app/community-confirmations",
+  "/app/community-confirmations/policy",
   "/app/loans",
   "/app/payment/loans/1",
+  "/app/command-center",
+  "/app/command-center/trust-analytics",
+  "/app/command-center/trust-events",
+  "/app/command-center/identity-risk",
+  "/app/command-center/system-operations",
+  "/app/command-center/trust-graph",
 ];
 
 function json(data, status = 200) {
@@ -37,6 +54,9 @@ function isApiRequest(url) {
     "/auth/",
     "/clans/",
     "/entry/",
+    "/community-confirmations",
+    "/community-domains",
+    "/merchant",
     "/marketplace",
     "/dashboard",
     "/loans",
@@ -45,6 +65,11 @@ function isApiRequest(url) {
     "/identity",
     "/trust",
     "/finance",
+    "/payment-instructions",
+    "/pool",
+    "/protected-trades",
+    "/rosca",
+    "/trust-slips",
   ];
 
   return (
@@ -86,7 +111,7 @@ async function mockApi(route) {
         gsn_id: "GMFN-U-0B5A2953",
         gmfn_id: "GMFN-U-0B5A2953",
         status: "active",
-        role: "member",
+        role: "admin",
       })
     );
     return;
@@ -137,6 +162,37 @@ async function mockApi(route) {
     return;
   }
 
+  if (url.includes("/marketplace/requests")) {
+    await route.fulfill(
+      json([
+        {
+          id: 301,
+          request_id: 301,
+          clan_id: 1,
+          requester_user_id: 2,
+          title: "Food items",
+          body: "Few food items available for those who might need it.",
+          status: "open",
+          created_at: "2026-09-14T10:00:00Z",
+          tags: ["food", "local-need"],
+          queue_keys: ["open"],
+        },
+        {
+          id: 302,
+          request_id: 302,
+          clan_id: 1,
+          requester_user_id: 3,
+          title: "Vacancies",
+          body: "Community work openings people should know about.",
+          status: "open",
+          created_at: "2026-09-14T10:05:00Z",
+          tags: ["work", "local-need"],
+          queue_keys: ["open", "ask_community"],
+        },
+      ])
+    );
+    return;
+  }
   if (url.includes("/marketplace")) {
     await route.fulfill(json({ items: [], listings: [] }));
     return;
@@ -152,7 +208,50 @@ async function mockApi(route) {
     return;
   }
 
-  await route.fulfill(json({ items: [], results: [], data: [] }));
+
+  if (url.includes("/trust-slips")) {
+    await route.fulfill(
+      json({
+        verified: true,
+        active: true,
+        status: "active",
+        code: "TS-MOBILE-QC",
+        verification_code: "TS-MOBILE-QC",
+        public_verify_url: "/t/TS-MOBILE-QC",
+        display_name: "Audit Member",
+        gmfn_id: "GMFN-U-0B5A2953",
+        gsn_id: "GMFN-U-0B5A2953",
+        community: "Homeland isa",
+        level: "B",
+        band: "B",
+        trust_score: 72,
+        phone_recorded: true,
+        phone_verified: true,
+        bank_details_recorded: true,
+        official_id_recorded: true,
+        photo_recorded: true,
+        identity_verified: true,
+      })
+    );
+    return;
+  }
+
+  if (url.includes("/community-confirmations")) {
+    await route.fulfill(json({ items: [], rows: [], open_count: 0, pending_count: 0 }));
+    return;
+  }
+
+  if (url.includes("/protected-trades") || url.includes("/rosca")) {
+    await route.fulfill(json({ items: [], records: [], cycles: [] }));
+    return;
+  }
+
+  if (url.includes("/payment-instructions") || url.includes("/pool")) {
+    await route.fulfill(json({ items: [], balance: 0, available_balance: 0 }));
+    return;
+  }
+
+  await route.fulfill(json({ items: [], results: [], data: [], records: [] }));
 }
 
 function pageAudit() {
@@ -245,7 +344,8 @@ function pageAudit() {
 
     if (!isVisible(element, rect, styles)) continue;
 
-    const hiddenFromA11y = element.getAttribute("aria-hidden") === "true";
+    const hiddenFromA11y = Boolean(element.closest("[aria-hidden='true'], [data-gsn-visual-decor='true']"));
+    if (hiddenFromA11y) continue;
     const directText = Array.from(element.childNodes)
       .filter((node) => node.nodeType === Node.TEXT_NODE)
       .map((node) => node.textContent || "")

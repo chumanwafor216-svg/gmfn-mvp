@@ -6745,7 +6745,7 @@ export default function ShopControlPage() {
           aria-hidden="true"
           style={{
             position: "absolute",
-            right: isCompact ? -22 : 16,
+            right: isCompact ? 10 : 16,
             top: isCompact ? 14 : -10,
             opacity: 0.08,
             pointerEvents: "none",

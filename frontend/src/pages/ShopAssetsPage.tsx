@@ -2034,8 +2034,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           aria-hidden="true"
           style={{
             position: "absolute",
-            right: isCompact ? -26 : 10,
-            top: isCompact ? 8 : -18,
+            right: isCompact ? 10 : 10,
+            top: isCompact ? 10 : -18,
             opacity: 0.075,
             pointerEvents: "none",
             transform: isCompact ? "rotate(-6deg)" : "rotate(-4deg)",
@@ -3593,5 +3593,3 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     </div>
   );
 }
-
-
