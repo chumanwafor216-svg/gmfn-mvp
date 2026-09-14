@@ -1,0 +1,65 @@
+[
+  {
+    "id": "ISS-001",
+    "severity": "High",
+    "status": "Open",
+    "area": "TrustSlip Decision Pack QR",
+    "finding": "`audit:trust-passport-trustslip-boundary` failed because the holder browser smoke expects the QR and public Decision Pack link to carry the same selected Decision Pack URL.",
+    "impact": "Base public TrustSlip verify boundary passes, but purpose-specific Decision Pack QR/link parity needs repair before claiming every TrustSlip Decision Pack path is fully verified.",
+    "recovery": "Fix or update the smoke and product code so selected Decision Pack URL, QR value, and public link agree; rerun Trust Passport/TrustSlip boundary audit."
+  },
+  {
+    "id": "ISS-002",
+    "severity": "Medium",
+    "status": "Open",
+    "area": "NPM audit aliases",
+    "finding": "`npm --prefix frontend run audit:whatsapp-bridge-contract` is missing, although `node tools/audit-whatsapp-bridge-contract.mjs` passes from the frontend directory.",
+    "impact": "Contract is protected but not exposed through the standard npm audit script list.",
+    "recovery": "Add package.json script alias or document node-direct invocation in internal QA runbook."
+  },
+  {
+    "id": "ISS-003",
+    "severity": "Medium",
+    "status": "Open",
+    "area": "Screenshot coverage",
+    "finding": "This pass captured representative current route screenshots, not every modal, setup success state, edit control, failed recovery state, and advanced detail panel.",
+    "impact": "Guide screenshots are valid examples but not complete proof for every feature state.",
+    "recovery": "Run deeper Playwright walkthrough with seeded success/edit/error states before publishing screenshot-heavy training."
+  },
+  {
+    "id": "ISS-004",
+    "severity": "Low",
+    "status": "Explained",
+    "area": "Backend local pytest temp permissions",
+    "finding": "`test_marketplace_public_shop.py` produced sandbox temp-directory errors locally but passed when rerun outside sandbox: 59 passed.",
+    "impact": "No product failure confirmed; local sandbox temp permissions can mislead future test runs.",
+    "recovery": "Use approved external pytest run or repair inaccessible `.pytest_*`/Temp permissions."
+  },
+  {
+    "id": "ISS-005",
+    "severity": "Low",
+    "status": "Open",
+    "area": "Visual QA tooling",
+    "finding": "`view_image` could not inspect the screenshot contact sheet because the Windows sandbox wrapper refused split writable roots.",
+    "impact": "Automated screenshot existence/text checks passed, but visual QA via image viewer was not completed inside this session.",
+    "recovery": "Open screenshots manually or use approved visual QA run where image viewer can access the workspace."
+  },
+  {
+    "id": "ISS-006",
+    "severity": "Low",
+    "status": "Open",
+    "area": "Dirty worktree",
+    "finding": "The repository already contains unrelated modified/untracked docs and deliverables outside this guide package.",
+    "impact": "Staging/pushing must be selective; do not assume all dirty files belong to this audit.",
+    "recovery": "Stage only the guide package and raw inventory if owner asks to push this batch."
+  },
+  {
+    "id": "ISS-007",
+    "severity": "Low",
+    "status": "Open",
+    "area": "DOCX render QA",
+    "finding": "The formal DOCX-to-PNG render workflow could not run locally because `pdf2image` is not installed and `soffice`/LibreOffice is not available on PATH.",
+    "impact": "Markdown, DOCX, and PDF files were generated and structurally validated, but page-image visual QA for the Word layout was not completed in this environment.",
+    "recovery": "Install the document render dependencies or run the render workflow on a machine with `pdf2image`, Poppler, and LibreOffice available; then inspect rendered pages."
+  }
+]

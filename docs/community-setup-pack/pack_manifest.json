@@ -1,0 +1,64 @@
+{
+    "pack_name":  "GSN Community Setup Pack",
+    "document_date":  "2026-09-14",
+    "status":  "maintained_source_pack",
+    "authenticity_mark":  "GSN Original Community Setup Material | Source-controlled in gmfn_mvp/docs | Document date: 2026-09-14",
+    "source_assets":  [
+                          {
+                              "role":  "live_setup_guide",
+                              "path":  "../gsn-user-guide/GSN_SELF_SERVICE_USER_GUIDE.md",
+                              "distribution":  [
+                                                   "../gsn-user-guide/GSN_SELF_SERVICE_USER_GUIDE.docx",
+                                                   "../gsn-user-guide/GSN_SELF_SERVICE_USER_GUIDE.pdf"
+                                               ]
+                          },
+                          {
+                              "role":  "feature_inventory",
+                              "path":  "../gsn-user-guide/GSN_FEATURE_INVENTORY_AUDIT.md",
+                              "machine_readable":  [
+                                                       "../gsn-user-guide/GSN_FEATURE_INVENTORY.json",
+                                                       "../gsn-user-guide/GSN_FEATURE_INVENTORY.csv"
+                                                   ]
+                          },
+                          {
+                              "role":  "setup_dependency_map",
+                              "path":  "../gsn-user-guide/GSN_FEATURE_DEPENDENCY_AND_SETUP_MAP.md"
+                          },
+                          {
+                              "role":  "route_recovery_map",
+                              "path":  "../gsn-user-guide/GSN_ROUTE_AND_RECOVERY_MAP.md"
+                          },
+                          {
+                              "role":  "master_capability_bank",
+                              "path":  "../gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_MASTER_CAPABILITY_BANK.md",
+                              "machine_readable":  [
+                                                       "../gsn-user-guide/real-life-capability-bank/capabilities.jsonl",
+                                                       "../gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_SELECTION_MAP.json",
+                                                       "../gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_SELECTION_MAP.csv"
+                                                   ]
+                          },
+                          {
+                              "role":  "audience_pick_lists",
+                              "path":  "../gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_AUDIENCE_PICK_LISTS.md",
+                              "distribution":  [
+                                                   "../gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_AUDIENCE_PICK_LISTS.docx",
+                                                   "../gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_AUDIENCE_PICK_LISTS.pdf"
+                                               ]
+                          }
+                      ],
+    "audience_copies":  [
+                            "church_faith_group",
+                            "school_youth_organisation",
+                            "ngo_charity_community_organisation",
+                            "cooperative_market_business_network",
+                            "family_diaspora_association"
+                        ],
+    "update_rule":  [
+                        "Update source Markdown/JSON/CSV first.",
+                        "Regenerate DOCX/PDF distribution copies.",
+                        "Update this manifest when files are added, renamed, retired or moved.",
+                        "Record substantial updates in docs/HANDOFF_NOTES.md."
+                    ],
+    "truth_boundary":  "This pack explains GSN setup and handover. It is not legal proof, payment proof, buyer proof, trust proof or a guarantee that every capability is live for every client.",
+    "builder":  "docs/community-setup-pack/tools/build_distribution_documents.py"
+}

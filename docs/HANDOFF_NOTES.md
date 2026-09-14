@@ -1,3 +1,14 @@
+## 2026-09-14 - GSN Community Setup Pack organized for deployment handover
+- Status: Documentation/package organization completed locally; no frontend feature, backend route, schema, auth, payment, permission, production data, Render deploy, or app behavior change was made.
+- Owner request: preserve the generated GSN setup materials, GSN in Real Life pack, master capabilities, audience stories, and "what to set up / how / what it does" documents as a maintained pack for community setup and client/member distribution.
+- New source folder: `docs/community-setup-pack/` now contains the deployment pack index, client handover map, story bank, authenticity/watermark standard, manifest, README, and the regeneration tool `tools/build_distribution_documents.py`.
+- Source assets linked by the pack: `docs/gsn-user-guide/GSN_SELF_SERVICE_USER_GUIDE.md`, feature inventory/setup maps, route/recovery map, and `docs/gsn-user-guide/real-life-capability-bank/` including `capabilities.jsonl`, master capability bank, audience pick lists, selection maps, and audience-specific copy.
+- Distribution rule: use the pack index and handover map for deployment-stage Community Domain setup, then send the relevant audience copy and self-service guide to the client so they can distribute member-facing guidance.
+- Title/authenticity change: the self-service guide and GSN in Real Life Markdown/DOCX/PDF outputs now use stronger dated `GSN Community Setup Pack: ... (2026-09-14)` titles plus the source mark `GSN Original Community Setup Material | Source-controlled in gmfn_mvp/docs | Document date: 2026-09-14`.
+- Regeneration command: `python docs\community-setup-pack\tools\build_distribution_documents.py` reapplies titles/authenticity metadata and rebuilds DOCX/PDF distribution copies.
+- Devil truth: the watermark/source mark proves package discipline and source origin inside this repo. It is not legal notarisation, anti-copy protection, buyer proof, payment proof, or a guarantee that every listed capability is live for every client.
+- Verification passed: builder reran successfully with global Python; `pack_manifest.json` parses; targeted Markdown title/authenticity scan passed; DOCX ZIP/header/footer structural watermark scan passed; generated PDFs are non-empty.
+- Tooling limit: formal page-image DOCX/PDF visual QA could not run because this environment is missing `pdf2image`, Poppler/LibreOffice/soffice, and local PDF text-extraction libraries. Treat the current verification as structural, not rendered-page proof.
 ## 2026-09-14 - Public Shop phone and Spotlight contact tap counting hardened
 - User reported testing a Spotlight/product share WhatsApp chat and phone call from a phone, but owner analytics did not show the contact count moving.
 - Confirmed backend already records and summarizes `contact_tap` under `/marketplace/analytics/attention`; targeted backend test passed.

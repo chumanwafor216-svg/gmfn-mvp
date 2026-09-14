@@ -1,5 +1,8 @@
-﻿# GSN in Real Life: Audience Pick Lists
+# GSN Community Setup Pack: Audience Pick Lists for Community Setup (2026-09-14)
 
+Document date: 2026-09-14
+Pack: GSN Community Setup Pack
+Authenticity mark: GSN Original Community Setup Material | Source-controlled in gmfn_mvp/docs | Document date: 2026-09-14
 Use this file when you do not want to send a full audience copy. The master bank remains the full source. The audience copies are detailed reference packs. These pick lists are the first-send versions for specific conversations.
 
 Always check the verified self-service guide before claiming a feature is live, complete or ready for handover.

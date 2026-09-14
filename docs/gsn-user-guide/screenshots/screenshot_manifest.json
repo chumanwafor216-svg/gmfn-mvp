@@ -1,0 +1,112 @@
+[
+  {
+    "slug": "dashboard",
+    "route": "/app/dashboard",
+    "screenshot": "screenshots/2026-09-13_dashboard.png",
+    "expected_text": "Dashboard",
+    "expected_text_found": true,
+    "captured_at": "2026-09-13T17:17:25.526Z",
+    "data": "mocked demo data, no production data",
+    "title": "GSN",
+    "error": ""
+  },
+  {
+    "slug": "community-home",
+    "route": "/app/community",
+    "screenshot": "screenshots/2026-09-13_community-home.png",
+    "expected_text": "Community",
+    "expected_text_found": true,
+    "captured_at": "2026-09-13T17:17:28.503Z",
+    "data": "mocked demo data, no production data",
+    "title": "GSN",
+    "error": ""
+  },
+  {
+    "slug": "marketplace",
+    "route": "/app/marketplace",
+    "screenshot": "screenshots/2026-09-13_marketplace.png",
+    "expected_text": "Marketplace",
+    "expected_text_found": true,
+    "captured_at": "2026-09-13T17:17:31.670Z",
+    "data": "mocked demo data, no production data",
+    "title": "GSN",
+    "error": ""
+  },
+  {
+    "slug": "shop-control",
+    "route": "/app/shop-control",
+    "screenshot": "screenshots/2026-09-13_shop-control.png",
+    "expected_text": "Shop",
+    "expected_text_found": true,
+    "captured_at": "2026-09-13T17:17:34.547Z",
+    "data": "mocked demo data, no production data",
+    "title": "GSN",
+    "error": ""
+  },
+  {
+    "slug": "shop-assets",
+    "route": "/app/shop-assets",
+    "screenshot": "screenshots/2026-09-13_shop-assets.png",
+    "expected_text": "Shop",
+    "expected_text_found": true,
+    "captured_at": "2026-09-13T17:17:37.386Z",
+    "data": "mocked demo data, no production data",
+    "title": "GSN",
+    "error": ""
+  },
+  {
+    "slug": "demandbox",
+    "route": "/app/demand-box",
+    "screenshot": "screenshots/2026-09-13_demandbox.png",
+    "expected_text": "DemandBox",
+    "expected_text_found": true,
+    "captured_at": "2026-09-13T17:17:40.306Z",
+    "data": "mocked demo data, no production data",
+    "title": "GSN",
+    "error": ""
+  },
+  {
+    "slug": "bulletin-bridge",
+    "route": "/app/whatsapp-bridge",
+    "screenshot": "screenshots/2026-09-13_bulletin-bridge.png",
+    "expected_text": "Community Domain Bulletin Bridge",
+    "expected_text_found": true,
+    "captured_at": "2026-09-13T17:17:43.153Z",
+    "data": "mocked demo data, no production data",
+    "title": "GSN",
+    "error": ""
+  },
+  {
+    "slug": "trust-passport",
+    "route": "/app/trust",
+    "screenshot": "screenshots/2026-09-13_trust-passport.png",
+    "expected_text": "Trust",
+    "expected_text_found": true,
+    "captured_at": "2026-09-13T17:17:45.960Z",
+    "data": "mocked demo data, no production data",
+    "title": "GSN",
+    "error": ""
+  },
+  {
+    "slug": "trustslip",
+    "route": "/app/trust-slip",
+    "screenshot": "screenshots/2026-09-13_trustslip.png",
+    "expected_text": "TrustSlip",
+    "expected_text_found": true,
+    "captured_at": "2026-09-13T17:17:48.848Z",
+    "data": "mocked demo data, no production data",
+    "title": "GSN",
+    "error": ""
+  },
+  {
+    "slug": "public-trustslip",
+    "route": "/t/TS-DEMO-SELF-SERVICE",
+    "screenshot": "screenshots/2026-09-13_public-trustslip.png",
+    "expected_text": "TrustSlip",
+    "expected_text_found": true,
+    "captured_at": "2026-09-13T17:17:51.647Z",
+    "data": "mocked demo data, no production data",
+    "title": "GSN",
+    "error": ""
+  }
+]

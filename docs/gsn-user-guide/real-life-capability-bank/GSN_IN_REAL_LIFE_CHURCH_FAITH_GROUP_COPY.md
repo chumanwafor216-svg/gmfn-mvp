@@ -1,5 +1,8 @@
-# GSN in Real Life: Church and Faith Group Copy
+# GSN Community Setup Pack: Church and Faith Group Real-Life Copy (2026-09-14)
 
+Document date: 2026-09-14
+Pack: GSN Community Setup Pack
+Authenticity mark: GSN Original Community Setup Material | Source-controlled in gmfn_mvp/docs | Document date: 2026-09-14
 Practical ways GSN helps communities organise, preserve value and create opportunity
 
 Linked setup/status authority: [../GSN_SELF_SERVICE_USER_GUIDE.md](../GSN_SELF_SERVICE_USER_GUIDE.md)
