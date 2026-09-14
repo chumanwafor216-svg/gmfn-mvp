@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta, timezone
 from typing import List
 
@@ -218,6 +219,110 @@ def _visible_user_ids_for_marketplace_requests(
     return visible_ids
 
 
+_HANDLE_PATTERN = re.compile(r"@([A-Za-z0-9][A-Za-z0-9_.-]{2,63})")
+
+
+def _safe_text(value: object) -> str:
+    return str(value or "").strip()
+
+
+def _request_text(row: MarketplaceRequest) -> str:
+    return " ".join(
+        part
+        for part in [
+            _safe_text(getattr(row, "title", None)),
+            _safe_text(getattr(row, "description", None)),
+            _safe_text(getattr(row, "category", None)),
+            _safe_text(getattr(row, "area", None)),
+        ]
+        if part
+    )
+
+
+def _is_ask_community_request(row: MarketplaceRequest) -> bool:
+    category = _safe_text(getattr(row, "category", None)).lower()
+    description = _safe_text(getattr(row, "description", None)).lower()
+    return (
+        category in {"community ask", "ask community"}
+        or "community ask posted through demandbox" in description
+    )
+
+
+def _request_source(row: MarketplaceRequest) -> str:
+    return "ask_community" if _is_ask_community_request(row) else "demand_box"
+
+
+def _request_source_label(row: MarketplaceRequest) -> str:
+    return "Ask Community" if _request_source(row) == "ask_community" else "DemandBox"
+
+
+def _request_need_type(row: MarketplaceRequest) -> str:
+    return (
+        _safe_text(getattr(row, "category", None))
+        or _safe_text(getattr(row, "area", None))
+        or "General"
+    )
+
+
+def _mentioned_handles(row: MarketplaceRequest) -> list[str]:
+    found: list[str] = []
+    seen: set[str] = set()
+    for match in _HANDLE_PATTERN.finditer(_request_text(row)):
+        token = match.group(1).strip(".,;:!?)]}")
+        if not token:
+            continue
+        handle = f"@{token}"
+        key = handle.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        found.append(handle)
+        if len(found) >= 8:
+            break
+    return found
+
+
+def _request_queue_keys(
+    row: MarketplaceRequest,
+    *,
+    current_user_id: int | None,
+) -> list[str]:
+    keys: list[str] = []
+    is_mine = current_user_id is not None and int(row.user_id) == int(current_user_id)
+    if is_mine:
+        keys.append("mine")
+    else:
+        keys.append("for_me")
+    if _is_ask_community_request(row):
+        keys.append("ask_community")
+    if _normalize_urgency(getattr(row, "urgency", None)) == "high":
+        keys.append("urgent")
+    need_key = _request_need_type(row).strip().lower().replace(" ", "_")
+    if need_key:
+        keys.append(f"need_type:{need_key}")
+    return keys
+
+
+def _request_routing_status(row: MarketplaceRequest) -> str:
+    return "handle_text_detected" if _mentioned_handles(row) else "community_queue"
+
+
+def _request_routing_hint(row: MarketplaceRequest) -> str:
+    if _mentioned_handles(row):
+        return "Handle text was detected, but direct person delivery still needs governed routing."
+    if _is_ask_community_request(row):
+        return "Visible in the Ask Community lane and the wider community queue."
+    return "Visible through the community queue."
+
+
+def _request_action_url(row: MarketplaceRequest) -> str:
+    clan_id = getattr(row, "clan_id", None)
+    queue = "ask_community" if _is_ask_community_request(row) else "open"
+    if clan_id:
+        return f"/app/demand-box?clan_id={int(clan_id)}&queue={queue}"
+    return f"/app/demand-box?queue={queue}"
+
+
 def _to_out(
     db: Session,
     row: MarketplaceRequest,
@@ -257,6 +362,13 @@ def _to_out(
         requester_trust_band=getattr(owner, "trust_band", None),
         is_mine=is_mine,
         mine=is_mine,
+        source=_request_source(row),
+        source_label=_request_source_label(row),
+        need_type=_request_need_type(row),
+        queue_keys=_request_queue_keys(row, current_user_id=current_user_id),
+        mentioned_handles=_mentioned_handles(row),
+        routing_status=_request_routing_status(row),
+        routing_hint=_request_routing_hint(row),
     )
 
 
@@ -325,7 +437,7 @@ def create_marketplace_request(
             kind="demand_new",
             title="New request near you",
             message=f"{current_user.email} needs: {payload.title}",
-            action_url="/app/demand-box",
+            action_url=_request_action_url(row),
             action_label="View request",
         )
 
@@ -335,7 +447,7 @@ def create_marketplace_request(
         kind="demand_posted",
         title="Your request is live",
         message=f"Your request '{payload.title}' is now visible.",
-        action_url="/app/demand-box",
+        action_url=_request_action_url(row),
         action_label="View your post",
     )
 

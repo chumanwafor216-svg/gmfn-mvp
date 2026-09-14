@@ -105,5 +105,12 @@ class MarketplaceRequestOut(BaseModel):
     requester_trust_band: Optional[str] = None
     is_mine: bool = False
     mine: bool = False
+    source: str = "demand_box"
+    source_label: str = "DemandBox"
+    need_type: str = "General"
+    queue_keys: list[str] = Field(default_factory=list)
+    mentioned_handles: list[str] = Field(default_factory=list)
+    routing_status: str = "community_queue"
+    routing_hint: str = "Visible through the community queue."
 
     model_config = ConfigDict(from_attributes=True)

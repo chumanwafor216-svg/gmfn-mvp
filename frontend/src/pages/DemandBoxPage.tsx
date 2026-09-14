@@ -63,6 +63,13 @@ type DemandRow = {
   requester_trust_band?: string | null;
   is_mine?: boolean;
   mine?: boolean;
+  source?: string | null;
+  source_label?: string | null;
+  need_type?: string | null;
+  queue_keys?: string[] | null;
+  mentioned_handles?: string[] | null;
+  routing_status?: string | null;
+  routing_hint?: string | null;
 };
 
 type NoticeTone = "success" | "error";
@@ -393,6 +400,7 @@ function urgencyLabel(value?: string | null): string {
 }
 
 function isUrgentDemand(row: DemandRow): boolean {
+  if (queueKeysOf(row).includes("urgent")) return true;
   if (safeStr(row?.urgency).toLowerCase() === "high") return true;
 
   const expiresAt = safeStr(row?.expires_at);
@@ -406,13 +414,35 @@ function isUrgentDemand(row: DemandRow): boolean {
 }
 
 function categoryLabel(row: DemandRow): string {
-  return firstTruthy(row?.category, row?.area, "General");
+  return firstTruthy(row?.need_type, row?.category, row?.area, "General");
+}
+
+function queueKeysOf(row: DemandRow): string[] {
+  return Array.isArray(row?.queue_keys)
+    ? row.queue_keys.map((key) => safeStr(key).toLowerCase()).filter(Boolean)
+    : [];
+}
+
+function mentionedHandlesOf(row: DemandRow): string[] {
+  return Array.isArray(row?.mentioned_handles)
+    ? row.mentioned_handles.map(safeStr).filter(Boolean).slice(0, 3)
+    : [];
+}
+
+function routingLabel(row: DemandRow): string {
+  if (mentionedHandlesOf(row).length > 0) return "Handle typed";
+  if (isAskCommunityDemand(row)) return "Ask lane";
+  return "Community queue";
 }
 
 function isAskCommunityDemand(row: DemandRow): boolean {
+  const queueKeys = queueKeysOf(row);
+  const source = safeStr(row?.source).toLowerCase();
   const category = safeStr(row?.category).toLowerCase();
   const description = safeStr(row?.description).toLowerCase();
   return (
+    queueKeys.includes("ask_community") ||
+    source === "ask_community" ||
     category === "community ask" ||
     category === "ask community" ||
     description.includes("community ask posted through demandbox")
@@ -1192,6 +1222,7 @@ export default function DemandBoxPage() {
     const canClose = options.canClose === true;
     const trustPosture = requesterTrustPostureLabel(row);
     const fromAskCommunity = isAskCommunityDemand(row);
+    const mentionedHandles = mentionedHandlesOf(row);
 
     return (
       <div key={rowKey} style={recordCard()}>
@@ -1242,6 +1273,12 @@ export default function DemandBoxPage() {
             Source: {fromAskCommunity ? "Ask Community" : "DemandBox"}
           </span>
           <span style={badge(false)}>Need type: {categoryLabel(row)}</span>
+          <span data-gsn-demand-routing-chip="true" style={badge(mentionedHandles.length > 0)}>
+            Route: {routingLabel(row)}
+          </span>
+          {mentionedHandles.length > 0 ? (
+            <span style={badge(false)}>Typed tag: {mentionedHandles.join(", ")}</span>
+          ) : null}
           {scope === "community" ? (
             <span style={badge(false)}>By: {requesterName(row)}</span>
           ) : null}
@@ -2466,7 +2503,7 @@ export default function DemandBoxPage() {
             <div style={{ padding: "0 14px 14px", display: "grid", gap: 10 }}>
               <div style={{ ...innerCard("#FCFEFF"), display: "grid", gap: 8 }}>
                 <div style={{ color: "#0B1F33", fontWeight: 900 }}>
-                  Current pilot sorting uses the need-type tag, urgency, owner, and Ask Community source.
+                  Current pilot sorting uses backend queue keys, need-type tag, urgency, owner, Ask Community source, and typed @handle text.
                 </div>
                 <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.55 }}>
                   Direct member handles, routed assignments, ranked queues, moderation rules, and true backend paging still need a governed data-model slice before very large communities use DemandBox at full scale.

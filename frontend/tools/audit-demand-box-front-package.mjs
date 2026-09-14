@@ -6,7 +6,9 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const pageFile = "src/pages/DemandBoxPage.tsx";
+const apiFile = "src/lib/api.ts";
 const source = readFileSync(join(frontendRoot, pageFile), "utf8");
+const apiSource = readFileSync(join(frontendRoot, apiFile), "utf8");
 const findings = [];
 
 function lineAt(index) {
@@ -26,6 +28,17 @@ function requirePattern(pattern, message) {
   const index = source.search(pattern);
   if (index === -1) {
     addFinding(-1, message, pattern.toString());
+  }
+}
+
+function requireApiPattern(pattern, message) {
+  if (apiSource.search(pattern) === -1) {
+    findings.push({
+      file: apiFile,
+      line: 1,
+      message,
+      text: pattern.toString().replace(/\s+/g, " ").slice(0, 260),
+    });
   }
 }
 
@@ -131,6 +144,26 @@ function requirePattern(pattern, message) {
     "DemandBox must expose Ask Community as a separate visible lane.",
   ],
   [
+    /function queueKeysOf\(row: DemandRow\): string\[\][\s\S]*?queue_keys/,
+    "DemandBox must consume backend queue keys for large-community sorting.",
+  ],
+  [
+    /queueKeysOf\(row\)\.includes\("urgent"\)/,
+    "DemandBox urgent lane must respect backend queue keys before local fallbacks.",
+  ],
+  [
+    /queueKeys\.includes\("ask_community"\)/,
+    "DemandBox Ask Community lane must respect backend queue keys before local fallbacks.",
+  ],
+  [
+    /mentioned_handles\?: string\[\] \| null/,
+    "DemandBox must expose typed handle metadata without pretending direct delivery is complete.",
+  ],
+  [
+    /routing_status\?: string \| null/,
+    "DemandBox must expose routing status metadata for queue clarity.",
+  ],
+  [
     /const categoryBuckets = useMemo\(\(\) => \{[\s\S]*?categoryLabel\(row\)[\s\S]*?urgentCount: rows\.filter\(isUrgentDemand\)\.length/,
     "DemandBox must group open rows by recorded demand category.",
   ],
@@ -219,6 +252,21 @@ function requirePattern(pattern, message) {
     "DemandBox dashboard escape must keep its stable debug id.",
   ],
 ].forEach(([pattern, message]) => requirePattern(pattern, message));
+
+[
+  [
+    /queue_keys\?: string\[\] \| null/,
+    "API request type must include backend queue keys.",
+  ],
+  [
+    /mentioned_handles\?: string\[\] \| null/,
+    "API request type must include typed handle metadata.",
+  ],
+  [
+    /routing_status\?: string \| null/,
+    "API request type must include routing status metadata.",
+  ],
+].forEach(([pattern, message]) => requireApiPattern(pattern, message));
 
 [
   [

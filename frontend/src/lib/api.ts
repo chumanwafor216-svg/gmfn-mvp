@@ -7695,6 +7695,13 @@ export type MarketplaceRequestItem = {
 
   is_mine?: boolean;
   mine?: boolean;
+  source?: string | null;
+  source_label?: string | null;
+  need_type?: string | null;
+  queue_keys?: string[] | null;
+  mentioned_handles?: string[] | null;
+  routing_status?: string | null;
+  routing_hint?: string | null;
 };
 
 export async function listMarketplaceRequests(params?: {
