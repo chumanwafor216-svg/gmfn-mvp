@@ -161359,3 +161359,12 @@ Operational note:
 - Guardrail changed: `frontend/tools/audit-shop-control-button-inventory.mjs` now cages the compact checklist, live Opportunity Engine row wiring, hidden desktop experiment details on phone, and the non-repetition rule for compact sub-tabs.
 - Truth boundary: this is presentation polish only. It does not change analytics counts, DemandBox, Spotlight counting, trade evidence, trust scoring, backend logic, or billing entitlement.
 - Verification passed: targeted Shop Control audit, Spotlight system feed audit, phone Playwright checks across all Advanced Analytics sub-tabs at 390px, whitespace check, and `npm --prefix frontend run build`. The broader protected button freeze still has unrelated existing failures in `frontend/src/pages/MyGMFNAndIPage.tsx`.
+
+## 2026-09-14 - My GSN and I protected audit repair
+
+- Status: Frontend member-entry audit repair implemented and verified; deployment triggered from this slice.
+- Owner trigger: after Shop Control deployment, the wider protected button freeze still failed on `MyGMFNAndIPage.tsx` for one raw external setup-pack link block and two drifted capability-story strings.
+- Frontend route affected: `/app/my-gmfn-and-i` through `frontend/src/pages/MyGMFNAndIPage.tsx`.
+- Product behavior changed: setup-pack download cards now use `StableCtaLink` with traceable debug IDs; ROSCA is described as its own Marketplace path with Finance as Community Money; Evidence-Backed Buying and Selling restores the fuller buyer/seller/supplier trust decision story.
+- Truth boundary: this is link stability and public guide wording repair only. It does not change auth, membership, routes, billing, marketplace data, ROSCA backend behavior, or TrustSlip records.
+- Verification passed: `npm --prefix frontend run audit:member-entry-actions`; global raw action element audit; `npm --prefix frontend run audit:protected-button-freeze`; whitespace check; and `npm --prefix frontend run build`.

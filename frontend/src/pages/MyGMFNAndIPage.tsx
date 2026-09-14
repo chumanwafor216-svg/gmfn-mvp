@@ -638,13 +638,13 @@ const CAPABILITY_MAP_DETAILS: Record<number, CapabilityMapDetail> = {
   },
   7: {
     category: "Buying & Selling",
-    realWorld: "A seller's products, services, media, contact number, and proof often live in scattered chats and screenshots.",
-    danger: "Buyers may not know whether the item, owner, contact route, and verification signal belong together.",
-    decision: "GSN gives shops, services, products, media, Spotlight, contacts, and verification entry points one organised public home.",
-    tools: "Public Shop -> Shop Gallery -> Spotlight -> WhatsApp/Phone Contact -> Merchant Verification.",
-    where: "Shop -> Public Shop / Gallery / Spotlight; Marketplace -> Public Shops.",
-    evidence: "Public shop link, shelf items, media, owner identity, contact path, Spotlight record, and verification entry point.",
-    summary: "Gives shops, services, products, media, Spotlight, contacts, and verification entry points one organised public home.",
+    realWorld: "Buyers, sellers, suppliers, and service providers often meet through messages, referrals, or marketplace posts with thin identity context.",
+    danger: "A good-looking offer can hide a weak seller, a false buyer, an unreliable supplier, or a trade that leaves no usable record afterwards.",
+    decision: "GSN lets both sides read shop identity, member context, TrustSlip evidence, and trade history before committing.",
+    tools: "Public Shop -> Merchant Verification -> TrustSlip -> Merchant Release Rail -> Shop Diary -> Vault.",
+    where: "Marketplace -> Members & Trade; Shop -> Public Shop / Vault; Trust -> TrustSlip.",
+    evidence: "Shop identity, shelf activity, followers, trade records, verification links, and public shop record.",
+    summary: "Lets both sides read shop identity, member context, TrustSlip evidence, and trade history before committing.",
   },
   8: {
     category: "Visibility & Opportunity",
@@ -661,8 +661,8 @@ const CAPABILITY_MAP_DETAILS: Record<number, CapabilityMapDetail> = {
     realWorld: "Communities support members, collect contributions, back requests, run welfare, and sometimes manage savings-circle expectations.",
     danger: "Without records, help becomes pressure, repayment becomes hearsay, and contribution history disappears when decisions matter.",
     decision: "GSN makes welfare, support, contribution, repayment, and responsibility records easier to review without turning GSN into a bank.",
-    tools: "Support Request -> Guarantor/Supporter Context -> Finance Records -> Contribution/ROSCA Context -> TrustPassport.",
-    where: "Finance; Loans / Support; Trust -> Trust Passport; Community -> Welfare or contribution records where enabled.",
+    tools: "ROSCA Desk -> Contribution Cycle -> Payout Record -> Member Evidence.",
+    where: "Marketplace -> ROSCA; Finance -> Community Money.",
     evidence: "Amount, purpose, duration, supporter responsibility, contribution event, repayment context, and community source.",
     summary: "Makes welfare, support, contribution, repayment, and responsibility records easier to review without turning GSN into a bank.",
   },
@@ -2926,21 +2926,26 @@ export default function MyGMFNAndIPage() {
                       "QR download index",
                       "Scan or send the phone-friendly pack index.",
                       "https://raw.githubusercontent.com/chumanwafor216-svg/gmfn-mvp/main/docs/community-setup-pack/GSN_COMMUNITY_SETUP_QR_DOWNLOAD_INDEX_2026-09-14.pdf",
+                      "my-gmfn.setup-pack.qr-download-index",
                     ],
                     [
                       "Core capability source",
                       "Use the stable core set for public and app-facing explanation.",
                       "https://raw.githubusercontent.com/chumanwafor216-svg/gmfn-mvp/main/docs/community-setup-pack/GSN_CORE_CAPABILITY_SET_2026-09-14.pdf",
+                      "my-gmfn.setup-pack.core-capability-source",
                     ],
                     [
                       "Full capability bank",
                       "Open only for setup teams and people who need the deeper 44-module map.",
                       "https://raw.githubusercontent.com/chumanwafor216-svg/gmfn-mvp/main/docs/gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_MASTER_CAPABILITY_BANK.pdf",
+                      "my-gmfn.setup-pack.full-capability-bank",
                     ],
-                  ] as const).map(([label, description, href]) => (
-                    <a
+                  ] as const).map(([label, description, href, debugId]) => (
+                    <StableCtaLink
                       key={label}
-                      href={href}
+                      to={href}
+                      kind="secondary"
+                      debugId={debugId}
                       target="_blank"
                       rel="noreferrer"
                       style={{
@@ -2971,7 +2976,7 @@ export default function MyGMFNAndIPage() {
                       >
                         Open pack
                       </span>
-                    </a>
+                    </StableCtaLink>
                   ))}
                 </div>
 
