@@ -66,7 +66,7 @@ assertContains(
 );
 
 assertContains(
-  /const IDENTITY_PAGE_UI_STORAGE_KEY = "gmfn\.identityPage\.sections\.v3";/,
+  /const IDENTITY_PAGE_UI_STORAGE_KEY = "gmfn\.identityPage\.sections\.v4";/,
   "Identity Integrity must bump the section-state storage key when default exposure changes so old open layouts do not persist on pilot phones."
 );
 assertContains(
