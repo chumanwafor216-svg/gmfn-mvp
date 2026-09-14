@@ -1,4 +1,4 @@
-﻿import React, { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import React, { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import NextActionGuide, {
   type NextActionGuideItem,
@@ -536,55 +536,33 @@ function publicCapabilityIconIos(): React.CSSProperties {
 }
 
 const PUBLIC_CAPABILITY_LINES: Record<number, string> = {
-  1: "Lets a seller check identity, community, TrustSlip, and current evidence before releasing goods or credit.",
-  2: "Keeps shops, buyers, followers, shelf items, and public shop records tied to visible community evidence.",
-  3: "Lets a member or shop carry a readable trust record beyond one marketplace or local community.",
-  4: "Surfaces weak evidence, missing witness renewal, inactive records, and caution signs before people act.",
-  5: "Gives approved shop updates a clearer place to be seen while keeping the shop record and media attached.",
-  6: "Lets better recorded trust earn better reach while still showing the limits of the record.",
-  7: "Keeps one public shop identity connected across marketplaces, shelves, spotlight, WhatsApp, and verification.",
-  8: "Turns support requests into recorded drafts with amount, purpose, duration, supporters, and fit signals.",
-  9: "Shows who may back a support request and keeps help connected to visible responsibility.",
-  10: "Gives urgent support a faster evidence path through identity, community, TrustSlip, and confirmation checks.",
-  11: "Helps families, markets, churches, unions, and diaspora groups read trust across distance.",
-  12: "Adds GSN records around ROSCA savings circles so contribution cycles are easier to track.",
-  13: "Turns contributions, support, repayment, and community activity into records people can later review.",
-  14: "Keeps a member's identity, community role, and trust trail usable when they move or reconnect.",
-  15: "Lets a member carry a public GSN ID, TrustSlip, credential, and Trust Passport context together.",
-  16: "Keeps earned evidence from staying trapped in one street, shop, phone contact, or local circle.",
-  17: "Gives one shop a public home for shelf items, spotlight, WhatsApp, verification, and trust signals.",
-  18: "Helps informal service work become visible through demand, evidence, community context, and follow-up.",
-  19: "Helps work decisions read public identity, record strength, and community evidence before commitment.",
-  20: "Routes Ask Community and local needs into DemandBox so the bulletin stays official and demand stays structured.",
-  21: "Connects identity, marketplace activity, finance evidence, DemandBox, trust records, and analytics into one working layer.",
-  22: "Turns savings, repayment, business, retirement, and personal goals into clearer commitments and follow-through.",
-  23: "Gives schools, churches, NGOs, cooperatives, markets, families, and associations a structured domain for members, bulletins, meetings, attendance, documents, roles, evidence, policies, and public claims.",
+  1: "Gives a real group a recognised GSN identity beyond WhatsApp names, paper lists, and one person's phone.",
+  2: "Separates leaders, admins, members, visitors, and public readers so access follows responsibility.",
+  3: "Uses invite and QR paths so people can enter the right setup, member, document, or community flow without typing links.",
+  4: "Keeps official notices, acknowledgement, availability, and follow-up evidence from being buried in chat noise.",
+  5: "Connects meetings, attendance, decisions, files, action owners, and handover memory into one readable trail.",
+  6: "Lets members carry bounded TrustPassport, TrustSlip, credential, identity, and verification context without calling trust automatic proof.",
+  7: "Gives shops, services, products, media, Spotlight, contacts, and verification entry points one organised public home.",
+  8: "Routes needs, offers, requests, and local demand into DemandBox while keeping official bulletin space protected.",
+  9: "Makes welfare, support, contribution, repayment, and responsibility records easier to review without turning GSN into a bank.",
+  10: "Helps leaders read attention, demand, participation, Spotlight movement, shop activity, and opportunity signals without mistaking signals for proof.",
+  11: "Packages setup papers, QR download sheets, public links, private files, and approved bridges so people receive the right material.",
+  12: "Keeps community identity, roles, documents, decisions, evidence, setup history, and handover usable after leaders or devices change.",
 };
 
 const CAPABILITY_ICON_NAMES: Record<number, GsnIconName> = {
-  1: "shield",
-  2: "shop",
-  3: "globe",
-  4: "alert",
-  5: "spark",
-  6: "spark",
+  1: "home",
+  2: "shield",
+  3: "qr",
+  4: "document",
+  5: "check",
+  6: "id",
   7: "shop",
-  8: "wallet",
-  9: "community",
-  10: "alert",
-  11: "globe",
-  12: "wallet",
-  13: "document",
-  14: "globe",
-  15: "id",
-  16: "chart",
-  17: "shop",
-  18: "briefcase",
-  19: "user",
-  20: "document",
-  21: "community",
-  22: "check",
-  23: "home",
+  8: "search",
+  9: "wallet",
+  10: "chart",
+  11: "document",
+  12: "community",
 };
 
 const CAPABILITY_MAP_CATEGORIES: readonly CapabilityMapCategory[] = [
@@ -599,234 +577,124 @@ const CAPABILITY_MAP_CATEGORIES: readonly CapabilityMapCategory[] = [
 
 const CAPABILITY_MAP_DETAILS: Record<number, CapabilityMapDetail> = {
   1: {
-    category: "Buying & Selling",
-    realWorld: "Every day, people release goods, provide services, or extend credit to someone they only partly know.",
-    danger: "The buyer may be genuine, but the seller can still lose stock, time, cash flow, or standing when the decision rests only on promises.",
-    decision: "GSN changes the question from \"Can I trust this person?\" to \"What evidence already exists before I release value?\"",
-    tools: "Community Verification -> Merchant Verification -> TrustSlip -> Protected Trade Record -> Merchant Release Rail.",
-    where: "Marketplace -> Members & Trade; Trust -> TrustSlip; Shop -> Public Shop.",
-    evidence: "Merchant Release Record, Trade Evidence, Community Context, Trust Event, and future TrustSlip evidence.",
-    summary: "Reduces blind release by making the seller look for evidence before accepting payment risk or credit risk.",
+    category: "Community & Membership",
+    realWorld: "Communities often exist as WhatsApp names, paper lists, informal leaders, and records kept on one person's phone.",
+    danger: "When the phone, leader, or chat changes, authority, membership, public claims, and history become unclear.",
+    decision: "GSN gives the group a recognised identity space before announcements, meetings, shops, support, or public claims depend on it.",
+    tools: "Community Domain -> Community Profile -> Public Community Record -> Setup Pack -> Handover Notes.",
+    where: "Community -> Community Home / Community Domain; Profile -> My GSN and I; Setup Pack -> Core capabilities.",
+    evidence: "Community name, owner context, member boundary, setup material, public identity, and handover trail.",
+    summary: "Gives a real group a recognised GSN identity beyond WhatsApp names, paper lists, and one person's phone.",
   },
   2: {
-    category: "Buying & Selling",
-    realWorld: "Buyers, sellers, suppliers, and service providers often meet through messages, referrals, or marketplace posts with thin identity context.",
-    danger: "A good-looking offer can hide a weak seller, a false buyer, an unreliable supplier, or a trade that leaves no usable record afterwards.",
-    decision: "GSN lets both sides read shop identity, member context, TrustSlip evidence, and trade history before committing.",
-    tools: "Public Shop -> Merchant Verification -> TrustSlip -> Merchant Release Rail -> Shop Diary -> Vault.",
-    where: "Marketplace -> Members & Trade; Shop -> Public Shop / Vault; Trust -> TrustSlip.",
-    evidence: "Shop identity, shelf activity, followers, trade records, verification links, and public shop record.",
-    summary: "Turns buying and selling into an evidence-backed decision instead of a confidence guess.",
+    category: "Identity & Verification",
+    realWorld: "Open groups collect strangers, duplicate names, silent members, admins with too much power, and visitors nobody can place.",
+    danger: "If everyone looks the same, official notices, private evidence, role authority, and member safety become weak.",
+    decision: "GSN separates leaders, admins, members, visitors, and public readers so access follows responsibility.",
+    tools: "Join Path -> Invite/QR Entry -> Member Review -> Admin Tools -> Role-Aware Surfaces.",
+    where: "Community -> Join / Members / Admin; Profile -> My Communities.",
+    evidence: "Entry path, membership status, role context, approval posture, and visible action boundary.",
+    summary: "Separates leaders, admins, members, visitors, and public readers so access follows responsibility.",
   },
   3: {
-    category: "Buying & Selling",
-    realWorld: "A person may be trusted in one street, church, union, market, or family circle but unknown in another.",
-    danger: "Without portable context, good members restart from zero while bad actors can move to a new circle with no visible history.",
-    decision: "GSN carries identity and community evidence across circles while keeping each community boundary readable.",
-    tools: "GSN ID -> Community Record -> Public Shop -> TrustSlip -> Community Credential.",
-    where: "Marketplace -> Members & Trade; Community -> Community Record; Trust -> TrustSlip.",
-    evidence: "Cross-community identity trail, member credential, shop record, and community-scoped confirmation.",
-    summary: "Lets trade travel with context without pretending every community has made the same judgement.",
+    category: "Community & Membership",
+    realWorld: "Manual onboarding makes people type links, search for files, ask the same questions, or enter the wrong flow.",
+    danger: "Bad links and manual transfer create confusion before the community can even trust the setup process.",
+    decision: "GSN uses invite and QR paths so people can enter the intended setup, member, document, or community flow quickly.",
+    tools: "Invite Links -> QR Entry -> QR Download Index -> Public/Member Link Boundary.",
+    where: "Community -> Invite / Join; Setup Pack -> QR Download Index; Public links -> Member entry.",
+    evidence: "Invite path, QR target, document target, audience label, and access boundary.",
+    summary: "Uses invite and QR paths so people can enter the right setup, member, document, or community flow without typing links.",
   },
   4: {
-    category: "Security & Privacy",
-    realWorld: "Fraud often looks ordinary until value, access, or public confidence has already moved.",
-    danger: "By the time the pattern is clear, the victim may have lost goods, money, time, or social standing.",
-    decision: "GSN surfaces weak evidence, missing renewal, inactive records, and boundary notes before people act.",
-    tools: "Trust Reading -> TrustSlip Verify -> Community Member Verify -> Trust Passport boundary notes.",
-    where: "Trust -> TrustSlip; Marketplace -> Members & Trade; Community -> Verify Member.",
-    evidence: "Visible posture, caution notes, missing evidence signals, and verification limits.",
-    summary: "Moves caution to the front of the decision without pretending GSN can guarantee future behaviour.",
+    category: "Community & Membership",
+    realWorld: "Important notices disappear under greetings, jokes, debates, repeats, and private replies.",
+    danger: "Leaders may not know who saw the announcement, who is coming, who is available, or who needs follow-up.",
+    decision: "GSN keeps official notices and response evidence in a clearer lane instead of mixing them with ordinary chat noise.",
+    tools: "Official Bulletin -> Acknowledgement -> Availability -> Response Signals -> Follow-Up Path.",
+    where: "Community -> Bulletin / Ask Community; Dashboard -> What Matters Now.",
+    evidence: "Notice source, acknowledgement, availability, response path, timestamp, and follow-up need.",
+    summary: "Keeps official notices, acknowledgement, availability, and follow-up evidence from being buried in chat noise.",
   },
   5: {
-    category: "Visibility & Opportunity",
-    realWorld: "A useful shop update, service offer, or opportunity can disappear before the right people see it.",
-    danger: "Attention can reward noise, timing, or loud posting instead of recorded value and accountable identity.",
-    decision: "GSN gives approved updates a clearer place to be seen while separating visibility from verification.",
-    tools: "Spotlight -> Public Shop -> Marketplace Broadcast -> Shop Gallery.",
-    where: "Shop -> Spotlight; Marketplace -> Public Shops; Dashboard -> Spotlight preview.",
-    evidence: "Published spotlight, shop owner identity, community placement, media record, and timestamp.",
-    summary: "Helps recorded value reach people without turning publicity into a trust guarantee.",
+    category: "Community & Membership",
+    realWorld: "Meetings lose agenda, attendance, decisions, files, action owners, and reasons for past choices.",
+    danger: "New leaders repeat old work, members argue from memory, and serious decisions become impossible to trace.",
+    decision: "GSN connects meetings, attendance, decisions, files, action owners, and handover memory into one readable trail.",
+    tools: "Meeting Notice -> Attendance / Sign-In -> Minutes -> Action Owners -> Document Links -> Handover Record.",
+    where: "Community -> Meetings / Bulletin / Documents; Setup Pack -> Route and recovery map.",
+    evidence: "Attendance, meeting record, decision notes, document links, action ownership, and handover context.",
+    summary: "Connects meetings, attendance, decisions, files, action owners, and handover memory into one readable trail.",
   },
   6: {
-    category: "Visibility & Opportunity",
-    realWorld: "Serious members can be harder to find than louder members when visibility depends only on posting volume.",
-    danger: "Opportunity can flow toward noise while stronger evidence stays hidden from buyers, supporters, and partners.",
-    decision: "GSN lets recorded evidence support reach while still showing the limits of the evidence.",
-    tools: "Evidence signals -> Trust Reading -> Spotlight placement -> Marketplace visibility.",
-    where: "Dashboard -> Market Wisdom; Marketplace -> Public Shops; Trust -> Trust Passport.",
-    evidence: "Trust posture, activity trail, shop status, community context, and current public record.",
-    summary: "Lets stronger recorded evidence influence visibility without confusing reach with certainty.",
+    category: "Trust & Evidence",
+    realWorld: "People may be known locally but still need to present bounded identity and trust context outside that circle.",
+    danger: "Screenshots, nicknames, and informal introductions can expose too much private information or prove too little.",
+    decision: "GSN lets members carry bounded TrustPassport, TrustSlip, credential, identity, and verification context without calling trust automatic proof.",
+    tools: "GSN ID -> TrustPassport -> TrustSlip -> Community Credential -> Verification Boundary.",
+    where: "Trust -> Trust Passport / TrustSlip; Community -> Member Verify; Profile -> Identity.",
+    evidence: "GSN ID, credential, TrustSlip code, TrustPassport context, community source, and current verification limit.",
+    summary: "Lets members carry bounded TrustPassport, TrustSlip, credential, identity, and verification context without calling trust automatic proof.",
   },
   7: {
-    category: "Visibility & Opportunity",
-    realWorld: "A merchant may sell across several communities while still relying on scattered screenshots, chats, and repeated introductions.",
-    danger: "Customers cannot easily tell whether the shop, owner, shelf, and contact path belong together.",
-    decision: "GSN gives one merchant a controlled shop identity that can travel with community and verification context.",
-    tools: "Public Shop -> Shop Gallery -> Spotlight -> WhatsApp contact -> Merchant Verification.",
-    where: "Shop -> Public Shop; Marketplace -> Public Shops; Trust -> Merchant Verification.",
-    evidence: "One public shop link, shelf items, spotlight media, owner GSN ID, and verification entry points.",
-    summary: "Keeps one shop presence connected across marketplaces while preserving community context.",
+    category: "Buying & Selling",
+    realWorld: "A seller's products, services, media, contact number, and proof often live in scattered chats and screenshots.",
+    danger: "Buyers may not know whether the item, owner, contact route, and verification signal belong together.",
+    decision: "GSN gives shops, services, products, media, Spotlight, contacts, and verification entry points one organised public home.",
+    tools: "Public Shop -> Shop Gallery -> Spotlight -> WhatsApp/Phone Contact -> Merchant Verification.",
+    where: "Shop -> Public Shop / Gallery / Spotlight; Marketplace -> Public Shops.",
+    evidence: "Public shop link, shelf items, media, owner identity, contact path, Spotlight record, and verification entry point.",
+    summary: "Gives shops, services, products, media, Spotlight, contacts, and verification entry points one organised public home.",
   },
   8: {
-    category: "Finance & Support",
-    realWorld: "A person may need money, stock, school fees, emergency support, or working capital before formal finance will listen.",
-    danger: "If amount, purpose, duration, and backing are unclear, support can become blind lending, pressure, or informal begging.",
-    decision: "GSN turns the request into a reviewable decision with purpose, fit, supporters, and repayment context visible.",
-    tools: "Loan Support -> Support Draft -> Fit Check -> Supporter List -> Guarantor Request.",
-    where: "Marketplace -> Loan Support; Loan Support -> Readiness / Suggestions / Workbench.",
-    evidence: "Amount, purpose, duration, repayment plan, fit signal, suggested supporters, and request record.",
-    summary: "Turns support into a visible request people can review before backing it.",
+    category: "Visibility & Opportunity",
+    realWorld: "People need work, goods, services, buyers, stock, or help before the right person sees the request.",
+    danger: "Opportunity is missed when demand stays hidden in private chats or gets pushed into the official bulletin.",
+    decision: "GSN routes needs, offers, requests, and local demand into DemandBox while keeping official bulletin space protected.",
+    tools: "Ask Community -> DemandBox -> Marketplace Needs -> Public Shop -> Response Path.",
+    where: "Marketplace -> DemandBox; Community -> Ask Community; Dashboard -> What Matters Now.",
+    evidence: "Need or offer post, requester context, placement, response path, timestamp, and evidence boundary.",
+    summary: "Routes needs, offers, requests, and local demand into DemandBox while keeping official bulletin space protected.",
   },
   9: {
     category: "Finance & Support",
-    realWorld: "People often want to help someone they know, but they may not know the full responsibility attached to that help.",
-    danger: "Support can become emotional pressure, unclear obligation, or hidden risk for the person standing behind the request.",
-    decision: "GSN helps a supporter read the request, relationship context, responsibility, and trust evidence before saying yes.",
-    tools: "Supporter Check -> Guarantor Inbox -> Trust Passport -> Community Relationship Evidence.",
-    where: "Loan Support -> Guarantor Inbox; Trust -> Trust Passport; Marketplace -> Support Requests.",
-    evidence: "Support invitation, relationship context, trust reading, guarantor decision, and support trail.",
-    summary: "Keeps help connected to responsibility, evidence, and community-backed judgement.",
+    realWorld: "Communities support members, collect contributions, back requests, run welfare, and sometimes manage savings-circle expectations.",
+    danger: "Without records, help becomes pressure, repayment becomes hearsay, and contribution history disappears when decisions matter.",
+    decision: "GSN makes welfare, support, contribution, repayment, and responsibility records easier to review without turning GSN into a bank.",
+    tools: "Support Request -> Guarantor/Supporter Context -> Finance Records -> Contribution/ROSCA Context -> TrustPassport.",
+    where: "Finance; Loans / Support; Trust -> Trust Passport; Community -> Welfare or contribution records where enabled.",
+    evidence: "Amount, purpose, duration, supporter responsibility, contribution event, repayment context, and community source.",
+    summary: "Makes welfare, support, contribution, repayment, and responsibility records easier to review without turning GSN into a bank.",
   },
   10: {
-    category: "Finance & Support",
-    realWorld: "Urgent support decisions often arrive through calls, messages, or relatives before anyone has time to verify the situation.",
-    danger: "A real emergency can be delayed, while a false or unclear request can pull money and attention away from safer decisions.",
-    decision: "GSN shortens uncertainty by putting identity, community confirmation, TrustSlip context, and need record together.",
-    tools: "TrustSlip -> Community Confirmation -> DemandBox -> Support Request -> Identity Record.",
-    where: "Trust -> TrustSlip; Community -> Confirmation; Marketplace -> DemandBox / Support.",
-    evidence: "Urgent need record, member identity, community confirmation, TrustSlip code, and support response.",
-    summary: "Shortens uncertainty in urgent moments while preserving the evidence boundary.",
+    category: "Visibility & Opportunity",
+    realWorld: "Leaders see activity, shop interest, member response, demand, and public attention, but those signals are easy to misread.",
+    danger: "A view, click, chat, or busy screen can be mistaken for a buyer, sale, approval, or guaranteed opportunity.",
+    decision: "GSN helps leaders read attention, demand, participation, Spotlight movement, shop activity, and opportunity signals without mistaking signals for proof.",
+    tools: "Shop Control -> Spotlight Attention -> DemandBox -> Market Wisdom -> Opportunity Engine -> Analytics Summaries.",
+    where: "Shop -> Analytics / Shop Control; Dashboard -> Market Wisdom; Marketplace -> DemandBox.",
+    evidence: "Views, contact taps, demand signals, participation records, shop movement, analytics reading, and visible limits.",
+    summary: "Helps leaders read attention, demand, participation, Spotlight movement, shop activity, and opportunity signals without mistaking signals for proof.",
   },
   11: {
-    category: "Community & Membership",
-    realWorld: "Diaspora members and distant supporters often make decisions from far away with only family reports or chat messages.",
-    danger: "Distance weakens context, so support, trade, and opportunity can depend on incomplete or one-sided information.",
-    decision: "GSN gives distant readers controlled community evidence before they send support, goods, or opportunity.",
-    tools: "Community Record -> TrustSlip -> Public Shop -> Community Confirmation -> GSN ID.",
-    where: "Community -> Community Record; Trust -> TrustSlip; Shop -> Public Shop.",
-    evidence: "Community membership, public identity, shop record, confirmation notes, and verification link.",
-    summary: "Lets people across distance see controlled evidence before sending support, goods, or opportunity.",
+    category: "Security & Privacy",
+    realWorld: "Communities need to distribute constitutions, guides, handover notes, QR packs, forms, and links without sending the wrong material.",
+    danger: "A private file can become public, an admin note can go to members, or a useful guide can be lost before people open it.",
+    decision: "GSN packages setup papers, QR download sheets, public links, private files, and approved bridges so people receive the right material.",
+    tools: "Setup Pack -> QR Download Index -> Document Links -> Bulletin Bridge -> Public/Private Boundary.",
+    where: "Community Setup Pack; Community -> Documents / Bulletin; Public links -> Download or verification pages.",
+    evidence: "Document title, document date, QR target, audience label, public/private status, and authenticity mark.",
+    summary: "Packages setup papers, QR download sheets, public links, private files, and approved bridges so people receive the right material.",
   },
   12: {
-    category: "Finance & Support",
-    realWorld: "Savings circles depend on repeated contribution, timing, and mutual confidence.",
-    danger: "When memory and informal pressure are the only record, missed contributions and payout disputes are harder to resolve.",
-    decision: "GSN adds visible contribution and payout context around familiar savings culture without acting as the bank.",
-    tools: "ROSCA Desk -> Contribution Cycle -> Payout Record -> Member Evidence.",
-    where: "Marketplace -> ROSCA; Finance -> Community Money.",
-    evidence: "Cycle setup, selected members, contribution schedule, payout record, and community context.",
-    summary: "Adds a visible trust layer to familiar savings culture without turning GSN into a bank.",
-  },
-  13: {
-    category: "Trust & Evidence",
-    realWorld: "People contribute, repay, support, volunteer, sell, and follow through, but much of that history disappears.",
-    danger: "When the record is lost, future decisions return to hearsay even after someone has already built evidence.",
-    decision: "GSN turns useful behaviour into reviewable Trust Events and records that can inform later decisions.",
-    tools: "Trust Events -> Finance Records -> Repayment Record -> Support Evidence -> Trust Passport.",
-    where: "Trust -> Trust Passport; Finance -> Records; Loan Support -> Repayment.",
-    evidence: "Contribution events, repayment behaviour, support records, timestamps, and community source.",
-    summary: "Turns useful history into reviewable evidence for future decisions.",
-  },
-  14: {
     category: "Community & Membership",
-    realWorld: "People move, reconnect, change work, join new circles, and still need their real history to make sense.",
-    danger: "Without continuity, a responsible member can look unknown while old accountability becomes hard to find.",
-    decision: "GSN keeps identity, community role, and trust trail readable without merging distinct communities into one claim.",
-    tools: "GSN ID -> Community Membership -> Trust Passport -> Community Record.",
-    where: "Profile -> My GSN Identity; Community -> My Communities; Trust -> Trust Passport.",
-    evidence: "GSN ID, active community count, role context, community membership, and trust trail.",
-    summary: "Keeps identity continuity visible without merging distinct community records.",
-  },
-  15: {
-    category: "Identity & Verification",
-    realWorld: "A person may be known locally but still need a controlled way to present identity and trust context outside that circle.",
-    danger: "Screenshots, nicknames, and informal introductions can expose too much private information or prove too little.",
-    decision: "GSN gives the member a portable identity package while keeping deeper evidence protected and bounded.",
-    tools: "GSN ID -> Trust Passport -> TrustSlip -> Profile photo/selfie -> Community Credential.",
-    where: "Profile -> My GSN Identity; Trust -> Trust Passport / TrustSlip; Community -> Member Verify.",
-    evidence: "GSN ID, display name, photo/selfie status, credential, TrustSlip code, and verification boundary.",
-    summary: "Makes identity portable while keeping private evidence protected.",
-  },
-  16: {
-    category: "Trust & Evidence",
-    realWorld: "A good name can be real but trapped inside one street, shop, contact list, or local circle.",
-    danger: "When evidence cannot travel with context, opportunity stays local and new readers fall back to gossip.",
-    decision: "GSN lets recorded behaviour move with relationship evidence and community context.",
-    tools: "Trust Passport -> Trust Graph -> Community Record -> TrustSlip.",
-    where: "Trust -> Trust Passport; Dashboard -> Trust signals; Community -> Community Record.",
-    evidence: "Recorded activity, relationship evidence, community footprint, TrustSlip, and current reading.",
-    summary: "Lets recorded evidence move with context instead of gossip.",
-  },
-  17: {
-    category: "Buying & Selling",
-    realWorld: "A shop may be represented by chats, photos, flyers, and personal contacts scattered across many places.",
-    danger: "Customers may not know whether the item, owner, contact route, and verification signal belong to the same shop.",
-    decision: "GSN gives the shop one public home for shelf items, media, contact, and verification entry points.",
-    tools: "Public Shop -> Vault -> Shop Gallery -> Spotlight -> Merchant Verification.",
-    where: "Shop -> Public Shop / Vault; Marketplace -> Public Shops.",
-    evidence: "Public shop link, shelf blocks, owner GSN ID, spotlight media, and verification actions.",
-    summary: "Gives one shop a controlled public home instead of scattered screenshots and phone-only claims.",
-  },
-  18: {
-    category: "Visibility & Opportunity",
-    realWorld: "Informal service work often happens through referrals, chats, and one-off introductions.",
-    danger: "Good workers remain invisible, and buyers may hire from weak claims because previous work is not easy to review.",
-    decision: "GSN helps service work become visible through demand, public identity, community context, and follow-up evidence.",
-    tools: "DemandBox -> Public Shop -> TrustSlip -> Community Activity -> Shop Diary.",
-    where: "Marketplace -> DemandBox; Shop -> Public Shop; Trust -> TrustSlip.",
-    evidence: "Service offer, demand response, community context, public identity, and follow-up activity.",
-    summary: "Makes informal service participation more visible and reviewable.",
-  },
-  19: {
-    category: "Trust & Evidence",
-    realWorld: "Hiring, task assignment, and service decisions often depend on referrals, confidence, or a quick conversation.",
-    danger: "A weak claim can sound strong, and a strong worker can look ordinary when evidence is not visible.",
-    decision: "GSN helps the reader check identity, role evidence, community activity, and confirmation before commitment.",
-    tools: "Trust Passport -> Community Credential -> TrustSlip -> Community Confirmation.",
-    where: "Trust -> Trust Passport; Community -> Member Verify; Marketplace -> Members & Trade.",
-    evidence: "Identity status, role evidence, community activity, TrustSlip code, and confirmation note.",
-    summary: "Helps work decisions read credibility before commitment.",
-  },
-  20: {
-    category: "Visibility & Opportunity",
-    realWorld: "People need work, goods, services, stock, help, or buyers before the right person knows they exist.",
-    danger: "Opportunity can be missed simply because demand stayed hidden inside private chats or late conversations.",
-    decision: "GSN routes Ask Community and local needs into DemandBox so demand becomes visible while official bulletin space stays protected.",
-    tools: "Ask Community -> DemandBox -> Marketplace Needs -> Public Shop -> Community Bulletin Bridge.",
-    where: "Marketplace -> DemandBox; Community -> Ask Community; Dashboard -> What Matters Now.",
-    evidence: "Need or offer post, community placement, requester context, response path, and evidence boundary.",
-    summary: "Keeps community asks structured in DemandBox instead of burying them in the official bulletin.",
-  },
-  21: {
-    category: "Community & Membership",
-    realWorld: "A community may hold identity, trade, support, finance, trust, and opportunity records across many disconnected places.",
-    danger: "When those records do not meet, the community cannot see its own economic power or protect its members consistently.",
-    decision: "GSN connects those records into one operating layer while keeping personal, shop, and institutional claims distinct.",
-    tools: "Community Home -> Marketplace -> Finance -> Trust Passport -> Community Domain.",
-    where: "Community -> Community Home; Marketplace; Finance; Trust.",
-    evidence: "Community identity, member activity, marketplace records, finance evidence, and trust records.",
-    summary: "Connects community power into one working layer without confusing personal marketplaces with institutions.",
-  },
-  22: {
-    category: "Trust & Evidence",
-    realWorld: "People make savings goals, repayment plans, business promises, and personal commitments that need follow-through.",
-    danger: "Without a visible execution trail, intention fades and future readers cannot separate promise from discipline.",
-    decision: "GSN turns intention into a focused commitment record with progress, reminders, and completion evidence.",
-    tools: "Commitment Builder -> Focus Commitments -> Reminders -> Progress Evidence.",
-    where: "Dashboard -> Focus Commitments; Profile -> Member Guide.",
-    evidence: "Commitment record, progress steps, reminders, completion trail, and follow-through signal.",
-    summary: "Turns intention into a visible discipline record that can support future judgement.",
-  },
-  23: {
-    category: "Community & Membership",
-    realWorld: "Schools, unions, churches, cooperatives, markets, and associations need membership, roles, branches, policies, and public claims.",
-    danger: "If institutional identity is mixed with personal marketplaces, authority, evidence, and public trust become confusing.",
-    decision: "GSN gives institutions a Community Domain so governance, membership, bulletins, meetings, attendance, documents, services, and public claims stay structured.",
-    tools: "Community Domain -> Bulletin -> QR Entry -> Meeting Record -> Document Links -> Governance Roles -> Public Community Record.",
-    where: "Community -> Community Domain; Community -> Bulletin; Community -> Settings; Profile -> Route list.",
-    evidence: "Domain identity, member placement, bulletin notices, attendance/meeting evidence, document links, role structure, service status, and controlled public claim.",
-    summary: "Helps schools, churches, NGOs, cooperatives, markets, families, and associations preserve institutional memory and handover.",
+    realWorld: "Leaders change, phones get lost, documents move, and members forget why old decisions were made.",
+    danger: "The community restarts from memory, loses evidence, or becomes dependent on one admin's device and personality.",
+    decision: "GSN keeps community identity, roles, documents, decisions, evidence, setup history, and handover usable after leaders or devices change.",
+    tools: "Community Domain -> Setup Pack -> Handover Map -> Route/Recovery Map -> Evidence Surfaces -> Source-Controlled Docs.",
+    where: "Community -> Domain / Home; Profile -> My GSN and I; Setup Pack -> Handover materials.",
+    evidence: "Role structure, document trail, setup history, handover notes, community memory, and current route state.",
+    summary: "Keeps community identity, roles, documents, decisions, evidence, setup history, and handover usable after leaders or devices change.",
   },
 };
 
@@ -1250,7 +1118,7 @@ function PublicCapabilitiesGuidePage({
                 debugId="my-gmfn.public.toggle-all-capabilities"
                 style={publicGuideLightButton(false)}
               >
-                {showAllPublicCapabilities ? "Hide full list" : "All capabilities"}
+                {showAllPublicCapabilities ? "Hide core list" : "Core list"}
               </SecondaryButton>
             </div>
 
@@ -2572,7 +2440,7 @@ export default function MyGMFNAndIPage() {
                     <GsnLegacyIcon name="shield" size={26} decorative />
                   </span>
                   <span style={{ minWidth: 0 }}>
-                    <span style={{ display: "block" }}>GSN Capabilities</span>
+                    <span style={{ display: "block" }}>GSN Core Capabilities</span>
                     {!isCompact ? (
                       <span
                         style={{
@@ -2584,7 +2452,7 @@ export default function MyGMFNAndIPage() {
                           lineHeight: 1.2,
                         }}
                       >
-                        Open decision stories and evidence paths only when needed.
+                        Open the stable core set; keep the full bank for setup work only.
                       </span>
                     ) : null}
                   </span>
@@ -2764,7 +2632,7 @@ export default function MyGMFNAndIPage() {
                           lineHeight: 1.2,
                         }}
                       >
-                        Search, filter, or open the full guide boundary.
+                        Search or filter the core set; use the setup pack for the deeper bank.
                       </span>
                     ) : null}
                   </span>
@@ -2973,6 +2841,146 @@ export default function MyGMFNAndIPage() {
             </details>
           </section>
 
+          <section
+            data-my-gmfn-setup-pack-shell="collapsed"
+            style={appGuidePanel(isCompact)}
+          >
+            <details style={appGuideDisclosureShell()}>
+              <StableDisclosureSummary
+                debugId="my-gmfn.profile.setup-pack"
+                stableHeight={isCompact ? 64 : 70}
+                style={appGuideDisclosureSummary(isCompact)}
+              >
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 10,
+                    minWidth: 0,
+                  }}
+                >
+                  <span style={appGuideMiniIconBubble()}>
+                    <GsnLegacyIcon name="qr" size={26} decorative />
+                  </span>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: "block" }}>GSN Setup Pack</span>
+                    {!isCompact ? (
+                      <span
+                        style={{
+                          display: "block",
+                          marginTop: 2,
+                          color: "#64748B",
+                          fontSize: 12,
+                          fontWeight: 760,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        Controlled handover material, QR downloads, and the full capability bank.
+                      </span>
+                    ) : null}
+                  </span>
+                </span>
+                <span aria-hidden="true" style={appGuideDisclosureChevron()}>
+                  {">"}
+                </span>
+              </StableDisclosureSummary>
+
+              <div
+                data-my-gmfn-setup-pack-body="true"
+                style={{
+                  padding: isCompact ? "0 13px 13px" : "0 15px 15px",
+                  display: "grid",
+                  gap: 12,
+                }}
+              >
+                <div
+                  style={{
+                    color: "#07172C",
+                    fontSize: isCompact ? 18 : 22,
+                    fontWeight: 1000,
+                    lineHeight: 1.08,
+                  }}
+                >
+                  Full bank stays behind the setup pack
+                </div>
+                <div
+                  style={{
+                    color: "#64748B",
+                    fontSize: isCompact ? 12.5 : 13.5,
+                    fontWeight: 700,
+                    lineHeight: 1.42,
+                  }}
+                >
+                  The public guide shows the stable GSN Core Capabilities. The larger GSN in Real Life bank is for setup, client handover, audience selection, and controlled rollout conversations.
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                    gap: 10,
+                  }}
+                >
+                  {([
+                    [
+                      "QR download index",
+                      "Scan or send the phone-friendly pack index.",
+                      "https://raw.githubusercontent.com/chumanwafor216-svg/gmfn-mvp/main/docs/community-setup-pack/GSN_COMMUNITY_SETUP_QR_DOWNLOAD_INDEX_2026-09-14.pdf",
+                    ],
+                    [
+                      "Core capability source",
+                      "Use the stable core set for public and app-facing explanation.",
+                      "https://github.com/chumanwafor216-svg/gmfn-mvp/blob/main/docs/community-setup-pack/GSN_CORE_CAPABILITY_SET_2026-09-14.md",
+                    ],
+                    [
+                      "Full capability bank",
+                      "Open only for setup teams and people who need the deeper 44-module map.",
+                      "https://raw.githubusercontent.com/chumanwafor216-svg/gmfn-mvp/main/docs/gsn-user-guide/real-life-capability-bank/GSN_IN_REAL_LIFE_MASTER_CAPABILITY_BANK.pdf",
+                    ],
+                  ] as const).map(([label, description, href]) => (
+                    <a
+                      key={label}
+                      href={href}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        ...innerCard(),
+                        display: "grid",
+                        gap: 8,
+                        textDecoration: "none",
+                        minHeight: 122,
+                      }}
+                    >
+                      <span style={sectionLabel()}>{label}</span>
+                      <span
+                        style={{
+                          color: "#10253B",
+                          fontSize: isCompact ? 13 : 13.5,
+                          fontWeight: 820,
+                          lineHeight: 1.38,
+                        }}
+                      >
+                        {description}
+                      </span>
+                      <span
+                        style={{
+                          color: "#76591D",
+                          fontSize: 12,
+                          fontWeight: 1000,
+                        }}
+                      >
+                        Open pack
+                      </span>
+                    </a>
+                  ))}
+                </div>
+
+                <div style={helperText()}>
+                  Boundary: these links depend on the repository or public mirror being reachable. Do not send the full bank to ordinary members when a smaller audience copy is enough.
+                </div>
+              </div>
+            </details>
+          </section>
           <section
             data-my-gmfn-major-domains-shell="collapsed"
             style={appGuidePanel(isCompact)}
@@ -3223,7 +3231,7 @@ export default function MyGMFNAndIPage() {
             <div style={sectionLabel()}>Workspace settings</div>
 
             <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
-              Keep the app calmer and easier to read without changing the {capabilityCount} core capabilities guide.
+              Keep the app calmer and easier to read without changing the GSN Core Capabilities guide.
             </div>
 
             <div

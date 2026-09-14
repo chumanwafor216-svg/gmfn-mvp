@@ -1,4 +1,4 @@
-﻿/* global console, process */
+/* global console, process */
 
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -44,11 +44,51 @@ function assertTextExcludes(file, value, message) {
 }
 
 const capabilityTitles = [
+  "Recognised Community Identity",
+  "Governed Membership and Roles",
+  "Invite and QR Entry",
+  "Official Announcements and Response Evidence",
+  "Meetings, Attendance and Decision Memory",
+  "TrustPassport and TrustSlip Evidence",
+  "Community Marketplace and Public Shop",
+  "DemandBox and Ask Community",
+  "Support, Welfare and Contribution Records",
+  "Opportunity and Activity Analytics",
+  "Documents, Downloads and Bridges",
+  "Continuity, Handover and Institutional Memory",
+];
+
+for (const title of capabilityTitles) {
+  assertTextIncludes(
+    "frontend/src/lib/gmfnCapabilities.ts",
+    `title: "${title}"`,
+    "The capability registry must keep the GSN Core Capabilities source set."
+  );
+
+  assertTextIncludes(
+    "frontend/tools/generate-static-gsn-pdfs.py",
+    `"${title}"`,
+    "The public executive-summary PDF generator must mirror the GSN Core Capabilities titles."
+  );
+
+  assertTextIncludes(
+    "docs/community-setup-pack/GSN_CORE_CAPABILITY_SET_2026-09-14.md",
+    title,
+    "The setup pack must include each GSN Core Capability title."
+  );
+
+  assertTextIncludes(
+    "docs/community-setup-pack/core_capability_set.json",
+    `"title": "${title}"`,
+    "The machine-readable core capability source must include each title."
+  );
+}
+
+for (const oldTitle of [
   "Release Before Payment",
   "Evidence-Backed Buying and Selling",
   "Cross-Community Trade",
   "Fraud Reduction Before Action",
-  "Spotlight Visibility",
   "Reputation-Based Visibility",
   "Marketplace Presence Across Communities",
   "People-Backed Loans",
@@ -63,56 +103,64 @@ const capabilityTitles = [
   "One Global Shop",
   "Service Economy Participation",
   "Trust-Based Hiring",
-  "DemandBox",
   "Community Economic Power",
-  "Commitment Builder",
   "Institutional Community Domain",
-];
-
-for (const title of capabilityTitles) {
-  assertTextIncludes(
+]) {
+  assertTextExcludes(
     "frontend/src/lib/gmfnCapabilities.ts",
-    `title: "${title}"`,
-    "The capability registry must keep the full 23-capability mirror."
+    `title: "${oldTitle}"`,
+    "The public/app-facing registry must not drift back to the retired 23-title mirror."
   );
 
-  assertTextIncludes(
-    "docs/GSN_DOCUMENT_TO_SYSTEM_GAP_REVIEW_2026-06-26.md",
-    title,
-    "The document-to-system gap review must include every capability."
-  );
-
-  assertTextIncludes(
+  assertTextExcludes(
     "frontend/tools/generate-static-gsn-pdfs.py",
-    `"${title}"`,
-    "The public executive-summary PDF generator must mirror the exact 23-capability registry titles."
+    `"${oldTitle}"`,
+    "The public executive-summary PDF generator must not drift back to the retired 23-title mirror."
   );
 }
 
 for (const value of [
-  "decisions GSN helps members make",
+  "GSN Core Capabilities",
   "Decision guide",
-  "Commitment Builder",
-  "Institutional Community Domain",
+  "TrustPassport and TrustSlip Evidence",
+  "Opportunity and Activity Analytics",
   "Boundary: API-paid verification",
 ]) {
   assertTextIncludes(
     "frontend/tools/generate-static-gsn-pdfs.py",
     value,
-    "The public executive summary PDF generator must mirror all 23 GSN capabilities and keep the paid-verification boundary."
+    "The public executive summary PDF generator must mirror the GSN Core Capabilities and keep the paid-verification boundary."
   );
 }
 
 assertContains(
-  "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /GSN Decision Guide[\s\S]*?real-world decisions GSN helps people make[\s\S]*?why those[\s\S]*?decisions are risky[\s\S]*?which tools cooperate[\s\S]*?evidence[\s\S]*?remains afterwards/,
-  "The public and signed-in My GSN guides must use the institutional decision-guide heading."
+  "frontend/src/lib/gmfnCapabilities.ts",
+  /export const GMFN_CAPABILITY_COUNT = GMFN_CAPABILITIES\.length;/,
+  "The capability count must remain derived from the registry, not hardcoded."
+);
+
+assertContains(
+  "frontend/src/lib/gmfnCapabilities.ts",
+  /Recognised Community Identity[\s\S]*?Governed Membership and Roles[\s\S]*?Invite and QR Entry[\s\S]*?Continuity, Handover and Institutional Memory[\s\S]*?safeStr\(capability\.decisionGuideLine\)/,
+  "The shared registry must provide the stable GSN Core Capabilities and the dashboard guide helper must prefer their decision lines."
 );
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /GSN Decision Guide[\s\S]*?Read each capability as a decision story[\s\S]*?what happens in real[\s\S]*?why the decision is dangerous[\s\S]*?how GSN changes the question[\s\S]*?which tools cooperate[\s\S]*?evidence remains afterwards[\s\S]*?not proof[\s\S]*?member[\s\S]*?shop[\s\S]*?payout[\s\S]*?paid verification[\s\S]*?protected[\s\S]*?trade release/,
-  "The signed-in My GSN and I decision guide must keep the decision-story frame and the institutional boundary against overclaiming live approvals, payout, paid verification, or protected trade release."
+  /GSN Decision Guide[\s\S]*?real-world decisions GSN helps people make[\s\S]*?why those[\s\S]*?decisions are risky[\s\S]*?which tools cooperate[\s\S]*?evidence[\s\S]*?remains afterwards/,
+  "The public and signed-in My GSN guides must keep the institutional decision-guide heading."
+);
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  /data-my-gmfn-capabilities-shell="collapsed"[\s\S]*?GSN Core Capabilities[\s\S]*?data-my-gmfn-selected-capability="true"[\s\S]*?data-my-gmfn-setup-pack-shell="collapsed"[\s\S]*?GSN Setup Pack[\s\S]*?Full bank stays behind the setup pack[\s\S]*?data-my-gmfn-major-domains-shell="collapsed"/,
+  "The signed-in command-centre guide must show the core set first and keep the full bank behind the setup-pack disclosure."
+);
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  /data-my-gmfn-selected-capability="true"[\s\S]*selectedCapabilityDetail\.summary[\s\S]*The real-world problem[\s\S]*selectedCapabilityDetail\.realWorld[\s\S]*Why it is dangerous[\s\S]*selectedCapabilityDetail\.danger[\s\S]*How GSN changes the decision[\s\S]*selectedCapabilityDetail\.decision[\s\S]*Which GSN tools cooperate[\s\S]*selectedCapabilityDetail\.tools[\s\S]*Where you use them[\s\S]*selectedCapabilityDetail\.where[\s\S]*Evidence created[\s\S]*selectedCapabilityDetail\.evidence/,
+  "The signed-in My GSN and I core capability card must keep the decision-story shape."
 );
 
 for (const value of [
@@ -129,31 +177,16 @@ for (const value of [
   'id="my-gmfn-capability-category"',
   "Choose capability",
   "{item.id}. {item.title}",
+  "my-gmfn.profile.setup-pack",
+  "GSN_CORE_CAPABILITY_SET_2026-09-14.md",
+  "GSN_IN_REAL_LIFE_MASTER_CAPABILITY_BANK.pdf",
 ]) {
   assertTextIncludes(
     "frontend/src/pages/MyGMFNAndIPage.tsx",
     value,
-    "The signed-in My GSN and I capability map must provide a native dropdown plus one focused capability card on phone instead of exposing all capability cards at once."
+    "The signed-in My GSN and I guide must provide focused core capability controls plus controlled setup-pack access."
   );
 }
-
-assertContains(
-  "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /data-my-gmfn-selected-capability="true"[\s\S]*selectedCapabilityDetail\.summary[\s\S]*The real-world problem[\s\S]*selectedCapabilityDetail\.realWorld[\s\S]*Why it is dangerous[\s\S]*selectedCapabilityDetail\.danger[\s\S]*How GSN changes the decision[\s\S]*selectedCapabilityDetail\.decision[\s\S]*Which GSN tools cooperate[\s\S]*selectedCapabilityDetail\.tools[\s\S]*Where you use them[\s\S]*selectedCapabilityDetail\.where[\s\S]*Evidence created[\s\S]*selectedCapabilityDetail\.evidence[\s\S]*data-my-gmfn-decision-guide-tools="collapsed"/,
-  "The signed-in My GSN and I decision guide must show one selected institutional card before the collapsed decision-guide controls."
-);
-
-assertContains(
-  "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /data-my-gmfn-capabilities-shell="collapsed"[\s\S]*StableDisclosureSummary[\s\S]*debugId="my-gmfn\.profile\.gsn-capabilities"[\s\S]*GSN Capabilities[\s\S]*data-my-gmfn-capabilities-body="true"[\s\S]*data-my-gmfn-selected-capability="true"[\s\S]*data-my-gmfn-major-domains-shell="collapsed"[\s\S]*StableDisclosureSummary[\s\S]*debugId="my-gmfn\.profile\.major-domains"[\s\S]*Major Domains[\s\S]*data-my-gmfn-major-domains-body="true"[\s\S]*appGuideRoutes\.map[\s\S]*data-my-gmfn-page-guide="collapsed"[\s\S]*debugId="my-gmfn\.profile\.page-guide"[\s\S]*Page Guide/,
-  "The signed-in My GSN and I guide must keep GSN Capabilities, Major Domains, and page-use guidance covered by closed institutional disclosure headings on phone."
-);
-
-assertContains(
-  "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /stepCapability[\s\S]*Show previous GSN capability[\s\S]*Previous[\s\S]*Show next GSN capability[\s\S]*Next/,
-  "The signed-in My GSN and I capability map must let readers move backward and forward through capabilities without reopening the dropdown."
-);
 
 for (const value of [
   "publicCapabilityId",
@@ -168,76 +201,28 @@ for (const value of [
   assertTextIncludes(
     "frontend/src/pages/MyGMFNAndIPage.tsx",
     value,
-    "The public My GSN and I guide must default to one focused capability with previous/next controls and keep the full capability list optional."
+    "The public My GSN and I guide must default to one focused core capability with previous/next controls and keep the full core list optional."
   );
 }
 
 for (const value of [
-  "23 things GSN does",
+  "numbered things GSN does",
   "{capabilityCount} things GSN does",
   "{GMFN_CAPABILITY_COUNT} things GSN does",
+  "numbered things GSN can do for you",
 ]) {
   assertTextExcludes(
     "frontend/src/pages/MyGMFNAndIPage.tsx",
     value,
-    "The My GSN page must not drift back to childish things-GSN-does wording."
+    "The My GSN page must not drift back to fixed-number or childish capability wording."
   );
 }
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /publicSelectedCapability \? \([\s\S]*data-my-gmfn-public-selected-capability="true"[\s\S]*capabilityMapDetail\(publicSelectedCapability\)\.summary[\s\S]*showAllPublicCapabilities \? \(/,
-  "The public My GSN and I guide must show a selected reader card before the optional full capability list."
+  /1: "Gives a real group a recognised GSN identity[\s\S]*?6: "Lets members carry bounded TrustPassport[\s\S]*?10: "Helps leaders read attention[\s\S]*?12: "Keeps community identity/,
+  "The visible core capability lines must protect the new salient GSN model."
 );
-
-assertContains(
-  "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /finance: routeTarget\("finance"[\s\S]*label: "Finance"[\s\S]*Money records and payment evidence[\s\S]*icon: "financeInstitution"[\s\S]*debugId: "my-gmfn\.route\.finance"/,
-  "The signed-in My GSN and I app route list must include Finance with the finance-institution icon and a stable debug id."
-);
-
-assertTextExcludes(
-  "frontend/src/pages/MyGMFNAndIPage.tsx",
-  "22 things GSN can do for you",
-  "The public My GSN and I guide must not drift back to casual 22-capability wording."
-);
-
-assertTextExcludes(
-  "frontend/src/pages/MyGMFNAndIPage.tsx",
-  "Things GSN Can Do For You",
-  "The signed-in My GSN and I guide must not drift back to casual capability wording."
-);
-
-assertContains(
-  "frontend/src/lib/gmfnCapabilities.ts",
-  /export const GMFN_CAPABILITY_COUNT = GMFN_CAPABILITIES\.length;/,
-  "The capability count must remain derived from the registry, not hardcoded."
-);
-
-assertContains(
-  "frontend/src/lib/gmfnCapabilities.ts",
-  /decisionGuideLine\?: string;[\s\S]*?Release Before Payment[\s\S]*?decisionGuideLine:[\s\S]*?Before value moves[\s\S]*?Evidence-Backed Buying and Selling[\s\S]*?decisionGuideLine:[\s\S]*?Before buying or selling[\s\S]*?Institutional Community Domain[\s\S]*?decisionGuideLine:[\s\S]*?institutional membership[\s\S]*?safeStr\(capability\.decisionGuideLine\)/,
-  "The shared capability registry must provide Decision Guide summary lines and the dashboard guide helper must prefer them."
-);
-
-assertContains(
-  "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /5: "Gives approved shop updates a clearer place to be seen while keeping the shop record and media attached\."[\s\S]*?8: "Turns support requests into recorded drafts with amount, purpose, duration, supporters, and fit signals\."[\s\S]*?17: "Gives one shop a public home for shelf items, spotlight, WhatsApp, verification, and trust signals\."[\s\S]*?18: "Helps informal service work become visible through demand, evidence, community context, and follow-up\."[\s\S]*?23: "Gives schools, churches, NGOs, cooperatives, markets, families, and associations a structured domain/,
-  "The capability visible card lines must avoid implying that public visibility, lending, shop presence, service work, or institutional domains are already verified trust."
-);
-
-for (const oldLine of [
-  "Helps trusted value get seen first.",
-  "Turns visible trust into people-backed lending confidence.",
-  "Gives one trusted identity one wider shop presence.",
-  "Makes informal service work more visible and trusted.",
-]) {
-  assertTextExcludes(
-    "frontend/src/pages/MyGMFNAndIPage.tsx",
-    oldLine,
-    "The visible 22-capability card lines must not overclaim trust, lending, or service verification."
-  );
-}
 
 for (const oldPdfLine of [
   "trusted commerce",
@@ -256,10 +241,10 @@ assertTextIncludes(
   "The public executive-summary PDF source must use evidence-backed commerce wording."
 );
 
-assertTextIncludes(
-  "frontend/tools/generate-static-gsn-pdfs.py",
-  "someone may want to stand behind another person",
-  "The public executive-summary PDF source must frame supporter standing as a responsibility decision, not blanket trusted-member certification."
+assertContains(
+  "docs/community-setup-pack/GSN_CORE_CAPABILITY_SET_2026-09-14.md",
+  /This document replaces the old public habit of presenting GSN as a fixed-number capability list\.[\s\S]*?The 44-module `GSN in Real Life` bank remains useful, but it should not be the default public front\./,
+  "The setup pack must record the fixed-23 retirement and controlled full-bank boundary."
 );
 
 assertContains(
@@ -272,12 +257,6 @@ assertContains(
   "docs/GSN_DOCUMENT_TO_SYSTEM_GAP_REVIEW_2026-06-26.md",
   /The uploaded documents are not an exact replica of the current GSN system\.[\s\S]*?The MVP is also deeper than the documents in practical finance plumbing\./,
   "The gap review must preserve the devil's-advocate truth: documents and app are close, but not exact replicas."
-);
-
-assertContains(
-  "docs/GSN_DOCUMENT_TO_SYSTEM_GAP_REVIEW_2026-06-26.md",
-  /Backend loan creation already has amount, duration, repayment cadence, service fee, net disbursed, guarantor pool, platform revenue, guarantors required, pool-used calculation, commitment trust event, guarantor suggestions, guarantor requests, approvals, repayment schedule, repayment expected payments, and stale support expiry\./,
-  "The gap review must keep the confirmed backend support-engine truth."
 );
 
 assertContains(

@@ -5,6 +5,13 @@
   "authenticity_mark": "GSN Original Community Setup Material | Source-controlled in gmfn_mvp/docs | Document date: 2026-09-14",
   "source_assets": [
     {
+      "role": "core_capability_set",
+      "path": "GSN_CORE_CAPABILITY_SET_2026-09-14.md",
+      "machine_readable": [
+        "core_capability_set.json"
+      ]
+    },
+    {
       "role": "live_setup_guide",
       "path": "../gsn-user-guide/GSN_SELF_SERVICE_USER_GUIDE.md",
       "distribution": [
@@ -76,6 +83,14 @@
       "path": "docs/gsn-user-guide/GSN_SELF_SERVICE_USER_GUIDE.pdf",
       "url": "https://raw.githubusercontent.com/chumanwafor216-svg/gmfn-mvp/main/docs/gsn-user-guide/GSN_SELF_SERVICE_USER_GUIDE.pdf",
       "qr_png": "docs/community-setup-pack/qr-codes/setup-guide-pdf.png"
+    },
+    {
+      "id": "core-capability-set",
+      "title": "GSN Core Capability Set",
+      "audience": "Public app surfaces, first conversations and client handover",
+      "path": "docs/community-setup-pack/GSN_CORE_CAPABILITY_SET_2026-09-14.md",
+      "url": "https://github.com/chumanwafor216-svg/gmfn-mvp/blob/main/docs/community-setup-pack/GSN_CORE_CAPABILITY_SET_2026-09-14.md",
+      "qr_png": "docs/community-setup-pack/qr-codes/core-capability-set.png"
     },
     {
       "id": "deployment-pack-index",

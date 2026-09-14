@@ -58,6 +58,11 @@ QR_TARGETS = [
         "audience": "Leaders, admins and members",
     },
     {
+        "id": "core-capability-set",
+        "title": "GSN Core Capability Set",
+        "path": PACK_DIR / f"GSN_CORE_CAPABILITY_SET_{DOC_DATE}.md",
+        "audience": "Public app surfaces, first conversations and client handover",
+    },    {
         "id": "deployment-pack-index",
         "title": "Community Setup Deployment Pack Index",
         "path": PACK_DIR / f"GSN_COMMUNITY_SETUP_DEPLOYMENT_PACK_INDEX_{DOC_DATE}.md",

@@ -1,4 +1,4 @@
-﻿# GSN Document To System Gap Review
+# GSN Document To System Gap Review
 
 Date: 2026-06-26
 
@@ -83,7 +83,7 @@ That structure is directionally present in the repo through:
 | Trust-Based Hiring | Pilot-ready presentation layer | Trust Passport, TrustSlip, DemandBox, public verification | Existing trust evidence can support hiring judgement. Dedicated hiring/employer workflow can come later. |
 | DemandBox | Implemented/partial | `/app/demand-box`, marketplace request backend | Good base exists; still needs simpler focus and stronger connection to evidence-backed trade. |
 | Community Economic Power | Pilot-ready with current readings | dashboard, finance, community summaries, trust command centre, pool/contribution/support readings | Current summaries can carry pilot. Deeper tailored analytics and exportable institutional reports can come later. |
-| Commitment Builder | Institutional mirror aligned | `frontend/src/lib/gmfnCapabilities.ts` capability 22, Commitment Builder notes, and `frontend/tools/generate-static-gsn-pdfs.py` public executive summary generator | Dedicated goal/commitment workflows can deepen over time, but the outsider-facing 23-capability institutional mirror now includes it. |
+| Commitment Builder | Institutional mirror aligned | `frontend/src/lib/gmfnCapabilities.ts` GSN Core Capabilities registry, Commitment Builder notes, and `frontend/tools/generate-static-gsn-pdfs.py` public executive summary generator | Dedicated goal/commitment workflows can deepen over time, but the outsider-facing fixed-number capability mirror has been retired in favour of the curated GSN Core Capabilities set. |
 | Institutional Community Domain | Institutional mirror aligned | `frontend/src/lib/gmfnCapabilities.ts` capability 23, Community Domain dashboard/purchase routes, community-domain API routes, and `frontend/tools/generate-static-gsn-pdfs.py` public executive summary generator | The product lane exists for organized bodies such as schools, unions, churches, cooperatives, markets, and associations. It must remain distinct from personal marketplace communities so public claims, branches, roles, policies, and member placement are not confused with ordinary shop/community activity. |
 
 ## Finance Line Truth

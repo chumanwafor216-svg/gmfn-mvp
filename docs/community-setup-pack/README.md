@@ -17,6 +17,8 @@ Use this pack when a group asks:
 ## Source Materials
 
 The reusable source materials live here:
+- `GSN_CORE_CAPABILITY_SET_2026-09-14.md`
+- `core_capability_set.json`
 - `../gsn-user-guide/GSN_SELF_SERVICE_USER_GUIDE.md`
 - `../gsn-user-guide/GSN_FEATURE_INVENTORY_AUDIT.md`
 - `../gsn-user-guide/GSN_FEATURE_INVENTORY.json`
@@ -37,6 +39,7 @@ Do not create a fresh one-off pack when a client asks for setup material. Update
 
 ## Pack Files
 
+- `GSN_CORE_CAPABILITY_SET_2026-09-14.md`: public/app-facing core set selected from the deeper bank.
 - `GSN_COMMUNITY_SETUP_DEPLOYMENT_PACK_INDEX_2026-09-14.md`: master index and deployment-stage use map.
 - `GSN_COMMUNITY_SETUP_CLIENT_HANDOVER_MAP_2026-09-14.md`: what to send to leaders, admins, members and external supporters.
 - `GSN_COMMUNITY_SETUP_STORY_BANK_2026-09-14.md`: reusable audience stories and examples.

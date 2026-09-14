@@ -1,3 +1,14 @@
+## 2026-09-14 - Public GSN capability front changed to core set
+- Status: Frontend/docs/static-PDF update completed locally; no backend route, schema, auth, permission, payment, production data, or new feature engine was changed.
+- Owner request: stop presenting the old fixed-number public capability front. Use `GSN Core Capabilities` instead, with a smaller durable set for ordinary app/public explanation, and keep the larger 44-module GSN in Real Life bank as controlled setup-pack/command-centre material for teams that need it.
+- Public/app change: `frontend/src/lib/gmfnCapabilities.ts` and `frontend/src/pages/MyGMFNAndIPage.tsx` now expose 12 GSN Core Capabilities instead of the old public 23-item framing.
+- Screen impact: My GSN and I public/member guide now says `GSN Core Capabilities`, uses `Core list`, and includes a collapsed signed-in `GSN Setup Pack` panel linking to the QR download index, the core capability source, and the full capability bank.
+- Pack change: `docs/community-setup-pack/GSN_CORE_CAPABILITY_SET_2026-09-14.md` and `core_capability_set.json` were added as maintained source assets; the setup pack manifest/index and QR download index now include the core set QR target.
+- Static assets: `frontend/tools/generate-static-gsn-pdfs.py` now uses the core capability set and regenerated `frontend/public/GSN_FINAL_WHITE.pdf`, `frontend/public/GMFN_FINAL_WHITE.pdf`, and `frontend/public/gmfn-executive-summary.pdf`.
+- Guardrail: `frontend/tools/audit-capability-mirror.mjs` now protects the 12-title core set, the removal of old fixed-number language from public fronts, and the presence of controlled setup-pack links to the full bank.
+- Dashboard note: the frozen Dashboard Market Wisdom UI was not edited, but it imports the shared capability registry, so its underlying capability titles follow the new core set if displayed there.
+- Devil truth: this is a positioning and package-governance change. It does not prove every deeper capability is live, does not make the 44-module bank private by itself, and does not replace real access control if the repository/raw links remain public.
+- Verification passed: `npm --prefix frontend run audit:capability-mirror`, `npm --prefix frontend run build`, JSON validation for the core set and manifest, Python compile checks for both generators, regenerated setup-pack distributions, regenerated static PDFs, old fixed-number wording scan, and `git diff --check` on touched files.
 ## 2026-09-14 - QR transfer layer added to GSN Community Setup Pack
 - Status: Documentation/package transfer enhancement completed locally; no frontend route, backend route, schema, auth, payment, permission, production data, or app behavior change was made.
 - Owner request: make key GSN setup articles easy to move onto phones by scanning QR codes instead of forcing people to search folders or type links manually.

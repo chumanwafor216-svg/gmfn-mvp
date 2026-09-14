@@ -1,0 +1,69 @@
+{
+  "name": "GSN Core Capabilities",
+  "document_date": "2026-09-14",
+  "status": "public_and_app_facing_core_set",
+  "source_note": "Curated from the larger GSN in Real Life capability bank. Replaces the old public fixed-number capability framing.",
+  "truth_boundary": "Explains durable GSN value. Does not prove every capability is live for every client and does not expose every internal module.",
+  "capabilities": [
+    {
+      "id": 1,
+      "title": "Recognised Community Identity",
+      "audiences": ["organisation", "church", "school", "ngo", "cooperative", "family"]
+    },
+    {
+      "id": 2,
+      "title": "Governed Membership and Roles",
+      "audiences": ["organisation", "church", "school", "ngo", "cooperative", "family"]
+    },
+    {
+      "id": 3,
+      "title": "Invite and QR Entry",
+      "audiences": ["organisation", "church", "school", "ngo", "cooperative", "family"]
+    },
+    {
+      "id": 4,
+      "title": "Official Announcements and Response Evidence",
+      "audiences": ["organisation", "church", "school", "ngo", "family"]
+    },
+    {
+      "id": 5,
+      "title": "Meetings, Attendance and Decision Memory",
+      "audiences": ["organisation", "church", "school", "ngo", "cooperative", "family"]
+    },
+    {
+      "id": 6,
+      "title": "TrustPassport and TrustSlip Evidence",
+      "audiences": ["organisation", "cooperative", "family"]
+    },
+    {
+      "id": 7,
+      "title": "Community Marketplace and Public Shop",
+      "audiences": ["organisation", "cooperative"]
+    },
+    {
+      "id": 8,
+      "title": "DemandBox and Ask Community",
+      "audiences": ["organisation", "ngo", "cooperative", "family"]
+    },
+    {
+      "id": 9,
+      "title": "Support, Welfare and Contribution Records",
+      "audiences": ["organisation", "church", "ngo", "cooperative", "family"]
+    },
+    {
+      "id": 10,
+      "title": "Opportunity and Activity Analytics",
+      "audiences": ["organisation", "ngo", "cooperative"]
+    },
+    {
+      "id": 11,
+      "title": "Documents, Downloads and Bridges",
+      "audiences": ["organisation", "church", "school", "ngo", "cooperative", "family"]
+    },
+    {
+      "id": 12,
+      "title": "Continuity, Handover and Institutional Memory",
+      "audiences": ["organisation", "church", "school", "ngo", "cooperative", "family"]
+    }
+  ]
+}

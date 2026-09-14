@@ -16,6 +16,7 @@ The pack has two sides:
 
 | Role | File | Use |
 |---|---|---|
+| Core capability set | `GSN_CORE_CAPABILITY_SET_2026-09-14.md` | Public/app-facing stable capability set selected from the deeper bank. |
 | Live setup guide | `../gsn-user-guide/GSN_SELF_SERVICE_USER_GUIDE.md` | Current setup/status authority for what to set up, what it does and how to use it. |
 | Word setup guide | `../gsn-user-guide/GSN_SELF_SERVICE_USER_GUIDE.docx` | Editable client handover copy. |
 | PDF setup guide | `../gsn-user-guide/GSN_SELF_SERVICE_USER_GUIDE.pdf` | Send-ready read-only client copy. |

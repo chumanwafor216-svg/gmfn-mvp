@@ -1,4 +1,4 @@
-﻿export type GmfnCapabilityCategory =
+export type GmfnCapabilityCategory =
   | "trade"
   | "visibility"
   | "finance"
@@ -47,299 +47,219 @@ function hashSeed(...parts: Array<unknown>): number {
 export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
   {
     id: 1,
-    title: "Release Before Payment",
-    proverb: "Release Before Payment reduces blind risk before money moves.",
+    title: "Recognised Community Identity",
+    proverb: "A community should not live only inside one phone, chat name, or paper list.",
     gmfn:
-      "GSN makes trust visible before payment so identity, trust, and community can improve access and reduce risk.",
-    category: "trade",
+      "GSN gives a real group a governed identity space where members, public claims, setup material, and handover records can remain readable over time.",
+    category: "community",
     tone: "focus",
-    priority: 6,
+    priority: 9,
+    whatItIs:
+      "A structured GSN identity for a church, school, cooperative, market, NGO, family, diaspora group, or similar organisation.",
+    howItWorks:
+      "The community keeps a named space for its public identity, membership context, setup links, documents, and role-based activity instead of scattering authority across chats and personal devices.",
+    whyItMatters:
+      "Identity is the root of safe membership, announcements, meetings, trust evidence, shops, support, and continuity.",
     decisionGuideLine:
-      "Before value moves, check what identity, community, TrustSlip, merchant, and trade evidence already exists.",
+      "Before a group acts publicly, confirm the community identity, owner context, member boundary, and source of authority.",
   },
   {
     id: 2,
-    title: "Evidence-Backed Buying and Selling",
-    proverb: "Evidence-Backed Buying and Selling turns recorded evidence into clearer trade decisions.",
+    title: "Governed Membership and Roles",
+    proverb: "Access should follow responsibility, not forwarded links alone.",
     gmfn:
-      "GSN helps buyers and sellers act with more confidence because identity, trust evidence, and community context are visible in one flow.",
-    category: "trade",
+      "GSN separates leaders, admins, members, visitors, and public readers so community access can be controlled without turning every person into an owner.",
+    category: "identity",
     tone: "focus",
-    priority: 6,
+    priority: 9,
+    whatItIs:
+      "A membership and role model for who belongs, who manages, who can publish, and who can only read.",
+    howItWorks:
+      "Joining paths, invite or QR entry, role-aware surfaces, and controlled actions keep membership from becoming a loose public chat.",
+    whyItMatters:
+      "Good limits protect official notices, private evidence, member safety, and leadership handover.",
     decisionGuideLine:
-      "Before buying or selling, read shop identity, member context, TrustSlip evidence, and trade history together.",
+      "Before granting access, check the person's role, entry path, community fit, and what actions that role should allow.",
   },
   {
     id: 3,
-    title: "Cross-Community Trade",
-    proverb: "Cross-Community Trade expands trust beyond one circle.",
+    title: "Invite and QR Entry",
+    proverb: "The entry path is part of the evidence.",
     gmfn:
-      "GSN carries visible trust across communities so economic access grows without losing accountability.",
-    category: "trade",
-    tone: "focus",
-    priority: 6,
+      "GSN helps people enter the right community, document, shop, or setup flow by scanning or opening the correct link instead of relying on manual typing and repeated forwarding.",
+    category: "operating",
+    tone: "calm",
+    priority: 8,
+    whatItIs:
+      "Phone-friendly invite, QR, and download paths for onboarding, meetings, documents, and client handover.",
+    howItWorks:
+      "The setup pack and app flows can provide QR or invite links that take the reader directly to the intended public, member, or setup surface.",
+    whyItMatters:
+      "QR entry reduces manual error and gives communities a cleaner way to distribute material to members.",
     decisionGuideLine:
-      "When trust crosses communities, carry identity and community evidence without hiding where each claim came from.",
+      "Before sharing a QR or invite, confirm it opens only the intended public, member, or setup surface.",
   },
   {
     id: 4,
-    title: "Fraud Reduction Before Action",
-    proverb: "Fraud Reduction Before Action protects people before loss happens.",
+    title: "Official Announcements and Response Evidence",
+    proverb: "A message that matters should not disappear under chat noise.",
     gmfn:
-      "GSN reduces risk before action by making trust visible early, not after damage is done.",
-    category: "identity",
-    tone: "alert",
+      "GSN gives official notices, acknowledgements, availability, and response signals a clearer place to live so leaders can see what happened after a message was sent.",
+    category: "community",
+    tone: "calm",
     priority: 8,
+    whatItIs:
+      "A protected announcement and response layer for official community communication.",
+    howItWorks:
+      "Bulletin-style notices, acknowledgement paths, and response records can sit beside ordinary communication without becoming a free-for-all feed.",
+    whyItMatters:
+      "Coordination begins when people can tell who saw, acknowledged, responded, or needs follow-up.",
     decisionGuideLine:
-      "Before action, look for weak evidence, stale records, mismatch warnings, and confirmation paths.",
+      "Before treating an announcement as complete, check its official source, response evidence, and follow-up path.",
   },
   {
     id: 5,
-    title: "Spotlight Visibility",
-    proverb: "Spotlight Visibility helps recorded value get seen first.",
+    title: "Meetings, Attendance and Decision Memory",
+    proverb: "A community should not repeat decisions because yesterday's record is missing.",
     gmfn:
-      "GSN uses visible trust to improve presence and confidence around spotlighted goods, services, and people.",
-    category: "visibility",
-    tone: "spotlight",
-    priority: 7,
+      "GSN helps meetings, attendance, actions, files, decisions, and handover memory stay connected so a community does not restart when leaders change.",
+    category: "community",
+    tone: "focus",
+    priority: 9,
+    whatItIs:
+      "A meeting and institutional memory layer for participation, decisions, documents, and continuity.",
+    howItWorks:
+      "Notices, attendance/sign-in patterns, minutes, action owners, files, and follow-up evidence can be organised around the community domain.",
+    whyItMatters:
+      "Leadership continuity depends on records that survive phones, terms of office, and changing admins.",
     decisionGuideLine:
-      "Before attention becomes trust, separate useful visibility from verification and keep the public record attached.",
+      "Before a decision is reused, check the meeting, attendance, document, action owner, and handover evidence behind it.",
   },
   {
     id: 6,
-    title: "Reputation-Based Visibility",
-    proverb: "Reputation-Based Visibility gives stronger recorded trust more reach.",
+    title: "TrustPassport and TrustSlip Evidence",
+    proverb: "Trust should be readable, bounded, and current before people rely on it.",
     gmfn:
-      "GSN makes visibility depend on visible evidence, not noise alone, so access improves while risk falls.",
-    category: "visibility",
-    tone: "spotlight",
-    priority: 7,
+      "GSN helps members carry controlled trust evidence through TrustPassport, TrustSlip, identity context, credentials, and verification boundaries without pretending trust is automatic proof.",
+    category: "identity",
+    tone: "alert",
+    priority: 9,
+    whatItIs:
+      "Portable but bounded evidence for identity, reputation, community context, and trust decisions.",
+    howItWorks:
+      "TrustPassport holds fuller context while TrustSlip gives a smaller checkable evidence record for decisions that need a public or limited reading.",
+    whyItMatters:
+      "People need a way to carry a good name beyond one circle without exposing every private record.",
     decisionGuideLine:
-      "When deciding who should be seen, let recorded evidence support reach while keeping evidence limits visible.",
+      "Before relying on trust, reopen the current TrustPassport, TrustSlip, credential, and verification boundary.",
   },
   {
     id: 7,
-    title: "Marketplace Presence Across Communities",
-    proverb: "Marketplace Presence Across Communities lets trust travel with the merchant.",
+    title: "Community Marketplace and Public Shop",
+    proverb: "A shop should not be only scattered photos, chats, and claims.",
     gmfn:
-      "GSN gives a merchant usable presence beyond one market by carrying identity, trust, and community context together.",
-    category: "visibility",
+      "GSN gives sellers, services, products, media, contact routes, Spotlight activity, and public shop identity a more organised community-backed presence.",
+    category: "trade",
     tone: "spotlight",
-    priority: 7,
+    priority: 8,
+    whatItIs:
+      "A marketplace and public shop layer for goods, services, seller identity, and contact paths.",
+    howItWorks:
+      "Public shop pages, shelf items, media, Spotlight, WhatsApp or phone contact paths, and trust entry points stay tied to one shop identity.",
+    whyItMatters:
+      "Buyers need to see item, owner, contact route, community context, and evidence boundaries together.",
     decisionGuideLine:
-      "Before a shop travels across communities, keep owner, shelf, contact, and verification context connected.",
+      "Before buying, selling, or sharing a shop, check owner identity, shelf evidence, contact path, and verification boundary.",
   },
   {
     id: 8,
-    title: "People-Backed Loans",
-    proverb: "People-Backed Loans make support more relational and accountable.",
+    title: "DemandBox and Ask Community",
+    proverb: "Real needs should be structured before chat noise buries them.",
     gmfn:
-      "GSN turns visible trust into a support signal so lending can improve access while keeping risk clearer.",
-    category: "finance",
+      "GSN routes needs, offers, requests, and local demand into a structured place so the official bulletin can stay official while opportunity remains visible.",
+    category: "trade",
     tone: "focus",
-    priority: 7,
+    priority: 8,
+    whatItIs:
+      "A structured demand and request layer for community needs, offers, services, goods, and support signals.",
+    howItWorks:
+      "Ask Community and DemandBox separate official notices from demand signals, then keep requester context, placement, and response paths visible.",
+    whyItMatters:
+      "Many opportunities are lost because the right person never sees the need at the right time.",
     decisionGuideLine:
-      "Before backing a request, read amount, purpose, duration, repayment plan, supporter fit, and responsibility.",
+      "Before treating a need as solved, check requester context, placement, response path, and evidence left behind.",
   },
   {
     id: 9,
-    title: "Supporting Others",
-    proverb: "Supporting Others makes trust productive, not passive.",
+    title: "Support, Welfare and Contribution Records",
+    proverb: "Help is stronger when responsibility and evidence travel with it.",
     gmfn:
-      "GSN shows when support is visible, accountable, and community-backed so help becomes measurable.",
-    category: "support",
-    tone: "calm",
-    priority: 6,
+      "GSN helps support requests, welfare activity, contribution history, repayment context, supporter responsibility, and savings-circle records become easier to review.",
+    category: "finance",
+    tone: "focus",
+    priority: 8,
+    whatItIs:
+      "A support and finance-evidence layer for welfare, contributions, loans, repayments, and community responsibility.",
+    howItWorks:
+      "Requests can carry amount, purpose, duration, fit, supporter context, repayment plan, contribution record, or ROSCA context where the live product supports it.",
+    whyItMatters:
+      "Communities need support evidence without pretending GSN is a bank or that every request is approved.",
     decisionGuideLine:
-      "Before standing behind someone, read the request, relationship context, trust evidence, and responsibility.",
+      "Before backing support or reading finance evidence, check amount, purpose, duration, responsibility, repayment, and community source.",
   },
   {
     id: 10,
-    title: "Emergency Support",
-    proverb: "Emergency Support works better when trust is already visible.",
+    title: "Opportunity and Activity Analytics",
+    proverb: "Activity becomes useful when leaders can read it without mistaking signals for proof.",
     gmfn:
-      "GSN shortens uncertainty in urgent moments by making identity, trust, and community context easier to read.",
-    category: "support",
-    tone: "alert",
+      "GSN helps leaders read attention, participation, demand, Spotlight movement, shop activity, trust signals, and opportunity patterns from observable activity.",
+    category: "visibility",
+    tone: "focus",
     priority: 8,
+    whatItIs:
+      "A practical analytics layer for reading community movement, market activity, demand, visibility, and follow-up signals.",
+    howItWorks:
+      "Shop Control, Spotlight attention, DemandBox signals, Market Wisdom, and Opportunity Engine views can organise what GSN can observe.",
+    whyItMatters:
+      "Leaders need a calmer way to see what is moving, what is ignored, and what needs action.",
     decisionGuideLine:
-      "In urgent moments, reduce uncertainty by checking identity, community confirmation, TrustSlip, and need evidence.",
+      "Before acting on analytics, separate attention, demand, participation, contact attempts, and verified outcomes.",
   },
   {
     id: 11,
-    title: "Diaspora Trust Bridge",
-    proverb: "Diaspora Trust Bridge carries confidence across distance.",
+    title: "Documents, Downloads and Bridges",
+    proverb: "Important material should move cleanly without exposing the wrong door.",
     gmfn:
-      "GSN helps people transact, support, and verify across borders by making trust portable instead of local only.",
-    category: "community",
-    tone: "focus",
-    priority: 6,
+      "GSN helps communities package documents, QR download sheets, forms, setup packs, public links, private files, and approved bridges so people receive the right material.",
+    category: "operating",
+    tone: "calm",
+    priority: 8,
+    whatItIs:
+      "A document and transfer layer for setup packs, downloads, QR handover, public links, and controlled private material.",
+    howItWorks:
+      "The setup pack, QR download index, document links, bulletin bridges, and public/private boundaries guide what can be sent to leaders or members.",
+    whyItMatters:
+      "Good documents reduce repeated explanation and help members move setup material onto their phones.",
     decisionGuideLine:
-      "Across distance, give supporters and traders controlled community evidence before they send value or opportunity.",
+      "Before sending a document or bridge, check whether it is public, member-safe, admin-only, or private.",
   },
   {
     id: 12,
-    title: "Trust Savings (ROSCA Support)",
-    proverb: "Trust Savings gives familiar savings culture a visible trust layer.",
+    title: "Continuity, Handover and Institutional Memory",
+    proverb: "A community should outlive the current admin's phone.",
     gmfn:
-      "GSN helps savings groups become more accountable by making contribution trust visible inside community structures.",
-    category: "finance",
-    tone: "calm",
-    priority: 6,
-    decisionGuideLine:
-      "For savings circles, keep contribution, timing, payout, and community context visible without becoming a bank.",
-  },
-  {
-    id: 13,
-    title: "Contribution Tracking",
-    proverb: "Contribution Tracking turns memory into visible economic record.",
-    gmfn:
-      "GSN helps contribution history become visible evidence so access and accountability improve together.",
-    category: "finance",
-    tone: "focus",
-    priority: 6,
-    decisionGuideLine:
-      "Turn contribution, repayment, support, and follow-through into records future decisions can review.",
-  },
-  {
-    id: 14,
-    title: "Continuity Across Distance",
-    proverb: "Continuity Across Distance keeps trust from breaking when people move.",
-    gmfn:
-      "GSN preserves identity, trust, and participation across time and location so opportunity does not reset from zero.",
-    category: "community",
-    tone: "calm",
-    priority: 6,
-    decisionGuideLine:
-      "When life moves, keep identity, role, membership, and trust trail readable without merging communities.",
-  },
-  {
-    id: 15,
-    title: "Portable Trust Identity",
-    proverb: "Portable Trust Identity lets trust move with the person.",
-    gmfn:
-      "GSN turns informal community vouching into portable, verifiable trust evidence, especially for people who are normally invisible to formal credit systems.",
-    category: "identity",
-    tone: "focus",
-    priority: 8,
-    whatItIs:
-      "Portable Trust Identity helps a member carry their good name beyond the street, market, family, or community where people already know them.",
-    howItWorks:
-      "Trust Passport keeps the fuller record of money promises, repayment behaviour, support given, supporter responsibility, identity continuity, and recorded community-backed behaviour. TrustSlip gives a smaller evidence record that can be checked before a seller releases goods on credit, before a loan is approved, or before someone accepts risk.",
-    whyItMatters:
-      "GSN turns informal community vouching into portable, verifiable trust evidence, especially for people who are normally invisible to formal credit systems.",
-    decisionGuideLine:
-      "When identity must travel, share a bounded GSN ID, Trust Passport, TrustSlip, credential, and verification boundary.",
-  },
-  {
-    id: 16,
-    title: "Reputation Mobility",
-    proverb: "Reputation Mobility stops trust from staying trapped in one place.",
-    gmfn:
-      "GSN helps earned evidence stay usable across new spaces, which improves access without losing accountability.",
-    category: "identity",
-    tone: "focus",
-    priority: 7,
-    decisionGuideLine:
-      "Let recorded behaviour move with relationship evidence, community context, and current reading.",
-  },
-  {
-    id: 17,
-    title: "One Global Shop",
-    proverb: "One Global Shop gives one identity a wider market presence.",
-    gmfn:
-      "GSN helps one merchant identity stay visible across communities instead of rebuilding from zero in each market.",
-    category: "visibility",
-    tone: "spotlight",
-    priority: 7,
-    decisionGuideLine:
-      "Before customers rely on scattered shop claims, give them one public shop home with verification entry points.",
-  },
-  {
-    id: 18,
-    title: "Service Economy Participation",
-    proverb: "Service Economy Participation brings trust into work that often stays informal.",
-    gmfn:
-      "GSN helps service work become more visible and reviewable so access improves for workers and buyers alike.",
-    category: "work",
-    tone: "focus",
-    priority: 6,
-    decisionGuideLine:
-      "Before service work is chosen, connect demand, public identity, community context, and follow-up evidence.",
-  },
-  {
-    id: 19,
-    title: "Trust-Based Hiring",
-    proverb: "Trust-Based Hiring helps work decisions rely on visible credibility.",
-    gmfn:
-      "GSN makes trust readable before hiring, so decisions can go beyond guesswork and weak informal signals.",
-    category: "work",
-    tone: "focus",
-    priority: 6,
-    decisionGuideLine:
-      "Before hiring or assigning work, check identity, role evidence, activity, TrustSlip, and confirmation context.",
-  },
-  {
-    id: 20,
-    title: "DemandBox",
-    proverb: "DemandBox keeps real needs structured before chat noise buries them.",
-    gmfn:
-      "GSN helps demand, Ask Community requests, and local support signals become readable without turning the official bulletin into a mixed conversation feed.",
-    category: "trade",
-    tone: "focus",
-    priority: 7,
-    decisionGuideLine:
-      "Before opportunity is missed, route the ask into DemandBox with requester context, placement, response path, and evidence boundary.",
-  },
-  {
-    id: 21,
-    title: "Community Economic Power",
-    proverb: "Community Economic Power grows when trust becomes visible and usable.",
-    gmfn:
-      "GSN turns trust into shared economic strength by linking identity, trust, and community into one working layer.",
-    category: "community",
-    tone: "calm",
-    priority: 8,
-    decisionGuideLine:
-      "Help a community read identity, marketplace, finance, trust, and opportunity records as one working layer.",
-  },
-  {
-    id: 22,
-    title: "Commitment Builder",
-    proverb:
-      "The point is not to collect goals. The point is to build execution discipline that supports savings, repayment, retirement readiness, and dependable follow-through.",
-    gmfn:
-      "GSN helps members turn intentions into structured, achievable follow-through through reminders, progress guidance, and visible commitment support.",
-    category: "operating",
-    tone: "focus",
-    priority: 8,
-    whatItIs:
-      "Commitment Builder helps members turn savings goals, business targets, repayment plans, retirement readiness, and other intentions into structured, achievable follow-through.",
-    howItWorks:
-      "The app can help a member start a savings target, business target, repayment target, retirement-readiness target, or another structured commitment, then turn that intention into a clearer plan, reminders, step-by-step progress, and visible follow-through.",
-    whyItMatters:
-      "The point is not to collect goals. The point is to build execution discipline that can support savings behavior, retirement readiness, repayment follow-through, business targets, and more dependable action over time.",
-    decisionGuideLine:
-      "Turn intention into a visible commitment record with progress, reminders, completion, and follow-through evidence.",
-  },
-  {
-    id: 23,
-    title: "Institutional Community Domain",
-    proverb:
-      "Institutional Community Domain helps a real organization preserve identity, meetings, announcements, evidence, and handover.",
-    gmfn:
-      "GSN helps schools, churches, cooperatives, markets, unions, NGOs, families, and associations organize members, roles, announcements, meeting evidence, documents, QR entry, governance, services, and public identity without confusing them with personal marketplaces.",
+      "GSN helps preserve identity, membership, roles, documents, decisions, support evidence, marketplace context, and setup history so communities can upgrade instead of starting again.",
     category: "community",
     tone: "focus",
-    priority: 8,
+    priority: 9,
     whatItIs:
-      "Institutional Community Domain is the larger organized-community layer for schools, unions, churches, cooperatives, markets, associations, and similar bodies.",
+      "The continuity layer that keeps community memory, setup material, roles, evidence, and handover usable over time.",
     howItWorks:
-      "A domain can hold the institution's public identity, operating units, member placement, policies, bulletin notices, meeting and attendance records, document links, evidence maps, service lanes, participation records, and controlled public claims in one structured space.",
+      "The Community Domain, setup pack, route map, documents, role model, and evidence surfaces make the organisation less dependent on one person or device.",
     whyItMatters:
-      "It separates institutional communities from personal marketplaces and gives leaders a memory that can survive handover, so people can see whether they are dealing with a real organized body, a branch under that body, or an ordinary marketplace community.",
+      "Continuity is what makes GSN valuable beyond one demo, one meeting, or one leadership cycle.",
     decisionGuideLine:
-      "Keep institutional membership, announcements, meetings, attendance, roles, services, governance, and public claims separate from personal marketplaces.",
+      "Before handover or upgrade, check the source pack, current routes, roles, documents, evidence limits, and live community state.",
   },
 ] as const;
 
