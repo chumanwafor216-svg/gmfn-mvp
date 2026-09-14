@@ -539,6 +539,7 @@ def list_marketplace_requests(
     mine_only: bool = Query(default=False),
     clan_id: int | None = Query(default=None, ge=1),
     limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
 ):
     _cleanup_expired_requests(db)
 
@@ -601,7 +602,14 @@ def list_marketplace_requests(
     if area:
         q = q.filter(MarketplaceRequest.area.ilike(f"%{area.strip()}%"))
 
-    rows = q.order_by(MarketplaceRequest.created_at.desc()).limit(limit).all()
+    offset_value = offset if isinstance(offset, int) else 0
+
+    rows = (
+        q.order_by(MarketplaceRequest.created_at.desc())
+        .offset(offset_value)
+        .limit(limit)
+        .all()
+    )
 
     return [_to_out(db, row, current_user_id=int(current_user.id)) for row in rows]
 

@@ -81,6 +81,8 @@ type DemandNoticeExpiryPolicy = "standard" | "urgent" | "event" | "pinned";
 type DemandQueueLane = "tagged" | "for_me" | "mine" | "ask_community" | "urgent" | "categories";
 type DemandTagMember = { userId: number; gsnId: string; label: string; role: string };
 
+const DEMAND_BOX_PAGE_SIZE = 200;
+
 function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
@@ -729,6 +731,9 @@ export default function DemandBoxPage() {
     useState<any>(null);
   const [myOpenRows, setMyOpenRows] = useState<DemandRow[]>([]);
   const [visibleRows, setVisibleRows] = useState<DemandRow[]>([]);
+  const [visibleRowsRawLoaded, setVisibleRowsRawLoaded] = useState(0);
+  const [hasMoreVisibleRows, setHasMoreVisibleRows] = useState(false);
+  const [loadingMoreVisibleRows, setLoadingMoreVisibleRows] = useState(false);
   const [tagMembers, setTagMembers] = useState<DemandTagMember[]>([]);
   const [activeQueueLane, setActiveQueueLane] = useState<DemandQueueLane>("for_me");
 
@@ -805,6 +810,9 @@ export default function DemandBoxPage() {
     setCommunityDomainPolicyPayload(null);
     setMyOpenRows([]);
     setVisibleRows([]);
+    setVisibleRowsRawLoaded(0);
+    setHasMoreVisibleRows(false);
+    setLoadingMoreVisibleRows(false);
     setTagMembers([]);
 
     try {
@@ -825,13 +833,15 @@ export default function DemandBoxPage() {
           clan_id: effectiveClanId || undefined,
           mine_only: true,
           status: "open",
-          limit: 200,
+          limit: DEMAND_BOX_PAGE_SIZE,
+          offset: 0,
         }).catch(() => []),
         listMarketplaceRequests({
           clan_id: effectiveClanId || undefined,
           mine_only: false,
           status: "open",
-          limit: 200,
+          limit: DEMAND_BOX_PAGE_SIZE,
+          offset: 0,
         }).catch(() => []),
         effectiveClanId
           ? listClanMembers(effectiveClanId).catch(() => ({ items: [] }))
@@ -861,6 +871,8 @@ export default function DemandBoxPage() {
       setCommunityDomainPolicyPayload(domainsRes);
       setMyOpenRows(myRows);
       setVisibleRows(filteredVisible);
+      setVisibleRowsRawLoaded(visibleAll.length);
+      setHasMoreVisibleRows(visibleAll.length === DEMAND_BOX_PAGE_SIZE);
       setTagMembers(availableTagMembers);
     } finally {
       if (isCurrentDemandLoad()) setLoading(false);
@@ -871,9 +883,51 @@ export default function DemandBoxPage() {
     void loadPage(selectedClanId);
   }, [loadPage, selectedClanId]);
 
-  function showNotice(tone: NoticeTone, text: string) {
+  const showNotice = useCallback((tone: NoticeTone, text: string) => {
     setNotice({ tone, text });
-  }
+  }, []);
+
+  const loadOlderVisibleDemandRows = useCallback(async () => {
+    const effectiveClanId = Number(selectedClanId || 0);
+    if (!effectiveClanId || loadingMoreVisibleRows || !hasMoreVisibleRows) return;
+
+    setLoadingMoreVisibleRows(true);
+    try {
+      const nextRes = await listMarketplaceRequests({
+        clan_id: effectiveClanId,
+        mine_only: false,
+        status: "open",
+        limit: DEMAND_BOX_PAGE_SIZE,
+        offset: visibleRowsRawLoaded,
+      });
+      const nextRawRows = rowsOf<DemandRow>(nextRes);
+      const nextVisibleRows = nextRawRows.filter((row) => !isMineRow(row, me));
+
+      setVisibleRows((currentRows) =>
+        uniqueDemandRows([...currentRows, ...nextVisibleRows])
+      );
+      setVisibleRowsRawLoaded((currentOffset) => currentOffset + nextRawRows.length);
+      setHasMoreVisibleRows(nextRawRows.length === DEMAND_BOX_PAGE_SIZE);
+
+      if (nextRawRows.length === 0) {
+        showNotice("success", "No older open requests found for this community.");
+      }
+    } catch (err: any) {
+      showNotice(
+        "error",
+        safeStr(err?.message) || "Older DemandBox requests could not be loaded."
+      );
+    } finally {
+      setLoadingMoreVisibleRows(false);
+    }
+  }, [
+    hasMoreVisibleRows,
+    loadingMoreVisibleRows,
+    me,
+    showNotice,
+    selectedClanId,
+    visibleRowsRawLoaded,
+  ]);
 
   function openDemandWhatsAppChat(row: DemandRow) {
     const chatUrl = buildWhatsAppChatUrl(
@@ -1168,7 +1222,7 @@ export default function DemandBoxPage() {
     }
 
     setMarketNeedPulseOpen(true);
-  }, [demandBoxFeatureOff, demandBoxFeatureOffText, selectedClanId]);
+  }, [demandBoxFeatureOff, demandBoxFeatureOffText, selectedClanId, showNotice]);
 
   async function submitMarketNeedPulse(
     body: string,
@@ -2551,6 +2605,7 @@ export default function DemandBoxPage() {
               <span style={badge(askCommunityRows.length > 0)}>Ask: {askCommunityRows.length}</span>
               <span style={badge(urgentRows.length > 0)}>Urgent: {urgentRows.length}</span>
               <span style={badge(false)}>Loaded: {allOpenRows.length}</span>
+              <span style={badge(hasMoreVisibleRows)}>More: {hasMoreVisibleRows ? "available" : "none shown"}</span>
             </div>
           </div>
 
@@ -2611,7 +2666,7 @@ export default function DemandBoxPage() {
             </span>
             <span style={badge(taggedRows.length > 0)}>Tagged: {taggedRows.length}</span>
             <span style={badge(false)}>Not a chat feed</span>
-            <span style={badge(false)}>Max loaded now: 200 per read</span>
+            <span style={badge(false)}>Fetched: {visibleRowsRawLoaded}</span>
           </div>
 
           <details
@@ -2632,7 +2687,7 @@ export default function DemandBoxPage() {
                   Current pilot sorting uses saved queue signals, matched GSN handles, need type, urgency, owner, and Ask Community source.
                 </div>
                 <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.55 }}>
-                  Matched GSN handles can route a notification to the tagged lane. Ranked queues, moderation rules, rate limits, saved assignments, and full list paging still need governed records work before very large communities use DemandBox at full scale.
+                  Matched GSN handles can route a notification to the tagged lane. Load older requests extends the visible queue in batches; ranked queues, moderation rules, rate limits, and saved assignments still need governed records work before very large communities use DemandBox at full scale.
                 </div>
               </div>
             </div>
@@ -2716,12 +2771,33 @@ export default function DemandBoxPage() {
               {(queueLaneRows[activeQueueLane] || []).length > (isCompact ? 12 : 24) ? (
                 <div style={{ ...helperText(), ...innerCard("#F8FBFF") }}>
                   Showing the first {isCompact ? 12 : 24} rows in this lane. Use
-                  Need types, Urgent, or Tagged to narrow the queue while full list controls are prepared.
+                  Need types, Urgent, or Tagged to narrow the queue, or load older community requests if more are available.
                 </div>
               ) : null}
             </div>
           )}
 
+          {hasMoreVisibleRows ? (
+            <div
+              data-gsn-demand-load-older="true"
+              style={{ marginTop: 14, display: "grid", gap: 8 }}
+            >
+              <SecondaryButton
+                onClick={loadOlderVisibleDemandRows}
+                disabled={loadingMoreVisibleRows}
+                busy={loadingMoreVisibleRows}
+                busyLabel="Loading older requests..."
+                fullWidth
+                stableHeight={54}
+                debugId="demand-box.queue.load-older"
+              >
+                {demandIconText("refresh", "Load older requests", 20)}
+              </SecondaryButton>
+              <div style={{ ...helperText(), textAlign: "center" }}>
+                GSN loads DemandBox in batches so large communities stay readable.
+              </div>
+            </div>
+          ) : null}
           <div style={demandActionRowStyle(isCompact, 54, 156, 14)}>
             <StableCtaLink
               to={demandReturnTo}

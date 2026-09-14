@@ -7714,6 +7714,7 @@ export async function listMarketplaceRequests(params?: {
   mine_only?: boolean;
   clan_id?: number | null;
   limit?: number;
+  offset?: number;
 }): Promise<MarketplaceRequestItem[]> {
   const effectiveClanId =
     params?.clan_id === undefined ? getSelectedClanId() : params?.clan_id;
@@ -7727,6 +7728,7 @@ export async function listMarketplaceRequests(params?: {
         typeof params?.mine_only === "boolean" ? params.mine_only : undefined,
       clan_id: effectiveClanId ?? undefined,
       limit: params?.limit ?? 100,
+      offset: params?.offset ?? undefined,
     };
 
   return cachedStartupSectionRead(
@@ -7747,6 +7749,7 @@ export async function getMarketplaceRequests(params?: {
   mine_only?: boolean;
   clan_id?: number | null;
   limit?: number;
+  offset?: number;
 }): Promise<MarketplaceRequestItem[]> {
   return listMarketplaceRequests(params);
 }

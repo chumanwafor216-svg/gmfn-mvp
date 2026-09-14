@@ -236,12 +236,12 @@ function requireApiPattern(pattern, message) {
     "DemandBox must show Ask Community as its own queue lane instead of repeating the Community lane.",
   ],
   [
-    /data-gsn-demand-routing-readiness="true"[\s\S]*?Matched GSN handles can route a notification to the tagged lane. Ranked queues, moderation rules, rate limits, saved assignments, and full list paging still need governed records work before/,
-    "DemandBox must keep the large-community routing boundary collapsed and honest.",
+    /data-gsn-demand-routing-readiness="true"[\s\S]*?Load older requests extends the visible queue in batches[\s\S]*?ranked queues, moderation rules, rate limits, and saved assignments still need governed records work before/,
+    "DemandBox must keep the large-community routing boundary collapsed, batch-aware, and honest.",
   ],
   [
-    /Need types, Urgent, or Tagged to narrow the queue while full list controls are prepared\./,
-    "DemandBox overflow guidance must not expose raw implementation wording to users.",
+    /Need types, Urgent, or Tagged to narrow the queue, or load older community requests if more are available\./,
+    "DemandBox overflow guidance must point to lane narrowing or older-batch loading.",
   ],
   [
     /data-gsn-demand-category-buckets="true"/,
@@ -268,8 +268,20 @@ function requireApiPattern(pattern, message) {
     "DemandBox must state the anti-WhatsApp queue boundary.",
   ],
   [
-    /Max loaded now: 200 per read/,
-    "DemandBox must surface the current list-size boundary while backend pagination/tag routing is pending.",
+    /data-gsn-demand-load-older="true"[\s\S]*?debugId="demand-box\.queue\.load-older"[\s\S]*?Load older requests/,
+    "DemandBox must expose a load-older control for paged community demand queues.",
+  ],
+  [
+    /const DEMAND_BOX_PAGE_SIZE = 200/,
+    "DemandBox must keep the backend-safe page size explicit.",
+  ],
+  [
+    /offset: visibleRowsRawLoaded/,
+    "DemandBox must request older rows with the backend offset rather than pretending the first batch is complete.",
+  ],
+  [
+    /setHasMoreVisibleRows\(visibleAll\.length === DEMAND_BOX_PAGE_SIZE\)/,
+    "DemandBox must detect when a full initial batch may have older rows.",
   ],
   [
     /askCommunity: appendRouteQueryParam[\s\S]*?routeTarget\("demandBox", selectedClanId, "demand-box\.ask-community"\)[\s\S]*?"mode"[\s\S]*?"ask_community"/,
@@ -317,6 +329,10 @@ function requireApiPattern(pattern, message) {
   [
     /mentioned_member_count\?: number \| null/,
     "API request type must include matched-member count metadata.",
+  ],
+  [
+    /offset\?: number/,
+    "API request list helper must include the backend paging offset.",
   ],
 ].forEach(([pattern, message]) => requireApiPattern(pattern, message));
 
@@ -382,7 +398,7 @@ function requireApiPattern(pattern, message) {
     "DemandBox must not hide the need-type tag inside More detail again.",
   ],
   [
-    /cursor paging and direct handles are being built/,
+    /cursor paging and direct handles are being built|full list controls are prepared|full list paging still need|Max loaded now: 200 per read/,
     "DemandBox must not expose raw implementation wording about unfinished cursor/direct-handle work.",
   ],
 ].forEach(([pattern, message]) => {

@@ -721,6 +721,51 @@ def test_marketplace_request_quota_ignores_open_requests_older_than_24_hours(
     assert _marketplace_request_counts() == (6, 1)
 
 
+def test_marketplace_request_list_supports_offset_paging():
+    _seed_primary_clan()
+    _add_second_member_to_primary_clan()
+    base_created_at = datetime.now(timezone.utc) - timedelta(minutes=10)
+    future_expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+
+    with engine.begin() as conn:
+        for index in range(3):
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO marketplace_requests
+                        (clan_id, user_id, title, description, urgency, status, created_at, expires_at)
+                    VALUES
+                        (1, 1, :title, 'Paging boundary request.', 'medium', 'open', :created_at, :expires_at)
+                    """
+                ),
+                {
+                    "title": f"Paged DemandBox request {index + 1}",
+                    "created_at": base_created_at + timedelta(minutes=index),
+                    "expires_at": future_expires_at,
+                },
+            )
+
+    with SessionLocal() as db:
+        rows = marketplace_requests.list_marketplace_requests(
+            db=db,
+            current_user=_fake_second_user(),
+            status="open",
+            category=None,
+            urgency=None,
+            area=None,
+            mine_only=False,
+            clan_id=1,
+            limit=2,
+            offset=1,
+        )
+
+    assert [row.title for row in rows] == [
+        "Paged DemandBox request 2",
+        "Paged DemandBox request 1",
+    ]
+    assert all(row.is_mine is False for row in rows)
+
+
 def test_marketplace_request_requires_community_when_user_has_many():
     _seed_primary_clan()
     _add_second_clan_for_user()
