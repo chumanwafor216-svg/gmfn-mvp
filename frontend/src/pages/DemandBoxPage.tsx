@@ -823,6 +823,7 @@ export default function DemandBoxPage() {
         domainsRes,
         myRes,
         visibleRes,
+        visibleProbeRes,
         membersRes,
       ] = await Promise.all([
         getMe().catch(() => null),
@@ -844,6 +845,15 @@ export default function DemandBoxPage() {
           offset: 0,
         }).catch(() => []),
         effectiveClanId
+          ? listMarketplaceRequests({
+              clan_id: effectiveClanId,
+              mine_only: false,
+              status: "open",
+              limit: 1,
+              offset: DEMAND_BOX_PAGE_SIZE,
+            }).catch(() => [])
+          : Promise.resolve([]),
+        effectiveClanId
           ? listClanMembers(effectiveClanId).catch(() => ({ items: [] }))
           : Promise.resolve({ items: [] }),
       ]);
@@ -855,6 +865,7 @@ export default function DemandBoxPage() {
         ) || currentClanRes || null;
       const myRows = rowsOf<DemandRow>(myRes);
       const visibleAll = rowsOf<DemandRow>(visibleRes);
+      const visibleProbeRows = rowsOf<DemandRow>(visibleProbeRes);
       const availableTagMembers = rowsOf<any>(membersRes)
         .map(normalizeDemandTagMember)
         .filter(Boolean) as DemandTagMember[];
@@ -872,7 +883,7 @@ export default function DemandBoxPage() {
       setMyOpenRows(myRows);
       setVisibleRows(filteredVisible);
       setVisibleRowsRawLoaded(visibleAll.length);
-      setHasMoreVisibleRows(visibleAll.length === DEMAND_BOX_PAGE_SIZE);
+      setHasMoreVisibleRows(visibleProbeRows.length > 0);
       setTagMembers(availableTagMembers);
     } finally {
       if (isCurrentDemandLoad()) setLoading(false);
@@ -902,12 +913,25 @@ export default function DemandBoxPage() {
       });
       const nextRawRows = rowsOf<DemandRow>(nextRes);
       const nextVisibleRows = nextRawRows.filter((row) => !isMineRow(row, me));
+      const nextOffset = visibleRowsRawLoaded + nextRawRows.length;
+      const nextProbeRows =
+        nextRawRows.length === DEMAND_BOX_PAGE_SIZE
+          ? rowsOf<DemandRow>(
+              await listMarketplaceRequests({
+                clan_id: effectiveClanId,
+                mine_only: false,
+                status: "open",
+                limit: 1,
+                offset: nextOffset,
+              })
+            )
+          : [];
 
       setVisibleRows((currentRows) =>
         uniqueDemandRows([...currentRows, ...nextVisibleRows])
       );
-      setVisibleRowsRawLoaded((currentOffset) => currentOffset + nextRawRows.length);
-      setHasMoreVisibleRows(nextRawRows.length === DEMAND_BOX_PAGE_SIZE);
+      setVisibleRowsRawLoaded(nextOffset);
+      setHasMoreVisibleRows(nextProbeRows.length > 0);
 
       if (nextRawRows.length === 0) {
         showNotice("success", "No older open requests found for this community.");

@@ -276,12 +276,12 @@ function requireApiPattern(pattern, message) {
     "DemandBox must keep the backend-safe page size explicit.",
   ],
   [
-    /offset: visibleRowsRawLoaded/,
-    "DemandBox must request older rows with the backend offset rather than pretending the first batch is complete.",
+    /offset: visibleRowsRawLoaded[\s\S]*?nextOffset = visibleRowsRawLoaded \+ nextRawRows\.length[\s\S]*?limit: 1,[\s\S]*?offset: nextOffset/,
+    "DemandBox must request older rows with backend offset and probe the following batch before showing more.",
   ],
   [
-    /setHasMoreVisibleRows\(visibleAll\.length === DEMAND_BOX_PAGE_SIZE\)/,
-    "DemandBox must detect when a full initial batch may have older rows.",
+    /limit: 1,[\s\S]*?offset: DEMAND_BOX_PAGE_SIZE[\s\S]*?visibleProbeRows[\s\S]*?setHasMoreVisibleRows\(visibleProbeRows\.length > 0\)/,
+    "DemandBox must prove older rows exist with a one-row probe after the initial batch.",
   ],
   [
     /askCommunity: appendRouteQueryParam[\s\S]*?routeTarget\("demandBox", selectedClanId, "demand-box\.ask-community"\)[\s\S]*?"mode"[\s\S]*?"ask_community"/,
