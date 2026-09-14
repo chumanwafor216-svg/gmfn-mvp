@@ -119,6 +119,10 @@ const protectedAudits = [
     label: "trust/admin mobile overflow",
     script: "audit-trust-admin-mobile-overflow.mjs",
   },
+  {
+    label: "trust infrastructure mobile visual",
+    script: "audit-trust-infrastructure-mobile-visual.mjs",
+  },
 ];
 
 const failures = [];

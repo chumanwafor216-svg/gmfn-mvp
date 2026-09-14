@@ -162,7 +162,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "audit:dashboard-passport-hitboxes": "node tools/audit-dashboard-passport-hitboxes.mjs",
-    "audit:shop-control-analytics-mobile-visual": "node tools/audit-shop-control-analytics-mobile-visual.mjs"
+    "audit:shop-control-analytics-mobile-visual": "node tools/audit-shop-control-analytics-mobile-visual.mjs",
+    "audit:trust-infrastructure-mobile-visual": "node tools/audit-trust-infrastructure-mobile-visual.mjs"
   },
   "dependencies": {
     "qrcode.react": "^4.2.0",
