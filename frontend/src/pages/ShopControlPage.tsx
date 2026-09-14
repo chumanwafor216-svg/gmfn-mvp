@@ -2319,40 +2319,40 @@ function ShopOpportunityLensesVisualPanel({
       icon: "shop",
       title: "Economic demand",
       status: demandOpenCount > 0 ? "Live" : "Next",
-      value: demandOpenCount > 0 ? `${demandOpenCount} open DemandBox request` : "No DemandBox request yet",
-      next: "Compare requests with shop offers",
+      value: demandOpenCount > 0 ? `${demandOpenCount} open DemandBox signal` : "No DemandBox signal yet",
+      next: "Compare with shop offers",
       accent: "green",
     },
     {
       icon: "community",
       title: "Social movement",
       status: hasCommunityContext ? "Live" : "Next",
-      value: hasCommunityContext ? "Community-scoped reading" : "Select community context",
-      next: "Keep comparisons local",
+      value: hasCommunityContext ? "One selected community" : "Select one community",
+      next: "Keep comparisons community-scoped",
       accent: "green",
+    },
+    {
+      icon: "shield",
+      title: "Trust and safety",
+      status: tradeRecords > 0 ? "Live" : "Watch",
+      value: tradeRecords > 0 ? `${tradeRecords} protected trade record${tradeRecords === 1 ? "" : "s"}` : "No protected trade record",
+      next: "Protect serious outcomes",
+      accent: "gold",
     },
     {
       icon: "megaphone",
       title: "Operations",
       status: liveSignalCount >= 3 ? "Live" : "Watch",
-      value: `${liveSignalCount} of ${totalSignals} signals are live`,
-      next: "Test one small change",
+      value: `${liveSignalCount} of ${totalSignals} signals live`,
+      next: "Test one small adjustment",
       accent: "blue",
     },
     {
-      icon: "shield",
-      title: "Trust & safety",
-      status: tradeRecords > 0 ? "Live" : "Watch",
-      value: tradeRecords > 0 ? `${tradeRecords} protected records` : "No protected trade records yet",
-      next: "Protect serious outcomes",
-      accent: "gold",
-    },
-    {
       icon: "lock",
-      title: "Outside context",
+      title: "Governance and outside context",
       status: "Next",
-      value: "Not connected to this pilot",
-      next: "Add only approved sources",
+      value: "Not connected to this pilot slice",
+      next: "Add only approved inputs",
       accent: "blue",
     },
   ];
@@ -2379,10 +2379,15 @@ function ShopOpportunityLensesVisualPanel({
           Opportunity lenses
         </div>
         <div style={{ color: "#385773", fontSize: 14, fontWeight: 850, lineHeight: 1.35 }}>
-          What the evidence suggests and what to do next.
+          Read local signals. Choose the next safe action.
         </div>
-        <div style={{ borderRadius: 999, padding: "8px 16px", background: "linear-gradient(180deg, #FFF1B8 0%, #F7D66D 100%)", color: "#5B3C00", fontSize: 14, fontWeight: 950 }}>
-          Local GSN reading
+        <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap" }}>
+          <div style={{ borderRadius: 999, padding: "8px 16px", background: "linear-gradient(180deg, #FFF1B8 0%, #F7D66D 100%)", color: "#5B3C00", fontSize: 14, fontWeight: 950 }}>
+            Local GSN reading
+          </div>
+          <div style={{ borderRadius: 999, padding: "8px 16px", background: "#F1F7FF", border: "1px solid rgba(15,94,170,0.14)", color: "#0F5EAA", fontSize: 14, fontWeight: 950 }}>
+            {liveSignalCount} of {totalSignals} signals live
+          </div>
         </div>
       </div>
       <div
@@ -2396,14 +2401,14 @@ function ShopOpportunityLensesVisualPanel({
         <div style={{ display: "grid", gap: 10 }}>
           {lenses.slice(0, 2).map((item) => (
             <div key={`visual-lens-left-${item.title}`} style={{ borderRadius: 18, border: `1px solid ${ANALYTICS_ACCENTS[item.accent].border}`, background: "rgba(255,255,255,0.88)", padding: 10, display: "grid", gap: 8, minHeight: 132 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "62px minmax(0, 1fr)", gap: 10, alignItems: "center" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "70px minmax(0, 1fr)", gap: 10, alignItems: "center" }}>
                 <ShopVisualIconTile icon={item.icon} accent={item.accent} size={40} />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ color: "#061827", fontSize: 16, fontWeight: 950, lineHeight: 1.1 }}>{item.title}</div>
-                  <span style={{ ...badge(item.status === "Live"), marginTop: 6, display: "inline-flex" }}>{item.status}</span>
+                  <span style={{ ...badge(item.status === "Live"), marginTop: 6, display: "inline-flex", background: ANALYTICS_ACCENTS[statusTone(item.status)].bg }}>{item.status}</span>
                 </div>
               </div>
-              <div style={{ color: "#385773", fontSize: 13, fontWeight: 850, lineHeight: 1.28 }}>{item.value}</div>
+              <div style={{ color: "#385773", fontSize: 13, fontWeight: 850, lineHeight: 1.28 }}>Evidence: {item.value}</div>
               <div style={{ borderRadius: 14, background: ANALYTICS_ACCENTS[item.accent].bg, color: "#0B2D4A", padding: "8px 10px", fontSize: 12, fontWeight: 950, lineHeight: 1.2 }}>{item.next} {"->"}</div>
             </div>
           ))}
@@ -2416,14 +2421,14 @@ function ShopOpportunityLensesVisualPanel({
             placeItems: "center",
             textAlign: "center",
             color: "#FFFFFF",
-            background: "radial-gradient(circle at 45% 26%, #22466D 0%, #08233A 56%, #061827 100%)",
+            background: "radial-gradient(circle at 45% 26%, #3187D8 0%, #133D68 42%, #061827 100%)",
             border: "8px solid rgba(214,170,69,0.72)",
             boxShadow: "0 18px 34px rgba(7,24,39,0.22)",
             padding: 18,
           }}
         >
           <div>
-            <div style={{ fontSize: 17, fontWeight: 950, lineHeight: 1.05 }}>Opportunity View</div>
+            <div style={{ fontSize: 13, fontWeight: 950, lineHeight: 1.05, textTransform: "uppercase" }}>Local Opportunity View</div>
             <div style={{ marginTop: 8, color: "#F7D66D", fontSize: 24, fontWeight: 950, lineHeight: 1 }}>{liveSignalCount} of {totalSignals}</div>
             <div style={{ marginTop: 4, fontSize: 13, fontWeight: 850 }}>signals live</div>
           </div>
@@ -2431,14 +2436,14 @@ function ShopOpportunityLensesVisualPanel({
         <div style={{ display: "grid", gap: 10 }}>
           {lenses.slice(2).map((item) => (
             <div key={`visual-lens-right-${item.title}`} style={{ borderRadius: 18, border: `1px solid ${ANALYTICS_ACCENTS[item.accent].border}`, background: item.status === "Next" ? "#F7FBFF" : "rgba(255,255,255,0.88)", padding: 10, display: "grid", gap: 8, minHeight: 124 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "58px minmax(0, 1fr)", gap: 10, alignItems: "center" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "70px minmax(0, 1fr)", gap: 10, alignItems: "center" }}>
                 <ShopVisualIconTile icon={item.icon} accent={item.accent} size={38} />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ color: "#061827", fontSize: 16, fontWeight: 950, lineHeight: 1.1 }}>{item.title}</div>
                   <span style={{ ...badge(item.status === "Live"), marginTop: 6, display: "inline-flex", background: ANALYTICS_ACCENTS[statusTone(item.status)].bg }}>{item.status}</span>
                 </div>
               </div>
-              <div style={{ color: "#385773", fontSize: 13, fontWeight: 850, lineHeight: 1.28 }}>{item.value}</div>
+              <div style={{ color: "#385773", fontSize: 13, fontWeight: 850, lineHeight: 1.28 }}>Evidence: {item.value}</div>
               <div style={{ borderRadius: 14, background: ANALYTICS_ACCENTS[item.accent].bg, color: "#0B2D4A", padding: "8px 10px", fontSize: 12, fontWeight: 950, lineHeight: 1.2 }}>{item.next} {"->"}</div>
             </div>
           ))}
@@ -2446,9 +2451,9 @@ function ShopOpportunityLensesVisualPanel({
       </div>
       <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 8 }}>
         {[
-          { status: "Live", text: "evidence exists", accent: "green" as AnalyticsAccent },
+          { status: "Live", text: "usable signal", accent: "green" as AnalyticsAccent },
           { status: "Watch", text: "evidence is thin", accent: "gold" as AnalyticsAccent },
-          { status: "Next", text: "not connected yet", accent: "blue" as AnalyticsAccent },
+          { status: "Next", text: "not connected", accent: "blue" as AnalyticsAccent },
         ].map((item) => (
           <div key={`visual-lens-legend-${item.status}`} style={{ borderRadius: 999, background: "rgba(255,255,255,0.86)", border: "1px solid rgba(18,58,89,0.10)", padding: "10px 12px", display: "flex", alignItems: "center", gap: 10 }}>
             <span aria-hidden="true" style={{ width: 30, height: 30, borderRadius: 999, background: ANALYTICS_ACCENTS[item.accent].color, boxShadow: "0 8px 16px rgba(7,24,39,0.12)" }} />
@@ -2457,21 +2462,168 @@ function ShopOpportunityLensesVisualPanel({
           </div>
         ))}
       </div>
-      <div style={{ borderRadius: 18, border: "1px solid rgba(18,58,89,0.10)", background: "rgba(255,255,255,0.86)", padding: 12, display: "grid", gap: 10 }}>
-        <div style={{ color: "#061827", fontSize: 16, fontWeight: 950 }}>Evidence boundaries</div>
-        <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-          {["Demand is not guaranteed sales", "Trust evidence is not approval", "Local reading is not public conclusion"].map((text) => (
-            <div key={`visual-lens-boundary-${text}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(200,58,58,0.14)", padding: 10, display: "grid", gridTemplateColumns: "44px minmax(0, 1fr)", gap: 9, alignItems: "center" }}>
-              <ShopVisualIconTile icon="alert" accent="red" size={30} />
-              <div style={{ color: "#385773", fontSize: 12, fontWeight: 850, lineHeight: 1.25 }}>{text}</div>
-            </div>
-          ))}
+      <div style={{ borderRadius: 18, border: "1px solid rgba(214,170,69,0.20)", background: "#FFF9E8", padding: 12, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "68px minmax(0, 1fr)", gap: 12, alignItems: "center" }}>
+        <ShopVisualIconTile icon="alert" accent="gold" size={36} />
+        <div style={{ display: "grid", gap: 7 }}>
+          <div style={{ color: "#5B3C00", fontSize: 16, fontWeight: 950, textTransform: "uppercase" }}>Local evidence only</div>
+          <div style={{ display: "grid", gap: 5 }}>
+            {[
+              "Demand is not guaranteed sales",
+              "Trust guidance is not approval",
+              "No public, demographic, political, health, legal or external-market conclusion",
+            ].map((text) => (
+              <div key={`visual-lens-boundary-${text}`} style={{ color: "#385773", fontSize: 12, fontWeight: 850, lineHeight: 1.3 }}>
+                {text}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
+function ShopFirstTradeRecordVisualPanel({
+  isCompact,
+  protectedTrades,
+  releasedRecords,
+  receiptRecords,
+  disputeRecords,
+}: {
+  isCompact: boolean;
+  protectedTrades: number;
+  releasedRecords: number;
+  receiptRecords: number;
+  disputeRecords: number;
+}) {
+  const steps: Array<{ icon: GsnIconName; label: string; accent: AnalyticsAccent }> = [
+    { icon: "document", label: "Agree terms", accent: "green" },
+    { icon: "shop", label: "Release item", accent: "blue" },
+    { icon: "wallet", label: "Confirm payment", accent: "gold" },
+    { icon: "shield", label: "Record outcome", accent: "purple" },
+  ];
+  const metrics: Array<{ icon: GsnIconName; label: string; value: number; accent: AnalyticsAccent }> = [
+    { icon: "shield", label: "Protected trades", value: protectedTrades, accent: "green" },
+    { icon: "shop", label: "Released", value: releasedRecords, accent: "gold" },
+    { icon: "document", label: "Receipts", value: receiptRecords, accent: "blue" },
+    { icon: "alert", label: "Disputes", value: disputeRecords, accent: "red" },
+  ];
+  const evidenceTypes: Array<{ icon: GsnIconName; label: string; accent: AnalyticsAccent }> = [
+    { icon: "document", label: "Agreed terms", accent: "green" },
+    { icon: "shop", label: "Recorded handover", accent: "gold" },
+    { icon: "shield", label: "Confirmed outcome", accent: "blue" },
+  ];
+
+  return (
+    <div
+      aria-label="First trade record visual guide"
+      style={{
+        marginTop: 12,
+        borderRadius: 22,
+        border: "1px solid rgba(15,94,170,0.14)",
+        background: "linear-gradient(180deg, #F4FBFF 0%, #FFFFFF 58%, #EFFBF7 100%)",
+        padding: isCompact ? 12 : 14,
+        display: "grid",
+        gap: 12,
+        boxShadow: "0 14px 28px rgba(7,24,39,0.07)",
+      }}
+    >
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 220px",
+          gap: 12,
+          alignItems: "center",
+          borderRadius: 20,
+          background: "linear-gradient(135deg, #F8FCFF 0%, #E7F8F6 100%)",
+          border: "1px solid rgba(15,94,170,0.12)",
+          padding: 14,
+        }}
+      >
+        <div>
+          <div style={{ display: "inline-flex", borderRadius: 999, background: "#EAF4FF", border: "1px solid rgba(15,94,170,0.12)", padding: "7px 12px", color: "#0F5EAA", fontSize: 12, fontWeight: 950 }}>
+            Evidence only
+          </div>
+          <div style={{ marginTop: 10, color: "#061827", fontSize: isCompact ? 28 : 36, fontWeight: 950, lineHeight: 1.02 }}>
+            Build your first trade record
+          </div>
+          <div style={{ marginTop: 9, color: "#385773", fontSize: 15, fontWeight: 850, lineHeight: 1.35 }}>
+            Attention can grow before formal trade evidence appears.
+          </div>
+        </div>
+        <div style={{ justifySelf: isCompact ? "stretch" : "end", borderRadius: 22, background: "rgba(255,255,255,0.86)", border: "1px solid rgba(18,58,89,0.10)", padding: 14, display: "grid", justifyItems: "center", gap: 8, textAlign: "center" }}>
+          <ShopVisualIconTile icon="shield" accent="green" size={56} />
+          <div style={{ color: "#061827", fontSize: 15, fontWeight: 950 }}>Protected handover</div>
+          <div style={{ color: "#5A6F84", fontSize: 12, fontWeight: 820, lineHeight: 1.3 }}>Terms, release, receipt, outcome.</div>
+        </div>
+      </div>
+      <div style={{ borderRadius: 20, background: "rgba(255,255,255,0.88)", border: "1px solid rgba(18,58,89,0.10)", padding: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(7, minmax(0, auto))", gap: 10, alignItems: "center", justifyContent: "space-between" }}>
+          {steps.map((step, index) => (
+            <React.Fragment key={`first-trade-step-${step.label}`}>
+              <div style={{ display: "grid", justifyItems: "center", gap: 7, textAlign: "center", minWidth: 0 }}>
+                <div style={{ position: "relative" }}>
+                  <ShopVisualIconTile icon={step.icon} accent={step.accent} size={40} />
+                  <span aria-hidden="true" style={{ position: "absolute", top: -8, left: -8, width: 28, height: 28, borderRadius: 999, display: "grid", placeItems: "center", background: ANALYTICS_ACCENTS[step.accent].color, color: "#FFFFFF", fontSize: 14, fontWeight: 950, boxShadow: "0 8px 14px rgba(7,24,39,0.12)" }}>
+                    {index + 1}
+                  </span>
+                </div>
+                <div style={{ color: "#061827", fontSize: 13, fontWeight: 950, lineHeight: 1.15 }}>{step.label}</div>
+              </div>
+              {!isCompact && index < steps.length - 1 ? (
+                <div aria-hidden="true" style={{ color: "#08233A", fontSize: 22, fontWeight: 950 }}>
+                  {"->"}
+                </div>
+              ) : null}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+      <div style={{ borderRadius: 20, background: "rgba(255,255,255,0.90)", border: "1px solid rgba(18,58,89,0.10)", padding: 14, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "94px minmax(0, 1fr)", gap: 14, alignItems: "center" }}>
+        <ShopVisualIconTile icon="briefcase" accent="blue" size={54} />
+        <div>
+          <div style={{ color: "#061827", fontSize: 22, fontWeight: 950, lineHeight: 1.1 }}>Nothing recorded yet</div>
+          <div style={{ marginTop: 6, color: "#385773", fontSize: 14, fontWeight: 850, lineHeight: 1.35 }}>
+            Your first completed trade will appear here.
+          </div>
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))", gap: 8 }}>
+        {metrics.map((item) => (
+          <div key={`first-trade-metric-${item.label}`} style={{ borderRadius: 16, background: "rgba(255,255,255,0.88)", border: "1px solid rgba(18,58,89,0.10)", padding: 10, minHeight: 112, display: "grid", justifyItems: "center", gap: 6, textAlign: "center" }}>
+            <ShopVisualIconTile icon={item.icon} accent={item.accent} size={31} />
+            <div style={{ color: "#385773", fontSize: 12, fontWeight: 900, lineHeight: 1.1 }}>{item.label}</div>
+            <div style={{ color: "#061827", fontSize: 24, fontWeight: 950, lineHeight: 1 }}>{item.value}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{ borderRadius: 20, background: "rgba(255,255,255,0.88)", border: "1px solid rgba(18,58,89,0.10)", padding: 12, display: "grid", gap: 10 }}>
+        <div style={{ color: "#061827", fontSize: 18, fontWeight: 950 }}>What counts as evidence?</div>
+        <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 10 }}>
+          {evidenceTypes.map((item) => (
+            <div key={`first-trade-evidence-${item.label}`} style={{ borderRadius: 16, background: ANALYTICS_ACCENTS[item.accent].bg, border: `1px solid ${ANALYTICS_ACCENTS[item.accent].border}`, padding: 12, display: "grid", justifyItems: "center", gap: 8, textAlign: "center" }}>
+              <ShopVisualIconTile icon={item.icon} accent={item.accent} size={38} />
+              <div style={{ color: "#061827", fontSize: 13, fontWeight: 950, lineHeight: 1.15 }}>{item.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{ borderRadius: 18, background: "linear-gradient(180deg, #11A486 0%, #087A68 100%)", color: "#FFFFFF", minHeight: 56, display: "grid", gridTemplateColumns: "56px minmax(0, 1fr)", gap: 10, alignItems: "center", padding: "12px 16px", fontSize: 15, fontWeight: 950 }}>
+        <GsnLegacyIcon name="document" size={30} />
+        <div>Next safe action: record a trade outcome</div>
+      </div>
+      <div style={{ borderRadius: 18, border: "1px solid rgba(15,94,170,0.14)", background: "#F4FBFF", padding: 12, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "68px minmax(0, 1fr)", gap: 12, alignItems: "center" }}>
+        <ShopVisualIconTile icon="shield" accent="blue" size={38} />
+        <div>
+          <div style={{ color: "#061827", fontSize: 14, fontWeight: 950 }}>A record supports a decision.</div>
+          <div style={{ marginTop: 4, color: "#385773", fontSize: 12, fontWeight: 850, lineHeight: 1.35 }}>
+            It does not automatically prove payment, delivery or satisfaction.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 function ShopBusinessReturnReadinessVisualPanel({
   isCompact,
   visitors,
@@ -7877,6 +8029,13 @@ export default function ShopControlPage() {
               </div>
               <span style={badge(tradeOutcomeRecords7Days > 0)}>Evidence only</span>
             </div>
+            <ShopFirstTradeRecordVisualPanel
+              isCompact={isCompact}
+              protectedTrades={tradeOutcomeRecords7Days}
+              releasedRecords={tradeOutcomeReleasedRecords}
+              receiptRecords={tradeOutcomeReceiptConfirmedRecords}
+              disputeRecords={tradeOutcomeDisputeRecords}
+            />
             <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
               {[
                 ["Protected records", tradeOutcomeRecords7Days],
