@@ -1,4 +1,4 @@
-# GSN Core Capability Set (2026-09-14)
+# GSN Community Setup Pack: GSN Core Capabilities (2026-09-14)
 
 Document date: 2026-09-14
 Pack: GSN Community Setup Pack

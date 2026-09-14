@@ -178,7 +178,7 @@ for (const value of [
   "Choose capability",
   "{item.id}. {item.title}",
   "my-gmfn.profile.setup-pack",
-  "GSN_CORE_CAPABILITY_SET_2026-09-14.md",
+  "GSN_CORE_CAPABILITY_SET_2026-09-14.pdf",
   "GSN_IN_REAL_LIFE_MASTER_CAPABILITY_BANK.pdf",
 ]) {
   assertTextIncludes(

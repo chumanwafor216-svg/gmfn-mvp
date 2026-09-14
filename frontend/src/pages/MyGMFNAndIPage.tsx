@@ -2930,7 +2930,7 @@ export default function MyGMFNAndIPage() {
                     [
                       "Core capability source",
                       "Use the stable core set for public and app-facing explanation.",
-                      "https://github.com/chumanwafor216-svg/gmfn-mvp/blob/main/docs/community-setup-pack/GSN_CORE_CAPABILITY_SET_2026-09-14.md",
+                      "https://raw.githubusercontent.com/chumanwafor216-svg/gmfn-mvp/main/docs/community-setup-pack/GSN_CORE_CAPABILITY_SET_2026-09-14.pdf",
                     ],
                     [
                       "Full capability bank",

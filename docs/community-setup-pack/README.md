@@ -39,7 +39,7 @@ Do not create a fresh one-off pack when a client asks for setup material. Update
 
 ## Pack Files
 
-- `GSN_CORE_CAPABILITY_SET_2026-09-14.md`: public/app-facing core set selected from the deeper bank.
+- `GSN_CORE_CAPABILITY_SET_2026-09-14.md/.docx/.pdf`: public/app-facing core set selected from the deeper bank.
 - `GSN_COMMUNITY_SETUP_DEPLOYMENT_PACK_INDEX_2026-09-14.md`: master index and deployment-stage use map.
 - `GSN_COMMUNITY_SETUP_CLIENT_HANDOVER_MAP_2026-09-14.md`: what to send to leaders, admins, members and external supporters.
 - `GSN_COMMUNITY_SETUP_STORY_BANK_2026-09-14.md`: reusable audience stories and examples.
@@ -66,7 +66,7 @@ The pack now includes phone-friendly QR transfer material:
 
 Each generated self-service or real-life distribution DOCX/PDF also ends with a `Scan to download this GSN article` page. Use that page when a printed or forwarded copy needs to move quickly onto a phone.
 
-Truth boundary: the QR codes currently point to GitHub `main` URLs. That keeps them upgradeable, but external recipients can use them only if the repository files are public or the same URLs are mirrored to a public download location. For private client distribution, replace the URLs with approved public hosting links before regenerating.
+Truth boundary: the QR codes currently point to direct PDF files on GitHub raw `main` URLs, not GitHub source pages. That keeps them upgradeable and phone-friendly, but external recipients can use them only if the repository files are public or the same PDFs are mirrored to an approved public download location. For private client distribution, replace the URLs with approved hosted PDF links before regenerating.
 
 ## Builder
 Run this after source material changes:

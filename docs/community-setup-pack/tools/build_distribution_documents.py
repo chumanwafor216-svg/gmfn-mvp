@@ -14,7 +14,6 @@ AUTHENTICITY_LINE = (
 )
 WATERMARK_TEXT = f"GSN ORIGINAL | {DOC_DATE}"
 GITHUB_RAW_BASE = "https://raw.githubusercontent.com/chumanwafor216-svg/gmfn-mvp/main"
-GITHUB_WEB_BASE = "https://github.com/chumanwafor216-svg/gmfn-mvp/blob/main"
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 GUIDE_DIR = REPO_ROOT / "docs" / "gsn-user-guide"
@@ -24,6 +23,18 @@ QR_DIR = PACK_DIR / "qr-codes"
 QR_INDEX_PATH = PACK_DIR / f"GSN_COMMUNITY_SETUP_QR_DOWNLOAD_INDEX_{DOC_DATE}.md"
 
 TITLE_MAP = {
+    PACK_DIR / f"GSN_CORE_CAPABILITY_SET_{DOC_DATE}.md": (
+        f"{PACK_NAME}: GSN Core Capabilities ({DOC_DATE})"
+    ),
+    PACK_DIR / f"GSN_COMMUNITY_SETUP_DEPLOYMENT_PACK_INDEX_{DOC_DATE}.md": (
+        f"{PACK_NAME}: Deployment Pack Index ({DOC_DATE})"
+    ),
+    PACK_DIR / f"GSN_COMMUNITY_SETUP_CLIENT_HANDOVER_MAP_{DOC_DATE}.md": (
+        f"{PACK_NAME}: Client Handover Map ({DOC_DATE})"
+    ),
+    PACK_DIR / f"GSN_COMMUNITY_SETUP_STORY_BANK_{DOC_DATE}.md": (
+        f"{PACK_NAME}: Community Setup Story Bank ({DOC_DATE})"
+    ),
     GUIDE_DIR / "GSN_SELF_SERVICE_USER_GUIDE.md": (
         f"{PACK_NAME}: What to Set Up, What It Does, and How to Use It ({DOC_DATE})"
     ),
@@ -60,24 +71,25 @@ QR_TARGETS = [
     {
         "id": "core-capability-set",
         "title": "GSN Core Capability Set",
-        "path": PACK_DIR / f"GSN_CORE_CAPABILITY_SET_{DOC_DATE}.md",
+        "path": PACK_DIR / f"GSN_CORE_CAPABILITY_SET_{DOC_DATE}.pdf",
         "audience": "Public app surfaces, first conversations and client handover",
-    },    {
+    },
+    {
         "id": "deployment-pack-index",
         "title": "Community Setup Deployment Pack Index",
-        "path": PACK_DIR / f"GSN_COMMUNITY_SETUP_DEPLOYMENT_PACK_INDEX_{DOC_DATE}.md",
+        "path": PACK_DIR / f"GSN_COMMUNITY_SETUP_DEPLOYMENT_PACK_INDEX_{DOC_DATE}.pdf",
         "audience": "GSN setup team and community leaders",
     },
     {
         "id": "client-handover-map",
         "title": "Client Handover Map",
-        "path": PACK_DIR / f"GSN_COMMUNITY_SETUP_CLIENT_HANDOVER_MAP_{DOC_DATE}.md",
+        "path": PACK_DIR / f"GSN_COMMUNITY_SETUP_CLIENT_HANDOVER_MAP_{DOC_DATE}.pdf",
         "audience": "Community owners, coordinators and client admins",
     },
     {
         "id": "story-bank",
         "title": "Community Setup Story Bank",
-        "path": PACK_DIR / f"GSN_COMMUNITY_SETUP_STORY_BANK_{DOC_DATE}.md",
+        "path": PACK_DIR / f"GSN_COMMUNITY_SETUP_STORY_BANK_{DOC_DATE}.pdf",
         "audience": "Sales, onboarding and community champions",
     },
     {
@@ -125,6 +137,10 @@ QR_TARGETS = [
 ]
 
 QR_BY_DOCUMENT = {
+    PACK_DIR / f"GSN_CORE_CAPABILITY_SET_{DOC_DATE}.md": "core-capability-set",
+    PACK_DIR / f"GSN_COMMUNITY_SETUP_DEPLOYMENT_PACK_INDEX_{DOC_DATE}.md": "deployment-pack-index",
+    PACK_DIR / f"GSN_COMMUNITY_SETUP_CLIENT_HANDOVER_MAP_{DOC_DATE}.md": "client-handover-map",
+    PACK_DIR / f"GSN_COMMUNITY_SETUP_STORY_BANK_{DOC_DATE}.md": "story-bank",
     GUIDE_DIR / "GSN_SELF_SERVICE_USER_GUIDE.md": "setup-guide-pdf",
     REAL_LIFE_DIR / "GSN_IN_REAL_LIFE_MASTER_CAPABILITY_BANK.md": "master-capability-bank-pdf",
     REAL_LIFE_DIR / "GSN_IN_REAL_LIFE_AUDIENCE_PICK_LISTS.md": "audience-pick-lists-pdf",

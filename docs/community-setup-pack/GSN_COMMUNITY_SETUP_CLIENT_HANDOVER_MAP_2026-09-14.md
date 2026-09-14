@@ -1,5 +1,6 @@
-# GSN Community Setup Client Handover Map
+# GSN Community Setup Pack: Client Handover Map (2026-09-14)
 
+Authenticity mark: GSN Original Community Setup Material | Source-controlled in gmfn_mvp/docs | Document date: 2026-09-14
 Document date: 2026-09-14
 Pack: GSN Community Setup Pack
 Authenticity mark: GSN original community setup material, source-controlled in `gmfn_mvp/docs`.

@@ -1,3 +1,10 @@
+## 2026-09-14 - Setup pack QR links changed to direct PDFs
+- Status: Link hygiene follow-up completed locally after owner noticed phone QR/document links opening GitHub source pages.
+- Owner concern: opening a GitHub page from a PDF looked like a possible danger to GSN/GSM access and confused the intended client handoff experience.
+- Security truth: opening a public GitHub or raw PDF link does not grant GSN admin access, backend access, call logs, user accounts, payments, or community control. The real risk is exposure/confusion: public repository context and full-bank documents may be visible to anyone with the link if the repo or mirror is public.
+- Change: QR targets for the core capability set, deployment pack index, client handover map, and story bank now point to generated direct PDF files instead of GitHub Markdown source pages.
+- No new paper was added. The builder now creates DOCX/PDF distribution copies for existing setup-pack source papers so clients can open document files directly.
+- Remaining truth boundary: these links are still GitHub raw URLs until GSN has an approved public/private document host. For stricter control, mirror the PDFs to an access-controlled GSN/Drive/portal location and regenerate the QR codes.
 ## 2026-09-14 - Public GSN capability front changed to core set
 - Status: Frontend/docs/static-PDF update completed locally; no backend route, schema, auth, permission, payment, production data, or new feature engine was changed.
 - Owner request: stop presenting the old fixed-number public capability front. Use `GSN Core Capabilities` instead, with a smaller durable set for ordinary app/public explanation, and keep the larger 44-module GSN in Real Life bank as controlled setup-pack/command-centre material for teams that need it.
