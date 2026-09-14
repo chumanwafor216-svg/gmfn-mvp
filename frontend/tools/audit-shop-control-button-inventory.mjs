@@ -419,6 +419,18 @@ assertShopContains(
   "Shop Control traffic sources must keep the picture-led attention-source summary."
 );
 assertShopContains(
+  /function ShopEconomicEngineVisualPanel[\s\S]*?Shop & Marketplace[\s\S]*?Spotlight[\s\S]*?DemandBox[\s\S]*?Community context[\s\S]*?Trade evidence[\s\S]*?Trust layer/,
+  "Shop Control Opportunity Engine must keep the picture-led GSN Economic Engine overview."
+);
+assertShopContains(
+  /function ShopEconomicEngineVisualPanel[\s\S]*?Economic overview[\s\S]*?GSN[\s\S]*?Economic Engine[\s\S]*?Next evidence[\s\S]*?GSN shows recorded evidence/,
+  "Shop Control Opportunity Engine must keep the recorded-evidence boundary on the GSN Economic Engine overview."
+);
+assertShopContains(
+  /<ShopEconomicEngineVisualPanel[\s\S]*?liveSignalCount=\{opportunityEngineLiveSignalCount\}[\s\S]*?demandOpenCount=\{openDemandSignalCount\}[\s\S]*?trustRecordsReady=\{tradeOutcomeReleasedRecords > 0\}/,
+  "Shop Control Opportunity Engine must wire the GSN Economic Engine overview to live shop signals."
+);
+assertShopContains(
   /ShopVisualSummaryCard[\s\S]*?Shop health at a glance[\s\S]*?Shop items[\s\S]*?Spotlight[\s\S]*?DemandBox[\s\S]*?Protected trade/,
   "Shop Control analytics must keep the picture-led shop health summary for low-literacy owner review."
 );
@@ -451,12 +463,12 @@ if (/letterSpacing:\s*[1-9]/.test(shopControlSource)) {
   });
 }
 
-if (/ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢|ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¿ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½/.test(shopControlSource)) {
+if (/ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢|ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¿ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½/.test(shopControlSource)) {
   findings.push({
     file: shopControlFile,
-    line: lineAt(shopControlSource, shopControlSource.search(/ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢|ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¿ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½/)),
+    line: lineAt(shopControlSource, shopControlSource.search(/ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢|ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¿ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½/)),
     message: "Shop Control must not show mojibake/broken encoding characters in user-facing copy.",
-    text: shopControlSource.match(/.*(?:ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢|ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¿ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½).*/)?.[0]?.trim() || "",
+    text: shopControlSource.match(/.*(?:ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢|ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¿ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½).*/)?.[0]?.trim() || "",
   });
 }
 

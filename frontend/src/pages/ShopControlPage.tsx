@@ -2048,6 +2048,249 @@ function ShopTrafficSourceVisualPanel({
     </div>
   );
 }
+function ShopEconomicEngineVisualPanel({
+  isCompact,
+  liveSignalCount,
+  publicItemsLabel,
+  spotlightSeen,
+  demandOpenCount,
+  communityName,
+  hasCommunityContext,
+  tradeRecords,
+  trustRecordsReady,
+}: {
+  isCompact: boolean;
+  liveSignalCount: number;
+  publicItemsLabel: string;
+  spotlightSeen: number;
+  demandOpenCount: number;
+  communityName: string;
+  hasCommunityContext: boolean;
+  tradeRecords: number;
+  trustRecordsReady: boolean;
+}) {
+  const workingNow: Array<{
+    icon: GsnIconName;
+    title: string;
+    value: React.ReactNode;
+    detail: string;
+    accent: AnalyticsAccent;
+    live: boolean;
+  }> = [
+    {
+      icon: "shop",
+      title: "Shop & Marketplace",
+      value: publicItemsLabel,
+      detail: "Your public shelf is ready",
+      accent: "green",
+      live: true,
+    },
+    {
+      icon: "megaphone",
+      title: "Spotlight",
+      value: `${spotlightSeen} seen`,
+      detail: "Attention recorded",
+      accent: "blue",
+      live: spotlightSeen > 0,
+    },
+    {
+      icon: "briefcase",
+      title: "DemandBox",
+      value: demandOpenCount > 0 ? `${demandOpenCount} open` : "No open need",
+      detail: demandOpenCount > 0 ? "A stated need is visible" : "Wait for a stated need",
+      accent: "gold",
+      live: demandOpenCount > 0,
+    },
+    {
+      icon: "community",
+      title: "Community context",
+      value: hasCommunityContext ? communityName : "Select community",
+      detail: hasCommunityContext ? "Reading stays community-based" : "Context needed first",
+      accent: "purple",
+      live: hasCommunityContext,
+    },
+  ];
+  const nextEvidence: Array<{
+    icon: GsnIconName;
+    title: string;
+    value: string;
+    detail: string;
+    accent: AnalyticsAccent;
+    live: boolean;
+    cue: string;
+  }> = [
+    {
+      icon: "document",
+      title: "Trade evidence",
+      value: tradeRecords > 0 ? `${tradeRecords} records` : "No records yet",
+      detail: "Record a protected outcome",
+      accent: "blue",
+      live: tradeRecords > 0,
+      cue: tradeRecords > 0 ? "Live" : "Next",
+    },
+    {
+      icon: "shield",
+      title: "Trust layer",
+      value: trustRecordsReady ? "Records building" : "Waiting for governed records",
+      detail: "Build evidence first",
+      accent: "gold",
+      live: trustRecordsReady,
+      cue: trustRecordsReady ? "Live" : "Next",
+    },
+  ];
+
+  return (
+    <div
+      aria-label="GSN Economic Engine visual overview"
+      style={{
+        marginTop: 12,
+        borderRadius: 22,
+        border: "1px solid rgba(46,155,98,0.16)",
+        background: "linear-gradient(180deg, #F2FBFF 0%, #FFFFFF 54%, #EAF7FF 100%)",
+        padding: isCompact ? 12 : 14,
+        display: "grid",
+        gap: 12,
+        boxShadow: "0 14px 28px rgba(7,24,39,0.07)",
+      }}
+    >
+      <div style={{ textAlign: "center", display: "grid", justifyItems: "center", gap: 8 }}>
+        <div style={{ color: "#061827", fontSize: isCompact ? 28 : 34, fontWeight: 950, lineHeight: 1.03 }}>
+          Economic overview
+        </div>
+        <div style={{ color: "#385773", fontSize: 14, fontWeight: 850, lineHeight: 1.35 }}>
+          See what is working now and what needs evidence next.
+        </div>
+        <div
+          style={{
+            borderRadius: 999,
+            padding: "8px 16px",
+            background: "linear-gradient(180deg, #FFF1B8 0%, #F7D66D 100%)",
+            color: "#5B3C00",
+            fontSize: 14,
+            fontWeight: 950,
+          }}
+        >
+          {liveSignalCount} live signals
+        </div>
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 170px minmax(0, 1fr)",
+          gap: 12,
+          alignItems: "center",
+        }}
+      >
+        <div style={{ display: "grid", gap: 10 }}>
+          {workingNow.slice(0, 2).map((item) => (
+            <ShopVisualSummaryCard key={`economic-working-top-${item.title}`} icon={item.icon} label={item.title} value={item.value} accent={item.accent} />
+          ))}
+        </div>
+        <div
+          style={{
+            borderRadius: 999,
+            minHeight: 170,
+            display: "grid",
+            placeItems: "center",
+            textAlign: "center",
+            color: "#FFFFFF",
+            background: "radial-gradient(circle at 45% 30%, #1AA6C9 0%, #0B5C9F 42%, #06223D 100%)",
+            boxShadow: "0 18px 34px rgba(7,58,116,0.26), inset 0 0 0 8px rgba(255,255,255,0.10)",
+            padding: 18,
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 34, fontWeight: 950, lineHeight: 1 }}>GSN</div>
+            <div style={{ marginTop: 3, fontSize: 15, fontWeight: 950, opacity: 0.88 }}>Economic Engine</div>
+          </div>
+        </div>
+        <div style={{ display: "grid", gap: 10 }}>
+          {workingNow.slice(2).map((item) => (
+            <ShopVisualSummaryCard key={`economic-working-bottom-${item.title}`} icon={item.icon} label={item.title} value={item.value} accent={item.accent} />
+          ))}
+        </div>
+      </div>
+      <div
+        style={{
+          justifySelf: "center",
+          borderRadius: 999,
+          background: "linear-gradient(180deg, #DCEBFF 0%, #8CAAC8 100%)",
+          color: "#FFFFFF",
+          padding: "8px 18px",
+          fontSize: 14,
+          fontWeight: 950,
+          textTransform: "uppercase",
+        }}
+      >
+        Next evidence
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+          gap: 10,
+        }}
+      >
+        {nextEvidence.map((item) => (
+          <div
+            key={`economic-next-${item.title}`}
+            style={{
+              borderRadius: 20,
+              border: `1px solid ${ANALYTICS_ACCENTS[item.accent].border}`,
+              background: "rgba(255,255,255,0.84)",
+              padding: 12,
+              display: "grid",
+              gap: 10,
+              minHeight: 156,
+            }}
+          >
+            <div style={{ display: "grid", gridTemplateColumns: "68px minmax(0, 1fr) auto", gap: 10, alignItems: "center" }}>
+              <ShopVisualIconTile icon={item.icon} accent={item.accent} size={42} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ color: "#061827", fontSize: 17, fontWeight: 950, lineHeight: 1.12 }}>{item.title}</div>
+                <div style={{ marginTop: 6, color: item.live ? "#1F8A57" : "#5A6F84", fontSize: 14, fontWeight: 900, lineHeight: 1.25 }}>{item.value}</div>
+              </div>
+              <span style={badge(item.live)}>{item.cue}</span>
+            </div>
+            <div
+              style={{
+                borderRadius: 999,
+                padding: "9px 12px",
+                background: "linear-gradient(180deg, #FFFFFF 0%, #F3F8FF 100%)",
+                border: "1px solid rgba(18,58,89,0.10)",
+                color: "#0B2D4A",
+                fontSize: 13,
+                fontWeight: 950,
+                textAlign: "center",
+              }}
+            >
+              {item.detail}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div
+        style={{
+          borderRadius: 18,
+          border: "1px solid rgba(15,94,170,0.14)",
+          background: "rgba(255,255,255,0.82)",
+          padding: 12,
+          display: "grid",
+          gridTemplateColumns: "54px minmax(0, 1fr)",
+          gap: 12,
+          alignItems: "center",
+          color: "#0B2D4A",
+          fontSize: 13,
+          fontWeight: 900,
+          lineHeight: 1.35,
+        }}
+      >
+        <ShopVisualIconTile icon="shield" accent="blue" size={38} />
+        <div>GSN shows recorded evidence. It does not prove buyers, sales, payment, delivery, satisfaction or trust.</div>
+      </div>
+    </div>
+  );
+}
 function shortAnalyticsDateLabel(value: unknown): string {
   const text = safeStr(value);
   if (!text) return "Day";
@@ -7586,7 +7829,17 @@ export default function ShopControlPage() {
                 </div>
                 <span style={badge(opportunityEngineLiveSignalCount >= 3)}>{opportunityEngineLiveSignalCount} live signals</span>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+              <ShopEconomicEngineVisualPanel
+                isCompact={isCompact}
+                liveSignalCount={opportunityEngineLiveSignalCount}
+                publicItemsLabel={`${occupiedPublicProductSlotCount}/${publicProductSlotsTotal} public`}
+                spotlightSeen={attentionSpotlightImpressions7Days}
+                demandOpenCount={openDemandSignalCount}
+                communityName={communityName}
+                hasCommunityContext={Boolean(effectiveShopClanId || selectedClanId)}
+                tradeRecords={tradeOutcomeRecords7Days}
+                trustRecordsReady={tradeOutcomeReleasedRecords > 0}
+              />              <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                 {opportunityEngineSignalTiles.map((item) => (
                   <div key={`opportunity-engine-${item.label}`} style={{ borderRadius: 14, background: "rgba(255,255,255,0.78)", border: "1px solid rgba(18,58,89,0.08)", padding: 10, display: "grid", gridTemplateColumns: "32px minmax(0, 1fr)", gap: 8, alignItems: "start" }}>
                     <GsnLegacyIcon name={item.icon as GsnIconName} size={30} />

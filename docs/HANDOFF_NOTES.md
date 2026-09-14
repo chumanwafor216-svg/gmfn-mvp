@@ -1,3 +1,11 @@
+## 2026-09-14 - Shop Control Economic Engine overview made picture-led
+- Status: Verified local frontend UX update after the owner supplied the Economic overview reference image; no backend route, schema, auth, permission, payment, analytics event contract, Dashboard Market Wisdom, push, or deploy change was made in this pass.
+- Owner reference: `Economic overview` with 4 live signals, central `GSN Economic Engine`, working-now cards for Shop & Marketplace, Spotlight, DemandBox, Community context, next-evidence cards for Trade evidence and Trust layer, and a recorded-evidence boundary.
+- Files updated: `frontend/src/pages/ShopControlPage.tsx`, `frontend/tools/audit-shop-control-button-inventory.mjs`, and this handoff note.
+- Route/screen impact: `/app/shop-control` Opportunity Engine / Advanced Analytics / Market Intelligence now shows a pictorial GSN Economic Engine overview before the deeper analytics cards.
+- Guardrail: no new button/action roots were added; the Shop Control inventory remains unchanged at 12 PrimaryButton, 24 SecondaryButton, 3 SubtleButton, 5 StableButton, 10 StableCtaLink, 26 native fields, and 71 whole-route mobile action roots.
+- Verification passed: `npm --prefix frontend run audit:shop-control-button-inventory`, `npm --prefix frontend run audit:spotlight-system-feed`, and `npm --prefix frontend run build`.
+- Devil truth: this makes the Opportunity Engine easier to understand for low-literacy, unbanked, and underbanked shop owners. It still does not prove buyers, sales, payment, delivery, satisfaction, trust, bankability, or investor-grade market evidence.
 ## 2026-09-14 - Shop Control attention-source panel made picture-led
 - Status: Verified local frontend UX update after the owner supplied a fourth Shop Control reference image; no backend route, schema, auth, permission, payment, analytics event contract, push, or deploy change was made in this pass.
 - Owner reference: `Where your attention came from` with Spotlight, Shop gallery, Product card, total recorded attention signals, attention journey, follower notice/shared links, simple 7-day experiment, and a no-sales-proof boundary.
