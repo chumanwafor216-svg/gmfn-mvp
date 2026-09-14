@@ -271,7 +271,7 @@ function invitationPaperMessageStyle(isCompact: boolean): React.CSSProperties {
 }
 
 function isInvitationEvidenceLine(line: string): boolean {
-  return /^\u2705\s+/.test(cleanText(line));
+  return /^-\s+/.test(cleanText(line));
 }
 
 function invitationEvidenceGridStyle(isCompact: boolean): React.CSSProperties {
@@ -347,7 +347,7 @@ function renderInvitationMessageLines(lines: string[], isCompact: boolean) {
                   loading="eager"
                 />
               </span>
-              <span>{cleanText(evidenceLine).replace(/^\u2705\s*/, "")}</span>
+              <span>{cleanText(evidenceLine).replace(/^-\s*/, "")}</span>
             </div>
           ))}
         </div>

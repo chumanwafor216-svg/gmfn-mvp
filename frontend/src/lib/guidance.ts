@@ -2123,7 +2123,7 @@ function buildNextBestStep(params: {
       voice === "warm"
         ? [
             "Review your current position calmly.",
-            "Use today for one small trustworthy step.",
+            "Use today for one small evidence-backed step.",
           ]
         : voice === "direct"
         ? [

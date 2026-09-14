@@ -206,7 +206,7 @@ export default function IntroductionPage() {
               textShadow: "0 1px 0 rgba(255,255,255,0.85)",
             }}
           >
-            A structured trust framework for community-backed support.
+            A structured evidence framework for community support.
           </h1>
 
           <p
@@ -219,7 +219,7 @@ export default function IntroductionPage() {
             }}
           >
             GSN is designed to help communities organise support responsibly,
-            make trust visible, and preserve a clear evidence trail around commitments,
+            make trust evidence visible, and preserve a clear evidence trail around commitments,
             support commitments, and repayment behaviour.
           </p>
         </div>

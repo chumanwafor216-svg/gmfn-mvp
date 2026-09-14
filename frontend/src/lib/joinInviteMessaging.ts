@@ -12,18 +12,18 @@ type JoinInviteDoorwayParams = JoinInviteTextParams & {
 };
 
 const JOIN_INVITE_EVIDENCE_LINES = [
-  "✅ Build a trusted identity that follows you wherever life takes you.",
-  "✅ Find work, customers, and opportunities with greater confidence.",
-  "✅ Buy and sell online knowing more about who you are dealing with.",
-  "✅ Verify people, businesses, and communities before making decisions.",
-  "✅ Keep community records clear and reduce misunderstandings and disputes.",
-  "✅ Organise savings groups, support circles, and community activities with greater accountability.",
-  "✅ Receive community-backed support when it matters most.",
-  "✅ Share your Trust Passport or TrustSlip as checkable credibility evidence when trust is needed.",
+  "- Build an evidence-backed GSN identity that can travel with you.",
+  "- Find work, customers, and opportunities with clearer records.",
+  "- Buy and sell online with more context about who you are dealing with.",
+  "- Verify people, businesses, and communities before making decisions.",
+  "- Keep community records clear and reduce misunderstandings and disputes.",
+  "- Organise savings groups, support circles, and community activities with clearer accountability.",
+  "- Request community support with clearer evidence when it matters most.",
+  "- Share your Trust Passport or TrustSlip as checkable GSN evidence when trust is being reviewed.",
 ];
 
 const JOIN_INVITE_LINK_HINT =
-  "⬆️ Tap the preview above to open the invitation.";
+  "Tap the preview above to open the invitation.";
 
 function cleanText(value: unknown): string {
   return String(value ?? "").trim();
@@ -59,7 +59,7 @@ export function buildJoinInviteLetter(args: JoinInviteTextParams): string[] {
   );
   lines.push("");
   lines.push(
-    "GSN is a trust platform that helps people turn trust and integrity into real-life opportunities."
+    "GSN is an evidence platform that helps communities organise trust and integrity into real-life opportunities."
   );
   lines.push("");
   lines.push("With GSN, you can:");
@@ -68,7 +68,7 @@ export function buildJoinInviteLetter(args: JoinInviteTextParams): string[] {
 
   if (marketplaceName) {
     lines.push("");
-    lines.push(`🏛️ Community: ${marketplaceName}`);
+    lines.push(`Community: ${marketplaceName}`);
   }
 
   if (customMessage) {
@@ -116,13 +116,13 @@ export function buildJoinInviteDoorwayMessage(
     "",
     `You're invited to ${inviteTarget} on GSN.`,
     "",
-    "GSN is a trust platform that helps people turn trust and integrity into real-life opportunities.",
+    "GSN is an evidence platform that helps communities organise trust and integrity into real-life opportunities.",
     "",
     "With GSN, you can:",
     "",
     ...JOIN_INVITE_EVIDENCE_LINES,
     "",
-    marketplaceName ? `🏛️ Community: ${marketplaceName}` : null,
+    marketplaceName ? `Community: ${marketplaceName}` : null,
   ];
 
   if (customMessage) {
