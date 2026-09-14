@@ -1,11 +1,13 @@
 /* global console, document, getComputedStyle, HTMLInputElement, localStorage, location, Node, process, URL, window */
 
 import { chromium } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer } from "vite";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const shopControlSource = readFileSync(join(frontendRoot, "src/pages/ShopControlPage.tsx"), "utf8");
 
 function json(data, status = 200) {
   return {
@@ -547,6 +549,38 @@ async function collectPanelAudit(page, label) {
 
   return findings.length > 0 ? { label, findings: findings.slice(0, 24) } : null;
 }
+
+const sourceFindings = [];
+function requireSourcePattern(pattern, message) {
+  if (!pattern.test(shopControlSource)) {
+    sourceFindings.push({ label: "source:shop-control", findings: [message] });
+  }
+}
+
+requireSourcePattern(
+  /function ShopOpportunityLensesVisualPanel[\s\S]*?if \(isCompact\) \{[\s\S]*?gridTemplateColumns: "1fr"[\s\S]*?visual-lens-compact/,
+  "Compact Opportunity Lenses must use relaxed one-column rows, not the old narrow two-column mobile cards."
+);
+requireSourcePattern(
+  /function ShopOpportunityReadingVisualPanel[\s\S]*?if \(isCompact\) \{[\s\S]*?gridTemplateColumns: "1fr"[\s\S]*?opportunity-compact-reading-/,
+  "Compact Opportunity Reading must use full-width time rows so text does not stack into narrow towers."
+);
+requireSourcePattern(
+  /function ShopBusinessReturnReadinessVisualPanel[\s\S]*?if \(isCompact\) \{[\s\S]*?Return readiness[\s\S]*?Missing: cost, outcomes, repeat value/,
+  "Compact Business Return Readiness must use the shortened mobile copy, not the old bridge/island layout."
+);
+requireSourcePattern(
+  /activeOpportunityEnginePanel === "experiments" && isCompact[\s\S]*?<ShopEvidenceCaptureChecklistVisualPanel/,
+  "Compact experiments must render the condensed Evidence Checklist visual panel."
+);
+requireSourcePattern(
+  /display: activeOpportunityEnginePanel === "experiments" && !isCompact \? "block" : "none"/,
+  "Older detailed experiment blocks must stay hidden on compact screens."
+);
+requireSourcePattern(
+  /display: isCompact \? "none" : "grid"[\s\S]*?opportunityEngineUnitEconomicsReadiness\.currentEvidence/,
+  "Detailed return-evidence grids must stay desktop-only so phone pages do not repeat old containers."
+);
 const server = await createServer({
   root: frontendRoot,
   logLevel: "silent",
@@ -590,7 +624,7 @@ try {
     .first()
     .waitFor({ state: "visible", timeout: 20000 });
 
-  const findings = [];
+  const findings = [...sourceFindings];
 
   for (const panel of mainPanels) {
     await tapDebug(page, `shop-control.analytics-panel.${panel}`);
