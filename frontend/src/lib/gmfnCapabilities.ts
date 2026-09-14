@@ -210,9 +210,9 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
   {
     id: 10,
     title: "Opportunity and Activity Analytics",
-    proverb: "Activity becomes useful when leaders can read it without mistaking signals for proof.",
+    proverb: "Activity becomes useful when leaders read evidence records without turning signals into verdicts.",
     gmfn:
-      "GSN helps leaders read attention, participation, demand, Spotlight movement, shop activity, trust signals, and opportunity patterns from observable activity.",
+      "GSN helps leaders read attention, participation, demand, Spotlight movement, shop activity, bounded evidence records, and opportunity patterns from observable activity.",
     category: "visibility",
     tone: "focus",
     priority: 8,

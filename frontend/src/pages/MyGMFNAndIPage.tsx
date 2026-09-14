@@ -545,7 +545,7 @@ const PUBLIC_CAPABILITY_LINES: Record<number, string> = {
   7: "Gives shops, services, products, media, Spotlight, contacts, and verification entry points one organised public home.",
   8: "Routes needs, offers, requests, and local demand into DemandBox while keeping official bulletin space protected.",
   9: "Makes welfare, support, contribution, repayment, and responsibility records easier to review without turning GSN into a bank.",
-  10: "Helps leaders read attention, demand, participation, Spotlight movement, shop activity, and opportunity signals without mistaking signals for proof.",
+  10: "Helps leaders read attention, demand, participation, Spotlight movement, shop activity, and opportunity as bounded evidence records, not verdicts.",
   11: "Packages setup papers, QR download sheets, public links, private files, and approved bridges so people receive the right material.",
   12: "Keeps community identity, roles, documents, decisions, evidence, setup history, and handover usable after leaders or devices change.",
 };
@@ -670,11 +670,11 @@ const CAPABILITY_MAP_DETAILS: Record<number, CapabilityMapDetail> = {
     category: "Visibility & Opportunity",
     realWorld: "Leaders see activity, shop interest, member response, demand, and public attention, but those signals are easy to misread.",
     danger: "A view, click, chat, or busy screen can be mistaken for a buyer, sale, approval, or guaranteed opportunity.",
-    decision: "GSN helps leaders read attention, demand, participation, Spotlight movement, shop activity, and opportunity signals without mistaking signals for proof.",
+    decision: "GSN helps leaders read attention, demand, participation, Spotlight movement, shop activity, and opportunity as bounded evidence records, not verdicts.",
     tools: "Shop Control -> Spotlight Attention -> DemandBox -> Market Wisdom -> Opportunity Engine -> Analytics Summaries.",
     where: "Shop -> Analytics / Shop Control; Dashboard -> Market Wisdom; Marketplace -> DemandBox.",
     evidence: "Views, contact taps, demand signals, participation records, shop movement, analytics reading, and visible limits.",
-    summary: "Helps leaders read attention, demand, participation, Spotlight movement, shop activity, and opportunity signals without mistaking signals for proof.",
+    summary: "Helps leaders read attention, demand, participation, Spotlight movement, shop activity, and opportunity as bounded evidence records, not verdicts.",
   },
   11: {
     category: "Security & Privacy",

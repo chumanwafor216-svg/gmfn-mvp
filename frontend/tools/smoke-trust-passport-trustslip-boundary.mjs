@@ -516,6 +516,17 @@ async function assertTrustSlipQrCarriesSelectedDecisionPack(page, baseURL) {
     throw new Error("TrustSlip public Decision Pack link did not expose an href.");
   }
 
+  const publicPackHook = page.locator('[data-cta-id="trust-slip.public-decision-pack.open"]');
+  await expect(publicPackHook.first()).toHaveAttribute("href", /decision_pack=employment_decision/, { timeout: 30000 });
+  const hookedHrefs = await publicPackHook.evaluateAll((nodes) =>
+    nodes.map((node) => node.getAttribute("href") || "")
+  );
+  if (!hookedHrefs.some((href) => href === publicPackHref)) {
+    throw new Error(
+      `TrustSlip public Decision Pack stable hook does not match visible link: hook=${hookedHrefs.join(" | ")}; link=${publicPackHref}`
+    );
+  }
+
   const qrLocator = page.locator("[data-gsn-trustslip-qr-value]");
   await expect(qrLocator.first()).toHaveAttribute("data-gsn-trustslip-qr-value", /decision_pack=employment_decision/, { timeout: 30000 });
   await expect
