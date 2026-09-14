@@ -4118,7 +4118,7 @@ export default function DashboardPage() {
         clan_id: selectedClanId || undefined,
         status: "open",
         mine_only: false,
-        limit: 6,
+        limit: 200,
       }).catch(() => []);
 
       const responderRows = Array.isArray(rows)
