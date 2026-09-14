@@ -161349,3 +161349,13 @@ Operational note:
 - Added `docs/GSN_COMMUNITY_DOMAIN_AI_OPPORTUNITY_ENGINE_BRIEF_2026-09-13.md` to define the paid `Opportunity Engine` concept, research grounding, PESTLE/foresight lanes, output-card contract, data boundary, and devil-truth risk boundary.
 - Updated `docs/PROJECT_PROTOCOL.md` so naming work and Community Domain AI/opportunity-intelligence work route through those decision docs first.
 - Truth boundary: no chat, tagging, AI screen, paid billing gate, backend inference route, external-source ingestion, or OpenAI API integration was built yet. This records the intended product direction before implementation.
+
+## 2026-09-14 - Shop Control Advanced Analytics phone compaction
+
+- Status: Frontend Shop Control polish implemented and verified; deployment triggered from this slice.
+- Owner trigger: mobile screenshots showed Advanced Analytics / Opportunity Engine pages becoming too narrow, too tall, and crowded with repeated bordered report blocks; text was being forced against containers.
+- Frontend route affected: `/app/shop-control` through `frontend/src/pages/ShopControlPage.tsx`, especially the Advanced Analytics / Market Intelligence Opportunity Engine sub-tabs.
+- Product behavior changed: compact phone tabs no longer repeat the Economic overview block above every sub-tab; the Experiments tab now shows one relaxed visual `Evidence checklist` summary instead of the full desktop checklist, cadence, ledger, output-card and experiment-plan report stack.
+- Guardrail changed: `frontend/tools/audit-shop-control-button-inventory.mjs` now cages the compact checklist, live Opportunity Engine row wiring, hidden desktop experiment details on phone, and the non-repetition rule for compact sub-tabs.
+- Truth boundary: this is presentation polish only. It does not change analytics counts, DemandBox, Spotlight counting, trade evidence, trust scoring, backend logic, or billing entitlement.
+- Verification passed: targeted Shop Control audit, Spotlight system feed audit, phone Playwright checks across all Advanced Analytics sub-tabs at 390px, whitespace check, and `npm --prefix frontend run build`. The broader protected button freeze still has unrelated existing failures in `frontend/src/pages/MyGMFNAndIPage.tsx`.

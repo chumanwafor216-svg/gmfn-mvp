@@ -3264,6 +3264,172 @@ function ShopOpportunityReadingVisualPanel({
     </div>
   );
 }
+
+function compactOpportunityStatusLabel(status: unknown): string {
+  const text = safeStr(status);
+  if (!text) return "Next";
+  if (/partial/i.test(text)) return "Partial";
+  if (/missing/i.test(text)) return "Missing";
+  if (/live/i.test(text)) return "Live";
+  if (/ready/i.test(text)) return "Ready";
+  return text.length > 12 ? text.slice(0, 12) : text;
+}
+
+function ShopEvidenceCaptureChecklistVisualPanel({
+  captureRows,
+  reviewRows,
+  ledgerRows,
+  outputCardCount,
+  experimentRows,
+  snapshotTitle,
+  snapshotHeadline,
+  aggregatorReady,
+}: {
+  captureRows: Array<Record<string, any>>;
+  reviewRows: Array<Record<string, any>>;
+  ledgerRows: Array<Record<string, any>>;
+  outputCardCount: number;
+  experimentRows: Array<Record<string, any>>;
+  snapshotTitle: string;
+  snapshotHeadline: string;
+  aggregatorReady: boolean;
+}) {
+  const rows = captureRows.length
+    ? captureRows
+    : [
+        { category: "Promotion cost", status: "Missing", records_now: 0, why: "Know what attention costs." },
+        { category: "Serious contact", status: "Next", records_now: 0, why: "Separate curiosity from intent." },
+        { category: "Protected outcome", status: "Next", records_now: 0, why: "Connect activity to outcome evidence." },
+        { category: "Outcome value", status: "Missing", records_now: 0, why: "Learn value over time." },
+      ];
+  const compactRows = rows.slice(0, 4);
+  const builtCount = rows.filter((item) => safePositiveNumber(item.records_now) > 0 || /live|partial/i.test(safeStr(item.status))).length;
+  const totalCount = Math.max(rows.length, 1);
+  const builtRate = Math.round((builtCount / totalCount) * 100);
+  const nextRow = compactRows.find((item) => safePositiveNumber(item.records_now) <= 0) || compactRows[0];
+  const reviewArtifactCount = Math.max(outputCardCount, experimentRows.length);
+  const quickFacts = [
+    `${builtCount}/${totalCount} started`,
+    `${ledgerRows.length} ledger source${ledgerRows.length === 1 ? "" : "s"}`,
+    `${reviewRows.length} review window${reviewRows.length === 1 ? "" : "s"}`,
+    `${reviewArtifactCount} review card${reviewArtifactCount === 1 ? "" : "s"}`,
+  ];
+  const rowIcons: GsnIconName[] = ["megaphone", "community", "shield", "chart"];
+  const rowAccents: AnalyticsAccent[] = ["gold", "blue", "green", "purple"];
+
+  return (
+    <div
+      aria-label="Evidence capture checklist visual summary"
+      style={{
+        marginTop: 8,
+        marginLeft: -46,
+        marginRight: -46,
+        width: "calc(100% + 92px)",
+        borderRadius: 20,
+        border: "1px solid rgba(15,94,170,0.05)",
+        background: "linear-gradient(180deg, #F5FBFF 0%, #FFFFFF 64%, #FFF9EA 100%)",
+        padding: 9,
+        display: "grid",
+        gap: 8,
+        boxShadow: "0 10px 20px rgba(7,24,39,0.05)",
+        overflow: "hidden",
+      }}
+    >
+      <div style={{ display: "grid", gridTemplateColumns: "52px minmax(0, 1fr)", gap: 9, alignItems: "center" }}>
+        <div
+          aria-hidden="true"
+          style={{
+            width: 52,
+            height: 52,
+            borderRadius: "50%",
+            display: "grid",
+            placeItems: "center",
+            background: `conic-gradient(#0F5EAA ${builtRate}%, rgba(18,58,89,0.10) 0)`,
+          }}
+        >
+          <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#FFFFFF", display: "grid", placeItems: "center" }}>
+            <GsnLegacyIcon name="document" size={27} />
+          </div>
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ color: "#061827", fontSize: 21, fontWeight: 950, lineHeight: 1.05 }}>Evidence checklist</div>
+          <div style={{ color: "#385773", fontSize: 12.3, fontWeight: 850, lineHeight: 1.28 }}>Build records before judging return.</div>
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {quickFacts.map((fact, index) => (
+          <span
+            key={`capture-compact-fact-${fact}`}
+            style={{
+              borderRadius: 999,
+              background: index === 0 && aggregatorReady ? "#E8F8F1" : "#EAF4FF",
+              color: index === 0 && aggregatorReady ? "#1F8A57" : "#0F5EAA",
+              padding: "6px 8px",
+              fontSize: 10.8,
+              fontWeight: 920,
+              lineHeight: 1.05,
+            }}
+          >
+            {fact}
+          </span>
+        ))}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 7 }}>
+        {compactRows.map((item, index) => {
+          const status = compactOpportunityStatusLabel(item.status);
+          const recordsNow = safePositiveNumber(item.records_now);
+          const accent = rowAccents[index] || "blue";
+          const isStarted = recordsNow > 0 || /live|partial|ready/i.test(status);
+          return (
+            <div
+              key={`capture-compact-row-${item.category || index}`}
+              style={{
+                minWidth: 0,
+                borderRadius: 14,
+                background: ANALYTICS_ACCENTS[accent].bg,
+                padding: 9,
+                display: "grid",
+                gridTemplateColumns: "28px minmax(0, 1fr)",
+                gap: 7,
+                alignItems: "start",
+              }}
+            >
+              <GsnLegacyIcon name={rowIcons[index] || "document"} size={25} />
+              <div style={{ minWidth: 0, display: "grid", gap: 4 }}>
+                <div style={{ color: "#061827", fontSize: 12.2, fontWeight: 950, lineHeight: 1.12 }}>{safeStr(item.category) || "Evidence"}</div>
+                <div style={{ display: "flex", gap: 5, alignItems: "center", flexWrap: "wrap" }}>
+                  <span style={{ color: isStarted ? "#1F8A57" : "#8A5B00", fontSize: 10.8, fontWeight: 950, lineHeight: 1 }}>
+                    {status}
+                  </span>
+                  <span style={{ color: "#5A6F84", fontSize: 10.3, fontWeight: 850, lineHeight: 1 }}>
+                    {recordsNow} rec.
+                  </span>
+                </div>
+                <div style={{ color: "#385773", fontSize: 10.8, fontWeight: 850, lineHeight: 1.15 }}>
+                  {safeStr(item.why) || "Keep the reading evidence-led."}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ borderRadius: 14, background: "#FFFFFF", padding: 9, display: "grid", gridTemplateColumns: "28px minmax(0, 1fr)", gap: 8, alignItems: "center" }}>
+        <GsnLegacyIcon name="spark" size={24} />
+        <div style={{ minWidth: 0 }}>
+          <div style={{ color: "#061827", fontSize: 12.4, fontWeight: 950, lineHeight: 1.12 }}>
+            Next: {safeStr(nextRow?.category) || "record evidence"}
+          </div>
+          <div style={{ color: "#385773", fontSize: 11, fontWeight: 850, lineHeight: 1.18 }}>
+            {snapshotHeadline || snapshotTitle || "Save a reviewed snapshot after checking the evidence."}
+          </div>
+        </div>
+      </div>
+      <div style={{ borderRadius: 14, background: "#FFF9E8", color: "#6B4600", padding: "9px 10px", fontSize: 12, fontWeight: 900, lineHeight: 1.3 }}>
+        Checklist only: not a saved report, sales proof, billing right or trust score.
+      </div>
+    </div>
+  );
+}
 function shortAnalyticsDateLabel(value: unknown): string {
   const text = safeStr(value);
   if (!text) return "Day";
@@ -8800,7 +8966,7 @@ export default function ShopControlPage() {
                 gap: 10,
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
+              <div style={{ display: isCompact && activeOpportunityEnginePanel !== "overview" ? "none" : "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
                 <div>
                   <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Economic overview</div>
                   <div style={{ marginTop: 4, color: "#385773", fontSize: 12, fontWeight: 800, lineHeight: 1.4 }}>
@@ -8809,17 +8975,19 @@ export default function ShopControlPage() {
                 </div>
                 <span style={badge(opportunityEngineLiveSignalCount >= 3)}>{opportunityEngineLiveSignalCount} live signals</span>
               </div>
-              <ShopEconomicEngineVisualPanel
-                isCompact={isCompact}
-                liveSignalCount={opportunityEngineLiveSignalCount}
-                publicItemsLabel={`${occupiedPublicProductSlotCount}/${publicProductSlotsTotal} public`}
-                spotlightSeen={attentionSpotlightImpressions7Days}
-                demandOpenCount={openDemandSignalCount}
-                communityName={communityName}
-                hasCommunityContext={Boolean(effectiveShopClanId || selectedClanId)}
-                tradeRecords={tradeOutcomeRecords7Days}
-                trustRecordsReady={tradeOutcomeReleasedRecords > 0}
-              />
+              <div style={{ display: isCompact && activeOpportunityEnginePanel !== "overview" ? "none" : "block" }}>
+                <ShopEconomicEngineVisualPanel
+                  isCompact={isCompact}
+                  liveSignalCount={opportunityEngineLiveSignalCount}
+                  publicItemsLabel={`${occupiedPublicProductSlotCount}/${publicProductSlotsTotal} public`}
+                  spotlightSeen={attentionSpotlightImpressions7Days}
+                  demandOpenCount={openDemandSignalCount}
+                  communityName={communityName}
+                  hasCommunityContext={Boolean(effectiveShopClanId || selectedClanId)}
+                  tradeRecords={tradeOutcomeRecords7Days}
+                  trustRecordsReady={tradeOutcomeReleasedRecords > 0}
+                />
+              </div>
               <div style={{ display: isCompact ? "none" : "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))", gap: 8 }}>
                 {opportunityEngineSignalTiles.map((item) => (
                   <div key={`opportunity-engine-${item.label}`} style={{ borderRadius: 14, background: "rgba(255,255,255,0.78)", border: "1px solid rgba(18,58,89,0.08)", padding: 10, display: "grid", gridTemplateColumns: "32px minmax(0, 1fr)", gap: 8, alignItems: "start" }}>
@@ -9061,8 +9229,20 @@ export default function ShopControlPage() {
                 ) : null}
                 <div style={{ display: isCompact ? "none" : "block", color: "#7A4A00", fontSize: 10.5, fontWeight: 780, lineHeight: 1.35 }}>{opportunityEngineUnitEconomicsReadiness.boundary}</div>
               </div>
+              {activeOpportunityEnginePanel === "experiments" && isCompact ? (
+                <ShopEvidenceCaptureChecklistVisualPanel
+                  captureRows={opportunityEngineCaptureChecklistRows}
+                  reviewRows={opportunityEngineReviewCadenceRows}
+                  ledgerRows={opportunityEngineEvidenceLedgerRows}
+                  outputCardCount={opportunityEngineBackendOutputCards.length}
+                  experimentRows={opportunityEngineExperimentPlanRows}
+                  snapshotTitle={shopAttentionSummary?.opportunity_engine?.snapshot?.title || "Current evidence snapshot"}
+                  snapshotHeadline={shopAttentionSummary?.opportunity_engine?.snapshot?.headline || "Review the evidence before publishing."}
+                  aggregatorReady={Boolean(shopAttentionSummary?.opportunity_engine?.aggregator_ready)}
+                />
+              ) : null}
               {opportunityEngineCaptureChecklistRows.length > 0 ? (
-                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px", display: activeOpportunityEnginePanel === "experiments" ? "block" : "none" }}>
+                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px", display: activeOpportunityEnginePanel === "experiments" && !isCompact ? "block" : "none" }}>
                   <StableDisclosureSummary debugId="shop-control.opportunity-engine.capture-checklist" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
                     Evidence capture checklist
                   </StableDisclosureSummary>
@@ -9083,7 +9263,7 @@ export default function ShopControlPage() {
                 </details>
               ) : null}
               {opportunityEngineReviewCadenceRows.length > 0 ? (
-                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px", display: activeOpportunityEnginePanel === "experiments" ? "block" : "none" }}>
+                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px", display: activeOpportunityEnginePanel === "experiments" && !isCompact ? "block" : "none" }}>
                   <StableDisclosureSummary debugId="shop-control.opportunity-engine.review-cadence" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
                     Experiment review cadence
                   </StableDisclosureSummary>
@@ -9104,7 +9284,7 @@ export default function ShopControlPage() {
                 </details>
               ) : null}
               {shopAttentionSummary?.opportunity_engine?.snapshot ? (
-                <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.84)", border: "1px solid rgba(15,94,170,0.12)", padding: 10, display: activeOpportunityEnginePanel === "experiments" ? "grid" : "none", gap: 5 }}>
+                <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.84)", border: "1px solid rgba(15,94,170,0.12)", padding: 10, display: activeOpportunityEnginePanel === "experiments" && !isCompact ? "grid" : "none", gap: 5 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                     <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>{shopAttentionSummary.opportunity_engine.snapshot.title || "Current evidence snapshot"}</div>
                     <span style={{ ...badge(Boolean(shopAttentionSummary.opportunity_engine.aggregator_ready)), fontSize: 10 }}>{shopAttentionSummary.opportunity_engine.engine_state || "computed summary"}</span>
@@ -9116,7 +9296,7 @@ export default function ShopControlPage() {
                 </div>
               ) : null}
               {opportunityEngineEvidenceLedgerRows.length > 0 ? (
-                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px", display: activeOpportunityEnginePanel === "experiments" ? "block" : "none" }}>
+                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px", display: activeOpportunityEnginePanel === "experiments" && !isCompact ? "block" : "none" }}>
                   <StableDisclosureSummary debugId="shop-control.opportunity-engine.evidence-ledger" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
                     Evidence ledger
                   </StableDisclosureSummary>
@@ -9135,7 +9315,7 @@ export default function ShopControlPage() {
                 </details>
               ) : null}
               {opportunityEngineBackendOutputCards.length > 0 ? (
-                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px", display: activeOpportunityEnginePanel === "experiments" ? "block" : "none" }}>
+                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px", display: activeOpportunityEnginePanel === "experiments" && !isCompact ? "block" : "none" }}>
                   <StableDisclosureSummary debugId="shop-control.opportunity-engine.output-cards" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
                     Reviewed signal cards
                   </StableDisclosureSummary>
@@ -9159,7 +9339,7 @@ export default function ShopControlPage() {
                 </details>
               ) : null}
               {opportunityEngineExperimentPlanRows.length > 0 ? (
-                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px", display: activeOpportunityEnginePanel === "experiments" ? "block" : "none" }}>
+                <details style={{ borderRadius: 16, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "4px 10px 10px", display: activeOpportunityEnginePanel === "experiments" && !isCompact ? "block" : "none" }}>
                   <StableDisclosureSummary debugId="shop-control.opportunity-engine.experiment-plan" stableHeight={38} style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 950, cursor: "pointer" }}>
                     Small experiment plan
                   </StableDisclosureSummary>

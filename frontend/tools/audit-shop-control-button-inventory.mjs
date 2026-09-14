@@ -491,6 +491,22 @@ assertShopContains(
   "Shop Control Return evidence must hide repeated desktop evidence rows on phone."
 );
 assertShopContains(
+  /function ShopEvidenceCaptureChecklistVisualPanel[\s\S]*?Evidence checklist[\s\S]*?Build records before judging return\.[\s\S]*?Checklist only: not a saved report, sales proof, billing right or trust score/,
+  "Shop Control Experiments must keep a compact mobile evidence checklist with one boundary."
+);
+assertShopContains(
+  /activeOpportunityEnginePanel === "experiments" && isCompact[\s\S]*?<ShopEvidenceCaptureChecklistVisualPanel[\s\S]*?captureRows=\{opportunityEngineCaptureChecklistRows\}[\s\S]*?aggregatorReady=\{Boolean\(shopAttentionSummary\?\.opportunity_engine\?\.aggregator_ready\)\}/,
+  "Shop Control Experiments compact visual must stay wired to live Opportunity Engine evidence rows."
+);
+assertShopContains(
+  /display: activeOpportunityEnginePanel === "experiments" && !isCompact \? "block" : "none"[\s\S]*?shop-control\.opportunity-engine\.capture-checklist[\s\S]*?display: activeOpportunityEnginePanel === "experiments" && !isCompact \? "block" : "none"[\s\S]*?shop-control\.opportunity-engine\.experiment-plan/,
+  "Shop Control Experiments must hide detailed checklist, ledger, output-card and experiment rows on phone."
+);
+assertShopContains(
+  /display: isCompact && activeOpportunityEnginePanel !== "overview" \? "none" : "flex"[\s\S]*?Economic overview[\s\S]*?<ShopEconomicEngineVisualPanel/,
+  "Shop Control Advanced Analytics must hide only the overview intro/visual above compact sub-tabs, not the active tab body."
+);
+assertShopContains(
   /display: activeOpportunityEnginePanel === "signals" \? "grid" : "none"[\s\S]*?Small Seller Helper/,
   "Shop Control Small Seller Helper must stay scoped to the Signals lane."
 );
