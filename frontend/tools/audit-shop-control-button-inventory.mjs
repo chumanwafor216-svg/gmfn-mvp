@@ -447,12 +447,20 @@ assertShopContains(
   "Shop Control first trade record guide must stay wired to live protected-trade counts."
 );
 assertShopContains(
-  /function ShopBusinessReturnReadinessVisualPanel[\s\S]*?Business return readiness[\s\S]*?Promotion trail[\s\S]*?Missing link[\s\S]*?Outcome trail[\s\S]*?Build the evidence[\s\S]*?Readiness only, not a return calculation/,
+  /function ShopBusinessReturnReadinessVisualPanel[\s\S]*?Business return readiness[\s\S]*?Promotion evidence[\s\S]*?Cost & effort[\s\S]*?Business return[\s\S]*?What is still needed[\s\S]*?Next: build the trail[\s\S]*?Readiness only/,
   "Shop Control return evidence must keep the picture-led business return readiness view."
+);
+assertShopContains(
+  /function ShopOpportunityReadingVisualPanel[\s\S]*?Now[\s\S]*?90 days[\s\S]*?1 year[\s\S]*?2-5 years[\s\S]*?Opportunity reading[\s\S]*?Guidance, not a forecast[\s\S]*?Market Wisdom snapshot[\s\S]*?Snapshot only/,
+  "Shop Control Opportunity Engine Wisdom must keep the picture-led opportunity reading view."
 );
 assertShopContains(
   /<ShopBusinessReturnReadinessVisualPanel[\s\S]*?visitors=\{attentionVisitors7Days\}[\s\S]*?productOpens=\{attentionProductOpens7Days\}[\s\S]*?contactTaps=\{attentionContactTaps7Days\}[\s\S]*?tradeRecords=\{tradeOutcomeRecords7Days\}/,
   "Shop Control business return readiness visual must stay wired to live shop signals."
+);
+assertShopContains(
+  /<ShopOpportunityReadingVisualPanel[\s\S]*?spotlightSeen=\{attentionSpotlightImpressions7Days\}[\s\S]*?eligibleAccounts=\{attentionPossibleSpotlightReach\}[\s\S]*?visitors=\{attentionVisitors7Days\}[\s\S]*?demandOpenCount=\{openDemandSignalCount\}[\s\S]*?tradeRecords=\{tradeOutcomeRecords7Days\}/,
+  "Shop Control Opportunity reading visual must stay wired to live shop signals."
 );
 assertShopContains(
   /ShopVisualSummaryCard[\s\S]*?Shop health at a glance[\s\S]*?Shop items[\s\S]*?Spotlight[\s\S]*?DemandBox[\s\S]*?Protected trade/,

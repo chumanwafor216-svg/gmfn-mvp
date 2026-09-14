@@ -2645,20 +2645,22 @@ function ShopBusinessReturnReadinessVisualPanel({
   readinessStatus: string;
   readinessSummary: string;
 }) {
-  const promotionTrail: Array<{ icon: GsnIconName; label: string; value: number; accent: AnalyticsAccent }> = [
-    { icon: "community", label: "Visitors", value: visitors, accent: "green" },
-    { icon: "eye", label: "Product opens", value: productOpens, accent: "blue" },
+  const promotionMetrics: Array<{ icon: GsnIconName; label: string; value: number; accent: AnalyticsAccent }> = [
+    { icon: "community", label: "Visitors", value: visitors, accent: "blue" },
+    { icon: "document", label: "Product opens", value: productOpens, accent: "blue" },
     { icon: "phone", label: "Contact taps", value: contactTaps, accent: "green" },
-    { icon: "community", label: "Follower", value: followers, accent: "purple" },
+    { icon: "user", label: "Follower", value: followers, accent: "purple" },
   ];
-  const outcomeTrail: Array<{ icon: GsnIconName; label: string; value: string }> = [
-    { icon: "chart", label: "Outcomes", value: tradeRecords > 0 ? `${tradeRecords}` : "Missing" },
-    { icon: "shop", label: "Repeat purchases", value: "Missing" },
-    { icon: "community", label: "Retention", value: "Missing" },
-    { icon: "financeInstitution", label: "Margin", value: "Missing" },
-    { icon: "phone", label: "Support cost", value: "Missing" },
+  const missingEvidence: Array<{ icon: GsnIconName; label: string; accent: AnalyticsAccent; complete: boolean }> = [
+    { icon: "financeInstitution", label: "Promotion cost", accent: "gold", complete: false },
+    { icon: "document", label: "Completed outcomes", accent: "blue", complete: tradeRecords > 0 },
+    { icon: "refresh", label: "Repeat purchases", accent: "green", complete: false },
+    { icon: "community", label: "Retention", accent: "green", complete: false },
+    { icon: "chart", label: "Margin", accent: "purple", complete: false },
+    { icon: "phone", label: "Support cost", accent: "red", complete: false },
   ];
-  const hasOutcomeTrail = tradeRecords > 0 || releasedTradeRecords > 0;
+  const returnReady = readinessStatus === "Ready to estimate";
+  const outcomeLabel = releasedTradeRecords > 0 ? `${releasedTradeRecords} released trade record${releasedTradeRecords === 1 ? "" : "s"}` : "Needs completed outcome evidence";
 
   return (
     <div
@@ -2667,76 +2669,248 @@ function ShopBusinessReturnReadinessVisualPanel({
         marginTop: 10,
         borderRadius: 22,
         border: "1px solid rgba(15,94,170,0.14)",
-        background: "linear-gradient(180deg, #F2FBFF 0%, #FFFFFF 56%, #FFF8DD 100%)",
+        background: "linear-gradient(180deg, #F4FBFF 0%, #FFFFFF 62%, #FFF8E6 100%)",
         padding: isCompact ? 12 : 14,
         display: "grid",
         gap: 12,
         boxShadow: "0 14px 28px rgba(7,24,39,0.07)",
       }}
     >
-      <div style={{ textAlign: "center", display: "grid", justifyItems: "center", gap: 7 }}>
-        <div style={{ color: "#061827", fontSize: isCompact ? 27 : 34, fontWeight: 950, lineHeight: 1.03 }}>
-          Business return readiness
+      <div style={{ borderRadius: 18, background: "rgba(255,255,255,0.86)", border: "1px solid rgba(15,94,170,0.12)", padding: 12, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto", gap: 10, alignItems: "center" }}>
+        <div>
+          <div style={{ color: "#061827", fontSize: isCompact ? 28 : 34, fontWeight: 950, lineHeight: 1.03 }}>Business return readiness</div>
+          <div style={{ marginTop: 6, color: "#385773", fontSize: 14, fontWeight: 850, lineHeight: 1.35 }}>You can see attention. You cannot measure return yet.</div>
         </div>
-        <div style={{ color: "#385773", fontSize: 14, fontWeight: 850, lineHeight: 1.35 }}>
-          Attention is visible. Return is not proven yet.
-        </div>
-        <span style={{ ...badge(readinessStatus === "Ready to estimate"), fontSize: 12 }}>{readinessStatus}</span>
+        <span style={{ ...badge(returnReady), fontSize: 12 }}>{readinessStatus}</span>
       </div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 180px minmax(0, 1fr)",
-          gap: 12,
-          alignItems: "stretch",
-        }}
-      >
-        <div style={{ borderRadius: 20, border: "1px solid rgba(46,155,98,0.16)", background: "rgba(255,255,255,0.88)", padding: 12, display: "grid", gap: 9 }}>
-          <div style={{ justifySelf: "start", borderRadius: 999, background: "linear-gradient(180deg, #22A8C7 0%, #0F5EAA 100%)", color: "#FFFFFF", padding: "7px 12px", fontSize: 12, fontWeight: 950 }}>Promotion trail</div>
-          {promotionTrail.map((item) => (
-            <div key={`return-promotion-${item.label}`} style={{ display: "grid", gridTemplateColumns: "46px 44px minmax(0, 1fr)", gap: 8, alignItems: "center", borderBottom: "1px solid rgba(18,58,89,0.08)", paddingBottom: 7 }}>
-              <ShopVisualIconTile icon={item.icon} accent={item.accent} size={30} />
-              <div style={{ color: "#061827", fontSize: 24, fontWeight: 950, lineHeight: 1 }}>{item.value}</div>
-              <div style={{ color: "#385773", fontSize: 12, fontWeight: 850, lineHeight: 1.2 }}>{item.label}</div>
+      <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1.18fr 0.74fr 0.76fr", gap: 10, alignItems: "stretch" }}>
+        <div style={{ borderRadius: 18, border: "1px solid rgba(46,155,98,0.18)", background: "#ECFFFB", padding: 12, display: "grid", gap: 10 }}>
+          <div style={{ display: "flex", gap: 9, alignItems: "center", color: "#0F5EAA", fontSize: 16, fontWeight: 950, textTransform: "uppercase" }}>
+            <GsnLegacyIcon name="chart" size={34} />
+            <span>Promotion evidence</span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+            {promotionMetrics.map((item) => (
+              <div key={`return-promotion-evidence-${item.label}`} style={{ borderRadius: 14, background: "rgba(255,255,255,0.92)", border: "1px solid rgba(18,58,89,0.08)", minHeight: 112, padding: 9, display: "grid", justifyItems: "center", alignContent: "center", gap: 5, textAlign: "center" }}>
+                <GsnLegacyIcon name={item.icon} size={30} />
+                <div style={{ color: "#061827", fontSize: 23, fontWeight: 950, lineHeight: 1 }}>{item.value}</div>
+                <div style={{ color: "#385773", fontSize: 12, fontWeight: 900, lineHeight: 1.12 }}>{item.label}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ borderRadius: 999, background: "#DFFAF3", color: "#087A68", padding: "8px 10px", fontSize: 12, fontWeight: 950, textAlign: "center" }}>Attention and intent only</div>
+        </div>
+        <div style={{ borderRadius: 18, border: "1px solid rgba(214,170,69,0.24)", background: "#FFF7DD", padding: 12, display: "grid", justifyItems: "center", alignContent: "center", gap: 10, textAlign: "center" }}>
+          <div style={{ display: "grid", justifyItems: "center", gap: 6, color: "#7A4A00", fontSize: 16, fontWeight: 950, textTransform: "uppercase" }}>
+            <ShopVisualIconTile icon="financeInstitution" accent="gold" size={34} />
+            <span>Cost & effort</span>
+          </div>
+          <ShopVisualIconTile icon="document" accent="gold" size={42} />
+          <span style={{ borderRadius: 999, background: "linear-gradient(180deg, #FFEAA7 0%, #F5CB59 100%)", color: "#5B3C00", padding: "8px 16px", fontSize: 12, fontWeight: 950 }}>Missing</span>
+          <div style={{ color: "#385773", fontSize: 13, fontWeight: 850, lineHeight: 1.35 }}>Record the cost or effort behind each promoted channel.</div>
+        </div>
+        <div style={{ borderRadius: 18, border: "1px solid rgba(90,111,132,0.18)", background: "#F4F8FC", padding: 12, display: "grid", justifyItems: "center", alignContent: "center", gap: 10, textAlign: "center" }}>
+          <div style={{ display: "grid", justifyItems: "center", gap: 6, color: "#061827", fontSize: 16, fontWeight: 950, textTransform: "uppercase" }}>
+            <ShopVisualIconTile icon="chart" accent="blue" size={34} />
+            <span>Business return</span>
+          </div>
+          <ShopVisualIconTile icon="chart" accent="blue" size={44} />
+          <span style={{ borderRadius: 999, background: returnReady ? "#DFFAF3" : "#E7EDF5", color: returnReady ? "#087A68" : "#526B87", padding: "8px 16px", fontSize: 12, fontWeight: 950 }}>{returnReady ? "Ready" : "Not ready"}</span>
+          <div style={{ color: "#385773", fontSize: 13, fontWeight: 850, lineHeight: 1.35 }}>{outcomeLabel}. Repeat purchases, retention, margin, support cost, and trust evidence still matter.</div>
+        </div>
+      </div>
+      <div style={{ borderRadius: 18, background: "rgba(255,255,255,0.90)", border: "1px solid rgba(18,58,89,0.10)", padding: 12, display: "grid", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)", gap: 8, alignItems: "baseline" }}>
+          <div style={{ color: "#061827", fontSize: 17, fontWeight: 950, textTransform: "uppercase" }}>What is still needed</div>
+          <div style={{ color: "#5A6F84", fontSize: 12, fontWeight: 850, lineHeight: 1.3 }}>Add these evidence items to measure return.</div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+          {missingEvidence.map((item) => (
+            <div key={`return-needed-${item.label}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(18,58,89,0.10)", minHeight: 70, padding: 10, display: "grid", gridTemplateColumns: "42px minmax(0, 1fr) 24px", gap: 8, alignItems: "center" }}>
+              <GsnLegacyIcon name={item.icon} size={32} />
+              <div style={{ color: "#061827", fontSize: 12.5, fontWeight: 950, lineHeight: 1.15 }}>{item.label}</div>
+              <span aria-hidden="true" style={{ width: 21, height: 21, borderRadius: 999, border: item.complete ? "6px solid #2E9B62" : "2px solid rgba(90,111,132,0.32)", background: item.complete ? "#2E9B62" : "transparent" }} />
             </div>
           ))}
-          <div style={{ borderRadius: 14, background: "#E9FFF5", color: "#0C6542", padding: "8px 10px", fontSize: 12, fontWeight: 950, lineHeight: 1.2 }}>Shows attention and intent</div>
-        </div>
-        <div style={{ display: "grid", alignContent: "center", justifyItems: "center", gap: 10, textAlign: "center" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, width: "100%" }}>
-            <div style={{ borderRadius: 16, background: "linear-gradient(180deg, #FFF1B8 0%, #F9D76C 100%)", border: "1px solid rgba(180,123,0,0.20)", color: "#5B3C00", padding: 10, minHeight: 114, display: "grid", placeItems: "center", fontSize: 12, fontWeight: 950, lineHeight: 1.2 }}>1<br />Record promotion cost or effort</div>
-            <div style={{ borderRadius: 16, background: "linear-gradient(180deg, #FFF1B8 0%, #F9D76C 100%)", border: "1px solid rgba(180,123,0,0.20)", color: "#5B3C00", padding: 10, minHeight: 114, display: "grid", placeItems: "center", fontSize: 12, fontWeight: 950, lineHeight: 1.2 }}>2<br />Connect serious outcomes to protected trade</div>
-          </div>
-          <div style={{ color: "#7A4A00", fontSize: 13, fontWeight: 950 }}>Missing link</div>
-          <div aria-hidden="true" style={{ width: "100%", maxWidth: 154, height: 34, borderRadius: 999, borderTop: "6px dashed rgba(214,170,69,0.85)", borderBottom: "6px dashed rgba(214,170,69,0.45)" }} />
-        </div>
-        <div style={{ borderRadius: 20, border: "1px solid rgba(90,111,132,0.18)", background: "rgba(255,255,255,0.88)", padding: 12, display: "grid", gap: 8 }}>
-          <div style={{ justifySelf: "end", borderRadius: 999, background: "linear-gradient(180deg, #8CAAC8 0%, #526B87 100%)", color: "#FFFFFF", padding: "7px 12px", fontSize: 12, fontWeight: 950 }}>Outcome trail</div>
-          {outcomeTrail.map((item) => (
-            <div key={`return-outcome-${item.label}`} style={{ display: "grid", gridTemplateColumns: "42px minmax(0, 1fr)", gap: 8, alignItems: "center", opacity: item.value === "Missing" ? 0.62 : 1 }}>
-              <ShopVisualIconTile icon={item.icon} accent="blue" size={27} />
-              <div style={{ color: "#385773", fontSize: 12, fontWeight: 850, lineHeight: 1.2 }}>{item.label}</div>
-            </div>
-          ))}
-          <div style={{ borderRadius: 14, background: hasOutcomeTrail ? "#E9FFF5" : "#EEF3F8", color: hasOutcomeTrail ? "#0C6542" : "#526B87", padding: "8px 10px", fontSize: 12, fontWeight: 950, lineHeight: 1.2 }}>
-            {hasOutcomeTrail ? "Outcome evidence building" : "No value trail yet"}
-          </div>
         </div>
       </div>
-      <div style={{ borderRadius: 20, background: "rgba(255,255,255,0.88)", border: "1px solid rgba(18,58,89,0.10)", padding: 12, display: "grid", gap: 10 }}>
-        <div style={{ textAlign: "center", color: "#061827", fontSize: 17, fontWeight: 950 }}>Build the evidence</div>
-        <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 10 }}>
-          <ShopVisualStep index={1} icon="document" label="Record cost" accent="gold" />
-          <ShopVisualStep index={2} icon="shield" label="Protect outcome" accent="blue" />
-          <ShopVisualStep index={3} icon="chart" label="Compare value" accent="green" />
+      <div style={{ borderRadius: 20, background: "linear-gradient(180deg, #F4FBFF 0%, #EAF6FF 100%)", border: "1px solid rgba(15,94,170,0.12)", padding: 12, display: "grid", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)", gap: 8, alignItems: "baseline" }}>
+          <div style={{ color: "#061827", fontSize: 17, fontWeight: 950, textTransform: "uppercase" }}>Next: build the trail</div>
+          <div style={{ color: "#5A6F84", fontSize: 12, fontWeight: 850, lineHeight: 1.3 }}>Turn attention into business evidence.</div>
         </div>
-        <div style={{ borderRadius: 16, background: "linear-gradient(180deg, #0F79D0 0%, #07559B 100%)", color: "#FFFFFF", minHeight: 52, display: "grid", placeItems: "center", padding: "12px 16px", fontSize: 14, fontWeight: 950, textAlign: "center" }}>
-          Promotion and outcome plan below
+        <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(5, minmax(0, auto))", gap: 10, alignItems: "center", justifyContent: "space-between" }}>
+          <ShopVisualStep index={1} icon="document" label="Record cost or effort" accent="blue" />
+          {!isCompact ? <div aria-hidden="true" style={{ color: "#0F5EAA", fontSize: 24, fontWeight: 950 }}>{"->"}</div> : null}
+          <ShopVisualStep index={2} icon="lock" label="Link Protected Trade or TrustSlip" accent="green" />
+          {!isCompact ? <div aria-hidden="true" style={{ color: "#0F5EAA", fontSize: 24, fontWeight: 950 }}>{"->"}</div> : null}
+          <ShopVisualStep index={3} icon="chart" label="Compare outcome value" accent="blue" />
+        </div>
+        <div style={{ borderRadius: 16, background: "linear-gradient(180deg, #1687E2 0%, #0757A1 100%)", color: "#FFFFFF", minHeight: 54, display: "grid", gridTemplateColumns: "50px minmax(0, 1fr)", gap: 10, alignItems: "center", padding: "12px 16px", fontSize: 15, fontWeight: 950 }}>
+          <GsnLegacyIcon name="document" size={28} />
+          <div>Promotion & outcome plan below</div>
+        </div>
+        <div style={{ borderRadius: 14, background: "rgba(255,255,255,0.78)", color: "#385773", padding: "9px 12px", display: "grid", gridTemplateColumns: "36px minmax(0, 1fr)", gap: 8, alignItems: "center", fontSize: 12, fontWeight: 850, lineHeight: 1.3 }}>
+          <GsnLegacyIcon name="shield" size={28} />
+          <div>Trust evidence supports context; it does not calculate return. {readinessSummary}</div>
         </div>
       </div>
-      <div style={{ borderRadius: 16, border: "1px solid rgba(214,170,69,0.18)", background: "#FFF7D8", color: "#6B4600", padding: 12, display: "grid", gridTemplateColumns: "42px minmax(0, 1fr)", gap: 10, alignItems: "center", fontSize: 12, fontWeight: 900, lineHeight: 1.3 }}>
+      <div style={{ borderRadius: 16, border: "1px solid rgba(214,170,69,0.22)", background: "#FFF7D8", color: "#6B4600", padding: 12, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "48px minmax(0, 1fr)", gap: 10, alignItems: "center", fontSize: 12, fontWeight: 900, lineHeight: 1.3 }}>
         <ShopVisualIconTile icon="alert" accent="gold" size={30} />
-        <div>{readinessSummary} Readiness only, not a return calculation, profit claim or investor-grade evidence.</div>
+        <div><strong>Readiness only.</strong> This is not a return calculation, profit claim, or investor-grade business economics.</div>
+      </div>
+    </div>
+  );
+}
+
+function ShopOpportunityReadingVisualPanel({
+  isCompact,
+  spotlightSeen,
+  eligibleAccounts,
+  visitors,
+  demandOpenCount,
+  tradeRecords,
+  liveSignalCount,
+  signalGroupCount,
+  snapshotTitle,
+  snapshotHeadline,
+  snapshotUse,
+  communityName,
+}: {
+  isCompact: boolean;
+  spotlightSeen: number;
+  eligibleAccounts: number;
+  visitors: number;
+  demandOpenCount: number;
+  tradeRecords: number;
+  liveSignalCount: number;
+  signalGroupCount: number;
+  snapshotTitle: string;
+  snapshotHeadline: string;
+  snapshotUse: string;
+  communityName: string;
+}) {
+  const totalSignals = Math.max(signalGroupCount, 1);
+  const readingCards: Array<{ horizon: string; icon: GsnIconName; accent: AnalyticsAccent; facts: string[]; reading: string; next: string }> = [
+    {
+      horizon: "Now",
+      icon: "eye",
+      accent: "blue",
+      facts: [`${spotlightSeen} Spotlight views`, `${eligibleAccounts} eligible accounts`, `${visitors} shop visitors`],
+      reading: visitors > 0 ? "Distribution is still early" : "Distribution is still low",
+      next: "Share shop",
+    },
+    {
+      horizon: "90 days",
+      icon: "calendar",
+      accent: "green",
+      facts: [`${demandOpenCount} open community demand signal`],
+      reading: "Repeated requests may reveal demand",
+      next: "Compare DemandBox requests with public offers",
+    },
+    {
+      horizon: "1 year",
+      icon: "shield",
+      accent: "gold",
+      facts: [tradeRecords > 0 ? `${tradeRecords} protected trade record${tradeRecords === 1 ? "" : "s"}` : "No protected trade record yet"],
+      reading: "Lasting value cannot be learned yet",
+      next: "Protect serious buyer/seller outcomes",
+    },
+    {
+      horizon: "2-5 years",
+      icon: "proof",
+      accent: "blue",
+      facts: [`${liveSignalCount} of ${totalSignals} signal groups live today`],
+      reading: "Connected patterns may support planning",
+      next: "Wait for the full GSN field",
+    },
+  ];
+
+  return (
+    <div
+      aria-label="Opportunity reading visual summary"
+      style={{
+        marginTop: 10,
+        borderRadius: 22,
+        border: "1px solid rgba(15,94,170,0.14)",
+        background: "linear-gradient(180deg, #F5FBFF 0%, #FFFFFF 60%, #EEF8FF 100%)",
+        padding: isCompact ? 12 : 14,
+        display: "grid",
+        gap: 12,
+        boxShadow: "0 14px 28px rgba(7,24,39,0.07)",
+      }}
+    >
+      <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 190px", gap: 12, alignItems: "start" }}>
+        <div>
+          <div style={{ color: "#061827", fontSize: isCompact ? 30 : 36, fontWeight: 950, lineHeight: 1.03 }}>Opportunity reading</div>
+          <div style={{ marginTop: 6, color: "#385773", fontSize: 14, fontWeight: 850, lineHeight: 1.35 }}>Evidence changes. The reading should change with it.</div>
+          <div style={{ marginTop: 8, display: "inline-flex", borderRadius: 999, background: "#EAF4FF", border: "1px solid rgba(15,94,170,0.12)", padding: "7px 12px", color: "#0F5EAA", fontSize: 12, fontWeight: 950 }}>Guidance, not a forecast</div>
+        </div>
+        <div style={{ borderRadius: 18, background: "rgba(239,247,255,0.92)", border: "1px solid rgba(15,94,170,0.10)", padding: 12, display: "grid", gridTemplateColumns: "44px minmax(0, 1fr)", gap: 9, alignItems: "center" }}>
+          <GsnLegacyIcon name="chart" size={36} />
+          <div style={{ color: "#385773", fontSize: 12, fontWeight: 850, lineHeight: 1.3 }}>Same evidence today. A clearer picture over time.</div>
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(4, minmax(0, 1fr))", gap: 10, alignItems: "stretch" }}>
+        {readingCards.map((item) => (
+          <div key={`opportunity-reading-visual-${item.horizon}`} style={{ borderRadius: 18, background: "rgba(255,255,255,0.92)", border: `1px solid ${ANALYTICS_ACCENTS[item.accent].border}`, padding: 11, display: "grid", gap: 9, minHeight: 260 }}>
+            <div style={{ display: "grid", justifyItems: "center", gap: 7, textAlign: "center" }}>
+              <ShopVisualIconTile icon={item.icon} accent={item.accent} size={38} />
+              <div style={{ borderRadius: 999, background: ANALYTICS_ACCENTS[item.accent].bg, color: ANALYTICS_ACCENTS[item.accent].color, padding: "8px 12px", fontSize: 13, fontWeight: 950, textTransform: "uppercase", minWidth: 92 }}>{item.horizon}</div>
+            </div>
+            <div style={{ display: "grid", gap: 5 }}>
+              {item.facts.map((fact) => (
+                <div key={`opportunity-reading-fact-${item.horizon}-${fact}`} style={{ color: "#385773", fontSize: 11.5, fontWeight: 850, lineHeight: 1.25 }}>{fact}</div>
+              ))}
+            </div>
+            <div style={{ borderTop: "1px solid rgba(18,58,89,0.10)", paddingTop: 8, display: "grid", gap: 4 }}>
+              <div style={{ color: "#5A6F84", fontSize: 11, fontWeight: 850 }}>Reading</div>
+              <div style={{ color: "#061827", fontSize: 15, fontWeight: 950, lineHeight: 1.18 }}>{item.reading}</div>
+            </div>
+            <div style={{ marginTop: "auto", display: "grid", gap: 5 }}>
+              <div style={{ color: "#0F5EAA", fontSize: 11, fontWeight: 950 }}>Next</div>
+              <div style={{ borderRadius: 14, background: ANALYTICS_ACCENTS[item.accent].bg, color: "#0B2D4A", padding: "9px 10px", fontSize: 12, fontWeight: 950, lineHeight: 1.2 }}>{item.next}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ borderRadius: 20, border: "1px solid rgba(214,170,69,0.24)", background: "#FFFCF2", padding: 12, display: "grid", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto", gap: 10, alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", minWidth: 0 }}>
+            <ShopVisualIconTile icon="spark" accent="gold" size={34} />
+            <div style={{ color: "#061827", fontSize: 19, fontWeight: 950, lineHeight: 1.1 }}>{snapshotTitle || "Market Wisdom snapshot"}</div>
+          </div>
+          <span style={{ ...badge(false), fontSize: 10 }}>review before publishing</span>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+          {[
+            { icon: "chart" as GsnIconName, label: "Current", text: snapshotHeadline || "Distribution is low", accent: "blue" as AnalyticsAccent },
+            { icon: "community" as GsnIconName, label: "Watch", text: demandOpenCount > 0 ? "Repeated community requests" : "Need repeated requests", accent: "green" as AnalyticsAccent },
+            { icon: "document" as GsnIconName, label: "Use", text: snapshotUse || "A short owner note after review", accent: "gold" as AnalyticsAccent },
+          ].map((item) => (
+            <div key={`opportunity-reading-snapshot-${item.label}`} style={{ borderRadius: 14, background: "#FFFFFF", border: "1px solid rgba(18,58,89,0.08)", padding: 10, display: "grid", gridTemplateColumns: "40px minmax(0, 1fr)", gap: 8, alignItems: "center" }}>
+              <GsnLegacyIcon name={item.icon} size={32} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ color: ANALYTICS_ACCENTS[item.accent].color, fontSize: 12, fontWeight: 950 }}>{item.label}</div>
+                <div style={{ color: "#385773", fontSize: 11.5, fontWeight: 850, lineHeight: 1.25 }}>{item.text}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ borderRadius: 16, background: "linear-gradient(180deg, #1687E2 0%, #0757A1 100%)", color: "#FFFFFF", minHeight: 52, display: "grid", gridTemplateColumns: "48px minmax(0, 1fr)", gap: 10, alignItems: "center", padding: "12px 16px", fontSize: 15, fontWeight: 950 }}>
+          <GsnLegacyIcon name="document" size={28} />
+          <div>Review snapshot below</div>
+        </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <span style={{ color: "#5A6F84", fontSize: 11, fontWeight: 950 }}>Sources:</span>
+          {["Marketplace & Shop Diary", "DemandBox", communityName || "Community Homeland Domain"].map((source) => (
+            <span key={`opportunity-reading-source-${source}`} style={{ borderRadius: 999, background: source === "DemandBox" ? "#DFFAF3" : "#EAF4FF", color: "#0F5EAA", padding: "7px 10px", fontSize: 11, fontWeight: 900 }}>{source}</span>
+          ))}
+        </div>
+      </div>
+      <div style={{ borderRadius: 16, background: "rgba(255,255,255,0.86)", border: "1px solid rgba(15,94,170,0.12)", color: "#385773", padding: 12, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "44px minmax(0, 1fr)", gap: 10, alignItems: "center", fontSize: 12, fontWeight: 850, lineHeight: 1.35 }}>
+        <GsnLegacyIcon name="shield" size={32} />
+        <div>Snapshot only - not an automatic decision, sales proof, public trend claim or command to change products.</div>
       </div>
     </div>
   );
@@ -8395,7 +8569,22 @@ export default function ShopControlPage() {
                   </div>
                 </div>
               </div>
-              <div style={{ display: activeOpportunityEnginePanel === "wisdom" ? "flex" : "none", gap: 7, flexWrap: "wrap", alignItems: "center" }}>
+                            <div style={{ display: activeOpportunityEnginePanel === "wisdom" ? "grid" : "none", gap: 10 }}>
+                <ShopOpportunityReadingVisualPanel
+                  isCompact={isCompact}
+                  spotlightSeen={attentionSpotlightImpressions7Days}
+                  eligibleAccounts={attentionPossibleSpotlightReach}
+                  visitors={attentionVisitors7Days}
+                  demandOpenCount={openDemandSignalCount}
+                  tradeRecords={tradeOutcomeRecords7Days}
+                  liveSignalCount={opportunityEngineLiveSignalCount}
+                  signalGroupCount={opportunityEngineSignalTiles.length}
+                  snapshotTitle={opportunityEngineWisdomSnapshot.title}
+                  snapshotHeadline={opportunityEngineWisdomSnapshot.headline}
+                  snapshotUse={opportunityEngineWisdomSnapshot.useIn}
+                  communityName={communityName}
+                />
+              </div><div style={{ display: activeOpportunityEnginePanel === "wisdom" ? "flex" : "none", gap: 7, flexWrap: "wrap", alignItems: "center" }}>
                 <span style={{ color: "#24415C", fontSize: 11, fontWeight: 950 }}>Review windows</span>
                 {opportunityEngineHorizonLabels.map((label) => (
                   <span key={`opportunity-horizon-${label}`} style={{ borderRadius: 999, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,94,170,0.12)", padding: "5px 8px", color: "#24415C", fontSize: 10.5, fontWeight: 900 }}>
