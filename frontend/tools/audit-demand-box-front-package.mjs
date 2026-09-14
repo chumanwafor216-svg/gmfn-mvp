@@ -103,6 +103,19 @@ function requirePattern(pattern, message) {
     "DemandBox return action must keep its stable debug id.",
   ],
   [
+    /const shouldOpenDemandQueues = useMemo\(\(\) => \{[\s\S]*?params\.get\("queue"\)[\s\S]*?\["open", "queue", "all"\]\.includes\(queueMode\)[\s\S]*?\}, \[location\.search\]\);/,
+    "DemandBox must recognize queue=open links from Dashboard.",
+  ],
+  [
+    /open=\{shouldOpenDemandQueues && myOpenRows\.length > 0 \? true : undefined\}[\s\S]*?debugId="demand-box\.my-demand\.summary"/,
+    "DemandBox personal demand drawer must open from the Dashboard queue link when rows exist.",
+  ],
+  [
+    /open=\{shouldOpenDemandQueues && visibleRows\.length > 0 \? true : undefined\}[\s\S]*?debugId="demand-box\.community-demand\.summary"/,
+    "DemandBox community demand drawer must open from the Dashboard queue link when rows exist.",
+  ],
+
+  [
     /askCommunity: appendRouteQueryParam[\s\S]*?routeTarget\("demandBox", selectedClanId, "demand-box\.ask-community"\)[\s\S]*?"mode"[\s\S]*?"ask_community"/,
     "DemandBox Ask Community must route into DemandBox question mode, not a separate Marketplace modal path.",
   ],

@@ -241,6 +241,15 @@ assertContains(
   "Dashboard My Pulse must read server-owned Attention Spine signals before adding local fallback signals."
 );
 assertContains(
+  /listMarketplaceRequests\(\{[\s\S]*?clan_id: selectedClanId \|\| undefined,[\s\S]*?status: "open"[\s\S]*?mine_only: false[\s\S]*?limit: 6[\s\S]*?\}\)[\s\S]*?\}, \[selectedClanId\]\);/,
+  "Dashboard DemandBox summary must be scoped to the selected community so its count matches the DemandBox queue."
+);
+
+assertContains(
+  /const demandBoxQueueTo = appendDashboardQueryParam\([\s\S]*?routeTarget\("demandBox", selectedClanId, "dashboard\.demand\.queue-target"\)[\s\S]*?"queue"[\s\S]*?"open"/,
+  "Dashboard Open queue action must route DemandBox into open queue mode."
+);
+assertContains(
   /debugId="dashboard\.inbox\.toggle"[\s\S]*?data-debug-id="dashboard\.my-pulse"[\s\S]*?My Pulse[\s\S]*?\["red", "yellow", "green"\]/,
   "Dashboard My Pulse must live inside What needs your attention, not as a separate attention destination."
 );

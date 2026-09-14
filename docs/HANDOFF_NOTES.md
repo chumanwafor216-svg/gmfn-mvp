@@ -1,3 +1,10 @@
+## 2026-09-14 - Dashboard DemandBox queue count scoped to selected community
+- Status: Verified frontend route-scope fix after owner phone testing showed Dashboard saying 2 demand requests waiting while DemandBox appeared to expose only one reachable request.
+- Files updated: `frontend/src/pages/DashboardPage.tsx`, `frontend/src/pages/DemandBoxPage.tsx`, `frontend/tools/audit-dashboard-button-inventory.mjs`, `frontend/tools/audit-demand-box-front-package.mjs`, and this handoff note.
+- Route/screen impact: `/app/dashboard` now counts open DemandBox rows using the selected community id and sends the Open queue action to `/app/demand-box?clan_id=...&queue=open`; `/app/demand-box` opens the personal/community demand drawers when that queue mode is present so additional rows are visible instead of buried behind closed sections.
+- Guardrail: no backend route, schema, auth, permission, payment, Marketplace request contract, Dashboard Market Wisdom, or DemandBox action inventory was changed.
+- Verification passed: `npm --prefix frontend run audit:demand-box-front-package`, `npm --prefix frontend run audit:dashboard-button-inventory`, `npm --prefix frontend run audit:protected-button-freeze`, `npm --prefix frontend run build`, and `git diff --check` on touched files.
+- Devil truth: if there are still two rows in the same selected community, the queue should now open enough to find them. If the count drops to one, the previous second row was probably from a wider visible-community scope, not from the currently selected community. This does not create or delete any demand records.
 ## 2026-09-14 - Shop Control Advanced Analytics remaining phone panels compacted
 - Status: Verified local frontend UX cleanup after owner screenshots showed Advanced Analytics Return Evidence and Wisdom pages still had narrow containers, word pressure, repeated detail stacks, and too many visual walls on phone.
 - Files updated: `frontend/src/pages/ShopControlPage.tsx`, `frontend/tools/audit-shop-control-button-inventory.mjs`, and this handoff note.

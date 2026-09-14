@@ -1131,6 +1131,11 @@ export default function DemandBoxPage() {
     const params = new URLSearchParams(location.search);
     return safeStr(params.get("mode") || "").toLowerCase();
   }, [location.search]);
+  const shouldOpenDemandQueues = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const queueMode = safeStr(params.get("queue") || "").toLowerCase();
+    return ["open", "queue", "all"].includes(queueMode);
+  }, [location.search]);
   const routeAskCommunityMode = ["ask_community", "ask-community", "market_need_pulse"].includes(demandMode);
   const hasLegacyCreateHash = location.hash === "#demand-box-create";
   const isCreateMode = demandMode === "create" || routeAskCommunityMode || hasLegacyCreateHash;
@@ -2124,7 +2129,10 @@ export default function DemandBoxPage() {
             longer matters, close it cleanly.
           </div>
 
-          <details style={{ marginTop: 14, ...detailsShell() }}>
+          <details
+            open={shouldOpenDemandQueues && myOpenRows.length > 0 ? true : undefined}
+            style={{ marginTop: 14, ...detailsShell() }}
+          >
             <StableDisclosureSummary
               style={detailsSummary()}
               stableHeight={52}
@@ -2260,7 +2268,7 @@ export default function DemandBoxPage() {
               })}
 
               {extraMyOpenRows.length > 0 ? (
-                <details style={detailsShell()}>
+                <details open={shouldOpenDemandQueues ? true : undefined} style={detailsShell()}>
                   <StableDisclosureSummary
                     style={detailsSummary()}
                     stableHeight={52}
@@ -2410,7 +2418,10 @@ export default function DemandBoxPage() {
             money.
           </div>
 
-          <details style={{ marginTop: 14, ...detailsShell() }}>
+          <details
+            open={shouldOpenDemandQueues && visibleRows.length > 0 ? true : undefined}
+            style={{ marginTop: 14, ...detailsShell() }}
+          >
             <StableDisclosureSummary
               style={detailsSummary()}
               stableHeight={52}
@@ -2525,7 +2536,7 @@ export default function DemandBoxPage() {
               ))}
 
               {extraVisibleRows.length > 0 ? (
-                <details style={detailsShell()}>
+                <details open={shouldOpenDemandQueues ? true : undefined} style={detailsShell()}>
                   <StableDisclosureSummary
                     style={detailsSummary()}
                     stableHeight={52}

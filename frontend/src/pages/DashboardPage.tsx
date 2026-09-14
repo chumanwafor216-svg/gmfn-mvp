@@ -1204,6 +1204,13 @@ function routeTarget(
   }).to as string;
 }
 
+function appendDashboardQueryParam(to: string, key: string, value: string): string {
+  const [baseAndQuery, hash = ""] = String(to || "").split("#");
+  const separator = baseAndQuery.includes("?") ? "&" : "?";
+  const query = `${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+  return `${baseAndQuery}${separator}${query}${hash ? `#${hash}` : ""}`;
+}
+
 function firstNonEmpty(...values: unknown[]): string {
   for (const value of values) {
     const text = safeStr(value);
@@ -4089,6 +4096,7 @@ export default function DashboardPage() {
   useEffect(() => {
     (async () => {
       const rows = await listMarketplaceRequests({
+        clan_id: selectedClanId || undefined,
         status: "open",
         mine_only: false,
         limit: 6,
@@ -4096,7 +4104,7 @@ export default function DashboardPage() {
 
       setDemandItems(Array.isArray(rows) ? rows : []);
     })();
-  }, []);
+  }, [selectedClanId]);
 
   useEffect(() => {
     if (spotlights.length <= 1) return;
@@ -5089,10 +5097,19 @@ export default function DashboardPage() {
   }, [currentClan, currentDemandItem, selectedClanId]);
   const currentDemandIsUrgent =
     safeStr(currentDemandItem?.urgency).toLowerCase() === "high";
+  const demandBoxQueueTo = appendDashboardQueryParam(
+    routeTarget("demandBox", selectedClanId, "dashboard.demand.queue-target"),
+    "queue",
+    "open"
+  );
   const demandPrimaryActionTo =
     demandItems.length === 0
-      ? "/app/demand-box?mode=create"
-      : DASHBOARD_TARGETS.DEMAND_BOX;
+      ? appendDashboardQueryParam(
+          routeTarget("demandBox", selectedClanId, "dashboard.demand.create-target"),
+          "mode",
+          "create"
+        )
+      : demandBoxQueueTo;
   const demandPrimaryActionLabel =
     demandItems.length === 0
       ? "Create your demand"
