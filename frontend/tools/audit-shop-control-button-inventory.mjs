@@ -415,6 +415,10 @@ assertShopContains(
 );
 
 assertShopContains(
+  /ShopTrafficSourceVisualPanel[\s\S]*?Where your attention came from[\s\S]*?Spotlight[\s\S]*?Shop gallery[\s\S]*?Product card[\s\S]*?The attention journey[\s\S]*?Try a simple 7-day experiment[\s\S]*?Attention is not a sale/,
+  "Shop Control traffic sources must keep the picture-led attention-source summary."
+);
+assertShopContains(
   /ShopVisualSummaryCard[\s\S]*?Shop health at a glance[\s\S]*?Shop items[\s\S]*?Spotlight[\s\S]*?DemandBox[\s\S]*?Protected trade/,
   "Shop Control analytics must keep the picture-led shop health summary for low-literacy owner review."
 );
@@ -447,12 +451,12 @@ if (/letterSpacing:\s*[1-9]/.test(shopControlSource)) {
   });
 }
 
-if (/ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢|ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¿Ãƒâ€šÃ‚Â½/.test(shopControlSource)) {
+if (/ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢|ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¿ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½/.test(shopControlSource)) {
   findings.push({
     file: shopControlFile,
-    line: lineAt(shopControlSource, shopControlSource.search(/ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢|ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¿Ãƒâ€šÃ‚Â½/)),
+    line: lineAt(shopControlSource, shopControlSource.search(/ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢|ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¿ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½/)),
     message: "Shop Control must not show mojibake/broken encoding characters in user-facing copy.",
-    text: shopControlSource.match(/.*(?:ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢|ÃƒÆ’Ã‚Â¯Ãƒâ€šÃ‚Â¿Ãƒâ€šÃ‚Â½).*/)?.[0]?.trim() || "",
+    text: shopControlSource.match(/.*(?:ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢|ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¿ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½).*/)?.[0]?.trim() || "",
   });
 }
 

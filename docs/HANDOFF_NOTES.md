@@ -1,3 +1,11 @@
+## 2026-09-14 - Shop Control attention-source panel made picture-led
+- Status: Verified local frontend UX update after the owner supplied a fourth Shop Control reference image; no backend route, schema, auth, permission, payment, analytics event contract, push, or deploy change was made in this pass.
+- Owner reference: `Where your attention came from` with Spotlight, Shop gallery, Product card, total recorded attention signals, attention journey, follower notice/shared links, simple 7-day experiment, and a no-sales-proof boundary.
+- Files updated: `frontend/src/pages/ShopControlPage.tsx`, `frontend/tools/audit-shop-control-button-inventory.mjs`, and this handoff note.
+- Route/screen impact: `/app/shop-control` Share paths / Traffic sources now shows a pictorial attention-source summary before the detailed source breakdown rows.
+- Guardrail: no new button/action roots were added; the Shop Control inventory remains unchanged at 12 PrimaryButton, 24 SecondaryButton, 3 SubtleButton, 5 StableButton, 10 StableCtaLink, 26 native fields, and 71 whole-route mobile action roots.
+- Verification passed: `npm --prefix frontend run audit:shop-control-button-inventory`, `npm --prefix frontend run audit:spotlight-system-feed`, and `npm --prefix frontend run build`.
+- Devil truth: this is a clearer visual reading of existing attention counts. It does not prove buyers, payment, delivery, trust, completed calls, or completed WhatsApp conversations.
 ## 2026-09-14 - Shop Control made more picture-led for low-literacy owners
 - Status: Verified local frontend UX update; no backend route, schema, auth, permission, payment, analytics event contract, Dashboard Market Wisdom, push, or deploy change was made.
 - Owner request: make the Shop Control/analytics pages closer to the supplied picture-led references because many users will be unbanked or underbanked and should not need to read long reports.

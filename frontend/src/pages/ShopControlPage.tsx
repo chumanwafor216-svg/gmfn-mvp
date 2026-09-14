@@ -1806,6 +1806,248 @@ function ShopLearnBeforeScalePanel({ isCompact }: { isCompact: boolean }) {
     </div>
   );
 }
+function ShopTrafficOriginTile({
+  icon,
+  label,
+  value,
+  detail,
+  accent,
+  strong,
+}: {
+  icon: GsnIconName;
+  label: string;
+  value: React.ReactNode;
+  detail: string;
+  accent: AnalyticsAccent;
+  strong?: boolean;
+}) {
+  const palette = ANALYTICS_ACCENTS[accent];
+  return (
+    <div
+      style={{
+        borderRadius: 20,
+        border: strong ? "1px solid rgba(255,255,255,0.34)" : `1px solid ${palette.border}`,
+        background: strong ? "linear-gradient(180deg, #0F79D0 0%, #07559B 100%)" : palette.bg,
+        color: strong ? "#FFFFFF" : "#061827",
+        padding: 12,
+        minHeight: 148,
+        display: "grid",
+        justifyItems: "center",
+        alignContent: "space-between",
+        gap: 8,
+        textAlign: "center",
+        boxShadow: strong
+          ? "0 18px 34px rgba(7,58,116,0.24)"
+          : "0 12px 22px rgba(7,24,39,0.07)",
+      }}
+    >
+      <ShopVisualIconTile icon={icon} accent={accent} size={42} />
+      <div>
+        <div style={{ fontSize: 16, fontWeight: 950, lineHeight: 1.1 }}>{label}</div>
+        <div style={{ marginTop: 4, fontSize: 34, fontWeight: 950, lineHeight: 1 }}>{value}</div>
+        <div style={{ marginTop: 4, fontSize: 13, fontWeight: 900, opacity: strong ? 0.9 : 0.72 }}>{detail}</div>
+      </div>
+    </div>
+  );
+}
+
+function ShopTrafficSourceVisualPanel({
+  isCompact,
+  spotlightSeen,
+  shopVisits,
+  productOpens,
+  contactTaps,
+  followerNotices,
+  followerNoticeVisitors,
+  shareActions,
+}: {
+  isCompact: boolean;
+  spotlightSeen: number;
+  shopVisits: number;
+  productOpens: number;
+  contactTaps: number;
+  followerNotices: number;
+  followerNoticeVisitors: number;
+  shareActions: number;
+}) {
+  const totalAttentionSignals = spotlightSeen + shopVisits + productOpens + contactTaps;
+  const strongestSource = spotlightSeen >= shopVisits && spotlightSeen >= productOpens ? "Spotlight" : shopVisits >= productOpens ? "Shop gallery" : "Product card";
+  const journeySteps: Array<{ icon: GsnIconName; label: string; value: number; accent: AnalyticsAccent }> = [
+    { icon: "megaphone", label: "Spotlight", value: spotlightSeen, accent: "blue" },
+    { icon: "eye", label: "Visits", value: shopVisits, accent: "green" },
+    { icon: "document", label: "Opens", value: productOpens, accent: "gold" },
+    { icon: "community", label: "Contacts", value: contactTaps, accent: "red" },
+  ];
+
+  return (
+    <div
+      aria-label="Where your attention came from visual summary"
+      style={{
+        marginTop: 12,
+        display: "grid",
+        gap: 12,
+      }}
+    >
+      <div
+        style={{
+          borderRadius: 24,
+          border: "1px solid rgba(15,94,170,0.14)",
+          background: "linear-gradient(135deg, #EAF7FF 0%, #FFFFFF 54%, #FFF3C4 100%)",
+          padding: isCompact ? 14 : 16,
+          display: "grid",
+          gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 190px",
+          gap: 12,
+          alignItems: "center",
+        }}
+      >
+        <div>
+          <div style={{ color: "#061827", fontSize: isCompact ? 28 : 34, fontWeight: 950, lineHeight: 1.03 }}>
+            Where your attention came from
+          </div>
+          <div style={{ marginTop: 5, color: "#385773", fontSize: 17, fontWeight: 850 }}>Last 7 days</div>
+          <div
+            style={{
+              marginTop: 12,
+              display: "inline-flex",
+              borderRadius: 999,
+              padding: "8px 14px",
+              background: "linear-gradient(180deg, #FFF1B8 0%, #F7D66D 100%)",
+              color: "#5B3C00",
+              fontSize: 14,
+              fontWeight: 950,
+            }}
+          >
+            Attention only
+          </div>
+        </div>
+        <div style={{ display: "grid", justifyItems: "center", gap: 8, textAlign: "center" }}>
+          <ShopVisualIconTile icon="phone" accent="blue" size={54} />
+          <div style={{ color: "#0B2D4A", fontSize: 14, fontWeight: 950, lineHeight: 1.15 }}>Small shops. Big people.</div>
+        </div>
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+          gap: 10,
+        }}
+      >
+        <ShopTrafficOriginTile icon="megaphone" label="Spotlight" value={spotlightSeen} detail="seen" accent="blue" strong />
+        <ShopTrafficOriginTile icon="shop" label="Shop gallery" value={shopVisits} detail="visits" accent="green" />
+        <ShopTrafficOriginTile icon="tag" label="Product card" value={productOpens} detail="opens" accent="gold" />
+      </div>
+      <div
+        style={{
+          justifySelf: "center",
+          width: isCompact ? "100%" : "min(360px, 100%)",
+          borderRadius: 999,
+          background: "linear-gradient(180deg, #06223D 0%, #0B5C9F 100%)",
+          color: "#FFFFFF",
+          padding: isCompact ? "20px 18px" : "24px 28px",
+          textAlign: "center",
+          boxShadow: "0 18px 34px rgba(7,58,116,0.22)",
+        }}
+      >
+        <div style={{ fontSize: 44, fontWeight: 950, lineHeight: 1 }}>{totalAttentionSignals}</div>
+        <div style={{ marginTop: 4, fontSize: 16, fontWeight: 950 }}>recorded attention signals</div>
+        <div style={{ marginTop: 8, color: "#F7D66D", fontSize: 15, fontWeight: 950 }}>
+          Most attention came from {strongestSource}
+        </div>
+      </div>
+      <div
+        style={{
+          borderRadius: 20,
+          border: "1px solid rgba(18,58,89,0.12)",
+          background: "rgba(255,255,255,0.86)",
+          padding: 12,
+          display: "grid",
+          gap: 10,
+        }}
+      >
+        <div style={{ color: "#061827", fontSize: 17, fontWeight: 950 }}>The attention journey</div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(7, minmax(0, auto))",
+            gap: 10,
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          {journeySteps.map((item, index, list) => (
+            <React.Fragment key={`traffic-journey-${item.label}`}>
+              <div style={{ display: "grid", justifyItems: "center", gap: 6, textAlign: "center" }}>
+                <ShopVisualIconTile icon={item.icon} accent={item.accent} size={34} />
+                <div style={{ color: "#385773", fontSize: 11, fontWeight: 900 }}>{item.label}</div>
+                <div style={{ color: "#061827", fontSize: 24, fontWeight: 950, lineHeight: 1 }}>{item.value}</div>
+              </div>
+              {!isCompact && index < list.length - 1 ? (
+                <div aria-hidden="true" style={{ color: "#7FA4C5", fontSize: 24, fontWeight: 950 }}>
+                  {"->"}
+                </div>
+              ) : null}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
+      <div
+        style={{
+          borderRadius: 20,
+          border: "1px solid rgba(18,58,89,0.10)",
+          background: "rgba(255,255,255,0.84)",
+          padding: 12,
+          display: "grid",
+          gap: 10,
+        }}
+      >
+        <div style={{ color: "#061827", fontSize: 17, fontWeight: 950 }}>Other ways people can find your shop</div>
+        <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 10 }}>
+          <ShopVisualSummaryCard icon="megaphone" label="Follower notice" value={`${followerNotices} sent`} accent="red" />
+          <ShopVisualSummaryCard icon="copy" label="Shared links" value={shareActions > 0 ? `${shareActions} prepared` : "Not started"} accent="purple" />
+        </div>
+        <div style={{ color: "#385773", fontSize: 12, fontWeight: 850 }}>
+          Follower notice brought {followerNoticeVisitors} visitor{followerNoticeVisitors === 1 ? "" : "s"} back.
+        </div>
+      </div>
+      <div
+        style={{
+          borderRadius: 20,
+          border: "1px solid rgba(46,155,98,0.16)",
+          background: "linear-gradient(180deg, #F1FFF9 0%, #FFFFFF 100%)",
+          padding: 12,
+          display: "grid",
+          gap: 10,
+        }}
+      >
+        <div style={{ color: "#061827", fontSize: 17, fontWeight: 950 }}>Try a simple 7-day experiment</div>
+        <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: isCompact ? 18 : 10 }}>
+          <ShopVisualStep index={1} icon="copy" label="Share once" accent="green" />
+          <ShopVisualStep index={2} icon="document" label="Wait 7 days" accent="gold" />
+          <ShopVisualStep index={3} icon="chart" label="Compare visits" accent="blue" />
+        </div>
+      </div>
+      <div
+        style={{
+          borderRadius: 18,
+          border: "1px solid rgba(200,58,58,0.16)",
+          background: "linear-gradient(180deg, #FFF5F6 0%, #FFFFFF 100%)",
+          padding: 12,
+          display: "grid",
+          gridTemplateColumns: "54px minmax(0, 1fr)",
+          gap: 12,
+          alignItems: "center",
+          color: "#5A2F2F",
+          fontSize: 13,
+          fontWeight: 900,
+          lineHeight: 1.35,
+        }}
+      >
+        <ShopVisualIconTile icon="shield" accent="red" size={38} />
+        <div>Attention is not a sale. These signals do not prove buyers, payment, delivery or trust.</div>
+      </div>
+    </div>
+  );
+}
 function shortAnalyticsDateLabel(value: unknown): string {
   const text = safeStr(value);
   if (!text) return "Day";
@@ -7146,7 +7388,16 @@ export default function ShopControlPage() {
               <span style={badge(attentionSourceBreakdownRows.length > 0)}>Attention only</span>
             </div>
             <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
-              {attentionSourceBreakdownRows.length ? (
+              <ShopTrafficSourceVisualPanel
+                isCompact={isCompact}
+                spotlightSeen={attentionSpotlightImpressions7Days}
+                shopVisits={attentionVisitors7Days}
+                productOpens={attentionProductOpens7Days}
+                contactTaps={attentionContactTaps7Days}
+                followerNotices={followerNotices7Days}
+                followerNoticeVisitors={followerNoticeResponseVisitors}
+                shareActions={shareActions7Days}
+              />              {attentionSourceBreakdownRows.length ? (
                 attentionSourceBreakdownRows.map((row) => (
                   <div key={`traffic-source-${row.source || row.label}`} style={{ borderRadius: 14, background: "linear-gradient(180deg, #F8FBFF 0%, #EEF6FF 100%)", border: "1px solid rgba(18,58,89,0.10)", padding: "9px 10px" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
