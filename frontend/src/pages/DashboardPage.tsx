@@ -1830,7 +1830,7 @@ function daysUntil(value: unknown): number | null {
 
 function formatDateLabel(value: unknown): string {
   const d = toDateSafe(value);
-  if (!d) return "â€”";
+  if (!d) return "-";
   return d.toLocaleDateString();
 }
 
@@ -1951,7 +1951,7 @@ function formatFocusProgress(
 
   const target =
     targetValue === null || Number.isNaN(Number(targetValue))
-      ? "â€”"
+      ? "-"
       : String(targetValue);
 
   if (unit === "?") {
@@ -2147,7 +2147,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
         classText,
         postureSource:
           scoreNum === null || Number.isNaN(scoreNum)
-            ? "â€”"
+            ? "-"
             : formatReadingScore(rawScore, scoreNum),
         tone: "green",
         statusText: "Healthy across visible communities",
@@ -2160,7 +2160,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
         classText,
         postureSource:
           scoreNum === null || Number.isNaN(scoreNum)
-            ? "â€”"
+            ? "-"
             : formatReadingScore(rawScore, scoreNum),
         tone: "green",
         statusText: "Stable and growing",
@@ -2175,7 +2175,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
         classText,
         postureSource:
           scoreNum === null || Number.isNaN(scoreNum)
-            ? "â€”"
+            ? "-"
             : formatReadingScore(rawScore, scoreNum),
         tone: "yellow",
         statusText: "Needs attention",
@@ -2189,7 +2189,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
       classText,
       postureSource:
         scoreNum === null || Number.isNaN(scoreNum)
-          ? "â€”"
+          ? "-"
           : formatReadingScore(rawScore, scoreNum),
       tone: "red",
       statusText: "At risk",
@@ -2303,7 +2303,7 @@ function getOpenTrustState(
         classText: rawClass,
         postureSource:
           rawScore === null || Number.isNaN(rawScore)
-            ? "â€”"
+            ? "-"
             : String(Math.round(rawScore)),
         tone: "green",
         statusText: "Strong in your current community",
@@ -2316,7 +2316,7 @@ function getOpenTrustState(
         classText: rawClass,
         postureSource:
           rawScore === null || Number.isNaN(rawScore)
-            ? "â€”"
+            ? "-"
             : String(Math.round(rawScore)),
         tone: "green",
         statusText: "Stable in your current community",
@@ -2330,7 +2330,7 @@ function getOpenTrustState(
         classText: rawClass,
         postureSource:
           rawScore === null || Number.isNaN(rawScore)
-            ? "â€”"
+            ? "-"
             : String(Math.round(rawScore)),
         tone: "yellow",
         statusText: "Needs attention in your current community",
@@ -2344,7 +2344,7 @@ function getOpenTrustState(
       classText: rawClass,
       postureSource:
         rawScore === null || Number.isNaN(rawScore)
-          ? "â€”"
+          ? "-"
           : String(Math.round(rawScore)),
       tone: "red",
       statusText: "At risk in your current community",
@@ -3055,7 +3055,7 @@ function buildPriorityRoutes(params: {
     return {
       title: "Fix evidence first",
       detail:
-        "Your current evidence reading is under pressure. Protect tomorrowâ€™s options before chasing more visibility or movement.",
+        "Your current evidence reading is under pressure. Protect tomorrow's options before chasing more visibility or movement.",
       primaryRoute: trustPrimary
         ? {
             key: "trust",
@@ -4845,7 +4845,7 @@ export default function DashboardPage() {
         return {
           key: `source-${key}`,
           title: safeStr(first?.source || "General"),
-          detail: detailParts.join(" â€¢ "),
+          detail: detailParts.join(" | "),
           count: sortedRows.length,
           unreadCount,
           actNowCount,
@@ -10146,7 +10146,7 @@ export default function DashboardPage() {
                     ) : null}
                     {!isCompact ? (
                       <span style={badge(false)}>
-                        {safeDateTime(activeSpotlight.created_at) || "â€”"}
+                        {safeDateTime(activeSpotlight.created_at) || "-"}
                       </span>
                     ) : null}
                   </div>
@@ -10468,7 +10468,7 @@ export default function DashboardPage() {
                         backdropFilter: "blur(10px)",
                       }}
                     >
-                      {safeDateTime(activeSpotlight.created_at) || "â€”"}
+                      {safeDateTime(activeSpotlight.created_at) || "-"}
                     </span>
                   ) : null}
                 </div>
@@ -10717,7 +10717,7 @@ export default function DashboardPage() {
                             lineHeight: 1.32,
                           }}
                         >
-                          {safeDateTime(activeSpotlight.created_at) || "â€”"}
+                          {safeDateTime(activeSpotlight.created_at) || "-"}
                         </div>
                       </div>
 

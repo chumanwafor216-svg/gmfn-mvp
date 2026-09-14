@@ -1304,7 +1304,7 @@ function getCciState(me: any): ReadingState {
         classText,
         postureSource:
           scoreNum === null || Number.isNaN(scoreNum)
-            ? "â€”"
+            ? "-"
             : String(Math.round(scoreNum)),
         tone: "green",
         statusText: "Healthy across visible communities",
@@ -1317,7 +1317,7 @@ function getCciState(me: any): ReadingState {
         classText,
         postureSource:
           scoreNum === null || Number.isNaN(scoreNum)
-            ? "â€”"
+            ? "-"
             : String(Math.round(scoreNum)),
         tone: "green",
         statusText: "Stable and growing",
@@ -1332,7 +1332,7 @@ function getCciState(me: any): ReadingState {
         classText,
         postureSource:
           scoreNum === null || Number.isNaN(scoreNum)
-            ? "â€”"
+            ? "-"
             : String(Math.round(scoreNum)),
         tone: "yellow",
         statusText: "Needs attention",
@@ -1346,7 +1346,7 @@ function getCciState(me: any): ReadingState {
       classText,
       postureSource:
         scoreNum === null || Number.isNaN(scoreNum)
-          ? "â€”"
+          ? "-"
           : String(Math.round(scoreNum)),
       tone: "red",
       statusText: "At risk",
@@ -1457,7 +1457,7 @@ function getOpenTrustState(
         classText: rawClass,
         postureSource:
           rawScore === null || Number.isNaN(rawScore)
-            ? "â€”"
+            ? "-"
             : String(Math.round(rawScore)),
         tone: "green",
         statusText: "Strong in your current community",
@@ -1470,7 +1470,7 @@ function getOpenTrustState(
         classText: rawClass,
         postureSource:
           rawScore === null || Number.isNaN(rawScore)
-            ? "â€”"
+            ? "-"
             : String(Math.round(rawScore)),
         tone: "green",
         statusText: "Stable in your current community",
@@ -1484,7 +1484,7 @@ function getOpenTrustState(
         classText: rawClass,
         postureSource:
           rawScore === null || Number.isNaN(rawScore)
-            ? "â€”"
+            ? "-"
             : String(Math.round(rawScore)),
         tone: "yellow",
         statusText: "Needs attention in your current community",
@@ -1498,7 +1498,7 @@ function getOpenTrustState(
       classText: rawClass,
       postureSource:
         rawScore === null || Number.isNaN(rawScore)
-          ? "â€”"
+          ? "-"
           : String(Math.round(rawScore)),
       tone: "red",
       statusText: "At risk in your current community",
@@ -2112,7 +2112,7 @@ export default function IdentityIntegrityPage() {
       label: tone.label,
       postureSource:
         summary?.score === null || summary?.score === undefined
-          ? "â€”"
+          ? "-"
           : String(summary.score),
       reason:
         safeStr(summary?.reason) ||
@@ -4311,7 +4311,7 @@ export default function IdentityIntegrityPage() {
                 transform: "rotate(-2deg)",
               }}
             >
-              GSN VERIFY � TRUSTSLIP � GENERATED � COMMUNITY INTEGRITY � GSN VERIFY � TRUSTSLIP � GENERATED � COMMUNITY INTEGRITY
+              GSN VERIFY | TRUSTSLIP | GENERATED | COMMUNITY INTEGRITY | GSN VERIFY | TRUSTSLIP | GENERATED | COMMUNITY INTEGRITY
             </div>
           </div>
 

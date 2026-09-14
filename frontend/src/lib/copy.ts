@@ -13,8 +13,8 @@ export const copy = {
   },
   trust: {
     headline: "Your Trust Record",
-    sub: "Trust grows when you finish what you started — full repayment builds real confidence.",
-    rule: "Trust only increases when a loan is fully repaid.",
+    sub: "Trust evidence grows when governed records show completed responsibility.",
+    rule: "Trust evidence improves only when governed records show completed responsibility.",
     progressHeadline: "Progress stage",
     progressSub:
       "This is just encouragement. It does not change your Trust Record. It helps you stay consistent.",
@@ -29,9 +29,9 @@ export const copy = {
   trustslip: {
     headline: "TrustSlip",
     sub:
-      "A TrustSlip shows how much trust your community can currently extend to you — based on completed repayments.",
+      "A TrustSlip shows GSN evidence your community can currently review, based on completed records.",
     disclaimer:
-      "This is not a bank guarantee. It is community-backed trust with an audit trail.",
+      "This is not a bank guarantee, credit approval, payment instruction, or release authority. It is community evidence with an audit trail.",
   },
 };
 export async function copyText(text: string): Promise<void> {
