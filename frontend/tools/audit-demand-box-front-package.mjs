@@ -216,8 +216,20 @@ function requireApiPattern(pattern, message) {
     "DemandBox Ask Community posting must include the optional tagged GSN handle.",
   ],
   [
-    /Tag GSN member[\s\S]*?value=\{targetHandle\}[\s\S]*?placeholder="GSN-U-RESPONDER"[\s\S]*?Use a GSN ID, not a phone number/,
+    /Tag GSN member[\s\S]*?value=\{targetHandle\}[\s\S]*?placeholder="GSN-U-RESPONDER"[\s\S]*?demand-box-gsn-member-handles[\s\S]*?Do not use a phone number/,
     "DemandBox must expose a clear GSN member tag control in the create flow.",
+  ],
+  [
+    /listClanMembers\(effectiveClanId\)\.catch\(\(\) => \(\{ items: \[\] \}\)\)/,
+    "DemandBox must use the existing scoped community roster for tag suggestions when available.",
+  ],
+  [
+    /const tagHandleOptions = useMemo\(\(\) => \{[\s\S]*?\.slice\(0, 40\);/,
+    "DemandBox tag suggestions must stay bounded and deduplicated for large communities.",
+  ],
+  [
+    /<datalist id="demand-box-gsn-member-handles">[\s\S]*?tagHandleOptions\.map/,
+    "DemandBox must provide GSN-ID suggestions without exposing a large chat-style roster block.",
   ],
   [
     /label: "Ask Community"[\s\S]*?key: "ask_community"|key: "ask_community"[\s\S]*?label: "Ask Community"/,

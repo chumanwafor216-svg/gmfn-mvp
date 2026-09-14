@@ -22,6 +22,7 @@ import {
   listMyClans,
   listMyCommunityDomains,
   listMarketplaceRequests,
+  listClanMembers,
   selectClan,
   setSelectedClanId as persistSelectedClanId,
   safeCopy,
@@ -78,6 +79,7 @@ type NoticeTone = "success" | "error";
 type DemandPaperScope = "owner" | "community";
 type DemandNoticeExpiryPolicy = "standard" | "urgent" | "event" | "pinned";
 type DemandQueueLane = "tagged" | "for_me" | "mine" | "ask_community" | "urgent" | "categories";
+type DemandTagMember = { userId: number; gsnId: string; label: string; role: string };
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -533,6 +535,18 @@ function normalizeGsnMention(value: string): string {
   return handle ? `@${handle}` : "";
 }
 
+function normalizeDemandTagMember(raw: any): DemandTagMember | null {
+  const userId = positiveNumber(raw?.user_id || raw?.userId || raw?.id);
+  const gsnId = safeStr(raw?.gmfn_id || raw?.gsn_id || raw?.gmfnId || raw?.gsnId).toUpperCase();
+  if (!gsnId) return null;
+
+  return {
+    userId,
+    gsnId,
+    label: firstTruthy(raw?.display_name, raw?.name, gsnId),
+    role: firstTruthy(raw?.role, raw?.membership_role),
+  };
+}
 function demandTaggedHandleLine(targetHandle: string): string {
   const mention = normalizeGsnMention(targetHandle);
   return mention ? `Tagged GSN handle: ${mention}.` : "";
@@ -715,6 +729,7 @@ export default function DemandBoxPage() {
     useState<any>(null);
   const [myOpenRows, setMyOpenRows] = useState<DemandRow[]>([]);
   const [visibleRows, setVisibleRows] = useState<DemandRow[]>([]);
+  const [tagMembers, setTagMembers] = useState<DemandTagMember[]>([]);
   const [activeQueueLane, setActiveQueueLane] = useState<DemandQueueLane>("for_me");
 
   const [title, setTitle] = useState("");
@@ -790,6 +805,7 @@ export default function DemandBoxPage() {
     setCommunityDomainPolicyPayload(null);
     setMyOpenRows([]);
     setVisibleRows([]);
+    setTagMembers([]);
 
     try {
       const [
@@ -799,6 +815,7 @@ export default function DemandBoxPage() {
         domainsRes,
         myRes,
         visibleRes,
+        membersRes,
       ] = await Promise.all([
         getMe().catch(() => null),
         getCurrentClan().catch(() => null),
@@ -816,6 +833,9 @@ export default function DemandBoxPage() {
           status: "open",
           limit: 200,
         }).catch(() => []),
+        effectiveClanId
+          ? listClanMembers(effectiveClanId).catch(() => ({ items: [] }))
+          : Promise.resolve({ items: [] }),
       ]);
 
       const communityRows = rowsOf<any>(clansRes);
@@ -825,6 +845,9 @@ export default function DemandBoxPage() {
         ) || currentClanRes || null;
       const myRows = rowsOf<DemandRow>(myRes);
       const visibleAll = rowsOf<DemandRow>(visibleRes);
+      const availableTagMembers = rowsOf<any>(membersRes)
+        .map(normalizeDemandTagMember)
+        .filter(Boolean) as DemandTagMember[];
 
       const filteredVisible = visibleAll.filter(
         (row) => !isMineRow(row, meRes || null)
@@ -838,6 +861,7 @@ export default function DemandBoxPage() {
       setCommunityDomainPolicyPayload(domainsRes);
       setMyOpenRows(myRows);
       setVisibleRows(filteredVisible);
+      setTagMembers(availableTagMembers);
     } finally {
       if (isCurrentDemandLoad()) setLoading(false);
     }
@@ -1385,6 +1409,22 @@ export default function DemandBoxPage() {
     );
   }, [me]);
   const memberCciLabel = cciLabel(me);
+
+  const tagHandleOptions = useMemo(() => {
+    const myGsnId = safeStr(me?.gmfn_id).toUpperCase();
+    const seen = new Set<string>();
+
+    return tagMembers
+      .filter((member) => member.gsnId && member.gsnId !== myGsnId)
+      .filter((member) => {
+        const key = member.gsnId.toUpperCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((a, b) => a.label.localeCompare(b.label))
+      .slice(0, 40);
+  }, [me, tagMembers]);
 
   const demandMode = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -2260,10 +2300,22 @@ export default function DemandBoxPage() {
                   value={targetHandle}
                   onChange={(e) => setTargetHandle(e.target.value)}
                   placeholder="GSN-U-RESPONDER"
+                  list="demand-box-gsn-member-handles"
+                  autoCapitalize="characters"
                   style={{ ...inputStyle(), marginTop: 8 }}
                 />
+                {tagHandleOptions.length > 0 ? (
+                  <datalist id="demand-box-gsn-member-handles">
+                    {tagHandleOptions.map((member) => (
+                      <option key={member.gsnId} value={member.gsnId}>
+                        {member.label}
+                        {member.role ? ` - ${member.role}` : ""}
+                      </option>
+                    ))}
+                  </datalist>
+                ) : null}
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-                  Optional. Use a GSN ID, not a phone number.
+                  Optional. Start typing or choose a known GSN ID. Do not use a phone number.
                 </div>
               </div>
 
