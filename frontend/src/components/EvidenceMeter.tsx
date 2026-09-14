@@ -104,6 +104,7 @@ export function evidenceMeterStyle(
 }
 
 export function stopInertMeterTap(event: React.SyntheticEvent) {
+  event.preventDefault();
   event.stopPropagation();
 }
 
@@ -125,6 +126,8 @@ export default function EvidenceMeter({
       title={title}
       data-gsn-inert-meter="true"
       onClick={stopInertMeterTap}
+      onMouseDown={stopInertMeterTap}
+      onPointerDown={stopInertMeterTap}
       style={evidenceMeterStyle(status ?? children, style)}
     >
       {children}

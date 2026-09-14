@@ -378,7 +378,47 @@ async function collectRouteAudit(page, label) {
   return findings.length > 0 ? { label, findings } : null;
 }
 
+async function collectPassiveTrustTapAudit(page, label) {
+  const selector = '[data-gsn-inert-meter="true"], [data-dashboard-passport-feature-status="true"]';
+  const before = new URL(page.url());
+  const beforePath = before.pathname + before.search + before.hash;
+  const targetCount = await page.locator(selector).count();
+  const findings = [];
+
+  for (let index = 0; index < Math.min(targetCount, 6); index += 1) {
+    const target = page.locator(selector).nth(index);
+    const visible = await target.isVisible().catch(() => false);
+    if (!visible) continue;
+
+    const labelText = await target
+      .evaluate((node) => {
+        const aria = node.getAttribute("aria-label") || "";
+        const text = node.textContent || "";
+        return (aria || text).replace(/\s+/g, " ").trim().slice(0, 80);
+      })
+      .catch(() => `passive target ${index + 1}`);
+
+    await target.tap({ timeout: 2500 }).catch(async () => {
+      await target.click({ timeout: 2500, force: true });
+    });
+    await page.waitForTimeout(160);
+
+    const after = new URL(page.url());
+    const afterPath = after.pathname + after.search + after.hash;
+    if (afterPath !== beforePath) {
+      findings.push(`passive trust status tap navigated from ${beforePath} to ${afterPath}: ${labelText}`);
+      await page.goto(before.href, { waitUntil: "networkidle", timeout: 30000 });
+    }
+  }
+
+  return findings.length > 0 ? { label, findings } : null;
+}
 const routeChecks = [
+  {
+    label: "Dashboard Trust Passport status",
+    path: "/app/dashboard",
+    selector: '[data-dashboard-passport-reference="gsn-trust-card"]',
+  },
   {
     label: "Identity Integrity",
     path: "/app/identity",
@@ -469,6 +509,8 @@ try {
     await page.waitForTimeout(450);
     const routeFinding = await collectRouteAudit(page, routeCheck.label);
     if (routeFinding) findings.push(routeFinding);
+    const passiveTapFinding = await collectPassiveTrustTapAudit(page, routeCheck.label);
+    if (passiveTapFinding) findings.push(passiveTapFinding);
   }
 
   if (findings.length > 0) {

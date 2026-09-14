@@ -8283,6 +8283,7 @@ export default function DashboardPage() {
                   key={item.label}
                   aria-label={`${item.label}: Trust Passport status`}
                   onClick={(event) => event.stopPropagation()}
+                  onMouseDown={(event) => event.stopPropagation()}
                   onPointerDown={(event) => event.stopPropagation()}
                   style={dashboardStableActionFrame({
                     display: "grid",

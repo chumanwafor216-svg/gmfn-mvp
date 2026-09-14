@@ -227,7 +227,7 @@ type GsnIdentityCardShareImageParams = {
   verifyDisplay: string;
   valid: boolean;
 };
-const IDENTITY_PAGE_UI_STORAGE_KEY = "gmfn.identityPage.sections.v3";
+const IDENTITY_PAGE_UI_STORAGE_KEY = "gmfn.identityPage.sections.v4";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
