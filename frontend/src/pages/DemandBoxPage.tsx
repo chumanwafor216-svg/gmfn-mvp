@@ -927,7 +927,7 @@ export default function DemandBoxPage() {
       row?.area ? `Area: ${safeStr(row.area)}` : "",
       row?.payment_mode ? `Terms preference: ${safeStr(row.payment_mode)}` : "",
       row?.allow_trust_credit
-        ? "Trust-credit preference: requester is open to trust credit where appropriate."
+        ? "Trust-credit openness is a request preference, not approval to release goods, credit, or money."
         : "",
       row?.whatsapp_number
         ? "Public contact path: WhatsApp contact is available from this DemandBox request."
@@ -1278,13 +1278,27 @@ export default function DemandBoxPage() {
     options: { canClose?: boolean; index?: number } = {}
   ): React.ReactElement {
     const fallbackIndex = Number(options.index || 0);
-    const rowKey = safeStr(row?.id) || `${debugBase}.${fallbackIndex}`;
+    const index = fallbackIndex;
+    const debugIndex = `${debugBase}.${fallbackIndex}`;
+    const rowKey = safeStr(row?.id) || debugIndex;
     const rowId = Number(row?.id || 0);
     const busy = updatingDemandId === rowId;
     const canClose = options.canClose === true;
     const trustPosture = requesterTrustPostureLabel(row);
     const fromAskCommunity = isAskCommunityDemand(row);
     const mentionedHandles = mentionedHandlesOf(row);
+    const ownedCopyDebugId = `demand-box.request.${row?.id || index}.copy-paper`;
+    const ownedFallbackCopyDebugId = `demand-box.request.${row?.id || debugIndex}.copy-paper`;
+    const visibleCopyDebugId = `demand-box.visible-request.${row?.id || index}.copy-paper`;
+    const visibleFallbackCopyDebugId = `demand-box.visible-request.${row?.id || debugIndex}.copy-paper`;
+    const copyDebugId =
+      scope === "owner"
+        ? rowId
+          ? ownedCopyDebugId
+          : ownedFallbackCopyDebugId
+        : rowId
+          ? visibleCopyDebugId
+          : visibleFallbackCopyDebugId;
 
     return (
       <div key={rowKey} style={recordCard()}>
@@ -1357,7 +1371,7 @@ export default function DemandBoxPage() {
             <span style={badge(false)}>Terms: {safeStr(row?.payment_mode)}</span>
           ) : null}
           {row?.allow_trust_credit ? (
-            <span style={badge(false)}>Trust-credit requested</span>
+            <span style={badge(false)}>Trust-credit openness only</span>
           ) : null}
           {safeStr(row?.created_at) ? (
             <span style={badge(false)}>{safeDateTime(row?.created_at)}</span>
@@ -1391,7 +1405,7 @@ export default function DemandBoxPage() {
             </>
           ) : null}
 
-          {demandPaperAction(row, scope, `${debugBase}.copy-paper`)}
+          {demandPaperAction(row, scope, copyDebugId)}
           {demandContactActions(row, `${debugBase}.contact`)}
         </div>
       </div>
@@ -2491,6 +2505,10 @@ export default function DemandBoxPage() {
                     />
                     Open to trust credit where appropriate
                   </label>
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
+                    Trust-credit openness is a request preference, not approval to
+                    release goods, credit, or money.
+                  </div>
                 </div>
               </div>
             </details>
