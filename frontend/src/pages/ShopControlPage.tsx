@@ -8903,7 +8903,9 @@ export default function ShopControlPage() {
                 <div style={{ ...helperText(), fontSize: 12 }}>Advanced Analytics / Market Intelligence. Evidence first, one test next.</div>
               </div>
             </div>
-            <ShopLearnBeforeScalePanel isCompact={isCompact} />
+            {!isCompact || activeOpportunityEnginePanel === "signals" ? (
+              <ShopLearnBeforeScalePanel isCompact={isCompact} />
+            ) : null}
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(shopAnalyticsWisdom.confidence === "high")}>Confidence: {shopAnalyticsWisdom.confidence}</span>
               <span style={badge(shopAnalyticsWisdom.diagnosisCode !== "GATHERING_DATA")}>{shopAnalyticsWisdom.state}</span>
@@ -8954,11 +8956,11 @@ export default function ShopControlPage() {
               style={{
                 marginTop: 12,
                 borderRadius: 18,
-                border: "1px solid rgba(15,94,170,0.14)",
-                background: "linear-gradient(180deg, #F8FBFF 0%, #EDF6FF 100%)",
-                padding: 12,
+                border: isCompact ? "0" : "1px solid rgba(15,94,170,0.14)",
+                background: isCompact ? "transparent" : "linear-gradient(180deg, #F8FBFF 0%, #EDF6FF 100%)",
+                padding: isCompact ? 0 : 12,
                 display: "grid",
-                gap: 10,
+                gap: isCompact ? 8 : 10,
               }}
             >
               <div style={{ display: isCompact && activeOpportunityEnginePanel !== "overview" ? "none" : "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
@@ -9389,7 +9391,7 @@ export default function ShopControlPage() {
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: 12, display: activeOpportunityEnginePanel === "signals" ? "grid" : "none", gap: 10 }}>
+            <div style={{ marginTop: 12, display: activeOpportunityEnginePanel === "signals" && !isCompact ? "grid" : "none", gap: 10 }}>
               <div style={{ color: "#24415C", fontSize: 13, fontWeight: 850, lineHeight: 1.4 }}>
                 <strong style={{ color: "#061827" }}>Observation:</strong> {shopAnalyticsWisdom.observation}
               </div>
@@ -9439,7 +9441,7 @@ export default function ShopControlPage() {
                 {marketIntelligencePrimaryAction.label}
               </StableCtaLink>
             </div>
-            <div style={{ marginTop: 12, display: activeOpportunityEnginePanel === "signals" ? "grid" : "none", gap: 8 }}>
+            <div style={{ marginTop: 12, display: activeOpportunityEnginePanel === "signals" && !isCompact ? "grid" : "none", gap: 8 }}>
               {shopAnalyticsWisdom.actions.slice(0, 3).map((item, index) => {
                 const actionKey = marketIntelligenceActionKey(item, index);
                 const actionLogged = loggedRecommendationActionKeys.has(actionKey);
@@ -9597,7 +9599,7 @@ export default function ShopControlPage() {
                 </div>
               ) : null}
             </div>
-            <div style={{ marginTop: 12, borderRadius: 14, padding: 11, background: "rgba(239,247,255,0.80)", border: "1px solid rgba(18,58,89,0.08)", display: activeOpportunityEnginePanel === "signals" ? "block" : "none" }}>
+            <div style={{ marginTop: 12, borderRadius: 14, padding: 11, background: "rgba(239,247,255,0.80)", border: "1px solid rgba(18,58,89,0.08)", display: activeOpportunityEnginePanel === "signals" && !isCompact ? "block" : "none" }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                 <div style={{ color: "#061827", fontSize: 13, fontWeight: 950 }}>Advice action trail</div>
                 <div style={{ color: "#0F5EAA", fontSize: 12, fontWeight: 900 }}>{recommendationActions7Days} logged</div>
@@ -9619,7 +9621,7 @@ export default function ShopControlPage() {
                 {recommendationActionBoundary}
               </div>
             </div>
-            <details style={{ marginTop: 12, display: activeOpportunityEnginePanel === "signals" ? "block" : "none" }}>
+            <details style={{ marginTop: 12, display: activeOpportunityEnginePanel === "signals" && !isCompact ? "block" : "none" }}>
               <StableDisclosureSummary debugId="shop-control.market-intelligence.why" stableHeight={40} style={{ color: "#0F5EAA", fontSize: 13, fontWeight: 900, cursor: "pointer" }}>Why this advice?</StableDisclosureSummary>
               <div style={{ marginTop: 8, color: "#385773", fontSize: 12, fontWeight: 750, lineHeight: 1.45 }}>
                 {shopAnalyticsWisdom.why} This reading is packaged through the shared Attention Spine signal engine, so it does not create a separate shop-only priority system. Community Needs is read from the existing DemandBox request lane, not a separate matching engine or survey system.

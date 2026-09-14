@@ -570,6 +570,22 @@ assertShopContains(
   /function ShopLearnBeforeScalePanel[\s\S]*?Record cost[\s\S]*?One change[\s\S]*?Set date[\s\S]*?Save result[\s\S]*?7 days[\s\S]*?30 days[\s\S]*?90 days[\s\S]*?Learn before you scale[\s\S]*?<ShopLearnBeforeScalePanel isCompact=\{isCompact\}/,
   "Opportunity Engine must keep the learn-before-scale picture panel with 7, 30, and 90 day windows."
 );
+assertShopContains(
+  /!isCompact \|\| activeOpportunityEnginePanel === "signals" \? \([\s\S]*?<ShopLearnBeforeScalePanel isCompact=\{isCompact\}/,
+  "Shop Control Advanced Analytics must not repeat the learn-before-scale intro above every compact phone lane."
+);
+assertShopContains(
+  /border: isCompact \? "0" : "1px solid rgba\(15,94,170,0\.14\)"[\s\S]*?background: isCompact \? "transparent"[\s\S]*?padding: isCompact \? 0 : 12[\s\S]*?gap: isCompact \? 8 : 10/,
+  "Shop Control Advanced Analytics active-lane wrapper must not draw an extra container wall on phone."
+);
+assertShopContains(
+  /display: activeOpportunityEnginePanel === "signals" && !isCompact \? "grid" : "none"[\s\S]*?Observation:[\s\S]*?display: activeOpportunityEnginePanel === "signals" && !isCompact \? "grid" : "none"[\s\S]*?shop-control\.market-intelligence\.actioned/,
+  "Shop Control Signals lane must hide repeated desktop explanation/action stacks on phone."
+);
+assertShopContains(
+  /display: activeOpportunityEnginePanel === "signals" && !isCompact \? "block" : "none"[\s\S]*?Advice action trail[\s\S]*?<details style=\{\{ marginTop: 12, display: activeOpportunityEnginePanel === "signals" && !isCompact \? "block" : "none" \}\}>[\s\S]*?Why this advice\?/,
+  "Shop Control Signals lane must keep advice trail and why-details off the compact phone surface."
+);
 if (/letterSpacing:\s*[1-9]/.test(shopControlSource)) {
   findings.push({
     file: shopControlFile,
@@ -579,12 +595,14 @@ if (/letterSpacing:\s*[1-9]/.test(shopControlSource)) {
   });
 }
 
-if (/ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢|ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¿ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½/.test(shopControlSource)) {
+const mojibakePattern = /(?:\u00c3[\u0080-\u00bf]|\u00e2[\u0080-\u00bf][\u0080-\u00bf]|\ufffd)/;
+if (mojibakePattern.test(shopControlSource)) {
+  const lineMatch = shopControlSource.match(new RegExp(".*(?:" + mojibakePattern.source + ").*"));
   findings.push({
     file: shopControlFile,
-    line: lineAt(shopControlSource, shopControlSource.search(/ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢|ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¿ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½/)),
+    line: lineAt(shopControlSource, shopControlSource.search(mojibakePattern)),
     message: "Shop Control must not show mojibake/broken encoding characters in user-facing copy.",
-    text: shopControlSource.match(/.*(?:ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢|ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¯ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¿ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â½).*/)?.[0]?.trim() || "",
+    text: lineMatch?.[0]?.trim() || "",
   });
 }
 
