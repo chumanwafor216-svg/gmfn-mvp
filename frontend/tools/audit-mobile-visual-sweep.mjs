@@ -236,6 +236,8 @@ function pageAudit() {
   const overflow = [];
   const lowContrast = [];
   const oversized = [];
+  const crampedText = [];
+  const duplicateHeadings = [];
 
   for (const element of Array.from(document.querySelectorAll("body *"))) {
     const styles = getComputedStyle(element);
@@ -295,6 +297,26 @@ function pageAudit() {
       });
     }
 
+    const textLength = directText.length;
+    const isAppShell = Boolean(element.closest("[aria-label='Bottom navigation'], [data-app-shell='true']"));
+    const narrowWithLongText =
+      hasOwnLabel &&
+      textLength >= 32 &&
+      rect.width < 132 &&
+      Number.parseFloat(styles.fontSize || "16") >= 14 &&
+      isInVisibleVerticalRange &&
+      !isAppShell;
+
+    if (narrowWithLongText) {
+      crampedText.push({
+        tag: element.tagName,
+        label,
+        width: Math.round(rect.width),
+        font: Math.round(Number.parseFloat(styles.fontSize || "16")),
+        top: Math.round(rect.top),
+      });
+    }
+
     if (
       hiddenFromA11y ||
       !isInVisibleVerticalRange ||
@@ -325,6 +347,23 @@ function pageAudit() {
     }
   }
 
+  const headingCounts = new Map();
+  for (const heading of Array.from(document.querySelectorAll("h1, h2, h3, [data-gsn-major-block='true']"))) {
+    const styles = getComputedStyle(heading);
+    const rect = heading.getBoundingClientRect();
+    if (!isVisible(heading, rect, styles)) continue;
+
+    const text = (heading.textContent || "").replace(/\s+/g, " ").trim();
+    if (!text || text.length < 10) continue;
+    const normalized = text.toLowerCase();
+    headingCounts.set(normalized, (headingCounts.get(normalized) || 0) + 1);
+  }
+
+  for (const [heading, count] of headingCounts.entries()) {
+    if (count > 1) {
+      duplicateHeadings.push({ heading, count });
+    }
+  }
   return {
     path: location.pathname + location.search,
     viewportW,
@@ -335,9 +374,51 @@ function pageAudit() {
     overflow: overflow.slice(0, 12),
     lowContrast: lowContrast.slice(0, 14),
     oversized: oversized.slice(0, 12),
+    crampedText: crampedText.slice(0, 12),
+    duplicateHeadings: duplicateHeadings.slice(0, 10),
   };
 }
 
+async function collectRouteFindings(page) {
+  const findings = [];
+
+  function addFindings(result, prefix = "") {
+    if (result.horizontalOverflow) {
+      findings.push(`${prefix}horizontal overflow: scroll width ${result.scrollW}px on ${result.viewportW}px viewport`);
+    }
+    if (result.overflow.length > 0) {
+      findings.push(`${prefix}visible elements outside viewport: ${JSON.stringify(result.overflow)}`);
+    }
+    if (result.lowContrast.length > 0) {
+      findings.push(`${prefix}possible low contrast text: ${JSON.stringify(result.lowContrast)}`);
+    }
+    if (result.oversized.length > 0) {
+      findings.push(`${prefix}large visible blocks to review: ${JSON.stringify(result.oversized)}`);
+    }
+    if (result.crampedText.length > 0) {
+      findings.push(`${prefix}narrow long text: ${JSON.stringify(result.crampedText)}`);
+    }
+    if (result.duplicateHeadings.length > 0) {
+      findings.push(`${prefix}duplicate visible headings: ${JSON.stringify(result.duplicateHeadings)}`);
+    }
+  }
+
+  const firstResult = await page.evaluate(pageAudit);
+  const maxScrollY = Math.max(0, firstResult.scrollH - firstResult.viewportH);
+  const positions = Array.from(
+    new Set([0, 0.25, 0.5, 0.75, 1].map((ratio) => Math.round(maxScrollY * ratio)))
+  );
+
+  for (const scrollY of positions) {
+    await page.evaluate((nextY) => window.scrollTo(0, nextY), scrollY);
+    await page.waitForTimeout(160);
+    const result = await page.evaluate(pageAudit);
+    addFindings(result, scrollY > 0 ? `scrollY ${scrollY}: ` : "");
+  }
+
+  await page.evaluate(() => window.scrollTo(0, 0));
+  return findings.slice(0, 24);
+}
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({
   viewport: { width: 390, height: 844 },
@@ -363,21 +444,7 @@ for (const route of routes) {
   try {
     await page.goto(`${baseUrl}${route}`, { waitUntil: "networkidle", timeout: 15000 });
     await page.waitForTimeout(700);
-    const result = await page.evaluate(pageAudit);
-
-    const routeFindings = [];
-    if (result.horizontalOverflow) {
-      routeFindings.push(`horizontal overflow: scroll width ${result.scrollW}px on ${result.viewportW}px viewport`);
-    }
-    if (result.overflow.length > 0) {
-      routeFindings.push(`visible elements outside viewport: ${JSON.stringify(result.overflow)}`);
-    }
-    if (result.lowContrast.length > 0) {
-      routeFindings.push(`possible low contrast text: ${JSON.stringify(result.lowContrast)}`);
-    }
-    if (result.oversized.length > 0) {
-      routeFindings.push(`large visible blocks to review: ${JSON.stringify(result.oversized)}`);
-    }
+    const routeFindings = await collectRouteFindings(page);
 
     if (routeFindings.length > 0) {
       findings.push({ route, routeFindings });
