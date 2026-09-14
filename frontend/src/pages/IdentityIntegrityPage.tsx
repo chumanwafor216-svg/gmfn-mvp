@@ -149,6 +149,7 @@ type PhoneConflictState = {
 };
 
 type CollapseState = {
+  evidenceMeaning: boolean;
   summary: boolean;
   continuity: boolean;
   recovery: boolean;
@@ -226,7 +227,7 @@ type GsnIdentityCardShareImageParams = {
   verifyDisplay: string;
   valid: boolean;
 };
-const IDENTITY_PAGE_UI_STORAGE_KEY = "gmfn.identityPage.sections.v2";
+const IDENTITY_PAGE_UI_STORAGE_KEY = "gmfn.identityPage.sections.v3";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -1131,6 +1132,7 @@ function writeLocalJSON(key: string, value: any) {
 
 function defaultCollapseState(): CollapseState {
   return {
+    evidenceMeaning: true,
     summary: true,
     continuity: true,
     recovery: true,
@@ -1149,6 +1151,7 @@ function normalizeCollapseState(raw: any): CollapseState {
   const base = defaultCollapseState();
 
   return {
+    evidenceMeaning: Boolean(raw?.evidenceMeaning ?? base.evidenceMeaning),
     summary: Boolean(raw?.summary ?? base.summary),
     continuity: Boolean(raw?.continuity ?? base.continuity),
     recovery: Boolean(raw?.recovery ?? base.recovery),
@@ -3256,10 +3259,32 @@ export default function IdentityIntegrityPage() {
         backTo={routes.dashboard}
       />
 
-      <RealLifeMeaningGuide
-        compact={isCompact}
-        guidance={getRealLifeTrustGuidance("identity-evidence")}
-      />
+      <section
+        data-identity-integrity-secondary-section="evidence-meaning"
+        style={decongestedSectionCard(collapsed.evidenceMeaning, isCompact)}
+      >
+        {sectionIconHeader(
+          "shield",
+          "Evidence meaning",
+          "What this identity evidence means, why it matters, and what to do first.",
+          <SubtleButton
+            onClick={() => toggleSection("evidenceMeaning")}
+            stableHeight={52}
+            style={collapseToggle()}
+            debugId="identity-integrity.toggle-evidence-meaning"
+          >
+            {collapsed.evidenceMeaning ? "Open" : "Hide"}
+          </SubtleButton>
+        )}
+
+        {!collapsed.evidenceMeaning ? (
+          <RealLifeMeaningGuide
+            compact={isCompact}
+            guidance={getRealLifeTrustGuidance("identity-evidence")}
+            style={{ marginTop: 14 }}
+          />
+        ) : null}
+      </section>
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 

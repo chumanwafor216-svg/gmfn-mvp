@@ -61,12 +61,12 @@ assertContains(
 );
 
 assertContains(
-  /function defaultCollapseState\(\): CollapseState \{[\s\S]*?summary: true,[\s\S]*?continuity: true,[\s\S]*?recovery: true,[\s\S]*?reasons: true,[\s\S]*?timeline: true,[\s\S]*?next: true/,
-  "Identity Integrity secondary readings, continuity, recovery, reasons, timeline, and next-step panels must stay collapsed by default."
+  /function defaultCollapseState\(\): CollapseState \{[\s\S]*?evidenceMeaning: true,[\s\S]*?summary: true,[\s\S]*?continuity: true,[\s\S]*?recovery: true,[\s\S]*?reasons: true,[\s\S]*?timeline: true,[\s\S]*?next: true/,
+  "Identity Integrity evidence meaning, secondary readings, continuity, recovery, reasons, timeline, and next-step panels must stay collapsed by default."
 );
 
 assertContains(
-  /const IDENTITY_PAGE_UI_STORAGE_KEY = "gmfn\.identityPage\.sections\.v2";/,
+  /const IDENTITY_PAGE_UI_STORAGE_KEY = "gmfn\.identityPage\.sections\.v3";/,
   "Identity Integrity must bump the section-state storage key when default exposure changes so old open layouts do not persist on pilot phones."
 );
 assertContains(
@@ -75,8 +75,8 @@ assertContains(
 );
 
 assertContains(
-  /summary: true,[\s\S]*?continuity: true,[\s\S]*?recovery: true,[\s\S]*?reasons: true,[\s\S]*?timeline: true,[\s\S]*?next: true,[\s\S]*?guides: true/,
-  "Identity Integrity readings, recovery, timeline, next-step, and reference guides must stay closed by default."
+  /evidenceMeaning: true,[\s\S]*?summary: true,[\s\S]*?continuity: true,[\s\S]*?recovery: true,[\s\S]*?reasons: true,[\s\S]*?timeline: true,[\s\S]*?next: true,[\s\S]*?guides: true/,
+  "Identity Integrity evidence meaning, readings, recovery, timeline, next-step, and reference guides must stay closed by default."
 );
 
 assertContains(
@@ -84,6 +84,15 @@ assertContains(
   "Identity Integrity secondary page material must stay inside decongested route-local section shells."
 );
 
+assertContains(
+  /data-identity-integrity-secondary-section="evidence-meaning"[\s\S]*?decongestedSectionCard\(collapsed\.evidenceMeaning, isCompact\)[\s\S]*?Evidence meaning[\s\S]*?debugId="identity-integrity\.toggle-evidence-meaning"[\s\S]*?!collapsed\.evidenceMeaning[\s\S]*?RealLifeMeaningGuide[\s\S]*?getRealLifeTrustGuidance\("identity-evidence"\)/,
+  "Identity Integrity real-life meaning guidance must be collapsed under Evidence meaning by default."
+);
+
+assertContains(
+  /<PageTopNav[\s\S]*?subtitle="Stable identity, current status, and the next clean evidence step\."[\s\S]*?<section[\s\S]*?data-identity-integrity-secondary-section="evidence-meaning"[\s\S]*?<section[\s\S]*?data-identity-package-view-toggle="true"/,
+  "Identity Integrity must keep the first explanation as a collapsed evidence section before the identity package, not an always-open guide."
+);
 assertContains(
   /data-identity-integrity-secondary-section="guides"[\s\S]*?Evidence Guides[\s\S]*?debugId="identity-integrity\.toggle-guides"[\s\S]*?!collapsed\.guides[\s\S]*?data-identity-integrity-guide-stack="true"/,
   "Identity Integrity reference maps and guidance widgets must be covered by the Evidence Guides disclosure."
