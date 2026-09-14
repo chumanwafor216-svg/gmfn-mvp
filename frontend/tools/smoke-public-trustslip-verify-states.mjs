@@ -562,6 +562,10 @@ async function expectDecisionPackRecipientCard(page, { expectRedactedExtract = f
   await expect(decisionReading).toContainText("GSN reads the public-safe community activity first");
   await expect(decisionReading).toContainText("This is an inference from public-safe community activity");
   await expect(decisionReading).toContainText("Decision evidence summary");
+  await expect(decisionReading).toContainText("Decision evidence details");
+  await page.locator('[data-cta-id="trust-document.section.decision-evidence-details"]').click();
+  const purposeFilteredEvidence = page.locator('[data-gsn-decision-pack-profile="public-purpose-filter"]');
+  await expect(purposeFilteredEvidence).toBeVisible({ timeout: 30000 });
   await expect(decisionReading).toContainText("Core public signal");
   await expect(decisionReading).toContainText("Evidence source map");
   await expect(decisionReading).toContainText("Where can GSN point for this decision?");
