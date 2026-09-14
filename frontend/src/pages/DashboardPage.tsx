@@ -8237,17 +8237,14 @@ export default function DashboardPage() {
               {
                 icon: "eye" as const,
                 label: "Visible",
-                to: DASHBOARD_TARGETS.TRUST,
               },
               {
                 icon: "briefcase" as const,
                 label: "Portable",
-                to: DASHBOARD_TARGETS.TRUST,
               },
               {
                 icon: "check" as const,
                 label: "Usable",
-                to: DASHBOARD_TARGETS.TRUST,
               },
             ].map((item, index) => {
               const helper =
@@ -8258,13 +8255,11 @@ export default function DashboardPage() {
                   : "Accepted with evidence where it matters";
 
               return (
-                <StableButton
-                  debugId={`dashboard.passport-feature.${item.label.toLowerCase()}`}
+                <div
+                  data-debug-id={`dashboard.passport-feature.${item.label.toLowerCase()}.status`}
+                  data-dashboard-passport-feature-status="true"
                   key={item.label}
-                  type="button"
-                  onClick={(event) => openDashboardRoute(event, item.to)}
-                  onPointerDown={consumeDashboardPointerEvent}
-                  aria-label={`${item.label}: open Trust Passport`}
+                  aria-label={`${item.label}: Trust Passport status`}
                   style={dashboardStableActionFrame({
                     display: "grid",
                     gridTemplateRows: "auto auto 1fr",
@@ -8280,7 +8275,7 @@ export default function DashboardPage() {
                     lineHeight: 1,
                     position: "relative",
                     zIndex: 2,
-                    cursor: "pointer",
+                    cursor: "default",
                   })}
                 >
                   <span
@@ -8329,7 +8324,7 @@ export default function DashboardPage() {
                   >
                     {helper}
                   </span>
-                </StableButton>
+                </div>
               );
             })}
           </div>

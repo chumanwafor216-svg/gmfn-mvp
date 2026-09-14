@@ -308,8 +308,18 @@ assertContains(
 );
 
 assertContains(
-  /<PictureFrameToolsControl[\s\S]*?open=\{passportPictureToolsOpen\}[\s\S]*?label="Frame tools"[\s\S]*?triggerHeight=\{isPhone \? 40 : 42\}[\s\S]*?label: "Upload"[\s\S]*?inputId: avatarInputId[\s\S]*?label: "Change"[\s\S]*?inputId: avatarInputId[\s\S]*?label: "Remove"[\s\S]*?disabled: !avatarSrc[\s\S]*?label: "Visible"[\s\S]*?to: DASHBOARD_TARGETS\.TRUST[\s\S]*?label: "Portable"[\s\S]*?to: DASHBOARD_TARGETS\.TRUST[\s\S]*?label: "Usable"[\s\S]*?to: DASHBOARD_TARGETS\.TRUST[\s\S]*?debugId=\{`dashboard\.passport-feature\.\$\{item\.label\.toLowerCase\(\)\}`\}[\s\S]*?onClick=\{\(event\) => openDashboardRoute\(event, item\.to\)\}/,
-  "Dashboard passport must keep one Frame tools button hiding active file-backed Upload, Change, and Remove actions plus clickable Visible/Portable/Usable Trust Passport surfaces."
+  /<PictureFrameToolsControl[\s\S]*?open=\{passportPictureToolsOpen\}[\s\S]*?label="Frame tools"[\s\S]*?triggerHeight=\{isPhone \? 40 : 42\}[\s\S]*?label: "Upload"[\s\S]*?inputId: avatarInputId[\s\S]*?label: "Change"[\s\S]*?inputId: avatarInputId[\s\S]*?label: "Remove"[\s\S]*?disabled: !avatarSrc/,
+  "Dashboard passport must keep one Frame tools button hiding active file-backed Upload, Change, and Remove actions."
+);
+
+assertContains(
+  /label: "Visible"[\s\S]*?label: "Portable"[\s\S]*?label: "Usable"[\s\S]*?data-dashboard-passport-feature-status="true"[\s\S]*?aria-label=\{`\$\{item\.label\}: Trust Passport status`\}[\s\S]*?cursor: "default"/,
+  "Dashboard Visible, Portable, and Usable passport features must render as passive status surfaces."
+);
+
+assertNotContains(
+  /label: "Visible"[\s\S]*?to: DASHBOARD_TARGETS\.TRUST[\s\S]*?label: "Portable"[\s\S]*?to: DASHBOARD_TARGETS\.TRUST[\s\S]*?label: "Usable"[\s\S]*?to: DASHBOARD_TARGETS\.TRUST|debugId=\{`dashboard\.passport-feature\.\$\{item\.label\.toLowerCase\(\)\}`\}[\s\S]*?openDashboardRoute\(event, item\.to\)|aria-label=\{`\$\{item\.label\}: open Trust Passport`\}/,
+  "Dashboard Visible, Portable, and Usable passport features must not open Trust Passport when tapped."
 );
 
 assertContains(

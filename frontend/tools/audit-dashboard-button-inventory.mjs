@@ -73,6 +73,16 @@ function assertContains(
   });
 }
 
+function assertNotContains(pattern, message, text) {
+  if (!pattern.test(dashboardCompositeSource)) return;
+  findings.push({
+    file: dashboardFile,
+    line: 1,
+    message,
+    text,
+  });
+}
+
 function assertLayoutContains(
   pattern,
   message,
@@ -169,10 +179,10 @@ while ((match = nativeFieldPattern.exec(dashboardSource))) {
 }
 
 const expected = {
-  StableButton: 51,
+  StableButton: 50,
   StableDisclosureSummary: 1,
   PictureFrameToolsControl: 2,
-  EffectiveDashboardActionRoots: 60,
+  EffectiveDashboardActionRoots: 59,
 };
 const expectedWholeMobileRouteActionRoots =
   expected.EffectiveDashboardActionRoots + expectedMobileShellActionCount;
@@ -229,6 +239,17 @@ for (const action of actions) {
 assertContains(
   /id="most-used-apps"[\s\S]*?display: "none"[\s\S]*?debugId=\{`dashboard\.most-used-app\.\$\{app\.key\}`\}/,
   "Dashboard hidden most-used-apps source controls remain counted. Re-audit before exposing, removing, or moving this section."
+);
+
+assertContains(
+  /data-dashboard-passport-feature-status="true"[\s\S]*?aria-label=\{`\$\{item\.label\}: Trust Passport status`\}[\s\S]*?cursor: "default"/,
+  "Dashboard Visible, Portable, and Usable passport feature tiles must be status-only surfaces, not Trust Passport route actions."
+);
+
+assertNotContains(
+  /debugId=\{`dashboard\.passport-feature\.\$\{item\.label\.toLowerCase\(\)\}`\}[\s\S]*?openDashboardRoute\(event, item\.to\)|aria-label=\{`\$\{item\.label\}: open Trust Passport`\}/,
+  "Dashboard Visible, Portable, and Usable passport feature tiles must not open Trust Passport when tapped.",
+  "Found an old passport feature Trust Passport action contract."
 );
 
 assertContains(
