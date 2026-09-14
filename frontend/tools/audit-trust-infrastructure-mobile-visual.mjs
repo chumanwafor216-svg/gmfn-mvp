@@ -254,6 +254,7 @@ function pageAudit() {
   const scrollH = scrollingElement.scrollHeight;
   const overflow = [];
   const crampedText = [];
+  const duplicateHeadings = [];
 
   function isVisible(element, rect, styles) {
     return (
@@ -346,6 +347,24 @@ function pageAudit() {
     }
   }
 
+  const headingCounts = new Map();
+  for (const heading of Array.from(document.querySelectorAll("h1, h2, h3, [data-gsn-major-block='true']"))) {
+    const styles = getComputedStyle(heading);
+    const rect = heading.getBoundingClientRect();
+    if (!isVisible(heading, rect, styles)) continue;
+
+    const text = (heading.textContent || "").replace(/\s+/g, " ").trim();
+    if (!text || text.length < 10) continue;
+    const normalized = text.toLowerCase();
+    headingCounts.set(normalized, (headingCounts.get(normalized) || 0) + 1);
+  }
+
+  for (const [heading, count] of headingCounts.entries()) {
+    if (count > 1) {
+      duplicateHeadings.push({ heading, count });
+    }
+  }
+
   return {
     path: location.pathname + location.search + location.hash,
     viewportW,
@@ -355,6 +374,7 @@ function pageAudit() {
     horizontalOverflow: scrollW > viewportW + 2,
     overflow: overflow.slice(0, 14),
     crampedText: crampedText.slice(0, 14),
+    duplicateHeadings: duplicateHeadings.slice(0, 10),
   };
 }
 
@@ -370,6 +390,9 @@ async function collectRouteAudit(page, label) {
   }
   if (result.crampedText.length > 0) {
     findings.push(`narrow long text: ${JSON.stringify(result.crampedText)}`);
+  }
+  if (result.duplicateHeadings.length > 0) {
+    findings.push(`duplicate visible headings: ${JSON.stringify(result.duplicateHeadings)}`);
   }
   if (result.scrollH > result.viewportH * 9) {
     findings.push(`phone surface is too long: ${result.scrollH}px on ${result.viewportH}px viewport`);
@@ -454,6 +477,41 @@ const routeChecks = [
     path: "/app/command-center/trust-analytics",
     selector: 'main, [data-page-shell="trust-analytics"]',
   },
+  {
+    label: "Trust Command Center",
+    path: "/app/command-center",
+    selector: "main",
+  },
+  {
+    label: "Admin Trust Events",
+    path: "/app/command-center/trust-events",
+    selector: "main",
+  },
+  {
+    label: "Admin Identity Risk",
+    path: "/app/command-center/identity-risk",
+    selector: "main",
+  },
+  {
+    label: "System Operations",
+    path: "/app/command-center/system-operations",
+    selector: "main",
+  },
+  {
+    label: "Admin Trust Graph",
+    path: "/app/command-center/trust-graph",
+    selector: "main",
+  },
+  {
+    label: "Community Confirmation Inbox",
+    path: "/app/community-confirmations",
+    selector: "main",
+  },
+  {
+    label: "Community Confirmation Policy",
+    path: "/app/community-confirmations/policy",
+    selector: "main",
+  },
 ];
 
 const server = await createServer({
@@ -491,6 +549,10 @@ try {
     localStorage.setItem("gmfn_selected_clan_id", "8");
     localStorage.setItem("selected_clan_id", "8");
     localStorage.setItem("gmfn_companion_settings_local", JSON.stringify({ companionMode: "off" }));
+    localStorage.removeItem("gmfn.commandCenter.sections.v2");
+    localStorage.removeItem("gmfn.trustAnalytics.sections.v2");
+    localStorage.removeItem("gmfn.systemOperations.sections.v2");
+    localStorage.removeItem("gmfn.trustGraph.sections.v2");
   });
 
   const findings = [];
