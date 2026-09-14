@@ -2139,6 +2139,127 @@ function ShopEconomicEngineVisualPanel({
     },
   ];
 
+  if (isCompact) {
+    const compactWorkingNow = [
+      { ...workingNow[0], title: "Shop", value: publicItemsLabel },
+      { ...workingNow[1], title: "Spotlight", value: `${spotlightSeen} seen` },
+      { ...workingNow[2], title: "Demand", value: demandOpenCount > 0 ? `${demandOpenCount} open` : "None yet" },
+      { ...workingNow[3], title: "Community", value: hasCommunityContext ? "Selected" : "Choose one" },
+    ];
+    const compactNextEvidence = [
+      { ...nextEvidence[0], title: "Trade proof", value: tradeRecords > 0 ? `${tradeRecords} records` : "None yet" },
+      { ...nextEvidence[1], title: "Trust layer", value: trustRecordsReady ? "Building" : "Waiting" },
+    ];
+
+    return (
+      <div
+        aria-label="GSN Economic Engine visual overview"
+        style={{
+          marginTop: 10,
+          borderRadius: 18,
+          border: "1px solid rgba(15,94,170,0.08)",
+          background: "linear-gradient(180deg, #F4FBFF 0%, #FFFFFF 70%, #EEF8FF 100%)",
+          padding: 10,
+          display: "grid",
+          gap: 10,
+          boxShadow: "0 10px 20px rgba(7,24,39,0.05)",
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ display: "grid", gap: 7 }}>
+          <div style={{ color: "#061827", fontSize: 24, fontWeight: 950, lineHeight: 1.05 }}>Economic overview</div>
+          <div style={{ color: "#385773", fontSize: 13, fontWeight: 850, lineHeight: 1.3 }}>Working now. Evidence next.</div>
+          <div
+            style={{
+              justifySelf: "start",
+              borderRadius: 999,
+              padding: "7px 12px",
+              background: "linear-gradient(180deg, #FFF1B8 0%, #F7D66D 100%)",
+              color: "#5B3C00",
+              fontSize: 13,
+              fontWeight: 950,
+            }}
+          >
+            {liveSignalCount} live signals
+          </div>
+        </div>
+        <div
+          style={{
+            borderRadius: 18,
+            background: "radial-gradient(circle at 26% 25%, #1AA6C9 0%, #0B5C9F 45%, #06223D 100%)",
+            color: "#FFFFFF",
+            minHeight: 96,
+            padding: 14,
+            display: "grid",
+            alignContent: "center",
+            gap: 2,
+            textAlign: "center",
+            boxShadow: "inset 0 0 0 5px rgba(255,255,255,0.10)",
+          }}
+        >
+          <div style={{ fontSize: 30, fontWeight: 950, lineHeight: 1 }}>GSN</div>
+          <div style={{ fontSize: 14, fontWeight: 900, opacity: 0.88 }}>Economic Engine</div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+          {compactWorkingNow.map((item) => (
+            <div
+              key={`economic-compact-${item.title}`}
+              style={{
+                minWidth: 0,
+                borderRadius: 15,
+                background: ANALYTICS_ACCENTS[item.accent].bg,
+                padding: 9,
+                display: "grid",
+                gap: 7,
+                alignContent: "start",
+                minHeight: 92,
+                overflow: "hidden",
+              }}
+            >
+              <GsnLegacyIcon name={item.icon} size={28} />
+              <div style={{ color: "#061827", fontSize: 12.5, fontWeight: 950, lineHeight: 1.1 }}>{item.title}</div>
+              <div style={{ color: ANALYTICS_ACCENTS[item.accent].color, fontSize: 16, fontWeight: 950, lineHeight: 1.05, overflowWrap: "break-word" }}>{item.value}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ color: "#385773", fontSize: 11.5, fontWeight: 950, textTransform: "uppercase" }}>Next evidence</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+          {compactNextEvidence.map((item) => (
+            <div
+              key={`economic-compact-next-${item.title}`}
+              style={{
+                borderRadius: 15,
+                background: "rgba(255,255,255,0.86)",
+                padding: 9,
+                minHeight: 84,
+                display: "grid",
+                gap: 6,
+                minWidth: 0,
+              }}
+            >
+              <GsnLegacyIcon name={item.icon} size={26} />
+              <div style={{ color: "#061827", fontSize: 12.5, fontWeight: 950, lineHeight: 1.1 }}>{item.title}</div>
+              <div style={{ color: item.live ? "#1F8A57" : "#5A6F84", fontSize: 13, fontWeight: 900, lineHeight: 1.15 }}>{item.value}</div>
+            </div>
+          ))}
+        </div>
+        <div
+          style={{
+            borderRadius: 14,
+            background: "rgba(255,255,255,0.82)",
+            padding: "10px 11px",
+            color: "#0B2D4A",
+            fontSize: 12,
+            fontWeight: 900,
+            lineHeight: 1.3,
+          }}
+        >
+          Evidence recorded. Not sales, payment, delivery, or trust proof.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       aria-label="GSN Economic Engine visual overview"
@@ -2359,6 +2480,102 @@ function ShopOpportunityLensesVisualPanel({
 
   const statusTone = (status: "Live" | "Watch" | "Next"): AnalyticsAccent =>
     status === "Live" ? "green" : status === "Watch" ? "gold" : "blue";
+
+  if (isCompact) {
+    const compactLenses = [
+      { ...lenses[0], title: "Demand", value: demandOpenCount > 0 ? `${demandOpenCount} open need` : "No need yet", next: "Compare offers" },
+      { ...lenses[1], title: "Social", value: hasCommunityContext ? "Community selected" : "Choose community", next: "Keep local" },
+      { ...lenses[2], title: "Trust", value: tradeRecords > 0 ? `${tradeRecords} trade record${tradeRecords === 1 ? "" : "s"}` : "No record yet", next: "Protect outcomes" },
+      { ...lenses[3], title: "Operations", value: `${liveSignalCount}/${totalSignals} live`, next: "Test change" },
+      { ...lenses[4], title: "Outside", value: "Not added yet", next: "Approved inputs" },
+    ];
+
+    return (
+      <div
+        aria-label="Opportunity lenses visual summary"
+        style={{
+          marginTop: 10,
+          borderRadius: 18,
+          border: "1px solid rgba(15,94,170,0.08)",
+          background: "linear-gradient(180deg, #F4FBFF 0%, #FFFFFF 62%, #EEF8FF 100%)",
+          padding: 10,
+          display: "grid",
+          gap: 10,
+          boxShadow: "0 10px 20px rgba(7,24,39,0.05)",
+          overflow: "hidden",
+        }}
+      >
+        <div style={{ display: "grid", gap: 7 }}>
+          <div style={{ color: "#061827", fontSize: 24, fontWeight: 950, lineHeight: 1.05 }}>Opportunity lenses</div>
+          <div style={{ color: "#385773", fontSize: 13, fontWeight: 850, lineHeight: 1.3 }}>Read local signals first.</div>
+          <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+            <span style={{ borderRadius: 999, padding: "7px 11px", background: "linear-gradient(180deg, #FFF1B8 0%, #F7D66D 100%)", color: "#5B3C00", fontSize: 12, fontWeight: 950 }}>Local reading</span>
+            <span style={{ borderRadius: 999, padding: "7px 11px", background: "#F1F7FF", color: "#0F5EAA", fontSize: 12, fontWeight: 950 }}>{liveSignalCount}/{totalSignals} live</span>
+          </div>
+        </div>
+        <div
+          style={{
+            borderRadius: 18,
+            minHeight: 98,
+            display: "grid",
+            placeItems: "center",
+            textAlign: "center",
+            color: "#FFFFFF",
+            background: "radial-gradient(circle at 45% 26%, #3187D8 0%, #133D68 46%, #061827 100%)",
+            border: "5px solid rgba(214,170,69,0.62)",
+            padding: 12,
+          }}
+        >
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 950, lineHeight: 1.05, textTransform: "uppercase" }}>Local view</div>
+            <div style={{ marginTop: 5, color: "#F7D66D", fontSize: 24, fontWeight: 950, lineHeight: 1 }}>{liveSignalCount} of {totalSignals}</div>
+            <div style={{ marginTop: 2, fontSize: 12, fontWeight: 850 }}>signals live</div>
+          </div>
+        </div>
+        <div style={{ display: "grid", gap: 7 }}>
+          {compactLenses.map((item) => (
+            <div
+              key={`visual-lens-compact-${item.title}`}
+              style={{
+                minWidth: 0,
+                borderRadius: 15,
+                background: item.status === "Next" ? "#F7FBFF" : "rgba(255,255,255,0.88)",
+                padding: 8,
+                display: "grid",
+                gridTemplateColumns: "30px minmax(0, 1fr) auto",
+                gap: 8,
+                alignItems: "center",
+                minHeight: 66,
+                overflow: "hidden",
+              }}
+            >
+              <GsnLegacyIcon name={item.icon} size={25} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ color: "#061827", fontSize: 13, fontWeight: 950, lineHeight: 1.08 }}>{item.title}</div>
+                <div style={{ color: "#385773", fontSize: 11.5, fontWeight: 850, lineHeight: 1.18 }}>{item.value}</div>
+              </div>
+              <span style={{ color: ANALYTICS_ACCENTS[statusTone(item.status)].color, fontSize: 10.5, fontWeight: 950, whiteSpace: "nowrap" }}>{item.status}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 6 }}>
+          {[
+            { status: "Live", accent: "green" as AnalyticsAccent },
+            { status: "Watch", accent: "gold" as AnalyticsAccent },
+            { status: "Next", accent: "blue" as AnalyticsAccent },
+          ].map((item) => (
+            <div key={`visual-lens-compact-legend-${item.status}`} style={{ borderRadius: 999, background: "rgba(255,255,255,0.82)", padding: "8px 7px", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              <span aria-hidden="true" style={{ width: 12, height: 12, borderRadius: 999, background: ANALYTICS_ACCENTS[item.accent].color }} />
+              <span style={{ color: "#061827", fontSize: 11.5, fontWeight: 950 }}>{item.status}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ borderRadius: 14, background: "#FFF9E8", color: "#6B4600", padding: "10px 11px", fontSize: 12, fontWeight: 900, lineHeight: 1.3 }}>
+          Local evidence only: not sales proof, trust approval, or a public conclusion.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

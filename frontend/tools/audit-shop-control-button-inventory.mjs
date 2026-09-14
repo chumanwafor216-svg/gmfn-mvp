@@ -427,12 +427,20 @@ assertShopContains(
   "Shop Control Opportunity Engine must keep the recorded-evidence boundary on the GSN Economic Engine overview."
 );
 assertShopContains(
+  /function ShopEconomicEngineVisualPanel[\s\S]*?compactWorkingNow[\s\S]*?title: "Shop"[\s\S]*?title: "Community"[\s\S]*?Evidence recorded\. Not sales, payment, delivery, or trust proof/,
+  "Shop Control Economic overview must keep a compact mobile layout with short labels and one boundary line."
+);
+assertShopContains(
   /<ShopEconomicEngineVisualPanel[\s\S]*?liveSignalCount=\{opportunityEngineLiveSignalCount\}[\s\S]*?demandOpenCount=\{openDemandSignalCount\}[\s\S]*?trustRecordsReady=\{tradeOutcomeReleasedRecords > 0\}/,
   "Shop Control Opportunity Engine must wire the GSN Economic Engine overview to live shop signals."
 );
 assertShopContains(
   /function ShopOpportunityLensesVisualPanel[\s\S]*?Economic demand[\s\S]*?Social movement[\s\S]*?Trust and safety[\s\S]*?Operations[\s\S]*?Governance and outside context[\s\S]*?Opportunity lenses[\s\S]*?Read local signals[\s\S]*?Local evidence only/,
   "Shop Control Opportunity Engine must keep the picture-led Opportunity lenses view."
+);
+assertShopContains(
+  /function ShopOpportunityLensesVisualPanel[\s\S]*?compactLenses[\s\S]*?title: "Demand"[\s\S]*?title: "Outside"[\s\S]*?Local evidence only: not sales proof, trust approval, or a public conclusion/,
+  "Shop Control Opportunity lenses must keep a compact mobile layout with short labels and one boundary line."
 );
 assertShopContains(
   /<ShopOpportunityLensesVisualPanel[\s\S]*?liveSignalCount=\{opportunityEngineLiveSignalCount\}[\s\S]*?demandOpenCount=\{openDemandSignalCount\}[\s\S]*?tradeRecords=\{tradeOutcomeRecords7Days\}/,
