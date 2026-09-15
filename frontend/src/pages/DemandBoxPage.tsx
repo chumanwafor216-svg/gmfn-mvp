@@ -1365,6 +1365,7 @@ export default function DemandBoxPage() {
     const trustPosture = requesterTrustPostureLabel(row);
     const fromAskCommunity = isAskCommunityDemand(row);
     const mentionedHandles = mentionedHandlesOf(row);
+    const matchedTagCount = positiveNumber(row?.mentioned_member_count);
     const ownedCopyDebugId = `demand-box.request.${row?.id || index}.copy-paper`;
     const ownedFallbackCopyDebugId = `demand-box.request.${row?.id || debugIndex}.copy-paper`;
     const visibleCopyDebugId = `demand-box.visible-request.${row?.id || index}.copy-paper`;
@@ -1432,6 +1433,15 @@ export default function DemandBoxPage() {
           </span>
           {mentionedHandles.length > 0 ? (
             <span style={badge(false)}>Typed tag: {mentionedHandles.join(", ")}</span>
+          ) : null}
+          {matchedTagCount > 0 ? (
+            <span data-gsn-demand-matched-tag-chip="true" style={badge(true)}>
+              Matched tags: {matchedTagCount}
+            </span>
+          ) : mentionedHandles.length > 0 ? (
+            <span data-gsn-demand-matched-tag-chip="true" style={badge(false)}>
+              No matched member yet
+            </span>
           ) : null}
           {scope === "community" ? (
             <span style={badge(false)}>By: {requesterName(row)}</span>
@@ -1517,6 +1527,20 @@ export default function DemandBoxPage() {
       .sort((a, b) => a.label.localeCompare(b.label))
       .slice(0, 40);
   }, [me, tagMembers]);
+  const normalizedTargetHandle = useMemo(
+    () => normalizeGsnMention(targetHandle),
+    [targetHandle]
+  );
+  const selectedTagMember = useMemo(() => {
+    const targetKey = normalizedTargetHandle.replace(/^@/, "").toUpperCase();
+    if (!targetKey) return null;
+
+    return (
+      tagHandleOptions.find(
+        (member) => member.gsnId.toUpperCase() === targetKey
+      ) || null
+    );
+  }, [normalizedTargetHandle, tagHandleOptions]);
 
   const demandMode = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -2411,6 +2435,31 @@ export default function DemandBoxPage() {
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
                   Optional. Start typing or choose a known GSN ID. Do not use a phone number.
                 </div>
+                {normalizedTargetHandle ? (
+                  <div
+                    data-gsn-demand-tag-preview="true"
+                    style={{
+                      marginTop: 8,
+                      padding: "10px 11px",
+                      borderRadius: 12,
+                      border: selectedTagMember
+                        ? "1px solid rgba(18, 107, 75, 0.26)"
+                        : "1px solid rgba(153, 105, 20, 0.28)",
+                      background: selectedTagMember
+                        ? "rgba(18, 107, 75, 0.07)"
+                        : "rgba(153, 105, 20, 0.07)",
+                    }}
+                  >
+                    <span style={badge(Boolean(selectedTagMember))}>
+                      {selectedTagMember ? "Matched community member" : "Handle check"}
+                    </span>
+                    <div style={{ marginTop: 7, ...helperText(), fontSize: 12 }}>
+                      {selectedTagMember
+                        ? `Ready to route this demand to ${selectedTagMember.label} (${selectedTagMember.gsnId}).`
+                        : `${normalizedTargetHandle} will stay in the request text unless it matches an active member's GSN ID in this community.`}
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               <div>

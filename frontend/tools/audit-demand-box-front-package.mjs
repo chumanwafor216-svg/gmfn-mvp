@@ -244,6 +244,18 @@ function requireApiPattern(pattern, message) {
     "DemandBox must provide GSN-ID suggestions without exposing a large chat-style roster block.",
   ],
   [
+    /const normalizedTargetHandle = useMemo[\s\S]*?const selectedTagMember = useMemo/,
+    "DemandBox must compute visible tag matching from the same bounded community roster suggestions.",
+  ],
+  [
+    /data-gsn-demand-tag-preview="true"[\s\S]*?Matched community member[\s\S]*?will stay in the request text unless it matches an active member's GSN ID/,
+    "DemandBox must preview whether a typed GSN tag is a real in-community member before posting.",
+  ],
+  [
+    /data-gsn-demand-matched-tag-chip="true"[\s\S]*?Matched tags: \{matchedTagCount\}[\s\S]*?No matched member yet/,
+    "DemandBox request cards must distinguish matched member tags from text-only handles.",
+  ],
+  [
     /label: "Ask Community"[\s\S]*?key: "ask_community"|key: "ask_community"[\s\S]*?label: "Ask Community"/,
     "DemandBox must show Ask Community as its own queue lane instead of repeating the Community lane.",
   ],
