@@ -1145,7 +1145,7 @@ export default function DemandBoxPage() {
     setCreating(true);
 
     try {
-      await createMarketplaceRequest({
+      const created = await createMarketplaceRequest({
         title: safeStr(title),
         description: buildDemandDescription(description, responseEvidence, targetHandle),
         category: safeStr(category) || undefined,
@@ -1157,6 +1157,9 @@ export default function DemandBoxPage() {
         allow_trust_credit: allowTrustCredit,
         clan_id: selectedClanId,
       });
+
+      setActiveQueueLane("mine");
+      setMyOpenRows((currentRows) => uniqueDemandRows([created, ...currentRows]));
 
       setTitle("");
       setDescription("");
@@ -1280,7 +1283,7 @@ export default function DemandBoxPage() {
 
     setMarketNeedPulsePosting(true);
     try {
-      await createMarketplaceRequest({
+      const created = await createMarketplaceRequest({
         clan_id: selectedClanId,
         title: questionTitle,
         description: buildAskCommunityDemandDescription(body, targetHandle, options),
@@ -1289,6 +1292,8 @@ export default function DemandBoxPage() {
         whatsapp_number: safeStr(whatsappNumber) || undefined,
         expires_in_hours: demandExpiryHoursFromAskCommunity(options),
       });
+      setActiveQueueLane("ask_community");
+      setMyOpenRows((currentRows) => uniqueDemandRows([created, ...currentRows]));
       setMarketNeedPulseOpen(false);
       setTargetHandle("");
       await loadPage();
