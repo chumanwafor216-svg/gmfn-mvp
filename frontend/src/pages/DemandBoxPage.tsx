@@ -64,6 +64,8 @@ type DemandRow = {
   requester_trust_band?: string | null;
   is_mine?: boolean;
   mine?: boolean;
+  clan_name?: string | null;
+  marketplace_name?: string | null;
   source?: string | null;
   source_label?: string | null;
   need_type?: string | null;
@@ -814,10 +816,6 @@ export default function DemandBoxPage() {
     setLoading(true);
     setCurrentClan(null);
     setCommunityDomainPolicyPayload(null);
-    setMyOpenRows([]);
-    setVisibleRows([]);
-    setVisibleRowsRawLoaded(0);
-    setHasMoreVisibleRows(false);
     setLoadingMoreVisibleRows(false);
     setTagMembers([]);
 
@@ -837,7 +835,7 @@ export default function DemandBoxPage() {
         listMyClans().catch(() => []),
         listMyCommunityDomains().catch(() => null),
         listMarketplaceRequests({
-          clan_id: effectiveClanId || undefined,
+          clan_id: null,
           mine_only: true,
           status: "open",
           limit: DEMAND_BOX_PAGE_SIZE,
@@ -1476,6 +1474,9 @@ export default function DemandBoxPage() {
           ) : null}
           {safeStr(row?.whatsapp_number) ? (
             <span style={badge(false)}>Contact path: WhatsApp</span>
+          ) : null}
+          {firstTruthy(row?.marketplace_name, row?.clan_name) ? (
+            <span style={badge(false)}>Community: {firstTruthy(row?.marketplace_name, row?.clan_name)}</span>
           ) : null}
           {safeStr(row?.area) ? (
             <span style={badge(false)}>Area: {safeStr(row?.area)}</span>
