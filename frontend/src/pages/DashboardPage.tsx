@@ -155,6 +155,9 @@ type DemandItem = {
   requester_nickname?: string | null;
   requester_email?: string | null;
   requester_gmfn_id?: string | null;
+  clan_id?: number | string | null;
+  clan_name?: string | null;
+  marketplace_name?: string | null;
   created_at?: string | null;
   allow_trust_credit?: boolean;
 };
@@ -4114,17 +4117,38 @@ export default function DashboardPage() {
 
   useEffect(() => {
     (async () => {
-      const rows = await listMarketplaceRequests({
-        clan_id: selectedClanId || undefined,
-        status: "open",
-        mine_only: false,
-        limit: 200,
-      }).catch(() => []);
+      const [myRowsRaw, visibleRowsRaw] = await Promise.all([
+        listMarketplaceRequests({
+          clan_id: null,
+          status: "open",
+          mine_only: true,
+          limit: 200,
+        }).catch(() => []),
+        listMarketplaceRequests({
+          clan_id: selectedClanId || undefined,
+          status: "open",
+          mine_only: false,
+          limit: 200,
+        }).catch(() => []),
+      ]);
 
-      const responderRows = Array.isArray(rows)
-        ? rows.filter((row) => !isDashboardDemandMine(row, me))
+      const myRows: DemandItem[] = Array.isArray(myRowsRaw) ? myRowsRaw : [];
+      const responderRows: DemandItem[] = Array.isArray(visibleRowsRaw)
+        ? visibleRowsRaw.filter((row) => !isDashboardDemandMine(row, me))
         : [];
-      setDemandItems(responderRows);
+      const seenDemandKeys = new Set<string>();
+      const combinedRows = [...myRows, ...responderRows].filter((row) => {
+        const id = positiveNumber(row?.id);
+        const key = id
+          ? `id:${id}`
+          : [row?.title, row?.created_at, row?.requester_gmfn_id, row?.requester_email]
+              .map((value) => safeStr(value).toLowerCase())
+              .join("|");
+        if (seenDemandKeys.has(key)) return false;
+        seenDemandKeys.add(key);
+        return true;
+      });
+      setDemandItems(combinedRows);
     })();
   }, [me, selectedClanId]);
 
@@ -5109,10 +5133,12 @@ export default function DashboardPage() {
 
   const demandSummarySubline = useMemo(() => {
     if (currentDemandItem) {
-      return `${currentCommunityName(
-        currentClan,
-        selectedClanId
-      )}${safeDateTime(currentDemandItem.created_at) ? `, ${safeDateTime(currentDemandItem.created_at)}` : ""}`;
+      const rowCommunityName = firstNonEmpty(
+        currentDemandItem.marketplace_name,
+        currentDemandItem.clan_name,
+        currentCommunityName(currentClan, selectedClanId)
+      );
+      return `${rowCommunityName}${safeDateTime(currentDemandItem.created_at) ? `, ${safeDateTime(currentDemandItem.created_at)}` : ""}`;
     }
 
     return "Choose the community or marketplace this demand should come from before you create it.";
@@ -5138,7 +5164,11 @@ export default function DashboardPage() {
       : urgentDemandItems.length > 0
       ? "Open urgent demand"
       : "Open your DemandBox";
-  const demandCommunityLabel = currentCommunityName(currentClan, selectedClanId);
+  const demandCommunityLabel = firstNonEmpty(
+    currentDemandItem?.marketplace_name,
+    currentDemandItem?.clan_name,
+    currentCommunityName(currentClan, selectedClanId)
+  );
   const demandRequesterId = safeStr(currentDemandItem?.requester_gmfn_id || "");
   const demandRequesterTrust = safeStr(
     currentDemandItem?.requester_trust_band || ""
