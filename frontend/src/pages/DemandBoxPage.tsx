@@ -435,6 +435,12 @@ function mentionedHandlesOf(row: DemandRow): string[] {
     : [];
 }
 
+function isDemandQuotaError(value: any): boolean {
+  return safeStr(value?.message || value)
+    .toLowerCase()
+    .includes("active demandbox requests");
+}
+
 function isTaggedForMe(row: DemandRow): boolean {
   return row?.is_tagged_for_me === true || queueKeysOf(row).includes("tagged_for_me");
 }
@@ -785,7 +791,7 @@ export default function DemandBoxPage() {
 
     const timer = window.setTimeout(() => {
       setNotice(null);
-    }, 2800);
+    }, notice.tone === "error" ? 12000 : 2800);
 
     return () => window.clearTimeout(timer);
   }, [notice]);
@@ -1176,10 +1182,17 @@ export default function DemandBoxPage() {
       await loadPage();
       showNotice("success", "Demand posted successfully.");
     } catch (err: any) {
-      showNotice(
-        "error",
-        safeStr(err?.message) || "Demand could not be created."
-      );
+      const errorText = safeStr(err?.message) || "Demand could not be created.";
+      if (isDemandQuotaError(err)) {
+        setActiveQueueLane("mine");
+        await loadPage();
+        showNotice(
+          "error",
+          `${errorText} Review Mine below and mark one fulfilled or cancel it before posting another.`
+        );
+      } else {
+        showNotice("error", errorText);
+      }
     } finally {
       setCreating(false);
     }
@@ -1299,10 +1312,17 @@ export default function DemandBoxPage() {
       await loadPage();
       showNotice("success", "Community question posted in DemandBox.");
     } catch (err: any) {
-      showNotice(
-        "error",
-        safeStr(err?.message) || "Community question could not be posted in DemandBox."
-      );
+      const errorText = safeStr(err?.message) || "Community question could not be posted in DemandBox.";
+      if (isDemandQuotaError(err)) {
+        setActiveQueueLane("mine");
+        await loadPage();
+        showNotice(
+          "error",
+          `${errorText} Review Mine below and mark one fulfilled or cancel it before posting another.`
+        );
+      } else {
+        showNotice("error", errorText);
+      }
       throw err;
     } finally {
       setMarketNeedPulsePosting(false);
