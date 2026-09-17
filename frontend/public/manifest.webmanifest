@@ -6,11 +6,19 @@
   "start_url": "/cover?source=pwa",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui", "browser"],
+  "display_override": [
+    "standalone",
+    "minimal-ui",
+    "browser"
+  ],
   "background_color": "#061827",
   "theme_color": "#061827",
   "orientation": "portrait",
-  "categories": ["business", "finance", "productivity"],
+  "categories": [
+    "business",
+    "finance",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "/gsn-app-icon-ios-180-v14.png",
@@ -22,13 +30,13 @@
       "src": "/gsn-app-icon-192-v14.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "/gsn-app-icon-512-v14.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ],
   "shortcuts": [
@@ -58,5 +66,6 @@
         }
       ]
     }
-  ]
+  ],
+  "prefer_related_applications": false
 }

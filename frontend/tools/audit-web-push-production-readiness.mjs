@@ -96,13 +96,13 @@ assertContains(
 
 assertContains(
   "frontend/public/manifest.json",
-  /"display": "standalone"[\s\S]*?"display_override": \["standalone", "minimal-ui", "browser"\]/,
+  /"display": "standalone"[\s\S]*?"display_override": \[\s*"standalone",\s*"minimal-ui",\s*"browser"\s*\]/,
   "installed GSN manifest must prefer standalone mode instead of a browser shortcut."
 );
 
 assertContains(
   "frontend/public/manifest.webmanifest",
-  /"display": "standalone"[\s\S]*?"display_override": \["standalone", "minimal-ui", "browser"\]/,
+  /"display": "standalone"[\s\S]*?"display_override": \[\s*"standalone",\s*"minimal-ui",\s*"browser"\s*\]/,
   "webmanifest must prefer standalone mode instead of a browser shortcut."
 );
 

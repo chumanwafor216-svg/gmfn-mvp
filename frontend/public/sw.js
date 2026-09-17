@@ -1,6 +1,6 @@
 /* global caches, fetch, Response, self, URL */
 
-const CACHE_VERSION = "gsn-pwa-shell-v18";
+const CACHE_VERSION = "gsn-pwa-shell-v19";
 const SHELL_ASSETS = [
   "/",
   "/cover",
@@ -112,13 +112,15 @@ function positiveBadgeCount(value) {
 
 function setLauncherBadge(count) {
   const normalized = positiveBadgeCount(count);
-  const registration = self.registration || {};
+  const candidates = [self.navigator, self.registration].filter(Boolean);
   try {
-    if (normalized > 0 && typeof registration.setAppBadge === "function") {
-      return registration.setAppBadge(normalized);
-    }
-    if (normalized <= 0 && typeof registration.clearAppBadge === "function") {
-      return registration.clearAppBadge();
+    for (const candidate of candidates) {
+      if (normalized > 0 && typeof candidate.setAppBadge === "function") {
+        return candidate.setAppBadge(normalized);
+      }
+      if (normalized <= 0 && typeof candidate.clearAppBadge === "function") {
+        return candidate.clearAppBadge();
+      }
     }
   } catch {
     return undefined;
