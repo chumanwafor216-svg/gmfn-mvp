@@ -1037,7 +1037,12 @@ def _publish_marketplace_product_submission(
             shop_id=int(shop.id),
             visibility_mode=VISIBILITY_COMMUNITY,
         )
-        if active_product_count - len(replaceable_products) >= public_product_slots_total:
+        if not _public_product_capacity_allows_write(
+            active_product_count=active_product_count,
+            replaceable_product_count=len(replaceable_products),
+            public_product_slots_total=public_product_slots_total,
+            public_block_number=public_block_number,
+        ):
             raise HTTPException(
                 status_code=409,
                 detail=_public_product_capacity_detail(public_product_slots_total),
@@ -2136,6 +2141,25 @@ def _shop_public_product_slots_total(
         shop_id=int(shop.id),
     )
     return FREE_COMMUNITY_PRODUCT_SLOTS + min(MAX_EXTRA_PUBLIC_SHOP_BLOCKS, max(0, int(extra_slots or 0)))
+
+
+def _public_product_capacity_allows_write(
+    *,
+    active_product_count: int,
+    replaceable_product_count: int,
+    public_product_slots_total: int,
+    public_block_number: Optional[int],
+) -> bool:
+    active_after_replacement = int(active_product_count) - int(replaceable_product_count)
+    if active_after_replacement < int(public_product_slots_total):
+        return True
+
+    block_number = _safe_int(public_block_number, 0)
+    return (
+        block_number >= 1
+        and block_number <= int(public_product_slots_total)
+        and int(replaceable_product_count) > 0
+    )
 
 
 def _public_product_capacity_detail(limit: int) -> str:
@@ -3879,7 +3903,12 @@ def create_marketplace_product(
             shop_id=int(shop.id),
             visibility_mode=VISIBILITY_COMMUNITY,
         )
-        if active_product_count - len(replaceable_products) >= public_product_slots_total:
+        if not _public_product_capacity_allows_write(
+            active_product_count=active_product_count,
+            replaceable_product_count=len(replaceable_products),
+            public_product_slots_total=public_product_slots_total,
+            public_block_number=public_block_number,
+        ):
             raise HTTPException(
                 status_code=400,
                 detail=_public_product_capacity_detail(public_product_slots_total),
@@ -4372,7 +4401,12 @@ def update_marketplace_product(
             visibility_mode=VISIBILITY_COMMUNITY,
             exclude_product_id=int(product.id),
         )
-        if active_product_count - len(replaceable_products) >= public_product_slots_total:
+        if not _public_product_capacity_allows_write(
+            active_product_count=active_product_count,
+            replaceable_product_count=len(replaceable_products),
+            public_product_slots_total=public_product_slots_total,
+            public_block_number=target_public_block_number,
+        ):
             raise HTTPException(
                 status_code=400,
                 detail=_public_product_capacity_detail(public_product_slots_total),

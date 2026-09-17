@@ -2899,7 +2899,7 @@ def test_public_gallery_slot_limit_counts_legacy_public_visibility_aliases(
                 """
             )
         )
-        for slot in range(1, 13):
+        for slot in range(1, 7):
             conn.execute(
                 text(
                     """
@@ -2924,8 +2924,8 @@ def test_public_gallery_slot_limit_counts_legacy_public_visibility_aliases(
         json={
             "clan_id": 1,
             "shop_id": 1,
-            "name": "Thirteenth block",
-            "description": "[BLOCK:13] Should be rejected",
+            "name": "Seventh block",
+            "description": "[BLOCK:7] Should be rejected",
             "price": "2000",
             "currency": "NGN",
             "image_url": "/uploads/marketplace/images/new.jpg",
@@ -2933,7 +2933,7 @@ def test_public_gallery_slot_limit_counts_legacy_public_visibility_aliases(
         },
     )
     assert create_res.status_code == 400, create_res.text
-    assert "Maximum of 12 community-visible products" in create_res.json()["detail"]
+    assert "Maximum of 6 community-visible products" in create_res.json()["detail"]
 
 
 def test_public_gallery_replacing_numbered_block_hides_previous_live_product(
@@ -3525,7 +3525,7 @@ def test_public_gallery_extra_shop_block_entitlement_expands_slot_limit(
                 "expires_at": now + timedelta(days=365),
             },
         )
-        for slot in range(1, 13):
+        for slot in range(1, 9):
             conn.execute(
                 text(
                     """
@@ -3550,8 +3550,8 @@ def test_public_gallery_extra_shop_block_entitlement_expands_slot_limit(
         json={
             "clan_id": 1,
             "shop_id": 1,
-            "name": "Thirteenth block",
-            "description": "[BLOCK:13] Paid extra slot",
+            "name": "Ninth block",
+            "description": "[BLOCK:9] Paid extra slot",
             "price": "2000",
             "currency": "NGN",
             "image_url": "/uploads/marketplace/images/new.jpg",
@@ -3560,10 +3560,10 @@ def test_public_gallery_extra_shop_block_entitlement_expands_slot_limit(
     )
     assert create_res.status_code == 200, create_res.text
     item = create_res.json()["item"]
-    assert item["public_block_number"] == 13
-    assert item["shop_product_slots_free"] == 12
+    assert item["public_block_number"] == 9
+    assert item["shop_product_slots_free"] == 6
     assert item["shop_product_slots_extra"] == 3
-    assert item["shop_product_slots_total"] == 15
+    assert item["shop_product_slots_total"] == 9
 
 
 def test_public_shop_face_hides_missing_media_links(client, monkeypatch, tmp_path):
