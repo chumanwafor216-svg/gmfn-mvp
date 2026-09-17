@@ -104,11 +104,11 @@ The member does not get a separate shop for each community.
 ### 4. Vault ownership
 One shop is entitled to:
 
-- six vaults
+- two paid VAULT private link-only blocks in the current pilot model
 
-Vaults are locked surfaces.
+VAULT blocks are locked shop surfaces.
 They are not open by default.
-Viewing is conditional and authorization-based.
+Viewing is conditional, private-link-based, and authorization-based.
 
 ## Canonical hierarchy
 
