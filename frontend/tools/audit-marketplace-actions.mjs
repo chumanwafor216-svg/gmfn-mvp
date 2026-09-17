@@ -434,7 +434,7 @@ assertContains(
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
   /id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}[\s\S]*?Shop Diaries[\s\S]*?visibleProducts\.map/,
-  "Public Shop Gallery must anchor the 12-block Shop Diaries shelf for shared shop links."
+  "Public Shop Gallery must anchor the Shop Diaries shelf for shared shop links."
 );
 
 assertContains(

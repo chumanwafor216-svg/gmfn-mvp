@@ -227,12 +227,12 @@ def test_vault_status_creates_blocks_and_syncs_legacy_entitlement(
     body = res.json()
     assert body["ok"] is True
     assert body["shop_id"] == 1
-    assert body["max_slots"] == 6
+    assert body["max_slots"] == 2
     assert body["active_paid_slots"] == 2
-    assert len(body["blocks"]) == 6
-    assert [block["slot_number"] for block in body["blocks"]] == [1, 2, 3, 4, 5, 6]
+    assert len(body["blocks"]) == 2
+    assert [block["slot_number"] for block in body["blocks"]] == [1, 2]
     assert [block["state"] for block in body["blocks"][:2]] == ["active", "active"]
-    assert [block["state"] for block in body["blocks"][2:]] == ["inactive", "inactive", "inactive", "inactive"]
+    assert body["blocks"][2:] == []
 
 
 def test_vault_access_link_requires_and_returns_one_active_block_scope(

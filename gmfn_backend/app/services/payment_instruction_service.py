@@ -169,19 +169,16 @@ def _positive_int(value: Any, *, name: str) -> int:
 
 def calc_vault_subscription_amount(quantity_total: int) -> Decimal:
     """
-    Current agreed MVP pricing:
-    - 1-5 Vault slots = 1.00 GBP per slot
-    - 6 Vault slots = 5.00 GBP bundle
+    Current agreed pilot pricing:
+    - 1-2 Vault slots = 5.00 GBP per slot for the UK/Europe/US pilot rail
     """
     qty = _positive_int(quantity_total, name="quantity_total")
 
-    if 1 <= qty <= 5:
-        return Decimal("1.00") * Decimal(qty)
-    if qty == 6:
-        return Decimal("5.00")
+    if 1 <= qty <= 2:
+        return Decimal("5.00") * Decimal(qty)
 
     raise ValueError(
-        "Vault MVP pricing currently supports 1 to 6 slots only."
+        "Vault pilot pricing currently supports 1 to 2 slots only."
     )
 
 

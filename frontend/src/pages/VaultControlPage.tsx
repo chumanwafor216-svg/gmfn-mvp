@@ -172,7 +172,7 @@ type VaultConfigRecord = {
 
 type VaultPanelKey = "payment" | "blocks" | "link" | "flow";
 
-const VAULT_SLOT_LIMIT = 6;
+const VAULT_SLOT_LIMIT = 2;
 const VAULT_PAYMENT_DUE_DAYS = 7;
 const VAULT_LINK_DEFAULT_HOURS = 72;
 const VAULT_SLOT_STORAGE_PREFIX = "gmfn.vaultControl.slotMap.v1";
@@ -205,7 +205,7 @@ function numberLike(value: unknown, fallback = 0): number {
 
 function vaultSlotPaymentAmount(slotCount: unknown): number {
   const slots = Math.min(VAULT_SLOT_LIMIT, Math.max(1, Number(slotCount || 1)));
-  return slots === VAULT_SLOT_LIMIT ? 5 : slots;
+  return slots * 5;
 }
 
 function vaultPaymentQuoteKey(slotCount: unknown): string {
@@ -1253,11 +1253,7 @@ export default function VaultControlPage() {
   const paymentQuoteConfirmed = confirmedPaymentQuoteKey === selectedVaultQuoteKey;
   const selectedVaultAgreementText = `${selectedVaultSlotCount} slot${selectedVaultSlotCount === 1 ? "" : "s"} = ${selectedVaultPaymentLabel}`;
   const selectedVaultBundleText =
-    selectedVaultSlotCount === VAULT_SLOT_LIMIT
-      ? "This uses the 6-slot bundle, so the total stays at GBP 5."
-      : selectedVaultSlotCount >= 3
-        ? `You can also choose 6 slots for GBP 5 instead of ${selectedVaultPaymentLabel}.`
-        : "The 6-slot bundle is available for GBP 5 when you need the full private rack.";
+    "Each Vault block is GBP 5 for the UK/Europe/US pilot rail. Regional pricing can be adjusted from the costing framework.";
   const settlementMissingText = settlementValue(vaultSettlement, "missing_field_text") || "Payment setup is not ready for this region yet.";
   const vaultPaymentRegionCode = settlementValue(vaultSettlement, "region_code").toLowerCase();
   const vaultPaymentCountryCode = settlementValue(vaultSettlement, "country").toUpperCase();
@@ -1969,7 +1965,7 @@ export default function VaultControlPage() {
               <div style={{ marginTop: 14, ...vaultDisciplineCard() }}>
                 <div style={{ ...sectionLabel(), color: "#8A640E" }}>Pricing rule</div>
                 <div style={{ marginTop: 6, fontWeight: 900, lineHeight: 1.45 }}>
-                  1-5 slots are GBP 1 each. The full 6-slot private track is GBP 5.
+                  Each Vault block is GBP 5 on the UK/Europe/US pilot rail. This shop can activate up to 2 private Vault blocks.
                 </div>
               </div>
             ) : null}
@@ -1979,11 +1975,11 @@ export default function VaultControlPage() {
               style={{
                 marginTop: isCompact ? 10 : 14,
                 display: "grid",
-                gridTemplateColumns: isCompact ? "repeat(3, minmax(0, 1fr))" : "repeat(2, minmax(0, 1fr))",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
                 gap: isCompact ? 8 : 12,
               }}
             >
-              {[1, 2, 3, 4, 5, 6].map((slot) => {
+              {[1, 2].map((slot) => {
                 const selected = Number(paymentSlots) === slot;
                 return (
                   <StableButton

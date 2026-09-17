@@ -4,7 +4,7 @@
 
 Vault is a paid private layer under the owner's main shop, not a second shop.
 
-The public Shop Gallery keeps 12 free public blocks. Vault opens paid private blocks up to the current Vault cap of 6.
+The public Shop Gallery keeps 6 standard public Shop Diary blocks. Up to 4 extra public blocks can be paid capacity. Vault opens paid private blocks up to the current Vault cap of 2.
 
 The fuller MVP product law is recorded in `docs/VAULT_MVP_STANDARD.md`.
 
@@ -28,7 +28,7 @@ Future work may add real payment providers, stronger admin reporting, or product
 
 1. Vault inherits the main shop signboard/name/image automatically.
 2. The Vault hero must clearly identify the surface as `Vault`.
-3. A Vault payment request can activate 1 to 6 private slots.
+3. A Vault payment request can activate 1 to 2 private slots.
 4. Confirmed Vault payment quantity controls how many private blocks appear.
 5. `/app/vault-control` must include a fixed inner Vault private block room with all 6 known positions visible. Unpaid positions stay locked and cannot be used; paid positions become usable in place.
 6. Each paid private block can hold a picture or short video.
@@ -40,7 +40,7 @@ Future work may add real payment providers, stronger admin reporting, or product
 12. Vault owner controls keep a local product-id-to-slot map so the block the owner selected does not drift just because the backend returns products newest-first.
 13. Vault payment starts on the existing bank-transfer rail. Card payment is not connected in this pilot unless a real processor integration is added.
 14. The Vault payment surface must show the exact amount, settlement account details, and matching reference after the owner creates the instruction.
-15. Slot selection must not be silent. Before a payment code is generated, the page must immediately show the chosen slot count, exact price, the 6-slot bundle option, and the fact that the bank-transfer code/reference is required for reconciliation.
+15. Slot selection must not be silent. Before a payment code is generated, the page must immediately show the chosen slot count, exact price, the GBP 5 per-slot price, and the fact that the bank-transfer code/reference is required for reconciliation.
 16. Payment code generation must be quote-gated: the owner must explicitly agree to the visible slot count and GBP amount first. Changing the selected slot count clears that agreement, and the frontend must refuse to create a payment code until the currently visible quote is confirmed.
 17. After generation, the bank-transfer surface must call the reference a payment code in user-facing copy, show expiry/due information, and explain that the exact code is what connects the transfer to Vault.
 18. New Vault access links must target one selected private block/offer. Legacy links without a product/block scope are not the future standard.
@@ -76,7 +76,7 @@ Future work may add real payment providers, stronger admin reporting, or product
 - Vault link creation requires at least one active private Vault product and an active Vault entitlement.
 - Payment confirmation is still driven by the bank/expected-payment reconciliation process.
 - Marketplace products do not carry a permanent `vault_slot_number` field. Permanent cross-device slot order now comes from `vault_blocks.slot_number`, and private products attach to those blocks through `vault_blocks.product_id`.
-- Current Vault pricing is GBP 1 per slot for 1-5 slots, and GBP 5 for the 6-slot bundle.
+- Current Vault pricing is GBP 5 per slot for up to 2 Vault slots on the UK/Europe/US pilot rail.
 - The backend now has dedicated `vault_orders`, `vault_blocks`, `vault_private_offers`, and `vault_access_logs` tables for the MVP Vault lane.
 - Vault payment matching still starts from expected payments and feature entitlements because that is the real bank-transfer reconciliation rail.
 - Vault private offer content is still stored as `marketplace_products.visibility_mode = vault_private`, with `vault_private_offers` mirroring the selected block content.
@@ -87,8 +87,8 @@ Future work may add real payment providers, stronger admin reporting, or product
 
 1. Open `/app/vault-control`.
 2. Confirm the hero uses the main shop image/name and says Vault.
-3. Create a Vault payment request for 1-6 slots.
-4. Before generating the instruction, select 3 slots and confirm the page says 3 slots equals GBP 3 and offers the 6-slot GBP 5 bundle.
+3. Create a Vault payment request for 1-2 slots.
+4. Before generating the instruction, select 2 slots and confirm the page says 2 slots equals GBP 10 at GBP 5 per slot.
 5. Confirm the visible quote. Changing the slot count must clear the confirmation.
 6. Generate the payment code.
 7. Confirm the screen shows bank transfer account details, amount, the exact payment code, and expiry/due information.

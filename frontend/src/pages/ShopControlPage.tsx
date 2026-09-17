@@ -536,6 +536,11 @@ type NoticeTone = "success" | "error" | "info";
 
 type SpotlightFeedbackState = ShopControlSpotlightFeedback;
 
+const PUBLIC_SHOP_STANDARD_SLOT_COUNT = 6;
+const PUBLIC_SHOP_EXTRA_SLOT_LIMIT = 4;
+const PUBLIC_SHOP_MAX_SLOT_COUNT =
+  PUBLIC_SHOP_STANDARD_SLOT_COUNT + PUBLIC_SHOP_EXTRA_SLOT_LIMIT;
+
 const OWNER_PUBLIC_PRODUCT_VISIBILITY_MODES = new Set([
   "community_visible",
   "public",
@@ -963,7 +968,7 @@ function arrangePublicProductsIntoSlots(
   items: ProductRecord[],
   slotCount: number
 ): (ProductRecord | null)[] {
-  const safeSlotCount = Math.max(1, Math.floor(slotCount || 12));
+  const safeSlotCount = Math.min(PUBLIC_SHOP_MAX_SLOT_COUNT, Math.max(PUBLIC_SHOP_STANDARD_SLOT_COUNT, Math.floor(slotCount || PUBLIC_SHOP_STANDARD_SLOT_COUNT)));
   const slots: (ProductRecord | null)[] = Array.from(
     { length: safeSlotCount },
     () => null
@@ -4374,7 +4379,8 @@ export default function ShopControlPage() {
     const fromProducts = products
       .map((item) => safePositiveNumber(item?.shop_product_slots_total, 0))
       .filter((value) => value > 0);
-    return Math.max(12, ...fromProducts);
+    if (fromProducts.length > 0) return Math.min(PUBLIC_SHOP_MAX_SLOT_COUNT, Math.max(PUBLIC_SHOP_STANDARD_SLOT_COUNT, ...fromProducts));
+    return PUBLIC_SHOP_STANDARD_SLOT_COUNT;
   }, [products, shop]);
 
   const publicProductSlots = useMemo(
@@ -5554,7 +5560,7 @@ export default function ShopControlPage() {
     return options.idle;
   }
 
-  async function createVaultInstruction(quantityTotal: 1 | 6) {
+  async function createVaultInstruction(quantityTotal: 1 | 2) {
     if (!shop?.id) {
       showNotice("error", "Shop record is not available.");
       return;
@@ -6847,7 +6853,7 @@ export default function ShopControlPage() {
           >
             <div style={sectionLabel()}>Shop Gallery Tools</div>
             <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 20, fontWeight: 950 }}>
-              Control the public shop billboard and 12 Shop Diaries.
+              Control the public shop billboard, 6 standard Shop Diaries, and paid extra capacity.
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
               Use this lane for pictures, products, diary blocks, and the public shop face.
@@ -7019,7 +7025,7 @@ export default function ShopControlPage() {
                 })}
               </PrimaryButton>
               <SecondaryButton
-                onClick={() => createVaultInstruction(6)}
+                onClick={() => createVaultInstruction(2)}
                 disabled={
                   shopActionsLocked ||
                   creatingVaultInstruction ||
@@ -7028,12 +7034,12 @@ export default function ShopControlPage() {
                 busy={creatingVaultInstruction}
                 busyLabel="Preparing..."
                 fullWidth
-                debugId="shop-control.vault.pay-6-slots"
+                debugId="shop-control.vault.pay-2-slots"
               >
                 {paidToolActionLabel({
                   locked: shopActionsLocked,
                   busy: creatingVaultInstruction,
-                  idle: "Pay 6 slots",
+                  idle: "Pay 2 slots",
                   busyText: "Preparing...",
                 })}
               </SecondaryButton>

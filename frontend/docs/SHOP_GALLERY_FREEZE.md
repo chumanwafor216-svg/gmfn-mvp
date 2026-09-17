@@ -4,7 +4,7 @@ Freeze date: 2026-05-04
 
 ## Frozen Scope
 
-The Shop Gallery lane is the public 12-block shop shelf inside Shop Control.
+The Shop Gallery lane is the public Shop Diary shelf inside Shop Control.
 
 Primary owner route:
 
@@ -25,7 +25,7 @@ Public viewer structure:
 - `Repost shop`, `Share shop`, and `Copy link` as one stable three-button row
 - compact Spotlight advert framed as a community billboard from marketplace shops, with text/action plus a media frame
 - compact Private Vault advert with text/actions plus a Vault visual
-- `Shop Diaries` 12-block public shelf with product cards whose product media is visually dominant and whose `Open` and `Share` buttons never collapse into vertical letters
+- `Shop Diaries` public shelf with product cards whose product media is visually dominant and whose `Open` and `Share` buttons never collapse into vertical letters
 - Vault public-facing surfaces should use a vault-door style visual, not a bare `V` badge, so the meaning is private/premium storage rather than an unexplained letter.
 
 Public viewer colour/theming rule:
@@ -33,7 +33,7 @@ Public viewer colour/theming rule:
 - `/shop/:gmfnId` must use the global GSN colour system from `src/styles/tokens.css`.
 - The public viewer shell must use `theme-public-shop` and public shop classes from `src/styles/public-shop.css`.
 - Do not invent random page-local colours for this route. Dark navy is for the public signboard and authority, white cards are for readable shop/product content, gold is for trust/premium highlights, blue is for primary actions, green is only for live/ready/success, and red is only for danger.
-- On phone, do not collapse the public trust/contact strip, the `Repost / Share / Copy` row, or the 12-block diaries grid into single-column stacks. The approved reference keeps them compact.
+- On phone, do not collapse the public trust/contact strip, the `Repost / Share / Copy` row, or the Shop Diaries grid into single-column stacks. The approved reference keeps them compact.
 
 The public viewer should not show owner-side setup controls. Those belong in Shop Control.
 
@@ -43,7 +43,7 @@ Shop Gallery is one owner/global-identity public shelf, not a separate shelf per
 
 When the owner adds a public Shop Gallery product once, that product is visible inside every community where the shop owner is an active member. People outside those communities can view the same public shelf through the shop link. Vault-private products remain excluded from this public shelf and require a Vault link.
 
-Each of the 12 public blocks must accept either:
+Each public block must accept either:
 
 - one picture, or
 - one short video.

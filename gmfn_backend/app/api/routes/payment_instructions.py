@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import os
@@ -396,7 +396,7 @@ class LoanInstructionIn(BaseModel):
 class VaultInstructionIn(BaseModel):
     clan_id: int
     shop_id: int
-    quantity_total: int = Field(..., ge=1, le=6)
+    quantity_total: int = Field(..., ge=1, le=2)
     currency: str = "GBP"
 
     @field_validator("clan_id", "shop_id", "quantity_total", mode="before")
@@ -628,10 +628,10 @@ def create_vault_instruction(
     )
 
     quantity_total = _safe_int(payload.quantity_total, 0)
-    if quantity_total < 1 or quantity_total > 6:
+    if quantity_total < 1 or quantity_total > 2:
         raise HTTPException(
             status_code=400,
-            detail="Vault subscription currently supports quantity_total from 1 to 6 only.",
+            detail="Vault subscription currently supports quantity_total from 1 to 2 only.",
         )
     sync_legacy_entitlements_to_blocks(
         db,
@@ -1119,12 +1119,12 @@ def my_instruction_config(
             "community_package_subscription",
             "community_domain_subscription",
         ],
-        "vault_supported_quantities": [1, 2, 3, 4, 5, 6],
+        "vault_supported_quantities": [1, 2],
         "vault_config": {
-            "max_slots": 6,
-            "unit_price_gbp": "1.00",
-            "bundle_slot_count": 6,
-            "bundle_price_gbp": "5.00",
+            "max_slots": 2,
+            "unit_price_gbp": "5.00",
+            "bundle_slot_count": None,
+            "bundle_price_gbp": None,
             "payment_instruction_expiry_days": PAYMENT_DUE_WINDOW_DAYS,
             "vault_slot_duration_days": VAULT_SLOT_DURATION_DAYS,
             "default_link_expiry_hours": DEFAULT_LINK_EXPIRY_HOURS,

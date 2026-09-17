@@ -138,19 +138,25 @@ assertContains(
 
 assertContains(
   "src/pages/ShopControlPage.tsx",
-  /const publicProductSlots = useMemo\([\s\S]*?arrangePublicProductsIntoSlots\(publicProducts, publicProductSlotsTotal\)[\s\S]*?const occupiedPublicProductSlotCount = useMemo\([\s\S]*?publicProductSlots\.filter\(Boolean\)\.length[\s\S]*?\{occupiedPublicProductSlotCount\} \/ \{publicProductSlotsTotal\}/,
-  "Shop Control summary Public items stat must count visible occupied public slots, not raw public product rows."
+  /const publicProductSlotsTotal = useMemo\([\s\S]*?PUBLIC_SHOP_STANDARD_SLOT_COUNT[\s\S]*?const publicProductSlots = useMemo\([\s\S]*?arrangePublicProductsIntoSlots\(publicProducts, publicProductSlotsTotal\)[\s\S]*?const occupiedPublicProductSlotCount = useMemo\([\s\S]*?publicProductSlots\.filter\(Boolean\)\.length/,
+  "Shop Control summary must derive public capacity from slot entitlements and count occupied arranged slots."
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /occupiedPublicProductSlotCount\} \/ \{publicProductSlotsTotal\}|`\$\{occupiedPublicProductSlotCount\} \/ \$\{publicProductSlotsTotal\}`/,
+  "Shop Control visible public item counters must show occupied slots over the current slot capacity."
 );
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /const publicGallerySlots = useMemo\([\s\S]*?arrangePublicProductsIntoSlots\(publicProducts\)[\s\S]*?const occupiedPublicSlotCount = useMemo\([\s\S]*?publicGallerySlots\.filter\(Boolean\)\.length[\s\S]*?\{occupiedPublicSlotCount\} \/ 12 live blocks/,
+  /const publicGallerySlots = useMemo\([\s\S]*?arrangePublicProductsIntoSlots\(publicProducts, publicProductSlotsTotal\)[\s\S]*?const occupiedPublicSlotCount = useMemo[\s\S]*?publicGallerySlots\.filter\(Boolean\)\.length[\s\S]*?\{occupiedPublicSlotCount\} \/ \{publicProductSlotsTotal\} live blocks/,
   "Shop Assets live-block counter must use occupied arranged slots, not raw product row count."
 );
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /function productDisplayRank\([\s\S]*?createdMs[\s\S]*?id[\s\S]*?function isNewerProductCandidate\([\s\S]*?candidateRank\.createdMs[\s\S]*?candidateRank\.id > currentRank\.id[\s\S]*?function arrangePublicProductsIntoSlots\([\s\S]*?if \(blockNumber >= 1 && blockNumber <= 12\) \{[\s\S]*?isNewerProductCandidate\(item, slots\[blockNumber - 1\]\)[\s\S]*?slots\[blockNumber - 1\] = item;[\s\S]*?return;[\s\S]*?overflow\.push\(item\);/,
+  /function productDisplayRank\([\s\S]*?createdMs[\s\S]*?id[\s\S]*?function isNewerProductCandidate\([\s\S]*?candidateRank\.createdMs[\s\S]*?candidateRank\.id > currentRank\.id[\s\S]*?function arrangePublicProductsIntoSlots\([\s\S]*?if \(blockNumber >= 1 && blockNumber <= safeSlotCount\) \{[\s\S]*?isNewerProductCandidate\(item, slots\[blockNumber - 1\]\)[\s\S]*?slots\[blockNumber - 1\] = item;[\s\S]*?return;[\s\S]*?overflow\.push\(item\);/,
   "Shop Assets arranged slots must keep the newest product for a numbered block and must not spill duplicate same-block products into another visible slot."
 );
 
@@ -159,14 +165,14 @@ if (/publicProducts\.length/.test(shopAssetsSource)) {
     file: shopAssetsFile,
     line: lineAt(shopAssetsSource, shopAssetsSource.search(/publicProducts\.length/)),
     message:
-      "Shop Assets must not count raw public product rows for public gallery capacity or status; use occupiedPublicSlotCount from the arranged 12-slot gallery.",
+      "Shop Assets must not count raw public product rows for public gallery capacity or status; use occupiedPublicSlotCount from the arranged public slot gallery.",
     text: shopAssetsSource.match(/publicProducts\.length[^,\n)]*/)?.[0] || "",
   });
 }
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /targetVisibility === "community_visible"[\s\S]*?!editingAlreadyPublic[\s\S]*?occupiedPublicSlotCount >= 12[\s\S]*?The public shop gallery already has 12 live blocks/,
+  /targetVisibility === "community_visible"[\s\S]*?!editingAlreadyPublic[\s\S]*?occupiedPublicSlotCount >= publicProductSlotsTotal[\s\S]*?The public shop gallery has reached its current live-block capacity/,
   "Shop Assets add guard must use visible occupied slots, not raw public product rows."
 );
 
@@ -202,7 +208,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /Public products: \{occupiedPublicSlotCount\} \/ 12[\s\S]*?occupiedPublicSlotCount > 0/,
+  /Public products: \{occupiedPublicSlotCount\} \/ \{publicProductSlotsTotal\}[\s\S]*?occupiedPublicSlotCount > 0/,
   "Shop Assets header public-products badge must report visible occupied slots."
 );
 
@@ -227,7 +233,7 @@ assertContains(
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
   /const selectedPublicProduct = publicGallerySlots\[selectedPublicSlot - 1\] \|\| null/,
-  "Shop Assets selected block must come from the arranged 12-slot gallery."
+  "Shop Assets selected block must come from the arranged public slot gallery."
 );
 
 assertContains(

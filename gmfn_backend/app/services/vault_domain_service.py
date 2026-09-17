@@ -20,7 +20,7 @@ from app.services.feature_entitlements_service import get_active_entitlements
 from app.services.trust_events_services import log_trust_event
 
 
-MAX_VAULT_SLOTS = 6
+MAX_VAULT_SLOTS = 2
 VAULT_SLOT_DURATION_DAYS = 30
 VAULT_PAYMENT_EXPIRY_DAYS = 7
 VISIBILITY_VAULT = "vault_private"
@@ -62,12 +62,12 @@ def _d(value: Any) -> Decimal:
 def _slot_count(value: Any) -> int:
     count = _safe_int(value, 0)
     if count < 1 or count > MAX_VAULT_SLOTS:
-        raise ValueError("Vault slot count must be between 1 and 6")
+        raise ValueError("Vault slot count must be between 1 and 2")
     return count
 
 
 def _pricing_rule(slot_count: int) -> str:
-    return "bundle_6_for_5" if int(slot_count) == MAX_VAULT_SLOTS else "unit"
+    return "unit_5_gbp"
 
 
 def _offer_media_type(product: MarketplaceProduct) -> str:

@@ -70,6 +70,9 @@ type ShopRecord = {
   community_name?: string | null;
   is_active?: boolean;
   created_at?: string | null;
+  shop_product_slots_free?: number | null;
+  shop_product_slots_extra?: number | null;
+  shop_product_slots_total?: number | null;
 };
 
 type ProductRecord = {
@@ -92,6 +95,9 @@ type ProductRecord = {
   origin_clan_id?: number;
   origin_shop_id?: number;
   origin_shop_name?: string | null;
+  shop_product_slots_free?: number | null;
+  shop_product_slots_extra?: number | null;
+  shop_product_slots_total?: number | null;
 };
 
 type NoticeTone = "success" | "error" | "info";
@@ -111,6 +117,10 @@ type ShopAssetsPageProps = {
 };
 
 const SHOP_ASSETS_UI_STORAGE_KEY = "gmfn.shopAssets.sections.v2";
+const PUBLIC_SHOP_STANDARD_SLOT_COUNT = 6;
+const PUBLIC_SHOP_EXTRA_SLOT_LIMIT = 4;
+const PUBLIC_SHOP_MAX_SLOT_COUNT =
+  PUBLIC_SHOP_STANDARD_SLOT_COUNT + PUBLIC_SHOP_EXTRA_SLOT_LIMIT;
 const PUBLIC_GALLERY_VISIBILITY_MODES = new Set([
   "community_visible",
   "public",
@@ -130,6 +140,19 @@ function firstTruthy(...values: unknown[]): string {
   return "";
 }
 
+function safePositiveNumber(value: unknown, fallback = 0): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return parsed;
+}
+
+function clampPublicShopSlotTotal(value: unknown): number {
+  const parsed = Math.floor(safePositiveNumber(value, PUBLIC_SHOP_STANDARD_SLOT_COUNT));
+  return Math.min(
+    PUBLIC_SHOP_MAX_SLOT_COUNT,
+    Math.max(PUBLIC_SHOP_STANDARD_SLOT_COUNT, parsed)
+  );
+}
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     ...institutionalPageCard(bg),
@@ -602,7 +625,7 @@ function stripProductLabel(description: string): string {
 function extractPublicBlockNumber(description: string): number {
   const match = safeStr(description).match(/^\[BLOCK:(\d{1,2})\]\s*/i);
   const blockNumber = Number(match?.[1] || 0);
-  return blockNumber >= 1 && blockNumber <= 12 ? blockNumber : 0;
+  return blockNumber >= 1 && blockNumber <= PUBLIC_SHOP_MAX_SLOT_COUNT ? blockNumber : 0;
 }
 
 function stripPublicBlockNumber(description: string): string {
@@ -619,7 +642,7 @@ function composeProductDescription(
   publicBlockNumber = 0
 ): string {
   const cleanBlock =
-    publicBlockNumber >= 1 && publicBlockNumber <= 12
+    publicBlockNumber >= 1 && publicBlockNumber <= PUBLIC_SHOP_MAX_SLOT_COUNT
       ? `[BLOCK:${publicBlockNumber}]`
       : "";
   const cleanLabel = safeStr(label);
@@ -644,7 +667,7 @@ function publicBlockNumberForProduct(item: ProductRecord | null | undefined): nu
       (item as any)?.block_number
     )
   );
-  if (explicitBlock >= 1 && explicitBlock <= 12) return explicitBlock;
+  if (explicitBlock >= 1 && explicitBlock <= PUBLIC_SHOP_MAX_SLOT_COUNT) return explicitBlock;
 
   return extractPublicBlockNumber(firstTruthy(item?.description));
 }
@@ -692,7 +715,7 @@ function normalizeProductRecord(raw: any): ProductRecord | null {
     video_url: firstTruthy(src?.video_url),
     visibility_mode: firstTruthy(src?.visibility_mode, "community_visible"),
     public_block_number:
-      publicBlockNumber >= 1 && publicBlockNumber <= 12
+      publicBlockNumber >= 1 && publicBlockNumber <= PUBLIC_SHOP_MAX_SLOT_COUNT
         ? publicBlockNumber
         : extractPublicBlockNumber(rawDescription),
     slot_number: firstTruthy(src?.slot_number),
@@ -736,13 +759,17 @@ function isNewerProductCandidate(
   return candidateRank.id > currentRank.id;
 }
 
-function arrangePublicProductsIntoSlots(items: ProductRecord[]): (ProductRecord | null)[] {
-  const slots: (ProductRecord | null)[] = Array.from({ length: 12 }, () => null);
+function arrangePublicProductsIntoSlots(
+  items: ProductRecord[],
+  slotCount = PUBLIC_SHOP_STANDARD_SLOT_COUNT
+): (ProductRecord | null)[] {
+  const safeSlotCount = clampPublicShopSlotTotal(slotCount);
+  const slots: (ProductRecord | null)[] = Array.from({ length: safeSlotCount }, () => null);
   const overflow: ProductRecord[] = [];
 
   items.forEach((item) => {
     const blockNumber = publicBlockNumberForProduct(item);
-    if (blockNumber >= 1 && blockNumber <= 12) {
+    if (blockNumber >= 1 && blockNumber <= safeSlotCount) {
       if (isNewerProductCandidate(item, slots[blockNumber - 1])) {
         slots[blockNumber - 1] = item;
       }
@@ -1258,7 +1285,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     const productId = Number(product?.id || 0);
     const params = new URLSearchParams();
     if (productId > 0) params.set("repost_product_id", String(productId));
-    if (blockNumber >= 1 && blockNumber <= 12) params.set("block", String(blockNumber));
+    if (blockNumber >= 1 && blockNumber <= PUBLIC_SHOP_MAX_SLOT_COUNT) params.set("block", String(blockNumber));
     params.set("source", "shop-control-gallery");
     const joiner = marketplaceBasePath.includes("?") ? "&" : "?";
     return `${marketplaceBasePath}${joiner}${params.toString()}#${PAID_REPOST_HASH}`;
@@ -1315,9 +1342,27 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     [products]
   );
 
+  const publicProductSlotsTotal = useMemo(() => {
+    const fromShop = safePositiveNumber(shop?.shop_product_slots_total, 0);
+    if (fromShop > 0) return clampPublicShopSlotTotal(fromShop);
+
+    const fromProducts = products
+      .map((item) => safePositiveNumber(item?.shop_product_slots_total, 0))
+      .filter((value) => value > 0);
+    if (fromProducts.length > 0) return clampPublicShopSlotTotal(Math.max(...fromProducts));
+
+    return PUBLIC_SHOP_STANDARD_SLOT_COUNT;
+  }, [products, shop]);
+
+  useEffect(() => {
+    if (selectedPublicSlot > publicProductSlotsTotal) {
+      setSelectedPublicSlot(publicProductSlotsTotal);
+    }
+  }, [publicProductSlotsTotal, selectedPublicSlot]);
+
   const publicGallerySlots = useMemo(
-    () => arrangePublicProductsIntoSlots(publicProducts),
-    [publicProducts]
+    () => arrangePublicProductsIntoSlots(publicProducts, publicProductSlotsTotal),
+    [publicProductSlotsTotal, publicProducts]
   );
   const occupiedPublicSlotCount = useMemo(
     () => publicGallerySlots.filter(Boolean).length,
@@ -1735,11 +1780,11 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     if (
       targetVisibility === "community_visible" &&
       !editingAlreadyPublic &&
-      occupiedPublicSlotCount >= 12
+      occupiedPublicSlotCount >= publicProductSlotsTotal
     ) {
       showProductFormNotice(
         "error",
-        "The public shop gallery already has 12 live blocks. Edit or remove one before adding another."
+        "The public shop gallery has reached its current live-block capacity. Open Marketplace Capacity if this shop needs paid extra public blocks."
       );
       return;
     }
@@ -2088,8 +2133,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               }}
             >
               {iconBadge("image", <>Shop picture: {safeStr(shopPreviewUrl) ? "Ready" : "Needed"}</>, true)}
-              {iconBadge("shop", <>Public products: {occupiedPublicSlotCount} / 12</>, occupiedPublicSlotCount > 0)}
-              {iconBadge("lock", <>Vault offers: {vaultProducts.length} / 6</>, vaultProducts.length > 0)}
+              {iconBadge("shop", <>Public products: {occupiedPublicSlotCount} / {publicProductSlotsTotal}</>, occupiedPublicSlotCount > 0)}
+              {iconBadge("lock", <>Vault offers: {vaultProducts.length} / 2</>, vaultProducts.length > 0)}
               {iconBadge("document", <>Hidden: {hiddenProducts.length}</>)}
             </div>
 
@@ -2546,7 +2591,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
 
             {iconBadge(
               "shop",
-              <>{occupiedPublicSlotCount} / 12 live blocks</>,
+              <>{occupiedPublicSlotCount} / {publicProductSlotsTotal} live blocks</>,
               occupiedPublicSlotCount > 0
             )}
           </div>

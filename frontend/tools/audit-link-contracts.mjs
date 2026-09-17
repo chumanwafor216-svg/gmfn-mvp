@@ -423,19 +423,19 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /function extractPublicBlockNumber\(description: string\): number[\s\S]*?safeStr\(description\)\.match\([\s\S]*?BLOCK:[\s\S]*?function arrangePublicProductsIntoSlots\(items: ProductRecord\[\]\)[\s\S]*?publicBlockNumberForProduct\(item\)[\s\S]*?const publicGallerySlots = useMemo\([\s\S]*?arrangePublicProductsIntoSlots\(publicProducts\)[\s\S]*?description: composeProductDescription\([\s\S]*?targetVisibility === "community_visible" \? selectedPublicSlot : 0/,
+  /function extractPublicBlockNumber\(description: string\): number[\s\S]*?safeStr\(description\)\.match\([\s\S]*?BLOCK:[\s\S]*?function arrangePublicProductsIntoSlots\([\s\S]*?items: ProductRecord\[\],[\s\S]*?slotCount = PUBLIC_SHOP_STANDARD_SLOT_COUNT[\s\S]*?\)[\s\S]*?publicBlockNumberForProduct\(item\)[\s\S]*?const publicGallerySlots = useMemo\([\s\S]*?arrangePublicProductsIntoSlots\(publicProducts, publicProductSlotsTotal\)[\s\S]*?description: composeProductDescription\([\s\S]*?targetVisibility === "community_visible" \? selectedPublicSlot : 0/,
   "Shop Assets public gallery block control must preserve selected block occupancy and render occupied blocks from stored block metadata, not array order."
 );
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
   /PUBLIC_GALLERY_VISIBILITY_MODES[\s\S]*?"community_visible"[\s\S]*?"public"[\s\S]*?"community"[\s\S]*?function mergeProductsById[\s\S]*?let shopRes = await getMyMarketplaceShop\([\s\S]*?let nextProducts: ProductRecord\[\] = mergeProductsById\([\s\S]*?normalizeProductRecords\(shopRes\.products\)[\s\S]*?getPublicMarketplaceShopByGmfnId\(effectiveGmfnId,[\s\S]*?product_limit: 200[\s\S]*?nextProducts = mergeProductsById\(nextProducts, publicShopProducts\)[\s\S]*?products\.filter\(\(item\) => isPublicGalleryProduct\(item\)\)/,
-  "Embedded Shop Control must hydrate its 12 public blocks from the signed-in owner route plus the same public-shop truth and visibility aliases that visitors see."
+  "Embedded Shop Control must hydrate its public Shop Diary blocks from the signed-in owner route plus the same public-shop truth and visibility aliases that visitors see."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /function extractPublicBlockNumber\(description: any\): number[\s\S]*?function stripProductLabel\(description: any\): string[\s\S]*?function arrangeProductsByPublicBlock\(items: ShopProduct\[\]\)[\s\S]*?const arrangedProducts = arrangeProductsByPublicBlock\(normalizedProducts\)[\s\S]*?setProducts\(arrangedProducts\)/,
+  /function extractPublicBlockNumber\(description: any\): number[\s\S]*?function stripProductLabel\(description: any\): string[\s\S]*?function arrangeProductsByPublicBlock\(items: ShopProduct\[\], slotCount = GALLERY_STANDARD_SLOTS_TOTAL\)[\s\S]*?const arrangedProducts = arrangeProductsByPublicBlock\(normalizedProducts, normalizedShop\?\.publicSlotsTotal\)[\s\S]*?setProducts\(arrangedProducts\)/,
   "Public Shop Gallery must honor hidden public block metadata while stripping it from visitor-facing descriptions."
 );
 
@@ -1102,14 +1102,14 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /function isPublicShopBlockHash\(value: string\): boolean \{[\s\S]*?\^shop-block-\\d\{1,2\}\$[\s\S]*?\^product-\\d\+\$[\s\S]*?const focusedBlockProduct = useMemo\([\s\S]*?publicShopBlockAnchorId\(product\)[\s\S]*?legacyProductAnchorId\(product\)[\s\S]*?if \(focusedBlockLinkActive\) return focusedBlockProduct \? \[focusedBlockProduct\] : \[\];[\s\S]*?products\.slice\(0, GALLERY_SLOTS_TOTAL\)[\s\S]*?const overflowProductCount = focusedBlockLinkActive[\s\S]*?: Math\.max\(0, products\.length - GALLERY_SLOTS_TOTAL\);/,
-  "Public Shop Gallery must focus exact product/block links to one block while whole-shop links keep the approved 12-block shelf."
+  /function isPublicShopBlockHash\(value: string\): boolean \{[\s\S]*?\^shop-block-\\d\{1,2\}\$[\s\S]*?\^product-\\d\+\$[\s\S]*?const focusedBlockProduct = useMemo\([\s\S]*?publicShopBlockAnchorId\(product\)[\s\S]*?legacyProductAnchorId\(product\)[\s\S]*?if \(focusedBlockLinkActive\) return focusedBlockProduct \? \[focusedBlockProduct\] : \[\];[\s\S]*?products\.slice\(0, gallerySlotsTotal\)[\s\S]*?const overflowProductCount = focusedBlockLinkActive[\s\S]*?: Math\.max\(0, products\.length - gallerySlotsTotal\);/,
+  "Public Shop Gallery must focus exact product/block links to one block while whole-shop links keep the approved Shop Diaries shelf."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
   /className="public-shop-signboard"[\s\S]*?className="public-shop-status-strip"[\s\S]*?className="public-shop-section public-shop-spotlight"[\s\S]*?className="public-shop-section public-shop-vault-ad"[\s\S]*?id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}/,
-  "Public Shop Gallery must land as a whole public shop: signboard, trust/status cues, mini spotlight, Vault promo, then the public 12-block shelf."
+  "Public Shop Gallery must land as a whole public shop: signboard, trust/status cues, mini spotlight, Vault promo, then the public Shop Diaries shelf."
 );
 
 assertContains(

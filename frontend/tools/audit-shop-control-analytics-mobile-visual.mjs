@@ -92,8 +92,8 @@ const shop = {
   visibility_mode: "community_visible",
   is_active: true,
   status: "active",
-  shop_product_slots_total: 12,
-  public_product_count: 12,
+  shop_product_slots_total: 6,
+  public_product_count: 6,
 };
 
 const products = Array.from({ length: 12 }, (_, index) => ({
@@ -108,7 +108,7 @@ const products = Array.from({ length: 12 }, (_, index) => ({
   is_active: true,
   visibility_mode: "community_visible",
   shop_product_slot_number: index + 1,
-  shop_product_slots_total: 12,
+  shop_product_slots_total: 6,
 }));
 
 const demandRows = [
@@ -226,7 +226,7 @@ const attentionSummary = {
       next_step: "Record promotion cost before comparing business return.",
     },
     signal_groups: [
-      { key: "shop", label: "Shop and marketplace", status: "Live", count: 12, evidence: "12 public items" },
+      { key: "shop", label: "Shop and marketplace", status: "Live", count: 6, evidence: "6 public items" },
       { key: "spotlight", label: "Spotlight", status: "Live", count: 106, evidence: "106 seen" },
       { key: "demand", label: "DemandBox", status: "Live", count: 2, evidence: "2 open needs" },
       { key: "community", label: "Community context", status: "Live", count: 1, evidence: "Selected community" },

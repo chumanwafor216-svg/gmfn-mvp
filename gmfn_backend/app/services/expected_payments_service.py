@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 import secrets
@@ -344,19 +344,16 @@ def ensure_loan_repayment_expected_payment(
 
 def calc_vault_subscription_amount(quantity_total: int) -> Decimal:
     """
-    Agreed MVP pricing:
-    - 1-5 Vault slots for the 30-day MVP cycle = 1.00 GBP per slot
-    - 6 Vault slots for the 30-day MVP cycle = 5.00 GBP bundle
+    Agreed pilot pricing:
+    - 1-2 Vault slots for the 30-day pilot cycle = 5.00 GBP per slot
     """
     qty = _positive_int(quantity_total, name="quantity_total")
 
-    if 1 <= qty <= 5:
-        return Decimal("1.00") * Decimal(qty)
-    if qty == 6:
-        return Decimal("5.00")
+    if 1 <= qty <= 2:
+        return Decimal("5.00") * Decimal(qty)
 
     raise ValueError(
-        "Vault MVP pricing currently supports 1 to 6 slots only."
+        "Vault pilot pricing currently supports 1 to 2 slots only."
     )
 
 

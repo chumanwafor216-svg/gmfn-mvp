@@ -10,9 +10,9 @@ The public shop remains normal. Vault adds paid private blocks that are hidden f
 
 ## Fixed MVP Rules
 
-- Maximum active paid Vault slots: 6.
-- Pricing: slots 1-5 cost GBP 1 per slot.
-- Pricing: 6 slots in one order cost GBP 5 as the bundle.
+- Maximum active paid Vault slots: 2.
+- Pricing: each Vault slot costs GBP 5 on the UK/Europe/US pilot rail.
+- No Vault bundle is active under the current pilot rule.
 - MVP payment method: bank transfer only.
 - Card payment may be added later, but the current Vault MVP must not pretend card payment is connected.
 - Vault revenue belongs to the platform/GMFN/GSN account, not community money.
@@ -27,7 +27,7 @@ The public shop remains normal. Vault adds paid private blocks that are hidden f
 
 1. Owner opens `/app/vault-control`.
 2. The page shows the main shop hero and clearly labels the private layer as Vault.
-3. Owner chooses 1-6 slots.
+3. Owner chooses 1-2 slots.
 4. The page immediately shows the selected slot count and exact price.
 5. Owner explicitly agrees to that quote before any payment code is generated.
 6. Owner generates a payment code for the agreed slot count and amount.

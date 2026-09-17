@@ -66,6 +66,7 @@ type ShopProfile = {
   whatsapp: string;
   telegram: string;
   followerCount: number;
+  publicSlotsTotal?: number;
 };
 
 type ShopFollowState = {
@@ -170,7 +171,9 @@ type ShopIconName = LegacyShopIconName | Gsn3DIconKey;
 
 type NoticeTone = "success" | "error";
 
-const GALLERY_SLOTS_TOTAL = 12;
+const GALLERY_STANDARD_SLOTS_TOTAL = 6;
+const GALLERY_EXTRA_SLOTS_LIMIT = 4;
+const GALLERY_SLOTS_TOTAL = GALLERY_STANDARD_SLOTS_TOTAL + GALLERY_EXTRA_SLOTS_LIMIT;
 const PAID_REPOST_HANDOFF_STORAGE_KEY = "gmfn_paid_repost_handoff_v1";
 const PLACEHOLDER_TEXTS = new Set([
   "string",
@@ -305,6 +308,11 @@ function replacePublicShopAddress(gmfnId: string): void {
 function positiveNumber(value: any): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function clampGallerySlotsTotal(value: any): number {
+  const parsed = Math.floor(positiveNumber(value) || GALLERY_STANDARD_SLOTS_TOTAL);
+  return Math.min(GALLERY_SLOTS_TOTAL, Math.max(GALLERY_STANDARD_SLOTS_TOTAL, parsed));
 }
 
 function appendShopShareAttribution(
@@ -1210,16 +1218,17 @@ function isNewerProductCandidate(
   return candidateRank.id > currentRank.id;
 }
 
-function arrangeProductsByPublicBlock(items: ShopProduct[]): ShopProduct[] {
+function arrangeProductsByPublicBlock(items: ShopProduct[], slotCount = GALLERY_STANDARD_SLOTS_TOTAL): ShopProduct[] {
+  const safeSlotCount = clampGallerySlotsTotal(slotCount);
   const slots: (ShopProduct | null)[] = Array.from(
-    { length: GALLERY_SLOTS_TOTAL },
+    { length: safeSlotCount },
     () => null
   );
   const overflow: ShopProduct[] = [];
 
   items.forEach((item) => {
     const slotNumber = positiveNumber(item?.slotNumber);
-    if (slotNumber >= 1 && slotNumber <= GALLERY_SLOTS_TOTAL) {
+    if (slotNumber >= 1 && slotNumber <= safeSlotCount) {
       if (isNewerProductCandidate(item, slots[slotNumber - 1])) {
         slots[slotNumber - 1] = item;
       }
@@ -1610,6 +1619,7 @@ export default function ShopGalleryPage() {
   const [ownerContactPanelOpen, setOwnerContactPanelOpen] = useState(false);
   const [shopVerificationOpen, setShopVerificationOpen] = useState(false);
   const [shopVerificationQrOpen, setShopVerificationQrOpen] = useState(false);
+  const gallerySlotsTotal = clampGallerySlotsTotal(shop?.publicSlotsTotal);
   const [signedInGmfnId, setSignedInGmfnId] = useState<string>(
     () => getStoredGmfnId() || ""
   );
@@ -1763,7 +1773,7 @@ export default function ShopGalleryPage() {
         })
         .map((row, index) => normalizeProduct(row, index + 1))
         .filter(Boolean) as ShopProduct[];
-      const arrangedProducts = arrangeProductsByPublicBlock(normalizedProducts);
+      const arrangedProducts = arrangeProductsByPublicBlock(normalizedProducts, normalizedShop?.publicSlotsTotal);
 
       const relevantGmfnId = firstMeaningful(
         normalizedShop?.gmfnId,
@@ -2190,7 +2200,7 @@ export default function ShopGalleryPage() {
     cancelPendingGalleryReveal();
 
     if (matchedProduct) {
-      if (products.indexOf(matchedProduct) >= GALLERY_SLOTS_TOTAL) {
+      if (products.indexOf(matchedProduct) >= gallerySlotsTotal) {
         setShowAllProducts(true);
       }
       setOpenProductId(matchedProduct.id ?? matchedProduct.slotNumber);
@@ -2210,6 +2220,7 @@ export default function ShopGalleryPage() {
     revealGalleryTarget,
     routeBlockNumber,
     routeProductId,
+    gallerySlotsTotal,
   ]);
 
   useEffect(() => {
@@ -2262,6 +2273,7 @@ export default function ShopGalleryPage() {
       whatsapp: firstMeaningful(shop?.whatsapp),
       telegram: firstMeaningful(shop?.telegram),
       followerCount: positiveNumber(shop?.followerCount),
+      publicSlotsTotal: clampGallerySlotsTotal(shop?.publicSlotsTotal),
     };
   }, [shop, broadcast, gmfnId, currentClan]);
 
@@ -2476,10 +2488,10 @@ export default function ShopGalleryPage() {
   ]);
 
   useEffect(() => {
-    if (products.length <= GALLERY_SLOTS_TOTAL && showAllProducts) {
+    if (products.length <= gallerySlotsTotal && showAllProducts) {
       setShowAllProducts(false);
     }
-  }, [products.length, showAllProducts]);
+  }, [gallerySlotsTotal, products.length, showAllProducts]);
 
   useEffect(() => {
     if (
@@ -2520,12 +2532,12 @@ export default function ShopGalleryPage() {
 
   const visibleProducts = useMemo(() => {
     if (focusedBlockLinkActive) return focusedBlockProduct ? [focusedBlockProduct] : [];
-    return showAllProducts ? products : products.slice(0, GALLERY_SLOTS_TOTAL);
-  }, [focusedBlockLinkActive, focusedBlockProduct, products, showAllProducts]);
+    return showAllProducts ? products : products.slice(0, gallerySlotsTotal);
+  }, [focusedBlockLinkActive, focusedBlockProduct, gallerySlotsTotal, products, showAllProducts]);
 
   const overflowProductCount = focusedBlockLinkActive
     ? 0
-    : Math.max(0, products.length - GALLERY_SLOTS_TOTAL);
+    : Math.max(0, products.length - gallerySlotsTotal);
 
   const heroImage = useMemo(() => {
     return effectiveShop?.imageUrl || "";
@@ -2775,7 +2787,7 @@ export default function ShopGalleryPage() {
     shopDescriptionText.toLowerCase() !== shopCategoryText.toLowerCase();
   const shopGmfnText = safeStr(effectiveShop?.gmfnId);
   const shopCommunityText = safeStr(effectiveShop?.communityName);
-  const publicBlockCount = Math.min(products.length, GALLERY_SLOTS_TOTAL);
+  const publicBlockCount = Math.min(products.length, gallerySlotsTotal);
   const publicBlockText = autoRefreshingShop
     ? "Reconnecting shop"
     : shopLoadFailed
@@ -2787,7 +2799,7 @@ export default function ShopGalleryPage() {
     ? "Refreshing"
     : shopLoadFailed
     ? "Needs refresh"
-    : `${publicBlockCount}/${GALLERY_SLOTS_TOTAL}`;
+    : `${publicBlockCount}/${gallerySlotsTotal}`;
   const shopLocationText = firstMeaningful(
     shopCommunityText,
     "GSN public marketplace"
@@ -5345,7 +5357,7 @@ export default function ShopGalleryPage() {
               >
                 {focusedBlockLinkActive
                   ? "This shared link opens only this public shop block."
-                  : "These are the 12 public blocks anyone can browse or share."}
+                  : "These are the public Shop Diary blocks anyone can browse or share."}
               </div>
             </div>
             <span style={badge(true)}>

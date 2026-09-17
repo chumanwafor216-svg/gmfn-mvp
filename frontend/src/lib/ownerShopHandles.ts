@@ -107,7 +107,7 @@ export const SHOP_CONTROL_SHORTCUTS: ShopControlShortcut[] = [
   },
   {
     id: "shop-diaries",
-    label: "12 Shop Diaries",
+    label: "6 Shop Diaries",
     hash: OWNER_SHOP_HASHES.diaries,
   },
   {

@@ -240,7 +240,7 @@ const expectedActionOrder = [
   "shop-control.spotlight.preview.cancel",
   "shop-control.hero-shortcut.${item.label.toLowerCase().replace(/\\s+/g, \"-\")}",
   "shop-control.vault.pay-1-slot",
-  "shop-control.vault.pay-6-slots",
+  "shop-control.vault.pay-2-slots",
   "shop-control.vault.manage-offers",
   "shop-control.vault.create-link",
   "shop-control.verify.pay",
@@ -371,7 +371,7 @@ assertShopContains(
 
 assertShopContains(
   /SHOP_CONTROL_SHORTCUTS[\s\S]*?from "\.\.\/lib\/ownerShopHandles";[\s\S]*?const SHOP_CONTROL_SHORTCUT_ICONS:[\s\S]*?"shop-billboard": "shop"[\s\S]*?"shop-diaries": "document"[\s\S]*?"shop-summary": "chart"[\s\S]*?"community-package": "financeInstitution"[\s\S]*?const shopHeroShortcuts:[\s\S]*?SHOP_CONTROL_SHORTCUTS\.map/,
-  "Shop Control hero shortcuts must focus owner shop control: billboard, 12 Shop Diaries, summary, and Marketplace Capacity."
+  "Shop Control hero shortcuts must focus owner shop control: billboard, 6 Shop Diaries, summary, and Marketplace Capacity."
 );
 
 assertOwnerShopHandlesContains(
@@ -651,8 +651,8 @@ assertShopContains(
 );
 
 assertShopContains(
-  /id="shop-control-gallery-tools"[\s\S]*?Shop Gallery Tools[\s\S]*?Control the public shop billboard and 12 Shop Diaries[\s\S]*?open Marketplace Capacity[\s\S]*?debugId="shop-control\.gallery\.shop-billboard"[\s\S]*?debugId="shop-control\.gallery\.community-package"[\s\S]*?Marketplace capacity/,
-  "Shop Control gallery tools must expose billboard control and Marketplace Capacity from the 12 Shop Diaries lane."
+  /id="shop-control-gallery-tools"[\s\S]*?Shop Gallery Tools[\s\S]*?Control the public shop billboard, 6 standard Shop Diaries, and paid extra capacity[\s\S]*?open Marketplace Capacity[\s\S]*?debugId="shop-control\.gallery\.shop-billboard"[\s\S]*?debugId="shop-control\.gallery\.community-package"[\s\S]*?Marketplace capacity/,
+  "Shop Control gallery tools must expose billboard control and Marketplace Capacity from the 6 standard Shop Diaries lane."
 );
 
 if (

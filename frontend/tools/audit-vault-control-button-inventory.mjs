@@ -326,13 +326,13 @@ if (mediaFrameInvocationCount !== expectedMediaFrameInvocations) {
 }
 
 assertVaultContains(
-  /role="radiogroup"[\s\S]*?\[1, 2, 3, 4, 5, 6\]\.map\(\(slot\)[\s\S]*?role="radio"[\s\S]*?debugId=\{`vault-control\.payment-slot\.\$\{slot\}`\}/,
-  "Vault Control payment slot chooser must keep one audited radiogroup action family for slots 1-6."
+  /role="radiogroup"[\s\S]*?\[1, 2\]\.map\(\(slot\)[\s\S]*?role="radio"[\s\S]*?debugId=\{`vault-control\.payment-slot\.\$\{slot\}`\}/,
+  "Vault Control payment slot chooser must keep one audited radiogroup action family for slots 1-2."
 );
 
 assertVaultContains(
   /vaultInnerSlots\.map\(\(item, index\)[\s\S]*?const slotNumber = index \+ 1[\s\S]*?debugId=\{`vault-control\.block-slot\.\$\{slotNumber\}\.select`\}/,
-  "Vault Control private block chooser must keep one audited action family for block slots 1-6."
+  "Vault Control private block chooser must keep one audited action family for block slots 1-2."
 );
 
 assertVaultContains(

@@ -62,7 +62,8 @@ MARKETPLACE_LISTING_REVIEW_EVENT = "marketplace.listing.review_decided"
 MARKETPLACE_LISTING_REVIEW_PANEL_HASH = "marketplace-listing-review-panel"
 
 
-FREE_COMMUNITY_PRODUCT_SLOTS = 12
+FREE_COMMUNITY_PRODUCT_SLOTS = 6
+MAX_EXTRA_PUBLIC_SHOP_BLOCKS = 4
 
 TOTAL_DISTRIBUTION_SLOTS = 10
 ORIGIN_SPOTLIGHT_RESERVED_SLOTS = 1
@@ -2126,7 +2127,7 @@ def _shop_public_product_slots_total(
         .scalar()
     )
     if int(shop_scoped_extra_slots or 0) > 0:
-        return FREE_COMMUNITY_PRODUCT_SLOTS + int(shop_scoped_extra_slots or 0)
+        return FREE_COMMUNITY_PRODUCT_SLOTS + min(MAX_EXTRA_PUBLIC_SHOP_BLOCKS, int(shop_scoped_extra_slots or 0))
 
     extra_slots = get_active_feature_quantity(
         db,
@@ -2134,7 +2135,7 @@ def _shop_public_product_slots_total(
         feature_code=FEATURE_EXTRA_SHOP_BLOCK,
         shop_id=int(shop.id),
     )
-    return FREE_COMMUNITY_PRODUCT_SLOTS + max(0, int(extra_slots or 0))
+    return FREE_COMMUNITY_PRODUCT_SLOTS + min(MAX_EXTRA_PUBLIC_SHOP_BLOCKS, max(0, int(extra_slots or 0)))
 
 
 def _public_product_capacity_detail(limit: int) -> str:
@@ -2175,7 +2176,7 @@ class MarketplaceProductCreateIn(BaseModel):
     image_url: Optional[str] = Field(default=None, max_length=4000)
     video_url: Optional[str] = Field(default=None, max_length=4000)
     visibility_mode: Optional[str] = Field(default=VISIBILITY_COMMUNITY, max_length=32)
-    vault_slot_number: Optional[int] = Field(default=None, ge=1, le=6)
+    vault_slot_number: Optional[int] = Field(default=None, ge=1, le=2)
 
 
 class MarketplaceProductUpdateIn(BaseModel):
@@ -2188,7 +2189,7 @@ class MarketplaceProductUpdateIn(BaseModel):
     image_url: Optional[str] = Field(default=None, max_length=4000)
     video_url: Optional[str] = Field(default=None, max_length=4000)
     visibility_mode: Optional[str] = Field(default=None, max_length=32)
-    vault_slot_number: Optional[int] = Field(default=None, ge=1, le=6)
+    vault_slot_number: Optional[int] = Field(default=None, ge=1, le=2)
     clear_image: Optional[bool] = False
     remove_image: Optional[bool] = False
     delete_image: Optional[bool] = False
