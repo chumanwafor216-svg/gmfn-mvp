@@ -1,6 +1,6 @@
 /* global caches, fetch, Response, self, URL */
 
-const CACHE_VERSION = "gsn-pwa-shell-v17";
+const CACHE_VERSION = "gsn-pwa-shell-v18";
 const SHELL_ASSETS = [
   "/",
   "/cover",
@@ -105,6 +105,52 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
+function positiveBadgeCount(value) {
+  const count = Number(value || 0);
+  return Number.isFinite(count) && count > 0 ? Math.floor(count) : 0;
+}
+
+function setLauncherBadge(count) {
+  const normalized = positiveBadgeCount(count);
+  const registration = self.registration || {};
+  try {
+    if (normalized > 0 && typeof registration.setAppBadge === "function") {
+      return registration.setAppBadge(normalized);
+    }
+    if (normalized <= 0 && typeof registration.clearAppBadge === "function") {
+      return registration.clearAppBadge();
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
+}
+
+function broadcastBadgeCount(count) {
+  return self.clients
+    .matchAll({ type: "window", includeUncontrolled: true })
+    .then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({
+          type: "GSN_BADGE_COUNT",
+          unreadCount: positiveBadgeCount(count),
+        });
+      });
+    })
+    .catch(() => undefined);
+}
+
+function broadcastBadgeRefresh() {
+  return self.clients
+    .matchAll({ type: "window", includeUncontrolled: true })
+    .then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({ type: "GSN_REFRESH_BADGE" });
+      });
+    })
+    .catch(() => undefined);
+}
+
 function normalizePushActionUrl(rawTarget, kind, payload) {
   const target = String(rawTarget || "/app/notifications");
   const eventKind = String(kind || "").trim().toLowerCase();
@@ -157,23 +203,36 @@ self.addEventListener("push", (event) => {
   const actionUrl = normalizePushActionUrl(payload.action_url, kind, payload);
   const actionLabel = String(payload.action_label || "Open");
   const notificationId = String(payload.notification_id || Date.now());
+  const unreadCount = positiveBadgeCount(
+    payload.unread_count ??
+      payload.unreadCount ??
+      payload.badge_count ??
+      payload.badgeCount ??
+      1,
+  );
 
   event.waitUntil(
-    self.registration.showNotification(title, {
-      body,
-      tag: `gsn-${kind}-${notificationId}`,
-      data: {
-        actionUrl,
-        kind,
-        notificationId,
-      },
-      actions: [
-        {
-          action: "open",
-          title: actionLabel,
+    Promise.all([
+      setLauncherBadge(unreadCount),
+      broadcastBadgeCount(unreadCount),
+      self.registration.showNotification(title, {
+        body,
+        icon: "/gsn-app-icon-192-v14.png",
+        badge: "/gsn-app-icon-192-v14.png",
+        tag: `gsn-${kind}-${notificationId}`,
+        data: {
+          actionUrl,
+          kind,
+          notificationId,
         },
-      ],
-    }),
+        actions: [
+          {
+            action: "open",
+            title: actionLabel,
+          },
+        ],
+      }),
+    ]),
   );
 });
 
@@ -185,23 +244,26 @@ self.addEventListener("notificationclick", (event) => {
   const targetUrl = new URL(String(rawTarget), self.location.origin).toString();
 
   event.waitUntil(
-    self.clients
-      .matchAll({ type: "window", includeUncontrolled: true })
-      .then((clients) => {
-        for (const client of clients) {
-          if ("focus" in client) {
-            client.focus();
-            if ("navigate" in client) {
-              return client.navigate(targetUrl);
+    Promise.all([
+      broadcastBadgeRefresh(),
+      self.clients
+        .matchAll({ type: "window", includeUncontrolled: true })
+        .then((clients) => {
+          for (const client of clients) {
+            if ("focus" in client) {
+              client.focus();
+              if ("navigate" in client) {
+                return client.navigate(targetUrl);
+              }
+              return undefined;
             }
-            return undefined;
           }
-        }
 
-        if (self.clients.openWindow) {
-          return self.clients.openWindow(targetUrl);
-        }
-        return undefined;
-      }),
+          if (self.clients.openWindow) {
+            return self.clients.openWindow(targetUrl);
+          }
+          return undefined;
+        }),
+    ]),
   );
 });

@@ -220,6 +220,7 @@ def test_web_push_self_test_sends_to_current_users_registered_device(
         assert payload["title"] == "GSN test notification"
         assert payload["body"] == "Your phone can receive GSN notifications."
         assert payload["action_url"] == "/app/notifications"
+        assert payload["unread_count"] == 1
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
@@ -481,6 +482,7 @@ def test_official_notice_dispatches_web_push_to_registered_member(
         assert payload["action_url"] == (
             "/app/marketplace?clan_id=1#marketplace-official-board"
         )
+        assert payload["unread_count"] == 1
 
         with SessionLocal() as db:
             notification = db.query(Notification).one()

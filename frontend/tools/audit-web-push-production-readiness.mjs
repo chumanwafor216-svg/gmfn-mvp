@@ -82,6 +82,30 @@ assertContains(
   "service worker must keep push display and click-open handling."
 );
 
+assertContains(
+  "frontend/public/sw.js",
+  /setAppBadge[\s\S]*?clearAppBadge[\s\S]*?GSN_BADGE_COUNT[\s\S]*?badge: "\/gsn-app-icon-192-v14\.png"/,
+  "service worker must keep launcher badge support and use the GSN icon for notification badging."
+);
+
+assertContains(
+  "frontend/src/lib/appBadge.ts",
+  /getMyUnreadNotificationCount[\s\S]*?GSN_AUTH_SESSION_CHANGED[\s\S]*?setAppBadge[\s\S]*?clearAppBadge/,
+  "frontend must refresh the launcher badge from the unread notification count."
+);
+
+assertContains(
+  "frontend/public/manifest.json",
+  /"display": "standalone"[\s\S]*?"display_override": \["standalone", "minimal-ui", "browser"\]/,
+  "installed GSN manifest must prefer standalone mode instead of a browser shortcut."
+);
+
+assertContains(
+  "frontend/public/manifest.webmanifest",
+  /"display": "standalone"[\s\S]*?"display_override": \["standalone", "minimal-ui", "browser"\]/,
+  "webmanifest must prefer standalone mode instead of a browser shortcut."
+);
+
 if (findings.length > 0) {
   console.error("Web Push production readiness audit failed:");
   findings.forEach((finding) => console.error(`- ${finding}`));

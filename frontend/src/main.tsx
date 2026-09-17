@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 
 import App from "./App";
+import { installGsnAppBadgeSync } from "./lib/appBadge";
 import { installMobileTapGuard } from "./lib/mobileTapGuard";
 import {
   registerGsnServiceWorker,
@@ -85,6 +86,7 @@ if (hasBootSessionReset()) {
 installMobileTapGuard();
 registerPwaInstallSupport();
 registerGsnServiceWorker();
+installGsnAppBadgeSync();
 
 if (!migrateSuspendedPublicHost()) {
   ReactDOM.createRoot(document.getElementById("root")!).render(

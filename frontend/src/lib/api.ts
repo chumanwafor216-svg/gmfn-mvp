@@ -301,9 +301,20 @@ export function getAccessToken(): string | null {
   return readStorage(ACCESS_TOKEN_KEY);
 }
 
+function dispatchGsnAuthSessionChanged(): void {
+  try {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("GSN_AUTH_SESSION_CHANGED"));
+    }
+  } catch {
+    // Auth storage must not fail because badge refresh is unavailable.
+  }
+}
+
 export function setAccessToken(tok: string | null) {
   clearStartupReadCache();
   writeStorage(ACCESS_TOKEN_KEY, tok);
+  dispatchGsnAuthSessionChanged();
 }
 
 function normalizeGmfnId(value: unknown): string {
@@ -479,6 +490,7 @@ export function logout(): void {
     // ignore storage cleanup issues during logout
   }
   clearPublicEntryState();
+  dispatchGsnAuthSessionChanged();
 }
 
 async function readTextSafe(res: Response): Promise<string> {

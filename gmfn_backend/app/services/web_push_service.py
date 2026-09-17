@@ -178,6 +178,15 @@ def active_web_push_subscription_count(db: Session, *, user_id: int) -> int:
     )
 
 
+def unread_notification_count(db: Session, *, user_id: int) -> int:
+    return int(
+        db.query(Notification)
+        .filter(Notification.user_id == int(user_id))
+        .filter(Notification.is_read.is_(False))
+        .count()
+    )
+
+
 def notification_web_push_payload(notification: Notification) -> dict[str, Any]:
     action_url = _safe_str(notification.action_url) or "/app/notifications"
     return {
@@ -238,6 +247,10 @@ def dispatch_web_push_for_notification(
         return {"attempted": 0, "sent": 0, "skipped": "no_active_subscription"}
 
     payload = notification_web_push_payload(notification)
+    payload["unread_count"] = unread_notification_count(
+        db, user_id=int(notification.user_id)
+    )
+
     attempted = 0
     sent = 0
     deactivated = 0
@@ -302,6 +315,7 @@ def dispatch_web_push_test_to_user(db: Session, *, user_id: int) -> dict[str, An
         "body": "Your phone can receive GSN notifications.",
         "action_url": "/app/notifications",
         "action_label": "Open GSN",
+        "unread_count": max(unread_notification_count(db, user_id=int(user_id)), 1),
     }
 
     attempted = 0

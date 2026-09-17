@@ -10,6 +10,7 @@ import {
   SubtleButton,
 } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
+import { refreshGsnAppBadge } from "../lib/appBadge";
 import {
   getMyNotifications,
   getMySettings,
@@ -1146,6 +1147,7 @@ export default function NotificationsPage() {
     setSelectedNotice((prev) =>
       prev && safeStr(prev.id) === id ? { ...prev, unread: false } : prev
     );
+    void refreshGsnAppBadge();
     setActionNotice({
       tone: "success",
       text: "Notice marked as read.",
@@ -1158,7 +1160,9 @@ export default function NotificationsPage() {
 
     if (settings.openActionsDirectly) {
       if (/^\d+$/.test(noticeId)) {
-        void markNotificationRead(Number(noticeId)).catch(() => null);
+        void markNotificationRead(Number(noticeId))
+          .then(() => refreshGsnAppBadge())
+          .catch(() => null);
       }
       setActionNotice({
         tone: "success",
