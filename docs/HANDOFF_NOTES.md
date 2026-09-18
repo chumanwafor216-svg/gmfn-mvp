@@ -1,3 +1,10 @@
+## 2026-09-18 - Active My GSN profile public link correction
+- Status: Follow-up correction implemented after live verification showed the first profile link change was placed in legacy `ProfilePage.tsx`, while `/app/profile` redirects to the active `MyGMFNAndIPage` route.
+- Frontend screen affected: `frontend/src/pages/MyGMFNAndIPage.tsx` now shows the GSN public website open/copy controls and the user's copyable `@GSN...` handle directly under the My GSN Identity hero.
+- Verification passed locally: `npm --prefix frontend run audit:entry-auth`, `npm --prefix frontend run audit:member-entry-actions`, `npm --prefix frontend run audit:demand-box-front-package`, `npm --prefix frontend run audit:button-stability`, `npm --prefix frontend run audit:protected-button-freeze` outside sandbox after sandbox EPERM, and `npm --prefix frontend run build`.
+- Deployment truth from previous commit: GitHub/Render reported success, but the public URL still served the old asset hash when checked. The workflow's existing public marker check is too broad because it only proves an older Decision Pack marker exists; live verification for this follow-up must check the new My GSN profile strings or chunk hash before calling it visible to users.
+- Devil truth: the handle remains the existing GSN ID/handle path. No backend public username registry or global searchable handle system has been built yet.
+
 ## 2026-09-18 - GSN website link and phone-free handle contact surfaced in app
 - Status: Local app polish implemented and verified; ready for owner review/publish.
 - Owner trigger: owner paused deeper delegation/bridge design and asked for only two practical items now: make the GSN public website easy to share from the app and improve handle-based contact without using phone numbers.

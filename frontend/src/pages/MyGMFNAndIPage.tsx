@@ -73,6 +73,7 @@ type CapabilityMapDetail = {
 
 const SETTINGS_STORAGE_KEY = "gmfn.myGmfnAndI.settings.v2";
 const SLOW_WORKSPACE_SETTINGS_LOAD_MS = 8000;
+const GSN_PUBLIC_WEBSITE_URL = "https://globalsupportnetwork.org";
 
 const DEFAULT_SETTINGS: SettingsState = {
   notificationsMode: "summary",
@@ -1573,6 +1574,8 @@ export default function MyGMFNAndIPage() {
     return Boolean(text && text.toLowerCase() !== "not issued yet");
   }, [gmfnIdValue]);
 
+  const gsnHandle = useMemo(() => safeStr(gmfnIdValue).toUpperCase(), [gmfnIdValue]);
+
   const communityLabel = useMemo(() => {
     return (
       firstTruthy(
@@ -2346,6 +2349,84 @@ export default function MyGMFNAndIPage() {
             Open dashboard
             <span aria-hidden="true">{">"}</span>
           </StableCtaLink>
+
+          <div
+            style={{
+              marginTop: isCompact ? 12 : 14,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+              gap: 10,
+            }}
+          >
+            <div style={innerCard("rgba(255,255,255,0.96)")}>
+              <div style={sectionLabel()}>GSN public website</div>
+              <div style={{ marginTop: 8, ...helperText(), color: "#405168" }}>
+                Share the official Global Support Network website when someone asks what GSN is.
+              </div>
+              <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <SecondaryButton
+                  type="button"
+                  stableHeight={44}
+                  debugId="my-gmfn.public-website.open"
+                  onClick={() => window.open(GSN_PUBLIC_WEBSITE_URL, "_blank", "noopener,noreferrer")}
+                >
+                  <GsnLegacyIcon name="navigation" size={20} decorative />
+                  Open site
+                </SecondaryButton>
+                <SecondaryButton
+                  type="button"
+                  stableHeight={44}
+                  debugId="my-gmfn.public-website.copy"
+                  onClick={() => {
+                    void navigator.clipboard?.writeText(GSN_PUBLIC_WEBSITE_URL);
+                    setNotice({ tone: "success", text: "GSN website link copied." });
+                  }}
+                >
+                  <GsnLegacyIcon name="copy" size={20} decorative />
+                  Copy link
+                </SecondaryButton>
+              </div>
+            </div>
+
+            <div style={innerCard("rgba(255,255,255,0.96)")}>
+              <div style={sectionLabel()}>Your GSN handle</div>
+              <div style={{ marginTop: 8, ...helperText(), color: "#405168" }}>
+                Use this reference when people need to tag or reach you inside GSN without your phone number.
+              </div>
+              <div
+                style={{
+                  marginTop: 10,
+                  borderRadius: 14,
+                  border: "1px solid rgba(15,23,42,0.10)",
+                  background: "#F8FBFF",
+                  padding: "10px 12px",
+                  color: "#07172C",
+                  fontWeight: 1000,
+                  overflowWrap: "anywhere",
+                }}
+              >
+                {gsnHandle ? `@${gsnHandle}` : "GSN ID not issued yet"}
+              </div>
+              <SecondaryButton
+                type="button"
+                stableHeight={44}
+                disabled={!gsnHandle}
+                debugId="my-gmfn.gsn-handle.copy"
+                onClick={() => {
+                  if (!gsnHandle) {
+                    setNotice({ tone: "error", text: "Your GSN ID is not issued yet." });
+                    return;
+                  }
+                  void navigator.clipboard?.writeText(`@${gsnHandle}`);
+                  setNotice({ tone: "success", text: "GSN handle copied." });
+                }}
+                style={{ marginTop: 10, width: "100%", justifyContent: "center" }}
+              >
+                <GsnLegacyIcon name="copy" size={20} decorative />
+                Copy handle
+              </SecondaryButton>
+            </div>
+          </div>
         </div>
 
         <div
