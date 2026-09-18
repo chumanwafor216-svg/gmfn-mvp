@@ -1,3 +1,13 @@
+## 2026-09-18 - Pastor Mrs discovery workshop logged
+- Status: Logged a product discovery workshop with Pastor Mrs for Saturday 2026-09-19 at 18:15 UK time.
+- Files updated: `docs/GSN_PASTOR_MRS_PRODUCT_DISCOVERY_WORKSHOP_PREP_2026-09-19.md`, `docs/GSN_CONTACT_AND_MEETING_REGISTER_2026-09-13.md`, `docs/GSN_SECRETARY_OPERATIONS_REGISTER_2026-09-10.md`, and `docs/GSN_PASTOR_CHURCH_CUSTOMER_DISCOVERY_RECORD_2026-09-07.md`.
+- Workshop focus: official notices, QR/attendance memory, private follow-up, Focus Commitments, Demand Box, Meeting Pack, privacy boundaries, and budget/sponsor/authority only after workflow fit.
+- Devil truth: this is a scheduled discovery workshop, not church adoption, payment, endorsement, board approval, or permission to expose member data.
+## 2026-09-18 - Pilot contract added to pilot package
+- Status: Added the short Community Pilot Participation Agreement into the public-facing pilot feature pack as a required companion document for paid or sponsor-backed pilots.
+- Files updated: `docs/GSN_PILOT_PRODUCT_FEATURE_PACK_2026-09-10.md`; the existing agreement remains at `docs/GSN_COMMUNITY_PILOT_PARTICIPATION_AGREEMENT_SHORT_DRAFT_2026-09-18.md`.
+- Package impact: the pilot pack now names the participation agreement, budget draft and paid-pilot readiness protocol as companion documents, and includes a checklist for when the agreement should be sent and what it should confirm.
+- Devil truth: this is a practical founder draft, not legal advice or solicitor-reviewed terms; use proper legal/professional review before sensitive, high-value, regulated or long-term pilots.
 ## 2026-09-18 - Live profile/public-link deploy verifier added
 - Status: Added a manual production verification command for the GSN public-link and handle deployment markers.
 - Files updated: `frontend/tools/verify-live-profile-public-link.mjs`, `frontend/package.json`, and this handoff note.
