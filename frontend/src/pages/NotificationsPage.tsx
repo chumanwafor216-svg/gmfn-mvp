@@ -1160,14 +1160,9 @@ export default function NotificationsPage() {
 
     if (settings.openActionsDirectly) {
       if (/^\d+$/.test(noticeId)) {
-        void markNotificationRead(Number(noticeId))
-          .then(() => refreshGsnAppBadge())
-          .catch(() => null);
+        void markNotificationRead(Number(noticeId)).catch(() => null);
+        void refreshGsnAppBadge();
       }
-      setActionNotice({
-        tone: "success",
-        text: `Opening ${normalizedNotice.ctaLabel || "the next page"} now.`,
-      });
       navigateWithOrigin(navigate, normalizedNotice.ctaTo, location);
       return;
     }

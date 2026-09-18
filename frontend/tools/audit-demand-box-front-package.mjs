@@ -228,8 +228,8 @@ function requireApiPattern(pattern, message) {
     "DemandBox Ask Community posting must include the optional tagged GSN handle.",
   ],
   [
-    /Tag GSN member[\s\S]*?value=\{targetHandle\}[\s\S]*?placeholder="GSN-U-RESPONDER"[\s\S]*?demand-box-gsn-member-handles[\s\S]*?Do not use a phone number/,
-    "DemandBox must expose a clear GSN member tag control in the create flow.",
+    /Contact by GSN handle[\s\S]*?value=\{targetHandle\}[\s\S]*?placeholder="@GSN-U-RESPONDER"[\s\S]*?demand-box-gsn-member-handles[\s\S]*?Do not use a phone number/,
+    "DemandBox must expose a clear phone-free GSN handle contact control in the create flow.",
   ],
   [
     /listClanMembers\(effectiveClanId\)\.catch\(\(\) => \(\{ items: \[\] \}\)\)/,
@@ -248,7 +248,7 @@ function requireApiPattern(pattern, message) {
     "DemandBox must compute visible tag matching from the same bounded community roster suggestions.",
   ],
   [
-    /data-gsn-demand-tag-preview="true"[\s\S]*?Matched community member[\s\S]*?will stay in the request text unless it matches an active member's GSN ID/,
+    /data-gsn-demand-tag-preview="true"[\s\S]*?Matched community member[\s\S]*?will stay in the request text unless it matches an active member's GSN handle or ID/,
     "DemandBox must preview whether a typed GSN tag is a real in-community member before posting.",
   ],
   [

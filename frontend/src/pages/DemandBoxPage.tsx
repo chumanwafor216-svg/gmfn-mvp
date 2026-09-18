@@ -1623,7 +1623,7 @@ export default function DemandBoxPage() {
   const queueLanes = useMemo<Array<{ key: DemandQueueLane; label: string; count: number; icon: GsnIconName; detail: string }>>(
     () => [
       { key: "open", label: "All open", count: allOpenRows.length, icon: "briefcase", detail: "Every loaded open request" },
-      { key: "tagged", label: "Tagged", count: taggedRows.length, icon: "tag", detail: "Requests mentioning your GSN ID" },
+      { key: "tagged", label: "Tagged", count: taggedRows.length, icon: "tag", detail: "Requests mentioning your GSN handle" },
       { key: "for_me", label: "For me", count: visibleRows.length, icon: "community", detail: "Community requests you can answer" },
       { key: "mine", label: "Mine", count: myOpenRows.length, icon: "user", detail: "Needs you posted" },
       { key: "ask_community", label: "Ask Community", count: askCommunityRows.length, icon: "community", detail: "Questions posted through DemandBox" },
@@ -2439,11 +2439,11 @@ export default function DemandBoxPage() {
               </div>
 
               <div>
-                <div style={sectionLabel()}>Tag GSN member</div>
+                <div style={sectionLabel()}>Contact by GSN handle</div>
                 <input
                   value={targetHandle}
                   onChange={(e) => setTargetHandle(e.target.value)}
-                  placeholder="GSN-U-RESPONDER"
+                  placeholder="@GSN-U-RESPONDER"
                   list="demand-box-gsn-member-handles"
                   autoCapitalize="characters"
                   style={{ ...inputStyle(), marginTop: 8 }}
@@ -2459,7 +2459,7 @@ export default function DemandBoxPage() {
                   </datalist>
                 ) : null}
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-                  Optional. Start typing or choose a known GSN ID. Do not use a phone number.
+                  Optional. Start typing or choose a known GSN handle or ID. Do not use a phone number.
                 </div>
                 {normalizedTargetHandle ? (
                   <div
@@ -2481,8 +2481,8 @@ export default function DemandBoxPage() {
                     </span>
                     <div style={{ marginTop: 7, ...helperText(), fontSize: 12 }}>
                       {selectedTagMember
-                        ? `Ready to route this demand to ${selectedTagMember.label} (${selectedTagMember.gsnId}).`
-                        : `${normalizedTargetHandle} will stay in the request text unless it matches an active member's GSN ID in this community.`}
+                        ? `Ready to route this demand to ${selectedTagMember.label} without using their phone number (${selectedTagMember.gsnId}).`
+                        : `${normalizedTargetHandle} will stay in the request text unless it matches an active member's GSN handle or ID in this community.`}
                     </div>
                   </div>
                 ) : null}

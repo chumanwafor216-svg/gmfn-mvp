@@ -4117,38 +4117,17 @@ export default function DashboardPage() {
 
   useEffect(() => {
     (async () => {
-      const [myRowsRaw, visibleRowsRaw] = await Promise.all([
-        listMarketplaceRequests({
-          clan_id: null,
-          status: "open",
-          mine_only: true,
-          limit: 200,
-        }).catch(() => []),
-        listMarketplaceRequests({
-          clan_id: selectedClanId || undefined,
-          status: "open",
-          mine_only: false,
-          limit: 200,
-        }).catch(() => []),
-      ]);
+      const rows = await listMarketplaceRequests({
+        clan_id: selectedClanId || undefined,
+        status: "open",
+        mine_only: false,
+        limit: 200,
+      }).catch(() => []);
 
-      const myRows: DemandItem[] = Array.isArray(myRowsRaw) ? myRowsRaw : [];
-      const responderRows: DemandItem[] = Array.isArray(visibleRowsRaw)
-        ? visibleRowsRaw.filter((row) => !isDashboardDemandMine(row, me))
+      const responderRows = Array.isArray(rows)
+        ? rows.filter((row) => !isDashboardDemandMine(row, me))
         : [];
-      const seenDemandKeys = new Set<string>();
-      const combinedRows = [...myRows, ...responderRows].filter((row) => {
-        const id = positiveNumber(row?.id);
-        const key = id
-          ? `id:${id}`
-          : [row?.title, row?.created_at, row?.requester_gmfn_id, row?.requester_email]
-              .map((value) => safeStr(value).toLowerCase())
-              .join("|");
-        if (seenDemandKeys.has(key)) return false;
-        seenDemandKeys.add(key);
-        return true;
-      });
-      setDemandItems(combinedRows);
+      setDemandItems(responderRows);
     })();
   }, [me, selectedClanId]);
 

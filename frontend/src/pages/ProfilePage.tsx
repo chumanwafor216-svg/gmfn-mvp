@@ -3,6 +3,8 @@ import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { CardActionRow, PrimaryButton, SecondaryButton } from "../components/StableButton";
 import { getMe, updateMyProfile } from "../lib/api";
 
+const GSN_PUBLIC_WEBSITE_URL = "https://globalsupportnetwork.org";
+
 function card(): React.CSSProperties {
   return {
     border: "1px solid #e5e7eb",
@@ -79,6 +81,7 @@ export default function ProfilePage() {
   }
 
   const accountPhone = String(me?.phone_e164 || "").trim();
+  const gsnHandle = String(me?.gmfn_id || me?.gsn_id || "").trim().toUpperCase();
   const phoneStatus = me?.phone_verified
     ? "Verified phone"
     : accountPhone
@@ -94,6 +97,75 @@ export default function ProfilePage() {
         {profileIconText("shield", "Human identity for trust (low-end friendly).", 20)}
       </div>
 
+
+      <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gap: 12 }}>
+        <div style={card()}>
+          <div style={{ fontWeight: 1000 }}>
+            {profileIconText("navigation", "GSN public website", 22)}
+          </div>
+          <div style={{ marginTop: 8, color: "#64748b", fontSize: 13, lineHeight: 1.45 }}>
+            Share the official Global Support Network website when someone asks what GSN is.
+          </div>
+          <CardActionRow style={{ marginTop: 12 }}>
+            <SecondaryButton
+              type="button"
+              onClick={() => window.open(GSN_PUBLIC_WEBSITE_URL, "_blank", "noopener,noreferrer")}
+              debugId="profile.public-website.open"
+            >
+              {profileIconText("navigation", "Open site", 20)}
+            </SecondaryButton>
+            <SecondaryButton
+              type="button"
+              onClick={() => {
+                void navigator.clipboard?.writeText(GSN_PUBLIC_WEBSITE_URL);
+                setNote("GSN website link copied.");
+              }}
+              debugId="profile.public-website.copy"
+            >
+              {profileIconText("copy", "Copy link", 20)}
+            </SecondaryButton>
+          </CardActionRow>
+        </div>
+
+        <div style={card()}>
+          <div style={{ fontWeight: 1000 }}>
+            {profileIconText("id", "Your GSN handle", 22)}
+          </div>
+          <div style={{ marginTop: 8, color: "#64748b", fontSize: 13, lineHeight: 1.45 }}>
+            Use this GSN reference when people need to tag or reach you inside GSN without using your phone number.
+          </div>
+          <div
+            style={{
+              marginTop: 10,
+              padding: "10px 12px",
+              borderRadius: 12,
+              border: "1px solid #e5e7eb",
+              background: "#f8fafc",
+              fontWeight: 1000,
+              overflowWrap: "anywhere",
+            }}
+          >
+            {gsnHandle ? `@${gsnHandle}` : "GSN ID not issued yet"}
+          </div>
+          <CardActionRow style={{ marginTop: 12 }}>
+            <SecondaryButton
+              type="button"
+              disabled={!gsnHandle}
+              onClick={() => {
+                if (!gsnHandle) {
+                  setNote("Your GSN ID is not issued yet.");
+                  return;
+                }
+                void navigator.clipboard?.writeText(`@${gsnHandle}`);
+                setNote("GSN handle copied.");
+              }}
+              debugId="profile.gsn-handle.copy"
+            >
+              {profileIconText("copy", "Copy handle", 20)}
+            </SecondaryButton>
+          </CardActionRow>
+        </div>
+      </div>
       <div style={{ marginTop: 12, ...card() }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <div

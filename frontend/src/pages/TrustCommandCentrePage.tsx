@@ -72,6 +72,7 @@ function defaultExecutiveReading(): ExecutiveReading {
   };
 }
 
+const GSN_PUBLIC_WEBSITE_URL = "https://globalsupportnetwork.org";
 const COMMAND_CENTER_UI_STORAGE_KEY = "gmfn.commandCenter.sections.v2";
 const COMMAND_CENTER_PILOT_WORKSHEET_STORAGE_KEY =
   "gmfn.commandCenter.pilotWorksheet.v1";
@@ -1536,6 +1537,15 @@ export default function TrustCommandCentrePage() {
             <div style={{ marginTop: 10, ...helperText() }}>
               Start with the live reading, then open only the admin page that matches the current task.
             </div>
+            <SecondaryButton
+              type="button"
+              stableHeight={44}
+              debugId="trust-command.public-website.open"
+              onClick={() => window.open(GSN_PUBLIC_WEBSITE_URL, "_blank", "noopener,noreferrer")}
+              style={{ marginTop: 12, width: "100%", justifyContent: "center" }}
+            >
+              {labelWithIcon("navigation", "Open public GSN site")}
+            </SecondaryButton>
           </div>
         </div>
       </section>
