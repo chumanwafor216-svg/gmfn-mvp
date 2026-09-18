@@ -1,3 +1,10 @@
+## 2026-09-18 - Live profile/public-link deploy verifier added
+- Status: Added a manual production verification command for the GSN public-link and handle deployment markers.
+- Files updated: `frontend/tools/verify-live-profile-public-link.mjs`, `frontend/package.json`, and this handoff note.
+- New command: `npm --prefix frontend run verify:live-profile-public-link` checks the live frontend index, scans Vite route chunks, and fails unless the active My GSN profile, DemandBox, and Trust Command Centre public-link/handle markers are present.
+- Verification passed live against `https://gmfn-frontend.onrender.com`: index asset `assets/index-B-T88SJQ.js`; active profile chunk `assets/MyGMFNAndIPage-Bm6PB_X-.js`; DemandBox chunk `assets/DemandBoxPage-CvctZK_Y.js`; Trust Command Centre chunk `assets/TrustCommandCentrePage-DQZvbEag.js`.
+- Deployment note: this is tooling only and does not need a Render redeploy by itself.
+
 ## 2026-09-18 - Active My GSN profile public link correction
 - Status: Follow-up correction implemented after live verification showed the first profile link change was placed in legacy `ProfilePage.tsx`, while `/app/profile` redirects to the active `MyGMFNAndIPage` route.
 - Frontend screen affected: `frontend/src/pages/MyGMFNAndIPage.tsx` now shows the GSN public website open/copy controls and the user's copyable `@GSN...` handle directly under the My GSN Identity hero.

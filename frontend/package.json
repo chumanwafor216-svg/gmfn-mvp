@@ -12,6 +12,7 @@
     "verify:evidence-display-boundary-local": "node tools/verify-evidence-display-boundary-local.mjs",
     "verify:evidence-live-readiness-local": "node tools/verify-evidence-live-readiness-local.mjs",
     "verify:evidence-publish-readiness-local": "node tools/verify-evidence-publish-readiness-local.mjs",
+    "verify:live-profile-public-link": "node tools/verify-live-profile-public-link.mjs",
     "verify:pwa-icon-publish-readiness-local": "node tools/verify-pwa-icon-publish-readiness-local.mjs",
     "verify:combined-local-batch-readiness": "node tools/verify-combined-local-batch-readiness.mjs",
     "print:evidence-local-batch-stage-plan": "node tools/print-evidence-local-batch-stage-plan.mjs",
