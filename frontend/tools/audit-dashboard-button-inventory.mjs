@@ -180,9 +180,9 @@ while ((match = nativeFieldPattern.exec(dashboardSource))) {
 
 const expected = {
   StableButton: 50,
-  StableDisclosureSummary: 1,
+  StableDisclosureSummary: 2,
   PictureFrameToolsControl: 2,
-  EffectiveDashboardActionRoots: 59,
+  EffectiveDashboardActionRoots: 60,
 };
 const expectedWholeMobileRouteActionRoots =
   expected.EffectiveDashboardActionRoots + expectedMobileShellActionCount;
@@ -271,6 +271,10 @@ assertContains(
   "Dashboard DemandBox summary must include the current user's own open rows and selected-community visible rows, then dedupe them before counting."
 );
 
+assertContains(
+  /DemandBox queue[\s\S]*?Showing \{demandItems\.length\} open request[\s\S]*?maxHeight: isPhone \? 390 : 480[\s\S]*?demandItems\.map\(\(item, itemIndex\) => \{[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId=\{`dashboard\.demand\.queue\.item\.\$\{itemIndex \+ 1\}`\}[\s\S]*?Item detail:/,
+  "Dashboard DemandBox expanded state must show a scroll-bounded numbered request queue with stable dropdown details for each request."
+);
 assertContains(
   /const demandBoxQueueTo = appendDashboardQueryParam\([\s\S]*?routeTarget\("demandBox", selectedClanId, "dashboard\.demand\.queue-target"\)[\s\S]*?"queue"[\s\S]*?"open"/,
   "Dashboard Open queue action must route DemandBox into open queue mode."

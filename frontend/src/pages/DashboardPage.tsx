@@ -5176,8 +5176,7 @@ export default function DashboardPage() {
 
     return "Choose the community or marketplace this demand should come from before you create it.";
   }, [currentClan, currentDemandItem, selectedClanId]);
-  const currentDemandIsUrgent =
-    safeStr(currentDemandItem?.urgency).toLowerCase() === "high";
+
   const demandBoxQueueTo = appendDashboardQueryParam(
     routeTarget("demandBox", selectedClanId, "dashboard.demand.queue-target"),
     "queue",
@@ -5197,20 +5196,7 @@ export default function DashboardPage() {
       : urgentDemandItems.length > 0
       ? "Open urgent demand"
       : "Open your DemandBox";
-  const demandCommunityLabel = firstNonEmpty(
-    currentDemandItem?.marketplace_name,
-    currentDemandItem?.clan_name,
-    currentCommunityName(currentClan, selectedClanId)
-  );
-  const demandRequesterId = safeStr(currentDemandItem?.requester_gmfn_id || "");
-  const demandRequesterTrust = safeStr(
-    currentDemandItem?.requester_trust_band || ""
-  );
-  const demandRequesterTrustPosture = demandRequesterTrust
-    ? getContextualEvidencePosture(null, demandRequesterTrust).shortLabel
-    : "";
-  const demandPaymentMode = safeStr(currentDemandItem?.payment_mode || "");
-  const demandArea = safeStr(currentDemandItem?.area || "");
+
   const demandGuideTitle = demandItems.length
     ? myOpenDemandItems.length > 0 && responderDemandItems.length === 0
       ? "Your demand is live in DemandBox."
@@ -11255,13 +11241,13 @@ export default function DashboardPage() {
               gap: isPhone ? 8 : 10,
             }}
           >
-            {currentDemandItem ? (
+            {demandItems.length > 0 ? (
               <div
                 style={{
                   background:
                     "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(252,254,255,0.98) 100%)",
                   border: "1px solid rgba(214,170,69,0.46)",
-                  padding: isPhone ? 13 : 18,
+                  padding: isPhone ? 10 : 16,
                   borderRadius: isPhone ? 18 : 22,
                   boxShadow:
                     "0 18px 36px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.92)",
@@ -11289,279 +11275,343 @@ export default function DashboardPage() {
                   >
                     <DashboardSignalIcon name="trust" size={isPhone ? 16 : 18} />
                   </span>
-                  DemandBox Response
+                  DemandBox queue
                 </div>
 
                 <div
                   style={{
-                    marginTop: isPhone ? 11 : 14,
-                    display: "grid",
-                    gridTemplateColumns: "auto minmax(0, 1fr)",
-                    gap: isPhone ? 10 : 14,
-                    alignItems: "center",
-                  }}
-                >
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width: isPhone ? 42 : 48,
-                      height: isPhone ? 42 : 48,
-                      borderRadius: isPhone ? 12 : 14,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#F2C766",
-                      background:
-                        "linear-gradient(180deg, #0B2D4A 0%, #061827 100%)",
-                      boxShadow: "0 10px 20px rgba(6,24,39,0.18)",
-                    }}
-                  >
-                    <DashboardSignalIcon name="package" size={isPhone ? 23 : 26} />
-                  </span>
-                  <div
-                    style={{
-                      color: "#0B1F33",
-                      fontWeight: 1000,
-                      fontSize: isPhone ? 27 : 34,
-                      lineHeight: 1.04,
-                      letterSpacing: 0,
-                      minWidth: 0,
-                      overflowWrap: "anywhere",
-                    }}
-                  >
-                    {safeStr(currentDemandItem.title || "Current demand request")}
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    marginTop: isPhone ? 13 : 16,
-                    display: "flex",
-                    gap: 8,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <span
-                    style={{
-                      ...badge(false),
-                      minHeight: isPhone ? 30 : 34,
-                      color: "#0B63D1",
-                      border: "1px solid rgba(11,99,209,0.20)",
-                      background: "rgba(239,246,255,0.92)",
-                    }}
-                  >
-                    <span aria-hidden="true">•</span>
-                    {currentDemandIsUrgent ? "Urgent" : "Open"}
-                  </span>
-                  {safeDateTime(currentDemandItem.created_at) ? (
-                    <span
-                      style={{
-                        ...badge(false),
-                        minHeight: isPhone ? 30 : 34,
-                        color: "#425C78",
-                        border: "1px solid rgba(11,99,209,0.16)",
-                        background: "rgba(248,251,255,0.96)",
-                      }}
-                    >
-                      <DashboardSignalIcon name="calendar" size={isPhone ? 14 : 15} />
-                      {safeDateTime(currentDemandItem.created_at)}
-                    </span>
-                  ) : null}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: isPhone ? 14 : 18,
-                    paddingTop: isPhone ? 12 : 14,
-                    borderTop: "1px solid rgba(15,59,116,0.10)",
-                    ...helperText(),
+                    marginTop: isPhone ? 8 : 10,
                     color: "#4F6073",
-                    fontSize: isPhone ? 14 : 15,
-                    lineHeight: isPhone ? 1.42 : 1.55,
+                    fontSize: isPhone ? 12.5 : 13.5,
+                    lineHeight: 1.45,
                     fontWeight: 760,
                   }}
                 >
-                  Item detail:{" "}
-                  {safeStr(
-                    currentDemandItem.description ||
-                      "Open your DemandBox to read the full request."
-                  )}
+                  Showing {demandItems.length} open request{demandItems.length === 1 ? "" : "s"}. Tap any number to see the detail and evidence guide.
                 </div>
 
                 <div
                   style={{
-                    marginTop: isPhone ? 16 : 18,
-                    borderRadius: isPhone ? 15 : 18,
-                    border: "1px solid rgba(15,59,116,0.10)",
-                    background: "rgba(255,255,255,0.78)",
-                    overflow: "hidden",
-                  }}
-                >
-                  {[
-                    {
-                      icon: "community" as const,
-                      label: "Community",
-                      value: demandCommunityLabel,
-                    },
-                    {
-                      icon: "user" as const,
-                      label: "Requested by",
-                      value:
-                        safeStr(currentDemandItem.requester_email) ||
-                        safeStr(
-                          currentDemandItem.requester_name ||
-                            currentDemandItem.requester_nickname
-                        ) ||
-                        "Not shown",
-                    },
-                    {
-                      icon: "identity" as const,
-                      label: "GSN ID",
-                      value: demandRequesterId || "Not shown",
-                    },
-                    {
-                      icon: "trust" as const,
-                      label: "Trust posture",
-                      value:
-                        demandRequesterTrustPosture &&
-                        demandRequesterTrustPosture !== "Not shown"
-                          ? demandRequesterTrustPosture
-                          : "Not shown",
-                    },
-                    {
-                      icon: "demand" as const,
-                      label: "Support type / Credit line",
-                      value: currentDemandItem.allow_trust_credit
-                        ? "Trust credit"
-                        : demandPaymentMode || "Not stated",
-                    },
-                    {
-                      icon: "marketplace" as const,
-                      label: "Sender / courier location",
-                      value: demandArea || "Not stated",
-                    },
-                  ].map((row, rowIndex) => (
-                    <div
-                      key={row.label}
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: isPhone
-                          ? "34px minmax(96px, 0.72fr) minmax(0, 1fr)"
-                          : "44px minmax(170px, 0.62fr) minmax(0, 1fr)",
-                        gap: isPhone ? 8 : 12,
-                        alignItems: "center",
-                        padding: isPhone ? "9px 10px" : "12px 14px",
-                        borderTop:
-                          rowIndex === 0
-                            ? "none"
-                            : "1px solid rgba(15,59,116,0.08)",
-                      }}
-                    >
-                      <span
-                        aria-hidden="true"
-                        style={{
-                          width: isPhone ? 30 : 34,
-                          height: isPhone ? 30 : 34,
-                          borderRadius: 999,
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          background: "rgba(234,243,255,0.96)",
-                          color: "#0B2D4A",
-                        }}
-                      >
-                        <DashboardSignalIcon name={row.icon} size={isPhone ? 17 : 18} />
-                      </span>
-                      <span
-                        style={{
-                          color: "#66758A",
-                          fontWeight: 760,
-                          fontSize: isPhone ? 12.2 : 13,
-                          lineHeight: 1.22,
-                        }}
-                      >
-                        {row.label}
-                      </span>
-                      <span
-                        style={{
-                          color: "#0B1F33",
-                          fontWeight: 940,
-                          fontSize: isPhone ? 12.4 : 13.5,
-                          lineHeight: 1.24,
-                          overflowWrap: "anywhere",
-                        }}
-                      >
-                        {row.value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: isPhone ? 16 : 20,
-                    borderRadius: isPhone ? 15 : 18,
-                    border: "1px solid rgba(214,170,69,0.34)",
-                    background:
-                      "linear-gradient(180deg, rgba(255,253,247,0.98) 0%, rgba(255,250,235,0.90) 100%)",
+                    marginTop: isPhone ? 10 : 14,
                     display: "grid",
-                    gridTemplateColumns: isPhone ? "54px minmax(0, 1fr)" : "76px minmax(0, 1fr)",
-                    gap: isPhone ? 12 : 16,
-                    alignItems: "center",
-                    padding: isPhone ? 13 : 16,
+                    gap: isPhone ? 8 : 10,
+                    maxHeight: isPhone ? 390 : 480,
+                    overflowY: "auto",
+                    paddingRight: isPhone ? 2 : 4,
                   }}
                 >
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width: isPhone ? 48 : 62,
-                      height: isPhone ? 48 : 62,
-                      borderRadius: 999,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#FFFFFF",
-                      background:
-                        "linear-gradient(180deg, #F2C766 0%, #D6AA45 100%)",
-                      boxShadow: "0 10px 22px rgba(214,170,69,0.20)",
-                    }}
-                  >
-                    <DashboardSignalIcon name="check" size={isPhone ? 24 : 30} />
-                  </span>
-                  <div
-                    style={{
-                      borderLeft: "1px solid rgba(214,170,69,0.44)",
-                      paddingLeft: isPhone ? 12 : 18,
-                      minWidth: 0,
-                    }}
-                  >
-                    <div
-                      style={{
-                        color: "#0B1F33",
-                        fontWeight: 1000,
-                        fontSize: isPhone ? 14 : 16,
-                        lineHeight: 1.28,
-                      }}
-                    >
-                      Response evidence expected.
-                    </div>
-                    <div
-                      style={{
-                        marginTop: 5,
-                        color: "#334155",
-                        fontWeight: 760,
-                        fontSize: isPhone ? 12.8 : 14,
-                        lineHeight: 1.42,
-                      }}
-                    >
-                      Please confirm GSN ID and TrustSlip before work starts.
-                    </div>
-                  </div>
+                  {demandItems.map((item, itemIndex) => {
+                    const itemKey =
+                      safeStr(item?.id) ||
+                      [
+                        safeStr(item?.title),
+                        safeStr(item?.created_at),
+                        safeStr(item?.requester_gmfn_id),
+                        String(itemIndex),
+                      ].join("|");
+                    const itemIsMine = isDashboardDemandMine(item, me);
+                    const itemIsUrgent = safeStr(item?.urgency).toLowerCase() === "high";
+                    const itemCommunityLabel = firstNonEmpty(
+                      item?.marketplace_name,
+                      item?.clan_name,
+                      currentCommunityName(currentClan, selectedClanId)
+                    );
+                    const itemRequesterId = safeStr(item?.requester_gmfn_id || "");
+                    const itemTrust = safeStr(item?.requester_trust_band || "");
+                    const itemTrustPosture = itemTrust
+                      ? getContextualEvidencePosture(null, itemTrust).shortLabel
+                      : "";
+                    const itemPaymentMode = safeStr(item?.payment_mode || "");
+                    const itemArea = safeStr(item?.area || "");
+                    const itemDate = safeDateTime(item?.created_at);
+                    const itemRequesterLabel =
+                      itemIsMine
+                        ? "You"
+                        : safeStr(item?.requester_email) ||
+                          safeStr(item?.requester_name || item?.requester_nickname) ||
+                          "Not shown";
+
+                    const itemFacts = [
+                      {
+                        icon: "community" as const,
+                        label: "Community",
+                        value: itemCommunityLabel || "Not stated",
+                      },
+                      {
+                        icon: "user" as const,
+                        label: "Requested by",
+                        value: itemRequesterLabel,
+                      },
+                      {
+                        icon: "identity" as const,
+                        label: "GSN ID",
+                        value: itemRequesterId || (itemIsMine ? "Your GSN ID" : "Not shown"),
+                      },
+                      {
+                        icon: "trust" as const,
+                        label: "Trust posture",
+                        value:
+                          itemTrustPosture && itemTrustPosture !== "Not shown"
+                            ? itemTrustPosture
+                            : "Not shown",
+                      },
+                      {
+                        icon: "demand" as const,
+                        label: "Support type / Credit line",
+                        value: item?.allow_trust_credit
+                          ? "Trust credit"
+                          : itemPaymentMode || "Not stated",
+                      },
+                      {
+                        icon: "marketplace" as const,
+                        label: "Sender / courier location",
+                        value: itemArea || "Not stated",
+                      },
+                    ];
+
+                    return (
+                      <details
+                        key={itemKey}
+                        style={{
+                          borderRadius: isPhone ? 15 : 18,
+                          border: itemIsUrgent
+                            ? "1px solid rgba(245,158,11,0.32)"
+                            : "1px solid rgba(15,59,116,0.10)",
+                          background: itemIsUrgent
+                            ? "linear-gradient(180deg, rgba(255,251,235,0.98) 0%, rgba(255,255,255,0.96) 100%)"
+                            : "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,250,255,0.96) 100%)",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <StableDisclosureSummary
+                          debugId={`dashboard.demand.queue.item.${itemIndex + 1}`}
+                          stableHeight={isPhone ? 62 : 66}
+                          onPointerDown={stopDashboardPointerEvent}
+                          onMouseDown={stopDashboardPointerEvent}
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: isPhone
+                              ? "38px minmax(0, 1fr)"
+                              : "46px minmax(0, 1fr) auto",
+                            gap: isPhone ? 9 : 12,
+                            alignItems: "center",
+                            padding: isPhone ? "10px 10px" : "12px 14px",
+                            listStyle: "none",
+                          }}
+                        >
+                          <span
+                            aria-hidden="true"
+                            style={{
+                              width: isPhone ? 32 : 38,
+                              height: isPhone ? 32 : 38,
+                              borderRadius: 999,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              background: itemIsUrgent ? "rgba(245,158,11,0.16)" : "rgba(234,243,255,0.96)",
+                              color: itemIsUrgent ? "#9A4D04" : "#0B2D4A",
+                              fontWeight: 1000,
+                              fontSize: isPhone ? 13 : 14,
+                            }}
+                          >
+                            {itemIndex + 1}
+                          </span>
+                          <span style={{ minWidth: 0 }}>
+                            <span
+                              style={{
+                                display: "block",
+                                color: "#0B1F33",
+                                fontWeight: 1000,
+                                fontSize: isPhone ? 14.5 : 16,
+                                lineHeight: 1.2,
+                                overflowWrap: "anywhere",
+                              }}
+                            >
+                              {safeStr(item?.title || "Demand request")}
+                            </span>
+                            <span
+                              style={{
+                                display: "block",
+                                marginTop: 3,
+                                color: "#5C6D82",
+                                fontWeight: 760,
+                                fontSize: isPhone ? 11.8 : 12.5,
+                                lineHeight: 1.25,
+                                overflowWrap: "anywhere",
+                              }}
+                            >
+                              {itemCommunityLabel || "DemandBox"}{itemDate ? `, ${itemDate}` : ""}
+                            </span>
+                          </span>
+                          <span
+                            style={{
+                              ...badge(itemIsUrgent),
+                              display: isPhone ? "none" : "inline-flex",
+                              background: itemIsMine
+                                ? "rgba(11,99,209,0.10)"
+                                : itemIsUrgent
+                                ? "rgba(245,158,11,0.16)"
+                                : "rgba(46,155,98,0.10)",
+                              color: itemIsMine
+                                ? "#0B63D1"
+                                : itemIsUrgent
+                                ? "#9A4D04"
+                                : "#166534",
+                              border: "none",
+                            }}
+                          >
+                            {itemIsMine ? "Yours" : itemIsUrgent ? "Urgent" : "Open"}
+                          </span>
+                        </StableDisclosureSummary>
+
+                        <div
+                          style={{
+                            padding: isPhone ? "0 10px 12px" : "0 14px 14px",
+                            display: "grid",
+                            gap: isPhone ? 10 : 12,
+                          }}
+                        >
+                          <div
+                            style={{
+                              paddingTop: isPhone ? 10 : 12,
+                              borderTop: "1px solid rgba(15,59,116,0.10)",
+                              color: "#4F6073",
+                              fontSize: isPhone ? 13 : 14,
+                              lineHeight: isPhone ? 1.42 : 1.5,
+                              fontWeight: 760,
+                            }}
+                          >
+                            Item detail: {safeStr(item?.description || "Open the full DemandBox record to read the complete request.")}
+                          </div>
+
+                          <div
+                            style={{
+                              borderRadius: isPhone ? 14 : 16,
+                              border: "1px solid rgba(15,59,116,0.10)",
+                              background: "rgba(255,255,255,0.80)",
+                              overflow: "hidden",
+                            }}
+                          >
+                            {itemFacts.map((row, rowIndex) => (
+                              <div
+                                key={`${itemKey}-${row.label}`}
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: isPhone
+                                    ? "30px minmax(88px, 0.72fr) minmax(0, 1fr)"
+                                    : "38px minmax(160px, 0.62fr) minmax(0, 1fr)",
+                                  gap: isPhone ? 7 : 10,
+                                  alignItems: "center",
+                                  padding: isPhone ? "8px 9px" : "10px 12px",
+                                  borderTop:
+                                    rowIndex === 0
+                                      ? "none"
+                                      : "1px solid rgba(15,59,116,0.08)",
+                                }}
+                              >
+                                <span
+                                  aria-hidden="true"
+                                  style={{
+                                    width: isPhone ? 27 : 31,
+                                    height: isPhone ? 27 : 31,
+                                    borderRadius: 999,
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    background: "rgba(234,243,255,0.96)",
+                                    color: "#0B2D4A",
+                                  }}
+                                >
+                                  <DashboardSignalIcon name={row.icon} size={isPhone ? 15 : 16} />
+                                </span>
+                                <span
+                                  style={{
+                                    color: "#66758A",
+                                    fontWeight: 760,
+                                    fontSize: isPhone ? 11.5 : 12.5,
+                                    lineHeight: 1.2,
+                                  }}
+                                >
+                                  {row.label}
+                                </span>
+                                <span
+                                  style={{
+                                    color: "#0B1F33",
+                                    fontWeight: 900,
+                                    fontSize: isPhone ? 11.8 : 13,
+                                    lineHeight: 1.22,
+                                    overflowWrap: "anywhere",
+                                  }}
+                                >
+                                  {row.value}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div
+                            style={{
+                              borderRadius: isPhone ? 14 : 16,
+                              border: "1px solid rgba(214,170,69,0.34)",
+                              background:
+                                "linear-gradient(180deg, rgba(255,253,247,0.98) 0%, rgba(255,250,235,0.90) 100%)",
+                              display: "grid",
+                              gridTemplateColumns: isPhone ? "42px minmax(0, 1fr)" : "52px minmax(0, 1fr)",
+                              gap: isPhone ? 10 : 12,
+                              alignItems: "center",
+                              padding: isPhone ? 10 : 12,
+                            }}
+                          >
+                            <span
+                              aria-hidden="true"
+                              style={{
+                                width: isPhone ? 38 : 46,
+                                height: isPhone ? 38 : 46,
+                                borderRadius: 999,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "#FFFFFF",
+                                background:
+                                  "linear-gradient(180deg, #F2C766 0%, #D6AA45 100%)",
+                                boxShadow: "0 10px 22px rgba(214,170,69,0.20)",
+                              }}
+                            >
+                              <DashboardSignalIcon name="check" size={isPhone ? 20 : 23} />
+                            </span>
+                            <div style={{ minWidth: 0 }}>
+                              <div
+                                style={{
+                                  color: "#0B1F33",
+                                  fontWeight: 1000,
+                                  fontSize: isPhone ? 13 : 14,
+                                  lineHeight: 1.25,
+                                }}
+                              >
+                                Response evidence expected.
+                              </div>
+                              <div
+                                style={{
+                                  marginTop: 4,
+                                  color: "#334155",
+                                  fontWeight: 760,
+                                  fontSize: isPhone ? 12 : 12.8,
+                                  lineHeight: 1.38,
+                                }}
+                              >
+                                Confirm GSN ID and TrustSlip before work starts.
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </details>
+                    );
+                  })}
                 </div>
 
                 <div
                   style={{
-                    marginTop: isPhone ? 14 : 18,
+                    marginTop: isPhone ? 12 : 16,
                     display: "grid",
                     gap: isPhone ? 9 : 10,
                   }}
@@ -11588,9 +11638,9 @@ export default function DashboardPage() {
                     }}
                   >
                     <DashboardSignalIcon name="package" size={isPhone ? 18 : 20} />
-                    Open your DemandBox
+                    Open full DemandBox
                     <span aria-hidden="true" style={{ marginLeft: "auto", color: "#D6AA45" }}>
-                      ›
+                      &gt;
                     </span>
                   </StableButton>
 
@@ -11612,16 +11662,16 @@ export default function DashboardPage() {
                     }}
                   >
                     <DashboardSignalIcon name="identity" size={isPhone ? 17 : 18} />
-                    View full record
+                    View full queue
                     <span aria-hidden="true" style={{ marginLeft: "auto", color: "#66758A" }}>
-                      ›
+                      &gt;
                     </span>
                   </StableButton>
                 </div>
 
                 <div
                   style={{
-                    marginTop: isPhone ? 18 : 24,
+                    marginTop: isPhone ? 14 : 18,
                     textAlign: "center",
                     color: "#0B2D4A",
                     fontSize: isPhone ? 10.5 : 12,

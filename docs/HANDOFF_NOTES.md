@@ -1,3 +1,10 @@
+## 2026-09-19 - Dashboard DemandBox queue details collapsed
+- Status: Local Dashboard UX fix implemented after owner reported expanded DemandBox details made the page too long and only one of many open requests was visible on Dashboard.
+- Frontend screen affected: `/app/dashboard`.
+- Files updated: `frontend/src/pages/DashboardPage.tsx`, `frontend/tools/audit-dashboard-button-inventory.mjs`, and this handoff note.
+- Dashboard impact: expanded `Your DemandBox` now shows a scroll-bounded numbered queue of open requests directly on Dashboard. Each request row is a stable dropdown; item detail, community, requested-by, GSN ID, trust posture, support/credit type, location, and response-evidence guidance stay collapsed until tapped.
+- Guardrail impact: Dashboard button inventory now expects 2 `StableDisclosureSummary` templates and 60 effective Dashboard action roots, and cages the numbered DemandBox queue/dropdown contract.
+- Devil truth: showing all request details open was a dashboard dump. The corrected behavior lets users discover request 1, 2, 3, etc. without leaving Dashboard while still keeping deep DemandBox work on `/app/demand-box`.
 ## 2026-09-19 - Dashboard DemandBox own-demand zero fixed
 - Status: Follow-up fix implemented after owner posted a demand on the live phone build and Dashboard still showed `Your DemandBox - No open demand is waiting`.
 - Root cause: Dashboard fetched selected-community open DemandBox rows, then filtered out the current user's own rows before setting `demandItems`. That made the compact DemandBox card false immediately after the owner created a demand, even though backend `demand_posted` notifications existed.
