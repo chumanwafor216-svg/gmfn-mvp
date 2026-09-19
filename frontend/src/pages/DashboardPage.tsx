@@ -1282,6 +1282,26 @@ function isDashboardDemandMine(item: DemandItem, user: any): boolean {
   return Boolean(requesterEmail && myEmail && requesterEmail === myEmail);
 }
 
+function uniqueDashboardDemandItems(items: DemandItem[]): DemandItem[] {
+  const seen = new Set<string>();
+  const out: DemandItem[] = [];
+
+  for (const item of items) {
+    const key =
+      safeStr(item?.id) ||
+      [
+        safeStr(item?.title),
+        safeStr(item?.created_at),
+        safeStr(item?.requester_gmfn_id),
+      ].join("|");
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(item);
+  }
+
+  return out;
+}
+
 function spotlightPriceLine(price: unknown, currency: unknown): string {
   const priceText = safeStr(price);
   const currencyText = safeStr(currency);
@@ -4121,19 +4141,29 @@ export default function DashboardPage() {
 
   useEffect(() => {
     (async () => {
-      const rows = await listMarketplaceRequests({
-        clan_id: selectedClanId || undefined,
-        status: "open",
-        mine_only: false,
-        limit: 200,
-      }).catch(() => []);
+      const [visibleRows, myRows] = await Promise.all([
+        listMarketplaceRequests({
+          clan_id: selectedClanId || undefined,
+          status: "open",
+          mine_only: false,
+          limit: 200,
+        }).catch(() => []),
+        listMarketplaceRequests({
+          clan_id: selectedClanId || undefined,
+          status: "open",
+          mine_only: true,
+          limit: 200,
+        }).catch(() => []),
+      ]);
 
-      const responderRows = Array.isArray(rows)
-        ? rows.filter((row) => !isDashboardDemandMine(row, me))
-        : [];
-      setDemandItems(responderRows);
+      setDemandItems(
+        uniqueDashboardDemandItems([
+          ...(Array.isArray(myRows) ? myRows : []),
+          ...(Array.isArray(visibleRows) ? visibleRows : []),
+        ])
+      );
     })();
-  }, [me, selectedClanId]);
+  }, [selectedClanId]);
 
   useEffect(() => {
     if (spotlights.length <= 1) return;
@@ -5095,6 +5125,14 @@ export default function DashboardPage() {
       ),
     [demandItems]
   );
+  const myOpenDemandItems = useMemo(
+    () => demandItems.filter((item) => isDashboardDemandMine(item, me)),
+    [demandItems, me]
+  );
+  const responderDemandItems = useMemo(
+    () => demandItems.filter((item) => !isDashboardDemandMine(item, me)),
+    [demandItems, me]
+  );
 
   const currentDemandItem = demandItems[0] || null;
 
@@ -5109,10 +5147,22 @@ export default function DashboardPage() {
       }. ${urgentDemandItems.length} need attention now.`;
     }
 
-    return `You have ${demandItems.length} demand request${
-      demandItems.length === 1 ? "" : "s"
+    if (myOpenDemandItems.length > 0 && responderDemandItems.length === 0) {
+      return `Your ${myOpenDemandItems.length === 1 ? "demand is" : "demands are"} open in DemandBox.`;
+    }
+
+    if (myOpenDemandItems.length > 0 && responderDemandItems.length > 0) {
+      return `You have ${myOpenDemandItems.length} open demand${
+        myOpenDemandItems.length === 1 ? "" : "s"
+      } and ${responderDemandItems.length} community request${
+        responderDemandItems.length === 1 ? "" : "s"
+      } waiting.`;
+    }
+
+    return `You have ${responderDemandItems.length} community demand request${
+      responderDemandItems.length === 1 ? "" : "s"
     } waiting now.`;
-  }, [demandItems, urgentDemandItems]);
+  }, [demandItems.length, myOpenDemandItems.length, responderDemandItems.length, urgentDemandItems.length]);
 
   const demandSummarySubline = useMemo(() => {
     if (currentDemandItem) {
@@ -5162,7 +5212,9 @@ export default function DashboardPage() {
   const demandPaymentMode = safeStr(currentDemandItem?.payment_mode || "");
   const demandArea = safeStr(currentDemandItem?.area || "");
   const demandGuideTitle = demandItems.length
-    ? "A person's request is live in your community."
+    ? myOpenDemandItems.length > 0 && responderDemandItems.length === 0
+      ? "Your demand is live in DemandBox."
+      : "A demand request is live in your community."
     : "Create your demand when you need help.";
   const demandGuideBody =
     "Your DemandBox is personal: you say what you need, and your GSN evidence signal shows who is asking. Your community name shows where you are sending it from. Payment terms and TrustSlip expectations help both sides agree before work starts.";
@@ -11035,9 +11087,13 @@ export default function DashboardPage() {
             </span>
             <span style={dashboardAccordionSummaryStyle}>
               {demandItems.length > 0
-                ? `${demandItems.length} demand request${
-                    demandItems.length === 1 ? "" : "s"
-                  } visible.`
+                ? myOpenDemandItems.length > 0 && responderDemandItems.length === 0
+                  ? `${myOpenDemandItems.length} open demand${
+                      myOpenDemandItems.length === 1 ? "" : "s"
+                    } from you.`
+                  : `${demandItems.length} demand request${
+                      demandItems.length === 1 ? "" : "s"
+                    } visible.`
                 : "No open demand is waiting right now."}
             </span>
           </span>

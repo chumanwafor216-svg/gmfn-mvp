@@ -1,3 +1,11 @@
+## 2026-09-19 - Dashboard DemandBox own-demand zero fixed
+- Status: Follow-up fix implemented after owner posted a demand on the live phone build and Dashboard still showed `Your DemandBox - No open demand is waiting`.
+- Root cause: Dashboard fetched selected-community open DemandBox rows, then filtered out the current user's own rows before setting `demandItems`. That made the compact DemandBox card false immediately after the owner created a demand, even though backend `demand_posted` notifications existed.
+- Frontend screen affected: `/app/dashboard`.
+- Files updated: `frontend/src/pages/DashboardPage.tsx`, `frontend/tools/audit-dashboard-button-inventory.mjs`, and this handoff note.
+- Dashboard impact: DemandBox summary now combines `mine_only: true` open rows with selected-community visible open rows, dedupes them, and uses clearer collapsed/expanded wording when the only open row is the user's own demand.
+- Guardrail impact: dashboard button inventory audit now cages the corrected own-row-inclusive DemandBox summary contract instead of the old `exclude own rows` contract.
+- Devil truth: the previous deploy restored attention waking, but it did not repair the visible DemandBox summary card. The screenshot exposed a real remaining bug, not user confusion.
 ## 2026-09-19 - DemandBox focused surface and Dashboard demand alert restored
 - Status: Local frontend fix implemented and verified after owner reported DemandBox became too long and DemandBox notifications no longer woke the Dashboard.
 - Frontend screens affected: `/app/demand-box` and `/app/dashboard`.

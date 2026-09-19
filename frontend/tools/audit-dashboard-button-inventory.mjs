@@ -267,8 +267,8 @@ assertContains(
 );
 
 assertContains(
-  /listMarketplaceRequests\(\{[\s\S]*?clan_id: selectedClanId \|\| undefined,[\s\S]*?status: "open"[\s\S]*?mine_only: false[\s\S]*?limit: 200[\s\S]*?\}\)[\s\S]*?const responderRows = Array\.isArray\(rows\)[\s\S]*?rows\.filter\(\(row\) => !isDashboardDemandMine\(row, me\)\)[\s\S]*?setDemandItems\(responderRows\);[\s\S]*?\}, \[me, selectedClanId\]\);/,
-  "Dashboard DemandBox summary must be scoped to the selected community and exclude own rows so its count matches the DemandBox Open queue under the current pilot cap."
+  /const \[visibleRows, myRows\] = await Promise\.all\(\[[\s\S]*?listMarketplaceRequests\(\{[\s\S]*?clan_id: selectedClanId \|\| undefined,[\s\S]*?status: "open"[\s\S]*?mine_only: false[\s\S]*?limit: 200[\s\S]*?listMarketplaceRequests\(\{[\s\S]*?clan_id: selectedClanId \|\| undefined,[\s\S]*?status: "open"[\s\S]*?mine_only: true[\s\S]*?limit: 200[\s\S]*?setDemandItems\([\s\S]*?uniqueDashboardDemandItems\(\[[\s\S]*?Array\.isArray\(myRows\)[\s\S]*?Array\.isArray\(visibleRows\)[\s\S]*?\}\, \[selectedClanId\]\);/,
+  "Dashboard DemandBox summary must include the current user's own open rows and selected-community visible rows, then dedupe them before counting."
 );
 
 assertContains(
