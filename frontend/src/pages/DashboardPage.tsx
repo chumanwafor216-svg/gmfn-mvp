@@ -3014,7 +3014,11 @@ function getUserOperationalClass(params: {
     (item) => safeStr(item.urgency).toLowerCase() === "high"
   ).length;
 
-  if (urgentDemandCount > 0 || params.dashboardNoticeSummary.counts.actNow > 0) {
+  if (
+    urgentDemandCount > 0 ||
+    params.demandItems.length > 0 ||
+    params.dashboardNoticeSummary.counts.actNow > 0
+  ) {
     return "demand";
   }
 
@@ -6016,11 +6020,20 @@ export default function DashboardPage() {
 
   const attentionQuietActive =
     attentionQuietUntilMs > 0 && attentionQuietUntilMs > attentionClockMs;
-  const attentionAutoOpenAllowed = false;
+  const attentionAutoOpenAllowed = [
+    "demand",
+    "notifications",
+    "approval",
+    "focus",
+  ].includes(attentionDisplaySignal.sourceKind);
+
+  const attentionCanSurfaceWithSpotlight =
+    attentionPopupVisible ||
+    (attentionAutoOpenAllowed && attentionDisplaySignal.shouldShow);
 
   const attentionSurfaceVisible =
     attentionDisplaySignal.active &&
-    !activeSpotlight &&
+    (!activeSpotlight || attentionCanSurfaceWithSpotlight) &&
     (attentionPopupVisible ||
       (!attentionAutoOpenAllowed && !attentionQuietActive) ||
       (attentionDisplaySignal.shouldShow && !attentionQuietActive));

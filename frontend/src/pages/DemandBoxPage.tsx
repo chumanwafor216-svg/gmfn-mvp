@@ -760,6 +760,7 @@ export default function DemandBoxPage() {
   const [creating, setCreating] = useState(false);
   const [marketNeedPulseOpen, setMarketNeedPulseOpen] = useState(false);
   const [marketNeedPulsePosting, setMarketNeedPulsePosting] = useState(false);
+  const [createPanelOpen, setCreatePanelOpen] = useState(false);
   const [selectingClanId, setSelectingClanId] = useState<number>(0);
   const [updatingDemandId, setUpdatingDemandId] = useState<number>(0);
   const [createCommunityConfirmed, setCreateCommunityConfirmed] =
@@ -1100,6 +1101,18 @@ export default function DemandBoxPage() {
     demandCreateRevealRef.current = null;
   }, []);
 
+  const openCreateDemandPanel = useCallback(() => {
+    setCreatePanelOpen(true);
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    demandCreateRevealRef.current = window.requestAnimationFrame(() => {
+      revealDemandCreate();
+    });
+  }, [revealDemandCreate]);
+
   async function handleChooseDemandCommunity(community: any) {
     const clanId = Number(community?.id || community?.clan_id || 0);
     if (!clanId) {
@@ -1178,6 +1191,7 @@ export default function DemandBoxPage() {
       setAllowTrustCredit(false);
 
       await loadPage();
+      setCreatePanelOpen(false);
       showNotice("success", "Demand posted successfully.");
     } catch (err: any) {
       const errorText = safeStr(err?.message) || "Demand could not be created.";
@@ -1650,6 +1664,7 @@ export default function DemandBoxPage() {
   const routeAskCommunityMode = ["ask_community", "ask-community", "market_need_pulse"].includes(demandMode);
   const hasLegacyCreateHash = location.hash === "#demand-box-create";
   const isCreateMode = demandMode === "create" || routeAskCommunityMode || hasLegacyCreateHash;
+  const showCreateWorkSurface = isCreateMode || createPanelOpen;
   const currentPath = `${location.pathname}${location.search}${
     hasLegacyCreateHash ? location.hash : ""
   }`;
@@ -2032,7 +2047,7 @@ export default function DemandBoxPage() {
         </Suspense>
       ) : null}
 
-      {!isCreateMode ? (
+      {!showCreateWorkSurface ? (
       <section
         style={{
           ...demandBrandShell(),
@@ -2099,7 +2114,7 @@ export default function DemandBoxPage() {
             <div style={demandHeroActionRowStyle(isCompact)}>
               <SecondaryButton
                 onClick={() => {
-                  revealDemandCreate();
+                  openCreateDemandPanel();
                 }}
                 debugId="demand-box.create"
                 stableHeight={isCompact ? 52 : 54}
@@ -2194,6 +2209,7 @@ export default function DemandBoxPage() {
       </section>
       ) : null}
 
+      {showCreateWorkSurface ? (
       <section
         id="demand-box-create"
         style={pageCard(
@@ -2240,6 +2256,16 @@ export default function DemandBoxPage() {
                 : "Keep it simple: what you need, where it is needed, and what evidence or payment should be clear first."}
             </div>
           </div>
+          {!isCreateMode ? (
+            <SecondaryButton
+              type="button"
+              debugId="demand-box.create.close"
+              onClick={() => setCreatePanelOpen(false)}
+              style={demandActionStyle(52)}
+            >
+              {demandIconText("lock", "Close form", 20)}
+            </SecondaryButton>
+          ) : null}
         </div>
 
         {isCreateMode ? (
@@ -2670,8 +2696,9 @@ export default function DemandBoxPage() {
           </div>
         </div>
       </section>
+      ) : null}
 
-      {!isCreateMode ? (
+      {!showCreateWorkSurface ? (
         <section id="demand-box-queue-board" style={pageCard("#FFFFFF")}>
           <div
             style={{

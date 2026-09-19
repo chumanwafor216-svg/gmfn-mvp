@@ -1,3 +1,11 @@
+## 2026-09-19 - DemandBox focused surface and Dashboard demand alert restored
+- Status: Local frontend fix implemented and verified after owner reported DemandBox became too long and DemandBox notifications no longer woke the Dashboard.
+- Frontend screens affected: `/app/demand-box` and `/app/dashboard`.
+- Files updated: `frontend/src/pages/DemandBoxPage.tsx`, `frontend/src/pages/DashboardPage.tsx`, and this handoff note.
+- DemandBox impact: normal DemandBox now shows the front door and queue; tapping `Create demand` opens the create form as the active work surface with a `Close form` control, and the queue stays hidden while create is active. Direct `mode=create`/Ask Community routes still open the form directly.
+- Dashboard impact: any visible responder-facing DemandBox request now classifies the dashboard operating state as `demand`, not only urgent requests; the attention guide is allowed to auto-open again for demand, notifications, approvals, and focus pressure instead of being hard-disabled; demand/action alerts can surface even when Spotlight is live.
+- Verification passed: `npm --prefix frontend run audit:demand-box-front-package`; `npm --prefix frontend run audit:dashboard-actions`; `npm --prefix frontend run audit:dashboard-button-inventory`; `npm --prefix frontend run build`; `npm --prefix frontend run audit:protected-button-freeze` outside sandbox after sandbox EPERM from browser/Vite process spawning.
+- Devil truth: backend notification creation was already present for DemandBox (`demand_new`, `demand_tagged`, `demand_posted`). The problem was frontend attention/display behavior and DemandBox first-surface density, not a missing notification write path.
 ## 2026-09-18 - Pastor Mrs discovery workshop logged
 - Status: Logged a product discovery workshop with Pastor Mrs for Saturday 2026-09-19 at 18:15 UK time.
 - Files updated: `docs/GSN_PASTOR_MRS_PRODUCT_DISCOVERY_WORKSHOP_PREP_2026-09-19.md`, `docs/GSN_CONTACT_AND_MEETING_REGISTER_2026-09-13.md`, `docs/GSN_SECRETARY_OPERATIONS_REGISTER_2026-09-10.md`, and `docs/GSN_PASTOR_CHURCH_CUSTOMER_DISCOVERY_RECORD_2026-09-07.md`.
