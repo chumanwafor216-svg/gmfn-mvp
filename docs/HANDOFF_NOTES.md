@@ -161744,3 +161744,21 @@ Operational note:
 - Protected audit changed: audit:protected-button-freeze now runs the mobile visual route coverage guard before the trust infrastructure visual check.
 - Verification passed: node --check for the new guard and broad sweep; targeted ESLint for the new guard, broad sweep, and protected runner; npm --prefix frontend run audit:mobile-visual-route-coverage; npm --prefix frontend run audit:mobile-visual-sweep; npm --prefix frontend run audit:protected-button-freeze; and npm --prefix frontend run build.
 - Devil truth: this prevents known APP_ROUTES from quietly falling outside the visual cage, but it does not discover completely undocumented routes or prove all live backend text lengths are safe.
+
+## 2026-09-20 - GSN public site pilot-interest route deployed
+- Status: Public Sites update implemented, committed, pushed, saved as Sites version 8, and deployed.
+- Site affected: `https://globalsupportnetwork.org` / `site_gsn_public`.
+- Files updated in the Sites checkout: `site_gsn_public/index.html`, `site_gsn_public/styles.css`, `site_gsn_public/dist/index.html`, and `site_gsn_public/dist/styles.css`.
+- Website impact: the pilot CTA no longer sends visitors back to LinkedIn. The hero now routes to `#pilot-interest`; the old `#contact` anchor remains as a compatibility target; the contact section now includes a short community pilot interest form that opens a prefilled email to `hello@globalsupportnetwork.org`.
+- Boundary impact: the form asks only for organisation/community details, representative contact, approximate membership, main challenge, and preferred first step. It explicitly tells visitors not to send member databases, identity documents, or private community records at this stage.
+- Deployment facts: Sites source commit `a8a0109fd964d1e27316778c83d8435df50251ad`, saved version 8 (`appgver_5355dbcebeb48191b0e4672a5c148c23`), deployment `appgdep_6aafaedf7fb48191936df28bc68fa93f` succeeded. Sites reports current live URL as `https://globalsupportnetwork.org`.
+- Verification passed: static checks confirmed source/dist sync, `#pilot-interest` plus legacy `#contact`, mailto route, required enquiry fields, and no remaining LinkedIn pilot CTA.
+- Devil truth: this is not a database-backed application form yet. It is an honest email-based expression-of-interest route suitable for immediate LinkedIn/Facebook outreach.
+
+## 2026-09-20 - LinkedIn/Facebook pilot outreach pack drafted
+- Status: Ready-to-use social rollout pack drafted after the public pilot-interest route went live.
+- File created: `docs/GSN_LINKEDIN_FACEBOOK_PILOT_OUTREACH_PACK_2026-09-20.md`.
+- Outreach impact: provides LinkedIn Featured text, About-section closing copy, LinkedIn company Page wording, Facebook Page action-button guidance, first public invitation post, short Facebook version, direct outreach templates, comment replies, enquiry triage labels, and first-response email templates.
+- Link strategy: all public calls to action point to `https://globalsupportnetwork.org/#pilot-interest`, with `hello@globalsupportnetwork.org` as fallback.
+- Platform notes: checked LinkedIn Help and Facebook Help on 2026-09-20 for Featured links, eligible LinkedIn custom profile buttons, Facebook action-button editing, and Page access requirements; source links are recorded in the pack.
+- Devil truth: this creates a disciplined invitation and response system, not proof of traction. Real proof still requires named communities, decision-makers, repeated workflows, dated next actions, and payment/sponsor/budget-holder signals.
