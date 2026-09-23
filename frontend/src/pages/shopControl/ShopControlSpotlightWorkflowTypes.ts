@@ -139,5 +139,7 @@ export type ShopControlSpotlightWorkflowProps = {
   spotlightPreviewHasPicture: boolean;
   spotlightPreviewHasVideo: boolean;
   handleCreateSpotlight: () => Promise<void>;
+  takingDownSpotlight: boolean;
+  handleTakeDownCurrentSpotlight: () => Promise<void>;
   shopActionsLocked: boolean;
 };

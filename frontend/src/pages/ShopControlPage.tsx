@@ -19,6 +19,7 @@ import ShopAssetsPage from "./ShopAssetsPage";
 import {
   createMarketplaceShop,
   createMarketplaceBroadcast,
+  deleteMarketplaceBroadcast,
   getPublicMarketplaceShopByGmfnId,
   getMe,
   getMarketplaceShopByGmfnId,
@@ -3702,6 +3703,7 @@ export default function ShopControlPage() {
   const [preparingSpotlightImage, setPreparingSpotlightImage] = useState(false);
   const [preparingSpotlightVideo, setPreparingSpotlightVideo] = useState(false);
   const [creatingSpotlight, setCreatingSpotlight] = useState(false);
+  const [takingDownSpotlight, setTakingDownSpotlight] = useState(false);
   const [creatingSpotlightShop, setCreatingSpotlightShop] = useState(false);
   const [spotlightPriorityMode, setSpotlightPriorityMode] = useState<ShopControlSpotlightPriorityMode>("free");
   const [spotlightPublishFeedback, setSpotlightPublishFeedback] =
@@ -6548,6 +6550,82 @@ export default function ShopControlPage() {
     }
   }
 
+  async function handleTakeDownCurrentSpotlight() {
+    if (takingDownSpotlight) {
+      setSpotlightPublishFeedback({
+        tone: "info",
+        text: "Spotlight takedown is already running. Wait for it to finish.",
+      });
+      return;
+    }
+
+    const spotlightId = Number(currentActiveSpotlight?.id || 0);
+    if (spotlightId <= 0) {
+      const missingMessage =
+        "GSN could not identify the live Spotlight to take down. Refresh the page, then try again.";
+      setSpotlightPublishFeedback({ tone: "error", text: missingMessage });
+      showNotice("error", missingMessage);
+      return;
+    }
+
+    setTakingDownSpotlight(true);
+    setSpotlightPublishFeedback(null);
+
+    try {
+      const res = await deleteMarketplaceBroadcast(spotlightId);
+      const deletedItems = Array.isArray((res as any)?.deleted_items)
+        ? ((res as any).deleted_items as Array<{ id?: number | null }>)
+        : [];
+      const deletedIds = new Set<number>(
+        deletedItems
+          .map((item) => Number(item?.id || 0))
+          .filter((id) => id > 0)
+      );
+      deletedIds.add(spotlightId);
+
+      setSpotlights((prev) =>
+        prev.filter((item) => !deletedIds.has(Number(item?.id || 0)))
+      );
+
+      const successMessage =
+        "Live Spotlight taken down. You can now publish the corrected Spotlight from this page.";
+      setSpotlightPublishFeedback({
+        tone: "success",
+        text: successMessage,
+      });
+      showNotice("success", successMessage);
+
+      try {
+        await loadPage({
+          background: true,
+          preferredClanId: Number(
+            shop?.clan_id || selectedClanId || effectiveShopClanId || 0
+          ),
+        });
+      } catch (refreshErr: any) {
+        const refreshMessage =
+          shopControlRequestErrorMessage(refreshErr) ||
+          "Spotlight was taken down, but the page could not refresh immediately.";
+        setSpotlightPublishFeedback({
+          tone: "info",
+          text: refreshMessage,
+        });
+        showNotice("info", refreshMessage);
+      }
+    } catch (err: any) {
+      const errorMessage =
+        shopControlRequestErrorMessage(err) ||
+        "GSN could not take down the live Spotlight yet.";
+      setSpotlightPublishFeedback({
+        tone: "error",
+        text: errorMessage,
+      });
+      showNotice("error", errorMessage);
+    } finally {
+      setTakingDownSpotlight(false);
+    }
+  }
+
   const spotlightModeIsPaid = spotlightPriorityMode === "paid";
   const spotlightPortalTitle = spotlightModeIsPaid
     ? "Spotlight Subscription"
@@ -6638,6 +6716,8 @@ export default function ShopControlPage() {
     spotlightPreviewHasPicture,
     spotlightPreviewHasVideo,
     handleCreateSpotlight,
+    takingDownSpotlight,
+    handleTakeDownCurrentSpotlight,
     shopActionsLocked,
   } satisfies ShopControlSpotlightWorkflowProps;
 

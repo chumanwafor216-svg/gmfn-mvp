@@ -161762,3 +161762,14 @@ Operational note:
 - Link strategy: all public calls to action point to `https://globalsupportnetwork.org/#pilot-interest`, with `hello@globalsupportnetwork.org` as fallback.
 - Platform notes: checked LinkedIn Help and Facebook Help on 2026-09-20 for Featured links, eligible LinkedIn custom profile buttons, Facebook action-button editing, and Page access requirements; source links are recorded in the pack.
 - Devil truth: this creates a disciplined invitation and response system, not proof of traction. Real proof still requires named communities, decision-makers, repeated workflows, dated next actions, and payment/sponsor/budget-holder signals.
+
+## 2026-09-23 - iPhone PWA shortcut stabilization and Spotlight takedown control
+
+- Status: Local frontend fix implemented and verified; not yet device-verified on a real iPhone 14/15 and not deployed in this slice.
+- Owner trigger: owner reported iPhone shortcut users seeing the app open into a continuously shaky/reloading screen, sometimes fixed by deleting and re-adding the home-screen shortcut. Owner also asked how a seller can take down or replace a live Spotlight before its allotted time expires.
+- Frontend files changed: `frontend/src/lib/pwaInstall.ts`, `frontend/src/pages/ShopControlPage.tsx`, `frontend/src/pages/shopControl/ShopControlSpotlightWorkflow.tsx`, and `frontend/src/pages/shopControl/ShopControlSpotlightWorkflowTypes.ts`.
+- PWA behavior changed: installed iOS shortcuts still register/update the service worker, but they no longer auto-trigger skip-waiting, controllerchange reload, or installed-shell freshness reload loops while opening in standalone mode. Android/regular browser update behavior remains unchanged.
+- Spotlight behavior changed: the Shop Control live Spotlight card now exposes a `Take down live Spotlight` action wired to the existing DELETE marketplace broadcast API. Successful takedown removes the live Spotlight locally, refreshes Shop Control in the background, and tells the seller they can publish the corrected Spotlight from the same page.
+- Business truth boundary: backend deletion already removes matching propagated Spotlight siblings. Free Spotlight replacement should become possible after takedown because the prior broadcast rows are removed. Paid Spotlight takedown is not a refund path; the UI now says paid Spotlight payments are not refunded by that action.
+- Verification passed: `npm --prefix frontend run audit:spotlight-controls`; `npm --prefix frontend run audit:web-push-production-readiness`; `npm --prefix frontend run audit:pwa-icon-publish-readiness-nonmutating`; `npm --prefix frontend run build`.
+- Devil truth: the iPhone fix is a strong code-level hypothesis, not proof. A real iPhone 14/15 installed shortcut must be tested after deployment to confirm the shaking complaint is gone, especially across first open after deploy, second open, and after leaving the app idle.

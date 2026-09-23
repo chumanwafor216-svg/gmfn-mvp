@@ -56,6 +56,10 @@ export function isIosManualInstallTarget(): boolean {
   );
 }
 
+function isIosInstalledShortcut(): boolean {
+  return isIosManualInstallTarget() && isGsnStandaloneDisplay();
+}
+
 export function subscribePwaInstall(listener: () => void): () => void {
   installListeners.add(listener);
 
@@ -165,6 +169,7 @@ function reloadForFreshShell(latestSignature: string): void {
 async function checkForFreshInstalledShell(): Promise<void> {
   if (typeof window === "undefined") return;
   if (!isGsnStandaloneDisplay()) return;
+  if (isIosInstalledShortcut()) return;
   if (document.visibilityState === "hidden") return;
   if (shellFreshnessChecking) return;
 
@@ -218,6 +223,7 @@ function registerInstalledShellFreshnessChecks(
   registration: ServiceWorkerRegistration
 ): void {
   if (shellFreshnessRegistered || typeof window === "undefined") return;
+  if (isIosInstalledShortcut()) return;
   shellFreshnessRegistered = true;
 
   const requestFreshnessCheck = () => {
@@ -254,6 +260,7 @@ export function registerGsnServiceWorker(): void {
 
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (serviceWorkerControllerReloading) return;
+    if (isIosInstalledShortcut()) return;
     serviceWorkerControllerReloading = true;
     window.location.reload();
   });
@@ -262,7 +269,9 @@ export function registerGsnServiceWorker(): void {
     navigator.serviceWorker
       .register("/sw.js")
       .then((registration) => {
-        nudgeWaitingServiceWorker(registration);
+        if (!isIosInstalledShortcut()) {
+          nudgeWaitingServiceWorker(registration);
+        }
         registerInstalledShellFreshnessChecks(registration);
         void registration.update().catch(() => undefined);
       })

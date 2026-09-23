@@ -83,8 +83,12 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
     spotlightPreviewHasPicture,
     spotlightPreviewHasVideo,
     handleCreateSpotlight,
+    takingDownSpotlight,
+    handleTakeDownCurrentSpotlight,
     shopActionsLocked,
   } = props;
+  const currentLiveSpotlightIsPaid =
+    firstTruthy(currentActiveSpotlight?.priority_mode, "free").toLowerCase() === "paid";
 
   return (
     <section
@@ -168,7 +172,21 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
             {firstTruthy(currentActiveSpotlight?.message, "Live spotlight is active.")}
           </div>
           <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-            Publishing a new one will replace the current live spotlight for this shop.
+            Take it down first if the media or wording is wrong. After it is down,
+            publish the corrected Spotlight from this page.
+            {currentLiveSpotlightIsPaid
+              ? " Paid Spotlight payments are not refunded by this action."
+              : ""}
+          </div>
+          <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-start" }}>
+            <SecondaryButton
+              type="button"
+              onClick={() => handleTakeDownCurrentSpotlight()}
+              disabled={takingDownSpotlight || creatingSpotlight}
+              debugId="shop-control.spotlight.live.take-down"
+            >
+              {takingDownSpotlight ? "Taking down..." : "Take down live Spotlight"}
+            </SecondaryButton>
           </div>
         </div>
       ) : null}
