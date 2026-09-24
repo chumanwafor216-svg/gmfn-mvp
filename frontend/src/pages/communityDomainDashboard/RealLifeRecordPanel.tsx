@@ -422,6 +422,9 @@ type ActivityRecordRow = ActivityCatalogueOption & {
   subject_user_id?: string | number | null;
   note?: string | number | null;
   evidence_reference?: string | number | null;
+  follow_up_due_at?: string | number | null;
+  follow_up_due_date?: string | number | null;
+  follow_up_queue_status?: string | number | null;
 };
 
 type BeneficiaryOutcomeRelatedRecord = {
@@ -895,6 +898,10 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
   }
 
   function churchFollowUpNextDateValue(item: ActivityRecordRow) {
+    const queueDate = cleanText(item?.follow_up_due_date).slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(queueDate)) {
+      return queueDate;
+    }
     const structuredDate = cleanText(item?.follow_up_due_at).slice(0, 10);
     if (/^\d{4}-\d{2}-\d{2}$/.test(structuredDate)) {
       return structuredDate;
@@ -911,6 +918,13 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
   }
 
   function churchFollowUpDueStatus(item: ActivityRecordRow) {
+    const queueStatus = cleanText(item?.follow_up_queue_status).toLowerCase();
+    if (queueStatus === "overdue_before_cutoff") {
+      return "Overdue";
+    }
+    if (queueStatus === "due_on_cutoff") {
+      return "Due today";
+    }
     const nextDate = churchFollowUpNextDateValue(item);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(nextDate)) {
       return "";

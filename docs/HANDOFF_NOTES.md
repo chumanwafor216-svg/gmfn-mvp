@@ -1,3 +1,12 @@
+## 2026-09-24 - Church follow-up queue status drives frontend badges
+- Status: Frontend follow-up queue refinement implemented locally so attention counts and row badges prefer backend queue status fields instead of recalculating every queue row from the browser date.
+- Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent attention queue.
+- Files updated: `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Frontend impact: `ActivityRecordRow` now explicitly carries `follow_up_due_date` and `follow_up_queue_status`; the due-status helper maps backend `overdue_before_cutoff` to `Overdue` and `due_on_cutoff` to `Due today`, falling back to local date parsing only for older/general rows.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts` and `npm --prefix frontend run build`.
+- Publish status: local only. Per product-owner instruction, do not push or trigger Render until the current work batch is finished.
+- Devil truth: this aligns display with the backend due queue, but it still does not create reminders, owner acceptance, formal task closure, indexed follow-up storage, or safeguarding escalation.
+
 ## 2026-09-24 - Church follow-up queue hides resolved records
 - Status: Backend follow-up queue refinement implemented locally so due pastoral follow-up records drop out of the admin queue after a later pastoral update references their original `activity-record:{event_id}`.
 - Route affected: `GET /community-domains/{community_domain_id}/activities/follow-ups`; downstream `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent attention queue.
