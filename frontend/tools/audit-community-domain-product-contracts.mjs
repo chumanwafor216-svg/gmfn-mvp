@@ -380,7 +380,7 @@ assertContains(
 
 assertContains(
   communityDomainDashboardFile,
-  /function churchFollowUpRecentAttentionSummary[\s\S]*activityRows\.slice\(0, 5\)[\s\S]*churchPastoralFollowUpPreset\.activityType[\s\S]*summary\.overdue \+= 1[\s\S]*summary\.dueToday \+= 1[\s\S]*community-domain-dashboard\.activity-recent-follow-up-attention-summary[\s\S]*Follow-up attention[\s\S]*Overdue: \{followUpAttention\.overdue\}[\s\S]*Due today: \{followUpAttention\.dueToday\}[\s\S]*community-domain-dashboard\.activity-recent-follow-up-record-update[\s\S]*applyChurchActivityPreset\(churchPastoralFollowUpPreset\)[\s\S]*Record follow-up update[\s\S]*Counts only loaded recent pastoral follow-up records\. This cue has not sent a reminder\./,
+  /function churchFollowUpRecentAttentionSummary[\s\S]*activityRows\.slice\(0, 5\)[\s\S]*churchPastoralFollowUpPreset\.activityType[\s\S]*summary\.overdue \+= 1[\s\S]*summary\.dueToday \+= 1[\s\S]*function applyChurchRecentFollowUpRecordUpdate[\s\S]*subject_user_id[\s\S]*evidence_reference[\s\S]*activity-record:\$\{eventId\}[\s\S]*community-domain-dashboard\.activity-recent-follow-up-attention-summary[\s\S]*Follow-up attention[\s\S]*Overdue: \{followUpAttention\.overdue\}[\s\S]*Due today: \{followUpAttention\.dueToday\}[\s\S]*community-domain-dashboard\.activity-recent-follow-up-record-update[\s\S]*applyChurchActivityPreset\(churchPastoralFollowUpPreset\)[\s\S]*Record follow-up update[\s\S]*Counts only loaded recent pastoral follow-up records\. This cue has not sent a reminder\.[\s\S]*community-domain-dashboard\.activity-recent-follow-up-row-record-update[\s\S]*applyChurchRecentFollowUpRecordUpdate\(item\)[\s\S]*Record this update/,
   "Community Domain recent church pastoral follow-up records must summarize loaded due-today and overdue follow-up cues, then bridge leaders back into the existing follow-up recorder without implying a reminder was sent.",
   { frontend: true }
 );
@@ -499,6 +499,18 @@ assertContains(
   "Backend tests must prove church workflow catalogue priority and private pastoral follow-up recording without payment or outcome claims."
 );
 
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /def _community_domain_activity_event_payload[\s\S]*"subject_user_id": int\(row\.subject_user_id\)[\s\S]*"visibility": meta\.get\("visibility"\)[\s\S]*"note": meta\.get\("note"\)[\s\S]*"evidence_reference": meta\.get\("evidence_reference"\)[\s\S]*def list_community_domain_activities[\s\S]*_require_domain_admin_scope[\s\S]*"items": \[_community_domain_activity_event_payload\(row\) for row in rows\]/,
+  "Backend admin activity list must return saved note markers and evidence references so recent church follow-up records can reload their private context."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domain_collection_instructions.py",
+  /test_church_domain_can_record_private_pastoral_follow_up_without_payment_or_outcome_claim[\s\S]*"evidence_reference": "pastoral-care-register-001"[\s\S]*activity\["note"\]\.startswith\("Pastor or welfare officer recorded"\)[\s\S]*activity\["evidence_reference"\] == "pastoral-care-register-001"[\s\S]*listed_res = client\.get\("\/community-domains\/815\/activities"\)[\s\S]*listed_activity\["note"\]\.startswith\("Pastor or welfare officer recorded"\)[\s\S]*listed_activity\["evidence_reference"\] == "pastoral-care-register-001"/,
+  "Backend tests must prove admin activity create and list payloads preserve private note markers and evidence references for church follow-up reloads."
+);
 assertContains(
   communityDomainRealLifeRecordFile,
   /CHURCH_ACTIVITY_PRESET_PACK[\s\S]*pastoral_follow_up[\s\S]*member_belonging_check[\s\S]*department_service[\s\S]*contribution_memory[\s\S]*community-domain-dashboard\.church-workflow-packet[\s\S]*church keeps authority, privacy, and pastoral judgement/,

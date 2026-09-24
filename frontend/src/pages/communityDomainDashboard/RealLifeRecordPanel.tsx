@@ -418,6 +418,9 @@ type ActivityRecordRow = ActivityCatalogueOption & {
   activity_label?: string;
   quantity?: string | number | null;
   created_at?: string | number | null;
+  subject_user_id?: string | number | null;
+  note?: string | number | null;
+  evidence_reference?: string | number | null;
 };
 
 type BeneficiaryOutcomeRelatedRecord = {
@@ -921,6 +924,22 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
         return summary;
       },
       { overdue: 0, dueToday: 0 }
+    );
+  }
+
+  function applyChurchRecentFollowUpRecordUpdate(item: ActivityRecordRow) {
+    const subjectUserId = cleanText(item?.subject_user_id);
+    const existingReference = cleanText(item?.evidence_reference);
+    const eventId = cleanText(item?.event_id);
+    const recordReference = eventId ? `activity-record:${eventId}` : "";
+    const evidenceReference = [existingReference, recordReference]
+      .filter(Boolean)
+      .join("; ")
+      .slice(0, 512);
+    applyChurchActivityPreset(
+      churchPastoralFollowUpPreset,
+      subjectUserId,
+      evidenceReference
     );
   }
 
@@ -2261,6 +2280,19 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                                 {detail.label}: {detail.value}
                                               </span>
                                             ))}
+                                            {followUpDueStatus ? (
+                                              <StableButton
+                                                type="button"
+                                                kind="secondary"
+                                                stableHeight={36}
+                                                debugId="community-domain-dashboard.activity-recent-follow-up-row-record-update"
+                                                onClick={() =>
+                                                  applyChurchRecentFollowUpRecordUpdate(item)
+                                                }
+                                              >
+                                                Record this update
+                                              </StableButton>
+                                            ) : null}
                                           </div>
                                         ) : null;
                                       })()

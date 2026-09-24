@@ -268,6 +268,8 @@ def test_church_domain_can_record_private_pastoral_follow_up_without_payment_or_
     assert activity["activity_type"] == "pastoral_follow_up"
     assert activity["evidence_dimension"] == "care_follow_up"
     assert activity["visibility"] == "admin_only"
+    assert activity["note"].startswith("Pastor or welfare officer recorded")
+    assert activity["evidence_reference"] == "pastoral-care-register-001"
     assert body["catalogue_item"] == {
         "activity_type": "pastoral_follow_up",
         "label": "Pastoral follow-up",
@@ -275,6 +277,13 @@ def test_church_domain_can_record_private_pastoral_follow_up_without_payment_or_
     }
     assert "not a final beneficiary outcome" in body["boundary"]
     assert "not a public sponsor report" in body["boundary"]
+
+    listed_res = client.get("/community-domains/815/activities")
+    assert listed_res.status_code == 200, listed_res.text
+    listed_activity = listed_res.json()["items"][0]
+    assert listed_activity["activity_type"] == "pastoral_follow_up"
+    assert listed_activity["note"].startswith("Pastor or welfare officer recorded")
+    assert listed_activity["evidence_reference"] == "pastoral-care-register-001"
 
     with engine.begin() as conn:
         row = conn.execute(

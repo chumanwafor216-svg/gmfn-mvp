@@ -1920,6 +1920,8 @@ def _community_domain_activity_event_payload(row: TrustEvent) -> dict[str, Any]:
         "occurred_at": meta.get("occurred_at"),
         "evidence_strength": meta.get("evidence_strength"),
         "visibility": meta.get("visibility"),
+        "note": meta.get("note"),
+        "evidence_reference": meta.get("evidence_reference"),
         "membership_status_snapshot": meta.get("membership_status_snapshot"),
         "membership_role_snapshot": meta.get("membership_role_snapshot"),
         "baseline_value": meta.get("baseline_value"),

@@ -1,3 +1,13 @@
+## 2026-09-24 - Church follow-up reload context and row update action
+- Status: Backend/frontend follow-up refinement implemented locally so recent church Activity records can reload their saved note markers and open a row-specific follow-up update.
+- Screens/routes affected: `GET /community-domains/{community_domain_id}/activities`; `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent.
+- Files updated: `gmfn_backend/app/api/routes/community_domains.py`, `gmfn_backend/tests/test_community_domain_collection_instructions.py`, `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Backend impact: admin-scoped activity list payloads now return `note` and `evidence_reference`, matching the create response and allowing saved church follow-up markers to survive reload.
+- Frontend impact: due-today or overdue pastoral follow-up rows now show `Record this update`, which opens the existing staged `Pastoral follow-up` recorder with the row subject and source reference when those values are present.
+- Verification passed: `python -m pytest -q gmfn_backend\\tests\\test_community_domain_collection_instructions.py -k "church_domain_can_record_private_pastoral_follow_up_without_payment_or_outcome_claim" --basetemp C:\\tmp\\pytest-church-activity-reload-context`, `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Publish status: local only. Per product-owner instruction, do not push or trigger Render until the current work batch is finished.
+- Devil truth: this fixes a real reload-data gap, but the workflow is still manual. It does not create a full overdue queue, send reminders, require assigned-owner acceptance, prove care happened, or handle safeguarding escalation.
+
 ## 2026-09-24 - Church follow-up attention summary opens recorder
 - Status: Frontend follow-up refinement implemented locally so the recent Activity attention strip gives leaders a direct manual recording action.
 - Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent.
