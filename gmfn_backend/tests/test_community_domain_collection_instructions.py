@@ -504,6 +504,82 @@ def test_church_live_attendance_qr_records_member_checkin_once(
 
     assert checkin_count == 1
 
+def test_church_live_attendance_admin_follow_up_snapshot_is_count_only(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    with engine.begin() as conn:
+        _seed_domain(conn, domain_id=822, policy_mode="admin_only", notice_policy_mode="admin_only")
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO users (id, email, hashed_password, role, display_name)
+                VALUES
+                  (2, 'church-member-2@example.com', 'hashed', 'user', 'Church Member Two'),
+                  (3, 'church-member-3@example.com', 'hashed', 'user', 'Church Member Three')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO community_domain_memberships (
+                    community_domain_id,
+                    user_id,
+                    role,
+                    status,
+                    title,
+                    created_at,
+                    updated_at
+                )
+                VALUES
+                  (822, 1, 'owner', 'active', 'Pastor', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                  (822, 2, 'member', 'active', 'Member', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                  (822, 3, 'member', 'active', 'Member', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """
+            )
+        )
+
+    session_res = client.post(
+        "/community-domains/822/attendance-sessions",
+        json={"programme_label": "Sunday service follow-up test", "method": "qr", "window_minutes": 45},
+    )
+    assert session_res.status_code == 201, session_res.text
+    session = session_res.json()["attendance_session"]
+    opening_snapshot = session["follow_up_snapshot"]
+    assert opening_snapshot["expected_member_count"] == 3
+    assert opening_snapshot["present_member_count"] == 0
+    assert opening_snapshot["follow_up_needed_count"] == 3
+    assert opening_snapshot["follow_up_status"] == "care_follow_up_needed"
+    assert "follow_up_needed_members" not in opening_snapshot
+
+    public_res = client.get(session["public_api_path"])
+    assert public_res.status_code == 200, public_res.text
+    public_session = public_res.json()["attendance_session"]
+    assert "follow_up_snapshot" not in public_session
+    assert "checked_in_user_ids" not in public_session
+
+    checkin_res = client.post(
+        f'{session["public_api_path"]}/check-ins',
+        json={"method": "qr"},
+    )
+    assert checkin_res.status_code == 200, checkin_res.text
+
+    list_res = client.get("/community-domains/822/attendance-sessions")
+    assert list_res.status_code == 200, list_res.text
+    listed = list_res.json()["items"][0]
+    snapshot = listed["follow_up_snapshot"]
+    assert listed["checked_in_user_ids"] == [1]
+    assert snapshot["expected_member_count"] == 3
+    assert snapshot["present_member_count"] == 1
+    assert snapshot["follow_up_needed_count"] == 2
+    assert snapshot["follow_up_status"] == "care_follow_up_needed"
+    assert "Do not publish an absence list" in snapshot["next_step"]
+    assert "absent-member list" in snapshot["boundary"]
+    assert "Church Member Two" not in str(snapshot)
+    assert "church-member-2@example.com" not in str(snapshot)
+
 
 def test_church_summary_pdf_accepts_live_attendance_qr_counts(
     client,

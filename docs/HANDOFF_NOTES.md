@@ -1,3 +1,11 @@
+## 2026-09-24 - Church attendance care follow-up snapshot added
+- Status: Local backend and frontend fix implemented after pastor/church discovery showed the first useful pilot workflow is live QR attendance plus private follow-up prompts.
+- Screens/routes affected: `/app/community-domain/:communityDomainId` church workflow packet and backend `/community-domains/{id}/attendance-sessions`.
+- Files updated: `gmfn_backend/app/api/routes/community_domains.py`, `gmfn_backend/tests/test_community_domain_collection_instructions.py`, `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Backend impact: admin attendance-session payloads now include `follow_up_snapshot` with expected member count, present count, follow-up-needed count, next-step guidance, and boundary text. Public attendance QR payloads still do not expose this snapshot or checked-in user IDs.
+- Frontend impact: the existing Church workflow packet now shows a compact `Care follow-up snapshot` under Live Attendance QR with Members, Present, and Follow-up counts only.
+- Verification passed: Python compile, `python -m pytest gmfn_backend\tests\test_community_domain_collection_instructions.py -q`, `npm --prefix frontend run audit:community-domain-product-contracts`, and `npm --prefix frontend run build`.
+- Devil truth: this is count-only care workflow memory. It does not identify absent members in the UI, does not replace the church's private roster, does not prove attendance publicly, and is not safeguarding, counselling, discipline, payment evidence, location tracking, or spiritual judgement.
 ## 2026-09-24 - DemandBox private Ask Person route added for church discovery gap
 - Status: Local backend and frontend fix implemented after church/customer discovery exposed a privacy gap: some follow-up requests must go to one named person, not the whole community queue.
 - Screens/routes affected: `/app/demand-box`; backend marketplace request routes under `gmfn_backend/app/api/routes/marketplace_requests.py`.

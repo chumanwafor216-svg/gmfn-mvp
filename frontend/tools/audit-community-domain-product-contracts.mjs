@@ -301,6 +301,12 @@ assertContains(
   "Community Domain church workflow packet must expose live QR attendance controls without making Bluetooth automatic.",
   { frontend: true }
 );
+assertContains(
+  communityDomainDashboardFile,
+  /community-domain-dashboard\.church-attendance-follow-up-snapshot[\s\S]*Care follow-up snapshot[\s\S]*Members[\s\S]*Present[\s\S]*Follow-up[\s\S]*Do not publish an absence list/,
+  "Community Domain church workflow packet must show a count-only care follow-up snapshot without exposing an absence list.",
+  { frontend: true }
+);
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
@@ -312,6 +318,11 @@ assertContains(
   "gmfn_backend/tests/test_community_domain_collection_instructions.py",
   /test_church_live_attendance_qr_records_member_checkin_once[\s\S]*\/community-domains\/819\/attendance-sessions[\s\S]*\/check-ins[\s\S]*already_recorded[\s\S]*community_domain\.attendance_checkin\.recorded/,
   "Backend tests must prove church live attendance QR records one signed-in member check-in and prevents duplicate scan counts."
+);
+assertContains(
+  "gmfn_backend/tests/test_community_domain_collection_instructions.py",
+  /test_church_live_attendance_admin_follow_up_snapshot_is_count_only[\s\S]*follow_up_snapshot[\s\S]*follow_up_needed_count[\s\S]*follow_up_needed_members[\s\S]*not in opening_snapshot[\s\S]*Church Member Two[\s\S]*not in str\(snapshot\)/,
+  "Backend tests must prove church attendance follow-up is admin-only, count-only, and does not expose absent-member names or emails."
 );
 
 assertContains(

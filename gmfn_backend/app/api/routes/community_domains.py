@@ -23862,7 +23862,69 @@ def _find_existing_community_domain_attendance_checkin(
     return None
 
 
+
+def _community_domain_attendance_follow_up_snapshot(
+    db: Session,
+    *,
+    domain: Optional[CommunityDomain],
+    checked_in_user_ids: list[int],
+) -> dict[str, Any]:
+    boundary = (
+        "Admin-only attendance follow-up snapshot. It gives counts and next-step "
+        "guidance only; it does not expose an absent-member list, prove attendance "
+        "publicly, discipline members, prove payment, track location, or make "
+        "spiritual judgement."
+    )
+    if domain is None:
+        return {
+            "expected_member_count": 0,
+            "present_member_count": len(set(checked_in_user_ids)),
+            "follow_up_needed_count": 0,
+            "follow_up_status": "no_domain_roster",
+            "next_step": "Open the domain roster before using attendance for care follow-up.",
+            "boundary": boundary,
+        }
+
+    active_member_ids = {
+        int(row[0])
+        for row in (
+            db.query(CommunityDomainMembership.user_id)
+            .filter(CommunityDomainMembership.community_domain_id == int(domain.id))
+            .filter(CommunityDomainMembership.status == "active")
+            .all()
+        )
+    }
+    owner = db.get(User, int(domain.owner_user_id))
+    if owner is not None:
+        active_member_ids.add(int(domain.owner_user_id))
+
+    checked_set = {int(user_id) for user_id in checked_in_user_ids}
+    expected_member_count = len(active_member_ids)
+    present_member_count = len(active_member_ids.intersection(checked_set))
+    follow_up_needed_count = max(expected_member_count - present_member_count, 0)
+    if expected_member_count <= 0:
+        status = "no_roster"
+        next_step = "Add active members before using QR attendance as follow-up memory."
+    elif follow_up_needed_count <= 0:
+        status = "no_follow_up_gap"
+        next_step = "No roster-level attendance gap is visible from this QR window."
+    else:
+        status = "care_follow_up_needed"
+        next_step = (
+            "Use the private church roster or welcome-team record to decide who should receive "
+            "a care check. Do not publish an absence list."
+        )
+
+    return {
+        "expected_member_count": expected_member_count,
+        "present_member_count": present_member_count,
+        "follow_up_needed_count": follow_up_needed_count,
+        "follow_up_status": status,
+        "next_step": next_step,
+        "boundary": boundary,
+    }
 def _community_domain_attendance_session_payload(
+    db: Session,
     event: TrustEvent,
     *,
     domain: Optional[CommunityDomain] = None,
@@ -23922,8 +23984,12 @@ def _community_domain_attendance_session_payload(
     if include_private:
         payload["checked_in_user_ids"] = checked_in_user_ids
         payload["note"] = meta.get("note")
+        payload["follow_up_snapshot"] = _community_domain_attendance_follow_up_snapshot(
+            db,
+            domain=domain,
+            checked_in_user_ids=checked_in_user_ids,
+        )
     return payload
-
 
 def _community_domain_attendance_checkin_payload(event: TrustEvent) -> dict[str, Any]:
     meta = event.meta or {}
@@ -23963,6 +24029,7 @@ def list_community_domain_attendance_sessions(
         "ok": True,
         "items": [
             _community_domain_attendance_session_payload(
+                db,
                 row,
                 domain=domain,
                 checkin_rows=_community_domain_attendance_checkin_events(
@@ -24050,6 +24117,7 @@ def create_community_domain_attendance_session(
     return {
         "ok": True,
         "attendance_session": _community_domain_attendance_session_payload(
+            db,
             event,
             domain=domain,
             checkin_rows=[],
@@ -24080,6 +24148,7 @@ def get_public_community_domain_attendance_session(
     return {
         "ok": True,
         "attendance_session": _community_domain_attendance_session_payload(
+            db,
             event,
             domain=domain,
             checkin_rows=_community_domain_attendance_checkin_events(

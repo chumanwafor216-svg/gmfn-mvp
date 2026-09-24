@@ -330,6 +330,15 @@ type ResponseChannelRow = {
   [key: string]: unknown;
 };
 
+type AttendanceFollowUpSnapshot = {
+  expected_member_count?: string | number | null;
+  present_member_count?: string | number | null;
+  follow_up_needed_count?: string | number | null;
+  follow_up_status?: string | number | null;
+  next_step?: string | number | null;
+  boundary?: string | number | null;
+  [key: string]: unknown;
+};
 type AttendanceSessionRow = {
   event_id?: string | number | null;
   programme_label?: string | number | null;
@@ -338,6 +347,7 @@ type AttendanceSessionRow = {
   attendance_method?: string | number | null;
   attendance_expires_at?: string | number | null;
   active?: boolean | null;
+  follow_up_snapshot?: AttendanceFollowUpSnapshot | null;
   boundary?: string | number | null;
   [key: string]: unknown;
 };
@@ -719,6 +729,23 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
   const latestAttendanceSession = attendanceSessionRows[0] || null;
   const latestAttendanceActive = Boolean(latestAttendanceSession?.active);
   const latestAttendanceCount = cleanText(latestAttendanceSession?.checkin_count, "0");
+  const latestAttendanceFollowUpSnapshot =
+    latestAttendanceSession?.follow_up_snapshot &&
+    typeof latestAttendanceSession.follow_up_snapshot === "object"
+      ? latestAttendanceSession.follow_up_snapshot
+      : null;
+  const latestAttendanceExpectedCount = cleanText(
+    latestAttendanceFollowUpSnapshot?.expected_member_count,
+    "0"
+  );
+  const latestAttendancePresentCount = cleanText(
+    latestAttendanceFollowUpSnapshot?.present_member_count,
+    latestAttendanceCount
+  );
+  const latestAttendanceFollowUpCount = cleanText(
+    latestAttendanceFollowUpSnapshot?.follow_up_needed_count,
+    "0"
+  );
   const latestResponseChannel = responseChannelRows[0] || null;
   const latestResponseActive = Boolean(latestResponseChannel?.active);
   const latestResponseCount = cleanText(latestResponseChannel?.response_count, "0");
@@ -1117,6 +1144,61 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                   </div>
                                   <div style={{ borderRadius: 14, border: "1px solid rgba(9,27,46,0.1)", padding: 8, background: "#FFFFFF" }}>
                                     <QRCodeSVG value={latestAttendancePublicUrl} size={104} bgColor="#FFFFFF" fgColor="#07172C" level="M" marginSize={1} />
+                                  </div>
+                                </div>
+                              ) : null}
+                              {latestAttendanceFollowUpSnapshot ? (
+                                <div
+                                  data-debug-id="community-domain-dashboard.church-attendance-follow-up-snapshot"
+                                  style={{
+                                    display: "grid",
+                                    gap: 8,
+                                    borderRadius: 12,
+                                    border: "1px solid rgba(9,27,46,0.1)",
+                                    background: "#F8FBFF",
+                                    padding: 10,
+                                  }}
+                                >
+                                  <div style={sectionLabel()}>Care follow-up snapshot</div>
+                                  <div
+                                    style={{
+                                      display: "grid",
+                                      gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 112px), 1fr))",
+                                      gap: 8,
+                                    }}
+                                  >
+                                    {[
+                                      ["Members", latestAttendanceExpectedCount],
+                                      ["Present", latestAttendancePresentCount],
+                                      ["Follow-up", latestAttendanceFollowUpCount],
+                                    ].map(([summaryLabel, summaryValue]) => (
+                                      <div
+                                        key={summaryLabel}
+                                        style={{
+                                          borderRadius: 10,
+                                          border: "1px solid rgba(9,27,46,0.08)",
+                                          background: "#FFFFFF",
+                                          padding: "8px 9px",
+                                        }}
+                                      >
+                                        <div style={{ ...sectionLabel(), fontSize: 10 }}>{summaryLabel}</div>
+                                        <div style={{ color: "#091B2E", fontWeight: 900, fontSize: 15 }}>
+                                          {summaryValue}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <div style={{ ...helperText(), fontSize: 12 }}>
+                                    {cleanText(
+                                      latestAttendanceFollowUpSnapshot.next_step,
+                                      "Use the private church roster or welcome-team record for any care checks. Do not publish an absence list."
+                                    )}
+                                  </div>
+                                  <div style={{ ...helperText(), fontSize: 11 }}>
+                                    {cleanText(
+                                      latestAttendanceFollowUpSnapshot.boundary,
+                                      "Admin-only count snapshot. It does not expose an absent-member list or replace pastoral judgement."
+                                    )}
                                   </div>
                                 </div>
                               ) : null}
