@@ -324,6 +324,13 @@ assertContains(
 
 assertContains(
   communityDomainDashboardFile,
+  /activeActivityRecordStage === "person"[\s\S]*activityDraft\.evidence_reference[\s\S]*community-domain-dashboard\.activity-record-source-reference-preview[\s\S]*Source reference[\s\S]*activityDraft\.evidence_reference/,
+  "Community Domain activity record person stage must preview a prefilled attendance-session evidence reference before the leader records follow-up.",
+  { frontend: true }
+);
+
+assertContains(
+  communityDomainDashboardFile,
   /CHURCH_ATTENDANCE_FOLLOW_UP_ROUTE_STEPS[\s\S]*Call[\s\S]*Text[\s\S]*WhatsApp[\s\S]*Visit[\s\S]*Escalate/,
   "Community Domain church attendance follow-up route cues must mirror the discovered call/text/WhatsApp/visit/escalation path.",
   { frontend: true }

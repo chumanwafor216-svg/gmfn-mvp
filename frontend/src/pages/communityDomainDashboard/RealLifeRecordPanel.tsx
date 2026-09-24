@@ -1693,6 +1693,30 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                     ))}
                                   </select>
                                 </div>
+                                {activityDraft.evidence_reference ? (
+                                  <div
+                                    data-debug-id="community-domain-dashboard.activity-record-source-reference-preview"
+                                    style={{
+                                      borderRadius: 10,
+                                      border: "1px solid rgba(9,27,46,0.08)",
+                                      background: "#FFFFFF",
+                                      padding: "8px 10px",
+                                    }}
+                                  >
+                                    <div style={{ ...sectionLabel(), fontSize: 10 }}>
+                                      Source reference
+                                    </div>
+                                    <div
+                                      style={{
+                                        ...helperText(),
+                                        fontSize: 12,
+                                        overflowWrap: "anywhere",
+                                      }}
+                                    >
+                                      {activityDraft.evidence_reference}
+                                    </div>
+                                  </div>
+                                ) : null}
                                 <StableButton
                                   type="button"
                                   kind="primary"

@@ -1,3 +1,10 @@
+## 2026-09-24 - Church follow-up source preview added
+- Status: Frontend follow-up refinement implemented so pastoral/welfare Activity records opened from an attendance care snapshot show their attendance source reference on the first person step.
+- Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Church workflow packet -> Activity record.
+- Files updated: `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Frontend impact: when a leader selects a private follow-up candidate or uses `Record Follow-up`, the record form now previews `attendance-session:{event_id}` before the leader advances to activity details. This makes the source breadcrumb visible earlier without exposing member names or contact details.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Devil truth: this is still only a visible audit breadcrumb. It does not prove the follow-up happened, assign an owner, send a message, capture consent, log a call outcome, manage visits, or handle safeguarding escalation.
 ## 2026-09-24 - Church follow-up records keep attendance source reference
 - Status: Frontend follow-up refinement implemented so pastoral/welfare Activity records opened from the attendance care snapshot carry an attendance-session evidence reference.
 - Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Church workflow packet.
