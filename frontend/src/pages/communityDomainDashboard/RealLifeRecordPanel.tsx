@@ -433,6 +433,8 @@ type ActivityAttentionSummary = {
   queueTotal: number;
   rowTotal: number;
   scanLimit: number;
+  scannedActivityTotal: number;
+  scanWindowExhausted: boolean;
   resolvedReferenceTotal: number;
 };
 type BeneficiaryOutcomeRelatedRecord = {
@@ -998,13 +1000,19 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     const rowTotal = activityAttentionSummary?.rowTotal ?? displayedCount;
     const resolvedReferenceTotal = activityAttentionSummary?.resolvedReferenceTotal ?? 0;
     const scanLimit = activityAttentionSummary?.scanLimit ?? 0;
+    const scannedActivityTotal = activityAttentionSummary?.scannedActivityTotal ?? 0;
+    const scanWindowExhausted = activityAttentionSummary?.scanWindowExhausted ?? false;
     const shownTotal = Math.min(displayedCount, rowTotal || displayedCount, queueTotal || displayedCount);
     const recordWord = queueTotal === 1 ? "record" : "records";
     const parts = [
       `Showing ${shownTotal} of ${queueTotal || shownTotal} due or overdue pastoral follow-up ${recordWord} from the admin due queue.`,
     ];
     if (scanLimit > 0) {
-      parts.push(`Scanned the latest ${scanLimit} admin activity records for this queue.`);
+      const scannedText = scannedActivityTotal > 0 ? `${scannedActivityTotal} of up to ${scanLimit}` : `up to ${scanLimit}`;
+      parts.push(`Scanned ${scannedText} admin activity records for this queue.`);
+    }
+    if (scanWindowExhausted) {
+      parts.push("The scan window was full, so older admin activity records may sit outside this queue.");
     }
     if (resolvedReferenceTotal > 0) {
       parts.push(

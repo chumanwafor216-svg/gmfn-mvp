@@ -26186,6 +26186,8 @@ def list_community_domain_activity_follow_ups(
         community_node_ids=node_scope_ids or None,
         limit=int(scan_limit),
     )
+    scanned_activity_total = len(rows)
+    scan_window_exhausted = scanned_activity_total >= int(scan_limit)
     resolved_activity_ids = _community_domain_follow_up_resolved_activity_ids(rows)
     resolved_due_reference_total = 0
     due_rows: list[TrustEvent] = []
@@ -26231,11 +26233,14 @@ def list_community_domain_activity_follow_ups(
         "due_on_cutoff_total": due_on_cutoff_total,
         "resolved_reference_total": resolved_due_reference_total,
         "scan_limit": int(scan_limit),
+        "scanned_activity_total": scanned_activity_total,
+        "scan_window_exhausted": scan_window_exhausted,
         "boundary": (
             "Pastoral follow-up queue v1 is an admin-only due list built from "
             "recorded Community Domain activity Trust Events. It does not send "
             "reminders, assign responsibility, prove care happened, or replace "
-            "safeguarding escalation."
+            "safeguarding escalation. When scan_window_exhausted is true, older "
+            "activity records may exist outside the response."
         ),
     }
 

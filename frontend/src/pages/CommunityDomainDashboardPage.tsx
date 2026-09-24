@@ -1736,6 +1736,12 @@ function payloadNonNegativeInt(payload: unknown, key: string): number {
   return Math.floor(numeric);
 }
 
+function payloadBoolean(payload: unknown, key: string): boolean {
+  const value = payloadValue(payload, key);
+  if (typeof value === "boolean") return value;
+  return cleanText(value).toLowerCase() === "true";
+}
+
 function activityAttentionSummaryFromPayload(
   payload: unknown
 ): RealLifeActivityAttentionSummary | null {
@@ -1746,6 +1752,8 @@ function activityAttentionSummaryFromPayload(
     "queue_total",
     "total",
     "scan_limit",
+    "scanned_activity_total",
+    "scan_window_exhausted",
     "resolved_reference_total",
   ].some((key) => Object.prototype.hasOwnProperty.call(payload, key));
   if (!hasSummary) return null;
@@ -1755,6 +1763,8 @@ function activityAttentionSummaryFromPayload(
     queueTotal: payloadNonNegativeInt(payload, "queue_total"),
     rowTotal: payloadNonNegativeInt(payload, "total"),
     scanLimit: payloadNonNegativeInt(payload, "scan_limit"),
+    scannedActivityTotal: payloadNonNegativeInt(payload, "scanned_activity_total"),
+    scanWindowExhausted: payloadBoolean(payload, "scan_window_exhausted"),
     resolvedReferenceTotal: payloadNonNegativeInt(payload, "resolved_reference_total"),
   };
 }

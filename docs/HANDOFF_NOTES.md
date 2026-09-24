@@ -1,3 +1,13 @@
+## 2026-09-24 - Church follow-up queue reports exhausted scan windows
+- Status: Backend/frontend follow-up queue refinement implemented locally so the due queue reports how many domain activity records it scanned and whether the scan window was filled.
+- Routes/screens affected: `GET /community-domains/{community_domain_id}/activities/follow-ups`; `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent attention queue.
+- Files updated: `gmfn_backend/app/api/routes/community_domains.py`, `gmfn_backend/tests/test_community_domain_collection_instructions.py`, `frontend/src/pages/CommunityDomainDashboardPage.tsx`, `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Backend impact: the due queue now returns `scanned_activity_total` and `scan_window_exhausted`; when the scan is full, the boundary warns that older activity records may exist outside the response.
+- Frontend impact: the attention summary now carries `scannedActivityTotal` and `scanWindowExhausted`, showing a stronger warning only when the backend says the scan window was full.
+- Verification passed: `python -m pytest -q gmfn_backend\tests\test_community_domain_collection_instructions.py -k "activity_follow_up_queue_returns_due_pastoral_records_only or activity_follow_up_queue_reports_exhausted_scan_window or activity_follow_up_queue_hides_records_resolved_by_later_update" --basetemp C:\tmp\pytest-church-follow-up-scan-window`, `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Publish status: local only. Per product-owner instruction, do not push or trigger Render until the current work batch is finished.
+- Devil truth: this makes the bounded scan visibly honest, but it still does not replace a real indexed follow-up task table, reminders, owner acceptance, or safeguarding escalation.
+
 ## 2026-09-24 - Church follow-up attention names backend scan limit
 - Status: Frontend follow-up queue refinement implemented locally so the attention strip explains that due/overdue queue totals come from a bounded backend activity scan.
 - Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent attention queue.
