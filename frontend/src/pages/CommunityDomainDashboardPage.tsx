@@ -10501,6 +10501,7 @@ export default function CommunityDomainDashboardPage() {
                           latestAttendancePublicUrl,
                           latestResponsePublicUrl,
                           noticeDateLabel,
+                          openMemberRoster: () => openMemberFocus("roster"),
                           realLifeRecordTypeChooserOpen,
                           recordBeneficiaryOutcomeContactConsent,
                           recordBeneficiaryOutcomeDeliveryReceipt,

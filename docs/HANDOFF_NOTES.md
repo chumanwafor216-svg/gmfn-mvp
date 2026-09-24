@@ -1,3 +1,10 @@
+## 2026-09-24 - Church attendance candidate IDs route to member roster
+- Status: Frontend follow-up refinement implemented so admin-visible attendance candidate IDs now have a direct next action instead of being a dead-end list.
+- Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Church workflow packet.
+- Files updated: `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/src/pages/CommunityDomainDashboardPage.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Frontend impact: the `Private candidate IDs` row now includes `Review Roster`, which opens the existing Members roster lane via the current `openMemberFocus("roster")` path. This keeps resolution inside existing member permissions rather than exposing names/contact details in the church workflow packet.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Devil truth: this gives leaders a practical next click, not a follow-up case-management system. There is still no ownership assignment, call/visit log, consent capture, WhatsApp sending, pastoral escalation, or safeguarding workflow.
 ## 2026-09-24 - Church attendance candidate IDs surfaced in workflow packet
 - Status: Frontend UI slice implemented after the backend started returning admin-only `follow_up_candidate_user_ids` for church attendance follow-up.
 - Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Church workflow packet.

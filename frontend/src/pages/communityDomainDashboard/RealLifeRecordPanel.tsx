@@ -528,6 +528,7 @@ export type RealLifeRecordPanelData = {
   latestAttendancePublicUrl: string;
   latestResponsePublicUrl: string;
   noticeDateLabel: (value: unknown) => string;
+  openMemberRoster: AsyncAction;
   realLifeRecordTypeChooserOpen: boolean;
   recordBeneficiaryOutcomeContactConsent: RowAction<BeneficiaryOutcomeRow>;
   recordBeneficiaryOutcomeDeliveryReceipt: RowAction<BeneficiaryOutcomeRow>;
@@ -669,6 +670,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     isAdmin,
     latestAttendancePublicUrl,
     latestResponsePublicUrl,
+    openMemberRoster,
     noticeDateLabel,
     realLifeRecordTypeChooserOpen,
     recordBeneficiaryOutcomeContactConsent,
@@ -1237,6 +1239,15 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                           </span>
                                         ) : null}
                                       </div>
+                                      <StableButton
+                                        kind="secondary"
+                                        stableHeight={34}
+                                        debugId="community-domain-dashboard.church-attendance-follow-up-review-roster"
+                                        onClick={openMemberRoster}
+                                        style={{ justifySelf: "start", fontSize: 12, textTransform: "none" }}
+                                      >
+                                        Review Roster
+                                      </StableButton>
                                     </div>
                                   ) : null}
                                   <div style={{ ...helperText(), fontSize: 12 }}>
