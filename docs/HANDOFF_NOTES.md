@@ -1,3 +1,10 @@
+## 2026-09-24 - Church follow-up candidate IDs prefill record subject
+- Status: Frontend follow-up refinement implemented so clicking a private attendance candidate ID opens the existing pastoral/welfare Activity record with that candidate as the subject user id.
+- Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Church workflow packet.
+- Files updated: `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Frontend impact: private candidate IDs in the admin-only `Care follow-up snapshot` are now small action buttons. Selecting one uses the existing `Pastoral follow-up` preset and prefills `subject_user_id`, so the leader can review the member id before recording the follow-up activity.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Devil truth: this still does not identify names, send messages, assign owners, record call outcomes, prove consent, manage visits, or handle safeguarding. It only reduces manual copy-paste from candidate ID to the existing record form.
 ## 2026-09-24 - Church attendance follow-up can open pastoral record
 - Status: Frontend follow-up refinement implemented so the attendance care snapshot now has a direct bridge into the existing Activity record flow using the `Pastoral follow-up` preset.
 - Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Church workflow packet.

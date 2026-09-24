@@ -771,12 +771,17 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     CHURCH_ACTIVITY_PRESET_PACK.find((preset) => preset.key === "pastoral_follow_up") || CHURCH_ACTIVITY_PRESET_PACK[0];
 
   function applyChurchActivityPreset(
-    preset: (typeof CHURCH_ACTIVITY_PRESET_PACK)[number]
+    preset: (typeof CHURCH_ACTIVITY_PRESET_PACK)[number],
+    subjectUserId = ""
   ) {
+    const cleanSubjectUserId = cleanText(subjectUserId);
     updateActivityDraft("activity_type", preset.activityType);
     updateActivityDraft("activity_label", preset.activityLabel);
     updateActivityDraft("measurement_unit", preset.unit);
     updateActivityDraft("note", preset.note);
+    if (cleanSubjectUserId) {
+      updateActivityDraft("subject_user_id", cleanSubjectUserId);
+    }
     setActiveRealLifeRecordTask("activity");
     setActiveActivityRecordTask("record");
     setActiveActivityRecordStage("person");
@@ -1222,8 +1227,13 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                       <div style={{ ...sectionLabel(), fontSize: 10 }}>Private candidate IDs</div>
                                       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                                         {latestAttendanceVisibleCandidateIds.map((candidateId) => (
-                                          <span
+                                          <StableButton
                                             key={candidateId}
+                                            type="button"
+                                            kind="secondary"
+                                            stableHeight={28}
+                                            debugId="community-domain-dashboard.church-attendance-follow-up-candidate-select"
+                                            onClick={() => applyChurchActivityPreset(churchPastoralFollowUpPreset, candidateId)}
                                             style={{
                                               borderRadius: 999,
                                               border: "1px solid rgba(185,143,46,0.28)",
@@ -1232,10 +1242,11 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                               fontSize: 11,
                                               fontWeight: 800,
                                               padding: "4px 7px",
+                                              textTransform: "none",
                                             }}
                                           >
                                             {candidateId}
-                                          </span>
+                                          </StableButton>
                                         ))}
                                         {latestAttendanceHiddenCandidateCount ? (
                                           <span style={{ ...helperText(), fontSize: 11 }}>
