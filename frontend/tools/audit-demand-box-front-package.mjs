@@ -248,6 +248,22 @@ function requireApiPattern(pattern, message) {
     "DemandBox must compute visible tag matching from the same bounded community roster suggestions.",
   ],
   [
+    /data-gsn-demand-privacy-route="true"[\s\S]*?debugId="demand-box\.visibility\.community"[\s\S]*?debugId="demand-box\.visibility\.protected-target"[\s\S]*?Private Ask Person needs one matched GSN handle/,
+    "DemandBox must expose a deliberate privacy route selector for protected person-targeted requests.",
+  ],
+  [
+    /visibilityScope === DEMAND_VISIBILITY_PROTECTED && !selectedTagMember[\s\S]*?Choose a matched GSN handle before posting a private Ask Person request/,
+    "DemandBox must block protected Ask Person posts until the target handle matches a community member.",
+  ],
+  [
+    /visibility_scope: visibilityScope/,
+    "DemandBox create payload must send the selected visibility scope to the backend.",
+  ],
+  [
+    /data-gsn-demand-protected-target-chip="true"[\s\S]*?Private to matched person/,
+    "DemandBox request cards must visibly distinguish protected person-targeted rows.",
+  ],
+  [
     /data-gsn-demand-tag-preview="true"[\s\S]*?Matched community member[\s\S]*?will stay in the request text unless it matches an active member's GSN handle or ID/,
     "DemandBox must preview whether a typed GSN tag is a real in-community member before posting.",
   ],
@@ -353,6 +369,10 @@ function requireApiPattern(pattern, message) {
   [
     /mentioned_member_count\?: number \| null/,
     "API request type must include matched-member count metadata.",
+  ],
+  [
+    /visibility_scope\?: string \| null/,
+    "API request type must include protected/community visibility metadata.",
   ],
   [
     /offset\?: number/,

@@ -41,6 +41,7 @@ class MarketplaceRequestCreate(BaseModel):
     expires_in_hours: Optional[int] = Field(default=48, ge=1, le=168)
     payment_mode: Optional[str] = Field(default=None, max_length=40)
     allow_trust_credit: bool = False
+    visibility_scope: Optional[str] = Field(default="community_visible", max_length=40)
 
     @field_validator("clan_id", "expires_in_hours", mode="before")
     @classmethod
@@ -55,6 +56,7 @@ class MarketplaceRequestCreate(BaseModel):
         "area",
         "whatsapp_number",
         "payment_mode",
+        "visibility_scope",
         mode="before",
     )
     @classmethod
@@ -114,5 +116,6 @@ class MarketplaceRequestOut(BaseModel):
     is_tagged_for_me: bool = False
     routing_status: str = "community_queue"
     routing_hint: str = "Visible through the community queue."
+    visibility_scope: str = "community_visible"
 
     model_config = ConfigDict(from_attributes=True)

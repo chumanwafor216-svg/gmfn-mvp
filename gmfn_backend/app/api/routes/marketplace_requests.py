@@ -25,6 +25,9 @@ router = APIRouter(prefix="/marketplace/requests", tags=["marketplace-requests"]
 MAX_REQUESTS_PER_USER_24H = 5
 REQUEST_QUOTA_WINDOW_HOURS = 24
 DEFAULT_EXPIRY_HOURS = 48
+VISIBILITY_SCOPE_COMMUNITY = "community_visible"
+VISIBILITY_SCOPE_PROTECTED_TARGET = "protected_target"
+PROTECTED_TARGET_MARKER = "[GSN_VISIBILITY_SCOPE:protected_target]"
 
 
 def _now_utc() -> datetime:
@@ -225,13 +228,59 @@ _HANDLE_PATTERN = re.compile(r"@([A-Za-z0-9][A-Za-z0-9_.-]{2,63})")
 def _safe_text(value: object) -> str:
     return str(value or "").strip()
 
+def _normalize_visibility_scope(value: str | None) -> str:
+    raw = _safe_text(value).lower().replace("-", "_").replace(" ", "_")
+    if raw in {
+        "protected_target",
+        "private_target",
+        "targeted_private",
+        "ask_person",
+        "ask_leader",
+        "ask_pastor",
+        "person_only",
+    }:
+        return VISIBILITY_SCOPE_PROTECTED_TARGET
+    return VISIBILITY_SCOPE_COMMUNITY
+
+
+def _stored_description(description: str | None, visibility_scope: str) -> str | None:
+    body = _safe_text(description)
+    if visibility_scope != VISIBILITY_SCOPE_PROTECTED_TARGET:
+        return body or None
+    parts = [PROTECTED_TARGET_MARKER]
+    if body:
+        parts.append(body)
+    return "\n\n".join(parts)
+
+
+def _public_description(row: MarketplaceRequest) -> str | None:
+    description = _safe_text(getattr(row, "description", None))
+    if not description:
+        return None
+    cleaned = "\n".join(
+        line
+        for line in description.splitlines()
+        if line.strip() != PROTECTED_TARGET_MARKER
+    ).strip()
+    return cleaned or None
+
+
+def _request_visibility_scope(row: MarketplaceRequest) -> str:
+    description = _safe_text(getattr(row, "description", None))
+    if PROTECTED_TARGET_MARKER in description:
+        return VISIBILITY_SCOPE_PROTECTED_TARGET
+    return VISIBILITY_SCOPE_COMMUNITY
+
+
+def _is_protected_target_request(row: MarketplaceRequest) -> bool:
+    return _request_visibility_scope(row) == VISIBILITY_SCOPE_PROTECTED_TARGET
 
 def _request_text(row: MarketplaceRequest) -> str:
     return " ".join(
         part
         for part in [
             _safe_text(getattr(row, "title", None)),
-            _safe_text(getattr(row, "description", None)),
+            _safe_text(_public_description(row)),
             _safe_text(getattr(row, "category", None)),
             _safe_text(getattr(row, "area", None)),
         ]
@@ -249,11 +298,16 @@ def _is_ask_community_request(row: MarketplaceRequest) -> bool:
 
 
 def _request_source(row: MarketplaceRequest) -> str:
+    if _is_protected_target_request(row):
+        return "ask_person"
     return "ask_community" if _is_ask_community_request(row) else "demand_box"
 
 
 def _request_source_label(row: MarketplaceRequest) -> str:
-    return "Ask Community" if _request_source(row) == "ask_community" else "DemandBox"
+    source = _request_source(row)
+    if source == "ask_person":
+        return "Ask Person"
+    return "Ask Community" if source == "ask_community" else "DemandBox"
 
 
 def _request_need_type(row: MarketplaceRequest) -> str:
@@ -327,6 +381,8 @@ def _request_queue_keys(
         keys.append("tagged_for_me")
     if tagged_member_ids:
         keys.append("direct_tag")
+    if _is_protected_target_request(row):
+        keys.append("protected_target")
     if _is_ask_community_request(row):
         keys.append("ask_community")
     if _normalize_urgency(getattr(row, "urgency", None)) == "high":
@@ -343,6 +399,8 @@ def _request_routing_status(
     mentioned_member_ids: set[int] | None = None,
 ) -> str:
     if mentioned_member_ids:
+        if _is_protected_target_request(row):
+            return "protected_member_targeted"
         return "member_tagged"
     return "handle_text_detected" if _mentioned_handles(row) else "community_queue"
 
@@ -353,6 +411,8 @@ def _request_routing_hint(
     mentioned_member_ids: set[int] | None = None,
 ) -> str:
     if mentioned_member_ids:
+        if _is_protected_target_request(row):
+            return "Protected request: visible only to the requester and matched target member."
         return "Matched GSN member handles were routed to the tagged queue."
     if _mentioned_handles(row):
         return "Handle text was detected, but no same-community GSN member was matched."
@@ -363,7 +423,13 @@ def _request_routing_hint(
 
 def _request_action_url(row: MarketplaceRequest, queue: str | None = None) -> str:
     clan_id = getattr(row, "clan_id", None)
-    queue_key = queue or ("ask_community" if _is_ask_community_request(row) else "open")
+    queue_key = queue or (
+        "tagged"
+        if _is_protected_target_request(row)
+        else "ask_community"
+        if _is_ask_community_request(row)
+        else "open"
+    )
     if clan_id:
         return f"/app/demand-box?clan_id={int(clan_id)}&queue={queue_key}"
     return f"/app/demand-box?queue={queue_key}"
@@ -390,7 +456,7 @@ def _to_out(
         clan_name=getattr(clan, "name", None) if clan else None,
         marketplace_name=getattr(clan, "marketplace_name", None) if clan else None,
         title=row.title,
-        description=row.description,
+        description=_public_description(row),
         category=row.category,
         urgency=row.urgency,
         area=row.area,
@@ -431,8 +497,20 @@ def _to_out(
             row,
             mentioned_member_ids=mentioned_member_ids,
         ),
+        visibility_scope=_request_visibility_scope(row),
     )
 
+def _row_visible_to_user(
+    db: Session,
+    row: MarketplaceRequest,
+    *,
+    current_user_id: int,
+) -> bool:
+    if int(row.user_id) == int(current_user_id):
+        return True
+    if not _is_protected_target_request(row):
+        return True
+    return int(current_user_id) in _mentioned_member_ids(db, row)
 
 @router.post("", response_model=MarketplaceRequestOut)
 def create_marketplace_request(
@@ -462,12 +540,13 @@ def create_marketplace_request(
         requested_clan_id=payload.clan_id,
     )
     require_domain_demand_box_enabled(db, clan_id=request_clan_id)
+    visibility_scope = _normalize_visibility_scope(payload.visibility_scope)
 
     row = MarketplaceRequest(
         clan_id=request_clan_id,
         user_id=current_user.id,
         title=payload.title.strip(),
-        description=(payload.description or "").strip() or None,
+        description=_stored_description(payload.description, visibility_scope),
         category=(payload.category or "").strip() or None,
         urgency=urgency,
         area=(payload.area or "").strip() or None,
@@ -478,7 +557,15 @@ def create_marketplace_request(
         created_at=_now_utc(),
         expires_at=_now_utc() + timedelta(hours=expires_in_hours),
     )
-
+    mentioned_member_ids = _mentioned_member_ids(db, row)
+    if visibility_scope == VISIBILITY_SCOPE_PROTECTED_TARGET and len(mentioned_member_ids) != 1:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Private Ask Person requests need exactly one matched GSN handle "
+                "from this community before they can be posted."
+            ),
+        )
     db.add(row)
     db.commit()
     db.refresh(row)
@@ -503,7 +590,9 @@ def create_marketplace_request(
             user_id=uid,
             kind="demand_tagged" if tagged_for_recipient else "demand_new",
             title=(
-                "Demand tagged for you"
+                "Private request for you"
+                if visibility_scope == VISIBILITY_SCOPE_PROTECTED_TARGET
+                else "Demand tagged for you"
                 if tagged_for_recipient
                 else "New request near you"
             ),
@@ -520,7 +609,11 @@ def create_marketplace_request(
         user_id=current_user.id,
         kind="demand_posted",
         title="Your request is live",
-        message=f"Your request '{payload.title}' is now visible.",
+        message=(
+            f"Your private request '{payload.title}' is now routed."
+            if visibility_scope == VISIBILITY_SCOPE_PROTECTED_TARGET
+            else f"Your request '{payload.title}' is now visible."
+        ),
         action_url=_request_action_url(row),
         action_label="View your post",
     )
@@ -604,12 +697,17 @@ def list_marketplace_requests(
 
     offset_value = offset if isinstance(offset, int) else 0
 
-    rows = (
+    raw_rows = (
         q.order_by(MarketplaceRequest.created_at.desc())
         .offset(offset_value)
         .limit(limit)
         .all()
     )
+    rows = [
+        row
+        for row in raw_rows
+        if _row_visible_to_user(db, row, current_user_id=int(current_user.id))
+    ]
 
     return [_to_out(db, row, current_user_id=int(current_user.id)) for row in rows]
 
@@ -657,7 +755,9 @@ def get_marketplace_request(
         q = q.filter(or_(*visibility_filters))
 
     row = q.filter(MarketplaceRequest.id == request_id).first()
-    if not row:
+    if not row or not _row_visible_to_user(
+        db, row, current_user_id=int(current_user.id)
+    ):
         raise HTTPException(status_code=404, detail="Request not found")
 
     return _to_out(db, row, current_user_id=int(current_user.id))

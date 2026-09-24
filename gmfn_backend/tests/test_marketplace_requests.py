@@ -23,6 +23,10 @@ def _fake_second_user():
     return Obj(id=2, email="responder@example.com", role="member", gmfn_id="GSN-U-RESPONDER")
 
 
+def _fake_third_user():
+    return Obj(id=3, email="third@example.com", role="member", gmfn_id="GSN-U-THIRD")
+
+
 def _seed_primary_clan() -> None:
     with engine.begin() as conn:
         conn.execute(
@@ -102,6 +106,28 @@ def _add_second_member_to_primary_clan() -> None:
             )
         )
 
+
+
+
+def _add_third_member_to_primary_clan() -> None:
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (id, email, hashed_password, role, gmfn_id)
+                VALUES (3, 'third@example.com', 'hashed', 'member', 'GSN-U-THIRD')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships
+                    (clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 3, 'member', 0)
+                """
+            )
+        )
 
 
 def _add_second_clan_for_user() -> None:
@@ -421,6 +447,140 @@ def test_marketplace_request_surfaces_ask_community_routing_metadata_and_links()
             "action_url": "/app/demand-box?clan_id=1&queue=ask_community",
         },
     ]
+
+
+def test_marketplace_request_protected_target_is_only_visible_to_owner_and_matched_member():
+    _seed_primary_clan()
+    _add_second_member_to_primary_clan()
+    _add_third_member_to_primary_clan()
+
+    with SessionLocal() as db:
+        response = marketplace_requests.create_marketplace_request(
+            MarketplaceRequestCreate(
+                clan_id=1,
+                title="Please follow up privately with @GSN-U-RESPONDER",
+                description="Member care follow-up after Sunday service.",
+                category="Care follow-up",
+                visibility_scope="protected_target",
+            ),
+            db=db,
+            current_user=_fake_current_user(),
+        )
+        data = response.model_dump()
+
+        owner_rows = marketplace_requests.list_marketplace_requests(
+            db=db,
+            current_user=_fake_current_user(),
+            status="open",
+            category=None,
+            urgency=None,
+            area=None,
+            mine_only=True,
+            clan_id=1,
+            limit=50,
+        )
+        target_rows = marketplace_requests.list_marketplace_requests(
+            db=db,
+            current_user=_fake_second_user(),
+            status="open",
+            category=None,
+            urgency=None,
+            area=None,
+            mine_only=False,
+            clan_id=1,
+            limit=50,
+        )
+        third_rows = marketplace_requests.list_marketplace_requests(
+            db=db,
+            current_user=_fake_third_user(),
+            status="open",
+            category=None,
+            urgency=None,
+            area=None,
+            mine_only=False,
+            clan_id=1,
+            limit=50,
+        )
+        target_detail = marketplace_requests.get_marketplace_request(
+            request_id=data["id"],
+            db=db,
+            current_user=_fake_second_user(),
+            clan_id=1,
+        )
+        with pytest.raises(HTTPException) as third_detail_error:
+            marketplace_requests.get_marketplace_request(
+                request_id=data["id"],
+                db=db,
+                current_user=_fake_third_user(),
+                clan_id=1,
+            )
+
+    with engine.begin() as conn:
+        stored_description = conn.execute(
+            text("SELECT description FROM marketplace_requests WHERE id = :id"),
+            {"id": data["id"]},
+        ).scalar_one()
+        notices = conn.execute(
+            text(
+                """
+                SELECT user_id, kind, title, action_url
+                FROM notifications
+                ORDER BY id ASC
+                """
+            )
+        ).mappings().all()
+
+    assert data["visibility_scope"] == "protected_target"
+    assert data["source"] == "ask_person"
+    assert data["source_label"] == "Ask Person"
+    assert data["routing_status"] == "protected_member_targeted"
+    assert data["routing_hint"] == "Protected request: visible only to the requester and matched target member."
+    assert "protected_target" in data["queue_keys"]
+    assert "GSN_VISIBILITY_SCOPE" not in (data["description"] or "")
+    assert "GSN_VISIBILITY_SCOPE" in stored_description
+
+    assert len(owner_rows) == 1
+    assert len(target_rows) == 1
+    assert target_rows[0].is_tagged_for_me is True
+    assert target_rows[0].visibility_scope == "protected_target"
+    assert target_detail.id == data["id"]
+    assert third_rows == []
+    assert third_detail_error.value.status_code == 404
+    assert [dict(row) for row in notices] == [
+        {
+            "user_id": 2,
+            "kind": "demand_tagged",
+            "title": "Private request for you",
+            "action_url": "/app/demand-box?clan_id=1&queue=tagged",
+        },
+        {
+            "user_id": 1,
+            "kind": "demand_posted",
+            "title": "Your request is live",
+            "action_url": "/app/demand-box?clan_id=1&queue=tagged",
+        },
+    ]
+
+
+def test_marketplace_request_rejects_protected_target_without_one_matched_member():
+    _seed_primary_clan()
+    _add_second_member_to_primary_clan()
+
+    with SessionLocal() as db:
+        with pytest.raises(HTTPException) as exc:
+            marketplace_requests.create_marketplace_request(
+                MarketplaceRequestCreate(
+                    clan_id=1,
+                    title="Please follow up privately with @UNKNOWN-HANDLE",
+                    description="Private request should not fake delivery.",
+                    visibility_scope="protected_target",
+                ),
+                db=db,
+                current_user=_fake_current_user(),
+            )
+
+    assert exc.value.status_code == 400
+    assert "exactly one matched GSN handle" in exc.value.detail
 
 def test_marketplace_request_keeps_unmatched_handles_as_text_only():
     _seed_primary_clan()

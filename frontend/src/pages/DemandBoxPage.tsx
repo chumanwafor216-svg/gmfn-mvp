@@ -75,6 +75,7 @@ type DemandRow = {
   is_tagged_for_me?: boolean | null;
   routing_status?: string | null;
   routing_hint?: string | null;
+  visibility_scope?: string | null;
 };
 
 type NoticeTone = "success" | "error";
@@ -82,8 +83,11 @@ type DemandPaperScope = "owner" | "community";
 type DemandNoticeExpiryPolicy = "standard" | "urgent" | "event" | "pinned";
 type DemandQueueLane = "open" | "tagged" | "for_me" | "mine" | "ask_community" | "urgent" | "categories";
 type DemandTagMember = { userId: number; gsnId: string; label: string; role: string };
+type DemandVisibilityScope = "community_visible" | "protected_target";
 
 const DEMAND_BOX_PAGE_SIZE = 200;
+const DEMAND_VISIBILITY_COMMUNITY: DemandVisibilityScope = "community_visible";
+const DEMAND_VISIBILITY_PROTECTED: DemandVisibilityScope = "protected_target";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -446,10 +450,24 @@ function isDemandQuotaError(value: any): boolean {
 function isTaggedForMe(row: DemandRow): boolean {
   return row?.is_tagged_for_me === true || queueKeysOf(row).includes("tagged_for_me");
 }
+function demandVisibilityScope(row: DemandRow): DemandVisibilityScope {
+  const raw = safeStr(row?.visibility_scope).toLowerCase().replace(/[-\s]+/g, "_");
+  if (raw === DEMAND_VISIBILITY_PROTECTED || queueKeysOf(row).includes("protected_target")) {
+    return DEMAND_VISIBILITY_PROTECTED;
+  }
+  return DEMAND_VISIBILITY_COMMUNITY;
+}
+
+function isProtectedTargetDemand(row: DemandRow): boolean {
+  return demandVisibilityScope(row) === DEMAND_VISIBILITY_PROTECTED;
+}
 
 function routingLabel(row: DemandRow): string {
   const status = safeStr(row?.routing_status).toLowerCase();
+  if (isProtectedTargetDemand(row) && isTaggedForMe(row)) return "Private for you";
+  if (isProtectedTargetDemand(row)) return "Private target";
   if (isTaggedForMe(row)) return "Tagged for you";
+  if (status === "protected_member_targeted") return "Private target";
   if (status === "member_tagged") return "Tagged member";
   if (mentionedHandlesOf(row).length > 0) return "Handle typed";
   if (isAskCommunityDemand(row)) return "Ask lane";
@@ -751,6 +769,7 @@ export default function DemandBoxPage() {
   const [area, setArea] = useState("");
   const [category, setCategory] = useState("");
   const [targetHandle, setTargetHandle] = useState("");
+  const [visibilityScope, setVisibilityScope] = useState<DemandVisibilityScope>(DEMAND_VISIBILITY_COMMUNITY);
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [expiresInHours, setExpiresInHours] = useState("72");
   const [paymentMode, setPaymentMode] = useState("");
@@ -1006,6 +1025,9 @@ export default function DemandBoxPage() {
       `Request title: ${firstTruthy(row?.title, "Community demand request")}`,
       row?.description ? `Request detail: ${safeStr(row.description)}` : "",
       row?.category ? `Category: ${safeStr(row.category)}` : "",
+      isProtectedTargetDemand(row)
+        ? "Visibility: protected Ask Person request, visible only to requester and matched target."
+        : "Visibility: community DemandBox queue.",
       `Urgency: ${urgencyLabel(row?.urgency)}`,
       row?.area ? `Area: ${safeStr(row.area)}` : "",
       row?.payment_mode ? `Terms preference: ${safeStr(row.payment_mode)}` : "",
@@ -1040,7 +1062,9 @@ export default function DemandBoxPage() {
       ],
       bodyLines: details,
       privacyNote:
-        "Privacy: only request facts already visible on this DemandBox page are shown.",
+        isProtectedTargetDemand(row)
+          ? "Privacy: this is a protected targeted DemandBox request. Do not forward it as a community-visible request."
+          : "Privacy: only request facts already visible on this DemandBox page are shown.",
       limitationNote:
         "Limitation: request evidence only. Not approval to release goods, credit, money, or service, not a bank guarantee, and not proof that the request was fulfilled.",
     });
@@ -1159,6 +1183,14 @@ export default function DemandBoxPage() {
       return;
     }
 
+    if (visibilityScope === DEMAND_VISIBILITY_PROTECTED && !selectedTagMember) {
+      showNotice(
+        "error",
+        "Choose a matched GSN handle before posting a private Ask Person request."
+      );
+      return;
+    }
+
     setCreating(true);
 
     try {
@@ -1172,6 +1204,7 @@ export default function DemandBoxPage() {
         expires_in_hours: Number(expiresInHours || 0) > 0 ? Number(expiresInHours) : undefined,
         payment_mode: safeStr(paymentMode) || undefined,
         allow_trust_credit: allowTrustCredit,
+        visibility_scope: visibilityScope,
         clan_id: selectedClanId,
       });
 
@@ -1184,6 +1217,7 @@ export default function DemandBoxPage() {
       setArea("");
       setCategory("");
       setTargetHandle("");
+      setVisibilityScope(DEMAND_VISIBILITY_COMMUNITY);
       setWhatsappNumber("");
       setExpiresInHours("72");
       setPaymentMode("");
@@ -1192,7 +1226,12 @@ export default function DemandBoxPage() {
 
       await loadPage();
       setCreatePanelOpen(false);
-      showNotice("success", "Demand posted successfully.");
+      showNotice(
+        "success",
+        visibilityScope === DEMAND_VISIBILITY_PROTECTED
+          ? "Private Ask Person request routed to the matched member."
+          : "Demand posted successfully."
+      );
     } catch (err: any) {
       const errorText = safeStr(err?.message) || "Demand could not be created.";
       if (isDemandQuotaError(err)) {
@@ -1401,6 +1440,8 @@ export default function DemandBoxPage() {
     const canClose = options.canClose === true;
     const trustPosture = requesterTrustPostureLabel(row);
     const fromAskCommunity = isAskCommunityDemand(row);
+    const protectedTarget = isProtectedTargetDemand(row);
+    const sourceLabel = firstTruthy(row?.source_label, protectedTarget ? "Ask Person" : fromAskCommunity ? "Ask Community" : "DemandBox");
     const mentionedHandles = mentionedHandlesOf(row);
     const matchedTagCount = positiveNumber(row?.mentioned_member_count);
     const ownedCopyDebugId = `demand-box.request.${row?.id || index}.copy-paper`;
@@ -1461,9 +1502,12 @@ export default function DemandBoxPage() {
             flexWrap: "wrap",
           }}
         >
-          <span style={badge(fromAskCommunity)}>
-            Source: {fromAskCommunity ? "Ask Community" : "DemandBox"}
+          <span style={badge(fromAskCommunity || protectedTarget)}>
+            Source: {sourceLabel}
           </span>
+          {protectedTarget ? (
+            <span data-gsn-demand-protected-target-chip="true" style={badge(true)}>Private to matched person</span>
+          ) : null}
           <span style={badge(false)}>Need type: {categoryLabel(row)}</span>
           <span data-gsn-demand-routing-chip="true" style={badge(mentionedHandles.length > 0)}>
             Route: {routingLabel(row)}
@@ -2513,7 +2557,47 @@ export default function DemandBoxPage() {
                   </div>
                 ) : null}
               </div>
-
+              <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
+                <div style={sectionLabel()}>Privacy route</div>
+                <div
+                  data-gsn-demand-privacy-route="true"
+                  style={{
+                    marginTop: 8,
+                    display: "grid",
+                    gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                    gap: 10,
+                  }}
+                >
+                  <SecondaryButton
+                    type="button"
+                    debugId="demand-box.visibility.community"
+                    stableHeight={54}
+                    style={demandActionStyle(54)}
+                    onClick={() => setVisibilityScope(DEMAND_VISIBILITY_COMMUNITY)}
+                  >
+                    {demandIconText("community", visibilityScope === DEMAND_VISIBILITY_COMMUNITY ? "Community queue" : "Use community", 20)}
+                  </SecondaryButton>
+                  <SecondaryButton
+                    type="button"
+                    debugId="demand-box.visibility.protected-target"
+                    stableHeight={54}
+                    style={{
+                      ...demandActionStyle(54),
+                      border: visibilityScope === DEMAND_VISIBILITY_PROTECTED ? "1px solid rgba(18,107,75,0.34)" : undefined,
+                      background: visibilityScope === DEMAND_VISIBILITY_PROTECTED ? "linear-gradient(180deg, #F0FAF5 0%, #E6F6EF 100%)" : undefined,
+                      color: visibilityScope === DEMAND_VISIBILITY_PROTECTED ? "#126B4B" : undefined,
+                    }}
+                    onClick={() => setVisibilityScope(DEMAND_VISIBILITY_PROTECTED)}
+                  >
+                    {demandIconText("lock", visibilityScope === DEMAND_VISIBILITY_PROTECTED ? "Ask person" : "Private person", 20)}
+                  </SecondaryButton>
+                </div>
+                <div style={{ marginTop: 7, ...helperText(), fontSize: 12 }}>
+                  {visibilityScope === DEMAND_VISIBILITY_PROTECTED
+                    ? "Private Ask Person needs one matched GSN handle. Only you and that matched person should see the request."
+                    : "Community queue is visible to members who can answer inside the selected community."}
+                </div>
+              </div>
               <div>
                 <div style={sectionLabel()}>Area / location</div>
                 <input

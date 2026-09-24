@@ -7716,6 +7716,7 @@ export type MarketplaceRequestItem = {
   is_tagged_for_me?: boolean | null;
   routing_status?: string | null;
   routing_hint?: string | null;
+  visibility_scope?: string | null;
 };
 
 export async function listMarketplaceRequests(params?: {
@@ -7776,6 +7777,7 @@ export async function createMarketplaceRequest(payload: {
   expires_in_hours?: number;
   payment_mode?: string;
   allow_trust_credit?: boolean;
+  visibility_scope?: string;
   clan_id?: number | null;
 }): Promise<MarketplaceRequestItem> {
   const effectiveClanId =
