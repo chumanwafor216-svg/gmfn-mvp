@@ -1,3 +1,13 @@
+## 2026-09-24 - Church next follow-up date is structured
+- Status: Backend/frontend follow-up refinement implemented locally so church pastoral follow-up records now send a structured `follow_up_due_at` alongside the readable note marker.
+- Screens/routes affected: `POST /community-domains/{community_domain_id}/activities`; `GET /community-domains/{community_domain_id}/activities`; `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Record/Recent.
+- Files updated: `frontend/src/pages/CommunityDomainDashboardPage.tsx`, `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `gmfn_backend/tests/test_community_domain_collection_instructions.py`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Backend/test impact: the church pastoral follow-up test now posts `follow_up_due_at` and proves create/list payloads preserve it.
+- Frontend impact: selecting `Next follow-up date` now writes `activityDraft.follow_up_due_at` and also keeps `Next follow-up date: YYYY-MM-DD` in the note for older display compatibility. Recent due/overdue logic prefers structured `follow_up_due_at` and falls back to the note marker.
+- Verification passed: `python -m pytest -q gmfn_backend\tests\test_community_domain_collection_instructions.py -k "church_domain_can_record_private_pastoral_follow_up_without_payment_or_outcome_claim" --basetemp C:\tmp\pytest-church-structured-follow-up-date`, `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Publish status: local only. Per product-owner instruction, do not push or trigger Render until the current work batch is finished.
+- Devil truth: this improves data integrity, but it still does not create real reminders, owner acceptance, full backlog search, or safeguarding escalation.
+
 ## 2026-09-24 - Church follow-up reload context and row update action
 - Status: Backend/frontend follow-up refinement implemented locally so recent church Activity records can reload their saved note markers and open a row-specific follow-up update.
 - Screens/routes affected: `GET /community-domains/{community_domain_id}/activities`; `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent.

@@ -312,6 +312,7 @@ type CommunityDomainActivityDraft = {
   measurement_unit: string;
   note: string;
   evidence_reference: string;
+  follow_up_due_at: string;
 };
 
 type CommunityDomainAttendanceSessionDraft = {
@@ -798,6 +799,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     updateActivityDraft("activity_label", preset.activityLabel);
     updateActivityDraft("measurement_unit", preset.unit);
     updateActivityDraft("note", preset.note);
+    updateActivityDraft("follow_up_due_at", "");
     if (cleanSubjectUserId) {
       updateActivityDraft("subject_user_id", cleanSubjectUserId);
     }
@@ -878,11 +880,24 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     );
   }
 
+  function updateChurchFollowUpNextDate(value: string) {
+    updateActivityDraft("follow_up_due_at", cleanText(value));
+    updateChurchFollowUpNoteLine(CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX, value);
+  }
+
   function churchFollowUpRowNoteValue(item: ActivityRecordRow, prefix: string) {
     const matchingLine = cleanText(item?.note)
       .split("\n")
       .find((line) => line.trim().startsWith(prefix));
     return matchingLine ? matchingLine.trim().slice(prefix.length).trim() : "";
+  }
+
+  function churchFollowUpNextDateValue(item: ActivityRecordRow) {
+    const structuredDate = cleanText(item?.follow_up_due_at).slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(structuredDate)) {
+      return structuredDate;
+    }
+    return churchFollowUpRowNoteValue(item, CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX);
   }
 
   function churchFollowUpTodayIsoDate() {
@@ -894,7 +909,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
   }
 
   function churchFollowUpDueStatus(item: ActivityRecordRow) {
-    const nextDate = churchFollowUpRowNoteValue(item, CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX);
+    const nextDate = churchFollowUpNextDateValue(item);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(nextDate)) {
       return "";
     }
@@ -948,7 +963,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
       { label: "Owner", value: churchFollowUpRowNoteValue(item, CHURCH_FOLLOW_UP_OWNER_NOTE_PREFIX) },
       { label: "Route", value: churchFollowUpRowNoteValue(item, CHURCH_FOLLOW_UP_ROUTE_NOTE_PREFIX) },
       { label: "Outcome", value: churchFollowUpRowNoteValue(item, CHURCH_FOLLOW_UP_OUTCOME_NOTE_PREFIX) },
-      { label: "Next", value: churchFollowUpRowNoteValue(item, CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX) },
+      { label: "Next", value: churchFollowUpNextDateValue(item) },
     ].filter((detail) => Boolean(detail.value));
   }
 
@@ -2071,15 +2086,15 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                   <input
                                     data-debug-id="community-domain-dashboard.activity-record-follow-up-next-date"
                                     type="date"
-                                    value={churchFollowUpNoteValue(
-                                      CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX
-                                    )}
+                                    value={
+                                      activityDraft.follow_up_due_at ||
+                                      churchFollowUpNoteValue(
+                                        CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX
+                                      )
+                                    }
                                     disabled={busyActivityRecord}
                                     onChange={(event) =>
-                                      updateChurchFollowUpNoteLine(
-                                        CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX,
-                                        event.target.value
-                                      )
+                                      updateChurchFollowUpNextDate(event.target.value)
                                     }
                                     aria-label="Next follow-up date"
                                     style={billingInputStyle()}

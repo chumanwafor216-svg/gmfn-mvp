@@ -359,21 +359,34 @@ assertContains(
 
 assertContains(
   communityDomainDashboardFile,
-  /CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX[\s\S]*Next follow-up date:[\s\S]*community-domain-dashboard\.activity-record-follow-up-next-date[\s\S]*type="date"[\s\S]*churchFollowUpNoteValue\([\s\S]*CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX[\s\S]*updateChurchFollowUpNoteLine\([\s\S]*CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX[\s\S]*Next follow-up date/,
-  "Community Domain church pastoral follow-up records must let leaders mark the next follow-up date in the saved activity note.",
+  /CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX[\s\S]*Next follow-up date:[\s\S]*function updateChurchFollowUpNextDate[\s\S]*updateActivityDraft\("follow_up_due_at", cleanText\(value\)\)[\s\S]*updateChurchFollowUpNoteLine\(CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX, value\)[\s\S]*community-domain-dashboard\.activity-record-follow-up-next-date[\s\S]*type="date"[\s\S]*activityDraft\.follow_up_due_at \|\|[\s\S]*churchFollowUpNoteValue\([\s\S]*CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX[\s\S]*updateChurchFollowUpNextDate\(event\.target\.value\)[\s\S]*Next follow-up date/,
+  "Community Domain church pastoral follow-up records must let leaders mark the next follow-up date in the saved activity note while writing the structured due date.",
+  { frontend: true }
+);
+assertContains(
+  communityDomainDashboardFile,
+  /type CommunityDomainActivityDraft[\s\S]*follow_up_due_at: string[\s\S]*emptyCommunityDomainActivityDraft[\s\S]*follow_up_due_at: ""[\s\S]*recordCommunityDomainActivity\(requestDomainId[\s\S]*follow_up_due_at: activityDraft\.follow_up_due_at[\s\S]*\$\{activityDraft\.follow_up_due_at\}T00:00:00Z/,
+  "Community Domain activity record submit path must send structured follow_up_due_at instead of hiding church next-follow-up dates only in notes.",
   { frontend: true }
 );
 
 assertContains(
   communityDomainDashboardFile,
-  /function churchFollowUpRowNoteValue[\s\S]*function churchFollowUpRecentDetails[\s\S]*Owner[\s\S]*CHURCH_FOLLOW_UP_OWNER_NOTE_PREFIX[\s\S]*Route[\s\S]*CHURCH_FOLLOW_UP_ROUTE_NOTE_PREFIX[\s\S]*Outcome[\s\S]*CHURCH_FOLLOW_UP_OUTCOME_NOTE_PREFIX[\s\S]*Next[\s\S]*CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX[\s\S]*community-domain-dashboard\.activity-recent-records[\s\S]*activity_type[\s\S]*churchPastoralFollowUpPreset\.activityType[\s\S]*community-domain-dashboard\.activity-recent-follow-up-details[\s\S]*followUpDetails\.map[\s\S]*detail\.label[\s\S]*detail\.value/,
+  /function updateChurchFollowUpNextDate[\s\S]*updateActivityDraft\("follow_up_due_at", cleanText\(value\)\)[\s\S]*updateChurchFollowUpNoteLine\(CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX, value\)[\s\S]*function churchFollowUpNextDateValue[\s\S]*item\?\.follow_up_due_at[\s\S]*CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX[\s\S]*activityDraft\.follow_up_due_at \|\|[\s\S]*updateChurchFollowUpNextDate\(event\.target\.value\)/,
+  "Community Domain church follow-up date control must write the structured due date while keeping note-marker compatibility for older records.",
+  { frontend: true }
+);
+
+assertContains(
+  communityDomainDashboardFile,
+  /function churchFollowUpRowNoteValue[\s\S]*function churchFollowUpNextDateValue[\s\S]*item\?\.follow_up_due_at[\s\S]*CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX[\s\S]*function churchFollowUpRecentDetails[\s\S]*Owner[\s\S]*CHURCH_FOLLOW_UP_OWNER_NOTE_PREFIX[\s\S]*Route[\s\S]*CHURCH_FOLLOW_UP_ROUTE_NOTE_PREFIX[\s\S]*Outcome[\s\S]*CHURCH_FOLLOW_UP_OUTCOME_NOTE_PREFIX[\s\S]*Next[\s\S]*churchFollowUpNextDateValue\(item\)[\s\S]*community-domain-dashboard\.activity-recent-records[\s\S]*activity_type[\s\S]*churchPastoralFollowUpPreset\.activityType[\s\S]*community-domain-dashboard\.activity-recent-follow-up-details[\s\S]*followUpDetails\.map[\s\S]*detail\.label[\s\S]*detail\.value/,
   "Community Domain recent church pastoral follow-up records must surface saved owner, route, outcome, and next-date note markers.",
   { frontend: true }
 );
 
 assertContains(
   communityDomainDashboardFile,
-  /function churchFollowUpTodayIsoDate[\s\S]*getFullYear[\s\S]*padStart\(2, "0"\)[\s\S]*function churchFollowUpDueStatus[\s\S]*CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX[\s\S]*Overdue[\s\S]*Due today[\s\S]*followUpDueStatus = churchFollowUpDueStatus\(item\)[\s\S]*community-domain-dashboard\.activity-recent-follow-up-due-status[\s\S]*statusBadge\(followUpDueStatus\)/,
+  /function churchFollowUpNextDateValue[\s\S]*item\?\.follow_up_due_at[\s\S]*CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX[\s\S]*function churchFollowUpTodayIsoDate[\s\S]*getFullYear[\s\S]*padStart\(2, "0"\)[\s\S]*function churchFollowUpDueStatus[\s\S]*churchFollowUpNextDateValue\(item\)[\s\S]*Overdue[\s\S]*Due today[\s\S]*followUpDueStatus = churchFollowUpDueStatus\(item\)[\s\S]*community-domain-dashboard\.activity-recent-follow-up-due-status[\s\S]*statusBadge\(followUpDueStatus\)/,
   "Community Domain recent church pastoral follow-up records must flag due-today and overdue next follow-up dates without claiming reminders were sent.",
   { frontend: true }
 );
@@ -508,7 +521,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/tests/test_community_domain_collection_instructions.py",
-  /test_church_domain_can_record_private_pastoral_follow_up_without_payment_or_outcome_claim[\s\S]*"evidence_reference": "pastoral-care-register-001"[\s\S]*activity\["note"\]\.startswith\("Pastor or welfare officer recorded"\)[\s\S]*activity\["evidence_reference"\] == "pastoral-care-register-001"[\s\S]*listed_res = client\.get\("\/community-domains\/815\/activities"\)[\s\S]*listed_activity\["note"\]\.startswith\("Pastor or welfare officer recorded"\)[\s\S]*listed_activity\["evidence_reference"\] == "pastoral-care-register-001"/,
+  /test_church_domain_can_record_private_pastoral_follow_up_without_payment_or_outcome_claim[\s\S]*"evidence_reference": "pastoral-care-register-001"[\s\S]*activity\["note"\]\.startswith\("Pastor or welfare officer recorded"\)[\s\S]*activity\["evidence_reference"\] == "pastoral-care-register-001"[\s\S]*activity\["follow_up_due_at"\]\.startswith\("2026-09-25T09:00:00"\)[\s\S]*listed_res = client\.get\("\/community-domains\/815\/activities"\)[\s\S]*listed_activity\["note"\]\.startswith\("Pastor or welfare officer recorded"\)[\s\S]*listed_activity\["evidence_reference"\] == "pastoral-care-register-001"[\s\S]*listed_activity\["follow_up_due_at"\]\.startswith\("2026-09-25T09:00:00"\)/,
   "Backend tests must prove admin activity create and list payloads preserve private note markers and evidence references for church follow-up reloads."
 );
 assertContains(

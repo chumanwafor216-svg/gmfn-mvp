@@ -339,6 +339,7 @@ type CommunityDomainActivityDraft = {
   measurement_unit: string;
   note: string;
   evidence_reference: string;
+  follow_up_due_at: string;
 };
 
 type CommunityDomainOutcomeDraft = {
@@ -390,6 +391,7 @@ function emptyCommunityDomainActivityDraft(): CommunityDomainActivityDraft {
     measurement_unit: "",
     note: "",
     evidence_reference: "",
+    follow_up_due_at: "",
   };
 }
 
@@ -3589,6 +3591,9 @@ export default function CommunityDomainDashboardPage() {
         visibility: "director_safe",
         note: activityDraft.note,
         evidence_reference: activityDraft.evidence_reference,
+        follow_up_due_at: activityDraft.follow_up_due_at
+          ? `${activityDraft.follow_up_due_at}T00:00:00Z`
+          : null,
       });
       const [periodPayload, sponsorPayload, activityPayload] = await Promise.all([
         readOptional(() => getCommunityDomainPeriodSummary(requestDomainId)),

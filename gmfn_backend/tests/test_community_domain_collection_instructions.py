@@ -259,6 +259,7 @@ def test_church_domain_can_record_private_pastoral_follow_up_without_payment_or_
             "visibility": "admin_only",
             "note": "Pastor or welfare officer recorded that follow-up happened; no sensitive counselling detail stored.",
             "evidence_reference": "pastoral-care-register-001",
+            "follow_up_due_at": "2026-09-25T09:00:00Z",
         },
     )
 
@@ -270,6 +271,7 @@ def test_church_domain_can_record_private_pastoral_follow_up_without_payment_or_
     assert activity["visibility"] == "admin_only"
     assert activity["note"].startswith("Pastor or welfare officer recorded")
     assert activity["evidence_reference"] == "pastoral-care-register-001"
+    assert activity["follow_up_due_at"].startswith("2026-09-25T09:00:00")
     assert body["catalogue_item"] == {
         "activity_type": "pastoral_follow_up",
         "label": "Pastoral follow-up",
@@ -284,6 +286,7 @@ def test_church_domain_can_record_private_pastoral_follow_up_without_payment_or_
     assert listed_activity["activity_type"] == "pastoral_follow_up"
     assert listed_activity["note"].startswith("Pastor or welfare officer recorded")
     assert listed_activity["evidence_reference"] == "pastoral-care-register-001"
+    assert listed_activity["follow_up_due_at"].startswith("2026-09-25T09:00:00")
 
     with engine.begin() as conn:
         row = conn.execute(
