@@ -1,3 +1,10 @@
+## 2026-09-24 - Church follow-up owner can be marked on record
+- Status: Frontend follow-up refinement implemented so a church pastoral/welfare Activity record can preserve the follow-up owner or team in its saved note.
+- Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Church workflow packet -> Activity record evidence step.
+- Files updated: `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Frontend impact: when the activity type is `pastoral_follow_up` in the church workflow, the evidence step now shows a `Follow-up owner or team` input. It writes `Follow-up owner: {owner}` into the existing Activity note while preserving route, outcome, and free-note text.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Devil truth: this is assignment memory only. It does not notify the owner, create a task queue, prove acceptance, track overdue care, expose contact details safely by role, or handle safeguarding escalation.
 ## 2026-09-24 - Church follow-up outcome can be marked on record
 - Status: Frontend follow-up refinement implemented so a church pastoral/welfare Activity record can preserve a basic follow-up outcome in its saved note.
 - Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Church workflow packet -> Activity record evidence step.
