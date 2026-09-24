@@ -379,6 +379,13 @@ assertContains(
 );
 
 assertContains(
+  communityDomainDashboardFile,
+  /function churchFollowUpRecentAttentionSummary[\s\S]*activityRows\.slice\(0, 5\)[\s\S]*churchPastoralFollowUpPreset\.activityType[\s\S]*summary\.overdue \+= 1[\s\S]*summary\.dueToday \+= 1[\s\S]*community-domain-dashboard\.activity-recent-follow-up-attention-summary[\s\S]*Follow-up attention[\s\S]*Overdue: \{followUpAttention\.overdue\}[\s\S]*Due today: \{followUpAttention\.dueToday\}[\s\S]*Counts only loaded recent pastoral follow-up records\. This cue has not sent a reminder\./,
+  "Community Domain recent church pastoral follow-up records must summarize loaded due-today and overdue follow-up cues without implying a reminder was sent.",
+  { frontend: true }
+);
+
+assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
   /COMMUNITY_DOMAIN_ATTENDANCE_SESSION_EVENT[\s\S]*community_domain\.attendance_session\.opened[\s\S]*CommunityDomainAttendanceSessionIn[\s\S]*\/\{community_domain_id\}\/attendance-sessions[\s\S]*\/public\/attendance-sessions\/\{public_code\}[\s\S]*\/check-ins[\s\S]*COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY/,
   "Backend must expose Community Domain live attendance QR sessions and signed-in check-ins with a Presence Evidence boundary."

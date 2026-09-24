@@ -905,6 +905,25 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     return "";
   }
 
+  function churchFollowUpRecentAttentionSummary(): { overdue: number; dueToday: number } {
+    return activityRows.slice(0, 5).reduce<{ overdue: number; dueToday: number }>(
+      (summary, item) => {
+        if (cleanText(item?.activity_type) !== churchPastoralFollowUpPreset.activityType) {
+          return summary;
+        }
+        const dueStatus = churchFollowUpDueStatus(item);
+        if (dueStatus === "Overdue") {
+          summary.overdue += 1;
+        }
+        if (dueStatus === "Due today") {
+          summary.dueToday += 1;
+        }
+        return summary;
+      },
+      { overdue: 0, dueToday: 0 }
+    );
+  }
+
   function churchFollowUpRecentDetails(item: ActivityRecordRow) {
     return [
       { label: "Owner", value: churchFollowUpRowNoteValue(item, CHURCH_FOLLOW_UP_OWNER_NOTE_PREFIX) },
@@ -2138,6 +2157,47 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                               <div style={{ ...helperText(), fontSize: 13 }}>
                                 Recorded activity evidence is kept separate from confirmation and beneficiary outcome proof.
                               </div>
+                              {(() => {
+                                const followUpAttention = churchFollowUpRecentAttentionSummary();
+                                const attentionTotal = followUpAttention.overdue + followUpAttention.dueToday;
+                                return attentionTotal ? (
+                                  <div
+                                    data-debug-id="community-domain-dashboard.activity-recent-follow-up-attention-summary"
+                                    style={{
+                                      display: "flex",
+                                      flexWrap: "wrap",
+                                      gap: 8,
+                                      alignItems: "center",
+                                      padding: "8px 0",
+                                      borderTop: "1px solid rgba(9,27,46,0.1)",
+                                      borderBottom: "1px solid rgba(9,27,46,0.1)",
+                                    }}
+                                  >
+                                    <strong style={{ color: "#091B2E", fontSize: 14 }}>
+                                      Follow-up attention
+                                    </strong>
+                                    {followUpAttention.overdue ? (
+                                      <span style={statusBadge("Overdue")}>
+                                        Overdue: {followUpAttention.overdue}
+                                      </span>
+                                    ) : null}
+                                    {followUpAttention.dueToday ? (
+                                      <span style={statusBadge("Due today")}>
+                                        Due today: {followUpAttention.dueToday}
+                                      </span>
+                                    ) : null}
+                                    <span
+                                      style={{
+                                        ...helperText(),
+                                        flexBasis: "100%",
+                                        fontSize: 12,
+                                      }}
+                                    >
+                                      Counts only loaded recent pastoral follow-up records. This cue has not sent a reminder.
+                                    </span>
+                                  </div>
+                                ) : null;
+                              })()}
                               {activityRows.slice(0, 5).map((item) => (
                                 <div
                                   key={cleanText(item?.event_id)}

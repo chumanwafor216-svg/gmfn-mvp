@@ -1,3 +1,12 @@
+## 2026-09-24 - Church recent follow-up attention summary is visible
+- Status: Frontend follow-up refinement implemented locally so the recent Activity view surfaces a compact church pastoral follow-up attention summary.
+- Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent.
+- Files updated: `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Frontend impact: when loaded recent `pastoral_follow_up` records include saved next dates that are due today or overdue, the Recent view now shows a `Follow-up attention` strip with `Overdue` and `Due today` counts before the row list. The copy explicitly says it counts only loaded recent records and that no reminder was sent by the cue.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Publish status: local only. Per product-owner instruction, do not push or trigger Render until the current work batch is finished.
+- Devil truth: this is still not a real follow-up queue. It does not search all historical records, notify the assigned owner, require acceptance, create reminders, or handle safeguarding escalation.
+
 ## 2026-09-24 - Church recent follow-up due cue is visible
 - Status: Frontend follow-up refinement implemented locally so recent church pastoral/welfare Activity records can flag saved next follow-up dates that are due today or overdue.
 - Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent.
