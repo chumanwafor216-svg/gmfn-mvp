@@ -393,8 +393,15 @@ assertContains(
 
 assertContains(
   communityDomainDashboardFile,
-  /function churchFollowUpRecentAttentionSummary[\s\S]*activityRows\.slice\(0, 5\)[\s\S]*churchPastoralFollowUpPreset\.activityType[\s\S]*summary\.overdue \+= 1[\s\S]*summary\.dueToday \+= 1[\s\S]*function applyChurchRecentFollowUpRecordUpdate[\s\S]*subject_user_id[\s\S]*evidence_reference[\s\S]*activity-record:\$\{eventId\}[\s\S]*community-domain-dashboard\.activity-recent-follow-up-attention-summary[\s\S]*Follow-up attention[\s\S]*Overdue: \{followUpAttention\.overdue\}[\s\S]*Due today: \{followUpAttention\.dueToday\}[\s\S]*community-domain-dashboard\.activity-recent-follow-up-record-update[\s\S]*applyChurchActivityPreset\(churchPastoralFollowUpPreset\)[\s\S]*Record follow-up update[\s\S]*Counts only loaded recent pastoral follow-up records\. This cue has not sent a reminder\.[\s\S]*community-domain-dashboard\.activity-recent-follow-up-row-record-update[\s\S]*applyChurchRecentFollowUpRecordUpdate\(item\)[\s\S]*Record this update/,
-  "Community Domain recent church pastoral follow-up records must summarize loaded due-today and overdue follow-up cues, then bridge leaders back into the existing follow-up recorder without implying a reminder was sent.",
+  /const \[activityRows, setActivityRows\][\s\S]*const \[activityAttentionRows, setActivityAttentionRows\][\s\S]*listCommunityDomainActivities\(domainId, \{ limit: 5 \}\)[\s\S]*listCommunityDomainActivities\(domainId, \{ limit: 250 \}\)[\s\S]*activityRowsPayload[\s\S]*activityAttentionRowsPayload[\s\S]*setActivityRows\(payloadRecordArray\(activityRowsPayload, "items"\)\)[\s\S]*setActivityAttentionRows\(payloadRecordArray\(activityAttentionRowsPayload, "items"\)\)[\s\S]*activityRows,[\s\S]*activityAttentionRows,/,
+  "Community Domain governance loader must keep recent activity rows compact while loading a wider admin activity scan for church follow-up attention.",
+  { frontend: true }
+);
+
+assertContains(
+  communityDomainRealLifeRecordFile,
+  /activityRows: ActivityRecordRow\[\][\s\S]*activityAttentionRows: ActivityRecordRow\[\][\s\S]*activityRows,[\s\S]*activityAttentionRows,[\s\S]*function churchFollowUpRecentAttentionSummary[\s\S]*activityAttentionRows\.reduce[\s\S]*churchPastoralFollowUpPreset\.activityType[\s\S]*summary\.overdue \+= 1[\s\S]*summary\.dueToday \+= 1[\s\S]*community-domain-dashboard\.activity-recent-follow-up-attention-summary[\s\S]*Follow-up attention[\s\S]*Overdue: \{followUpAttention\.overdue\}[\s\S]*Due today: \{followUpAttention\.dueToday\}[\s\S]*community-domain-dashboard\.activity-recent-follow-up-record-update[\s\S]*applyChurchActivityPreset\(churchPastoralFollowUpPreset\)[\s\S]*Record follow-up update[\s\S]*Scans loaded admin activity records for pastoral follow-up dates\. This cue has not sent a reminder\.[\s\S]*activityRows\.slice\(0, 5\)\.map[\s\S]*community-domain-dashboard\.activity-recent-follow-up-row-record-update[\s\S]*applyChurchRecentFollowUpRecordUpdate\(item\)[\s\S]*Record this update/,
+  "Community Domain recent church pastoral follow-up records must summarize due-today and overdue follow-up cues from the wider attention scan, keep the visible recent rows compact, and bridge leaders back into the existing follow-up recorder without implying a reminder was sent.",
   { frontend: true }
 );
 

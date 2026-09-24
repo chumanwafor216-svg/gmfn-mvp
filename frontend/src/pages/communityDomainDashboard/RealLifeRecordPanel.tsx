@@ -485,6 +485,7 @@ export type RealLifeRecordPanelData = {
   activityRecordStageChooserOpen: boolean;
   activityRecordTaskChooserOpen: boolean;
   activityRows: ActivityRecordRow[];
+  activityAttentionRows: ActivityRecordRow[];
   attendanceSessionCopied: boolean;
   attendanceSessionDraft: CommunityDomainAttendanceSessionDraft;
   attendanceSessionRows: AttendanceSessionRow[];
@@ -628,6 +629,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     activityRecordStageChooserOpen,
     activityRecordTaskChooserOpen,
     activityRows,
+    activityAttentionRows,
     attendanceSessionCopied,
     attendanceSessionDraft,
     attendanceSessionRows,
@@ -924,7 +926,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
   }
 
   function churchFollowUpRecentAttentionSummary(): { overdue: number; dueToday: number } {
-    return activityRows.slice(0, 5).reduce<{ overdue: number; dueToday: number }>(
+    return activityAttentionRows.reduce<{ overdue: number; dueToday: number }>(
       (summary, item) => {
         if (cleanText(item?.activity_type) !== churchPastoralFollowUpPreset.activityType) {
           return summary;
@@ -2238,7 +2240,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                         fontSize: 12,
                                       }}
                                     >
-                                      Counts only loaded recent pastoral follow-up records. This cue has not sent a reminder.
+                                      Scans loaded admin activity records for pastoral follow-up dates. This cue has not sent a reminder.
                                     </span>
                                   </div>
                                 ) : null;

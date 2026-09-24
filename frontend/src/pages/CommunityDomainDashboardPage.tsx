@@ -2653,6 +2653,7 @@ export default function CommunityDomainDashboardPage() {
     useState<CommunityValueReportPeriodKey>("last_30_days");
   const [activityCatalogue, setActivityCatalogue] = useState<RealLifeActivityCatalogueOption[]>([]);
   const [activityRows, setActivityRows] = useState<RealLifeActivityRecordRow[]>([]);
+  const [activityAttentionRows, setActivityAttentionRows] = useState<RealLifeActivityRecordRow[]>([]);
   const [beneficiaryOutcomeRows, setBeneficiaryOutcomeRows] = useState<RealLifeBeneficiaryOutcomeRow[]>([]);
   const [beneficiaryCorrectionRows, setBeneficiaryCorrectionRows] = useState<UnknownRecord[]>([]);
   const [beneficiaryCorrectionDecisionByOutcomeId, setBeneficiaryCorrectionDecisionByOutcomeId] =
@@ -3112,6 +3113,7 @@ export default function CommunityDomainDashboardPage() {
     setSponsorSummary(null);
     setActivityCatalogue([]);
     setActivityRows([]);
+    setActivityAttentionRows([]);
     setActivityDraft(emptyCommunityDomainActivityDraft());
     setActiveRealLifeRecordTask(null);
     setActiveActivityRecordTask("record");
@@ -3595,14 +3597,16 @@ export default function CommunityDomainDashboardPage() {
           ? `${activityDraft.follow_up_due_at}T00:00:00Z`
           : null,
       });
-      const [periodPayload, sponsorPayload, activityPayload] = await Promise.all([
+      const [periodPayload, sponsorPayload, activityPayload, activityAttentionPayload] = await Promise.all([
         readOptional(() => getCommunityDomainPeriodSummary(requestDomainId)),
         readOptional(() => getCommunityDomainSponsorSummary(requestDomainId)),
         readOptional(() => listCommunityDomainActivities(requestDomainId, { limit: 5 })),
+        readOptional(() => listCommunityDomainActivities(requestDomainId, { limit: 250 })),
       ]);
       setPeriodSummary(periodPayload || null);
       setSponsorSummary(sponsorPayload || null);
       const refreshedActivityRows = payloadRecordArrayOrNull(activityPayload, "items");
+      const refreshedActivityAttentionRows = payloadRecordArrayOrNull(activityAttentionPayload, "items");
       const recordedActivity = isUnknownRecord(recorded?.activity)
         ? recorded.activity
         : null;
@@ -3611,6 +3615,12 @@ export default function CommunityDomainDashboardPage() {
           (recordedActivity
             ? [recordedActivity, ...activityRows].slice(0, 5)
             : activityRows)
+      );
+      setActivityAttentionRows(
+        refreshedActivityAttentionRows ??
+          (recordedActivity
+            ? [recordedActivity, ...activityAttentionRows].slice(0, 250)
+            : activityAttentionRows)
       );
       setActivityDraft(emptyCommunityDomainActivityDraft());
       setActiveActivityRecordStage("person");
@@ -4441,6 +4451,7 @@ export default function CommunityDomainDashboardPage() {
           readOptional(() => getCommunityDomainSponsorSummary(domainId)),
           readOptional(() => getCommunityDomainActivityCatalogue(domainId)),
           readOptional(() => listCommunityDomainActivities(domainId, { limit: 5 })),
+          readOptional(() => listCommunityDomainActivities(domainId, { limit: 250 })),
           readOptional(() => listCommunityDomainBeneficiaryOutcomes(domainId, { limit: 5 })),
           readOptional(() =>
             listCommunityDomainOutcomeCorrectionReviews(domainId, { limit: 5 })
@@ -4595,6 +4606,7 @@ export default function CommunityDomainDashboardPage() {
         sponsorSummaryPayload,
         activityCataloguePayload,
         activityRowsPayload,
+        activityAttentionRowsPayload,
         beneficiaryOutcomeRowsPayload,
         beneficiaryCorrectionRowsPayload,
       ] = payloads;
@@ -4608,6 +4620,7 @@ export default function CommunityDomainDashboardPage() {
       setSponsorSummary(isUnknownRecord(sponsorSummaryPayload) ? sponsorSummaryPayload : null);
       setActivityCatalogue(payloadRecordArray(activityCataloguePayload, "activity_catalogue"));
       setActivityRows(payloadRecordArray(activityRowsPayload, "items"));
+      setActivityAttentionRows(payloadRecordArray(activityAttentionRowsPayload, "items"));
       setBeneficiaryOutcomeRows(payloadRecordArray(beneficiaryOutcomeRowsPayload, "items"));
       setBeneficiaryCorrectionRows(payloadRecordArray(beneficiaryCorrectionRowsPayload, "items"));
       return;
@@ -10446,6 +10459,7 @@ export default function CommunityDomainDashboardPage() {
                           activityRecordStageChooserOpen,
                           activityRecordTaskChooserOpen,
                           activityRows,
+                          activityAttentionRows,
                           attendanceSessionCopied,
                           attendanceSessionDraft,
                           attendanceSessionRows,

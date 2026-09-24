@@ -1,3 +1,12 @@
+## 2026-09-24 - Church follow-up attention uses wider admin scan
+- Status: Frontend follow-up refinement implemented locally so the church pastoral follow-up attention strip is no longer calculated only from the five visible recent rows.
+- Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent.
+- Files updated: `frontend/src/pages/CommunityDomainDashboardPage.tsx`, `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Frontend impact: the governance loader still fetches 5 rows for the visible Recent list, but also fetches up to 250 admin activity rows into `activityAttentionRows`. The follow-up attention summary now counts due-today and overdue pastoral follow-up dates from that wider scan while keeping the visible list compact.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Publish status: local only. Per product-owner instruction, do not push or trigger Render until the current work batch is finished.
+- Devil truth: this reduces the chance of missing an overdue follow-up, but it is still not a database-backed due-follow-up queue, real reminder, assigned-owner acceptance workflow, or safeguarding escalation system.
+
 ## 2026-09-24 - Church next follow-up date is structured
 - Status: Backend/frontend follow-up refinement implemented locally so church pastoral follow-up records now send a structured `follow_up_due_at` alongside the readable note marker.
 - Screens/routes affected: `POST /community-domains/{community_domain_id}/activities`; `GET /community-domains/{community_domain_id}/activities`; `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Record/Recent.
