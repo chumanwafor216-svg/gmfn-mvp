@@ -372,6 +372,13 @@ assertContains(
 );
 
 assertContains(
+  communityDomainDashboardFile,
+  /function churchFollowUpTodayIsoDate[\s\S]*getFullYear[\s\S]*padStart\(2, "0"\)[\s\S]*function churchFollowUpDueStatus[\s\S]*CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX[\s\S]*Overdue[\s\S]*Due today[\s\S]*followUpDueStatus = churchFollowUpDueStatus\(item\)[\s\S]*community-domain-dashboard\.activity-recent-follow-up-due-status[\s\S]*statusBadge\(followUpDueStatus\)/,
+  "Community Domain recent church pastoral follow-up records must flag due-today and overdue next follow-up dates without claiming reminders were sent.",
+  { frontend: true }
+);
+
+assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
   /COMMUNITY_DOMAIN_ATTENDANCE_SESSION_EVENT[\s\S]*community_domain\.attendance_session\.opened[\s\S]*CommunityDomainAttendanceSessionIn[\s\S]*\/\{community_domain_id\}\/attendance-sessions[\s\S]*\/public\/attendance-sessions\/\{public_code\}[\s\S]*\/check-ins[\s\S]*COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY/,
   "Backend must expose Community Domain live attendance QR sessions and signed-in check-ins with a Presence Evidence boundary."

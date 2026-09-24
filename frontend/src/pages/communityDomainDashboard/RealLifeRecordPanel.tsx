@@ -882,6 +882,29 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     return matchingLine ? matchingLine.trim().slice(prefix.length).trim() : "";
   }
 
+  function churchFollowUpTodayIsoDate() {
+    const now = new Date();
+    const year = String(now.getFullYear());
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  function churchFollowUpDueStatus(item: ActivityRecordRow) {
+    const nextDate = churchFollowUpRowNoteValue(item, CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(nextDate)) {
+      return "";
+    }
+    const today = churchFollowUpTodayIsoDate();
+    if (nextDate < today) {
+      return "Overdue";
+    }
+    if (nextDate === today) {
+      return "Due today";
+    }
+    return "";
+  }
+
   function churchFollowUpRecentDetails(item: ActivityRecordRow) {
     return [
       { label: "Owner", value: churchFollowUpRowNoteValue(item, CHURCH_FOLLOW_UP_OWNER_NOTE_PREFIX) },
@@ -2140,7 +2163,8 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                   churchPastoralFollowUpPreset.activityType
                                     ? (() => {
                                         const followUpDetails = churchFollowUpRecentDetails(item);
-                                        return followUpDetails.length ? (
+                                        const followUpDueStatus = churchFollowUpDueStatus(item);
+                                        return followUpDetails.length || followUpDueStatus ? (
                                           <div
                                             data-debug-id="community-domain-dashboard.activity-recent-follow-up-details"
                                             style={{
@@ -2150,6 +2174,14 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                               gap: 6,
                                             }}
                                           >
+                                            {followUpDueStatus ? (
+                                              <span
+                                                data-debug-id="community-domain-dashboard.activity-recent-follow-up-due-status"
+                                                style={statusBadge(followUpDueStatus)}
+                                              >
+                                                {followUpDueStatus}
+                                              </span>
+                                            ) : null}
                                             {followUpDetails.map((detail) => (
                                               <span
                                                 key={detail.label}
