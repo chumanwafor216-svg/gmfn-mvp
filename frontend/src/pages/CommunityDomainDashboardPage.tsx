@@ -87,6 +87,7 @@ import {
   listCommunityDomainServiceSettings,
   listCommunityDomainActionReviews,
   listCommunityDomainActivities,
+  listCommunityDomainActivityFollowUps,
   lockCommunityDomainGovernancePackage,
   listCommunityDomainAttendanceSessions,
   listCommunityDomainCollectionInstructions,
@@ -3601,7 +3602,7 @@ export default function CommunityDomainDashboardPage() {
         readOptional(() => getCommunityDomainPeriodSummary(requestDomainId)),
         readOptional(() => getCommunityDomainSponsorSummary(requestDomainId)),
         readOptional(() => listCommunityDomainActivities(requestDomainId, { limit: 5 })),
-        readOptional(() => listCommunityDomainActivities(requestDomainId, { limit: 250 })),
+        readOptional(() => listCommunityDomainActivityFollowUps(requestDomainId, { limit: 50 })),
       ]);
       setPeriodSummary(periodPayload || null);
       setSponsorSummary(sponsorPayload || null);
@@ -4451,7 +4452,7 @@ export default function CommunityDomainDashboardPage() {
           readOptional(() => getCommunityDomainSponsorSummary(domainId)),
           readOptional(() => getCommunityDomainActivityCatalogue(domainId)),
           readOptional(() => listCommunityDomainActivities(domainId, { limit: 5 })),
-          readOptional(() => listCommunityDomainActivities(domainId, { limit: 250 })),
+          readOptional(() => listCommunityDomainActivityFollowUps(domainId, { limit: 50 })),
           readOptional(() => listCommunityDomainBeneficiaryOutcomes(domainId, { limit: 5 })),
           readOptional(() =>
             listCommunityDomainOutcomeCorrectionReviews(domainId, { limit: 5 })

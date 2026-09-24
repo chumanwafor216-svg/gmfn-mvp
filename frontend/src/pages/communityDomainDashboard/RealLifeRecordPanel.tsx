@@ -2321,7 +2321,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                         fontSize: 12,
                                       }}
                                     >
-                                      Shows up to five due or overdue pastoral follow-up records from the loaded admin scan. This cue has not sent a reminder.
+                                      Shows up to five due or overdue pastoral follow-up records from the admin due queue. This cue has not sent a reminder.
                                     </span>
                                   </div>
                                 ) : null;

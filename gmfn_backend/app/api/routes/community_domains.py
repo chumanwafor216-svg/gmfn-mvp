@@ -1931,6 +1931,49 @@ def _community_domain_activity_event_payload(row: TrustEvent) -> dict[str, Any]:
     }
 
 
+def _community_domain_follow_up_due_date(value: Any) -> Optional[str]:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    due_day = text[:10]
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", due_day):
+        return None
+    try:
+        datetime.strptime(due_day, "%Y-%m-%d")
+    except ValueError:
+        return None
+    return due_day
+
+
+def _community_domain_follow_up_cutoff(value: Optional[str]) -> str:
+    if value is None:
+        return datetime.now(timezone.utc).date().isoformat()
+    due_day = _community_domain_follow_up_due_date(value)
+    if due_day is None:
+        raise HTTPException(
+            status_code=400,
+            detail="due_on_or_before must use YYYY-MM-DD.",
+        )
+    return due_day
+
+
+def _community_domain_follow_up_queue_item(
+    row: TrustEvent,
+    *,
+    cutoff_day: str,
+) -> dict[str, Any]:
+    payload = _community_domain_activity_event_payload(row)
+    due_day = _community_domain_follow_up_due_date(payload.get("follow_up_due_at"))
+    payload["follow_up_due_date"] = due_day
+    payload["follow_up_queue_status"] = (
+        "overdue_before_cutoff"
+        if due_day is not None and due_day < cutoff_day
+        else "due_on_cutoff"
+    )
+    payload["queue_source"] = "pastoral_follow_up_activity_records_v1"
+    return payload
+
+
 def _community_domain_activity_events(
     db: Session,
     *,
@@ -1977,6 +2020,7 @@ def _community_domain_activity_events(
         if len(rows) < batch_size:
             break
     return filtered
+
 
 def _community_domain_outcome_event_payload(row: TrustEvent) -> dict[str, Any]:
     meta = row.meta or {}
@@ -26092,6 +26136,88 @@ def list_community_domain_activities(
             "Activity records are admin-visible Trust Events for recorded community "
             "activities. They do not expose private notes publicly, replace attendance "
             "imports, or prove beneficiary outcomes without follow-up records."
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/activities/follow-ups", response_model=dict[str, Any])
+def list_community_domain_activity_follow_ups(
+    community_domain_id: int,
+    due_on_or_before: Optional[str] = Query(default=None),
+    community_node_id: Optional[int] = Query(default=None, ge=1),
+    include_descendants: bool = Query(default=True),
+    limit: int = Query(default=50, ge=1, le=100),
+    scan_limit: int = Query(default=1000, ge=50, le=2000),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    cutoff_day = _community_domain_follow_up_cutoff(due_on_or_before)
+    node_scope_ids: list[int] = []
+    if community_node_id is not None:
+        node = _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=int(community_node_id),
+        )
+        node_scope_ids = _descendant_node_ids(
+            db,
+            domain=domain,
+            node=node,
+            include_descendants=bool(include_descendants),
+        )
+
+    rows = _community_domain_activity_events(
+        db,
+        community_domain_id=int(domain.id),
+        community_node_ids=node_scope_ids or None,
+        limit=int(scan_limit),
+    )
+    due_rows: list[TrustEvent] = []
+    for row in rows:
+        meta = row.meta or {}
+        if _clean_template_key(meta.get("activity_type")) != "pastoral_follow_up":
+            continue
+        due_day = _community_domain_follow_up_due_date(meta.get("follow_up_due_at"))
+        if due_day is None or due_day > cutoff_day:
+            continue
+        due_rows.append(row)
+
+    due_rows.sort(
+        key=lambda row: (
+            _community_domain_follow_up_due_date((row.meta or {}).get("follow_up_due_at"))
+            or "9999-12-31",
+            -int(row.id),
+        )
+    )
+    visible_rows = due_rows[: int(limit)]
+    overdue_before_cutoff_total = sum(
+        1
+        for row in due_rows
+        if (_community_domain_follow_up_due_date((row.meta or {}).get("follow_up_due_at")) or "")
+        < cutoff_day
+    )
+    due_on_cutoff_total = len(due_rows) - overdue_before_cutoff_total
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "community_node_ids": node_scope_ids,
+        "due_on_or_before": cutoff_day,
+        "items": [
+            _community_domain_follow_up_queue_item(row, cutoff_day=cutoff_day)
+            for row in visible_rows
+        ],
+        "total": len(visible_rows),
+        "queue_total": len(due_rows),
+        "overdue_before_cutoff_total": overdue_before_cutoff_total,
+        "due_on_cutoff_total": due_on_cutoff_total,
+        "scan_limit": int(scan_limit),
+        "boundary": (
+            "Pastoral follow-up queue v1 is an admin-only due list built from "
+            "recorded Community Domain activity Trust Events. It does not send "
+            "reminders, assign responsibility, prove care happened, or replace "
+            "safeguarding escalation."
         ),
     }
 

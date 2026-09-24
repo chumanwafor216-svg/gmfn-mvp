@@ -393,18 +393,36 @@ assertContains(
 
 assertContains(
   communityDomainDashboardFile,
-  /const \[activityRows, setActivityRows\][\s\S]*const \[activityAttentionRows, setActivityAttentionRows\][\s\S]*listCommunityDomainActivities\(domainId, \{ limit: 5 \}\)[\s\S]*listCommunityDomainActivities\(domainId, \{ limit: 250 \}\)[\s\S]*activityRowsPayload[\s\S]*activityAttentionRowsPayload[\s\S]*setActivityRows\(payloadRecordArray\(activityRowsPayload, "items"\)\)[\s\S]*setActivityAttentionRows\(payloadRecordArray\(activityAttentionRowsPayload, "items"\)\)[\s\S]*activityRows,[\s\S]*activityAttentionRows,/,
-  "Community Domain governance loader must keep recent activity rows compact while loading a wider admin activity scan for church follow-up attention.",
+  /const \[activityRows, setActivityRows\][\s\S]*const \[activityAttentionRows, setActivityAttentionRows\][\s\S]*listCommunityDomainActivities\(domainId, \{ limit: 5 \}\)[\s\S]*listCommunityDomainActivityFollowUps\(domainId, \{ limit: 50 \}\)[\s\S]*activityRowsPayload[\s\S]*activityAttentionRowsPayload[\s\S]*setActivityRows\(payloadRecordArray\(activityRowsPayload, "items"\)\)[\s\S]*setActivityAttentionRows\(payloadRecordArray\(activityAttentionRowsPayload, "items"\)\)[\s\S]*activityRows,[\s\S]*activityAttentionRows,/,
+  "Community Domain governance loader must keep recent activity rows compact while loading the backend admin due-follow-up queue for church follow-up attention.",
   { frontend: true }
 );
 
 assertContains(
   communityDomainRealLifeRecordFile,
-  /activityRows: ActivityRecordRow\[\][\s\S]*activityAttentionRows: ActivityRecordRow\[\][\s\S]*activityRows,[\s\S]*activityAttentionRows,[\s\S]*function churchFollowUpRecentAttentionSummary[\s\S]*activityAttentionRows\.reduce[\s\S]*summary\.overdue \+= 1[\s\S]*summary\.dueToday \+= 1[\s\S]*function churchFollowUpAttentionItems[\s\S]*activityAttentionRows[\s\S]*Boolean\(churchFollowUpDueStatus\(item\)\)[\s\S]*churchFollowUpNextDateValue\(left\)[\s\S]*slice\(0, 5\)[\s\S]*community-domain-dashboard\.activity-recent-follow-up-attention-summary[\s\S]*Follow-up attention[\s\S]*Overdue: \{followUpAttention\.overdue\}[\s\S]*Due today: \{followUpAttention\.dueToday\}[\s\S]*community-domain-dashboard\.activity-recent-follow-up-record-update[\s\S]*Record follow-up update[\s\S]*followUpAttentionItems\.length[\s\S]*community-domain-dashboard\.activity-recent-follow-up-attention-queue[\s\S]*followUpAttentionItems\.map[\s\S]*community-domain-dashboard\.activity-recent-follow-up-attention-queue-row[\s\S]*subjectReferenceLabel\(item\)[\s\S]*community-domain-dashboard\.activity-recent-follow-up-attention-row-record-update[\s\S]*applyChurchRecentFollowUpRecordUpdate\(item\)[\s\S]*Shows up to five due or overdue pastoral follow-up records from the loaded admin scan\. This cue has not sent a reminder\.[\s\S]*activityRows\.slice\(0, 5\)\.map[\s\S]*community-domain-dashboard\.activity-recent-follow-up-row-record-update[\s\S]*Record this update/,
-  "Community Domain recent church pastoral follow-up records must summarize due-today and overdue follow-up cues from the wider attention scan, show a compact actionable attention queue, keep the visible recent rows compact, and bridge leaders back into the existing follow-up recorder without implying a reminder was sent.",
+  /activityRows: ActivityRecordRow\[\][\s\S]*activityAttentionRows: ActivityRecordRow\[\][\s\S]*activityRows,[\s\S]*activityAttentionRows,[\s\S]*function churchFollowUpRecentAttentionSummary[\s\S]*activityAttentionRows\.reduce[\s\S]*summary\.overdue \+= 1[\s\S]*summary\.dueToday \+= 1[\s\S]*function churchFollowUpAttentionItems[\s\S]*activityAttentionRows[\s\S]*Boolean\(churchFollowUpDueStatus\(item\)\)[\s\S]*churchFollowUpNextDateValue\(left\)[\s\S]*slice\(0, 5\)[\s\S]*community-domain-dashboard\.activity-recent-follow-up-attention-summary[\s\S]*Follow-up attention[\s\S]*Overdue: \{followUpAttention\.overdue\}[\s\S]*Due today: \{followUpAttention\.dueToday\}[\s\S]*community-domain-dashboard\.activity-recent-follow-up-record-update[\s\S]*Record follow-up update[\s\S]*followUpAttentionItems\.length[\s\S]*community-domain-dashboard\.activity-recent-follow-up-attention-queue[\s\S]*followUpAttentionItems\.map[\s\S]*community-domain-dashboard\.activity-recent-follow-up-attention-queue-row[\s\S]*subjectReferenceLabel\(item\)[\s\S]*community-domain-dashboard\.activity-recent-follow-up-attention-row-record-update[\s\S]*applyChurchRecentFollowUpRecordUpdate\(item\)[\s\S]*Shows up to five due or overdue pastoral follow-up records from the admin due queue\. This cue has not sent a reminder\.[\s\S]*activityRows\.slice\(0, 5\)\.map[\s\S]*community-domain-dashboard\.activity-recent-follow-up-row-record-update[\s\S]*Record this update/,
+  "Community Domain recent church pastoral follow-up records must summarize due-today and overdue follow-up cues from the backend due-follow-up queue, show a compact actionable attention queue, keep the visible recent rows compact, and bridge leaders back into the existing follow-up recorder without implying a reminder was sent.",
   { frontend: true }
 );
 
+assertContains(
+  "src/lib/api.ts",
+  /listCommunityDomainActivityFollowUps[\s\S]*\/activities\/follow-ups[\s\S]*due_on_or_before[\s\S]*scan_limit/,
+  "Frontend API helpers must expose the admin pastoral due-follow-up queue instead of only reusing the general activity list.",
+  { frontend: true }
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /list_community_domain_activity_follow_ups[\s\S]*due_on_or_before[\s\S]*scan_limit[\s\S]*pastoral_follow_up[\s\S]*follow_up_due_at[\s\S]*overdue_before_cutoff_total[\s\S]*Pastoral follow-up queue v1 is an admin-only due list/,
+  "Backend must expose an admin-only pastoral follow-up due queue with an honest non-reminder boundary."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domain_collection_instructions.py",
+  /test_activity_follow_up_queue_returns_due_pastoral_records_only[\s\S]*\/community-domains\/824\/activities\/follow-ups\?due_on_or_before=2026-09-24&limit=10[\s\S]*Queue church follow-up[\s\S]*Future church follow-up[\s\S]*not in str\(body\["items"\]\)[\s\S]*Due non-pastoral activity[\s\S]*not in str\(body\["items"\]\)[\s\S]*Other domain due follow-up[\s\S]*not in str\(body\["items"\]\)/,
+  "Backend tests must prove the pastoral follow-up queue returns due target-domain pastoral rows without future, non-pastoral, or other-domain leakage."
+);
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
   /COMMUNITY_DOMAIN_ATTENDANCE_SESSION_EVENT[\s\S]*community_domain\.attendance_session\.opened[\s\S]*CommunityDomainAttendanceSessionIn[\s\S]*\/\{community_domain_id\}\/attendance-sessions[\s\S]*\/public\/attendance-sessions\/\{public_code\}[\s\S]*\/check-ins[\s\S]*COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY/,

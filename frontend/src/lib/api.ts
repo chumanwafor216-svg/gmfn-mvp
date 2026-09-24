@@ -3537,6 +3537,29 @@ export async function listCommunityDomainActivities(
   );
 }
 
+export async function listCommunityDomainActivityFollowUps(
+  communityDomainId: number | string,
+  params: {
+    due_on_or_before?: string | null;
+    community_node_id?: number | string | null;
+    include_descendants?: boolean | null;
+    limit?: number | string | null;
+    scan_limit?: number | string | null;
+  } = {}
+): Promise<any> {
+  return httpJson(
+    `${communityDomainPath(communityDomainId, "/activities/follow-ups")}${buildQuery({
+      due_on_or_before: params.due_on_or_before || undefined,
+      community_node_id: params.community_node_id || undefined,
+      include_descendants:
+        params.include_descendants == null ? undefined : params.include_descendants,
+      limit: params.limit || undefined,
+      scan_limit: params.scan_limit || undefined,
+    })}`,
+    "GET"
+  );
+}
+
 export async function recordCommunityDomainActivity(
   communityDomainId: number | string,
   payload: {
