@@ -486,6 +486,7 @@ def test_activity_follow_up_queue_returns_due_pastoral_records_only(
     assert body["scan_limit"] == 1000
     assert body["scanned_activity_total"] == 3
     assert body["scan_window_exhausted"] is False
+    assert body["resolved_reference_scan_window_exhausted"] is False
     assert body["items"][0]["community_domain_id"] == 824
     assert body["items"][0]["activity_label"] == "Queue church follow-up"
     assert body["items"][0]["follow_up_due_date"] == "2026-09-23"
@@ -554,7 +555,9 @@ def test_activity_follow_up_queue_reports_exhausted_scan_window(
     assert body["scan_limit"] == 50
     assert body["scanned_activity_total"] == 50
     assert body["scan_window_exhausted"] is True
+    assert body["resolved_reference_scan_window_exhausted"] is True
     assert "older activity records may exist outside the response" in body["boundary"]
+    assert "resolved references are checked only inside the scanned activity window" in body["boundary"]
     assert "Scan window church follow-up 0" not in str(body["items"])
 
 
@@ -726,6 +729,7 @@ def test_activity_follow_up_queue_hides_records_resolved_by_later_update(
     assert body["total"] == 1
     assert body["queue_total"] == 1
     assert body["resolved_reference_total"] == 1
+    assert body["resolved_reference_scan_window_exhausted"] is False
     assert body["items"][0]["activity_label"] == "Still due church follow-up"
     assert "Resolved church follow-up" not in str(body["items"])
     assert "Recorded update for resolved follow-up" not in str(body["items"])

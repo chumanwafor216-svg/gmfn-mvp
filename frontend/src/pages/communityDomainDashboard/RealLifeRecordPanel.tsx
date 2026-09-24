@@ -436,6 +436,7 @@ type ActivityAttentionSummary = {
   scannedActivityTotal: number;
   scanWindowExhausted: boolean;
   resolvedReferenceTotal: number;
+  resolvedReferenceScanWindowExhausted: boolean;
 };
 type BeneficiaryOutcomeRelatedRecord = {
   event_id?: string | number | null;
@@ -999,6 +1000,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     const queueTotal = activityAttentionSummary?.queueTotal ?? displayedCount;
     const rowTotal = activityAttentionSummary?.rowTotal ?? displayedCount;
     const resolvedReferenceTotal = activityAttentionSummary?.resolvedReferenceTotal ?? 0;
+    const resolvedReferenceScanWindowExhausted = activityAttentionSummary?.resolvedReferenceScanWindowExhausted ?? false;
     const scanLimit = activityAttentionSummary?.scanLimit ?? 0;
     const scannedActivityTotal = activityAttentionSummary?.scannedActivityTotal ?? 0;
     const scanWindowExhausted = activityAttentionSummary?.scanWindowExhausted ?? false;
@@ -1018,6 +1020,9 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
       parts.push(
         `${resolvedReferenceTotal} due ${resolvedReferenceTotal === 1 ? "record has" : "records have"} already been hidden because a later update referenced ${resolvedReferenceTotal === 1 ? "it" : "them"}.`
       );
+    }
+    if (resolvedReferenceScanWindowExhausted) {
+      parts.push("The resolved-record check uses the same scan window, so older resolved updates may need manual review.");
     }
     parts.push("This cue has not sent a reminder.");
     return parts.join(" ");

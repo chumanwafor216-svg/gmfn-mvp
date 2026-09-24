@@ -26232,6 +26232,7 @@ def list_community_domain_activity_follow_ups(
         "overdue_before_cutoff_total": overdue_before_cutoff_total,
         "due_on_cutoff_total": due_on_cutoff_total,
         "resolved_reference_total": resolved_due_reference_total,
+        "resolved_reference_scan_window_exhausted": scan_window_exhausted,
         "scan_limit": int(scan_limit),
         "scanned_activity_total": scanned_activity_total,
         "scan_window_exhausted": scan_window_exhausted,
@@ -26240,7 +26241,8 @@ def list_community_domain_activity_follow_ups(
             "recorded Community Domain activity Trust Events. It does not send "
             "reminders, assign responsibility, prove care happened, or replace "
             "safeguarding escalation. When scan_window_exhausted is true, older "
-            "activity records may exist outside the response."
+            "activity records may exist outside the response, and resolved "
+            "references are checked only inside the scanned activity window."
         ),
     }
 

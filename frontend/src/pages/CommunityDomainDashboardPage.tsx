@@ -1755,6 +1755,7 @@ function activityAttentionSummaryFromPayload(
     "scanned_activity_total",
     "scan_window_exhausted",
     "resolved_reference_total",
+    "resolved_reference_scan_window_exhausted",
   ].some((key) => Object.prototype.hasOwnProperty.call(payload, key));
   if (!hasSummary) return null;
   return {
@@ -1766,6 +1767,7 @@ function activityAttentionSummaryFromPayload(
     scannedActivityTotal: payloadNonNegativeInt(payload, "scanned_activity_total"),
     scanWindowExhausted: payloadBoolean(payload, "scan_window_exhausted"),
     resolvedReferenceTotal: payloadNonNegativeInt(payload, "resolved_reference_total"),
+    resolvedReferenceScanWindowExhausted: payloadBoolean(payload, "resolved_reference_scan_window_exhausted"),
   };
 }
 

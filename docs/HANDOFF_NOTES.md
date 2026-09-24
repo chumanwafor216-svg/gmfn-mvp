@@ -162041,3 +162041,16 @@ Operational note:
 - Verification passed: `npm --prefix frontend run audit:spotlight-controls`; `npm --prefix frontend run audit:web-push-production-readiness`; `npm --prefix frontend run audit:pwa-icon-publish-readiness-nonmutating`; `npm --prefix frontend run build`.
 - Deployment facts: initial app fix commit `9d3c658c` pushed to `main`; GitHub Actions Render workflow run `35828881635` completed successfully and Render reported frontend deploy `dep-dapnepsbqjoc73aktim0` live after accepting hook deploy `dep-dapnepvlk1mc73c8nk7g`.
 - Devil truth: the iPhone fix is a strong code-level hypothesis, not proof. A real iPhone 14/15 installed shortcut must be tested after deployment to confirm the shaking complaint is gone, especially across first open after deploy, second open, and after leaving the app idle.
+
+## 2026-09-24 - Church follow-up resolved-reference scan boundary (local)
+
+- Status: Local backend/frontend truth-boundary hardening implemented and verified; not pushed or deployed because pilot publishing is frozen into batch mode.
+- Owner trigger: continuation of the pastor/church customer-discovery gap work after identifying that the pastoral follow-up queue used the same bounded activity scan both to build the due queue and to detect later updates that reference/resolved earlier follow-ups.
+- Backend route affected: `GET /community-domains/{community_domain_id}/activities/follow-ups` in `gmfn_backend/app/api/routes/community_domains.py`.
+- Frontend screen affected: `/app/community-domain/:id` Community Domain dashboard Real-life record church/pastoral follow-up attention queue through `frontend/src/pages/CommunityDomainDashboardPage.tsx` and `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`.
+- Behavior changed: the follow-up queue response now includes `resolved_reference_scan_window_exhausted`, set from the bounded scan-window state, and the backend boundary now says resolved references are checked only inside the scanned activity window when the scan is exhausted.
+- UI changed: the church follow-up queue note now warns that the resolved-record check uses the same scan window, so older resolved updates may need manual review when the scan window is full.
+- Guardrail changed: `frontend/tools/audit-community-domain-product-contracts.mjs` now cages the new backend field, the frontend parser/type, the church queue warning text, and backend tests for ordinary, exhausted, and resolved-reference cases.
+- Truth boundary: this does not create a permanent task/status table or a full historical resolver. It is an honest MVP boundary so leaders do not treat a bounded event scan as perfect proof that every old pastoral follow-up remains due.
+- Verification passed: targeted backend pytest for the three activity follow-up queue tests; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run build`; `git diff --check` for touched slice files.
+- Publishing status: no push, no Render deploy, no pipeline burn.
