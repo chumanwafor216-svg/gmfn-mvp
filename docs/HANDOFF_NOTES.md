@@ -1,3 +1,10 @@
+## 2026-09-24 - Church attendance candidate IDs surfaced in workflow packet
+- Status: Frontend UI slice implemented after the backend started returning admin-only `follow_up_candidate_user_ids` for church attendance follow-up.
+- Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Church workflow packet.
+- Files updated: `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Frontend impact: the Care follow-up snapshot now shows a compact `Private candidate IDs` row when candidate IDs exist, capped to the first 12 IDs with a `+N more` indicator. The row sits beside Members, Present, and Follow-up counts and keeps the no-public-absence-list/privacy boundary visible.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Devil truth: the UI still shows IDs only. It does not resolve names, contact details, follow-up ownership, consent, escalation status, WhatsApp delivery, visit records, or pastoral case notes. That restraint is deliberate until role/privacy decisions are explicit.
 ## 2026-09-24 - Church attendance follow-up candidate IDs added
 - Status: Local backend refinement implemented after re-reading the pastor/church discovery success measure: the pilot is only useful if authorised leaders can identify which regular members may need welcome-team follow-up, not just how many.
 - Screens/routes affected: admin backend `/community-domains/{id}/attendance-sessions` and session creation payloads; public `/community-domains/public/attendance-sessions/{public_code}` remains unchanged and does not expose the follow-up snapshot.

@@ -334,6 +334,7 @@ type AttendanceFollowUpSnapshot = {
   expected_member_count?: string | number | null;
   present_member_count?: string | number | null;
   follow_up_needed_count?: string | number | null;
+  follow_up_candidate_user_ids?: Array<string | number> | null;
   follow_up_status?: string | number | null;
   next_step?: string | number | null;
   boundary?: string | number | null;
@@ -745,6 +746,18 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
   const latestAttendanceFollowUpCount = cleanText(
     latestAttendanceFollowUpSnapshot?.follow_up_needed_count,
     "0"
+  );
+  const latestAttendanceFollowUpCandidateIds = Array.isArray(
+    latestAttendanceFollowUpSnapshot?.follow_up_candidate_user_ids
+  )
+    ? latestAttendanceFollowUpSnapshot.follow_up_candidate_user_ids
+        .map((candidateId) => cleanText(candidateId))
+        .filter(Boolean)
+    : [];
+  const latestAttendanceVisibleCandidateIds = latestAttendanceFollowUpCandidateIds.slice(0, 12);
+  const latestAttendanceHiddenCandidateCount = Math.max(
+    latestAttendanceFollowUpCandidateIds.length - latestAttendanceVisibleCandidateIds.length,
+    0
   );
   const latestResponseChannel = responseChannelRows[0] || null;
   const latestResponseActive = Boolean(latestResponseChannel?.active);
@@ -1188,16 +1201,54 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                       </div>
                                     ))}
                                   </div>
+                                  {latestAttendanceFollowUpCandidateIds.length ? (
+                                    <div
+                                      data-debug-id="community-domain-dashboard.church-attendance-follow-up-candidate-ids"
+                                      style={{
+                                        display: "grid",
+                                        gap: 6,
+                                        borderRadius: 10,
+                                        border: "1px solid rgba(9,27,46,0.08)",
+                                        background: "#FFFFFF",
+                                        padding: "8px 9px",
+                                      }}
+                                    >
+                                      <div style={{ ...sectionLabel(), fontSize: 10 }}>Private candidate IDs</div>
+                                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                                        {latestAttendanceVisibleCandidateIds.map((candidateId) => (
+                                          <span
+                                            key={candidateId}
+                                            style={{
+                                              borderRadius: 999,
+                                              border: "1px solid rgba(185,143,46,0.28)",
+                                              background: "#FFF8E3",
+                                              color: "#091B2E",
+                                              fontSize: 11,
+                                              fontWeight: 800,
+                                              padding: "4px 7px",
+                                            }}
+                                          >
+                                            {candidateId}
+                                          </span>
+                                        ))}
+                                        {latestAttendanceHiddenCandidateCount ? (
+                                          <span style={{ ...helperText(), fontSize: 11 }}>
+                                            +{latestAttendanceHiddenCandidateCount} more
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                    </div>
+                                  ) : null}
                                   <div style={{ ...helperText(), fontSize: 12 }}>
                                     {cleanText(
                                       latestAttendanceFollowUpSnapshot.next_step,
-                                      "Use the private church roster or welcome-team record for any care checks. Do not publish an absence list."
+                                      "Use the private church roster to resolve the candidate user IDs for welcome-team care checks. Do not publish an absence list."
                                     )}
                                   </div>
                                   <div style={{ ...helperText(), fontSize: 11 }}>
                                     {cleanText(
                                       latestAttendanceFollowUpSnapshot.boundary,
-                                      "Admin-only count snapshot. It does not expose an absent-member list or replace pastoral judgement."
+                                      "Admin-only snapshot. It shows private candidate IDs without member names or contact details, and it does not replace pastoral judgement."
                                     )}
                                   </div>
                                 </div>
