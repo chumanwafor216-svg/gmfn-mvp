@@ -763,6 +763,9 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     latestAttendanceFollowUpCandidateIds.length - latestAttendanceVisibleCandidateIds.length,
     0
   );
+  const latestAttendanceEvidenceReference = cleanText(latestAttendanceSession?.event_id)
+    ? `attendance-session:${cleanText(latestAttendanceSession?.event_id)}`
+    : "";
   const latestResponseChannel = responseChannelRows[0] || null;
   const latestResponseActive = Boolean(latestResponseChannel?.active);
   const latestResponseCount = cleanText(latestResponseChannel?.response_count, "0");
@@ -772,15 +775,20 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
 
   function applyChurchActivityPreset(
     preset: (typeof CHURCH_ACTIVITY_PRESET_PACK)[number],
-    subjectUserId = ""
+    subjectUserId = "",
+    evidenceReference = ""
   ) {
     const cleanSubjectUserId = cleanText(subjectUserId);
+    const cleanEvidenceReference = cleanText(evidenceReference);
     updateActivityDraft("activity_type", preset.activityType);
     updateActivityDraft("activity_label", preset.activityLabel);
     updateActivityDraft("measurement_unit", preset.unit);
     updateActivityDraft("note", preset.note);
     if (cleanSubjectUserId) {
       updateActivityDraft("subject_user_id", cleanSubjectUserId);
+    }
+    if (cleanEvidenceReference) {
+      updateActivityDraft("evidence_reference", cleanEvidenceReference);
     }
     setActiveRealLifeRecordTask("activity");
     setActiveActivityRecordTask("record");
@@ -1233,7 +1241,13 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                             kind="secondary"
                                             stableHeight={28}
                                             debugId="community-domain-dashboard.church-attendance-follow-up-candidate-select"
-                                            onClick={() => applyChurchActivityPreset(churchPastoralFollowUpPreset, candidateId)}
+                                            onClick={() =>
+                                              applyChurchActivityPreset(
+                                                churchPastoralFollowUpPreset,
+                                                candidateId,
+                                                latestAttendanceEvidenceReference
+                                              )
+                                            }
                                             style={{
                                               borderRadius: 999,
                                               border: "1px solid rgba(185,143,46,0.28)",
@@ -1292,7 +1306,13 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                     stableHeight={34}
                                     disabled={busyActivityRecord}
                                     debugId="community-domain-dashboard.church-attendance-record-follow-up"
-                                    onClick={() => applyChurchActivityPreset(churchPastoralFollowUpPreset)}
+                                    onClick={() =>
+                                      applyChurchActivityPreset(
+                                        churchPastoralFollowUpPreset,
+                                        "",
+                                        latestAttendanceEvidenceReference
+                                      )
+                                    }
                                     style={{ justifySelf: "start", fontSize: 12, textTransform: "none" }}
                                   >
                                     Record Follow-up

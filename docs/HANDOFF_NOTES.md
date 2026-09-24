@@ -1,3 +1,10 @@
+## 2026-09-24 - Church follow-up records keep attendance source reference
+- Status: Frontend follow-up refinement implemented so pastoral/welfare Activity records opened from the attendance care snapshot carry an attendance-session evidence reference.
+- Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Church workflow packet.
+- Files updated: `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Frontend impact: selecting a private follow-up candidate now pre-fills both `subject_user_id` and `evidence_reference` with `attendance-session:{event_id}`. The general `Record Follow-up` action also carries the attendance-session source when available.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Devil truth: this adds an audit breadcrumb only. It does not prove the follow-up happened, show member names, assign owners, send messages, capture consent, log call outcomes, manage visits, or handle safeguarding escalation.
 ## 2026-09-24 - Church follow-up candidate IDs prefill record subject
 - Status: Frontend follow-up refinement implemented so clicking a private attendance candidate ID opens the existing pastoral/welfare Activity record with that candidate as the subject user id.
 - Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Church workflow packet.

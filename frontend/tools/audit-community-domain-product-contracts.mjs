@@ -303,21 +303,21 @@ assertContains(
 );
 assertContains(
   communityDomainDashboardFile,
-  /community-domain-dashboard\.church-attendance-follow-up-snapshot[\s\S]*Care follow-up snapshot[\s\S]*Members[\s\S]*Present[\s\S]*Follow-up[\s\S]*community-domain-dashboard\.church-attendance-follow-up-candidate-ids[\s\S]*Private candidate IDs[\s\S]*community-domain-dashboard\.church-attendance-follow-up-candidate-select[\s\S]*applyChurchActivityPreset\(churchPastoralFollowUpPreset, candidateId\)[\s\S]*community-domain-dashboard\.church-attendance-follow-up-review-roster[\s\S]*Review Roster[\s\S]*community-domain-dashboard\.church-attendance-follow-up-route[\s\S]*community-domain-dashboard\.church-attendance-record-follow-up[\s\S]*Record Follow-up[\s\S]*Do not publish an absence list[\s\S]*without member names or contact details/,
+  /community-domain-dashboard\.church-attendance-follow-up-snapshot[\s\S]*Care follow-up snapshot[\s\S]*Members[\s\S]*Present[\s\S]*Follow-up[\s\S]*community-domain-dashboard\.church-attendance-follow-up-candidate-ids[\s\S]*Private candidate IDs[\s\S]*community-domain-dashboard\.church-attendance-follow-up-candidate-select[\s\S]*applyChurchActivityPreset[\s\S]*churchPastoralFollowUpPreset,[\s\S]*candidateId,[\s\S]*latestAttendanceEvidenceReference[\s\S]*community-domain-dashboard\.church-attendance-follow-up-review-roster[\s\S]*Review Roster[\s\S]*community-domain-dashboard\.church-attendance-follow-up-route[\s\S]*community-domain-dashboard\.church-attendance-record-follow-up[\s\S]*Record Follow-up[\s\S]*Do not publish an absence list[\s\S]*without member names or contact details/,
   "Community Domain church workflow packet must show admin-only private candidate IDs with a roster-review action beside the care follow-up counts without exposing names or contact details.",
   { frontend: true }
 );
 
 assertContains(
   communityDomainDashboardFile,
-  /churchPastoralFollowUpPreset[\s\S]*pastoral_follow_up[\s\S]*community-domain-dashboard\.church-attendance-record-follow-up[\s\S]*applyChurchActivityPreset\(churchPastoralFollowUpPreset\)/,
+  /churchPastoralFollowUpPreset[\s\S]*pastoral_follow_up[\s\S]*community-domain-dashboard\.church-attendance-record-follow-up[\s\S]*applyChurchActivityPreset[\s\S]*churchPastoralFollowUpPreset,[\s\S]*"",[\s\S]*latestAttendanceEvidenceReference/,
   "Community Domain church attendance snapshot must bridge follow-up candidates into the existing pastoral follow-up activity recorder.",
   { frontend: true }
 );
 
 assertContains(
   communityDomainDashboardFile,
-  /function applyChurchActivityPreset[\s\S]*subjectUserId[\s\S]*cleanSubjectUserId[\s\S]*updateActivityDraft\("subject_user_id", cleanSubjectUserId\)/,
+  /latestAttendanceEvidenceReference[\s\S]*attendance-session:\$\{cleanText\(latestAttendanceSession\?\.event_id\)\}[\s\S]*function applyChurchActivityPreset[\s\S]*subjectUserId[\s\S]*evidenceReference[\s\S]*cleanEvidenceReference[\s\S]*updateActivityDraft\("subject_user_id", cleanSubjectUserId\)[\s\S]*updateActivityDraft\("evidence_reference", cleanEvidenceReference\)/,
   "Community Domain church follow-up candidate selection must prefill the activity subject user id before recording.",
   { frontend: true }
 );
