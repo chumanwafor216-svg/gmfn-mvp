@@ -334,6 +334,7 @@ type DomainFeaturePolicyConfig = {
 
 type CommunityDomainActivityDraft = {
   subject_user_id: string;
+  community_node_id: string;
   activity_type: string;
   activity_label: string;
   quantity: string;
@@ -386,6 +387,7 @@ type BeneficiaryDeliveryReceiptCorrectionDraft = {
 function emptyCommunityDomainActivityDraft(): CommunityDomainActivityDraft {
   return {
     subject_user_id: "",
+    community_node_id: "",
     activity_type: "attendance",
     activity_label: "",
     quantity: "",
@@ -3635,6 +3637,7 @@ export default function CommunityDomainDashboardPage() {
     try {
       const recorded = await recordCommunityDomainActivity(requestDomainId, {
         subject_user_id: subjectUserId,
+        community_node_id: activityDraft.community_node_id || null,
         activity_type: activityDraft.activity_type,
         activity_label: activityDraft.activity_label,
         quantity: activityDraft.quantity,

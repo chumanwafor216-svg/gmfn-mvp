@@ -406,6 +406,19 @@ assertContains(
 );
 
 assertContains(
+  communityDomainDashboardFile,
+  /type CommunityDomainActivityDraft[\s\S]*subject_user_id: string[\s\S]*community_node_id: string[\s\S]*function emptyCommunityDomainActivityDraft[\s\S]*community_node_id: ""[\s\S]*recordCommunityDomainActivity\(requestDomainId, \{[\s\S]*subject_user_id: subjectUserId[\s\S]*community_node_id: activityDraft\.community_node_id \|\| null/,
+  "Community Domain activity recording must preserve optional node scope through the draft and API payload.",
+  { frontend: true }
+);
+
+assertContains(
+  communityDomainRealLifeRecordFile,
+  /type CommunityDomainActivityDraft[\s\S]*subject_user_id: string[\s\S]*community_node_id: string[\s\S]*function applyChurchActivityPreset[\s\S]*communityNodeId = ""[\s\S]*cleanCommunityNodeId[\s\S]*updateActivityDraft\("community_node_id", cleanCommunityNodeId\)[\s\S]*function applyChurchRecentFollowUpRecordUpdate[\s\S]*cleanText\(item\?\.community_node_id\)[\s\S]*communityNodeId[\s\S]*value=\{activityDraft\.community_node_id\}[\s\S]*Community node id \(optional\)/,
+  "Community Domain church follow-up update actions must carry the original node id into the activity recorder and expose the optional node scope field.",
+  { frontend: true }
+);
+assertContains(
   "src/lib/api.ts",
   /listCommunityDomainActivityFollowUps[\s\S]*\/activities\/follow-ups[\s\S]*due_on_or_before[\s\S]*scan_limit/,
   "Frontend API helpers must expose the admin pastoral due-follow-up queue instead of only reusing the general activity list.",

@@ -162079,3 +162079,14 @@ Operational note:
 - Truth boundary: this still uses a bounded event scan; it now avoids a false certainty warning when the scan count exactly equals the requested limit.
 - Verification passed: targeted backend pytest for five activity follow-up queue tests; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run build`; `git diff --check` for touched slice files.
 - Publishing status: no push, no Render deploy, no pipeline burn.
+
+## 2026-09-24 - Church follow-up update preserves node scope (local)
+
+- Status: Local frontend/audit correction implemented and verified; not pushed or deployed because pilot publishing remains frozen into batch mode.
+- Owner trigger: continuation of pastor/church customer-discovery gap work after finding follow-up update actions opened from node-scoped pastoral cues did not carry the original `community_node_id` into the activity recorder.
+- Frontend screen affected: `/app/community-domain/:id` Community Domain dashboard Real-life record activity recorder / church pastoral follow-up attention queue through `frontend/src/pages/CommunityDomainDashboardPage.tsx` and `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`.
+- Behavior changed: activity recording draft now includes optional `community_node_id`, submits it to the existing `recordCommunityDomainActivity` API helper, shows an optional Community node id input, and `Record follow-up update` carries `item.community_node_id` from the due queue into the update draft.
+- Guardrail changed: `frontend/tools/audit-community-domain-product-contracts.mjs` now cages the activity draft node field, API payload, optional node input, and follow-up update node carry-forward.
+- Truth boundary: this preserves node context for manual records and follow-up updates; it does not create a node picker, infer node placement from membership, or change backend permissions/schema.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run build`; `git diff --check` for touched slice files.
+- Publishing status: no push, no Render deploy, no pipeline burn.

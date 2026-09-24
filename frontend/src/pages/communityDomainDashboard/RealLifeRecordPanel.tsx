@@ -306,6 +306,7 @@ const BENEFICIARY_OUTCOME_RECENT_PACKET_OPTIONS: Array<{
 
 type CommunityDomainActivityDraft = {
   subject_user_id: string;
+  community_node_id: string;
   activity_type: string;
   activity_label: string;
   quantity: string;
@@ -811,10 +812,12 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
   function applyChurchActivityPreset(
     preset: (typeof CHURCH_ACTIVITY_PRESET_PACK)[number],
     subjectUserId = "",
-    evidenceReference = ""
+    evidenceReference = "",
+    communityNodeId = ""
   ) {
     const cleanSubjectUserId = cleanText(subjectUserId);
     const cleanEvidenceReference = cleanText(evidenceReference);
+    const cleanCommunityNodeId = cleanText(communityNodeId);
     updateActivityDraft("activity_type", preset.activityType);
     updateActivityDraft("activity_label", preset.activityLabel);
     updateActivityDraft("measurement_unit", preset.unit);
@@ -825,6 +828,9 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     }
     if (cleanEvidenceReference) {
       updateActivityDraft("evidence_reference", cleanEvidenceReference);
+    }
+    if (cleanCommunityNodeId) {
+      updateActivityDraft("community_node_id", cleanCommunityNodeId);
     }
     setActiveRealLifeRecordTask("activity");
     setActiveActivityRecordTask("record");
@@ -1040,6 +1046,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     const subjectUserId = cleanText(item?.subject_user_id);
     const existingReference = cleanText(item?.evidence_reference);
     const eventId = cleanText(item?.event_id);
+    const communityNodeId = cleanText(item?.community_node_id);
     const recordReference = eventId ? `activity-record:${eventId}` : "";
     const evidenceReference = [existingReference, recordReference]
       .filter(Boolean)
@@ -1048,7 +1055,8 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     applyChurchActivityPreset(
       churchPastoralFollowUpPreset,
       subjectUserId,
-      evidenceReference
+      evidenceReference,
+      communityNodeId
     );
   }
 
@@ -1933,6 +1941,19 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                       )
                                     }
                                     placeholder="Subject user id"
+                                    inputMode="numeric"
+                                    style={billingInputStyle()}
+                                  />
+                                  <input
+                                    value={activityDraft.community_node_id}
+                                    disabled={busyActivityRecord}
+                                    onChange={(event) =>
+                                      updateActivityDraft(
+                                        "community_node_id",
+                                        event.target.value
+                                      )
+                                    }
+                                    placeholder="Community node id (optional)"
                                     inputMode="numeric"
                                     style={billingInputStyle()}
                                   />
