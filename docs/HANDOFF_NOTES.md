@@ -1,3 +1,10 @@
+## 2026-09-24 - Church attendance follow-up route cues added
+- Status: Frontend follow-up refinement implemented so the church attendance care snapshot now names the discovered care route without pretending GSN performs the care work.
+- Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Church workflow packet.
+- Files updated: `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Frontend impact: the admin-only `Care follow-up snapshot` now shows compact route cues: `Call`, `Text`, `WhatsApp`, `Visit`, and `Escalate`, sitting beside the private candidate IDs and roster-review action. This mirrors the pastor/church discovery route while keeping contact details and pastoral decisions outside the snapshot.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Devil truth: this is only a visual operating prompt. It does not assign a follow-up owner, send WhatsApp/SMS/email, record call outcomes, manage home visits, capture consent, or handle safeguarding/pastoral escalation.
 ## 2026-09-24 - Church attendance candidate IDs route to member roster
 - Status: Frontend follow-up refinement implemented so admin-visible attendance candidate IDs now have a direct next action instead of being a dead-end list.
 - Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Church workflow packet.

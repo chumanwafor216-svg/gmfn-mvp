@@ -303,8 +303,15 @@ assertContains(
 );
 assertContains(
   communityDomainDashboardFile,
-  /community-domain-dashboard\.church-attendance-follow-up-snapshot[\s\S]*Care follow-up snapshot[\s\S]*Members[\s\S]*Present[\s\S]*Follow-up[\s\S]*community-domain-dashboard\.church-attendance-follow-up-candidate-ids[\s\S]*Private candidate IDs[\s\S]*candidateId[\s\S]*community-domain-dashboard\.church-attendance-follow-up-review-roster[\s\S]*Review Roster[\s\S]*Do not publish an absence list[\s\S]*without member names or contact details/,
+  /community-domain-dashboard\.church-attendance-follow-up-snapshot[\s\S]*Care follow-up snapshot[\s\S]*Members[\s\S]*Present[\s\S]*Follow-up[\s\S]*community-domain-dashboard\.church-attendance-follow-up-candidate-ids[\s\S]*Private candidate IDs[\s\S]*candidateId[\s\S]*community-domain-dashboard\.church-attendance-follow-up-review-roster[\s\S]*Review Roster[\s\S]*community-domain-dashboard\.church-attendance-follow-up-route[\s\S]*Do not publish an absence list[\s\S]*without member names or contact details/,
   "Community Domain church workflow packet must show admin-only private candidate IDs with a roster-review action beside the care follow-up counts without exposing names or contact details.",
+  { frontend: true }
+);
+
+assertContains(
+  communityDomainDashboardFile,
+  /CHURCH_ATTENDANCE_FOLLOW_UP_ROUTE_STEPS[\s\S]*Call[\s\S]*Text[\s\S]*WhatsApp[\s\S]*Visit[\s\S]*Escalate/,
+  "Community Domain church attendance follow-up route cues must mirror the discovered call/text/WhatsApp/visit/escalation path.",
   { frontend: true }
 );
 

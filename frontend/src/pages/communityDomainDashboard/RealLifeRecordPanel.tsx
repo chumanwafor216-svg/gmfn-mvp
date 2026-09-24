@@ -198,6 +198,8 @@ const CHURCH_ACTIVITY_PRESET_PACK: Array<{
     note: "Record church-held contribution memory only. This is not GSN payment confirmation, settlement proof, or impact proof.",
   },
 ];
+
+const CHURCH_ATTENDANCE_FOLLOW_UP_ROUTE_STEPS = ["Call", "Text", "WhatsApp", "Visit", "Escalate"];
 const BENEFICIARY_OUTCOME_TASK_OPTIONS: Array<{
   key: BeneficiaryOutcomeTaskKey;
   label: string;
@@ -1250,6 +1252,27 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                       </StableButton>
                                     </div>
                                   ) : null}
+                                  <div
+                                    data-debug-id="community-domain-dashboard.church-attendance-follow-up-route"
+                                    style={{ display: "flex", flexWrap: "wrap", gap: 6 }}
+                                  >
+                                    {CHURCH_ATTENDANCE_FOLLOW_UP_ROUTE_STEPS.map((step) => (
+                                      <span
+                                        key={step}
+                                        style={{
+                                          borderRadius: 999,
+                                          border: "1px solid rgba(9,27,46,0.1)",
+                                          background: "#FFFFFF",
+                                          color: "#35445A",
+                                          fontSize: 11,
+                                          fontWeight: 800,
+                                          padding: "4px 7px",
+                                        }}
+                                      >
+                                        {step}
+                                      </span>
+                                    ))}
+                                  </div>
                                   <div style={{ ...helperText(), fontSize: 12 }}>
                                     {cleanText(
                                       latestAttendanceFollowUpSnapshot.next_step,
