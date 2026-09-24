@@ -344,6 +344,13 @@ assertContains(
 );
 
 assertContains(
+  communityDomainDashboardFile,
+  /CHURCH_ATTENDANCE_FOLLOW_UP_OUTCOMES[\s\S]*Reached[\s\S]*No answer[\s\S]*Message left[\s\S]*Visit planned[\s\S]*Escalated[\s\S]*CHURCH_FOLLOW_UP_OUTCOME_NOTE_PREFIX[\s\S]*Follow-up outcome:[\s\S]*function applyChurchFollowUpOutcomeNote[\s\S]*updateActivityDraft\([\s\S]*"note"[\s\S]*community-domain-dashboard\.activity-record-follow-up-outcome-picker[\s\S]*Follow-up outcome[\s\S]*CHURCH_ATTENDANCE_FOLLOW_UP_OUTCOMES\.map[\s\S]*activity-record-follow-up-outcome\.\$\{outcome[\s\S]*applyChurchFollowUpOutcomeNote\(outcome\)/,
+  "Community Domain church pastoral follow-up records must let leaders mark a basic follow-up outcome in the saved activity note.",
+  { frontend: true }
+);
+
+assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
   /COMMUNITY_DOMAIN_ATTENDANCE_SESSION_EVENT[\s\S]*community_domain\.attendance_session\.opened[\s\S]*CommunityDomainAttendanceSessionIn[\s\S]*\/\{community_domain_id\}\/attendance-sessions[\s\S]*\/public\/attendance-sessions\/\{public_code\}[\s\S]*\/check-ins[\s\S]*COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY/,
   "Backend must expose Community Domain live attendance QR sessions and signed-in check-ins with a Presence Evidence boundary."

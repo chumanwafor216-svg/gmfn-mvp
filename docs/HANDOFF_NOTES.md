@@ -1,3 +1,10 @@
+## 2026-09-24 - Church follow-up outcome can be marked on record
+- Status: Frontend follow-up refinement implemented so a church pastoral/welfare Activity record can preserve a basic follow-up outcome in its saved note.
+- Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Church workflow packet -> Activity record evidence step.
+- Files updated: `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Frontend impact: when the activity type is `pastoral_follow_up` in the church workflow, the evidence step now shows compact outcome buttons for `Reached`, `No answer`, `Message left`, `Visit planned`, and `Escalated`. Selecting one writes `Follow-up outcome: {outcome}` into the existing Activity note while preserving the rest of the note.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Devil truth: this records a leader-selected outcome only. It does not prove contact happened, deliver a message, assign a care owner, capture consent, verify a visit, document safeguarding work, or judge pastoral quality.
 ## 2026-09-24 - Church follow-up route can be marked on record
 - Status: Frontend follow-up refinement implemented so a church pastoral/welfare Activity record can preserve the selected follow-up route in its saved note.
 - Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Church workflow packet -> Activity record evidence step.

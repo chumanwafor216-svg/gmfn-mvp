@@ -200,7 +200,15 @@ const CHURCH_ACTIVITY_PRESET_PACK: Array<{
 ];
 
 const CHURCH_ATTENDANCE_FOLLOW_UP_ROUTE_STEPS = ["Call", "Text", "WhatsApp", "Visit", "Escalate"];
+const CHURCH_ATTENDANCE_FOLLOW_UP_OUTCOMES = [
+  "Reached",
+  "No answer",
+  "Message left",
+  "Visit planned",
+  "Escalated",
+];
 const CHURCH_FOLLOW_UP_ROUTE_NOTE_PREFIX = "Follow-up route:";
+const CHURCH_FOLLOW_UP_OUTCOME_NOTE_PREFIX = "Follow-up outcome:";
 const BENEFICIARY_OUTCOME_TASK_OPTIONS: Array<{
   key: BeneficiaryOutcomeTaskKey;
   label: string;
@@ -816,6 +824,29 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     updateActivityDraft(
       "note",
       noteWithoutPreviousRoute ? `${routeLine}\n${noteWithoutPreviousRoute}` : routeLine
+    );
+  }
+
+  function applyChurchFollowUpOutcomeNote(outcome: string) {
+    const cleanOutcome = cleanText(outcome);
+    if (!cleanOutcome) {
+      return;
+    }
+    const existingNote = String(activityDraft.note || "");
+    const noteWithoutPreviousOutcome = existingNote
+      .split("\n")
+      .filter(
+        (line) =>
+          !line.trim().startsWith(CHURCH_FOLLOW_UP_OUTCOME_NOTE_PREFIX)
+      )
+      .join("\n")
+      .trim();
+    const outcomeLine = `${CHURCH_FOLLOW_UP_OUTCOME_NOTE_PREFIX} ${cleanOutcome}`;
+    updateActivityDraft(
+      "note",
+      noteWithoutPreviousOutcome
+        ? `${outcomeLine}\n${noteWithoutPreviousOutcome}`
+        : outcomeLine
     );
   }
 
@@ -1871,6 +1902,44 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                             style={{ fontSize: 12, textTransform: "none" }}
                                           >
                                             {step}
+                                          </StableButton>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ) : null}
+                                {isChurchWorkflow &&
+                                activityDraft.activity_type === churchPastoralFollowUpPreset.activityType ? (
+                                  <div
+                                    data-debug-id="community-domain-dashboard.activity-record-follow-up-outcome-picker"
+                                    style={{ display: "grid", gap: 6 }}
+                                  >
+                                    <div style={{ ...sectionLabel(), fontSize: 10 }}>
+                                      Follow-up outcome
+                                    </div>
+                                    <div
+                                      style={{ display: "flex", flexWrap: "wrap", gap: 6 }}
+                                    >
+                                      {CHURCH_ATTENDANCE_FOLLOW_UP_OUTCOMES.map((outcome) => {
+                                        const outcomeLine = `${CHURCH_FOLLOW_UP_OUTCOME_NOTE_PREFIX} ${outcome}`;
+                                        return (
+                                          <StableButton
+                                            key={outcome}
+                                            type="button"
+                                            kind={
+                                              activityDraft.note.includes(outcomeLine)
+                                                ? "primary"
+                                                : "secondary"
+                                            }
+                                            stableHeight={34}
+                                            disabled={busyActivityRecord}
+                                            debugId={`community-domain-dashboard.activity-record-follow-up-outcome.${outcome
+                                              .toLowerCase()
+                                              .replace(/\s+/g, "-")}`}
+                                            onClick={() => applyChurchFollowUpOutcomeNote(outcome)}
+                                            style={{ fontSize: 12, textTransform: "none" }}
+                                          >
+                                            {outcome}
                                           </StableButton>
                                         );
                                       })}
