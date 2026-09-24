@@ -875,6 +875,22 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     );
   }
 
+  function churchFollowUpRowNoteValue(item: ActivityRecordRow, prefix: string) {
+    const matchingLine = cleanText(item?.note)
+      .split("\n")
+      .find((line) => line.trim().startsWith(prefix));
+    return matchingLine ? matchingLine.trim().slice(prefix.length).trim() : "";
+  }
+
+  function churchFollowUpRecentDetails(item: ActivityRecordRow) {
+    return [
+      { label: "Owner", value: churchFollowUpRowNoteValue(item, CHURCH_FOLLOW_UP_OWNER_NOTE_PREFIX) },
+      { label: "Route", value: churchFollowUpRowNoteValue(item, CHURCH_FOLLOW_UP_ROUTE_NOTE_PREFIX) },
+      { label: "Outcome", value: churchFollowUpRowNoteValue(item, CHURCH_FOLLOW_UP_OUTCOME_NOTE_PREFIX) },
+      { label: "Next", value: churchFollowUpRowNoteValue(item, CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX) },
+    ].filter((detail) => Boolean(detail.value));
+  }
+
   return (
     <>
                     {isAdmin && activeGovernanceTask === "real_life_record" ? (
@@ -2120,6 +2136,32 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                   <span style={statusBadge("subject")}>
                                     {subjectReferenceLabel(item)}
                                   </span>
+                                  {cleanText(item?.activity_type) ===
+                                  churchPastoralFollowUpPreset.activityType
+                                    ? (() => {
+                                        const followUpDetails = churchFollowUpRecentDetails(item);
+                                        return followUpDetails.length ? (
+                                          <div
+                                            data-debug-id="community-domain-dashboard.activity-recent-follow-up-details"
+                                            style={{
+                                              display: "flex",
+                                              flexBasis: "100%",
+                                              flexWrap: "wrap",
+                                              gap: 6,
+                                            }}
+                                          >
+                                            {followUpDetails.map((detail) => (
+                                              <span
+                                                key={detail.label}
+                                                style={statusBadge("follow_up")}
+                                              >
+                                                {detail.label}: {detail.value}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        ) : null;
+                                      })()
+                                    : null}
                                 </div>
                               ))}
                             </div>

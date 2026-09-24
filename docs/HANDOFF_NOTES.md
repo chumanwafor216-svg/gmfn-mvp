@@ -1,3 +1,12 @@
+## 2026-09-24 - Church recent follow-up details are visible
+- Status: Frontend follow-up refinement implemented locally so recent church pastoral/welfare Activity records surface saved follow-up markers.
+- Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent.
+- Files updated: `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Frontend impact: recent records for `pastoral_follow_up` now show compact chips for saved `Owner`, `Route`, `Outcome`, and `Next` values when those markers exist in the Activity note. Ordinary activity records remain unchanged.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Publish status: local only. Per product-owner instruction, do not push or trigger Render until the current work batch is finished.
+- Devil truth: this makes saved follow-up markers visible, but it still relies on note text. It does not create structured reporting, reminders, ownership acceptance, overdue care alerts, or safeguarding escalation.
+
 ## 2026-09-24 - Church follow-up next date can be marked on record
 - Status: Frontend follow-up refinement implemented locally so a church pastoral/welfare Activity record can preserve the next follow-up date in its saved note.
 - Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Church workflow packet -> Activity record evidence step.
