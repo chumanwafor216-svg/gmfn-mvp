@@ -432,6 +432,7 @@ type ActivityAttentionSummary = {
   dueToday: number;
   queueTotal: number;
   rowTotal: number;
+  scanLimit: number;
   resolvedReferenceTotal: number;
 };
 type BeneficiaryOutcomeRelatedRecord = {
@@ -996,11 +997,15 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     const queueTotal = activityAttentionSummary?.queueTotal ?? displayedCount;
     const rowTotal = activityAttentionSummary?.rowTotal ?? displayedCount;
     const resolvedReferenceTotal = activityAttentionSummary?.resolvedReferenceTotal ?? 0;
+    const scanLimit = activityAttentionSummary?.scanLimit ?? 0;
     const shownTotal = Math.min(displayedCount, rowTotal || displayedCount, queueTotal || displayedCount);
     const recordWord = queueTotal === 1 ? "record" : "records";
     const parts = [
       `Showing ${shownTotal} of ${queueTotal || shownTotal} due or overdue pastoral follow-up ${recordWord} from the admin due queue.`,
     ];
+    if (scanLimit > 0) {
+      parts.push(`Scanned the latest ${scanLimit} admin activity records for this queue.`);
+    }
     if (resolvedReferenceTotal > 0) {
       parts.push(
         `${resolvedReferenceTotal} due ${resolvedReferenceTotal === 1 ? "record has" : "records have"} already been hidden because a later update referenced ${resolvedReferenceTotal === 1 ? "it" : "them"}.`

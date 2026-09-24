@@ -1745,6 +1745,7 @@ function activityAttentionSummaryFromPayload(
     "due_on_cutoff_total",
     "queue_total",
     "total",
+    "scan_limit",
     "resolved_reference_total",
   ].some((key) => Object.prototype.hasOwnProperty.call(payload, key));
   if (!hasSummary) return null;
@@ -1753,6 +1754,7 @@ function activityAttentionSummaryFromPayload(
     dueToday: payloadNonNegativeInt(payload, "due_on_cutoff_total"),
     queueTotal: payloadNonNegativeInt(payload, "queue_total"),
     rowTotal: payloadNonNegativeInt(payload, "total"),
+    scanLimit: payloadNonNegativeInt(payload, "scan_limit"),
     resolvedReferenceTotal: payloadNonNegativeInt(payload, "resolved_reference_total"),
   };
 }

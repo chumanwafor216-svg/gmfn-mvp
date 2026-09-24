@@ -1,3 +1,12 @@
+## 2026-09-24 - Church follow-up attention names backend scan limit
+- Status: Frontend follow-up queue refinement implemented locally so the attention strip explains that due/overdue queue totals come from a bounded backend activity scan.
+- Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent attention queue.
+- Files updated: `frontend/src/pages/CommunityDomainDashboardPage.tsx`, `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Frontend impact: `activityAttentionSummary` now carries `scanLimit` from the due queue response, and the queue note says it scanned the latest N admin activity records before showing the non-reminder boundary.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Publish status: local only. Per product-owner instruction, do not push or trigger Render until the current work batch is finished.
+- Devil truth: this makes the bounded-scan limitation visible, but it still does not create a complete indexed task table, reminder sender, owner acceptance flow, or safeguarding escalation process.
+
 ## 2026-09-24 - Church follow-up attention explains queue totals
 - Status: Frontend follow-up queue refinement implemented locally so the attention strip tells admins how many due/overdue pastoral follow-up records are being shown out of the backend queue total and when resolved due rows have been hidden.
 - Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent attention queue.
