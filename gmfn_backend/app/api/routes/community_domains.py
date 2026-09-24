@@ -26180,24 +26180,28 @@ def list_community_domain_activity_follow_ups(
             include_descendants=bool(include_descendants),
         )
 
-    rows = _community_domain_activity_events(
+    requested_scan_limit = int(scan_limit)
+    probe_limit = requested_scan_limit + 1
+    row_probe = _community_domain_activity_events(
         db,
         community_domain_id=int(domain.id),
         community_node_ids=node_scope_ids or None,
-        limit=int(scan_limit),
+        limit=probe_limit,
     )
-    resolution_rows = rows
+    rows = row_probe[:requested_scan_limit]
+    resolution_row_probe = row_probe
     if node_scope_ids:
-        resolution_rows = _community_domain_activity_events(
+        resolution_row_probe = _community_domain_activity_events(
             db,
             community_domain_id=int(domain.id),
-            limit=int(scan_limit),
+            limit=probe_limit,
         )
+    resolution_rows = resolution_row_probe[:requested_scan_limit]
     scanned_activity_total = len(rows)
-    scan_window_exhausted = scanned_activity_total >= int(scan_limit)
+    scan_window_exhausted = len(row_probe) > requested_scan_limit
     resolved_reference_scanned_activity_total = len(resolution_rows)
     resolved_reference_scan_window_exhausted = (
-        resolved_reference_scanned_activity_total >= int(scan_limit)
+        len(resolution_row_probe) > requested_scan_limit
     )
     resolved_reference_scan_scope = (
         "domain_activity_scan" if node_scope_ids else "queue_activity_scan"
@@ -26249,7 +26253,7 @@ def list_community_domain_activity_follow_ups(
         "resolved_reference_scan_scope": resolved_reference_scan_scope,
         "resolved_reference_scanned_activity_total": resolved_reference_scanned_activity_total,
         "resolved_reference_scan_window_exhausted": resolved_reference_scan_window_exhausted,
-        "scan_limit": int(scan_limit),
+        "scan_limit": requested_scan_limit,
         "scanned_activity_total": scanned_activity_total,
         "scan_window_exhausted": scan_window_exhausted,
         "boundary": (

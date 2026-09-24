@@ -414,7 +414,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /list_community_domain_activity_follow_ups[\s\S]*due_on_or_before[\s\S]*scan_limit[\s\S]*resolved_activity_ids[\s\S]*resolved_due_reference_total[\s\S]*pastoral_follow_up[\s\S]*follow_up_due_at[\s\S]*resolved_due_reference_total \+= 1[\s\S]*overdue_before_cutoff_total[\s\S]*resolved_reference_total[\s\S]*resolved_reference_scan_scope[\s\S]*resolved_reference_scanned_activity_total[\s\S]*resolved_reference_scan_window_exhausted[\s\S]*scanned_activity_total[\s\S]*scan_window_exhausted[\s\S]*activity records may exist outside the response[\s\S]*due rows stay node-scoped[\s\S]*references are checked across the domain activity scan/,
+  /list_community_domain_activity_follow_ups[\s\S]*due_on_or_before[\s\S]*scan_limit[\s\S]*probe_limit[\s\S]*row_probe[\s\S]*row_probe\[:requested_scan_limit\][\s\S]*len\(row_probe\) > requested_scan_limit[\s\S]*resolved_activity_ids[\s\S]*resolved_due_reference_total[\s\S]*pastoral_follow_up[\s\S]*follow_up_due_at[\s\S]*resolved_due_reference_total \+= 1[\s\S]*overdue_before_cutoff_total[\s\S]*resolved_reference_total[\s\S]*resolved_reference_scan_scope[\s\S]*resolved_reference_scanned_activity_total[\s\S]*resolved_reference_scan_window_exhausted[\s\S]*scanned_activity_total[\s\S]*scan_window_exhausted[\s\S]*activity records may exist outside the response[\s\S]*due rows stay node-scoped[\s\S]*references are checked across the domain activity scan/,
   "Backend must expose an admin-only pastoral follow-up due queue with honest non-reminder and bounded-resolution-check boundaries."
 );
 
@@ -424,6 +424,11 @@ assertContains(
   "Backend tests must prove the pastoral follow-up queue returns due target-domain pastoral rows without future, non-pastoral, or other-domain leakage and reports normal scan-window state."
 );
 
+assertContains(
+  "gmfn_backend/tests/test_community_domain_collection_instructions.py",
+  /test_activity_follow_up_queue_does_not_report_exhausted_at_exact_scan_limit[\s\S]*range\(50\)[\s\S]*scan_limit=50[\s\S]*scanned_activity_total"\] == 50[\s\S]*scan_window_exhausted"\] is False[\s\S]*resolved_reference_scanned_activity_total"\] == 50[\s\S]*resolved_reference_scan_window_exhausted"\] is False/,
+  "Backend tests must prove the pastoral follow-up queue does not claim scan exhaustion when the result count exactly matches the scan limit."
+);
 assertContains(
   "gmfn_backend/tests/test_community_domain_collection_instructions.py",
   /test_activity_follow_up_queue_reports_exhausted_scan_window[\s\S]*scan_limit=50[\s\S]*scanned_activity_total[\s\S]*scan_window_exhausted[\s\S]*older activity records may exist outside the response[\s\S]*due rows stay node-scoped[\s\S]*references are checked across the domain activity scan[\s\S]*Scan window church follow-up 0[\s\S]*not in str\(body\["items"\]\)/,

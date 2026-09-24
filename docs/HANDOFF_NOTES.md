@@ -162068,3 +162068,14 @@ Operational note:
 - Truth boundary: this still is not a permanent task/status table. It is a stronger event-scan resolver for the current MVP follow-up queue, with explicit bounded-scan honesty.
 - Verification passed: targeted backend pytest for four activity follow-up queue tests; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run build`; `git diff --check` for touched slice files.
 - Publishing status: no push, no Render deploy, no pipeline burn.
+
+## 2026-09-24 - Church follow-up scan exhaustion made exact (local)
+
+- Status: Local backend/audit correction implemented and verified; not pushed or deployed because pilot publishing remains frozen into batch mode.
+- Owner trigger: continuation of the pastor/church customer-discovery gap work after finding the follow-up queue treated exactly `scan_limit` scanned rows as definite scan exhaustion.
+- Backend route affected: `GET /community-domains/{community_domain_id}/activities/follow-ups` in `gmfn_backend/app/api/routes/community_domains.py`.
+- Behavior changed: the route now probes one extra activity row (`scan_limit + 1`) and then trims back to `scan_limit` for queue/resolution processing. `scan_window_exhausted` and `resolved_reference_scan_window_exhausted` are true only when an extra row proves older matching activity exists outside the returned scan window.
+- Guardrail changed: `gmfn_backend/tests/test_community_domain_collection_instructions.py` now includes `test_activity_follow_up_queue_does_not_report_exhausted_at_exact_scan_limit`, proving 50 rows with `scan_limit=50` does not falsely report exhaustion, while the existing 51-row test still reports exhaustion. `frontend/tools/audit-community-domain-product-contracts.mjs` cages the probe-and-trim implementation and exact-limit test.
+- Truth boundary: this still uses a bounded event scan; it now avoids a false certainty warning when the scan count exactly equals the requested limit.
+- Verification passed: targeted backend pytest for five activity follow-up queue tests; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run build`; `git diff --check` for touched slice files.
+- Publishing status: no push, no Render deploy, no pipeline burn.
