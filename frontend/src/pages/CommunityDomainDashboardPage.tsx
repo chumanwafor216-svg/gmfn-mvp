@@ -1755,6 +1755,8 @@ function activityAttentionSummaryFromPayload(
     "scanned_activity_total",
     "scan_window_exhausted",
     "resolved_reference_total",
+    "resolved_reference_scan_scope",
+    "resolved_reference_scanned_activity_total",
     "resolved_reference_scan_window_exhausted",
   ].some((key) => Object.prototype.hasOwnProperty.call(payload, key));
   if (!hasSummary) return null;
@@ -1767,6 +1769,8 @@ function activityAttentionSummaryFromPayload(
     scannedActivityTotal: payloadNonNegativeInt(payload, "scanned_activity_total"),
     scanWindowExhausted: payloadBoolean(payload, "scan_window_exhausted"),
     resolvedReferenceTotal: payloadNonNegativeInt(payload, "resolved_reference_total"),
+    resolvedReferenceScanScope: cleanText(payloadValue(payload, "resolved_reference_scan_scope")),
+    resolvedReferenceScannedActivityTotal: payloadNonNegativeInt(payload, "resolved_reference_scanned_activity_total"),
     resolvedReferenceScanWindowExhausted: payloadBoolean(payload, "resolved_reference_scan_window_exhausted"),
   };
 }

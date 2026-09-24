@@ -162054,3 +162054,17 @@ Operational note:
 - Truth boundary: this does not create a permanent task/status table or a full historical resolver. It is an honest MVP boundary so leaders do not treat a bounded event scan as perfect proof that every old pastoral follow-up remains due.
 - Verification passed: targeted backend pytest for the three activity follow-up queue tests; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run build`; `git diff --check` for touched slice files.
 - Publishing status: no push, no Render deploy, no pipeline burn.
+
+## 2026-09-24 - Church node follow-up resolver widened to domain scan (local)
+
+- Status: Local backend/frontend correction implemented and verified; not pushed or deployed because pilot publishing remains frozen into batch mode.
+- Owner trigger: continuation of the pastor/church customer-discovery gap work after finding that node-filtered pastoral follow-up queues could miss a domain-level follow-up update referencing a node-scoped due record.
+- Backend route affected: `GET /community-domains/{community_domain_id}/activities/follow-ups` in `gmfn_backend/app/api/routes/community_domains.py`.
+- Frontend screen affected: `/app/community-domain/:id` Community Domain dashboard Real-life record church/pastoral follow-up attention queue through `frontend/src/pages/CommunityDomainDashboardPage.tsx` and `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`.
+- Behavior changed: due rows remain scoped to the requested node/descendant scope, but resolved activity-record references are now read from a domain-wide activity scan when the request is node-filtered. This lets a domain-level follow-up update hide a resolved branch cue without leaking other-node due rows into the branch queue.
+- API fields added/refined: the response now reports `resolved_reference_scan_scope`, `resolved_reference_scanned_activity_total`, and `resolved_reference_scan_window_exhausted` separately from the due-row scan fields.
+- UI changed: the church follow-up queue note now explains when node-filtered due rows use a domain-wide resolved-record scan and when that resolved-record scan itself was full.
+- Guardrail changed: `frontend/tools/audit-community-domain-product-contracts.mjs` now cages the new backend fields, frontend parser/type, UI note text, and a regression test proving domain-level resolution works for a node-scoped queue without other-node leakage.
+- Truth boundary: this still is not a permanent task/status table. It is a stronger event-scan resolver for the current MVP follow-up queue, with explicit bounded-scan honesty.
+- Verification passed: targeted backend pytest for four activity follow-up queue tests; `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run build`; `git diff --check` for touched slice files.
+- Publishing status: no push, no Render deploy, no pipeline burn.

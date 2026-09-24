@@ -26186,9 +26186,23 @@ def list_community_domain_activity_follow_ups(
         community_node_ids=node_scope_ids or None,
         limit=int(scan_limit),
     )
+    resolution_rows = rows
+    if node_scope_ids:
+        resolution_rows = _community_domain_activity_events(
+            db,
+            community_domain_id=int(domain.id),
+            limit=int(scan_limit),
+        )
     scanned_activity_total = len(rows)
     scan_window_exhausted = scanned_activity_total >= int(scan_limit)
-    resolved_activity_ids = _community_domain_follow_up_resolved_activity_ids(rows)
+    resolved_reference_scanned_activity_total = len(resolution_rows)
+    resolved_reference_scan_window_exhausted = (
+        resolved_reference_scanned_activity_total >= int(scan_limit)
+    )
+    resolved_reference_scan_scope = (
+        "domain_activity_scan" if node_scope_ids else "queue_activity_scan"
+    )
+    resolved_activity_ids = _community_domain_follow_up_resolved_activity_ids(resolution_rows)
     resolved_due_reference_total = 0
     due_rows: list[TrustEvent] = []
     for row in rows:
@@ -26232,7 +26246,9 @@ def list_community_domain_activity_follow_ups(
         "overdue_before_cutoff_total": overdue_before_cutoff_total,
         "due_on_cutoff_total": due_on_cutoff_total,
         "resolved_reference_total": resolved_due_reference_total,
-        "resolved_reference_scan_window_exhausted": scan_window_exhausted,
+        "resolved_reference_scan_scope": resolved_reference_scan_scope,
+        "resolved_reference_scanned_activity_total": resolved_reference_scanned_activity_total,
+        "resolved_reference_scan_window_exhausted": resolved_reference_scan_window_exhausted,
         "scan_limit": int(scan_limit),
         "scanned_activity_total": scanned_activity_total,
         "scan_window_exhausted": scan_window_exhausted,
@@ -26241,8 +26257,9 @@ def list_community_domain_activity_follow_ups(
             "recorded Community Domain activity Trust Events. It does not send "
             "reminders, assign responsibility, prove care happened, or replace "
             "safeguarding escalation. When scan_window_exhausted is true, older "
-            "activity records may exist outside the response, and resolved "
-            "references are checked only inside the scanned activity window."
+            "activity records may exist outside the response. For node-filtered "
+            "requests, due rows stay node-scoped but resolved activity-record "
+            "references are checked across the domain activity scan."
         ),
     }
 

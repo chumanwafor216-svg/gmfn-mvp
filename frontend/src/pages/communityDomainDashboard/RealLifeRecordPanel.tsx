@@ -436,6 +436,8 @@ type ActivityAttentionSummary = {
   scannedActivityTotal: number;
   scanWindowExhausted: boolean;
   resolvedReferenceTotal: number;
+  resolvedReferenceScanScope: string;
+  resolvedReferenceScannedActivityTotal: number;
   resolvedReferenceScanWindowExhausted: boolean;
 };
 type BeneficiaryOutcomeRelatedRecord = {
@@ -1000,6 +1002,8 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     const queueTotal = activityAttentionSummary?.queueTotal ?? displayedCount;
     const rowTotal = activityAttentionSummary?.rowTotal ?? displayedCount;
     const resolvedReferenceTotal = activityAttentionSummary?.resolvedReferenceTotal ?? 0;
+    const resolvedReferenceScanScope = activityAttentionSummary?.resolvedReferenceScanScope ?? "";
+    const resolvedReferenceScannedActivityTotal = activityAttentionSummary?.resolvedReferenceScannedActivityTotal ?? 0;
     const resolvedReferenceScanWindowExhausted = activityAttentionSummary?.resolvedReferenceScanWindowExhausted ?? false;
     const scanLimit = activityAttentionSummary?.scanLimit ?? 0;
     const scannedActivityTotal = activityAttentionSummary?.scannedActivityTotal ?? 0;
@@ -1021,8 +1025,12 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
         `${resolvedReferenceTotal} due ${resolvedReferenceTotal === 1 ? "record has" : "records have"} already been hidden because a later update referenced ${resolvedReferenceTotal === 1 ? "it" : "them"}.`
       );
     }
+    if (resolvedReferenceScanScope === "domain_activity_scan") {
+      parts.push("Node-filtered due rows use a domain-wide resolved-record scan, so domain-level updates can clear branch cues.");
+    }
     if (resolvedReferenceScanWindowExhausted) {
-      parts.push("The resolved-record check uses the same scan window, so older resolved updates may need manual review.");
+      const resolvedScannedText = resolvedReferenceScannedActivityTotal > 0 ? `${resolvedReferenceScannedActivityTotal} records` : "the bounded activity window";
+      parts.push(`The resolved-record scan checked ${resolvedScannedText}, so older due or resolving records may need manual review.`);
     }
     parts.push("This cue has not sent a reminder.");
     return parts.join(" ");

@@ -486,6 +486,8 @@ def test_activity_follow_up_queue_returns_due_pastoral_records_only(
     assert body["scan_limit"] == 1000
     assert body["scanned_activity_total"] == 3
     assert body["scan_window_exhausted"] is False
+    assert body["resolved_reference_scan_scope"] == "queue_activity_scan"
+    assert body["resolved_reference_scanned_activity_total"] == 3
     assert body["resolved_reference_scan_window_exhausted"] is False
     assert body["items"][0]["community_domain_id"] == 824
     assert body["items"][0]["activity_label"] == "Queue church follow-up"
@@ -555,9 +557,12 @@ def test_activity_follow_up_queue_reports_exhausted_scan_window(
     assert body["scan_limit"] == 50
     assert body["scanned_activity_total"] == 50
     assert body["scan_window_exhausted"] is True
+    assert body["resolved_reference_scan_scope"] == "queue_activity_scan"
+    assert body["resolved_reference_scanned_activity_total"] == 50
     assert body["resolved_reference_scan_window_exhausted"] is True
     assert "older activity records may exist outside the response" in body["boundary"]
-    assert "resolved references are checked only inside the scanned activity window" in body["boundary"]
+    assert "due rows stay node-scoped" in body["boundary"]
+    assert "resolved activity-record references are checked across the domain activity scan" in body["boundary"]
     assert "Scan window church follow-up 0" not in str(body["items"])
 
 
@@ -729,11 +734,198 @@ def test_activity_follow_up_queue_hides_records_resolved_by_later_update(
     assert body["total"] == 1
     assert body["queue_total"] == 1
     assert body["resolved_reference_total"] == 1
+    assert body["resolved_reference_scan_scope"] == "queue_activity_scan"
     assert body["resolved_reference_scan_window_exhausted"] is False
     assert body["items"][0]["activity_label"] == "Still due church follow-up"
     assert "Resolved church follow-up" not in str(body["items"])
     assert "Recorded update for resolved follow-up" not in str(body["items"])
     assert "Future referenced church follow-up" not in str(body["items"])
+
+
+def test_activity_follow_up_queue_resolves_node_due_record_from_domain_update(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    with engine.begin() as conn:
+        _seed_domain(conn, domain_id=827, policy_mode="admin_only")
+        for node_id, node_name in ((8271, "Pastoral Team A"), (8272, "Pastoral Team B")):
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO community_nodes (
+                        id,
+                        community_domain_id,
+                        parent_node_id,
+                        name,
+                        node_type,
+                        node_kind,
+                        path,
+                        depth,
+                        description,
+                        sort_order,
+                        visibility_policy,
+                        inherits_parent_policy,
+                        status,
+                        created_at,
+                        updated_at
+                    )
+                    VALUES (
+                        :node_id,
+                        827,
+                        NULL,
+                        :node_name,
+                        'ministry_team',
+                        'pastoral_team',
+                        :node_path,
+                        0,
+                        NULL,
+                        0,
+                        'members',
+                        1,
+                        'active',
+                        CURRENT_TIMESTAMP,
+                        CURRENT_TIMESTAMP
+                    )
+                    """
+                ),
+                {
+                    "node_id": node_id,
+                    "node_name": node_name,
+                    "node_path": str(node_id),
+                },
+            )
+        conn.execute(
+            text(
+                """
+                INSERT INTO trust_events (
+                    event_type,
+                    clan_id,
+                    actor_user_id,
+                    subject_user_id,
+                    meta_json,
+                    created_at
+                )
+                VALUES (
+                    'community_domain.activity_recorded',
+                    1,
+                    1,
+                    1,
+                    :meta_json,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "meta_json": json.dumps(
+                    {
+                        "source": "community_domain_activity_catalogue_v1",
+                        "community_domain_id": 827,
+                        "community_node_id": 8271,
+                        "activity_type": "pastoral_follow_up",
+                        "activity_label": "Node scoped resolved church follow-up",
+                        "evidence_dimension": "care_follow_up",
+                        "evidence_strength": "admin_recorded",
+                        "visibility": "director_safe",
+                        "note": "Next follow-up date: 2026-09-23",
+                        "follow_up_due_at": "2026-09-23T00:00:00+00:00",
+                    }
+                )
+            },
+        )
+        resolved_event_id = conn.execute(text("SELECT last_insert_rowid()")).scalar_one()
+        conn.execute(
+            text(
+                """
+                INSERT INTO trust_events (
+                    event_type,
+                    clan_id,
+                    actor_user_id,
+                    subject_user_id,
+                    meta_json,
+                    created_at
+                )
+                VALUES (
+                    'community_domain.activity_recorded',
+                    1,
+                    1,
+                    1,
+                    :meta_json,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "meta_json": json.dumps(
+                    {
+                        "source": "community_domain_activity_catalogue_v1",
+                        "community_domain_id": 827,
+                        "community_node_id": 8272,
+                        "activity_type": "pastoral_follow_up",
+                        "activity_label": "Other node church follow-up",
+                        "evidence_dimension": "care_follow_up",
+                        "evidence_strength": "admin_recorded",
+                        "visibility": "director_safe",
+                        "note": "Next follow-up date: 2026-09-23",
+                        "follow_up_due_at": "2026-09-23T00:00:00+00:00",
+                    }
+                )
+            },
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO trust_events (
+                    event_type,
+                    clan_id,
+                    actor_user_id,
+                    subject_user_id,
+                    meta_json,
+                    created_at
+                )
+                VALUES (
+                    'community_domain.activity_recorded',
+                    1,
+                    1,
+                    1,
+                    :meta_json,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "meta_json": json.dumps(
+                    {
+                        "source": "community_domain_activity_catalogue_v1",
+                        "community_domain_id": 827,
+                        "activity_type": "pastoral_follow_up",
+                        "activity_label": "Domain-level resolved follow-up update",
+                        "evidence_dimension": "care_follow_up",
+                        "evidence_strength": "admin_recorded",
+                        "visibility": "director_safe",
+                        "evidence_reference": f"activity-record:{resolved_event_id}",
+                        "note": "Follow-up completed for the node record.",
+                        "follow_up_due_at": "2026-09-30T00:00:00+00:00",
+                    }
+                )
+            },
+        )
+
+    response = client.get(
+        "/community-domains/827/activities/follow-ups?due_on_or_before=2026-09-24&community_node_id=8271&include_descendants=false&limit=10"
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["community_node_ids"] == [8271]
+    assert body["total"] == 0
+    assert body["queue_total"] == 0
+    assert body["resolved_reference_total"] == 1
+    assert body["resolved_reference_scan_scope"] == "domain_activity_scan"
+    assert body["resolved_reference_scanned_activity_total"] == 3
+    assert body["resolved_reference_scan_window_exhausted"] is False
+    assert "Node scoped resolved church follow-up" not in str(body["items"])
+    assert "Other node church follow-up" not in str(body["items"])
 
 
 def test_public_notice_qr_requires_explicit_public_qr_opt_in(
