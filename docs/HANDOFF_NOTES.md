@@ -162090,3 +162090,15 @@ Operational note:
 - Truth boundary: this preserves node context for manual records and follow-up updates; it does not create a node picker, infer node placement from membership, or change backend permissions/schema.
 - Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run build`; `git diff --check` for touched slice files.
 - Publishing status: no push, no Render deploy, no pipeline burn.
+
+## 2026-09-24 - Church follow-up update source cue preview (local)
+
+- Status: Local frontend/audit correction implemented and verified; not pushed or deployed because pilot publishing remains frozen into batch mode.
+- Owner trigger: continuation of pastor/church customer-discovery gap work after tightening the due follow-up queue and node scope preservation.
+- Frontend screen affected: `/app/community-domain/:id` Community Domain dashboard Real-life record activity recorder / church pastoral follow-up attention queue through `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`.
+- Behavior changed: when a leader taps `Record this update` from a due pastoral follow-up cue, the activity recorder now shows a compact `Closing follow-up cue` preview with the source subject, due date, owner, node id, and source event id before the admin records the update.
+- Safety copy changed: the preview tells the leader to record what happened and the next safe step, and not to paste private counselling or safeguarding detail into GSN.
+- Guardrail changed: `frontend/tools/audit-community-domain-product-contracts.mjs` now cages the source cue state, row-to-form source carry-forward, preview debug id, source chips, and pastoral privacy warning.
+- Truth boundary: this is a UI clarity and privacy guard. It does not create a permanent task table, automate safeguarding escalation, expose pastoral notes, or change backend permissions/schema.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run build`; `git diff --check` for touched slice files.
+- Publishing status: no push, no Render deploy, no pipeline burn.

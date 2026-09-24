@@ -808,12 +808,21 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
   const latestResponseFollowUpCount = cleanText(latestResponseChannel?.private_follow_up_count, "0");
   const churchPastoralFollowUpPreset =
     CHURCH_ACTIVITY_PRESET_PACK.find((preset) => preset.key === "pastoral_follow_up") || CHURCH_ACTIVITY_PRESET_PACK[0];
+  const [churchFollowUpSourceCue, setChurchFollowUpSourceCue] = React.useState<{
+    eventId: string;
+    subjectLabel: string;
+    nextDate: string;
+    owner: string;
+    communityNodeId: string;
+    evidenceReference: string;
+  } | null>(null);
 
   function applyChurchActivityPreset(
     preset: (typeof CHURCH_ACTIVITY_PRESET_PACK)[number],
     subjectUserId = "",
     evidenceReference = "",
-    communityNodeId = ""
+    communityNodeId = "",
+    sourceCue: typeof churchFollowUpSourceCue = null
   ) {
     const cleanSubjectUserId = cleanText(subjectUserId);
     const cleanEvidenceReference = cleanText(evidenceReference);
@@ -831,7 +840,10 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     }
     if (cleanCommunityNodeId) {
       updateActivityDraft("community_node_id", cleanCommunityNodeId);
+    } else {
+      updateActivityDraft("community_node_id", "");
     }
+    setChurchFollowUpSourceCue(sourceCue);
     setActiveRealLifeRecordTask("activity");
     setActiveActivityRecordTask("record");
     setActiveActivityRecordStage("person");
@@ -1056,7 +1068,18 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
       churchPastoralFollowUpPreset,
       subjectUserId,
       evidenceReference,
-      communityNodeId
+      communityNodeId,
+      {
+        eventId,
+        subjectLabel: subjectReferenceLabel(item),
+        nextDate: churchFollowUpNextDateValue(item),
+        owner: churchFollowUpRowNoteValue(
+          item,
+          CHURCH_FOLLOW_UP_OWNER_NOTE_PREFIX
+        ),
+        communityNodeId,
+        evidenceReference,
+      }
     );
   }
 
@@ -1173,6 +1196,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                 stableHeight={46}
                                 debugId="community-domain-dashboard.real-life-record.beneficiary-outcome-inline"
                                 onClick={() => {
+                                  setChurchFollowUpSourceCue(null);
                                   setActiveRealLifeRecordTask("beneficiary_outcome");
                                   setActiveBeneficiaryOutcomeTask("record");
                                   setBeneficiaryOutcomeTaskChooserOpen(false);
@@ -1268,6 +1292,59 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                 </div>
                               </div>
                             ))}
+                          </div>
+                        ) : null}
+
+                        {isChurchWorkflow &&
+                        activeActivityRecordTask === "record" &&
+                        activityDraft.activity_type === churchPastoralFollowUpPreset.activityType &&
+                        churchFollowUpSourceCue ? (
+                          <div
+                            data-debug-id="community-domain-dashboard.activity-record-follow-up-source-cue"
+                            style={{
+                              display: "grid",
+                              gap: 8,
+                              borderRadius: 12,
+                              border: "1px solid rgba(199,164,74,0.34)",
+                              background: "rgba(199,164,74,0.1)",
+                              padding: 12,
+                            }}
+                          >
+                            <div style={sectionLabel()}>Closing follow-up cue</div>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: 6,
+                              }}
+                            >
+                              <span style={statusBadge("subject")}>
+                                {churchFollowUpSourceCue.subjectLabel}
+                              </span>
+                              {churchFollowUpSourceCue.nextDate ? (
+                                <span style={statusBadge("follow_up")}>
+                                  Due: {churchFollowUpSourceCue.nextDate}
+                                </span>
+                              ) : null}
+                              {churchFollowUpSourceCue.owner ? (
+                                <span style={statusBadge("follow_up")}>
+                                  Owner: {churchFollowUpSourceCue.owner}
+                                </span>
+                              ) : null}
+                              {churchFollowUpSourceCue.communityNodeId ? (
+                                <span style={statusBadge("follow_up")}>
+                                  Node: {churchFollowUpSourceCue.communityNodeId}
+                                </span>
+                              ) : null}
+                              {churchFollowUpSourceCue.eventId ? (
+                                <span style={statusBadge("follow_up")}>
+                                  Source: {churchFollowUpSourceCue.eventId}
+                                </span>
+                              ) : null}
+                            </div>
+                            <div style={{ ...helperText(), fontSize: 12 }}>
+                              Record what happened and the next safe step. Do not paste private counselling or safeguarding detail here.
+                            </div>
                           </div>
                         ) : null}
 
@@ -1960,12 +2037,16 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                   <select
                                     value={activityDraft.activity_type}
                                     disabled={busyActivityRecord}
-                                    onChange={(event) =>
+                                    onChange={(event) => {
+                                      const nextActivityType = event.target.value;
                                       updateActivityDraft(
                                         "activity_type",
-                                        event.target.value
-                                      )
-                                    }
+                                        nextActivityType
+                                      );
+                                      if (nextActivityType !== churchPastoralFollowUpPreset.activityType) {
+                                        setChurchFollowUpSourceCue(null);
+                                      }
+                                    }}
                                     style={billingInputStyle()}
                                   >
                                     {activityCatalogueOptions.map((item) => (

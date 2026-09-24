@@ -418,6 +418,14 @@ assertContains(
   "Community Domain church follow-up update actions must carry the original node id into the activity recorder and expose the optional node scope field.",
   { frontend: true }
 );
+
+assertContains(
+  communityDomainRealLifeRecordFile,
+  /churchFollowUpSourceCue[\s\S]*setChurchFollowUpSourceCue[\s\S]*function applyChurchActivityPreset[\s\S]*sourceCue[\s\S]*setChurchFollowUpSourceCue\(sourceCue\)[\s\S]*function applyChurchRecentFollowUpRecordUpdate[\s\S]*subjectLabel: subjectReferenceLabel\(item\)[\s\S]*nextDate: churchFollowUpNextDateValue\(item\)[\s\S]*owner: churchFollowUpRowNoteValue[\s\S]*community-domain-dashboard\.activity-record-follow-up-source-cue[\s\S]*Closing follow-up cue[\s\S]*Due: \{churchFollowUpSourceCue\.nextDate\}[\s\S]*Owner: \{churchFollowUpSourceCue\.owner\}[\s\S]*Node: \{churchFollowUpSourceCue\.communityNodeId\}[\s\S]*Source: \{churchFollowUpSourceCue\.eventId\}[\s\S]*Do not paste private counselling or safeguarding detail here/,
+  "Community Domain church follow-up update form must show the source due cue being closed and warn leaders not to store private pastoral detail.",
+  { frontend: true }
+);
+
 assertContains(
   "src/lib/api.ts",
   /listCommunityDomainActivityFollowUps[\s\S]*\/activities\/follow-ups[\s\S]*due_on_or_before[\s\S]*scan_limit/,
