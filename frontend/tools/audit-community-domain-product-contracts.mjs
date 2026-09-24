@@ -414,7 +414,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /list_community_domain_activity_follow_ups[\s\S]*due_on_or_before[\s\S]*scan_limit[\s\S]*pastoral_follow_up[\s\S]*follow_up_due_at[\s\S]*overdue_before_cutoff_total[\s\S]*Pastoral follow-up queue v1 is an admin-only due list/,
+  /list_community_domain_activity_follow_ups[\s\S]*due_on_or_before[\s\S]*scan_limit[\s\S]*resolved_activity_ids[\s\S]*pastoral_follow_up[\s\S]*follow_up_due_at[\s\S]*overdue_before_cutoff_total[\s\S]*resolved_reference_total[\s\S]*Pastoral follow-up queue v1 is an admin-only due list/,
   "Backend must expose an admin-only pastoral follow-up due queue with an honest non-reminder boundary."
 );
 
@@ -423,6 +423,13 @@ assertContains(
   /test_activity_follow_up_queue_returns_due_pastoral_records_only[\s\S]*\/community-domains\/824\/activities\/follow-ups\?due_on_or_before=2026-09-24&limit=10[\s\S]*Queue church follow-up[\s\S]*Future church follow-up[\s\S]*not in str\(body\["items"\]\)[\s\S]*Due non-pastoral activity[\s\S]*not in str\(body\["items"\]\)[\s\S]*Other domain due follow-up[\s\S]*not in str\(body\["items"\]\)/,
   "Backend tests must prove the pastoral follow-up queue returns due target-domain pastoral rows without future, non-pastoral, or other-domain leakage."
 );
+
+assertContains(
+  "gmfn_backend/tests/test_community_domain_collection_instructions.py",
+  /test_activity_follow_up_queue_hides_records_resolved_by_later_update[\s\S]*activity-record:\{resolved_event_id\}[\s\S]*\/community-domains\/825\/activities\/follow-ups\?due_on_or_before=2026-09-24&limit=10[\s\S]*resolved_reference_total[\s\S]*Still due church follow-up[\s\S]*Resolved church follow-up[\s\S]*not in str\(body\["items"\]\)[\s\S]*Recorded update for resolved follow-up[\s\S]*not in str\(body\["items"\]\)/,
+  "Backend tests must prove the pastoral follow-up queue suppresses due records after a later update references their activity-record id."
+);
+
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
   /COMMUNITY_DOMAIN_ATTENDANCE_SESSION_EVENT[\s\S]*community_domain\.attendance_session\.opened[\s\S]*CommunityDomainAttendanceSessionIn[\s\S]*\/\{community_domain_id\}\/attendance-sessions[\s\S]*\/public\/attendance-sessions\/\{public_code\}[\s\S]*\/check-ins[\s\S]*COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY/,
@@ -2091,7 +2098,9 @@ assertContains(
   /paymentsContributionsOff[\s\S]*paymentsContributionsPolicyMode[\s\S]*Payment rule[\s\S]*Subscription billing: required[\s\S]*Do not use the Payments and Contributions[\s\S]*to block this setup payment[\s\S]*Use that setting for registrations/,
   "Community Domain dashboard must distinguish required subscription billing from the domain Payments and Contributions service policy.",
   { frontend: true }
-);assertContains(
+);
+
+assertContains(
   "gmfn_backend/tests/test_community_domains.py",
   /test_community_domain_notice_board_respects_disabled_feature_policy[\s\S]*"domain\.feature_policy"[\s\S]*"announcement_board": "off"[\s\S]*"posting_enabled"\] is False[\s\S]*community_domain_feature_disabled[\s\S]*TrustEvent[\s\S]*count\(\)[\s\S]*== 0/,
   "Backend tests must prove disabled Announcement Board policy blocks notice posting without creating TrustEvents or notifications."

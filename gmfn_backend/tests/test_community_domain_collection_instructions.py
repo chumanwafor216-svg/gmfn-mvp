@@ -492,6 +492,141 @@ def test_activity_follow_up_queue_returns_due_pastoral_records_only(
     assert "Other domain due follow-up" not in str(body["items"])
 
 
+def test_activity_follow_up_queue_hides_records_resolved_by_later_update(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    with engine.begin() as conn:
+        _seed_domain(conn, domain_id=825, policy_mode="admin_only")
+        conn.execute(
+            text(
+                """
+                INSERT INTO trust_events (
+                    event_type,
+                    clan_id,
+                    actor_user_id,
+                    subject_user_id,
+                    meta_json,
+                    created_at
+                )
+                VALUES (
+                    'community_domain.activity_recorded',
+                    1,
+                    1,
+                    1,
+                    :meta_json,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "meta_json": json.dumps(
+                    {
+                        "source": "community_domain_activity_catalogue_v1",
+                        "community_domain_id": 825,
+                        "activity_type": "pastoral_follow_up",
+                        "activity_label": "Resolved church follow-up",
+                        "evidence_dimension": "care_follow_up",
+                        "evidence_strength": "admin_recorded",
+                        "visibility": "director_safe",
+                        "note": "Next follow-up date: 2026-09-23",
+                        "follow_up_due_at": "2026-09-23T00:00:00+00:00",
+                    }
+                )
+            },
+        )
+        resolved_event_id = conn.execute(text("SELECT last_insert_rowid()")).scalar_one()
+        conn.execute(
+            text(
+                """
+                INSERT INTO trust_events (
+                    event_type,
+                    clan_id,
+                    actor_user_id,
+                    subject_user_id,
+                    meta_json,
+                    created_at
+                )
+                VALUES (
+                    'community_domain.activity_recorded',
+                    1,
+                    1,
+                    1,
+                    :meta_json,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "meta_json": json.dumps(
+                    {
+                        "source": "community_domain_activity_catalogue_v1",
+                        "community_domain_id": 825,
+                        "activity_type": "pastoral_follow_up",
+                        "activity_label": "Still due church follow-up",
+                        "evidence_dimension": "care_follow_up",
+                        "evidence_strength": "admin_recorded",
+                        "visibility": "director_safe",
+                        "note": "Next follow-up date: 2026-09-23",
+                        "follow_up_due_at": "2026-09-23T00:00:00+00:00",
+                    }
+                )
+            },
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO trust_events (
+                    event_type,
+                    clan_id,
+                    actor_user_id,
+                    subject_user_id,
+                    meta_json,
+                    created_at
+                )
+                VALUES (
+                    'community_domain.activity_recorded',
+                    1,
+                    1,
+                    1,
+                    :meta_json,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "meta_json": json.dumps(
+                    {
+                        "source": "community_domain_activity_catalogue_v1",
+                        "community_domain_id": 825,
+                        "activity_type": "pastoral_follow_up",
+                        "activity_label": "Recorded update for resolved follow-up",
+                        "evidence_dimension": "care_follow_up",
+                        "evidence_strength": "admin_recorded",
+                        "visibility": "director_safe",
+                        "evidence_reference": f"activity-record:{resolved_event_id}",
+                        "note": "Follow-up completed and next date moved forward.",
+                        "follow_up_due_at": "2026-09-30T00:00:00+00:00",
+                    }
+                )
+            },
+        )
+
+    response = client.get(
+        "/community-domains/825/activities/follow-ups?due_on_or_before=2026-09-24&limit=10"
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["total"] == 1
+    assert body["queue_total"] == 1
+    assert body["resolved_reference_total"] == 1
+    assert body["items"][0]["activity_label"] == "Still due church follow-up"
+    assert "Resolved church follow-up" not in str(body["items"])
+    assert "Recorded update for resolved follow-up" not in str(body["items"])
+
+
 def test_public_notice_qr_requires_explicit_public_qr_opt_in(
     client,
     seed_clan_admin_membership,

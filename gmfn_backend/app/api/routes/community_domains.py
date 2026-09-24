@@ -1974,6 +1974,18 @@ def _community_domain_follow_up_queue_item(
     return payload
 
 
+def _community_domain_follow_up_resolved_activity_ids(rows: Sequence[TrustEvent]) -> set[int]:
+    resolved_ids: set[int] = set()
+    for row in rows:
+        meta = row.meta or {}
+        if _clean_template_key(meta.get("activity_type")) != "pastoral_follow_up":
+            continue
+        evidence_reference = str(meta.get("evidence_reference") or "")
+        for match in re.finditer(r"\bactivity-record:(\d+)\b", evidence_reference):
+            resolved_ids.add(int(match.group(1)))
+    return resolved_ids
+
+
 def _community_domain_activity_events(
     db: Session,
     *,
@@ -26174,10 +26186,13 @@ def list_community_domain_activity_follow_ups(
         community_node_ids=node_scope_ids or None,
         limit=int(scan_limit),
     )
+    resolved_activity_ids = _community_domain_follow_up_resolved_activity_ids(rows)
     due_rows: list[TrustEvent] = []
     for row in rows:
         meta = row.meta or {}
         if _clean_template_key(meta.get("activity_type")) != "pastoral_follow_up":
+            continue
+        if int(row.id) in resolved_activity_ids:
             continue
         due_day = _community_domain_follow_up_due_date(meta.get("follow_up_due_at"))
         if due_day is None or due_day > cutoff_day:
@@ -26212,6 +26227,7 @@ def list_community_domain_activity_follow_ups(
         "queue_total": len(due_rows),
         "overdue_before_cutoff_total": overdue_before_cutoff_total,
         "due_on_cutoff_total": due_on_cutoff_total,
+        "resolved_reference_total": len(resolved_activity_ids),
         "scan_limit": int(scan_limit),
         "boundary": (
             "Pastoral follow-up queue v1 is an admin-only due list built from "
