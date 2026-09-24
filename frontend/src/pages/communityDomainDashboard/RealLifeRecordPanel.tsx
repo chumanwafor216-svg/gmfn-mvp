@@ -210,6 +210,7 @@ const CHURCH_ATTENDANCE_FOLLOW_UP_OUTCOMES = [
 const CHURCH_FOLLOW_UP_ROUTE_NOTE_PREFIX = "Follow-up route:";
 const CHURCH_FOLLOW_UP_OUTCOME_NOTE_PREFIX = "Follow-up outcome:";
 const CHURCH_FOLLOW_UP_OWNER_NOTE_PREFIX = "Follow-up owner:";
+const CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX = "Next follow-up date:";
 const BENEFICIARY_OUTCOME_TASK_OPTIONS: Array<{
   key: BeneficiaryOutcomeTaskKey;
   label: string;
@@ -1985,6 +1986,25 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                       )
                                     }
                                     placeholder="Follow-up owner or team"
+                                    style={billingInputStyle()}
+                                  />
+                                ) : null}
+                                {isChurchWorkflow &&
+                                activityDraft.activity_type === churchPastoralFollowUpPreset.activityType ? (
+                                  <input
+                                    data-debug-id="community-domain-dashboard.activity-record-follow-up-next-date"
+                                    type="date"
+                                    value={churchFollowUpNoteValue(
+                                      CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX
+                                    )}
+                                    disabled={busyActivityRecord}
+                                    onChange={(event) =>
+                                      updateChurchFollowUpNoteLine(
+                                        CHURCH_FOLLOW_UP_NEXT_DATE_NOTE_PREFIX,
+                                        event.target.value
+                                      )
+                                    }
+                                    aria-label="Next follow-up date"
                                     style={billingInputStyle()}
                                   />
                                 ) : null}

@@ -1,3 +1,11 @@
+## 2026-09-24 - Church follow-up next date can be marked on record
+- Status: Frontend follow-up refinement implemented locally so a church pastoral/welfare Activity record can preserve the next follow-up date in its saved note.
+- Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Church workflow packet -> Activity record evidence step.
+- Files updated: `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Frontend impact: when the activity type is `pastoral_follow_up` in the church workflow, the evidence step now shows a `Next follow-up date` date input. It writes `Next follow-up date: YYYY-MM-DD` into the existing Activity note while preserving owner, route, outcome, and free-note text.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Publish status: local only. Per product-owner instruction, do not push or trigger Render until the current work batch is finished.
+- Devil truth: this is a check-back cue only. It does not create reminders, notify the owner, enforce overdue follow-up, prove care happened, expose role-safe contact details, or handle safeguarding escalation.
 ## 2026-09-24 - Church follow-up owner can be marked on record
 - Status: Frontend follow-up refinement implemented so a church pastoral/welfare Activity record can preserve the follow-up owner or team in its saved note.
 - Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Church workflow packet -> Activity record evidence step.
