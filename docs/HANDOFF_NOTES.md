@@ -1,3 +1,12 @@
+## 2026-09-24 - Church follow-up attention explains queue totals
+- Status: Frontend follow-up queue refinement implemented locally so the attention strip tells admins how many due/overdue pastoral follow-up records are being shown out of the backend queue total and when resolved due rows have been hidden.
+- Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent attention queue.
+- Files updated: `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Frontend impact: the attention helper now uses backend `queueTotal`, `rowTotal`, and `resolvedReferenceTotal` to replace the old fixed “shows up to five” text with a live, bounded-queue explanation while preserving the non-reminder boundary.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Publish status: local only. Per product-owner instruction, do not push or trigger Render until the current work batch is finished.
+- Devil truth: this makes the queue display more honest, but it still does not create a formal task lifecycle, reminders, owner acceptance, indexed follow-up storage, or safeguarding escalation.
+
 ## 2026-09-24 - Church follow-up attention summary uses backend totals
 - Status: Frontend follow-up queue refinement implemented locally so attention summary counts use backend due queue totals instead of only counting returned row items.
 - Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent attention queue.

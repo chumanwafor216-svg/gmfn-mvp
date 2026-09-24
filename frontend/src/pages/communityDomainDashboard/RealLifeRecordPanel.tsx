@@ -992,6 +992,24 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
       .slice(0, 5);
   }
 
+  function churchFollowUpAttentionQueueNote(displayedCount: number): string {
+    const queueTotal = activityAttentionSummary?.queueTotal ?? displayedCount;
+    const rowTotal = activityAttentionSummary?.rowTotal ?? displayedCount;
+    const resolvedReferenceTotal = activityAttentionSummary?.resolvedReferenceTotal ?? 0;
+    const shownTotal = Math.min(displayedCount, rowTotal || displayedCount, queueTotal || displayedCount);
+    const recordWord = queueTotal === 1 ? "record" : "records";
+    const parts = [
+      `Showing ${shownTotal} of ${queueTotal || shownTotal} due or overdue pastoral follow-up ${recordWord} from the admin due queue.`,
+    ];
+    if (resolvedReferenceTotal > 0) {
+      parts.push(
+        `${resolvedReferenceTotal} due ${resolvedReferenceTotal === 1 ? "record has" : "records have"} already been hidden because a later update referenced ${resolvedReferenceTotal === 1 ? "it" : "them"}.`
+      );
+    }
+    parts.push("This cue has not sent a reminder.");
+    return parts.join(" ");
+  }
+
   function applyChurchRecentFollowUpRecordUpdate(item: ActivityRecordRow) {
     const subjectUserId = cleanText(item?.subject_user_id);
     const existingReference = cleanText(item?.evidence_reference);
@@ -2350,7 +2368,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                         fontSize: 12,
                                       }}
                                     >
-                                      Shows up to five due or overdue pastoral follow-up records from the admin due queue. This cue has not sent a reminder.
+                                      {churchFollowUpAttentionQueueNote(followUpAttentionItems.length)}
                                     </span>
                                   </div>
                                 ) : null;
