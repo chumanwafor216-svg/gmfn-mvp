@@ -1,3 +1,10 @@
+## 2026-09-24 - Church attendance follow-up can open pastoral record
+- Status: Frontend follow-up refinement implemented so the attendance care snapshot now has a direct bridge into the existing Activity record flow using the `Pastoral follow-up` preset.
+- Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Church workflow packet.
+- Files updated: `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Frontend impact: the admin-only `Care follow-up snapshot` now includes `Record Follow-up`, which opens the existing real-life Activity recorder with the pastoral/welfare follow-up preset. This gives the welcome/follow-up team a practical next step after reviewing private candidate IDs.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Devil truth: this is a manual record bridge only. It does not auto-fill candidate IDs, assign follow-up owners, send WhatsApp/SMS/email, record call outcomes, manage home visits, capture consent, or handle safeguarding escalation.
 ## 2026-09-24 - Church attendance follow-up route cues added
 - Status: Frontend follow-up refinement implemented so the church attendance care snapshot now names the discovered care route without pretending GSN performs the care work.
 - Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Church workflow packet.

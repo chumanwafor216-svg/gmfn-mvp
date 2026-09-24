@@ -767,6 +767,8 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
   const latestResponseActive = Boolean(latestResponseChannel?.active);
   const latestResponseCount = cleanText(latestResponseChannel?.response_count, "0");
   const latestResponseFollowUpCount = cleanText(latestResponseChannel?.private_follow_up_count, "0");
+  const churchPastoralFollowUpPreset =
+    CHURCH_ACTIVITY_PRESET_PACK.find((preset) => preset.key === "pastoral_follow_up") || CHURCH_ACTIVITY_PRESET_PACK[0];
 
   function applyChurchActivityPreset(
     preset: (typeof CHURCH_ACTIVITY_PRESET_PACK)[number]
@@ -1273,6 +1275,17 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                       </span>
                                     ))}
                                   </div>
+                                  <StableButton
+                                    type="button"
+                                    kind="secondary"
+                                    stableHeight={34}
+                                    disabled={busyActivityRecord}
+                                    debugId="community-domain-dashboard.church-attendance-record-follow-up"
+                                    onClick={() => applyChurchActivityPreset(churchPastoralFollowUpPreset)}
+                                    style={{ justifySelf: "start", fontSize: 12, textTransform: "none" }}
+                                  >
+                                    Record Follow-up
+                                  </StableButton>
                                   <div style={{ ...helperText(), fontSize: 12 }}>
                                     {cleanText(
                                       latestAttendanceFollowUpSnapshot.next_step,
