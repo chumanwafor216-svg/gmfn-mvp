@@ -414,7 +414,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /list_community_domain_activity_follow_ups[\s\S]*due_on_or_before[\s\S]*scan_limit[\s\S]*resolved_activity_ids[\s\S]*pastoral_follow_up[\s\S]*follow_up_due_at[\s\S]*overdue_before_cutoff_total[\s\S]*resolved_reference_total[\s\S]*Pastoral follow-up queue v1 is an admin-only due list/,
+  /list_community_domain_activity_follow_ups[\s\S]*due_on_or_before[\s\S]*scan_limit[\s\S]*resolved_activity_ids[\s\S]*resolved_due_reference_total[\s\S]*pastoral_follow_up[\s\S]*follow_up_due_at[\s\S]*resolved_due_reference_total \+= 1[\s\S]*overdue_before_cutoff_total[\s\S]*resolved_reference_total[\s\S]*Pastoral follow-up queue v1 is an admin-only due list/,
   "Backend must expose an admin-only pastoral follow-up due queue with an honest non-reminder boundary."
 );
 
@@ -426,7 +426,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/tests/test_community_domain_collection_instructions.py",
-  /test_activity_follow_up_queue_hides_records_resolved_by_later_update[\s\S]*activity-record:\{resolved_event_id\}[\s\S]*\/community-domains\/825\/activities\/follow-ups\?due_on_or_before=2026-09-24&limit=10[\s\S]*resolved_reference_total[\s\S]*Still due church follow-up[\s\S]*Resolved church follow-up[\s\S]*not in str\(body\["items"\]\)[\s\S]*Recorded update for resolved follow-up[\s\S]*not in str\(body\["items"\]\)/,
+  /test_activity_follow_up_queue_hides_records_resolved_by_later_update[\s\S]*activity-record:\{resolved_event_id\}[\s\S]*\/community-domains\/825\/activities\/follow-ups\?due_on_or_before=2026-09-24&limit=10[\s\S]*resolved_reference_total[\s\S]*Still due church follow-up[\s\S]*Resolved church follow-up[\s\S]*not in str\(body\["items"\]\)[\s\S]*Recorded update for resolved follow-up[\s\S]*not in str\(body\["items"\]\)[\s\S]*Future referenced church follow-up[\s\S]*not in str\(body\["items"\]\)/,
   "Backend tests must prove the pastoral follow-up queue suppresses due records after a later update references their activity-record id."
 );
 

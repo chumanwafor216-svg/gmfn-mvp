@@ -564,6 +564,44 @@ def test_activity_follow_up_queue_hides_records_resolved_by_later_update(
                         "source": "community_domain_activity_catalogue_v1",
                         "community_domain_id": 825,
                         "activity_type": "pastoral_follow_up",
+                        "activity_label": "Future referenced church follow-up",
+                        "evidence_dimension": "care_follow_up",
+                        "evidence_strength": "admin_recorded",
+                        "visibility": "director_safe",
+                        "note": "Next follow-up date: 2026-09-30",
+                        "follow_up_due_at": "2026-09-30T00:00:00+00:00",
+                    }
+                )
+            },
+        )
+        future_referenced_event_id = conn.execute(text("SELECT last_insert_rowid()")).scalar_one()
+        conn.execute(
+            text(
+                """
+                INSERT INTO trust_events (
+                    event_type,
+                    clan_id,
+                    actor_user_id,
+                    subject_user_id,
+                    meta_json,
+                    created_at
+                )
+                VALUES (
+                    'community_domain.activity_recorded',
+                    1,
+                    1,
+                    1,
+                    :meta_json,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "meta_json": json.dumps(
+                    {
+                        "source": "community_domain_activity_catalogue_v1",
+                        "community_domain_id": 825,
+                        "activity_type": "pastoral_follow_up",
                         "activity_label": "Still due church follow-up",
                         "evidence_dimension": "care_follow_up",
                         "evidence_strength": "admin_recorded",
@@ -605,7 +643,7 @@ def test_activity_follow_up_queue_hides_records_resolved_by_later_update(
                         "evidence_dimension": "care_follow_up",
                         "evidence_strength": "admin_recorded",
                         "visibility": "director_safe",
-                        "evidence_reference": f"activity-record:{resolved_event_id}",
+                        "evidence_reference": f"activity-record:{resolved_event_id}; activity-record:{future_referenced_event_id}",
                         "note": "Follow-up completed and next date moved forward.",
                         "follow_up_due_at": "2026-09-30T00:00:00+00:00",
                     }
@@ -625,6 +663,7 @@ def test_activity_follow_up_queue_hides_records_resolved_by_later_update(
     assert body["items"][0]["activity_label"] == "Still due church follow-up"
     assert "Resolved church follow-up" not in str(body["items"])
     assert "Recorded update for resolved follow-up" not in str(body["items"])
+    assert "Future referenced church follow-up" not in str(body["items"])
 
 
 def test_public_notice_qr_requires_explicit_public_qr_opt_in(

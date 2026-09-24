@@ -26187,15 +26187,17 @@ def list_community_domain_activity_follow_ups(
         limit=int(scan_limit),
     )
     resolved_activity_ids = _community_domain_follow_up_resolved_activity_ids(rows)
+    resolved_due_reference_total = 0
     due_rows: list[TrustEvent] = []
     for row in rows:
         meta = row.meta or {}
         if _clean_template_key(meta.get("activity_type")) != "pastoral_follow_up":
             continue
-        if int(row.id) in resolved_activity_ids:
-            continue
         due_day = _community_domain_follow_up_due_date(meta.get("follow_up_due_at"))
         if due_day is None or due_day > cutoff_day:
+            continue
+        if int(row.id) in resolved_activity_ids:
+            resolved_due_reference_total += 1
             continue
         due_rows.append(row)
 
@@ -26227,7 +26229,7 @@ def list_community_domain_activity_follow_ups(
         "queue_total": len(due_rows),
         "overdue_before_cutoff_total": overdue_before_cutoff_total,
         "due_on_cutoff_total": due_on_cutoff_total,
-        "resolved_reference_total": len(resolved_activity_ids),
+        "resolved_reference_total": resolved_due_reference_total,
         "scan_limit": int(scan_limit),
         "boundary": (
             "Pastoral follow-up queue v1 is an admin-only due list built from "

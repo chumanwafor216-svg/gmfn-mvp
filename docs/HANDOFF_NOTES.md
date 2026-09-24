@@ -1,3 +1,12 @@
+## 2026-09-24 - Church follow-up resolved count only counts due suppressed rows
+- Status: Backend follow-up queue accuracy fix implemented locally so `resolved_reference_total` counts only due pastoral follow-up rows actually suppressed from the active queue, not every referenced activity id in the scan.
+- Route affected: `GET /community-domains/{community_domain_id}/activities/follow-ups`.
+- Files updated: `gmfn_backend/app/api/routes/community_domains.py`, `gmfn_backend/tests/test_community_domain_collection_instructions.py`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Backend impact: queue filtering now checks `follow_up_due_at <= due_on_or_before` before suppressing resolved records; future referenced follow-ups no longer inflate the resolved count.
+- Verification passed: `python -m pytest -q gmfn_backend\tests\test_community_domain_collection_instructions.py -k "activity_follow_up_queue_returns_due_pastoral_records_only or activity_follow_up_queue_hides_records_resolved_by_later_update or activity_list_scans_past_other_domain_rows_before_applying_domain_limit" --basetemp C:\tmp\pytest-church-follow-up-resolved-count` and `npm --prefix frontend run audit:community-domain-product-contracts`.
+- Publish status: local only. Per product-owner instruction, do not push or trigger Render until the current work batch is finished.
+- Devil truth: the count is now honest for the scanned rows, but the queue remains bounded-scan and reference-based, not an indexed task table or formal follow-up lifecycle.
+
 ## 2026-09-24 - Church follow-up queue status drives frontend badges
 - Status: Frontend follow-up queue refinement implemented locally so attention counts and row badges prefer backend queue status fields instead of recalculating every queue row from the browser date.
 - Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent attention queue.
