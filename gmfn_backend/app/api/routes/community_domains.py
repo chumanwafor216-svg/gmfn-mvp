@@ -1940,6 +1940,7 @@ def _community_domain_activity_events(
     community_node_ids: Optional[list[int]] = None,
     limit: int = 250,
 ) -> list[TrustEvent]:
+    requested_limit = max(int(limit), 1)
     query = (
         db.query(TrustEvent)
         .filter(TrustEvent.event_type == COMMUNITY_DOMAIN_ACTIVITY_EVENT)
@@ -1949,21 +1950,33 @@ def _community_domain_activity_events(
         query = query.filter(TrustEvent.created_at >= period_start)
     if period_end is not None:
         query = query.filter(TrustEvent.created_at <= period_end)
-    rows = query.limit(max(int(limit), 1)).all()
+
     desired_domain_id = int(community_domain_id)
     node_filter = {int(item) for item in community_node_ids or []}
     filtered: list[TrustEvent] = []
-    for row in rows:
-        meta = row.meta or {}
-        if int(meta.get("community_domain_id") or 0) != desired_domain_id:
-            continue
-        if node_filter:
-            node_id = meta.get("community_node_id")
-            if node_id is None or int(node_id) not in node_filter:
-                continue
-        filtered.append(row)
-    return filtered
+    scan_offset = 0
+    batch_size = min(max(requested_limit, 50), 250)
+    max_scan_rows = max(requested_limit * 20, 1000)
 
+    while len(filtered) < requested_limit and scan_offset < max_scan_rows:
+        rows = query.offset(scan_offset).limit(batch_size).all()
+        if not rows:
+            break
+        scan_offset += len(rows)
+        for row in rows:
+            meta = row.meta or {}
+            if int(meta.get("community_domain_id") or 0) != desired_domain_id:
+                continue
+            if node_filter:
+                node_id = meta.get("community_node_id")
+                if node_id is None or int(node_id) not in node_filter:
+                    continue
+            filtered.append(row)
+            if len(filtered) >= requested_limit:
+                break
+        if len(rows) < batch_size:
+            break
+    return filtered
 
 def _community_domain_outcome_event_payload(row: TrustEvent) -> dict[str, Any]:
     meta = row.meta or {}

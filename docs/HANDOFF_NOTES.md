@@ -1,3 +1,13 @@
+## 2026-09-24 - Community Domain activity list scans before domain limit
+- Status: Backend follow-up reliability fix implemented locally so Community Domain activity lists do not lose older domain rows behind newer activity events from other domains.
+- Routes affected: `GET /community-domains/{community_domain_id}/activities`; downstream `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent attention scan.
+- Files updated: `gmfn_backend/app/api/routes/community_domains.py`, `gmfn_backend/tests/test_community_domain_collection_instructions.py`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Backend impact: `_community_domain_activity_events` now scans TrustEvents in batches and applies the requested limit after matching `community_domain_id` and optional node scope, instead of applying SQL `limit` before JSON metadata filtering.
+- Test impact: added a regression where a target-domain church follow-up sits behind a newer other-domain activity while the request uses `limit=1`; the route must still return the target-domain row.
+- Verification passed: `python -m pytest -q gmfn_backend\tests\test_community_domain_collection_instructions.py -k "church_domain_can_record_private_pastoral_follow_up_without_payment_or_outcome_claim or activity_list_scans_past_other_domain_rows_before_applying_domain_limit" --basetemp C:\tmp\pytest-church-activity-domain-scan`, `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Publish status: local only. Per product-owner instruction, do not push or trigger Render until the current work batch is finished.
+- Devil truth: this makes the existing activity scan more honest, but it is still a bounded scan over TrustEvent metadata, not a dedicated indexed due-follow-up table or full workflow engine.
+
 ## 2026-09-24 - Church follow-up attention shows actionable rows
 - Status: Frontend follow-up refinement implemented locally so the wider church pastoral follow-up attention scan now exposes a compact actionable list, not only counts.
 - Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent.

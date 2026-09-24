@@ -525,6 +525,17 @@ assertContains(
   /def _community_domain_activity_event_payload[\s\S]*"subject_user_id": int\(row\.subject_user_id\)[\s\S]*"visibility": meta\.get\("visibility"\)[\s\S]*"note": meta\.get\("note"\)[\s\S]*"evidence_reference": meta\.get\("evidence_reference"\)[\s\S]*def list_community_domain_activities[\s\S]*_require_domain_admin_scope[\s\S]*"items": \[_community_domain_activity_event_payload\(row\) for row in rows\]/,
   "Backend admin activity list must return saved note markers and evidence references so recent church follow-up records can reload their private context."
 );
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /def _community_domain_activity_events[\s\S]*requested_limit = max\(int\(limit\), 1\)[\s\S]*scan_offset = 0[\s\S]*batch_size = min\(max\(requested_limit, 50\), 250\)[\s\S]*max_scan_rows = max\(requested_limit \* 20, 1000\)[\s\S]*while len\(filtered\) < requested_limit and scan_offset < max_scan_rows[\s\S]*query\.offset\(scan_offset\)\.limit\(batch_size\)\.all\(\)[\s\S]*int\(meta\.get\("community_domain_id"\) or 0\) != desired_domain_id[\s\S]*filtered\.append\(row\)[\s\S]*if len\(filtered\) >= requested_limit/,
+  "Backend activity listing must scan past newer other-domain TrustEvents before applying the requested Community Domain result limit."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domain_collection_instructions.py",
+  /test_activity_list_scans_past_other_domain_rows_before_applying_domain_limit[\s\S]*community_domain_id": 823[\s\S]*Hidden older church follow-up[\s\S]*community_domain_id": 999999[\s\S]*Newer other-domain activity[\s\S]*client\.get\("\/community-domains\/823\/activities\?limit=1"\)[\s\S]*body\["total"\] == 1[\s\S]*body\["items"\]\[0\]\["community_domain_id"\] == 823/,
+  "Backend tests must prove a low-limit Community Domain activity list does not lose domain rows behind newer other-domain TrustEvents."
+);
 
 assertContains(
   "gmfn_backend/tests/test_community_domain_collection_instructions.py",

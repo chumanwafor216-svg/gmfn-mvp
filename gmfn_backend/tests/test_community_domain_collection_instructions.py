@@ -304,6 +304,100 @@ def test_church_domain_can_record_private_pastoral_follow_up_without_payment_or_
     assert meta["source"] == "community_domain_activity_catalogue_v1"
     assert meta["note"].startswith("Pastor or welfare officer recorded")
 
+def test_activity_list_scans_past_other_domain_rows_before_applying_domain_limit(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    with engine.begin() as conn:
+        _seed_domain(conn, domain_id=823, policy_mode="admin_only")
+        conn.execute(
+            text(
+                """
+                INSERT INTO trust_events (
+                    event_type,
+                    clan_id,
+                    actor_user_id,
+                    subject_user_id,
+                    meta_json,
+                    created_at
+                )
+                VALUES (
+                    'community_domain.activity_recorded',
+                    1,
+                    1,
+                    1,
+                    :target_meta_json,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "target_meta_json": json.dumps(
+                    {
+                        "source": "community_domain_activity_catalogue_v1",
+                        "community_domain_id": 823,
+                        "activity_type": "pastoral_follow_up",
+                        "activity_label": "Hidden older church follow-up",
+                        "evidence_dimension": "care_follow_up",
+                        "quantity": "1.00",
+                        "measurement_unit": "visit",
+                        "evidence_strength": "admin_recorded",
+                        "visibility": "director_safe",
+                        "note": "Next follow-up date: 2026-09-24",
+                        "follow_up_due_at": "2026-09-24T00:00:00+00:00",
+                    }
+                )
+            },
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO trust_events (
+                    event_type,
+                    clan_id,
+                    actor_user_id,
+                    subject_user_id,
+                    meta_json,
+                    created_at
+                )
+                VALUES (
+                    'community_domain.activity_recorded',
+                    1,
+                    1,
+                    1,
+                    :distractor_meta_json,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "distractor_meta_json": json.dumps(
+                    {
+                        "source": "community_domain_activity_catalogue_v1",
+                        "community_domain_id": 999999,
+                        "activity_type": "market_meeting",
+                        "activity_label": "Newer other-domain activity",
+                        "evidence_dimension": "participation",
+                        "quantity": "1.00",
+                        "measurement_unit": "meeting",
+                        "evidence_strength": "admin_recorded",
+                        "visibility": "director_safe",
+                    }
+                )
+            },
+        )
+
+    response = client.get("/community-domains/823/activities?limit=1")
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["total"] == 1
+    assert body["items"][0]["community_domain_id"] == 823
+    assert body["items"][0]["activity_label"] == "Hidden older church follow-up"
+    assert body["items"][0]["follow_up_due_at"].startswith("2026-09-24T00:00:00")
+
+
 def test_public_notice_qr_requires_explicit_public_qr_opt_in(
     client,
     seed_clan_admin_membership,
