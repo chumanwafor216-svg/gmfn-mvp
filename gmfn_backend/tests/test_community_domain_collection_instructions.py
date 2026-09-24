@@ -635,6 +635,30 @@ def test_church_response_qr_records_member_question_and_follow_up_preference(
 ):
     with engine.begin() as conn:
         _seed_domain(conn, domain_id=821, policy_mode="admin_only", notice_policy_mode="admin_only")
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO users (id, email, hashed_password, role, display_name)
+                VALUES (2, 'church-admin-2@example.com', 'hashed', 'user', 'Church Admin Two')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO community_domain_memberships (
+                    community_domain_id,
+                    user_id,
+                    role,
+                    status,
+                    title,
+                    created_at,
+                    updated_at
+                )
+                VALUES (821, 2, 'admin', 'active', 'Follow-up team', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """
+            )
+        )
 
     channel_res = client.post(
         "/community-domains/821/response-channels",
@@ -673,6 +697,7 @@ def test_church_response_qr_records_member_question_and_follow_up_preference(
         },
     )
     assert response_res.status_code == 200, response_res.text
+    assert response_res.json()["admin_notifications_created"] == 1
     body = response_res.json()["response"]
     assert body["response_type"] == "question"
     assert body["wants_private_follow_up"] is True
@@ -701,8 +726,25 @@ def test_church_response_qr_records_member_question_and_follow_up_preference(
             ),
             {"domain_like": '%community_domain_id%821%'},
         ).scalar_one()
+        notification = conn.execute(
+            text(
+                """
+                SELECT title, message, action_url, action_label
+                FROM notifications
+                WHERE user_id = 2
+                  AND kind = 'community_domain.response.admin_review'
+                """
+            )
+        ).mappings().one()
 
     assert response_count == 1
+    assert "Follow-up response" in notification["title"]
+    assert "Review it inside GSN" in notification["message"]
+    assert "youth programme" not in notification["message"]
+    assert "Church Admin Two" not in notification["message"]
+    assert "church-admin-2@example.com" not in notification["message"]
+    assert notification["action_url"] == "/app/community-domain/821?lane=governance"
+    assert notification["action_label"] == "Open Response Review"
 
 
 def test_church_response_qr_respects_disabled_demand_box_policy(

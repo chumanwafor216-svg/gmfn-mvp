@@ -360,9 +360,15 @@ assertContains(
 );
 
 assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /COMMUNITY_DOMAIN_RESPONSE_ADMIN_NOTIFICATION[\s\S]*wants_private_follow_up[\s\S]*pastoral_follow_up[\s\S]*Review it inside GSN; private details and message content stay in the[\s\S]*exclude_user_ids=\{int\(current_user\.id\)\}/,
+  "Backend Response QR must wake admins for private follow-up, need, pastoral, or concern responses without putting private message content in notifications."
+);
+
+assertContains(
   "gmfn_backend/tests/test_community_domain_collection_instructions.py",
-  /test_church_response_qr_records_member_question_and_follow_up_preference[\s\S]*\/community-domains\/821\/response-channels[\s\S]*\/responses[\s\S]*preferred_follow_up_channel[\s\S]*whatsapp[\s\S]*responder_user_id[\s\S]*not in body[\s\S]*test_church_response_qr_respects_disabled_demand_box_policy[\s\S]*demand_box/,
-  "Backend tests must prove response QR records signed-in member questions privately and respects the DemandBox feature gate."
+  /test_church_response_qr_records_member_question_and_follow_up_preference[\s\S]*\/community-domains\/821\/response-channels[\s\S]*\/responses[\s\S]*preferred_follow_up_channel[\s\S]*whatsapp[\s\S]*admin_notifications_created[\s\S]*community_domain\.response\.admin_review[\s\S]*youth programme[\s\S]*not in notification\["message"\][\s\S]*test_church_response_qr_respects_disabled_demand_box_policy[\s\S]*demand_box/,
+  "Backend tests must prove response QR records signed-in member questions privately, wakes admins for follow-up, and respects the DemandBox feature gate."
 );
 
 assertContains(

@@ -242,6 +242,7 @@ COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY = (
 )
 COMMUNITY_DOMAIN_RESPONSE_CHANNEL_EVENT = "community_domain.response_channel.opened"
 COMMUNITY_DOMAIN_RESPONSE_EVENT = "community_domain.response.recorded"
+COMMUNITY_DOMAIN_RESPONSE_ADMIN_NOTIFICATION = "community_domain.response.admin_review"
 COMMUNITY_DOMAIN_RESPONSE_TYPES = {
     "question",
     "comment",
@@ -24784,12 +24785,34 @@ def record_public_community_domain_response(
         commit=True,
         refresh=True,
     )
+    admin_notifications_created = 0
+    if wants_private_follow_up or response_type in {"need_request", "pastoral_follow_up", "concern"}:
+        domain_label = _clean_str(domain.display_name or domain.domain_name, "Community Domain")
+        response_label = _community_domain_response_type_label(response_type)
+        admin_notifications_created = _create_community_domain_admin_notifications(
+            db,
+            domain=domain,
+            kind=COMMUNITY_DOMAIN_RESPONSE_ADMIN_NOTIFICATION,
+            title=f"Follow-up response in {domain_label}",
+            message=(
+                f"A member submitted a {response_label.lower()} response"
+                f" through {channel_meta.get('title') or 'Response QR'}. "
+                "Review it inside GSN; private details and message content stay in the "
+                "Community Domain record."
+            ),
+            action_url=f"/app/community-domain/{int(domain.id)}?lane=governance",
+            action_label="Open Response Review",
+            exclude_user_ids={int(current_user.id)},
+        )
     return {
         "ok": True,
         "response": _community_domain_response_payload(event, include_private=False),
         "message": "Response recorded. Organisers can review it inside GSN; WhatsApp is not the official record.",
+        "admin_notifications_created": int(admin_notifications_created),
         "boundary": COMMUNITY_DOMAIN_RESPONSE_BOUNDARY,
     }
+
+
 @router.get("/public/notices/{public_code}", response_model=dict[str, Any])
 def get_public_community_domain_notice(
     public_code: str,

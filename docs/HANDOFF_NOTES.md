@@ -1,3 +1,11 @@
+## 2026-09-24 - Church Response QR follow-up notifications added
+- Status: Local backend fix implemented after pastor/church discovery showed a Response QR follow-up request cannot only sit silently in the record; it has to wake an organiser while keeping private text inside GSN.
+- Screens/routes affected: public backend `/community-domains/public/response-channels/{public_code}/responses`; organiser review remains through `/app/community-domain/:communityDomainId` governance/context surfaces.
+- Files updated: `gmfn_backend/app/api/routes/community_domains.py`, `gmfn_backend/tests/test_community_domain_collection_instructions.py`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Backend impact: responses marked `wants_private_follow_up`, or typed as need, pastoral follow-up, or concern, now create `community_domain.response.admin_review` notifications for active domain admins/owners other than the submitting user. The notification says to review inside GSN and links to `/app/community-domain/{id}?lane=governance`.
+- Privacy impact: the notification deliberately does not include the member's response body, responder id, email, or private details. The public response payload still omits `responder_user_id`; organiser channel listing remains the admin-side record.
+- Verification passed: Python compile, `python -m pytest gmfn_backend\tests\test_community_domain_collection_instructions.py -q`, `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Devil truth: this is an organiser wake-up, not a full pastoral case-management, safeguarding, escalation, consent, SLA, WhatsApp delivery, or counselling workflow. It closes the immediate pilot gap: private follow-up is no longer silently buried.
 ## 2026-09-24 - Church attendance care follow-up snapshot added
 - Status: Local backend and frontend fix implemented after pastor/church discovery showed the first useful pilot workflow is live QR attendance plus private follow-up prompts.
 - Screens/routes affected: `/app/community-domain/:communityDomainId` church workflow packet and backend `/community-domains/{id}/attendance-sessions`.
