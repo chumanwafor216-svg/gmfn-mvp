@@ -504,7 +504,7 @@ def test_church_live_attendance_qr_records_member_checkin_once(
 
     assert checkin_count == 1
 
-def test_church_live_attendance_admin_follow_up_snapshot_is_count_only(
+def test_church_live_attendance_admin_follow_up_snapshot_has_private_safe_candidate_ids(
     client,
     seed_clan_admin_membership,
     override_current_user,
@@ -551,6 +551,7 @@ def test_church_live_attendance_admin_follow_up_snapshot_is_count_only(
     assert opening_snapshot["expected_member_count"] == 3
     assert opening_snapshot["present_member_count"] == 0
     assert opening_snapshot["follow_up_needed_count"] == 3
+    assert opening_snapshot["follow_up_candidate_user_ids"] == [1, 2, 3]
     assert opening_snapshot["follow_up_status"] == "care_follow_up_needed"
     assert "follow_up_needed_members" not in opening_snapshot
 
@@ -559,6 +560,7 @@ def test_church_live_attendance_admin_follow_up_snapshot_is_count_only(
     public_session = public_res.json()["attendance_session"]
     assert "follow_up_snapshot" not in public_session
     assert "checked_in_user_ids" not in public_session
+    assert "follow_up_candidate_user_ids" not in str(public_session)
 
     checkin_res = client.post(
         f'{session["public_api_path"]}/check-ins',
@@ -574,9 +576,11 @@ def test_church_live_attendance_admin_follow_up_snapshot_is_count_only(
     assert snapshot["expected_member_count"] == 3
     assert snapshot["present_member_count"] == 1
     assert snapshot["follow_up_needed_count"] == 2
+    assert snapshot["follow_up_candidate_user_ids"] == [2, 3]
     assert snapshot["follow_up_status"] == "care_follow_up_needed"
     assert "Do not publish an absence list" in snapshot["next_step"]
-    assert "absent-member list" in snapshot["boundary"]
+    assert "roster user IDs" in snapshot["boundary"]
+    assert "member names or contact details" in snapshot["boundary"]
     assert "Church Member Two" not in str(snapshot)
     assert "church-member-2@example.com" not in str(snapshot)
 

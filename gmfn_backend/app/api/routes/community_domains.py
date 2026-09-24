@@ -23871,8 +23871,9 @@ def _community_domain_attendance_follow_up_snapshot(
     checked_in_user_ids: list[int],
 ) -> dict[str, Any]:
     boundary = (
-        "Admin-only attendance follow-up snapshot. It gives counts and next-step "
-        "guidance only; it does not expose an absent-member list, prove attendance "
+        "Admin-only attendance follow-up snapshot. It gives counts and private "
+        "roster user IDs for follow-up candidates; it does not expose member "
+        "names or contact details, publish an absence list, prove attendance "
         "publicly, discipline members, prove payment, track location, or make "
         "spiritual judgement."
     )
@@ -23881,6 +23882,7 @@ def _community_domain_attendance_follow_up_snapshot(
             "expected_member_count": 0,
             "present_member_count": len(set(checked_in_user_ids)),
             "follow_up_needed_count": 0,
+            "follow_up_candidate_user_ids": [],
             "follow_up_status": "no_domain_roster",
             "next_step": "Open the domain roster before using attendance for care follow-up.",
             "boundary": boundary,
@@ -23903,6 +23905,7 @@ def _community_domain_attendance_follow_up_snapshot(
     expected_member_count = len(active_member_ids)
     present_member_count = len(active_member_ids.intersection(checked_set))
     follow_up_needed_count = max(expected_member_count - present_member_count, 0)
+    follow_up_candidate_user_ids = sorted(active_member_ids.difference(checked_set))
     if expected_member_count <= 0:
         status = "no_roster"
         next_step = "Add active members before using QR attendance as follow-up memory."
@@ -23912,14 +23915,15 @@ def _community_domain_attendance_follow_up_snapshot(
     else:
         status = "care_follow_up_needed"
         next_step = (
-            "Use the private church roster or welcome-team record to decide who should receive "
-            "a care check. Do not publish an absence list."
+            "Use the private church roster to resolve the candidate user IDs for welcome-team "
+            "care checks. Do not publish an absence list."
         )
 
     return {
         "expected_member_count": expected_member_count,
         "present_member_count": present_member_count,
         "follow_up_needed_count": follow_up_needed_count,
+        "follow_up_candidate_user_ids": follow_up_candidate_user_ids,
         "follow_up_status": status,
         "next_step": next_step,
         "boundary": boundary,

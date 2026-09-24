@@ -321,8 +321,8 @@ assertContains(
 );
 assertContains(
   "gmfn_backend/tests/test_community_domain_collection_instructions.py",
-  /test_church_live_attendance_admin_follow_up_snapshot_is_count_only[\s\S]*follow_up_snapshot[\s\S]*follow_up_needed_count[\s\S]*follow_up_needed_members[\s\S]*not in opening_snapshot[\s\S]*Church Member Two[\s\S]*not in str\(snapshot\)/,
-  "Backend tests must prove church attendance follow-up is admin-only, count-only, and does not expose absent-member names or emails."
+  /test_church_live_attendance_admin_follow_up_snapshot_has_private_safe_candidate_ids[\s\S]*follow_up_snapshot[\s\S]*follow_up_candidate_user_ids[\s\S]*\[1, 2, 3\][\s\S]*follow_up_needed_members[\s\S]*not in opening_snapshot[\s\S]*follow_up_candidate_user_ids[\s\S]*not in str\(public_session\)[\s\S]*follow_up_candidate_user_ids[\s\S]*\[2, 3\][\s\S]*Church Member Two[\s\S]*not in str\(snapshot\)/,
+  "Backend tests must prove church attendance follow-up is admin-only, carries private-safe candidate IDs, and does not expose absent-member names or emails."
 );
 
 assertContains(

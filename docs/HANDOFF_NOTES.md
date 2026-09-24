@@ -1,3 +1,10 @@
+## 2026-09-24 - Church attendance follow-up candidate IDs added
+- Status: Local backend refinement implemented after re-reading the pastor/church discovery success measure: the pilot is only useful if authorised leaders can identify which regular members may need welcome-team follow-up, not just how many.
+- Screens/routes affected: admin backend `/community-domains/{id}/attendance-sessions` and session creation payloads; public `/community-domains/public/attendance-sessions/{public_code}` remains unchanged and does not expose the follow-up snapshot.
+- Files updated: `gmfn_backend/app/api/routes/community_domains.py`, `gmfn_backend/tests/test_community_domain_collection_instructions.py`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Backend impact: admin-only `follow_up_snapshot` now includes `follow_up_candidate_user_ids` alongside expected/present/follow-up counts, so authorised organisers can resolve the IDs through the private roster. It still omits names, emails, phone numbers, addresses, and any public absence list.
+- Verification passed: Python compile, `python -m pytest gmfn_backend\tests\test_community_domain_collection_instructions.py -q`, `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Devil truth: this is the minimum backend bridge from count-only attendance memory to actionable welcome-team follow-up. It is not yet a polished follow-up-team UI, escalation workflow, safeguarding case file, consent workflow, home-visit tracker, WhatsApp sender, or pastoral counselling system.
 ## 2026-09-24 - Church Response QR follow-up notifications added
 - Status: Local backend fix implemented after pastor/church discovery showed a Response QR follow-up request cannot only sit silently in the record; it has to wake an organiser while keeping private text inside GSN.
 - Screens/routes affected: public backend `/community-domains/public/response-channels/{public_code}/responses`; organiser review remains through `/app/community-domain/:communityDomainId` governance/context surfaces.
