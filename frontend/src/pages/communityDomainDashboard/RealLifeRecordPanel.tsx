@@ -944,6 +944,25 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     );
   }
 
+  function churchFollowUpAttentionItems() {
+    return activityAttentionRows
+      .filter(
+        (item) =>
+          cleanText(item?.activity_type) === churchPastoralFollowUpPreset.activityType &&
+          Boolean(churchFollowUpDueStatus(item))
+      )
+      .sort((left, right) => {
+        const leftDate = churchFollowUpNextDateValue(left);
+        const rightDate = churchFollowUpNextDateValue(right);
+        const dateOrder = leftDate.localeCompare(rightDate);
+        if (dateOrder !== 0) {
+          return dateOrder;
+        }
+        return cleanText(right?.event_id).localeCompare(cleanText(left?.event_id));
+      })
+      .slice(0, 5);
+  }
+
   function applyChurchRecentFollowUpRecordUpdate(item: ActivityRecordRow) {
     const subjectUserId = cleanText(item?.subject_user_id);
     const existingReference = cleanText(item?.evidence_reference);
@@ -2195,6 +2214,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                               </div>
                               {(() => {
                                 const followUpAttention = churchFollowUpRecentAttentionSummary();
+                                const followUpAttentionItems = churchFollowUpAttentionItems();
                                 const attentionTotal = followUpAttention.overdue + followUpAttention.dueToday;
                                 return attentionTotal ? (
                                   <div
@@ -2233,6 +2253,67 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                     >
                                       Record follow-up update
                                     </StableButton>
+                                    {followUpAttentionItems.length ? (
+                                      <div
+                                        data-debug-id="community-domain-dashboard.activity-recent-follow-up-attention-queue"
+                                        style={{
+                                          display: "grid",
+                                          flexBasis: "100%",
+                                          gap: 6,
+                                        }}
+                                      >
+                                        {followUpAttentionItems.map((item) => {
+                                          const followUpDueStatus = churchFollowUpDueStatus(item);
+                                          const nextDate = churchFollowUpNextDateValue(item);
+                                          const owner = churchFollowUpRowNoteValue(
+                                            item,
+                                            CHURCH_FOLLOW_UP_OWNER_NOTE_PREFIX
+                                          );
+                                          return (
+                                            <div
+                                              key={cleanText(item?.event_id)}
+                                              data-debug-id="community-domain-dashboard.activity-recent-follow-up-attention-queue-row"
+                                              style={{
+                                                display: "flex",
+                                                flexWrap: "wrap",
+                                                gap: 6,
+                                                alignItems: "center",
+                                                paddingTop: 6,
+                                                borderTop: "1px solid rgba(9,27,46,0.08)",
+                                              }}
+                                            >
+                                              <span style={statusBadge(followUpDueStatus)}>
+                                                {followUpDueStatus}
+                                              </span>
+                                              <strong style={{ color: "#091B2E", fontSize: 13 }}>
+                                                {subjectReferenceLabel(item)}
+                                              </strong>
+                                              {nextDate ? (
+                                                <span style={statusBadge("follow_up")}>
+                                                  Next: {nextDate}
+                                                </span>
+                                              ) : null}
+                                              {owner ? (
+                                                <span style={statusBadge("follow_up")}>
+                                                  Owner: {owner}
+                                                </span>
+                                              ) : null}
+                                              <StableButton
+                                                type="button"
+                                                kind="secondary"
+                                                stableHeight={36}
+                                                debugId="community-domain-dashboard.activity-recent-follow-up-attention-row-record-update"
+                                                onClick={() =>
+                                                  applyChurchRecentFollowUpRecordUpdate(item)
+                                                }
+                                              >
+                                                Record this update
+                                              </StableButton>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    ) : null}
                                     <span
                                       style={{
                                         ...helperText(),
@@ -2240,7 +2321,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                         fontSize: 12,
                                       }}
                                     >
-                                      Scans loaded admin activity records for pastoral follow-up dates. This cue has not sent a reminder.
+                                      Shows up to five due or overdue pastoral follow-up records from the loaded admin scan. This cue has not sent a reminder.
                                     </span>
                                   </div>
                                 ) : null;

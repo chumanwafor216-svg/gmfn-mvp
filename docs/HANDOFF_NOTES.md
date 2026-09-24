@@ -1,3 +1,12 @@
+## 2026-09-24 - Church follow-up attention shows actionable rows
+- Status: Frontend follow-up refinement implemented locally so the wider church pastoral follow-up attention scan now exposes a compact actionable list, not only counts.
+- Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent.
+- Files updated: `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Frontend impact: when the wider admin activity scan finds due-today or overdue pastoral follow-up records, the attention strip now shows up to five specific due rows ordered by next follow-up date. Each row shows the due status, subject reference, next date, optional owner marker, and a row-specific `Record this update` action that opens the existing pastoral follow-up recorder with subject/source context.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Publish status: local only. Per product-owner instruction, do not push or trigger Render until the current work batch is finished.
+- Devil truth: this makes overdue records easier to act on, but it is still not a true task queue, reminder sender, owner acceptance workflow, full historical search, or safeguarding escalation process.
+
 ## 2026-09-24 - Church follow-up attention uses wider admin scan
 - Status: Frontend follow-up refinement implemented locally so the church pastoral follow-up attention strip is no longer calculated only from the five visible recent rows.
 - Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent.
