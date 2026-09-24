@@ -2186,6 +2186,17 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                         Due today: {followUpAttention.dueToday}
                                       </span>
                                     ) : null}
+                                    <StableButton
+                                      type="button"
+                                      kind="secondary"
+                                      stableHeight={40}
+                                      debugId="community-domain-dashboard.activity-recent-follow-up-record-update"
+                                      onClick={() =>
+                                        applyChurchActivityPreset(churchPastoralFollowUpPreset)
+                                      }
+                                    >
+                                      Record follow-up update
+                                    </StableButton>
                                     <span
                                       style={{
                                         ...helperText(),

@@ -380,8 +380,8 @@ assertContains(
 
 assertContains(
   communityDomainDashboardFile,
-  /function churchFollowUpRecentAttentionSummary[\s\S]*activityRows\.slice\(0, 5\)[\s\S]*churchPastoralFollowUpPreset\.activityType[\s\S]*summary\.overdue \+= 1[\s\S]*summary\.dueToday \+= 1[\s\S]*community-domain-dashboard\.activity-recent-follow-up-attention-summary[\s\S]*Follow-up attention[\s\S]*Overdue: \{followUpAttention\.overdue\}[\s\S]*Due today: \{followUpAttention\.dueToday\}[\s\S]*Counts only loaded recent pastoral follow-up records\. This cue has not sent a reminder\./,
-  "Community Domain recent church pastoral follow-up records must summarize loaded due-today and overdue follow-up cues without implying a reminder was sent.",
+  /function churchFollowUpRecentAttentionSummary[\s\S]*activityRows\.slice\(0, 5\)[\s\S]*churchPastoralFollowUpPreset\.activityType[\s\S]*summary\.overdue \+= 1[\s\S]*summary\.dueToday \+= 1[\s\S]*community-domain-dashboard\.activity-recent-follow-up-attention-summary[\s\S]*Follow-up attention[\s\S]*Overdue: \{followUpAttention\.overdue\}[\s\S]*Due today: \{followUpAttention\.dueToday\}[\s\S]*community-domain-dashboard\.activity-recent-follow-up-record-update[\s\S]*applyChurchActivityPreset\(churchPastoralFollowUpPreset\)[\s\S]*Record follow-up update[\s\S]*Counts only loaded recent pastoral follow-up records\. This cue has not sent a reminder\./,
+  "Community Domain recent church pastoral follow-up records must summarize loaded due-today and overdue follow-up cues, then bridge leaders back into the existing follow-up recorder without implying a reminder was sent.",
   { frontend: true }
 );
 

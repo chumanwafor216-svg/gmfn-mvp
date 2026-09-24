@@ -1,3 +1,12 @@
+## 2026-09-24 - Church follow-up attention summary opens recorder
+- Status: Frontend follow-up refinement implemented locally so the recent Activity attention strip gives leaders a direct manual recording action.
+- Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent.
+- Files updated: `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Frontend impact: when the loaded recent pastoral follow-up records show due-today or overdue attention, the `Follow-up attention` strip now includes `Record follow-up update`. It reuses the existing `Pastoral follow-up` preset and opens the normal staged Activity recorder instead of creating a separate workflow.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Publish status: local only. Per product-owner instruction, do not push or trigger Render until the current work batch is finished.
+- Devil truth: this is a manual shortcut only. It does not select the exact overdue member, search the full history, notify the assigned owner, create reminders, prove follow-up happened, or handle safeguarding escalation.
+
 ## 2026-09-24 - Church recent follow-up attention summary is visible
 - Status: Frontend follow-up refinement implemented locally so the recent Activity view surfaces a compact church pastoral follow-up attention summary.
 - Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent.
