@@ -427,6 +427,13 @@ type ActivityRecordRow = ActivityCatalogueOption & {
   follow_up_queue_status?: string | number | null;
 };
 
+type ActivityAttentionSummary = {
+  overdue: number;
+  dueToday: number;
+  queueTotal: number;
+  rowTotal: number;
+  resolvedReferenceTotal: number;
+};
 type BeneficiaryOutcomeRelatedRecord = {
   event_id?: string | number | null;
   channel?: string | number | null;
@@ -489,6 +496,7 @@ export type RealLifeRecordPanelData = {
   activityRecordTaskChooserOpen: boolean;
   activityRows: ActivityRecordRow[];
   activityAttentionRows: ActivityRecordRow[];
+  activityAttentionSummary: ActivityAttentionSummary | null;
   attendanceSessionCopied: boolean;
   attendanceSessionDraft: CommunityDomainAttendanceSessionDraft;
   attendanceSessionRows: AttendanceSessionRow[];
@@ -633,6 +641,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     activityRecordTaskChooserOpen,
     activityRows,
     activityAttentionRows,
+    activityAttentionSummary,
     attendanceSessionCopied,
     attendanceSessionDraft,
     attendanceSessionRows,
@@ -940,6 +949,12 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
   }
 
   function churchFollowUpRecentAttentionSummary(): { overdue: number; dueToday: number } {
+    if (activityAttentionSummary) {
+      return {
+        overdue: activityAttentionSummary.overdue,
+        dueToday: activityAttentionSummary.dueToday,
+      };
+    }
     return activityAttentionRows.reduce<{ overdue: number; dueToday: number }>(
       (summary, item) => {
         if (cleanText(item?.activity_type) !== churchPastoralFollowUpPreset.activityType) {

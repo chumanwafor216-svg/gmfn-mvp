@@ -711,6 +711,7 @@ function isUnknownRecord(value: unknown): value is UnknownRecord {
 
 type RealLifeActivityCatalogueOption = RealLifeRecordPanelData["activityCatalogueOptions"][number];
 type RealLifeActivityRecordRow = RealLifeRecordPanelData["activityRows"][number];
+type RealLifeActivityAttentionSummary = NonNullable<RealLifeRecordPanelData["activityAttentionSummary"]>;
 type RealLifeBeneficiaryOutcomeRow = RealLifeRecordPanelData["beneficiaryOutcomeRows"][number];
 type RealLifeBeneficiaryOutcomeRelatedRecord =
   RealLifeRecordPanelData["beneficiaryDeliveryPackByOutcomeId"][string];
@@ -1729,6 +1730,33 @@ function payloadRecordOrNull(payload: unknown, key: string): UnknownRecord | nul
   return isUnknownRecord(value) ? value : null;
 }
 
+function payloadNonNegativeInt(payload: unknown, key: string): number {
+  const numeric = Number(payloadValue(payload, key) ?? 0);
+  if (!Number.isFinite(numeric) || numeric < 0) return 0;
+  return Math.floor(numeric);
+}
+
+function activityAttentionSummaryFromPayload(
+  payload: unknown
+): RealLifeActivityAttentionSummary | null {
+  if (!isUnknownRecord(payload)) return null;
+  const hasSummary = [
+    "overdue_before_cutoff_total",
+    "due_on_cutoff_total",
+    "queue_total",
+    "total",
+    "resolved_reference_total",
+  ].some((key) => Object.prototype.hasOwnProperty.call(payload, key));
+  if (!hasSummary) return null;
+  return {
+    overdue: payloadNonNegativeInt(payload, "overdue_before_cutoff_total"),
+    dueToday: payloadNonNegativeInt(payload, "due_on_cutoff_total"),
+    queueTotal: payloadNonNegativeInt(payload, "queue_total"),
+    rowTotal: payloadNonNegativeInt(payload, "total"),
+    resolvedReferenceTotal: payloadNonNegativeInt(payload, "resolved_reference_total"),
+  };
+}
+
 function memberPlacementSummaryOrNull(value: unknown): MemberPlacementSummarySurface | null {
   if (!isUnknownRecord(value)) return null;
   return {
@@ -2655,6 +2683,8 @@ export default function CommunityDomainDashboardPage() {
   const [activityCatalogue, setActivityCatalogue] = useState<RealLifeActivityCatalogueOption[]>([]);
   const [activityRows, setActivityRows] = useState<RealLifeActivityRecordRow[]>([]);
   const [activityAttentionRows, setActivityAttentionRows] = useState<RealLifeActivityRecordRow[]>([]);
+  const [activityAttentionSummary, setActivityAttentionSummary] =
+    useState<RealLifeActivityAttentionSummary | null>(null);
   const [beneficiaryOutcomeRows, setBeneficiaryOutcomeRows] = useState<RealLifeBeneficiaryOutcomeRow[]>([]);
   const [beneficiaryCorrectionRows, setBeneficiaryCorrectionRows] = useState<UnknownRecord[]>([]);
   const [beneficiaryCorrectionDecisionByOutcomeId, setBeneficiaryCorrectionDecisionByOutcomeId] =
@@ -3115,6 +3145,7 @@ export default function CommunityDomainDashboardPage() {
     setActivityCatalogue([]);
     setActivityRows([]);
     setActivityAttentionRows([]);
+    setActivityAttentionSummary(null);
     setActivityDraft(emptyCommunityDomainActivityDraft());
     setActiveRealLifeRecordTask(null);
     setActiveActivityRecordTask("record");
@@ -3608,6 +3639,7 @@ export default function CommunityDomainDashboardPage() {
       setSponsorSummary(sponsorPayload || null);
       const refreshedActivityRows = payloadRecordArrayOrNull(activityPayload, "items");
       const refreshedActivityAttentionRows = payloadRecordArrayOrNull(activityAttentionPayload, "items");
+      const refreshedActivityAttentionSummary = activityAttentionSummaryFromPayload(activityAttentionPayload);
       const recordedActivity = isUnknownRecord(recorded?.activity)
         ? recorded.activity
         : null;
@@ -3623,6 +3655,7 @@ export default function CommunityDomainDashboardPage() {
             ? [recordedActivity, ...activityAttentionRows].slice(0, 250)
             : activityAttentionRows)
       );
+      setActivityAttentionSummary(refreshedActivityAttentionSummary ?? activityAttentionSummary);
       setActivityDraft(emptyCommunityDomainActivityDraft());
       setActiveActivityRecordStage("person");
       setActivityRecordStageChooserOpen(false);
@@ -4622,6 +4655,7 @@ export default function CommunityDomainDashboardPage() {
       setActivityCatalogue(payloadRecordArray(activityCataloguePayload, "activity_catalogue"));
       setActivityRows(payloadRecordArray(activityRowsPayload, "items"));
       setActivityAttentionRows(payloadRecordArray(activityAttentionRowsPayload, "items"));
+      setActivityAttentionSummary(activityAttentionSummaryFromPayload(activityAttentionRowsPayload));
       setBeneficiaryOutcomeRows(payloadRecordArray(beneficiaryOutcomeRowsPayload, "items"));
       setBeneficiaryCorrectionRows(payloadRecordArray(beneficiaryCorrectionRowsPayload, "items"));
       return;
@@ -10461,6 +10495,7 @@ export default function CommunityDomainDashboardPage() {
                           activityRecordTaskChooserOpen,
                           activityRows,
                           activityAttentionRows,
+                          activityAttentionSummary,
                           attendanceSessionCopied,
                           attendanceSessionDraft,
                           attendanceSessionRows,

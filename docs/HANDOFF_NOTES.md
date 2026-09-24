@@ -1,3 +1,12 @@
+## 2026-09-24 - Church follow-up attention summary uses backend totals
+- Status: Frontend follow-up queue refinement implemented locally so attention summary counts use backend due queue totals instead of only counting returned row items.
+- Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent attention queue.
+- Files updated: `frontend/src/pages/CommunityDomainDashboardPage.tsx`, `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
+- Frontend impact: dashboard now normalizes `overdue_before_cutoff_total`, `due_on_cutoff_total`, `queue_total`, `total`, and `resolved_reference_total` from the due queue response into `activityAttentionSummary`; the panel uses those backend totals for `Overdue`/`Due today` counts and falls back to row counting only when summary metadata is absent.
+- Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
+- Publish status: local only. Per product-owner instruction, do not push or trigger Render until the current work batch is finished.
+- Devil truth: counts are now better for the backend-scanned queue, but they are still bounded by backend scan/route logic; this is not a reminder sender, task ownership lifecycle, indexed follow-up table, or safeguarding escalation process.
+
 ## 2026-09-24 - Church follow-up resolved count only counts due suppressed rows
 - Status: Backend follow-up queue accuracy fix implemented locally so `resolved_reference_total` counts only due pastoral follow-up rows actually suppressed from the active queue, not every referenced activity id in the scan.
 - Route affected: `GET /community-domains/{community_domain_id}/activities/follow-ups`.
