@@ -200,6 +200,7 @@ const CHURCH_ACTIVITY_PRESET_PACK: Array<{
 ];
 
 const CHURCH_ATTENDANCE_FOLLOW_UP_ROUTE_STEPS = ["Call", "Text", "WhatsApp", "Visit", "Escalate"];
+const CHURCH_FOLLOW_UP_ROUTE_NOTE_PREFIX = "Follow-up route:";
 const BENEFICIARY_OUTCOME_TASK_OPTIONS: Array<{
   key: BeneficiaryOutcomeTaskKey;
   label: string;
@@ -795,6 +796,27 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     setActiveActivityRecordStage("person");
     setActivityRecordTaskChooserOpen(false);
     setActivityRecordStageChooserOpen(false);
+  }
+
+  function applyChurchFollowUpRouteNote(route: string) {
+    const cleanRoute = cleanText(route);
+    if (!cleanRoute) {
+      return;
+    }
+    const existingNote = String(activityDraft.note || "");
+    const noteWithoutPreviousRoute = existingNote
+      .split("\n")
+      .filter(
+        (line) =>
+          !line.trim().startsWith(CHURCH_FOLLOW_UP_ROUTE_NOTE_PREFIX)
+      )
+      .join("\n")
+      .trim();
+    const routeLine = `${CHURCH_FOLLOW_UP_ROUTE_NOTE_PREFIX} ${cleanRoute}`;
+    updateActivityDraft(
+      "note",
+      noteWithoutPreviousRoute ? `${routeLine}\n${noteWithoutPreviousRoute}` : routeLine
+    );
   }
 
   return (
@@ -1819,6 +1841,42 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                   placeholder="Evidence reference"
                                   style={billingInputStyle()}
                                 />
+                                {isChurchWorkflow &&
+                                activityDraft.activity_type === churchPastoralFollowUpPreset.activityType ? (
+                                  <div
+                                    data-debug-id="community-domain-dashboard.activity-record-follow-up-route-picker"
+                                    style={{ display: "grid", gap: 6 }}
+                                  >
+                                    <div style={{ ...sectionLabel(), fontSize: 10 }}>
+                                      Follow-up route
+                                    </div>
+                                    <div
+                                      style={{ display: "flex", flexWrap: "wrap", gap: 6 }}
+                                    >
+                                      {CHURCH_ATTENDANCE_FOLLOW_UP_ROUTE_STEPS.map((step) => {
+                                        const routeLine = `${CHURCH_FOLLOW_UP_ROUTE_NOTE_PREFIX} ${step}`;
+                                        return (
+                                          <StableButton
+                                            key={step}
+                                            type="button"
+                                            kind={
+                                              activityDraft.note.includes(routeLine)
+                                                ? "primary"
+                                                : "secondary"
+                                            }
+                                            stableHeight={34}
+                                            disabled={busyActivityRecord}
+                                            debugId={`community-domain-dashboard.activity-record-follow-up-route.${step.toLowerCase()}`}
+                                            onClick={() => applyChurchFollowUpRouteNote(step)}
+                                            style={{ fontSize: 12, textTransform: "none" }}
+                                          >
+                                            {step}
+                                          </StableButton>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ) : null}
                                 <textarea
                                   value={activityDraft.note}
                                   disabled={busyActivityRecord}
