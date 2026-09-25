@@ -534,6 +534,12 @@ export default function CommunityDomainSetupOverviewPanel({ data }: Props) {
           </div>
 
           <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+            <div
+              data-debug-id="community-domain-dashboard.setup-notice-recommendation"
+              style={{ ...helperText(), fontSize: 13 }}
+            >
+              Recommended: Review Recent notices before posting a new notice.
+            </div>
             <div style={{ ...helperText(), fontSize: 13 }}>
               Current notice view: <strong>{activeSetupNoticeTaskOption.label}</strong>.{" "}
               {activeSetupNoticeTaskOption.note}
