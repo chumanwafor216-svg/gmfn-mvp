@@ -17,6 +17,15 @@ type SummaryOption<Key extends string> = {
   note: string;
 };
 
+type ReportPathStepKey = "boundary" | "facts" | "delivery" | "prepare";
+
+type ReportPathStep = {
+  key: ReportPathStepKey;
+  number: string;
+  label: string;
+  note: string;
+};
+
 type DeliveryEvidenceSurface = UnknownRecord & {
   beneficiary_confirmation_delivery_prepared?: unknown;
   confirmation_delivery_prepared_records?: unknown;
@@ -445,6 +454,138 @@ function PanelHeader({ icon, label, title, detail }: { icon: "records-folder" | 
     </div>
   );
 }
+const REPORT_WORK_PATH_STEPS: ReportPathStep[] = [
+  {
+    key: "boundary",
+    number: "1",
+    label: "Read boundary",
+    note: "Confirm what the report can and cannot claim.",
+  },
+  {
+    key: "facts",
+    number: "2",
+    label: "Review facts",
+    note: "Check the recorded membership, evidence, or outcome counts.",
+  },
+  {
+    key: "delivery",
+    number: "3",
+    label: "Check delivery",
+    note: "Review manual receipts and provider-send readiness before sharing.",
+  },
+  {
+    key: "prepare",
+    number: "4",
+    label: "Prepare output",
+    note: "Prepare a PDF or sponsor-safe copy only after the facts are checked.",
+  },
+];
+
+function activeReportPathStep(data: SummaryPanelsData, isDirector: boolean): ReportPathStepKey {
+  if (isDirector) {
+    if (data.activeDirectorSummaryTask === "delivery") return "delivery";
+    if (
+      data.activeDirectorSummaryTask === "membership" ||
+      data.activeDirectorSummaryTask === "evidence"
+    ) {
+      return "facts";
+    }
+    return "boundary";
+  }
+  if (data.activeSponsorSummaryTask === "delivery") return "delivery";
+  if (data.activeSponsorSummaryTask === "export") return "prepare";
+  if (data.activeSponsorSummaryTask === "evidence") return "facts";
+  return "boundary";
+}
+
+function ReportWorkPath({
+  data,
+  isDirector,
+  reportActionOpen,
+  setReportActionOpen,
+}: {
+  data: SummaryPanelsData;
+  isDirector: boolean;
+  reportActionOpen: boolean;
+  setReportActionOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
+  const activeStep = reportActionOpen
+    ? "prepare"
+    : activeReportPathStep(data, isDirector);
+
+  function selectReportStep(step: ReportPathStepKey) {
+    if (step === "boundary") {
+      if (isDirector) data.setActiveDirectorSummaryTask("overview");
+      else data.setActiveSponsorSummaryTask("overview");
+      setReportActionOpen(false);
+      return;
+    }
+    if (step === "facts") {
+      if (isDirector) data.setActiveDirectorSummaryTask("membership");
+      else data.setActiveSponsorSummaryTask("evidence");
+      setReportActionOpen(false);
+      return;
+    }
+    if (step === "delivery") {
+      if (isDirector) data.setActiveDirectorSummaryTask("delivery");
+      else data.setActiveSponsorSummaryTask("delivery");
+      setReportActionOpen(false);
+      return;
+    }
+    if (!isDirector) {
+      data.setActiveSponsorSummaryTask("export");
+    }
+    setReportActionOpen(true);
+  }
+
+  return (
+    <div
+      data-debug-id="community-domain-dashboard.report-work-path"
+      style={{
+        display: "grid",
+        gap: 8,
+      }}
+    >
+      <div style={sectionLabel()}>Report path</div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
+          gap: 8,
+        }}
+      >
+        {REPORT_WORK_PATH_STEPS.map((step) => {
+          const selected = activeStep === step.key;
+          return (
+            <StableButton
+              key={step.key}
+              type="button"
+              kind={selected ? "primary" : "secondary"}
+              stableHeight={54}
+              debugId={`community-domain-dashboard.report-path.${step.key}`}
+              aria-pressed={selected}
+              title={step.note}
+              onClick={() => selectReportStep(step.key)}
+              style={{
+                justifyContent: "flex-start",
+                textAlign: "left",
+                fontSize: 13,
+                lineHeight: 1.18,
+                textTransform: "none",
+              }}
+            >
+              {step.number}. {step.label}
+            </StableButton>
+          );
+        })}
+      </div>
+      <div style={{ ...helperText(), fontSize: 13 }}>
+        Use this order for normal reporting. Boundary first, facts second,
+        delivery third, output last.
+      </div>
+    </div>
+  );
+}
 function ReportExportControls({ data }: { data: SummaryPanelsData }) {
   const selectStyle: React.CSSProperties = {
     width: "100%",
@@ -805,6 +946,9 @@ function SponsorSummary({ data }: { data: SummaryPanelsData }) {
 
 export default function PeriodSponsorSummaryPanels({ data }: PeriodSponsorSummaryPanelsProps) {
   const isDirector = data.activeGovernanceTask === "director_summary";
+  const [reportActionOpen, setReportActionOpen] = React.useState(false);
+  const showReportExportControls =
+    reportActionOpen || (!isDirector && data.activeSponsorSummaryTask === "export");
 
   return (
     <div style={{ ...softCard(), display: "grid", gap: 12 }}>
@@ -816,7 +960,13 @@ export default function PeriodSponsorSummaryPanels({ data }: PeriodSponsorSummar
             title="Recorded facts for this period."
             detail="This report only counts records already in GSN. Missing activity or beneficiary records stay marked as not recorded."
           />
-          <ReportExportControls data={data} />
+          <ReportWorkPath
+            data={data}
+            isDirector={isDirector}
+            reportActionOpen={reportActionOpen}
+            setReportActionOpen={setReportActionOpen}
+          />
+          {showReportExportControls ? <ReportExportControls data={data} /> : null}
           <DirectorSummary data={data} />
         </>
       ) : (
@@ -827,7 +977,13 @@ export default function PeriodSponsorSummaryPanels({ data }: PeriodSponsorSummar
             title="Aggregate evidence only."
             detail="This view separates recorded, confirmed, and challenged evidence without exposing private beneficiary details."
           />
-          <ReportExportControls data={data} />
+          <ReportWorkPath
+            data={data}
+            isDirector={isDirector}
+            reportActionOpen={reportActionOpen}
+            setReportActionOpen={setReportActionOpen}
+          />
+          {showReportExportControls ? <ReportExportControls data={data} /> : null}
           <SponsorSummary data={data} />
         </>
       )}

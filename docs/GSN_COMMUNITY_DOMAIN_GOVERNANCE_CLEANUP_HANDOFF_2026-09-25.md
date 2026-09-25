@@ -1,7 +1,7 @@
 # GSN Community Domain Governance Cleanup Handoff
 
 Date: 2026-09-25
-Status: first six cleanup slices implemented locally
+Status: first seven cleanup slices implemented locally
 Owner: Chukwuma Nwafor / Global Support Network Ltd
 
 ## Purpose
@@ -75,15 +75,27 @@ Access request wording now separates governance approval from membership apply:
 - approve-and-apply adds the person only when the review is ready and accepted;
 - approved requests show an explicit apply membership step.
 
+Director and sponsor reporting now start with a guided report path in
+`frontend/src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx`:
+
+- Step 1: Read boundary;
+- Step 2: Review facts;
+- Step 3: Check delivery;
+- Step 4: Prepare output.
+
+PDF/export controls are no longer exposed at the top by default; they appear
+only when the owner reaches the output step or opens the sponsor export view.
+
 ## Audit Protection
 
 `frontend/tools/audit-community-domain-product-contracts.mjs` now checks that
 the guided setup path, step states, primary action, and earlier-step blocker
 messages stay present. It also checks that Governance jobs keep the numbered
 work path before exposing deeper stage/job selectors, that Real-life record
-capture shows direct staged paths before secondary step changers, and that the
-school governance packet keeps heavy sections behind one selected work area, and
-Access requests explain approve-only vs apply-membership in the panel itself.
+capture shows direct staged paths before secondary step changers, that the
+school governance packet keeps heavy sections behind one selected work area,
+that Access requests explain approve-only vs apply-membership in the panel
+itself, and that report output controls stay behind the guided report path.
 
 ## Verification
 
@@ -95,7 +107,7 @@ Passed locally:
 
 ## Remaining Cleanup
 
-The first six cleanup slices are in place. The deeper governance cleanup is not finished.
+The first seven cleanup slices are in place. The deeper governance cleanup is not finished.
 Next useful slices:
 
 1. Add a phone visual audit for the guided setup path, governance work path, and
@@ -107,4 +119,4 @@ Next useful slices:
 
 ## Devil Truth
 
-The page is now easier at the front door. Governance jobs, Real-life record capture, the school packet, and access requests now have clearer selected paths and action wording. The system is still not fully simplified: reporting panels still contain many powerful tools and need pilot-led cleanup.
+The page is now easier at the front door. Governance jobs, Real-life record capture, the school packet, access requests, and report output now have clearer selected paths and action wording. The system is still not fully simplified: operating summaries and the wider Community Domain surface still need phone visual checks and pilot-led cleanup.

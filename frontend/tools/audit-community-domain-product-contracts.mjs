@@ -1403,6 +1403,12 @@ assertContains(
   "Lazy Community Domain director period summary must keep Overview, Membership, Evidence, and Delivery views behind a closed Change report view control.",
   { frontend: true }
 );
+assertContains(
+  "src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx",
+  /type ReportPathStepKey = "boundary" \| "facts" \| "delivery" \| "prepare"[\s\S]*REPORT_WORK_PATH_STEPS[\s\S]*Read boundary[\s\S]*Review facts[\s\S]*Check delivery[\s\S]*Prepare output[\s\S]*function activeReportPathStep[\s\S]*function ReportWorkPath[\s\S]*community-domain-dashboard\.report-work-path[\s\S]*community-domain-dashboard\.report-path\.\$\{step\.key\}[\s\S]*Use this order for normal reporting\. Boundary first, facts second,[\s\S]*delivery third, output last\.[\s\S]*reportActionOpen[\s\S]*showReportExportControls[\s\S]*<ReportWorkPath[\s\S]*\{showReportExportControls \? <ReportExportControls data=\{data\} \/> : null\}/,
+  "Lazy Community Domain report panels must keep PDF/export controls behind a guided Boundary/Facts/Delivery/Output report path.",
+  { frontend: true }
+);
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",

@@ -503,6 +503,9 @@ Must show:
   sponsor report, all operating areas, and save/lock package handoff
 - inside Governance jobs, a numbered work path must come before deeper selectors:
   check readiness, handle access, record evidence, then review reports
+- inside Director summary and Sponsor report, report output controls must follow
+  a guided report path: read boundary, review facts, check delivery, then
+  prepare PDF or sponsor-safe copy last
 - inside Record evidence / Real-life record, activity and beneficiary outcome
   records must show their staged path before secondary step changers
 - school-specific Real-life record tools must expose one selected work area at a
