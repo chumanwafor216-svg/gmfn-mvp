@@ -9672,6 +9672,16 @@ export default function CommunityDomainDashboardPage() {
                     </div>
                     {showSetupAccessCard ? (
                       <div style={{ display: "grid", gap: 8 }}>
+                        <div
+                          data-debug-id="community-domain-dashboard.setup-workbench-recommendation"
+                          style={statusBadge("Recommended: Setup step")}
+                        >
+                          Recommended: Continue the setup step first.
+                        </div>
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          Open Access only when editing is locked or a trusted
+                          setup editor must be authorised.
+                        </div>
                         <div style={{ ...helperText(), fontSize: 13 }}>
                           Current setup view:{" "}
                           <strong>{activeSetupWorkbenchTaskOption.label}</strong>.{" "}

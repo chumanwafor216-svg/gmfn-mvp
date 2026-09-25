@@ -1,7 +1,7 @@
 # GSN Community Domain Governance Cleanup Handoff
 
 Date: 2026-09-25
-Status: first ten cleanup slices implemented locally
+Status: first eleven cleanup slices implemented locally
 Owner: Chukwuma Nwafor / Global Support Network Ltd
 
 ## Purpose
@@ -59,6 +59,11 @@ setup checkpoint is done, and exposes one state-aware next task only. It points
 to Community Home connection when no linked Community Home exists, Member
 Invite policy when invites are blocked, or First Circle when the invite path is
 ready. The old broad invite card no longer appears before setup completion.
+
+Inside the setup workbench, GSN now recommends continuing the active setup step
+first. Access is described as an exception for locked editing or trusted setup
+editor authority, so the owner is not asked to choose between parallel setup
+surfaces before finishing the current task.
 
 The older Community Domain setup tools drawer was made secondary:
 
