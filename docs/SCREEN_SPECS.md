@@ -495,6 +495,7 @@ Must show:
   Organise people, Run the community, and Advanced governance
 - each governance stage exposes six inner actions only after that stage is
   selected
+- blocked stage actions, such as First Circle before Community Home link or owner/admin-only actions for ordinary members, must explain the blocker in place instead of becoming silent disabled buttons
 - Set up the institution actions for domain name reservation, community linking,
   identities/profiles, owner authority evidence, subscription/package status,
   and launch readiness

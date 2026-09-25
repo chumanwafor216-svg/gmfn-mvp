@@ -66,6 +66,9 @@ The older Community Domain setup tools drawer was made secondary:
 - opening the drawer now restates the current guided setup step first and gives
   one action back to that step before the older stage tiles;
 - the four older stage tiles use secondary visual weight;
+- blocked stage actions now remain tappable and explain the blocker in place,
+  including missing Community Home link, disabled Member Invites, and
+  owner/admin-only community actions;
 - the header tells the owner to follow the guided setup path first.
 
 Governance jobs now start with a numbered work path inside

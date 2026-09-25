@@ -2842,6 +2842,12 @@ assertContains(
 );
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /disabledReason\?: string[\s\S]*Connect the Community Home first[\s\S]*Member Invites are off in this Community Domain policy[\s\S]*Only the owner\/admin can use this Community Domain action[\s\S]*aria-disabled=\{action\.disabled \? "true" : undefined\}[\s\S]*setMessage\([\s\S]*action\.disabledReason[\s\S]*setCommandGuidanceOpen\(true\)[\s\S]*void action\.run\(\)/,
+  "Community Domain command actions must explain blocked First Circle and owner/admin-only actions instead of becoming silent disabled buttons.",
+  { frontend: true }
+);
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /function saveDomainCommandCheckpoint\(\)[\s\S]*saveSetupProgress\(\)[\s\S]*Governance setup checkpoint saved[\s\S]*function openLaunchReadinessForLock\(\)[\s\S]*setupEditingLocked[\s\S]*setActiveSetupWorkbenchTask\("access"\)[\s\S]*setActiveSetupAccessTask\("authority"\)[\s\S]*saveSetupProgress\(\)[\s\S]*openSetupJourneyAt\("launch", "edit"\)[\s\S]*Final lock still depends on owner\/admin authority[\s\S]*key: "lock-package"[\s\S]*label: "Save \/ lock package"[\s\S]*run: openLaunchReadinessForLock/,
   "Community Domain Save / lock package must save a checkpoint first, send locked users to owner authority, and avoid pretending non-admins can locally unlock governance.",
   { frontend: true }

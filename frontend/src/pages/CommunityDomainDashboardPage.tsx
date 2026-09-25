@@ -8427,6 +8427,7 @@ export default function CommunityDomainDashboardPage() {
     note: string;
     run: () => void | Promise<void>;
     disabled?: boolean;
+    disabledReason?: string;
   }> =
     activeDomainCommandGroup === "institution"
       ? [
@@ -8475,6 +8476,11 @@ export default function CommunityDomainDashboardPage() {
             note: "Invite trusted people through the governed domain context.",
             run: openSetupFirstCircle,
             disabled: !selectedDomainClanId || memberInvitesOff,
+            disabledReason: !selectedDomainClanId
+              ? "Connect the Community Home first. First Circle opens only after this domain is linked to its Community Home record."
+              : memberInvitesOff
+              ? "Member Invites are off in this Community Domain policy. Open Feature policy, allow Member Invites, then build the first circle."
+              : "",
           },
           {
             key: "roster",
@@ -8525,6 +8531,7 @@ export default function CommunityDomainDashboardPage() {
             note: "Create a public-safe announcement or message QR.",
             run: () => setDomainNoticeModalOpen(true),
             disabled: !isAdmin,
+            disabledReason: "Only the owner/admin can use this Community Domain action. Ask the owner/admin to do this step or authorise setup editing.",
           },
           {
             key: "attendance",
@@ -8532,6 +8539,7 @@ export default function CommunityDomainDashboardPage() {
             note: "Record programme or meeting presence.",
             run: () => openServiceFlowRecordStep("attendance"),
             disabled: !isAdmin,
+            disabledReason: "Only the owner/admin can use this Community Domain action. Ask the owner/admin to do this step or authorise setup editing.",
           },
           {
             key: "response",
@@ -8539,6 +8547,7 @@ export default function CommunityDomainDashboardPage() {
             note: "Collect questions, needs, comments, and follow-up requests.",
             run: () => openServiceFlowRecordStep("response"),
             disabled: !isAdmin,
+            disabledReason: "Only the owner/admin can use this Community Domain action. Ask the owner/admin to do this step or authorise setup editing.",
           },
           {
             key: "collection",
@@ -8546,6 +8555,7 @@ export default function CommunityDomainDashboardPage() {
             note: "Open governed payment-instruction setup for approved money-in.",
             run: openServiceFlowOfferingStep,
             disabled: !isAdmin,
+            disabledReason: "Only the owner/admin can use this Community Domain action. Ask the owner/admin to do this step or authorise setup editing.",
           },
           {
             key: "record-activity",
@@ -8553,6 +8563,7 @@ export default function CommunityDomainDashboardPage() {
             note: "Capture a real-life institutional activity record.",
             run: () => openRealLifeRecordTask("activity"),
             disabled: !isAdmin,
+            disabledReason: "Only the owner/admin can use this Community Domain action. Ask the owner/admin to do this step or authorise setup editing.",
           },
         ]
       : activeDomainCommandGroup === "advanced"
@@ -9059,13 +9070,23 @@ export default function CommunityDomainDashboardPage() {
                             <StableButton
                               key={action.key}
                               type="button"
-                              kind={index === 0 ? "primary" : "secondary"}
+                              kind={action.disabled ? "secondary" : index === 0 ? "primary" : "secondary"}
                               fullWidth
                               stableHeight={58}
-                              title={action.note}
+                              title={action.disabled ? cleanText(action.disabledReason, action.note) : action.note}
                               debugId={`community-domain-dashboard.command-action.${activeDomainCommandGroupOption.key}.${action.key}`}
-                              disabled={action.disabled}
+                              aria-disabled={action.disabled ? "true" : undefined}
                               onClick={() => {
+                                if (action.disabled) {
+                                  setMessage(
+                                    cleanText(
+                                      action.disabledReason,
+                                      "This action is blocked. Finish the current guided setup step or ask the owner/admin to authorise it."
+                                    )
+                                  );
+                                  setCommandGuidanceOpen(true);
+                                  return;
+                                }
                                 void action.run();
                               }}
                               style={{
@@ -9075,6 +9096,7 @@ export default function CommunityDomainDashboardPage() {
                                 textTransform: "none",
                                 whiteSpace: "normal",
                                 lineHeight: 1.16,
+                                opacity: action.disabled ? 0.72 : 1,
                               }}
                             >
                               {index + 1}. {action.label}
