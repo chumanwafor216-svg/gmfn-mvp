@@ -196,6 +196,12 @@ assertContains(
   { frontend: true }
 );
 assertContains(
+  communityDomainDashboardFile,
+  /setupCompletionNextAction[\s\S]*Next required action[\s\S]*Connect the Community Home[\s\S]*Turn on Member Invites[\s\S]*Next recommended action[\s\S]*Build the first circle[\s\S]*Setup completed[\s\S]*This setup checkpoint is done[\s\S]*community-domain-dashboard\.setup-completion-next-task[\s\S]*community-domain-dashboard\.setup-completion-next/,
+  "Community Domain setup completion must show a completed checkpoint and one state-aware next task instead of dumping users into every governance surface.",
+  { frontend: true }
+);
+assertContains(
   "src/App.tsx",
   /CommunityDomainDashboardPage[\s\S]*path="community-domain"[\s\S]*path="community-domains"[\s\S]*path="community-domain\/:communityDomainId"[\s\S]*path="community-domains\/:communityDomainId"/,
   "Authenticated app routes must expose the Community Domain dashboard without replacing Community Home.",
@@ -2081,7 +2087,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /openSetupFirstCircle[\s\S]*new URLSearchParams\(\{[\s\S]*mode: "community-domain"[\s\S]*community_domain_id[\s\S]*community_domain_clan_id[\s\S]*community_domain_name[\s\S]*community_domain_code[\s\S]*domain_type[\s\S]*template_key[\s\S]*APP_ROUTES\.BUILD_FIRST_CIRCLE[\s\S]*Build your first circle[\s\S]*existing WhatsApp or[\s\S]*owner\/admin approval decides access[\s\S]*community-domain-dashboard\.setup-open-first-circle[\s\S]*Build first circle/,
+  /openSetupFirstCircle[\s\S]*new URLSearchParams\(\{[\s\S]*mode: "community-domain"[\s\S]*community_domain_id[\s\S]*community_domain_clan_id[\s\S]*community_domain_name[\s\S]*community_domain_code[\s\S]*domain_type[\s\S]*template_key[\s\S]*APP_ROUTES\.BUILD_FIRST_CIRCLE[\s\S]*setupCompletionNextAction[\s\S]*Next recommended action[\s\S]*Build the first circle[\s\S]*buttonLabel: "Build first circle"[\s\S]*community-domain-dashboard\.setup-completion-next/,
   "Community Domain setup completion must open Build First Circle with domain identity, not the ordinary personal three-contact flow or a marketplace-name guess.",
   { frontend: true }
 );
@@ -2143,7 +2149,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /domainFeatureIsOff[\s\S]*domainFeatureRouteEffect[\s\S]*When off: Official Board posting cannot be used[\s\S]*When off: First Circle and member invites cannot be used[\s\S]*shop identity creation and editing are blocked[\s\S]*product, public gallery block, and shop content updates are blocked[\s\S]*linked payment instructions and money-in actions are blocked[\s\S]*ROSCA cycle actions are blocked[\s\S]*Spotlight broadcast and paid Spotlight payment actions are blocked[\s\S]*paid credit pricing stays separate[\s\S]*new DemandBox requests are blocked[\s\S]*existing requests can still be read or closed[\s\S]*featureKey === "vault"[\s\S]*private Vault content and active Vault access-link creation are blocked[\s\S]*paid slot entitlement[\s\S]*stay separate[\s\S]*Planning rule only: saved as the domain rule[\s\S]*memberInvitesOff[\s\S]*Member Invites are off in this Community Domain policy[\s\S]*First Circle is blocked by this domain policy[\s\S]*Member Invites off/,
+  /domainFeatureIsOff[\s\S]*domainFeatureRouteEffect[\s\S]*When off: Official Board posting cannot be used[\s\S]*When off: First Circle and member invites cannot be used[\s\S]*shop identity creation and editing are blocked[\s\S]*product, public gallery block, and shop content updates are blocked[\s\S]*linked payment instructions and money-in actions are blocked[\s\S]*ROSCA cycle actions are blocked[\s\S]*Spotlight broadcast and paid Spotlight payment actions are blocked[\s\S]*paid credit pricing stays separate[\s\S]*new DemandBox requests are blocked[\s\S]*existing requests can still be read or closed[\s\S]*featureKey === "vault"[\s\S]*private Vault content and active Vault access-link creation are blocked[\s\S]*paid slot entitlement[\s\S]*stay separate[\s\S]*Planning rule only: saved as the domain rule[\s\S]*memberInvitesOff[\s\S]*Member Invites are off in this Community Domain policy[\s\S]*Turn on Member Invites[\s\S]*first-circle invite is blocked by the domain policy[\s\S]*Open Member Invite rule/,
   "Community Domain dashboard must block the First Circle invite action when Member Invites are disabled instead of letting the owner enter a dead invite path.",
   { frontend: true }
 );
@@ -2986,7 +2992,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /useNavigate[\s\S]*setSelectedClanId[\s\S]*setupCompletionSavedAt[\s\S]*openSetupFirstCircle[\s\S]*setSelectedClanId\(clanId\)[\s\S]*gmfn\.buildFirstCircle\.communityDomainInviteContext\.v1[\s\S]*domainName[\s\S]*templateKey[\s\S]*new URLSearchParams\(\{[\s\S]*community_domain_name[\s\S]*domain_type[\s\S]*template_key[\s\S]*navigate\(`\$\{APP_ROUTES\.BUILD_FIRST_CIRCLE\}\?\$\{inviteParams\.toString\(\)\}`\)[\s\S]*Setup saved[\s\S]*community-domain-dashboard\.setup-open-first-circle[\s\S]*Build first circle/,
+  /useNavigate[\s\S]*setSelectedClanId[\s\S]*setupCompletionSavedAt[\s\S]*openSetupFirstCircle[\s\S]*setSelectedClanId\(clanId\)[\s\S]*gmfn\.buildFirstCircle\.communityDomainInviteContext\.v1[\s\S]*domainName[\s\S]*templateKey[\s\S]*new URLSearchParams\(\{[\s\S]*community_domain_name[\s\S]*domain_type[\s\S]*template_key[\s\S]*navigate\(`\$\{APP_ROUTES\.BUILD_FIRST_CIRCLE\}\?\$\{inviteParams\.toString\(\)\}`\)[\s\S]*setupCompletionNextAction[\s\S]*buttonLabel: "Build first circle"[\s\S]*Setup completed[\s\S]*community-domain-dashboard\.setup-completion-next[\s\S]*setupCompletionNextAction\.buttonLabel/,
   "Community Domain setup launch step must visibly respond to Save setup and route owners to the real domain-identified Community Domain group-invite flow.",
   { frontend: true }
 );

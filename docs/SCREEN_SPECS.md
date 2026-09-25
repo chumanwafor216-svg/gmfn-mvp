@@ -489,6 +489,7 @@ Must show:
 - for an owner with no linked domain, a Community Domain dashboard start that first shows a guided setup path; name reservation, local community anchor, payment, and verification must wait inside that guided sequence or the quieter More setup tools drawer, not before it
 - identity setup starts with a domain-code check and a plain category choice such as School, Church, Charity / NGO, Association, or Other; prepared categories hide raw type/template fields, and only Other asks for manual description or support help
 - after category selection, setup step titles, notes, and examples should speak in that package language, such as campuses/classes for School, branches/ministries for Church, programmes/beneficiaries for Charity / NGO, and committees/members for Association
+- after the launch/setup checkpoint is saved, the page must visibly mark the setup checkpoint as completed and show one state-aware next task, such as connect Community Home, turn on Member Invites, or build the first circle, instead of exposing all governance surfaces
 - one command surface that first shows the guided setup path
 - after the owner opens `More setup tools`, four secondary governance stages: Set up the institution,
   Organise people, Run the community, and Advanced governance

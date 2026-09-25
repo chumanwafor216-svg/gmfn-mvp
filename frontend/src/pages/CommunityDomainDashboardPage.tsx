@@ -8350,6 +8350,35 @@ export default function CommunityDomainDashboardPage() {
   const guidedCompletedTotal = guidedSetupSteps.filter((step) => step.done).length;
   const guidedProgressText = `${guidedCompletedTotal}/${guidedSetupSteps.length}`;
   const guidedCurrentStepBlocked = Boolean(guidedCurrentStep.blocker);
+  const setupCompletionNextAction = !selectedDomainClanId
+    ? {
+        kicker: "Next required action",
+        title: "Connect the Community Home.",
+        detail:
+          "This setup is saved, but first-circle invites open only after the domain is linked to its Community Home record.",
+        buttonLabel: "Connect Community Home",
+        disabled: false,
+        run: () => openBillingFocus("payment_code", "reference"),
+      }
+    : memberInvitesOff
+    ? {
+        kicker: "Next required action",
+        title: "Turn on Member Invites.",
+        detail:
+          "The setup is saved, but the first-circle invite is blocked by the domain policy. Open Services, allow Member Invites, then invite trusted people.",
+        buttonLabel: "Open Member Invite rule",
+        disabled: setupEditingLocked,
+        run: () => openSetupJourneyAt("services", "edit"),
+      }
+    : {
+        kicker: "Next recommended action",
+        title: "Build the first circle.",
+        detail:
+          "Invite the trusted people who will help test the domain. Each person still enters with their own GSN identity and owner/admin approval.",
+        buttonLabel: "Build first circle",
+        disabled: setupEditingLocked,
+        run: openSetupFirstCircle,
+      };
 
   function runGuidedSetupStep(step: {
     blocker?: string;
@@ -10803,10 +10832,12 @@ export default function CommunityDomainDashboardPage() {
                                 <GsnRealisticIcon name="records-folder" size={35} decorative />
                               </span>
                               <div style={{ minWidth: 0 }}>
-                                <div style={sectionLabel()}>Setup saved</div>
-                                <div style={helperText()}>
-                                  Your setup record was saved. You can now invite the
-                                  first trusted people or continue to payment.
+                                <div style={sectionLabel()}>Setup completed</div>
+                                <h3 style={{ margin: "2px 0 0", fontSize: 18, lineHeight: 1.16 }}>
+                                  This setup checkpoint is done.
+                                </h3>
+                                <div style={{ ...helperText(), marginTop: 5 }}>
+                                  GSN now points to the next required task below instead of opening every governance surface at once.
                                 </div>
                               </div>
                             </div>
@@ -10980,61 +11011,37 @@ export default function CommunityDomainDashboardPage() {
                             ) : null}
                           </div>
                         ) : null}
-                        <div style={{ ...softCard(), display: "grid", gap: 10 }}>
-                          <div style={iconHeaderStyle()}>
-                            <span style={iconFrame(46)}>
-                              <GsnRealisticIcon name="join-person-plus" size={35} decorative />
-                            </span>
-                            <div style={{ minWidth: 0 }}>
-                              <div style={sectionLabel()}>Invite next</div>
-                              <h3 style={{ margin: 0, fontSize: 19, lineHeight: 1.15 }}>
-                                Build your first circle.
-                              </h3>
-                            </div>
-                          </div>
-                          <div style={helperText()}>
-                            Share one group invite with the existing WhatsApp or
-                            member group. Each person still enters with their own
-                            GSN identity, then owner/admin approval decides access.
-                          </div>
+                        {setupCompletionSavedAt ? (
                           <div
-                            style={statusBadge(
-                              memberInvitesOff
-                                ? "Member Invites off"
-                                : featurePolicyModeLabel(memberInvitesPolicyMode)
-                            )}
+                            data-debug-id="community-domain-dashboard.setup-completion-next-task"
+                            style={{ ...softCard(), display: "grid", gap: 10 }}
                           >
-                            Member Invites:{" "}
-                            {memberInvitesOff
-                              ? "off in policy"
-                              : featurePolicyModeLabel(memberInvitesPolicyMode)}
+                            <div style={iconHeaderStyle()}>
+                              <span style={iconFrame(46)}>
+                                <GsnRealisticIcon name="join-person-plus" size={35} decorative />
+                              </span>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={sectionLabel()}>{setupCompletionNextAction.kicker}</div>
+                                <h3 style={{ margin: 0, fontSize: 19, lineHeight: 1.15 }}>
+                                  {setupCompletionNextAction.title}
+                                </h3>
+                              </div>
+                            </div>
+                            <div style={helperText()}>{setupCompletionNextAction.detail}</div>
+                            <StableButton
+                              type="button"
+                              kind="primary"
+                              fullWidth
+                              disabled={setupCompletionNextAction.disabled}
+                              debugId="community-domain-dashboard.setup-completion-next"
+                              onClick={() => {
+                                void setupCompletionNextAction.run();
+                              }}
+                            >
+                              {setupCompletionNextAction.buttonLabel}
+                            </StableButton>
                           </div>
-                          {memberInvitesOff ? (
-                            <div style={{ ...helperText(), fontSize: 13 }}>
-                              First Circle is blocked by this domain policy. Open
-                              Services and change Member Invites before sending
-                              group invites.
-                            </div>
-                          ) : null}
-                          <StableButton
-                            type="button"
-                            kind="primary"
-                            fullWidth
-                            disabled={
-                              setupEditingLocked || !selectedDomainClanId || memberInvitesOff
-                            }
-                            debugId="community-domain-dashboard.setup-open-first-circle"
-                            onClick={openSetupFirstCircle}
-                          >
-                            {memberInvitesOff ? "Member Invites off" : "Build first circle"}
-                          </StableButton>
-                          {!selectedDomainClanId ? (
-                            <div style={{ ...helperText(), fontSize: 13 }}>
-                              Invite opens after this domain is linked to a Community
-                              Home record.
-                            </div>
-                          ) : null}
-                        </div>
+                        ) : null}
                       </div>
                     ) : null}
 

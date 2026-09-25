@@ -53,6 +53,13 @@ notes, and examples:
 - Association owners see units, committees, officials, members, dues or levies,
   member support, and records language;
 - Other keeps custom wording so the owner can describe the organisation.
+
+The launch completion state now shows `Setup completed`, explains that the
+setup checkpoint is done, and exposes one state-aware next task only. It points
+to Community Home connection when no linked Community Home exists, Member
+Invite policy when invites are blocked, or First Circle when the invite path is
+ready. The old broad invite card no longer appears before setup completion.
+
 The older Community Domain setup tools drawer was made secondary:
 
 - the old primary button now reads `More setup tools`;
