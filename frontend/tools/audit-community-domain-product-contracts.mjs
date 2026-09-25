@@ -1411,8 +1411,8 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx",
-  /type DirectorSummaryTaskKey = "overview" \| "membership" \| "evidence" \| "delivery"[\s\S]*directorSummaryTaskChooserOpen[\s\S]*debugPrefix="community-domain-dashboard\.director-summary"[\s\S]*labelClosed="Change report view"[\s\S]*labelOpen="Close report views"[\s\S]*options=\{data\.DIRECTOR_SUMMARY_TASK_OPTIONS\}[\s\S]*data\.activeDirectorSummaryTask === "overview"[\s\S]*Report boundary[\s\S]*data\.activeDirectorSummaryTask === "membership"[\s\S]*SummaryTiles rows=\{membershipTiles\}[\s\S]*data\.activeDirectorSummaryTask === "evidence"[\s\S]*SummaryTiles rows=\{evidenceTiles\}[\s\S]*data\.activeDirectorSummaryTask === "delivery"[\s\S]*SummaryTiles rows=\{deliveryTiles\}[\s\S]*DeliveryEvidence evidence=\{evidence\}/,
-  "Lazy Community Domain director period summary must keep Overview, Membership, Evidence, and Delivery views behind a closed Change report view control.",
+  /type DirectorSummaryTaskKey = "overview" \| "membership" \| "evidence" \| "delivery"[\s\S]*directorSummaryTaskChooserOpen[\s\S]*community-domain-dashboard\.director-summary-recommendation[\s\S]*Recommended: Review Overview before membership, evidence, or delivery\.[\s\S]*debugPrefix="community-domain-dashboard\.director-summary"[\s\S]*labelClosed="Change report view"[\s\S]*labelOpen="Close report views"[\s\S]*options=\{data\.DIRECTOR_SUMMARY_TASK_OPTIONS\}[\s\S]*data\.activeDirectorSummaryTask === "overview"[\s\S]*Report boundary[\s\S]*data\.activeDirectorSummaryTask === "membership"[\s\S]*SummaryTiles rows=\{membershipTiles\}[\s\S]*data\.activeDirectorSummaryTask === "evidence"[\s\S]*SummaryTiles rows=\{evidenceTiles\}[\s\S]*data\.activeDirectorSummaryTask === "delivery"[\s\S]*SummaryTiles rows=\{deliveryTiles\}[\s\S]*DeliveryEvidence evidence=\{evidence\}/,
+  "Lazy Community Domain director period summary must recommend Overview first and keep Overview, Membership, Evidence, and Delivery views behind a closed Change report view control.",
   { frontend: true }
 );
 assertContains(

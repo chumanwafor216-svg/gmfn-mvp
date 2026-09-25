@@ -711,6 +711,12 @@ function DirectorSummary({ data }: { data: SummaryPanelsData }) {
         <span style={statusBadge(activityStatus)}>Activity: {compactStatus(activityStatus)}</span>
         <span style={statusBadge(outcomeStatus)}>Outcomes: {compactStatus(outcomeStatus)}</span>
       </div>
+      <div
+        data-debug-id="community-domain-dashboard.director-summary-recommendation"
+        style={{ ...helperText(), fontSize: 13 }}
+      >
+        Recommended: Review Overview before membership, evidence, or delivery.
+      </div>
       <div style={{ ...helperText(), fontSize: 13 }}>
         Current report view: <strong>{data.activeDirectorSummaryTaskOption.label}</strong>. {data.activeDirectorSummaryTaskOption.note}
       </div>
