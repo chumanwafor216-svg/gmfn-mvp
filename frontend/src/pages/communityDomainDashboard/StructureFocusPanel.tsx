@@ -180,8 +180,14 @@ export default function CommunityDomainStructureFocusPanel({ data }: Props) {
         }}
       >
         <div style={sectionLabel()}>Structure focus</div>
+        <div
+          data-debug-id="community-domain-dashboard.structure-recommendation"
+          style={helperText()}
+        >
+          Recommended: Start with the Structure map before readiness or rollout.
+        </div>
         <div style={helperText()}>
-          Choose the structure stage first. Current view:{" "}
+          Current structure view:{" "}
           <strong>{selectedStructureDetail.label}</strong>.
         </div>
         <StableButton

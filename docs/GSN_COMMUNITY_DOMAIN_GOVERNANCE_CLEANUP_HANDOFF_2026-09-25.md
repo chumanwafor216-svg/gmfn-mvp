@@ -1,7 +1,7 @@
 # GSN Community Domain Governance Cleanup Handoff
 
 Date: 2026-09-25
-Status: first twelve cleanup slices implemented locally
+Status: first thirteen cleanup slices implemented locally
 Owner: Chukwuma Nwafor / Global Support Network Ltd
 
 ## Purpose
@@ -68,6 +68,9 @@ surfaces before finishing the current task.
 The secondary setup overview now starts with the next setup action instead of
 asking the owner to choose a setup stage first. Reference views remain available
 behind closed selectors for facts and counts.
+
+Structure focus now recommends the Structure map before readiness or rollout,
+while the deeper stage and view selectors remain closed until needed.
 
 The older Community Domain setup tools drawer was made secondary:
 
