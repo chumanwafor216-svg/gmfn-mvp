@@ -501,6 +501,7 @@ Must show:
 - inside Billing Code & proof, Reference must be recommended before code generation, settlement checks, or proof upload
 - inside Operating summary, Do next must be recommended before status, allowance, or permissions
 - inside Activity recording, Record must be recommended before catalogue or recent activity views
+- inside Beneficiary outcomes, Record must be recommended before recent outcome views
 - after the launch/setup checkpoint is saved, the page must visibly mark the setup checkpoint as completed and show one state-aware next task, such as connect Community Home, turn on Member Invites, or build the first circle, instead of exposing all governance surfaces
 - one command surface that first shows the guided setup path
 - after the owner opens `More setup tools`, the drawer must first restate the current guided setup step and one action back to that step, then show four secondary governance stages: Set up the institution,

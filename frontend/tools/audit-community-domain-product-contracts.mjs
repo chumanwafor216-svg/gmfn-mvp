@@ -1449,6 +1449,8 @@ assertContains(
   "beneficiaryOutcomeReceiptFormOpenById",
   "beneficiaryOutcomeDeliveryNotesOpenById",
   "activeBeneficiaryOutcomeTaskOption",
+  "community-domain-dashboard.beneficiary-outcome-task-recommendation",
+  "Recommended: Start with Record before recent outcome views.",
   "community-domain-dashboard.beneficiary-outcome-task-toggle",
   "Close outcome views",
   "Change outcome view",
@@ -1520,7 +1522,7 @@ assertContains(
   assertIncludes(
     "src/pages/CommunityDomainDashboardPage.tsx",
     expected,
-    "Community Domain beneficiary outcome recording must keep Record and Recent controls staged behind closed view choosers.",
+    "Community Domain beneficiary outcome recording must recommend Record first and keep Record and Recent controls staged behind closed view choosers.",
     { frontend: true }
   )
 );

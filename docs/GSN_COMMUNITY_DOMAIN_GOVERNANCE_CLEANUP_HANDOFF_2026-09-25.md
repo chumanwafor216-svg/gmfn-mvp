@@ -1,7 +1,7 @@
 # GSN Community Domain Governance Cleanup Handoff
 
 Date: 2026-09-25
-Status: first twenty-two cleanup slices implemented locally
+Status: first twenty-three cleanup slices implemented locally
 Owner: Chukwuma Nwafor / Global Support Network Ltd
 
 ## Purpose
@@ -98,6 +98,9 @@ permissions, keeping live-domain reference questions behind the selectors.
 
 Activity recording now recommends Record before catalogue or recent views,
 keeping the record flow staged through person, activity, and evidence.
+
+Beneficiary outcomes now recommends Record before recent outcome views,
+keeping the outcome flow staged through person, change, and proof.
 
 The older Community Domain setup tools drawer was made secondary:
 

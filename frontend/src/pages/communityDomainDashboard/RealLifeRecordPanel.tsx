@@ -4553,6 +4553,12 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                           </div>
                         </div>
 
+                        <div
+                          data-debug-id="community-domain-dashboard.beneficiary-outcome-task-recommendation"
+                          style={{ ...helperText(), fontSize: 13 }}
+                        >
+                          Recommended: Start with Record before recent outcome views.
+                        </div>
                         <div style={{ ...helperText(), fontSize: 13 }}>
                           Current outcome view:{" "}
                           <strong>{activeBeneficiaryOutcomeTaskOption.label}</strong>.{" "}
