@@ -285,6 +285,12 @@ assertContains(
   { frontend: true }
 );
 assertContains(
+  "src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx",
+  /community-domain-dashboard\.real-life-record\.type-toggle[\s\S]*activeRealLifeRecordTask === "activity"[\s\S]*community-domain-dashboard\.activity-record-step-path[\s\S]*1}\. \{stage\.label\}[\s\S]*Use Change step only to correct an earlier part[\s\S]*community-domain-dashboard\.activity-record-stage-toggle[\s\S]*activeRealLifeRecordTask === "beneficiary_outcome"[\s\S]*community-domain-dashboard\.beneficiary-outcome-record-step-path[\s\S]*community-domain-dashboard\.beneficiary-outcome-record-stage-toggle/,
+  "Real-life record panel must show direct staged paths for activity and beneficiary outcome records before secondary step changers.",
+  { frontend: true }
+);
+assertContains(
   "src/pages/communityDomainDashboard/SetupOverviewPanel.tsx",
   /QRCodeSVG[\s\S]*community-domain-dashboard\.notice-public-qr[\s\S]*sermon topic, message of the day, or public programme note[\s\S]*Copy QR Link[\s\S]*Open QR Page/,
   "Community Domain notice board must show QR/copy/open controls only for QR-enabled public messages.",

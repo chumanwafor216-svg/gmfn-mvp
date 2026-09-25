@@ -3666,11 +3666,98 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                   (stage) => stage.key === activeActivityRecordStage
                                 )?.note || "Follow the next action to continue."}
                               </div>
+                              <div
+
+                                data-debug-id="community-domain-dashboard.activity-record-step-path"
+
+                                style={{
+
+                                  display: "grid",
+
+                                  gridTemplateColumns:
+
+                                    "repeat(auto-fit, minmax(min(100%, 120px), 1fr))",
+
+                                  gap: 8,
+
+                                }}
+
+                              >
+
+                                {ACTIVITY_RECORD_STAGE_OPTIONS.map((stage, index) => {
+
+                                  const selected = stage.key === activeActivityRecordStage;
+
+                                  return (
+
+                                    <StableButton
+
+                                      key={stage.key}
+
+                                      type="button"
+
+                                      kind={selected ? "primary" : "secondary"}
+
+                                      stableHeight={54}
+
+                                      fullWidth
+
+                                      aria-pressed={selected}
+
+                                      title={stage.note}
+
+                                      debugId={`community-domain-dashboard.activity-record-step-path.${stage.key}`}
+
+                                      onClick={() => {
+
+                                        setActiveActivityRecordStage(stage.key);
+
+                                        setActivityRecordStageChooserOpen(false);
+
+                                      }}
+
+                                      style={{
+
+                                        justifyContent: "flex-start",
+
+                                        textAlign: "left",
+
+                                        fontSize: 13,
+
+                                        lineHeight: 1.18,
+
+                                        textTransform: "none",
+
+                                      }}
+
+                                    >
+
+                                      {index + 1}. {stage.label}
+
+                                    </StableButton>
+
+                                  );
+
+                                })}
+
+                              </div>
+
+                              <div style={{ ...helperText(), fontSize: 12 }}>
+
+                                Follow these steps left to right. Use Change step only to correct an earlier part.
+
+                              </div>
+
                               <StableButton
+
                                 type="button"
+
                                 kind="secondary"
+
                                 fullWidth
+
                                 stableHeight={42}
+
                                 debugId="community-domain-dashboard.activity-record-stage-toggle"
                                 aria-expanded={activityRecordStageChooserOpen}
                                 aria-controls="community-domain-activity-record-stages"
@@ -4436,11 +4523,98 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                     stage.key === activeBeneficiaryOutcomeRecordStage
                                 )?.note || "Follow the next action to continue."}
                               </div>
+                              <div
+
+                                data-debug-id="community-domain-dashboard.beneficiary-outcome-record-step-path"
+
+                                style={{
+
+                                  display: "grid",
+
+                                  gridTemplateColumns:
+
+                                    "repeat(auto-fit, minmax(min(100%, 120px), 1fr))",
+
+                                  gap: 8,
+
+                                }}
+
+                              >
+
+                                {BENEFICIARY_OUTCOME_RECORD_STAGE_OPTIONS.map((stage, index) => {
+
+                                  const selected = stage.key === activeBeneficiaryOutcomeRecordStage;
+
+                                  return (
+
+                                    <StableButton
+
+                                      key={stage.key}
+
+                                      type="button"
+
+                                      kind={selected ? "primary" : "secondary"}
+
+                                      stableHeight={54}
+
+                                      fullWidth
+
+                                      aria-pressed={selected}
+
+                                      title={stage.note}
+
+                                      debugId={`community-domain-dashboard.beneficiary-outcome-record-step-path.${stage.key}`}
+
+                                      onClick={() => {
+
+                                        setActiveBeneficiaryOutcomeRecordStage(stage.key);
+
+                                        setBeneficiaryOutcomeRecordStageChooserOpen(false);
+
+                                      }}
+
+                                      style={{
+
+                                        justifyContent: "flex-start",
+
+                                        textAlign: "left",
+
+                                        fontSize: 13,
+
+                                        lineHeight: 1.18,
+
+                                        textTransform: "none",
+
+                                      }}
+
+                                    >
+
+                                      {index + 1}. {stage.label}
+
+                                    </StableButton>
+
+                                  );
+
+                                })}
+
+                              </div>
+
+                              <div style={{ ...helperText(), fontSize: 12 }}>
+
+                                Follow these steps left to right. Use Change step only to correct an earlier part.
+
+                              </div>
+
                               <StableButton
+
                                 type="button"
+
                                 kind="secondary"
+
                                 fullWidth
+
                                 stableHeight={42}
+
                                 debugId="community-domain-dashboard.beneficiary-outcome-record-stage-toggle"
                                 aria-expanded={beneficiaryOutcomeRecordStageChooserOpen}
                                 aria-controls="community-domain-beneficiary-outcome-record-stages"

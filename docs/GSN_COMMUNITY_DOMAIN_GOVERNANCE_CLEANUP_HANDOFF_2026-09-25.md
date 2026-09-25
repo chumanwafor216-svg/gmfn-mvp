@@ -1,7 +1,7 @@
 # GSN Community Domain Governance Cleanup Handoff
 
 Date: 2026-09-25
-Status: first three cleanup slices implemented locally
+Status: first four cleanup slices implemented locally
 Owner: Chukwuma Nwafor / Global Support Network Ltd
 
 ## Purpose
@@ -49,12 +49,22 @@ Governance jobs now start with a numbered work path inside
 The older governance stage/job selectors remain available, but they are now
 secondary behind `More governance stages` and `Change job`.
 
+Real-life record setup now shows direct staged paths inside
+`frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`:
+
+- Activity: Person, Activity, Evidence;
+- Beneficiary outcome: Person, Change, Proof.
+
+The older `Change step` controls remain available for correction, but the normal
+path is now visible before those controls.
+
 ## Audit Protection
 
 `frontend/tools/audit-community-domain-product-contracts.mjs` now checks that
 the guided setup path, step states, primary action, and earlier-step blocker
 messages stay present. It also checks that Governance jobs keep the numbered
-work path before exposing deeper stage/job selectors.
+work path before exposing deeper stage/job selectors, and that Real-life record
+capture shows direct staged paths before secondary step changers.
 
 ## Verification
 
@@ -69,15 +79,15 @@ Passed locally:
 The first three cleanup slices are in place. The deeper governance cleanup is not finished.
 Next useful slices:
 
-1. Simplify Real-life record setup so one record type opens one staged form and
-   old task surfaces close automatically.
-2. Add a phone visual audit for the guided setup path and governance work path
-   to confirm the first viewport is calm on 390px mobile.
-3. Review Access request wording after live testing to confirm school/church
+1. Add a phone visual audit for the guided setup path, governance work path, and
+   real-life record staged paths to confirm the first viewport is calm on 390px mobile.
+2. Review Access request wording after live testing to confirm school/church
    admins understand approval vs apply-membership.
-4. Continue lane-by-lane cleanup for reports and operating summaries if they
+3. Continue lane-by-lane cleanup for reports and operating summaries if they
    still feel like expert consoles.
+4. Consider a later split of school-specific packet sections if the pilot shows
+   they still feel too dense after staged entry.
 
 ## Devil Truth
 
-The page is now easier at the front door, and Governance jobs now have a clearer numbered path. The system is still not fully simplified: Real-life record setup and the reporting panels still contain many powerful tools and need further lane-by-lane cleanup.
+The page is now easier at the front door. Governance jobs and Real-life record capture now have clearer numbered/staged paths. The system is still not fully simplified: school packet details, access request wording, and reporting panels still contain many powerful tools and need pilot-led cleanup.
