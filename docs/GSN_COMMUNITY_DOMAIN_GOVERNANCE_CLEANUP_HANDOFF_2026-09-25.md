@@ -1,7 +1,7 @@
 # GSN Community Domain Governance Cleanup Handoff
 
 Date: 2026-09-25
-Status: first cleanup slice implemented locally
+Status: first two cleanup slices implemented locally
 Owner: Chukwuma Nwafor / Global Support Network Ltd
 
 ## Purpose
@@ -11,7 +11,7 @@ record, reporting, and operating tools. The product owner asked for the
 beginning of the journey to become easier: finish Step 1, then GSN directs the
 owner to Step 2, and mistakes are explained in place.
 
-## Implemented Slice
+## Implemented Slices
 
 A guided setup path was added to the top of the Community Domain command
 surface in `frontend/src/pages/CommunityDomainDashboardPage.tsx`.

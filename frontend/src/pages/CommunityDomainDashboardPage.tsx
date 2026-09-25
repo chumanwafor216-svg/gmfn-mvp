@@ -8565,8 +8565,8 @@ export default function CommunityDomainDashboardPage() {
                   </h2>
                   <div style={{ ...helperText(), marginTop: 6, fontSize: 13, lineHeight: 1.42 }}>
                     {domainOperational
-                      ? "Open institution setup, then choose one governance stage at a time."
-                      : "Open institution setup, then choose one setup stage at a time."}
+                      ? "Follow the guided setup path. Open more tools only when a specific governance area is needed."
+                      : "Follow the guided setup path. Open more tools only when a specific setup area is needed."}
                   </div>
                 </div>
               </div>
@@ -8671,9 +8671,9 @@ export default function CommunityDomainDashboardPage() {
                 </div>
                 <StableButton
                   type="button"
-                  kind="primary"
+                  kind="secondary"
                   fullWidth
-                  stableHeight={48}
+                  stableHeight={44}
                   debugId="community-domain-dashboard.institution-gateway"
                   aria-expanded={domainCommandMenuOpen}
                   aria-controls="community-domain-governance-folders"
@@ -8689,7 +8689,7 @@ export default function CommunityDomainDashboardPage() {
                   }}
                   style={{ justifyContent: "center", fontSize: 14, textTransform: "none" }}
                 >
-                  {domainCommandMenuOpen ? "Close institution setup" : "Set up the institution"}
+                  {domainCommandMenuOpen ? "Close more setup tools" : "More setup tools"}
                 </StableButton>
 
                 {domainCommandMenuOpen ? (
@@ -8707,9 +8707,9 @@ export default function CommunityDomainDashboardPage() {
                           <StableButton
                             key={group.key}
                             type="button"
-                            kind={index === 0 ? "primary" : "secondary"}
+                            kind="secondary"
                             fullWidth
-                            stableHeight={64}
+                            stableHeight={58}
                             title={group.note}
                             debugId={`community-domain-dashboard.command-stage.${group.key}`}
                             onClick={() => openDomainCommandGroup(group.key)}

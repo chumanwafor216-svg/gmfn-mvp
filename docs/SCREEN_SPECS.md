@@ -486,9 +486,9 @@ Must show:
 - Community Domain identity hero
 - domain name/code, display name, owner, status, verification state, and renewal
   state as compact facts
-- for an owner with no linked domain, a Community Domain dashboard start that first shows `Set up the institution`; name reservation, local community anchor, payment, and verification must wait inside that stage, not before it
-- one command surface that first shows only `Set up the institution`
-- after that gateway opens, four governance stages: Set up the institution,
+- for an owner with no linked domain, a Community Domain dashboard start that first shows a guided setup path; name reservation, local community anchor, payment, and verification must wait inside that guided sequence or the quieter More setup tools drawer, not before it
+- one command surface that first shows the guided setup path
+- after the owner opens `More setup tools`, four secondary governance stages: Set up the institution,
   Organise people, Run the community, and Advanced governance
 - each governance stage exposes six inner actions only after that stage is
   selected
@@ -530,15 +530,15 @@ Rules:
 - This page is the institutional operating surface. It must not replace
   CommunityHomePage, which remains the lightweight selected-community home.
 - The first screen must not expose every operating area at once. For no-domain entry, do not show a separate path selector before the dashboard start. Follow the
-  guided governance-folder rule: one identity hero, one command gateway, four
-  stages after the gateway opens, one selected stage, and one opened work area
+  guided governance-folder rule: one identity hero, one guided setup path, one secondary tools drawer, four
+  stages after More setup tools opens, one selected stage, and one opened work area
   at a time.
-- Before launch, Set up the institution is the primary stage. Billing,
+- Before launch, the guided setup path is primary and Set up the institution is a secondary tools stage. Billing,
   verification, and final activation remain separate even when they are reached
   from that stage.
 - After launch, Run the community may lead to the linked Marketplace while Set
   up the institution, Organise people, and Advanced governance remain available
-  as quiet stage choices behind the gateway.
+  as quiet stage choices behind More setup tools.
 - Save/checkpoint actions may preserve draft progress, but a real governance
   lock or unlock must depend on backend owner/admin/delegated-authority checks
   and recorded history, not only frontend hiding.
@@ -608,7 +608,7 @@ Sermon/message attachment guardrail:
 Primary action:
 
 ```text
-Set up the institution first; then choose one governance stage and one inner action at a time.
+Follow the guided setup path first; use More setup tools only when you need one governance stage and one inner action.
 ```
 
 ## MarketplacePage
