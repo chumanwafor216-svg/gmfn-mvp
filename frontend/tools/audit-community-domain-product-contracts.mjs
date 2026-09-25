@@ -1473,6 +1473,8 @@ assertContains(
   "Recent outcomes",
   "activeOutcomeRecentPacket",
   "outcomeRecentPacketChooserOpen",
+  "community-domain-dashboard.beneficiary-outcome-recent-packet-recommendation",
+  "Recommended: Review Summary before confirmation, contact, delivery, or receipt.",
   "Current view",
   "community-domain-dashboard.beneficiary-outcome-recent-packet-toggle",
   "Close views",

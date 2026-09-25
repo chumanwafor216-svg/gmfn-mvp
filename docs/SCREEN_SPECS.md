@@ -538,6 +538,8 @@ Must show:
   permissions
 - inside Record evidence / Real-life record, activity and beneficiary outcome
   records must show their staged path before secondary step changers
+- inside Beneficiary outcome recent records, Summary must be recommended before
+  confirmation, contact, delivery, or receipt
 - school-specific Real-life record tools must expose one selected work area at a
   time: readiness, notices, fees, contacts, or attendance
 - where Community Finance collections are enabled, a compact governed QR or

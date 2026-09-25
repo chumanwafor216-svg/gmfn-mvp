@@ -5483,6 +5483,12 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                                   ))}
                                 </div>
                                 <div style={{ display: "grid", gap: 8 }}>
+                                  <div
+                                    data-debug-id="community-domain-dashboard.beneficiary-outcome-recent-packet-recommendation"
+                                    style={{ ...helperText(), fontSize: 13 }}
+                                  >
+                                    Recommended: Review Summary before confirmation, contact, delivery, or receipt.
+                                  </div>
                                   <div style={{ ...helperText(), fontSize: 13 }}>
                                     Current view:{" "}
                                     <strong>
