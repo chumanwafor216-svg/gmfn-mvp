@@ -1,7 +1,7 @@
 # GSN Community Domain Governance Cleanup Handoff
 
 Date: 2026-09-25
-Status: first nine cleanup slices implemented locally
+Status: first ten cleanup slices implemented locally
 Owner: Chukwuma Nwafor / Global Support Network Ltd
 
 ## Purpose
@@ -41,6 +41,18 @@ Identity setup now starts with a self-service package path:
 - Other as the only path that shows manual type/template fields and a support link.
 
 The raw `domain_type` and `template_key` fields are no longer exposed as the ordinary setup path.
+After category selection, the setup workbench now uses package-aware titles,
+notes, and examples:
+
+- School owners see language such as campuses, classes, staff, parents, students,
+  school-fee tracking, guardian contacts, and attendance support;
+- Church owners see branches, ministries, leaders, members, official messages,
+  offering QR, attendance QR, response QR, and church summary language;
+- Charity / NGO owners see programmes, sites, team, beneficiaries, support
+  evidence, outcome records, and sponsor-safe reporting language;
+- Association owners see units, committees, officials, members, dues or levies,
+  member support, and records language;
+- Other keeps custom wording so the owner can describe the organisation.
 The older Community Domain setup tools drawer was made secondary:
 
 - the old primary button now reads `More setup tools`;
@@ -118,7 +130,7 @@ that Access requests explain approve-only vs apply-membership in the panel
 itself, that report output controls stay behind the guided report path, that
 Operating summary shows the active-domain path before secondary selectors, and
 that identity setup keeps the domain-code check, category package chooser,
-Other-only manual fields, and support link.
+Other-only manual fields, package-aware setup wording, and support link.
 
 ## Verification
 
@@ -130,7 +142,7 @@ Passed locally:
 
 ## Remaining Cleanup
 
-The first nine cleanup slices are in place. The deeper governance cleanup is not finished.
+The first ten cleanup slices are in place. The deeper governance cleanup is not finished.
 Next useful slices:
 
 1. Add a phone visual audit for the guided setup path, governance work path, and
@@ -142,4 +154,4 @@ Next useful slices:
 
 ## Devil Truth
 
-The page is now easier at the front door. Identity setup, Governance jobs, Real-life record capture, the school packet, access requests, report output, and operating summary now have clearer selected paths and action wording. The system is still not fully simplified: the wider Community Domain surface still needs phone visual checks and pilot-led cleanup.
+The page is now easier at the front door. Identity setup, package-guided setup wording, Governance jobs, Real-life record capture, the school packet, access requests, report output, and operating summary now have clearer selected paths and action wording. The system is still not fully simplified: the wider Community Domain surface still needs phone visual checks and pilot-led cleanup.

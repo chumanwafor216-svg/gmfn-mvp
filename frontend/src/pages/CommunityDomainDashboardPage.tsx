@@ -2643,6 +2643,76 @@ function setupDomainNameCheckIsReady(
       normalizedSetupText(draft.domain_name)
   );
 }
+function setupStepDisplay(
+  step: SetupStepKey,
+  draft: CommunityDomainSetupDraft
+): { label: string; note: string } {
+  const base =
+    SETUP_STEP_OPTIONS.find((option) => option.key === step) ||
+    SETUP_STEP_OPTIONS[0];
+  const hasPackage = Boolean(
+    cleanText(draft.domain_type) || cleanText(draft.template_key)
+  );
+  if (!hasPackage) return { label: base.label, note: base.note };
+
+  const option = setupTemplateOptionForDraft(draft);
+  if (option.key === "school") {
+    if (step === "identity") return { label: "School identity", note: "Confirm the school name, domain code, category, location, and public profile." };
+    if (step === "payment") return { label: "School payment handoff", note: "Keep subscription payment separate from school fees and parent payment records." };
+    if (step === "evidence") return { label: "Owner authority evidence", note: "Record who has authority to set up the school domain." };
+    if (step === "structure") return { label: "Campuses and classes", note: "Name the campuses, class levels, departments, and admin offices GSN should guide first." };
+    if (step === "members") return { label: "Staff, parents, students", note: "Record the first people groups without importing every person at once." };
+    if (step === "governance") return { label: "School decisions", note: "Capture who approves notices, fee records, attendance records, contacts, and setup changes." };
+    if (step === "services") return { label: "School services", note: "Choose school tools such as notices, fee tracking, contact records, and attendance support." };
+    return { label: "School launch check", note: "Check the school setup blockers before activation or pilot use." };
+  }
+
+  if (option.key === "church") {
+    if (step === "identity") return { label: "Church identity", note: "Confirm the church name, domain code, category, location, and public profile." };
+    if (step === "payment") return { label: "Church payment handoff", note: "Keep subscription payment separate from offerings, donations, levies, and programme collections." };
+    if (step === "evidence") return { label: "Church authority evidence", note: "Record who has authority to set up the church or ministry domain." };
+    if (step === "structure") return { label: "Branches and ministries", note: "Name the branches, departments, ministries, programmes, or fellowship groups GSN should guide first." };
+    if (step === "members") return { label: "Leaders and members", note: "Record the first pastors, admins, workers, ministry leads, and member groups." };
+    if (step === "governance") return { label: "Church decisions", note: "Capture who approves messages, attendance, offerings, response QR, welfare follow-up, and setup changes." };
+    if (step === "services") return { label: "Church service tools", note: "Choose meeting tools such as official messages, attendance QR, offering QR, response QR, and church summaries." };
+    return { label: "Church launch check", note: "Check the church setup blockers before activation or pilot use." };
+  }
+
+  if (option.key === "ngo") {
+    if (step === "identity") return { label: "NGO identity", note: "Confirm the organisation name, domain code, category, location, and public profile." };
+    if (step === "payment") return { label: "NGO payment handoff", note: "Keep subscription payment separate from donations, grants, support appeals, and beneficiary records." };
+    if (step === "evidence") return { label: "Authority evidence", note: "Record who has authority to set up the charity, NGO, or project domain." };
+    if (step === "structure") return { label: "Programmes and sites", note: "Name the programmes, locations, service areas, projects, or partner groups GSN should guide first." };
+    if (step === "members") return { label: "Team and beneficiaries", note: "Record the first trustees, admins, volunteers, coordinators, partners, or beneficiary groups." };
+    if (step === "governance") return { label: "Evidence decisions", note: "Capture who approves beneficiary outcomes, support records, notices, sponsor-safe reports, and setup changes." };
+    if (step === "services") return { label: "Programme services", note: "Choose tools for notices, outcome records, evidence packs, support appeals, and sponsor-safe reporting." };
+    return { label: "NGO launch check", note: "Check the programme setup blockers before activation or pilot use." };
+  }
+
+  if (option.key === "association") {
+    if (step === "identity") return { label: "Association identity", note: "Confirm the association name, domain code, category, location, and public profile." };
+    if (step === "payment") return { label: "Association payment handoff", note: "Keep subscription payment separate from dues, levies, savings groups, and member collections." };
+    if (step === "evidence") return { label: "Association authority", note: "Record who has authority to set up the association, union, cooperative, or alumni domain." };
+    if (step === "structure") return { label: "Units and committees", note: "Name the branches, committees, units, classes, chapters, or working groups GSN should guide first." };
+    if (step === "members") return { label: "Officials and members", note: "Record the first executives, admins, committee leads, and member groups." };
+    if (step === "governance") return { label: "Committee decisions", note: "Capture who approves members, dues, notices, records, disputes, and setup changes." };
+    if (step === "services") return { label: "Member services", note: "Choose tools for notices, dues or levies, marketplace activity, records, and member support." };
+    return { label: "Association launch check", note: "Check the association setup blockers before activation or pilot use." };
+  }
+
+  if (option.key === "other") {
+    if (step === "identity") return { label: "Custom identity", note: "Describe the organisation clearly so GSN can adapt the setup package." };
+    if (step === "payment") return { label: "Custom payment handoff", note: "Keep subscription payment separate from the organisation's own collections or service payments." };
+    if (step === "evidence") return { label: "Custom authority evidence", note: "Record who has authority to request and manage this custom domain." };
+    if (step === "structure") return { label: "Custom structure", note: "Describe the first units, groups, locations, or service areas GSN should support." };
+    if (step === "members") return { label: "Custom people groups", note: "Describe the first admins, coordinators, members, clients, or contacts." };
+    if (step === "governance") return { label: "Custom decisions", note: "Capture who approves access, records, notices, payments, and setup changes." };
+    if (step === "services") return { label: "Custom services", note: "Choose only the shared GSN services that fit this organisation first." };
+    return { label: "Custom launch check", note: "Check the remaining blockers before activation or pilot use." };
+  }
+
+  return { label: base.label, note: base.note };
+}
 function setupStepPlaceholder(
   step: SetupStepKey,
   domain: unknown,
@@ -2662,6 +2732,43 @@ function setupStepPlaceholder(
     return "Example: fitness, food support, household items, women's health seminars, notices, spotlight, records.";
   }
 
+  const hasPackage = Boolean(
+    cleanText(draft.domain_type) || cleanText(draft.template_key)
+  );
+  if (hasPackage) {
+    const option = setupTemplateOptionForDraft(draft);
+    if (option.key === "school") {
+      if (step === "structure") return "Example: campus one nursery/primary, campus two college, campus three combined, classes, admin office.";
+      if (step === "members") return "Example: proprietor, heads, bursar, teachers, admin staff, parents/guardians, student groups.";
+      if (step === "governance") return "Example: who approves notices, fee follow-up, attendance scans, contact changes, and campus decisions.";
+      return "Example: parent notices, school-fee tracking, guardian contacts, staff attendance, student arrival/closing notification.";
+    }
+    if (option.key === "church") {
+      if (step === "structure") return "Example: main branch, youth ministry, women ministry, choir, welfare team, programme groups.";
+      if (step === "members") return "Example: pastor, secretary, treasurer, ministry leads, workers, members, welfare contacts.";
+      if (step === "governance") return "Example: who approves official messages, offerings QR, attendance QR, response follow-up, and welfare records.";
+      return "Example: service message QR, attendance QR, offering QR, response QR, pastoral follow-up, monthly church summary.";
+    }
+    if (option.key === "ngo") {
+      if (step === "structure") return "Example: food support, fitness, household items, health seminar, partner locations, project areas.";
+      if (step === "members") return "Example: founder, trustees, volunteers, coordinators, partner contacts, beneficiary groups.";
+      if (step === "governance") return "Example: who approves beneficiary records, support evidence, sponsor-safe reports, notices, and programme changes.";
+      return "Example: beneficiary outcome records, public-safe notices, support appeal QR, sponsor summaries, evidence packs.";
+    }
+    if (option.key === "association") {
+      if (step === "structure") return "Example: executive committee, chapters, branches, class set, welfare committee, finance committee.";
+      if (step === "members") return "Example: chair, secretary, treasurer, admins, committee leads, ordinary members, reviewers.";
+      if (step === "governance") return "Example: who approves members, dues or levies, notices, records, disputes, and committee changes.";
+      return "Example: notices, dues or levies, marketplace activity, Demand Box, records, member support, reports.";
+    }
+    if (option.key === "other") {
+      if (step === "structure") return "Describe the first locations, teams, branches, service areas, or groups this organisation uses.";
+      if (step === "members") return "Describe the first admins, coordinators, members, clients, contacts, or reviewers.";
+      if (step === "governance") return "Describe who approves access, notices, records, payments, support, and setup changes.";
+      return "Describe the services and records this organisation needs GSN to support first.";
+    }
+  }
+
   if (step === "structure") {
     return "Example: main office, branches, departments, teams, programme groups, or service areas.";
   }
@@ -2673,7 +2780,6 @@ function setupStepPlaceholder(
   }
   return "Example: marketplace, notices, verification, records, analytics, vault, shop, spotlight.";
 }
-
 function reviewStatusCounts(items: ActionReviewItem[]): Record<string, number> {
   return items.reduce<Record<string, number>>((counts, item) => {
     const status = cleanText(item.status, "unknown").toLowerCase();
@@ -5425,10 +5531,8 @@ export default function CommunityDomainDashboardPage() {
     row.label,
     featurePolicyModeLabel(effectiveFeaturePolicy.features[row.key]),
   ]);
-  const setupCurrentStep =
-    SETUP_STEP_OPTIONS.find((option) => option.key === activeSetupStep) ||
-    SETUP_STEP_OPTIONS[0];
   const activeSetupTemplateOption = setupTemplateOptionForDraft(setupDraft);
+  const activeSetupStepDisplay = setupStepDisplay(activeSetupStep, setupDraft);
   const setupIdentityNameReady = setupDomainNameCheckIsReady(
     setupDomainNameCheck,
     setupDraft
@@ -9460,12 +9564,23 @@ export default function CommunityDomainDashboardPage() {
                       Step {setupStepIndex + 1} of {SETUP_STEP_OPTIONS.length}
                     </div>
                     <h3 style={{ margin: 0, fontSize: 22, lineHeight: 1.15 }}>
-                      {setupCurrentStep.label}
+                      {activeSetupStepDisplay.label}
                     </h3>
                     <div style={{ ...helperText(), fontSize: 14 }}>
                       {setupJourneyMode === "edit"
                         ? "Correct saved details only after owner/admin or setup-editor authority is clear."
-                        : setupCurrentStep.note}
+                        : activeSetupStepDisplay.note}
+                    </div>
+                    <div
+                      style={statusBadge(
+                        setupIdentityCategoryReady
+                          ? `Package: ${activeSetupTemplateOption.label}`
+                          : "Choose category first"
+                      )}
+                    >
+                      {setupIdentityCategoryReady
+                        ? `This setup is using the ${activeSetupTemplateOption.label} package.`
+                        : "Choose School, Church, Charity / NGO, Association, or Other in Identity."}
                     </div>
                     {showSetupAccessCard ? (
                       <div style={{ display: "grid", gap: 8 }}>
