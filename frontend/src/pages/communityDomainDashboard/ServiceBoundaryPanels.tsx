@@ -346,6 +346,12 @@ export default function CommunityDomainServiceBoundaryPanels({
         }}
       >
         <div style={sectionLabel()}>Rules view</div>
+        <div
+          data-debug-id="community-domain-service-boundary.focus-recommendation"
+          style={helperText()}
+        >
+          Recommended: Review Exchange before privacy, setup, compliance, or appeals.
+        </div>
         <div style={helperText()}>
           Current view: <strong>{selectedBoundaryFocus.label}</strong>.
         </div>

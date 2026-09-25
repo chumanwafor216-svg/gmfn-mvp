@@ -507,6 +507,7 @@ Must show:
 - inside Official Board notices, Recent notices must be recommended before posting a new notice
 - inside Structure planning, Rollout must be recommended before activity or group readiness
 - inside Trust/Evidence readiness, Records must be recommended before release, relay, notification, or mobility
+- inside Service boundary rules, Exchange must be recommended before privacy, setup, compliance, or appeals
 - after the launch/setup checkpoint is saved, the page must visibly mark the setup checkpoint as completed and show one state-aware next task, such as connect Community Home, turn on Member Invites, or build the first circle, instead of exposing all governance surfaces
 - one command surface that first shows the guided setup path
 - after the owner opens `More setup tools`, the drawer must first restate the current guided setup step and one action back to that step, then show four secondary governance stages: Set up the institution,
