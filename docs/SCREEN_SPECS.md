@@ -505,6 +505,8 @@ Must show:
   check readiness, handle access, record evidence, then review reports
 - inside Record evidence / Real-life record, activity and beneficiary outcome
   records must show their staged path before secondary step changers
+- school-specific Real-life record tools must expose one selected work area at a
+  time: readiness, notices, fees, contacts, or attendance
 - where Community Finance collections are enabled, a compact governed QR or
   payment-instruction row for offerings, donations, levies, registrations, or
   support appeals
@@ -567,6 +569,8 @@ Rules:
 - Real-life record capture must remain staged: activity uses Person, Activity,
   Evidence; beneficiary outcome uses Person, Change, Proof. The visible path is
   primary, while Change step is a correction tool.
+- School governance packet details must not appear as a full dashboard dump.
+  Use the selected school work area first, then reveal only the matching details.
 - `needs_changes` reviews are requester follow-up, not pending reviewer work.
 - Payment, package quote, and renewal status must not be shown as verification.
 - Offering, donation, levy, or registration QR codes must be shown as governed

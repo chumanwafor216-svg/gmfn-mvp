@@ -1,7 +1,7 @@
 # GSN Community Domain Governance Cleanup Handoff
 
 Date: 2026-09-25
-Status: first four cleanup slices implemented locally
+Status: first five cleanup slices implemented locally
 Owner: Chukwuma Nwafor / Global Support Network Ltd
 
 ## Purpose
@@ -58,13 +58,25 @@ Real-life record setup now shows direct staged paths inside
 The older `Change step` controls remain available for correction, but the normal
 path is now visible before those controls.
 
+The school governance packet now exposes one selected work area at a time:
+
+- Readiness;
+- Notices;
+- Fees;
+- Contacts;
+- Attendance.
+
+The older school sections remain intact, but they are hidden unless their school
+work area is selected.
+
 ## Audit Protection
 
 `frontend/tools/audit-community-domain-product-contracts.mjs` now checks that
 the guided setup path, step states, primary action, and earlier-step blocker
 messages stay present. It also checks that Governance jobs keep the numbered
-work path before exposing deeper stage/job selectors, and that Real-life record
-capture shows direct staged paths before secondary step changers.
+work path before exposing deeper stage/job selectors, that Real-life record
+capture shows direct staged paths before secondary step changers, and that the
+school governance packet keeps heavy sections behind one selected work area.
 
 ## Verification
 
@@ -76,7 +88,7 @@ Passed locally:
 
 ## Remaining Cleanup
 
-The first three cleanup slices are in place. The deeper governance cleanup is not finished.
+The first five cleanup slices are in place. The deeper governance cleanup is not finished.
 Next useful slices:
 
 1. Add a phone visual audit for the guided setup path, governance work path, and
@@ -85,9 +97,8 @@ Next useful slices:
    admins understand approval vs apply-membership.
 3. Continue lane-by-lane cleanup for reports and operating summaries if they
    still feel like expert consoles.
-4. Consider a later split of school-specific packet sections if the pilot shows
-   they still feel too dense after staged entry.
+4. Consider a later split of school-specific packet sections into separate lazy panels if the pilot shows the selected work-area pattern is still too dense.
 
 ## Devil Truth
 
-The page is now easier at the front door. Governance jobs and Real-life record capture now have clearer numbered/staged paths. The system is still not fully simplified: school packet details, access request wording, and reporting panels still contain many powerful tools and need pilot-led cleanup.
+The page is now easier at the front door. Governance jobs, Real-life record capture, and the school packet now have clearer selected paths. The system is still not fully simplified: access request wording and reporting panels still contain many powerful tools and need pilot-led cleanup.

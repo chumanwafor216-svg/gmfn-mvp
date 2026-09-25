@@ -18,6 +18,7 @@ type BeneficiaryOutcomeRecentPacketKey =
   | "contact"
   | "delivery"
   | "receipt";
+type SchoolWorkflowTaskKey = "readiness" | "notices" | "fees" | "contacts" | "attendance";
 type GovernanceTaskKey =
   | "readiness"
   | "director_summary"
@@ -977,6 +978,10 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
   const [schoolGuardianChannel, setSchoolGuardianChannel] = React.useState("whatsapp");
   const [schoolGuardianReferenceLabel, setSchoolGuardianReferenceLabel] = React.useState("Parent WhatsApp on file");
   const [schoolFeeMessage, setSchoolFeeMessage] = React.useState("");
+  const [activeSchoolWorkflowTask, setActiveSchoolWorkflowTask] =
+    React.useState<SchoolWorkflowTaskKey>("readiness");
+  const [schoolWorkflowTaskChooserOpen, setSchoolWorkflowTaskChooserOpen] =
+    React.useState(false);
 
   const selectedSchoolAttendanceMember =
     activeSchoolAttendanceMembers.find(
@@ -1115,6 +1120,46 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
   ];
   const schoolPilotReadyCount = schoolPilotReadinessRows.filter((row) => row.ready).length;
   const schoolPilotReadinessStatus = schoolPilotReadyCount === schoolPilotReadinessRows.length ? "Pilot ready" : `${schoolPilotReadyCount}/${schoolPilotReadinessRows.length} ready`;
+  const schoolWorkflowTaskOptions: Array<{
+    key: SchoolWorkflowTaskKey;
+    label: string;
+    note: string;
+    status: string;
+  }> = [
+    {
+      key: "readiness",
+      label: "Readiness",
+      note: "Check whether the school pilot basics are prepared.",
+      status: schoolPilotReadinessStatus,
+    },
+    {
+      key: "notices",
+      label: "Notices",
+      note: "Track official notice acknowledgement and follow-up.",
+      status: `${visibleSchoolNoticeRows.length} notices`,
+    },
+    {
+      key: "fees",
+      label: "Fees",
+      note: "Open expected-payment rows and log proof for review.",
+      status: `${schoolFeeStatusCounts.pending} pending`,
+    },
+    {
+      key: "contacts",
+      label: "Contacts",
+      note: "Record parent or guardian contact references.",
+      status: `${schoolGuardianCoverageReady}/${schoolGuardianCoverageTotal}`,
+    },
+    {
+      key: "attendance",
+      label: "Attendance",
+      note: "Prepare staff scanning, student arrival, and dismissal logs.",
+      status: `${schoolAttendanceCardRows.length} cards`,
+    },
+  ];
+  const activeSchoolWorkflowTaskOption =
+    schoolWorkflowTaskOptions.find((task) => task.key === activeSchoolWorkflowTask) ||
+    schoolWorkflowTaskOptions[0];
 
   async function copySchoolPilotReadinessSheet() {
     const lines = [
@@ -2042,7 +2087,72 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                             <div style={{ ...helperText(), fontSize: 13 }}>
                               Use these presets for parent notice follow-up, fee follow-up, staff-scanned student arrival and dismissal, and school shop or supply notices. WhatsApp can carry prompts; GSN keeps the official school record.
                             </div>
+                            <div style={{ ...helperText(), fontSize: 13 }}>
+                              Current school work: <strong>{activeSchoolWorkflowTaskOption.label}</strong>. {activeSchoolWorkflowTaskOption.note}
+                            </div>
+                            <StableButton
+                              type="button"
+                              kind="secondary"
+                              fullWidth
+                              stableHeight={42}
+                              debugId="community-domain-dashboard.school-workflow-task-toggle"
+                              aria-expanded={schoolWorkflowTaskChooserOpen}
+                              aria-controls="community-domain-school-workflow-tasks"
+                              onClick={() =>
+                                setSchoolWorkflowTaskChooserOpen((current) => !current)
+                              }
+                              style={{
+                                justifyContent: "center",
+                                fontSize: 13,
+                                textTransform: "none",
+                              }}
+                            >
+                              {schoolWorkflowTaskChooserOpen
+                                ? "Close school work areas"
+                                : "Change school work area"}
+                            </StableButton>
+                            {schoolWorkflowTaskChooserOpen ? (
+                              <div
+                                id="community-domain-school-workflow-tasks"
+                                data-debug-id="community-domain-dashboard.school-workflow-task-panel"
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns:
+                                    "repeat(auto-fit, minmax(min(100%, 135px), 1fr))",
+                                  gap: 8,
+                                }}
+                              >
+                                {schoolWorkflowTaskOptions.map((task) => {
+                                  const selected = task.key === activeSchoolWorkflowTask;
+                                  return (
+                                    <StableButton
+                                      key={task.key}
+                                      type="button"
+                                      kind={selected ? "primary" : "secondary"}
+                                      stableHeight={58}
+                                      debugId={`community-domain-dashboard.school-workflow-task.${task.key}`}
+                                      aria-pressed={selected}
+                                      title={task.note}
+                                      onClick={() => {
+                                        setActiveSchoolWorkflowTask(task.key);
+                                        setSchoolWorkflowTaskChooserOpen(false);
+                                      }}
+                                      style={{
+                                        justifyContent: "flex-start",
+                                        textAlign: "left",
+                                        fontSize: 12,
+                                        lineHeight: 1.18,
+                                        textTransform: "none",
+                                      }}
+                                    >
+                                      {task.label}: {task.status}
+                                    </StableButton>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
                             <div
+                              hidden={activeSchoolWorkflowTask !== "readiness"}
                               data-debug-id="community-domain-dashboard.school-pilot-readiness"
                               style={{
                                 display: "grid",
@@ -2147,6 +2257,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                               Keep WhatsApp as a bridge, not the destination. GSN should hold acknowledgement, fee status, attendance record, and school shop or service visibility so parents have a reason to enter the school community.
                             </div>
                             <div
+                              hidden={activeSchoolWorkflowTask !== "notices"}
                               data-debug-id="community-domain-dashboard.school-notice-acknowledgement"
                               style={{
                                 display: "grid",
@@ -2260,6 +2371,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                               ) : null}
                             </div>
                             <div
+                              hidden={activeSchoolWorkflowTask !== "fees"}
                               data-debug-id="community-domain-dashboard.school-fee-tracker"
                               style={{
                                 display: "grid",
@@ -2554,6 +2666,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                               ) : null}
                             </div>
                             <div
+                              hidden={activeSchoolWorkflowTask !== "contacts"}
                               data-debug-id="community-domain-dashboard.school-guardian-contact"
                               style={{
                                 display: "grid",
@@ -2731,6 +2844,7 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                               )}
                             </div>
                             <div
+                              hidden={activeSchoolWorkflowTask !== "attendance"}
                               data-debug-id="community-domain-dashboard.school-staff-attendance"
                               style={{
                                 display: "grid",

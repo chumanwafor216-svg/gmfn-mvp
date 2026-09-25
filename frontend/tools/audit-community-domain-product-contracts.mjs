@@ -291,6 +291,12 @@ assertContains(
   { frontend: true }
 );
 assertContains(
+  "src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx",
+  /type SchoolWorkflowTaskKey = "readiness" \| "notices" \| "fees" \| "contacts" \| "attendance"[\s\S]*schoolWorkflowTaskOptions[\s\S]*key: "readiness"[\s\S]*key: "notices"[\s\S]*key: "fees"[\s\S]*key: "contacts"[\s\S]*key: "attendance"[\s\S]*community-domain-dashboard\.school-workflow-task-toggle[\s\S]*community-domain-dashboard\.school-workflow-task-panel[\s\S]*hidden=\{activeSchoolWorkflowTask !== "readiness"\}[\s\S]*community-domain-dashboard\.school-pilot-readiness[\s\S]*hidden=\{activeSchoolWorkflowTask !== "notices"\}[\s\S]*community-domain-dashboard\.school-notice-acknowledgement[\s\S]*hidden=\{activeSchoolWorkflowTask !== "fees"\}[\s\S]*community-domain-dashboard\.school-fee-tracker[\s\S]*hidden=\{activeSchoolWorkflowTask !== "contacts"\}[\s\S]*community-domain-dashboard\.school-guardian-contact[\s\S]*hidden=\{activeSchoolWorkflowTask !== "attendance"\}[\s\S]*community-domain-dashboard\.school-staff-attendance/,
+  "School governance packet must keep readiness, notices, fees, contacts, and attendance behind one selected school work area instead of dumping every school tool at once.",
+  { frontend: true }
+);
+assertContains(
   "src/pages/communityDomainDashboard/SetupOverviewPanel.tsx",
   /QRCodeSVG[\s\S]*community-domain-dashboard\.notice-public-qr[\s\S]*sermon topic, message of the day, or public programme note[\s\S]*Copy QR Link[\s\S]*Open QR Page/,
   "Community Domain notice board must show QR/copy/open controls only for QR-enabled public messages.",
