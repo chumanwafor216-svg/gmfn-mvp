@@ -179,6 +179,18 @@ assertContains(
 );
 
 assertContains(
+  communityDomainDashboardFile,
+  /community-domain-dashboard\.guided-setup-path[\s\S]*Guided setup[\s\S]*Step \{guidedCurrentStep\.number\}: \{guidedCurrentStep\.title\}[\s\S]*Finish the current step first[\s\S]*guidedSetupSteps\.map[\s\S]*Done[\s\S]*Fix first[\s\S]*Do now[\s\S]*community-domain-dashboard\.guided-setup\.next[\s\S]*runGuidedSetupStep\(guidedCurrentStep\)/,
+  "Community Domain dashboard must keep the guided setup path that shows the current numbered step, done/fix/next states, a primary continue action, and in-place blocker guidance before exposing deeper governance stages.",
+  { frontend: true }
+);
+assertContains(
+  communityDomainDashboardFile,
+  /Finish Step 1 first[\s\S]*Finish Step 2 first[\s\S]*Finish Step 3 first[\s\S]*Finish Step 4 first[\s\S]*runGuidedSetupStep[\s\S]*setMessage\(cleanText\(step\.blocker\)\)/,
+  "Community Domain guided setup must tell the owner which earlier step is missing instead of silently opening later governance work.",
+  { frontend: true }
+);
+assertContains(
   "src/App.tsx",
   /CommunityDomainDashboardPage[\s\S]*path="community-domain"[\s\S]*path="community-domains"[\s\S]*path="community-domain\/:communityDomainId"[\s\S]*path="community-domains\/:communityDomainId"/,
   "Authenticated app routes must expose the Community Domain dashboard without replacing Community Home.",

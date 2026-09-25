@@ -8003,6 +8003,137 @@ export default function CommunityDomainDashboardPage() {
         },
       ];
 
+  const setupProgressReady = (label: string) =>
+    setupProgress.labels.some(
+      ([itemLabel, ready]) => itemLabel === label && ready
+    );
+  const guidedIdentityReady = setupProgressReady("Identity");
+  const guidedBillingReady =
+    domainOperational ||
+    billingIsActive ||
+    communityDomainPilotPaymentSuspended ||
+    Boolean(domainPaymentReference || domainPaymentConfirmed);
+  const guidedPeopleReady =
+    setupProgressReady("Structure note") && setupProgressReady("Members note");
+  const guidedAuthorityReady = setupProgressReady("Authority evidence");
+  const guidedGovernanceReady =
+    setupProgressReady("Governance note") &&
+    setupProgressReady("Services note") &&
+    setupProgressReady("Feature policy");
+  const guidedLaunchReady =
+    domainOperational ||
+    (guidedIdentityReady &&
+      guidedBillingReady &&
+      guidedPeopleReady &&
+      guidedAuthorityReady &&
+      guidedGovernanceReady);
+  const guidedSetupSteps: Array<{
+    number: string;
+    title: string;
+    shortTitle: string;
+    done: boolean;
+    blocker: string;
+    actionLabel: string;
+    run: () => void | Promise<void>;
+  }> = [
+    {
+      number: "1",
+      title: "Confirm identity",
+      shortTitle: "Identity",
+      done: guidedIdentityReady,
+      blocker: setupEditingLocked ? setupEditLockMessage : "",
+      actionLabel: "Continue identity",
+      run: () => openSetupJourneyAt("identity", domainOperational ? "edit" : "setup"),
+    },
+    {
+      number: "2",
+      title: "Connect community and package",
+      shortTitle: "Package",
+      done: guidedBillingReady,
+      blocker: guidedIdentityReady
+        ? ""
+        : "Finish Step 1 first. Confirm the Community Domain name and identity before opening package or payment work.",
+      actionLabel: "Continue package",
+      run: () => openBillingFocus("payment_code", "reference"),
+    },
+    {
+      number: "3",
+      title: "Organise people and units",
+      shortTitle: "People",
+      done: guidedPeopleReady,
+      blocker: guidedBillingReady
+        ? setupEditingLocked
+          ? setupEditLockMessage
+          : ""
+        : "Finish Step 2 first. Connect the domain package or pilot status before organising people.",
+      actionLabel: "Continue people",
+      run: () => openSetupJourneyAt("members", domainOperational ? "edit" : "setup"),
+    },
+    {
+      number: "4",
+      title: "Add authority evidence",
+      shortTitle: "Authority",
+      done: guidedAuthorityReady,
+      blocker: guidedPeopleReady
+        ? setupEditingLocked
+          ? setupEditLockMessage
+          : ""
+        : "Finish Step 3 first. Add the first people and units before recording authority evidence.",
+      actionLabel: "Continue authority",
+      run: () => openSetupJourneyAt("evidence", domainOperational ? "edit" : "setup"),
+    },
+    {
+      number: "5",
+      title: "Set governance rules",
+      shortTitle: "Rules",
+      done: guidedGovernanceReady,
+      blocker: guidedAuthorityReady
+        ? setupEditingLocked
+          ? setupEditLockMessage
+          : ""
+        : "Finish Step 4 first. Add authority evidence before locking governance rules.",
+      actionLabel: "Continue rules",
+      run: () => openSetupJourneyAt("services", "edit"),
+    },
+    {
+      number: "6",
+      title: "Review and launch",
+      shortTitle: "Launch",
+      done: guidedLaunchReady,
+      blocker: guidedGovernanceReady
+        ? ""
+        : "Finish the earlier setup steps first. GSN will not call this Community Domain ready until identity, package, people, authority, and governance rules are in place.",
+      actionLabel: "Review launch",
+      run: openLaunchReadinessForLock,
+    },
+  ];
+  const guidedCurrentStep =
+    guidedSetupSteps.find((step) => !step.done) ||
+    ({
+      number: "7",
+      title: "Run daily work",
+      shortTitle: "Daily work",
+      done: false,
+      blocker: "",
+      actionLabel: "Open live work",
+      run: openDailyWorkLane,
+    } satisfies (typeof guidedSetupSteps)[number]);
+  const guidedCompletedTotal = guidedSetupSteps.filter((step) => step.done).length;
+  const guidedProgressText = `${guidedCompletedTotal}/${guidedSetupSteps.length}`;
+  const guidedCurrentStepBlocked = Boolean(guidedCurrentStep.blocker);
+
+  function runGuidedSetupStep(step: {
+    blocker?: string;
+    run: () => void | Promise<void>;
+  }) {
+    if (cleanText(step.blocker)) {
+      setMessage(cleanText(step.blocker));
+      setDomainCommandMenuOpen(true);
+      setCommandGuidanceOpen(true);
+      return;
+    }
+    void step.run();
+  }
   const domainCommandGroups: Array<{
     key: DomainCommandGroupKey;
     label: string;
@@ -8443,6 +8574,101 @@ export default function CommunityDomainDashboardPage() {
                 data-debug-id="community-domain-dashboard.governance-gateway"
                 style={{ display: "grid", gap: 10 }}
               >
+                <div
+                  data-debug-id="community-domain-dashboard.guided-setup-path"
+                  style={{
+                    ...softCard(),
+                    display: "grid",
+                    gap: 12,
+                    borderColor: guidedCurrentStepBlocked
+                      ? "rgba(146,94,8,0.28)"
+                      : "rgba(12,79,168,0.20)",
+                    background: guidedCurrentStepBlocked
+                      ? "linear-gradient(180deg, rgba(255,251,235,0.98) 0%, rgba(255,247,237,0.96) 100%)"
+                      : "linear-gradient(180deg, rgba(247,251,255,0.99) 0%, rgba(235,244,255,0.96) 100%)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "minmax(0, 1fr) auto",
+                      gap: 10,
+                      alignItems: "center",
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <div style={sectionLabel()}>Guided setup</div>
+                      <h3 style={{ margin: "4px 0 0", fontSize: 20, lineHeight: 1.12 }}>
+                        Step {guidedCurrentStep.number}: {guidedCurrentStep.title}
+                      </h3>
+                    </div>
+                    <div style={statusBadge(guidedProgressText)}>{guidedProgressText}</div>
+                  </div>
+
+                  <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.42 }}>
+                    Finish the current step first. GSN then opens the next step and explains what is missing when the order is wrong.
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 118px), 1fr))",
+                      gap: 8,
+                    }}
+                  >
+                    {guidedSetupSteps.map((step) => {
+                      const current = step.number === guidedCurrentStep.number;
+                      const blocked = current && Boolean(step.blocker);
+                      const stateLabel = step.done ? "Done" : blocked ? "Fix first" : current ? "Do now" : "Next";
+                      return (
+                        <div
+                          key={step.number}
+                          data-debug-id={`community-domain-dashboard.guided-setup.step.${step.number}`}
+                          style={{
+                            borderRadius: 14,
+                            border: current
+                              ? "1px solid rgba(12,79,168,0.28)"
+                              : "1px solid rgba(9,27,46,0.10)",
+                            background: step.done
+                              ? "rgba(22,101,52,0.08)"
+                              : current
+                              ? "rgba(12,79,168,0.08)"
+                              : "rgba(255,255,255,0.74)",
+                            padding: "9px 10px",
+                            minWidth: 0,
+                            boxSizing: "border-box",
+                            display: "grid",
+                            gap: 3,
+                          }}
+                        >
+                          <span style={{ ...sectionLabel(), fontSize: 10 }}>Step {step.number}</span>
+                          <strong style={{ fontSize: 13.5, lineHeight: 1.18 }}>{step.shortTitle}</strong>
+                          <span
+                            style={{
+                              color: step.done ? "#166534" : blocked ? "#925E08" : "#4F647A",
+                              fontSize: 12,
+                              fontWeight: 900,
+                            }}
+                          >
+                            {stateLabel}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <StableButton
+                    type="button"
+                    kind="primary"
+                    fullWidth
+                    stableHeight={48}
+                    debugId="community-domain-dashboard.guided-setup.next"
+                    onClick={() => runGuidedSetupStep(guidedCurrentStep)}
+                    style={{ justifyContent: "center", fontSize: 14, textTransform: "none" }}
+                  >
+                    {guidedCurrentStepBlocked ? "Fix current step" : guidedCurrentStep.actionLabel}
+                  </StableButton>
+                </div>
                 <StableButton
                   type="button"
                   kind="primary"
