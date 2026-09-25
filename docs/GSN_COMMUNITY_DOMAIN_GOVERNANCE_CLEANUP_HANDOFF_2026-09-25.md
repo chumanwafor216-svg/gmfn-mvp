@@ -1,7 +1,7 @@
 # GSN Community Domain Governance Cleanup Handoff
 
 Date: 2026-09-25
-Status: first thirty cleanup slices implemented locally
+Status: first thirty-one cleanup slices implemented locally
 Owner: Chukwuma Nwafor / Global Support Network Ltd
 
 ## Purpose
@@ -115,6 +115,8 @@ Trust/Evidence readiness now recommends Records before release, relay, notificat
 Service boundary rules now recommend Exchange before privacy, setup, compliance, or appeals, keeping boundary sub-views behind the closed view selector.
 
 Identity readiness now recommends Domain identity before profile, bridge, or affiliation, keeping identity sub-views behind the closed view selector.
+
+Governance readiness now recommends Review pulse before delegation or coverage, keeping governance sub-views behind the closed view selector.
 
 The older Community Domain setup tools drawer was made secondary:
 

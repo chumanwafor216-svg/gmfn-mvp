@@ -509,6 +509,7 @@ Must show:
 - inside Trust/Evidence readiness, Records must be recommended before release, relay, notification, or mobility
 - inside Service boundary rules, Exchange must be recommended before privacy, setup, compliance, or appeals
 - inside Identity readiness, Domain identity must be recommended before profile, bridge, or affiliation
+- inside Governance readiness, Review pulse must be recommended before delegation or coverage
 - after the launch/setup checkpoint is saved, the page must visibly mark the setup checkpoint as completed and show one state-aware next task, such as connect Community Home, turn on Member Invites, or build the first circle, instead of exposing all governance surfaces
 - one command surface that first shows the guided setup path
 - after the owner opens `More setup tools`, the drawer must first restate the current guided setup step and one action back to that step, then show four secondary governance stages: Set up the institution,

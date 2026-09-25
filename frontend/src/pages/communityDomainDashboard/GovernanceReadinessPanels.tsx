@@ -292,6 +292,12 @@ export default function CommunityDomainGovernanceReadinessPanels({
         }}
       >
         <div style={sectionLabel()}>Governance focus</div>
+        <div
+          data-debug-id="community-domain-governance.detail-recommendation"
+          style={helperText()}
+        >
+          Recommended: Review pulse before delegation or coverage.
+        </div>
         <div style={helperText()}>
           Open one governance view at a time. Current view:{" "}
           <strong>{selectedGovernanceDetail.label}</strong>.

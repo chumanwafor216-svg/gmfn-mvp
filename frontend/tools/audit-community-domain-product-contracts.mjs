@@ -4194,8 +4194,8 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx",
-  /GOVERNANCE_DETAIL_OPTIONS[\s\S]*key: "review"[\s\S]*key: "delegation"[\s\S]*key: "coverage"[\s\S]*activeGovernanceDetail[\s\S]*community-domain-governance\.detail\.\$\{option\.key\}[\s\S]*activeGovernanceDetail === "review"[\s\S]*Governance review pulse[\s\S]*activeGovernanceDetail === "delegation"[\s\S]*Delegation map[\s\S]*activeGovernanceDetail === "coverage"[\s\S]*Governance coverage/,
-  "Community Domain Governance readiness panel must expose one focused governance view at a time instead of dumping review pulse, delegation, and coverage together.",
+  /GOVERNANCE_DETAIL_OPTIONS[\s\S]*key: "review"[\s\S]*key: "delegation"[\s\S]*key: "coverage"[\s\S]*activeGovernanceDetail[\s\S]*community-domain-governance\.detail-recommendation[\s\S]*Recommended: Review pulse before delegation or coverage\.[\s\S]*community-domain-governance\.detail-toggle[\s\S]*community-domain-governance\.detail\.\$\{option\.key\}[\s\S]*activeGovernanceDetail === "review"[\s\S]*Governance review pulse[\s\S]*activeGovernanceDetail === "delegation"[\s\S]*Delegation map[\s\S]*activeGovernanceDetail === "coverage"[\s\S]*Governance coverage/,
+  "Community Domain Governance readiness panel must recommend Review pulse first, keep detail views behind Change view, and expose one focused detail at a time instead of stacking review pulse, delegation map, and coverage together.",
   { frontend: true }
 );
 
