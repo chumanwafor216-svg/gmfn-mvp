@@ -287,6 +287,12 @@ export default function CommunityDomainIdentityReadinessPanels({
         }}
       >
         <div style={sectionLabel()}>Identity focus</div>
+        <div
+          data-debug-id="community-domain-identity.detail-recommendation"
+          style={helperText()}
+        >
+          Recommended: Review Domain identity before profile, bridge, or affiliation.
+        </div>
         <div style={helperText()}>
           Open one identity view at a time. Current view:{" "}
           <strong>{selectedIdentityDetail.label}</strong>.
