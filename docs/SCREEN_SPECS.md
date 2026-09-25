@@ -506,6 +506,9 @@ Must show:
 - inside Director summary and Sponsor report, report output controls must follow
   a guided report path: read boundary, review facts, check delivery, then
   prepare PDF or sponsor-safe copy last
+- inside Operating summary, a direct active-domain path must appear before
+  secondary selectors: do next, check status, check allowance, then review
+  permissions
 - inside Record evidence / Real-life record, activity and beneficiary outcome
   records must show their staged path before secondary step changers
 - school-specific Real-life record tools must expose one selected work area at a

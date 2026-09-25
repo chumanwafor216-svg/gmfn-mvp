@@ -58,6 +58,37 @@ const OPERATING_SUMMARY_GROUP_OPTIONS: Array<{
     taskKeys: ["allowance", "permissions"],
   },
 ];
+const OPERATING_SUMMARY_WORK_PATH_OPTIONS: Array<{
+  number: string;
+  task: OperatingSummaryTaskKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    number: "1",
+    task: "next_action",
+    label: "Do next",
+    note: "Open the safest live action or deliberately edit setup.",
+  },
+  {
+    number: "2",
+    task: "status",
+    label: "Check status",
+    note: "Confirm domain, billing, activation, and verification state.",
+  },
+  {
+    number: "3",
+    task: "allowance",
+    label: "Check allowance",
+    note: "Review package limits before expecting more capacity.",
+  },
+  {
+    number: "4",
+    task: "permissions",
+    label: "Review permissions",
+    note: "Confirm which domain features are allowed before changing behaviour.",
+  },
+];
 
 export type OperatingSummaryPanelData = {
   activeDomainPermissionFacts: Array<Array<string | number>>;
@@ -137,6 +168,57 @@ export default function CommunityDomainOperatingSummaryPanel({ data }: Props) {
       <div style={{ ...helperText(), fontSize: 14 }}>
         Current live stage: <strong>{activeOperatingSummaryGroupOption.label}</strong>.{" "}
         {activeOperatingSummaryGroupOption.note}
+      </div>
+      <div
+        data-debug-id="community-domain-dashboard.operating-summary-work-path"
+        style={{
+          display: "grid",
+          gap: 8,
+        }}
+      >
+        <div style={sectionLabel()}>Active-domain path</div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
+            gap: 8,
+          }}
+        >
+          {OPERATING_SUMMARY_WORK_PATH_OPTIONS.map((step) => {
+            const selected = step.task === activeOperatingSummaryTask;
+            return (
+              <StableButton
+                key={step.task}
+                type="button"
+                kind={selected ? "primary" : "secondary"}
+                stableHeight={54}
+                fullWidth
+                aria-pressed={selected}
+                title={step.note}
+                debugId={`community-domain-dashboard.operating-summary-path.${step.task}`}
+                onClick={() => {
+                  setActiveOperatingSummaryTask(step.task);
+                  setOperatingSummaryGroupChooserOpen(false);
+                  setOperatingSummaryTaskChooserOpen(false);
+                  setOperatingSummaryNotesOpen(false);
+                }}
+                style={{
+                  justifyContent: "flex-start",
+                  textAlign: "left",
+                  fontSize: 13,
+                  lineHeight: 1.18,
+                  textTransform: "none",
+                }}
+              >
+                {step.number}. {step.label}
+              </StableButton>
+            );
+          })}
+        </div>
+        <div style={{ ...helperText(), fontSize: 13 }}>
+          Use this order for normal active-domain work. Open the extra stage and
+          question controls only when you need a specific reference view.
+        </div>
       </div>
       <StableButton
         type="button"

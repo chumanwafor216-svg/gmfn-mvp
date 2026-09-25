@@ -1,7 +1,7 @@
 # GSN Community Domain Governance Cleanup Handoff
 
 Date: 2026-09-25
-Status: first seven cleanup slices implemented locally
+Status: first eight cleanup slices implemented locally
 Owner: Chukwuma Nwafor / Global Support Network Ltd
 
 ## Purpose
@@ -86,6 +86,17 @@ Director and sponsor reporting now start with a guided report path in
 PDF/export controls are no longer exposed at the top by default; they appear
 only when the owner reaches the output step or opens the sponsor export view.
 
+Operating summary now exposes a direct active-domain path in
+`frontend/src/pages/communityDomainDashboard/OperatingSummaryPanel.tsx`:
+
+- Step 1: Do next;
+- Step 2: Check status;
+- Step 3: Check allowance;
+- Step 4: Review permissions.
+
+The older Action/Reference and question selectors remain available, but they are
+secondary to the path.
+
 ## Audit Protection
 
 `frontend/tools/audit-community-domain-product-contracts.mjs` now checks that
@@ -95,7 +106,8 @@ work path before exposing deeper stage/job selectors, that Real-life record
 capture shows direct staged paths before secondary step changers, that the
 school governance packet keeps heavy sections behind one selected work area,
 that Access requests explain approve-only vs apply-membership in the panel
-itself, and that report output controls stay behind the guided report path.
+itself, that report output controls stay behind the guided report path, and that
+Operating summary shows the active-domain path before secondary selectors.
 
 ## Verification
 
@@ -107,7 +119,7 @@ Passed locally:
 
 ## Remaining Cleanup
 
-The first seven cleanup slices are in place. The deeper governance cleanup is not finished.
+The first eight cleanup slices are in place. The deeper governance cleanup is not finished.
 Next useful slices:
 
 1. Add a phone visual audit for the guided setup path, governance work path, and
@@ -119,4 +131,4 @@ Next useful slices:
 
 ## Devil Truth
 
-The page is now easier at the front door. Governance jobs, Real-life record capture, the school packet, access requests, and report output now have clearer selected paths and action wording. The system is still not fully simplified: operating summaries and the wider Community Domain surface still need phone visual checks and pilot-led cleanup.
+The page is now easier at the front door. Governance jobs, Real-life record capture, the school packet, access requests, report output, and operating summary now have clearer selected paths and action wording. The system is still not fully simplified: the wider Community Domain surface still needs phone visual checks and pilot-led cleanup.

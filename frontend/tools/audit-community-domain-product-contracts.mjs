@@ -2065,6 +2065,12 @@ assertContains(
   "Lazy OperatingSummaryPanel must keep next action, status, package allowance, and permission boundaries behind closed Action/Reference and question selectors.",
   { frontend: true }
 );
+assertContains(
+  "src/pages/communityDomainDashboard/OperatingSummaryPanel.tsx",
+  /OPERATING_SUMMARY_WORK_PATH_OPTIONS[\s\S]*task: "next_action"[\s\S]*Do next[\s\S]*task: "status"[\s\S]*Check status[\s\S]*task: "allowance"[\s\S]*Check allowance[\s\S]*task: "permissions"[\s\S]*Review permissions[\s\S]*community-domain-dashboard\.operating-summary-work-path[\s\S]*Active-domain path[\s\S]*community-domain-dashboard\.operating-summary-path\.\$\{step\.task\}[\s\S]*setActiveOperatingSummaryTask\(step\.task\)[\s\S]*setOperatingSummaryGroupChooserOpen\(false\)[\s\S]*setOperatingSummaryTaskChooserOpen\(false\)[\s\S]*setOperatingSummaryNotesOpen\(false\)[\s\S]*Use this order for normal active-domain work/,
+  "Lazy OperatingSummaryPanel must show a direct active-domain path before exposing secondary stage/question selectors.",
+  { frontend: true }
+);
 
 
 assertContains(
