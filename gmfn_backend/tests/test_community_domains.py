@@ -3858,6 +3858,173 @@ def test_locked_delegation_operator_can_apply_direct_notice_and_member_powers(
         app.dependency_overrides.pop(get_current_user, None)
 
 
+
+def test_locked_delegation_operator_can_apply_remaining_existing_power_routes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    handler = _seed_user(2, "remaining-handler@example.com")
+    target = _seed_user(3, "remaining-target@example.com")
+    with SessionLocal() as db:
+        row = db.get(User, int(handler.id))
+        row.gmfn_id = "GMFN-REMAINING-HANDLER"
+        row.phone_e164 = "+2348066667777"
+        db.commit()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Delegated Remaining School",
+                "display_name": "Delegated Remaining School",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        with SessionLocal() as db:
+            db.add(
+                Clan(
+                    id=77,
+                    name="Delegated Remaining Clan",
+                    community_code="DRC-77",
+                    invite_code="delegated-remaining-clan",
+                )
+            )
+            domain = db.get(CommunityDomain, int(domain_id))
+            domain.clan_id = 77
+            db.commit()
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": int(target.id), "role": "member", "status": "active"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "domain.feature_policy",
+                "action_key": "domain.features.configure",
+                "status": "active",
+                "config": {
+                    "version": 1,
+                    "features": {
+                        "announcement_board": "admin_only",
+                        "demand_box": "members_submit_admin_approves",
+                        "spotlight": "admin_only",
+                        "shop_diary": "members_submit_admin_approves",
+                        "vault": "admin_only",
+                        "marketplace_shops": "members_submit_admin_approves",
+                        "member_invites": "admin_only",
+                        "payments_contributions": "admin_only",
+                        "rosca_cycles": "off",
+                    },
+                    "delegation_package": {
+                        "operator_gsn_id": "GMFN-REMAINING-HANDLER",
+                        "operator_phone": "+2348066667777",
+                        "powers": {
+                            "billing_admin": "can_apply_directly",
+                            "payment_confirmation": "can_apply_directly",
+                            "collections_admin": "can_apply_directly",
+                            "records_reports": "can_apply_directly",
+                            "governance_edit_request": "can_apply_directly",
+                            "institution_verification": "can_apply_directly",
+                            "marketplace_operation": "can_apply_directly",
+                            "ownership_transfer": "off",
+                        },
+                    },
+                },
+            },
+        )
+        assert policy.status_code == 201, policy.text
+        locked = client.post(f"/community-domains/{domain_id}/governance-package/lock", json={})
+        assert locked.status_code == 201, locked.text
+
+        app.dependency_overrides[get_current_user] = lambda: handler
+        quote = client.post(f"/community-domains/{domain_id}/package-quote")
+        assert quote.status_code == 200, quote.text
+
+        evidence = client.post(
+            f"/community-domains/{domain_id}/setup-evidence",
+            data={
+                "evidence_type": "authority_document",
+                "title": "School proprietor authority note",
+                "description": "Pilot authority reference supplied by owner delegate.",
+                "external_reference": "owner-file:delegated-school-authority",
+            },
+        )
+        assert evidence.status_code == 201, evidence.text
+
+        collection = client.post(
+            f"/community-domains/{domain_id}/collection-instructions",
+            json={
+                "collection_type": "school_fee",
+                "collection_mode": "event_specific",
+                "purpose_label": "Term school fees",
+                "amount_label": "NGN 10000",
+                "currency": "NGN",
+                "receiving_account_label": "School bursar account",
+            },
+        )
+        assert collection.status_code == 201, collection.text
+        collections = client.get(f"/community-domains/{domain_id}/collection-instructions")
+        assert collections.status_code == 200, collections.text
+        assert collections.json()["items"]
+
+        expected = client.post(
+            f"/community-domains/{domain_id}/school-fees/expected-payments",
+            json={
+                "subject_user_id": int(target.id),
+                "amount": "10000.00",
+                "currency": "NGN",
+                "term_label": "First term",
+                "fee_label": "School fees",
+            },
+        )
+        assert expected.status_code == 201, expected.text
+        expected_payment_id = expected.json()["expected_payment"]["id"]
+
+        proof = client.post(
+            f"/community-domains/{domain_id}/school-fees/expected-payments/{expected_payment_id}/proof-logs",
+            json={
+                "proof_source": "bank_transfer_slip",
+                "proof_status": "submitted",
+                "proof_reference": "BANK-REF-001",
+                "amount_reported": "10000.00",
+            },
+        )
+        assert proof.status_code == 201, proof.text
+
+        activity = client.post(
+            f"/community-domains/{domain_id}/activities",
+            json={
+                "subject_user_id": int(target.id),
+                "activity_type": "school_fee_follow_up",
+                "activity_label": "Fee follow-up logged",
+                "evidence_strength": "admin_recorded",
+                "visibility": "admin_only",
+                "note": "Parent submitted proof for finance review.",
+            },
+        )
+        assert activity.status_code == 201, activity.text
+
+        governance_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "domain.test_delegated_governance",
+                "action_key": "domain.test_delegated_governance",
+                "status": "active",
+                "policy_summary": "Delegated governance operator can create policy records.",
+                "config": {"source": "delegation_test"},
+            },
+        )
+        assert governance_policy.status_code == 201, governance_policy.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
 def test_locked_delegation_operator_without_direct_mode_cannot_apply_actions(
     client: TestClient,
 ):
@@ -3924,14 +4091,14 @@ def test_locked_delegation_operator_without_direct_mode_cannot_apply_actions(
             json={"body": "This should wait for owner approval."},
         )
         assert notice.status_code == 403, notice.text
-        assert notice.json()["detail"]["current_mode"] == "request_owner_approval"
+        assert notice.json()["detail"]["current_modes"]["official_notices"] == "request_owner_approval"
 
         added = client.post(
             f"/community-domains/{domain_id}/members",
             json={"user_id": int(target.id), "role": "member", "status": "active"},
         )
         assert added.status_code == 403, added.text
-        assert added.json()["detail"]["current_mode"] == "prepare_only"
+        assert added.json()["detail"]["current_modes"]["member_approval"] == "prepare_only"
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 

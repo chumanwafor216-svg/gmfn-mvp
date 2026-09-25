@@ -344,10 +344,80 @@ assertContains(
 
 assertContains(
   "gmfn_backend/tests/test_community_domains.py",
-  /test_locked_delegation_operator_can_apply_direct_notice_and_member_powers[\s\S]*official_notices[\s\S]*can_apply_directly[\s\S]*member_approval[\s\S]*can_apply_directly[\s\S]*\/notices[\s\S]*\/members[\s\S]*\/status[\s\S]*test_locked_delegation_operator_without_direct_mode_cannot_apply_actions[\s\S]*request_owner_approval[\s\S]*prepare_only/,
-  "Backend tests must prove locked direct delegation can perform notices/member actions while prepare-only or owner-approval modes cannot apply directly."
+  /test_locked_delegation_operator_can_apply_direct_notice_and_member_powers/,
+  "Backend tests must include direct notice/member delegation coverage."
 );
 
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_locked_delegation_operator_without_direct_mode_cannot_apply_actions/,
+  "Backend tests must include blocked non-direct delegation coverage."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /current_modes[\s\S]*official_notices[\s\S]*request_owner_approval/,
+  "Backend tests must prove owner-approval notice delegation cannot apply directly."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /current_modes[\s\S]*member_approval[\s\S]*prepare_only/,
+  "Backend tests must prove prepare-only member delegation cannot apply directly."
+);
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /DELEGATION_POWER_BILLING_ADMIN[\s\S]*DELEGATION_POWER_PAYMENT_CONFIRMATION[\s\S]*DELEGATION_POWER_COLLECTIONS_ADMIN[\s\S]*DELEGATION_POWER_MARKETPLACE_OPERATION[\s\S]*DELEGATION_POWER_RECORDS_REPORTS[\s\S]*DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST[\s\S]*DELEGATION_POWER_OWNERSHIP_TRANSFER[\s\S]*DELEGATION_POWER_INSTITUTION_VERIFICATION/,
+  "Backend must define all owner delegation package power keys, including currently route-backed and future route-backed powers."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /_require_domain_admin_or_any_direct_delegation_scope/,
+  "Backend must support routes that accept any one of several locked direct delegation powers."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /create_community_domain_package_quote[\s\S]*DELEGATION_POWER_BILLING_ADMIN/,
+  "Billing package quote route must honor locked billing_admin delegation."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /submit_community_domain_setup_evidence[\s\S]*DELEGATION_POWER_INSTITUTION_VERIFICATION/,
+  "Setup evidence route must honor locked institution_verification delegation."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /create_community_domain_collection_instruction[\s\S]*DELEGATION_POWER_COLLECTIONS_ADMIN/,
+  "Collection instruction route must honor locked collections_admin delegation."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /log_community_domain_school_fee_payment_proof[\s\S]*DELEGATION_POWER_PAYMENT_CONFIRMATION/,
+  "School-fee proof route must honor locked payment_confirmation delegation."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /record_community_domain_activity[\s\S]*DELEGATION_POWER_RECORDS_REPORTS/,
+  "Activity record route must honor locked records_reports delegation."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /upsert_community_domain_policy[\s\S]*DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST/,
+  "Policy route must honor locked governance_edit_request delegation."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_locked_delegation_operator_can_apply_remaining_existing_power_routes/,
+  "Backend tests must include remaining route-backed delegation powers."
+);
 assertContains(
   "src/pages/communityDomainDashboard/SetupOverviewPanel.tsx",
   /QRCodeSVG[\s\S]*community-domain-dashboard\.notice-public-qr[\s\S]*sermon topic, message of the day, or public programme note[\s\S]*Copy QR Link[\s\S]*Open QR Page/,
@@ -670,7 +740,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /def _community_domain_activity_event_payload[\s\S]*"subject_user_id": int\(row\.subject_user_id\)[\s\S]*"visibility": meta\.get\("visibility"\)[\s\S]*"note": meta\.get\("note"\)[\s\S]*"evidence_reference": meta\.get\("evidence_reference"\)[\s\S]*def list_community_domain_activities[\s\S]*_require_domain_admin_scope[\s\S]*"items": \[_community_domain_activity_event_payload\(row\) for row in rows\]/,
+  /def _community_domain_activity_event_payload[\s\S]*"subject_user_id": int\(row\.subject_user_id\)[\s\S]*"visibility": meta\.get\("visibility"\)[\s\S]*"note": meta\.get\("note"\)[\s\S]*"evidence_reference": meta\.get\("evidence_reference"\)[\s\S]*def list_community_domain_activities[\s\S]*DELEGATION_POWER_RECORDS_REPORTS[\s\S]*"items": \[_community_domain_activity_event_payload\(row\) for row in rows\]/,
   "Backend admin activity list must return saved note markers and evidence references so recent church follow-up records can reload their private context."
 );
 assertContains(
@@ -4771,7 +4841,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /@router\.post\("\/\{community_domain_id\}\/package-quote"[\s\S]*def create_community_domain_package_quote[\s\S]*_require_domain_admin_scope[\s\S]*Pilot package status only[\s\S]*verify ownership/,
+  /@router\.post\("\/\{community_domain_id\}\/package-quote"[\s\S]*def create_community_domain_package_quote[\s\S]*DELEGATION_POWER_BILLING_ADMIN[\s\S]*Pilot package status only[\s\S]*verify ownership/,
   "Backend route must expose a scoped Community Domain package quote without payment, activation, or verification side effects."
 );
 
@@ -4783,7 +4853,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/tests/test_community_domains.py",
-  /test_outsider_cannot_preview_community_domain_package_quote[\s\S]*\/package-quote[\s\S]*response\.status_code == 403[\s\S]*owner or domain admin/,
+  /test_outsider_cannot_preview_community_domain_package_quote[\s\S]*\/package-quote[\s\S]*response\.status_code == 403/,
   "Backend tests must prove package quote preview is owner/admin scoped."
 );
 assertContains(
@@ -6536,8 +6606,8 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /CommunityDomainGovernancePackageLockIn[\s\S]*governance-package\/lock[\s\S]*_require_domain_admin_scope[\s\S]*_active_feature_policy_row[\s\S]*_governance_package_hash[\s\S]*CommunityDomainActionReview[\s\S]*community_domain\.governance_package_locked/,
-  "Backend must let only owner/admin lock a server-side governance package version from the active domain feature policy."
+  /CommunityDomainGovernancePackageLockIn[\s\S]*governance-package\/lock[\s\S]*DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST[\s\S]*_active_feature_policy_row[\s\S]*_governance_package_hash[\s\S]*CommunityDomainActionReview[\s\S]*community_domain\.governance_package_locked/,
+  "Backend must let only owner/admin or locked direct governance delegation lock a server-side governance package version from the active domain feature policy."
 );
 
 assertContains(

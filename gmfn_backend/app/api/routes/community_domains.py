@@ -172,6 +172,14 @@ DELEGATION_POWER_MODES = {
 }
 DELEGATION_POWER_MEMBER_APPROVAL = "member_approval"
 DELEGATION_POWER_OFFICIAL_NOTICES = "official_notices"
+DELEGATION_POWER_BILLING_ADMIN = "billing_admin"
+DELEGATION_POWER_PAYMENT_CONFIRMATION = "payment_confirmation"
+DELEGATION_POWER_COLLECTIONS_ADMIN = "collections_admin"
+DELEGATION_POWER_MARKETPLACE_OPERATION = "marketplace_operation"
+DELEGATION_POWER_RECORDS_REPORTS = "records_reports"
+DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST = "governance_edit_request"
+DELEGATION_POWER_OWNERSHIP_TRANSFER = "ownership_transfer"
+DELEGATION_POWER_INSTITUTION_VERIFICATION = "institution_verification"
 COMMUNITY_DOMAIN_FEATURE_ANNOUNCEMENT_BOARD = "announcement_board"
 COMMUNITY_DOMAIN_FEATURE_MODE_OFF = "off"
 COMMUNITY_DOMAIN_FEATURE_MODE_ADMIN_ONLY = "admin_only"
@@ -22646,12 +22654,12 @@ def _has_domain_direct_delegation_scope(
     )
 
 
-def _require_domain_admin_or_direct_delegation_scope(
+def _require_domain_admin_or_any_direct_delegation_scope(
     db: Session,
     *,
     domain: CommunityDomain,
     current_user: User,
-    power_key: str,
+    power_keys: Sequence[str],
     action_label: str,
 ) -> None:
     blocked_status = _community_domain_operation_block_detail(
@@ -22662,14 +22670,19 @@ def _require_domain_admin_or_direct_delegation_scope(
         raise HTTPException(status_code=403, detail=blocked_status)
     if _has_domain_admin_scope(db, domain=domain, current_user=current_user):
         return
-    mode = _domain_delegation_power_mode(
-        db,
-        domain=domain,
-        current_user=current_user,
-        power_key=power_key,
-    )
-    if mode == DELEGATION_POWER_MODE_CAN_APPLY_DIRECTLY:
-        return
+
+    current_modes: dict[str, str] = {}
+    for power_key in power_keys:
+        mode = _domain_delegation_power_mode(
+            db,
+            domain=domain,
+            current_user=current_user,
+            power_key=power_key,
+        )
+        current_modes[power_key] = mode
+        if mode == DELEGATION_POWER_MODE_CAN_APPLY_DIRECTLY:
+            return
+
     raise HTTPException(
         status_code=403,
         detail={
@@ -22678,10 +22691,27 @@ def _require_domain_admin_or_direct_delegation_scope(
                 f"Only a Community Domain owner/admin or the locked delegated operator "
                 f"with direct {action_label} authority can perform this action."
             ),
-            "power_key": power_key,
-            "current_mode": mode,
+            "power_keys": list(power_keys),
+            "current_modes": current_modes,
             "required_mode": DELEGATION_POWER_MODE_CAN_APPLY_DIRECTLY,
         },
+    )
+
+
+def _require_domain_admin_or_direct_delegation_scope(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    power_key: str,
+    action_label: str,
+) -> None:
+    _require_domain_admin_or_any_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_keys=[power_key],
+        action_label=action_label,
     )
 
 
@@ -23059,6 +23089,13 @@ def _require_node_or_domain_admin_scope(
 ) -> str:
     if _has_domain_admin_scope(db, domain=domain, current_user=current_user):
         return "domain_admin"
+    if _has_domain_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
+    ):
+        return "domain_admin"
     if _has_node_admin_scope(db, domain=domain, node=node, current_user=current_user):
         return "node_admin"
     raise HTTPException(
@@ -23079,6 +23116,13 @@ def _require_policy_reviewer_role(
     if not required_role:
         return
     if _clean_role(getattr(current_user, "role", "")) == "admin":
+        return
+    if _has_domain_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
+    ):
         return
     if int(domain.owner_user_id) == int(current_user.id) and required_role in {"owner", "domain_admin", "admin"}:
         return
@@ -23179,7 +23223,13 @@ def _require_action_review_decider_scope(
     current_user: User,
 ) -> Optional[CommunityNode]:
     if row.community_node_id is None:
-        _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+        _require_domain_admin_or_direct_delegation_scope(
+            db,
+            domain=domain,
+            current_user=current_user,
+            power_key=DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
+            action_label="governance editing",
+        )
         return None
 
     node = _get_node_or_404(
@@ -23188,6 +23238,13 @@ def _require_action_review_decider_scope(
         community_node_id=int(row.community_node_id),
     )
     if _has_domain_admin_scope(db, domain=domain, current_user=current_user):
+        return node
+    if _has_domain_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
+    ):
         return node
 
     try:
@@ -23234,7 +23291,13 @@ def _require_action_review_admin_scope(
     current_user: User,
 ) -> tuple[Optional[CommunityNode], str]:
     if row.community_node_id is None:
-        _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+        _require_domain_admin_or_direct_delegation_scope(
+            db,
+            domain=domain,
+            current_user=current_user,
+            power_key=DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
+            action_label="governance editing",
+        )
         return None, "domain_admin"
 
     node = _get_node_or_404(
@@ -23672,7 +23735,13 @@ def update_community_domain_profile(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_setup_edit_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
+        action_label="governance editing",
+    )
 
     availability = _domain_available_payload(db, payload.domain_name)
     normalized_domain_name = availability["normalized_domain_name"]
@@ -23789,7 +23858,13 @@ def update_community_domain_invite_template(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_setup_edit_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
+        action_label="governance editing",
+    )
     message = _clean_str(payload.message)
     if not message:
         raise HTTPException(
@@ -24179,7 +24254,13 @@ async def submit_community_domain_setup_evidence(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_setup_edit_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_INSTITUTION_VERIFICATION,
+        action_label="institution verification",
+    )
 
     clean_reference = _clean_str(external_reference) or None
     if file is None and clean_reference is None:
@@ -24253,7 +24334,13 @@ def create_community_domain_package_quote(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_BILLING_ADMIN,
+        action_label="billing administration",
+    )
     return {
         "ok": True,
         "community_domain_id": int(domain.id),
@@ -24725,7 +24812,17 @@ def list_community_domain_school_fee_expected_payments(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_any_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_keys=[
+            DELEGATION_POWER_PAYMENT_CONFIRMATION,
+            DELEGATION_POWER_COLLECTIONS_ADMIN,
+            DELEGATION_POWER_RECORDS_REPORTS,
+        ],
+        action_label="school fee records",
+    )
     q = (
         db.query(ExpectedPayment)
         .filter(ExpectedPayment.clan_id == int(domain.clan_id))
@@ -24881,7 +24978,13 @@ def create_community_domain_school_fee_expected_payment(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_COLLECTIONS_ADMIN,
+        action_label="collections administration",
+    )
     _require_community_domain_feature_enabled(
         db,
         domain=domain,
@@ -24921,7 +25024,13 @@ def bulk_open_community_domain_school_fee_expected_payments(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_COLLECTIONS_ADMIN,
+        action_label="collections administration",
+    )
     _require_community_domain_feature_enabled(
         db,
         domain=domain,
@@ -24975,7 +25084,13 @@ def log_community_domain_school_fee_payment_proof(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_PAYMENT_CONFIRMATION,
+        action_label="payment confirmation",
+    )
     _require_community_domain_feature_enabled(
         db,
         domain=domain,
@@ -25076,7 +25191,13 @@ def list_community_domain_school_guardian_contacts(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     if subject_user_id is not None:
         membership = _active_domain_membership_for_user(
             db,
@@ -25127,7 +25248,13 @@ def record_community_domain_school_guardian_contact(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     membership = _active_domain_membership_for_user(
         db,
         community_domain_id=int(domain.id),
@@ -25192,8 +25319,23 @@ def list_community_domain_collection_instructions(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_any_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_keys=[
+            DELEGATION_POWER_COLLECTIONS_ADMIN,
+            DELEGATION_POWER_RECORDS_REPORTS,
+        ],
+        action_label="collection records",
+    )
     is_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    include_private = is_admin or _has_domain_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_COLLECTIONS_ADMIN,
+    )
     rows = _community_collection_instruction_events(
         db,
         community_domain_id=int(domain.id),
@@ -25202,7 +25344,7 @@ def list_community_domain_collection_instructions(
     return {
         "ok": True,
         "items": [
-            _collection_instruction_payload(row, domain=domain, include_private=is_admin)
+            _collection_instruction_payload(row, domain=domain, include_private=include_private)
             for row in rows
         ],
         "boundary": COMMUNITY_DOMAIN_COLLECTION_PUBLIC_BOUNDARY,
@@ -25221,7 +25363,13 @@ def create_community_domain_collection_instruction(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_COLLECTIONS_ADMIN,
+        action_label="collections administration",
+    )
     _require_community_domain_feature_enabled(
         db,
         domain=domain,
@@ -25736,7 +25884,13 @@ def list_community_domain_attendance_sessions(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     sessions = _community_domain_attendance_session_events(
         db,
         community_domain_id=int(domain.id),
@@ -25771,7 +25925,13 @@ def create_community_domain_attendance_session(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     node: Optional[CommunityNode] = None
     if payload.community_node_id is not None:
         node = _get_node_or_404(
@@ -25854,7 +26014,13 @@ def record_admin_community_domain_attendance_checkin(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     session_event = db.get(TrustEvent, int(attendance_session_event_id))
     if session_event is None or session_event.event_type != COMMUNITY_DOMAIN_ATTENDANCE_SESSION_EVENT:
         raise HTTPException(
@@ -25984,7 +26150,13 @@ def record_admin_community_domain_attendance_card_checkin(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     card_domain_id, card_user_id = _parse_community_domain_attendance_card_code(payload.card_code)
     if card_domain_id != int(domain.id):
         raise HTTPException(
@@ -26133,7 +26305,13 @@ def list_community_domain_attendance_parent_notification_logs(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     session_event = db.get(TrustEvent, int(attendance_session_event_id))
     if session_event is None or session_event.event_type != COMMUNITY_DOMAIN_ATTENDANCE_SESSION_EVENT:
         raise HTTPException(
@@ -26177,7 +26355,13 @@ def create_community_domain_attendance_parent_notification_log(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     session_event = db.get(TrustEvent, int(attendance_session_event_id))
     if session_event is None or session_event.event_type != COMMUNITY_DOMAIN_ATTENDANCE_SESSION_EVENT:
         raise HTTPException(
@@ -26696,7 +26880,13 @@ def list_community_domain_response_channels(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     channels = _community_domain_response_channel_events(
         db,
         community_domain_id=int(domain.id),
@@ -26734,7 +26924,13 @@ def create_community_domain_response_channel(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     _require_community_domain_feature_enabled(
         db,
         domain=domain,
@@ -27077,7 +27273,13 @@ def create_community_domain_payment_instruction(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_BILLING_ADMIN,
+        action_label="billing administration",
+    )
     if COMMUNITY_DOMAIN_PILOT_PAYMENT_SUSPENDED:
         raise HTTPException(
             status_code=409,
@@ -27374,7 +27576,13 @@ def get_community_domain_period_summary(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     start, end = _period_bounds(period_start=period_start, period_end=period_end)
 
     node: Optional[CommunityNode] = None
@@ -28220,7 +28428,13 @@ def list_community_domain_activities(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     node_scope_ids: list[int] = []
     if community_node_id is not None:
         node = _get_node_or_404(
@@ -28268,7 +28482,13 @@ def list_community_domain_activity_follow_ups(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     cutoff_day = _community_domain_follow_up_cutoff(due_on_or_before)
     node_scope_ids: list[int] = []
     if community_node_id is not None:
@@ -28380,7 +28600,13 @@ def record_community_domain_activity(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     subject = _get_user_or_404(db, int(payload.subject_user_id))
     node: Optional[CommunityNode] = None
     if payload.community_node_id is not None:
@@ -28468,7 +28694,13 @@ def list_community_domain_beneficiary_outcomes(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     node_scope_ids: list[int] = []
     if community_node_id is not None:
         node = _get_node_or_404(
@@ -28697,7 +28929,13 @@ def record_community_domain_beneficiary_outcome(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     subject = _get_user_or_404(db, int(payload.subject_user_id))
     node: Optional[CommunityNode] = None
     if payload.community_node_id is not None:
@@ -28783,7 +29021,13 @@ def record_community_domain_outcome_contact_consent(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     outcome_event = _get_community_domain_outcome_event_or_404(
         db,
         community_domain_id=int(domain.id),
@@ -28858,7 +29102,13 @@ def withdraw_community_domain_outcome_contact_consent(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     outcome_event = _get_community_domain_outcome_event_or_404(
         db,
         community_domain_id=int(domain.id),
@@ -28958,7 +29208,13 @@ def create_community_domain_outcome_confirmation_link(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     outcome_event = _get_community_domain_outcome_event_or_404(
         db,
         community_domain_id=int(domain.id),
@@ -29089,7 +29345,13 @@ def attempt_community_domain_outcome_confirmation_provider_send(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     outcome_event = _get_community_domain_outcome_event_or_404(
         db,
         community_domain_id=int(domain.id),
@@ -29263,7 +29525,13 @@ def record_community_domain_outcome_confirmation_delivery_receipt(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     outcome_event = _get_community_domain_outcome_event_or_404(
         db,
         community_domain_id=int(domain.id),
@@ -29438,7 +29706,13 @@ def correct_community_domain_outcome_confirmation_delivery_receipt(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     outcome_event = _get_community_domain_outcome_event_or_404(
         db,
         community_domain_id=int(domain.id),
@@ -29801,7 +30075,13 @@ def list_community_domain_outcome_correction_reviews(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     if outcome_event_id is not None:
         _get_community_domain_outcome_event_or_404(
             db,
@@ -29845,7 +30125,13 @@ def review_community_domain_outcome_correction(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     outcome_event = _get_community_domain_outcome_event_or_404(
         db,
         community_domain_id=int(domain.id),
@@ -29959,7 +30245,13 @@ def get_community_domain_sponsor_summary(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     start, end = _period_bounds(period_start=period_start, period_end=period_end)
 
     node: Optional[CommunityNode] = None
@@ -30645,7 +30937,13 @@ def get_community_domain_church_memory_summary(
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_RECORDS_REPORTS,
+        action_label="records and reports",
+    )
     start, end = _period_bounds(period_start=period_start, period_end=period_end)
     node = None
     node_scope_ids: list[int] = []
@@ -32495,7 +32793,13 @@ def create_community_domain_node(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
+        action_label="governance editing",
+    )
 
     parent_node: Optional[CommunityNode]
     if payload.parent_node_id is None:
@@ -32570,7 +32874,16 @@ def get_community_domain_node_status_impact(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_any_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_keys=[
+            DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
+            DELEGATION_POWER_RECORDS_REPORTS,
+        ],
+        action_label="governance records",
+    )
     node = _get_node_or_404(
         db,
         community_domain_id=int(domain.id),
@@ -32601,7 +32914,13 @@ def update_community_domain_node_status(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
+        action_label="governance editing",
+    )
     node = _get_node_or_404(
         db,
         community_domain_id=int(domain.id),
@@ -32704,7 +33023,16 @@ def list_community_domain_members(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_any_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_keys=[
+            DELEGATION_POWER_MEMBER_APPROVAL,
+            DELEGATION_POWER_RECORDS_REPORTS,
+        ],
+        action_label="member records",
+    )
 
     rows = (
         db.query(CommunityDomainMembership)
@@ -33369,7 +33697,13 @@ def lock_community_domain_governance_package(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
+        action_label="governance editing",
+    )
 
     feature_policy = _active_feature_policy_row(
         db,
@@ -33537,7 +33871,13 @@ def upsert_community_domain_policy(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
+        action_label="governance editing",
+    )
 
     node_id: Optional[int] = None
     if payload.community_node_id is not None:
@@ -33632,7 +33972,16 @@ def list_community_domain_action_reviews(
             include_descendants=bool(include_descendants),
         )
     else:
-        _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+        _require_domain_admin_or_any_direct_delegation_scope(
+            db,
+            domain=domain,
+            current_user=current_user,
+            power_keys=[
+                DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
+                DELEGATION_POWER_RECORDS_REPORTS,
+            ],
+            action_label="governance records",
+        )
 
     query = db.query(CommunityDomainActionReview).filter(
         CommunityDomainActionReview.community_domain_id == int(domain.id)
@@ -33948,7 +34297,16 @@ def list_community_domain_action_review_activity(
             include_descendants=bool(include_descendants),
         )
     else:
-        _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+        _require_domain_admin_or_any_direct_delegation_scope(
+            db,
+            domain=domain,
+            current_user=current_user,
+            power_keys=[
+                DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
+                DELEGATION_POWER_RECORDS_REPORTS,
+            ],
+            action_label="governance records",
+        )
 
     query = db.query(CommunityDomainActionReview).filter(
         CommunityDomainActionReview.community_domain_id == int(domain.id)
@@ -34035,7 +34393,16 @@ def get_community_domain_action_review_summary(
             include_descendants=bool(include_descendants),
         )
     else:
-        _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+        _require_domain_admin_or_any_direct_delegation_scope(
+            db,
+            domain=domain,
+            current_user=current_user,
+            power_keys=[
+                DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
+                DELEGATION_POWER_RECORDS_REPORTS,
+            ],
+            action_label="governance records",
+        )
 
     query = db.query(CommunityDomainActionReview).filter(
         CommunityDomainActionReview.community_domain_id == int(domain.id)
