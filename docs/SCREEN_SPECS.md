@@ -487,7 +487,9 @@ Must show:
 - domain name/code, display name, owner, status, verification state, and renewal
   state as compact facts
 - for an owner with no linked domain, a Community Domain dashboard start that first shows a guided setup path; name reservation, local community anchor, payment, and verification must wait inside that guided sequence or the quieter More setup tools drawer, not before it
-- identity setup starts with a domain-code check and a plain category choice such as School, Church, Charity / NGO, Association, or Other; prepared categories hide raw type/template fields, and only Other asks for manual description or support help
+- identity setup starts with the responsible signed-in GSN identity/personal page, then a domain-code availability check and Save checked name action, then a plain category package choice such as School, Church, Charity / NGO, Association, or Other
+- category packages stay gated until the GSN identity and available domain name are ready; once selected, the package collapses to a summary with an Edit package action instead of exposing every category permanently
+- prepared categories hide raw type/template fields, and only Other asks for manual description or support help
 - after category selection, setup step titles, notes, and examples should speak in that package language, such as campuses/classes for School, branches/ministries for Church, programmes/beneficiaries for Charity / NGO, and committees/members for Association
 - inside the setup workbench, the page must recommend continuing the active setup step first and keep Access as a secondary exception for locked editing or setup-editor authority
 - inside the secondary setup overview, Next setup must be recommended before reference views, with stages and views kept behind closed selectors

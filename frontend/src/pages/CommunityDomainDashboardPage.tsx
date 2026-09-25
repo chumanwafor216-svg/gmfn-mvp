@@ -3055,6 +3055,7 @@ export default function CommunityDomainDashboardPage() {
   const [setupFeaturePolicyNotesOpen, setSetupFeaturePolicyNotesOpen] =
     useState(false);
   const [setupSpotlightSlotsOpen, setSetupSpotlightSlotsOpen] = useState(false);
+  const [setupPackageEditOpen, setSetupPackageEditOpen] = useState(false);
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
   const [operatingAreaPickerOpen, setOperatingAreaPickerOpen] = useState(false);
   const [commandGuidanceOpen, setCommandGuidanceOpen] = useState(false);
@@ -5543,6 +5544,9 @@ export default function CommunityDomainDashboardPage() {
   const setupIdentityProfileReady = Boolean(
     cleanText(setupDraft.display_name) && cleanText(setupDraft.public_profile)
   );
+  const setupResponsibleUserId = cleanText(dashboard?.viewer?.user_id);
+  const setupResponsibleIdentityReady = Boolean(setupResponsibleUserId);
+  const setupCategoryCanOpen = setupResponsibleIdentityReady && setupIdentityNameReady;
   const activeSetupEditGroup = useMemo<SetupEditGroupKey>(() => {
     if (
       activeSetupStep === "structure" ||
@@ -5648,6 +5652,7 @@ export default function CommunityDomainDashboardPage() {
       domain_type: option.domainType,
       template_key: option.templateKey,
     }));
+    setSetupPackageEditOpen(false);
     setMessage(
       `${option.label} package selected. GSN will show this setup through that package first.`
     );
@@ -9987,7 +9992,7 @@ export default function CommunityDomainDashboardPage() {
                             <div style={{ minWidth: 0 }}>
                               <div style={sectionLabel()}>Setup path</div>
                               <div style={helperText()}>
-                                Start with the name, choose the package, then save the public profile.
+                                First confirm the signed-in GSN identity, then check and save the domain name, choose one package, and finish the public profile.
                               </div>
                             </div>
                           </div>
@@ -10000,9 +10005,10 @@ export default function CommunityDomainDashboardPage() {
                             }}
                           >
                             {[
-                              ["1", "Domain name", setupIdentityNameReady ? "ready" : "check next"],
-                              ["2", "Category", setupIdentityCategoryReady ? "selected" : "choose next"],
-                              ["3", "Profile", setupIdentityProfileReady ? "ready" : "write short note"],
+                              ["1", "GSN identity", setupResponsibleIdentityReady ? "ready" : "open profile"],
+                              ["2", "Domain name", setupIdentityNameReady ? "available" : "check next"],
+                              ["3", "Category", setupIdentityCategoryReady ? "selected" : "choose next"],
+                              ["4", "Profile", setupIdentityProfileReady ? "ready" : "write short note"],
                             ].map(([number, label, status]) => (
                               <div key={label} style={{ ...softCard(), padding: 12 }}>
                                 <div style={{ fontSize: 12, fontWeight: 950, color: "#8A6A16" }}>
@@ -10015,6 +10021,38 @@ export default function CommunityDomainDashboardPage() {
                               </div>
                             ))}
                           </div>
+                        </div>
+                        <div
+                          style={{ ...softCard(), display: "grid", gap: 10 }}
+                          data-gsn-debug-id="community-domain-dashboard.setup-responsible-identity"
+                        >
+                          <div style={iconHeaderStyle()}>
+                            <span style={iconFrame(46)}>
+                              <GsnRealisticIcon name="identity-card" size={35} decorative />
+                            </span>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={sectionLabel()}>Responsible GSN identity</div>
+                              <div style={helperText()}>
+                                The domain must be attached to a signed-in GSN person before the institution package is prepared.
+                              </div>
+                            </div>
+                          </div>
+                          <div style={statusBadge(setupResponsibleIdentityReady ? "GSN identity ready" : "personal page needed")}>
+                            {setupResponsibleIdentityReady
+                              ? `Signed-in GSN user: ${setupResponsibleUserId}`
+                              : "Open My GSN Identity and complete the personal page first."}
+                          </div>
+                          <StableButton
+                            type="button"
+                            kind="secondary"
+                            fullWidth
+                            stableHeight={42}
+                            debugId="community-domain-dashboard.setup-open-personal-page"
+                            onClick={() => navigate(APP_ROUTES.PROFILE)}
+                            style={{ justifyContent: "center", fontSize: 13 }}
+                          >
+                            Open My GSN Identity
+                          </StableButton>
                         </div>
                         <div
                           style={{
@@ -10090,13 +10128,29 @@ export default function CommunityDomainDashboardPage() {
                             kind="primary"
                             fullWidth
                             debugId="community-domain-dashboard.setup-check-domain-name"
-                            disabled={setupEditingLocked || busySetupDomainCheck || busyProfileSave}
+                            disabled={setupEditingLocked || !setupResponsibleIdentityReady || busySetupDomainCheck || busyProfileSave}
                             onClick={() => {
                               void checkSetupDomainName();
                             }}
                           >
                             {busySetupDomainCheck ? "Checking..." : "Check domain name"}
                           </StableButton>
+                          {setupIdentityNameReady ? (
+                            <StableButton
+                              type="button"
+                              kind="secondary"
+                              fullWidth
+                              stableHeight={42}
+                              debugId="community-domain-dashboard.setup-save-checked-name"
+                              disabled={setupEditingLocked}
+                              onClick={() => {
+                                saveSetupProgress();
+                              }}
+                              style={{ justifyContent: "center", fontSize: 13 }}
+                            >
+                              Save checked name
+                            </StableButton>
+                          ) : null}
                           <div
                             style={statusBadge(
                               setupIdentityNameReady
@@ -10109,64 +10163,107 @@ export default function CommunityDomainDashboardPage() {
                             {setupDomainNameCheck.message}
                           </div>
                         </div>
-                        <div style={{ ...softCard(), display: "grid", gap: 10 }}>
+                        <div
+                          style={{ ...softCard(), display: "grid", gap: 10 }}
+                          data-gsn-debug-id="community-domain-dashboard.setup-package-gate"
+                        >
                           <div style={iconHeaderStyle()}>
                             <span style={iconFrame(46)}>
                               <GsnRealisticIcon name={activeSetupTemplateOption.icon} size={35} decorative />
                             </span>
                             <div style={{ minWidth: 0 }}>
-                              <div style={sectionLabel()}>Choose category</div>
+                              <div style={sectionLabel()}>Choose category package</div>
                               <div style={helperText()}>
-                                GSN opens only the setup package that matches this choice.
+                                GSN prepares the normal package for the selected organisation type. Use Edit package only when the default needs correction.
                               </div>
                             </div>
                           </div>
-                          <div
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns:
-                                "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
-                              gap: 8,
-                            }}
-                          >
-                            {SETUP_TEMPLATE_OPTIONS.map((option, index) => {
-                              const selected =
-                                setupIdentityCategoryReady &&
-                                activeSetupTemplateOption.key === option.key;
-                              return (
-                                <div
-                                  key={option.key}
-                                  style={{
-                                    ...softCard(),
-                                    padding: 12,
-                                    border: selected
-                                      ? "1px solid rgba(214,170,69,0.76)"
-                                      : "1px solid rgba(7,23,44,0.08)",
-                                  }}
+                          {!setupCategoryCanOpen ? (
+                            <div style={{ display: "grid", gap: 8 }}>
+                              <div style={statusBadge("finish name first")}>Finish GSN identity and name check first.</div>
+                              <div style={{ ...helperText(), fontSize: 13 }}>
+                                The package is locked until the responsible GSN identity is present and the domain name is available.
+                              </div>
+                            </div>
+                          ) : setupIdentityCategoryReady && !setupPackageEditOpen ? (
+                            <div style={{ display: "grid", gap: 8 }}>
+                              <div style={statusBadge(activeSetupTemplateOption.label)}>
+                                Selected package: {activeSetupTemplateOption.label}
+                              </div>
+                              <div style={{ ...helperText(), fontSize: 13 }}>
+                                {activeSetupTemplateOption.note}
+                              </div>
+                              <StableButton
+                                type="button"
+                                kind="secondary"
+                                fullWidth
+                                stableHeight={42}
+                                debugId="community-domain-dashboard.setup-template-edit-toggle"
+                                disabled={setupEditingLocked}
+                                onClick={() => setSetupPackageEditOpen(true)}
+                                style={{ justifyContent: "center", fontSize: 13 }}
+                              >
+                                Edit package
+                              </StableButton>
+                            </div>
+                          ) : (
+                            <div style={{ display: "grid", gap: 10 }}>
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns:
+                                    "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
+                                  gap: 8,
+                                }}
+                              >
+                                {SETUP_TEMPLATE_OPTIONS.map((option, index) => {
+                                  const selected =
+                                    setupIdentityCategoryReady &&
+                                    activeSetupTemplateOption.key === option.key;
+                                  return (
+                                    <div
+                                      key={option.key}
+                                      style={{
+                                        ...softCard(),
+                                        padding: 12,
+                                        border: selected
+                                          ? "1px solid rgba(214,170,69,0.76)"
+                                          : "1px solid rgba(7,23,44,0.08)",
+                                      }}
+                                    >
+                                      <StableButton
+                                        type="button"
+                                        kind={selected ? "primary" : "secondary"}
+                                        stableHeight={48}
+                                        fullWidth
+                                        debugId={`community-domain-dashboard.setup-template-option.${option.key}`}
+                                        disabled={setupEditingLocked}
+                                        onClick={() => applySetupTemplateOption(option)}
+                                      >
+                                        {index + 1}. {option.label}
+                                      </StableButton>
+                                      <div style={{ ...helperText(), marginTop: 8, fontSize: 12.5 }}>
+                                        {option.note}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              {setupIdentityCategoryReady ? (
+                                <StableButton
+                                  type="button"
+                                  kind="secondary"
+                                  fullWidth
+                                  stableHeight={42}
+                                  debugId="community-domain-dashboard.setup-template-edit-close"
+                                  onClick={() => setSetupPackageEditOpen(false)}
+                                  style={{ justifyContent: "center", fontSize: 13 }}
                                 >
-                                  <StableButton
-                                    type="button"
-                                    kind={selected ? "primary" : "secondary"}
-                                    stableHeight={48}
-                                    fullWidth
-                                    debugId={`community-domain-dashboard.setup-template-option.${option.key}`}
-                                    disabled={setupEditingLocked}
-                                    onClick={() => applySetupTemplateOption(option)}
-                                  >
-                                    {index + 1}. {option.label}
-                                  </StableButton>
-                                  <div style={{ ...helperText(), marginTop: 8, fontSize: 12.5 }}>
-                                    {option.note}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                          <div style={statusBadge(setupIdentityCategoryReady ? activeSetupTemplateOption.label : "choose category")}>
-                            {setupIdentityCategoryReady
-                              ? `Selected package: ${activeSetupTemplateOption.label}. GSN will continue with this package first.`
-                              : "Choose one package to continue."}
-                          </div>
+                                  Close package editor
+                                </StableButton>
+                              ) : null}
+                            </div>
+                          )}
                         </div>
                         {activeSetupTemplateOption.key === "other" ? (
                           <div
@@ -10694,6 +10791,7 @@ export default function CommunityDomainDashboardPage() {
                             </div>
                           ) : null}
                         </div>
+
                         <div
                           style={{
                             display: "grid",

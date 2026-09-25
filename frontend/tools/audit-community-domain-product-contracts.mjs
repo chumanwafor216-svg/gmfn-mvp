@@ -189,7 +189,9 @@ assertContains(
   /Finish Step 1 first[\s\S]*Finish Step 2 first[\s\S]*Finish Step 3 first[\s\S]*Finish Step 4 first[\s\S]*runGuidedSetupStep[\s\S]*setMessage\(cleanText\(step\.blocker\)\)/,
   "Community Domain guided setup must tell the owner which earlier step is missing instead of silently opening later governance work.",
   { frontend: true }
-);assertContains(
+);
+
+assertContains(
   communityDomainDashboardFile,
   /Follow the guided setup path\. Open more tools only when a specific setup area is needed\.[\s\S]*community-domain-dashboard\.guided-setup\.next[\s\S]*kind="secondary"[\s\S]*stableHeight=\{44\}[\s\S]*community-domain-dashboard\.institution-gateway[\s\S]*More setup tools[\s\S]*community-domain-dashboard\.command-drawer-current-step[\s\S]*Use this first[\s\S]*community-domain-dashboard\.command-drawer-current-step-action[\s\S]*community-domain-dashboard\.governance-stage-board[\s\S]*kind="secondary"[\s\S]*stableHeight=\{58\}[\s\S]*community-domain-dashboard\.command-stage\.\$\{group\.key\}/,
   "Community Domain command surface must keep the guided setup path as the primary route and make More setup tools restate the current guided step before exposing the older stage board.",
@@ -308,6 +310,14 @@ assertContains(
   "Community Domain identity setup must guide users through domain-name check, category package choice, package-aware step guidance, Other-only manual fields, and support help without exposing raw type/template setup as the ordinary path.",
   { frontend: true }
 );
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /setupPackageEditOpen[\s\S]*setupResponsibleIdentityReady[\s\S]*setupCategoryCanOpen[\s\S]*First confirm the signed-in GSN identity[\s\S]*community-domain-dashboard\.setup-responsible-identity[\s\S]*Open My GSN Identity[\s\S]*community-domain-dashboard\.setup-check-domain-name[\s\S]*!setupResponsibleIdentityReady[\s\S]*community-domain-dashboard\.setup-save-checked-name[\s\S]*Save checked name[\s\S]*community-domain-dashboard\.setup-package-gate[\s\S]*Finish GSN identity and name check first[\s\S]*community-domain-dashboard\.setup-template-edit-toggle[\s\S]*Edit package[\s\S]*community-domain-dashboard\.setup-template-option\.\$\{option\.key\}/,
+  "Community Domain setup identity step must lead with responsible GSN identity, then checked domain-name save, then a gated category package that collapses selected packages behind Edit package instead of exposing every package permanently.",
+  { frontend: true }
+);
+
 assertContains(
   "src/pages/communityDomainDashboard/SetupOverviewPanel.tsx",
   /QRCodeSVG[\s\S]*community-domain-dashboard\.notice-public-qr[\s\S]*sermon topic, message of the day, or public programme note[\s\S]*Copy QR Link[\s\S]*Open QR Page/,
