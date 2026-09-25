@@ -9770,6 +9770,12 @@ export default function CommunityDomainDashboardPage() {
                             ? "You hold final owner/admin authority. You can authorise or remove one trusted setup editor."
                             : "You can edit setup, profile, and setup evidence only. Owner/admin authority remains above this role."}
                         </div>
+                        <div
+                          data-debug-id="community-domain-dashboard.setup-access-recommendation"
+                          style={{ ...helperText(), fontSize: 13 }}
+                        >
+                          Recommended: Review Summary before changing setup editor authority.
+                        </div>
                         <div style={{ ...helperText(), fontSize: 13 }}>
                           Current access view:{" "}
                           <strong>{activeSetupAccessTaskOption.label}</strong>.{" "}
