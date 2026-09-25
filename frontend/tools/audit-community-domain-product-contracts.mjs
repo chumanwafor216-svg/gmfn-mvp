@@ -279,6 +279,12 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/communityDomainDashboard/GovernanceFocusPanel.tsx",
+  /GOVERNANCE_WORK_PATH_OPTIONS[\s\S]*number: "1"[\s\S]*task: "readiness"[\s\S]*number: "2"[\s\S]*task: "access_requests"[\s\S]*number: "3"[\s\S]*task: "real_life_record"[\s\S]*number: "4"[\s\S]*task: "director_summary"[\s\S]*Follow the governance work path[\s\S]*community-domain-dashboard\.governance-work-path[\s\S]*community-domain-dashboard\.governance-path\.\$\{step\.task\}[\s\S]*More governance stages[\s\S]*Use the path above for normal work/,
+  "Lazy GovernanceFocusPanel must lead with a numbered governance work path before exposing deeper governance stage/job selectors.",
+  { frontend: true }
+);
+assertContains(
   "src/pages/communityDomainDashboard/SetupOverviewPanel.tsx",
   /QRCodeSVG[\s\S]*community-domain-dashboard\.notice-public-qr[\s\S]*sermon topic, message of the day, or public programme note[\s\S]*Copy QR Link[\s\S]*Open QR Page/,
   "Community Domain notice board must show QR/copy/open controls only for QR-enabled public messages.",

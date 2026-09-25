@@ -501,6 +501,8 @@ Must show:
   response QR, collection QR, and real-life activity records
 - Advanced governance actions for readiness, feature policy, director summary,
   sponsor report, all operating areas, and save/lock package handoff
+- inside Governance jobs, a numbered work path must come before deeper selectors:
+  check readiness, handle access, record evidence, then review reports
 - where Community Finance collections are enabled, a compact governed QR or
   payment-instruction row for offerings, donations, levies, registrations, or
   support appeals
@@ -558,6 +560,8 @@ Rules:
   ROSCA, welfare, fundraising, jobs, services, and trusted procurement.
 - Governance actions must use scoped roles and policies. A node admin should
   see only the work their role can handle.
+- Governance jobs must remain step-first: use the numbered governance work path
+  for normal work, and keep deeper stage/job selectors secondary.
 - `needs_changes` reviews are requester follow-up, not pending reviewer work.
 - Payment, package quote, and renewal status must not be shown as verification.
 - Offering, donation, levy, or registration QR codes must be shown as governed

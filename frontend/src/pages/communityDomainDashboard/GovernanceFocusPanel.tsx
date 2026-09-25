@@ -94,6 +94,38 @@ const GOVERNANCE_TASK_GROUP_OPTIONS: Array<{
   },
 ];
 
+const GOVERNANCE_WORK_PATH_OPTIONS: Array<{
+  number: string;
+  task: GovernanceTaskKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    number: "1",
+    task: "readiness",
+    label: "Check readiness",
+    note: "See what is blocked before changing records or access.",
+  },
+  {
+    number: "2",
+    task: "access_requests",
+    label: "Handle access",
+    note: "Approve, decline, or ask for changes where people are waiting.",
+  },
+  {
+    number: "3",
+    task: "real_life_record",
+    label: "Record evidence",
+    note: "Capture activity or beneficiary outcome proof from real life.",
+  },
+  {
+    number: "4",
+    task: "director_summary",
+    label: "Review reports",
+    note: "Use director or sponsor-safe summaries after the work is recorded.",
+  },
+];
+
 export const DIRECTOR_SUMMARY_TASK_OPTIONS: Array<
   SummaryOption<DirectorSummaryTaskKey>
 > = [
@@ -288,16 +320,53 @@ export default function GovernanceFocusPanel({ data }: GovernanceFocusPanelProps
                   lineHeight: 1.16,
                 }}
               >
-                Choose the governance stage first.
+                Follow the governance work path.
               </h3>
               <div style={{ ...helperText(), marginTop: 6 }}>
-                Readiness, reports, and records stay separate so the surface does
-                not dump every control at once.
+                Start with readiness, handle waiting access, record evidence,
+                then review reports when the work is already captured.
               </div>
             </div>
           </div>
+          <div
+            data-debug-id="community-domain-dashboard.governance-work-path"
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+              gap: 8,
+            }}
+          >
+            {GOVERNANCE_WORK_PATH_OPTIONS.map((step) => {
+              const selected = data.activeGovernanceTask === step.task;
+              return (
+                <StableButton
+                  key={step.task}
+                  type="button"
+                  kind={selected ? "primary" : "secondary"}
+                  stableHeight={58}
+                  debugId={`community-domain-dashboard.governance-path.${step.task}`}
+                  aria-pressed={selected}
+                  title={step.note}
+                  onClick={() => data.selectGovernanceTask(step.task)}
+                  style={{
+                    justifyContent: "flex-start",
+                    textAlign: "left",
+                    fontSize: 13,
+                    lineHeight: 1.18,
+                  }}
+                >
+                  {step.number}. {step.label}
+                </StableButton>
+              );
+            })}
+          </div>
           <div style={{ ...helperText(), fontSize: 13 }}>
-            Current governance stage:{" "}
+            Current work: <strong>{activeGovernanceTaskOption.label}</strong>.{" "}
+            {activeGovernanceTaskOption.note}
+          </div>
+          <div style={{ ...helperText(), fontSize: 13 }}>
+            More tools stage:{" "}
             <strong>{activeGovernanceTaskGroupOption.label}</strong>.{" "}
             {activeGovernanceTaskGroupOption.note}
           </div>
@@ -320,7 +389,7 @@ export default function GovernanceFocusPanel({ data }: GovernanceFocusPanelProps
           >
             {data.governanceGroupChooserOpen
               ? "Close governance stages"
-              : "Change governance stage"}
+              : "More governance stages"}
           </StableButton>
           {data.governanceGroupChooserOpen ? (
             <div
@@ -419,7 +488,8 @@ export default function GovernanceFocusPanel({ data }: GovernanceFocusPanelProps
             </div>
           ) : null}
           <div style={{ ...helperText(), fontSize: 13 }}>
-            {activeGovernanceTaskOption.note}
+            Use the path above for normal work. Open more stages only when a
+            specific governance area is needed.
           </div>
         </div>
       ) : null}
