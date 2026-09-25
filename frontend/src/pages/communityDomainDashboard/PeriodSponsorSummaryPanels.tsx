@@ -877,6 +877,12 @@ function SponsorSummary({ data }: { data: SummaryPanelsData }) {
         <span style={statusBadge(outcomes.status)}>Outcomes: {compactStatus(outcomes.status)}</span>
         <span style={statusBadge(challenges.status)}>Challenges: {compactStatus(challenges.status)}</span>
       </div>
+      <div
+        data-debug-id="community-domain-dashboard.sponsor-summary-recommendation"
+        style={{ ...helperText(), fontSize: 13 }}
+      >
+        Recommended: Review Overview before evidence, delivery, or export.
+      </div>
       <div style={{ ...helperText(), fontSize: 13 }}>
         Current sponsor view: <strong>{data.activeSponsorSummaryTaskOption.label}</strong>. {data.activeSponsorSummaryTaskOption.note}
       </div>

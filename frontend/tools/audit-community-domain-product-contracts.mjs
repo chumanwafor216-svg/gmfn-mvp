@@ -1397,8 +1397,8 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/PeriodSponsorSummaryPanels.tsx",
-  /type SponsorSummaryTaskKey = "overview" \| "evidence" \| "delivery" \| "export"[\s\S]*sponsorSummaryTaskChooserOpen[\s\S]*debugPrefix="community-domain-dashboard\.sponsor-summary"[\s\S]*labelClosed="Change sponsor view"[\s\S]*labelOpen="Close sponsor views"[\s\S]*options=\{data\.SPONSOR_SUMMARY_TASK_OPTIONS\}[\s\S]*data\.activeSponsorSummaryTask === "overview"[\s\S]*Sponsor boundary[\s\S]*data\.activeSponsorSummaryTask === "evidence"[\s\S]*SummaryTiles rows=\{sponsorTiles\}[\s\S]*data\.activeSponsorSummaryTask === "export"[\s\S]*community-domain-dashboard\.copy-sponsor-export-pack[\s\S]*data\.activeSponsorSummaryTask === "delivery"[\s\S]*DeliveryEvidence evidence=\{evidence\} sponsor[\s\S]*ProviderDeliveryReadiness/,
-  "Lazy Community Domain sponsor-safe summary must keep Overview, Evidence, Export, and Delivery views behind a closed Change sponsor view control.",
+  /type SponsorSummaryTaskKey = "overview" \| "evidence" \| "delivery" \| "export"[\s\S]*sponsorSummaryTaskChooserOpen[\s\S]*community-domain-dashboard\.sponsor-summary-recommendation[\s\S]*Recommended: Review Overview before evidence, delivery, or export\.[\s\S]*debugPrefix="community-domain-dashboard\.sponsor-summary"[\s\S]*labelClosed="Change sponsor view"[\s\S]*labelOpen="Close sponsor views"[\s\S]*options=\{data\.SPONSOR_SUMMARY_TASK_OPTIONS\}[\s\S]*data\.activeSponsorSummaryTask === "overview"[\s\S]*Sponsor boundary[\s\S]*data\.activeSponsorSummaryTask === "evidence"[\s\S]*SummaryTiles rows=\{sponsorTiles\}[\s\S]*data\.activeSponsorSummaryTask === "export"[\s\S]*community-domain-dashboard\.copy-sponsor-export-pack[\s\S]*data\.activeSponsorSummaryTask === "delivery"[\s\S]*DeliveryEvidence evidence=\{evidence\} sponsor[\s\S]*ProviderDeliveryReadiness/,
+  "Lazy Community Domain sponsor-safe summary must recommend Overview first and keep Overview, Evidence, Export, and Delivery views behind a closed Change sponsor view control.",
   { frontend: true }
 );
 
