@@ -1598,7 +1598,33 @@ export async function getPublicCommunityDomainNotice(publicCode: number | string
     { includeAuth: false }
   );
 }
-export type CommunityDomainAttendanceMethod = "qr" | "rotating_qr" | "short_code" | "bluetooth_proximity";
+
+export async function listCommunityDomainNoticeAcknowledgements(
+  communityDomainId: number | string,
+  noticeEventId: number | string
+): Promise<any> {
+  return httpJson(
+    `/community-domains/${encodeURIComponent(
+      String(communityDomainId)
+    )}/notices/${encodeURIComponent(String(noticeEventId))}/acknowledgements`,
+    "GET"
+  );
+}
+
+export async function acknowledgeCommunityDomainNotice(
+  communityDomainId: number | string,
+  noticeEventId: number | string,
+  payload: { note?: string | null } = {}
+): Promise<any> {
+  return httpJson(
+    `/community-domains/${encodeURIComponent(
+      String(communityDomainId)
+    )}/notices/${encodeURIComponent(String(noticeEventId))}/acknowledgements`,
+    "POST",
+    payload
+  );
+}
+export type CommunityDomainAttendanceMethod = "qr" | "rotating_qr" | "short_code" | "bluetooth_proximity" | "staff_scan";
 
 export async function listCommunityDomainAttendanceSessions(
   communityDomainId: number | string,
@@ -1627,6 +1653,218 @@ export async function createCommunityDomainAttendanceSession(
 ): Promise<any> {
   return httpJson(
     `/community-domains/${encodeURIComponent(String(communityDomainId))}/attendance-sessions`,
+    "POST",
+    Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
+    )
+  );
+}
+
+export async function recordAdminCommunityDomainAttendanceCheckin(
+  communityDomainId: number | string,
+  attendanceSessionEventId: number | string,
+  payload: {
+    subject_user_id: number | string;
+    method?: CommunityDomainAttendanceMethod;
+    note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-domains/${encodeURIComponent(
+      String(communityDomainId)
+    )}/attendance-sessions/${encodeURIComponent(
+      String(attendanceSessionEventId)
+    )}/admin-check-ins`,
+    "POST",
+    Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
+    )
+  );
+}
+
+export async function recordAdminCommunityDomainAttendanceCardCheckin(
+  communityDomainId: number | string,
+  attendanceSessionEventId: number | string,
+  payload: {
+    card_code: string;
+    method?: CommunityDomainAttendanceMethod;
+    note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-domains/${encodeURIComponent(
+      String(communityDomainId)
+    )}/attendance-sessions/${encodeURIComponent(
+      String(attendanceSessionEventId)
+    )}/admin-card-check-ins`,
+    "POST",
+    Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
+    )
+  );
+}
+export async function listCommunityDomainAttendanceParentNotificationLogs(
+  communityDomainId: number | string,
+  attendanceSessionEventId: number | string,
+  params: { limit?: number } = {}
+): Promise<any> {
+  return httpJson(
+    `/community-domains/${encodeURIComponent(
+      String(communityDomainId)
+    )}/attendance-sessions/${encodeURIComponent(
+      String(attendanceSessionEventId)
+    )}/parent-notification-logs${buildQuery({ limit: params.limit ?? 50 })}`,
+    "GET"
+  );
+}
+
+export async function createCommunityDomainAttendanceParentNotificationLog(
+  communityDomainId: number | string,
+  attendanceSessionEventId: number | string,
+  payload: {
+    subject_user_id: number | string;
+    channel?: "gsn" | "whatsapp" | "email" | "sms" | "phone" | "paper" | "manual" | string;
+    delivery_status?: "prepared" | "sent_outside_gsn" | "acknowledged_by_parent" | "failed" | "not_sent" | string;
+    destination_reference_status?: string;
+    destination_reference_label?: string | null;
+    note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-domains/${encodeURIComponent(
+      String(communityDomainId)
+    )}/attendance-sessions/${encodeURIComponent(
+      String(attendanceSessionEventId)
+    )}/parent-notification-logs`,
+    "POST",
+    Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
+    )
+  );
+}
+
+export async function listCommunityDomainSchoolGuardianContacts(
+  communityDomainId: number | string,
+  params: { subject_user_id?: number | string; limit?: number } = {}
+): Promise<any> {
+  return httpJson(
+    `/community-domains/${encodeURIComponent(
+      String(communityDomainId)
+    )}/school-roster/guardian-contacts${buildQuery({
+      subject_user_id: params.subject_user_id || undefined,
+      limit: params.limit ?? 50,
+    })}`,
+    "GET"
+  );
+}
+
+export async function createCommunityDomainSchoolGuardianContact(
+  communityDomainId: number | string,
+  subjectUserId: number | string,
+  payload: {
+    guardian_label?: string;
+    relationship?: string;
+    channel?: string;
+    destination_reference_status?: string;
+    destination_reference_label?: string | null;
+    contact_status?: string;
+    consent_basis?: string;
+    notification_scope?: string;
+    note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-domains/${encodeURIComponent(
+      String(communityDomainId)
+    )}/school-roster/${encodeURIComponent(String(subjectUserId))}/guardian-contacts`,
+    "POST",
+    Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
+    )
+  );
+}
+
+export async function listCommunityDomainSchoolFeeExpectedPayments(
+  communityDomainId: number | string,
+  params: { status?: string; limit?: number } = {}
+): Promise<any> {
+  return httpJson(
+    `/community-domains/${encodeURIComponent(
+      String(communityDomainId)
+    )}/school-fees/expected-payments${buildQuery({
+      status: params.status || undefined,
+      limit: params.limit ?? 50,
+    })}`,
+    "GET"
+  );
+}
+
+export async function createCommunityDomainSchoolFeeExpectedPayment(
+  communityDomainId: number | string,
+  payload: {
+    subject_user_id: number | string;
+    amount: string | number;
+    currency?: string;
+    term_label?: string;
+    fee_label?: string;
+    due_at?: string | null;
+    campus_label?: string | null;
+    note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-domains/${encodeURIComponent(
+      String(communityDomainId)
+    )}/school-fees/expected-payments`,
+    "POST",
+    Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
+    )
+  );
+}
+
+export async function bulkOpenCommunityDomainSchoolFeeExpectedPayments(
+  communityDomainId: number | string,
+  payload: {
+    amount: string | number;
+    currency?: string;
+    term_label?: string;
+    fee_label?: string;
+    due_at?: string | null;
+    campus_label?: string | null;
+    note?: string | null;
+    max_members?: number;
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-domains/${encodeURIComponent(
+      String(communityDomainId)
+    )}/school-fees/expected-payments/bulk-open-missing`,
+    "POST",
+    Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
+    )
+  );
+}
+
+export async function createCommunityDomainSchoolFeePaymentProofLog(
+  communityDomainId: number | string,
+  expectedPaymentId: number | string,
+  payload: {
+    proof_source?: string;
+    proof_status?: string;
+    proof_reference?: string | null;
+    amount_reported?: string | number | null;
+    received_at?: string | null;
+    note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-domains/${encodeURIComponent(
+      String(communityDomainId)
+    )}/school-fees/expected-payments/${encodeURIComponent(
+      String(expectedPaymentId)
+    )}/proof-logs`,
     "POST",
     Object.fromEntries(
       Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)

@@ -14,7 +14,9 @@ import PageTopNav from "../components/PageTopNav";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
 import { StableButton } from "../components/StableButton";
 import {
+  acknowledgeCommunityDomainNotice,
   applyCommunityDomainActionReview,
+  bulkOpenCommunityDomainSchoolFeeExpectedPayments,
   attemptCommunityDomainOutcomeConfirmationProviderSend,
   cancelCommunityDomainActionReview,
   checkCommunityDomainAvailability,
@@ -24,9 +26,13 @@ import {
   createCommunityDomainNotice,
   createCommunityDomainResponseChannel,
   createCommunityDomainAttendanceSession,
+  createCommunityDomainAttendanceParentNotificationLog,
   createCommunityDomainCollectionInstruction,
   createCommunityDomainPaymentInstruction,
   createCommunityDomainPackageQuote,
+  createCommunityDomainSchoolFeeExpectedPayment,
+  createCommunityDomainSchoolFeePaymentProofLog,
+  createCommunityDomainSchoolGuardianContact,
   deactivateCommunityDomainMember,
   decideCommunityDomainActionReview,
   delegateCommunityDomainSetupEditor,
@@ -92,6 +98,8 @@ import {
   listCommunityDomainAttendanceSessions,
   listCommunityDomainCollectionInstructions,
   listCommunityDomainResponseChannels,
+  listCommunityDomainSchoolFeeExpectedPayments,
+  listCommunityDomainSchoolGuardianContacts,
   listCommunityDomainMembers,
   listCommunityDomainNodeTree,
   listCommunityDomainNotices,
@@ -101,6 +109,8 @@ import {
   listMyCommunityDomains,
   requestCommunityDomainMembership,
   recordCommunityDomainActivity,
+  recordAdminCommunityDomainAttendanceCheckin,
+  recordAdminCommunityDomainAttendanceCardCheckin,
   recordCommunityDomainBeneficiaryOutcome,
   recordCommunityDomainOutcomeConfirmationDeliveryReceipt,
   recordCommunityDomainOutcomeContactConsent,
@@ -660,7 +670,7 @@ type CollectionInstructionDraft = {
 
 type AttendanceSessionDraft = {
   programme_label: string;
-  method: "qr" | "bluetooth_proximity";
+  method: "qr" | "bluetooth_proximity" | "staff_scan";
   window_minutes: string;
   note: string;
 };
@@ -678,11 +688,11 @@ function emptyCollectionInstructionDraft(): CollectionInstructionDraft {
   return {
     collection_type: "offering",
     collection_mode: "standing",
-    purpose_label: "Sunday Offering",
+    purpose_label: "Official collection",
     amount_label: "Open amount",
     currency: "GBP",
     external_payment_url: "",
-    receiving_account_label: "Church approved receiving account",
+    receiving_account_label: "Approved receiving account",
     visibility_scope: "public",
     note: "",
   };
@@ -2685,6 +2695,12 @@ export default function CommunityDomainDashboardPage() {
     useState(false);
   const [placementSummary, setPlacementSummary] = useState<MemberPlacementSummarySurface | null>(null);
   const [domainMemberRows, setDomainMemberRows] = useState<UnknownRecord[]>([]);
+  const [schoolFeeExpectedPaymentRows, setSchoolFeeExpectedPaymentRows] = useState<UnknownRecord[]>([]);
+  const [schoolFeeExpectedPaymentSummary, setSchoolFeeExpectedPaymentSummary] = useState<UnknownRecord | null>(null);
+  const [schoolGuardianContactRows, setSchoolGuardianContactRows] = useState<UnknownRecord[]>([]);
+  const [schoolGuardianContactSummary, setSchoolGuardianContactSummary] = useState<UnknownRecord | null>(null);
+  const [busySchoolFeeExpectedPayment, setBusySchoolFeeExpectedPayment] = useState(false);
+  const [busySchoolGuardianContact, setBusySchoolGuardianContact] = useState(false);
   const [nodeTree, setNodeTree] = useState<StructureNode[]>([]);
   const [moduleScopeReadiness, setModuleScopeReadiness] = useState<ModuleScopeReadinessSurface | null>(null);
   const [setupReadiness, setSetupReadiness] = useState<SetupReadinessSurface | null>(null);
@@ -3119,6 +3135,10 @@ export default function CommunityDomainDashboardPage() {
   const resetOptionalReadinessState = useCallback(() => {
     setPlacementSummary(null);
     setDomainMemberRows([]);
+    setSchoolFeeExpectedPaymentRows([]);
+    setSchoolFeeExpectedPaymentSummary(null);
+    setSchoolGuardianContactRows([]);
+    setSchoolGuardianContactSummary(null);
     setNodeTree([]);
     setModuleScopeReadiness(null);
     setSetupReadiness(null);
@@ -3401,7 +3421,7 @@ export default function CommunityDomainDashboardPage() {
       setDomainNoticesLoading(true);
       try {
         const payload = await listCommunityDomainNotices(requestDomainId, {
-          limit: 3,
+          limit: 6,
         }).catch(() => null);
         if (!isCurrentDomainRequest(requestDomainId)) return;
         const rows = Array.isArray(payload?.notices) ? payload.notices : [];
@@ -3502,6 +3522,23 @@ export default function CommunityDomainDashboardPage() {
     if (!dashboard || !communityDomainId || activeLane !== "governance") return;
     void loadResponseChannels(communityDomainId);
   }, [activeLane, communityDomainId, dashboard, loadResponseChannels]);
+  async function acknowledgeDomainNotice(noticeEventId: string) {
+    const requestDomainId = cleanText(domain?.id || communityDomainId);
+    const cleanNoticeEventId = cleanText(noticeEventId);
+    if (!requestDomainId || !cleanNoticeEventId) {
+      setMessage("Open a Community Domain notice before acknowledging it.");
+      return;
+    }
+    try {
+      await acknowledgeCommunityDomainNotice(requestDomainId, cleanNoticeEventId, {});
+      await loadDomainNotices(requestDomainId);
+      setMessage("Notice acknowledged inside GSN. This is not WhatsApp delivery proof.");
+    } catch (err) {
+      setMessage(errorDetailMessage(err, "GSN could not acknowledge this notice."));
+      throw err;
+    }
+  }
+
   async function submitDomainNotice(
     body: string,
     options?: {
@@ -4511,6 +4548,9 @@ export default function CommunityDomainDashboardPage() {
           readOptional(() =>
             listCommunityDomainOutcomeCorrectionReviews(domainId, { limit: 5 })
           ),
+          readOptional(() => listCommunityDomainMembers(domainId)),
+          readOptional(() => listCommunityDomainSchoolFeeExpectedPayments(domainId, { limit: 50 })),
+          readOptional(() => listCommunityDomainSchoolGuardianContacts(domainId, { limit: 50 })),
         ]);
       }
 
@@ -4664,6 +4704,9 @@ export default function CommunityDomainDashboardPage() {
         activityAttentionRowsPayload,
         beneficiaryOutcomeRowsPayload,
         beneficiaryCorrectionRowsPayload,
+        memberListPayload,
+        schoolFeeExpectedPaymentsPayload,
+        schoolGuardianContactsPayload,
       ] = payloads;
       setGovernanceCoverage(
         governanceCoverageOrNull(payloadRecordOrNull(governanceCoveragePayload, "governance_coverage"))
@@ -4679,6 +4722,11 @@ export default function CommunityDomainDashboardPage() {
       setActivityAttentionSummary(activityAttentionSummaryFromPayload(activityAttentionRowsPayload));
       setBeneficiaryOutcomeRows(payloadRecordArray(beneficiaryOutcomeRowsPayload, "items"));
       setBeneficiaryCorrectionRows(payloadRecordArray(beneficiaryCorrectionRowsPayload, "items"));
+      setDomainMemberRows(payloadRecordArray(memberListPayload, "items"));
+      setSchoolFeeExpectedPaymentRows(payloadRecordArray(schoolFeeExpectedPaymentsPayload, "items"));
+      setSchoolFeeExpectedPaymentSummary(payloadRecordOrNull(schoolFeeExpectedPaymentsPayload, "summary"));
+      setSchoolGuardianContactRows(payloadRecordArray(schoolGuardianContactsPayload, "items"));
+      setSchoolGuardianContactSummary(payloadRecordOrNull(schoolGuardianContactsPayload, "summary"));
       return;
     }
 
@@ -5974,7 +6022,7 @@ export default function CommunityDomainDashboardPage() {
     setCollectionInstructionPanelOpen(true);
     setServiceFlowGuideOpen(false);
     setServiceFlowGuidePromptReason("");
-    setMessage("Collection QR is open. Use it for offerings, donations, levies, or support appeals only after the church approves the receiving route.");
+    setMessage("Collection QR is open. Use it for school fees, offerings, donations, levies, books and uniforms, or support appeals only after the organisation approves the receiving route.");
   }
 
   function openServiceFlowRecordStep(kind: "attendance" | "response") {
@@ -6989,7 +7037,7 @@ export default function CommunityDomainDashboardPage() {
       }
       setCollectionInstructionPanelOpen(true);
       setMessage(
-        "Collection QR published. It opens a GSN instruction page; GSN still does not hold or confirm the offering money."
+        "Collection QR published. It opens a GSN instruction page; GSN still does not hold or confirm the money."
       );
       promptServiceFlowGuide("Collection QR is ready. Open the next service step.");
     } catch (err) {
@@ -7065,6 +7113,403 @@ export default function CommunityDomainDashboardPage() {
     } finally {
       if (isCurrentDomainRequest(requestDomainId)) {
         setBusyAttendanceSession(false);
+      }
+    }
+  }
+
+  async function recordAdminAttendanceCheckin(subjectUserId: string) {
+    const requestDomainId = cleanText(communityDomainId);
+    const cleanSubjectUserId = cleanText(subjectUserId);
+    const attendanceSessionEventId = cleanText(latestAttendanceSession?.event_id);
+    if (!requestDomainId || !attendanceSessionEventId) {
+      setMessage("Open a staff attendance window before recording student arrival.");
+      return;
+    }
+    if (!isAdmin) {
+      setMessage("Only a Community Domain owner or domain admin can record staff-scanned attendance.");
+      return;
+    }
+    if (!cleanSubjectUserId) {
+      setMessage("Enter the student or member user ID before recording attendance.");
+      return;
+    }
+    setBusyAttendanceSession(true);
+    setMessage("");
+    try {
+      const payload = await recordAdminCommunityDomainAttendanceCheckin(
+        requestDomainId,
+        attendanceSessionEventId,
+        {
+          subject_user_id: cleanSubjectUserId,
+          method: "staff_scan",
+          note: "Staff recorded attendance from school governance packet.",
+        }
+      );
+      if (!isCurrentDomainRequest(requestDomainId)) return;
+      await loadAttendanceSessions(requestDomainId);
+      setMessage(
+        cleanText(
+          payload?.message,
+          "Staff-scanned attendance recorded. This is Presence Evidence, not automatic parent notification."
+        )
+      );
+    } catch (err) {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setMessage(
+          errorDetailMessage(err, "GSN could not record this staff-scanned attendance.")
+        );
+      }
+    } finally {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setBusyAttendanceSession(false);
+      }
+    }
+  }
+
+  async function recordAdminAttendanceCardCheckin(cardCode: string) {
+    const requestDomainId = cleanText(communityDomainId);
+    const cleanCardCode = cleanText(cardCode);
+    const attendanceSessionEventId = cleanText(latestAttendanceSession?.event_id);
+    if (!requestDomainId || !attendanceSessionEventId) {
+      setMessage("Open a staff attendance window before scanning a student ID card.");
+      return;
+    }
+    if (!isAdmin) {
+      setMessage("Only a Community Domain owner or domain admin can record staff-scanned attendance.");
+      return;
+    }
+    if (!cleanCardCode) {
+      setMessage("Scan or enter the GSN attendance card code before recording attendance.");
+      return;
+    }
+    setBusyAttendanceSession(true);
+    setMessage("");
+    try {
+      const payload = await recordAdminCommunityDomainAttendanceCardCheckin(
+        requestDomainId,
+        attendanceSessionEventId,
+        {
+          card_code: cleanCardCode,
+          method: "staff_scan",
+          note: "Staff recorded attendance from a printed GSN attendance card.",
+        }
+      );
+      if (!isCurrentDomainRequest(requestDomainId)) return;
+      await loadAttendanceSessions(requestDomainId);
+      setMessage(
+        cleanText(
+          payload?.message,
+          "Staff-scanned card attendance recorded. This is Presence Evidence, not automatic parent notification."
+        )
+      );
+    } catch (err) {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setMessage(
+          errorDetailMessage(err, "GSN could not record this attendance card scan.")
+        );
+      }
+    } finally {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setBusyAttendanceSession(false);
+      }
+    }
+  }
+  async function recordSchoolAttendanceParentNotification(payload: {
+    subject_user_id: string;
+    channel: string;
+    delivery_status: string;
+    destination_reference_status?: string | null;
+    destination_reference_label?: string | null;
+    note?: string | null;
+  }) {
+    const requestDomainId = cleanText(communityDomainId);
+    const attendanceSessionEventId = cleanText(latestAttendanceSession?.event_id);
+    const cleanSubjectUserId = cleanText(payload.subject_user_id);
+    if (!requestDomainId || !attendanceSessionEventId) {
+      setMessage("Open a staff attendance window before logging a parent notification.");
+      return;
+    }
+    if (!isAdmin) {
+      setMessage("Only a Community Domain owner or domain admin can log parent notification follow-up.");
+      return;
+    }
+    if (!cleanSubjectUserId) {
+      setMessage("Choose or enter a student/member before logging parent notification follow-up.");
+      return;
+    }
+    setBusyAttendanceSession(true);
+    setMessage("");
+    try {
+      const logged = await createCommunityDomainAttendanceParentNotificationLog(
+        requestDomainId,
+        attendanceSessionEventId,
+        {
+          subject_user_id: cleanSubjectUserId,
+          channel: payload.channel,
+          delivery_status: payload.delivery_status,
+          destination_reference_status: payload.destination_reference_status || "not_recorded",
+          destination_reference_label: payload.destination_reference_label || undefined,
+          note: payload.note || undefined,
+        }
+      );
+      if (!isCurrentDomainRequest(requestDomainId)) return;
+      setMessage(
+        cleanText(
+          logged?.message,
+          "Parent notification log recorded. This is not WhatsApp delivery proof."
+        )
+      );
+    } catch (err) {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setMessage(
+          errorDetailMessage(err, "GSN could not record this parent notification log.")
+        );
+      }
+    } finally {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setBusyAttendanceSession(false);
+      }
+    }
+  }
+
+  async function createSchoolFeeExpectedPayment(payload: {
+    subject_user_id: string;
+    amount: string;
+    currency: string;
+    term_label: string;
+    fee_label: string;
+    due_at?: string | null;
+    campus_label?: string | null;
+    note?: string | null;
+  }) {
+    const requestDomainId = cleanText(communityDomainId);
+    if (!requestDomainId) return;
+    if (!isAdmin) {
+      setMessage("Only a Community Domain owner or domain admin can open school-fee tracking.");
+      return;
+    }
+    const cleanSubjectUserId = cleanText(payload.subject_user_id);
+    const cleanAmount = cleanText(payload.amount);
+    if (!cleanSubjectUserId) {
+      setMessage("Choose the student/member before opening a school-fee expected payment.");
+      return;
+    }
+    if (!cleanAmount) {
+      setMessage("Enter the fee amount before opening a school-fee expected payment.");
+      return;
+    }
+    setBusySchoolFeeExpectedPayment(true);
+    setMessage("");
+    try {
+      const created = await createCommunityDomainSchoolFeeExpectedPayment(requestDomainId, {
+        subject_user_id: cleanSubjectUserId,
+        amount: cleanAmount,
+        currency: cleanText(payload.currency, "NGN"),
+        term_label: cleanText(payload.term_label, "Current term"),
+        fee_label: cleanText(payload.fee_label, "School fees"),
+        due_at: cleanText(payload.due_at) || null,
+        campus_label: cleanText(payload.campus_label) || null,
+        note: cleanText(payload.note) || null,
+      });
+      if (!isCurrentDomainRequest(requestDomainId)) return;
+      const refreshed = await listCommunityDomainSchoolFeeExpectedPayments(requestDomainId, { limit: 50 });
+      if (!isCurrentDomainRequest(requestDomainId)) return;
+      setSchoolFeeExpectedPaymentRows(payloadRecordArray(refreshed, "items"));
+      setSchoolFeeExpectedPaymentSummary(payloadRecordOrNull(refreshed, "summary"));
+      setMessage(
+        cleanText(
+          created?.already_exists
+            ? "School-fee expected payment already exists for this student and period."
+            : "School-fee expected payment opened. This is awaiting proof, finance review, or bank match."
+        )
+      );
+    } catch (err) {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setMessage(
+          errorDetailMessage(err, "GSN could not open this school-fee expected payment.")
+        );
+      }
+    } finally {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setBusySchoolFeeExpectedPayment(false);
+      }
+    }
+  }
+
+  async function bulkOpenSchoolFeeExpectedPayments(payload: {
+    amount: string;
+    currency: string;
+    term_label: string;
+    fee_label: string;
+    due_at?: string | null;
+    campus_label?: string | null;
+    note?: string | null;
+  }) {
+    const requestDomainId = cleanText(communityDomainId);
+    if (!requestDomainId) return;
+    if (!isAdmin) {
+      setMessage("Only a Community Domain owner or domain admin can bulk-open school-fee tracking.");
+      return;
+    }
+    const cleanAmount = cleanText(payload.amount);
+    if (!cleanAmount) {
+      setMessage("Enter the fee amount before bulk-opening school-fee tracking.");
+      return;
+    }
+    setBusySchoolFeeExpectedPayment(true);
+    setMessage("");
+    try {
+      const opened = await bulkOpenCommunityDomainSchoolFeeExpectedPayments(requestDomainId, {
+        amount: cleanAmount,
+        currency: cleanText(payload.currency, "NGN"),
+        term_label: cleanText(payload.term_label, "Current term"),
+        fee_label: cleanText(payload.fee_label, "School fees"),
+        due_at: cleanText(payload.due_at) || null,
+        campus_label: cleanText(payload.campus_label) || null,
+        note: cleanText(payload.note) || null,
+      });
+      if (!isCurrentDomainRequest(requestDomainId)) return;
+      const refreshed = await listCommunityDomainSchoolFeeExpectedPayments(requestDomainId, { limit: 50 });
+      if (!isCurrentDomainRequest(requestDomainId)) return;
+      setSchoolFeeExpectedPaymentRows(payloadRecordArray(refreshed, "items"));
+      setSchoolFeeExpectedPaymentSummary(payloadRecordOrNull(refreshed, "summary"));
+      setMessage(
+        `Bulk school-fee setup finished: ${cleanText(opened?.opened_count, "0")} opened, ${cleanText(
+          opened?.already_existing_count,
+          "0"
+        )} already existed. This is not payment proof or a receipt.`
+      );
+    } catch (err) {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setMessage(
+          errorDetailMessage(err, "GSN could not bulk-open these school-fee expected payments.")
+        );
+      }
+    } finally {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setBusySchoolFeeExpectedPayment(false);
+      }
+    }
+  }
+
+  async function logSchoolFeePaymentProof(payload: {
+    expected_payment_id: string;
+    proof_source: string;
+    proof_status: string;
+    proof_reference?: string | null;
+    amount_reported?: string | null;
+    note?: string | null;
+  }) {
+    const requestDomainId = cleanText(communityDomainId);
+    if (!requestDomainId) return;
+    if (!isAdmin) {
+      setMessage("Only a Community Domain owner or domain admin can log school-fee payment proof.");
+      return;
+    }
+    const cleanExpectedPaymentId = cleanText(payload.expected_payment_id);
+    if (!cleanExpectedPaymentId) {
+      setMessage("Choose a school-fee row before logging payment proof.");
+      return;
+    }
+    setBusySchoolFeeExpectedPayment(true);
+    setMessage("");
+    try {
+      const logged = await createCommunityDomainSchoolFeePaymentProofLog(
+        requestDomainId,
+        cleanExpectedPaymentId,
+        {
+          proof_source: cleanText(payload.proof_source, "bank_transfer_slip"),
+          proof_status: cleanText(payload.proof_status, "submitted"),
+          proof_reference: cleanText(payload.proof_reference) || null,
+          amount_reported: cleanText(payload.amount_reported) || null,
+          note: cleanText(payload.note) || null,
+        }
+      );
+      if (!isCurrentDomainRequest(requestDomainId)) return;
+      const refreshed = await listCommunityDomainSchoolFeeExpectedPayments(requestDomainId, { limit: 50 });
+      if (!isCurrentDomainRequest(requestDomainId)) return;
+      setSchoolFeeExpectedPaymentRows(payloadRecordArray(refreshed, "items"));
+      setSchoolFeeExpectedPaymentSummary(payloadRecordOrNull(refreshed, "summary"));
+      setMessage(
+        cleanText(
+          logged?.message,
+          "School-fee proof logged for finance review. This is not bank confirmation."
+        )
+      );
+    } catch (err) {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setMessage(
+          errorDetailMessage(err, "GSN could not log this school-fee proof.")
+        );
+      }
+    } finally {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setBusySchoolFeeExpectedPayment(false);
+      }
+    }
+  }
+
+  async function recordSchoolGuardianContact(payload: {
+    subject_user_id: string;
+    guardian_label: string;
+    relationship: string;
+    channel: string;
+    destination_reference_status: string;
+    destination_reference_label?: string | null;
+    contact_status: string;
+    consent_basis: string;
+    notification_scope: string;
+    note?: string | null;
+  }) {
+    const requestDomainId = cleanText(communityDomainId);
+    if (!requestDomainId) return;
+    if (!isAdmin) {
+      setMessage("Only a Community Domain owner or domain admin can record parent/guardian contacts.");
+      return;
+    }
+    const cleanSubjectUserId = cleanText(payload.subject_user_id);
+    if (!cleanSubjectUserId) {
+      setMessage("Choose a student/member before recording a parent/guardian contact.");
+      return;
+    }
+    setBusySchoolGuardianContact(true);
+    setMessage("");
+    try {
+      const recorded = await createCommunityDomainSchoolGuardianContact(
+        requestDomainId,
+        cleanSubjectUserId,
+        {
+          guardian_label: cleanText(payload.guardian_label, "Parent/guardian"),
+          relationship: cleanText(payload.relationship, "parent"),
+          channel: cleanText(payload.channel, "whatsapp"),
+          destination_reference_status: cleanText(payload.destination_reference_status, "admin_verified_off_platform"),
+          destination_reference_label: cleanText(payload.destination_reference_label) || null,
+          contact_status: cleanText(payload.contact_status, "active_attestation"),
+          consent_basis: cleanText(payload.consent_basis, "guardian_or_authorized_contact"),
+          notification_scope: cleanText(payload.notification_scope, "school_attendance_fee_and_notice_follow_up"),
+          note: cleanText(payload.note) || null,
+        }
+      );
+      if (!isCurrentDomainRequest(requestDomainId)) return;
+      const refreshed = await listCommunityDomainSchoolGuardianContacts(requestDomainId, { limit: 50 });
+      if (!isCurrentDomainRequest(requestDomainId)) return;
+      setSchoolGuardianContactRows(payloadRecordArray(refreshed, "items"));
+      setSchoolGuardianContactSummary(payloadRecordOrNull(refreshed, "summary"));
+      setMessage(
+        cleanText(
+          recorded?.message,
+          "Parent/guardian contact reference recorded. This is not delivery proof."
+        )
+      );
+    } catch (err) {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setMessage(
+          errorDetailMessage(err, "GSN could not record this parent/guardian contact.")
+        );
+      }
+    } finally {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setBusySchoolGuardianContact(false);
       }
     }
   }
@@ -10175,12 +10620,12 @@ export default function CommunityDomainDashboardPage() {
                       <div style={{ minWidth: 0 }}>
                         <div style={sectionLabel()}>Collections</div>
                         <h3 style={{ margin: 0, fontSize: 20, lineHeight: 1.12 }}>
-                          Offering and donation QR
+                          Collection and fee QR
                         </h3>
                       </div>
                     </div>
                     <div style={{ ...helperText(), fontSize: 13.5 }}>
-                      Publish a standing or event-specific collection QR for offerings, donations, levies, or support appeals. The QR opens a governed GSN instruction page; GSN does not hold the money or expose the church account details.
+                      Publish a standing or event-specific collection QR for school fees, offerings, donations, levies, books and uniforms, or support appeals. The QR opens a governed GSN instruction page; GSN does not hold the money or expose private receiving account details.
                     </div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                       <span style={statusBadge(paymentsContributionsOff ? "off" : "enabled")}>
@@ -10266,7 +10711,7 @@ export default function CommunityDomainDashboardPage() {
                               style={billingInputStyle()}
                               value={collectionInstructionDraft.purpose_label}
                               onChange={(event) => updateCollectionInstructionDraft("purpose_label", event.target.value)}
-                              placeholder="Sunday Offering"
+                              placeholder="Term 1 school fees or Sunday Offering"
                             />
                           </label>
                           <label style={{ display: "grid", gap: 6 }}>
@@ -10280,6 +10725,9 @@ export default function CommunityDomainDashboardPage() {
                               <option value="donation">Donation</option>
                               <option value="tithe">Tithe</option>
                               <option value="levy">Levy</option>
+                              <option value="school_fee">School fee</option>
+                              <option value="pta_levy">PTA levy</option>
+                              <option value="books_uniforms">Books and uniforms</option>
                               <option value="support_appeal">Support appeal</option>
                               <option value="welfare_collection">Welfare collection</option>
                               <option value="project_support">Project support</option>
@@ -10339,11 +10787,11 @@ export default function CommunityDomainDashboardPage() {
                             style={billingInputStyle()}
                             value={collectionInstructionDraft.receiving_account_label}
                             onChange={(event) => updateCollectionInstructionDraft("receiving_account_label", event.target.value)}
-                            placeholder="Church approved receiving account"
+                            placeholder="Approved receiving account"
                           />
                         </label>
                         <div style={{ ...helperText(), fontSize: 12.5 }}>
-                          Receiving account label is for admin context only. Public QR pages do not expose raw account details; attach an approved payment page when the church has one.
+                          Receiving account label is for admin context only. Public QR pages do not expose raw account details; attach an approved payment page when the organisation has one.
                         </div>
                         <StableButton
                           type="button"
@@ -10520,6 +10968,13 @@ export default function CommunityDomainDashboardPage() {
                           attendanceSessionCopied,
                           attendanceSessionDraft,
                           attendanceSessionRows,
+                          domainMemberRows,
+                          domainNotices,
+                          domainNoticesLoading,
+                          schoolFeeExpectedPaymentRows,
+                          schoolFeeExpectedPaymentSummary,
+                          schoolGuardianContactRows,
+                          schoolGuardianContactSummary,
                           responseChannelCopied,
                           responseChannelDraft,
                           responseChannelRows,
@@ -10550,6 +11005,8 @@ export default function CommunityDomainDashboardPage() {
                           templateKey: cleanText(domain?.template_key || template?.key || domain?.domain_type),
                           busyActivityRecord,
                           busyAttendanceSession,
+                          busySchoolFeeExpectedPayment,
+                          busySchoolGuardianContact,
                           busyBeneficiaryOutcomeRecord,
                           busyOutcomeConfirmationLinkId,
                           busyOutcomeContactConsentId,
@@ -10563,8 +11020,13 @@ export default function CommunityDomainDashboardPage() {
                           cleanText,
                           compactStatus,
                           correctBeneficiaryOutcomeDeliveryReceipt,
+                          acknowledgeDomainNotice,
                           copyLatestAttendanceLink,
                           copyLatestResponseLink,
+                          createSchoolFeeExpectedPayment,
+                          bulkOpenSchoolFeeExpectedPayments,
+                          logSchoolFeePaymentProof,
+                          recordSchoolGuardianContact,
                           createBeneficiaryOutcomeConfirmationLink,
                           emptyBeneficiaryContactConsentDraft,
                           emptyBeneficiaryContactConsentWithdrawalDraft,
@@ -10583,6 +11045,9 @@ export default function CommunityDomainDashboardPage() {
                           recordBeneficiaryOutcomeDeliveryReceipt,
                           sectionLabel,
                           generateAttendanceSession,
+                          recordAdminAttendanceCheckin,
+                          recordAdminAttendanceCardCheckin,
+                          recordSchoolAttendanceParentNotification,
                           generateResponseChannel,
                           shareLatestResponseViaWhatsApp,
                           setActiveActivityRecordStage,

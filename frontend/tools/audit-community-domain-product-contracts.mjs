@@ -236,7 +236,7 @@ assertContains(
 
 assertContains(
   communityCollectionPageFile,
-  /QRCodeSVG[\s\S]*getPublicCommunityDomainCollectionInstruction[\s\S]*receiving account remains controlled by the community[\s\S]*Open Payment Page[\s\S]*does not hold this money, confirm payment, expose church bank details/,
+  /QRCodeSVG[\s\S]*getPublicCommunityDomainCollectionInstruction[\s\S]*receiving account remains controlled by the community[\s\S]*Open Payment Page[\s\S]*does not hold this money, confirm payment, expose private receiving account details/,
   "Public Community Collection page must render the QR/payment handoff without exposing bank details or implying GSN custody/confirmation.",
   { frontend: true }
 );

@@ -46,6 +46,7 @@ from app.services.payment_instruction_service import (
     ANNUAL_BILLING_CYCLE,
     create_community_domain_subscription_instruction,
 )
+from app.services.expected_payments_service import create_expected_payment
 from app.services.notification_service import create_notification
 from app.services.web_push_service import dispatch_web_push_for_notifications
 from app.db.bank_models import ExpectedPayment
@@ -100,6 +101,13 @@ COMMUNITY_DOMAIN_NOTICE_PUBLIC_BOUNDARY = (
     "GSN shows a public-safe Community Domain message only. It does not expose "
     "member lists, open comments, prove attendance, collect money, or replace "
     "the pastor's or domain leader's authority."
+)
+COMMUNITY_DOMAIN_NOTICE_ACK_EVENT = "community_domain.notice.acknowledged"
+COMMUNITY_DOMAIN_NOTICE_ACK_BOUNDARY = (
+    "GSN notice acknowledgement records a signed-in member's in-app acknowledgement "
+    "for this Community Domain only. It is not WhatsApp delivery proof, not SMS "
+    "delivery proof, not email open tracking, not parent identity verification, "
+    "and not legal service of notice."
 )
 COMMUNITY_DOMAIN_INVITE_TEMPLATE_EVENT = "community_domain.invite.template"
 COMMUNITY_DOMAIN_INVITE_TEMPLATE_MAX_CHARS = 1800
@@ -224,21 +232,79 @@ COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_RECORDED_EVENT = (
 COMMUNITY_DOMAIN_COLLECTION_INSTRUCTION_EVENT = "community_domain.collection_instruction"
 COMMUNITY_DOMAIN_ATTENDANCE_SESSION_EVENT = "community_domain.attendance_session.opened"
 COMMUNITY_DOMAIN_ATTENDANCE_CHECKIN_EVENT = "community_domain.attendance_checkin.recorded"
+COMMUNITY_DOMAIN_ATTENDANCE_PARENT_NOTIFICATION_EVENT = "community_domain.attendance_parent_notification.logged"
 COMMUNITY_DOMAIN_ATTENDANCE_METHODS = {
     "qr",
     "rotating_qr",
     "short_code",
     "bluetooth_proximity",
+    "staff_scan",
 }
 COMMUNITY_DOMAIN_ATTENDANCE_STRENGTH = {
     "qr": "moderate",
     "rotating_qr": "moderate",
     "short_code": "moderate",
     "bluetooth_proximity": "stronger_when_enabled",
+    "staff_scan": "admin_attested",
 }
 COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY = (
     "GSN records live Presence Evidence only. This is not a trust score, "
-    "location tracker, manual attendance sheet, contribution proof, or spiritual judgement."
+    "location tracker, contribution proof, payment proof, or automatic parent notification."
+)
+COMMUNITY_DOMAIN_ATTENDANCE_CARD_BOUNDARY = (
+    "School attendance card codes are admin-only roster aids for staff-scanned attendance. "
+    "They do not expose student names publicly, do not let students self-check-in without staff, "
+    "do not prove location, and do not send parent notifications by themselves."
+)
+COMMUNITY_DOMAIN_ATTENDANCE_PARENT_NOTIFICATION_BOUNDARY = (
+    "GSN records a staff/admin parent-notification log linked to attendance only. "
+    "It is not WhatsApp delivery proof, not SMS delivery proof, not email open tracking, "
+    "not parent identity verification, and not automatic notification delivery."
+)
+COMMUNITY_DOMAIN_ATTENDANCE_PARENT_NOTIFICATION_CHANNELS = {
+    "gsn",
+    "whatsapp",
+    "email",
+    "sms",
+    "phone",
+    "paper",
+    "manual",
+}
+COMMUNITY_DOMAIN_ATTENDANCE_PARENT_NOTIFICATION_STATUSES = {
+    "prepared",
+    "sent_outside_gsn",
+    "acknowledged_by_parent",
+    "failed",
+    "not_sent",
+}
+COMMUNITY_DOMAIN_SCHOOL_GUARDIAN_CONTACT_EVENT = "community_domain.school_guardian_contact.recorded"
+COMMUNITY_DOMAIN_SCHOOL_GUARDIAN_CONTACT_CHANNELS = {
+    "whatsapp",
+    "email",
+    "sms",
+    "phone",
+    "paper",
+    "gsn",
+    "manual",
+}
+COMMUNITY_DOMAIN_SCHOOL_GUARDIAN_RELATIONSHIPS = {
+    "parent",
+    "guardian",
+    "family_representative",
+    "authorized_pickup",
+    "sponsor",
+    "other",
+}
+COMMUNITY_DOMAIN_SCHOOL_GUARDIAN_CONTACT_STATUSES = {
+    "active_attestation",
+    "on_file_unverified",
+    "needs_update",
+    "withdrawn",
+}
+COMMUNITY_DOMAIN_SCHOOL_GUARDIAN_CONTACT_BOUNDARY = (
+    "GSN records a school admin's parent/guardian contact reference for roster follow-up only. "
+    "It is not parent identity verification, not legal consent, not WhatsApp delivery proof, "
+    "not SMS or email delivery proof, and not automatic notification delivery."
 )
 COMMUNITY_DOMAIN_RESPONSE_CHANNEL_EVENT = "community_domain.response_channel.opened"
 COMMUNITY_DOMAIN_RESPONSE_EVENT = "community_domain.response.recorded"
@@ -275,6 +341,9 @@ COMMUNITY_DOMAIN_COLLECTION_TYPES = {
     "donation",
     "tithe",
     "levy",
+    "school_fee",
+    "pta_levy",
+    "books_uniforms",
     "support_appeal",
     "welfare_collection",
     "project_support",
@@ -287,7 +356,31 @@ COMMUNITY_DOMAIN_COLLECTION_VISIBILITY = {"public", "members", "department", "ad
 COMMUNITY_DOMAIN_COLLECTION_STATUSES = {"published", "retired"}
 COMMUNITY_DOMAIN_COLLECTION_PUBLIC_BOUNDARY = (
     "GSN shows a governed collection instruction only. GSN does not hold this money, "
-    "confirm payment, expose church bank details, guarantee settlement, or prove impact."
+    "confirm payment, expose private receiving account details, guarantee settlement, or prove impact."
+)
+COMMUNITY_DOMAIN_SCHOOL_FEE_BOUNDARY = (
+    "GSN tracks school-fee expected payments, submitted proof, admin follow-up, and finance-review status only. "
+    "It is not automatic bank confirmation, not a receipt issuer, not a debt collector, and not a parent WhatsApp delivery bridge."
+)
+COMMUNITY_DOMAIN_SCHOOL_FEE_PROOF_EVENT = "community_domain.school_fee_payment_proof.logged"
+COMMUNITY_DOMAIN_SCHOOL_FEE_PROOF_SOURCES = {
+    "bank_transfer_slip",
+    "whatsapp_screenshot",
+    "cash_receipt",
+    "pos_receipt",
+    "teller",
+    "manual_note",
+}
+COMMUNITY_DOMAIN_SCHOOL_FEE_PROOF_STATUSES = {
+    "submitted",
+    "needs_review",
+    "reviewed_outside_gsn",
+    "rejected",
+}
+COMMUNITY_DOMAIN_SCHOOL_FEE_PROOF_BOUNDARY = (
+    "GSN records school-fee payment proof as evidence for finance review only. "
+    "It is not automatic bank confirmation, not a school receipt, not settlement proof, "
+    "and not proof that the parent has fully paid until finance review or bank/provider reconciliation confirms it."
 )
 COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_WITHDRAWN_EVENT = (
     "community_domain.beneficiary_outcome_contact_consent_withdrawn"
@@ -420,6 +513,31 @@ COMMUNITY_DOMAIN_ACTIVITY_TYPES: dict[str, dict[str, str]] = {
         "evidence_dimension": "learning",
         "summary": "A class, training, module, project, or learning step was completed.",
     },
+    "school_notice_ack_follow_up": {
+        "label": "Parent notice follow-up",
+        "evidence_dimension": "follow_up",
+        "summary": "A school admin followed up a parent or guardian about an official notice, circular, meeting, or fee reminder.",
+    },
+    "school_fee_follow_up": {
+        "label": "School fee follow-up",
+        "evidence_dimension": "finance_follow_up",
+        "summary": "A bursar or school admin recorded a fee follow-up status. This is not bank confirmation until finance review or receipt evidence supports it.",
+    },
+    "student_arrival_record": {
+        "label": "Student arrival record",
+        "evidence_dimension": "attendance",
+        "summary": "Authorized school staff recorded that a student arrived at school, normally from an ID/card or staff register workflow.",
+    },
+    "student_dismissal_record": {
+        "label": "Student dismissal record",
+        "evidence_dimension": "attendance",
+        "summary": "Authorized school staff recorded that a student left school at dismissal or approved departure.",
+    },
+    "school_shop_supply_notice": {
+        "label": "School shop / supply notice",
+        "evidence_dimension": "commerce_notice",
+        "summary": "A school admin recorded a books, uniforms, supplies, or approved-vendor notice without turning the official board into open chat.",
+    },
     "project_participation": {
         "label": "Project participation",
         "evidence_dimension": "project_work",
@@ -427,6 +545,26 @@ COMMUNITY_DOMAIN_ACTIVITY_TYPES: dict[str, dict[str, str]] = {
     },
 }
 COMMUNITY_DOMAIN_TEMPLATE_ACTIVITY_PRIORITY: dict[str, list[str]] = {
+    "school_multi_branch": [
+        "school_notice_ack_follow_up",
+        "school_fee_follow_up",
+        "student_arrival_record",
+        "student_dismissal_record",
+        "school_shop_supply_notice",
+        "attendance",
+        "training_completion",
+        "leadership_duty",
+    ],
+    "school": [
+        "school_notice_ack_follow_up",
+        "school_fee_follow_up",
+        "student_arrival_record",
+        "student_dismissal_record",
+        "school_shop_supply_notice",
+        "attendance",
+        "training_completion",
+        "leadership_duty",
+    ],
     "church_religious_body": [
         "church_programme_attendance",
         "pastoral_follow_up",
@@ -1873,6 +2011,12 @@ def _community_domain_activity_catalogue_items(
         COMMUNITY_DOMAIN_TEMPLATE_ACTIVITY_PRIORITY.get(domain_type, []),
     )
     priority_index = {key: index for index, key in enumerate(priority)}
+    if template_key in {"school_multi_branch", "school"} or domain_type == "school":
+        workflow_context = "school_governance_package"
+    elif template_key in {"church_religious_body", "religious_body"} or domain_type == "religious_body":
+        workflow_context = "church_pastor_discovery"
+    else:
+        workflow_context = "standard"
     ordered_items = sorted(
         COMMUNITY_DOMAIN_ACTIVITY_TYPES.items(),
         key=lambda row: (
@@ -1891,9 +2035,7 @@ def _community_domain_activity_catalogue_items(
             "domain_type": domain_type,
             "recording_mode": "manual_admin_record",
             "pilot_recommended": key in priority_index,
-            "workflow_context": (
-                "church_pastor_discovery" if key in priority_index else "standard"
-            ),
+            "workflow_context": workflow_context if key in priority_index else "standard",
         }
         for key, item in ordered_items
     ]
@@ -3864,6 +4006,24 @@ class CommunityDomainNoticeIn(BaseModel):
         return value
 
 
+class CommunityDomainNoticeAcknowledgementIn(BaseModel):
+    note: Optional[str] = Field(default=None, max_length=200)
+
+    @field_validator("note", mode="before")
+    @classmethod
+    def _reject_non_text_note(cls, value: Any) -> Any:
+        if value is None:
+            return None
+        if not isinstance(value, str):
+            raise ValueError("note must be text.")
+        return value
+
+    @field_validator("note")
+    @classmethod
+    def _clean_note(cls, value: Optional[str]) -> Optional[str]:
+        cleaned = _clean_str(value)
+        return cleaned or None
+
 
 MEMBER_ACTION_REVIEW_KEYS = {
     "domain_member.upsert",
@@ -3950,9 +4110,13 @@ def _node_payload(node: Optional[CommunityNode]) -> Optional[dict[str, Any]]:
     }
 
 
-def _domain_member_payload(row: CommunityDomainMembership) -> dict[str, Any]:
+def _domain_member_payload(
+    row: CommunityDomainMembership,
+    *,
+    include_attendance_card: bool = False,
+) -> dict[str, Any]:
     user = getattr(row, "user", None)
-    return {
+    payload = {
         "id": int(row.id),
         "community_domain_id": int(row.community_domain_id),
         "user_id": int(row.user_id),
@@ -3964,6 +4128,19 @@ def _domain_member_payload(row: CommunityDomainMembership) -> dict[str, Any]:
         "created_at": _iso(row.created_at),
         "updated_at": _iso(row.updated_at),
     }
+    if include_attendance_card:
+        card_code = _community_domain_attendance_card_code(
+            community_domain_id=int(row.community_domain_id),
+            user_id=int(row.user_id),
+        )
+        payload.update(
+            {
+                "attendance_card_code": card_code,
+                "attendance_card_qr_value": card_code,
+                "attendance_card_boundary": COMMUNITY_DOMAIN_ATTENDANCE_CARD_BOUNDARY,
+            }
+        )
+    return payload
 
 
 def _node_member_payload(row: CommunityNodeMembership) -> dict[str, Any]:
@@ -4709,6 +4886,150 @@ def _list_community_domain_notice_payloads(
         if len(notices) >= int(limit):
             break
     return notices, archived_notice_count
+
+
+def _community_domain_notice_event_or_404(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    notice_event_id: int,
+) -> TrustEvent:
+    event = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.id == int(notice_event_id))
+        .filter(TrustEvent.event_type == COMMUNITY_DOMAIN_NOTICE_EVENT)
+        .first()
+    )
+    if event is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_notice_not_found",
+                "message": "GSN could not find this Community Domain notice.",
+            },
+        )
+    meta = _json_load(event.meta_json)
+    try:
+        event_domain_id = int(meta.get("community_domain_id") or 0)
+    except (TypeError, ValueError):
+        event_domain_id = 0
+    if event_domain_id != int(domain.id):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_notice_not_in_domain",
+                "message": "This notice does not belong to the selected Community Domain.",
+            },
+        )
+    return event
+
+
+def _active_community_domain_member_user_ids(
+    db: Session,
+    *,
+    community_domain_id: int,
+) -> list[int]:
+    rows = (
+        db.query(CommunityDomainMembership.user_id)
+        .filter(CommunityDomainMembership.community_domain_id == int(community_domain_id))
+        .filter(CommunityDomainMembership.status == "active")
+        .order_by(CommunityDomainMembership.user_id.asc())
+        .all()
+    )
+    return [int(row[0]) for row in rows if row[0] is not None]
+
+
+def _community_domain_notice_ack_events(
+    db: Session,
+    *,
+    community_domain_id: int,
+    notice_event_id: int,
+) -> list[TrustEvent]:
+    rows = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == COMMUNITY_DOMAIN_NOTICE_ACK_EVENT)
+        .order_by(TrustEvent.id.desc())
+        .limit(1000)
+        .all()
+    )
+    matched: list[TrustEvent] = []
+    for row in rows:
+        meta = _json_load(row.meta_json)
+        try:
+            row_domain_id = int(meta.get("community_domain_id") or 0)
+            row_notice_event_id = int(meta.get("notice_event_id") or 0)
+        except (TypeError, ValueError):
+            continue
+        if row_domain_id == int(community_domain_id) and row_notice_event_id == int(notice_event_id):
+            matched.append(row)
+    return matched
+
+
+def _community_domain_notice_ack_summary(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    notice_event_id: int,
+    viewer_user_id: int,
+    include_private: bool = False,
+) -> dict[str, Any]:
+    active_user_ids = _active_community_domain_member_user_ids(
+        db,
+        community_domain_id=int(domain.id),
+    )
+    active_user_id_set = set(active_user_ids)
+    ack_events = _community_domain_notice_ack_events(
+        db,
+        community_domain_id=int(domain.id),
+        notice_event_id=int(notice_event_id),
+    )
+    latest_by_user: dict[int, TrustEvent] = {}
+    for event in ack_events:
+        try:
+            user_id = int(event.subject_user_id or event.actor_user_id or 0)
+        except (TypeError, ValueError):
+            continue
+        if user_id not in active_user_id_set or user_id in latest_by_user:
+            continue
+        latest_by_user[user_id] = event
+
+    acknowledged_user_ids = sorted(latest_by_user)
+    not_acknowledged_user_ids = [
+        user_id for user_id in active_user_ids if user_id not in latest_by_user
+    ]
+    summary: dict[str, Any] = {
+        "notice_event_id": int(notice_event_id),
+        "total_active_members": len(active_user_ids),
+        "acknowledged_count": len(acknowledged_user_ids),
+        "not_acknowledged_count": len(not_acknowledged_user_ids),
+        "viewer_acknowledged": int(viewer_user_id) in latest_by_user,
+        "follow_up_status": "all_acknowledged" if not not_acknowledged_user_ids else "follow_up_needed",
+        "whatsapp_delivery_proof": False,
+        "email_open_tracking": False,
+        "sms_delivery_proof": False,
+        "boundary": COMMUNITY_DOMAIN_NOTICE_ACK_BOUNDARY,
+    }
+    if include_private:
+        recent_acknowledgements: list[dict[str, Any]] = []
+        for user_id in acknowledged_user_ids[:25]:
+            event = latest_by_user[user_id]
+            user = db.get(User, int(user_id))
+            recent_acknowledgements.append(
+                {
+                    "user_id": int(user_id),
+                    "display_name": _clean_str(getattr(user, "display_name", None)) if user else "",
+                    "email": _clean_str(getattr(user, "email", None)) if user else "",
+                    "acknowledged_at": _iso(getattr(event, "created_at", None)),
+                }
+            )
+        summary.update(
+            {
+                "acknowledged_user_ids": acknowledged_user_ids,
+                "not_acknowledged_user_ids": not_acknowledged_user_ids,
+                "recent_acknowledgements": recent_acknowledgements,
+            }
+        )
+    return summary
 
 
 def _active_community_domain_notice_recipient_ids(
@@ -20182,6 +20503,165 @@ class CommunityDomainCollectionInstructionIn(BaseModel):
             raise ValueError("Collection payment links must use https://")
         return raw
 
+class CommunityDomainSchoolFeeExpectedPaymentIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    subject_user_id: int = Field(..., ge=1)
+    amount: Decimal = Field(..., gt=Decimal("0"))
+    currency: str = Field(default="NGN", min_length=3, max_length=8)
+    term_label: str = Field(default="Current term", min_length=2, max_length=80)
+    fee_label: str = Field(default="School fees", min_length=2, max_length=120)
+    due_at: Optional[datetime] = None
+    campus_label: Optional[str] = Field(default=None, max_length=120)
+    note: Optional[str] = Field(default=None, max_length=300)
+
+    @field_validator("subject_user_id", mode="before")
+    @classmethod
+    def _reject_bool_subject_user_id(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "subject_user_id")
+
+    @field_validator("currency", "term_label", "fee_label", "campus_label", "note", mode="before")
+    @classmethod
+    def _reject_non_text_school_fee_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("due_at", mode="before")
+    @classmethod
+    def _reject_datetime_school_fee_controls(cls, value: Any) -> Any:
+        return _reject_non_datetime_string(value, "due_at")
+
+    @field_validator("currency")
+    @classmethod
+    def _normalize_school_fee_currency(cls, value: str) -> str:
+        return _clean_str(value).upper() or "NGN"
+
+
+class CommunityDomainSchoolFeeBulkExpectedPaymentIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    amount: Decimal = Field(..., gt=Decimal("0"))
+    currency: str = Field(default="NGN", min_length=3, max_length=8)
+    term_label: str = Field(default="Current term", min_length=2, max_length=80)
+    fee_label: str = Field(default="School fees", min_length=2, max_length=120)
+    due_at: Optional[datetime] = None
+    campus_label: Optional[str] = Field(default=None, max_length=120)
+    note: Optional[str] = Field(default=None, max_length=300)
+    max_members: int = Field(default=500, ge=1, le=500)
+
+    @field_validator("currency", "term_label", "fee_label", "campus_label", "note", mode="before")
+    @classmethod
+    def _reject_non_text_school_fee_bulk_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("due_at", mode="before")
+    @classmethod
+    def _reject_datetime_school_fee_bulk_controls(cls, value: Any) -> Any:
+        return _reject_non_datetime_string(value, "due_at")
+
+    @field_validator("currency")
+    @classmethod
+    def _normalize_school_fee_bulk_currency(cls, value: str) -> str:
+        return _clean_str(value).upper() or "NGN"
+
+
+class CommunityDomainSchoolFeePaymentProofLogIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    proof_source: str = Field(default="bank_transfer_slip", min_length=2, max_length=40)
+    proof_status: str = Field(default="submitted", min_length=2, max_length=40)
+    proof_reference: Optional[str] = Field(default=None, max_length=160)
+    amount_reported: Optional[Decimal] = Field(default=None, gt=Decimal("0"))
+    received_at: Optional[datetime] = None
+    note: Optional[str] = Field(default=None, max_length=300)
+
+    @field_validator("proof_source", "proof_status", "proof_reference", "note", mode="before")
+    @classmethod
+    def _reject_non_text_school_fee_proof_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("received_at", mode="before")
+    @classmethod
+    def _reject_datetime_school_fee_proof_controls(cls, value: Any) -> Any:
+        return _reject_non_datetime_string(value, "received_at")
+
+    @field_validator("received_at")
+    @classmethod
+    def _normalize_school_fee_proof_received_at(cls, value: Optional[datetime]) -> Optional[datetime]:
+        if value is None:
+            return None
+        return _as_aware_utc(value)
+
+    @field_validator("proof_source")
+    @classmethod
+    def _normalize_school_fee_proof_source(cls, value: str) -> str:
+        source = _clean_role(value, "bank_transfer_slip")
+        if source not in COMMUNITY_DOMAIN_SCHOOL_FEE_PROOF_SOURCES:
+            raise ValueError("School-fee proof source is not supported.")
+        return source
+
+    @field_validator("proof_status")
+    @classmethod
+    def _normalize_school_fee_proof_status(cls, value: str) -> str:
+        status = _clean_role(value, "submitted")
+        if status not in COMMUNITY_DOMAIN_SCHOOL_FEE_PROOF_STATUSES:
+            raise ValueError("School-fee proof status is not supported.")
+        return status
+
+
+class CommunityDomainSchoolGuardianContactIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    guardian_label: str = Field(default="Parent/guardian", min_length=2, max_length=120)
+    relationship: str = Field(default="parent", min_length=2, max_length=40)
+    channel: str = Field(default="whatsapp", min_length=2, max_length=40)
+    destination_reference_status: str = Field(default="admin_verified_off_platform", min_length=2, max_length=80)
+    destination_reference_label: Optional[str] = Field(default=None, max_length=160)
+    contact_status: str = Field(default="active_attestation", min_length=2, max_length=40)
+    consent_basis: str = Field(default="guardian_or_authorized_contact", min_length=2, max_length=80)
+    notification_scope: str = Field(default="school_attendance_fee_and_notice_follow_up", min_length=2, max_length=120)
+    note: Optional[str] = Field(default=None, max_length=300)
+
+    @field_validator(
+        "guardian_label",
+        "relationship",
+        "channel",
+        "destination_reference_status",
+        "destination_reference_label",
+        "contact_status",
+        "consent_basis",
+        "notification_scope",
+        "note",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_school_guardian_contact_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("relationship")
+    @classmethod
+    def _normalize_school_guardian_relationship(cls, value: str) -> str:
+        relationship = _clean_role(value, "parent")
+        if relationship not in COMMUNITY_DOMAIN_SCHOOL_GUARDIAN_RELATIONSHIPS:
+            raise ValueError("School guardian relationship is not supported.")
+        return relationship
+
+    @field_validator("channel")
+    @classmethod
+    def _normalize_school_guardian_channel(cls, value: str) -> str:
+        channel = _clean_role(value, "whatsapp")
+        if channel not in COMMUNITY_DOMAIN_SCHOOL_GUARDIAN_CONTACT_CHANNELS:
+            raise ValueError("School guardian contact channel is not supported.")
+        return channel
+
+    @field_validator("contact_status")
+    @classmethod
+    def _normalize_school_guardian_contact_status(cls, value: str) -> str:
+        status = _clean_role(value, "active_attestation")
+        if status not in COMMUNITY_DOMAIN_SCHOOL_GUARDIAN_CONTACT_STATUSES:
+            raise ValueError("School guardian contact status is not supported.")
+        return status
+
+
 class CommunityDomainAttendanceSessionIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -20242,6 +20722,96 @@ class CommunityDomainAttendanceCheckinIn(BaseModel):
             raise ValueError("Attendance method is not supported for Community Domain evidence.")
         return method
 
+
+class CommunityDomainAdminAttendanceCheckinIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    subject_user_id: int = Field(..., ge=1)
+    method: str = Field(default="staff_scan", min_length=2, max_length=40)
+    note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("subject_user_id", mode="before")
+    @classmethod
+    def _reject_bool_subject_user_id(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "subject_user_id")
+
+    @field_validator("method", "note", mode="before")
+    @classmethod
+    def _reject_non_text_admin_checkin_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("method")
+    @classmethod
+    def _normalize_attendance_method(cls, value: str) -> str:
+        method = _clean_role(value, "staff_scan")
+        if method not in COMMUNITY_DOMAIN_ATTENDANCE_METHODS:
+            raise ValueError("Attendance method is not supported for Community Domain evidence.")
+        return method
+
+
+class CommunityDomainAdminAttendanceCardCheckinIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    card_code: str = Field(..., min_length=8, max_length=80)
+    method: str = Field(default="staff_scan", min_length=2, max_length=40)
+    note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("card_code", "method", "note", mode="before")
+    @classmethod
+    def _reject_non_text_card_checkin_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("method")
+    @classmethod
+    def _normalize_attendance_method(cls, value: str) -> str:
+        method = _clean_role(value, "staff_scan")
+        if method not in COMMUNITY_DOMAIN_ATTENDANCE_METHODS:
+            raise ValueError("Attendance method is not supported for Community Domain evidence.")
+        return method
+
+
+class CommunityDomainAttendanceParentNotificationLogIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    subject_user_id: int = Field(..., ge=1)
+    channel: str = Field(default="gsn", min_length=2, max_length=40)
+    delivery_status: str = Field(default="prepared", min_length=2, max_length=60)
+    destination_reference_status: str = Field(default="not_recorded", min_length=2, max_length=80)
+    destination_reference_label: Optional[str] = Field(default=None, max_length=120)
+    note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("subject_user_id", mode="before")
+    @classmethod
+    def _reject_bool_subject_user_id(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "subject_user_id")
+
+    @field_validator(
+        "channel",
+        "delivery_status",
+        "destination_reference_status",
+        "destination_reference_label",
+        "note",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_notification_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("channel")
+    @classmethod
+    def _normalize_channel(cls, value: str) -> str:
+        channel = _clean_role(value, "gsn")
+        if channel not in COMMUNITY_DOMAIN_ATTENDANCE_PARENT_NOTIFICATION_CHANNELS:
+            raise ValueError("Unsupported parent notification channel.")
+        return channel
+
+    @field_validator("delivery_status")
+    @classmethod
+    def _normalize_delivery_status(cls, value: str) -> str:
+        status = _clean_role(value, "prepared")
+        if status not in COMMUNITY_DOMAIN_ATTENDANCE_PARENT_NOTIFICATION_STATUSES:
+            raise ValueError("Unsupported parent notification status.")
+        return status
 
 class CommunityDomainResponseChannelIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
@@ -23535,6 +24105,326 @@ def _safe_expected_payment_meta(row: ExpectedPayment) -> dict[str, Any]:
         return {}
 
 
+def _school_fee_code(value: Any, fallback: str) -> str:
+    raw = _clean_str(value).upper()
+    code = "".join(ch for ch in raw if ch.isalnum())
+    return (code or fallback)[:12]
+
+
+def _school_fee_expected_payment_reference(
+    *,
+    community_domain_id: int,
+    subject_user_id: int,
+    term_label: str,
+    fee_label: str,
+) -> str:
+    term_code = _school_fee_code(term_label, "TERM")
+    fee_code = _school_fee_code(fee_label, "FEE")[:8]
+    return f"GSN-SF-CD{int(community_domain_id)}-U{int(subject_user_id)}-{term_code}-{fee_code}"[:64]
+
+
+def _school_fee_expected_payment_payload(
+    row: ExpectedPayment,
+    *,
+    domain: Optional[CommunityDomain] = None,
+    user: Optional[User] = None,
+) -> dict[str, Any]:
+    meta = _safe_expected_payment_meta(row)
+    return {
+        "id": int(row.id),
+        "clan_id": int(row.clan_id),
+        "user_id": int(row.user_id),
+        "subject_user_id": int(row.user_id),
+        "student_user_id": int(row.user_id),
+        "student_display_name": getattr(user, "display_name", None) if user is not None else None,
+        "student_email": getattr(user, "email", None) if user is not None else None,
+        "expected_type": row.expected_type,
+        "amount": str(row.amount),
+        "currency": row.currency,
+        "paid_amount": str(row.paid_amount),
+        "remaining_amount": str(row.remaining_amount),
+        "due_at": row.due_at.isoformat() if row.due_at else None,
+        "reference_display": row.reference_display,
+        "reference": row.reference_display,
+        "reference_normalized": row.reference_normalized,
+        "status": row.status,
+        "status_reason": row.status_reason,
+        "bank_event_id": row.bank_event_id,
+        "matched_bank_event_id": row.bank_event_id,
+        "trust_event_id": row.trust_event_id,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+        "term_label": meta.get("term_label") or "Current term",
+        "fee_label": meta.get("fee_label") or "School fees",
+        "campus_label": meta.get("campus_label"),
+        "note": meta.get("note"),
+        "payment_status_label": _community_domain_expected_payment_status_label(row, meta),
+        "bank_authentication_guidance": (
+            "Parents can submit proof after bank transfer, but GSN treats the fee as confirmed only after finance review or bank/provider reconciliation."
+        ),
+        "meta": meta,
+        "meta_json": meta,
+        "boundary": COMMUNITY_DOMAIN_SCHOOL_FEE_BOUNDARY,
+        "community_domain": {
+            "id": int(domain.id),
+            "display_name": domain.display_name,
+            "domain_name": domain.domain_name,
+        } if domain is not None else None,
+    }
+
+
+def _community_domain_expected_payment_status_label(row: ExpectedPayment, meta: dict[str, Any]) -> str:
+    status = _clean_role(getattr(row, "status", None), "expected")
+    latest_proof = meta.get("latest_payment_proof") if isinstance(meta.get("latest_payment_proof"), dict) else None
+    if status in {"confirmed", "applied"} or row.bank_event_id:
+        return "Confirmed"
+    if status == "partial":
+        return "Partially paid"
+    if latest_proof:
+        return "Proof uploaded"
+    if status in {"cancelled", "canceled"}:
+        return "Cancelled"
+    if status == "expired":
+        return "Overdue or expired"
+    return "Awaiting proof or bank match"
+
+
+def _school_fee_expected_payment_summary(
+    items: list[dict[str, Any]],
+    *,
+    active_member_user_ids: Optional[list[int]] = None,
+) -> dict[str, Any]:
+    roster_ids = sorted({int(value) for value in (active_member_user_ids or []) if value})
+    expected_subject_ids = {
+        int(item.get("subject_user_id") or item.get("student_user_id") or item.get("user_id"))
+        for item in items
+        if item.get("subject_user_id") or item.get("student_user_id") or item.get("user_id")
+    }
+    confirmed_subject_ids = {
+        int(item.get("subject_user_id") or item.get("student_user_id") or item.get("user_id"))
+        for item in items
+        if (item.get("subject_user_id") or item.get("student_user_id") or item.get("user_id"))
+        and item.get("status") in {"confirmed", "applied"}
+    }
+    proof_subject_ids = {
+        int(item.get("subject_user_id") or item.get("student_user_id") or item.get("user_id"))
+        for item in items
+        if (item.get("subject_user_id") or item.get("student_user_id") or item.get("user_id"))
+        and isinstance(item.get("meta"), dict)
+        and isinstance(item["meta"].get("latest_payment_proof"), dict)
+    }
+    missing_expected_ids = [value for value in roster_ids if value not in expected_subject_ids]
+    return {
+        "total": len(items),
+        "expected": sum(1 for item in items if item.get("status") == "expected"),
+        "partial": sum(1 for item in items if item.get("status") == "partial"),
+        "confirmed": sum(1 for item in items if item.get("status") in {"confirmed", "applied"}),
+        "proof_uploaded": sum(
+            1
+            for item in items
+            if isinstance(item.get("meta"), dict)
+            and isinstance(item["meta"].get("latest_payment_proof"), dict)
+            and item.get("status") not in {"confirmed", "applied"}
+        ),
+        "active_member_total": len(roster_ids),
+        "active_member_with_expected_payment_total": sum(1 for value in roster_ids if value in expected_subject_ids),
+        "active_member_with_proof_total": sum(1 for value in roster_ids if value in proof_subject_ids),
+        "active_member_confirmed_total": sum(1 for value in roster_ids if value in confirmed_subject_ids),
+        "active_member_missing_expected_payment_total": len(missing_expected_ids),
+        "missing_expected_payment_subject_user_ids": missing_expected_ids[:50],
+        "coverage_boundary": (
+            "School-fee coverage is based on active Community Domain roster rows and opened school-fee "
+            "expected-payment records only. It does not prove debt, payment, bank settlement, parent notice delivery, or receipt issuance."
+        ),
+    }
+
+
+def _school_fee_expected_payment_for_domain(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    expected_payment_id: int,
+) -> ExpectedPayment:
+    row = db.get(ExpectedPayment, int(expected_payment_id))
+    if row is None:
+        raise HTTPException(status_code=404, detail="School-fee expected payment not found.")
+    meta = _safe_expected_payment_meta(row)
+    if (
+        int(row.clan_id) != int(domain.clan_id)
+        or row.expected_type != "school_fee"
+        or int(meta.get("community_domain_id") or 0) != int(domain.id)
+    ):
+        raise HTTPException(status_code=404, detail="School-fee expected payment not found for this Community Domain.")
+    return row
+
+
+def _school_fee_payment_proof_payload(proof: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "proof_source": proof.get("proof_source"),
+        "proof_status": proof.get("proof_status"),
+        "proof_reference": proof.get("proof_reference"),
+        "amount_reported": proof.get("amount_reported"),
+        "received_at": proof.get("received_at"),
+        "submitted_at": proof.get("submitted_at"),
+        "submitted_by_user_id": proof.get("submitted_by_user_id"),
+        "review_required": True,
+        "automatic_bank_confirmation": False,
+        "receipt_issued_by_gsn": False,
+        "bank_event_id": None,
+        "boundary": COMMUNITY_DOMAIN_SCHOOL_FEE_PROOF_BOUNDARY,
+    }
+
+
+def _school_guardian_contact_payload(event: TrustEvent) -> dict[str, Any]:
+    meta = event.meta or {}
+    return {
+        "event_id": int(event.id),
+        "community_domain_id": int(meta.get("community_domain_id") or 0) or None,
+        "subject_user_id": int(meta.get("subject_user_id") or event.subject_user_id or 0) or None,
+        "student_user_id": int(meta.get("subject_user_id") or event.subject_user_id or 0) or None,
+        "recorded_by_user_id": int(event.actor_user_id) if event.actor_user_id else None,
+        "guardian_label": meta.get("guardian_label") or "Parent/guardian",
+        "relationship": meta.get("relationship") or "parent",
+        "channel": meta.get("channel") or "whatsapp",
+        "destination_reference_status": meta.get("destination_reference_status") or "not_recorded",
+        "destination_reference_label": meta.get("destination_reference_label"),
+        "contact_status": meta.get("contact_status") or "on_file_unverified",
+        "consent_basis": meta.get("consent_basis") or "not_recorded",
+        "notification_scope": meta.get("notification_scope") or "school_attendance_fee_and_notice_follow_up",
+        "recorded_at": event.created_at.isoformat() if event.created_at else None,
+        "provider_send_ready": False,
+        "parent_identity_verified_by_gsn": False,
+        "automatic_parent_notification": False,
+        "whatsapp_delivery_proof": False,
+        "boundary": COMMUNITY_DOMAIN_SCHOOL_GUARDIAN_CONTACT_BOUNDARY,
+    }
+
+
+def _school_guardian_contact_events(
+    db: Session,
+    *,
+    community_domain_id: int,
+    subject_user_id: Optional[int] = None,
+    limit: int = 50,
+) -> list[TrustEvent]:
+    rows = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == COMMUNITY_DOMAIN_SCHOOL_GUARDIAN_CONTACT_EVENT)
+        .order_by(TrustEvent.id.desc())
+        .limit(1000)
+        .all()
+    )
+    out: list[TrustEvent] = []
+    for row in rows:
+        meta = row.meta or {}
+        if int(meta.get("community_domain_id") or 0) != int(community_domain_id):
+            continue
+        if subject_user_id is not None and int(meta.get("subject_user_id") or 0) != int(subject_user_id):
+            continue
+        out.append(row)
+        if len(out) >= max(1, min(int(limit), 200)):
+            break
+    return out
+
+
+def _school_guardian_contact_summary(
+    events: list[TrustEvent],
+    *,
+    active_member_user_ids: Optional[list[int]] = None,
+) -> dict[str, Any]:
+    payloads = [_school_guardian_contact_payload(event) for event in events]
+    active_subject_ids = {
+        int(item["subject_user_id"])
+        for item in payloads
+        if item.get("subject_user_id") is not None
+        and item.get("contact_status") == "active_attestation"
+    }
+    on_file_subject_ids = {
+        int(item["subject_user_id"])
+        for item in payloads
+        if item.get("subject_user_id") is not None
+        and item.get("contact_status") != "withdrawn"
+    }
+    roster_ids = [int(value) for value in (active_member_user_ids or [])]
+    missing_active_ids = [value for value in roster_ids if value not in active_subject_ids]
+    return {
+        "total": len(payloads),
+        "active": sum(1 for item in payloads if item.get("contact_status") == "active_attestation"),
+        "needs_update": sum(1 for item in payloads if item.get("contact_status") == "needs_update"),
+        "withdrawn": sum(1 for item in payloads if item.get("contact_status") == "withdrawn"),
+        "provider_ready": 0,
+        "whatsapp": sum(1 for item in payloads if item.get("channel") == "whatsapp"),
+        "active_member_total": len(roster_ids),
+        "active_member_with_active_contact_total": sum(1 for value in roster_ids if value in active_subject_ids),
+        "active_member_with_any_contact_total": sum(1 for value in roster_ids if value in on_file_subject_ids),
+        "active_member_missing_active_contact_total": len(missing_active_ids),
+        "missing_active_contact_subject_user_ids": missing_active_ids[:50],
+        "coverage_boundary": (
+            "Guardian contact coverage is based on active Community Domain roster rows and recorded contact "
+            "attestations only. It does not prove parent identity, consent, phone ownership, or delivery readiness."
+        ),
+    }
+
+
+def _active_domain_member_user_ids(db: Session, *, community_domain_id: int) -> list[int]:
+    rows = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == int(community_domain_id))
+        .filter(CommunityDomainMembership.status == "active")
+        .all()
+    )
+    admin_roles = {
+        "owner",
+        "admin",
+        "domain_admin",
+        "branch_admin",
+        "campus_admin",
+        "proprietor",
+        "head_teacher",
+        "headmistress",
+        "headmaster",
+    }
+    out: list[int] = []
+    for row in rows:
+        role = _clean_role(getattr(row, "role", None), "member")
+        if role in admin_roles:
+            continue
+        try:
+            out.append(int(row.user_id))
+        except Exception:
+            continue
+    return out
+
+
+def _latest_school_guardian_contact_event(
+    db: Session,
+    *,
+    community_domain_id: int,
+    subject_user_id: int,
+    preferred_channel: Optional[str] = None,
+) -> Optional[TrustEvent]:
+    rows = _school_guardian_contact_events(
+        db,
+        community_domain_id=int(community_domain_id),
+        subject_user_id=int(subject_user_id),
+        limit=50,
+    )
+    usable: list[TrustEvent] = []
+    for row in rows:
+        meta = row.meta or {}
+        if _clean_role(meta.get("contact_status"), "on_file_unverified") == "withdrawn":
+            continue
+        usable.append(row)
+    if not usable:
+        return None
+    channel = _clean_role(preferred_channel, "")
+    if channel:
+        for row in usable:
+            meta = row.meta or {}
+            if _clean_role(meta.get("channel"), "") == channel:
+                return row
+    return usable[0]
+
+
 def _community_collection_public_path(public_code: str) -> str:
     return f"/community-collections/{public_code}"
 
@@ -23627,6 +24517,475 @@ def _community_collection_instruction_by_public_code(
         if meta.get("public_code_hash") == code_hash or meta.get("public_code") == code:
             return row
     return None
+
+
+@router.get("/{community_domain_id}/school-fees/expected-payments", response_model=dict[str, Any])
+def list_community_domain_school_fee_expected_payments(
+    community_domain_id: int,
+    status: Optional[str] = Query(default=None, max_length=32),
+    limit: int = Query(default=50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    q = (
+        db.query(ExpectedPayment)
+        .filter(ExpectedPayment.clan_id == int(domain.clan_id))
+        .filter(ExpectedPayment.expected_type == "school_fee")
+    )
+    clean_status = _clean_role(status, "")
+    if clean_status:
+        q = q.filter(ExpectedPayment.status == clean_status)
+    rows = q.order_by(ExpectedPayment.id.desc()).limit(500).all()
+    all_items: list[dict[str, Any]] = []
+    for row in rows:
+        meta = _safe_expected_payment_meta(row)
+        if int(meta.get("community_domain_id") or 0) != int(domain.id):
+            continue
+        student = db.get(User, int(row.user_id))
+        all_items.append(_school_fee_expected_payment_payload(row, domain=domain, user=student))
+    active_member_user_ids = _active_domain_member_user_ids(
+        db,
+        community_domain_id=int(domain.id),
+    )
+    return {
+        "ok": True,
+        "items": all_items[: int(limit)],
+        "summary": _school_fee_expected_payment_summary(
+            all_items,
+            active_member_user_ids=active_member_user_ids,
+        ),
+        "boundary": COMMUNITY_DOMAIN_SCHOOL_FEE_BOUNDARY,
+    }
+
+
+def _open_school_fee_expected_payment_record(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    subject_user_id: int,
+    amount: Decimal,
+    currency: str,
+    term_label: str,
+    fee_label: str,
+    due_at: Optional[datetime] = None,
+    campus_label: Optional[str] = None,
+    note: Optional[str] = None,
+) -> tuple[dict[str, Any], bool]:
+    subject_membership = _active_domain_membership_for_user(
+        db,
+        community_domain_id=int(domain.id),
+        user_id=int(subject_user_id),
+    )
+    if subject_membership is None:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "community_domain_school_fee_subject_not_active_member",
+                "message": "School-fee tracking can only be opened for an active student or member in this Community Domain.",
+            },
+        )
+
+    reference_display = _school_fee_expected_payment_reference(
+        community_domain_id=int(domain.id),
+        subject_user_id=int(subject_user_id),
+        term_label=term_label,
+        fee_label=fee_label,
+    )
+    existing = (
+        db.query(ExpectedPayment)
+        .filter(ExpectedPayment.clan_id == int(domain.clan_id))
+        .filter(ExpectedPayment.reference_display == reference_display)
+        .first()
+    )
+    if existing is not None:
+        student = db.get(User, int(existing.user_id))
+        return _school_fee_expected_payment_payload(existing, domain=domain, user=student), True
+
+    event = log_trust_event(
+        db,
+        event_type="community_domain.school_fee_expected_payment.created",
+        clan_id=int(domain.clan_id) if domain.clan_id else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(subject_user_id),
+        meta={
+            "engine_version": "community_domain_school_fee_expected_payment_v1",
+            "reason": "School fee expected payment opened",
+            "community_domain_id": int(domain.id),
+            "community_domain_name": domain.display_name,
+            "domain_name": domain.domain_name,
+            "template_key": domain.template_key,
+            "subject_user_id": int(subject_user_id),
+            "subject_membership_role": subject_membership.role,
+            "fee_label": fee_label,
+            "term_label": term_label,
+            "campus_label": campus_label,
+            "amount": str(amount),
+            "currency": currency,
+            "reference_display": reference_display,
+            "privacy_boundary": COMMUNITY_DOMAIN_SCHOOL_FEE_BOUNDARY,
+            "automatic_bank_confirmation": False,
+            "parent_whatsapp_sent_by_gsn": False,
+        },
+        commit=True,
+        refresh=True,
+    )
+    try:
+        expected_payment = create_expected_payment(
+            db,
+            clan_id=int(domain.clan_id),
+            user_id=int(subject_user_id),
+            expected_type="school_fee",
+            amount=amount,
+            currency=currency,
+            reference_display=reference_display,
+            due_at=due_at,
+            trust_event_id=int(event.id),
+            meta={
+                "engine_version": "community_domain_school_fee_expected_payment_v1",
+                "feature_code": "school_fee_tracking",
+                "community_domain_id": int(domain.id),
+                "community_domain_name": domain.display_name,
+                "domain_name": domain.domain_name,
+                "template_key": domain.template_key,
+                "subject_user_id": int(subject_user_id),
+                "student_user_id": int(subject_user_id),
+                "subject_membership_role": subject_membership.role,
+                "fee_label": fee_label,
+                "term_label": term_label,
+                "campus_label": campus_label,
+                "note": note,
+                "payment_reference": reference_display,
+                "automatic_bank_confirmation": False,
+                "parent_whatsapp_sent_by_gsn": False,
+                "privacy_boundary": COMMUNITY_DOMAIN_SCHOOL_FEE_BOUNDARY,
+            },
+            commit=True,
+            refresh=True,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    student = db.get(User, int(expected_payment.user_id))
+    return _school_fee_expected_payment_payload(expected_payment, domain=domain, user=student), False
+
+
+@router.post(
+    "/{community_domain_id}/school-fees/expected-payments",
+    status_code=201,
+    response_model=dict[str, Any],
+)
+def create_community_domain_school_fee_expected_payment(
+    community_domain_id: int,
+    payload: CommunityDomainSchoolFeeExpectedPaymentIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_community_domain_feature_enabled(
+        db,
+        domain=domain,
+        feature_key=COMMUNITY_DOMAIN_FEATURE_PAYMENTS_CONTRIBUTIONS,
+        feature_label="Payments and Contributions",
+    )
+    expected_payment, already_exists = _open_school_fee_expected_payment_record(
+        db,
+        domain=domain,
+        current_user=current_user,
+        subject_user_id=int(payload.subject_user_id),
+        amount=payload.amount,
+        currency=payload.currency,
+        term_label=payload.term_label,
+        fee_label=payload.fee_label,
+        due_at=payload.due_at,
+        campus_label=payload.campus_label,
+        note=payload.note,
+    )
+    return {
+        "ok": True,
+        "expected_payment": expected_payment,
+        "already_exists": already_exists,
+        "boundary": COMMUNITY_DOMAIN_SCHOOL_FEE_BOUNDARY,
+    }
+
+
+@router.post(
+    "/{community_domain_id}/school-fees/expected-payments/bulk-open-missing",
+    status_code=201,
+    response_model=dict[str, Any],
+)
+def bulk_open_community_domain_school_fee_expected_payments(
+    community_domain_id: int,
+    payload: CommunityDomainSchoolFeeBulkExpectedPaymentIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_community_domain_feature_enabled(
+        db,
+        domain=domain,
+        feature_key=COMMUNITY_DOMAIN_FEATURE_PAYMENTS_CONTRIBUTIONS,
+        feature_label="Payments and Contributions",
+    )
+    subject_user_ids = _active_domain_member_user_ids(db, community_domain_id=int(domain.id))[: int(payload.max_members)]
+    items: list[dict[str, Any]] = []
+    opened_count = 0
+    already_existing_count = 0
+    for subject_user_id in subject_user_ids:
+        expected_payment, already_exists = _open_school_fee_expected_payment_record(
+            db,
+            domain=domain,
+            current_user=current_user,
+            subject_user_id=int(subject_user_id),
+            amount=payload.amount,
+            currency=payload.currency,
+            term_label=payload.term_label,
+            fee_label=payload.fee_label,
+            due_at=payload.due_at,
+            campus_label=payload.campus_label,
+            note=payload.note,
+        )
+        items.append(expected_payment)
+        if already_exists:
+            already_existing_count += 1
+        else:
+            opened_count += 1
+    return {
+        "ok": True,
+        "items": items,
+        "opened_count": opened_count,
+        "already_existing_count": already_existing_count,
+        "target_member_count": len(subject_user_ids),
+        "message": "School-fee expected-payment rows prepared for active roster members. This is not debt proof, payment proof, or a receipt.",
+        "boundary": COMMUNITY_DOMAIN_SCHOOL_FEE_BOUNDARY,
+    }
+
+
+@router.post(
+    "/{community_domain_id}/school-fees/expected-payments/{expected_payment_id}/proof-logs",
+    status_code=201,
+    response_model=dict[str, Any],
+)
+def log_community_domain_school_fee_payment_proof(
+    community_domain_id: int,
+    expected_payment_id: int,
+    payload: CommunityDomainSchoolFeePaymentProofLogIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_community_domain_feature_enabled(
+        db,
+        domain=domain,
+        feature_key=COMMUNITY_DOMAIN_FEATURE_PAYMENTS_CONTRIBUTIONS,
+        feature_label="Payments and Contributions",
+    )
+    expected_payment = _school_fee_expected_payment_for_domain(
+        db,
+        domain=domain,
+        expected_payment_id=int(expected_payment_id),
+    )
+    student = db.get(User, int(expected_payment.user_id))
+    meta = _safe_expected_payment_meta(expected_payment)
+    submitted_at = datetime.now(timezone.utc).isoformat()
+    received_at = payload.received_at or datetime.now(timezone.utc)
+    proof = {
+        "proof_source": payload.proof_source,
+        "proof_status": payload.proof_status,
+        "proof_reference": payload.proof_reference,
+        "amount_reported": str(payload.amount_reported) if payload.amount_reported is not None else None,
+        "received_at": received_at.isoformat(),
+        "submitted_at": submitted_at,
+        "submitted_by_user_id": int(current_user.id),
+        "note": payload.note,
+        "review_required": True,
+        "automatic_bank_confirmation": False,
+        "receipt_issued_by_gsn": False,
+        "bank_event_id": None,
+        "privacy_boundary": COMMUNITY_DOMAIN_SCHOOL_FEE_PROOF_BOUNDARY,
+    }
+    proofs = meta.get("payment_proofs")
+    if not isinstance(proofs, list):
+        proofs = []
+    proofs.append(proof)
+    meta["payment_proofs"] = proofs[-10:]
+    meta["latest_payment_proof"] = proof
+    meta["proof_status"] = payload.proof_status
+    meta["proof_status_text"] = "Submitted for finance review"
+    meta["proof_submitted_at"] = submitted_at
+    meta["automatic_bank_confirmation"] = False
+    meta["receipt_issued_by_gsn"] = False
+    meta["bank_event_id"] = None
+    expected_payment.status_reason = "proof_submitted_for_review"
+    expected_payment.meta_json = json.dumps(meta, ensure_ascii=False)
+    db.add(expected_payment)
+    event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_SCHOOL_FEE_PROOF_EVENT,
+        clan_id=int(domain.clan_id) if domain.clan_id else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(expected_payment.user_id),
+        meta={
+            "engine_version": "community_domain_school_fee_payment_proof_v1",
+            "reason": "School fee payment proof logged for finance review",
+            "community_domain_id": int(domain.id),
+            "community_domain_name": domain.display_name,
+            "domain_name": domain.domain_name,
+            "expected_payment_id": int(expected_payment.id),
+            "subject_user_id": int(expected_payment.user_id),
+            "proof_source": payload.proof_source,
+            "proof_status": payload.proof_status,
+            "proof_reference": payload.proof_reference,
+            "amount_reported": str(payload.amount_reported) if payload.amount_reported is not None else None,
+            "automatic_bank_confirmation": False,
+            "receipt_issued_by_gsn": False,
+            "bank_event_id": None,
+            "privacy_boundary": COMMUNITY_DOMAIN_SCHOOL_FEE_PROOF_BOUNDARY,
+            "trust_delta": "0.00",
+            "system": False,
+        },
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+    db.refresh(expected_payment)
+    try:
+        db.refresh(event)
+    except Exception:
+        pass
+    latest_proof = _safe_expected_payment_meta(expected_payment).get("latest_payment_proof")
+    if not isinstance(latest_proof, dict):
+        latest_proof = proof
+    return {
+        "ok": True,
+        "expected_payment": _school_fee_expected_payment_payload(expected_payment, domain=domain, user=student),
+        "proof": _school_fee_payment_proof_payload(latest_proof),
+        "message": "School-fee proof logged for finance review. This is not bank confirmation or a receipt.",
+        "boundary": COMMUNITY_DOMAIN_SCHOOL_FEE_PROOF_BOUNDARY,
+    }
+
+
+@router.get("/{community_domain_id}/school-roster/guardian-contacts", response_model=dict[str, Any])
+def list_community_domain_school_guardian_contacts(
+    community_domain_id: int,
+    subject_user_id: Optional[int] = Query(default=None, ge=1),
+    limit: int = Query(default=50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    if subject_user_id is not None:
+        membership = _active_domain_membership_for_user(
+            db,
+            community_domain_id=int(domain.id),
+            user_id=int(subject_user_id),
+        )
+        if membership is None:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "community_domain_school_guardian_contact_subject_not_active_member",
+                    "message": "Guardian contacts can only be listed for an active student or member in this Community Domain.",
+                },
+            )
+    rows = _school_guardian_contact_events(
+        db,
+        community_domain_id=int(domain.id),
+        subject_user_id=int(subject_user_id) if subject_user_id is not None else None,
+        limit=int(limit),
+    )
+    items = [_school_guardian_contact_payload(row) for row in rows]
+    active_member_user_ids = _active_domain_member_user_ids(
+        db,
+        community_domain_id=int(domain.id),
+    )
+    return {
+        "ok": True,
+        "items": items,
+        "total": len(items),
+        "summary": _school_guardian_contact_summary(
+            rows,
+            active_member_user_ids=active_member_user_ids,
+        ),
+        "boundary": COMMUNITY_DOMAIN_SCHOOL_GUARDIAN_CONTACT_BOUNDARY,
+    }
+
+
+@router.post(
+    "/{community_domain_id}/school-roster/{subject_user_id}/guardian-contacts",
+    status_code=201,
+    response_model=dict[str, Any],
+)
+def record_community_domain_school_guardian_contact(
+    community_domain_id: int,
+    subject_user_id: int,
+    payload: CommunityDomainSchoolGuardianContactIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    membership = _active_domain_membership_for_user(
+        db,
+        community_domain_id=int(domain.id),
+        user_id=int(subject_user_id),
+    )
+    if membership is None:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "community_domain_school_guardian_contact_subject_not_active_member",
+                "message": "Guardian contacts can only be recorded for an active student or member in this Community Domain.",
+            },
+        )
+    event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_SCHOOL_GUARDIAN_CONTACT_EVENT,
+        clan_id=int(domain.clan_id) if domain.clan_id else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(subject_user_id),
+        meta={
+            "engine_version": "community_domain_school_guardian_contact_v1",
+            "reason": "School parent/guardian contact reference recorded for roster follow-up",
+            "community_domain_id": int(domain.id),
+            "community_domain_name": domain.display_name,
+            "domain_name": domain.domain_name,
+            "template_key": domain.template_key,
+            "subject_user_id": int(subject_user_id),
+            "subject_membership_role": membership.role,
+            "guardian_label": payload.guardian_label,
+            "relationship": payload.relationship,
+            "channel": payload.channel,
+            "destination_reference_status": payload.destination_reference_status,
+            "destination_reference_label": payload.destination_reference_label,
+            "contact_status": payload.contact_status,
+            "consent_basis": payload.consent_basis,
+            "notification_scope": payload.notification_scope,
+            "note": payload.note,
+            "provider_send_ready": False,
+            "parent_identity_verified_by_gsn": False,
+            "automatic_parent_notification": False,
+            "whatsapp_delivery_proof": False,
+            "privacy_boundary": COMMUNITY_DOMAIN_SCHOOL_GUARDIAN_CONTACT_BOUNDARY,
+            "trust_delta": "0.00",
+            "system": False,
+        },
+        commit=True,
+        refresh=True,
+    )
+    contact = _school_guardian_contact_payload(event)
+    return {
+        "ok": True,
+        "guardian_contact": contact,
+        "message": "Parent/guardian contact reference recorded. This is not parent identity verification or delivery proof.",
+        "boundary": COMMUNITY_DOMAIN_SCHOOL_GUARDIAN_CONTACT_BOUNDARY,
+    }
 
 
 @router.get("/{community_domain_id}/collection-instructions", response_model=dict[str, Any])
@@ -23780,6 +25139,24 @@ def _community_attendance_public_api_path(public_code: str) -> str:
 
 def _domain_attendance_token() -> str:
     return secrets.token_urlsafe(18).rstrip("=")
+
+
+def _community_domain_attendance_card_code(*, community_domain_id: int, user_id: int) -> str:
+    return f"GSN-ATT-CD{int(community_domain_id)}-U{int(user_id)}"
+
+
+def _parse_community_domain_attendance_card_code(value: Any) -> tuple[int, int]:
+    cleaned = _clean_str(value).upper().replace(" ", "")
+    match = re.fullmatch(r"GSN-ATT-CD(?P<domain_id>\d+)-U(?P<user_id>\d+)", cleaned)
+    if not match:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "community_domain_attendance_card_invalid",
+                "message": "Attendance card code is not a valid GSN school attendance code.",
+            },
+        )
+    return int(match.group("domain_id")), int(match.group("user_id"))
 
 
 def _community_domain_attendance_session_id(*, community_domain_id: int, token: str) -> str:
@@ -24076,15 +25453,82 @@ def _community_domain_attendance_checkin_payload(event: TrustEvent) -> dict[str,
         "attendance_session_id": meta.get("attendance_session_id"),
         "programme_label": meta.get("programme_label"),
         "checked_in_user_id": int(event.subject_user_id) if event.subject_user_id else None,
+        "recorded_by_user_id": int(meta.get("recorded_by_user_id") or event.actor_user_id or 0) or None,
         "checked_in_at": meta.get("checked_in_at"),
         "attendance_method": _normalize_community_domain_attendance_method(meta.get("attendance_method")),
         "attendance_method_label": meta.get("attendance_method_label"),
+        "capture_method": meta.get("capture_method"),
+        "student_card_code_used": bool(meta.get("student_card_code_used")),
+        "staff_recorded": bool(meta.get("staff_recorded")),
+        "student_phone_required": bool(meta.get("student_phone_required")),
+        "parent_notification_sent_by_gsn": bool(meta.get("parent_notification_sent_by_gsn")),
         "arrival_status": meta.get("arrival_status"),
         "minutes_from_start": meta.get("minutes_from_start"),
         "evidence_strength": meta.get("evidence_strength"),
         "automatic_bluetooth_scan": False,
         "boundary": COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY,
     }
+
+
+def _community_domain_attendance_parent_notification_payload(event: TrustEvent) -> dict[str, Any]:
+    meta = event.meta or {}
+    return {
+        "event_id": int(event.id),
+        "community_domain_id": int(meta.get("community_domain_id") or 0) or None,
+        "attendance_session_event_id": int(meta.get("attendance_session_event_id") or 0) or None,
+        "attendance_checkin_event_id": int(meta.get("attendance_checkin_event_id") or 0) or None,
+        "attendance_session_id": meta.get("attendance_session_id"),
+        "subject_user_id": int(event.subject_user_id) if event.subject_user_id else None,
+        "recorded_by_user_id": int(meta.get("recorded_by_user_id") or event.actor_user_id or 0) or None,
+        "channel": _clean_role(meta.get("channel"), "gsn"),
+        "delivery_status": _clean_role(meta.get("delivery_status"), "prepared"),
+        "destination_reference_status": _clean_role(meta.get("destination_reference_status"), "not_recorded"),
+        "destination_reference_label": _clean_str(meta.get("destination_reference_label")),
+        "guardian_contact_event_id": meta.get("guardian_contact_event_id"),
+        "guardian_contact_channel": meta.get("guardian_contact_channel"),
+        "guardian_contact_status": meta.get("guardian_contact_status"),
+        "guardian_contact_label": meta.get("guardian_contact_label"),
+        "guardian_contact_relationship": meta.get("guardian_contact_relationship"),
+        "guardian_contact_reference_label": meta.get("guardian_contact_reference_label"),
+        "guardian_contact_snapshot_used": bool(meta.get("guardian_contact_snapshot_used")),
+        "logged_at": meta.get("logged_at") or _iso(event.created_at),
+        "sent_by_gsn": bool(meta.get("sent_by_gsn")),
+        "whatsapp_delivery_proof": bool(meta.get("whatsapp_delivery_proof")),
+        "email_open_tracking": bool(meta.get("email_open_tracking")),
+        "sms_delivery_proof": bool(meta.get("sms_delivery_proof")),
+        "automatic_parent_notification": bool(meta.get("automatic_parent_notification")),
+        "boundary": COMMUNITY_DOMAIN_ATTENDANCE_PARENT_NOTIFICATION_BOUNDARY,
+    }
+
+
+def _community_domain_attendance_parent_notification_events(
+    db: Session,
+    *,
+    community_domain_id: int,
+    attendance_session_event_id: int,
+    limit: int = 50,
+) -> list[TrustEvent]:
+    rows = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == COMMUNITY_DOMAIN_ATTENDANCE_PARENT_NOTIFICATION_EVENT)
+        .order_by(TrustEvent.id.desc())
+        .limit(1000)
+        .all()
+    )
+    out: list[TrustEvent] = []
+    for row in rows:
+        meta = row.meta or {}
+        try:
+            row_domain_id = int(meta.get("community_domain_id") or 0)
+            row_session_id = int(meta.get("attendance_session_event_id") or 0)
+        except (TypeError, ValueError):
+            continue
+        if row_domain_id != int(community_domain_id) or row_session_id != int(attendance_session_event_id):
+            continue
+        out.append(row)
+        if len(out) >= max(1, min(int(limit), 200)):
+            break
+    return out
 
 
 @router.get("/{community_domain_id}/attendance-sessions", response_model=dict[str, Any])
@@ -24204,6 +25648,469 @@ def create_community_domain_attendance_session(
     }
 
 
+@router.post("/{community_domain_id}/attendance-sessions/{attendance_session_event_id}/admin-check-ins", response_model=dict[str, Any])
+def record_admin_community_domain_attendance_checkin(
+    community_domain_id: int,
+    attendance_session_event_id: int,
+    payload: CommunityDomainAdminAttendanceCheckinIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    session_event = db.get(TrustEvent, int(attendance_session_event_id))
+    if session_event is None or session_event.event_type != COMMUNITY_DOMAIN_ATTENDANCE_SESSION_EVENT:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_attendance_session_not_found",
+                "message": "GSN could not find this attendance session.",
+            },
+        )
+    session_meta = session_event.meta or {}
+    if int(session_meta.get("community_domain_id") or 0) != int(domain.id):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_attendance_session_not_found",
+                "message": "GSN could not find this attendance session in this Community Domain.",
+            },
+        )
+    if not _community_domain_attendance_session_is_active(session_meta):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_attendance_session_closed",
+                "message": "This attendance window is closed.",
+            },
+        )
+
+    subject_membership = _active_domain_membership_for_user(
+        db,
+        community_domain_id=int(domain.id),
+        user_id=int(payload.subject_user_id),
+    )
+    if subject_membership is None:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "community_domain_attendance_subject_not_active_member",
+                "message": "Staff-scanned attendance can only be recorded for an active member or student in this Community Domain.",
+            },
+        )
+
+    session_method = _normalize_community_domain_attendance_method(session_meta.get("attendance_method"))
+    requested_method = _normalize_community_domain_attendance_method(payload.method)
+    method = "staff_scan" if requested_method == "staff_scan" else requested_method
+    if method != session_method and session_method != "staff_scan":
+        raise HTTPException(
+            status_code=400,
+            detail="Attendance method does not match the active attendance window.",
+        )
+
+    existing = _find_existing_community_domain_attendance_checkin(
+        db,
+        community_domain_id=int(domain.id),
+        attendance_session_event_id=int(session_event.id),
+        user_id=int(payload.subject_user_id),
+    )
+    if existing is not None:
+        return {
+            "ok": True,
+            "attendance_checkin": _community_domain_attendance_checkin_payload(existing),
+            "already_recorded": True,
+            "message": "Attendance was already recorded for this student or member in this window.",
+            "boundary": COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY,
+        }
+
+    checked_in_at = datetime.now(timezone.utc)
+    event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_ATTENDANCE_CHECKIN_EVENT,
+        clan_id=int(domain.clan_id) if domain.clan_id else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(payload.subject_user_id),
+        meta={
+            "engine_version": "community_domain_live_attendance_v1",
+            "source": "community_domain_attendance_staff_scan",
+            "reason": "community_domain_staff_attendance_checkin_recorded",
+            "community_domain_id": int(domain.id),
+            "community_domain_name": domain.display_name,
+            "domain_name": domain.domain_name,
+            "template_key": domain.template_key,
+            "community_node_id": session_meta.get("community_node_id"),
+            "community_node_name": session_meta.get("community_node_name"),
+            "programme_label": session_meta.get("programme_label"),
+            "scheduled_at": session_meta.get("scheduled_at"),
+            "attendance_session_event_id": int(session_event.id),
+            "attendance_session_id": session_meta.get("attendance_session_id"),
+            "attendance_method": method,
+            "attendance_method_label": method.replace("_", " "),
+            "checked_in_at": _iso(checked_in_at),
+            "checked_in_user_id": int(payload.subject_user_id),
+            "recorded_by_user_id": int(current_user.id),
+            "subject_membership_role": _clean_role(subject_membership.role, "member"),
+            "capture_method": method,
+            "evidence_strength": _community_domain_attendance_strength(method),
+            "presence_evidence": True,
+            "attendance_confirmation": True,
+            "staff_recorded": True,
+            "student_phone_required": False,
+            "parent_notification_sent_by_gsn": False,
+            "automatic_bluetooth_scan": False,
+            "privacy_boundary": COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY,
+            "trust_delta": "0.00",
+            "note": _clean_str(payload.note) or None,
+            **_community_domain_attendance_arrival_status(
+                scheduled_at=session_meta.get("scheduled_at"),
+                checked_in_at=checked_in_at,
+            ),
+        },
+        dedupe_key=f"community-domain-attendance-checkin:{int(session_event.id)}:{int(payload.subject_user_id)}",
+        commit=True,
+        refresh=True,
+    )
+    return {
+        "ok": True,
+        "attendance_checkin": _community_domain_attendance_checkin_payload(event),
+        "already_recorded": False,
+        "message": "Staff-scanned attendance recorded. This is Presence Evidence, not automatic parent notification.",
+        "boundary": COMMUNITY_DOMAIN_ATTENDANCE_BOUNDARY,
+    }
+
+@router.post("/{community_domain_id}/attendance-sessions/{attendance_session_event_id}/admin-card-check-ins", response_model=dict[str, Any])
+def record_admin_community_domain_attendance_card_checkin(
+    community_domain_id: int,
+    attendance_session_event_id: int,
+    payload: CommunityDomainAdminAttendanceCardCheckinIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    card_domain_id, card_user_id = _parse_community_domain_attendance_card_code(payload.card_code)
+    if card_domain_id != int(domain.id):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "community_domain_attendance_card_wrong_domain",
+                "message": "This attendance card belongs to another Community Domain.",
+            },
+        )
+
+    session_event = db.get(TrustEvent, int(attendance_session_event_id))
+    if session_event is None or session_event.event_type != COMMUNITY_DOMAIN_ATTENDANCE_SESSION_EVENT:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_attendance_session_not_found",
+                "message": "GSN could not find this attendance window.",
+            },
+        )
+    session_meta = session_event.meta or {}
+    if int(session_meta.get("community_domain_id") or 0) != int(domain.id):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_attendance_session_not_in_domain",
+                "message": "This attendance window does not belong to the selected Community Domain.",
+            },
+        )
+    if not _community_domain_attendance_session_is_active(session_meta):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_attendance_session_closed",
+                "message": "This attendance window is closed.",
+            },
+        )
+
+    subject_membership = _active_domain_membership_for_user(
+        db,
+        community_domain_id=int(domain.id),
+        user_id=int(card_user_id),
+    )
+    if subject_membership is None:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "community_domain_attendance_subject_not_active_member",
+                "message": "Staff-scanned attendance can only be recorded for an active member or student in this Community Domain.",
+            },
+        )
+
+    session_method = _normalize_community_domain_attendance_method(session_meta.get("attendance_method"))
+    requested_method = _normalize_community_domain_attendance_method(payload.method)
+    method = "staff_scan" if requested_method == "staff_scan" else requested_method
+    if method != session_method and session_method != "staff_scan":
+        raise HTTPException(
+            status_code=400,
+            detail="Attendance method does not match the active attendance window.",
+        )
+
+    existing = _find_existing_community_domain_attendance_checkin(
+        db,
+        community_domain_id=int(domain.id),
+        attendance_session_event_id=int(session_event.id),
+        user_id=int(card_user_id),
+    )
+    if existing is not None:
+        return {
+            "ok": True,
+            "attendance_checkin": _community_domain_attendance_checkin_payload(existing),
+            "already_recorded": True,
+            "card_code": _community_domain_attendance_card_code(
+                community_domain_id=int(domain.id),
+                user_id=int(card_user_id),
+            ),
+            "message": "Attendance was already recorded for this attendance card in this window.",
+            "boundary": COMMUNITY_DOMAIN_ATTENDANCE_CARD_BOUNDARY,
+        }
+
+    checked_in_at = datetime.now(timezone.utc)
+    event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_ATTENDANCE_CHECKIN_EVENT,
+        clan_id=int(domain.clan_id) if domain.clan_id else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(card_user_id),
+        meta={
+            "engine_version": "community_domain_live_attendance_v1",
+            "source": "community_domain_attendance_staff_card_scan",
+            "reason": "community_domain_staff_attendance_card_checkin_recorded",
+            "community_domain_id": int(domain.id),
+            "community_domain_name": domain.display_name,
+            "domain_name": domain.domain_name,
+            "template_key": domain.template_key,
+            "community_node_id": session_meta.get("community_node_id"),
+            "community_node_name": session_meta.get("community_node_name"),
+            "programme_label": session_meta.get("programme_label"),
+            "scheduled_at": session_meta.get("scheduled_at"),
+            "attendance_session_event_id": int(session_event.id),
+            "attendance_session_id": session_meta.get("attendance_session_id"),
+            "attendance_method": method,
+            "attendance_method_label": method.replace("_", " "),
+            "checked_in_at": _iso(checked_in_at),
+            "checked_in_user_id": int(card_user_id),
+            "recorded_by_user_id": int(current_user.id),
+            "subject_membership_role": _clean_role(subject_membership.role, "member"),
+            "capture_method": "staff_card_scan",
+            "evidence_strength": _community_domain_attendance_strength(method),
+            "presence_evidence": True,
+            "attendance_confirmation": True,
+            "staff_recorded": True,
+            "student_phone_required": False,
+            "student_card_code_used": True,
+            "parent_notification_sent_by_gsn": False,
+            "automatic_bluetooth_scan": False,
+            "privacy_boundary": COMMUNITY_DOMAIN_ATTENDANCE_CARD_BOUNDARY,
+            "trust_delta": "0.00",
+            "note": _clean_str(payload.note) or None,
+            **_community_domain_attendance_arrival_status(
+                scheduled_at=session_meta.get("scheduled_at"),
+                checked_in_at=checked_in_at,
+            ),
+        },
+        dedupe_key=f"community-domain-attendance-checkin:{int(session_event.id)}:{int(card_user_id)}",
+        commit=True,
+        refresh=True,
+    )
+    return {
+        "ok": True,
+        "attendance_checkin": _community_domain_attendance_checkin_payload(event),
+        "already_recorded": False,
+        "card_code": _community_domain_attendance_card_code(
+            community_domain_id=int(domain.id),
+            user_id=int(card_user_id),
+        ),
+        "message": "Staff-scanned card attendance recorded. This is Presence Evidence, not automatic parent notification.",
+        "boundary": COMMUNITY_DOMAIN_ATTENDANCE_CARD_BOUNDARY,
+    }
+
+@router.get("/{community_domain_id}/attendance-sessions/{attendance_session_event_id}/parent-notification-logs", response_model=dict[str, Any])
+def list_community_domain_attendance_parent_notification_logs(
+    community_domain_id: int,
+    attendance_session_event_id: int,
+    limit: int = Query(default=50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    session_event = db.get(TrustEvent, int(attendance_session_event_id))
+    if session_event is None or session_event.event_type != COMMUNITY_DOMAIN_ATTENDANCE_SESSION_EVENT:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_attendance_session_not_found",
+                "message": "GSN could not find this attendance window.",
+            },
+        )
+    session_meta = session_event.meta or {}
+    if int(session_meta.get("community_domain_id") or 0) != int(domain.id):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_attendance_session_not_in_domain",
+                "message": "This attendance window does not belong to the selected Community Domain.",
+            },
+        )
+    rows = _community_domain_attendance_parent_notification_events(
+        db,
+        community_domain_id=int(domain.id),
+        attendance_session_event_id=int(session_event.id),
+        limit=int(limit),
+    )
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "attendance_session_event_id": int(session_event.id),
+        "items": [_community_domain_attendance_parent_notification_payload(row) for row in rows],
+        "total": len(rows),
+        "boundary": COMMUNITY_DOMAIN_ATTENDANCE_PARENT_NOTIFICATION_BOUNDARY,
+    }
+
+
+@router.post("/{community_domain_id}/attendance-sessions/{attendance_session_event_id}/parent-notification-logs", response_model=dict[str, Any])
+def create_community_domain_attendance_parent_notification_log(
+    community_domain_id: int,
+    attendance_session_event_id: int,
+    payload: CommunityDomainAttendanceParentNotificationLogIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    session_event = db.get(TrustEvent, int(attendance_session_event_id))
+    if session_event is None or session_event.event_type != COMMUNITY_DOMAIN_ATTENDANCE_SESSION_EVENT:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_attendance_session_not_found",
+                "message": "GSN could not find this attendance window.",
+            },
+        )
+    session_meta = session_event.meta or {}
+    if int(session_meta.get("community_domain_id") or 0) != int(domain.id):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_attendance_session_not_in_domain",
+                "message": "This attendance window does not belong to the selected Community Domain.",
+            },
+        )
+    subject_membership = _active_domain_membership_for_user(
+        db,
+        community_domain_id=int(domain.id),
+        user_id=int(payload.subject_user_id),
+    )
+    if subject_membership is None:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "community_domain_attendance_subject_not_active_member",
+                "message": "Parent notification logs can only be linked to an active student/member in this Community Domain.",
+            },
+        )
+    attendance_checkin = _find_existing_community_domain_attendance_checkin(
+        db,
+        community_domain_id=int(domain.id),
+        attendance_session_event_id=int(session_event.id),
+        user_id=int(payload.subject_user_id),
+    )
+    if attendance_checkin is None:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_attendance_checkin_required",
+                "message": "Record the student's attendance before logging a parent notification for that attendance window.",
+            },
+        )
+    logged_at = datetime.now(timezone.utc)
+    channel = _clean_role(payload.channel, "gsn")
+    delivery_status = _clean_role(payload.delivery_status, "prepared")
+    guardian_contact_event = _latest_school_guardian_contact_event(
+        db,
+        community_domain_id=int(domain.id),
+        subject_user_id=int(payload.subject_user_id),
+        preferred_channel=channel,
+    )
+    guardian_contact = (
+        _school_guardian_contact_payload(guardian_contact_event)
+        if guardian_contact_event is not None
+        else None
+    )
+    destination_reference_status = _clean_role(payload.destination_reference_status, "not_recorded")
+    destination_reference_label = _clean_str(payload.destination_reference_label) or None
+    if guardian_contact is not None:
+        if not destination_reference_label:
+            destination_reference_label = _clean_str(
+                guardian_contact.get("destination_reference_label")
+                or guardian_contact.get("guardian_label")
+            ) or None
+        if destination_reference_status == "not_recorded":
+            destination_reference_status = _clean_role(
+                guardian_contact.get("destination_reference_status"),
+                "on_file",
+            )
+    event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_ATTENDANCE_PARENT_NOTIFICATION_EVENT,
+        clan_id=int(domain.clan_id) if domain.clan_id else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(payload.subject_user_id),
+        meta={
+            "engine_version": "community_domain_school_attendance_notification_v1",
+            "source": "community_domain_attendance_parent_notification_log",
+            "reason": "community_domain_attendance_parent_notification_logged",
+            "community_domain_id": int(domain.id),
+            "community_domain_name": domain.display_name,
+            "domain_name": domain.domain_name,
+            "template_key": domain.template_key,
+            "attendance_session_event_id": int(session_event.id),
+            "attendance_session_id": session_meta.get("attendance_session_id"),
+            "attendance_checkin_event_id": int(attendance_checkin.id),
+            "programme_label": session_meta.get("programme_label"),
+            "subject_membership_role": _clean_role(subject_membership.role, "member"),
+            "recorded_by_user_id": int(current_user.id),
+            "logged_at": _iso(logged_at),
+            "channel": channel,
+            "delivery_status": delivery_status,
+            "destination_reference_status": destination_reference_status,
+            "destination_reference_label": destination_reference_label,
+            "guardian_contact_event_id": (
+                int(guardian_contact["event_id"])
+                if guardian_contact is not None and guardian_contact.get("event_id") is not None
+                else None
+            ),
+            "guardian_contact_channel": guardian_contact.get("channel") if guardian_contact else None,
+            "guardian_contact_status": guardian_contact.get("contact_status") if guardian_contact else None,
+            "guardian_contact_label": guardian_contact.get("guardian_label") if guardian_contact else None,
+            "guardian_contact_relationship": guardian_contact.get("relationship") if guardian_contact else None,
+            "guardian_contact_reference_label": (
+                guardian_contact.get("destination_reference_label") if guardian_contact else None
+            ),
+            "guardian_contact_snapshot_used": guardian_contact is not None,
+            "sent_by_gsn": False,
+            "whatsapp_delivery_proof": False,
+            "email_open_tracking": False,
+            "sms_delivery_proof": False,
+            "automatic_parent_notification": False,
+            "privacy_boundary": COMMUNITY_DOMAIN_ATTENDANCE_PARENT_NOTIFICATION_BOUNDARY,
+            "trust_delta": "0.00",
+            "note": _clean_str(payload.note) or None,
+        },
+        commit=True,
+        refresh=True,
+    )
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "attendance_session_event_id": int(session_event.id),
+        "parent_notification_log": _community_domain_attendance_parent_notification_payload(event),
+        "message": "Parent notification log recorded. This is not WhatsApp, SMS, or email delivery proof.",
+        "boundary": COMMUNITY_DOMAIN_ATTENDANCE_PARENT_NOTIFICATION_BOUNDARY,
+    }
 @router.get("/public/attendance-sessions/{public_code}", response_model=dict[str, Any])
 def get_public_community_domain_attendance_session(
     public_code: str,
@@ -28961,6 +30868,20 @@ def list_community_domain_notices(
         community_domain_id=int(domain.id),
         limit=int(limit),
     )
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    for notice in notices:
+        try:
+            notice_event_id = int(notice.get("event_id") or 0)
+        except (TypeError, ValueError):
+            notice_event_id = 0
+        if notice_event_id:
+            notice["acknowledgement_summary"] = _community_domain_notice_ack_summary(
+                db,
+                domain=domain,
+                notice_event_id=notice_event_id,
+                viewer_user_id=int(current_user.id),
+                include_private=can_admin,
+            )
     return {
         "ok": True,
         "engine_ready": True,
@@ -28983,6 +30904,107 @@ def list_community_domain_notices(
             "domains, other communities, or public visitors. Expired notices leave "
             "the active board but remain in Community Memory."
         ),
+    }
+
+
+@router.get("/{community_domain_id}/notices/{notice_event_id}/acknowledgements", response_model=dict[str, Any])
+def list_community_domain_notice_acknowledgements(
+    community_domain_id: int,
+    notice_event_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    _raise_if_domain_publicly_blocked(domain)
+    notice_event = _community_domain_notice_event_or_404(
+        db,
+        domain=domain,
+        notice_event_id=int(notice_event_id),
+    )
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "engine_ready": True,
+        "community_domain_id": int(domain.id),
+        "notice": _community_domain_notice_payload(notice_event, include_private=can_admin),
+        "acknowledgement_summary": _community_domain_notice_ack_summary(
+            db,
+            domain=domain,
+            notice_event_id=int(notice_event_id),
+            viewer_user_id=int(current_user.id),
+            include_private=can_admin,
+        ),
+        "boundary": COMMUNITY_DOMAIN_NOTICE_ACK_BOUNDARY,
+    }
+
+
+@router.post("/{community_domain_id}/notices/{notice_event_id}/acknowledgements", response_model=dict[str, Any])
+def acknowledge_community_domain_notice(
+    community_domain_id: int,
+    notice_event_id: int,
+    payload: CommunityDomainNoticeAcknowledgementIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    _raise_if_domain_publicly_blocked(domain)
+    notice_event = _community_domain_notice_event_or_404(
+        db,
+        domain=domain,
+        notice_event_id=int(notice_event_id),
+    )
+    notice_meta = _json_load(notice_event.meta_json)
+    if _community_domain_notice_is_expired(
+        notice_meta,
+        created_at=getattr(notice_event, "created_at", None),
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_notice_expired",
+                "message": "This Community Domain notice has expired and cannot be newly acknowledged.",
+            },
+        )
+    ack_event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_NOTICE_ACK_EVENT,
+        clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        dedupe_key=f"community-domain-notice-ack:{int(domain.id)}:{int(notice_event_id)}:{int(current_user.id)}",
+        meta={
+            "source": COMMUNITY_DOMAIN_NOTICE_SOURCE,
+            "reason": "community_domain_notice_acknowledged",
+            "community_domain_id": int(domain.id),
+            "notice_event_id": int(notice_event_id),
+            "notice_id": f"TE-{int(notice_event_id)}",
+            "acknowledgement": "seen",
+            "note": payload.note,
+            "whatsapp_delivery_proof": False,
+            "email_open_tracking": False,
+            "sms_delivery_proof": False,
+            "boundary": COMMUNITY_DOMAIN_NOTICE_ACK_BOUNDARY,
+            "trust_delta": "0.00",
+        },
+    )
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "engine_ready": True,
+        "community_domain_id": int(domain.id),
+        "acknowledgement_event_id": int(ack_event.id),
+        "notice": _community_domain_notice_payload(notice_event, include_private=can_admin),
+        "acknowledgement_summary": _community_domain_notice_ack_summary(
+            db,
+            domain=domain,
+            notice_event_id=int(notice_event_id),
+            viewer_user_id=int(current_user.id),
+            include_private=can_admin,
+        ),
+        "message": "Notice acknowledged inside GSN.",
+        "boundary": COMMUNITY_DOMAIN_NOTICE_ACK_BOUNDARY,
     }
 
 
@@ -30472,11 +32494,13 @@ def list_community_domain_members(
     return {
         "ok": True,
         "community_domain_id": int(domain.id),
-        "items": [_domain_member_payload(row) for row in rows],
+        "items": [_domain_member_payload(row, include_attendance_card=True) for row in rows],
         "total": len(rows),
+        "attendance_card_boundary": COMMUNITY_DOMAIN_ATTENDANCE_CARD_BOUNDARY,
         "boundary": (
             "Institutional membership only. This does not create a social Community "
-            "membership, payment right, loan approval, or verified legal authority."
+            "membership, payment right, loan approval, verified legal authority, "
+            "public student directory, or automatic parent notification."
         ),
     }
 

@@ -30,6 +30,7 @@ type AsyncAction = () => void | Promise<void>;
 type RowAction<Row> = (item: Row) => void | Promise<void>;
 type PanelStyleFactory = (onDark?: boolean) => React.CSSProperties;
 type StatusStyleFactory = (status?: string | number | null) => React.CSSProperties;
+type UnknownRecord = Record<string, unknown>;
 const BENEFICIARY_OUTCOME_STATE_OPTIONS = [
   { value: "not_enough_evidence", label: "Not enough evidence" },
   { value: "baseline_only", label: "Baseline only" },
@@ -199,6 +200,55 @@ const CHURCH_ACTIVITY_PRESET_PACK: Array<{
   },
 ];
 
+const SCHOOL_ACTIVITY_PRESET_PACK: Array<{
+  key: string;
+  label: string;
+  activityType: string;
+  activityLabel: string;
+  unit: string;
+  note: string;
+}> = [
+  {
+    key: "parent_notice_follow_up",
+    label: "Parent notice follow-up",
+    activityType: "school_notice_ack_follow_up",
+    activityLabel: "Parent notice follow-up",
+    unit: "follow-up",
+    note: "Record that school staff followed up a parent or guardian about an official notice, circular, meeting, or fee reminder. WhatsApp may carry the prompt; GSN keeps the school record.",
+  },
+  {
+    key: "school_fee_follow_up",
+    label: "School fee follow-up",
+    activityType: "school_fee_follow_up",
+    activityLabel: "School fee follow-up",
+    unit: "fee status",
+    note: "Record a bursar or admin fee follow-up status. This is not bank confirmation until finance review, receipt, or school bank evidence supports it.",
+  },
+  {
+    key: "student_arrival",
+    label: "Student arrival",
+    activityType: "student_arrival_record",
+    activityLabel: "Student arrival record",
+    unit: "arrival",
+    note: "Record that authorized school staff marked a student as arrived. The student does not need a phone; the staff member is the accountable actor.",
+  },
+  {
+    key: "student_dismissal",
+    label: "Student dismissal",
+    activityType: "student_dismissal_record",
+    activityLabel: "Student dismissal record",
+    unit: "dismissal",
+    note: "Record that authorized school staff marked a student as dismissed or approved to leave. Parent notification remains a bridge/log unless a delivery provider is connected.",
+  },
+  {
+    key: "school_shop_supply",
+    label: "School shop / supplies",
+    activityType: "school_shop_supply_notice",
+    activityLabel: "School shop or supply notice",
+    unit: "notice",
+    note: "Record a school shop, books, uniforms, forms, or approved-vendor notice without turning official school communication into open chat.",
+  },
+];
 const CHURCH_ATTENDANCE_FOLLOW_UP_ROUTE_STEPS = ["Call", "Text", "WhatsApp", "Visit", "Escalate"];
 const CHURCH_ATTENDANCE_FOLLOW_UP_OUTCOMES = [
   "Reached",
@@ -318,7 +368,7 @@ type CommunityDomainActivityDraft = {
 
 type CommunityDomainAttendanceSessionDraft = {
   programme_label: string;
-  method: "qr" | "bluetooth_proximity";
+  method: "qr" | "bluetooth_proximity" | "staff_scan";
   window_minutes: string;
   note: string;
 };
@@ -507,6 +557,13 @@ export type RealLifeRecordPanelData = {
   attendanceSessionCopied: boolean;
   attendanceSessionDraft: CommunityDomainAttendanceSessionDraft;
   attendanceSessionRows: AttendanceSessionRow[];
+  domainMemberRows: UnknownRecord[];
+  domainNotices: UnknownRecord[];
+  domainNoticesLoading: boolean;
+  schoolFeeExpectedPaymentRows: UnknownRecord[];
+  schoolFeeExpectedPaymentSummary: UnknownRecord | null;
+  schoolGuardianContactRows: UnknownRecord[];
+  schoolGuardianContactSummary: UnknownRecord | null;
   responseChannelCopied: boolean;
   responseChannelDraft: CommunityDomainResponseChannelDraft;
   responseChannelRows: ResponseChannelRow[];
@@ -537,6 +594,8 @@ export type RealLifeRecordPanelData = {
   templateKey: string;
   busyActivityRecord: boolean;
   busyAttendanceSession: boolean;
+  busySchoolFeeExpectedPayment: boolean;
+  busySchoolGuardianContact: boolean;
   busyBeneficiaryOutcomeRecord: boolean;
   busyOutcomeConfirmationLinkId: string;
   busyOutcomeContactConsentId: string;
@@ -550,8 +609,48 @@ export type RealLifeRecordPanelData = {
   cleanText: (value: unknown, fallback?: string) => string;
   compactStatus: (value: unknown) => string;
   correctBeneficiaryOutcomeDeliveryReceipt: RowAction<BeneficiaryOutcomeRow>;
+  acknowledgeDomainNotice: (noticeEventId: string) => void | Promise<void>;
   copyLatestAttendanceLink: AsyncAction;
   copyLatestResponseLink: AsyncAction;
+  createSchoolFeeExpectedPayment: (payload: {
+    subject_user_id: string;
+    amount: string;
+    currency: string;
+    term_label: string;
+    fee_label: string;
+    due_at?: string | null;
+    campus_label?: string | null;
+    note?: string | null;
+  }) => void | Promise<void>;
+  bulkOpenSchoolFeeExpectedPayments: (payload: {
+    amount: string;
+    currency: string;
+    term_label: string;
+    fee_label: string;
+    due_at?: string | null;
+    campus_label?: string | null;
+    note?: string | null;
+  }) => void | Promise<void>;
+  logSchoolFeePaymentProof: (payload: {
+    expected_payment_id: string;
+    proof_source: string;
+    proof_status: string;
+    proof_reference?: string | null;
+    amount_reported?: string | null;
+    note?: string | null;
+  }) => void | Promise<void>;
+  recordSchoolGuardianContact: (payload: {
+    subject_user_id: string;
+    guardian_label: string;
+    relationship: string;
+    channel: string;
+    destination_reference_status: string;
+    destination_reference_label?: string | null;
+    contact_status: string;
+    consent_basis: string;
+    notification_scope: string;
+    note?: string | null;
+  }) => void | Promise<void>;
   createBeneficiaryOutcomeConfirmationLink: (outcomeEventId: string) => void | Promise<void>;
   emptyBeneficiaryContactConsentDraft: () => BeneficiaryContactConsentDraft;
   emptyBeneficiaryContactConsentWithdrawalDraft: () => BeneficiaryContactConsentWithdrawalDraft;
@@ -570,6 +669,16 @@ export type RealLifeRecordPanelData = {
   recordBeneficiaryOutcomeDeliveryReceipt: RowAction<BeneficiaryOutcomeRow>;
   sectionLabel: PanelStyleFactory;
   generateAttendanceSession: AsyncAction;
+  recordAdminAttendanceCheckin: (subjectUserId: string) => void | Promise<void>;
+  recordAdminAttendanceCardCheckin: (cardCode: string) => void | Promise<void>;
+  recordSchoolAttendanceParentNotification: (payload: {
+    subject_user_id: string;
+    channel: string;
+    delivery_status: string;
+    destination_reference_status?: string | null;
+    destination_reference_label?: string | null;
+    note?: string | null;
+  }) => void | Promise<void>;
   generateResponseChannel: AsyncAction;
   shareLatestResponseViaWhatsApp: AsyncAction;
   setActiveActivityRecordStage: StateSetter<ActivityRecordStageKey>;
@@ -652,6 +761,13 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     attendanceSessionCopied,
     attendanceSessionDraft,
     attendanceSessionRows,
+    domainMemberRows,
+    domainNotices,
+    domainNoticesLoading,
+    schoolFeeExpectedPaymentRows,
+    schoolFeeExpectedPaymentSummary,
+    schoolGuardianContactRows,
+    schoolGuardianContactSummary,
     responseChannelCopied,
     responseChannelDraft,
     responseChannelRows,
@@ -682,6 +798,8 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     templateKey,
     busyActivityRecord,
     busyAttendanceSession,
+    busySchoolFeeExpectedPayment,
+    busySchoolGuardianContact,
     busyBeneficiaryOutcomeRecord,
     busyOutcomeConfirmationLinkId,
     busyOutcomeContactConsentId,
@@ -691,12 +809,17 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     busyOutcomeDeliveryReceiptId,
     busyOutcomeProviderSendId,
     busyResponseChannel,
+    acknowledgeDomainNotice,
     checkBeneficiaryOutcomeProviderSend,
     cleanText,
     compactStatus,
     correctBeneficiaryOutcomeDeliveryReceipt,
     copyLatestAttendanceLink,
     copyLatestResponseLink,
+    createSchoolFeeExpectedPayment,
+    bulkOpenSchoolFeeExpectedPayments,
+    logSchoolFeePaymentProof,
+    recordSchoolGuardianContact,
     createBeneficiaryOutcomeConfirmationLink,
     emptyBeneficiaryContactConsentDraft,
     emptyBeneficiaryContactConsentWithdrawalDraft,
@@ -715,6 +838,9 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     recordBeneficiaryOutcomeDeliveryReceipt,
     sectionLabel,
     generateAttendanceSession,
+    recordAdminAttendanceCheckin,
+    recordAdminAttendanceCardCheckin,
+    recordSchoolAttendanceParentNotification,
     generateResponseChannel,
     shareLatestResponseViaWhatsApp,
     setActiveActivityRecordStage,
@@ -767,6 +893,8 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
   const domainWorkflowKey = cleanText(templateKey || domainType).toLowerCase();
   const isChurchWorkflow =
     domainWorkflowKey === "church_religious_body" || domainWorkflowKey === "religious_body";
+  const isSchoolWorkflow =
+    domainWorkflowKey === "school_multi_branch" || domainWorkflowKey === "school";
   const latestAttendanceSession = attendanceSessionRows[0] || null;
   const latestAttendanceActive = Boolean(latestAttendanceSession?.active);
   const latestAttendanceCount = cleanText(latestAttendanceSession?.checkin_count, "0");
@@ -794,6 +922,9 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
         .map((candidateId) => cleanText(candidateId))
         .filter(Boolean)
     : [];
+  const activeSchoolAttendanceMembers = domainMemberRows
+    .filter((row) => cleanText(row?.status, "inactive").toLowerCase() === "active")
+    .slice(0, 75);
   const latestAttendanceVisibleCandidateIds = latestAttendanceFollowUpCandidateIds.slice(0, 12);
   const latestAttendanceHiddenCandidateCount = Math.max(
     latestAttendanceFollowUpCandidateIds.length - latestAttendanceVisibleCandidateIds.length,
@@ -817,6 +948,552 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
     evidenceReference: string;
   } | null>(null);
 
+  const [schoolStaffScanSubjectUserId, setSchoolStaffScanSubjectUserId] = React.useState("");
+  const [schoolStaffScanCardCode, setSchoolStaffScanCardCode] = React.useState("");
+  const [schoolParentNotificationChannel, setSchoolParentNotificationChannel] = React.useState("gsn");
+  const [schoolParentNotificationStatus, setSchoolParentNotificationStatus] = React.useState("prepared");
+  const [schoolParentNotificationLabel, setSchoolParentNotificationLabel] = React.useState("Parent/guardian on file");
+  const [schoolStaffScanBusy, setSchoolStaffScanBusy] = React.useState(false);
+  const [schoolStaffScanMessage, setSchoolStaffScanMessage] = React.useState("");
+  const [schoolAttendanceCardSheetCopied, setSchoolAttendanceCardSheetCopied] = React.useState(false);
+  const [schoolFeeTrackerCopied, setSchoolFeeTrackerCopied] = React.useState(false);
+  const [schoolGuardianContactSheetCopied, setSchoolGuardianContactSheetCopied] = React.useState(false);
+  const [schoolNoticeAckBusyId, setSchoolNoticeAckBusyId] = React.useState("");
+  const [schoolNoticeAckMessage, setSchoolNoticeAckMessage] = React.useState("");
+  const [schoolNoticeSheetCopied, setSchoolNoticeSheetCopied] = React.useState(false);
+  const [schoolPilotReadinessCopied, setSchoolPilotReadinessCopied] = React.useState(false);
+  const [schoolFeeSubjectUserId, setSchoolFeeSubjectUserId] = React.useState("");
+  const [schoolFeeAmount, setSchoolFeeAmount] = React.useState("");
+  const [schoolFeeCurrency, setSchoolFeeCurrency] = React.useState("NGN");
+  const [schoolFeeTermLabel, setSchoolFeeTermLabel] = React.useState("Current term");
+  const [schoolFeeCampusLabel, setSchoolFeeCampusLabel] = React.useState("");
+  const [schoolFeeProofExpectedPaymentId, setSchoolFeeProofExpectedPaymentId] = React.useState("");
+  const [schoolFeeProofSource, setSchoolFeeProofSource] = React.useState("bank_transfer_slip");
+  const [schoolFeeProofReference, setSchoolFeeProofReference] = React.useState("");
+  const [schoolFeeProofAmount, setSchoolFeeProofAmount] = React.useState("");
+  const [schoolGuardianSubjectUserId, setSchoolGuardianSubjectUserId] = React.useState("");
+  const [schoolGuardianLabel, setSchoolGuardianLabel] = React.useState("Parent/guardian");
+  const [schoolGuardianRelationship, setSchoolGuardianRelationship] = React.useState("parent");
+  const [schoolGuardianChannel, setSchoolGuardianChannel] = React.useState("whatsapp");
+  const [schoolGuardianReferenceLabel, setSchoolGuardianReferenceLabel] = React.useState("Parent WhatsApp on file");
+  const [schoolFeeMessage, setSchoolFeeMessage] = React.useState("");
+
+  const selectedSchoolAttendanceMember =
+    activeSchoolAttendanceMembers.find(
+      (row) => cleanText(row?.user_id) === cleanText(schoolStaffScanSubjectUserId)
+    ) || null;
+  const selectedSchoolAttendanceCardCode = cleanText(
+    selectedSchoolAttendanceMember?.attendance_card_code
+  );
+  const schoolAttendanceCardRows = activeSchoolAttendanceMembers.filter((row) => cleanText(row?.attendance_card_code));
+  const visibleSchoolAttendanceCardRows = schoolAttendanceCardRows.slice(0, 6);
+  const schoolAttendanceCardMissingTotal = Math.max(
+    activeSchoolAttendanceMembers.length - schoolAttendanceCardRows.length,
+    0
+  );
+
+  const visibleSchoolNoticeRows = domainNotices.slice(0, 4);
+  const visibleSchoolFeeRows = schoolFeeExpectedPaymentRows.slice(0, 8);
+  const visibleSchoolGuardianContactRows = schoolGuardianContactRows.slice(0, 4);
+  const schoolGuardianContactActiveCount = schoolGuardianContactRows.filter(
+    (row) => cleanText(row?.contact_status) === "active_attestation"
+  ).length;
+  const schoolGuardianCoverageTotal = cleanText(
+    schoolGuardianContactSummary?.active_member_total,
+    cleanText(activeSchoolAttendanceMembers.length)
+  );
+  const schoolGuardianCoverageReady = cleanText(
+    schoolGuardianContactSummary?.active_member_with_active_contact_total,
+    cleanText(schoolGuardianContactActiveCount)
+  );
+  const schoolGuardianCoverageMissing = cleanText(
+    schoolGuardianContactSummary?.active_member_missing_active_contact_total,
+    "0"
+  );
+  const schoolGuardianMissingIds = Array.isArray(
+    schoolGuardianContactSummary?.missing_active_contact_subject_user_ids
+  )
+    ? schoolGuardianContactSummary?.missing_active_contact_subject_user_ids
+        .map((value) => cleanText(value))
+        .filter(Boolean)
+        .slice(0, 8)
+    : [];
+  const selectedSchoolParentNotificationContact =
+    schoolGuardianContactRows.find(
+      (row) =>
+        cleanText(row?.subject_user_id) === cleanText(schoolStaffScanSubjectUserId) &&
+        cleanText(row?.channel) === cleanText(schoolParentNotificationChannel) &&
+        cleanText(row?.contact_status) !== "withdrawn"
+    ) ||
+    schoolGuardianContactRows.find(
+      (row) =>
+        cleanText(row?.subject_user_id) === cleanText(schoolStaffScanSubjectUserId) &&
+        cleanText(row?.contact_status) !== "withdrawn"
+    ) ||
+    null;
+  const selectedSchoolParentNotificationContactLabel = cleanText(
+    selectedSchoolParentNotificationContact?.destination_reference_label ||
+      selectedSchoolParentNotificationContact?.guardian_label
+  );
+  const schoolFeeStatusCounts = schoolFeeExpectedPaymentRows.reduce<{
+    pending: number;
+    partial: number;
+    confirmed: number;
+    proofUploaded: number;
+  }>(
+    (counts, row) => {
+      const status = cleanText(row?.status, "expected").toLowerCase();
+      if (status === "confirmed" || status === "applied") counts.confirmed += 1;
+      else if (status === "partial") counts.partial += 1;
+      else counts.pending += 1;
+      const meta = row?.meta && typeof row.meta === "object" && !Array.isArray(row.meta)
+        ? (row.meta as UnknownRecord)
+        : {};
+      if (meta.latest_payment_proof && status !== "confirmed" && status !== "applied") {
+        counts.proofUploaded += 1;
+      }
+      return counts;
+    },
+    { pending: 0, partial: 0, confirmed: 0, proofUploaded: 0 }
+  );
+  const schoolFeeCoverageTotal = cleanText(
+    schoolFeeExpectedPaymentSummary?.active_member_total,
+    cleanText(activeSchoolAttendanceMembers.length)
+  );
+  const schoolFeeCoverageReady = cleanText(
+    schoolFeeExpectedPaymentSummary?.active_member_with_expected_payment_total,
+    cleanText(schoolFeeExpectedPaymentRows.length)
+  );
+  const schoolFeeCoverageMissing = cleanText(
+    schoolFeeExpectedPaymentSummary?.active_member_missing_expected_payment_total,
+    "0"
+  );
+  const schoolFeeProofCoverageReady = cleanText(
+    schoolFeeExpectedPaymentSummary?.active_member_with_proof_total,
+    cleanText(schoolFeeStatusCounts.proofUploaded)
+  );
+  const schoolFeeMissingIds = Array.isArray(
+    schoolFeeExpectedPaymentSummary?.missing_expected_payment_subject_user_ids
+  )
+    ? schoolFeeExpectedPaymentSummary?.missing_expected_payment_subject_user_ids
+        .map((value) => cleanText(value))
+        .filter(Boolean)
+        .slice(0, 8)
+    : [];
+
+  const schoolPilotReadinessRows = [
+    {
+      label: "Active roster",
+      value: `${activeSchoolAttendanceMembers.length} loaded`,
+      ready: activeSchoolAttendanceMembers.length > 0,
+      next: activeSchoolAttendanceMembers.length > 0 ? "Roster can drive school setup." : "Load active students/members first.",
+    },
+    {
+      label: "Attendance cards",
+      value: `${schoolAttendanceCardRows.length}/${activeSchoolAttendanceMembers.length}`,
+      ready: activeSchoolAttendanceMembers.length > 0 && schoolAttendanceCardMissingTotal === 0,
+      next: schoolAttendanceCardMissingTotal === 0 ? "Card sheet is ready for staff scanning." : "Refresh roster or generate missing card codes before printing.",
+    },
+    {
+      label: "Guardian contacts",
+      value: `${schoolGuardianCoverageReady}/${schoolGuardianCoverageTotal}`,
+      ready: cleanText(schoolGuardianCoverageMissing) === "0" && cleanText(schoolGuardianCoverageTotal) !== "0",
+      next: cleanText(schoolGuardianCoverageMissing) === "0" ? "Contact reference coverage is complete." : "Record active contact references for missing students.",
+    },
+    {
+      label: "Fee tracking",
+      value: `${schoolFeeCoverageReady}/${schoolFeeCoverageTotal}`,
+      ready: cleanText(schoolFeeCoverageMissing) === "0" && cleanText(schoolFeeCoverageTotal) !== "0",
+      next: cleanText(schoolFeeCoverageMissing) === "0" ? "Expected-payment rows are opened." : "Open missing fee rows before testing follow-up.",
+    },
+    {
+      label: "Official notices",
+      value: `${domainNotices.length} loaded`,
+      ready: domainNotices.length > 0,
+      next: domainNotices.length > 0 ? "Notice acknowledgement can be tested." : "Post at least one notice on the Announcement Board.",
+    },
+  ];
+  const schoolPilotReadyCount = schoolPilotReadinessRows.filter((row) => row.ready).length;
+  const schoolPilotReadinessStatus = schoolPilotReadyCount === schoolPilotReadinessRows.length ? "Pilot ready" : `${schoolPilotReadyCount}/${schoolPilotReadinessRows.length} ready`;
+
+  async function copySchoolPilotReadinessSheet() {
+    const lines = [
+      "GSN school pilot readiness sheet",
+      "Boundary: this readiness sheet reports setup status inside GSN only. It is not proof of parent consent, message delivery, fee payment, attendance, or bank reconciliation.",
+      `Summary\t${schoolPilotReadinessStatus}`,
+      "Area\tStatus\tValue\tNext step",
+      ...schoolPilotReadinessRows.map((row) => [
+        row.label,
+        row.ready ? "ready" : "needs setup",
+        row.value,
+        row.next,
+      ].join("\t")),
+    ];
+    const copyText = lines.join("\n");
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(copyText);
+        setSchoolPilotReadinessCopied(true);
+        setSchoolFeeMessage("School pilot readiness sheet copied. Review before sending or printing.");
+        window.setTimeout(() => setSchoolPilotReadinessCopied(false), 1600);
+      } else {
+        setSchoolFeeMessage(`Clipboard is not available. School pilot readiness sheet: ${copyText}`);
+      }
+    } catch {
+      setSchoolFeeMessage(`Clipboard access was blocked. School pilot readiness sheet: ${copyText}`);
+    }
+  }
+  async function copySchoolNoticeAcknowledgementSheet() {
+    if (!domainNotices.length) {
+      setSchoolNoticeAckMessage("No school notices are loaded to copy yet.");
+      return;
+    }
+    const lines = [
+      "GSN school notice acknowledgement sheet",
+      "Boundary: this sheet records GSN notice acknowledgement status only. It is not WhatsApp delivery proof, not parent read confirmation, and not proof that a paper circular reached home.",
+      "Notice\tStatus\tAcknowledged\tNeeds follow-up\tViewer acknowledged\tPublic QR\tEvent ID",
+      ...domainNotices.map((notice) => {
+        const summary = notice?.acknowledgement_summary && typeof notice.acknowledgement_summary === "object" && !Array.isArray(notice.acknowledgement_summary)
+          ? (notice.acknowledgement_summary as UnknownRecord)
+          : {};
+        return [
+          cleanText(notice?.body, "Official school notice"),
+          cleanText(notice?.active_board_status, "active"),
+          cleanText(summary?.acknowledged_count, "0"),
+          cleanText(summary?.not_acknowledged_count, "0"),
+          summary?.viewer_acknowledged ? "yes" : "no",
+          cleanText(notice?.public_path) ? "yes" : "no",
+          cleanText(notice?.event_id || notice?.notice_id, "-"),
+        ].join("\t");
+      }),
+    ];
+    const copyText = lines.join("\n");
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(copyText);
+        setSchoolNoticeSheetCopied(true);
+        setSchoolNoticeAckMessage("Notice acknowledgement sheet copied. Review before sending or printing.");
+        window.setTimeout(() => setSchoolNoticeSheetCopied(false), 1600);
+      } else {
+        setSchoolNoticeAckMessage(`Clipboard is not available. Notice acknowledgement sheet: ${copyText}`);
+      }
+    } catch {
+      setSchoolNoticeAckMessage(`Clipboard access was blocked. Notice acknowledgement sheet: ${copyText}`);
+    }
+  }
+  async function submitSchoolNoticeAcknowledgement(noticeEventId: string) {
+    const cleanNoticeEventId = cleanText(noticeEventId);
+    if (!cleanNoticeEventId) {
+      setSchoolNoticeAckMessage("Choose a notice before acknowledging.");
+      return;
+    }
+    setSchoolNoticeAckBusyId(cleanNoticeEventId);
+    setSchoolNoticeAckMessage("");
+    try {
+      await acknowledgeDomainNotice(cleanNoticeEventId);
+      setSchoolNoticeAckMessage("Notice acknowledged in GSN. This does not prove WhatsApp delivery.");
+    } finally {
+      setSchoolNoticeAckBusyId("");
+    }
+  }
+
+  async function submitSchoolFeeExpectedPayment() {
+    const cleanSubjectUserId = cleanText(schoolFeeSubjectUserId);
+    const cleanAmount = cleanText(schoolFeeAmount);
+    if (!cleanSubjectUserId) {
+      setSchoolFeeMessage("Choose a student/member before opening fee tracking.");
+      return;
+    }
+    if (!cleanAmount) {
+      setSchoolFeeMessage("Enter the fee amount first.");
+      return;
+    }
+    setSchoolFeeMessage("");
+    await createSchoolFeeExpectedPayment({
+      subject_user_id: cleanSubjectUserId,
+      amount: cleanAmount,
+      currency: cleanText(schoolFeeCurrency, "NGN"),
+      term_label: cleanText(schoolFeeTermLabel, "Current term"),
+      fee_label: "School fees",
+      campus_label: cleanText(schoolFeeCampusLabel) || null,
+      note: "Opened from school governance packet. Confirmation still requires finance review or bank/provider match.",
+    });
+    setSchoolFeeMessage("Fee tracking submitted. Check the status row below after GSN refreshes the list.");
+  }
+
+  async function submitBulkSchoolFeeExpectedPayments() {
+    const cleanAmount = cleanText(schoolFeeAmount);
+    if (!cleanAmount) {
+      setSchoolFeeMessage("Enter the fee amount first.");
+      return;
+    }
+    setSchoolFeeMessage("");
+    await bulkOpenSchoolFeeExpectedPayments({
+      amount: cleanAmount,
+      currency: cleanText(schoolFeeCurrency, "NGN"),
+      term_label: cleanText(schoolFeeTermLabel, "Current term"),
+      fee_label: "School fees",
+      campus_label: cleanText(schoolFeeCampusLabel) || null,
+      note: "Bulk opened from school governance packet. Confirmation still requires finance review or bank/provider match.",
+    });
+    setSchoolFeeMessage("Bulk fee setup submitted. Existing rows will not be duplicated.");
+  }
+
+  async function submitSchoolFeePaymentProofLog() {
+    const cleanExpectedPaymentId = cleanText(schoolFeeProofExpectedPaymentId);
+    if (!cleanExpectedPaymentId) {
+      setSchoolFeeMessage("Choose the fee row before logging proof.");
+      return;
+    }
+    setSchoolFeeMessage("");
+    await logSchoolFeePaymentProof({
+      expected_payment_id: cleanExpectedPaymentId,
+      proof_source: cleanText(schoolFeeProofSource, "bank_transfer_slip"),
+      proof_status: "submitted",
+      proof_reference: cleanText(schoolFeeProofReference) || null,
+      amount_reported: cleanText(schoolFeeProofAmount) || null,
+      note: "Logged from school governance packet. Proof still requires finance review or bank/provider reconciliation.",
+    });
+    setSchoolFeeMessage("Payment proof logged for finance review. This is not bank confirmation.");
+  }
+
+  async function copySchoolFeeTrackerSheet() {
+    if (!schoolFeeExpectedPaymentRows.length) {
+      setSchoolFeeMessage("No school-fee tracker rows are loaded to copy yet.");
+      return;
+    }
+    const lines = [
+      "GSN school-fee tracker sheet",
+      "Boundary: this sheet is a bursar follow-up view from GSN expected-payment rows. It is not a receipt, bank confirmation, or legal proof that a parent has paid.",
+      `Summary\tPending ${schoolFeeStatusCounts.pending}\tPartial ${schoolFeeStatusCounts.partial}\tProof ${schoolFeeStatusCounts.proofUploaded}\tConfirmed ${schoolFeeStatusCounts.confirmed}\tCoverage ${schoolFeeCoverageReady}/${schoolFeeCoverageTotal}`,
+      "Student/member\tUser ID\tStatus\tAmount\tTerm\tCampus\tReference\tProof status\tProof reference",
+      ...schoolFeeExpectedPaymentRows.map((row) => {
+        const meta = row?.meta && typeof row.meta === "object" && !Array.isArray(row.meta)
+          ? (row.meta as UnknownRecord)
+          : {};
+        const latestProof = meta.latest_payment_proof && typeof meta.latest_payment_proof === "object" && !Array.isArray(meta.latest_payment_proof)
+          ? (meta.latest_payment_proof as UnknownRecord)
+          : {};
+        const studentLabel =
+          cleanText(row?.student_display_name) ||
+          cleanText(row?.student_email) ||
+          (cleanText(row?.subject_user_id) ? `Member ${cleanText(row?.subject_user_id)}` : "Student/member");
+        const amountLabel = `${cleanText(row?.currency, "NGN")} ${cleanText(row?.amount, "0")}`;
+        return [
+          studentLabel,
+          cleanText(row?.subject_user_id, "-"),
+          cleanText(row?.payment_status_label, cleanText(row?.status, "Expected")),
+          amountLabel,
+          cleanText(row?.term_label, "Current term"),
+          cleanText(row?.campus_label, "-"),
+          cleanText(row?.reference_display || row?.reference, "-"),
+          cleanText(latestProof.proof_status || latestProof.status, "none"),
+          cleanText(latestProof.proof_reference || latestProof.reference, "-"),
+        ].join("\t");
+      }),
+    ];
+    const copyText = lines.join("\n");
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(copyText);
+        setSchoolFeeTrackerCopied(true);
+        setSchoolFeeMessage("School-fee tracker copied for bursar follow-up. Review before sending or printing.");
+        window.setTimeout(() => setSchoolFeeTrackerCopied(false), 1600);
+      } else {
+        setSchoolFeeMessage(`Clipboard is not available. School-fee tracker: ${copyText}`);
+      }
+    } catch {
+      setSchoolFeeMessage(`Clipboard access was blocked. School-fee tracker: ${copyText}`);
+    }
+  }
+  async function copySchoolGuardianContactSheet() {
+    if (!schoolGuardianContactRows.length) {
+      setSchoolFeeMessage("No parent/guardian contact rows are loaded to copy yet.");
+      return;
+    }
+    const lines = [
+      "GSN school parent/guardian contact sheet",
+      "Boundary: this sheet is an internal school contact-reference register from GSN. It is not parent identity verification, consent proof, WhatsApp delivery proof, or confirmation that a message was read.",
+      `Summary\tActive contacts ${schoolGuardianContactActiveCount}\tCoverage ${schoolGuardianCoverageReady}/${schoolGuardianCoverageTotal}\tMissing active contacts ${schoolGuardianCoverageMissing}`,
+      "Student/member ID\tGuardian label\tRelationship\tChannel\tReference label\tContact status\tConsent basis\tNotification scope",
+      ...schoolGuardianContactRows.map((row) => [
+        cleanText(row?.subject_user_id, "-"),
+        cleanText(row?.guardian_label, "Parent/guardian"),
+        cleanText(row?.relationship, "-"),
+        cleanText(row?.channel, "manual"),
+        cleanText(row?.destination_reference_label, "Reference on file"),
+        cleanText(row?.contact_status, "on_file_unverified"),
+        cleanText(row?.consent_basis, "-"),
+        cleanText(row?.notification_scope, "-"),
+      ].join("\t")),
+    ];
+    const copyText = lines.join("\n");
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(copyText);
+        setSchoolGuardianContactSheetCopied(true);
+        setSchoolFeeMessage("Parent/guardian contact sheet copied. Review before sending or printing.");
+        window.setTimeout(() => setSchoolGuardianContactSheetCopied(false), 1600);
+      } else {
+        setSchoolFeeMessage(`Clipboard is not available. Parent/guardian contact sheet: ${copyText}`);
+      }
+    } catch {
+      setSchoolFeeMessage(`Clipboard access was blocked. Parent/guardian contact sheet: ${copyText}`);
+    }
+  }
+  async function submitSchoolGuardianContact() {
+    const cleanSubjectUserId = cleanText(schoolGuardianSubjectUserId);
+    if (!cleanSubjectUserId) {
+      setSchoolFeeMessage("Choose a student/member before recording a parent or guardian contact.");
+      return;
+    }
+    setSchoolFeeMessage("");
+    await recordSchoolGuardianContact({
+      subject_user_id: cleanSubjectUserId,
+      guardian_label: cleanText(schoolGuardianLabel, "Parent/guardian"),
+      relationship: cleanText(schoolGuardianRelationship, "parent"),
+      channel: cleanText(schoolGuardianChannel, "whatsapp"),
+      destination_reference_status: "admin_verified_off_platform",
+      destination_reference_label: cleanText(schoolGuardianReferenceLabel) || null,
+      contact_status: "active_attestation",
+      consent_basis: "guardian_or_authorized_contact",
+      notification_scope: "school_attendance_fee_and_notice_follow_up",
+      note: "Recorded from school governance packet. Provider delivery still requires a connected bridge and delivery receipts.",
+    });
+    setSchoolFeeMessage("Parent/guardian contact reference recorded. This is not delivery proof.");
+  }
+
+  async function copySchoolAttendanceCardSheet() {
+    if (!schoolAttendanceCardRows.length) {
+      setSchoolStaffScanMessage("No attendance card rows are loaded to copy yet.");
+      return;
+    }
+    const lines = [
+      "GSN attendance card sheet",
+      "Boundary: these codes identify active GSN roster rows for signed-in staff scanning only. They are not public student records, attendance proof, parent notification, or payment proof.",
+      "Student/member	User ID	Attendance card code",
+      ...schoolAttendanceCardRows.map((row) => {
+        const userId = cleanText(row?.user_id);
+        const studentLabel =
+          cleanText(row?.user_display_name) ||
+          cleanText(row?.user_email) ||
+          (userId ? `Member ${userId}` : "Student/member");
+        return `${studentLabel}	${userId || "-"}	${cleanText(row?.attendance_card_code)}`;
+      }),
+    ];
+    const copyText = lines.join("\n");
+    try {
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(copyText);
+        setSchoolAttendanceCardSheetCopied(true);
+        setSchoolStaffScanMessage("Attendance card sheet copied. Review before printing or sharing with staff.");
+        window.setTimeout(() => setSchoolAttendanceCardSheetCopied(false), 1600);
+      } else {
+        setSchoolStaffScanMessage(`Clipboard is not available. Card sheet: ${copyText}`);
+      }
+    } catch {
+      setSchoolStaffScanMessage(`Clipboard access was blocked. Card sheet: ${copyText}`);
+    }
+  }
+
+  async function submitSchoolStaffScanCardAttendance() {
+    const cleanCardCode = cleanText(schoolStaffScanCardCode || selectedSchoolAttendanceCardCode);
+    if (!cleanCardCode) {
+      setSchoolStaffScanMessage("Scan, paste, or select a student ID card code first.");
+      return;
+    }
+    setSchoolStaffScanBusy(true);
+    setSchoolStaffScanMessage("");
+    try {
+      await recordAdminAttendanceCardCheckin(cleanCardCode);
+      setSchoolStaffScanCardCode("");
+      setSchoolStaffScanMessage("Attendance card recorded for this student/member.");
+    } catch (error) {
+      setSchoolStaffScanMessage("GSN could not record attendance from this card code.");
+    } finally {
+      setSchoolStaffScanBusy(false);
+    }
+  }
+
+  async function submitSchoolParentNotificationLog() {
+    const cleanSubjectUserId = cleanText(schoolStaffScanSubjectUserId);
+    if (!cleanSubjectUserId) {
+      setSchoolStaffScanMessage("Choose a student/member before logging parent notification.");
+      return;
+    }
+    setSchoolStaffScanBusy(true);
+    setSchoolStaffScanMessage("");
+    try {
+      const destinationLabel =
+        cleanText(schoolParentNotificationLabel) ||
+        selectedSchoolParentNotificationContactLabel ||
+        null;
+      await recordSchoolAttendanceParentNotification({
+        subject_user_id: cleanSubjectUserId,
+        channel: cleanText(schoolParentNotificationChannel, "gsn"),
+        delivery_status: cleanText(schoolParentNotificationStatus, "prepared"),
+        destination_reference_status: destinationLabel ? "on_file" : "not_recorded",
+        destination_reference_label: destinationLabel,
+        note: selectedSchoolParentNotificationContact
+          ? "Parent notification log recorded from the school governance packet using the roster guardian contact reference. Delivery proof is external unless a provider is connected."
+          : "Parent notification log recorded from the school governance packet. Delivery proof is external unless a provider is connected.",
+      });
+      setSchoolStaffScanMessage("Parent notification log recorded. This is not delivery proof.");
+    } catch (error) {
+      setSchoolStaffScanMessage("GSN could not record this parent notification log.");
+    } finally {
+      setSchoolStaffScanBusy(false);
+    }
+  }
+
+  async function submitSchoolStaffScanAttendance() {
+    const cleanSubjectUserId = cleanText(schoolStaffScanSubjectUserId);
+    if (!cleanSubjectUserId) {
+      setSchoolStaffScanMessage("Enter a student or member user ID first.");
+      return;
+    }
+    setSchoolStaffScanBusy(true);
+    setSchoolStaffScanMessage("");
+    try {
+      await recordAdminAttendanceCheckin(cleanSubjectUserId);
+      setSchoolStaffScanMessage("Attendance record submitted for this student/member ID.");
+    } catch (error) {
+      setSchoolStaffScanMessage("GSN could not record this attendance from the school packet.");
+    } finally {
+      setSchoolStaffScanBusy(false);
+    }
+  }
+
+  function prepareSchoolStaffAttendanceWindowPreset(preset: "arrival" | "dismissal") {
+    const isDismissal = preset === "dismissal";
+    updateAttendanceSessionDraft("programme_label", isDismissal ? "School dismissal" : "School morning arrival");
+    updateAttendanceSessionDraft("method", "staff_scan");
+    updateAttendanceSessionDraft("window_minutes", "120");
+    updateAttendanceSessionDraft(
+      "note",
+      isDismissal
+        ? "Staff-scanned dismissal window for students. Students do not need phones; parent notification is recorded separately until a provider is connected."
+        : "Staff-scanned arrival window for students. Students do not need phones; parent notification is recorded separately until a provider is connected."
+    );
+  }
+
+  function prepareSchoolStaffAttendanceWindow() {
+    prepareSchoolStaffAttendanceWindowPreset("arrival");
+  }
+
+  function applySchoolActivityPreset(preset: (typeof SCHOOL_ACTIVITY_PRESET_PACK)[number]) {
+    updateActivityDraft("activity_type", preset.activityType);
+    updateActivityDraft("activity_label", preset.activityLabel);
+    updateActivityDraft("measurement_unit", preset.unit);
+    updateActivityDraft("note", preset.note);
+    updateActivityDraft("follow_up_due_at", "");
+    setChurchFollowUpSourceCue(null);
+    setActiveRealLifeRecordTask("activity");
+    setActiveActivityRecordTask("record");
+    setActiveActivityRecordStage("person");
+    setActivityRecordTaskChooserOpen(false);
+    setActivityRecordStageChooserOpen(false);
+  }
   function applyChurchActivityPreset(
     preset: (typeof CHURCH_ACTIVITY_PRESET_PACK)[number],
     subjectUserId = "",
@@ -1349,6 +2026,1062 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                         ) : null}
 
 
+                        {isSchoolWorkflow ? (
+                          <div
+                            data-debug-id="community-domain-dashboard.school-workflow-packet"
+                            style={{
+                              display: "grid",
+                              gap: 8,
+                              borderRadius: 12,
+                              border: "1px solid rgba(199,164,74,0.28)",
+                              background: "rgba(199,164,74,0.08)",
+                              padding: 12,
+                            }}
+                          >
+                            <div style={sectionLabel()}>School governance packet</div>
+                            <div style={{ ...helperText(), fontSize: 13 }}>
+                              Use these presets for parent notice follow-up, fee follow-up, staff-scanned student arrival and dismissal, and school shop or supply notices. WhatsApp can carry prompts; GSN keeps the official school record.
+                            </div>
+                            <div
+                              data-debug-id="community-domain-dashboard.school-pilot-readiness"
+                              style={{
+                                display: "grid",
+                                gap: 8,
+                                borderRadius: 10,
+                                border: "1px solid rgba(9,27,46,0.1)",
+                                background: "#FFFFFF",
+                                padding: 10,
+                              }}
+                            >
+                              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                                <div style={sectionLabel()}>Pilot readiness</div>
+                                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                                  <span style={statusBadge(schoolPilotReadyCount === schoolPilotReadinessRows.length ? "confirmed" : "pending")}>{schoolPilotReadinessStatus}</span>
+                                  <StableButton
+                                    type="button"
+                                    kind="secondary"
+                                    stableHeight={30}
+                                    debugId="community-domain-dashboard.school-pilot-readiness-copy"
+                                    onClick={copySchoolPilotReadinessSheet}
+                                    style={{ fontSize: 11, padding: "0 10px" }}
+                                  >
+                                    {schoolPilotReadinessCopied ? "Copied" : "Copy Readiness"}
+                                  </StableButton>
+                                </div>
+                              </div>
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                                  gap: 6,
+                                }}
+                              >
+                                {schoolPilotReadinessRows.map((row) => (
+                                  <div
+                                    key={row.label}
+                                    style={{
+                                      display: "grid",
+                                      gap: 4,
+                                      borderRadius: 8,
+                                      border: "1px solid rgba(9,27,46,0.08)",
+                                      background: row.ready ? "rgba(28,95,59,0.08)" : "rgba(107,74,0,0.08)",
+                                      padding: 8,
+                                      minWidth: 0,
+                                    }}
+                                  >
+                                    <div style={{ display: "flex", justifyContent: "space-between", gap: 6, flexWrap: "wrap" }}>
+                                      <strong style={{ color: "#091B2E", fontSize: 12 }}>{row.label}</strong>
+                                      <span style={statusBadge(row.ready ? "confirmed" : "pending")}>{row.ready ? "Ready" : "Setup"}</span>
+                                    </div>
+                                    <div style={{ ...helperText(), fontSize: 12 }}>{row.value}</div>
+                                  </div>
+                                ))}
+                              </div>
+                              <div style={{ ...helperText(), fontSize: 12 }}>
+                                This readiness view only reports setup status. It does not prove attendance, payment, parent consent, or message delivery.
+                              </div>
+                            </div>
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns:
+                                  "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                                gap: 8,
+                              }}
+                            >
+                              {SCHOOL_ACTIVITY_PRESET_PACK.map((preset) => (
+                                <StableButton
+                                  key={preset.key}
+                                  type="button"
+                                  kind={
+                                    activityDraft.activity_type === preset.activityType
+                                      ? "primary"
+                                      : "secondary"
+                                  }
+                                  stableHeight={44}
+                                  disabled={busyActivityRecord}
+                                  debugId={`community-domain-dashboard.school-workflow.${preset.key}`}
+                                  onClick={() => applySchoolActivityPreset(preset)}
+                                  style={{
+                                    justifyContent: "center",
+                                    fontSize: 12,
+                                    textTransform: "none",
+                                  }}
+                                >
+                                  {preset.label}
+                                </StableButton>
+                              ))}
+                            </div>
+                            <div
+                              data-debug-id="community-domain-dashboard.school-adoption-boundary"
+                              style={{
+                                borderRadius: 10,
+                                border: "1px solid rgba(9,27,46,0.1)",
+                                background: "#FFFFFF",
+                                padding: 10,
+                                color: "#42526E",
+                                fontSize: 12,
+                                lineHeight: 1.45,
+                              }}
+                            >
+                              Keep WhatsApp as a bridge, not the destination. GSN should hold acknowledgement, fee status, attendance record, and school shop or service visibility so parents have a reason to enter the school community.
+                            </div>
+                            <div
+                              data-debug-id="community-domain-dashboard.school-notice-acknowledgement"
+                              style={{
+                                display: "grid",
+                                gap: 10,
+                                borderRadius: 12,
+                                border: "1px solid rgba(9,27,46,0.1)",
+                                background: "#FFFFFF",
+                                padding: 12,
+                              }}
+                            >
+                              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                                <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
+                                  <div style={sectionLabel()}>Parent notice acknowledgement</div>
+                                  <div style={{ ...helperText(), fontSize: 13 }}>
+                                    Track who acknowledged official school notices inside GSN. This is not WhatsApp delivery proof, but it gives admin a clean follow-up list.
+                                  </div>
+                                </div>
+                                <span style={statusBadge(domainNoticesLoading ? "loading" : "notice")}>
+                                  {domainNoticesLoading ? "Loading" : `${visibleSchoolNoticeRows.length} notices`}
+                                </span>
+                                <StableButton
+                                  type="button"
+                                  kind="secondary"
+                                  stableHeight={30}
+                                  disabled={!domainNotices.length || domainNoticesLoading}
+                                  debugId="community-domain-dashboard.school-notice-sheet-copy"
+                                  onClick={copySchoolNoticeAcknowledgementSheet}
+                                  style={{ fontSize: 11, padding: "0 10px" }}
+                                >
+                                  {schoolNoticeSheetCopied ? "Copied" : "Copy Notice Sheet"}
+                                </StableButton>
+                              </div>
+                              {visibleSchoolNoticeRows.length ? (
+                                <div style={{ display: "grid", gap: 8 }}>
+                                  {visibleSchoolNoticeRows.map((notice) => {
+                                    const eventId = cleanText(notice?.event_id);
+                                    const summary = notice?.acknowledgement_summary && typeof notice.acknowledgement_summary === "object" && !Array.isArray(notice.acknowledgement_summary)
+                                      ? (notice.acknowledgement_summary as UnknownRecord)
+                                      : {};
+                                    const acknowledgedCount = cleanText(summary?.acknowledged_count, "0");
+                                    const followUpCount = cleanText(summary?.not_acknowledged_count, "0");
+                                    const viewerAcknowledged = Boolean(summary?.viewer_acknowledged);
+                                    const publicPath = cleanText(notice?.public_path);
+                                    return (
+                                      <div
+                                        key={eventId || cleanText(notice?.notice_id) || cleanText(notice?.body)}
+                                        style={{
+                                          display: "grid",
+                                          gap: 8,
+                                          borderRadius: 10,
+                                          border: "1px solid rgba(9,27,46,0.08)",
+                                          padding: 10,
+                                        }}
+                                      >
+                                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                                          <strong style={{ color: "#091B2E", fontSize: 13, lineHeight: 1.35 }}>
+                                            {cleanText(notice?.body, "Official school notice")}
+                                          </strong>
+                                          <span style={statusBadge(cleanText(summary?.follow_up_status, "follow_up_needed"))}>
+                                            Follow-up: {followUpCount}
+                                          </span>
+                                        </div>
+                                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                                          <span style={statusBadge("acknowledged")}>Ack: {acknowledgedCount}</span>
+                                          <span style={statusBadge(cleanText(notice?.active_board_status, "active"))}>
+                                            {cleanText(notice?.active_board_status, "active")}
+                                          </span>
+                                          {publicPath ? <span style={statusBadge("public")}>Public QR on</span> : null}
+                                        </div>
+                                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                          <StableButton
+                                            type="button"
+                                            kind={viewerAcknowledged ? "secondary" : "primary"}
+                                            stableHeight={38}
+                                            disabled={!eventId || viewerAcknowledged || schoolNoticeAckBusyId === eventId}
+                                            busy={schoolNoticeAckBusyId === eventId}
+                                            debugId="community-domain-dashboard.school-notice-acknowledge"
+                                            onClick={() => submitSchoolNoticeAcknowledgement(eventId)}
+                                            style={{ fontSize: 12 }}
+                                          >
+                                            {viewerAcknowledged ? "Acknowledged" : "Acknowledge"}
+                                          </StableButton>
+                                          <StableButton
+                                            type="button"
+                                            kind="secondary"
+                                            stableHeight={38}
+                                            disabled={busyActivityRecord}
+                                            debugId="community-domain-dashboard.school-notice-follow-up-preset"
+                                            onClick={() => {
+                                              const preset = SCHOOL_ACTIVITY_PRESET_PACK.find((item) => item.key === "parent_notice_follow_up") || SCHOOL_ACTIVITY_PRESET_PACK[0];
+                                              applySchoolActivityPreset(preset);
+                                            }}
+                                            style={{ fontSize: 12 }}
+                                          >
+                                            Follow-up Preset
+                                          </StableButton>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <div style={{ ...helperText(), fontSize: 12 }}>
+                                  No official school notices loaded yet. Use the Announcement Board to post the first notice.
+                                </div>
+                              )}
+                              {schoolNoticeAckMessage ? (
+                                <div style={{ ...helperText(), fontSize: 12, color: "#6B4A00" }}>
+                                  {schoolNoticeAckMessage}
+                                </div>
+                              ) : null}
+                            </div>
+                            <div
+                              data-debug-id="community-domain-dashboard.school-fee-tracker"
+                              style={{
+                                display: "grid",
+                                gap: 10,
+                                borderRadius: 12,
+                                border: "1px solid rgba(9,27,46,0.1)",
+                                background: "#FFFFFF",
+                                padding: 12,
+                              }}
+                            >
+                              <div style={sectionLabel()}>School-fee tracker</div>
+                              <div style={{ ...helperText(), fontSize: 13 }}>
+                                Open an expected payment for a student/member. GSN can track proof and finance status, but this is not bank confirmation until review or reconciliation happens.
+                              </div>
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 160px), 1fr))",
+                                  gap: 8,
+                                  alignItems: "end",
+                                }}
+                              >
+                                <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                                  <span style={sectionLabel()}>Student/member</span>
+                                  <select
+                                    data-debug-id="community-domain-dashboard.school-fee-member-select"
+                                    value={schoolFeeSubjectUserId}
+                                    disabled={busySchoolFeeExpectedPayment || !activeSchoolAttendanceMembers.length}
+                                    onChange={(event) => setSchoolFeeSubjectUserId(event.target.value)}
+                                    style={billingInputStyle()}
+                                  >
+                                    <option value="">
+                                      {activeSchoolAttendanceMembers.length ? "Select from roster" : "No active roster loaded"}
+                                    </option>
+                                    {activeSchoolAttendanceMembers.map((row) => {
+                                      const userId = cleanText(row?.user_id);
+                                      const label =
+                                        cleanText(row?.user_display_name) ||
+                                        cleanText(row?.user_email) ||
+                                        (userId ? `Member ${userId}` : "Domain member");
+                                      return userId ? (
+                                        <option key={`fee-${userId}`} value={userId}>
+                                          {label} - ID {userId}
+                                        </option>
+                                      ) : null;
+                                    })}
+                                  </select>
+                                </label>
+                                <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                                  <span style={sectionLabel()}>Amount</span>
+                                  <input
+                                    data-debug-id="community-domain-dashboard.school-fee-amount"
+                                    value={schoolFeeAmount}
+                                    disabled={busySchoolFeeExpectedPayment}
+                                    onChange={(event) => setSchoolFeeAmount(event.target.value)}
+                                    placeholder="e.g. 50000"
+                                    inputMode="decimal"
+                                    style={billingInputStyle()}
+                                  />
+                                </label>
+                                <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                                  <span style={sectionLabel()}>Currency</span>
+                                  <input
+                                    data-debug-id="community-domain-dashboard.school-fee-currency"
+                                    value={schoolFeeCurrency}
+                                    disabled={busySchoolFeeExpectedPayment}
+                                    onChange={(event) => setSchoolFeeCurrency(event.target.value.toUpperCase())}
+                                    placeholder="NGN"
+                                    style={billingInputStyle()}
+                                  />
+                                </label>
+                                <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                                  <span style={sectionLabel()}>Term</span>
+                                  <input
+                                    data-debug-id="community-domain-dashboard.school-fee-term"
+                                    value={schoolFeeTermLabel}
+                                    disabled={busySchoolFeeExpectedPayment}
+                                    onChange={(event) => setSchoolFeeTermLabel(event.target.value)}
+                                    placeholder="2026 first term"
+                                    style={billingInputStyle()}
+                                  />
+                                </label>
+                                <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                                  <span style={sectionLabel()}>Campus</span>
+                                  <input
+                                    data-debug-id="community-domain-dashboard.school-fee-campus"
+                                    value={schoolFeeCampusLabel}
+                                    disabled={busySchoolFeeExpectedPayment}
+                                    onChange={(event) => setSchoolFeeCampusLabel(event.target.value)}
+                                    placeholder="Campus 3"
+                                    style={billingInputStyle()}
+                                  />
+                                </label>
+                              </div>
+                              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                <StableButton
+                                  type="button"
+                                  kind="primary"
+                                  stableHeight={42}
+                                  disabled={busySchoolFeeExpectedPayment}
+                                  busy={busySchoolFeeExpectedPayment}
+                                  debugId="community-domain-dashboard.school-fee-open"
+                                  onClick={submitSchoolFeeExpectedPayment}
+                                  style={{ fontSize: 12 }}
+                                >
+                                  Open Fee Tracking
+                                </StableButton>
+                                <StableButton
+                                  type="button"
+                                  kind="secondary"
+                                  stableHeight={42}
+                                  debugId="community-domain-dashboard.school-fee-open-roster"
+                                  onClick={openMemberRoster}
+                                  style={{ fontSize: 12 }}
+                                >
+                                  Open Roster
+                                </StableButton>
+                                <StableButton
+                                  type="button"
+                                  kind="secondary"
+                                  stableHeight={42}
+                                  disabled={busySchoolFeeExpectedPayment || schoolFeeCoverageMissing === "0"}
+                                  busy={busySchoolFeeExpectedPayment}
+                                  debugId="community-domain-dashboard.school-fee-bulk-open-missing"
+                                  onClick={submitBulkSchoolFeeExpectedPayments}
+                                  style={{ fontSize: 12 }}
+                                >
+                                  Open Missing Fee Rows
+                                </StableButton>
+                              </div>
+                              <div
+                                data-debug-id="community-domain-dashboard.school-fee-proof-log"
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 160px), 1fr))",
+                                  gap: 8,
+                                  alignItems: "end",
+                                  borderRadius: 10,
+                                  border: "1px solid rgba(177,132,31,0.22)",
+                                  background: "#FFF8E8",
+                                  padding: 10,
+                                }}
+                              >
+                                <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                                  <span style={sectionLabel()}>Proof row</span>
+                                  <select
+                                    data-debug-id="community-domain-dashboard.school-fee-proof-row"
+                                    value={schoolFeeProofExpectedPaymentId}
+                                    disabled={busySchoolFeeExpectedPayment || !schoolFeeExpectedPaymentRows.length}
+                                    onChange={(event) => setSchoolFeeProofExpectedPaymentId(event.target.value)}
+                                    style={billingInputStyle()}
+                                  >
+                                    <option value="">Select fee row</option>
+                                    {schoolFeeExpectedPaymentRows.map((row) => {
+                                      const rowId = cleanText(row?.id);
+                                      const label =
+                                        cleanText(row?.student_display_name) ||
+                                        cleanText(row?.student_email) ||
+                                        (cleanText(row?.subject_user_id) ? `Member ${cleanText(row?.subject_user_id)}` : "Student/member");
+                                      return rowId ? (
+                                        <option key={`fee-proof-${rowId}`} value={rowId}>
+                                          {label} - {cleanText(row?.currency, "NGN")} {cleanText(row?.amount, "0")}
+                                        </option>
+                                      ) : null;
+                                    })}
+                                  </select>
+                                </label>
+                                <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                                  <span style={sectionLabel()}>Proof source</span>
+                                  <select
+                                    data-debug-id="community-domain-dashboard.school-fee-proof-source"
+                                    value={schoolFeeProofSource}
+                                    disabled={busySchoolFeeExpectedPayment}
+                                    onChange={(event) => setSchoolFeeProofSource(event.target.value)}
+                                    style={billingInputStyle()}
+                                  >
+                                    <option value="bank_transfer_slip">Bank transfer slip</option>
+                                    <option value="whatsapp_screenshot">WhatsApp screenshot</option>
+                                    <option value="cash_receipt">Cash receipt</option>
+                                    <option value="pos_receipt">POS receipt</option>
+                                    <option value="teller">Bank teller</option>
+                                    <option value="manual_note">Manual note</option>
+                                  </select>
+                                </label>
+                                <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                                  <span style={sectionLabel()}>Proof ref</span>
+                                  <input
+                                    data-debug-id="community-domain-dashboard.school-fee-proof-reference"
+                                    value={schoolFeeProofReference}
+                                    disabled={busySchoolFeeExpectedPayment}
+                                    onChange={(event) => setSchoolFeeProofReference(event.target.value)}
+                                    placeholder="Slip, teller, or chat ref"
+                                    style={billingInputStyle()}
+                                  />
+                                </label>
+                                <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                                  <span style={sectionLabel()}>Amount seen</span>
+                                  <input
+                                    data-debug-id="community-domain-dashboard.school-fee-proof-amount"
+                                    value={schoolFeeProofAmount}
+                                    disabled={busySchoolFeeExpectedPayment}
+                                    onChange={(event) => setSchoolFeeProofAmount(event.target.value)}
+                                    placeholder="e.g. 25000"
+                                    inputMode="decimal"
+                                    style={billingInputStyle()}
+                                  />
+                                </label>
+                                <StableButton
+                                  type="button"
+                                  kind="secondary"
+                                  stableHeight={42}
+                                  disabled={busySchoolFeeExpectedPayment || !schoolFeeExpectedPaymentRows.length}
+                                  busy={busySchoolFeeExpectedPayment}
+                                  debugId="community-domain-dashboard.school-fee-proof-log-submit"
+                                  onClick={submitSchoolFeePaymentProofLog}
+                                  style={{ fontSize: 12 }}
+                                >
+                                  Log Proof
+                                </StableButton>
+                                <div style={{ ...helperText(), fontSize: 12, gridColumn: "1 / -1" }}>
+                                  Proof changes the row to finance review only. It is not a receipt and not bank confirmation.
+                                </div>
+                              </div>
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                                <span style={statusBadge("pending")}>Pending: {schoolFeeStatusCounts.pending}</span>
+                                <span style={statusBadge("partial")}>Partial: {schoolFeeStatusCounts.partial}</span>
+                                <span style={statusBadge("proof")}>Proof: {schoolFeeStatusCounts.proofUploaded}</span>
+                                <span style={statusBadge("confirmed")}>Confirmed: {schoolFeeStatusCounts.confirmed}</span>
+                                <span style={statusBadge(schoolFeeCoverageMissing === "0" ? "confirmed" : "pending")}>
+                                  Coverage: {schoolFeeCoverageReady}/{schoolFeeCoverageTotal}
+                                </span>
+                                <span style={statusBadge("proof")}>Proof coverage: {schoolFeeProofCoverageReady}/{schoolFeeCoverageTotal}</span>
+                                <StableButton
+                                  type="button"
+                                  kind="secondary"
+                                  stableHeight={30}
+                                  disabled={!schoolFeeExpectedPaymentRows.length}
+                                  debugId="community-domain-dashboard.school-fee-tracker-copy"
+                                  onClick={copySchoolFeeTrackerSheet}
+                                  style={{ fontSize: 11, padding: "0 10px" }}
+                                >
+                                  {schoolFeeTrackerCopied ? "Copied" : "Copy Fee Sheet"}
+                                </StableButton>
+                              </div>
+                              <div style={{ ...helperText(), fontSize: 12, color: schoolFeeCoverageMissing === "0" ? "#1C5F3B" : "#6B4A00" }}>
+                                {schoolFeeCoverageMissing === "0"
+                                  ? "Every tracked active student/member currently has a school-fee expected-payment row."
+                                  : `Missing fee setup: ${schoolFeeCoverageMissing}${schoolFeeMissingIds.length ? ` - IDs ${schoolFeeMissingIds.join(", ")}` : ""}.`}
+                              </div>
+                              {visibleSchoolFeeRows.length ? (
+                                <div style={{ display: "grid", gap: 6 }}>
+                                  {visibleSchoolFeeRows.map((row) => {
+                                    const id = cleanText(row?.id || row?.reference_display || row?.reference);
+                                    const studentLabel =
+                                      cleanText(row?.student_display_name) ||
+                                      cleanText(row?.student_email) ||
+                                      (cleanText(row?.subject_user_id) ? `Member ${cleanText(row?.subject_user_id)}` : "Student/member");
+                                    const amountLabel = `${cleanText(row?.currency, "NGN")} ${cleanText(row?.amount, "0")}`;
+                                    return (
+                                      <div
+                                        key={id || `${studentLabel}-${amountLabel}`}
+                                        style={{
+                                          display: "grid",
+                                          gap: 4,
+                                          borderRadius: 10,
+                                          border: "1px solid rgba(9,27,46,0.08)",
+                                          padding: 8,
+                                        }}
+                                      >
+                                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                                          <strong style={{ color: "#091B2E", fontSize: 13 }}>{studentLabel}</strong>
+                                          <span style={statusBadge(cleanText(row?.status, "expected"))}>
+                                            {cleanText(row?.payment_status_label, cleanText(row?.status, "Expected"))}
+                                          </span>
+                                        </div>
+                                        <div style={{ ...helperText(), fontSize: 12 }}>
+                                          {amountLabel} - {cleanText(row?.term_label, "Current term")} - Ref: {cleanText(row?.reference_display, "not opened")}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <div style={{ ...helperText(), fontSize: 12 }}>
+                                  No school-fee expected payments loaded yet.
+                                </div>
+                              )}
+                              {schoolFeeMessage ? (
+                                <div style={{ ...helperText(), fontSize: 12, color: "#6B4A00" }}>
+                                  {schoolFeeMessage}
+                                </div>
+                              ) : null}
+                            </div>
+                            <div
+                              data-debug-id="community-domain-dashboard.school-guardian-contact"
+                              style={{
+                                display: "grid",
+                                gap: 10,
+                                borderRadius: 12,
+                                border: "1px solid rgba(9,27,46,0.1)",
+                                background: "#FFFFFF",
+                                padding: 12,
+                              }}
+                            >
+                              <div style={sectionLabel()}>Parent/guardian contact reference</div>
+                              <div style={{ ...helperText(), fontSize: 13 }}>
+                                Record who the school may contact for attendance, fee, and notice follow-up. This is not parent identity verification and does not send WhatsApp by itself.
+                              </div>
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 160px), 1fr))",
+                                  gap: 8,
+                                  alignItems: "end",
+                                }}
+                              >
+                                <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                                  <span style={sectionLabel()}>Student/member</span>
+                                  <select
+                                    data-debug-id="community-domain-dashboard.school-guardian-member-select"
+                                    value={schoolGuardianSubjectUserId}
+                                    disabled={busySchoolGuardianContact || !activeSchoolAttendanceMembers.length}
+                                    onChange={(event) => setSchoolGuardianSubjectUserId(event.target.value)}
+                                    style={billingInputStyle()}
+                                  >
+                                    <option value="">
+                                      {activeSchoolAttendanceMembers.length ? "Select from roster" : "No active roster loaded"}
+                                    </option>
+                                    {activeSchoolAttendanceMembers.map((row) => {
+                                      const userId = cleanText(row?.user_id);
+                                      const label =
+                                        cleanText(row?.user_display_name) ||
+                                        cleanText(row?.user_email) ||
+                                        (userId ? `Member ${userId}` : "Domain member");
+                                      return userId ? (
+                                        <option key={`guardian-${userId}`} value={userId}>
+                                          {label} - ID {userId}
+                                        </option>
+                                      ) : null;
+                                    })}
+                                  </select>
+                                </label>
+                                <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                                  <span style={sectionLabel()}>Guardian label</span>
+                                  <input
+                                    data-debug-id="community-domain-dashboard.school-guardian-label"
+                                    value={schoolGuardianLabel}
+                                    disabled={busySchoolGuardianContact}
+                                    onChange={(event) => setSchoolGuardianLabel(event.target.value)}
+                                    placeholder="Mrs Kanu"
+                                    style={billingInputStyle()}
+                                  />
+                                </label>
+                                <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                                  <span style={sectionLabel()}>Relationship</span>
+                                  <select
+                                    data-debug-id="community-domain-dashboard.school-guardian-relationship"
+                                    value={schoolGuardianRelationship}
+                                    disabled={busySchoolGuardianContact}
+                                    onChange={(event) => setSchoolGuardianRelationship(event.target.value)}
+                                    style={billingInputStyle()}
+                                  >
+                                    <option value="parent">Parent</option>
+                                    <option value="guardian">Guardian</option>
+                                    <option value="family_representative">Family representative</option>
+                                    <option value="authorized_pickup">Authorized pickup</option>
+                                    <option value="sponsor">Sponsor</option>
+                                    <option value="other">Other</option>
+                                  </select>
+                                </label>
+                                <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                                  <span style={sectionLabel()}>Channel</span>
+                                  <select
+                                    data-debug-id="community-domain-dashboard.school-guardian-channel"
+                                    value={schoolGuardianChannel}
+                                    disabled={busySchoolGuardianContact}
+                                    onChange={(event) => setSchoolGuardianChannel(event.target.value)}
+                                    style={billingInputStyle()}
+                                  >
+                                    <option value="whatsapp">WhatsApp</option>
+                                    <option value="email">Email</option>
+                                    <option value="sms">SMS</option>
+                                    <option value="phone">Phone</option>
+                                    <option value="paper">Paper</option>
+                                    <option value="gsn">GSN</option>
+                                    <option value="manual">Manual</option>
+                                  </select>
+                                </label>
+                                <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                                  <span style={sectionLabel()}>Reference label</span>
+                                  <input
+                                    data-debug-id="community-domain-dashboard.school-guardian-reference"
+                                    value={schoolGuardianReferenceLabel}
+                                    disabled={busySchoolGuardianContact}
+                                    onChange={(event) => setSchoolGuardianReferenceLabel(event.target.value)}
+                                    placeholder="Parent WhatsApp on file"
+                                    style={billingInputStyle()}
+                                  />
+                                </label>
+                              </div>
+                              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                                <StableButton
+                                  type="button"
+                                  kind="primary"
+                                  stableHeight={42}
+                                  disabled={busySchoolGuardianContact}
+                                  busy={busySchoolGuardianContact}
+                                  debugId="community-domain-dashboard.school-guardian-contact-record"
+                                  onClick={submitSchoolGuardianContact}
+                                  style={{ fontSize: 12 }}
+                                >
+                                  Record Contact
+                                </StableButton>
+                                <span style={statusBadge("proof")}>Active contacts: {schoolGuardianContactActiveCount}</span>
+                                <span style={statusBadge(schoolGuardianCoverageMissing === "0" ? "confirmed" : "pending")}>
+                                  Coverage: {schoolGuardianCoverageReady}/{schoolGuardianCoverageTotal}
+                                </span>
+                                <StableButton
+                                  type="button"
+                                  kind="secondary"
+                                  stableHeight={30}
+                                  disabled={!schoolGuardianContactRows.length}
+                                  debugId="community-domain-dashboard.school-guardian-contact-copy"
+                                  onClick={copySchoolGuardianContactSheet}
+                                  style={{ fontSize: 11, padding: "0 10px" }}
+                                >
+                                  {schoolGuardianContactSheetCopied ? "Copied" : "Copy Contact Sheet"}
+                                </StableButton>
+                              </div>
+                              <div style={{ ...helperText(), fontSize: 12, color: schoolGuardianCoverageMissing === "0" ? "#1C5F3B" : "#6B4A00" }}>
+                                {schoolGuardianCoverageMissing === "0"
+                                  ? "Every tracked active student/member currently has an active contact reference."
+                                  : `Missing active contact: ${schoolGuardianCoverageMissing}${schoolGuardianMissingIds.length ? ` - IDs ${schoolGuardianMissingIds.join(", ")}` : ""}.`}
+                              </div>
+                              {visibleSchoolGuardianContactRows.length ? (
+                                <div style={{ display: "grid", gap: 6 }}>
+                                  {visibleSchoolGuardianContactRows.map((row) => {
+                                    const rowId = cleanText(row?.event_id);
+                                    return (
+                                      <div
+                                        key={rowId || `${cleanText(row?.subject_user_id)}-${cleanText(row?.guardian_label)}`}
+                                        style={{
+                                          display: "grid",
+                                          gap: 4,
+                                          borderRadius: 10,
+                                          border: "1px solid rgba(9,27,46,0.08)",
+                                          padding: 8,
+                                        }}
+                                      >
+                                        <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                                          <strong style={{ color: "#091B2E", fontSize: 13 }}>
+                                            {cleanText(row?.guardian_label, "Parent/guardian")}
+                                          </strong>
+                                          <span style={statusBadge(cleanText(row?.contact_status, "on_file_unverified"))}>
+                                            {cleanText(row?.channel, "manual")}
+                                          </span>
+                                        </div>
+                                        <div style={{ ...helperText(), fontSize: 12 }}>
+                                          Student/member ID {cleanText(row?.subject_user_id, "-")} - {cleanText(row?.destination_reference_label, "Reference on file")}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <div style={{ ...helperText(), fontSize: 12 }}>
+                                  No parent/guardian contact references recorded yet.
+                                </div>
+                              )}
+                            </div>
+                            <div
+                              data-debug-id="community-domain-dashboard.school-staff-attendance"
+                              style={{
+                                display: "grid",
+                                gap: 10,
+                                borderRadius: 12,
+                                border: "1px solid rgba(9,27,46,0.1)",
+                                background: "#FFFFFF",
+                                padding: 12,
+                              }}
+                            >
+                              <div style={sectionLabel()}>Staff-scanned attendance</div>
+                              <div style={{ ...helperText(), fontSize: 13 }}>
+                                For schools where students cannot carry phones. Open a staff-scan window, then record arrival by student/member user ID. This does not send parent WhatsApp yet.
+                              </div>
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                                <StableButton
+                                  type="button"
+                                  kind="secondary"
+                                  stableHeight={40}
+                                  disabled={busyAttendanceSession}
+                                  debugId="community-domain-dashboard.school-staff-attendance-prepare"
+                                  onClick={prepareSchoolStaffAttendanceWindow}
+                                  style={{ fontSize: 12 }}
+                                >
+                                  Prepare Arrival Window
+                                </StableButton>
+                                <StableButton
+                                  type="button"
+                                  kind="secondary"
+                                  stableHeight={40}
+                                  disabled={busyAttendanceSession}
+                                  debugId="community-domain-dashboard.school-staff-attendance-prepare-dismissal"
+                                  onClick={() => prepareSchoolStaffAttendanceWindowPreset("dismissal")}
+                                  style={{ fontSize: 12 }}
+                                >
+                                  Prepare Dismissal Window
+                                </StableButton>
+                                <StableButton
+                                  type="button"
+                                  kind="primary"
+                                  stableHeight={40}
+                                  disabled={busyAttendanceSession || attendanceSessionDraft.method !== "staff_scan"}
+                                  busy={busyAttendanceSession && attendanceSessionDraft.method === "staff_scan"}
+                                  debugId="community-domain-dashboard.school-staff-attendance-open"
+                                  onClick={generateAttendanceSession}
+                                  style={{ fontSize: 12 }}
+                                >
+                                  Open Staff Window
+                                </StableButton>
+                              </div>
+                              <div style={{ ...helperText(), fontSize: 12 }}>
+                                Prepared window: {attendanceSessionDraft.method === "staff_scan" ? cleanText(attendanceSessionDraft.programme_label, "School staff window") : "Choose arrival or dismissal first"}. Parent notification remains a separate school log until a provider is connected.
+                              </div>
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
+                                  gap: 8,
+                                  alignItems: "end",
+                                }}
+                              >
+                                <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                                  <span style={sectionLabel()}>Choose active student/member</span>
+                                  <select
+                                    data-debug-id="community-domain-dashboard.school-staff-attendance-member-select"
+                                    value={schoolStaffScanSubjectUserId}
+                                    disabled={schoolStaffScanBusy || busyAttendanceSession || !activeSchoolAttendanceMembers.length}
+                                    onChange={(event) => setSchoolStaffScanSubjectUserId(event.target.value)}
+                                    style={billingInputStyle()}
+                                  >
+                                    <option value="">
+                                      {activeSchoolAttendanceMembers.length ? "Select from roster" : "No active roster loaded"}
+                                    </option>
+                                    {activeSchoolAttendanceMembers.map((row) => {
+                                      const userId = cleanText(row?.user_id);
+                                      const label =
+                                        cleanText(row?.user_display_name) ||
+                                        cleanText(row?.user_email) ||
+                                        (userId ? `Member ${userId}` : "Domain member");
+                                      return userId ? (
+                                        <option key={userId} value={userId}>
+                                          {label} - ID {userId}
+                                        </option>
+                                      ) : null;
+                                    })}
+                                  </select>
+                                </label>
+                                <label style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                                  <span style={sectionLabel()}>Or enter user ID</span>
+                                  <input
+                                    data-debug-id="community-domain-dashboard.school-staff-attendance-subject"
+                                    value={schoolStaffScanSubjectUserId}
+                                    disabled={schoolStaffScanBusy || busyAttendanceSession}
+                                    onChange={(event) => setSchoolStaffScanSubjectUserId(event.target.value)}
+                                    placeholder="e.g. 1024"
+                                    style={billingInputStyle()}
+                                  />
+                                </label>
+                              </div>
+                              <div
+                                data-debug-id="community-domain-dashboard.school-attendance-card-preview"
+                                style={{
+                                  display: "grid",
+                                  gap: 10,
+                                  borderRadius: 10,
+                                  border: "1px solid rgba(9,27,46,0.08)",
+                                  background: "rgba(9,27,46,0.03)",
+                                  padding: 10,
+                                }}
+                              >
+                                <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                                  {selectedSchoolAttendanceCardCode ? (
+                                    <div
+                                      style={{
+                                        width: 96,
+                                        height: 96,
+                                        borderRadius: 10,
+                                        background: "#FFFFFF",
+                                        display: "grid",
+                                        placeItems: "center",
+                                        border: "1px solid rgba(9,27,46,0.08)",
+                                        flex: "0 0 auto",
+                                      }}
+                                    >
+                                      <QRCodeSVG value={selectedSchoolAttendanceCardCode} size={76} bgColor="#FFFFFF" fgColor="#07172C" level="M" marginSize={1} />
+                                    </div>
+                                  ) : null}
+                                  <div style={{ display: "grid", gap: 6, minWidth: 0, flex: "1 1 220px" }}>
+                                    <div style={sectionLabel()}>Student ID card code</div>
+                                    <div style={{ ...helperText(), fontSize: 12 }}>
+                                      {selectedSchoolAttendanceCardCode
+                                        ? selectedSchoolAttendanceCardCode
+                                        : "Select a roster member to preview the printable GSN attendance code."}
+                                    </div>
+                                    <input
+                                      data-debug-id="community-domain-dashboard.school-staff-attendance-card-code"
+                                      value={schoolStaffScanCardCode}
+                                      disabled={schoolStaffScanBusy || busyAttendanceSession}
+                                      onChange={(event) => setSchoolStaffScanCardCode(event.target.value)}
+                                      placeholder="Scan or paste card code"
+                                      style={billingInputStyle()}
+                                    />
+                                  </div>
+                                </div>
+                                <div style={{ ...helperText(), fontSize: 12 }}>
+                                  The QR/code identifies the GSN roster member only. Staff must be signed in to record it; it does not publish student details or message parents by itself.
+                                </div>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                                  <span style={statusBadge(schoolAttendanceCardMissingTotal === 0 ? "confirmed" : "pending")}>
+                                    Cards ready: {schoolAttendanceCardRows.length}/{activeSchoolAttendanceMembers.length}
+                                  </span>
+                                  <span style={statusBadge("proof")}>No student phone required</span>
+                                  <StableButton
+                                    type="button"
+                                    kind="secondary"
+                                    stableHeight={30}
+                                    disabled={!schoolAttendanceCardRows.length}
+                                    debugId="community-domain-dashboard.school-attendance-card-sheet-copy"
+                                    onClick={copySchoolAttendanceCardSheet}
+                                    style={{ fontSize: 11, padding: "0 10px" }}
+                                  >
+                                    {schoolAttendanceCardSheetCopied ? "Copied" : "Copy Card Sheet"}
+                                  </StableButton>
+                                </div>
+                                {schoolAttendanceCardMissingTotal ? (
+                                  <div style={{ ...helperText(), fontSize: 12, color: "#6B4A00" }}>
+                                    Missing card codes for {schoolAttendanceCardMissingTotal} active roster row(s). Refresh roster before printing cards.
+                                  </div>
+                                ) : null}
+                                {visibleSchoolAttendanceCardRows.length ? (
+                                  <div
+                                    data-debug-id="community-domain-dashboard.school-attendance-card-sheet"
+                                    style={{
+                                      display: "grid",
+                                      gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 210px), 1fr))",
+                                      gap: 8,
+                                    }}
+                                  >
+                                    {visibleSchoolAttendanceCardRows.map((row) => {
+                                      const userId = cleanText(row?.user_id);
+                                      const cardCode = cleanText(row?.attendance_card_code);
+                                      const studentLabel =
+                                        cleanText(row?.user_display_name) ||
+                                        cleanText(row?.user_email) ||
+                                        (userId ? `Member ${userId}` : "Student/member");
+                                      return cardCode ? (
+                                        <div
+                                          key={`attendance-card-${cardCode}`}
+                                          style={{
+                                            display: "grid",
+                                            gridTemplateColumns: "58px minmax(0, 1fr)",
+                                            gap: 8,
+                                            alignItems: "center",
+                                            borderRadius: 8,
+                                            border: "1px solid rgba(9,27,46,0.08)",
+                                            background: "#FFFFFF",
+                                            padding: 8,
+                                            minHeight: 74,
+                                          }}
+                                        >
+                                          <div
+                                            style={{
+                                              width: 58,
+                                              height: 58,
+                                              display: "grid",
+                                              placeItems: "center",
+                                              borderRadius: 8,
+                                              border: "1px solid rgba(9,27,46,0.08)",
+                                              background: "#FFFFFF",
+                                            }}
+                                          >
+                                            <QRCodeSVG value={cardCode} size={48} bgColor="#FFFFFF" fgColor="#07172C" level="M" marginSize={1} />
+                                          </div>
+                                          <div style={{ display: "grid", gap: 3, minWidth: 0 }}>
+                                            <strong style={{ color: "#091B2E", fontSize: 12, overflowWrap: "anywhere" }}>
+                                              {studentLabel}
+                                            </strong>
+                                            <span style={{ ...helperText(), fontSize: 11, overflowWrap: "anywhere" }}>
+                                              ID {userId || "-"} - {cardCode}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      ) : null;
+                                    })}
+                                  </div>
+                                ) : null}
+                              </div>
+                              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                <StableButton
+                                  type="button"
+                                  kind="secondary"
+                                  stableHeight={42}
+                                  disabled={schoolStaffScanBusy || busyAttendanceSession || !latestAttendanceSession}
+                                  busy={schoolStaffScanBusy}
+                                  debugId="community-domain-dashboard.school-staff-attendance-record"
+                                  onClick={submitSchoolStaffScanAttendance}
+                                  style={{ fontSize: 12 }}
+                                >
+                                  Record Arrival
+                                </StableButton>
+                                <StableButton
+                                  type="button"
+                                  kind="primary"
+                                  stableHeight={42}
+                                  disabled={schoolStaffScanBusy || busyAttendanceSession || !latestAttendanceSession || !(schoolStaffScanCardCode || selectedSchoolAttendanceCardCode)}
+                                  busy={schoolStaffScanBusy}
+                                  debugId="community-domain-dashboard.school-staff-attendance-card-record"
+                                  onClick={submitSchoolStaffScanCardAttendance}
+                                  style={{ fontSize: 12 }}
+                                >
+                                  Record Card Scan
+                                </StableButton>
+                                <StableButton
+                                  type="button"
+                                  kind="secondary"
+                                  stableHeight={42}
+                                  debugId="community-domain-dashboard.school-staff-attendance-open-roster"
+                                  onClick={openMemberRoster}
+                                  style={{ fontSize: 12 }}
+                                >
+                                  Open Roster
+                                </StableButton>
+                              </div>
+                              <div
+                                data-debug-id="community-domain-dashboard.school-parent-notification-log"
+                                style={{
+                                  display: "grid",
+                                  gap: 10,
+                                  borderRadius: 10,
+                                  border: "1px solid rgba(9,27,46,0.08)",
+                                  background: "#FFFFFF",
+                                  padding: 10,
+                                }}
+                              >
+                                <div style={sectionLabel()}>Parent notification log</div>
+                                <div style={{ ...helperText(), fontSize: 12 }}>
+                                  Record that staff prepared or sent a parent prompt outside GSN. This is not WhatsApp, SMS, or email delivery proof.
+                                </div>
+                                <div style={{ ...helperText(), fontSize: 12, color: selectedSchoolParentNotificationContact ? "#1C5F3B" : "#6B4A00" }}>
+                                  {selectedSchoolParentNotificationContact
+                                    ? `Roster contact: ${selectedSchoolParentNotificationContactLabel || "reference on file"}`
+                                    : "No roster contact matched for the selected student/channel yet."}
+                                </div>
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                                    gap: 8,
+                                  }}
+                                >
+                                  <select
+                                    data-debug-id="community-domain-dashboard.school-parent-notification-channel"
+                                    value={schoolParentNotificationChannel}
+                                    disabled={schoolStaffScanBusy || busyAttendanceSession}
+                                    onChange={(event) => setSchoolParentNotificationChannel(event.target.value)}
+                                    style={billingInputStyle()}
+                                  >
+                                    <option value="gsn">GSN prompt</option>
+                                    <option value="whatsapp">WhatsApp outside GSN</option>
+                                    <option value="email">Email outside GSN</option>
+                                    <option value="sms">SMS outside GSN</option>
+                                    <option value="phone">Phone call</option>
+                                    <option value="paper">Paper note</option>
+                                    <option value="manual">Manual log</option>
+                                  </select>
+                                  <select
+                                    data-debug-id="community-domain-dashboard.school-parent-notification-status"
+                                    value={schoolParentNotificationStatus}
+                                    disabled={schoolStaffScanBusy || busyAttendanceSession}
+                                    onChange={(event) => setSchoolParentNotificationStatus(event.target.value)}
+                                    style={billingInputStyle()}
+                                  >
+                                    <option value="prepared">Prepared</option>
+                                    <option value="sent_outside_gsn">Sent outside GSN</option>
+                                    <option value="acknowledged_by_parent">Acknowledged by parent</option>
+                                    <option value="failed">Failed</option>
+                                    <option value="not_sent">Not sent</option>
+                                  </select>
+                                  <input
+                                    data-debug-id="community-domain-dashboard.school-parent-notification-label"
+                                    value={schoolParentNotificationLabel}
+                                    disabled={schoolStaffScanBusy || busyAttendanceSession}
+                                    onChange={(event) => setSchoolParentNotificationLabel(event.target.value)}
+                                    placeholder="Parent/guardian reference"
+                                    style={billingInputStyle()}
+                                  />
+                                </div>
+                                <StableButton
+                                  type="button"
+                                  kind="secondary"
+                                  stableHeight={40}
+                                  disabled={schoolStaffScanBusy || busyAttendanceSession || !latestAttendanceSession || !schoolStaffScanSubjectUserId}
+                                  busy={schoolStaffScanBusy}
+                                  debugId="community-domain-dashboard.school-parent-notification-log-submit"
+                                  onClick={submitSchoolParentNotificationLog}
+                                  style={{ fontSize: 12 }}
+                                >
+                                  Log Parent Prompt
+                                </StableButton>
+                              </div>
+                              <div style={{ ...helperText(), fontSize: 12 }}>
+                                Latest window: {latestAttendanceSession ? cleanText(latestAttendanceSession.programme_label, "Attendance window") : "None opened yet"}. Recorded: {latestAttendanceCount}.
+                              </div>
+                              {schoolStaffScanMessage ? (
+                                <div style={{ ...helperText(), fontSize: 12, color: "#6B4A00" }}>
+                                  {schoolStaffScanMessage}
+                                </div>
+                              ) : null}
+                            </div>
+                          </div>
+                        ) : null}
                         {isChurchWorkflow ? (
                           <div
                             data-debug-id="community-domain-dashboard.church-workflow-packet"

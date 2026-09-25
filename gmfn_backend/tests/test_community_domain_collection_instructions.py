@@ -11,6 +11,8 @@ def _seed_domain(
     conn,
     *,
     domain_id: int,
+    domain_type: str = "church_religious_body",
+    template_key: str = "church_religious_body",
     policy_mode: str = "admin_only",
     notice_policy_mode: str = "admin_only",
     demand_policy_mode: str = "admin_only",
@@ -35,8 +37,8 @@ def _seed_domain(
                 :domain_id,
                 :domain_name,
                 :display_name,
-                'church_religious_body',
-                'church_religious_body',
+                :domain_type,
+                :template_key,
                 1,
                 1,
                 'active',
@@ -50,6 +52,8 @@ def _seed_domain(
             "domain_id": domain_id,
             "domain_name": f"collection-domain-{domain_id}",
             "display_name": f"Collection Domain {domain_id}",
+            "domain_type": domain_type,
+            "template_key": template_key,
         },
     )
     conn.execute(
@@ -239,6 +243,42 @@ def test_church_domain_activity_catalogue_prioritizes_pastor_discovery_workflows
     assert "does not create activities by itself" in response.json()["boundary"]
 
 
+
+def test_school_domain_activity_catalogue_prioritizes_school_governance_package(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    with engine.begin() as conn:
+        _seed_domain(
+            conn,
+            domain_id=830,
+            domain_type="school",
+            template_key="school_multi_branch",
+            policy_mode="admin_only",
+        )
+
+    response = client.get("/community-domains/830/activity-catalogue")
+
+    assert response.status_code == 200, response.text
+    catalogue = response.json()["activity_catalogue"]
+    first_types = [item["activity_type"] for item in catalogue[:8]]
+    assert first_types == [
+        "school_notice_ack_follow_up",
+        "school_fee_follow_up",
+        "student_arrival_record",
+        "student_dismissal_record",
+        "school_shop_supply_notice",
+        "attendance",
+        "training_completion",
+        "leadership_duty",
+    ]
+    by_type = {item["activity_type"]: item for item in catalogue}
+    assert by_type["school_fee_follow_up"]["pilot_recommended"] is True
+    assert by_type["school_fee_follow_up"]["workflow_context"] == "school_governance_package"
+    assert "not bank confirmation" in by_type["school_fee_follow_up"]["summary"]
+    assert by_type["student_arrival_record"]["evidence_dimension"] == "attendance"
+    assert "does not create activities by itself" in response.json()["boundary"]
 def test_church_domain_can_record_private_pastoral_follow_up_without_payment_or_outcome_claim(
     client,
     seed_clan_admin_membership,
@@ -1205,6 +1245,687 @@ def test_church_live_attendance_qr_records_member_checkin_once(
 
     assert checkin_count == 1
 
+def test_school_guardian_contact_records_parent_reference_without_delivery_proof(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    with engine.begin() as conn:
+        _seed_domain(
+            conn,
+            domain_id=837,
+            domain_type="school",
+            template_key="school_multi_branch",
+            policy_mode="admin_only",
+            notice_policy_mode="admin_only",
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO users (id, email, hashed_password, role, display_name)
+                VALUES (2, 'school-guardian-student-2@example.com', 'hashed', 'user', 'Guardian Student Two')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO community_domain_memberships (
+                    community_domain_id,
+                    user_id,
+                    role,
+                    status,
+                    title,
+                    created_at,
+                    updated_at
+                )
+                VALUES (837, 2, 'member', 'active', 'Student', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """
+            )
+        )
+
+    inactive_res = client.post(
+        "/community-domains/837/school-roster/999/guardian-contacts",
+        json={"guardian_label": "Parent on file"},
+    )
+    assert inactive_res.status_code == 400, inactive_res.text
+    assert inactive_res.json()["detail"]["code"] == "community_domain_school_guardian_contact_subject_not_active_member"
+
+    missing_res = client.get("/community-domains/837/school-roster/guardian-contacts")
+    assert missing_res.status_code == 200, missing_res.text
+    missing_summary = missing_res.json()["summary"]
+    assert missing_summary["active_member_total"] == 1
+    assert missing_summary["active_member_with_active_contact_total"] == 0
+    assert missing_summary["active_member_missing_active_contact_total"] == 1
+    assert 2 in missing_summary["missing_active_contact_subject_user_ids"]
+    assert "does not prove parent identity" in missing_summary["coverage_boundary"]
+
+    create_res = client.post(
+        "/community-domains/837/school-roster/2/guardian-contacts",
+        json={
+            "guardian_label": "Mrs Parent Two",
+            "relationship": "parent",
+            "channel": "whatsapp",
+            "destination_reference_status": "admin_verified_off_platform",
+            "destination_reference_label": "Parent WhatsApp on file",
+            "contact_status": "active_attestation",
+            "consent_basis": "guardian_or_authorized_contact",
+            "notification_scope": "school_attendance_fee_and_notice_follow_up",
+            "note": "Recorded from school office enrolment records.",
+        },
+    )
+    assert create_res.status_code == 201, create_res.text
+    body = create_res.json()
+    assert "not parent identity verification" in body["message"]
+    contact = body["guardian_contact"]
+    assert contact["subject_user_id"] == 2
+    assert contact["guardian_label"] == "Mrs Parent Two"
+    assert contact["channel"] == "whatsapp"
+    assert contact["provider_send_ready"] is False
+    assert contact["parent_identity_verified_by_gsn"] is False
+    assert contact["automatic_parent_notification"] is False
+    assert contact["whatsapp_delivery_proof"] is False
+    assert "not WhatsApp delivery proof" in contact["boundary"]
+
+    list_res = client.get("/community-domains/837/school-roster/guardian-contacts")
+    assert list_res.status_code == 200, list_res.text
+    list_body = list_res.json()
+    assert list_body["total"] == 1
+    assert list_body["summary"]["active"] == 1
+    assert list_body["summary"]["provider_ready"] == 0
+    assert list_body["summary"]["active_member_total"] == 1
+    assert list_body["summary"]["active_member_with_active_contact_total"] == 1
+    assert list_body["summary"]["active_member_missing_active_contact_total"] == 0
+    assert 2 not in list_body["summary"]["missing_active_contact_subject_user_ids"]
+    assert list_body["items"][0]["destination_reference_label"] == "Parent WhatsApp on file"
+
+    filtered_res = client.get("/community-domains/837/school-roster/guardian-contacts?subject_user_id=2")
+    assert filtered_res.status_code == 200, filtered_res.text
+    assert filtered_res.json()["total"] == 1
+
+    with engine.begin() as conn:
+        contact_event_count = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM trust_events
+                WHERE event_type = 'community_domain.school_guardian_contact.recorded'
+                AND meta_json LIKE :domain_like
+                """
+            ),
+            {"domain_like": '%community_domain_id%837%'},
+        ).scalar_one()
+    assert contact_event_count == 1
+
+
+def test_school_fee_expected_payment_tracks_student_fee_without_bank_confirmation(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    with engine.begin() as conn:
+        _seed_domain(
+            conn,
+            domain_id=832,
+            domain_type="school",
+            template_key="school_multi_branch",
+            policy_mode="admin_only",
+            notice_policy_mode="admin_only",
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO users (id, email, hashed_password, role, display_name)
+                VALUES (2, 'school-fee-student-2@example.com', 'hashed', 'user', 'School Fee Student Two')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO community_domain_memberships (
+                    community_domain_id,
+                    user_id,
+                    role,
+                    status,
+                    title,
+                    created_at,
+                    updated_at
+                )
+                VALUES (832, 2, 'member', 'active', 'Student', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """
+            )
+        )
+
+    missing_res = client.get("/community-domains/832/school-fees/expected-payments")
+    assert missing_res.status_code == 200, missing_res.text
+    missing_summary = missing_res.json()["summary"]
+    assert missing_summary["active_member_total"] == 1
+    assert missing_summary["active_member_with_expected_payment_total"] == 0
+    assert missing_summary["active_member_missing_expected_payment_total"] == 1
+    assert 2 in missing_summary["missing_expected_payment_subject_user_ids"]
+    assert "does not prove debt" in missing_summary["coverage_boundary"]
+
+    create_res = client.post(
+        "/community-domains/832/school-fees/expected-payments",
+        json={
+            "subject_user_id": 2,
+            "amount": "50000.00",
+            "currency": "NGN",
+            "term_label": "2026 first term",
+            "fee_label": "School fees",
+            "campus_label": "Campus 3",
+            "note": "Parent has been notified manually by bursar.",
+        },
+    )
+    assert create_res.status_code == 201, create_res.text
+    body = create_res.json()
+    payment = body["expected_payment"]
+    assert body["already_exists"] is False
+    assert payment["expected_type"] == "school_fee"
+    assert payment["subject_user_id"] == 2
+    assert payment["student_display_name"] == "School Fee Student Two"
+    assert payment["amount"] == "50000.00"
+    assert payment["currency"] == "NGN"
+    assert payment["status"] == "expected"
+    assert payment["payment_status_label"] == "Awaiting proof or bank match"
+    assert payment["reference_display"].startswith("GSN-SF-CD832-U2-")
+    assert payment["meta"]["automatic_bank_confirmation"] is False
+    assert payment["meta"]["parent_whatsapp_sent_by_gsn"] is False
+    assert "not automatic bank confirmation" in body["boundary"]
+
+    duplicate_res = client.post(
+        "/community-domains/832/school-fees/expected-payments",
+        json={
+            "subject_user_id": 2,
+            "amount": "50000.00",
+            "currency": "NGN",
+            "term_label": "2026 first term",
+            "fee_label": "School fees",
+        },
+    )
+    assert duplicate_res.status_code == 201, duplicate_res.text
+    assert duplicate_res.json()["already_exists"] is True
+    assert duplicate_res.json()["expected_payment"]["id"] == payment["id"]
+
+    list_res = client.get("/community-domains/832/school-fees/expected-payments")
+    assert list_res.status_code == 200, list_res.text
+    listed_body = list_res.json()
+    assert listed_body["summary"]["expected"] == 1
+    assert listed_body["summary"]["confirmed"] == 0
+    assert listed_body["summary"]["active_member_total"] == 1
+    assert listed_body["summary"]["active_member_with_expected_payment_total"] == 1
+    assert listed_body["summary"]["active_member_missing_expected_payment_total"] == 0
+    assert 2 not in listed_body["summary"]["missing_expected_payment_subject_user_ids"]
+    listed = listed_body["items"][0]
+    assert listed["id"] == payment["id"]
+    assert listed["campus_label"] == "Campus 3"
+    assert listed["boundary"] == listed_body["boundary"]
+
+    proof_res = client.post(
+        f"/community-domains/832/school-fees/expected-payments/{payment['id']}/proof-logs",
+        json={
+            "proof_source": "whatsapp_screenshot",
+            "proof_status": "submitted",
+            "proof_reference": "parent-chat-slip-001",
+            "amount_reported": "50000.00",
+            "note": "Parent sent a transfer screenshot to the bursar.",
+        },
+    )
+    assert proof_res.status_code == 201, proof_res.text
+    proof_body = proof_res.json()
+    assert "not bank confirmation" in proof_body["message"]
+    assert proof_body["proof"]["proof_source"] == "whatsapp_screenshot"
+    assert proof_body["proof"]["amount_reported"] == "50000.00"
+    assert proof_body["proof"]["automatic_bank_confirmation"] is False
+    assert proof_body["proof"]["receipt_issued_by_gsn"] is False
+    assert "not automatic bank confirmation" in proof_body["boundary"]
+    assert proof_body["expected_payment"]["status"] == "expected"
+    assert proof_body["expected_payment"]["payment_status_label"] == "Proof uploaded"
+    assert proof_body["expected_payment"]["bank_event_id"] is None
+
+    proof_list_res = client.get("/community-domains/832/school-fees/expected-payments")
+    assert proof_list_res.status_code == 200, proof_list_res.text
+    proof_list_body = proof_list_res.json()
+    assert proof_list_body["summary"]["expected"] == 1
+    assert proof_list_body["summary"]["confirmed"] == 0
+    assert proof_list_body["summary"]["proof_uploaded"] == 1
+    assert proof_list_body["summary"]["active_member_with_proof_total"] == 1
+    proof_listed = proof_list_body["items"][0]
+    assert proof_listed["payment_status_label"] == "Proof uploaded"
+    assert proof_listed["meta"]["latest_payment_proof"]["proof_reference"] == "parent-chat-slip-001"
+    assert proof_listed["meta"]["latest_payment_proof"]["automatic_bank_confirmation"] is False
+
+    with engine.begin() as conn:
+        stored = conn.execute(
+            text(
+                """
+                SELECT expected_type, status, trust_event_id, meta_json
+                FROM expected_payments
+                WHERE id = :payment_id
+                """
+            ),
+            {"payment_id": payment["id"]},
+        ).mappings().one()
+
+    assert stored["expected_type"] == "school_fee"
+    assert stored["status"] == "expected"
+    assert stored["trust_event_id"] is not None
+    stored_meta = json.loads(stored["meta_json"] or "{}")
+    assert stored_meta["feature_code"] == "school_fee_tracking"
+    assert stored_meta["latest_payment_proof"]["proof_status"] == "submitted"
+    assert stored_meta["latest_payment_proof"]["automatic_bank_confirmation"] is False
+    assert stored_meta["latest_payment_proof"]["receipt_issued_by_gsn"] is False
+
+    with engine.begin() as conn:
+        proof_event_count = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM trust_events
+                WHERE event_type = 'community_domain.school_fee_payment_proof.logged'
+                AND meta_json LIKE :domain_like
+                """
+            ),
+            {"domain_like": '%community_domain_id%832%'},
+        ).scalar_one()
+    assert proof_event_count == 1
+
+
+def test_school_fee_bulk_open_missing_active_roster_is_idempotent(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    with engine.begin() as conn:
+        _seed_domain(
+            conn,
+            domain_id=838,
+            domain_type="school",
+            template_key="school_multi_branch",
+            policy_mode="admin_only",
+            notice_policy_mode="admin_only",
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO users (id, email, hashed_password, role, display_name)
+                VALUES
+                  (2, 'bulk-fee-student-2@example.com', 'hashed', 'user', 'Bulk Fee Student Two'),
+                  (3, 'bulk-fee-student-3@example.com', 'hashed', 'user', 'Bulk Fee Student Three')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO community_domain_memberships (
+                    community_domain_id,
+                    user_id,
+                    role,
+                    status,
+                    title,
+                    created_at,
+                    updated_at
+                )
+                VALUES
+                  (838, 2, 'member', 'active', 'Student', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                  (838, 3, 'member', 'active', 'Student', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """
+            )
+        )
+
+    missing_res = client.get("/community-domains/838/school-fees/expected-payments")
+    assert missing_res.status_code == 200, missing_res.text
+    assert missing_res.json()["summary"]["active_member_total"] == 2
+    assert missing_res.json()["summary"]["active_member_missing_expected_payment_total"] == 2
+
+    bulk_res = client.post(
+        "/community-domains/838/school-fees/expected-payments/bulk-open-missing",
+        json={
+            "amount": "42000.00",
+            "currency": "NGN",
+            "term_label": "2026 first term",
+            "fee_label": "School fees",
+            "campus_label": "Campus 3",
+            "note": "Bulk opened from school governance packet.",
+        },
+    )
+    assert bulk_res.status_code == 201, bulk_res.text
+    bulk_body = bulk_res.json()
+    assert bulk_body["opened_count"] == 2
+    assert bulk_body["already_existing_count"] == 0
+    assert bulk_body["target_member_count"] == 2
+    assert len(bulk_body["items"]) == 2
+    assert "not debt proof" in bulk_body["message"]
+    assert {item["subject_user_id"] for item in bulk_body["items"]} == {2, 3}
+
+    duplicate_res = client.post(
+        "/community-domains/838/school-fees/expected-payments/bulk-open-missing",
+        json={
+            "amount": "42000.00",
+            "currency": "NGN",
+            "term_label": "2026 first term",
+            "fee_label": "School fees",
+            "campus_label": "Campus 3",
+        },
+    )
+    assert duplicate_res.status_code == 201, duplicate_res.text
+    duplicate_body = duplicate_res.json()
+    assert duplicate_body["opened_count"] == 0
+    assert duplicate_body["already_existing_count"] == 2
+
+    list_res = client.get("/community-domains/838/school-fees/expected-payments")
+    assert list_res.status_code == 200, list_res.text
+    summary = list_res.json()["summary"]
+    assert summary["total"] == 2
+    assert summary["active_member_with_expected_payment_total"] == 2
+    assert summary["active_member_missing_expected_payment_total"] == 0
+    assert summary["missing_expected_payment_subject_user_ids"] == []
+
+    with engine.begin() as conn:
+        payment_count = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM expected_payments
+                WHERE expected_type = 'school_fee'
+                  AND reference_display LIKE 'GSN-SF-CD838-%'
+                """
+            )
+        ).scalar_one()
+    assert payment_count == 2
+
+
+def test_school_staff_scan_attendance_records_student_without_student_phone(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    with engine.begin() as conn:
+        _seed_domain(
+            conn,
+            domain_id=831,
+            domain_type="school",
+            template_key="school_multi_branch",
+            policy_mode="admin_only",
+            notice_policy_mode="admin_only",
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO users (id, email, hashed_password, role, display_name)
+                VALUES (2, 'school-student-2@example.com', 'hashed', 'user', 'School Student Two')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO community_domain_memberships (
+                    community_domain_id,
+                    user_id,
+                    role,
+                    status,
+                    title,
+                    created_at,
+                    updated_at
+                )
+                VALUES (831, 2, 'member', 'active', 'Student', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """
+            )
+        )
+
+    session_res = client.post(
+        "/community-domains/831/attendance-sessions",
+        json={
+            "programme_label": "Campus 3 morning arrival",
+            "method": "staff_scan",
+            "window_minutes": 120,
+            "note": "Teacher scans student ID cards at the gate.",
+        },
+    )
+    assert session_res.status_code == 201, session_res.text
+    session = session_res.json()["attendance_session"]
+    assert session["attendance_method"] == "staff_scan"
+    assert session["evidence_strength"] == "admin_attested"
+    assert "automatic parent notification" in session["boundary"]
+
+    checkin_res = client.post(
+        f'/community-domains/831/attendance-sessions/{session["event_id"]}/admin-check-ins',
+        json={
+            "subject_user_id": 2,
+            "method": "staff_scan",
+            "note": "Student ID card scanned by gate teacher.",
+        },
+    )
+    assert checkin_res.status_code == 200, checkin_res.text
+    checkin = checkin_res.json()["attendance_checkin"]
+    assert checkin_res.json()["already_recorded"] is False
+    assert checkin["checked_in_user_id"] == 2
+    assert checkin["recorded_by_user_id"] == 1
+    assert checkin["attendance_method"] == "staff_scan"
+    assert checkin["evidence_strength"] == "admin_attested"
+    assert checkin["staff_recorded"] is True
+    assert checkin["student_phone_required"] is False
+    assert checkin["parent_notification_sent_by_gsn"] is False
+
+    duplicate_res = client.post(
+        f'/community-domains/831/attendance-sessions/{session["event_id"]}/admin-check-ins',
+        json={"subject_user_id": 2, "method": "staff_scan"},
+    )
+    assert duplicate_res.status_code == 200, duplicate_res.text
+    assert duplicate_res.json()["already_recorded"] is True
+
+    list_res = client.get("/community-domains/831/attendance-sessions")
+    assert list_res.status_code == 200, list_res.text
+    listed = list_res.json()["items"][0]
+    assert listed["checkin_count"] == 1
+    assert listed["checked_in_user_ids"] == [2]
+    assert listed["method_counts"] == {"staff_scan": 1}
+
+    public_res = client.get(session["public_api_path"])
+    assert public_res.status_code == 200, public_res.text
+    public_session = public_res.json()["attendance_session"]
+    assert public_session["checkin_count"] == 1
+    assert "checked_in_user_ids" not in public_session
+    assert "School Student Two" not in str(public_session)
+
+    with engine.begin() as conn:
+        checkin_count = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM trust_events
+                WHERE event_type = 'community_domain.attendance_checkin.recorded'
+                  AND meta_json LIKE :domain_like
+                """
+            ),
+            {"domain_like": '%community_domain_id%831%'},
+        ).scalar_one()
+
+    assert checkin_count == 1
+
+
+
+def test_school_attendance_card_code_records_student_without_student_phone(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    with engine.begin() as conn:
+        _seed_domain(
+            conn,
+            domain_id=836,
+            domain_type="school",
+            template_key="school_multi_branch",
+            policy_mode="admin_only",
+            notice_policy_mode="admin_only",
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO users (id, email, hashed_password, role, display_name)
+                VALUES (2, 'school-card-student-2@example.com', 'hashed', 'user', 'School Card Student Two')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO community_domain_memberships (
+                    community_domain_id,
+                    user_id,
+                    role,
+                    status,
+                    title,
+                    created_at,
+                    updated_at
+                )
+                VALUES (836, 2, 'member', 'active', 'Student', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """
+            )
+        )
+
+    members_res = client.get("/community-domains/836/members")
+    assert members_res.status_code == 200, members_res.text
+    member = next(item for item in members_res.json()["items"] if item["user_id"] == 2)
+    assert member["attendance_card_code"] == "GSN-ATT-CD836-U2"
+    assert member["attendance_card_qr_value"] == "GSN-ATT-CD836-U2"
+    assert "do not expose student names publicly" in member["attendance_card_boundary"]
+    assert "automatic parent notification" in members_res.json()["boundary"]
+
+    session_res = client.post(
+        "/community-domains/836/attendance-sessions",
+        json={
+            "programme_label": "Campus 1 morning gate",
+            "method": "staff_scan",
+            "window_minutes": 120,
+            "note": "Teacher scans printed GSN student cards.",
+        },
+    )
+    assert session_res.status_code == 201, session_res.text
+    session = session_res.json()["attendance_session"]
+
+    guardian_contact_res = client.post(
+        "/community-domains/836/school-roster/2/guardian-contacts",
+        json={
+            "guardian_label": "Mrs Card Parent",
+            "relationship": "parent",
+            "channel": "whatsapp",
+            "destination_reference_status": "admin_verified_off_platform",
+            "destination_reference_label": "Card parent WhatsApp on file",
+            "contact_status": "active_attestation",
+            "consent_basis": "guardian_or_authorized_contact",
+            "notification_scope": "school_attendance_fee_and_notice_follow_up",
+        },
+    )
+    assert guardian_contact_res.status_code == 201, guardian_contact_res.text
+    guardian_contact = guardian_contact_res.json()["guardian_contact"]
+
+    premature_notification_res = client.post(
+        f'/community-domains/836/attendance-sessions/{session["event_id"]}/parent-notification-logs',
+        json={
+            "subject_user_id": 2,
+            "channel": "whatsapp",
+            "delivery_status": "prepared",
+            "destination_reference_status": "on_file",
+            "destination_reference_label": "Parent on file",
+        },
+    )
+    assert premature_notification_res.status_code == 409, premature_notification_res.text
+    assert premature_notification_res.json()["detail"]["code"] == "community_domain_attendance_checkin_required"
+
+    card_res = client.post(
+        f'/community-domains/836/attendance-sessions/{session["event_id"]}/admin-card-check-ins',
+        json={
+            "card_code": "GSN-ATT-CD836-U2",
+            "method": "staff_scan",
+            "note": "Printed card scanned by gate teacher.",
+        },
+    )
+    assert card_res.status_code == 200, card_res.text
+    body = card_res.json()
+    assert body["already_recorded"] is False
+    assert body["card_code"] == "GSN-ATT-CD836-U2"
+    assert "not automatic parent notification" in body["message"]
+    checkin = body["attendance_checkin"]
+    assert checkin["checked_in_user_id"] == 2
+    assert checkin["staff_recorded"] is True
+    assert checkin["student_phone_required"] is False
+    assert checkin["parent_notification_sent_by_gsn"] is False
+    assert checkin["capture_method"] == "staff_card_scan"
+
+    duplicate_res = client.post(
+        f'/community-domains/836/attendance-sessions/{session["event_id"]}/admin-card-check-ins',
+        json={"card_code": "GSN-ATT-CD836-U2", "method": "staff_scan"},
+    )
+    assert duplicate_res.status_code == 200, duplicate_res.text
+    assert duplicate_res.json()["already_recorded"] is True
+
+    notification_res = client.post(
+        f'/community-domains/836/attendance-sessions/{session["event_id"]}/parent-notification-logs',
+        json={
+            "subject_user_id": 2,
+            "channel": "whatsapp",
+            "delivery_status": "sent_outside_gsn",
+            "destination_reference_status": "on_file",
+            "destination_reference_label": "Parent/guardian on file",
+            "note": "Office WhatsApp prompt prepared from the attendance record.",
+        },
+    )
+    assert notification_res.status_code == 200, notification_res.text
+    notification_body = notification_res.json()
+    assert "not WhatsApp" in notification_body["message"]
+    notification_log = notification_body["parent_notification_log"]
+    assert notification_log["subject_user_id"] == 2
+    assert notification_log["channel"] == "whatsapp"
+    assert notification_log["delivery_status"] == "sent_outside_gsn"
+    assert notification_log["sent_by_gsn"] is False
+    assert notification_log["whatsapp_delivery_proof"] is False
+    assert notification_log["automatic_parent_notification"] is False
+    assert notification_log["guardian_contact_snapshot_used"] is True
+    assert notification_log["guardian_contact_event_id"] == guardian_contact["event_id"]
+    assert notification_log["guardian_contact_label"] == "Mrs Card Parent"
+    assert notification_log["guardian_contact_channel"] == "whatsapp"
+    assert notification_log["guardian_contact_reference_label"] == "Card parent WhatsApp on file"
+    assert "not WhatsApp delivery proof" in notification_log["boundary"]
+
+    notification_list_res = client.get(
+        f'/community-domains/836/attendance-sessions/{session["event_id"]}/parent-notification-logs'
+    )
+    assert notification_list_res.status_code == 200, notification_list_res.text
+    assert notification_list_res.json()["total"] == 1
+    assert notification_list_res.json()["items"][0]["attendance_session_event_id"] == session["event_id"]
+
+    wrong_domain_res = client.post(
+        f'/community-domains/836/attendance-sessions/{session["event_id"]}/admin-card-check-ins',
+        json={"card_code": "GSN-ATT-CD999-U2", "method": "staff_scan"},
+    )
+    assert wrong_domain_res.status_code == 400, wrong_domain_res.text
+    assert wrong_domain_res.json()["detail"]["code"] == "community_domain_attendance_card_wrong_domain"
+
+    public_res = client.get(session["public_api_path"])
+    assert public_res.status_code == 200, public_res.text
+    public_session = public_res.json()["attendance_session"]
+    assert "attendance_card_code" not in str(public_session)
+    assert "School Card Student Two" not in str(public_session)
+
+    with engine.begin() as conn:
+        checkin_count = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM trust_events
+                WHERE event_type = 'community_domain.attendance_checkin.recorded'
+                  AND meta_json LIKE :domain_like
+                """
+            ),
+            {"domain_like": '%community_domain_id%836%'},
+        ).scalar_one()
+
+    assert checkin_count == 1
+
 def test_church_live_attendance_admin_follow_up_snapshot_has_private_safe_candidate_ids(
     client,
     seed_clan_admin_membership,
@@ -1476,3 +2197,116 @@ def test_church_response_qr_respects_disabled_demand_box_policy(
     )
     assert blocked.status_code == 403, blocked.text
     assert blocked.json()["detail"]["feature_key"] == "demand_box"
+
+
+
+def test_school_notice_acknowledgement_tracks_signed_in_ack_without_whatsapp_delivery(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    with engine.begin() as conn:
+        _seed_domain(
+            conn,
+            domain_id=835,
+            domain_type="school_multi_branch",
+            template_key="school_multi_branch",
+            policy_mode="admin_only",
+            notice_policy_mode="admin_only",
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO users (id, email, hashed_password, role, display_name)
+                VALUES
+                  (1, 'pytest@example.com', 'hashed', 'admin', 'School Owner'),
+                  (2, 'parent-two@example.com', 'hashed', 'user', 'Parent Two'),
+                  (3, 'parent-three@example.com', 'hashed', 'user', 'Parent Three')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO community_domain_memberships (
+                    community_domain_id,
+                    user_id,
+                    role,
+                    status,
+                    title,
+                    created_at,
+                    updated_at
+                )
+                VALUES
+                  (835, 1, 'owner', 'active', 'Proprietor', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                  (835, 2, 'member', 'active', 'Parent', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                  (835, 3, 'member', 'active', 'Parent', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """
+            )
+        )
+
+    notice_res = client.post(
+        "/community-domains/835/notices",
+        json={
+            "body": "School fees are due this Friday. Please acknowledge this notice in GSN.",
+            "expiry_policy": "standard",
+            "public_qr_enabled": True,
+        },
+    )
+    assert notice_res.status_code == 200, notice_res.text
+    notice = notice_res.json()["notice"]
+
+    list_res = client.get("/community-domains/835/notices")
+    assert list_res.status_code == 200, list_res.text
+    listed_notice = list_res.json()["notices"][0]
+    summary = listed_notice["acknowledgement_summary"]
+    assert summary["total_active_members"] == 3
+    assert summary["acknowledged_count"] == 0
+    assert summary["not_acknowledged_count"] == 3
+    assert summary["not_acknowledged_user_ids"] == [1, 2, 3]
+    assert summary["whatsapp_delivery_proof"] is False
+    assert "not WhatsApp delivery proof" in summary["boundary"]
+
+    public_res = client.get(notice["public_api_path"])
+    assert public_res.status_code == 200, public_res.text
+    public_notice = public_res.json()["notice"]
+    assert "acknowledgement_summary" not in public_notice
+    assert "not_acknowledged_user_ids" not in public_res.text
+    assert "Parent Two" not in public_res.text
+    assert "parent-two@example.com" not in public_res.text
+
+    ack_res = client.post(
+        f"/community-domains/835/notices/{notice['event_id']}/acknowledgements",
+        json={},
+    )
+    assert ack_res.status_code == 200, ack_res.text
+    ack_summary = ack_res.json()["acknowledgement_summary"]
+    assert ack_summary["acknowledged_count"] == 1
+    assert ack_summary["not_acknowledged_count"] == 2
+    assert ack_summary["viewer_acknowledged"] is True
+    assert ack_summary["acknowledged_user_ids"] == [1]
+    assert ack_summary["not_acknowledged_user_ids"] == [2, 3]
+    assert ack_summary["whatsapp_delivery_proof"] is False
+
+    duplicate_ack_res = client.post(
+        f"/community-domains/835/notices/{notice['event_id']}/acknowledgements",
+        json={},
+    )
+    assert duplicate_ack_res.status_code == 200, duplicate_ack_res.text
+    duplicate_summary = duplicate_ack_res.json()["acknowledgement_summary"]
+    assert duplicate_summary["acknowledged_count"] == 1
+
+    with engine.begin() as conn:
+        ack_count = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM trust_events
+                WHERE event_type = 'community_domain.notice.acknowledged'
+                  AND meta_json LIKE :domain_like
+                """
+            ),
+            {"domain_like": '%community_domain_id%835%'},
+        ).scalar_one()
+
+    assert ack_count == 1
