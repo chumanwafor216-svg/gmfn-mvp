@@ -159,6 +159,12 @@ function approvalProgressText(review: ActionReviewItem): string {
   return `${approvalCount}/${requiredApprovals} approvals. ${remainingApprovals} more needed.`;
 }
 
+function accessDecisionGuideText(isApprovedReview: boolean): string {
+  return isApprovedReview
+    ? "This request already has an approval decision. Use Apply approved membership only when the person should actually be added now."
+    : "Approve only records the governance decision. Approve and apply adds the member only if the review has enough approvals and the backend accepts it.";
+}
+
 function followUpText(review: ActionReviewItem): string {
   const parentReviewId = cleanText(review.parent_review_id);
   if (!parentReviewId) {
@@ -213,7 +219,7 @@ export default function CommunityDomainAccessRequestsPanel({
             Review access.
           </h2>
           <div style={{ ...helperText(), marginTop: 8 }}>
-            Decide who can enter this domain.
+            Review the request first, then apply membership only when the person should actually be added.
           </div>
         </div>
 
@@ -265,7 +271,19 @@ export default function CommunityDomainAccessRequestsPanel({
                       </strong>
                       .
                     </div>
-                    {review.request_note ? (
+                    <div
+                      data-debug-id={`community-domain-dashboard.access-request.decision-guide-${reviewId}`}
+                      style={{
+                        ...helperText(),
+                        fontSize: 13,
+                        borderRadius: 12,
+                        border: "1px solid rgba(9,27,46,0.1)",
+                        background: "rgba(255,255,255,0.72)",
+                        padding: "9px 10px",
+                      }}
+                    >
+                      {accessDecisionGuideText(isApprovedReview)}
+                    </div>                    {review.request_note ? (
                       <div style={{ ...helperText(), fontSize: 13 }}>
                         Note: {cleanText(review.request_note)}
                       </div>
@@ -295,8 +313,8 @@ export default function CommunityDomainAccessRequestsPanel({
                       {decisionOpen
                         ? "Hide request action"
                         : isApprovedReview
-                        ? "Open apply step"
-                        : "Review decision"}
+                        ? "Open apply membership step"
+                        : "Review request decision"}
                     </StableButton>
                     {decisionOpen ? (
                       <div style={{ display: "grid", gap: 8 }}>
@@ -330,7 +348,7 @@ export default function CommunityDomainAccessRequestsPanel({
                                 }))
                               }
                             >
-                              <option value="approve">Approve only</option>
+                              <option value="approve">Approve decision only</option>
                               <option value="needs_changes">Ask for changes</option>
                               <option value="reject">Decline</option>
                             </select>
@@ -350,7 +368,7 @@ export default function CommunityDomainAccessRequestsPanel({
                                 ? "Ask for changes"
                                 : selectedDecision === "reject"
                                 ? "Decline"
-                                : "Record decision"}
+                                : "Approve only"}
                               </StableButton>
                           ) : null}
                           <StableButton
@@ -368,8 +386,8 @@ export default function CommunityDomainAccessRequestsPanel({
                             {applyBusy
                               ? "Working..."
                               : isApprovedReview
-                              ? "Add approved member"
-                              : "Approve, add if ready"}
+                              ? "Apply approved membership"
+                              : "Approve and apply if ready"}
                           </StableButton>
                         </div>
                       </div>

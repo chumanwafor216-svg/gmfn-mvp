@@ -1,7 +1,7 @@
 # GSN Community Domain Governance Cleanup Handoff
 
 Date: 2026-09-25
-Status: first five cleanup slices implemented locally
+Status: first six cleanup slices implemented locally
 Owner: Chukwuma Nwafor / Global Support Network Ltd
 
 ## Purpose
@@ -69,6 +69,12 @@ The school governance packet now exposes one selected work area at a time:
 The older school sections remain intact, but they are hidden unless their school
 work area is selected.
 
+Access request wording now separates governance approval from membership apply:
+
+- approve-only records the owner/admin decision;
+- approve-and-apply adds the person only when the review is ready and accepted;
+- approved requests show an explicit apply membership step.
+
 ## Audit Protection
 
 `frontend/tools/audit-community-domain-product-contracts.mjs` now checks that
@@ -76,7 +82,8 @@ the guided setup path, step states, primary action, and earlier-step blocker
 messages stay present. It also checks that Governance jobs keep the numbered
 work path before exposing deeper stage/job selectors, that Real-life record
 capture shows direct staged paths before secondary step changers, and that the
-school governance packet keeps heavy sections behind one selected work area.
+school governance packet keeps heavy sections behind one selected work area, and
+Access requests explain approve-only vs apply-membership in the panel itself.
 
 ## Verification
 
@@ -88,17 +95,16 @@ Passed locally:
 
 ## Remaining Cleanup
 
-The first five cleanup slices are in place. The deeper governance cleanup is not finished.
+The first six cleanup slices are in place. The deeper governance cleanup is not finished.
 Next useful slices:
 
 1. Add a phone visual audit for the guided setup path, governance work path, and
    real-life record staged paths to confirm the first viewport is calm on 390px mobile.
-2. Review Access request wording after live testing to confirm school/church
-   admins understand approval vs apply-membership.
+2. Live-test access requests with school/church admins to confirm the approve/apply wording is understood.
 3. Continue lane-by-lane cleanup for reports and operating summaries if they
    still feel like expert consoles.
 4. Consider a later split of school-specific packet sections into separate lazy panels if the pilot shows the selected work-area pattern is still too dense.
 
 ## Devil Truth
 
-The page is now easier at the front door. Governance jobs, Real-life record capture, and the school packet now have clearer selected paths. The system is still not fully simplified: access request wording and reporting panels still contain many powerful tools and need pilot-led cleanup.
+The page is now easier at the front door. Governance jobs, Real-life record capture, the school packet, and access requests now have clearer selected paths and action wording. The system is still not fully simplified: reporting panels still contain many powerful tools and need pilot-led cleanup.
