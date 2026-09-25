@@ -297,6 +297,12 @@ assertContains(
   { frontend: true }
 );
 assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /type SetupTemplateOptionKey =[\s\S]*"school"[\s\S]*"church"[\s\S]*"ngo"[\s\S]*"association"[\s\S]*"other"[\s\S]*SETUP_TEMPLATE_OPTIONS[\s\S]*school_multi_branch[\s\S]*church_religious_body[\s\S]*ngo_project_network[\s\S]*generic_association[\s\S]*other_custom[\s\S]*setupTemplateOptionForDraft[\s\S]*setupDomainNameCheckIsReady[\s\S]*activeSetupTemplateOption[\s\S]*setupIdentityNameReady[\s\S]*setupIdentityCategoryReady[\s\S]*applySetupTemplateOption[\s\S]*community-domain-dashboard\.setup-identity-self-service-path[\s\S]*community-domain-dashboard\.setup-template-option\.\$\{option\.key\}[\s\S]*community-domain-dashboard\.setup-template-other-manual[\s\S]*community-domain-dashboard\.setup-template-other-help[\s\S]*APP_ROUTES\.HELP_DESK/,
+  "Community Domain identity setup must guide users through domain-name check, category package choice, Other-only manual fields, and support help without exposing raw type/template setup as the ordinary path.",
+  { frontend: true }
+);
+assertContains(
   "src/pages/communityDomainDashboard/SetupOverviewPanel.tsx",
   /QRCodeSVG[\s\S]*community-domain-dashboard\.notice-public-qr[\s\S]*sermon topic, message of the day, or public programme note[\s\S]*Copy QR Link[\s\S]*Open QR Page/,
   "Community Domain notice board must show QR/copy/open controls only for QR-enabled public messages.",

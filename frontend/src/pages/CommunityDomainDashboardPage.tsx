@@ -233,6 +233,23 @@ type SetupStepKey =
   | "services"
   | "launch";
 
+type SetupTemplateOptionKey =
+  | "school"
+  | "church"
+  | "ngo"
+  | "association"
+  | "other";
+
+type SetupTemplateOption = {
+  key: SetupTemplateOptionKey;
+  label: string;
+  note: string;
+  domainType: string;
+  templateKey: string;
+  profilePlaceholder: string;
+  icon: Gsn3DIconKey;
+};
+
 type CommunityDomainSetupDraft = {
   domain_name: string;
   display_name: string;
@@ -505,6 +522,53 @@ const SETUP_STEP_OPTIONS: Array<{
   },
 ];
 
+const SETUP_TEMPLATE_OPTIONS: SetupTemplateOption[] = [
+  {
+    key: "school",
+    label: "School",
+    note: "Campuses, classes, staff, parents, notices, attendance, and school-fee tracking.",
+    domainType: "school",
+    templateKey: "school_multi_branch",
+    profilePlaceholder: "Short public-safe description of the school, campuses, pupils/students, and parents served.",
+    icon: "community-building",
+  },
+  {
+    key: "church",
+    label: "Church",
+    note: "Services, branches, ministries, attendance QR, response QR, offerings, and church memory.",
+    domainType: "religious_body",
+    templateKey: "church_religious_body",
+    profilePlaceholder: "Short public-safe description of the church, branches, ministries, programmes, and members served.",
+    icon: "certificate-seal",
+  },
+  {
+    key: "ngo",
+    label: "Charity / NGO",
+    note: "Programmes, beneficiaries, volunteers, evidence records, support, and sponsor-safe reporting.",
+    domainType: "ngo_project_network",
+    templateKey: "ngo_project_network",
+    profilePlaceholder: "Short public-safe description of the mission, programmes, people served, and evidence the organisation records.",
+    icon: "trust-shield",
+  },
+  {
+    key: "association",
+    label: "Association",
+    note: "Unions, cooperatives, clubs, alumni, town unions, committees, and member governance.",
+    domainType: "generic_association",
+    templateKey: "generic_association",
+    profilePlaceholder: "Short public-safe description of the association, members, committees, and activities.",
+    icon: "join-person-plus",
+  },
+  {
+    key: "other",
+    label: "Other",
+    note: "Use only when the organisation does not fit the prepared packages. Describe it and GSN can adapt the package.",
+    domainType: "other",
+    templateKey: "other_custom",
+    profilePlaceholder: "Describe what this community or organisation is, who belongs to it, what it does, and what records it needs.",
+    icon: "records-folder",
+  },
+];
 const SETUP_EDIT_GROUP_OPTIONS: Array<{
   key: SetupEditGroupKey;
   label: string;
@@ -1298,8 +1362,8 @@ function setupDraftFromDomain(domain: unknown): CommunityDomainSetupDraft {
   return {
     domain_name: cleanText(record.domain_name),
     display_name: cleanText(record.display_name),
-    domain_type: cleanText(record.domain_type, "generic_association"),
-    template_key: cleanText(record.template_key || record.domain_type, "generic_association"),
+    domain_type: cleanText(record.domain_type),
+    template_key: cleanText(record.template_key || record.domain_type),
     country: cleanText(record.country),
     state: cleanText(record.state),
     public_profile: cleanText(record.public_profile),
@@ -2550,6 +2614,35 @@ function setupStepForLane(laneKey: string): SetupStepKey {
   return "identity";
 }
 
+function setupTemplateOptionForDraft(
+  draft: CommunityDomainSetupDraft
+): SetupTemplateOption {
+  const templateKey = cleanText(draft.template_key).toLowerCase();
+  const domainType = cleanText(draft.domain_type).toLowerCase();
+  if (!templateKey && !domainType) {
+    return SETUP_TEMPLATE_OPTIONS[0];
+  }
+  if (domainType === "other") {
+    return SETUP_TEMPLATE_OPTIONS.find((option) => option.key === "other") || SETUP_TEMPLATE_OPTIONS[0];
+  }
+  return (
+    SETUP_TEMPLATE_OPTIONS.find(
+      (option) =>
+        option.templateKey === templateKey || option.domainType === domainType
+    ) || SETUP_TEMPLATE_OPTIONS[SETUP_TEMPLATE_OPTIONS.length - 1]
+  );
+}
+
+function setupDomainNameCheckIsReady(
+  setupDomainNameCheck: { status: string; domainName: string },
+  draft: CommunityDomainSetupDraft
+): boolean {
+  return (
+    setupDomainNameCheck.status === "ready" &&
+    normalizedSetupText(setupDomainNameCheck.domainName) ===
+      normalizedSetupText(draft.domain_name)
+  );
+}
 function setupStepPlaceholder(
   step: SetupStepKey,
   domain: unknown,
@@ -5335,6 +5428,17 @@ export default function CommunityDomainDashboardPage() {
   const setupCurrentStep =
     SETUP_STEP_OPTIONS.find((option) => option.key === activeSetupStep) ||
     SETUP_STEP_OPTIONS[0];
+  const activeSetupTemplateOption = setupTemplateOptionForDraft(setupDraft);
+  const setupIdentityNameReady = setupDomainNameCheckIsReady(
+    setupDomainNameCheck,
+    setupDraft
+  );
+  const setupIdentityCategoryReady = Boolean(
+    cleanText(setupDraft.domain_type) && cleanText(setupDraft.template_key)
+  );
+  const setupIdentityProfileReady = Boolean(
+    cleanText(setupDraft.display_name) && cleanText(setupDraft.public_profile)
+  );
   const activeSetupEditGroup = useMemo<SetupEditGroupKey>(() => {
     if (
       activeSetupStep === "structure" ||
@@ -5429,6 +5533,21 @@ export default function CommunityDomainDashboardPage() {
     }));
   }
 
+  function applySetupTemplateOption(option: SetupTemplateOption) {
+    if (setupEditingLocked) {
+      setMessage(setupEditLockMessage);
+      return;
+    }
+    setSetupCompletionSavedAt("");
+    setSetupDraft((current) => ({
+      ...current,
+      domain_type: option.domainType,
+      template_key: option.templateKey,
+    }));
+    setMessage(
+      `${option.label} package selected. GSN will show this setup through that package first.`
+    );
+  }
   function updateFeaturePolicy(nextConfig: DomainFeaturePolicyConfig) {
     if (setupEditingLocked) {
       setMessage(setupEditLockMessage);
@@ -5505,7 +5624,7 @@ export default function CommunityDomainDashboardPage() {
       const messageText = ready
         ? isCurrentDomainName
           ? "This domain code already belongs to this draft."
-          : "This domain code is available."
+          : "This domain code is available. Save and continue to keep it in this setup."
         : setupDomainAvailabilityReasonText(result?.reason);
 
       setSetupDomainNameCheck({
@@ -6391,6 +6510,12 @@ export default function CommunityDomainDashboardPage() {
           domainName: setupDraft.domain_name,
           message: "Check this domain code first, then save and continue.",
         });
+        return;
+      }
+      if (!setupIdentityCategoryReady) {
+        setMessage(
+          "Choose School, Church, Charity / NGO, Association, or Other before saving this setup step."
+        );
         return;
       }
       const saved = await saveOfficialProfile();
@@ -9631,7 +9756,47 @@ export default function CommunityDomainDashboardPage() {
                       activeSetupWorkbenchTask === "step") ? (
                       <>
                     {activeSetupStep === "identity" ? (
-                      <div style={{ display: "grid", gap: 10 }}>
+                      <div style={{ display: "grid", gap: 12 }}>
+                        <div
+                          style={{ ...softCard(), display: "grid", gap: 10 }}
+                          data-gsn-debug-id="community-domain-dashboard.setup-identity-self-service-path"
+                        >
+                          <div style={iconHeaderStyle()}>
+                            <span style={iconFrame(46)}>
+                              <GsnRealisticIcon name="records-folder" size={35} decorative />
+                            </span>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={sectionLabel()}>Setup path</div>
+                              <div style={helperText()}>
+                                Start with the name, choose the package, then save the public profile.
+                              </div>
+                            </div>
+                          </div>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            {[
+                              ["1", "Domain name", setupIdentityNameReady ? "ready" : "check next"],
+                              ["2", "Category", setupIdentityCategoryReady ? "selected" : "choose next"],
+                              ["3", "Profile", setupIdentityProfileReady ? "ready" : "write short note"],
+                            ].map(([number, label, status]) => (
+                              <div key={label} style={{ ...softCard(), padding: 12 }}>
+                                <div style={{ fontSize: 12, fontWeight: 950, color: "#8A6A16" }}>
+                                  Step {number}
+                                </div>
+                                <div style={{ marginTop: 4, fontWeight: 950, color: "#07172C" }}>
+                                  {label}
+                                </div>
+                                <div style={{ marginTop: 6, ...statusBadge(status) }}>{status}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                         <div
                           style={{
                             display: "grid",
@@ -9661,30 +9826,6 @@ export default function CommunityDomainDashboardPage() {
                                 updateSetupDraftField("domain_name", event.target.value)
                               }
                               placeholder="pillar-of-hope"
-                              style={billingInputStyle()}
-                            />
-                          </label>
-                          <label style={{ display: "grid", gap: 6 }}>
-                            <span style={sectionLabel()}>Type</span>
-                            <input
-                              value={setupDraft.domain_type}
-                              disabled={setupEditingLocked}
-                              onChange={(event) =>
-                                updateSetupDraftField("domain_type", event.target.value)
-                              }
-                              placeholder="ngo_project_network"
-                              style={billingInputStyle()}
-                            />
-                          </label>
-                          <label style={{ display: "grid", gap: 6 }}>
-                            <span style={sectionLabel()}>Template</span>
-                            <input
-                              value={setupDraft.template_key}
-                              disabled={setupEditingLocked}
-                              onChange={(event) =>
-                                updateSetupDraftField("template_key", event.target.value)
-                              }
-                              placeholder="ngo_project_network"
                               style={billingInputStyle()}
                             />
                           </label>
@@ -9739,7 +9880,7 @@ export default function CommunityDomainDashboardPage() {
                           </StableButton>
                           <div
                             style={statusBadge(
-                              setupDomainNameCheck.status === "ready"
+                              setupIdentityNameReady
                                 ? "available"
                                 : setupDomainNameCheck.status === "blocked"
                                 ? "blocked"
@@ -9749,6 +9890,125 @@ export default function CommunityDomainDashboardPage() {
                             {setupDomainNameCheck.message}
                           </div>
                         </div>
+                        <div style={{ ...softCard(), display: "grid", gap: 10 }}>
+                          <div style={iconHeaderStyle()}>
+                            <span style={iconFrame(46)}>
+                              <GsnRealisticIcon name={activeSetupTemplateOption.icon} size={35} decorative />
+                            </span>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={sectionLabel()}>Choose category</div>
+                              <div style={helperText()}>
+                                GSN opens only the setup package that matches this choice.
+                              </div>
+                            </div>
+                          </div>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            {SETUP_TEMPLATE_OPTIONS.map((option, index) => {
+                              const selected =
+                                setupIdentityCategoryReady &&
+                                activeSetupTemplateOption.key === option.key;
+                              return (
+                                <div
+                                  key={option.key}
+                                  style={{
+                                    ...softCard(),
+                                    padding: 12,
+                                    border: selected
+                                      ? "1px solid rgba(214,170,69,0.76)"
+                                      : "1px solid rgba(7,23,44,0.08)",
+                                  }}
+                                >
+                                  <StableButton
+                                    type="button"
+                                    kind={selected ? "primary" : "secondary"}
+                                    stableHeight={48}
+                                    fullWidth
+                                    debugId={`community-domain-dashboard.setup-template-option.${option.key}`}
+                                    disabled={setupEditingLocked}
+                                    onClick={() => applySetupTemplateOption(option)}
+                                  >
+                                    {index + 1}. {option.label}
+                                  </StableButton>
+                                  <div style={{ ...helperText(), marginTop: 8, fontSize: 12.5 }}>
+                                    {option.note}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div style={statusBadge(setupIdentityCategoryReady ? activeSetupTemplateOption.label : "choose category")}>
+                            {setupIdentityCategoryReady
+                              ? `Selected package: ${activeSetupTemplateOption.label}. GSN will continue with this package first.`
+                              : "Choose one package to continue."}
+                          </div>
+                        </div>
+                        {activeSetupTemplateOption.key === "other" ? (
+                          <div
+                            style={{ ...softCard(), display: "grid", gap: 10 }}
+                            data-gsn-debug-id="community-domain-dashboard.setup-template-other-manual"
+                          >
+                            <div style={iconHeaderStyle()}>
+                              <span style={iconFrame(46)}>
+                                <GsnRealisticIcon name="trust-shield" size={35} decorative />
+                              </span>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={sectionLabel()}>Describe the organisation</div>
+                                <div style={helperText()}>
+                                  Use this only when School, Church, Charity / NGO, and Association do not fit.
+                                </div>
+                              </div>
+                            </div>
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns:
+                                  "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
+                                gap: 10,
+                              }}
+                            >
+                              <label style={{ display: "grid", gap: 6 }}>
+                                <span style={sectionLabel()}>Type</span>
+                                <input
+                                  value={setupDraft.domain_type}
+                                  disabled={setupEditingLocked}
+                                  onChange={(event) =>
+                                    updateSetupDraftField("domain_type", event.target.value)
+                                  }
+                                  placeholder="Describe the organisation type"
+                                  style={billingInputStyle()}
+                                />
+                              </label>
+                              <label style={{ display: "grid", gap: 6 }}>
+                                <span style={sectionLabel()}>Template note</span>
+                                <input
+                                  value={setupDraft.template_key}
+                                  disabled={setupEditingLocked}
+                                  onChange={(event) =>
+                                    updateSetupDraftField("template_key", event.target.value)
+                                  }
+                                  placeholder="Use generic association or request help"
+                                  style={billingInputStyle()}
+                                />
+                              </label>
+                            </div>
+                            <StableButton
+                              type="button"
+                              kind="secondary"
+                              stableHeight={48}
+                              debugId="community-domain-dashboard.setup-template-other-help"
+                              onClick={() => navigate(APP_ROUTES.HELP_DESK)}
+                            >
+                              Contact support
+                            </StableButton>
+                          </div>
+                        ) : null}
                         <label style={{ display: "grid", gap: 6 }}>
                           <span style={sectionLabel()}>Public profile</span>
                           <textarea
@@ -9757,7 +10017,7 @@ export default function CommunityDomainDashboardPage() {
                             onChange={(event) =>
                               updateSetupDraftField("public_profile", event.target.value)
                             }
-                            placeholder="Short public-safe description of this institution."
+                            placeholder={activeSetupTemplateOption.profilePlaceholder}
                             style={{
                               ...billingInputStyle(),
                               minHeight: 94,
@@ -9768,7 +10028,6 @@ export default function CommunityDomainDashboardPage() {
                         </label>
                       </div>
                     ) : null}
-
                     {activeSetupStep === "payment" ? (
                       <div style={{ ...softCard(), display: "grid", gap: 10 }}>
                         <div style={iconHeaderStyle()}>

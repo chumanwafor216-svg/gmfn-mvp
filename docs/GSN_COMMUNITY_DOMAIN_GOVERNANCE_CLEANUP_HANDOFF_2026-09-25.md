@@ -1,7 +1,7 @@
 # GSN Community Domain Governance Cleanup Handoff
 
 Date: 2026-09-25
-Status: first eight cleanup slices implemented locally
+Status: first nine cleanup slices implemented locally
 Owner: Chukwuma Nwafor / Global Support Network Ltd
 
 ## Purpose
@@ -32,6 +32,15 @@ The path now shows:
 The existing Community Domain engines were not duplicated. The guided path opens
 existing setup, billing, people, authority, governance, and launch actions.
 
+Identity setup now starts with a self-service package path:
+
+- Step 1: Domain name;
+- Step 2: Category;
+- Step 3: Profile;
+- prepared category choices for School, Church, Charity / NGO, and Association;
+- Other as the only path that shows manual type/template fields and a support link.
+
+The raw `domain_type` and `template_key` fields are no longer exposed as the ordinary setup path.
 The older Community Domain setup tools drawer was made secondary:
 
 - the old primary button now reads `More setup tools`;
@@ -106,8 +115,10 @@ work path before exposing deeper stage/job selectors, that Real-life record
 capture shows direct staged paths before secondary step changers, that the
 school governance packet keeps heavy sections behind one selected work area,
 that Access requests explain approve-only vs apply-membership in the panel
-itself, that report output controls stay behind the guided report path, and that
-Operating summary shows the active-domain path before secondary selectors.
+itself, that report output controls stay behind the guided report path, that
+Operating summary shows the active-domain path before secondary selectors, and
+that identity setup keeps the domain-code check, category package chooser,
+Other-only manual fields, and support link.
 
 ## Verification
 
@@ -115,11 +126,11 @@ Passed locally:
 
 - `npm --prefix frontend run audit:community-domain-product-contracts`
 - `npm --prefix frontend run build`
-- `git diff --check -- frontend/src/pages/CommunityDomainDashboardPage.tsx frontend/tools/audit-community-domain-product-contracts.mjs`
+- `git diff --check -- frontend/src/pages/CommunityDomainDashboardPage.tsx frontend/tools/audit-community-domain-product-contracts.mjs docs/SCREEN_SPECS.md docs/GSN_COMMUNITY_DOMAIN_GOVERNANCE_CLEANUP_HANDOFF_2026-09-25.md`
 
 ## Remaining Cleanup
 
-The first eight cleanup slices are in place. The deeper governance cleanup is not finished.
+The first nine cleanup slices are in place. The deeper governance cleanup is not finished.
 Next useful slices:
 
 1. Add a phone visual audit for the guided setup path, governance work path, and
@@ -131,4 +142,4 @@ Next useful slices:
 
 ## Devil Truth
 
-The page is now easier at the front door. Governance jobs, Real-life record capture, the school packet, access requests, report output, and operating summary now have clearer selected paths and action wording. The system is still not fully simplified: the wider Community Domain surface still needs phone visual checks and pilot-led cleanup.
+The page is now easier at the front door. Identity setup, Governance jobs, Real-life record capture, the school packet, access requests, report output, and operating summary now have clearer selected paths and action wording. The system is still not fully simplified: the wider Community Domain surface still needs phone visual checks and pilot-led cleanup.
