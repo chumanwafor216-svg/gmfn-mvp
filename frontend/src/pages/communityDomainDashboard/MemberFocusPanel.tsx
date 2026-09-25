@@ -177,8 +177,14 @@ export default function CommunityDomainMemberFocusPanel({ data }: Props) {
         }}
       >
         <div style={sectionLabel()}>Members focus</div>
+        <div
+          data-debug-id="community-domain-dashboard.member-recommendation"
+          style={helperText()}
+        >
+          Recommended: Start with Member readiness before roster control.
+        </div>
         <div style={helperText()}>
-          Choose the member stage first. Current view:{" "}
+          Current member view:{" "}
           <strong>{activeMemberDetailGroupOption.label}</strong> /{" "}
           <strong>{selectedMemberDetail.label}</strong>.
         </div>
