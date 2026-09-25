@@ -2769,8 +2769,8 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/BillingReadinessPanels.tsx",
-  /BILLING_DETAIL_OPTIONS[\s\S]*key: "lifecycle"[\s\S]*key: "capacity"[\s\S]*activeBillingDetail[\s\S]*community-domain-billing\.detail\.\$\{option\.key\}[\s\S]*activeBillingDetail === "lifecycle"[\s\S]*Subscription lifecycle[\s\S]*activeBillingDetail === "capacity"[\s\S]*Package capacity/,
-  "Community Domain Billing readiness panel must expose one focused billing view at a time instead of dumping lifecycle and capacity together.",
+  /BILLING_DETAIL_OPTIONS[\s\S]*key: "lifecycle"[\s\S]*key: "capacity"[\s\S]*activeBillingDetail[\s\S]*community-domain-billing\.detail-recommendation[\s\S]*Recommended: Review Lifecycle before capacity\.[\s\S]*community-domain-billing\.detail-toggle[\s\S]*community-domain-billing\.detail\.\$\{option\.key\}[\s\S]*activeBillingDetail === "lifecycle"[\s\S]*Subscription lifecycle[\s\S]*activeBillingDetail === "capacity"[\s\S]*Package capacity/,
+  "Community Domain Billing readiness panel must recommend Lifecycle first, keep detail views behind Change view, and expose one focused billing view at a time instead of dumping lifecycle and capacity together.",
   { frontend: true }
 );
 
@@ -3501,8 +3501,8 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
-  /rows\.push\(\{[\s\S]*label: "Billing"[\s\S]*rows\.push\(\{[\s\S]*label: "Settings"[\s\S]*activeServiceFocus[\s\S]*serviceFocusChooserOpen[\s\S]*community-domain-service-readiness\.focus-toggle[\s\S]*serviceFocusChooserOpen \? "Close views" : "Change view"[\s\S]*serviceFocusChooserOpen \? \([\s\S]*community-domain-service-readiness\.focus\.\$\{option\.key\}[\s\S]*setServiceFocusChooserOpen\(false\)[\s\S]*activeServiceFocus === "services"[\s\S]*Service readiness/,
-  "Community Domain dashboard Services readiness view must keep sub-views behind Change view and expose module-scope readiness as one focused sub-view instead of stacking every readiness view.",
+  /rows\.push\(\{[\s\S]*label: "Billing"[\s\S]*rows\.push\(\{[\s\S]*label: "Settings"[\s\S]*activeServiceFocus[\s\S]*serviceFocusChooserOpen[\s\S]*community-domain-service-readiness\.focus-recommendation[\s\S]*Recommended: Review Services before settings, economy, or presence\.[\s\S]*community-domain-service-readiness\.focus-toggle[\s\S]*serviceFocusChooserOpen \? "Close views" : "Change view"[\s\S]*serviceFocusChooserOpen \? \([\s\S]*community-domain-service-readiness\.focus\.\$\{option\.key\}[\s\S]*setServiceFocusChooserOpen\(false\)[\s\S]*activeServiceFocus === "services"[\s\S]*Service readiness/,
+  "Community Domain dashboard Services readiness view must recommend Services first, keep sub-views behind Change view, and expose module-scope readiness as one focused sub-view instead of stacking every readiness view.",
   { frontend: true }
 );
 

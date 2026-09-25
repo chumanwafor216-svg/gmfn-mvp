@@ -297,6 +297,12 @@ export default function CommunityDomainBillingReadinessPanels({
         }}
       >
         <div style={sectionLabel()}>Billing focus</div>
+        <div
+          data-debug-id="community-domain-billing.detail-recommendation"
+          style={helperText()}
+        >
+          Recommended: Review Lifecycle before capacity.
+        </div>
         <div style={helperText()}>
           Current view: <strong>{selectedBillingDetail.label}</strong>.
         </div>

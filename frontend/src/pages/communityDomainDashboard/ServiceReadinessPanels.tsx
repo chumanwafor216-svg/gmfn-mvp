@@ -477,6 +477,12 @@ export default function CommunityDomainServiceReadinessPanels({
         }}
       >
         <div style={sectionLabel()}>Readiness view</div>
+        <div
+          data-debug-id="community-domain-service-readiness.focus-recommendation"
+          style={helperText()}
+        >
+          Recommended: Review Services before settings, economy, or presence.
+        </div>
         <div style={helperText()}>
           Current view: <strong>{selectedServiceFocus.label}</strong>.
         </div>

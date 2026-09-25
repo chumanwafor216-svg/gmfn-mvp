@@ -507,7 +507,9 @@ Must show:
 - inside Official Board notices, Recent notices must be recommended before posting a new notice
 - inside Structure planning, Rollout must be recommended before activity or group readiness
 - inside Trust/Evidence readiness, Records must be recommended before release, relay, notification, or mobility
+- inside Service readiness, Services must be recommended before settings, economy, or presence
 - inside Service boundary rules, Exchange must be recommended before privacy, setup, compliance, or appeals
+- inside Billing readiness, Lifecycle must be recommended before capacity
 - inside Identity readiness, Domain identity must be recommended before profile, bridge, or affiliation
 - inside Governance readiness, Review pulse must be recommended before delegation or coverage
 - after the launch/setup checkpoint is saved, the page must visibly mark the setup checkpoint as completed and show one state-aware next task, such as connect Community Home, turn on Member Invites, or build the first circle, instead of exposing all governance surfaces
