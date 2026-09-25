@@ -490,6 +490,7 @@ Must show:
 - identity setup starts with a domain-code check and a plain category choice such as School, Church, Charity / NGO, Association, or Other; prepared categories hide raw type/template fields, and only Other asks for manual description or support help
 - after category selection, setup step titles, notes, and examples should speak in that package language, such as campuses/classes for School, branches/ministries for Church, programmes/beneficiaries for Charity / NGO, and committees/members for Association
 - inside the setup workbench, the page must recommend continuing the active setup step first and keep Access as a secondary exception for locked editing or setup-editor authority
+- inside the secondary setup overview, Next setup must be recommended before reference views, with stages and views kept behind closed selectors
 - after the launch/setup checkpoint is saved, the page must visibly mark the setup checkpoint as completed and show one state-aware next task, such as connect Community Home, turn on Member Invites, or build the first circle, instead of exposing all governance surfaces
 - one command surface that first shows the guided setup path
 - after the owner opens `More setup tools`, the drawer must first restate the current guided setup step and one action back to that step, then show four secondary governance stages: Set up the institution,

@@ -357,10 +357,16 @@ export default function CommunityDomainSetupOverviewPanel({ data }: Props) {
             <div style={{ minWidth: 0 }}>
               <div style={sectionLabel()}>Setup work</div>
               <h2 style={{ margin: "6px 0 0", fontSize: 22, lineHeight: 1.12 }}>
-                Choose one setup view.
+                Start with the next setup action.
               </h2>
+              <div
+                data-debug-id="community-domain-dashboard.setup-overview-recommendation"
+                style={{ ...statusBadge("Recommended: Next setup"), marginTop: 8 }}
+              >
+                Recommended: Use Next setup before reference views.
+              </div>
               <div style={{ ...helperText(), marginTop: 8 }}>
-                Choose the setup stage first. Current view:{" "}
+                Current setup stage:{" "}
                 <strong>{activeSetupOverviewGroupOption.label}</strong>.
               </div>
             </div>
