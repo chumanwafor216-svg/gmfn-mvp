@@ -22668,7 +22668,7 @@ def _require_domain_admin_or_any_direct_delegation_scope(
         detail={
             "code": "community_domain_delegation_power_required",
             "message": (
-                f"Only a Community Domain owner/admin or the locked delegated operator "
+                f"Only a Community Domain owner or domain admin, or the locked delegated operator "
                 f"with direct {action_label} authority can perform this action."
             ),
             "power_keys": list(power_keys),
@@ -22820,6 +22820,40 @@ def _require_domain_setup_edit_scope(
         },
     )
 
+
+def _require_domain_setup_edit_or_direct_governance_scope(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> None:
+    blocked_status = _community_domain_operation_block_detail(
+        domain,
+        current_user=current_user,
+    )
+    if blocked_status is not None:
+        raise HTTPException(status_code=403, detail=blocked_status)
+    if _has_domain_setup_edit_scope(db, domain=domain, current_user=current_user):
+        return
+    if _has_domain_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
+    ):
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "community_domain_setup_or_governance_delegation_required",
+            "message": (
+                "Only the Community Domain owner, a domain admin, an authorised "
+                "setup editor, or the locked delegated operator with direct "
+                "governance editing authority can edit this setup."
+            ),
+            "power_key": DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
+        },
+    )
 
 def _require_clan_admin_scope(
     db: Session,
@@ -23715,12 +23749,10 @@ def update_community_domain_profile(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_or_direct_delegation_scope(
+    _require_domain_setup_edit_or_direct_governance_scope(
         db,
         domain=domain,
         current_user=current_user,
-        power_key=DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
-        action_label="governance editing",
     )
 
     availability = _domain_available_payload(db, payload.domain_name)
@@ -23838,12 +23870,10 @@ def update_community_domain_invite_template(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_or_direct_delegation_scope(
+    _require_domain_setup_edit_or_direct_governance_scope(
         db,
         domain=domain,
         current_user=current_user,
-        power_key=DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
-        action_label="governance editing",
     )
     message = _clean_str(payload.message)
     if not message:
@@ -32773,12 +32803,10 @@ def create_community_domain_node(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_or_direct_delegation_scope(
+    _require_domain_setup_edit_or_direct_governance_scope(
         db,
         domain=domain,
         current_user=current_user,
-        power_key=DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
-        action_label="governance editing",
     )
 
     parent_node: Optional[CommunityNode]
@@ -32894,12 +32922,10 @@ def update_community_domain_node_status(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_or_direct_delegation_scope(
+    _require_domain_setup_edit_or_direct_governance_scope(
         db,
         domain=domain,
         current_user=current_user,
-        power_key=DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
-        action_label="governance editing",
     )
     node = _get_node_or_404(
         db,
@@ -33851,12 +33877,10 @@ def upsert_community_domain_policy(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_or_direct_delegation_scope(
+    _require_domain_setup_edit_or_direct_governance_scope(
         db,
         domain=domain,
         current_user=current_user,
-        power_key=DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
-        action_label="governance editing",
     )
 
     node_id: Optional[int] = None
