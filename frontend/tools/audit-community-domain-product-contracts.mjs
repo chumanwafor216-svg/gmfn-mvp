@@ -2017,6 +2017,8 @@ assertContains(
 
 [
   "Code & proof views",
+  "community-domain-dashboard.billing-payment-recommendation",
+  "Recommended: Review Reference before generating a code, checking settlement, or uploading proof.",
   "Current view:",
   "community-domain-dashboard.billing-payment-group-toggle",
   "Close code/proof views",
@@ -2044,7 +2046,7 @@ assertContains(
   assertIncludes(
     "src/pages/communityDomainDashboard/BillingTaskPanels.tsx",
     needle,
-    "Community Domain Billing Code & proof must keep code, settlement, proof, and their sub-steps behind closed selectors while preserving reference review, payment-code generation, credit-link identity, official pay account, and proof upload as separate views.",
+    "Community Domain Billing Code & proof must recommend Reference first, keep code, settlement, proof, and their sub-steps behind closed selectors, and preserve reference review, payment-code generation, credit-link identity, official pay account, and proof upload as separate views.",
     { frontend: true }
   )
 );assertNotContains(

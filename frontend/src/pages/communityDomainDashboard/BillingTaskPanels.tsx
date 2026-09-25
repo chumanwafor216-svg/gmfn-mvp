@@ -702,6 +702,12 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
 
                     <div style={{ ...softCard(), marginTop: 12, display: "grid", gap: 10 }}>
                       <div style={sectionLabel()}>Code & proof views</div>
+                      <div
+                        data-debug-id="community-domain-dashboard.billing-payment-recommendation"
+                        style={{ ...helperText(), fontSize: 13 }}
+                      >
+                        Recommended: Review Reference before generating a code, checking settlement, or uploading proof.
+                      </div>
                       <div style={{ ...helperText(), fontSize: 13 }}>
                         Current view:{" "}
                         <strong>{activeBillingPaymentGroupOption.label}</strong>.{" "}
