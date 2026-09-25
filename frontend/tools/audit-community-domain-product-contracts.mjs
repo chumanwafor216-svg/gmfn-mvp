@@ -336,6 +336,17 @@ assertContains(
   /delegation_package = config\.get\("delegation_package"\)[\s\S]*operator_gsn_id[\s\S]*operator_phone[\s\S]*community_domain_delegation_operator_pair_required[\s\S]*_find_user_by_setup_delegate_subject\(db, operator_gsn_id\)[\s\S]*_find_user_by_setup_delegate_subject\(db, operator_phone\)[\s\S]*community_domain_delegation_operator_identity_mismatch[\s\S]*operator_user_id[\s\S]*handover_status[\s\S]*"delegation_package": delegation_package[\s\S]*"owner_handover_record"/,
   "Backend governance package lock must include the owner delegation package and reject handler GSN ID / phone mismatches instead of locking unverifiable handover data."
 );
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /DELEGATION_POWER_MODE_CAN_APPLY_DIRECTLY[\s\S]*DELEGATION_POWER_MEMBER_APPROVAL[\s\S]*DELEGATION_POWER_OFFICIAL_NOTICES[\s\S]*_locked_domain_delegation_package[\s\S]*_domain_delegation_power_mode[\s\S]*_require_domain_admin_or_direct_delegation_scope[\s\S]*_require_domain_member_or_direct_delegation_scope[\s\S]*def list_community_domain_notices[\s\S]*DELEGATION_POWER_OFFICIAL_NOTICES[\s\S]*def create_community_domain_notice[\s\S]*DELEGATION_POWER_OFFICIAL_NOTICES[\s\S]*def upsert_community_domain_member[\s\S]*DELEGATION_POWER_MEMBER_APPROVAL[\s\S]*def update_community_domain_member_status[\s\S]*DELEGATION_POWER_MEMBER_APPROVAL[\s\S]*def deactivate_community_domain_member[\s\S]*DELEGATION_POWER_MEMBER_APPROVAL/,
+  "Backend Community Domain routes must enforce locked direct delegation powers for official notices and member approval instead of only recording the handover package."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_locked_delegation_operator_can_apply_direct_notice_and_member_powers[\s\S]*official_notices[\s\S]*can_apply_directly[\s\S]*member_approval[\s\S]*can_apply_directly[\s\S]*\/notices[\s\S]*\/members[\s\S]*\/status[\s\S]*test_locked_delegation_operator_without_direct_mode_cannot_apply_actions[\s\S]*request_owner_approval[\s\S]*prepare_only/,
+  "Backend tests must prove locked direct delegation can perform notices/member actions while prepare-only or owner-approval modes cannot apply directly."
+);
 
 assertContains(
   "src/pages/communityDomainDashboard/SetupOverviewPanel.tsx",

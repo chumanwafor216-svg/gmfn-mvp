@@ -3769,6 +3769,173 @@ def test_community_domain_governance_package_lock_captures_verified_delegation_p
         app.dependency_overrides.pop(get_current_user, None)
 
 
+def test_locked_delegation_operator_can_apply_direct_notice_and_member_powers(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    handler = _seed_user(2, "direct-handler@example.com")
+    target = _seed_user(3, "direct-target@example.com")
+    with SessionLocal() as db:
+        row = db.get(User, int(handler.id))
+        row.gmfn_id = "GMFN-DIRECT-HANDLER"
+        row.phone_e164 = "+2348044445555"
+        db.commit()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Delegated Direct School",
+                "display_name": "Delegated Direct School",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "domain.feature_policy",
+                "action_key": "domain.features.configure",
+                "status": "active",
+                "config": {
+                    "version": 1,
+                    "features": {
+                        "announcement_board": "admin_only",
+                        "demand_box": "members_submit_admin_approves",
+                        "spotlight": "admin_only",
+                        "shop_diary": "members_submit_admin_approves",
+                        "vault": "admin_only",
+                        "marketplace_shops": "members_submit_admin_approves",
+                        "member_invites": "admin_only",
+                        "payments_contributions": "admin_only",
+                        "rosca_cycles": "off",
+                    },
+                    "delegation_package": {
+                        "operator_gsn_id": "GMFN-DIRECT-HANDLER",
+                        "operator_phone": "+2348044445555",
+                        "powers": {
+                            "official_notices": "can_apply_directly",
+                            "member_approval": "can_apply_directly",
+                        },
+                    },
+                },
+            },
+        )
+        assert policy.status_code == 201, policy.text
+        locked = client.post(f"/community-domains/{domain_id}/governance-package/lock", json={})
+        assert locked.status_code == 201, locked.text
+
+        app.dependency_overrides[get_current_user] = lambda: handler
+        notice = client.post(
+            f"/community-domains/{domain_id}/notices",
+            json={"body": "School fees circular is now available."},
+        )
+        assert notice.status_code == 200, notice.text
+        assert notice.json()["notice"]["body"] == "School fees circular is now available."
+
+        notices = client.get(f"/community-domains/{domain_id}/notices")
+        assert notices.status_code == 200, notices.text
+        assert notices.json()["notices"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": int(target.id), "role": "member", "status": "active"},
+        )
+        assert added.status_code == 201, added.text
+        assert added.json()["membership"]["user_id"] == int(target.id)
+
+        changed = client.patch(
+            f"/community-domains/{domain_id}/members/{int(target.id)}/status",
+            json={"status": "inactive", "status_note": "Left the pilot roster."},
+        )
+        assert changed.status_code == 200, changed.text
+        assert changed.json()["new_status"] == "inactive"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_locked_delegation_operator_without_direct_mode_cannot_apply_actions(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    handler = _seed_user(2, "approval-handler@example.com")
+    target = _seed_user(3, "approval-target@example.com")
+    with SessionLocal() as db:
+        row = db.get(User, int(handler.id))
+        row.gmfn_id = "GMFN-APPROVAL-HANDLER"
+        row.phone_e164 = "+2348055556666"
+        db.commit()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Delegated Approval School",
+                "display_name": "Delegated Approval School",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "domain.feature_policy",
+                "action_key": "domain.features.configure",
+                "status": "active",
+                "config": {
+                    "version": 1,
+                    "features": {
+                        "announcement_board": "admin_only",
+                        "demand_box": "members_submit_admin_approves",
+                        "spotlight": "admin_only",
+                        "shop_diary": "members_submit_admin_approves",
+                        "vault": "admin_only",
+                        "marketplace_shops": "members_submit_admin_approves",
+                        "member_invites": "admin_only",
+                        "payments_contributions": "admin_only",
+                        "rosca_cycles": "off",
+                    },
+                    "delegation_package": {
+                        "operator_gsn_id": "GMFN-APPROVAL-HANDLER",
+                        "operator_phone": "+2348055556666",
+                        "powers": {
+                            "official_notices": "request_owner_approval",
+                            "member_approval": "prepare_only",
+                        },
+                    },
+                },
+            },
+        )
+        assert policy.status_code == 201, policy.text
+        locked = client.post(f"/community-domains/{domain_id}/governance-package/lock", json={})
+        assert locked.status_code == 201, locked.text
+
+        app.dependency_overrides[get_current_user] = lambda: handler
+        notice = client.post(
+            f"/community-domains/{domain_id}/notices",
+            json={"body": "This should wait for owner approval."},
+        )
+        assert notice.status_code == 403, notice.text
+        assert notice.json()["detail"]["current_mode"] == "request_owner_approval"
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": int(target.id), "role": "member", "status": "active"},
+        )
+        assert added.status_code == 403, added.text
+        assert added.json()["detail"]["current_mode"] == "prepare_only"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
 def test_community_domain_governance_package_lock_rejects_delegation_identity_mismatch(
     client: TestClient,
 ):

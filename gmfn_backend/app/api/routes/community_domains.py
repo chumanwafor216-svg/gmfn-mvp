@@ -160,6 +160,18 @@ COMMUNITY_DOMAIN_NOTICE_EMBEDDED_DATE_RE = re.compile(
 COMMUNITY_DOMAIN_FEATURE_POLICY_KEY = "domain.feature_policy"
 COMMUNITY_DOMAIN_GOVERNANCE_PACKAGE_KEY = "domain.governance_package"
 COMMUNITY_DOMAIN_GOVERNANCE_PACKAGE_LOCK_ACTION_KEY = "domain.governance_package.lock"
+DELEGATION_POWER_MODE_OFF = "off"
+DELEGATION_POWER_MODE_PREPARE_ONLY = "prepare_only"
+DELEGATION_POWER_MODE_REQUEST_OWNER_APPROVAL = "request_owner_approval"
+DELEGATION_POWER_MODE_CAN_APPLY_DIRECTLY = "can_apply_directly"
+DELEGATION_POWER_MODES = {
+    DELEGATION_POWER_MODE_OFF,
+    DELEGATION_POWER_MODE_PREPARE_ONLY,
+    DELEGATION_POWER_MODE_REQUEST_OWNER_APPROVAL,
+    DELEGATION_POWER_MODE_CAN_APPLY_DIRECTLY,
+}
+DELEGATION_POWER_MEMBER_APPROVAL = "member_approval"
+DELEGATION_POWER_OFFICIAL_NOTICES = "official_notices"
 COMMUNITY_DOMAIN_FEATURE_ANNOUNCEMENT_BOARD = "announcement_board"
 COMMUNITY_DOMAIN_FEATURE_MODE_OFF = "off"
 COMMUNITY_DOMAIN_FEATURE_MODE_ADMIN_ONLY = "admin_only"
@@ -22571,6 +22583,148 @@ def _has_domain_setup_edit_scope(
     return membership is not None and _clean_role(membership.role) == SETUP_EDITOR_ROLE
 
 
+def _locked_domain_delegation_package(
+    db: Session,
+    *,
+    community_domain_id: int,
+) -> dict[str, Any]:
+    latest = _latest_governance_package(
+        db,
+        community_domain_id=int(community_domain_id),
+    )
+    if latest is None:
+        return {}
+    package = _json_load(latest.package_json)
+    delegation_package = (
+        package.get("delegation_package") if isinstance(package, dict) else None
+    )
+    return delegation_package if isinstance(delegation_package, dict) else {}
+
+
+def _domain_delegation_power_mode(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    power_key: str,
+) -> str:
+    delegation_package = _locked_domain_delegation_package(
+        db,
+        community_domain_id=int(domain.id),
+    )
+    try:
+        operator_user_id = int(delegation_package.get("operator_user_id") or 0)
+    except (TypeError, ValueError):
+        operator_user_id = 0
+    if operator_user_id != int(current_user.id):
+        return DELEGATION_POWER_MODE_OFF
+
+    powers = delegation_package.get("powers")
+    if not isinstance(powers, dict):
+        return DELEGATION_POWER_MODE_OFF
+    mode = _clean_role(powers.get(power_key), DELEGATION_POWER_MODE_OFF)
+    if mode not in DELEGATION_POWER_MODES:
+        return DELEGATION_POWER_MODE_OFF
+    return mode
+
+
+def _has_domain_direct_delegation_scope(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    power_key: str,
+) -> bool:
+    return (
+        _domain_delegation_power_mode(
+            db,
+            domain=domain,
+            current_user=current_user,
+            power_key=power_key,
+        )
+        == DELEGATION_POWER_MODE_CAN_APPLY_DIRECTLY
+    )
+
+
+def _require_domain_admin_or_direct_delegation_scope(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    power_key: str,
+    action_label: str,
+) -> None:
+    blocked_status = _community_domain_operation_block_detail(
+        domain,
+        current_user=current_user,
+    )
+    if blocked_status is not None:
+        raise HTTPException(status_code=403, detail=blocked_status)
+    if _has_domain_admin_scope(db, domain=domain, current_user=current_user):
+        return
+    mode = _domain_delegation_power_mode(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=power_key,
+    )
+    if mode == DELEGATION_POWER_MODE_CAN_APPLY_DIRECTLY:
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "community_domain_delegation_power_required",
+            "message": (
+                f"Only a Community Domain owner/admin or the locked delegated operator "
+                f"with direct {action_label} authority can perform this action."
+            ),
+            "power_key": power_key,
+            "current_mode": mode,
+            "required_mode": DELEGATION_POWER_MODE_CAN_APPLY_DIRECTLY,
+        },
+    )
+
+
+def _require_domain_member_or_direct_delegation_scope(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    power_key: str,
+) -> None:
+    blocked_status = _community_domain_operation_block_detail(
+        domain,
+        current_user=current_user,
+    )
+    if blocked_status is not None:
+        raise HTTPException(status_code=403, detail=blocked_status)
+    if _has_domain_admin_scope(db, domain=domain, current_user=current_user):
+        return
+    membership = _active_domain_membership_for_user(
+        db,
+        community_domain_id=int(domain.id),
+        user_id=int(current_user.id),
+    )
+    if membership is not None:
+        return
+    if _has_domain_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=power_key,
+    ):
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "community_domain_member_or_delegated_operator_required",
+            "message": (
+                "Only active members, owner/admins, or the locked delegated "
+                "operator can view this domain surface."
+            ),
+            "power_key": power_key,
+        },
+    )
 
 
 def _community_domain_operation_block_detail(
@@ -30898,7 +31052,12 @@ def list_community_domain_notices(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    _require_domain_member_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_OFFICIAL_NOTICES,
+    )
     _raise_if_domain_publicly_blocked(domain)
     feature_mode = _community_domain_feature_mode(
         db,
@@ -30912,6 +31071,12 @@ def list_community_domain_notices(
         limit=int(limit),
     )
     can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    can_view_notice_admin = can_admin or _has_domain_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_OFFICIAL_NOTICES,
+    )
     for notice in notices:
         try:
             notice_event_id = int(notice.get("event_id") or 0)
@@ -30923,7 +31088,7 @@ def list_community_domain_notices(
                 domain=domain,
                 notice_event_id=notice_event_id,
                 viewer_user_id=int(current_user.id),
-                include_private=can_admin,
+                include_private=can_view_notice_admin,
             )
     return {
         "ok": True,
@@ -30958,7 +31123,12 @@ def list_community_domain_notice_acknowledgements(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    _require_domain_member_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_OFFICIAL_NOTICES,
+    )
     _raise_if_domain_publicly_blocked(domain)
     notice_event = _community_domain_notice_event_or_404(
         db,
@@ -30966,17 +31136,23 @@ def list_community_domain_notice_acknowledgements(
         notice_event_id=int(notice_event_id),
     )
     can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    can_view_notice_admin = can_admin or _has_domain_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_OFFICIAL_NOTICES,
+    )
     return {
         "ok": True,
         "engine_ready": True,
         "community_domain_id": int(domain.id),
-        "notice": _community_domain_notice_payload(notice_event, include_private=can_admin),
+        "notice": _community_domain_notice_payload(notice_event, include_private=can_view_notice_admin),
         "acknowledgement_summary": _community_domain_notice_ack_summary(
             db,
             domain=domain,
             notice_event_id=int(notice_event_id),
             viewer_user_id=int(current_user.id),
-            include_private=can_admin,
+            include_private=can_view_notice_admin,
         ),
         "boundary": COMMUNITY_DOMAIN_NOTICE_ACK_BOUNDARY,
     }
@@ -31059,7 +31235,13 @@ def create_community_domain_notice(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_OFFICIAL_NOTICES,
+        action_label="official notices",
+    )
     _require_community_domain_feature_enabled(
         db,
         domain=domain,
@@ -32785,7 +32967,13 @@ def upsert_community_domain_member(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_MEMBER_APPROVAL,
+        action_label="member approval",
+    )
     _get_user_or_404(db, payload.user_id)
     requested_role = _clean_role(payload.role, "member")
     if requested_role == "owner" and int(payload.user_id) != int(domain.owner_user_id):
@@ -32940,7 +33128,13 @@ def update_community_domain_member_status(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_MEMBER_APPROVAL,
+        action_label="member approval",
+    )
     membership = _domain_membership_for_user(
         db,
         community_domain_id=int(domain.id),
@@ -32973,7 +33167,13 @@ def deactivate_community_domain_member(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_admin_or_direct_delegation_scope(
+        db,
+        domain=domain,
+        current_user=current_user,
+        power_key=DELEGATION_POWER_MEMBER_APPROVAL,
+        action_label="member approval",
+    )
     membership = _domain_membership_for_user(
         db,
         community_domain_id=int(domain.id),
