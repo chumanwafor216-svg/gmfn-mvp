@@ -29,6 +29,19 @@ The path now shows:
 - one primary continue/fix action;
 - blocker messages when the owner tries to jump ahead too early.
 
+
+Product owner final direction on governance handover:
+
+- the owner must complete and lock governance before handover;
+- delegation is the last portal, not the source of governance;
+- the delegation package must be inside governance and must let the owner choose
+  what the handler/operator can do;
+- GSN should not forbid broad delegation where the owner deliberately accepts
+  responsibility for it;
+- GSN must preserve integrity through package versions, action reviews,
+  owner-signed approval for later governance edits, and edit history;
+- no duplicate password, cloned-account, or fake OTP engine should be created.
+
 The existing Community Domain engines were not duplicated. The guided path opens
 existing setup, billing, people, authority, governance, and launch actions.
 

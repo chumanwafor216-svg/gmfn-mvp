@@ -1,3 +1,11 @@
+## 2026-09-25 - Community Domain owner-locked governance handover protocol
+- Status: Product protocol update recorded locally; no backend/frontend behavior changed in this slice.
+- Owner direction: governance must be completed by the recorded owner before handover. Delegation is the final portal after the owner has chosen service switches, delegation powers, and lock confirmation. GSN must allow owners to delegate broad operational powers where they deliberately accept that responsibility, while preserving explicit package versions, action reviews, owner approval for later governance edits, and edit history.
+- Files updated: `docs/GSN_COMMUNITY_GOVERNANCE_DELEGATED_AUTHORITY_PROTOCOL_2026-06-30.md`, `docs/SCREEN_SPECS.md`, `docs/GSN_COMMUNITY_DOMAIN_GOVERNANCE_CLEANUP_HANDOFF_2026-09-25.md`, and this handoff note.
+- Implementation direction: reuse `CommunityDomainGovernancePackage` for the locked package and `CommunityDomainActionReview` for later owner-signed unlock/amendment approval. Do not create a duplicate password, cloned-account, or fake OTP engine. The eventual delegation package should resolve the handler by GSN ID plus phone and verify they belong to the same GSN account before handover.
+- Publish status: local only. Per product-owner instruction, do not push or trigger Render until the current work batch is finished.
+- Devil truth: this records the correct product contract, but the backend still needs a real delegation-package schema/enforcement layer before the app can honestly claim those per-power delegation switches are enforced.
+
 ## 2026-09-24 - Church follow-up queue reports exhausted scan windows
 - Status: Backend/frontend follow-up queue refinement implemented locally so the due queue reports how many domain activity records it scanned and whether the scan window was filled.
 - Routes/screens affected: `GET /community-domains/{community_domain_id}/activities/follow-ups`; `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent attention queue.

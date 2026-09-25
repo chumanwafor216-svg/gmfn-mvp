@@ -559,3 +559,119 @@ pastoral follow-up coverage, response questions and needs, private follow-up sig
 memory. It must not claim GSN has judged doctrine, measured spiritual growth,
 proved final attendance beyond recorded Presence Evidence, reconciled offerings, or certified anything not recorded in
 GSN.
+
+---
+
+## 2026-09-25 Addendum - Owner-Locked Governance Handover
+
+This addendum supersedes any product interpretation that treats delegated setup
+or delegated operation as the source of governance authority.
+
+### Final Product Rule
+
+The recorded Community Domain owner is responsible for the governance
+architecture before handover. The owner must complete the governance package,
+choose what is on and off, choose what delegated operators may do, and lock that
+package before handing the operational account or day-to-day work to another
+person.
+
+Delegation is not the beginning of governance. Delegation is the last portal
+after governance has been chosen.
+
+### Owner Responsibility
+
+GSN must allow an owner to delegate broad operational powers when that is the
+owner's real organisational decision. GSN must not hard-code a moral objection
+that prevents a school proprietor, CEO, pastor, chairman, or association leader
+from delegating membership approval, notices, billing administration,
+collections administration, marketplace operation, or other day-to-day work.
+
+GSN's responsibility is to preserve integrity:
+
+- the owner must be the person who chooses the governance and delegation scope;
+- the locked governance package must record what was chosen;
+- later changes must be attributable;
+- locked governance must not be silently edited;
+- GSN must keep evidence of who requested, approved, applied, and changed what.
+
+### Delegation Package
+
+Every Community Domain governance package must include a delegation package.
+The delegation package records which powers are available to the operator or
+handler after handover.
+
+The delegation package is owner-configured. It may include powers such as:
+
+- member approval or admission control;
+- official notices and announcements;
+- marketplace/shop operation;
+- billing administration;
+- collection or payment-instruction administration;
+- school, church, association, market, or charity workflow operation;
+- record keeping and report preparation;
+- governance edit request initiation.
+
+Some actions may still require platform-side or owner-side verification because
+of legal, financial, fraud, or identity risk, but they must be represented as
+clear governance states rather than hidden assumptions.
+
+### Default State
+
+The product may provide sensible defaults for services and delegation powers,
+but the owner must see and confirm the final governance package before lock.
+Examples:
+
+- Spotlight may default on;
+- DemandBox may default on;
+- ROSCA may default off;
+- voting may default off;
+- high-risk delegation powers may default off or require explicit owner choice.
+
+Defaults are guidance, not hidden governance.
+
+### Lock Confirmation
+
+The owner lock should be tied to the signed-in owner's GSN identity. A lock
+confirmation may require the owner to enter or confirm their GSN ID and phone
+number, but this is not an OTP system and must not be represented as a password
+bypass.
+
+The lock means the governance package is sealed as an auditable version. Later
+authorised changes create a new version or an explicit unlock/edit record; they
+do not silently mutate the old package.
+
+### Handover
+
+After governance is locked, the owner may hand over operation to a handler. The
+handover should use the handler/operator's GSN ID and phone number as the
+resolution pair. GSN should verify that the ID and phone belong to the same GSN
+account before linking the handler.
+
+The handler is not the author of the locked governance package unless the owner
+explicitly reassigns ownership through a separate controlled ownership-transfer
+process.
+
+### Later Governance Edits
+
+If a locked governance package needs amendment, the normal path is:
+
+1. the handler or authorised person clicks request edit;
+2. GSN creates an Action Review for governance unlock or governance amendment;
+3. the recorded owner receives an in-app notification;
+4. the owner approves or rejects from the owner's own signed-in GSN account;
+5. if approved, GSN opens the edit path or creates the new package version;
+6. GSN records what changed and who requested, approved, and applied it.
+
+This is the approved bridge between owner and handler. Do not create a duplicate
+password, cloned-account, or fake OTP engine for this purpose.
+
+### Organisation Account Integrity
+
+A Community Domain may be operated on a shared organisational device or desktop
+session when that reflects real institutional practice. This must not become an
+untraceable clone of another personal account. The system must preserve the
+recorded owner, the locked governance package, the operator/handover record, and
+an edit history showing what changed.
+
+The owner remains responsible for the powers they deliberately delegated, but
+GSN must still keep sufficient logs and package versions to show what happened.

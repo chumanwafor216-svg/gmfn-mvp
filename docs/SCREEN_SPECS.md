@@ -592,6 +592,14 @@ Rules:
   authority request instead of implying a local password or self-unlock. Later
   authorised changes create a new package version; the previous package is not
   silently mutated.
+- Governance handover must be owner-locked and delegation-last. The owner must
+  confirm the governance package, service switches, and delegation package before
+  handover. Delegation powers are owner choices recorded inside governance; GSN
+  must not hard-code a blanket refusal where an owner deliberately delegates
+  membership, notices, billing administration, collections administration, or
+  operating work. Later edits to locked governance must use owner-signed action
+  review approval and package version history, not cloned accounts, hidden
+  passwords, or silent local unlocks.
 - A branch, campus, parish, line, class, committee, ROSCA circle, or welfare
   group should normally be represented as a `CommunityNode` or activity group,
   not a separate domain, unless it needs separate billing, public identity, or
