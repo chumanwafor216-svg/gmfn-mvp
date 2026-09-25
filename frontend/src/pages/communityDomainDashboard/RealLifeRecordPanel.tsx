@@ -3692,6 +3692,12 @@ export default function CommunityDomainRealLifeRecordPanel({ data }: Props) {
                           </div>
                         ) : null}
 
+                        <div
+                          data-debug-id="community-domain-dashboard.activity-task-recommendation"
+                          style={{ ...helperText(), fontSize: 13 }}
+                        >
+                          Recommended: Start with Record before catalogue or recent activity views.
+                        </div>
                         <div style={{ ...helperText(), fontSize: 13 }}>
                           Current activity view:{" "}
                           <strong>{activeActivityRecordTaskOption.label}</strong>.{" "}
