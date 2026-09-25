@@ -63,6 +63,8 @@ ready. The old broad invite card no longer appears before setup completion.
 The older Community Domain setup tools drawer was made secondary:
 
 - the old primary button now reads `More setup tools`;
+- opening the drawer now restates the current guided setup step first and gives
+  one action back to that step before the older stage tiles;
 - the four older stage tiles use secondary visual weight;
 - the header tells the owner to follow the guided setup path first.
 

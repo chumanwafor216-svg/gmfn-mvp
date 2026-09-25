@@ -191,8 +191,8 @@ assertContains(
   { frontend: true }
 );assertContains(
   communityDomainDashboardFile,
-  /Follow the guided setup path\. Open more tools only when a specific setup area is needed\.[\s\S]*community-domain-dashboard\.guided-setup\.next[\s\S]*kind="secondary"[\s\S]*stableHeight=\{44\}[\s\S]*community-domain-dashboard\.institution-gateway[\s\S]*More setup tools[\s\S]*community-domain-dashboard\.governance-stage-board[\s\S]*kind="secondary"[\s\S]*stableHeight=\{58\}[\s\S]*community-domain-dashboard\.command-stage\.\$\{group\.key\}/,
-  "Community Domain command surface must keep the guided setup path as the primary route and leave the old stage board behind a quieter More setup tools drawer.",
+  /Follow the guided setup path\. Open more tools only when a specific setup area is needed\.[\s\S]*community-domain-dashboard\.guided-setup\.next[\s\S]*kind="secondary"[\s\S]*stableHeight=\{44\}[\s\S]*community-domain-dashboard\.institution-gateway[\s\S]*More setup tools[\s\S]*community-domain-dashboard\.command-drawer-current-step[\s\S]*Use this first[\s\S]*community-domain-dashboard\.command-drawer-current-step-action[\s\S]*community-domain-dashboard\.governance-stage-board[\s\S]*kind="secondary"[\s\S]*stableHeight=\{58\}[\s\S]*community-domain-dashboard\.command-stage\.\$\{group\.key\}/,
+  "Community Domain command surface must keep the guided setup path as the primary route and make More setup tools restate the current guided step before exposing the older stage board.",
   { frontend: true }
 );
 assertContains(
@@ -2836,8 +2836,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /Domain command[\s\S]*community-domain-dashboard\.governance-gateway[\s\S]*community-domain-dashboard\.guided-setup-path[\s\S]*community-domain-dashboard\.guided-setup\.next[\s\S]*community-domain-dashboard\.institution-gateway[\s\S]*More setup tools[\s\S]*domainCommandMenuOpen \? \([\s\S]*community-domain-dashboard\.domain-lane-board[\s\S]*community-domain-dashboard\.governance-stage-board[\s\S]*community-domain-dashboard\.command-stage\.\$\{group\.key\}[\s\S]*community-domain-dashboard\.command-stage-panel\.\$\{activeDomainCommandGroupOption\.key\}[\s\S]*domainCommandActions\.map[\s\S]*community-domain-dashboard\.command-action\.\$\{activeDomainCommandGroupOption\.key\}\.\$\{action\.key\}[\s\S]*community-domain-dashboard\.command-stage\.save-checkpoint[\s\S]*community-domain-dashboard\.command-guidance-toggle[\s\S]*community-domain-dashboard\.command-guidance-panel/,
-  "Community Domain dashboard must land on one guided setup path, then reveal the four older governance stages and six inner actions only after the owner opens More setup tools and the relevant stage.",
+  /Domain command[\s\S]*community-domain-dashboard\.governance-gateway[\s\S]*community-domain-dashboard\.guided-setup-path[\s\S]*community-domain-dashboard\.guided-setup\.next[\s\S]*community-domain-dashboard\.institution-gateway[\s\S]*More setup tools[\s\S]*domainCommandMenuOpen \? \([\s\S]*community-domain-dashboard\.domain-lane-board[\s\S]*community-domain-dashboard\.command-drawer-current-step[\s\S]*community-domain-dashboard\.command-drawer-current-step-action[\s\S]*community-domain-dashboard\.governance-stage-board[\s\S]*community-domain-dashboard\.command-stage\.\$\{group\.key\}[\s\S]*community-domain-dashboard\.command-stage-panel\.\$\{activeDomainCommandGroupOption\.key\}[\s\S]*domainCommandActions\.map[\s\S]*community-domain-dashboard\.command-action\.\$\{activeDomainCommandGroupOption\.key\}\.\$\{action\.key\}[\s\S]*community-domain-dashboard\.command-stage\.save-checkpoint[\s\S]*community-domain-dashboard\.command-guidance-toggle[\s\S]*community-domain-dashboard\.command-guidance-panel/,
+  "Community Domain dashboard must land on one guided setup path, restate the current step inside More setup tools, then reveal the four older governance stages and six inner actions only after the owner opens the relevant stage.",
   { frontend: true }
 );
 assertContains(

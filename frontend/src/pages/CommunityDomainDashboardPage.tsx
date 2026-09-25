@@ -8957,33 +8957,70 @@ export default function CommunityDomainDashboardPage() {
                     style={{ display: "grid", gap: 10 }}
                   >
                     {!activeDomainCommandGroupOption ? (
-                      <div
-                        data-debug-id="community-domain-dashboard.governance-stage-board"
-                        style={commandLaneGrid()}
-                      >
-                        {domainCommandGroups.map((group, index) => (
-                          <StableButton
-                            key={group.key}
-                            type="button"
-                            kind="secondary"
-                            fullWidth
-                            stableHeight={58}
-                            title={group.note}
-                            debugId={`community-domain-dashboard.command-stage.${group.key}`}
-                            onClick={() => openDomainCommandGroup(group.key)}
+                      <>
+                        <div
+                          data-debug-id="community-domain-dashboard.command-drawer-current-step"
+                          style={{ ...softCard(), display: "grid", gap: 10 }}
+                        >
+                          <div
                             style={{
-                              justifyContent: "flex-start",
-                              textAlign: "left",
-                              fontSize: 14,
-                              textTransform: "none",
-                              whiteSpace: "normal",
-                              lineHeight: 1.18,
+                              display: "grid",
+                              gridTemplateColumns: "minmax(0, 1fr) auto",
+                              gap: 10,
+                              alignItems: "center",
                             }}
                           >
-                            {index + 1}. {group.label}
+                            <div style={{ minWidth: 0 }}>
+                              <div style={sectionLabel()}>Use this first</div>
+                              <h3 style={{ margin: "4px 0 0", fontSize: 18, lineHeight: 1.14 }}>
+                                Step {guidedCurrentStep.number}: {guidedCurrentStep.title}
+                              </h3>
+                              <div style={{ ...helperText(), marginTop: 5, fontSize: 13, lineHeight: 1.38 }}>
+                                Open a stage below only to correct a saved detail or handle a specific admin task.
+                              </div>
+                            </div>
+                            <div style={statusBadge(guidedProgressText)}>{guidedProgressText}</div>
+                          </div>
+                          <StableButton
+                            type="button"
+                            kind="primary"
+                            fullWidth
+                            stableHeight={44}
+                            debugId="community-domain-dashboard.command-drawer-current-step-action"
+                            onClick={() => runGuidedSetupStep(guidedCurrentStep)}
+                            style={{ justifyContent: "center", fontSize: 13, textTransform: "none" }}
+                          >
+                            {guidedCurrentStepBlocked ? "Fix current step" : guidedCurrentStep.actionLabel}
                           </StableButton>
-                        ))}
-                      </div>
+                        </div>
+                        <div
+                          data-debug-id="community-domain-dashboard.governance-stage-board"
+                          style={commandLaneGrid()}
+                        >
+                          {domainCommandGroups.map((group, index) => (
+                            <StableButton
+                              key={group.key}
+                              type="button"
+                              kind="secondary"
+                              fullWidth
+                              stableHeight={58}
+                              title={group.note}
+                              debugId={`community-domain-dashboard.command-stage.${group.key}`}
+                              onClick={() => openDomainCommandGroup(group.key)}
+                              style={{
+                                justifyContent: "flex-start",
+                                textAlign: "left",
+                                fontSize: 14,
+                                textTransform: "none",
+                                whiteSpace: "normal",
+                                lineHeight: 1.18,
+                              }}
+                            >
+                              {index + 1}. {group.label}
+                            </StableButton>
+                          ))}
+                        </div>
+                      </>
                     ) : (
                       <div
                         data-debug-id={`community-domain-dashboard.command-stage-panel.${activeDomainCommandGroupOption.key}`}

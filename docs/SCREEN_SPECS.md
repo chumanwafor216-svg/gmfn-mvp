@@ -491,7 +491,7 @@ Must show:
 - after category selection, setup step titles, notes, and examples should speak in that package language, such as campuses/classes for School, branches/ministries for Church, programmes/beneficiaries for Charity / NGO, and committees/members for Association
 - after the launch/setup checkpoint is saved, the page must visibly mark the setup checkpoint as completed and show one state-aware next task, such as connect Community Home, turn on Member Invites, or build the first circle, instead of exposing all governance surfaces
 - one command surface that first shows the guided setup path
-- after the owner opens `More setup tools`, four secondary governance stages: Set up the institution,
+- after the owner opens `More setup tools`, the drawer must first restate the current guided setup step and one action back to that step, then show four secondary governance stages: Set up the institution,
   Organise people, Run the community, and Advanced governance
 - each governance stage exposes six inner actions only after that stage is
   selected
