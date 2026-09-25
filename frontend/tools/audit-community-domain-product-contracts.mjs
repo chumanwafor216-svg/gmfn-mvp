@@ -1979,6 +1979,8 @@ assertNotContains(
   "task.key === \"account\"",
   "setActiveBillingAccountTask(\"summary\")",
   "Community pay-in account",
+  "community-domain-dashboard.billing-account-recommendation",
+  "Recommended: Review Summary before opening pay-in account setup.",
   "Current pay-in account view",
   "community-domain-dashboard.billing-account-toggle",
   "Close pay-in account views",
@@ -1995,7 +1997,7 @@ assertNotContains(
   assertIncludes(
     "src/pages/communityDomainDashboard/BillingTaskPanels.tsx",
     needle,
-    "Community Domain Billing pay-in account must keep Summary and Setup behind a closed Change pay-in account view selector.",
+    "Community Domain Billing pay-in account must recommend Summary first and keep Summary and Setup behind a closed Change pay-in account view selector.",
     { frontend: true }
   )
 );assertNotContains(

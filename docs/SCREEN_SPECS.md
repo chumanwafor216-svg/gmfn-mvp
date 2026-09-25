@@ -497,6 +497,7 @@ Must show:
 - inside Roster control, Summary must be recommended before individual member status changes
 - inside Setup access, Summary must be recommended before changing setup editor authority
 - inside Billing jobs, Code & proof must be recommended before account setup, steps, or readiness diagnostics
+- inside Billing pay-in account, Summary must be recommended before account setup
 - after the launch/setup checkpoint is saved, the page must visibly mark the setup checkpoint as completed and show one state-aware next task, such as connect Community Home, turn on Member Invites, or build the first circle, instead of exposing all governance surfaces
 - one command surface that first shows the guided setup path
 - after the owner opens `More setup tools`, the drawer must first restate the current guided setup step and one action back to that step, then show four secondary governance stages: Set up the institution,

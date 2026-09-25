@@ -336,6 +336,12 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
                       <div style={{ ...helperText(), fontSize: 13 }}>
                         Use this account with the generated code. Editing is GSN-admin only.
                       </div>
+                      <div
+                        data-debug-id="community-domain-dashboard.billing-account-recommendation"
+                        style={{ ...helperText(), fontSize: 13 }}
+                      >
+                        Recommended: Review Summary before opening pay-in account setup.
+                      </div>
                       <div style={{ ...helperText(), fontSize: 13 }}>
                         Current pay-in account view:{" "}
                         <strong>{activeBillingAccountTaskOption.label}</strong>.{" "}
