@@ -415,6 +415,12 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
         }}
       >
         <div style={sectionLabel()}>Trust and evidence view</div>
+        <div
+          data-debug-id="community-domain.trust-evidence.focus-recommendation"
+          style={helperText()}
+        >
+          Recommended: Review Records before release, relay, notification, or mobility.
+        </div>
         <div style={helperText()}>
           Current view: <strong>{selectedTrustEvidenceFocus.label}</strong>.
         </div>
