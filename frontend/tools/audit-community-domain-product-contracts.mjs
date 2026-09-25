@@ -1934,6 +1934,8 @@ assertContains(
 
 [
   "Billing jobs",
+  "community-domain-dashboard.billing-task-recommendation",
+  "Recommended: Start with Code & proof before account setup, steps, or readiness diagnostics.",
   "Current billing job",
   "community-domain-dashboard.billing-task-toggle",
   "Close billing jobs",
@@ -1952,7 +1954,7 @@ assertContains(
   assertIncludes(
     "src/pages/communityDomainDashboard/BillingTaskPanels.tsx",
     needle,
-    "Community Domain Billing must keep billing jobs behind a closed Change billing job selector so steps, account, payment code/proof, and readiness diagnostics do not dump together.",
+    "Community Domain Billing must recommend Code & proof first and keep billing jobs behind a closed Change billing job selector so steps, account, payment code/proof, and readiness diagnostics do not dump together.",
     { frontend: true }
   )
 );assertNotContains(

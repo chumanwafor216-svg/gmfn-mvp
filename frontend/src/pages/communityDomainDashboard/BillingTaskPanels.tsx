@@ -198,11 +198,19 @@ export default function BillingTaskPanels({ data }: BillingTaskPanelsProps) {
                           need code, account, proof, or the step list.
                         </div>
                       ) : (
-                        <div style={{ ...helperText(), fontSize: 13 }}>
-                          Current billing job:{" "}
-                          <strong>{activeBillingTaskOption.label}</strong>.{" "}
-                          {activeBillingTaskOption.note}
-                        </div>
+                        <>
+                          <div
+                            data-debug-id="community-domain-dashboard.billing-task-recommendation"
+                            style={{ ...helperText(), fontSize: 13 }}
+                          >
+                            Recommended: Start with Code & proof before account setup, steps, or readiness diagnostics.
+                          </div>
+                          <div style={{ ...helperText(), fontSize: 13 }}>
+                            Current billing job:{" "}
+                            <strong>{activeBillingTaskOption.label}</strong>.{" "}
+                            {activeBillingTaskOption.note}
+                          </div>
+                        </>
                       )}
                       <StableButton
                         type="button"
