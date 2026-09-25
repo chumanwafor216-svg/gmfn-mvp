@@ -237,8 +237,14 @@ export default function CommunityDomainServiceFocusPanel({ data }: Props) {
         }}
       >
         <div style={sectionLabel()}>Services focus</div>
+        <div
+          data-debug-id="community-domain-dashboard.service-recommendation"
+          style={helperText()}
+        >
+          Recommended: Start with Readiness before local rules or trust views.
+        </div>
         <div style={helperText()}>
-          Choose the service stage first. Current view:{" "}
+          Current service view:{" "}
           <strong>{selectedServiceDetail.label}</strong>.
         </div>
         <StableButton
