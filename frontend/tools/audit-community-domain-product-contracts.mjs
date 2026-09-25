@@ -337,8 +337,14 @@ assertContains(
   "Backend governance package lock must include the owner delegation package and reject handler GSN ID / phone mismatches instead of locking unverifiable handover data."
 );
 assertContains(
+  "gmfn_backend/app/services/community_domain_delegation_service.py",
+  /DELEGATION_POWER_MODE_CAN_APPLY_DIRECTLY[\s\S]*DELEGATION_POWER_MEMBER_APPROVAL[\s\S]*DELEGATION_POWER_OFFICIAL_NOTICES[\s\S]*locked_domain_delegation_package[\s\S]*domain_delegation_power_mode[\s\S]*has_domain_direct_delegation_scope[\s\S]*has_clan_domain_direct_delegation_scope/,
+  "Backend must keep locked delegation package parsing and direct-power checks in the shared Community Domain delegation service."
+);
+
+assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /DELEGATION_POWER_MODE_CAN_APPLY_DIRECTLY[\s\S]*DELEGATION_POWER_MEMBER_APPROVAL[\s\S]*DELEGATION_POWER_OFFICIAL_NOTICES[\s\S]*_locked_domain_delegation_package[\s\S]*_domain_delegation_power_mode[\s\S]*_require_domain_admin_or_direct_delegation_scope[\s\S]*_require_domain_member_or_direct_delegation_scope[\s\S]*def list_community_domain_notices[\s\S]*DELEGATION_POWER_OFFICIAL_NOTICES[\s\S]*def create_community_domain_notice[\s\S]*DELEGATION_POWER_OFFICIAL_NOTICES[\s\S]*def upsert_community_domain_member[\s\S]*DELEGATION_POWER_MEMBER_APPROVAL[\s\S]*def update_community_domain_member_status[\s\S]*DELEGATION_POWER_MEMBER_APPROVAL[\s\S]*def deactivate_community_domain_member[\s\S]*DELEGATION_POWER_MEMBER_APPROVAL/,
+  /shared_locked_domain_delegation_package[\s\S]*shared_domain_delegation_power_mode[\s\S]*_require_domain_admin_or_direct_delegation_scope[\s\S]*_require_domain_member_or_direct_delegation_scope[\s\S]*def list_community_domain_notices[\s\S]*DELEGATION_POWER_OFFICIAL_NOTICES[\s\S]*def create_community_domain_notice[\s\S]*DELEGATION_POWER_OFFICIAL_NOTICES[\s\S]*def upsert_community_domain_member[\s\S]*DELEGATION_POWER_MEMBER_APPROVAL[\s\S]*def update_community_domain_member_status[\s\S]*DELEGATION_POWER_MEMBER_APPROVAL[\s\S]*def deactivate_community_domain_member[\s\S]*DELEGATION_POWER_MEMBER_APPROVAL/,
   "Backend Community Domain routes must enforce locked direct delegation powers for official notices and member approval instead of only recording the handover package."
 );
 
@@ -366,7 +372,7 @@ assertContains(
   "Backend tests must prove prepare-only member delegation cannot apply directly."
 );
 assertContains(
-  "gmfn_backend/app/api/routes/community_domains.py",
+  "gmfn_backend/app/services/community_domain_delegation_service.py",
   /DELEGATION_POWER_BILLING_ADMIN[\s\S]*DELEGATION_POWER_PAYMENT_CONFIRMATION[\s\S]*DELEGATION_POWER_COLLECTIONS_ADMIN[\s\S]*DELEGATION_POWER_MARKETPLACE_OPERATION[\s\S]*DELEGATION_POWER_RECORDS_REPORTS[\s\S]*DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST[\s\S]*DELEGATION_POWER_OWNERSHIP_TRANSFER[\s\S]*DELEGATION_POWER_INSTITUTION_VERIFICATION/,
   "Backend must define all owner delegation package power keys, including currently route-backed and future route-backed powers."
 );

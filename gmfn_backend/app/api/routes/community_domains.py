@@ -59,6 +59,26 @@ from app.services.trust_events_services import log_trust_event
 from app.services.community_domain_value_pdf_service import (
     build_community_domain_value_report_pdf,
 )
+from app.services.community_domain_delegation_service import (
+    COMMUNITY_DOMAIN_GOVERNANCE_PACKAGE_KEY,
+    DELEGATION_POWER_BILLING_ADMIN,
+    DELEGATION_POWER_COLLECTIONS_ADMIN,
+    DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST,
+    DELEGATION_POWER_INSTITUTION_VERIFICATION,
+    DELEGATION_POWER_MARKETPLACE_OPERATION,
+    DELEGATION_POWER_MEMBER_APPROVAL,
+    DELEGATION_POWER_MODE_CAN_APPLY_DIRECTLY,
+    DELEGATION_POWER_MODE_OFF,
+    DELEGATION_POWER_MODE_PREPARE_ONLY,
+    DELEGATION_POWER_MODE_REQUEST_OWNER_APPROVAL,
+    DELEGATION_POWER_MODES,
+    DELEGATION_POWER_OFFICIAL_NOTICES,
+    DELEGATION_POWER_OWNERSHIP_TRANSFER,
+    DELEGATION_POWER_PAYMENT_CONFIRMATION,
+    DELEGATION_POWER_RECORDS_REPORTS,
+    domain_delegation_power_mode as shared_domain_delegation_power_mode,
+    locked_domain_delegation_package as shared_locked_domain_delegation_package,
+)
 
 
 router = APIRouter(prefix="/community-domains", tags=["community-domains"])
@@ -158,28 +178,7 @@ COMMUNITY_DOMAIN_NOTICE_EMBEDDED_DATE_RE = re.compile(
     re.IGNORECASE,
 )
 COMMUNITY_DOMAIN_FEATURE_POLICY_KEY = "domain.feature_policy"
-COMMUNITY_DOMAIN_GOVERNANCE_PACKAGE_KEY = "domain.governance_package"
 COMMUNITY_DOMAIN_GOVERNANCE_PACKAGE_LOCK_ACTION_KEY = "domain.governance_package.lock"
-DELEGATION_POWER_MODE_OFF = "off"
-DELEGATION_POWER_MODE_PREPARE_ONLY = "prepare_only"
-DELEGATION_POWER_MODE_REQUEST_OWNER_APPROVAL = "request_owner_approval"
-DELEGATION_POWER_MODE_CAN_APPLY_DIRECTLY = "can_apply_directly"
-DELEGATION_POWER_MODES = {
-    DELEGATION_POWER_MODE_OFF,
-    DELEGATION_POWER_MODE_PREPARE_ONLY,
-    DELEGATION_POWER_MODE_REQUEST_OWNER_APPROVAL,
-    DELEGATION_POWER_MODE_CAN_APPLY_DIRECTLY,
-}
-DELEGATION_POWER_MEMBER_APPROVAL = "member_approval"
-DELEGATION_POWER_OFFICIAL_NOTICES = "official_notices"
-DELEGATION_POWER_BILLING_ADMIN = "billing_admin"
-DELEGATION_POWER_PAYMENT_CONFIRMATION = "payment_confirmation"
-DELEGATION_POWER_COLLECTIONS_ADMIN = "collections_admin"
-DELEGATION_POWER_MARKETPLACE_OPERATION = "marketplace_operation"
-DELEGATION_POWER_RECORDS_REPORTS = "records_reports"
-DELEGATION_POWER_GOVERNANCE_EDIT_REQUEST = "governance_edit_request"
-DELEGATION_POWER_OWNERSHIP_TRANSFER = "ownership_transfer"
-DELEGATION_POWER_INSTITUTION_VERIFICATION = "institution_verification"
 COMMUNITY_DOMAIN_FEATURE_ANNOUNCEMENT_BOARD = "announcement_board"
 COMMUNITY_DOMAIN_FEATURE_MODE_OFF = "off"
 COMMUNITY_DOMAIN_FEATURE_MODE_ADMIN_ONLY = "admin_only"
@@ -22596,17 +22595,10 @@ def _locked_domain_delegation_package(
     *,
     community_domain_id: int,
 ) -> dict[str, Any]:
-    latest = _latest_governance_package(
+    return shared_locked_domain_delegation_package(
         db,
         community_domain_id=int(community_domain_id),
     )
-    if latest is None:
-        return {}
-    package = _json_load(latest.package_json)
-    delegation_package = (
-        package.get("delegation_package") if isinstance(package, dict) else None
-    )
-    return delegation_package if isinstance(delegation_package, dict) else {}
 
 
 def _domain_delegation_power_mode(
@@ -22616,24 +22608,12 @@ def _domain_delegation_power_mode(
     current_user: User,
     power_key: str,
 ) -> str:
-    delegation_package = _locked_domain_delegation_package(
+    return shared_domain_delegation_power_mode(
         db,
-        community_domain_id=int(domain.id),
+        domain=domain,
+        current_user=current_user,
+        power_key=power_key,
     )
-    try:
-        operator_user_id = int(delegation_package.get("operator_user_id") or 0)
-    except (TypeError, ValueError):
-        operator_user_id = 0
-    if operator_user_id != int(current_user.id):
-        return DELEGATION_POWER_MODE_OFF
-
-    powers = delegation_package.get("powers")
-    if not isinstance(powers, dict):
-        return DELEGATION_POWER_MODE_OFF
-    mode = _clean_role(powers.get(power_key), DELEGATION_POWER_MODE_OFF)
-    if mode not in DELEGATION_POWER_MODES:
-        return DELEGATION_POWER_MODE_OFF
-    return mode
 
 
 def _has_domain_direct_delegation_scope(

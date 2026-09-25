@@ -42,6 +42,10 @@ from app.services.community_domain_feature_policy import (
     require_domain_spotlight_enabled,
     require_domain_vault_enabled,
 )
+from app.services.community_domain_delegation_service import (
+    DELEGATION_POWER_MARKETPLACE_OPERATION,
+    has_clan_domain_direct_delegation_scope,
+)
 from app.services.notification_service import create_notification
 from app.services.web_push_service import dispatch_web_push_for_notifications
 from app.services.trust_events_services import log_trust_event
@@ -477,15 +481,26 @@ def _is_admin(user: Any) -> bool:
 
 
 def _is_marketplace_listing_officer(
+    db: Session,
+    *,
+    clan_id: int,
     membership: Optional[ClanMembership],
     current_user: User,
 ) -> bool:
     if _is_admin(current_user):
         return True
-    return str(getattr(membership, "role", "") or "").lower() == "admin"
+    if str(getattr(membership, "role", "") or "").lower() == "admin":
+        return True
+    return has_clan_domain_direct_delegation_scope(
+        db,
+        clan_id=int(clan_id),
+        current_user=current_user,
+        power_key=DELEGATION_POWER_MARKETPLACE_OPERATION,
+    )
 
 
 def _require_marketplace_listing_publication_allowed(
+    db: Session,
     *,
     clan_id: int,
     membership: Optional[ClanMembership],
@@ -494,7 +509,12 @@ def _require_marketplace_listing_publication_allowed(
 ) -> None:
     if not bool(policy.get("admin_approval_required_for_listings", False)):
         return
-    if _is_marketplace_listing_officer(membership, current_user):
+    if _is_marketplace_listing_officer(
+        db,
+        clan_id=int(clan_id),
+        membership=membership,
+        current_user=current_user,
+    ):
         return
     raise HTTPException(
         status_code=403,
@@ -514,14 +534,18 @@ def _require_marketplace_listing_publication_allowed(
 
 
 def _marketplace_listing_requires_review(
+    db: Session,
     *,
+    clan_id: int,
     membership: Optional[ClanMembership],
     current_user: User,
     policy: dict[str, Any],
 ) -> bool:
     return bool(policy.get("admin_approval_required_for_listings", False)) and not _is_marketplace_listing_officer(
-        membership,
-        current_user,
+        db,
+        clan_id=int(clan_id),
+        membership=membership,
+        current_user=current_user,
     )
 
 
@@ -3148,6 +3172,8 @@ def create_marketplace_shop(
         clan_id=resolved_clan_id,
     )
     if _marketplace_listing_requires_review(
+        db,
+        clan_id=resolved_clan_id,
         membership=membership,
         current_user=current_user,
         policy=marketplace_governance_policy,
@@ -3169,6 +3195,7 @@ def create_marketplace_shop(
         )
 
     _require_marketplace_listing_publication_allowed(
+        db,
         clan_id=resolved_clan_id,
         membership=membership,
         current_user=current_user,
@@ -3854,6 +3881,8 @@ def create_marketplace_product(
 
 
     if _marketplace_listing_requires_review(
+        db,
+        clan_id=resolved_clan_id,
         membership=membership,
         current_user=current_user,
         policy=marketplace_governance_policy,
@@ -3879,6 +3908,7 @@ def create_marketplace_product(
         )
 
     _require_marketplace_listing_publication_allowed(
+        db,
         clan_id=resolved_clan_id,
         membership=membership,
         current_user=current_user,
@@ -4071,7 +4101,12 @@ def list_marketplace_listing_review_queue(
         user_id=int(current_user.id),
         clan_id=int(clan_id),
     )
-    if not _is_marketplace_listing_officer(membership, current_user):
+    if not _is_marketplace_listing_officer(
+        db,
+        clan_id=int(clan_id),
+        membership=membership,
+        current_user=current_user,
+    ):
         raise HTTPException(
             status_code=403,
             detail="Only a community admin can review marketplace listings",
@@ -4112,7 +4147,12 @@ def decide_marketplace_listing_review_submission(
         user_id=int(current_user.id),
         clan_id=int(payload.clan_id),
     )
-    if not _is_marketplace_listing_officer(membership, current_user):
+    if not _is_marketplace_listing_officer(
+        db,
+        clan_id=int(payload.clan_id),
+        membership=membership,
+        current_user=current_user,
+    ):
         raise HTTPException(
             status_code=403,
             detail="Only a community admin can review marketplace listings",

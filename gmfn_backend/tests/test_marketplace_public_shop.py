@@ -229,6 +229,87 @@ def _seed_second_marketplace_member() -> None:
         )
 
 
+def _seed_marketplace_operation_delegation_package() -> None:
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO community_domains (
+                    id,
+                    domain_name,
+                    display_name,
+                    domain_type,
+                    template_key,
+                    owner_user_id,
+                    clan_id,
+                    status,
+                    verification_status,
+                    created_at,
+                    updated_at
+                ) VALUES (
+                    980,
+                    'delegated-marketplace-domain',
+                    'Delegated Marketplace Domain',
+                    'marketplace_network',
+                    'marketplace_network',
+                    2,
+                    1,
+                    'active',
+                    'verified',
+                    CURRENT_TIMESTAMP,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO community_domain_governance_packages (
+                    community_domain_id,
+                    package_key,
+                    version,
+                    status,
+                    package_hash,
+                    package_summary,
+                    package_json,
+                    locked_by_user_id,
+                    locked_at,
+                    created_at
+                ) VALUES (
+                    980,
+                    'domain.governance_package',
+                    1,
+                    'locked',
+                    :package_hash,
+                    'Marketplace operation delegated for test.',
+                    :package_json,
+                    2,
+                    CURRENT_TIMESTAMP,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "package_hash": "b" * 64,
+                "package_json": json.dumps(
+                    {
+                        "delegation_package": {
+                            "operator_user_id": 1,
+                            "operator_gsn_id": "GMFN-MARKET-HANDLER",
+                            "operator_phone": "+2348099991111",
+                            "handover_status": "handler_verified",
+                            "powers": {
+                                "marketplace_operation": "can_apply_directly",
+                                "ownership_transfer": "off",
+                            },
+                        }
+                    }
+                ),
+            },
+        )
+
+
 def test_spotlight_message_parser_keeps_two_part_price_detail():
     parts = marketplace_routes._spotlight_message_parts("Rice bag - N25k")
 
@@ -1298,6 +1379,91 @@ def test_marketplace_listing_review_approval_publishes_shop_and_notifies_submitt
     assert submitter_notification["action_label"] == "Open Marketplace"
     assert bool(retired) is True
 
+
+def test_marketplace_listing_review_delegated_domain_operator_can_approve_shop(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    _ensure_marketplace_tables()
+    _seed_second_marketplace_member()
+    _seed_marketplace_operation_delegation_package()
+    _seed_marketplace_governance_profile_event(
+        enable_member_service_listings=True,
+        require_admin_approval_for_listings=True,
+    )
+    meta_json = json.dumps(
+        {
+            "source": "marketplace_listing_review",
+            "reason": "marketplace_listing_submitted_for_review",
+            "listing_type": "shop",
+            "listing_payload": {
+                "name": "Delegated Review Shop",
+                "description": "Domain operator reviewed shop.",
+            },
+            "review_status": "pending",
+            "submitted_by_role": "member",
+            "marketplace_governance_policy": {
+                "admin_approval_required_for_listings": True,
+                "listing_review_required": True,
+            },
+        }
+    )
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO trust_events (
+                    event_type, clan_id, actor_user_id, subject_user_id, meta_json, created_at
+                ) VALUES (
+                    'marketplace.listing.submitted', 1, 2, 2, :meta_json, CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {"meta_json": meta_json},
+        )
+        submission_id = int(conn.execute(text("SELECT MAX(id) FROM trust_events")).scalar_one())
+        conn.execute(
+            text(
+                """
+                INSERT INTO notifications (
+                    user_id, kind, title, message, action_url, action_label, is_read, created_at
+                ) VALUES (
+                    1,
+                    'marketplace.listing.submitted',
+                    'Marketplace listing waiting for review',
+                    'A member submitted Delegated Review Shop (shop) for marketplace approval.',
+                    :action_url,
+                    'Review listing',
+                    0,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "action_url": (
+                    f"/app/marketplace?clan_id=1&listing_review_submission_id={submission_id}"
+                    "#marketplace-listing-review-panel"
+                )
+            },
+        )
+
+    queue_response = client.get("/marketplace/listing-review-queue?clan_id=1")
+    assert queue_response.status_code == 200, queue_response.text
+    assert queue_response.json()["pending_review_count"] == 1
+
+    decision = client.post(
+        f"/marketplace/listing-review-queue/{submission_id}/decision",
+        json={"clan_id": 1, "decision": "approve"},
+    )
+
+    assert decision.status_code == 200, decision.text
+    body = decision.json()
+    assert body["decision"] == "approve"
+    assert body["listing_type"] == "shop"
+    assert body["shop"]["owner_user_id"] == 2
+    assert body["shop"]["name"] == "Delegated Review Shop"
+    assert _scalar("SELECT COUNT(*) FROM marketplace_shops WHERE owner_user_id = 2") == 1
 
 def test_marketplace_listing_review_rejection_records_decision_without_publishing(
     client,
