@@ -165,6 +165,12 @@ export default function CommunityDomainOperatingSummaryPanel({ data }: Props) {
       <h3 style={{ margin: 0, fontSize: 22, lineHeight: 1.15 }}>
         Open one active-domain question.
       </h3>
+      <div
+        data-debug-id="community-domain-dashboard.operating-summary-recommendation"
+        style={{ ...helperText(), fontSize: 14 }}
+      >
+        Recommended: Start with Do next before status, allowance, or permissions.
+      </div>
       <div style={{ ...helperText(), fontSize: 14 }}>
         Current live stage: <strong>{activeOperatingSummaryGroupOption.label}</strong>.{" "}
         {activeOperatingSummaryGroupOption.note}

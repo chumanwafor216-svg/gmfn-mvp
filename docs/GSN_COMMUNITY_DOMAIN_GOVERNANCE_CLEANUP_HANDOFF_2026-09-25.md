@@ -1,7 +1,7 @@
 # GSN Community Domain Governance Cleanup Handoff
 
 Date: 2026-09-25
-Status: first twenty cleanup slices implemented locally
+Status: first twenty-one cleanup slices implemented locally
 Owner: Chukwuma Nwafor / Global Support Network Ltd
 
 ## Purpose
@@ -92,6 +92,9 @@ GSN-admin account editing behind the closed pay-in account view selector.
 
 Billing Code & proof now recommends Reference before code generation,
 settlement checks, or proof upload, keeping each payment task behind selectors.
+
+Operating summary now recommends Do next before status, allowance, or
+permissions, keeping live-domain reference questions behind the selectors.
 
 The older Community Domain setup tools drawer was made secondary:
 
