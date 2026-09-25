@@ -349,6 +349,31 @@ type DomainFeaturePolicyKey =
   | "payments_contributions"
   | "rosca_cycles";
 
+type DelegationPowerMode =
+  | "off"
+  | "prepare_only"
+  | "request_owner_approval"
+  | "can_apply_directly";
+
+type DelegationPowerKey =
+  | "member_approval"
+  | "official_notices"
+  | "billing_admin"
+  | "payment_confirmation"
+  | "collections_admin"
+  | "marketplace_operation"
+  | "records_reports"
+  | "governance_edit_request"
+  | "ownership_transfer"
+  | "institution_verification";
+
+type DomainDelegationPackageConfig = {
+  operator_gsn_id: string;
+  operator_phone: string;
+  handover_note: string;
+  powers: Record<DelegationPowerKey, DelegationPowerMode>;
+};
+
 type DomainFeaturePolicyConfig = {
   version: number;
   features: Record<DomainFeaturePolicyKey, DomainFeaturePolicyMode>;
@@ -357,6 +382,7 @@ type DomainFeaturePolicyConfig = {
     paid_after_slots: number;
     rotation_hours: number;
   };
+  delegation_package: DomainDelegationPackageConfig;
 };
 
 type CommunityDomainActivityDraft = {
@@ -609,6 +635,84 @@ const FEATURE_POLICY_OPTIONS: Array<{
   { value: "members_submit_admin_approves", label: "Members submit, admin approves" },
   { value: "members_direct", label: "Members can post directly" },
   { value: "paid_or_quota", label: "Quota / paid after free use" },
+];
+
+const DELEGATION_POWER_MODE_OPTIONS: Array<{
+  value: DelegationPowerMode;
+  label: string;
+}> = [
+  { value: "off", label: "Off" },
+  { value: "prepare_only", label: "Prepare only" },
+  { value: "request_owner_approval", label: "Request owner approval" },
+  { value: "can_apply_directly", label: "Can apply directly" },
+];
+
+const DELEGATION_POWER_ROWS: Array<{
+  key: DelegationPowerKey;
+  label: string;
+  note: string;
+  defaultMode: DelegationPowerMode;
+}> = [
+  {
+    key: "member_approval",
+    label: "Member approval",
+    note: "Admission, parent/member approval, or ordinary roster acceptance.",
+    defaultMode: "request_owner_approval",
+  },
+  {
+    key: "official_notices",
+    label: "Official notices",
+    note: "Announcements, circulars, bulletins, and public-safe official messages.",
+    defaultMode: "can_apply_directly",
+  },
+  {
+    key: "billing_admin",
+    label: "Billing administration",
+    note: "Billing setup, renewal administration, or account instruction preparation.",
+    defaultMode: "request_owner_approval",
+  },
+  {
+    key: "payment_confirmation",
+    label: "Payment confirmation",
+    note: "Internal confirmation or finance-review preparation for payments and fees.",
+    defaultMode: "request_owner_approval",
+  },
+  {
+    key: "collections_admin",
+    label: "Collections administration",
+    note: "Offering, dues, levy, school-fee, or contribution instruction operation.",
+    defaultMode: "request_owner_approval",
+  },
+  {
+    key: "marketplace_operation",
+    label: "Marketplace operation",
+    note: "Shops, approved vendors, Spotlight, DemandBox, and marketplace work.",
+    defaultMode: "can_apply_directly",
+  },
+  {
+    key: "records_reports",
+    label: "Records and reports",
+    note: "Attendance, evidence, summaries, exports, and routine records.",
+    defaultMode: "can_apply_directly",
+  },
+  {
+    key: "governance_edit_request",
+    label: "Governance edit request",
+    note: "Request amendment of a locked governance package for owner approval.",
+    defaultMode: "request_owner_approval",
+  },
+  {
+    key: "ownership_transfer",
+    label: "Ownership transfer",
+    note: "Changing the recorded owner of the Community Domain.",
+    defaultMode: "off",
+  },
+  {
+    key: "institution_verification",
+    label: "Institution verification",
+    note: "Submitting or applying verification decisions for the institution.",
+    defaultMode: "off",
+  },
 ];
 
 const DOMAIN_FEATURE_POLICY_ROWS: Array<{
@@ -1196,6 +1300,21 @@ function isPillarOfHopeDomain(domain: unknown, draft?: Partial<CommunityDomainSe
   return candidates.some((value) => value === "pillar-of-hope" || value === "pillar-of-hope-demo");
 }
 
+function defaultDelegationPackageConfig(): DomainDelegationPackageConfig {
+  return {
+    operator_gsn_id: "",
+    operator_phone: "",
+    handover_note: "",
+    powers: DELEGATION_POWER_ROWS.reduce(
+      (powers, row) => ({
+        ...powers,
+        [row.key]: row.defaultMode,
+      }),
+      {} as Record<DelegationPowerKey, DelegationPowerMode>
+    ),
+  };
+}
+
 function defaultDomainFeaturePolicyConfig(): DomainFeaturePolicyConfig {
   return {
     version: 1,
@@ -1211,11 +1330,20 @@ function defaultDomainFeaturePolicyConfig(): DomainFeaturePolicyConfig {
       paid_after_slots: 5,
       rotation_hours: 24,
     },
+    delegation_package: defaultDelegationPackageConfig(),
   };
 }
 
 function isFeaturePolicyMode(value: unknown): value is DomainFeaturePolicyMode {
   return FEATURE_POLICY_OPTIONS.some((option) => option.value === value);
+}
+
+function isDelegationPowerMode(value: unknown): value is DelegationPowerMode {
+  return DELEGATION_POWER_MODE_OPTIONS.some((option) => option.value === value);
+}
+
+function delegationPowerModeLabel(mode: DelegationPowerMode): string {
+  return DELEGATION_POWER_MODE_OPTIONS.find((option) => option.value === mode)?.label || "Not set";
 }
 
 function boundedPositiveInt(value: unknown, fallback: number, max = 100): number {
@@ -1240,11 +1368,22 @@ function parseDomainFeaturePolicy(value: unknown): DomainFeaturePolicyConfig {
 
   const incomingFeatures = isUnknownRecord(parsed?.features) ? parsed.features : {};
   const spotlight = isUnknownRecord(parsed?.spotlight) ? parsed.spotlight : {};
+  const incomingDelegation = isUnknownRecord(parsed?.delegation_package)
+    ? parsed.delegation_package
+    : {};
+  const incomingDelegationPowers = isUnknownRecord(incomingDelegation.powers)
+    ? incomingDelegation.powers
+    : {};
   const features = DOMAIN_FEATURE_POLICY_ROWS.reduce((next, row) => {
     const mode = incomingFeatures[row.key];
     next[row.key] = isFeaturePolicyMode(mode) ? mode : row.defaultMode;
     return next;
   }, {} as Record<DomainFeaturePolicyKey, DomainFeaturePolicyMode>);
+  const delegationPowers = DELEGATION_POWER_ROWS.reduce((next, row) => {
+    const mode = incomingDelegationPowers[row.key];
+    next[row.key] = isDelegationPowerMode(mode) ? mode : row.defaultMode;
+    return next;
+  }, {} as Record<DelegationPowerKey, DelegationPowerMode>);
 
   return {
     version: 1,
@@ -1261,6 +1400,12 @@ function parseDomainFeaturePolicy(value: unknown): DomainFeaturePolicyConfig {
         base.spotlight.rotation_hours,
         168
       ),
+    },
+    delegation_package: {
+      operator_gsn_id: cleanText(incomingDelegation.operator_gsn_id),
+      operator_phone: cleanText(incomingDelegation.operator_phone),
+      handover_note: cleanText(incomingDelegation.handover_note),
+      powers: delegationPowers,
     },
   };
 }
@@ -1287,7 +1432,6 @@ function lockedDomainFeaturePolicyFromPayload(
     loadedAt: cleanText(lockedRow.updated_at || lockedRow.created_at),
   };
 }
-
 function serializeDomainFeaturePolicy(config: DomainFeaturePolicyConfig): string {
   return JSON.stringify(config);
 }
@@ -1301,18 +1445,29 @@ function featurePolicySummary(config: DomainFeaturePolicyConfig): string {
     const mode = featurePolicyModeLabel(config.features[row.key]);
     return `${row.label}: ${mode}`;
   });
+  const delegated = DELEGATION_POWER_ROWS.map((row) => {
+    const mode = delegationPowerModeLabel(config.delegation_package.powers[row.key]);
+    return `${row.label}: ${mode}`;
+  });
+  const operator = cleanText(config.delegation_package.operator_gsn_id)
+    ? `Delegated operator: ${cleanText(config.delegation_package.operator_gsn_id)}.`
+    : "Delegated operator: not set yet.";
   return [
-    "Governance package captures domain feature choices from setup.",
+    "Governance package captures domain feature choices and owner handover choices from setup.",
     "Community Domain is the governed professional marketplace form: ordinary marketplace behaviours stay available only as this domain permits them.",
     "This policy controls behaviour inside this registered domain; it does not remove member identity in other communities or automate tariffs, upgrades, member bands, paid slots, or outside publishing.",
     ...controlled,
+    operator,
+    ...delegated,
     `Spotlight: ${config.spotlight.free_slots} free slots, paid after ${config.spotlight.paid_after_slots}, ${config.spotlight.rotation_hours}h rotation.`,
   ].join(" ");
 }
-
 function domainFeaturePolicyIsReady(value: unknown): boolean {
   const config = parseDomainFeaturePolicy(value);
-  return DOMAIN_FEATURE_POLICY_ROWS.every((row) => isFeaturePolicyMode(config.features[row.key]));
+  return (
+    DOMAIN_FEATURE_POLICY_ROWS.every((row) => isFeaturePolicyMode(config.features[row.key])) &&
+    DELEGATION_POWER_ROWS.every((row) => isDelegationPowerMode(config.delegation_package.powers[row.key]))
+  );
 }
 
 function domainFeatureIsOff(
@@ -5697,6 +5852,34 @@ export default function CommunityDomainDashboardPage() {
     });
   }
 
+  function updateDelegationPackageField(
+    key: keyof Pick<DomainDelegationPackageConfig, "operator_gsn_id" | "operator_phone" | "handover_note">,
+    value: string
+  ) {
+    updateFeaturePolicy({
+      ...featurePolicyDraft,
+      delegation_package: {
+        ...featurePolicyDraft.delegation_package,
+        [key]: value,
+      },
+    });
+  }
+
+  function updateDelegationPowerMode(
+    powerKey: DelegationPowerKey,
+    mode: DelegationPowerMode
+  ) {
+    updateFeaturePolicy({
+      ...featurePolicyDraft,
+      delegation_package: {
+        ...featurePolicyDraft.delegation_package,
+        powers: {
+          ...featurePolicyDraft.delegation_package.powers,
+          [powerKey]: mode,
+        },
+      },
+    });
+  }
   function saveSetupProgress(): CommunityDomainSetupDraft | null {
     if (setupEditingLocked) {
       setMessage(setupEditLockMessage);
@@ -10957,6 +11140,125 @@ export default function CommunityDomainDashboardPage() {
 
                     {activeSetupStep === "launch" ? (
                       <div style={{ display: "grid", gap: 10 }}>
+                        <div
+                          style={{ ...softCard(), display: "grid", gap: 12 }}
+                          data-gsn-debug-id="community-domain-dashboard.setup-delegation-package"
+                        >
+                          <div style={iconHeaderStyle()}>
+                            <span style={iconFrame(48)}>
+                              <GsnRealisticIcon name="trust-shield" size={36} decorative />
+                            </span>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={sectionLabel()}>Delegation package</div>
+                              <h3 style={{ margin: "4px 0 0", fontSize: 19, lineHeight: 1.15 }}>
+                                Handover is the last portal.
+                              </h3>
+                              <div style={{ ...helperText(), marginTop: 6, fontSize: 13 }}>
+                                The owner chooses this before locking governance. If no handler is set,
+                                the owner keeps operation for now. Later governance edits must create an
+                                owner-approved review and a new locked package version.
+                              </div>
+                            </div>
+                          </div>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
+                              gap: 10,
+                            }}
+                          >
+                            <label style={{ display: "grid", gap: 6 }}>
+                              <span style={sectionLabel()}>Handler GSN ID</span>
+                              <input
+                                value={featurePolicyDraft.delegation_package.operator_gsn_id}
+                                disabled={setupEditingLocked}
+                                onChange={(event) =>
+                                  updateDelegationPackageField("operator_gsn_id", event.target.value)
+                                }
+                                placeholder="GSN ID, if handing over"
+                                style={billingInputStyle()}
+                              />
+                            </label>
+                            <label style={{ display: "grid", gap: 6 }}>
+                              <span style={sectionLabel()}>Handler phone</span>
+                              <input
+                                value={featurePolicyDraft.delegation_package.operator_phone}
+                                disabled={setupEditingLocked}
+                                onChange={(event) =>
+                                  updateDelegationPackageField("operator_phone", event.target.value)
+                                }
+                                placeholder="Phone linked to that GSN ID"
+                                style={billingInputStyle()}
+                              />
+                            </label>
+                          </div>
+                          <label style={{ display: "grid", gap: 6 }}>
+                            <span style={sectionLabel()}>Owner handover note</span>
+                            <textarea
+                              value={featurePolicyDraft.delegation_package.handover_note}
+                              disabled={setupEditingLocked}
+                              onChange={(event) =>
+                                updateDelegationPackageField("handover_note", event.target.value)
+                              }
+                              placeholder="Example: proprietor locks governance, bursar/admin handles notices, fees, records, and parent follow-up."
+                              style={{
+                                ...billingInputStyle(),
+                                minHeight: 84,
+                                padding: 12,
+                                resize: "vertical",
+                              }}
+                            />
+                          </label>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 210px), 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            {DELEGATION_POWER_ROWS.map((row) => (
+                              <label
+                                key={row.key}
+                                style={{ ...softCard(), padding: 12, display: "grid", gap: 7 }}
+                              >
+                                <span style={{ fontWeight: 950, color: "#07172C" }}>
+                                  {row.label}
+                                </span>
+                                <span style={{ ...helperText(), fontSize: 12.5 }}>{row.note}</span>
+                                <select
+                                  value={featurePolicyDraft.delegation_package.powers[row.key]}
+                                  disabled={setupEditingLocked}
+                                  onChange={(event) =>
+                                    updateDelegationPowerMode(
+                                      row.key,
+                                      event.target.value as DelegationPowerMode
+                                    )
+                                  }
+                                  style={billingInputStyle()}
+                                >
+                                  {DELEGATION_POWER_MODE_OPTIONS.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                            ))}
+                          </div>
+                          <div
+                            style={statusBadge(
+                              cleanText(featurePolicyDraft.delegation_package.operator_gsn_id)
+                                ? "handover recorded"
+                                : "owner operates"
+                            )}
+                          >
+                            {cleanText(featurePolicyDraft.delegation_package.operator_gsn_id)
+                              ? "This handler will be recorded inside the locked governance package."
+                              : "No handler set. The owner keeps operation until a handover is added."}
+                          </div>
+                        </div>
                         <div style={helperText()}>
                           Setup progress: <strong>{setupProgress.ready}</strong> of{" "}
                           <strong>{setupProgress.total}</strong> checks ready.

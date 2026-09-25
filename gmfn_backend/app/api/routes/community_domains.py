@@ -4271,6 +4271,44 @@ def _community_domain_governance_package_snapshot(
         .count()
     )
     config = _json_load(feature_policy.config_json)
+    delegation_package = config.get("delegation_package") if isinstance(config, dict) else None
+    if not isinstance(delegation_package, dict):
+        delegation_package = {
+            "operator_gsn_id": "",
+            "operator_phone": "",
+            "handover_note": "",
+            "powers": {},
+        }
+    operator_gsn_id = _clean_str(delegation_package.get("operator_gsn_id"))
+    operator_phone = _clean_str(delegation_package.get("operator_phone"))
+    operator_user_id: Optional[int] = None
+    if bool(operator_gsn_id) != bool(operator_phone):
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "community_domain_delegation_operator_pair_required",
+                "message": "Enter both the handler GSN ID and the phone linked to that GSN account, or leave both blank for owner operation.",
+            },
+        )
+    if operator_gsn_id and operator_phone:
+        operator_user = _find_user_by_setup_delegate_subject(db, operator_gsn_id)
+        phone_user = _find_user_by_setup_delegate_subject(db, operator_phone)
+        if operator_user is None or phone_user is None or int(operator_user.id) != int(phone_user.id):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_delegation_operator_identity_mismatch",
+                    "message": "The handler GSN ID and phone must resolve to the same GSN account before handover can be locked.",
+                },
+            )
+        operator_user_id = int(operator_user.id)
+    delegation_package = {
+        **delegation_package,
+        "operator_gsn_id": operator_gsn_id,
+        "operator_phone": operator_phone,
+        "operator_user_id": operator_user_id,
+        "handover_status": "handler_verified" if operator_user_id is not None else "owner_operates",
+    }
     return {
         "source": "community_domain_setup_lock",
         "package_key": COMMUNITY_DOMAIN_GOVERNANCE_PACKAGE_KEY,
@@ -4288,6 +4326,7 @@ def _community_domain_governance_package_snapshot(
             "state": domain.state,
             "public_profile_present": bool(_clean_str(domain.public_profile)),
         },
+        "delegation_package": delegation_package,
         "feature_policy": {
             "id": int(feature_policy.id),
             "policy_key": feature_policy.policy_key,
@@ -4319,17 +4358,21 @@ def _community_domain_governance_package_snapshot(
             "rosca_cycle_policy",
             "demand_box_policy",
             "private_record_policy",
+            "delegation_package",
+            "owner_handover_record",
         ],
         "authority": {
             "lock_requires": "community_domain_owner_or_admin",
             "setup_editor_scope": "prepare_setup_profile_and_evidence_only",
+            "delegation_package_scope": "owner_configured_inside_locked_governance",
             "owner_admin_remains_final": True,
         },
         "boundary": (
             "This immutable package snapshots current server-known setup and policy. "
             "It is not billing activation, ownership verification, payment collection, "
-            "or a permanent block on future owner/admin changes. Later authorized changes "
-            "must create another locked package version."
+            "or a permanent block on future owner/admin changes. The delegation package records "
+            "owner handover choices, and later authorized governance changes must create another "
+            "locked package version."
         ),
     }
 

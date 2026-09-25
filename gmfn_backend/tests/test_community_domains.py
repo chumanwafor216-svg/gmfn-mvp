@@ -3685,6 +3685,153 @@ def test_community_domain_governance_package_versions_after_policy_change(
         ).all()
         assert [row.version for row in packages] == [1, 2]
 
+def test_community_domain_governance_package_lock_captures_verified_delegation_package(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    handler = _seed_user(2, "school-handler@example.com")
+    with SessionLocal() as db:
+        row = db.get(User, int(handler.id))
+        row.gmfn_id = "GMFN-HANDLER-2"
+        row.phone_e164 = "+2348011112222"
+        db.commit()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Delegated School Lock",
+                "display_name": "Delegated School Lock",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "domain.feature_policy",
+                "action_key": "domain.features.configure",
+                "review_mode": "domain_admin_review",
+                "required_role": "domain_admin",
+                "status": "active",
+                "config": {
+                    "version": 1,
+                    "features": {
+                        "announcement_board": "admin_only",
+                        "demand_box": "members_submit_admin_approves",
+                        "spotlight": "admin_only",
+                        "shop_diary": "members_submit_admin_approves",
+                        "vault": "admin_only",
+                        "marketplace_shops": "members_submit_admin_approves",
+                        "member_invites": "admin_only",
+                        "payments_contributions": "admin_only",
+                        "rosca_cycles": "off",
+                    },
+                    "delegation_package": {
+                        "operator_gsn_id": "GMFN-HANDLER-2",
+                        "operator_phone": "+2348011112222",
+                        "handover_note": "Owner delegates routine school operation after lock.",
+                        "powers": {
+                            "member_approval": "can_apply_directly",
+                            "official_notices": "can_apply_directly",
+                            "billing_admin": "request_owner_approval",
+                            "payment_confirmation": "request_owner_approval",
+                            "collections_admin": "can_apply_directly",
+                            "marketplace_operation": "can_apply_directly",
+                            "records_reports": "can_apply_directly",
+                            "governance_edit_request": "request_owner_approval",
+                            "ownership_transfer": "off",
+                            "institution_verification": "off",
+                        },
+                    },
+                },
+                "policy_summary": "Owner selected service rules and delegation package.",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        locked = client.post(f"/community-domains/{domain_id}/governance-package/lock", json={})
+        assert locked.status_code == 201, locked.text
+        package = locked.json()["governance_package"]["package"]
+        delegation = package["delegation_package"]
+        assert delegation["operator_gsn_id"] == "GMFN-HANDLER-2"
+        assert delegation["operator_phone"] == "+2348011112222"
+        assert delegation["operator_user_id"] == handler.id
+        assert delegation["handover_status"] == "handler_verified"
+        assert delegation["powers"]["member_approval"] == "can_apply_directly"
+        assert "delegation_package" in package["locked_sections"]
+        assert package["authority"]["delegation_package_scope"] == "owner_configured_inside_locked_governance"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_community_domain_governance_package_lock_rejects_delegation_identity_mismatch(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    handler = _seed_user(2, "mismatch-handler@example.com")
+    other = _seed_user(3, "other-phone@example.com")
+    with SessionLocal() as db:
+        handler_row = db.get(User, int(handler.id))
+        handler_row.gmfn_id = "GMFN-HANDLER-MISMATCH"
+        handler_row.phone_e164 = "+2348022223333"
+        other_row = db.get(User, int(other.id))
+        other_row.phone_e164 = "+2348033334444"
+        db.commit()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Delegation Mismatch Lock",
+                "display_name": "Delegation Mismatch Lock",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "domain.feature_policy",
+                "action_key": "domain.features.configure",
+                "status": "active",
+                "config": {
+                    "version": 1,
+                    "features": {
+                        "announcement_board": "admin_only",
+                        "demand_box": "members_submit_admin_approves",
+                        "spotlight": "admin_only",
+                        "shop_diary": "members_submit_admin_approves",
+                        "vault": "admin_only",
+                        "marketplace_shops": "members_submit_admin_approves",
+                        "member_invites": "admin_only",
+                        "payments_contributions": "admin_only",
+                        "rosca_cycles": "off",
+                    },
+                    "delegation_package": {
+                        "operator_gsn_id": "GMFN-HANDLER-MISMATCH",
+                        "operator_phone": "+2348033334444",
+                        "powers": {},
+                    },
+                },
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        locked = client.post(f"/community-domains/{domain_id}/governance-package/lock", json={})
+        assert locked.status_code == 409, locked.text
+        assert locked.json()["detail"]["code"] == "community_domain_delegation_operator_identity_mismatch"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
 def test_community_domain_draft_defaults_template_to_domain_type(
     client: TestClient,
 ):

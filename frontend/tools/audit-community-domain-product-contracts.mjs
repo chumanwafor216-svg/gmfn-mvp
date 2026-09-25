@@ -317,6 +317,25 @@ assertContains(
   "Community Domain setup identity step must lead with responsible GSN identity, then checked domain-name save, then a gated category package that collapses selected packages behind Edit package instead of exposing every package permanently.",
   { frontend: true }
 );
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /type DelegationPowerMode[\s\S]*type DelegationPowerKey[\s\S]*DomainDelegationPackageConfig[\s\S]*delegation_package: DomainDelegationPackageConfig[\s\S]*DELEGATION_POWER_MODE_OPTIONS[\s\S]*DELEGATION_POWER_ROWS[\s\S]*defaultDelegationPackageConfig[\s\S]*parseDomainFeaturePolicy[\s\S]*featurePolicySummary/,
+  "Community Domain feature policy config must carry owner handover and delegation-package choices into the governance package policy.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /updateDelegationPackageField[\s\S]*updateDelegationPowerMode[\s\S]*community-domain-dashboard\.setup-delegation-package[\s\S]*Handover is the last portal[\s\S]*Handler GSN ID[\s\S]*Handler phone[\s\S]*DELEGATION_POWER_ROWS\.map/,
+  "Community Domain launch step must expose the final owner delegation package before governance lock.",
+  { frontend: true }
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /delegation_package = config\.get\("delegation_package"\)[\s\S]*operator_gsn_id[\s\S]*operator_phone[\s\S]*community_domain_delegation_operator_pair_required[\s\S]*_find_user_by_setup_delegate_subject\(db, operator_gsn_id\)[\s\S]*_find_user_by_setup_delegate_subject\(db, operator_phone\)[\s\S]*community_domain_delegation_operator_identity_mismatch[\s\S]*operator_user_id[\s\S]*handover_status[\s\S]*"delegation_package": delegation_package[\s\S]*"owner_handover_record"/,
+  "Backend governance package lock must include the owner delegation package and reject handler GSN ID / phone mismatches instead of locking unverifiable handover data."
+);
 
 assertContains(
   "src/pages/communityDomainDashboard/SetupOverviewPanel.tsx",
@@ -2142,7 +2161,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /function featurePolicySummary[\s\S]*Governance package captures domain feature choices from setup[\s\S]*Community Domain is the governed professional marketplace form[\s\S]*ordinary marketplace behaviours stay available only as this domain permits them[\s\S]*does not remove member identity in other communities or automate tariffs, upgrades, member bands, paid slots, or outside publishing[\s\S]*Spotlight:/,
+  /function featurePolicySummary[\s\S]*Governance package captures domain feature choices and owner handover choices from setup[\s\S]*Community Domain is the governed professional marketplace form[\s\S]*ordinary marketplace behaviours stay available only as this domain permits them[\s\S]*does not remove member identity in other communities or automate tariffs, upgrades, member bands, paid slots, or outside publishing[\s\S]*Spotlight:/,
   "Community Domain locked feature-policy summaries must preserve the governed professional marketplace boundary, not only a switch list.",
   { frontend: true }
 );
