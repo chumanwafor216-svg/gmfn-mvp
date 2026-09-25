@@ -111,6 +111,12 @@ export default function CommunityDomainMemberRosterPanel({ data }: Props) {
         </div>
       ) : null}
 
+      <div
+        data-debug-id="community-domain-dashboard.member-roster-recommendation"
+        style={{ ...helperText(), fontSize: 13 }}
+      >
+        Recommended: Review Summary before opening individual member status changes.
+      </div>
       <div style={{ ...helperText(), fontSize: 13 }}>
         Current roster view: <strong>{activeMemberRosterTaskOption.label}</strong>.{" "}
         {activeMemberRosterTaskOption.note}

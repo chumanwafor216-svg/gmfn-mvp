@@ -3745,8 +3745,8 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/MemberRosterPanel.tsx",
-  /MEMBER_ROSTER_TASK_OPTIONS[\s\S]*key: "summary"[\s\S]*key: "members"[\s\S]*activeMemberRosterTaskOption[\s\S]*Current roster view[\s\S]*community-domain-dashboard\.member-roster-toggle[\s\S]*Close roster views[\s\S]*Change roster view[\s\S]*memberRosterTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.member-roster\.\$\{task\.key\}[\s\S]*setMemberRosterTaskChooserOpen\(false\)[\s\S]*activeMemberRosterTask === "summary"[\s\S]*Active members can pass public active-member proof[\s\S]*activeMemberRosterTask === "members"[\s\S]*domainMemberRows\.length[\s\S]*community-domain-dashboard\.member-status\.\$\{rowKey\}/,
-  "Lazy Community Domain roster control must keep Summary and Members behind a closed Change roster view selector.",
+  /MEMBER_ROSTER_TASK_OPTIONS[\s\S]*key: "summary"[\s\S]*key: "members"[\s\S]*activeMemberRosterTaskOption[\s\S]*community-domain-dashboard\.member-roster-recommendation[\s\S]*Recommended: Review Summary before opening individual member status changes\.[\s\S]*Current roster view[\s\S]*community-domain-dashboard\.member-roster-toggle[\s\S]*Close roster views[\s\S]*Change roster view[\s\S]*memberRosterTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.member-roster\.\$\{task\.key\}[\s\S]*setMemberRosterTaskChooserOpen\(false\)[\s\S]*activeMemberRosterTask === "summary"[\s\S]*Active members can pass public active-member proof[\s\S]*activeMemberRosterTask === "members"[\s\S]*domainMemberRows\.length[\s\S]*community-domain-dashboard\.member-status\.\$\{rowKey\}/,
+  "Lazy Community Domain roster control must recommend Summary before member-level status changes and keep Summary and Members behind a closed Change roster view selector.",
   { frontend: true }
 );
 

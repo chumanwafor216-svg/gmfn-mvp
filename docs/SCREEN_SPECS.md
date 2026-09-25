@@ -494,6 +494,7 @@ Must show:
 - inside Structure focus, the Structure map must be recommended first before Readiness or Rollout selectors
 - inside Services focus, Readiness must be recommended first before Local rules or Trust selectors
 - inside Members focus, Member readiness must be recommended first before Roster control
+- inside Roster control, Summary must be recommended before individual member status changes
 - after the launch/setup checkpoint is saved, the page must visibly mark the setup checkpoint as completed and show one state-aware next task, such as connect Community Home, turn on Member Invites, or build the first circle, instead of exposing all governance surfaces
 - one command surface that first shows the guided setup path
 - after the owner opens `More setup tools`, the drawer must first restate the current guided setup step and one action back to that step, then show four secondary governance stages: Set up the institution,
