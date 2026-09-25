@@ -358,6 +358,12 @@ export default function CommunityDomainStructurePlanningPanels({
         }}
       >
         <div style={sectionLabel()}>Planning view</div>
+        <div
+          data-debug-id="community-domain.structure-planning.focus-recommendation"
+          style={helperText()}
+        >
+          Recommended: Review Rollout before activity or group readiness.
+        </div>
         <div style={helperText()}>
           Current view: <strong>{selectedStructurePlanningFocus.label}</strong>.
         </div>

@@ -4131,8 +4131,8 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/StructurePlanningPanels.tsx",
-  /STRUCTURE_PLANNING_FOCUS_OPTIONS[\s\S]*key: "rollout"[\s\S]*key: "activity"[\s\S]*key: "groups"[\s\S]*activeStructurePlanningFocus[\s\S]*structurePlanningFocusChooserOpen[\s\S]*community-domain\.structure-planning\.focus-toggle[\s\S]*structurePlanningFocusChooserOpen \? "Close views" : "Change view"[\s\S]*structurePlanningFocusChooserOpen \? \([\s\S]*community-domain\.structure-planning\.focus\.\$\{option\.key\}[\s\S]*setStructurePlanningFocusChooserOpen\(false\)[\s\S]*activeStructurePlanningFocus === "rollout"[\s\S]*Rollout plan[\s\S]*activeStructurePlanningFocus === "activity"[\s\S]*Activity map[\s\S]*activeStructurePlanningFocus === "groups"[\s\S]*Group readiness/,
-  "Community Domain Structure planning view must keep sub-views behind Change view and expose one focused sub-view at a time instead of stacking rollout, activity, and group readiness together.",
+  /STRUCTURE_PLANNING_FOCUS_OPTIONS[\s\S]*key: "rollout"[\s\S]*key: "activity"[\s\S]*key: "groups"[\s\S]*activeStructurePlanningFocus[\s\S]*structurePlanningFocusChooserOpen[\s\S]*community-domain\.structure-planning\.focus-recommendation[\s\S]*Recommended: Review Rollout before activity or group readiness\.[\s\S]*community-domain\.structure-planning\.focus-toggle[\s\S]*structurePlanningFocusChooserOpen \? "Close views" : "Change view"[\s\S]*structurePlanningFocusChooserOpen \? \([\s\S]*community-domain\.structure-planning\.focus\.\$\{option\.key\}[\s\S]*setStructurePlanningFocusChooserOpen\(false\)[\s\S]*activeStructurePlanningFocus === "rollout"[\s\S]*Rollout plan[\s\S]*activeStructurePlanningFocus === "activity"[\s\S]*Activity map[\s\S]*activeStructurePlanningFocus === "groups"[\s\S]*Group readiness/,
+  "Community Domain Structure planning view must recommend Rollout first, keep sub-views behind Change view, and expose one focused sub-view at a time instead of stacking rollout, activity, and group readiness together.",
   { frontend: true }
 );
 
