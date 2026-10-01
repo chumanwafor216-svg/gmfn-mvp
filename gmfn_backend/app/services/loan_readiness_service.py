@@ -87,11 +87,8 @@ def build_loan_readiness_plan(
             continue
 
         available_capacity = _safe_decimal(member.get("available_guarantee_capacity"), "0")
-        cci_score = _safe_decimal(member.get("cci_score"), "0")
 
         if available_capacity <= Decimal("0"):
-            continue
-        if cci_score < Decimal("35"):
             continue
 
         filtered_candidates.append(member)
@@ -100,8 +97,8 @@ def build_loan_readiness_plan(
     filtered_candidates.sort(
         key=lambda m: (
             _safe_decimal(m.get("available_guarantee_capacity"), "0"),
-            _safe_decimal(m.get("cci_score"), "0"),
-            _safe_decimal(m.get("trust_graph_reliability"), "0"),
+            _safe_int((m.get("historical_obligation_evidence") or {}).get("positive_signal_count"), 0),
+            -_safe_int(m.get("user_id"), 0),
         ),
         reverse=True,
     )
@@ -119,6 +116,7 @@ def build_loan_readiness_plan(
 
     clan_exposure_ratio = _safe_decimal(clan.get("clan_exposure_ratio"), "0")
     high_risk_members = _safe_int(clan.get("risk_counts", {}).get("high"), 0)
+    evidence_limited_members = _safe_int(clan.get("risk_counts", {}).get("evidence_limited"), 0)
 
     recommendation = _recommendation(
         total_candidate_capacity=total_candidate_capacity,
@@ -152,9 +150,15 @@ def build_loan_readiness_plan(
                 "cci_band": member.get("cci_band"),
                 "risk_level": member.get("risk_level"),
                 "available_guarantee_capacity": member.get("available_guarantee_capacity"),
+                "current_gsn_backed_capacity": member.get("current_gsn_backed_capacity"),
                 "suggested_pledge": str(_q2(pledge)),
                 "trust_graph_reliability": member.get("trust_graph_reliability"),
                 "repayment_velocity": member.get("repayment_velocity"),
+                "evidence_state": member.get("evidence_state"),
+                "hard_support_facts": member.get("hard_support_facts", {}),
+                "historical_obligation_evidence": member.get("historical_obligation_evidence", {}),
+                "current_willingness": "unknown_until_explicit_response",
+                "general_evidence_posture": member.get("general_evidence_posture", {}),
             }
         )
         remaining = _q2(remaining - pledge)
@@ -239,6 +243,18 @@ def build_loan_readiness_plan(
             "average_cci_score": str(clan.get("average_cci_score", "0.00")),
             "risk_flags": list(clan.get("risk_flags", []) or []),
             "risk_counts": dict(clan.get("risk_counts", {}) or {}),
+            "evidence_limited_members": evidence_limited_members,
+        },
+        "semantics": {
+            "purpose": "support_planning_evidence",
+            "recommendation_label": "planning_reading",
+            "not_loan_approval": True,
+            "not_endorsement": True,
+            "absence_of_evidence_is_not_negative_evidence": True,
+            "boundary": (
+                "Readiness is planning evidence. It does not approve, reject, "
+                "rank personal worth, prove financial reliability, prove supporter willingness, or move money."
+            ),
         },
         "top_candidates": suggested_top_candidates,
     }

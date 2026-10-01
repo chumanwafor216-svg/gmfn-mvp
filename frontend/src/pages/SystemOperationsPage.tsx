@@ -317,6 +317,13 @@ function toNum(value: any): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function funnelCountLabel(row: any): string {
+  if (safeStr(row?.measurement_status) === "not_measured_yet" || row?.count == null) {
+    return "Not measured yet";
+  }
+  return String(toNum(row?.count));
+}
+
 function signalTone(row: RawSystemRow): {
   bg: string;
   text: string;
@@ -807,6 +814,12 @@ export default function SystemOperationsPage() {
       joinActivationMissing: toNum(joinByStage.approved_missing_activation),
     };
   }, [pilotIntake]);
+
+  const earlyActivationFunnel = pilotIntake?.early_activation_funnel || null;
+  const earlyActivationStages = useMemo(
+    () => rowsOf<any>(earlyActivationFunnel?.stages),
+    [earlyActivationFunnel]
+  );
 
   const pilotTriageMessage = useMemo(() => {
     if (!pilotIntake) {
@@ -1406,6 +1419,57 @@ export default function SystemOperationsPage() {
                 {pilotTriageMessage}
               </div>
             </div>
+
+            {earlyActivationStages.length > 0 ? (
+              <div style={innerCard("#FCFEFF")}>
+                {sectionLabelWithIcon("document", "Early activation funnel", "blue")}
+                <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                  {safeStr(earlyActivationFunnel?.truth_boundary) ||
+                    "Read-only admin view. It does not change membership or trust."}
+                </div>
+                <div
+                  style={{
+                    marginTop: 12,
+                    display: "grid",
+                    gridTemplateColumns: isCompact
+                      ? "1fr"
+                      : "repeat(4, minmax(0, 1fr))",
+                    gap: 10,
+                  }}
+                >
+                  {earlyActivationStages.map((stage) => {
+                    const notMeasured =
+                      safeStr(stage?.measurement_status) === "not_measured_yet" ||
+                      stage?.count == null;
+                    return (
+                      <div
+                        key={`early-activation-${safeStr(stage?.key) || safeStr(stage?.label)}`}
+                        style={statTile(notMeasured ? "#FFFBEF" : "#F8FBFF")}
+                        title={safeStr(stage?.boundary)}
+                      >
+                        <div style={{ color: "#24415C", fontSize: 12, fontWeight: 900 }}>
+                          {safeStr(stage?.label) || "Funnel stage"}
+                        </div>
+                        <div
+                          style={{
+                            marginTop: 8,
+                            color: notMeasured ? "#92400E" : "#0B63D1",
+                            fontSize: notMeasured ? 15 : 24,
+                            fontWeight: 1000,
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          {funnelCountLabel(stage)}
+                        </div>
+                        <div style={{ marginTop: 6, color: "#64748B", fontSize: 11, fontWeight: 800 }}>
+                          {safeStr(stage?.measurement_status).replace(/_/g, " ") || "measured"}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
 
             {reviewMessage ? (
               <div

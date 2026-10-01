@@ -330,7 +330,7 @@ function normalizeSuggestedSupporter(raw: any): SuggestedSupporter | null {
     name,
     reason: reason || undefined,
     recommendedPledge: recommendedPledge || undefined,
-    trustScore: firstTruthy(src?.trust_score, src?.cci),
+    trustScore: firstTruthy(src?.trust_score, src?.cci_score, src?.cci),
     trustBand: firstTruthy(src?.trust_band),
   };
 }
@@ -1043,10 +1043,10 @@ export default function LoanSuggestionsPage() {
 
     if (suggestedSupporters.length > 0) {
       return {
-        title: "Fit suggestions are available.",
+        title: "Support planning evidence is available.",
         detail:
           suggestionMessage ||
-          "Review the strongest candidates, then continue into the deeper support workbench.",
+          "Review the visible facts and limits, then decide who it makes sense to approach.",
         tone: "ready" as const,
       };
     }
@@ -1128,7 +1128,7 @@ export default function LoanSuggestionsPage() {
       return {
         title: "Continue into the deeper support workbench.",
         detail:
-          "The fit picture is visible enough. The next move is the deeper workbench.",
+          "The planning evidence is visible enough to review in the deeper workbench.",
         ctaTo: routes.workbench,
         ctaLabel: "Open Support Workbench",
       };
@@ -1167,7 +1167,7 @@ export default function LoanSuggestionsPage() {
         status: fitReading.title,
         detailLines: [
           `Fit reading: ${fitReading.title}`,
-          `Suggested supporters visible: ${suggestedSupporters.length}`,
+          `Planning rows visible: ${suggestedSupporters.length}`,
         ],
       })
     );
@@ -1232,9 +1232,9 @@ export default function LoanSuggestionsPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="This page reads the current support item and shows which people or signals look strongest for the next move."
-        why="Finance keeps the money record. Suggestions keeps the fit reading, so you can judge this support path before deeper action."
-        next="Fit suggestions are decision support only; they do not choose a supporter, approve support, or authorize release of goods, credit, or money."
+        what="This page reads the current support item and shows visible support facts and broader evidence posture for the next move."
+        why="Finance keeps the money record. This screen keeps planning evidence separate from approval, endorsement, or personal worth."
+        next="Planning evidence is decision support only; it does not choose a supporter, approve support, endorse anyone, or authorize release of goods, credit, or money."
         tone="blue"
       />
 
@@ -1307,7 +1307,7 @@ export default function LoanSuggestionsPage() {
                 lineHeight: 1.1,
               }}
             >
-              Supporter fit suggestions for {memberName}
+              Support planning evidence for {memberName}
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
@@ -1541,7 +1541,7 @@ export default function LoanSuggestionsPage() {
             </div>
 
             <div style={statTile("#F8FBFF")}>
-              <div style={sectionLabel()}>Suggested supporters</div>
+              <div style={sectionLabel()}>Possible supporters</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1726,7 +1726,7 @@ export default function LoanSuggestionsPage() {
                   suggestionMessage ||
                     (activeBorrowerLoan
                       ? "The system has not returned a fuller fit note yet."
-                      : "Start or resume the support draft first to see fit suggestions.")
+                      : "Start or resume the support draft first to see planning evidence.")
                 )}
               </div>
             </div>
@@ -1790,9 +1790,9 @@ export default function LoanSuggestionsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Suggested supporters</div>
+            <div style={sectionLabel()}>Possible supporters</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              The strongest visible supporter-fit suggestions for the current support item.
+              Visible supporter planning evidence for the current support item. This is not an endorsement.
             </div>
           </div>
 
@@ -1822,9 +1822,9 @@ export default function LoanSuggestionsPage() {
 
         <ExplainToggle
           label="Why these supporters appear"
-          what="This section lists the strongest visible supporter matches for the current support item."
-          why="It helps you start from the best current fit instead of guessing who to approach first."
-          next="Review the reason and suggested support amount for each supporter, then continue into the workbench when you are ready to act."
+          what="This section lists visible support facts and broader evidence posture for the current support item."
+          why="It helps you review who may be practical to approach without treating a suggestion as GSN endorsement or financial reliability."
+          next="Review the reason and possible support amount for each person, then decide through the normal support workflow."
           tone="light"
           style={{ marginTop: 12 }}
         />
@@ -1878,7 +1878,7 @@ export default function LoanSuggestionsPage() {
 
                         {safeStr(item.recommendedPledge) ? (
                           <span style={badge(true)}>
-                            Suggested support: {safeStr(item.recommendedPledge)}
+                            Possible support: {safeStr(item.recommendedPledge)}
                           </span>
                         ) : null}
 
@@ -1903,7 +1903,7 @@ export default function LoanSuggestionsPage() {
                         fontSize: 13,
                       }}
                     >
-                      If this fit looks strong enough, use Next pages below to continue into Support Workbench.
+                      Use this as planning evidence only. A human still chooses whether to ask this person for support.
                     </div>
                   </div>
                 </div>

@@ -9,10 +9,14 @@ from typing import Any, Dict, Iterable, List, Optional
 from sqlalchemy.orm import Session
 
 from app.db.bank_models import ExpectedPayment
-from app.db.models import ClanMembership, PoolEvent, TrustEvent, User
+from app.db.models import ClanMembership, PoolEvent, TrustEvent
 from app.db.notification_models import Notification
 from app.services.expected_payments_service import create_expected_payment
 from app.services.feature_entitlements_service import get_active_feature_quantity
+from app.services.financial_obligation_evidence_service import (
+    build_financial_obligation_evidence,
+    obligation_evidence_sort_tuple,
+)
 from app.services.notification_service import create_notification
 from app.services.payment_instruction_service import FEATURE_ROSCA_CYCLE
 from app.services.trust_events_services import log_trust_event
@@ -216,47 +220,89 @@ def _validate_payout_order(
     return order
 
 
-def _trust_score_for_user(user: Optional[User]) -> int:
-    if user is None:
-        return 50
-    return _safe_int(getattr(user, "trust_score", None), 50)
-
-
-def _trust_ranked_payout_order(
+def _membership_order(
     db: Session,
     *,
+    clan_id: int,
     member_user_ids: List[int],
-) -> tuple[List[int], Dict[str, Any]]:
-    users = (
-        db.query(User)
-        .filter(User.id.in_([int(user_id) for user_id in member_user_ids]))
+) -> Dict[int, int]:
+    selected_ids = {int(user_id) for user_id in member_user_ids}
+    memberships = (
+        db.query(ClanMembership)
+        .filter(ClanMembership.clan_id == int(clan_id))
+        .filter(ClanMembership.user_id.in_(list(selected_ids)))
+        .order_by(ClanMembership.id.asc(), ClanMembership.created_at.asc())
         .all()
     )
-    user_by_id = {int(row.id): row for row in users}
-    membership_index = {
-        int(user_id): index for index, user_id in enumerate(member_user_ids)
-    }
-    trust_scores = {
-        int(user_id): _trust_score_for_user(user_by_id.get(int(user_id)))
+    membership_order = []
+    for membership in memberships:
+        uid = int(getattr(membership, "user_id", 0) or 0)
+        if uid in selected_ids and uid not in membership_order:
+            membership_order.append(uid)
+    membership_order.extend(
+        int(user_id)
         for user_id in member_user_ids
-    }
+        if int(user_id) in selected_ids and int(user_id) not in membership_order
+    )
+    return {int(user_id): index for index, user_id in enumerate(membership_order)}
+
+
+def _purpose_specific_default_payout_order(
+    db: Session,
+    *,
+    clan_id: int,
+    member_user_ids: List[int],
+) -> tuple[List[int], Dict[str, Any]]:
+    order_index = _membership_order(
+        db,
+        clan_id=int(clan_id),
+        member_user_ids=member_user_ids,
+    )
+    evidence_by_user_id: Dict[str, Dict[str, Any]] = {}
+    evidence_tuples: Dict[int, tuple[int, int, int, int, int]] = {}
+    for user_id in member_user_ids:
+        evidence = build_financial_obligation_evidence(
+            db,
+            user_id=int(user_id),
+            clan_id=int(clan_id),
+        )
+        evidence_by_user_id[str(int(user_id))] = evidence
+        evidence_tuples[int(user_id)] = obligation_evidence_sort_tuple(evidence)
+
+    has_relevant_positive_evidence = any(
+        any(value > 0 for value in evidence_tuples[int(user_id)])
+        for user_id in member_user_ids
+    )
+
     ranked = sorted(
         [int(user_id) for user_id in member_user_ids],
         key=lambda user_id: (
-            -trust_scores.get(int(user_id), 50),
-            membership_index.get(int(user_id), 999999),
+            tuple(-value for value in evidence_tuples[int(user_id)])
+            if has_relevant_positive_evidence
+            else (0, 0, 0, 0, 0),
+            order_index.get(int(user_id), 999999),
             int(user_id),
         ),
     )
     return ranked, {
-        "payout_order_strategy": "trust_score_desc_membership_order_tiebreak",
-        "trust_scores_by_user_id": {
-            str(user_id): int(trust_scores.get(int(user_id), 50))
-            for user_id in member_user_ids
-        },
-        "tie_breaker": "clan_membership_id_asc",
+        "payout_order_strategy": (
+            "purpose_relevant_obligation_evidence_default"
+            if has_relevant_positive_evidence
+            else "neutral_clan_membership_order"
+        ),
+        "explainable_policy": (
+            "No explicit payout order was supplied. GSN used relevant historical "
+            "evidence of comparable obligation fulfilment where it existed, then "
+            "community membership record order for neutral ties. General Trust "
+            "score, Trust band, CCI, and social network breadth are not used for "
+            "automatic ROSCA payout priority."
+        ),
+        "trust_scores_by_user_id": {},
+        "cci_scores_by_user_id": {},
+        "obligation_evidence_by_user_id": evidence_by_user_id,
+        "adverse_evidence_used": False,
+        "tie_breaker": "clan_membership_id_asc_then_user_id_asc_for_neutral_ties",
     }
-
 
 def _expected_payment_out(row: ExpectedPayment) -> Dict[str, Any]:
     meta = _safe_meta(getattr(row, "meta_json", None))
@@ -641,8 +687,9 @@ def create_rosca_cycle(
         member_user_ids=member_user_ids,
     )
     if payout_order_user_ids is None:
-        payout_order, payout_order_policy = _trust_ranked_payout_order(
+        payout_order, payout_order_policy = _purpose_specific_default_payout_order(
             db,
+            clan_id=int(clan_id),
             member_user_ids=members,
         )
     else:

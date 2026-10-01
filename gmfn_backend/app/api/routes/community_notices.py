@@ -128,6 +128,15 @@ def _safe_str(value: Any, fallback: str = "") -> str:
     return text if text else fallback
 
 
+
+def _public_trust_posture(user: User | None) -> tuple[float | None, str | None]:
+    if not user or not getattr(user, "trust_score_updated_at", None):
+        return None, None
+
+    score = getattr(user, "trust_score", None)
+    band = _safe_str(getattr(user, "trust_band", None)) or None
+    return (float(score) if score is not None else None), band
+
 def _iso(value: Any) -> Optional[str]:
     if isinstance(value, datetime):
         if value.tzinfo is None:
@@ -1372,7 +1381,7 @@ def _meeting_notice_is_expired(row: dict[str, Any], *, now: Optional[datetime] =
 
 def _request_to_demand_signal(db: Session, row: MarketplaceRequest) -> dict[str, Any]:
     requester = row.user or db.get(User, int(row.user_id))
-    trust_score = getattr(requester, "trust_score", None) if requester else None
+    requester_trust_score, requester_trust_band = _public_trust_posture(requester)
     return {
         "request_id": int(row.id),
         "source": "demand_box",
@@ -1384,8 +1393,8 @@ def _request_to_demand_signal(db: Session, row: MarketplaceRequest) -> dict[str,
         "created_at": _iso(getattr(row, "created_at", None)),
         "expires_at": _iso(getattr(row, "expires_at", None)),
         "requester_gmfn_id": _safe_str(getattr(requester, "gmfn_id", None)) or None,
-        "requester_trust_score": float(trust_score) if trust_score is not None else None,
-        "requester_trust_band": _safe_str(getattr(requester, "trust_band", None)) or None,
+        "requester_trust_score": requester_trust_score,
+        "requester_trust_band": requester_trust_band,
     }
 
 

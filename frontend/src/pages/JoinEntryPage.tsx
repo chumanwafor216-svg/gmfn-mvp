@@ -1452,7 +1452,7 @@ export default function JoinEntryPage() {
     );
   }, [searchParams]);
 
-  const inviterLabel = useMemo(() => {
+  const queryInviterLabel = useMemo(() => {
     return humanInviterLabel(inviterNameRaw);
   }, [inviterNameRaw]);
 
@@ -1522,6 +1522,19 @@ export default function JoinEntryPage() {
   });
   const [invitePreview, setInvitePreview] = useState<any>(null);
   const [inviteChecking, setInviteChecking] = useState(false);
+
+  const previewInviterLabel = useMemo(() => {
+    return humanInviterLabel(
+      cleanText(
+        invitePreview?.invited_by_display ||
+          invitePreview?.inviter_display ||
+          invitePreview?.inviter_name ||
+          ""
+      )
+    );
+  }, [invitePreview]);
+
+  const inviterLabel = previewInviterLabel || queryInviterLabel;
 
   const previewQrPolicyKey = useMemo(() => {
     return cleanText(invitePreview?.qr_policy_key || "");

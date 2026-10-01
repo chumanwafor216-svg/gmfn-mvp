@@ -1,6 +1,6 @@
 # GSN Endorsement Evidence Ledger
 
-Last updated: 2026-07-21
+Last updated: 2026-09-10
 
 Use this ledger after every discovery, pilot, payer, safeguard, technical, or
 external-review action. Its job is to separate evidence from excitement.
@@ -73,6 +73,7 @@ Impact evidence - measured real-world outcome after use
 | 2026-07-19 | Discovery evidence memo template separates evidence, interpretation, refusal reasons, pilot pull, and investor readiness. | `GSN_DISCOVERY_EVIDENCE_MEMO_TEMPLATE.md` | Founder capability; Market demand; Safeguards | Preparation evidence | The synthesis tool is designed to resist overclaiming. | Does not prove a first wedge, payer, or pilot. | Fill after first discovery round. |
 | 2026-07-19 | Accepted local 12-step product screenshot sequence exists. | `pilot_evidence_pack/12_product_evidence_capture/accepted_sequence_manifest.md` | Execution; Technical proof | Preparation evidence | A local synthetic product story can be explained with controlled screenshots. | Does not prove traction, adoption, revenue, external validation, recipient trust, product-market fit, or safeguards at scale. | Share only if requested, with limitation caption and send-ready checklist. |
 | 2026-07-21 | Initial endorsement-readiness audit completed. | `docs/GSN_ENDORSEMENT_READINESS_INITIAL_AUDIT_2026-07-21.md` | Founder capability; Governance; Responsible data use | Preparation evidence | GSN has an honest view of endorsement gaps and immediate priorities. | Does not prove the gaps are solved. | Convert the audit into discovery, pilot, payer, and safeguard evidence. |
+| 2026-09-10 | Paid-pilot and support-readiness customer discovery protocol added. | `docs/GSN_CUSTOMER_DISCOVERY_PAID_PILOT_AND_SUPPORT_READINESS_PROTOCOL_2026-09-10.md`; `README.md`; discovery templates | Founder capability; Market demand; Commercial proof; Safeguards; Governance | Preparation evidence | GSN now has a standard protocol requiring payment, sponsor, budget-holder, and support-readiness signals after customer discovery satisfaction. | Does not prove any organisation will pay, sponsor, commit to a pilot, or support an Innovator Founder endorsement. | Use the protocol in the next 8-10 discovery conversations and record payment/sponsor evidence honestly. |
 
 ## Add New Evidence Item
 

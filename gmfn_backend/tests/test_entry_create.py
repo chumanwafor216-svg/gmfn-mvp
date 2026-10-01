@@ -7,6 +7,7 @@ from app.core.security import get_password_hash, verify_password
 from app.db.database import SessionLocal
 from app.db.models import (
     Clan,
+    ClanInvite,
     ClanJoinRequest,
     ClanMembership,
     EntryPhoneVerification,
@@ -1843,6 +1844,44 @@ def test_admin_pilot_intake_reports_completed_create_entry(client, override_curr
         },
     )
     assert create_res.status_code == 201, create_res.text
+    create_body = create_res.json()
+
+    with SessionLocal() as db:
+        applicant = User(
+            id=9001,
+            email="activated.join@example.com",
+            display_name="Activated Join Applicant",
+            gmfn_id="GMFN-U-FUNNEL01",
+            hashed_password="hashed",
+            role="user",
+        )
+        db.add(applicant)
+        db.add(
+            ClanInvite(
+                id=9001,
+                clan_id=int(create_body["clan_id"]),
+                created_by_user_id=int(create_body["user_id"]),
+                code="pilot-funnel-code",
+                is_active=True,
+                max_uses=5,
+                uses=1,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.add(
+            ClanJoinRequest(
+                id=9001,
+                clan_id=int(create_body["clan_id"]),
+                applicant_user_id=9001,
+                invited_by_user_id=int(create_body["user_id"]),
+                status="approved",
+                activation_delivery_status="opened",
+                activation_delivered_at=datetime.now(timezone.utc),
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
 
     intake_res = client.get("/admin/pilot-intake?limit=20")
     assert intake_res.status_code == 200, intake_res.text
@@ -1861,6 +1900,22 @@ def test_admin_pilot_intake_reports_completed_create_entry(client, override_curr
     assert item["user"]["gmfn_id"]
     assert item["communities"][0]["name"] == "Pilot Admin Watch Circle"
     assert "Creation appears complete" in item["next_action"]
+
+    funnel = intake_body["early_activation_funnel"]
+    stages = {row["key"]: row for row in funnel["stages"]}
+    assert funnel["scope"] == "admin_command_center_read_model"
+    assert stages["invitation_created"]["count"] >= 1
+    assert stages["registration_started"]["measurement_status"] == "partially_measured"
+    assert stages["join_request_context_established"]["count"] >= 1
+    assert stages["activation_opened"]["count"] >= 1
+    assert stages["activated"]["count"] >= 1
+    assert stages["first_meaningful_action"]["count"] is None
+    assert stages["first_meaningful_action"]["measurement_status"] == "not_measured_yet"
+    assert "invite_opened" in funnel["not_measured_yet"]
+    assert any(
+        candidate["entry_context"] == "merchant/shop owner"
+        for candidate in funnel["candidate_first_meaningful_actions"]
+    )
 
 
 def test_entry_phone_start_resumes_unfinished_verified_session(client):

@@ -136,7 +136,9 @@ type Suggestion = {
   gmfn_id?: string | null;
   display_name?: string | null;
   cci?: number | string;
+  cci_score?: number | string;
   recommended_pledge?: number | string;
+  suggested_pledge?: number | string;
   reason?: string | null;
 };
 
@@ -165,7 +167,9 @@ function safeItems<T>(res: any): T[] {
   if (!res) return [];
   if (Array.isArray(res)) return res as T[];
   if (Array.isArray(res.items)) return res.items as T[];
+  if (Array.isArray(res.suggestions)) return res.suggestions as T[];
   if (Array.isArray(res.data?.items)) return res.data.items as T[];
+  if (Array.isArray(res.data?.suggestions)) return res.data.suggestions as T[];
   return [];
 }
 
@@ -2114,7 +2118,7 @@ export default function LoanSummaryPage() {
                 ...helperText(),
               }}
             >
-              Suggested supporter candidates for this support item, when available.
+Planning evidence for possible supporter outreach. These rows do not approve support, prove financial reliability, or endorse anyone.
             </div>
 
             <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
@@ -2149,9 +2153,9 @@ export default function LoanSummaryPage() {
                         flexWrap: "wrap",
                       }}
                     >
-                      {Number.isFinite(Number(s.cci)) ? (
+                      {Number.isFinite(Number(s.cci_score ?? s.cci)) ? (
                         <span style={badge(false)}>
-                          Wider consistency: {String(s.cci)}
+                          General evidence: {String(s.cci_score ?? s.cci)}
                         </span>
                       ) : null}
 

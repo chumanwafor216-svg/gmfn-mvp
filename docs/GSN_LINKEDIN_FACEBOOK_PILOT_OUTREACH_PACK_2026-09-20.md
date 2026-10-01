@@ -1,10 +1,12 @@
 # GSN LinkedIn And Facebook Pilot Outreach Pack
 
 Date: 2026-09-20
-Status: Ready-to-use launch pack after the public GSN pilot-interest route was deployed.
-Primary link: https://globalsupportnetwork.org/#pilot-interest
+Status: Ready-to-use launch pack, now aligned with GSN-SM-PROTOCOL-001.
+Primary link: https://globalsupportnetwork.org/pilot/
 Fallback email: hello@globalsupportnetwork.org
-
+Official Website: https://globalsupportnetwork.org
+Official LinkedIn Page: https://www.linkedin.com/company/global-support-network
+Official Facebook Page: https://www.facebook.com/people/GSN-Global-Support-Network/61594363752798/
 ## 1. Purpose
 
 This pack turns Chuma's LinkedIn profile, the GSN LinkedIn Page, Facebook Page,
@@ -26,13 +28,13 @@ start a leadership discussion.
 Use one main link everywhere:
 
 ```text
-https://globalsupportnetwork.org/#pilot-interest
+https://globalsupportnetwork.org/pilot/
 ```
 
 Why this link:
 
-- it opens the live GSN public website;
-- it lands directly on the community pilot interest section;
+- it opens the live GSN public pilot entrance;
+- it redirects visitors to the community pilot interest section if needed;
 - it avoids sending visitors from LinkedIn to the website and back to LinkedIn;
 - it uses the official GSN email route;
 - it does not pretend there is database-backed automatic onboarding yet.
@@ -64,7 +66,7 @@ Do you lead a community, association, church, charity, diaspora network or suppo
 Destination:
 
 ```text
-https://globalsupportnetwork.org/#pilot-interest
+https://globalsupportnetwork.org/pilot/
 ```
 
 Priority:
@@ -77,7 +79,7 @@ should be a doorway, not a filing cabinet.
 Add this at the end of the personal LinkedIn About section:
 
 ```text
-Community pilot enquiries: I welcome conversations with community leaders interested in exploring GSN. Please visit https://globalsupportnetwork.org/#pilot-interest or contact hello@globalsupportnetwork.org with your organisation's name, approximate membership and the main challenge you would like to address.
+Community pilot enquiries: I welcome conversations with community leaders interested in exploring GSN. Please visit https://globalsupportnetwork.org/pilot/ or contact hello@globalsupportnetwork.org with your organisation's name, approximate membership and the main challenge you would like to address.
 ```
 
 ### 3.3 Personal Profile Custom Button
@@ -94,7 +96,7 @@ Visit my website
 URL:
 
 ```text
-https://globalsupportnetwork.org/#pilot-interest
+https://globalsupportnetwork.org/pilot/
 ```
 
 Truth boundary:
@@ -117,7 +119,7 @@ Global Support Network (GSN) is building community trust infrastructure: practic
 
 GSN is currently inviting structured pilot conversations with associations, churches, charities, diaspora networks, support organisations and umbrella bodies. The first step is to understand one real workflow, agree a safe pilot scope and confirm the right leadership contact.
 
-Explore a community pilot: https://globalsupportnetwork.org/#pilot-interest
+Explore a community pilot: https://globalsupportnetwork.org/pilot/
 Contact: hello@globalsupportnetwork.org
 ```
 
@@ -140,7 +142,7 @@ Learn more
 URL:
 
 ```text
-https://globalsupportnetwork.org/#pilot-interest
+https://globalsupportnetwork.org/pilot/
 ```
 
 Do not use `Sign up` unless the destination becomes a real sign-up or application
@@ -165,7 +167,7 @@ Contact Us
 URL:
 
 ```text
-https://globalsupportnetwork.org/#pilot-interest
+https://globalsupportnetwork.org/pilot/
 ```
 
 Use the Page action button and the Page website/About field if both are
@@ -176,7 +178,7 @@ available. The button is the main action; the About field is the backup.
 ```text
 GSN helps communities make value visible, portable and useful. We are inviting community leaders, associations, churches, charities, diaspora networks and support organisations to explore structured community pilot conversations.
 
-Explore a GSN community pilot: https://globalsupportnetwork.org/#pilot-interest
+Explore a GSN community pilot: https://globalsupportnetwork.org/pilot/
 Email: hello@globalsupportnetwork.org
 ```
 
@@ -198,7 +200,7 @@ We welcome conversations with associations, churches, charities, diaspora networ
 The first step is a discussion about your community's needs, followed by an agreed pilot scope. GSN is still being tested and improved; available features, responsibilities and any charges will be explained before participation.
 
 Explore a community pilot:
-https://globalsupportnetwork.org/#pilot-interest
+https://globalsupportnetwork.org/pilot/
 
 Or email hello@globalsupportnetwork.org with your community's name, approximate membership and the main challenge you would like to address.
 
@@ -217,7 +219,7 @@ GSN is inviting community leaders to explore a structured community pilot. The a
 Start with one real workflow, one named administrator and one agreed review point. Larger organisations can begin with one branch or chapter before considering wider use.
 
 Explore a GSN community pilot:
-https://globalsupportnetwork.org/#pilot-interest
+https://globalsupportnetwork.org/pilot/
 
 Email: hello@globalsupportnetwork.org
 
@@ -237,8 +239,8 @@ GSN is designed to help communities organise information, preserve evidence of p
 
 I am not asking for member databases or private records. The first step is only a short discussion about one real workflow your community would like to improve.
 
-You can see the pilot-interest route here:
-https://globalsupportnetwork.org/#pilot-interest
+You can see the pilot route here:
+https://globalsupportnetwork.org/pilot/
 
 If it is relevant, please reply with your organisation name, approximate membership and the main challenge you would like to address.
 ```
@@ -252,8 +254,8 @@ The practical proposal is not to onboard everyone at once. A larger organisation
 
 The pilot conversation would focus on one defined problem, one authorised decision-maker, one named administrator and one agreed review point.
 
-Explore the pilot-interest route here:
-https://globalsupportnetwork.org/#pilot-interest
+Explore the pilot route here:
+https://globalsupportnetwork.org/pilot/
 
 If useful, I would welcome a short leadership discussion.
 ```
@@ -266,7 +268,7 @@ GSN is community trust infrastructure. It helps communities preserve useful evid
 It does not replace community judgement. It helps organise evidence so leaders, members and receiving organisations can make better-informed decisions.
 
 The current pilot route is here:
-https://globalsupportnetwork.org/#pilot-interest
+https://globalsupportnetwork.org/pilot/
 ```
 
 ## 9. Comment Reply Templates
@@ -274,7 +276,7 @@ https://globalsupportnetwork.org/#pilot-interest
 ### 9.1 Interested Leader
 
 ```text
-Thank you. The best first step is to use the pilot-interest route here: https://globalsupportnetwork.org/#pilot-interest
+Thank you. The best first step is to use the pilot route here: https://globalsupportnetwork.org/pilot/
 
 Please include your community or organisation name, approximate membership and the main challenge you would like to address.
 ```
@@ -288,7 +290,7 @@ The first conversation is exploratory. Any pilot scope, responsibilities and cha
 ### 9.3 Person Asking For Full Details Publicly
 
 ```text
-Happy to explain the right part. Because each community has different governance and privacy needs, the useful next step is a focused pilot conversation rather than a long public thread. Please use https://globalsupportnetwork.org/#pilot-interest or email hello@globalsupportnetwork.org.
+Happy to explain the right part. Because each community has different governance and privacy needs, the useful next step is a focused pilot conversation rather than a long public thread. Please use https://globalsupportnetwork.org/pilot/ or email hello@globalsupportnetwork.org.
 ```
 
 ## 10. First-Response Triage After An Enquiry Arrives
@@ -381,7 +383,7 @@ Week 2:
 
 - Post 1: what a controlled pilot looks like.
 - Post 2: what GSN does not collect at first contact.
-- Post 3: invitation reminder with the pilot-interest link.
+- Post 3: invitation reminder with the pilot link.
 
 Week 3:
 

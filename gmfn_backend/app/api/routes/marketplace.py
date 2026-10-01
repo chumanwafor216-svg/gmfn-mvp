@@ -121,6 +121,19 @@ def _safe_str(value: Any, default: str = "") -> str:
     return s if s else default
 
 
+
+def _public_trust_posture(user: User | None) -> tuple[Any | None, str | None]:
+    if not user or not getattr(user, "trust_score_updated_at", None):
+        return None, None
+
+    score = getattr(user, "trust_score", None)
+    band = (
+        _safe_str(getattr(user, "trust_band", None))
+        or _safe_str(getattr(user, "trust_class", None))
+        or None
+    )
+    return score, band
+
 def _json_load(value: Optional[str]) -> dict[str, Any]:
     if not value:
         return {}
@@ -2283,12 +2296,7 @@ def _shop_out(db: Session, shop: MarketplaceShop) -> Dict[str, Any]:
         fallback="Public GSN Shop",
     )
 
-    trust_band = (
-        _safe_str(getattr(owner, "trust_band", None))
-        or _safe_str(getattr(owner, "trust_class", None))
-        or None
-    )
-    trust_score = getattr(owner, "trust_score", None) if owner else None
+    trust_score, trust_band = _public_trust_posture(owner)
 
     clan_name = (
         _safe_str(getattr(clan, "marketplace_name", None))
@@ -2603,11 +2611,7 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
             fallback="Community seller",
         )
 
-    trust_band = None
-    trust_score = None
-    if author:
-        trust_band = _safe_str(getattr(author, "trust_band", None)) or None
-        trust_score = getattr(author, "trust_score", None)
+    trust_score, trust_band = _public_trust_posture(author)
 
     author_gmfn_id = None
     if author:

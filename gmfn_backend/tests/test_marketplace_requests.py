@@ -315,6 +315,49 @@ def test_marketplace_request_stores_selected_community():
     assert rows[0].mine is True
 
 
+def test_marketplace_request_uses_privacy_safe_requester_display_without_email():
+    _seed_primary_clan()
+    _add_second_member_to_primary_clan()
+
+    with SessionLocal() as db:
+        response = marketplace_requests.create_marketplace_request(
+            MarketplaceRequestCreate(
+                clan_id=1,
+                title="Need electrician help",
+                description="Socket repair needed before the weekend.",
+                whatsapp_number="+447700900444",
+            ),
+            db=db,
+            current_user=_fake_current_user(),
+        )
+        created = response.model_dump()
+
+        rows = marketplace_requests.list_marketplace_requests(
+            db=db,
+            current_user=_fake_second_user(),
+            status="open",
+            category=None,
+            urgency=None,
+            area=None,
+            mine_only=False,
+            clan_id=1,
+            limit=50,
+        )
+
+    assert created["requester_email"] is None
+    assert rows[0].requester_email is None
+    assert created["requester_trust_score"] is None
+    assert created["requester_trust_band"] is None
+    assert rows[0].requester_trust_score is None
+    assert rows[0].requester_trust_band is None
+    assert created["requester_display_name"] == "GSN-U-TEST"
+    assert rows[0].requester_display_name == "GSN-U-TEST"
+    assert rows[0].requester_name == "GSN-U-TEST"
+    assert "@" not in rows[0].requester_display_name
+    assert rows[0].requester_gmfn_id == "GSN-U-TEST"
+    assert rows[0].user_id == 1
+    assert rows[0].whatsapp_number == "+447700900444"
+
 def test_marketplace_request_marks_visible_community_rows_not_mine():
     _seed_primary_clan()
     _add_second_member_to_primary_clan()

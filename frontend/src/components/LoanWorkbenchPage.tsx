@@ -116,9 +116,9 @@ export default function LoanWorkbenchPage() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <div className="rounded-2xl border bg-white p-4 shadow-sm">
-        <div className="mb-2 text-xl font-bold">Loan Intelligence Workspace</div>
+        <div className="mb-2 text-xl font-bold">Loan Support Planning Workspace</div>
         <div className="mb-4 text-sm text-slate-600">
-          One place to inspect supporter suggestions and proceed/caution/block intelligence for a loan.
+          One place to inspect support planning evidence. It does not approve, reject, or endorse a loan or supporter.
         </div>
 
         <div className="flex flex-col gap-3 md:flex-row md:items-end">

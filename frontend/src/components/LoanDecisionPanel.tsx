@@ -77,18 +77,18 @@ export default function LoanDecisionPanel({
   if (!data) {
     return (
       <div className="rounded-2xl border bg-white p-4 shadow-sm">
-        <div className="text-sm text-slate-500">No decision intelligence loaded yet.</div>
+        <div className="text-sm text-slate-500">No support planning reading loaded yet.</div>
       </div>
     );
   }
 
   return (
     <div className="rounded-2xl border bg-white p-4 shadow-sm">
-      <div className="mb-3 text-lg font-bold">Decision Intelligence</div>
+      <div className="mb-3 text-lg font-bold">Support Planning Reading</div>
       <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">
-        Decision intelligence is support evidence for review. It is not loan
-        approval, bank approval, payment movement, auto-debit authority, payout
-        authority, or release authority.
+        This is planning evidence for review. It is not GSN loan approval, rejection,
+        bank approval, payment movement, auto-debit authority, payout authority,
+        release authority, or endorsement of any person.
       </div>
 
       <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-4">
@@ -99,7 +99,7 @@ export default function LoanDecisionPanel({
           </div>
         </div>
         <div className="rounded-xl bg-slate-50 p-3">
-          <div className="text-slate-500">Support reading</div>
+          <div className="text-slate-500">Planning reading</div>
           <div className="mt-2">
             <span
               className={`rounded-full px-3 py-1 text-sm font-semibold ${recommendationClass(
@@ -111,7 +111,7 @@ export default function LoanDecisionPanel({
           </div>
         </div>
         <div className="rounded-xl bg-slate-50 p-3">
-          <div className="text-slate-500">Review confidence</div>
+          <div className="text-slate-500">Evidence completeness</div>
           <div className="font-bold">{confidencePosture(data.decision.confidence_score)}</div>
         </div>
         <div className="rounded-xl bg-slate-50 p-3">
@@ -170,7 +170,7 @@ export default function LoanDecisionPanel({
             <div className="font-bold">{data.clan_context.clan_exposure_ratio}</div>
           </div>
           <div className="rounded-xl bg-slate-50 p-3">
-            <div className="text-slate-500">Community evidence</div>
+            <div className="text-slate-500">General community evidence</div>
             <div className="font-bold">
               {getContextualEvidencePosture(data.clan_context.average_cci_score).shortLabel}
             </div>

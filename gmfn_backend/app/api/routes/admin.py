@@ -23,6 +23,7 @@ from app.core.security import get_password_hash
 from app.db.database import get_db
 from app.db.models import (
     Clan,
+    ClanInvite,
     ClanJoinRequest,
     ClanMembership,
     CommunityDomain,
@@ -1198,6 +1199,166 @@ def _join_next_action(stage: str) -> str:
         return "No action unless the community wants to invite this person again."
     return "Review this join request."
 
+def _user_activation_completed(user: Optional[User]) -> bool:
+    if user is None:
+        return False
+    hashed = _safe_str(getattr(user, "hashed_password", ""))
+    return bool(hashed and hashed != "PENDING_APPROVAL")
+
+
+def _funnel_stage(
+    *,
+    key: str,
+    label: str,
+    count: Optional[int],
+    measurement_status: str,
+    source: list[str],
+    boundary: str,
+) -> dict[str, Any]:
+    return {
+        "key": key,
+        "label": label,
+        "count": count,
+        "measurement_status": measurement_status,
+        "source": source,
+        "boundary": boundary,
+    }
+
+
+def _early_activation_funnel_read_model(
+    *,
+    invitation_count: int,
+    entry_rows: list[EntryPhoneVerification],
+    create_stage_counts: dict[str, int],
+    join_items: list[dict[str, Any]],
+    join_stage_counts: dict[str, int],
+    limit: int,
+) -> dict[str, Any]:
+    approved_count = sum(
+        1
+        for row in join_items
+        if _safe_str(row.get("status")).lower() == "approved"
+    )
+    activation_opened_count = sum(
+        1
+        for row in join_items
+        if _safe_str(row.get("activation_delivery_status")).lower() == "opened"
+    )
+    activated_count = sum(1 for row in join_items if bool(row.get("activation_completed")))
+
+    return {
+        "scope": "admin_command_center_read_model",
+        "window": {
+            "recent_row_limit": int(limit),
+            "note": (
+                "Entry and join stages use the same recent rows loaded by pilot intake. "
+                "Invitation created counts current invite records."
+            ),
+        },
+        "truth_boundary": (
+            "Read-only operational/research view. It does not change trust, membership, "
+            "approval, invitation status, or member-facing analytics."
+        ),
+        "stages": [
+            _funnel_stage(
+                key="invitation_created",
+                label="Invitation created",
+                count=int(invitation_count),
+                measurement_status="measured",
+                source=["ClanInvite"],
+                boundary="Counts invite records only. It does not mean the invite was delivered, opened, trusted, or accepted.",
+            ),
+            _funnel_stage(
+                key="registration_started",
+                label="Registration started",
+                count=len(entry_rows),
+                measurement_status="partially_measured",
+                source=["EntryPhoneVerification"],
+                boundary="Create-community phone entry is measured. Join-form starts before submission are not measured yet.",
+            ),
+            _funnel_stage(
+                key="registration_completed",
+                label="Registration completed",
+                count=int(create_stage_counts.get("completed", 0)),
+                measurement_status="partially_measured",
+                source=["EntryPhoneVerification.consumed_at", "User"],
+                boundary="Create-community completion is measured. Join-registration completion before request submission is not separately measured yet.",
+            ),
+            _funnel_stage(
+                key="join_request_context_established",
+                label="Join/request context established",
+                count=len(join_items),
+                measurement_status="measured",
+                source=["ClanJoinRequest"],
+                boundary="Counts submitted join requests. It does not count people who saw a link but never submitted.",
+            ),
+            _funnel_stage(
+                key="approved_where_required",
+                label="Approved where approval is required",
+                count=int(approved_count),
+                measurement_status="measured",
+                source=["ClanJoinRequest.status"],
+                boundary="Counts approved join requests in the intake window. Direct existing-member reuse may not require activation.",
+            ),
+            _funnel_stage(
+                key="activation_opened",
+                label="Activation opened",
+                count=int(activation_opened_count),
+                measurement_status="measured",
+                source=["ClanJoinRequest.activation_delivery_status"],
+                boundary="Measured only when an approved activation page marks the existing activation-opened event. Invite-opened telemetry is not implemented.",
+            ),
+            _funnel_stage(
+                key="activated",
+                label="Activated",
+                count=int(activated_count),
+                measurement_status="measured_for_join_requests",
+                source=["ClanJoinRequest", "User.hashed_password"],
+                boundary="Activated means activation was completed: the approved join applicant password is no longer pending. It must not be interpreted as adoption, engagement, retention, useful activity, trust creation, commercial activity, or community value.",
+            ),
+            _funnel_stage(
+                key="first_meaningful_action",
+                label="First meaningful action",
+                count=None,
+                measurement_status="not_measured_yet",
+                source=[],
+                boundary="No canonical behavioural definition has been approved. Candidate definitions are reported separately; no count is invented.",
+            ),
+        ],
+        "candidate_first_meaningful_actions": [
+            {
+                "entry_context": "new community creator",
+                "candidate": "opens Build First Circle or records first community/member/invite action after activation",
+                "existing_signals": ["/app/build-first-circle", "TrustEvent", "ClanInvite"],
+                "decision_needed": "Choose whether circle-building, first invite, or first community setup completion is the useful outcome.",
+            },
+            {
+                "entry_context": "new community member by invitation",
+                "candidate": "lands in the approved community and performs a member-context action such as opening Community Home, Marketplace, or TrustSlip setup",
+                "existing_signals": ["ClanJoinRequest", "ClanMembership", "marketplace attention events", "TrustEvent"],
+                "decision_needed": "Choose whether context arrival is enough or whether the first useful action must create evidence or commerce activity.",
+            },
+            {
+                "entry_context": "merchant/shop owner",
+                "candidate": "opens Shop Control, creates/updates a shop listing, or receives first legitimate shop attention",
+                "existing_signals": ["MarketplaceShop", "MarketplaceProduct", "MarketplaceAttentionEvent"],
+                "decision_needed": "Choose whether owner setup, public shop readiness, or buyer attention is the useful outcome.",
+            },
+            {
+                "entry_context": "community administrator",
+                "candidate": "reviews a join request, creates a governed invite, records official community evidence, or opens Command Center support work",
+                "existing_signals": ["ClanJoinRequest", "ClanInvite", "TrustEvent", "admin pilot intake"],
+                "decision_needed": "Choose whether the first useful action is governance work, member support, or evidence capture.",
+            },
+        ],
+        "not_measured_yet": [
+            "invite_opened",
+            "invite_delivered",
+            "join_form_started_before_submit",
+            "prompted_vs_voluntary_pilot_action",
+            "first_meaningful_action",
+        ],
+    }
 
 @router.get("/community-ownership/lookup")
 def admin_community_ownership_lookup(
@@ -3010,8 +3171,19 @@ def admin_pilot_intake(
                 }
                 if inviter is not None
                 else None,
+                "activation_completed": _user_activation_completed(applicant),
             }
         )
+
+    invitation_count = int(db.query(func.count(ClanInvite.id)).scalar() or 0)
+    early_activation_funnel = _early_activation_funnel_read_model(
+        invitation_count=invitation_count,
+        entry_rows=entry_rows,
+        create_stage_counts=stage_counts,
+        join_items=join_items,
+        join_stage_counts=join_stage_counts,
+        limit=int(limit),
+    )
 
     return {
         "generated_at": _dt_iso(now),
@@ -3028,6 +3200,7 @@ def admin_pilot_intake(
         },
         "create_entries": create_items,
         "join_requests": join_items,
+        "early_activation_funnel": early_activation_funnel,
     }
 
 @router.post("/activate-membership")

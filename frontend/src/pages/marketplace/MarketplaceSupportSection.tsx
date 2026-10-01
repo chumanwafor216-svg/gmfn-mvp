@@ -727,9 +727,9 @@ export default function MarketplaceSupportSection({ data }: Props) {
 
                     <ExplainToggle
                       label="What this draft status does"
-                      what="This status strip shows how far the current support draft has moved, including whether supporters are required, how many fit suggestions exist, and how many people have responded."
+                      what="This status strip shows how far the current support draft has moved, including whether supporters are required, how many planning evidence rows exist, and how many people have responded."
                       why="It turns the draft into something readable so users can tell whether they should stay here, send support requests, or continue into the next support step."
-                      next="Read the status first, then review the fit suggestions below or move into the deeper support tools only when the draft shows you what is still missing."
+                      next="Read the status first, then review the planning evidence below or move into the deeper support tools only when the draft shows you what is still missing."
                       tone="light"
                       style={{ marginTop: 12 }}
                     />
@@ -749,7 +749,7 @@ export default function MarketplaceSupportSection({ data }: Props) {
                         Required supporters: {requiredGuarantorCount}
                       </span>
                       <span style={badge(false)}>
-                        Suggested fit: {suggestedSupporters.length}
+                        Planning rows: {suggestedSupporters.length}
                       </span>
                       <span style={badge(false)}>Sent: {sentGuarantorCount}</span>
                       <span style={badge(false)}>
@@ -764,20 +764,20 @@ export default function MarketplaceSupportSection({ data }: Props) {
 
                   {requiredGuarantorCount > 0 ? (
                     <div style={softCard("#F8FBFF")}>
-                      <div style={sectionLabel()}>Fit suggestions</div>
+                      <div style={sectionLabel()}>Support planning evidence</div>
 
                       <ExplainToggle
-                        label="What these fit suggestions do"
-                        what="These suggestions show which visible community members may fit the current support request based on the draft amount and the support signals already available."
-                        why="They help the user choose who to ask next without treating supporter selection like a blind guess or a random contact list."
-                        next="Read the reason and suggested support amount first, choose only the people that make sense for this request, then continue once the chosen supporters reflect the draft."
+                        label="What this planning evidence does"
+                        what="These rows show visible support facts for the current request while keeping broader evidence separate from endorsement."
+                        why="They help the user review practical support context without treating the system as choosing or endorsing a supporter."
+                        next="Read the reason and possible support amount first, choose only the people that make sense for this request, then continue once the chosen supporters reflect the draft."
                         tone="light"
                         style={{ marginTop: 12 }}
                       />
 
                       {suggestedSupporters.length === 0 ? (
                         <div style={{ marginTop: 10, ...helperText() }}>
-                          No supporter suggestion is shown yet for this amount.
+                          No supporter planning evidence is shown yet for this amount.
                         </div>
                       ) : (
                         <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
@@ -823,7 +823,7 @@ export default function MarketplaceSupportSection({ data }: Props) {
 
                                       {safeStr(item.recommendedPledge) ? (
                                         <span style={badge(true)}>
-                                          Suggested support: {safeStr(item.recommendedPledge)}
+                                          Possible support: {safeStr(item.recommendedPledge)}
                                         </span>
                                       ) : null}
                                     </div>

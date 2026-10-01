@@ -141,6 +141,7 @@ type JoinRequestItem = {
 
 type DemandItem = {
   id?: number;
+  user_id?: number | string | null;
   is_mine?: boolean;
   mine?: boolean;
   requester_user_id?: number | string | null;
@@ -151,6 +152,7 @@ type DemandItem = {
   area?: string | null;
   payment_mode?: string | null;
   requester_trust_band?: string | null;
+  requester_display_name?: string | null;
   requester_name?: string | null;
   requester_nickname?: string | null;
   requester_email?: string | null;
@@ -1269,19 +1271,14 @@ function positiveNumber(value: unknown): number {
 function isDashboardDemandMine(item: DemandItem, user: any): boolean {
   if (item?.is_mine === true || item?.mine === true) return true;
 
-  const requesterUserId = positiveNumber(item?.requester_user_id);
+  const requesterUserId = positiveNumber(item?.user_id || item?.requester_user_id);
   const myUserId = positiveNumber(user?.id || user?.user_id || user?.userId);
   if (requesterUserId && myUserId && requesterUserId === myUserId) return true;
 
   const requesterGsnId = safeStr(item?.requester_gmfn_id).toUpperCase();
   const myGsnId = safeStr(user?.gmfn_id || user?.gmfnId || user?.gsn_id).toUpperCase();
-  if (requesterGsnId && myGsnId && requesterGsnId === myGsnId) return true;
-
-  const requesterEmail = safeStr(item?.requester_email).toLowerCase();
-  const myEmail = safeStr(user?.email).toLowerCase();
-  return Boolean(requesterEmail && myEmail && requesterEmail === myEmail);
+  return Boolean(requesterGsnId && myGsnId && requesterGsnId === myGsnId);
 }
-
 function uniqueDashboardDemandItems(items: DemandItem[]): DemandItem[] {
   const seen = new Set<string>();
   const out: DemandItem[] = [];
@@ -11327,9 +11324,12 @@ export default function DashboardPage() {
                     const itemRequesterLabel =
                       itemIsMine
                         ? "You"
-                        : safeStr(item?.requester_email) ||
-                          safeStr(item?.requester_name || item?.requester_nickname) ||
-                          "Not shown";
+                        : safeStr(
+                            item?.requester_display_name ||
+                              item?.requester_name ||
+                              item?.requester_nickname ||
+                              item?.requester_gmfn_id
+                          ) || "Not shown";
 
                     const itemFacts = [
                       {
@@ -11349,7 +11349,7 @@ export default function DashboardPage() {
                       },
                       {
                         icon: "trust" as const,
-                        label: "Trust posture",
+                        label: "General evidence",
                         value:
                           itemTrustPosture && itemTrustPosture !== "Not shown"
                             ? itemTrustPosture

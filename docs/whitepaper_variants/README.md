@@ -48,6 +48,16 @@ it still needs manual QA with
 `pilot_evidence_pack/12_product_evidence_capture/external_packet_send_ready_checklist.md`
 before sending.
 
+## TrustSlip-First Consistency Review
+
+After the 2026-09-21 TrustSlip-first positioning update, use GSN_JOURNAL_TRUSTSLIP_SUSTAINABILITY_CONSISTENCY_REVIEW_2026-09-21.md before publishing or sending the journal/whitepaper externally. The review found no major contradiction, but recommends foregrounding TrustSlip, TrustPassport, trust sustainability, and operational sustainability before any final public journal version.
+
+Updated working journal copy:
+
+- `GSN_TrustSlip_And_Trust_Sustainability_Journal_Updated_2026-09-21.docx`
+- GSN_TrustSlip_And_Trust_Sustainability_Journal_Updated_2026-09-21.md email-readable copy
+
+This is the current TrustSlip-first working version. It should still pass manual Word/Google Docs visual QA and any final reference/citation review before formal publication.
 ## Files In This Packet
 
 | File | Audience | Use |
@@ -74,7 +84,10 @@ before sending.
 | `GSN_PRODUCT_EVIDENCE_CAPTURE_STANDARD.md` | Internal use | Defines the 12-step product-evidence capture sequence, product/proof state labels, caption template, protection rules, redaction log, and acceptance checklist. |
 | `GSN_INVESTOR_DILIGENCE_QA_AND_PROOF_ROADMAP.md` | Internal use | Prepares honest answers to investor diligence questions and separates the current thesis from proof still needed. |
 | `GSN_UN_SDG_ALIGNMENT_NOTE.md` | Internal use | Keeps the UN Sustainable Development Goals alignment language honest, measurable, and reusable across white paper, grant, policy, and investor conversations. |
-| `GSN_WHITEPAPER_PACKET_ACTION_PLAN.md` | Internal use | Converts the packet into a 7-day action checklist for Chris/RGU, discovery interviews, synthesis, and investor readiness. |
+| GSN_WHITEPAPER_PACKET_ACTION_PLAN.md | Internal use | Converts the packet into a 7-day action checklist for Chris/RGU, discovery interviews, synthesis, and investor readiness. |
+| GSN_JOURNAL_TRUSTSLIP_SUSTAINABILITY_CONSISTENCY_REVIEW_2026-09-21.md | Internal/publication readiness | Reviews whether the journal/whitepaper packet contradicts the TrustSlip-first, TrustPassport, trust-sustainability, and operational-sustainability framing. |
+| GSN_TrustSlip_And_Trust_Sustainability_Journal_Updated_2026-09-21.docx | Publication working copy / Converge-RGU preparation | Updated TrustSlip-first journal copy foregrounding TrustSlip, TrustPassport, trust sustainability, operational/social sustainability, safeguards, and pilot measurement. |
+| GSN_TrustSlip_And_Trust_Sustainability_Journal_Updated_2026-09-21.md | Email-readable copy / internal reference | Markdown copy generated from the updated DOCX for lightweight sharing and review. |
 
 ## Recommended Order
 

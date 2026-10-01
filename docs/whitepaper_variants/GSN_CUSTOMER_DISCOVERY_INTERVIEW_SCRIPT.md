@@ -1,8 +1,13 @@
 # GSN Customer Discovery Interview Script
 
-Last updated: 2026-07-19
+Last updated: 2026-09-10
 
 Use this with the plain-language customer discovery copy. It is for one-to-one interviews or small groups of 2-4 people. For a full room workshop, use the RGU community discovery session pack.
+
+From 2026-09-10 onward, also apply
+`docs/GSN_CUSTOMER_DISCOVERY_PAID_PILOT_AND_SUPPORT_READINESS_PROTOCOL_2026-09-10.md`.
+Discovery remains listen-first, but after the participant understands the safe
+pilot path, the interview must test payment, sponsor, or budget-holder reality.
 
 ## Purpose
 
@@ -81,6 +86,15 @@ visual polish. Interest in screenshots is not the same as pilot pull.
 ```
 
 ## Questions To Ask
+
+For support-readiness conversations, reserve the final 5 minutes for:
+
+```text
+Who approves a pilot?
+Who could pay or sponsor it after satisfaction?
+What result would justify payment?
+What is the next dated action?
+```
 
 ### 1. Current Reality
 
@@ -289,6 +303,20 @@ Then:
 Would you be willing to join a follow-up session where we design the first safe pilot workflow?
 ```
 
+If yes or maybe, ask:
+
+```text
+If that pilot is useful and safe, who would decide whether your organisation
+pays for it, sponsors it, or asks another partner to sponsor it?
+```
+
+Then:
+
+```text
+What result would need to happen before payment or sponsorship would feel
+justified?
+```
+
 Record:
 
 ```text
@@ -297,6 +325,8 @@ Record:
 [ ] no
 Contact:
 Condition:
+Buyer or sponsor route:
+Price or payment condition:
 ```
 
 ## What Not To Say

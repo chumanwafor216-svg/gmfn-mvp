@@ -602,6 +602,40 @@ def test_public_join_invite_preview_reports_ready_invite(client):
     assert data["status"] == "ready"
     assert data["community_name"] == "Aberdeen City ICA"
     assert data["invite_id"] == 1
+    assert data["invited_by_user_id"] == 1
+    assert data["invited_by_display"] == "A GSN member"
+    assert "invited_by_email" not in data
+
+
+def test_public_join_invite_preview_uses_safe_inviter_display_without_contact(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        inviter = db.get(User, 1)
+        inviter.display_name = "Pastor Ada"
+        db.add(inviter)
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="safe-display-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    res = client.get("/clans/join-invite/preview?code=safe-display-code")
+
+    assert res.status_code == 200, res.text
+    data = res.json()
+    assert data["invited_by_user_id"] == 1
+    assert data["invited_by_display"] == "Pastor Ada"
+    assert "admin@example.com" not in json.dumps(data)
 
 
 def test_public_join_invite_preview_exposes_governance_profile(client):

@@ -2,6 +2,7 @@ import React from "react";
 import { StableButton } from "../../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../../components/GsnLegacyIcon";
 import { marketplaceSectionStyle } from "../../lib/marketplaceActionStability";
+import { getContextualEvidencePosture } from "../../lib/trustBandLanguage";
 
 type NoticePolicy = "members" | "admins";
 
@@ -370,9 +371,10 @@ function marketplaceDemandUrgencyLabel(value?: string | null): string {
 function marketplaceDemandTrustLabel(signal?: DemandSignal | null): string {
   if (!signal) return "";
   const band = firstTruthy(signal.requester_trust_band);
-  if (band) return `Trust ${band}`;
-  const score = Number(signal.requester_trust_score || 0);
-  return score > 0 ? `Trust ${score}` : "";
+  if (!band) return "";
+
+  const label = getContextualEvidencePosture(null, band).shortLabel;
+  return label && label !== "Not shown" ? `General evidence: ${label}` : "";
 }
 
 export default function MarketplaceBoardSection({

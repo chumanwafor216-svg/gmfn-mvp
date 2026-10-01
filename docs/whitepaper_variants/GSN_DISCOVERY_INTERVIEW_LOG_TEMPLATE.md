@@ -1,8 +1,13 @@
 # GSN Discovery Interview Log Template
 
-Last updated: 2026-07-19
+Last updated: 2026-09-10
 
 Use this during or immediately after each interview. The evidence memo is for synthesis later; this log is for raw capture before memory edits the facts.
+
+From 2026-09-10 onward, also apply
+`docs/GSN_CUSTOMER_DISCOVERY_PAID_PILOT_AND_SUPPORT_READINESS_PROTOCOL_2026-09-10.md`.
+After the participant understands the possible pilot path, ask who pays,
+who sponsors, and what result would justify payment or sponsorship.
 
 ## Interview Header
 
@@ -265,6 +270,60 @@ Possible pilot workflow mentioned:
 
 ```text
 
+```
+
+## Paid Pilot And Sponsor Signal
+
+Ask only after current-reality discovery and after the possible pilot path is
+understood.
+
+```text
+If this solved the workflow you described, who would have authority to approve
+paying for it?
+```
+
+```text
+After a successful pilot, would your organisation consider paying for this kind
+of community infrastructure monthly or annually?
+```
+
+```text
+If direct payment is difficult, would a sponsor-funded pilot be acceptable?
+Who could sponsor it?
+```
+
+Commercial signal:
+
+```text
+[ ] No payment signal
+[ ] Weak payment signal
+[ ] Budget-holder unknown
+[ ] Sponsor route possible
+[ ] Price test accepted
+[ ] Written commitment possible
+[ ] Paid pilot possible
+```
+
+Notes:
+
+```text
+Buyer or budget-holder named:
+Sponsor route named:
+Price range discussed:
+Payment condition:
+Written commitment possible:
+Pilot package fit:
+```
+
+## Support And Visa Evidence Tags
+
+```text
+Scottish Enterprise evidence created:
+Business Gateway evidence created:
+RGU Accelerator evidence created:
+Innovator Founder evidence created:
+Team/support need discovered:
+Next dated action:
 ```
 
 ## Next Lead

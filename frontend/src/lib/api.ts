@@ -2650,8 +2650,8 @@ export async function getLoanGuarantorSuggestions(
 
   return httpJsonPaths(
     [
-      `/loans/${encodeURIComponent(String(loanId))}/guarantors/suggestions${query}`,
       `/loans/${encodeURIComponent(String(loanId))}/guarantor-suggestions${query}`,
+      `/loans/${encodeURIComponent(String(loanId))}/guarantors/suggestions${query}`,
     ],
     "GET",
     undefined,
@@ -7959,6 +7959,7 @@ export type MarketplaceRequestItem = {
   created_at: string;
   expires_at?: string | null;
 
+  requester_display_name?: string | null;
   requester_name?: string | null;
   requester_nickname?: string | null;
   requester_gmfn_id?: string | null;

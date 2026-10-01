@@ -601,6 +601,7 @@ def _invite_preview_payload(
     qr_policy_key = None
 
     governance_profile = None
+    invited_by_display = None
     visual_payload: dict[str, Any] = {}
     if clan is not None:
         db = object_session(clan)
@@ -610,6 +611,9 @@ def _invite_preview_payload(
                 clan_id=int(clan.id),
             )
             visual_payload = _join_invite_visual_payload(db, clan)
+            if invited_by_user_id is not None:
+                inviter = db.get(User, int(invited_by_user_id))
+                invited_by_display = _public_inviter_display(inviter) or None
 
     if invite_row is not None:
         invite_id = int(invite_row.id)
@@ -644,6 +648,7 @@ def _invite_preview_payload(
         "marketplace_name": getattr(clan, "marketplace_name", None) if clan is not None else None,
         "governance_profile": governance_profile,
         "invited_by_user_id": invited_by_user_id,
+        "invited_by_display": invited_by_display,
         "expires_at": expires_at,
         "uses": uses,
         "max_uses": max_uses,
@@ -886,6 +891,32 @@ def _member_display(user: Optional[User]) -> str:
         or "A GSN member",
         "A GSN member",
     )
+
+
+def _looks_like_private_contact(value: str) -> bool:
+    text = _safe_str(value)
+    if not text:
+        return False
+    if "@" in text:
+        return True
+    digits = "".join(ch for ch in text if ch.isdigit())
+    return len(digits) >= 7
+
+
+def _public_inviter_display(user: Optional[User]) -> str:
+    if user is None:
+        return ""
+
+    for value in (
+        getattr(user, "display_name", None),
+        getattr(user, "name", None),
+        getattr(user, "full_name", None),
+    ):
+        text = _safe_str(value)
+        if text and not _looks_like_private_contact(text):
+            return text
+
+    return "A GSN member"
 
 
 def _member_row(db: Session, m: ClanMembership) -> dict[str, Any]:

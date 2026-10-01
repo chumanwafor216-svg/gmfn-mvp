@@ -14,6 +14,7 @@ import {
   getMe,
   getMeWithToken,
   getSelectedClanId,
+  markJoinRequestActivationOpened,
   observeIdentityRisk,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
@@ -693,6 +694,7 @@ export default function MemberActivationPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const noticeTimerRef = useRef<number | null>(null);
   const routeTimerRef = useRef<number | null>(null);
+  const activationOpenedMarkerRef = useRef("");
 
   const requestReady = useMemo(() => {
     return {
@@ -705,6 +707,17 @@ export default function MemberActivationPage() {
 
   const hasGsnId = Boolean(requestReady.gmfn_id);
   const hasRequestId = Boolean(requestReady.request_id);
+
+  useEffect(() => {
+    if (!requestReady.gmfn_id || !requestReady.request_id) return;
+    const marker = `${requestReady.request_id}:${requestReady.gmfn_id}`;
+    if (activationOpenedMarkerRef.current === marker) return;
+    activationOpenedMarkerRef.current = marker;
+    markJoinRequestActivationOpened(
+      requestReady.request_id,
+      requestReady.gmfn_id
+    ).catch(() => null);
+  }, [requestReady.gmfn_id, requestReady.request_id]);
 
   useEffect(() => {
     return () => {

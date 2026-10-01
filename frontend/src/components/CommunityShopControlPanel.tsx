@@ -209,7 +209,7 @@ function normalizeShop(raw: any, fallbackGmfnId: string, currentClan: any): Shop
     shopName,
     description,
     communityName,
-    trustBand: firstTruthy(src?.trust_band, src?.owner_trust_band, "Visible seller"),
+    trustBand: firstTruthy(src?.trust_band, src?.owner_trust_band),
     imageUrl,
     whatsapp: firstTruthy(src?.whatsapp_number, src?.whatsapp),
     telegram: firstTruthy(src?.telegram_handle, src?.telegram),
@@ -813,7 +813,7 @@ export default function CommunityShopControlPanel({
                     </span>
                     <span style={badge(false)}>Selected community: {communityLabel}</span>
                     <span style={badge(false)}>
-                      Shop posture: {getContextualEvidencePosture(null, shop?.trustBand).shortLabel || "Visible seller"}
+                      General evidence: {shop?.trustBand ? getContextualEvidencePosture(null, shop.trustBand).shortLabel : "Not shown"}
                     </span>
                   </div>
 

@@ -225,7 +225,7 @@ export default function CommunityCollectionPage() {
               <div style={{ ...softCard(), background: "#F5F0E6" }}>
                 <div style={label()}>Boundary</div>
                 <p style={{ ...helper(), margin: 0 }}>
-                  {safeText(record.boundary, "GSN shows a governed collection instruction only. GSN does not hold this money, confirm payment, expose church bank details, guarantee settlement, or prove impact.")}
+                  {safeText(record.boundary, "GSN shows a governed collection instruction only. GSN does not hold this money, confirm payment, expose private receiving account details, guarantee settlement, or prove impact.")}
                 </p>
               </div>
             </>

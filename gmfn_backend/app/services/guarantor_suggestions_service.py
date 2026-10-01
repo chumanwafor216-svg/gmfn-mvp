@@ -2,11 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy.orm import Session
 from fastapi import HTTPException
+from sqlalchemy.orm import Session
 
-from app.db.models import Loan, ClanMembership, LoanGuarantor, User
-from app.services.trust_score_service import trust_band_for_score, compute_trust_score_explained
+from app.db.models import ClanMembership, Loan, LoanGuarantor, User
 
 
 def suggest_guarantors_for_loan(
@@ -21,7 +20,6 @@ def suggest_guarantors_for_loan(
     if not loan:
         raise HTTPException(status_code=404, detail="Loan not found")
 
-    # exclude existing guarantors for this loan
     existing_guarantor_ids = {
         int(r[0])
         for r in db.query(LoanGuarantor.guarantor_user_id)
@@ -30,17 +28,19 @@ def suggest_guarantors_for_loan(
         if r and r[0] is not None
     }
 
-    # clan members (members + admins)
     memberships = (
         db.query(ClanMembership)
         .filter(ClanMembership.clan_id == clan_id)
         .filter(ClanMembership.role.in_(["user", "admin"]))
+        .order_by(ClanMembership.id.asc(), ClanMembership.created_at.asc())
         .all()
     )
 
     candidate_user_ids = []
-    for m in memberships:
-        uid = int(m.user_id)
+    membership_order: dict[int, int] = {}
+    for index, membership in enumerate(memberships):
+        uid = int(membership.user_id)
+        membership_order[uid] = index
         if uid == int(borrower_user_id):
             continue
         if uid in existing_guarantor_ids:
@@ -52,11 +52,9 @@ def suggest_guarantors_for_loan(
 
     users = db.query(User).filter(User.id.in_(candidate_user_ids)).all()
 
-    # simple reliability from loan_guarantors history in this clan
-    # reliability_score = approved*2 - declined - expired
     items = []
-    for u in users:
-        uid = int(u.id)
+    for user in users:
+        uid = int(user.id)
 
         total = (
             db.query(LoanGuarantor)
@@ -92,40 +90,33 @@ def suggest_guarantors_for_loan(
         )
 
         reliability_score = int(approved * 2 - declined - expired)
-
-        # trust score (stored + fallback compute)
-        trust_score = getattr(u, "trust_score", None)
-        trust_band = getattr(u, "trust_band", None)
-
-        if trust_score is None:
-            computed = compute_trust_score_explained(db, user_id=uid)
-            trust_score = computed.get("score")
-            trust_band = trust_band or trust_band_for_score(int(trust_score) if trust_score is not None else 50)[0]
-
-        if trust_band is None and trust_score is not None:
-            trust_band = trust_band_for_score(int(trust_score))[0]
-
-        # ranking: trust_score primary, reliability secondary
-        trust_score_num = int(trust_score) if trust_score is not None else 50
-        rank = trust_score_num * 1.0 + reliability_score * 0.5
-
-        reason = f"Trust {trust_score_num} (Band {trust_band or '—'}), reliability {reliability_score}, history {total} requests"
+        reason = (
+            "Same-community support history: "
+            f"{approved} accepted, {declined} declined, {expired} expired; "
+            "general Trust score/band is not used for supporter ordering."
+        )
 
         items.append(
             {
                 "user_id": uid,
-                "email": getattr(u, "email", None),
-                "trust_score": trust_score_num,
-                "trust_band": trust_band,
+                "email": getattr(user, "email", None),
+                "trust_score": None,
+                "trust_band": None,
                 "reliability_score": reliability_score,
                 "total_requests": total,
                 "approved": approved,
                 "declined": declined,
                 "expired": expired,
-                "rank": rank,
+                "rank": reliability_score,
                 "reason": reason,
             }
         )
 
-    items.sort(key=lambda x: x["rank"], reverse=True)
+    items.sort(
+        key=lambda item: (
+            -int(item["rank"]),
+            membership_order.get(int(item["user_id"]), 999999),
+            int(item["user_id"]),
+        )
+    )
     return {"loan_id": loan_id, "clan_id": clan_id, "items": items[:limit]}

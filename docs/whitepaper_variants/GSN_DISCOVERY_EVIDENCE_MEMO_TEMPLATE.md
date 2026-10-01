@@ -1,8 +1,13 @@
 # GSN Discovery Evidence Memo Template
 
-Last updated: 2026-07-19
+Last updated: 2026-09-10
 
 Use this after the first 5-10 interviews or after one structured discovery session. The purpose is to separate evidence from excitement.
+
+From 2026-09-10 onward, also apply
+`docs/GSN_CUSTOMER_DISCOVERY_PAID_PILOT_AND_SUPPORT_READINESS_PROTOCOL_2026-09-10.md`.
+Do not treat a discovery round as commercially validated unless it contains a
+payment, sponsor, budget-holder, or written-commitment signal.
 
 ## Memo Status
 
@@ -212,6 +217,36 @@ Reason:
 
 ```
 
+## Paid Pilot And Sponsor Reading
+
+```text
+[ ] No payment signal - useful learning only.
+[ ] Weak payment signal - interest exists, but commercial proof is missing.
+[ ] Budget-holder unknown - identify decision-maker before pilot.
+[ ] Sponsor route possible - pursue named sponsor or partner.
+[ ] Price test accepted - test the stated range in writing.
+[ ] Written commitment possible - request dated written confirmation.
+[ ] Paid pilot possible - prepare pilot proposal and invoice/sponsor route.
+```
+
+Buyer or sponsor hypothesis:
+
+```text
+
+```
+
+Price or support level discussed:
+
+```text
+
+```
+
+Evidence still missing before calling this commercial proof:
+
+```text
+
+```
+
 ## Investor Readiness Reading
 
 ```text
@@ -236,6 +271,40 @@ The strongest academic/customer discovery question is:
 The next responsible step is:
 
 The main safeguard issue is:
+```
+
+## What To Tell Scottish Enterprise / Business Gateway
+
+```text
+The first market evidence suggests:
+
+The first paid or sponsor-backed pilot route is:
+
+The support we need from Scottish Enterprise is:
+
+The support we need from Business Gateway is:
+
+The specialist adviser gap is:
+
+The 90-day use-of-funds question is:
+```
+
+## Innovator Founder Evidence Reading
+
+This is not immigration legal advice. Use it only to organise evidence for a
+qualified adviser or endorsing-body discussion.
+
+```text
+Innovation evidence:
+Viability evidence:
+Scalability evidence:
+Market demand evidence:
+Commercial proof:
+Founder execution evidence:
+Team evidence:
+Source-of-funds / funding-route evidence:
+Safeguard evidence:
+Unresolved visa or work-condition risk:
 ```
 
 ## What To Tell Investors

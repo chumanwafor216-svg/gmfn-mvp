@@ -398,11 +398,9 @@ export default function CommunityMarketplaceSpotlight() {
           communityId: sourceClanId || selectedClanId,
           debugId: "community-marketplace-spotlight.broadcast-marketplace",
         });
-    const trustPostureLine = activeItem.feed?.trust_band
+    const generalEvidenceLine = activeItem.feed?.trust_band
       ? getContextualEvidencePosture(null, activeItem.feed.trust_band).shortLabel
-      : activeItem.feed?.trust_score
-        ? getContextualEvidencePosture(activeItem.feed.trust_score).shortLabel
-        : "Public visibility";
+      : "Not shown";
 
     return {
       kind: "broadcast" as const,
@@ -419,7 +417,7 @@ export default function CommunityMarketplaceSpotlight() {
         `Community: ${activeItem.feed?.source_clan_name || "Current community"}`,
         `Category: ${categoryLine}`,
         `Availability: ${availabilityLine}`,
-        `Evidence: ${trustPostureLine}`,
+        `General evidence: ${generalEvidenceLine}`,
         `Posted: ${formatWhen(activeItem.feed?.created_at)}`,
       ],
       primaryLabel: gmfnId ? "Open seller shop" : "Open Marketplace",

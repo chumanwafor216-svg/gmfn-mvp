@@ -7886,7 +7886,7 @@ export default function MarketplacePage() {
 
       showNotice(
         "success",
-        "Support request created. Review fit suggestions, choose supporters, then send requests."
+        "Support request created. Review planning evidence, choose supporters yourself, then send requests."
       );
     } catch (err: any) {
       showNotice(
@@ -7914,10 +7914,10 @@ export default function MarketplacePage() {
       if ((loaded?.suggestions || []).length === 0) {
         showNotice(
           "error",
-          "No fit supporter suggestion is available for this amount right now."
+          "No supporter planning evidence is available for this amount right now."
         );
       } else {
-        showNotice("success", "Fit suggestions refreshed.");
+        showNotice("success", "Support planning evidence refreshed.");
       }
     } catch (err: any) {
       showNotice(
@@ -8086,7 +8086,7 @@ export default function MarketplacePage() {
     supportProcessBusy
       ? "GSN is working on this support step now. Other support actions are held until this response finishes."
       : loanStatusLower === "incomplete"
-      ? "Support is not complete yet. Choose another fit supporter, send the next request, or cancel the draft if it should stop."
+      ? "Support is not complete yet. Review the visible planning evidence, send the next request yourself, or cancel the draft if it should stop."
       : loanStatusLower === "approved"
       ? "Support is approved. Finance/admin still prepares the withdrawal instruction before money moves."
       : loanDraftId

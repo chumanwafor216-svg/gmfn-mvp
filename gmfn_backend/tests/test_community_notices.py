@@ -573,6 +573,7 @@ def test_community_notice_board_lists_demand_box_signals_without_response_thread
         requester = db.get(User, 2)
         requester.gmfn_id = "GSN-PLUMBER-NEED"
         requester.trust_band = "good"
+        requester.trust_score_updated_at = now
         db.add(
             MarketplaceRequest(
                 id=1,

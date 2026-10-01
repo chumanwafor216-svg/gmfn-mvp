@@ -99,6 +99,7 @@ class MarketplaceRequestOut(BaseModel):
     created_at: datetime
     expires_at: Optional[datetime] = None
 
+    requester_display_name: Optional[str] = None
     requester_name: Optional[str] = None
     requester_nickname: Optional[str] = None
     requester_gmfn_id: Optional[str] = None

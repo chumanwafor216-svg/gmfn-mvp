@@ -450,7 +450,7 @@ def test_rosca_cycle_creation_requires_paid_yearly_service(
     assert "No active ROSCA yearly service" in res.json()["detail"]
 
 
-def test_rosca_default_payout_order_prioritizes_highest_trust_score(
+def test_rosca_default_payout_order_uses_neutral_membership_order_not_trust_score(
     client,
     override_current_user,
     seed_user2_member_membership,
@@ -464,7 +464,7 @@ def test_rosca_default_payout_order_prioritizes_highest_trust_score(
         "/rosca/cycles",
         json={
             "clan_id": 1,
-            "title": "Trust ordered circle",
+            "title": "Neutral ordered circle",
             "contribution_amount": "25.00",
             "currency": "GBP",
         },
@@ -473,20 +473,18 @@ def test_rosca_default_payout_order_prioritizes_highest_trust_score(
     assert res.status_code == 200
     cycle = res.json()["cycle"]
     assert cycle["member_user_ids"] == [1, 2]
-    assert cycle["payout_order_user_ids"] == [2, 1]
-    assert cycle["rounds"][0]["payout_user_id"] == 2
+    assert cycle["payout_order_user_ids"] == [1, 2]
+    assert cycle["rounds"][0]["payout_user_id"] == 1
 
     first_meta = cycle["rounds"][0]["contributions"][0]["meta"]
     assert first_meta["payout_order_policy"]["payout_order_strategy"] == (
-        "trust_score_desc_membership_order_tiebreak"
+        "neutral_clan_membership_order"
     )
-    assert first_meta["payout_order_policy"]["trust_scores_by_user_id"] == {
-        "1": 40,
-        "2": 92,
-    }
+    assert first_meta["payout_order_policy"]["trust_scores_by_user_id"] == {}
+    assert "General Trust score, Trust band, CCI" in first_meta["payout_order_policy"]["explainable_policy"]
 
 
-def test_rosca_explicit_payout_order_overrides_trust_score_priority(
+def test_rosca_explicit_payout_order_overrides_neutral_default_order(
     client,
     override_current_user,
     seed_user2_member_membership,
@@ -701,3 +699,127 @@ def test_rosca_reconciliation_creates_contribution_and_round_ready_notifications
     obligations = obligations_res.json()["obligations"]
     assert len(obligations) == 1
     assert obligations[0]["round_number"] == 2
+
+
+def test_rosca_default_order_uses_relevant_obligation_evidence_when_available(
+    client,
+    override_current_user,
+    seed_user2_member_membership,
+):
+    _seed_rosca_yearly_service()
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO expected_payments (
+                    clan_id, user_id, expected_type, amount, currency,
+                    paid_amount, remaining_amount, reference_display,
+                    reference_normalized, status, meta_json, created_at
+                )
+                VALUES (
+                    1, 2, 'contribution', 25.00, 'GBP',
+                    25.00, 0.00, 'OLD-ROSCA-U2', 'old-rosca-u2',
+                    'confirmed', '{"source":"rosca.cycle","rosca_cycle_id":"old"}', CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+
+    res = client.post(
+        "/rosca/cycles",
+        json={
+            "clan_id": 1,
+            "title": "Evidence ordered circle",
+            "contribution_amount": "25.00",
+            "currency": "GBP",
+        },
+    )
+
+    assert res.status_code == 200, res.text
+    cycle = res.json()["cycle"]
+    assert cycle["member_user_ids"] == [1, 2]
+    assert cycle["payout_order_user_ids"] == [2, 1]
+
+    policy = cycle["rounds"][0]["contributions"][0]["meta"]["payout_order_policy"]
+    assert policy["payout_order_strategy"] == "purpose_relevant_obligation_evidence_default"
+    assert policy["trust_scores_by_user_id"] == {}
+    assert policy["cci_scores_by_user_id"] == {}
+    assert policy["obligation_evidence_by_user_id"]["2"]["completed_rosca_contributions"] == 1
+    assert policy["obligation_evidence_by_user_id"]["1"]["evidence_state"] == "not_enough_relevant_evidence"
+
+
+def test_rosca_network_breadth_alone_does_not_determine_default_priority(
+    client,
+    override_current_user,
+    seed_user2_member_membership,
+):
+    _seed_rosca_yearly_service()
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO trust_events (
+                    event_type, clan_id, actor_user_id, subject_user_id, meta_json, dedupe_key
+                )
+                VALUES
+                    ('invited_by', 1, 1, 2, '{"source":"test-network"}', 'test-network-1'),
+                    ('co_membership', 1, 1, 2, '{"source":"test-network"}', 'test-network-2'),
+                    ('successfully_onboarded', 1, 2, 1, '{"source":"test-network"}', 'test-network-3')
+                """
+            )
+        )
+
+    res = client.post(
+        "/rosca/cycles",
+        json={
+            "clan_id": 1,
+            "title": "Network neutral circle",
+            "contribution_amount": "25.00",
+            "currency": "GBP",
+        },
+    )
+
+    assert res.status_code == 200, res.text
+    cycle = res.json()["cycle"]
+    assert cycle["payout_order_user_ids"] == [1, 2]
+    policy = cycle["rounds"][0]["contributions"][0]["meta"]["payout_order_policy"]
+    assert policy["payout_order_strategy"] == "neutral_clan_membership_order"
+    assert policy["obligation_evidence_by_user_id"]["2"]["positive_signal_count"] == 0
+
+
+def test_rosca_ambiguous_adverse_history_is_not_used_as_current_failure(
+    client,
+    override_current_user,
+    seed_user2_member_membership,
+):
+    _seed_rosca_yearly_service()
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO trust_events (
+                    event_type, clan_id, actor_user_id, subject_user_id, meta_json, dedupe_key
+                )
+                VALUES
+                    ('loan_defaulted', 1, 1, 2, '{"state":"disputed","reversed_text":"true"}', 'test-adverse-1'),
+                    ('repayment_delay', 1, 1, 2, '{"state":"stale"}', 'test-adverse-2')
+                """
+            )
+        )
+
+    res = client.post(
+        "/rosca/cycles",
+        json={
+            "clan_id": 1,
+            "title": "Adverse neutral circle",
+            "contribution_amount": "25.00",
+            "currency": "GBP",
+        },
+    )
+
+    assert res.status_code == 200, res.text
+    cycle = res.json()["cycle"]
+    assert cycle["payout_order_user_ids"] == [1, 2]
+    policy = cycle["rounds"][0]["contributions"][0]["meta"]["payout_order_policy"]
+    assert policy["adverse_evidence_used"] is False
+    assert policy["obligation_evidence_by_user_id"]["2"]["adverse_evidence_used"] is False

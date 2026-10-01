@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
 
 import app.db.models as db_models
+from app.services.financial_obligation_evidence_service import build_financial_obligation_evidence
 from app.services.trust_graph_service import build_trust_graph
 
 User = db_models.User
@@ -70,13 +71,19 @@ def _band_multiplier(band: str) -> Decimal:
     return Decimal("0.35")
 
 
-def _risk_level(*, available_capacity: Decimal, exposure_ratio: Decimal, cci_score: Decimal) -> str:
-    if available_capacity <= Decimal("0") or exposure_ratio >= Decimal("1.00") or cci_score < Decimal("35"):
+def _risk_level(
+    *,
+    available_capacity: Decimal,
+    exposure_ratio: Decimal,
+    evidence_state: str,
+) -> str:
+    if available_capacity <= Decimal("0") or exposure_ratio >= Decimal("1.00"):
         return "high"
-    if exposure_ratio >= Decimal("0.60") or cci_score < Decimal("55"):
+    if exposure_ratio >= Decimal("0.60"):
         return "medium"
+    if str(evidence_state) == "not_enough_relevant_evidence":
+        return "evidence_limited"
     return "low"
-
 
 def _get_active_guarantee_rows_for_user(db: Session, user_id: int) -> List[Any]:
     if LoanGuarantor is None:
@@ -242,44 +249,46 @@ def _build_user_profile_internal(
 
     repayment_velocity = _estimate_repayment_velocity(db, int(user_id))
     cross_clan_diversity = _estimate_cross_clan_diversity(summary)
+    financial_evidence = build_financial_obligation_evidence(db, user_id=int(user_id))
     cci_score = _safe_decimal(cci.get("cci_score"), "0")
     cci_band = str(cci.get("cci_band", "E") or "E")
     trust_graph_reliability = _graph_reliability(summary, cci)
+    evidence_signal_count = _safe_int(financial_evidence.get("positive_signal_count"), 0)
+    evidence_state = str(financial_evidence.get("evidence_state") or "not_enough_relevant_evidence")
 
     if personal_pool_balance > Decimal("0"):
         exposure_ratio = _q2(current_locked_guarantees / personal_pool_balance)
     else:
         exposure_ratio = Decimal("1.00") if current_locked_guarantees > Decimal("0") else Decimal("0.00")
 
-    stressed_edge_total = _safe_int(summary.get("stressed_edge_total"), 0)
     exposure_penalty = _clamp_decimal(
-        exposure_ratio * Decimal("50") + Decimal(active_guarantee_count * 5) + Decimal(stressed_edge_total * 10),
+        exposure_ratio * Decimal("100") + Decimal(active_guarantee_count * 5),
         Decimal("0"),
         Decimal("100"),
     )
 
-    multiplier = _band_multiplier(cci_band)
-    available_capacity = _q2((personal_pool_balance * multiplier) - current_locked_guarantees)
+    multiplier = Decimal("1.00")
+    available_capacity = _q2(personal_pool_balance - current_locked_guarantees)
     if available_capacity < Decimal("0.00"):
         available_capacity = Decimal("0.00")
 
     risk_level = _risk_level(
         available_capacity=available_capacity,
         exposure_ratio=exposure_ratio,
-        cci_score=cci_score,
+        evidence_state=evidence_state,
     )
 
     reasons: List[str] = []
     if available_capacity > Decimal("0"):
         reasons.append("has_available_guarantee_capacity")
-    if cci_score >= Decimal("50"):
-        reasons.append("acceptable_cci_band")
+    if evidence_signal_count > 0:
+        reasons.append("relevant_obligation_evidence_present")
     if repayment_velocity >= Decimal("40"):
-        reasons.append("good_repayment_velocity")
-    if cross_clan_diversity > Decimal("0"):
-        reasons.append("cross_clan_trust_present")
+        reasons.append("completed_repayment_evidence_present")
     if exposure_penalty >= Decimal("50"):
         reasons.append("exposure_pressure_high")
+    if evidence_state == "not_enough_relevant_evidence":
+        reasons.append("not_enough_relevant_evidence")
 
     return {
         "user_id": int(user.id),
@@ -297,7 +306,28 @@ def _build_user_profile_internal(
         "exposure_penalty": str(_q2(exposure_penalty)),
         "guarantee_capacity_multiplier": str(_q2(multiplier)),
         "available_guarantee_capacity": str(available_capacity),
+        "current_gsn_backed_capacity": str(available_capacity),
+        "raw_available_guarantee_capacity": str(available_capacity),
+        "risk_adjusted_planning_exposure": str(available_capacity),
         "risk_level": risk_level,
+        "evidence_state": evidence_state,
+        "hard_support_facts": {
+            "personal_pool_balance": str(personal_pool_balance),
+            "current_locked_guarantees": str(current_locked_guarantees),
+            "active_guarantee_count": active_guarantee_count,
+            "overexposure_ratio": str(_q2(exposure_ratio)),
+            "available_guarantee_capacity": str(available_capacity),
+            "current_gsn_backed_capacity": str(available_capacity),
+            "raw_available_guarantee_capacity": str(available_capacity),
+        },
+        "historical_obligation_evidence": financial_evidence,
+        "general_evidence_posture": {
+            "cci_score": str(_q2(cci_score)),
+            "cci_band": cci_band,
+            "trust_graph_reliability": str(_q2(trust_graph_reliability)),
+            "cross_clan_diversity": str(_q2(cross_clan_diversity)),
+            "evidence_state": evidence_state,
+        },
         "reasons": reasons,
         "summary": {
             "active_clan_count": _safe_int(summary.get("active_clan_count"), 0),
@@ -349,6 +379,7 @@ def build_clan_liquidity_snapshot(db: Session, clan_id: int) -> Dict[str, Any]:
         "low": len([m for m in members if str(m.get("risk_level")) == "low"]),
         "medium": len([m for m in members if str(m.get("risk_level")) == "medium"]),
         "high": len([m for m in members if str(m.get("risk_level")) == "high"]),
+        "evidence_limited": len([m for m in members if str(m.get("risk_level")) == "evidence_limited"]),
     }
 
     if total_personal_pool > Decimal("0"):
@@ -361,6 +392,8 @@ def build_clan_liquidity_snapshot(db: Session, clan_id: int) -> Dict[str, Any]:
         risk_flags.append("clan_overexposed")
     if risk_counts["high"] > 0:
         risk_flags.append("high_risk_members_present")
+    if risk_counts.get("evidence_limited", 0) > 0:
+        risk_flags.append("not_enough_evidence_members_present")
     if total_available <= Decimal("0"):
         risk_flags.append("no_available_guarantee_capacity")
 
@@ -368,7 +401,8 @@ def build_clan_liquidity_snapshot(db: Session, clan_id: int) -> Dict[str, Any]:
         members,
         key=lambda m: (
             _safe_decimal(m.get("available_guarantee_capacity"), "0"),
-            _safe_decimal(m.get("cci_score"), "0"),
+            _safe_int((m.get("historical_obligation_evidence") or {}).get("positive_signal_count"), 0),
+            -_safe_int(m.get("user_id"), 0),
         ),
         reverse=True,
     )

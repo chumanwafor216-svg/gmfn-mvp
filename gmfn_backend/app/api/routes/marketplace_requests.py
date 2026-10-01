@@ -228,6 +228,35 @@ _HANDLE_PATTERN = re.compile(r"@([A-Za-z0-9][A-Za-z0-9_.-]{2,63})")
 def _safe_text(value: object) -> str:
     return str(value or "").strip()
 
+
+def _public_requester_display_name(user: User | None) -> str:
+    if not user:
+        return "GSN member"
+
+    display_name = _safe_text(getattr(user, "display_name", None))
+    if display_name:
+        return display_name
+
+    gmfn_id = _safe_text(getattr(user, "gmfn_id", None))
+    if gmfn_id:
+        return gmfn_id
+
+    user_id = getattr(user, "id", None)
+    if user_id is not None:
+        return f"GSN member {int(user_id)}"
+
+    return "GSN member"
+
+
+
+def _public_trust_posture(user: User | None) -> tuple[float | None, str | None]:
+    if not user or not getattr(user, "trust_score_updated_at", None):
+        return None, None
+
+    score = getattr(user, "trust_score", None)
+    band = _safe_text(getattr(user, "trust_band", None)) or None
+    return (float(score) if score is not None else None), band
+
 def _normalize_visibility_scope(value: str | None) -> str:
     raw = _safe_text(value).lower().replace("-", "_").replace(" ", "_")
     if raw in {
@@ -448,6 +477,7 @@ def _to_out(
     is_tagged_for_me = (
         current_user_id is not None and int(current_user_id) in mentioned_member_ids
     )
+    requester_trust_score, requester_trust_band = _public_trust_posture(owner)
     return MarketplaceRequestOut(
         id=row.id,
         clan_id=getattr(row, "clan_id", None),
@@ -466,16 +496,13 @@ def _to_out(
         status=row.status,
         created_at=row.created_at,
         expires_at=row.expires_at,
-        requester_name=getattr(owner, "email", None),
+        requester_display_name=_public_requester_display_name(owner),
+        requester_name=_public_requester_display_name(owner),
         requester_nickname=None,
         requester_gmfn_id=getattr(owner, "gmfn_id", None),
-        requester_email=getattr(owner, "email", None),
-        requester_trust_score=(
-            float(owner.trust_score)
-            if getattr(owner, "trust_score", None) is not None
-            else None
-        ),
-        requester_trust_band=getattr(owner, "trust_band", None),
+        requester_email=None,
+        requester_trust_score=requester_trust_score,
+        requester_trust_band=requester_trust_band,
         is_mine=is_mine,
         mine=is_mine,
         source=_request_source(row),

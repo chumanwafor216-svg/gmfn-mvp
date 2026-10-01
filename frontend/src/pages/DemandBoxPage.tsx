@@ -49,6 +49,7 @@ const CommunityNoticeModal = lazy(
 
 type DemandRow = {
   id?: number;
+  user_id?: number | string | null;
   title?: string | null;
   description?: string | null;
   category?: string | null;
@@ -60,6 +61,7 @@ type DemandRow = {
   status?: string | null;
   created_at?: string | null;
   expires_at?: string | null;
+  requester_display_name?: string | null;
   requester_name?: string | null;
   requester_nickname?: string | null;
   requester_gmfn_id?: string | null;
@@ -543,17 +545,9 @@ function cciLabel(me: any): string {
 
 function requesterTrustPostureLabel(row?: DemandRow | null): string {
   const band = safeStr(row?.requester_trust_band);
-  const score =
-    row?.requester_trust_score === null || row?.requester_trust_score === undefined
-      ? ""
-      : safeStr(row?.requester_trust_score);
+  if (!band) return "";
 
-  if (!band && !score) return "";
-
-  const label = getContextualEvidencePosture(
-    score || null,
-    band || undefined
-  ).shortLabel;
+  const label = getContextualEvidencePosture(null, band).shortLabel;
 
   return label && label !== "Not shown" ? label : "";
 }
@@ -689,30 +683,27 @@ function demandHasReadyWhatsApp(row: DemandRow): boolean {
 function requesterName(row: DemandRow): string {
   return (
     firstTruthy(
+      row?.requester_display_name,
       row?.requester_name,
       row?.requester_nickname,
-      row?.requester_email,
       row?.requester_gmfn_id
     ) || "Member"
   );
 }
-
 function isMineRow(row: DemandRow, me: any): boolean {
   if (row?.is_mine === true || row?.mine === true) return true;
+
+  const myUserId = positiveNumber(me?.id || me?.user_id || me?.userId);
+  const rowUserId = positiveNumber(row?.user_id);
+  if (myUserId && rowUserId && myUserId === rowUserId) return true;
 
   const myGmfnId = safeStr(me?.gmfn_id).toUpperCase();
   const rowGmfnId = safeStr(row?.requester_gmfn_id).toUpperCase();
 
   if (myGmfnId && rowGmfnId && myGmfnId === rowGmfnId) return true;
 
-  const myEmail = safeStr(me?.email).toLowerCase();
-  const rowEmail = safeStr(row?.requester_email).toLowerCase();
-
-  if (myEmail && rowEmail && myEmail === rowEmail) return true;
-
   return false;
 }
-
 function routeTarget(
   intent: CtaIntent,
   communityId: number,
@@ -1061,7 +1052,7 @@ export default function DemandBoxPage() {
         ? "Public contact path: WhatsApp contact is available from this DemandBox request."
         : "",
       requesterTrustPostureLabel(row)
-        ? `Visible trust posture: ${requesterTrustPostureLabel(row)}`
+        ? `General evidence posture: ${requesterTrustPostureLabel(row)}`
         : "",
       row?.status ? `Request status: ${safeStr(row.status)}` : "",
       row?.created_at ? `Created: ${safeDateTime(row.created_at)}` : "",
@@ -1508,7 +1499,7 @@ export default function DemandBoxPage() {
               <span style={badge(false)}>{safeStr(row?.status)}</span>
             ) : null}
             {trustPosture && scope === "community" ? (
-              <span style={badge(false)}>Trust: {trustPosture}</span>
+              <span style={badge(false)}>General evidence: {trustPosture}</span>
             ) : null}
           </div>
         </div>

@@ -89,7 +89,10 @@ export default function LoanSuggestionsPanel({
 
   return (
     <div className="rounded-2xl border bg-white p-4 shadow-sm">
-      <div className="mb-3 text-lg font-bold">Supporter Suggestions</div>
+      <div className="mb-3 text-lg font-bold">Support Planning Evidence</div>
+      <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">
+        These rows separate practical support facts from broader community evidence. They are not GSN endorsement, loan approval, or proof of financial reliability.
+      </div>
 
       <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-4">
         <div className="rounded-xl bg-slate-50 p-3">
@@ -101,7 +104,7 @@ export default function LoanSuggestionsPanel({
           <div className="font-bold">{data.target_guarantee_amount}</div>
         </div>
         <div className="rounded-xl bg-slate-50 p-3">
-          <div className="text-slate-500">Suggested Total</div>
+          <div className="text-slate-500">Possible Support Total</div>
           <div className="font-bold">{data.suggested_total}</div>
         </div>
         <div className="rounded-xl bg-slate-50 p-3">
@@ -116,12 +119,12 @@ export default function LoanSuggestionsPanel({
             <tr className="border-b text-slate-500">
               <th className="px-3 py-2">Candidate</th>
               <th className="px-3 py-2">Consistency</th>
-              <th className="px-3 py-2">Wider posture</th>
+              <th className="px-3 py-2">General evidence</th>
               <th className="px-3 py-2">Evidence</th>
               <th className="px-3 py-2">Capacity</th>
               <th className="px-3 py-2">Support</th>
-              <th className="px-3 py-2">Fit</th>
-              <th className="px-3 py-2">Risk</th>
+              <th className="px-3 py-2">Planning</th>
+              <th className="px-3 py-2">Review state</th>
             </tr>
           </thead>
           <tbody>

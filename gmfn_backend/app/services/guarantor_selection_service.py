@@ -38,28 +38,11 @@ def _target_guarantee_amount(loan: Any) -> Decimal:
     return _q2(fallback_gap)
 
 
-def _candidate_score(profile: Dict[str, Any], target_amount: Decimal) -> Decimal:
+def _capacity_fit_percent(profile: Dict[str, Any], target_amount: Decimal) -> Decimal:
     available = _safe_decimal(profile.get("available_guarantee_capacity"), "0")
-    reliability = _safe_decimal(profile.get("trust_graph_reliability"), "0")
-    cci_score = _safe_decimal(profile.get("cci_score"), "0")
-    repayment_velocity = _safe_decimal(profile.get("repayment_velocity"), "0")
-    cross_clan_diversity = _safe_decimal(profile.get("cross_clan_diversity"), "0")
-    exposure_penalty = _safe_decimal(profile.get("exposure_penalty"), "0")
-
-    amount_fit = Decimal("0")
-    if target_amount > Decimal("0"):
-        amount_fit = _clamp((available / target_amount) * Decimal("100"), Decimal("0"), Decimal("100"))
-
-    score = (
-        amount_fit * Decimal("0.35")
-        + reliability * Decimal("0.20")
-        + cci_score * Decimal("0.15")
-        + repayment_velocity * Decimal("0.15")
-        + cross_clan_diversity * Decimal("0.10")
-        - exposure_penalty * Decimal("0.15")
-    )
-    return _clamp(score, Decimal("0"), Decimal("100"))
-
+    if target_amount <= Decimal("0"):
+        return Decimal("0.00")
+    return _clamp((available / target_amount) * Decimal("100"), Decimal("0"), Decimal("100"))
 
 def build_loan_guarantor_suggestions(
     db: Session,
@@ -104,15 +87,17 @@ def build_loan_guarantor_suggestions(
         if available <= Decimal("0"):
             continue
 
-        suitability_score = _candidate_score(profile, target_amount if target_amount > Decimal("0") else loan_amount)
-        profile["suitability_score"] = str(_q2(suitability_score))
+        capacity_fit = _capacity_fit_percent(profile, target_amount if target_amount > Decimal("0") else loan_amount)
+        profile["suitability_score"] = str(_q2(capacity_fit))
+        profile["planning_score"] = str(_q2(capacity_fit))
+        profile["planning_score_semantics"] = "capacity_fit_percent_only"
         candidates.append(profile)
 
     candidates.sort(
         key=lambda c: (
-            _safe_decimal(c.get("suitability_score"), "0"),
             _safe_decimal(c.get("available_guarantee_capacity"), "0"),
-            _safe_decimal(c.get("cci_score"), "0"),
+            _safe_int((c.get("historical_obligation_evidence") or {}).get("positive_signal_count"), 0),
+            -_safe_int(c.get("user_id"), 0),
         ),
         reverse=True,
     )
@@ -143,7 +128,14 @@ def build_loan_guarantor_suggestions(
                 "current_locked_guarantees": candidate.get("current_locked_guarantees"),
                 "available_guarantee_capacity": candidate.get("available_guarantee_capacity"),
                 "suggested_pledge": str(_q2(suggested_pledge)),
+                "planning_score": candidate.get("planning_score"),
+                "planning_score_semantics": candidate.get("planning_score_semantics"),
                 "suitability_score": candidate.get("suitability_score"),
+                "evidence_state": candidate.get("evidence_state"),
+                "hard_support_facts": candidate.get("hard_support_facts", {}),
+                "historical_obligation_evidence": candidate.get("historical_obligation_evidence", {}),
+                "current_willingness": "unknown_until_explicit_response",
+                "general_evidence_posture": candidate.get("general_evidence_posture", {}),
                 "reasons": candidate.get("reasons", []),
             }
         )
@@ -160,4 +152,23 @@ def build_loan_guarantor_suggestions(
         "suggested_total": str(suggested_total),
         "remaining_gap_after_suggestions": str(_q2(remaining)),
         "suggestions": selected,
+        "semantics": {
+            "purpose": "support_planning_evidence",
+            "not_endorsement": True,
+            "hard_support_facts": [
+                "available_guarantee_capacity",
+                "current_locked_guarantees",
+                "active_guarantee_count",
+            ],
+            "general_evidence_posture": [
+                "cci_score",
+                "cci_band",
+                "trust_graph_reliability",
+                "cross_clan_diversity",
+            ],
+            "boundary": (
+                "Suggestions are planning evidence only. They do not approve a loan, "
+                "choose a supporter, prove financial reliability, prove willingness, or endorse a person."
+            ),
+        },
     }

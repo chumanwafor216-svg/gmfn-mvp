@@ -12,6 +12,7 @@ Status: steward trial setup in progress; handover and verified release blocked u
 - A pilot intake email with setup questions was sent to the existing Felix / Pillar of Hope thread on 2026-09-11.
 - No filled intake reply from Felix was found after the 2026-09-11 pilot setup email during the 2026-09-13 mail check.
 - On 2026-09-13, the product owner reported that Mr Felix gave express permission to restart the Pillar of Hope trial setup. Treat this as permission to prepare the GSN steward/trial shell only, not as final institutional handover evidence until the assent/approval is captured in chat or email.
+- On 2026-09-13, the product owner reported sending Mr Felix a WhatsApp prompt asking him to reply by email so the pre-handover build authorization can be recorded. Treat this as an owner-reported outreach step until the email reply, screenshot, or message copy is attached.
 
 ## Truth Boundary
 
@@ -61,7 +62,7 @@ After a real Community Domain draft exists, the owner/dashboard route is:
 
 1. Use the trial route for presentation and setup preparation without claiming final handover.
 2. If preparing a hidden shell, use Command Centre steward setup for `Pillar of Hope`.
-3. Keep the community status as `steward_setup` until written assent/approval is captured in chat or email.
+3. Keep the community status as `steward_setup` until written assent/approval is captured in chat or email; the 2026-09-13 WhatsApp prompt is only a bridge to get that email record.
 4. Once Felix/Pillar confirms authority in writing, repair/release the normal community owner to the confirmed GSN identity.
 5. Create the Community Domain draft only after the owner has a normal GSN community anchor.
 6. Use domain name `pillar-of-hope`, display name `Pillar of Hope`, and template `ngo_project_network`.
@@ -83,6 +84,6 @@ After a real Community Domain draft exists, the owner/dashboard route is:
 
 ## Devil's Advocate
 
-The app can show and prepare the Pillar setup journey today. It cannot honestly show Pillar as handed over, a confirmed live customer, or a verified institution until the written assent/approval and papers are attached.
+The app can show and prepare the Pillar setup journey today. It cannot honestly show Pillar as handed over, a confirmed live customer, or a verified institution until the written assent/approval and papers are attached. The WhatsApp request is useful process evidence, but the stronger proof is Felix/Pillar replying by email or providing an attachable written approval artefact.
 
 The right move is to demonstrate the Community Domain operating model, then use Felix's written reply or approval trail to turn the prepared shell into an authorised pilot workspace.

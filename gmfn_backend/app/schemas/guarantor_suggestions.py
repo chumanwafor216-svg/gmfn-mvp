@@ -5,7 +5,7 @@ from pydantic import BaseModel
 class GuarantorSuggestionRow(BaseModel):
     user_id: int
     email: Optional[str] = None
-    trust_score: int
+    trust_score: Optional[int] = None
     trust_band: Optional[str] = None
     reliability_score: int
     total_requests: int
