@@ -903,7 +903,11 @@ async function fetchFirstJson(
           globalThis.clearTimeout(timer);
         }
 
-        if (!res.ok) continue;
+        if (!res.ok) {
+          const trustSlipBlocker = await trustSlipBlockedSummaryFromResponse(res, path);
+          if (trustSlipBlocker) return trustSlipBlocker;
+          continue;
+        }
 
         const contentType = String(
           res.headers.get("content-type") || ""
@@ -921,6 +925,92 @@ async function fetchFirstJson(
   return null;
 }
 
+async function trustSlipBlockedSummaryFromResponse(
+  res: Response,
+  path: string
+): Promise<Record<string, any> | null> {
+  if (!path.includes("/trust-slips/me")) return null;
+
+  let raw = "";
+  try {
+    raw = await res.text();
+  } catch {
+    raw = "";
+  }
+
+  let message = raw;
+  try {
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (Array.isArray(parsed?.detail)) {
+      message = parsed.detail
+        .map((item: any) => firstTruthy(item?.msg, item?.message))
+        .filter(Boolean)
+        .join(" ");
+    } else {
+      message = firstTruthy(parsed?.detail, parsed?.message, raw);
+    }
+  } catch {
+    message = raw;
+  }
+
+  const lower = safeStr(message).toLowerCase();
+  if (!lower) return null;
+
+  if (res.status === 401 || res.status === 403) return null;
+
+  if (lower.includes("phone")) {
+    return {
+      ok: false,
+      verified: false,
+      active: false,
+      status: "pending",
+      reason: "phone_unverified",
+      detail: "Verify your phone number to activate TrustSlip portability.",
+    };
+  }
+
+  if (
+    lower.includes("no active clan membership") ||
+    lower.includes("no active community")
+  ) {
+    return {
+      ok: false,
+      verified: false,
+      active: false,
+      status: "pending",
+      reason: "community_membership_required",
+      detail:
+        "Join or create a community before GSN can issue a TrustSlip. TrustSlip needs a community anchor so the evidence has provenance.",
+    };
+  }
+
+  if (
+    lower.includes("not an active member") ||
+    lower.includes("selected community") ||
+    lower.includes("selected clan")
+  ) {
+    return {
+      ok: false,
+      verified: false,
+      active: false,
+      status: "pending",
+      reason: "selected_community_required",
+      detail:
+        "Choose a community where your membership is active, then generate the TrustSlip again.",
+    };
+  }
+
+  return {
+    ok: false,
+    verified: false,
+    active: false,
+    status: "pending",
+    reason: "trustslip_issue_blocked",
+    detail:
+      safeStr(message) ||
+      "GSN could not issue this TrustSlip yet. Check your phone verification and community membership first.",
+  };
+}
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 24,
@@ -1860,7 +1950,7 @@ async function fetchCanonicalTrustSlipSummary(
 
   const promise = fetchFirstJson([canonicalPath], clanHeaders)
     .then((result) => {
-      if (result) {
+      if (result && result.ok !== false) {
         trustSlipSummaryStartupCache = {
           key,
           value: result,
@@ -2334,6 +2424,11 @@ export default function TrustSlipPage() {
         return `${identityPath}${separator}task=phone&mode=complete`;
       })(),
       trust: routeTarget("trust", selectedClanId, "trust-slip.route.trust"),
+      communityHome: routeTarget(
+        "communityHome",
+        selectedClanId,
+        "trust-slip.route.community"
+      ),
       guide: routeTarget("profile", selectedClanId, "trust-slip.route.guide"),
     }),
     [selectedClanId]
@@ -2969,10 +3064,35 @@ export default function TrustSlipPage() {
     !trustSlipCode &&
     (trustSlipIssueReason === "phone_unverified" ||
       /verify your phone/i.test(safeStr(summary?.detail)));
+  const trustSlipBlockedByCommunity =
+    !trustSlipCode &&
+    ["community_membership_required", "selected_community_required"].includes(
+      trustSlipIssueReason
+    );
+  const trustSlipBlockedByIssue =
+    !trustSlipCode && trustSlipIssueReason === "trustslip_issue_blocked";
+  const trustSlipHasSetupBlocker =
+    trustSlipBlockedByPhone ||
+    trustSlipBlockedByCommunity ||
+    trustSlipBlockedByIssue;
   const trustSlipBlockDetail = firstTruthy(
     summary?.detail,
-    "Verify your phone number to activate TrustSlip portability."
+    trustSlipBlockedByCommunity
+      ? "Join or create a community before GSN can issue a TrustSlip. TrustSlip needs a community anchor so the evidence has provenance."
+      : "Verify your phone number to activate TrustSlip portability."
   );
+  const trustSlipBlockTitle = trustSlipBlockedByPhone
+    ? "Phone verification needed"
+    : trustSlipBlockedByCommunity
+      ? "Community anchor needed"
+      : trustSlipBlockedByIssue
+        ? "TrustSlip cannot be issued yet"
+        : "TrustSlip setup needed";
+  const trustSlipBlockFirstStep = trustSlipBlockedByPhone
+    ? "Verify your phone, then return here to generate the TrustSlip."
+    : trustSlipBlockedByCommunity
+      ? "Open Community Home and join or create the community that should anchor this TrustSlip."
+      : "Check phone verification and active community membership first.";
 
   const verifyPath = useMemo(() => {
     const basePath = trustSlipVerifyFrontendPath(
@@ -4602,6 +4722,53 @@ export default function TrustSlipPage() {
                   The full TrustSlip opens after GSN refreshes it for this exact choice.
                 </div>
               </div>
+              {trustSlipHasSetupBlocker ? (
+                <div
+                  data-gsn-trustslip-setup-blocker="true"
+                  style={{
+                    position: "relative",
+                    zIndex: 1,
+                    borderRadius: 16,
+                    border: "1px solid rgba(200,58,58,0.22)",
+                    background: "#FFF7F7",
+                    padding: isCompact ? "11px 12px" : "13px 14px",
+                    display: "grid",
+                    gap: 6,
+                  }}
+                >
+                  <div style={{ ...sectionLabel(), color: "#991B1B" }}>TrustSlip not ready</div>
+                  <div
+                    style={{
+                      color: "#07172C",
+                      fontSize: isCompact ? 14 : 15,
+                      fontWeight: 950,
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    {trustSlipBlockTitle}
+                  </div>
+                  <div
+                    style={{
+                      color: "#526579",
+                      fontSize: isCompact ? 12 : 13,
+                      fontWeight: 850,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {trustSlipBlockDetail}
+                  </div>
+                  <div
+                    style={{
+                      color: "#7A4A00",
+                      fontSize: isCompact ? 12 : 13,
+                      fontWeight: 900,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    First step: {trustSlipBlockFirstStep}
+                  </div>
+                </div>
+              ) : null}
               <div
                 data-gsn-trustslip-purpose-mobile-select="setup"
                 style={{
@@ -4735,21 +4902,33 @@ export default function TrustSlipPage() {
                       navigateWithOrigin(navigate, routes.identityPhone, location);
                       return;
                     }
+                    if (trustSlipBlockedByCommunity) {
+                      navigateWithOrigin(navigate, routes.communityHome, location);
+                      return;
+                    }
                     void refreshTrustSlip();
                   }}
                   busy={refreshing}
-                  busyLabel={trustSlipBlockedByPhone ? "Opening..." : "Generating..."}
+                  busyLabel={trustSlipHasSetupBlocker ? "Opening..." : "Generating..."}
                   fullWidth
                   stableHeight={isCompact ? 54 : 52}
                   debugId="trust-slip.setup.submit"
                   style={trustSlipPrimaryActionStyle(isCompact)}
                 >
                   {trustSlipIconBadge(
-                    trustSlipBlockedByPhone ? "phone" : "refresh",
+                    trustSlipBlockedByPhone
+                      ? "phone"
+                      : trustSlipBlockedByCommunity
+                        ? "community"
+                        : "refresh",
                     isCompact ? 26 : 28,
                     "blue"
                   )}
-                  {trustSlipBlockedByPhone ? "Verify phone" : "Generate TrustSlip"}
+                  {trustSlipBlockedByPhone
+                    ? "Verify phone"
+                    : trustSlipBlockedByCommunity
+                      ? "Open Community"
+                      : "Generate TrustSlip"}
                 </PrimaryButton>
                 {trustSlipCode ? (
                   <SecondaryButton
@@ -5146,21 +5325,33 @@ export default function TrustSlipPage() {
                     navigateWithOrigin(navigate, routes.identityPhone, location);
                     return;
                   }
+                  if (trustSlipBlockedByCommunity) {
+                    navigateWithOrigin(navigate, routes.communityHome, location);
+                    return;
+                  }
                   void refreshTrustSlip();
                 }}
                 busy={refreshing}
-                busyLabel={trustSlipBlockedByPhone ? "Opening..." : "Refreshing..."}
+                busyLabel={trustSlipHasSetupBlocker ? "Opening..." : "Refreshing..."}
                 fullWidth
                 stableHeight={isCompact ? 52 : 50}
                 debugId="trust-slip.scope.refresh"
                 style={trustSlipPrimaryActionStyle(isCompact)}
               >
                 {trustSlipIconBadge(
-                  trustSlipBlockedByPhone ? "phone" : "refresh",
+                  trustSlipBlockedByPhone
+                      ? "phone"
+                      : trustSlipBlockedByCommunity
+                        ? "community"
+                        : "refresh",
                   isCompact ? 26 : 28,
                   "blue"
                 )}
-                {trustSlipBlockedByPhone ? "Verify phone" : "Refresh TrustSlip"}
+                {trustSlipBlockedByPhone
+                    ? "Verify phone"
+                    : trustSlipBlockedByCommunity
+                      ? "Open Community"
+                      : "Refresh TrustSlip"}
               </PrimaryButton>
             </div>
 
@@ -7454,16 +7645,24 @@ export default function TrustSlipPage() {
                       navigateWithOrigin(navigate, routes.identityPhone, location);
                       return;
                     }
+                    if (trustSlipBlockedByCommunity) {
+                      navigateWithOrigin(navigate, routes.communityHome, location);
+                      return;
+                    }
                     void refreshTrustSlip();
                   }}
                   busy={refreshing}
-                  busyLabel={trustSlipBlockedByPhone ? "Opening..." : "Refreshing..."}
+                  busyLabel={trustSlipHasSetupBlocker ? "Opening..." : "Refreshing..."}
                   stableHeight={isCompact ? 52 : 50}
                   fullWidth={isCompact}
                   minWidth={isCompact ? undefined : 190}
                   debugId="trust-slip.hero.prepare-verify"
                 >
-                  {trustSlipBlockedByPhone ? "Verify phone" : "Refresh TrustSlip"}
+                  {trustSlipBlockedByPhone
+                    ? "Verify phone"
+                    : trustSlipBlockedByCommunity
+                      ? "Open Community"
+                      : "Refresh TrustSlip"}
                 </PrimaryButton>
               )}
 
