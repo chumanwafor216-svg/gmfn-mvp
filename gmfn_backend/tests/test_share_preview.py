@@ -128,3 +128,31 @@ def test_vault_request_card_png_uses_vault_branding(client, monkeypatch):
     assert res.headers["content-type"].startswith("image/png")
     assert res.content.startswith(b"\x89PNG\r\n\x1a\n")
     assert len(res.content) > 10_000
+
+
+def test_share_join_preview_exposes_open_graph_card(client, monkeypatch):
+    monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://pilot.gsn.example")
+    monkeypatch.setenv("PUBLIC_API_URL", "https://api.gsn.example")
+    _seed_public_shop()
+
+    res = client.get("/share/join/share-invite?community_code=GMFN-C-SHARE&qr_policy=market_access")
+
+    assert res.status_code == 200
+    assert 'property="og:title"' in res.text
+    assert "Fresh rice bag | Share Clan GSN invite" in res.text
+    assert "GSN invite pack. Tap to request access. Approval required." in res.text
+    assert "https://api.gsn.example/share/join/share-invite/card.png?community_code=GMFN-C-SHARE&amp;qr_policy=market_access" in res.text
+    assert 'property="og:image:type" content="image/png"' in res.text
+    assert "https://pilot.gsn.example/start/join/share-invite?invite=share-invite&amp;community_code=GMFN-C-SHARE&amp;community_name=Share+Clan&amp;marketplace_name=Share+Clan&amp;qr_policy=market_access" in res.text
+
+
+def test_share_join_card_png_uses_invite_branding(client, monkeypatch):
+    monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://pilot.gsn.example")
+    _seed_public_shop()
+
+    res = client.get("/share/join/share-invite/card.png?community_code=GMFN-C-SHARE")
+
+    assert res.status_code == 200
+    assert res.headers["content-type"].startswith("image/png")
+    assert res.content.startswith(b"\x89PNG\r\n\x1a\n")
+    assert len(res.content) > 10_000

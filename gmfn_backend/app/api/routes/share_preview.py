@@ -5,14 +5,14 @@ from io import BytesIO
 from html import escape
 from textwrap import wrap
 from typing import Any, Optional
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse, Response
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from sqlalchemy.orm import Session
 
-from app.db.models import MarketplaceProduct, MarketplaceShop, User
+from app.db.models import Clan, ClanInvite, MarketplaceProduct, MarketplaceShop, User
 from app.deps import get_db
 
 router = APIRouter(prefix="/share", tags=["share-preview"])
@@ -198,6 +198,190 @@ def _vault_request_card_url(request: Request, gmfn_id: str) -> str:
     base = _public_api_origin(request)
     path = f"/share/vault-request/{quote(_safe_str(gmfn_id), safe='')}/card.png"
     return f"{base}{path}"
+
+
+def _join_invite_query(
+    code: str,
+    *,
+    clan: Optional[Clan],
+    community_code: str = "",
+    qr_policy: str = "",
+) -> str:
+    resolved_community_code = _safe_str(community_code) or _safe_str(getattr(clan, "community_code", None))
+    resolved_community_name = _safe_str(getattr(clan, "name", None))
+    resolved_marketplace_name = _safe_str(getattr(clan, "marketplace_name", None)) or resolved_community_name
+    params = {
+        "invite": _safe_str(code),
+        "community_code": resolved_community_code,
+        "community_name": resolved_community_name,
+        "marketplace_name": resolved_marketplace_name,
+        "qr_policy": _safe_str(qr_policy),
+    }
+    return urlencode({key: value for key, value in params.items() if _safe_str(value)})
+
+
+def _join_frontend_url(
+    code: str,
+    *,
+    clan: Optional[Clan],
+    community_code: str = "",
+    qr_policy: str = "",
+) -> str:
+    base = _public_frontend_origin()
+    safe_code = quote(_safe_str(code), safe="")
+    query = _join_invite_query(
+        code,
+        clan=clan,
+        community_code=community_code,
+        qr_policy=qr_policy,
+    )
+    return f"{base}/start/join/{safe_code}{'?' + query if query else ''}"
+
+
+def _join_share_page_url(
+    request: Request,
+    code: str,
+    *,
+    community_code: str = "",
+    qr_policy: str = "",
+) -> str:
+    base = _public_api_origin(request)
+    safe_code = quote(_safe_str(code), safe="")
+    params = {
+        "community_code": _safe_str(community_code),
+        "qr_policy": _safe_str(qr_policy),
+    }
+    query = urlencode({key: value for key, value in params.items() if _safe_str(value)})
+    return f"{base}/share/join/{safe_code}{'?' + query if query else ''}"
+
+
+def _join_share_card_url(
+    request: Request,
+    code: str,
+    *,
+    community_code: str = "",
+    qr_policy: str = "",
+) -> str:
+    base = _public_api_origin(request)
+    safe_code = quote(_safe_str(code), safe="")
+    params = {
+        "community_code": _safe_str(community_code),
+        "qr_policy": _safe_str(qr_policy),
+    }
+    query = urlencode({key: value for key, value in params.items() if _safe_str(value)})
+    return f"{base}/share/join/{safe_code}/card.png{'?' + query if query else ''}"
+
+
+def _get_join_invite_context(
+    db: Session,
+    *,
+    code: str,
+    community_code: str = "",
+) -> tuple[Optional[Clan], Optional[ClanInvite]]:
+    clean_code = _safe_str(code)
+    invite_row = None
+    if clean_code:
+        invite_row = (
+            db.query(ClanInvite)
+            .filter(ClanInvite.code == clean_code)
+            .order_by(ClanInvite.created_at.desc(), ClanInvite.id.desc())
+            .first()
+        )
+        if invite_row is not None:
+            clan = db.get(Clan, int(invite_row.clan_id))
+            if clan is not None:
+                return clan, invite_row
+
+        legacy_clan = (
+            db.query(Clan)
+            .filter(Clan.invite_code == clean_code)
+            .order_by(Clan.id.desc())
+            .first()
+        )
+        if legacy_clan is not None:
+            return legacy_clan, None
+
+    clean_community_code = _safe_str(community_code)
+    if clean_community_code:
+        clan = (
+            db.query(Clan)
+            .filter(Clan.community_code == clean_community_code)
+            .order_by(Clan.id.desc())
+            .first()
+        )
+        if clan is not None:
+            return clan, invite_row
+
+    return None, invite_row
+
+
+def _join_invite_preview_payload(
+    db: Session,
+    *,
+    code: str,
+    community_code: str = "",
+    qr_policy: str = "",
+) -> dict[str, str]:
+    clan, invite_row = _get_join_invite_context(
+        db,
+        code=code,
+        community_code=community_code,
+    )
+    shop = None
+    product = None
+    if clan is not None:
+        shop = (
+            db.query(MarketplaceShop)
+            .filter(MarketplaceShop.clan_id == int(clan.id))
+            .filter(MarketplaceShop.is_active.is_(True))
+            .order_by(MarketplaceShop.created_at.desc(), MarketplaceShop.id.desc())
+            .first()
+        )
+        if shop is not None:
+            product = (
+                db.query(MarketplaceProduct)
+                .filter(MarketplaceProduct.shop_id == int(shop.id))
+                .filter(MarketplaceProduct.clan_id == int(clan.id))
+                .filter(MarketplaceProduct.is_active.is_(True))
+                .filter(MarketplaceProduct.visibility_mode.in_(PUBLIC_VISIBILITY_MODES))
+                .order_by(MarketplaceProduct.created_at.desc(), MarketplaceProduct.id.desc())
+                .first()
+            )
+
+    resolved_community_code = _safe_str(getattr(clan, "community_code", None)) or _safe_str(community_code) or "GSN INVITE"
+    community_name = _safe_str(getattr(clan, "name", None), "GSN community")
+    marketplace_name = _safe_str(getattr(clan, "marketplace_name", None)) or community_name
+    shop_name = _safe_str(getattr(shop, "name", None)) or marketplace_name
+    product_name = _safe_str(getattr(product, "name", None))
+    product_line = product_name or "GSN access invite"
+    title = (
+        f"{product_line} | {marketplace_name} GSN invite"
+        if product is not None
+        else f"{marketplace_name} | GSN invite"
+    )
+    description = "GSN invite pack. Tap to request access. Approval required."
+    policy = _safe_str(qr_policy) or _safe_str(getattr(invite_row, "qr_policy_key", None))
+    target_url = _join_frontend_url(
+        code,
+        clan=clan,
+        community_code=resolved_community_code,
+        qr_policy=policy,
+    )
+
+    return {
+        "gmfn_id": resolved_community_code,
+        "owner_name": community_name,
+        "shop_name": shop_name,
+        "product_line": product_line,
+        "trust_line": "Request access - approval required",
+        "title": title,
+        "description": description,
+        "price": _money_text(product),
+        "target_url": target_url,
+        "community_name": community_name,
+        "marketplace_name": marketplace_name,
+        "invite_code": _safe_str(code),
+    }
 
 
 def _share_page_url(
@@ -526,6 +710,111 @@ def _draw_share_card_png(
     image.convert("RGB").save(out, format="PNG", optimize=True)
     return out.getvalue()
 
+
+@router.get("/join/{code}", response_class=HTMLResponse)
+def public_join_invite_share_preview(
+    code: str,
+    request: Request,
+    community_code: Optional[str] = Query(default=None),
+    qr_policy: Optional[str] = Query(default=None),
+    entry_policy: Optional[str] = Query(default=None),
+    db: Session = Depends(get_db),
+) -> HTMLResponse:
+    policy = _safe_str(qr_policy) or _safe_str(entry_policy)
+    payload = _join_invite_preview_payload(
+        db,
+        code=code,
+        community_code=_safe_str(community_code),
+        qr_policy=policy,
+    )
+    target_url = payload["target_url"]
+    share_url = _join_share_page_url(
+        request,
+        payload["invite_code"],
+        community_code=payload["gmfn_id"],
+        qr_policy=policy,
+    )
+    image_url = _join_share_card_url(
+        request,
+        payload["invite_code"],
+        community_code=payload["gmfn_id"],
+        qr_policy=policy,
+    )
+    title = escape(payload["title"])
+    description = escape(payload["description"])
+    target = escape(target_url, quote=True)
+
+    html = f"""<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content="{description}" />
+    <link rel="canonical" href="{escape(share_url, quote=True)}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Global Support Network" />
+    <meta property="og:title" content="{title}" />
+    <meta property="og:description" content="{description}" />
+    <meta property="og:url" content="{escape(share_url, quote=True)}" />
+    <meta property="og:image" content="{escape(image_url, quote=True)}" />
+    <meta property="og:image:secure_url" content="{escape(image_url, quote=True)}" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="GSN community invite poster" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{title}" />
+    <meta name="twitter:description" content="{description}" />
+    <meta name="twitter:image" content="{escape(image_url, quote=True)}" />
+    <meta http-equiv="refresh" content="1;url={target}" />
+    <style>
+      body {{ margin: 0; min-height: 100vh; display: grid; place-items: center; background: #061827; color: #fff; font-family: Arial, sans-serif; }}
+      main {{ max-width: 620px; margin: 24px; padding: 28px; border-radius: 28px; background: #fff; color: #07172C; }}
+      a {{ color: #0B4EA2; font-weight: 800; }}
+    </style>
+  </head>
+  <body>
+    <main>
+      <p>Opening the GSN invite...</p>
+      <p><a href="{target}">Open invite now</a></p>
+    </main>
+  </body>
+</html>"""
+    return HTMLResponse(
+        content=html,
+        headers={"Cache-Control": "public, max-age=300"},
+    )
+
+
+@router.get("/join/{code}/card.png")
+def public_join_invite_share_card_png(
+    code: str,
+    request: Request,
+    community_code: Optional[str] = Query(default=None),
+    qr_policy: Optional[str] = Query(default=None),
+    entry_policy: Optional[str] = Query(default=None),
+    db: Session = Depends(get_db),
+) -> Response:
+    policy = _safe_str(qr_policy) or _safe_str(entry_policy)
+    payload = _join_invite_preview_payload(
+        db,
+        code=code,
+        community_code=_safe_str(community_code),
+        qr_policy=policy,
+    )
+    png = _draw_share_card_png(
+        payload,
+        target_url=payload["target_url"],
+        block=None,
+        eyebrow="GSN INVITE",
+        block_label_override="Join request",
+    )
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=300"},
+    )
 
 @router.get("/vault-request/{gmfn_id}", response_class=HTMLResponse)
 def public_vault_request_share_preview(

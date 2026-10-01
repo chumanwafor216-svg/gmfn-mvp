@@ -57,7 +57,7 @@
 - Status: Frontend follow-up queue refinement implemented locally so the attention strip tells admins how many due/overdue pastoral follow-up records are being shown out of the backend queue total and when resolved due rows have been hidden.
 - Screen affected: `/app/community-domain/:communityDomainId` Governance -> Real-life record -> Activity -> Recent attention queue.
 - Files updated: `frontend/src/pages/communityDomainDashboard/RealLifeRecordPanel.tsx`, `frontend/tools/audit-community-domain-product-contracts.mjs`, and this handoff note.
-- Frontend impact: the attention helper now uses backend `queueTotal`, `rowTotal`, and `resolvedReferenceTotal` to replace the old fixed “shows up to five” text with a live, bounded-queue explanation while preserving the non-reminder boundary.
+- Frontend impact: the attention helper now uses backend `queueTotal`, `rowTotal`, and `resolvedReferenceTotal` to replace the old fixed ï¿½shows up to fiveï¿½ text with a live, bounded-queue explanation while preserving the non-reminder boundary.
 - Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`, `npm --prefix frontend run build`, and `git diff --check` for touched files.
 - Publish status: local only. Per product-owner instruction, do not push or trigger Render until the current work batch is finished.
 - Devil truth: this makes the queue display more honest, but it still does not create a formal task lifecycle, reminders, owner acceptance, indexed follow-up storage, or safeguarding escalation.
@@ -162182,3 +162182,9 @@ Operational note:
 - Guardrails changed: `frontend/tools/audit-existing-community-invite-line.mjs`, `frontend/tools/audit-share-tag-actions.mjs`, and `frontend/tools/audit-institutional-proof-surfaces.mjs` now cage the compact sender-aware share contract and the branded promo-pack received page.
 - Devil truth: this makes the received page look like the foundation for a priced advert/promotion pack, but WhatsApp link-preview images still require backend/social-preview metadata and real product/shop image fields. Current join preview data does not reliably carry product photos or shop logos into this page.
 - Verification passed: `npm --prefix frontend run audit:existing-community-invite-line`; `npm --prefix frontend run audit:share-tag-actions`; `npm --prefix frontend run audit:proof-surfaces`; `npm --prefix frontend run audit:entry-auth`; `npm --prefix frontend run audit:member-entry-actions`; `npm --prefix frontend run audit:demand-box-front-package`; `npm --prefix frontend run build`; targeted `git diff --check` for touched files.
+
+## 2026-10-01 - Join invite advert preview card hooks
+- Added `/share/join/{code}` and `/share/join/{code}/card.png` public preview endpoints so WhatsApp/social shares can show a compact GSN invite advert card instead of expanding the long join page text.
+- Updated invite share URLs from Marketplace and Community invite generation to use the public share-preview URL while preserving compact copied text and QR/community context.
+- Added shop/product visual fields to join-invite preview payloads; Join Entry now displays a real product/shop/community image in the branded invite pack when one is available, with the GSN storefront icon as fallback.
+- Verified with `python -m pytest gmfn_backend\tests\test_share_preview.py`, frontend invite/share/proof audits, entry-auth audit, and `npm --prefix frontend run build`.

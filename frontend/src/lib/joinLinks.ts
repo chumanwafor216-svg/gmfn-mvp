@@ -1,6 +1,7 @@
 import {
   canonicalPublicFrontendUrl,
   publicFrontendOrigin,
+  publicApiUrl,
   shareablePublicFrontendUrl,
 } from "./publicLinks";
 
@@ -71,6 +72,17 @@ function compactJoinInviteContextQuery(rawLink: string): string {
   } catch {
     return "";
   }
+}
+
+export function joinInviteSocialPreviewUrl(rawLink: string): string {
+  const direct = safeText(rawLink);
+  if (!direct) return "";
+
+  const code = inviteCodeFromLink(direct);
+  if (!code) return "";
+
+  const query = compactJoinInviteContextQuery(direct);
+  return publicApiUrl(`/share/join/${encodeURIComponent(code)}${query}`);
 }
 
 export function compactJoinInviteUrl(rawLink: string): string {

@@ -43,6 +43,7 @@ import {
   saveJoinEntryDraft,
 } from "../lib/entryDraft";
 import { buildJoinInviteLetter } from "../lib/joinInviteMessaging";
+import { publicApiUrl } from "../lib/publicLinks";
 import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import { structuredErrorDetail } from "../lib/structuredErrors";
 
@@ -300,6 +301,14 @@ function invitationPromotionShopTileStyle(isCompact: boolean): React.CSSProperti
   };
 }
 
+function invitationPromotionImageStyle(): React.CSSProperties {
+  return {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    display: "block",
+  };
+}
 function invitationPromotionGsnBadgeStyle(isCompact: boolean): React.CSSProperties {
   return {
     position: "absolute",
@@ -1162,6 +1171,15 @@ function humanInviterLabel(rawInviter: string): string {
   return v;
 }
 
+function resolveInviteMediaUrl(value: unknown): string {
+  const raw = cleanText(value);
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith("/uploads/") || raw.startsWith("/share/")) {
+    return publicApiUrl(raw);
+  }
+  return raw;
+}
 function safeDateTime(value: any): string {
   const raw = cleanText(value);
   if (!raw) return "Not available yet";
@@ -1205,12 +1223,16 @@ function BrandedInvitationPaper({
   inviterLabel,
   communityName,
   expiresAt,
+  promoImageUrl,
+  promoImageAlt,
   isCompact,
 }: {
   lines: string[];
   inviterLabel: string;
   communityName: string;
   expiresAt?: string;
+  promoImageUrl?: string;
+  promoImageAlt?: string;
   isCompact: boolean;
 }) {
   return (
@@ -1274,12 +1296,22 @@ function BrandedInvitationPaper({
         >
           <div style={invitationPromotionVisualStyle(isCompact)} aria-hidden="true">
             <div style={invitationPromotionShopTileStyle(isCompact)}>
-              <GsnRealisticIcon
-                name="shop-storefront"
-                size={isCompact ? 58 : 72}
-                decorative
-                loading="eager"
-              />
+              {promoImageUrl ? (
+                <img
+                  src={promoImageUrl}
+                  alt={promoImageAlt || "GSN invite promotion"}
+                  loading="eager"
+                  decoding="async"
+                  style={invitationPromotionImageStyle()}
+                />
+              ) : (
+                <GsnRealisticIcon
+                  name="shop-storefront"
+                  size={isCompact ? 58 : 72}
+                  decorative
+                  loading="eager"
+                />
+              )}
             </div>
             <div style={invitationPromotionGsnBadgeStyle(isCompact)}>
               <GSNBrandMark width={isCompact ? 25 : 29} height={isCompact ? 32 : 38} />
@@ -1528,6 +1560,33 @@ export default function JoinEntryPage() {
     return inviteExpiry || cleanText(invitePreview?.expires_at || "");
   }, [inviteExpiry, invitePreview]);
 
+  const invitePromoImageUrl = useMemo(() => {
+    return resolveInviteMediaUrl(
+      searchParams.get("product_image_url") ||
+        searchParams.get("shop_logo_url") ||
+        searchParams.get("shop_image_url") ||
+        searchParams.get("community_image_url") ||
+        searchParams.get("marketplace_image_url") ||
+        searchParams.get("image_url") ||
+        invitePreview?.product_image_url ||
+        invitePreview?.shop_logo_url ||
+        invitePreview?.shop_image_url ||
+        invitePreview?.community_image_url ||
+        invitePreview?.marketplace_image_url ||
+        invitePreview?.image_url ||
+        ""
+    );
+  }, [searchParams, invitePreview]);
+
+  const invitePromoImageAlt = useMemo(() => {
+    return cleanText(
+      invitePreview?.product_name ||
+        invitePreview?.shop_name ||
+        resolvedMarketplaceName ||
+        resolvedCommunityName ||
+        "GSN invite promotion"
+    );
+  }, [invitePreview, resolvedMarketplaceName, resolvedCommunityName]);
   const inviteLetter = useMemo(() => {
     return buildJoinInviteLetter({
       receiver: intendedReceiver,
@@ -2675,6 +2734,8 @@ export default function JoinEntryPage() {
                 inviterLabel={`Invited by ${inviterLabel}`}
                 communityName={resolvedCommunityName || "This GSN community"}
                 expiresAt={resolvedInviteExpiry}
+                promoImageUrl={invitePromoImageUrl}
+                promoImageAlt={invitePromoImageAlt}
                 isCompact={isCompact}
               />
 

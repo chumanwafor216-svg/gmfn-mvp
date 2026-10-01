@@ -5,6 +5,7 @@ import { RealLifeMeaningGuide } from "../components/RealLifeMeaningGuide";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   compactJoinInviteUrl,
+  joinInviteSocialPreviewUrl,
   normalizedJoinInviteUrl,
   personalizedJoinInviteUrl,
 } from "../lib/joinLinks";
@@ -6458,7 +6459,8 @@ export default function MarketplacePage() {
   }, [personalizedInviteLink, activeCommunityName]);
 
   const compactInviteLink = useMemo(() => {
-    return compactJoinInviteUrl(personalizedInviteLink) || personalizedInviteLink;
+    const compactLink = compactJoinInviteUrl(personalizedInviteLink) || personalizedInviteLink;
+    return joinInviteSocialPreviewUrl(compactLink) || compactLink;
   }, [personalizedInviteLink]);
 
   const maskedMarketplaceFaceLabel = useMemo(() => {

@@ -41,6 +41,8 @@ from app.db.models import (
     CommunityDomainPolicy,
     CommunityMemberVerification,
     CommunityMemberVerificationRequest,
+    MarketplaceProduct,
+    MarketplaceShop,
     TrustEvent,
     User,
     UserSettings,
@@ -542,6 +544,46 @@ def _raise_if_qr_policy_vote_blocked(
         },
     )
 
+def _join_invite_visual_payload(db: Optional[Session], clan: Optional[Clan]) -> dict[str, Any]:
+    if db is None or clan is None:
+        return {}
+
+    shop = (
+        db.query(MarketplaceShop)
+        .filter(MarketplaceShop.clan_id == int(clan.id))
+        .filter(MarketplaceShop.is_active.is_(True))
+        .order_by(MarketplaceShop.created_at.desc(), MarketplaceShop.id.desc())
+        .first()
+    )
+    product = None
+    if shop is not None:
+        product = (
+            db.query(MarketplaceProduct)
+            .filter(MarketplaceProduct.shop_id == int(shop.id))
+            .filter(MarketplaceProduct.clan_id == int(clan.id))
+            .filter(MarketplaceProduct.is_active.is_(True))
+            .filter(MarketplaceProduct.visibility_mode.in_(("community_visible", "public", "community")))
+            .order_by(MarketplaceProduct.created_at.desc(), MarketplaceProduct.id.desc())
+            .first()
+        )
+
+    shop_image_url = _safe_str(getattr(shop, "image_url", None)) if shop is not None else ""
+    product_image_url = _safe_str(getattr(product, "image_url", None)) if product is not None else ""
+    image_url = product_image_url or shop_image_url
+
+    return {
+        "shop_id": int(shop.id) if shop is not None else None,
+        "shop_name": _safe_str(getattr(shop, "name", None)) if shop is not None else None,
+        "shop_image_url": shop_image_url or None,
+        "shop_logo_url": shop_image_url or None,
+        "product_id": int(product.id) if product is not None else None,
+        "product_name": _safe_str(getattr(product, "name", None)) if product is not None else None,
+        "product_image_url": product_image_url or None,
+        "image_url": image_url or None,
+        "community_image_url": shop_image_url or None,
+        "marketplace_image_url": image_url or None,
+    }
+
 def _invite_preview_payload(
     *,
     valid: bool,
@@ -559,6 +601,7 @@ def _invite_preview_payload(
     qr_policy_key = None
 
     governance_profile = None
+    visual_payload: dict[str, Any] = {}
     if clan is not None:
         db = object_session(clan)
         if db is not None:
@@ -566,6 +609,7 @@ def _invite_preview_payload(
                 db,
                 clan_id=int(clan.id),
             )
+            visual_payload = _join_invite_visual_payload(db, clan)
 
     if invite_row is not None:
         invite_id = int(invite_row.id)
@@ -603,6 +647,7 @@ def _invite_preview_payload(
         "expires_at": expires_at,
         "uses": uses,
         "max_uses": max_uses,
+        **visual_payload,
     }
 
 

@@ -6,6 +6,7 @@ import { PrimaryButton, SecondaryButton, StableCtaLink, StableDisclosureSummary 
 import {
   canonicalJoinInviteUrl,
   compactJoinInviteUrl,
+  joinInviteSocialPreviewUrl,
   normalizedJoinInviteUrl,
   personalizedJoinInviteUrl,
 } from "../lib/joinLinks";
@@ -440,7 +441,8 @@ function buildInviteState(
   const guideUrl = buildGuideUrl();
   const fallbackGuideUrl = buildGuideFallbackUrl();
   const hasExtraSearchParams = Object.values(extraSearchParams).some((value) => safeStr(value));
-  const shareLink = hasExtraSearchParams ? link : compactJoinInviteUrl(link) || link;
+  const compactShareLink = hasExtraSearchParams ? link : compactJoinInviteUrl(link) || link;
+  const shareLink = joinInviteSocialPreviewUrl(compactShareLink) || compactShareLink;
 
   const personalNote = safeStr(shortMessage);
   const receiver = safeStr(receiverField);
