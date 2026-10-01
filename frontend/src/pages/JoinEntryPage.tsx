@@ -256,6 +256,123 @@ function invitationPaperTitleStyle(isCompact: boolean): React.CSSProperties {
   };
 }
 
+function invitationPromotionPackStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: isCompact ? "1fr" : "150px minmax(0, 1fr)",
+    gap: isCompact ? 12 : 16,
+    alignItems: "stretch",
+    borderRadius: isCompact ? 18 : 24,
+    padding: isCompact ? 12 : 16,
+    background:
+      "linear-gradient(135deg, rgba(7,29,51,0.97) 0%, rgba(12,55,88,0.94) 58%, rgba(143,102,16,0.88) 100%)",
+    border: "1px solid rgba(246,215,122,0.32)",
+    boxShadow: "0 18px 34px rgba(7,29,51,0.18)",
+    color: "#FFFFFF",
+    overflow: "hidden",
+  };
+}
+
+function invitationPromotionVisualStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    position: "relative",
+    minHeight: isCompact ? 112 : 148,
+    borderRadius: isCompact ? 16 : 20,
+    display: "grid",
+    placeItems: "center",
+    background:
+      "linear-gradient(145deg, rgba(255,255,255,0.95), rgba(238,246,255,0.86))",
+    border: "1px solid rgba(255,255,255,0.42)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.76)",
+  };
+}
+
+function invitationPromotionShopTileStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    width: isCompact ? 72 : 92,
+    height: isCompact ? 72 : 92,
+    borderRadius: isCompact ? 24 : 28,
+    display: "grid",
+    placeItems: "center",
+    background: "rgba(255,255,255,0.94)",
+    border: "1px solid rgba(8,35,58,0.12)",
+    boxShadow: "0 16px 32px rgba(8,35,58,0.18)",
+  };
+}
+
+function invitationPromotionGsnBadgeStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    position: "absolute",
+    right: isCompact ? 10 : 12,
+    bottom: isCompact ? 10 : 12,
+    width: isCompact ? 42 : 48,
+    height: isCompact ? 42 : 48,
+    borderRadius: isCompact ? 15 : 17,
+    display: "grid",
+    placeItems: "center",
+    background: "linear-gradient(145deg, #071D33 0%, #0B2D4A 100%)",
+    border: "1px solid rgba(246,215,122,0.42)",
+    boxShadow: "0 12px 24px rgba(7,29,51,0.24)",
+  };
+}
+
+function invitationPromotionCopyStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    minWidth: 0,
+    display: "grid",
+    alignContent: "center",
+    gap: isCompact ? 8 : 10,
+    padding: isCompact ? "2px 0" : "4px 0",
+  };
+}
+
+function invitationPromotionKickerStyle(): React.CSSProperties {
+  return {
+    color: "#F6D77A",
+    fontSize: 11,
+    fontWeight: 1000,
+    letterSpacing: 1.4,
+    textTransform: "uppercase",
+  };
+}
+
+function invitationPromotionTitleStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    color: "#FFFFFF",
+    fontSize: isCompact ? 24 : 32,
+    lineHeight: 1.05,
+    fontWeight: 1000,
+    overflowWrap: "anywhere",
+  };
+}
+
+function invitationPromotionMessageStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    color: "rgba(255,255,255,0.90)",
+    fontSize: isCompact ? 15 : 16,
+    lineHeight: 1.35,
+    fontWeight: 850,
+  };
+}
+
+function invitationPaperDetailsStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    borderRadius: isCompact ? 16 : 18,
+    background: "rgba(255,255,255,0.58)",
+    border: "1px solid rgba(37,78,119,0.10)",
+    overflow: "hidden",
+  };
+}
+
+function invitationPaperSummaryStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    padding: isCompact ? "0 12px" : "0 14px",
+    color: "#0F3B63",
+    fontSize: isCompact ? 14 : 13,
+    fontWeight: 1000,
+    background: "rgba(255,255,255,0.72)",
+  };
+}
 function invitationPaperMessageStyle(isCompact: boolean): React.CSSProperties {
   return {
     borderRadius: isCompact ? 18 : 22,
@@ -1151,9 +1268,47 @@ function BrandedInvitationPaper({
           ) : null}
         </div>
 
-        <div style={invitationPaperMessageStyle(isCompact)}>
-          {renderInvitationMessageLines(lines, isCompact)}
+        <div
+          data-gsn-invite-promo-pack="true"
+          style={invitationPromotionPackStyle(isCompact)}
+        >
+          <div style={invitationPromotionVisualStyle(isCompact)} aria-hidden="true">
+            <div style={invitationPromotionShopTileStyle(isCompact)}>
+              <GsnRealisticIcon
+                name="shop-storefront"
+                size={isCompact ? 58 : 72}
+                decorative
+                loading="eager"
+              />
+            </div>
+            <div style={invitationPromotionGsnBadgeStyle(isCompact)}>
+              <GSNBrandMark width={isCompact ? 25 : 29} height={isCompact ? 32 : 38} />
+            </div>
+          </div>
+
+          <div style={invitationPromotionCopyStyle(isCompact)}>
+            <div style={invitationPromotionKickerStyle()}>GSN invite pack</div>
+            <div style={invitationPromotionTitleStyle(isCompact)}>
+              {communityName || "GSN community"}
+            </div>
+            <div style={invitationPromotionMessageStyle(isCompact)}>
+              Request access through GSN. Approval required.
+            </div>
+          </div>
         </div>
+
+        <details style={invitationPaperDetailsStyle(isCompact)}>
+          <StableDisclosureSummary
+            debugId="join-entry.invite-note-details"
+            stableHeight={isCompact ? 42 : 44}
+            style={invitationPaperSummaryStyle(isCompact)}
+          >
+            Full invite note
+          </StableDisclosureSummary>
+          <div style={invitationPaperMessageStyle(isCompact)}>
+            {renderInvitationMessageLines(lines, isCompact)}
+          </div>
+        </details>
 
         <div style={invitationPaperFooterStyle()}>
           <span>Official GSN access</span>

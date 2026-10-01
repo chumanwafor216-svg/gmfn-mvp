@@ -82,14 +82,14 @@ assertContains(
 
 assertContains(
   "frontend/src/lib/joinInviteMessaging.ts",
-  /export function buildJoinInviteLetter[\s\S]*?const inviter = cleanText\(args\.inviter\)[\s\S]*?Invited by \$\{inviter\}\.[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?const inviter = cleanText\(args\.inviter\)[\s\S]*?Invited by \$\{inviter\}\./,
-  "Existing-community invite message must keep the sender name on both the visible invitation paper and the copied doorway message."
+  /export function buildJoinInviteLetter[\s\S]*?const inviter = cleanText\(args\.inviter\)[\s\S]*?Invited by \$\{inviter\}\.[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?const inviter = cleanText\(args\.inviter\)[\s\S]*?From: \$\{inviter\}/,
+  "Existing-community invite message must keep the sender name on the visible invitation paper and the compact copied doorway message."
 );
 
 assertContains(
   "frontend/src/lib/joinInviteMessaging.ts",
-  /JOIN_INVITE_LINK_HINT[\s\S]*?Tap the preview above to open the invitation[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?inviteLink \? JOIN_INVITE_LINK_HINT : null/,
-  "Copied existing-community invite messages must place a clear tap instruction beside the top GSN link preview."
+  /export function buildJoinInviteDoorwayMessage[\s\S]*?inviteLink \|\| null[\s\S]*?GSN invite: \$\{inviteTarget\}[\s\S]*?From: \$\{inviter\}[\s\S]*?Request access\. Approval required\./,
+  "Copied existing-community invite messages must stay short: top link, GSN invite target, sender, optional context, and approval boundary."
 );
 
 assertContains(
@@ -134,8 +134,8 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /import GSNBrandMark[\s\S]*?function BrandedInvitationPaper[\s\S]*?<GSNBrandMark[\s\S]*?(?:Community invitation|Community access request)[\s\S]*?(?:Official GSN invite|Official GSN access)[\s\S]*?<BrandedInvitationPaper/,
-  "Existing-community invites must render as a branded GSN invitation paper with a visible GSN mark/watermark, not a plain message block."
+  /import GSNBrandMark[\s\S]*?function BrandedInvitationPaper[\s\S]*?<GSNBrandMark[\s\S]*?(?:Community invitation|Community access request)[\s\S]*?data-gsn-invite-promo-pack="true"[\s\S]*?name="shop-storefront"[\s\S]*?Full invite note[\s\S]*?(?:Official GSN invite|Official GSN access)[\s\S]*?<BrandedInvitationPaper/,
+  "Existing-community invites must render as a compact branded GSN invite pack with GSN mark, shop/product-style visual tile, collapsed full note, and official-access footer."
 );
 
 assertContains(
@@ -217,8 +217,8 @@ assertContains(
 );
 assertContains(
   "frontend/src/pages/ClansPage.tsx",
-  /function communityQrAnnouncementText\(\): string \{[\s\S]*?enter the invite code in GSN Join Existing Community[\s\S]*?const code = safeStr\(inviteState\?\.code \|\| ""\);[\s\S]*?const expiry = safeStr\(inviteState\?\.expiresAt \|\| ""\);[\s\S]*?code \? `Invite code: \$\{code\}` : ""[\s\S]*?expiry \? `QR expiry: \$\{safeDateTime\(expiry\)\}` : ""[\s\S]*?link \? `Join link: \$\{link\}` : ""/,
-  "Copied community QR announcements must include the package expiry before the join link so WhatsApp and bulletin shares do not look permanent."
+  /function communityQrAnnouncementText\(\): string \{[\s\S]*?const link = safeStr\(inviteState\?\.link \|\| ""\);[\s\S]*?const code = safeStr\(inviteState\?\.code \|\| ""\);[\s\S]*?const expiry = safeStr\(inviteState\?\.expiresAt \|\| ""\);[\s\S]*?link \|\| null[\s\S]*?GSN community access: \$\{title\}[\s\S]*?code \? `Code: \$\{code\}` : ""[\s\S]*?expiry \? `Open until: \$\{safeDateTime\(expiry\)\}` : ""[\s\S]*?Request access\. Approval required\./,
+  "Copied community QR announcements must stay compact while preserving the join link, manual code, expiry, and approval boundary."
 );
 assertContains(
   "frontend/src/pages/ClansPage.tsx",

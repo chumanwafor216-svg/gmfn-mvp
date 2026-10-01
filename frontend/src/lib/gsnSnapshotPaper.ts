@@ -160,17 +160,21 @@ export function buildGsnInviteLinkMessage(params: {
   inviteLink: string;
   note?: string;
 }): string {
-  return buildGsnCompactPublicLinkPackage({
-    title: "GSN Community Invite",
-    primaryLabel: "Community",
-    primaryValue: params.communityName,
-    secondaryLabel: "From",
-    secondaryValue: params.senderName,
-    referenceLabel: "GSN ID",
-    referenceValue: params.senderGsnId,
-    note: safeText(params.note) || "Open this invite to request access.",
-    link: params.inviteLink,
-  });
+  const communityName = safeText(params.communityName) || "this GSN community";
+  const senderName = safeText(params.senderName);
+  const note = safeText(params.note);
+  const isDefaultNote = /^open this (invite|link) to request access\.?$/i.test(note);
+
+  return [
+    safeText(params.inviteLink),
+    "",
+    `GSN invite: ${communityName}`,
+    senderName ? `From: ${senderName}` : "",
+    note && !isDefaultNote ? `Note: ${note}` : "",
+    "Request access. Approval required.",
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export function buildGsnPublicShopLinkMessage(params: {

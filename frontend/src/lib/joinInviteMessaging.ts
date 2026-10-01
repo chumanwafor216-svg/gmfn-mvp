@@ -17,8 +17,6 @@ const JOIN_INVITE_EVIDENCE_LINES = [
   "- Use the link to send a reviewed membership request.",
 ];
 
-const JOIN_INVITE_LINK_HINT =
-  "Tap the preview above to open the invitation.";
 
 function cleanText(value: unknown): string {
   return String(value ?? "").trim();
@@ -91,7 +89,6 @@ export function buildJoinInviteLetter(args: JoinInviteTextParams): string[] {
 export function buildJoinInviteDoorwayMessage(
   args: JoinInviteDoorwayParams
 ): string {
-  const receiver = cleanText(args.receiver);
   const inviter = cleanText(args.inviter);
   const communityName = cleanText(args.communityName) || "this GSN community";
   const marketplaceName =
@@ -104,12 +101,9 @@ export function buildJoinInviteDoorwayMessage(
 
   const lines: Array<string | null> = [
     inviteLink || null,
-    inviteLink ? JOIN_INVITE_LINK_HINT : null,
     "",
-    receiver ? `Hello ${receiver},` : "Hello,",
-    inviter ? `Invited by ${inviter}.` : null,
-    `You're invited to ${inviteTarget} on GSN.`,
-    marketplaceName ? `Community: ${marketplaceName}` : null,
+    `GSN invite: ${inviteTarget}`,
+    inviter ? `From: ${inviter}` : null,
   ];
 
   if (customMessage) {
@@ -120,10 +114,7 @@ export function buildJoinInviteDoorwayMessage(
     lines.push(`Open until: ${safeDateTime(expiresAt)}.`);
   }
 
-  lines.push(
-    "Open the link to request access.",
-    "Community membership is reviewed before approval."
-  );
+  lines.push("Request access. Approval required.");
 
   return lines.filter((line) => line !== null).join("\n");
 }

@@ -66,7 +66,7 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/lib/gsnSnapshotPaper.ts",
-    /Generated \(UTC\): \$\{generatedAt\}[\s\S]*Security note: Keep the GSN mark, generated time, record code, privacy note, and limitation note with any copy[\s\S]*buildGsnCompactPublicLinkPackage[\s\S]*GSN Public Record[\s\S]*Evidence only\. Open this GSN record and check the current public details before you act[\s\S]*buildGsnCommunityVerifyLinkMessage[\s\S]*Evidence only\. Open this link to check the current public community record[\s\S]*buildGsnInviteLinkMessage[\s\S]*Open this invite to request access[\s\S]*buildGsnPublicShopLinkMessage[\s\S]*Evidence only\. Open this shop link to check current items and visible evidence[\s\S]*buildGsnVaultInviteMessage[\s\S]*Open this private link to view the selected Vault block/,
+    /Generated \(UTC\): \$\{generatedAt\}[\s\S]*Security note: Keep the GSN mark, generated time, record code, privacy note, and limitation note with any copy[\s\S]*buildGsnCompactPublicLinkPackage[\s\S]*GSN Public Record[\s\S]*Evidence only\. Open this GSN record and check the current public details before you act[\s\S]*buildGsnCommunityVerifyLinkMessage[\s\S]*Evidence only\. Open this link to check the current public community record[\s\S]*buildGsnInviteLinkMessage[\s\S]*Request access\. Approval required[\s\S]*buildGsnPublicShopLinkMessage[\s\S]*Evidence only\. Open this shop link to check current items and visible evidence[\s\S]*buildGsnVaultInviteMessage[\s\S]*Open this private link to view the selected Vault block/,
     "Public link packages must have compact forwarding messages separate from full snapshot/evidence papers.",
   ],
   [

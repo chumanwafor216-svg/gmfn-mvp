@@ -886,17 +886,15 @@ export default function ClansPage() {
     const expiry = safeStr(inviteState?.expiresAt || "");
 
     return [
-      `${title} is opening GSN community access.`,
-      "Scan the QR code, use the link, or enter the invite code in GSN Join Existing Community to begin your join request.",
-      inviteQrPolicy.announcement,
-      inviteQrPolicy.boundary,
-      code ? `Invite code: ${code}` : "",
-      expiry ? `QR expiry: ${safeDateTime(expiry)}` : "",
-      link ? `Join link: ${link}` : "",
-      "Sent through GSN",
+      link || null,
+      "",
+      `GSN community access: ${title}`,
+      code ? `Code: ${code}` : "",
+      expiry ? `Open until: ${safeDateTime(expiry)}` : "",
+      "Request access. Approval required.",
     ]
       .filter(Boolean)
-      .join("\n\n");
+      .join("\n");
   }
 
   function copyCommunityQrAnnouncement() {
