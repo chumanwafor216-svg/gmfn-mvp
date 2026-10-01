@@ -10,6 +10,7 @@ import {
   PrimaryButton,
   SecondaryButton,
   StableCtaLink,
+  StableDisclosureSummary,
 } from "../components/StableButton";
 import {
   institutionalInnerCard,
@@ -2564,7 +2565,7 @@ export default function JoinEntryPage() {
               </div>
 
 
-              {selectedQrPolicy ? (
+              {selectedQrPolicy && !isCompact ? (
                 <div style={{ marginTop: 14, ...innerCard("#F8FBFF") }}>
                   <div style={labelText()}>
                     {joinEntryIconText("navigation", "QR entry policy", 20)}
@@ -2610,7 +2611,7 @@ export default function JoinEntryPage() {
                   </div>
                 </div>
               ) : null}
-              {inviteGovernanceProfile ? (
+              {inviteGovernanceProfile && !isCompact ? (
                 <div style={{ marginTop: 14, ...innerCard("#F8FBFF") }}>
                   <div style={labelText()}>
                     {joinEntryIconText("check", "Community setup", 20)}
@@ -2643,6 +2644,62 @@ export default function JoinEntryPage() {
                   ) : null}
                 </div>
               ) : null}
+              {isCompact && (selectedQrPolicy || inviteGovernanceProfile) ? (
+                <details style={{ marginTop: 14 }}>
+                  <StableDisclosureSummary
+                    debugId="join-entry.invitation-details"
+                    stableHeight={48}
+                    style={entryChoiceActionStyle("secondary")}
+                  >
+                    {joinEntryIconText("eye", "Invitation details", 20)}
+                  </StableDisclosureSummary>
+                  <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                    {selectedQrPolicy ? (
+                      <div style={innerCard("#F8FBFF")}>
+                        <div style={labelText()}>
+                          {joinEntryIconText("navigation", "QR entry policy", 20)}
+                        </div>
+                        <div
+                          style={{
+                            marginTop: 8,
+                            color: "#0B1F33",
+                            fontWeight: 1000,
+                            fontSize: 15,
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {selectedQrPolicy.label}
+                        </div>
+                        <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                          {selectedQrPolicy.announcement}
+                        </div>
+                      </div>
+                    ) : null}
+                    {inviteGovernanceProfile ? (
+                      <div style={innerCard("#F8FBFF")}>
+                        <div style={labelText()}>
+                          {joinEntryIconText("check", "Community setup", 20)}
+                        </div>
+                        <div
+                          style={{
+                            marginTop: 8,
+                            color: "#0B1F33",
+                            fontWeight: 1000,
+                            fontSize: 15,
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {inviteGovernanceTitle}
+                        </div>
+                        <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                          {inviteGovernanceNote}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                </details>
+              ) : null}
+
               {joinRequiresRulesAcceptance ? (
                 <label
                   style={{

@@ -36,7 +36,11 @@ import {
   communityDomainFeatureOffMessage,
 } from "../lib/communityDomainFeaturePolicy";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
-import { buildPhoneCallUrl, buildWhatsAppChatUrl } from "../lib/whatsappLinks";
+import {
+  buildPhoneCallUrl,
+  buildWhatsAppChatUrl,
+  normalizeWhatsAppRecipient,
+} from "../lib/whatsappLinks";
 import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
 const CommunityNoticeModal = lazy(
@@ -665,6 +669,23 @@ function demandContactMessage(row: DemandRow, currentCommunityName: string): str
   ].join("\n");
 }
 
+function demandReadyWhatsAppRecipient(row: DemandRow): string {
+  const raw = safeStr(row?.whatsapp_number);
+  if (!raw) return "";
+
+  const lower = raw.toLowerCase();
+  if (lower.includes("@") || lower.includes(".local")) return "";
+
+  const normalized = normalizeWhatsAppRecipient(raw);
+  if (normalized.length < 8) return "";
+
+  return normalized;
+}
+
+function demandHasReadyWhatsApp(row: DemandRow): boolean {
+  return Boolean(demandReadyWhatsAppRecipient(row));
+}
+
 function requesterName(row: DemandRow): string {
   return (
     firstTruthy(
@@ -978,8 +999,9 @@ export default function DemandBoxPage() {
   ]);
 
   function openDemandWhatsAppChat(row: DemandRow) {
+    const readyRecipient = demandReadyWhatsAppRecipient(row);
     const chatUrl = buildWhatsAppChatUrl(
-      row?.whatsapp_number,
+      readyRecipient,
       demandContactMessage(row, currentCommunityName)
     );
 
@@ -996,7 +1018,8 @@ export default function DemandBoxPage() {
   }
 
   function openDemandWhatsAppCall(row: DemandRow) {
-    const callUrl = buildPhoneCallUrl(row?.whatsapp_number);
+    const readyRecipient = demandReadyWhatsAppRecipient(row);
+    const callUrl = buildPhoneCallUrl(readyRecipient);
 
     if (!callUrl || typeof window === "undefined") {
       showNotice(
@@ -1034,7 +1057,7 @@ export default function DemandBoxPage() {
       row?.allow_trust_credit
         ? "Trust-credit openness is a request preference, not approval to release goods, credit, or money."
         : "",
-      row?.whatsapp_number
+      demandHasReadyWhatsApp(row)
         ? "Public contact path: WhatsApp contact is available from this DemandBox request."
         : "",
       requesterTrustPostureLabel(row)
@@ -1381,7 +1404,7 @@ export default function DemandBoxPage() {
   }
 
   function demandContactActions(row: DemandRow, debugBase: string) {
-    const hasContact = Boolean(safeStr(row?.whatsapp_number));
+    const hasContact = demandHasReadyWhatsApp(row);
     return (
       <>
         <SecondaryButton
@@ -1389,7 +1412,7 @@ export default function DemandBoxPage() {
           debugId={`${debugBase}.whatsapp-chat`}
           style={demandActionStyle(54)}
         >
-          {demandIconText("phone", "WhatsApp Chat", 20)}
+          {demandIconText("phone", hasContact ? "WhatsApp Chat" : "WhatsApp not ready", 20)}
         </SecondaryButton>
         <SubtleButton
           onClick={() => openDemandWhatsAppCall(row)}
@@ -1530,8 +1553,10 @@ export default function DemandBoxPage() {
           {safeStr(row?.requester_gmfn_id) && scope === "community" ? (
             <span style={badge(false)}>GSN ID {safeStr(row?.requester_gmfn_id)}</span>
           ) : null}
-          {safeStr(row?.whatsapp_number) ? (
+          {demandHasReadyWhatsApp(row) ? (
             <span style={badge(false)}>Contact path: WhatsApp</span>
+          ) : safeStr(row?.whatsapp_number) ? (
+            <span style={badge(false)}>Contact path not ready</span>
           ) : null}
           {firstTruthy(row?.marketplace_name, row?.clan_name) ? (
             <span style={badge(false)}>Community: {firstTruthy(row?.marketplace_name, row?.clan_name)}</span>

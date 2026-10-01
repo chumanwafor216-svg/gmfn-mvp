@@ -1466,7 +1466,7 @@ assertContains(
 );
 assertContains(
   "joinInviteMessaging",
-  /JOIN_INVITE_EVIDENCE_LINES = \[[\s\S]*?Build an evidence-backed GSN identity[\s\S]*?Find work, customers, and opportunities with clearer records[\s\S]*?Request community support with clearer evidence[\s\S]*?Share your Trust Passport or TrustSlip as checkable GSN evidence[\s\S]*?export function buildJoinInviteLetter[\s\S]*?You're invited to \$\{inviteTarget\} on GSN\.[\s\S]*?GSN is an evidence platform[\s\S]*?lines\.push\(\.\.\.JOIN_INVITE_EVIDENCE_LINES\)[\s\S]*?Community: \$\{marketplaceName\}[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?inviteLink \|\| null[\s\S]*?\.\.\.JOIN_INVITE_EVIDENCE_LINES[\s\S]*?Community: \$\{marketplaceName\}[\s\S]*?Community membership is reviewed before approval\./,
+  /JOIN_INVITE_EVIDENCE_LINES = \[[\s\S]*?Request access with your GSN identity and community context[\s\S]*?Keep useful community, trade, and TrustSlip evidence connected[\s\S]*?Use the link to send a reviewed membership request[\s\S]*?export function buildJoinInviteLetter[\s\S]*?This helps you:[\s\S]*?lines\.push\(\.\.\.JOIN_INVITE_EVIDENCE_LINES\)[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?inviteLink \|\| null[\s\S]*?Open the link to request access\.[\s\S]*?Community membership is reviewed before approval\./,
   "Shared join invite messaging must keep the evidence-only form-page invite and outbound doorway message sender-aware and review-aware."
 );
 assertContains(

@@ -12,14 +12,9 @@ type JoinInviteDoorwayParams = JoinInviteTextParams & {
 };
 
 const JOIN_INVITE_EVIDENCE_LINES = [
-  "- Build an evidence-backed GSN identity that can travel with you.",
-  "- Find work, customers, and opportunities with clearer records.",
-  "- Buy and sell online with more context about who you are dealing with.",
-  "- Verify people, businesses, and communities before making decisions.",
-  "- Keep community records clear and reduce misunderstandings and disputes.",
-  "- Organise savings groups, support circles, and community activities with clearer accountability.",
-  "- Request community support with clearer evidence when it matters most.",
-  "- Share your Trust Passport or TrustSlip as checkable GSN evidence when trust is being reviewed.",
+  "- Request access with your GSN identity and community context.",
+  "- Keep useful community, trade, and TrustSlip evidence connected.",
+  "- Use the link to send a reviewed membership request.",
 ];
 
 const JOIN_INVITE_LINK_HINT =
@@ -62,7 +57,7 @@ export function buildJoinInviteLetter(args: JoinInviteTextParams): string[] {
     "GSN is an evidence platform that helps communities organise trust and integrity into real-life opportunities."
   );
   lines.push("");
-  lines.push("With GSN, you can:");
+  lines.push("This helps you:");
   lines.push("");
   lines.push(...JOIN_INVITE_EVIDENCE_LINES);
 
@@ -113,30 +108,20 @@ export function buildJoinInviteDoorwayMessage(
     "",
     receiver ? `Hello ${receiver},` : "Hello,",
     inviter ? `Invited by ${inviter}.` : null,
-    "",
     `You're invited to ${inviteTarget} on GSN.`,
-    "",
-    "GSN is an evidence platform that helps communities organise trust and integrity into real-life opportunities.",
-    "",
-    "With GSN, you can:",
-    "",
-    ...JOIN_INVITE_EVIDENCE_LINES,
-    "",
     marketplaceName ? `Community: ${marketplaceName}` : null,
   ];
 
   if (customMessage) {
-    lines.push("", `Personal note: ${customMessage}`);
+    lines.push(`Note: ${customMessage}`);
   }
 
   if (expiresAt) {
-    lines.push("", `Open until: ${safeDateTime(expiresAt)}.`);
+    lines.push(`Open until: ${safeDateTime(expiresAt)}.`);
   }
 
   lines.push(
-    "",
-    "After it opens, request access from the invitation page.",
-    "",
+    "Open the link to request access.",
     "Community membership is reviewed before approval."
   );
 

@@ -162138,3 +162138,37 @@ Operational note:
 - Truth boundary: this is a UI clarity and privacy guard. It does not create a permanent task table, automate safeguarding escalation, expose pastoral notes, or change backend permissions/schema.
 - Verification passed: `npm --prefix frontend run audit:community-domain-product-contracts`; `npm --prefix frontend run build`; `git diff --check` for touched slice files.
 - Publishing status: no push, no Render deploy, no pipeline burn.
+
+## 2026-09-28 - Investor-facing trusted-commerce/opportunity case drafted
+- Status: Documentation-only investor/adviser/academic review draft created locally; not sent, not committed, not pushed, and no deploy involved.
+- File added: `docs/GSN_INVESTOR_FACING_TRUSTED_COMMERCE_AND_OPPORTUNITY_CASE_2026-09-28.md`.
+- Purpose: turns the new trusted-community commerce framing into a standalone investor-facing case for Steliana / Business Gateway, Chris / RGU, Argo, investors, innovation reviewers, and strategic partners. The document does not address the founder directly; it explains why GSN should be assessed as trusted-community commerce plus portable value evidence, not as generic community-management software.
+- Position locked in the draft: GSN organises communities in order to unlock commerce, opportunity, TrustSlip evidence, and advanced opportunity intelligence. Community organisation is the operating layer, not the commercial ceiling.
+- Research basis: checked official/public pages for Amazon seller fees/Seller University/customer acquisition, eBay seller fees/promoted listings, Temu seller centre/PDD annual report, Etsy fees/offsite ads, Shopify pricing, TikTok Shop seller material, plus trust/social-commerce/foresight references from Nielsen, McKinsey, GOV.UK, UNDP, and OECD.
+- Devil truth: the document explicitly refuses overclaims. GSN does not yet prove cheaper acquisition, guaranteed sales, TrustSlip acceptance, product-market fit, or validated pricing. The pilot must measure commerce conversion, TrustSlip verification, Opportunity Engine usefulness, support cost, and repeat behaviour.
+
+## 2026-09-28 - Investor-facing case reversed to commerce/TrustSlip-first
+- Status: Documentation-only revision; not sent, not committed, not pushed, and no deploy involved.
+- File revised: `docs/GSN_INVESTOR_FACING_TRUSTED_COMMERCE_AND_OPPORTUNITY_CASE_2026-09-28.md`.
+- Change: rebuilt the opening and argument so the reader is the investor/adviser, not the founder. The hierarchy now leads with trusted-commerce, TrustSlip opportunity evidence, and direct comparison against ecommerce giants. Community organisation is presented as added value and the infrastructure/evidence engine, not the main product category.
+- Standard position now used in the draft: GSN is a trusted-commerce and TrustSlip opportunity platform that uses organised community activity to make value visible, portable and usable beyond the place where it was created.
+- Devil truth preserved: the document still says GSN has not proven cheaper acquisition, guaranteed sales, validated pricing, TrustSlip acceptance, or product-market fit; pilots must prove those metrics.
+
+## 2026-09-28 - Trusted-commerce / TrustSlip investor frame stored as forward reference
+- Status: Documentation reference update only; not committed, not pushed, and no deploy involved.
+- Files updated: `README.md` and this handoff note.
+- Standing instruction: for investor-facing, Steliana / Business Gateway, Chris / RGU, Argo, ecommerce, pricing, TrustSlip-opportunity, or commercial-comparison work after 2026-09-28, future sessions must read `docs/GSN_TRUSTED_COMMUNITY_COMMERCE_POSITIONING_PROTOCOL_2026-09-28.md` and `docs/GSN_INVESTOR_FACING_TRUSTED_COMMERCE_AND_OPPORTUNITY_CASE_2026-09-28.md`.
+- Stored framing: GSN is trusted-community commerce and portable value evidence infrastructure. TrustSlip is the bottom-line portable evidence wedge; trusted-community commerce is the primary commercial comparison lane against ecommerce giants; Community Domain / community organisation is the operating layer and added value that makes commerce and evidence credible.
+- Devil truth: this is now the reference frame for explanation and comparison, but proof claims still require pilot evidence on conversion, acquisition cost, TrustSlip verification/acceptance, support cost, and repeat behaviour.
+
+## 2026-10-01 - DemandBox contact readiness and compact join invite wording (local)
+- Status: Local frontend correction implemented and verified; not pushed or deployed because pilot publishing remains frozen into batch mode.
+- Owner trigger: owner reported a DemandBox record showing `WhatsApp Chat` while the visible requester identity was a pending `.gmfn.local` placeholder, and reported that invite-link messages were too long before users reached the join form.
+- Frontend screens affected: `/app/demand-box` through `frontend/src/pages/DemandBoxPage.tsx`; existing-community join links through `frontend/src/pages/JoinEntryPage.tsx`; copied/WhatsApp join invite text through `frontend/src/lib/joinInviteMessaging.ts`.
+- DemandBox behavior changed: WhatsApp/call readiness now requires a clean normalized phone recipient and rejects email-like or `.local` placeholders. Placeholder contact values now show `WhatsApp not ready`, `Call not ready`, and `Contact path not ready` instead of exporting a false-ready chat/call path.
+- Join/invite behavior changed: outbound join invite text was shortened from a long feature list to a doorway message: link, tap instruction, greeting, inviter, invited community, optional note/expiry, request-access instruction, and approval boundary. The visible form-page invitation now has three compact evidence lines instead of eight.
+- Mobile join page changed: QR policy and governance setup detail stay visible on desktop, but collapse behind a compact `Invitation details` drawer on phone so the main invite and continue/form decision arrive faster.
+- Guardrails changed: `frontend/tools/audit-demand-box-front-package.mjs` now cages the placeholder-contact rejection and not-ready labels; invite/proof audits now cage the shorter shared invite message contract.
+- Verification passed: `npm --prefix frontend run audit:demand-box-front-package`; `npm --prefix frontend run audit:existing-community-invite-line`; `npm --prefix frontend run audit:entry-auth`; `npm --prefix frontend run audit:member-entry-actions`; `npm --prefix frontend run audit:proof-surfaces`; `npm --prefix frontend run audit:protected-button-freeze`; `npm --prefix frontend run build`; targeted `git diff --check` for touched files.
+- Release-gate note: the protected freeze initially exposed a stale Shop Control audit baseline from the already-present live Spotlight takedown action. `frontend/tools/audit-shop-control-button-inventory.mjs` was updated to the current audited source count: 25 SecondaryButton actions and 55 total source actions. Shop Control source was not changed in this slice.
+- Devil truth: this fixes false readiness and reduces invite-message friction, but it does not prove the resulting phone screen is emotionally compact enough until a real mobile review opens a fresh invite link and a DemandBox placeholder-contact record.

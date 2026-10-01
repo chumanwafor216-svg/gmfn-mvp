@@ -140,7 +140,7 @@ assertContains(
 
 assertContains(
   "frontend/src/lib/joinInviteMessaging.ts",
-  /JOIN_INVITE_EVIDENCE_LINES = \[[\s\S]*?Build an evidence-backed GSN identity[\s\S]*?Find work, customers, and opportunities with clearer records[\s\S]*?Request community support with clearer evidence[\s\S]*?Share your Trust Passport or TrustSlip as checkable GSN evidence[\s\S]*?export function buildJoinInviteLetter[\s\S]*?You're invited to \$\{inviteTarget\} on GSN\.[\s\S]*?GSN is an evidence platform[\s\S]*?lines\.push\(\.\.\.JOIN_INVITE_EVIDENCE_LINES\)[\s\S]*?Community: \$\{marketplaceName\}[\s\S]*?Community membership is reviewed before approval\./,
+  /JOIN_INVITE_EVIDENCE_LINES = \[[\s\S]*?Request access with your GSN identity and community context[\s\S]*?Keep useful community, trade, and TrustSlip evidence connected[\s\S]*?Use the link to send a reviewed membership request[\s\S]*?export function buildJoinInviteLetter[\s\S]*?You're invited to \$\{inviteTarget\} on GSN\.[\s\S]*?GSN is an evidence platform[\s\S]*?lines\.push\(\.\.\.JOIN_INVITE_EVIDENCE_LINES\)[\s\S]*?Community: \$\{marketplaceName\}[\s\S]*?Community membership is reviewed before approval\./,
   "Existing-community invite message must keep evidence-only invite lines, community line, GSN-link instruction, and review-before-approval boundary."
 );
 

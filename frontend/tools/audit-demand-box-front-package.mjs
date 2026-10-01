@@ -348,6 +348,15 @@ function requireApiPattern(pattern, message) {
     "DemandBox dashboard escape must keep its stable debug id.",
   ],
 ].forEach(([pattern, message]) => requirePattern(pattern, message));
+requirePattern(
+  /function demandReadyWhatsAppRecipient\(row: DemandRow\): string[\s\S]*?lower\.includes\("@"\) \|\| lower\.includes\("\.local"\)[\s\S]*?normalizeWhatsAppRecipient\(raw\)[\s\S]*?normalized\.length < 8/,
+  "DemandBox must not treat pending .local identities or email-like placeholders as WhatsApp-ready phone numbers."
+);
+
+requirePattern(
+  /hasContact \? "WhatsApp Chat" : "WhatsApp not ready"[\s\S]*?hasContact \? "WhatsApp Call" : "Call not ready"[\s\S]*?Contact path not ready/,
+  "DemandBox request cards must tell the truth when WhatsApp or call contact is not ready."
+);
 
 [
   [
