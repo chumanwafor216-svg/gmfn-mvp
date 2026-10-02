@@ -737,6 +737,23 @@ function trustSlipIssueNoticeText(error: any): string {
     );
   }
 
+  const messageText = firstTruthy(
+    blocker?.message,
+    blocker?.detail,
+    error?.message,
+    error?.data?.message,
+    error?.data?.detail
+  );
+  const messageLower = messageText.toLowerCase();
+  if (
+    messageLower.includes("valid integer") ||
+    messageLower.includes("parse string as an integer") ||
+    messageLower.includes("community_id") ||
+    messageLower.includes("clan_id")
+  ) {
+    return "Choose an active community before issuing TrustSlip. All-visible context is for sharing scope, not the issuing community.";
+  }
+
   const status = Number(error?.status || error?.response?.status || 0);
   if (status >= 500) {
     return "Some TrustSlip information couldn't be loaded right now. Try again in a moment.";
@@ -1109,6 +1126,22 @@ async function trustSlipBlockedSummaryFromResponse(
     };
   }
 
+  if (
+    lower.includes("valid integer") ||
+    lower.includes("parse string as an integer") ||
+    lower.includes("community_id") ||
+    lower.includes("clan_id")
+  ) {
+    return {
+      ok: false,
+      verified: false,
+      active: false,
+      status: "pending",
+      reason: "selected_community_required",
+      detail:
+        "Choose an active community before issuing TrustSlip. All-visible context is for sharing scope, not the issuing community.",
+    };
+  }
   return {
     ok: false,
     verified: false,
@@ -2904,7 +2937,7 @@ export default function TrustSlipPage() {
     setMerchantRailBusy(false);
 
     try {
-      const issueCommunityId = selectedTrustSlipIssueCommunityId || selectedClanId;
+      const issueCommunityId = fallbackTrustSlipIssueCommunityId;
       const reissueResult = await api.reissueMyTrustSlip({
         reason: "holder_requested_fresh_public_trustslip",
         force: true,
@@ -2930,7 +2963,7 @@ export default function TrustSlipPage() {
       setMerchantRailLink(null);
       showNotice(
         "success",
-        selectedTrustSlipIssueCommunityId
+        selectedVerificationScope === "community_specific" && selectedTrustSlipIssueCommunityId
           ? `Fresh TrustSlip issued for ${selectedVerificationCommunityName}.`
           : "Fresh TrustSlip issued."
       );
@@ -3110,11 +3143,16 @@ export default function TrustSlipPage() {
   const selectedTrustSlipIssueCommunityId = positiveNumberId(
     selectedVerificationScope === "community_specific"
       ? selectedVerificationCommunityId
-      : selectedClanId
+      : ""
   );
   const currentTrustSlipAnchorCommunityId = positiveNumberId(
     firstTruthy(summary?.community_id, summary?.clan_id)
   );
+  const fallbackTrustSlipIssueCommunityId =
+    selectedTrustSlipIssueCommunityId ||
+    currentTrustSlipAnchorCommunityId ||
+    positiveNumberId(selectedClanId) ||
+    positiveNumberId(verificationCommunityOptions[0]?.id);
   const trustSlipNeedsSelectedCommunityRefresh = Boolean(
     selectedVerificationScope === "community_specific" &&
       selectedTrustSlipIssueCommunityId &&

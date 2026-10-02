@@ -3021,11 +3021,14 @@ export async function reissueMyTrustSlip(params?: {
   community_id?: number | string | null;
   clan_id?: number | string | null;
 }): Promise<any> {
-  const selectedCommunityId = params?.community_id ?? params?.clan_id ?? null;
+  const rawSelectedCommunityId = params?.community_id ?? params?.clan_id ?? null;
+  const selectedCommunityId = Number(rawSelectedCommunityId ?? 0);
+  const hasSelectedCommunityId =
+    Number.isFinite(selectedCommunityId) && selectedCommunityId > 0;
   const result = await httpJson("/trust-slips/me/reissue", "POST", {
     reason: params?.reason || "holder_requested_fresh_public_trustslip",
     force: params?.force ?? true,
-    community_id: selectedCommunityId || undefined,
+    community_id: hasSelectedCommunityId ? selectedCommunityId : undefined,
   });
   clearStartupSectionCacheByLabel("getMyTrustSlip");
   return result;
