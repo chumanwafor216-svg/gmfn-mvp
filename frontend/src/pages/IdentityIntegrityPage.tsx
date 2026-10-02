@@ -111,6 +111,9 @@ type TrustSlipRecord = {
   expires_at?: string | null;
   holder_name?: string | null;
   gmfn_id?: string | null;
+  ok?: boolean | null;
+  reason?: string | null;
+  detail?: string | null;
 };
 
 type IdentityCommunityRow = {
@@ -1169,8 +1172,23 @@ function normalizeTrustSlipRecord(raw: any): TrustSlipRecord | null {
 
   return {
     id: positiveNumber(firstTruthy(src?.id, src?.trust_slip_id)) || undefined,
-    code: firstTruthy(src?.code, src?.trust_slip_code),
+    code: firstTruthy(
+      src?.code,
+      src?.trust_slip_code,
+      src?.verification_code,
+      src?.verification_token,
+      src?.token
+    ),
     status: firstTruthy(src?.status, src?.state, src?.verification_status),
+    ok: src?.ok ?? null,
+    active: src?.active ?? src?.is_current ?? null,
+    verified: src?.verified ?? src?.active ?? src?.is_current ?? null,
+    public_verify_url: firstTruthy(src?.public_verify_url, src?.verify_url, src?.verification_url),
+    verification_code: firstTruthy(src?.verification_code, src?.code, src?.trust_slip_code),
+    verification_token: firstTruthy(src?.verification_token, src?.token, src?.code),
+    token: firstTruthy(src?.token, src?.verification_token, src?.code),
+    reason: firstTruthy(src?.reason, src?.issue_reason, src?.blocker_reason),
+    detail: firstTruthy(src?.detail, src?.message, src?.issue_detail, src?.blocker_detail),
     phone_recorded: src?.phone_recorded ?? src?.identity_context?.phone_recorded ?? null,
     phone_verified: src?.phone_verified ?? src?.identity_context?.phone_verified ?? null,
     bank_details_recorded:
@@ -1222,6 +1240,72 @@ function normalizeTrustSlipRecord(raw: any): TrustSlipRecord | null {
   };
 }
 
+function trustSlipPendingRecord(reason: string, detail: string): TrustSlipRecord {
+  return {
+    ok: false,
+    active: false,
+    verified: false,
+    status: "pending",
+    reason,
+    detail,
+  };
+}
+
+function trustSlipIssueBlockerFromError(err: any): TrustSlipRecord | null {
+  const status = Number(err?.status || err?.response?.status || 0);
+  if (status === 401 || status === 403) return null;
+
+  const detail = structuredErrorDetail(err);
+  const message = firstTruthy(
+    detail?.detail,
+    detail?.message,
+    detail?.title,
+    detail?.reason,
+    structuredErrorMessage(err, "")
+  );
+  const lower = safeStr(message).toLowerCase();
+
+  if (lower.includes("phone")) {
+    return trustSlipPendingRecord(
+      "phone_unverified",
+      "Verify your phone number to activate TrustSlip portability."
+    );
+  }
+
+  if (
+    lower.includes("no active clan membership") ||
+    lower.includes("no active community")
+  ) {
+    return trustSlipPendingRecord(
+      "community_membership_required",
+      "Join or create a community before GSN can issue a TrustSlip. TrustSlip needs a community anchor so the evidence has provenance."
+    );
+  }
+
+  if (
+    lower.includes("not an active member") ||
+    lower.includes("selected community") ||
+    lower.includes("selected clan")
+  ) {
+    return trustSlipPendingRecord(
+      "selected_community_required",
+      "Choose a community where your membership is active, then refresh the TrustSlip again."
+    );
+  }
+
+  return trustSlipPendingRecord(
+    "trustslip_issue_blocked",
+    "TrustSlip could not be issued yet. Check phone verification and active community membership first."
+  );
+}
+
+async function getMyTrustSlipForIdentityIntegrity(): Promise<TrustSlipRecord | null> {
+  try {
+    return normalizeTrustSlipRecord(await getMyTrustSlip({ fresh: true }));
+  } catch (err: any) {
+    return trustSlipIssueBlockerFromError(err);
+  }
+}
 async function fetchIdentityIntegrityData(
   selectedClanId: number
 ): Promise<IdentityIntegrityDataSnapshot> {
@@ -1239,7 +1323,7 @@ async function fetchIdentityIntegrityData(
     getMe().catch(() => null),
     getCurrentClan().catch(() => null),
     listMyClans({ timeoutMs: 6500 }).catch(() => null),
-    getMyTrustSlip().catch(() => null),
+    getMyTrustSlipForIdentityIntegrity(),
     buildGuidanceSnapshot().catch(() => null),
     getTrustWhyMe().catch(() => null),
     listTrustEvents({
@@ -1254,7 +1338,7 @@ async function fetchIdentityIntegrityData(
     me: meRes || null,
     currentClan: clanRes || null,
     communities: rowsOf<IdentityCommunityRow>(clansRes),
-    trustSlip: normalizeTrustSlipRecord(trustSlipRes),
+    trustSlip: trustSlipRes,
     guidance: guidanceRes || null,
     trustWhyRaw: whyRes || null,
     events: rowsOf<TrustEventRow>(eventsRes),
@@ -2005,7 +2089,18 @@ export default function IdentityIntegrityPage() {
   }, [me, trustSlip]);
   const gmfnId = gmfnIdValue || "Not issued yet";
 
-  const trustSlipCode = safeStr(trustSlip?.code || "");
+  const trustSlipCode = safeStr(
+    trustSlip?.code ||
+      trustSlip?.verification_code ||
+      trustSlip?.verification_token ||
+      trustSlip?.token ||
+      ""
+  );
+  const trustSlipIssueReason = safeStr(trustSlip?.reason);
+  const trustSlipIssueDetail = safeStr(trustSlip?.detail);
+  const trustSlipPendingLabel = trustSlipIssueReason ? "Setup needed" : "Not issued yet";
+  const trustSlipPendingDetail = trustSlipIssueDetail ||
+    (Boolean(trustSlip?.phone_verified) ? "Open TrustSlip to finish setup." : "Verify phone to issue.");
   const guideItems = useMemo(() => buildIdentityIntegrityGuideItems(), []);
   const actionGuide = useMemo(() => buildIdentityActionGuide(), []);
   const trustDocumentFamilyItems = useMemo(() => buildTrustDocumentFamilyItems(true), []);
@@ -2392,14 +2487,14 @@ export default function IdentityIntegrityPage() {
     ? trustSlipExpired
       ? "Expired"
       : "Active"
-    : "Not issued yet";
+    : trustSlipPendingLabel;
   const trustSlipExpiryLabel = trustSlipCode
     ? trustSlipExpiresAt
       ? trustSlipExpired
         ? `Expired ${safeDate(trustSlipExpiresAt)}`
         : `Valid until ${safeDate(trustSlipExpiresAt)}`
       : "Expiry not shown"
-    : "Verify phone to issue";
+    : trustSlipPendingDetail;
   const identityCardValid = Boolean(
     identitySignals.phoneVerified && trustSlipCode && !trustSlipExpired
   );
@@ -2409,7 +2504,9 @@ export default function IdentityIntegrityPage() {
       ? "Phone required"
       : trustSlipExpired
         ? "Expired"
-        : "TrustSlip pending";
+        : trustSlipIssueReason
+          ? "Setup needed"
+          : "TrustSlip pending";
   const identityCardStatusTone: "ready" | "pending" | "watch" = identityCardValid
     ? "ready"
     : identitySignals.phoneVerified
@@ -2815,7 +2912,7 @@ export default function IdentityIntegrityPage() {
 
   function copyTrustSlipCode() {
     if (!trustSlipCode) {
-      showNotice("error", "TrustSlip code is not ready yet.");
+      showNotice("error", trustSlipPendingDetail);
       return;
     }
 
@@ -2853,7 +2950,7 @@ export default function IdentityIntegrityPage() {
 
   async function copyTrustSlipVerifyLink() {
     if (!trustSlipVerifyUrl) {
-      showNotice("error", "TrustSlip Verify link is not ready yet. Verify phone or refresh TrustSlip first.");
+      showNotice("error", trustSlipPendingDetail);
       return;
     }
 
@@ -2864,14 +2961,22 @@ export default function IdentityIntegrityPage() {
     );
   }
 
+  function handleGsnIdentityCardPrimaryAction() {
+    if (identityCardValid) {
+      void shareGsnIdentityCard();
+      return;
+    }
+
+    setIdentityPackageView("anchor");
+    showNotice("error", trustSlipPendingDetail);
+    navigateWithOrigin(navigate, routes.trustSlip, location);
+  }
   async function shareGsnIdentityCard() {
     if (!identityCardValid) {
       setIdentityPackageView("anchor");
       showNotice(
         "error",
-        identitySignals.phoneVerified
-          ? "Identity Card needs an active TrustSlip before sharing."
-          : "Verify phone first. A valid GSN Identity Card requires verified phone evidence."
+        trustSlipPendingDetail
       );
       return;
     }
@@ -2950,7 +3055,7 @@ export default function IdentityIntegrityPage() {
 
   async function refreshTrustSlipAfterIdentityChange() {
     try {
-      const nextTrustSlip = await getMyTrustSlip();
+      const nextTrustSlip = await getMyTrustSlip({ fresh: true });
       setTrustSlip(normalizeTrustSlipRecord(nextTrustSlip));
       setIdentityCardGeneratedAt(new Date().toISOString());
       return nextTrustSlip;
@@ -3452,7 +3557,7 @@ export default function IdentityIntegrityPage() {
             {
               icon: "document" as GsnIconName,
               label: "TrustSlip",
-              value: trustSlipCode || "Not issued yet",
+              value: trustSlipCode || trustSlipPendingLabel,
               tone: trustSlipCode ? "ready" as const : "neutral" as const,
             },
           ].map((item) => (
@@ -3538,7 +3643,7 @@ export default function IdentityIntegrityPage() {
             <span style={{ minWidth: 0, display: "grid", gap: 2, textAlign: "left" }}>
               <span style={{ fontWeight: 1000, lineHeight: 1.05 }}>Copy TrustSlip</span>
               <span style={{ fontSize: 10.5, fontWeight: 900, color: trustSlipCode ? "#617085" : "#64748B" }}>
-                {trustSlipCode ? "Ready" : "Not issued yet"}
+                {trustSlipCode ? "Ready" : trustSlipPendingLabel}
               </span>
             </span>
           </SecondaryButton>
@@ -4611,7 +4716,7 @@ export default function IdentityIntegrityPage() {
             {identityCardRefreshing ? "Refreshing" : "Refresh card"}
           </SecondaryButton>
           <PrimaryButton
-            onClick={() => void shareGsnIdentityCard()}
+            onClick={handleGsnIdentityCardPrimaryAction}
             stableHeight={isCompact ? 52 : 50}
             fullWidth={isCompact}
             minWidth={isCompact ? undefined : 172}
@@ -4739,12 +4844,12 @@ export default function IdentityIntegrityPage() {
                     wordBreak: "break-word",
                   }}
                 >
-                  {trustSlipCode || "Not issued yet"}
+                  {trustSlipCode || trustSlipPendingLabel}
                 </div>
                 <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                   {trustSlipCode
                     ? "Portable verification record ready."
-                    : "Portable verification record still preparing."}
+                    : trustSlipPendingDetail}
                 </div>
               </div>
             </div>

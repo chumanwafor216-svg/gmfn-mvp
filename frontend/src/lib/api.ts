@@ -3010,11 +3010,9 @@ export async function getClanTrustScoreExplained(params?: {
   );
 }
 
-export async function getMyTrustSlip(): Promise<any> {
-  return cachedStartupSectionRead(
-    startupSectionCacheKey("getMyTrustSlip"),
-    () => httpJson("/trust-slips/me", "GET")
-  );
+export async function getMyTrustSlip(params?: { fresh?: boolean }): Promise<any> {
+  if (params?.fresh) clearStartupSectionCacheByLabel("getMyTrustSlip");
+  return httpJson("/trust-slips/me", "GET");
 }
 
 export async function reissueMyTrustSlip(params?: {
@@ -3024,11 +3022,13 @@ export async function reissueMyTrustSlip(params?: {
   clan_id?: number | string | null;
 }): Promise<any> {
   const selectedCommunityId = params?.community_id ?? params?.clan_id ?? null;
-  return httpJson("/trust-slips/me/reissue", "POST", {
+  const result = await httpJson("/trust-slips/me/reissue", "POST", {
     reason: params?.reason || "holder_requested_fresh_public_trustslip",
     force: params?.force ?? true,
     community_id: selectedCommunityId || undefined,
   });
+  clearStartupSectionCacheByLabel("getMyTrustSlip");
+  return result;
 }
 
 export async function getMyTrustSlipDecisionPackAccesses(limit = 12): Promise<any> {

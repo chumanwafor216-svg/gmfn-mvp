@@ -4259,7 +4259,14 @@ export default function DashboardPage() {
 
     return parts.join(" - ");
   }, [gmfnId, visibleGsnId]);
-  const trustSlipCode = safeStr(trustSlip?.code || "");
+  const trustSlipCode = safeStr(
+    trustSlip?.code ||
+      trustSlip?.trust_slip_code ||
+      trustSlip?.verification_code ||
+      trustSlip?.verification_token ||
+      trustSlip?.token ||
+      ""
+  );
   const avatarInputId = "dashboard-avatar-upload-input";
 
   function trustWhiteBtn(minHeight = 34, fontSize = 13): React.CSSProperties {
