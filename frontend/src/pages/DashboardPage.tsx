@@ -1227,6 +1227,82 @@ function firstNonEmpty(...values: unknown[]): string {
   return "";
 }
 
+function dashboardTrustSlipErrorMessage(err: any): string {
+  const direct = firstNonEmpty(
+    err?.detail,
+    err?.message,
+    err?.title,
+    err?.reason,
+    err?.response?.data?.detail,
+    err?.response?.data?.message,
+    err?.data?.detail,
+    err?.data?.message
+  );
+  if (direct) return direct;
+
+  try {
+    return JSON.stringify(err || {});
+  } catch {
+    return "";
+  }
+}
+
+function dashboardTrustSlipPendingFromError(err: any): any | null {
+  const status = Number(err?.status || err?.response?.status || 0);
+  if (status === 401 || status === 403) return null;
+
+  const lower = dashboardTrustSlipErrorMessage(err).toLowerCase();
+
+  if (lower.includes("phone")) {
+    return {
+      ok: false,
+      active: false,
+      verified: false,
+      status: "pending",
+      reason: "phone_unverified",
+      detail: "Verify phone",
+    };
+  }
+
+  if (
+    lower.includes("no active clan membership") ||
+    lower.includes("no active community")
+  ) {
+    return {
+      ok: false,
+      active: false,
+      verified: false,
+      status: "pending",
+      reason: "community_membership_required",
+      detail: "Community needed",
+    };
+  }
+
+  if (
+    lower.includes("not an active member") ||
+    lower.includes("selected community") ||
+    lower.includes("selected clan")
+  ) {
+    return {
+      ok: false,
+      active: false,
+      verified: false,
+      status: "pending",
+      reason: "selected_community_required",
+      detail: "Choose community",
+    };
+  }
+
+  return {
+    ok: false,
+    active: false,
+    verified: false,
+    status: "pending",
+    reason: "trustslip_issue_blocked",
+    detail: "Setup needed",
+  };
+}
+
 function storageIdentitySegment(value: unknown): string {
   const normalized = safeStr(value)
     .toLowerCase()
@@ -3700,7 +3776,7 @@ export default function DashboardPage() {
         await Promise.all([
           getMe().catch(() => null),
           getCurrentClan().catch(() => null),
-          getMyTrustSlip().catch(() => null),
+          getMyTrustSlip({ fresh: true }).catch(dashboardTrustSlipPendingFromError),
           selectedClanId
             ? getClanTrustScoreExplained({
                 clan_id: selectedClanId,
@@ -4267,6 +4343,25 @@ export default function DashboardPage() {
       trustSlip?.token ||
       ""
   );
+  const trustSlipIssueReason = safeStr(
+    trustSlip?.reason || trustSlip?.issue_reason || trustSlip?.blocker_reason
+  );
+  const trustSlipIssueDetail = safeStr(
+    trustSlip?.detail || trustSlip?.issue_detail || trustSlip?.blocker_detail
+  );
+  const trustSlipPendingValue = trustSlipIssueReason || trustSlip?.ok === false
+    ? "Setup needed"
+    : "Not issued yet";
+  const trustSlipPendingDetail = trustSlipIssueDetail ||
+    (trustSlipIssueReason === "phone_unverified"
+      ? "Verify phone"
+      : trustSlipIssueReason === "community_membership_required"
+      ? "Community needed"
+      : trustSlipIssueReason === "selected_community_required"
+      ? "Choose community"
+      : trustSlipIssueReason
+      ? "Open TrustSlip"
+      : "Open TrustSlip");
   const avatarInputId = "dashboard-avatar-upload-input";
 
   function trustWhiteBtn(minHeight = 34, fontSize = 13): React.CSSProperties {
@@ -8466,7 +8561,8 @@ export default function DashboardPage() {
               {
                 label: "TrustSlip",
                 value: trustSlipCode || "Not issued yet",
-                detail: "",
+                displayValue: trustSlipCode || trustSlipPendingValue,
+                detail: trustSlipCode ? "" : trustSlipPendingDetail,
                 strength: 0,
                 to: trustSlipCode
                   ? `${DASHBOARD_TARGETS.TRUST_SLIP_VERIFY}?code=${encodeURIComponent(trustSlipCode)}`
@@ -8536,7 +8632,7 @@ export default function DashboardPage() {
                     maxWidth: "100%",
                   }}
                 >
-                  {item.value}
+                  {(item as any).displayValue || item.value}
                 </span>
                 {item.detail ? (
                   <span
