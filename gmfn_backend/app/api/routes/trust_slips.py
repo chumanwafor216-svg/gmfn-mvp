@@ -1117,18 +1117,29 @@ def reissue_my_trust_slip(
             }
 
     try:
-        result = reissue_trust_slip(
-            db,
-            user_id=int(current_user.id),
-            reason=payload.reason,
-            preferred_clan_id=selected_clan_id,
-        )
+        if slip:
+            result = reissue_trust_slip(
+                db,
+                user_id=int(current_user.id),
+                reason=payload.reason,
+                preferred_clan_id=selected_clan_id,
+            )
+            event_type = "trust_slip.reissued"
+            was_reissue = True
+        else:
+            result = issue_trust_slip_for_user(
+                db,
+                user_id=int(current_user.id),
+                preferred_clan_id=selected_clan_id,
+            )
+            event_type = "trust_slip.issued"
+            was_reissue = False
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 
     log_trust_event(
         db,
-        event_type="trust_slip.reissued",
+        event_type=event_type,
         clan_id=int(result.get("clan_id") or selected_clan_id or 0),
         actor_user_id=int(current_user.id),
         subject_user_id=int(current_user.id),
@@ -1148,7 +1159,8 @@ def reissue_my_trust_slip(
 
     return {
         "ok": True,
-        "reissued": True,
+        "issued": bool(result.get("issued", not was_reissue)),
+        "reissued": bool(was_reissue),
         **result,
         "verification_token": result.get("code"),
         "verification_code": result.get("code"),

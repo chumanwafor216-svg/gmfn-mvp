@@ -818,6 +818,47 @@ def test_holder_can_force_fresh_trustslip_for_new_public_qr(
         assert aware(new_slip.expires_at) > now
 
 
+def test_holder_generate_trustslip_issues_first_public_code(
+    client: TestClient,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE users
+                SET phone_e164 = '+2348000000000',
+                    phone_verified_at = CURRENT_TIMESTAMP
+                WHERE id = 1
+                """
+            )
+        )
+
+    response = client.post(
+        "/trust-slips/me/reissue",
+        json={
+            "reason": "holder_requested_fresh_public_trustslip",
+            "force": True,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["issued"] is True
+    assert data["reissued"] is False
+    assert data["code"]
+    assert data["verification_code"] == data["code"]
+    assert data["verification_token"] == data["code"]
+    assert data["token"] == data["code"]
+    assert data["public_verify_url"] == f"/t/{data['code']}"
+
+    with SessionLocal() as db:
+        slip = db.query(TrustSlip).filter(TrustSlip.code == data["code"]).one()
+        assert slip.is_current is True
+        assert slip.holder_user_id == 1
+        assert slip.clan_id == 1
+
 def test_public_trustslip_verify_uses_holder_name_separate_from_gsn_id(
     client: TestClient,
     seed_clan_member_membership,

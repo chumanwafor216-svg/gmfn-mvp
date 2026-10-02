@@ -2756,6 +2756,9 @@ def reissue_trust_slip(
     if not user:
         raise ValueError("User not found")
 
+    if not getattr(user, "phone_verified_at", None) or not getattr(user, "phone_e164", None):
+        raise ValueError("Verify your phone number before issuing TrustSlip")
+
     selected_clan_id = _safe_positive_int(preferred_clan_id)
     current_payload = get_trust_slip_payload(
         db,

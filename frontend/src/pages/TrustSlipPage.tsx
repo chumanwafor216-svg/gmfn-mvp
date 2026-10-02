@@ -1836,7 +1836,7 @@ function normalizeTrustSlipSummary(raw: any): TrustSlipSummary | null {
     trust_limit: firstTruthy(src?.trust_limit),
     currency: firstTruthy(src?.currency),
     status: firstTruthy(src?.status),
-    code: firstTruthy(src?.code),
+    code: firstTruthy(src?.code, src?.trust_slip_code, src?.verification_code, src?.verification_token, src?.token),
     created_at: firstTruthy(src?.created_at),
     issued_at: firstTruthy(src?.issued_at),
     expires_at: firstTruthy(src?.expires_at),
@@ -2347,7 +2347,15 @@ function mergeFreshTrustSlipSummary(
 ): TrustSlipSummary | null {
   if (!reissueResult) return summary;
 
-  const freshCode = firstTruthy(reissueResult.code, reissueResult.trust_slip_code);
+  const freshCode = firstTruthy(
+    reissueResult.code,
+    reissueResult.trust_slip_code,
+    reissueResult.verification_code,
+    reissueResult.verification_token,
+    reissueResult.token,
+    reissueResult?.item?.code,
+    reissueResult?.trust_slip?.code
+  );
   if (!freshCode) return summary;
 
   const baseSummary =
