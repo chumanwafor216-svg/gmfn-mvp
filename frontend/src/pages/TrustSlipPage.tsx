@@ -3210,7 +3210,8 @@ export default function TrustSlipPage() {
     !trustSlipCode &&
     ["community_membership_required", "selected_community_required"].includes(
       trustSlipIssueReason
-    );
+    ) &&
+    !fallbackTrustSlipIssueCommunityId;
   const trustSlipBlockedByIssue =
     !trustSlipCode && trustSlipIssueReason === "trustslip_issue_blocked";
   const trustSlipHasSetupBlocker =
