@@ -118,9 +118,17 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
-  /inviteAcknowledged[\s\S]*?debugId="join-entry\.acknowledge-invite"[\s\S]*?Continue[\s\S]*?\{inviteAcknowledged \? \([\s\S]*?Join request form/,
-  "Existing-community invites must show the invitation first and only open the request area after the invite is acknowledged."
-);assertContains(
+  /Boolean\(inviteCode\) \|\| Boolean\(restoredJoinDraft\?\.inviteAcknowledged\)[\s\S]*?return Boolean\(inviteCode\);[\s\S]*?if \(inviteCode\) return "new";[\s\S]*?order: isCompact && inviteAcknowledged \? 2 : 1[\s\S]*?order: isCompact \? 1 : 2[\s\S]*?debugId="join-entry\.request-meaning-details"[\s\S]*?Why review matters/,
+  "Existing-community invite links must attach the new-request form immediately on phone, keep invitation details second, and collapse extra review explanation."
+);
+
+assertContains(
+  "frontend/src/pages/JoinEntryPage.tsx",
+  /setInviteAcknowledged\(true\);[\s\S]*?setJoinPathChoice\("new"\);[\s\S]*?setFormOpen\(true\);[\s\S]*?debugId="join-entry\.acknowledge-invite"/,
+  "Legacy invite acknowledgement recovery must open the new-request form instead of hiding it."
+);
+
+assertContains(
   "frontend/src/pages/JoinEntryPage.tsx",
   /function joinInviteHelpMessage\([\s\S]*?Enter the invite code from the QR sheet below[\s\S]*?Invite code or join link needed\.[\s\S]*?value=\{manualInviteCode\}[\s\S]*?placeholder="Enter invite code"[\s\S]*?debugId="join-entry\.manual-code\.open"[\s\S]*?Check code/,
   "Join Entry must support the QR manual-code fallback with clear no-link copy, invite-code input, and Check code action."

@@ -1509,15 +1509,16 @@ export default function JoinEntryPage() {
     Boolean(restoredJoinDraft?.rulesAccepted)
   );
   const [inviteAcknowledged, setInviteAcknowledged] = useState<boolean>(() =>
-    Boolean(restoredJoinDraft?.inviteAcknowledged)
+    Boolean(inviteCode) || Boolean(restoredJoinDraft?.inviteAcknowledged)
   );
   const [formOpen, setFormOpen] = useState<boolean>(() => {
     if (typeof restoredJoinDraft?.formOpen === "boolean") return restoredJoinDraft.formOpen;
-    return false;
+    return Boolean(inviteCode);
   });
   const [joinPathChoice, setJoinPathChoice] = useState<JoinPathChoice>(() => {
     if (cleanText(restoredJoinDraft?.existingGsnId || "")) return "existing";
     if (restoredJoinDraft?.formOpen) return "new";
+    if (inviteCode) return "new";
     return null;
   });
   const [invitePreview, setInvitePreview] = useState<any>(null);
@@ -2667,7 +2668,12 @@ export default function JoinEntryPage() {
             gap: 18,
           }}
         >
-          <div style={invitationMessageCardStyle(isCompact)}>
+          <div
+            style={{
+              ...invitationMessageCardStyle(isCompact),
+              order: isCompact && inviteAcknowledged ? 2 : 1,
+            }}
+          >
             <div
               style={{
                 display: "flex",
@@ -2929,7 +2935,7 @@ export default function JoinEntryPage() {
                 </details>
               ) : null}
 
-              {joinRequiresRulesAcceptance ? (
+              {joinRequiresRulesAcceptance && !isCompact ? (
                 <label
                   style={{
                     marginTop: 14,
@@ -2962,7 +2968,8 @@ export default function JoinEntryPage() {
                     onClick={() => {
                       if (!canOpenForm) return;
                       setInviteAcknowledged(true);
-                      setFormOpen(false);
+                      setJoinPathChoice("new");
+                      setFormOpen(true);
                     }}
                     debugId="join-entry.acknowledge-invite"
                     stableHeight={52}
@@ -2982,7 +2989,12 @@ export default function JoinEntryPage() {
           </div>
 
           {inviteAcknowledged ? (
-          <div style={pageCard()}>
+          <div
+            style={{
+              ...pageCard(),
+              order: isCompact ? 1 : 2,
+            }}
+          >
             <div style={labelText()}>
               {joinEntryIconText("join-person-plus", "Join request form", 22)}
             </div>
@@ -3003,14 +3015,58 @@ export default function JoinEntryPage() {
               short form for community review.
             </div>
 
-            <RealLifeMeaningGuide
-              compact={isCompact}
-              guidance={getRealLifeTrustGuidance("join-request", {
-                communityName: resolvedCommunityName || "this community",
-              })}
-              style={{ marginTop: 14 }}
-            />
+            {isCompact ? (
+              <details style={{ marginTop: 14 }}>
+                <StableDisclosureSummary
+                  debugId="join-entry.request-meaning-details"
+                  stableHeight={48}
+                  style={entryChoiceActionStyle("secondary")}
+                >
+                  {joinEntryIconText("eye", "Why review matters", 20)}
+                </StableDisclosureSummary>
+                <RealLifeMeaningGuide
+                  compact
+                  guidance={getRealLifeTrustGuidance("join-request", {
+                    communityName: resolvedCommunityName || "this community",
+                  })}
+                  style={{ marginTop: 10 }}
+                />
+              </details>
+            ) : (
+              <RealLifeMeaningGuide
+                compact={false}
+                guidance={getRealLifeTrustGuidance("join-request", {
+                  communityName: resolvedCommunityName || "this community",
+                })}
+                style={{ marginTop: 14 }}
+              />
+            )}
 
+            {joinRequiresRulesAcceptance && isCompact ? (
+              <label
+                style={{
+                  marginTop: 14,
+                  display: "grid",
+                  gridTemplateColumns: "22px minmax(0, 1fr)",
+                  gap: 10,
+                  alignItems: "start",
+                  color: "#334155",
+                  fontSize: 14,
+                  fontWeight: 800,
+                  lineHeight: 1.55,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={rulesAccepted}
+                  onChange={(event) => setRulesAccepted(event.target.checked)}
+                  style={{ width: 18, height: 18, marginTop: 2 }}
+                />
+                <span>
+                  I understand this community uses rules acceptance and admin review before membership is confirmed.
+                </span>
+              </label>
+            ) : null}
             {showDraftRecovery ? (
               <div style={{ marginTop: 14, ...innerCard("#F8FBFF") }}>
                 <div style={labelText()}>
