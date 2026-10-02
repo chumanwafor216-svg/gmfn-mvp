@@ -1698,13 +1698,14 @@ export default function MyGMFNAndIPage() {
   );
   const [memberOpportunityLoading, setMemberOpportunityLoading] = useState(false);
 
-  const activeTab = useMemo(() => {
+  const requestedTab = useMemo(() => {
     if (!isAppRoute) return "guide";
     const params = new URLSearchParams(location.search);
-    return safeStr(params.get("tab")).toLowerCase() === "settings"
-      ? "settings"
-      : "guide";
+    return safeStr(params.get("tab")).toLowerCase();
   }, [isAppRoute, location.search]);
+  const activeTab = requestedTab === "settings" ? "settings" : "guide";
+  const showMemberHomeSummary =
+    isAppRoute && ["home", "member-home", "summary"].includes(requestedTab);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2760,7 +2761,12 @@ export default function MyGMFNAndIPage() {
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
-      <section style={appGuidePanel(isCompact)}>
+      <section
+        style={{
+          ...appGuidePanel(isCompact),
+          display: showMemberHomeSummary ? "grid" : "none",
+        }}
+      >
         <div style={appNavyCard(isCompact)}>
           <div
             style={{

@@ -661,6 +661,25 @@ function uniqueTrustSlipCommunityOptions(rows: any[]): TrustSlipCommunityOption[
   return options;
 }
 
+function trustSlipCodeFromResult(value: any): string {
+  if (!value || typeof value !== "object") return "";
+  return firstTruthy(
+    value.code,
+    value.trust_slip_code,
+    value.verification_code,
+    value.verification_token,
+    value.token,
+    value?.item?.code,
+    value?.item?.trust_slip_code,
+    value?.trust_slip?.code,
+    value?.trust_slip?.trust_slip_code,
+    value?.summary?.code,
+    value?.summary?.verification_code,
+    value?.data?.code,
+    value?.data?.verification_code
+  );
+}
+
 function parseTrustSlipIssueBlocker(error: any): any | null {
   const candidates = [
     error?.detail,
@@ -2437,15 +2456,7 @@ function mergeFreshTrustSlipSummary(
 ): TrustSlipSummary | null {
   if (!reissueResult) return summary;
 
-  const freshCode = firstTruthy(
-    reissueResult.code,
-    reissueResult.trust_slip_code,
-    reissueResult.verification_code,
-    reissueResult.verification_token,
-    reissueResult.token,
-    reissueResult?.item?.code,
-    reissueResult?.trust_slip?.code
-  );
+  const freshCode = trustSlipCodeFromResult(reissueResult);
   if (!freshCode) return summary;
 
   const baseSummary =
@@ -4548,6 +4559,30 @@ export default function TrustSlipPage() {
       "This TrustSlip link is not ready yet."
     );
   }
+  async function sharePublicDecisionPack() {
+    const text = buildPublicDecisionPackShareText();
+    if (!verifyUrl || !text) {
+      showNotice("error", "This TrustSlip link is not ready yet.");
+      return;
+    }
+
+    const nativeShare = typeof navigator !== "undefined" ? navigator.share : undefined;
+    if (nativeShare) {
+      try {
+        await nativeShare.call(navigator, {
+          title: "GSN TrustSlip",
+          text,
+          url: verifyUrl,
+        });
+        showNotice("success", "Share sheet opened.");
+        return;
+      } catch (error: any) {
+        if (safeStr(error?.name) === "AbortError") return;
+      }
+    }
+
+    void handleCopy(text, "TrustSlip share message copied.", "This TrustSlip link is not ready yet.");
+  }
 
   function decisionPackEvidenceRowsForShare() {
     return privateDecisionPackEvidenceCategories.filter((category) => category.evidenceCount > 0);
@@ -4959,12 +4994,12 @@ export default function TrustSlipPage() {
                       padding: "0 40px 0 12px",
                     }}
                   >
+                    <option value="all_visible_communities">All visible community context</option>
                     {verificationCommunityOptions.map((option) => (
                       <option key={option.id} value={`community:${option.id}`}>
                         {option.label}
                       </option>
                     ))}
-                    <option value="all_visible_communities">All visible community context</option>
                   </select>
                 </label>
                 <div
@@ -5034,6 +5069,19 @@ export default function TrustSlipPage() {
                   >
                     {trustSlipIconBadge("document", isCompact ? 26 : 28, "navy")}
                     Open current TrustSlip
+                  </SecondaryButton>
+                ) : null}
+                {trustSlipCode ? (
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => void sharePublicDecisionPack()}
+                    fullWidth
+                    stableHeight={isCompact ? 54 : 52}
+                    debugId="trust-slip.setup.share-current"
+                    style={trustSlipActionButtonStyle(isCompact)}
+                  >
+                    {trustSlipIconBadge("public-globe", isCompact ? 26 : 28, "amber")}
+                    Share TrustSlip
                   </SecondaryButton>
                 ) : null}
               </div>
@@ -5330,12 +5378,12 @@ export default function TrustSlipPage() {
                     padding: "0 38px 0 11px",
                   }}
                 >
+                  <option value="all_visible_communities">All visible community context</option>
                   {verificationCommunityOptions.map((option) => (
                     <option key={option.id} value={`community:${option.id}`}>
                       {option.label}
                     </option>
                   ))}
-                  <option value="all_visible_communities">All visible community context</option>
                 </select>
               </label>
               <div style={{ minWidth: 0 }}>
@@ -5870,6 +5918,16 @@ export default function TrustSlipPage() {
 
               <CardActionRow>
                 <PrimaryButton
+                  onClick={() => void sharePublicDecisionPack()}
+                  disabled={!verifyUrl || trustSlipNeedsSelectedCommunityRefresh}
+                  stableHeight={isCompact ? 50 : 48}
+                  minWidth={isCompact ? undefined : 176}
+                  debugId="trust-slip.public-decision-pack.share"
+                  style={{ fontSize: isCompact ? 11 : 12 }}
+                >
+                  Share TrustSlip
+                </PrimaryButton>
+                <SecondaryButton
                   onClick={copyPublicDecisionPackShareNote}
                   disabled={!verifyUrl || trustSlipNeedsSelectedCommunityRefresh}
                   stableHeight={isCompact ? 50 : 48}
@@ -5878,7 +5936,7 @@ export default function TrustSlipPage() {
                   style={{ fontSize: isCompact ? 11 : 12 }}
                 >
                   Copy message
-                </PrimaryButton>
+                </SecondaryButton>
                 {verifyPath ? (
                   <StableCtaLink
                     to={verifyPath}
