@@ -2660,7 +2660,7 @@ export default function TrustSlipPage() {
   const applyTrustSlipPageData = useCallback((data: TrustSlipPageData) => {
     setMe(data.me);
     setCurrentClan(data.clan);
-    setMemberCommunityOptions(data.clans);
+    setMemberCommunityOptions((current) => (data.clans.length ? data.clans : current));
     setSummary(data.summary);
   }, []);
 
@@ -2957,7 +2957,7 @@ export default function TrustSlipPage() {
         ...data,
         summary: mergeFreshTrustSlipSummary(data.summary, reissueResult),
       });
-      setTrustSlipSetupSubmitted(true);
+      setTrustSlipSetupSubmitted(false);
       setActiveTrustSlipPaperPack("share");
       setConfirmationOutcome(null);
       setMerchantRailLink(null);
@@ -5097,6 +5097,17 @@ export default function TrustSlipPage() {
                       ? "Open Community"
                       : "Generate TrustSlip"}
                 </PrimaryButton>
+                <SecondaryButton
+                  type="button"
+                  onClick={() => void sharePublicDecisionPack()}
+                  fullWidth
+                  stableHeight={isCompact ? 54 : 52}
+                  debugId="trust-slip.setup.share-current"
+                  style={trustSlipActionButtonStyle(isCompact)}
+                >
+                  {trustSlipIconBadge("public-globe", isCompact ? 26 : 28, "amber")}
+                  Share TrustSlip
+                </SecondaryButton>
                 {trustSlipCode ? (
                   <SecondaryButton
                     type="button"
@@ -5108,19 +5119,6 @@ export default function TrustSlipPage() {
                   >
                     {trustSlipIconBadge("document", isCompact ? 26 : 28, "navy")}
                     Open current TrustSlip
-                  </SecondaryButton>
-                ) : null}
-                {trustSlipCode ? (
-                  <SecondaryButton
-                    type="button"
-                    onClick={() => void sharePublicDecisionPack()}
-                    fullWidth
-                    stableHeight={isCompact ? 54 : 52}
-                    debugId="trust-slip.setup.share-current"
-                    style={trustSlipActionButtonStyle(isCompact)}
-                  >
-                    {trustSlipIconBadge("public-globe", isCompact ? 26 : 28, "amber")}
-                    Share TrustSlip
                   </SecondaryButton>
                 ) : null}
               </div>
