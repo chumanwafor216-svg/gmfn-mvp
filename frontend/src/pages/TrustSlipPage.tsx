@@ -506,7 +506,7 @@ type TrustSlipDecisionPackIssueResolutionPointer = {
   decisionUse: string;
 };
 
-type TrustSlipVerificationScope = "community_specific" | "all_visible_communities";
+type TrustSlipVisibilityScope = "community_specific" | "all_visible_communities";
 type TrustSlipPaperPackKey = "share" | "holder" | "community" | "evidence" | "limits";
 
 type TrustSlipDecisionPackEvidenceExtract = {
@@ -751,7 +751,7 @@ function trustSlipIssueNoticeText(error: any): string {
     messageLower.includes("community_id") ||
     messageLower.includes("clan_id")
   ) {
-    return "Choose an active community before issuing TrustSlip. All-visible context is for sharing scope, not the issuing community.";
+    return "TrustSlip could not be generated because the community choice was not sent correctly. Choose a listed community and try again.";
   }
 
   const status = Number(error?.status || error?.response?.status || 0);
@@ -2616,9 +2616,9 @@ export default function TrustSlipPage() {
   const [merchantRailLink, setMerchantRailLink] = useState<MerchantLinkResponse | null>(null);
   const [selectedTrustSlipPurpose, setSelectedTrustSlipPurpose] =
     useState<DecisionPackKey>(DEFAULT_DECISION_PACK.key);
-  const [selectedVerificationScope, setSelectedVerificationScope] =
-    useState<TrustSlipVerificationScope>("community_specific");
-  const [selectedVerificationCommunityOptionId, setSelectedVerificationCommunityOptionId] =
+  const [visibilityScope, setVisibilityScope] =
+    useState<TrustSlipVisibilityScope>("community_specific");
+  const [selectedIssuingCommunityOptionId, setSelectedIssuingCommunityOptionId] =
     useState("");
   const [trustSlipSetupSubmitted, setTrustSlipSetupSubmitted] = useState(false);
   const [activeTrustSlipPaperPack, setActiveTrustSlipPaperPack] =
@@ -2926,6 +2926,15 @@ export default function TrustSlipPage() {
       return;
     }
 
+    const activeIssuingCommunityId = issuingCommunityId;
+    if (!activeIssuingCommunityId) {
+      showNotice(
+        "error",
+        "Choose an active community before generating TrustSlip. All visible context can be shared after a real community issues the TrustSlip."
+      );
+      return;
+    }
+
     const loadSeq = trustSlipLoadSeqRef.current + 1;
     trustSlipLoadSeqRef.current = loadSeq;
     communityPulseSeqRef.current += 1;
@@ -2937,13 +2946,12 @@ export default function TrustSlipPage() {
     setMerchantRailBusy(false);
 
     try {
-      const issueCommunityId = fallbackTrustSlipIssueCommunityId;
       const reissueResult = await api.reissueMyTrustSlip({
         reason: "holder_requested_fresh_public_trustslip",
         force: true,
-        community_id: issueCommunityId || undefined,
+        community_id: activeIssuingCommunityId,
       });
-      const data = await fetchTrustSlipPageData(issueCommunityId || selectedClanId, {
+      const data = await fetchTrustSlipPageData(activeIssuingCommunityId, {
         forceFresh: true,
         networkFirst: true,
       });
@@ -2953,19 +2961,34 @@ export default function TrustSlipPage() {
       ) {
         return;
       }
+      const mergedSummary = mergeFreshTrustSlipSummary(data.summary, reissueResult);
+      const issuedCode = firstTruthy(
+        trustSlipCodeFromResult(reissueResult),
+        trustSlipCodeFromResult(mergedSummary)
+      );
       applyTrustSlipPageData({
         ...data,
-        summary: mergeFreshTrustSlipSummary(data.summary, reissueResult),
+        summary: mergedSummary,
       });
-      setTrustSlipSetupSubmitted(false);
-      setActiveTrustSlipPaperPack("share");
       setConfirmationOutcome(null);
       setMerchantRailLink(null);
+      if (!issuedCode) {
+        setTrustSlipSetupSubmitted(false);
+        showNotice(
+          "error",
+          mergedSummary?.reason
+            ? trustSlipIssueNoticeText({ detail: mergedSummary })
+            : "TrustSlip is not ready yet. GSN did not return a current code for this community."
+        );
+        return;
+      }
+      setTrustSlipSetupSubmitted(true);
+      setActiveTrustSlipPaperPack("share");
       showNotice(
         "success",
-        selectedVerificationScope === "community_specific" && selectedTrustSlipIssueCommunityId
+        visibilityScope === "community_specific"
           ? `Fresh TrustSlip issued for ${selectedVerificationCommunityName}.`
-          : "Fresh TrustSlip issued."
+          : `Fresh TrustSlip issued from ${selectedVerificationCommunityName}.`
       );
     } catch (error: any) {
       if (
@@ -3074,36 +3097,33 @@ export default function TrustSlipPage() {
   );
 
   useEffect(() => {
-    if (selectedVerificationScope !== "community_specific") return;
-
     if (!verificationCommunityOptions.length) {
-      if (selectedVerificationCommunityOptionId) {
-        setSelectedVerificationCommunityOptionId("");
+      if (selectedIssuingCommunityOptionId) {
+        setSelectedIssuingCommunityOptionId("");
       }
       return;
     }
 
     const stillVisible = verificationCommunityOptions.some(
-      (option) => option.id === selectedVerificationCommunityOptionId
+      (option) => option.id === selectedIssuingCommunityOptionId
     );
     if (!stillVisible) {
       const preferred =
         verificationCommunityOptions.find(
           (option) => option.id === fallbackVerificationCommunityId
         ) || verificationCommunityOptions[0];
-      setSelectedVerificationCommunityOptionId(preferred.id);
+      setSelectedIssuingCommunityOptionId(preferred.id);
     }
   }, [
     fallbackVerificationCommunityId,
-    selectedVerificationCommunityOptionId,
-    selectedVerificationScope,
+    selectedIssuingCommunityOptionId,
     verificationCommunityOptions,
   ]);
 
   const selectedVerificationCommunityOption = useMemo(
     () =>
       verificationCommunityOptions.find(
-        (option) => option.id === selectedVerificationCommunityOptionId
+        (option) => option.id === selectedIssuingCommunityOptionId
       ) ||
       verificationCommunityOptions.find(
         (option) => option.id === fallbackVerificationCommunityId
@@ -3112,7 +3132,7 @@ export default function TrustSlipPage() {
       null,
     [
       fallbackVerificationCommunityId,
-      selectedVerificationCommunityOptionId,
+      selectedIssuingCommunityOptionId,
       verificationCommunityOptions,
     ]
   );
@@ -3129,35 +3149,28 @@ export default function TrustSlipPage() {
     communityRefValue
   );
   const verificationScopeSelectValue =
-    selectedVerificationScope === "all_visible_communities"
+    visibilityScope === "all_visible_communities"
       ? "all_visible_communities"
       : `community:${selectedVerificationCommunityId}`;
   const verificationScopeLabel =
-    selectedVerificationScope === "community_specific"
+    visibilityScope === "community_specific"
       ? `This community: ${selectedVerificationCommunityName}`
       : "All visible community context";
+  const issuingCommunityId = positiveNumberId(selectedVerificationCommunityId);
   const verificationScopeBoundary =
-    selectedVerificationScope === "community_specific"
+    visibilityScope === "community_specific"
       ? `Live confirmation requests should be answered by ${selectedVerificationCommunityName}. Other communities are not treated as giving the same judgement.`
-      : "This link may show wider visible community context, but it is not proof that every community gives the same judgement. Choose one community when you need a live answer.";
-  const selectedTrustSlipIssueCommunityId = positiveNumberId(
-    selectedVerificationScope === "community_specific"
-      ? selectedVerificationCommunityId
-      : ""
-  );
+      : issuingCommunityId
+        ? `All visible context can travel with the link, but this TrustSlip is still issued from ${selectedVerificationCommunityName}. It is not proof that every community gives the same judgement.`
+        : "Choose an active community before using all visible community context.";
   const currentTrustSlipAnchorCommunityId = positiveNumberId(
     firstTruthy(summary?.community_id, summary?.clan_id)
   );
-  const fallbackTrustSlipIssueCommunityId =
-    selectedTrustSlipIssueCommunityId ||
-    currentTrustSlipAnchorCommunityId ||
-    positiveNumberId(selectedClanId) ||
-    positiveNumberId(verificationCommunityOptions[0]?.id);
   const trustSlipNeedsSelectedCommunityRefresh = Boolean(
-    selectedVerificationScope === "community_specific" &&
-      selectedTrustSlipIssueCommunityId &&
+    visibilityScope === "community_specific" &&
+      issuingCommunityId &&
       currentTrustSlipAnchorCommunityId &&
-      selectedTrustSlipIssueCommunityId !== currentTrustSlipAnchorCommunityId
+      issuingCommunityId !== currentTrustSlipAnchorCommunityId
   );
   const trustSlipSelectedCommunityRefreshText = trustSlipNeedsSelectedCommunityRefresh
     ? `Refresh TrustSlip before sharing so the public code is issued from ${selectedVerificationCommunityName}.`
@@ -3168,12 +3181,12 @@ export default function TrustSlipPage() {
       access_purpose: selectedPurposeOption.label,
       recipient_question: selectedPurposeOption.recipientQuestion,
       decision_focus: selectedPurposeOption.focus,
-      access_scope: selectedVerificationScope,
-      verification_scope: selectedVerificationScope,
+      access_scope: visibilityScope,
+      verification_scope: visibilityScope,
       verification_scope_label: verificationScopeLabel,
       verification_scope_boundary: verificationScopeBoundary,
       verification_community_id:
-        selectedVerificationScope === "community_specific"
+        visibilityScope === "community_specific"
           ? selectedVerificationCommunityId
           : "",
       verification_community_label: selectedVerificationCommunityName,
@@ -3181,7 +3194,7 @@ export default function TrustSlipPage() {
     }),
     [
       selectedPurposeOption,
-      selectedVerificationScope,
+      visibilityScope,
       verificationScopeLabel,
       verificationScopeBoundary,
       selectedVerificationCommunityId,
@@ -3211,7 +3224,7 @@ export default function TrustSlipPage() {
     ["community_membership_required", "selected_community_required"].includes(
       trustSlipIssueReason
     ) &&
-    !fallbackTrustSlipIssueCommunityId;
+    !issuingCommunityId;
   const trustSlipBlockedByIssue =
     !trustSlipCode && trustSlipIssueReason === "trustslip_issue_blocked";
   const trustSlipHasSetupBlocker =
@@ -3245,6 +3258,7 @@ export default function TrustSlipPage() {
     return withPublicDecisionPackQuery(basePath, publicDecisionPackQuery);
   }, [publicDecisionPackQuery, summary, trustSlipCode]);
   const verifyUrl = useMemo(() => toFrontendAbsoluteUrl(verifyPath), [verifyPath]);
+  const hasUsableTrustSlipShare = Boolean(trustSlipCode && verifyPath && verifyUrl);
   const merchantRailReleasePath = useMemo(
     () => (merchantRailLink?.path ? merchantReleaseDeskPath(merchantRailLink.path) : ""),
     [merchantRailLink?.path]
@@ -4079,8 +4093,8 @@ export default function TrustSlipPage() {
   ];
   const communityConfirmation = summary?.community_confirmation || null;
   const communityVerifyKey = firstTruthy(
-    selectedVerificationScope === "community_specific" ? selectedVerificationCommunityRef : "",
-    selectedVerificationScope === "community_specific" ? selectedVerificationCommunityId : "",
+    visibilityScope === "community_specific" ? selectedVerificationCommunityRef : "",
+    visibilityScope === "community_specific" ? selectedVerificationCommunityId : "",
     communityConfirmation?.community_code,
     communityConfirmation?.community_id,
     summary?.community_code,
@@ -4413,7 +4427,7 @@ export default function TrustSlipPage() {
         requester_external_label: "TrustSlip viewer",
         reason_type: selectedPurposeOption.confirmationReasonType || "community_standing_check",
         community_id:
-          selectedVerificationScope === "community_specific"
+          visibilityScope === "community_specific"
             ? selectedVerificationCommunityId || undefined
             : undefined,
         risk_level: "low",
@@ -4568,7 +4582,7 @@ export default function TrustSlipPage() {
   ]);
 
   function buildPublicDecisionPackShareText() {
-    if (!verifyUrl) return "";
+    if (!hasUsableTrustSlipShare) return "";
 
     return [
       "GSN public Decision Pack link",
@@ -4600,7 +4614,7 @@ export default function TrustSlipPage() {
   }
   async function sharePublicDecisionPack() {
     const text = buildPublicDecisionPackShareText();
-    if (!verifyUrl || !text) {
+    if (!hasUsableTrustSlipShare || !text) {
       showNotice("error", "This TrustSlip link is not ready yet.");
       return;
     }
@@ -5014,12 +5028,12 @@ export default function TrustSlipPage() {
                     onChange={(event) => {
                       const value = event.target.value;
                       if (value === "all_visible_communities") {
-                        setSelectedVerificationScope("all_visible_communities");
+                        setVisibilityScope("all_visible_communities");
                         return;
                       }
 
-                      setSelectedVerificationScope("community_specific");
-                      setSelectedVerificationCommunityOptionId(value.replace(/^community:/, ""));
+                      setVisibilityScope("community_specific");
+                      setSelectedIssuingCommunityOptionId(value.replace(/^community:/, ""));
                     }}
                     style={{
                       width: "100%",
@@ -5033,12 +5047,12 @@ export default function TrustSlipPage() {
                       padding: "0 40px 0 12px",
                     }}
                   >
-                    <option value="all_visible_communities">All visible community context</option>
                     {verificationCommunityOptions.map((option) => (
-                      <option key={option.id} value={`community:${option.id}`}>
+                    <option key={option.id} value={`community:${option.id}`}>
                         {option.label}
                       </option>
                     ))}
+                    <option value="all_visible_communities">All visible community context</option>
                   </select>
                 </label>
                 <div
@@ -5097,17 +5111,19 @@ export default function TrustSlipPage() {
                       ? "Open Community"
                       : "Generate TrustSlip"}
                 </PrimaryButton>
-                <SecondaryButton
-                  type="button"
-                  onClick={() => void sharePublicDecisionPack()}
-                  fullWidth
-                  stableHeight={isCompact ? 54 : 52}
-                  debugId="trust-slip.setup.share-current"
-                  style={trustSlipActionButtonStyle(isCompact)}
-                >
-                  {trustSlipIconBadge("public-globe", isCompact ? 26 : 28, "amber")}
-                  Share TrustSlip
-                </SecondaryButton>
+                {trustSlipCode ? (
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => void sharePublicDecisionPack()}
+                    fullWidth
+                    stableHeight={isCompact ? 54 : 52}
+                    debugId="trust-slip.setup.share-current"
+                    style={trustSlipActionButtonStyle(isCompact)}
+                  >
+                    {trustSlipIconBadge("public-globe", isCompact ? 26 : 28, "amber")}
+                    Share TrustSlip
+                  </SecondaryButton>
+                ) : null}
                 {trustSlipCode ? (
                   <SecondaryButton
                     type="button"
@@ -5396,12 +5412,12 @@ export default function TrustSlipPage() {
                   onChange={(event) => {
                     const value = event.target.value;
                     if (value === "all_visible_communities") {
-                      setSelectedVerificationScope("all_visible_communities");
+                      setVisibilityScope("all_visible_communities");
                       return;
                     }
 
-                    setSelectedVerificationScope("community_specific");
-                    setSelectedVerificationCommunityOptionId(value.replace(/^community:/, ""));
+                    setVisibilityScope("community_specific");
+                    setSelectedIssuingCommunityOptionId(value.replace(/^community:/, ""));
                   }}
                   style={{
                     width: "100%",
@@ -5415,12 +5431,12 @@ export default function TrustSlipPage() {
                     padding: "0 38px 0 11px",
                   }}
                 >
-                  <option value="all_visible_communities">All visible community context</option>
-                  {verificationCommunityOptions.map((option) => (
+                    {verificationCommunityOptions.map((option) => (
                     <option key={option.id} value={`community:${option.id}`}>
                       {option.label}
                     </option>
                   ))}
+                  <option value="all_visible_communities">All visible community context</option>
                 </select>
               </label>
               <div style={{ minWidth: 0 }}>
@@ -5491,7 +5507,7 @@ export default function TrustSlipPage() {
                 >
                   {trustSlipNeedsSelectedCommunityRefresh
                     ? trustSlipSelectedCommunityRefreshText
-                    : selectedVerificationScope === "community_specific"
+                    : visibilityScope === "community_specific"
                       ? `Ready to issue from ${selectedVerificationCommunityName}.`
                       : "Refresh uses your current community as the anchor while showing wider visible context."}
                 </div>
@@ -5956,7 +5972,7 @@ export default function TrustSlipPage() {
               <CardActionRow>
                 <PrimaryButton
                   onClick={() => void sharePublicDecisionPack()}
-                  disabled={!verifyUrl || trustSlipNeedsSelectedCommunityRefresh}
+                  disabled={!hasUsableTrustSlipShare || trustSlipNeedsSelectedCommunityRefresh}
                   stableHeight={isCompact ? 50 : 48}
                   minWidth={isCompact ? undefined : 176}
                   debugId="trust-slip.public-decision-pack.share"
@@ -5966,7 +5982,7 @@ export default function TrustSlipPage() {
                 </PrimaryButton>
                 <SecondaryButton
                   onClick={copyPublicDecisionPackShareNote}
-                  disabled={!verifyUrl || trustSlipNeedsSelectedCommunityRefresh}
+                  disabled={!hasUsableTrustSlipShare || trustSlipNeedsSelectedCommunityRefresh}
                   stableHeight={isCompact ? 50 : 48}
                   minWidth={isCompact ? undefined : 176}
                   debugId="trust-slip.public-decision-pack.copy-note"
@@ -5974,7 +5990,7 @@ export default function TrustSlipPage() {
                 >
                   Copy message
                 </SecondaryButton>
-                {verifyPath ? (
+                {hasUsableTrustSlipShare ? (
                   <StableCtaLink
                     to={verifyPath}
                     target="_blank"
@@ -6649,7 +6665,7 @@ export default function TrustSlipPage() {
                     <CardActionRow>
                       <PrimaryButton
                         onClick={copyPublicDecisionPackShareNote}
-                        disabled={!verifyUrl || trustSlipNeedsSelectedCommunityRefresh}
+                        disabled={!hasUsableTrustSlipShare || trustSlipNeedsSelectedCommunityRefresh}
                         stableHeight={isCompact ? 52 : 50}
                         minWidth={isCompact ? undefined : 176}
                         debugId="trust-slip.paper-pack.share.copy-note"
@@ -6658,7 +6674,7 @@ export default function TrustSlipPage() {
                         {trustSlipIconBadge("copy", isCompact ? 26 : 28, "blue")}
                         Copy message
                       </PrimaryButton>
-                      {verifyPath ? (
+                      {hasUsableTrustSlipShare ? (
                         <StableCtaLink
                           to={verifyPath}
                           target="_blank"
@@ -7814,7 +7830,7 @@ export default function TrustSlipPage() {
             </div>
 
             <CardActionRow style={{ marginTop: 16 }}>
-              {verifyPath ? (
+              {hasUsableTrustSlipShare ? (
                 <StableCtaLink
                   to={verifyPath}
                   kind="primary"
@@ -8525,7 +8541,7 @@ export default function TrustSlipPage() {
               </div>
 
               <CardActionRow style={{ marginTop: 14 }}>
-                {verifyPath ? (
+                {hasUsableTrustSlipShare ? (
                   <StableCtaLink
                     to={verifyPath}
                     kind="primary"
@@ -8570,7 +8586,7 @@ export default function TrustSlipPage() {
                   Copy Verify Link
                 </SecondaryButton>
 
-                {verifyPath ? (
+                {hasUsableTrustSlipShare ? (
                   <StableCtaLink
                     to={verifyPath}
                     target="_blank"

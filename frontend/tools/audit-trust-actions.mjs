@@ -401,7 +401,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
-  /await api\.reissueMyTrustSlip\(\{[\s\S]*?reason: "holder_requested_fresh_public_trustslip"[\s\S]*?force: true[\s\S]*?Fresh TrustSlip issued\./,
+  /await api\.reissueMyTrustSlip\(\{[\s\S]*?reason: "holder_requested_fresh_public_trustslip"[\s\S]*?force: true[\s\S]*?community_id: activeIssuingCommunityId[\s\S]*?const issuedCode = firstTruthy[\s\S]*?setTrustSlipSetupSubmitted\(true\);[\s\S]*?setActiveTrustSlipPaperPack\("share"\);/,
   "TrustSlip page refresh must force a fresh public TrustSlip so the QR, issued date, and expiry update for a new sharing session."
 );
 
