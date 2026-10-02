@@ -6,6 +6,8 @@ from typing import Any, Mapping, Optional
 from sqlalchemy.orm import Session
 
 from app.db.models import ClanMembership, CommunityConfirmationDecision, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, CommunityConfirmationReviewCase, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceRequest, MarketplaceReview, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare
+from app.core.evidence_lifecycle import SOURCE_REPAYMENT
+from app.services.evidence_lifecycle_service import resolve_evidence_lifecycle, resolve_trust_event_lifecycle
 
 
 @dataclass(frozen=True)
@@ -900,6 +902,85 @@ def _event_text(value: Any) -> str:
     return _clean(value, limit=96).lower().replace("-", "_").replace(".", "_")
 
 
+def _clean_current_trust_events(db: Session, rows: list[TrustEvent]) -> list[TrustEvent]:
+    return [
+        row
+        for row in rows
+        if resolve_trust_event_lifecycle(db, row, consumer="decision_pack").is_clean_current_evidence
+    ]
+
+
+def _clean_current_repayments(db: Session, rows: list[Repayment]) -> list[Repayment]:
+    return [
+        row
+        for row in rows
+        if resolve_evidence_lifecycle(
+            db,
+            source_type=SOURCE_REPAYMENT,
+            source_id=getattr(row, "id", None),
+            consumer="decision_pack",
+        ).is_clean_current_evidence
+    ]
+
+
+def _decision_pack_lifecycle_context_rows(
+    db: Session,
+    rows: list[TrustEvent],
+    categories: list[str] | tuple[str, ...],
+    *,
+    slip: Optional[TrustSlip] = None,
+    active_community_ids: Optional[set[int]] = None,
+) -> list[dict[str, Any]]:
+    allowed = set(categories)
+    grouped: dict[str, list[tuple[TrustEvent, Any]]] = {category: [] for category in allowed}
+    for row in rows:
+        category = _public_event_category(getattr(row, "event_type", None))
+        if category not in allowed:
+            continue
+        decision = resolve_trust_event_lifecycle(db, row, consumer="decision_pack")
+        if decision.is_clean_current_evidence:
+            continue
+        grouped[category].append((row, decision))
+
+    out: list[dict[str, Any]] = []
+    for category in categories:
+        pairs = grouped.get(category, [])
+        if not pairs:
+            continue
+        state_counts: dict[str, int] = {}
+        resolution_counts: dict[str, int] = {}
+        latest = max((getattr(row, "created_at", None) for row, _decision in pairs), default=None)
+        for _row, decision in pairs:
+            state_counts[decision.current_state] = state_counts.get(decision.current_state, 0) + 1
+            if decision.resolution:
+                resolution_counts[decision.resolution] = resolution_counts.get(decision.resolution, 0) + 1
+        row_out: dict[str, Any] = {
+            "key": f"{category}_lifecycle_context",
+            "label": f"{PUBLIC_EVENT_CATEGORY_LABELS.get(category) or SENSITIVE_EVENT_CATEGORY_LABELS.get(category) or 'Evidence'} lifecycle context",
+            "status": "lifecycle_context",
+            "evidence_count": len(pairs),
+            "latest_at": latest.isoformat() if latest else None,
+            "source": "lifecycle_interpreted_trust_events",
+            "state_counts": state_counts,
+            "resolution_counts": resolution_counts,
+            "dispute_neutral": True,
+            "decision_use": "Review separately from clean-current aggregate evidence. Lifecycle-limited context is not a hidden negative score, guilt finding, endorsement, guarantee, or proof of future behaviour.",
+        }
+        if slip is not None:
+            active_ids = active_community_ids or set()
+            row_out["event_refs"] = [
+                {
+                    **_private_event_reference(row, slip=slip, active_community_ids=active_ids),
+                    "evidence_lifecycle_state": decision.current_state,
+                    "evidence_lifecycle_resolution": decision.resolution,
+                    "evidence_lifecycle_reason": decision.reason,
+                }
+                for row, decision in pairs[:3]
+            ]
+        out.append(row_out)
+    return out
+
+
 def _public_event_category(event_type: Any) -> Optional[str]:
     text = _event_text(event_type)
     if not text:
@@ -1602,7 +1683,10 @@ def _decision_pack_record_pointers(
     )
     if active_community_ids:
         repayment_query = repayment_query.filter(Loan.clan_id.in_(active_community_ids))
-    repayments = repayment_query.order_by(Repayment.created_at.desc(), Repayment.id.desc()).limit(20).all()
+    repayments = _clean_current_repayments(
+        db,
+        repayment_query.order_by(Repayment.created_at.desc(), Repayment.id.desc()).limit(20).all(),
+    )
     if repayments:
         pointers.append(
             _record_pointer_row(
@@ -1705,7 +1789,10 @@ def _decision_pack_housing_reference_pointers(
         db.query(TrustEvent).filter(TrustEvent.subject_user_id == int(holder_user_id)),
         active_community_ids=active_community_ids,
     )
-    event_rows = event_query.order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc()).limit(80).all()
+    event_rows = _clean_current_trust_events(
+        db,
+        event_query.order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc()).limit(80).all(),
+    )
     conduct_event_rows = [
         row
         for row in event_rows
@@ -1719,7 +1806,10 @@ def _decision_pack_housing_reference_pointers(
     )
     if active_community_ids:
         repayment_query = repayment_query.filter(Loan.clan_id.in_(active_community_ids))
-    repayment_rows = repayment_query.order_by(Repayment.created_at.desc(), Repayment.id.desc()).limit(20).all()
+    repayment_rows = _clean_current_repayments(
+        db,
+        repayment_query.order_by(Repayment.created_at.desc(), Repayment.id.desc()).limit(20).all(),
+    )
 
     pool_query = db.query(PoolEvent).filter(PoolEvent.user_id == int(holder_user_id))
     pool_query = _filter_to_active_communities(pool_query, PoolEvent, active_community_ids=active_community_ids)
@@ -1839,7 +1929,10 @@ def _decision_pack_completed_work_pointers(
         db.query(TrustEvent).filter(TrustEvent.subject_user_id == int(holder_user_id)),
         active_community_ids=active_community_ids,
     )
-    event_rows = event_query.order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc()).limit(80).all()
+    event_rows = _clean_current_trust_events(
+        db,
+        event_query.order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc()).limit(80).all(),
+    )
     completed_events = [
         row
         for row in event_rows
@@ -2285,10 +2378,18 @@ def build_decision_pack_private_evidence_extract(
         db.query(TrustEvent).filter(TrustEvent.subject_user_id == int(holder_user_id)),
         active_community_ids=active_community_ids,
     )
-    rows = (
+    raw_rows = (
         query.order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
         .limit(max(1, min(int(limit or 80), 200)))
         .all()
+    )
+    rows = _clean_current_trust_events(db, raw_rows)
+    lifecycle_context = _decision_pack_lifecycle_context_rows(
+        db,
+        raw_rows,
+        category_filter,
+        slip=slip,
+        active_community_ids=active_community_ids,
     )
 
     grouped: dict[str, list[TrustEvent]] = {category: [] for category in category_filter}
@@ -2369,6 +2470,8 @@ def build_decision_pack_private_evidence_extract(
             primary_clan_id=getattr(slip, "clan_id", None),
         ),
         "categories": categories,
+        "lifecycle_context": lifecycle_context,
+        "lifecycle_context_boundary_note": "Lifecycle-limited evidence is shown separately from clean-current evidence. It is not a hidden adverse score, guilt finding, endorsement, guarantee, or proof of future behaviour.",
         "declared_claims": declared_claims,
         "declaration_boundary_note": "Declared shop, listing, or trade records are evidence pointers only. They do not prove licence, insurance, work quality, or future performance.",
         "record_pointers": record_pointers,
@@ -2425,10 +2528,16 @@ def build_decision_pack_evidence_extract(
         db.query(TrustEvent).filter(TrustEvent.subject_user_id == int(holder_user_id)),
         active_community_ids=active_community_ids,
     )
-    rows = (
+    raw_rows = (
         query.order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
         .limit(max(1, min(int(limit or 250), 500)))
         .all()
+    )
+    rows = _clean_current_trust_events(db, raw_rows)
+    lifecycle_context = _decision_pack_lifecycle_context_rows(
+        db,
+        raw_rows,
+        public_categories,
     )
 
     grouped: dict[str, list[TrustEvent]] = {category: [] for category in public_categories}
@@ -2499,6 +2608,8 @@ def build_decision_pack_evidence_extract(
             primary_clan_id=getattr(slip, "clan_id", None),
         ),
         "categories": categories,
+        "lifecycle_context": lifecycle_context,
+        "lifecycle_context_boundary_note": "Lifecycle-limited evidence is shown separately from clean-current evidence. It is not a hidden adverse score, guilt finding, endorsement, guarantee, or proof of future behaviour.",
         "declared_claims": declared_claims,
         "declaration_boundary_note": "Declared shop, listing, or trade records are evidence pointers only. They do not prove licence, insurance, work quality, or future performance.",
         "record_pointers": record_pointers,

@@ -2682,6 +2682,64 @@ class TrustEvent(Base):
     meta = synonym("meta_json", descriptor=property(_get_meta, _set_meta))
 
 
+class EvidenceLifecycleMarker(Base):
+    __tablename__ = "evidence_lifecycle_markers"
+
+    __table_args__ = (
+        Index("ix_evidence_lifecycle_source", "source_type", "source_id"),
+        Index("ix_evidence_lifecycle_related_source", "related_source_type", "related_source_id"),
+        Index("ix_evidence_lifecycle_trust_event", "trust_event_id"),
+        Index("ix_evidence_lifecycle_related_trust_event", "related_trust_event_id"),
+        Index("ix_evidence_lifecycle_state", "state"),
+        Index("ix_evidence_lifecycle_marker_type", "marker_type"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    source_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_id: Mapped[str] = mapped_column(String(120), nullable=False)
+    trust_event_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("trust_events.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    marker_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    state: Mapped[str] = mapped_column(String(32), nullable=False)
+    resolution: Mapped[Optional[str]] = mapped_column(String(48), nullable=True)
+    actor_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    authority_type: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    reason: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)
+    note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    related_source_type: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    related_source_id: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    related_trust_event_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("trust_events.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    meta_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+
+    def _get_meta(self) -> Optional[Dict[str, Any]]:
+        if not self.meta_json:
+            return None
+        try:
+            raw = json.loads(self.meta_json)
+            return raw if isinstance(raw, dict) else None
+        except Exception:
+            return None
+
+    def _set_meta(self, value: Optional[Dict[str, Any]]) -> None:
+        self.meta_json = json.dumps(value) if value is not None else None
+
+    meta = synonym("meta_json", descriptor=property(_get_meta, _set_meta))
+
+
 class ProtectedTradeRecord(Base):
     __tablename__ = "protected_trade_records"
 

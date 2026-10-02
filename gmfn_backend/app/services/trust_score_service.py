@@ -25,7 +25,8 @@ from app.core.constants import (
     RECENCY_MAX_FACTOR,
     RECENCY_MIN_FACTOR,
 )
-from app.db.models import TrustEvent, User
+from app.db.models import Loan, TrustEvent, User
+from app.services.evidence_lifecycle_service import resolve_trust_event_lifecycle
 
 # Canonical event types
 EV_BORROWER_FULL_REPAID = "loan_fully_repaid"
@@ -129,6 +130,47 @@ _EVENT_ALIASES = {
     },
 }
 
+_FULL_REPAYMENT_UNCONDITIONAL_ALIASES = set(_EVENT_ALIASES[EV_BORROWER_FULL_REPAID])
+_FULL_REPAYMENT_CONTEXTUAL_ALIASES = {
+    "loan.repayment_confirmed",
+    "loan_repayment_confirmed",
+    "repayment.confirmed",
+    "repayment_confirmed",
+    "full_repayment_confirmed",
+    "repayment.completed",
+    "repayment_completed",
+    "repayment.successful",
+    "repayment_successful",
+    "repayment_verified",
+}
+_GUARANTOR_SUCCESS_CONTEXTUAL_ALIASES = {
+    "guarantor.repayment.confirmed",
+    "guarantor.support.confirmed",
+}
+_PARTIAL_OR_AMBIGUOUS_REPAYMENT_EVENTS = {
+    "repayment.created",
+    "repayment_created",
+    "repayment.claimed",
+    "repayment_claimed",
+    "repayment.claim",
+    "repayment.schedule.created",
+    "repayment_schedule_created",
+    "repayment.reversed",
+    "repayment_reversed",
+}
+_DEFAULT_ALIASES = set(_EVENT_ALIASES[EV_DEFAULT]) | {"loan.defaulted"}
+
+_FULL_REPAYMENT_META_VALUES = {
+    "loan_fully_repaid",
+    "fully_repaid",
+    "full_repayment",
+    "loan_repaid",
+    "loan.repaid",
+    "repaid",
+    "settled",
+    "closed",
+    "paid",
+}
 
 def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
@@ -154,11 +196,118 @@ def _normalize_event_type(event_type: str) -> str:
     et = (event_type or "").strip().lower()
     if not et:
         return et
+    if et in _DEFAULT_ALIASES:
+        return EV_DEFAULT
     for canonical, aliases in _EVENT_ALIASES.items():
         if et == canonical or et in aliases:
             return canonical
     return et
 
+
+def _meta_text_values(meta: Dict[str, Any]) -> list[str]:
+    keys = (
+        "reason",
+        "status",
+        "outcome",
+        "result",
+        "state",
+        "loan_status",
+        "loan_status_after",
+        "repayment_status",
+        "repayment_outcome",
+        "completion_status",
+        "trust_reason",
+    )
+    values: list[str] = []
+    for key in keys:
+        raw = meta.get(key)
+        if raw is None:
+            continue
+        text = str(raw).strip().lower().replace("-", "_").replace(" ", "_")
+        if text:
+            values.append(text)
+    return values
+
+
+def _loan_is_full_repayment_outcome(db: Session, loan_id: Any) -> bool:
+    try:
+        safe_loan_id = int(loan_id)
+    except Exception:
+        return False
+    loan = db.get(Loan, safe_loan_id)
+    if loan is None:
+        return False
+    status = str(getattr(loan, "status", "") or "").strip().lower()
+    if status in {"repaid", "paid", "settled", "closed"}:
+        return True
+    if getattr(loan, "repaid_at", None) is not None:
+        return True
+    try:
+        remaining = _d(getattr(loan, "remaining_amount", None))
+        paid_total = _d(getattr(loan, "paid_total", None))
+        amount = _d(getattr(loan, "amount", None))
+    except Exception:
+        return False
+    return amount > Decimal("0") and paid_total >= amount and remaining <= Decimal("0")
+
+
+def _meta_establishes_full_repayment(meta: Dict[str, Any]) -> bool:
+    for text in _meta_text_values(meta):
+        if text in _FULL_REPAYMENT_META_VALUES:
+            return True
+        if ("full" in text or "fully" in text) and ("repay" in text or "paid" in text):
+            return True
+    if meta.get("is_full_repayment") is True or meta.get("fully_repaid") is True:
+        return True
+    return False
+
+
+def _context_establishes_full_repayment(db: Session, row: TrustEvent, meta: Dict[str, Any]) -> bool:
+    return _meta_establishes_full_repayment(meta) or _loan_is_full_repayment_outcome(
+        db, getattr(row, "loan_id", None)
+    )
+
+
+def _outcome_key(row: TrustEvent, *, kind: str, meta: Dict[str, Any]) -> tuple[Any, ...]:
+    subject_user_id = int(getattr(row, "subject_user_id", 0) or 0)
+    loan_id = getattr(row, "loan_id", None) or meta.get("loan_id")
+    if loan_id is not None:
+        if kind == EV_GUARANTOR_SUCCESS:
+            guarantor_key = (
+                getattr(row, "guarantor_id", None)
+                or meta.get("guarantor_id")
+                or meta.get("guarantor_user_id")
+                or meta.get("supporter_user_id")
+                or subject_user_id
+            )
+            return (kind, subject_user_id, str(loan_id), str(guarantor_key))
+        return (kind, subject_user_id, str(loan_id))
+    dedupe_key = getattr(row, "dedupe_key", None) or meta.get("dedupe_key")
+    if dedupe_key:
+        return (kind, subject_user_id, "dedupe", str(dedupe_key))
+    return (kind, subject_user_id, "event", int(getattr(row, "id", 0) or 0))
+
+
+def _raw_event_type(row: TrustEvent) -> str:
+    return str(getattr(row, "event_type", "") or "").strip().lower()
+
+
+def _is_current_full_repayment_event(row: TrustEvent) -> bool:
+    return _raw_event_type(row) in _FULL_REPAYMENT_UNCONDITIONAL_ALIASES
+
+
+def _canonical_full_repayment_keys(rows: list[TrustEvent]) -> set[tuple[Any, ...]]:
+    keys: set[tuple[Any, ...]] = set()
+    for row in rows:
+        if _is_current_full_repayment_event(row):
+            keys.add(
+                _outcome_key(
+                    row,
+                    kind=EV_BORROWER_FULL_REPAID,
+                    meta=_safe_event_meta(row),
+                )
+            )
+    return keys
 
 def _safe_event_meta(row: TrustEvent) -> Dict[str, Any]:
     raw = getattr(row, "meta", None) or getattr(row, "meta_json", None)
@@ -296,11 +445,58 @@ def recompute_trust_for_user(
     review_caution = 0
     review_negative = 0
     photo_review_state_by_check: Dict[int, str] = {}
+    lifecycle_limited_event_count = 0
+    ambiguous_repayment_events_preserved = 0
+    partial_repayment_events_preserved = 0
+    duplicate_outcome_events_skipped = 0
+    contextual_legacy_full_repayments_counted = 0
+    contextual_legacy_guarantor_success_counted = 0
+    canonical_full_repayment_keys = _canonical_full_repayment_keys(rows)
+    counted_outcome_keys: set[tuple[Any, ...]] = set()
 
     for row in rows:
-        et = _normalize_event_type(getattr(row, "event_type", "") or "")
+        raw_et = _raw_event_type(row)
+        meta = _safe_event_meta(row)
+        et = _normalize_event_type(raw_et)
+
+        if raw_et in _PARTIAL_OR_AMBIGUOUS_REPAYMENT_EVENTS:
+            partial_repayment_events_preserved += 1
+            continue
+
+        if raw_et in _FULL_REPAYMENT_CONTEXTUAL_ALIASES:
+            if not _context_establishes_full_repayment(db, row, meta):
+                ambiguous_repayment_events_preserved += 1
+                continue
+            et = EV_BORROWER_FULL_REPAID
+            contextual_legacy_full_repayments_counted += 1
+        elif raw_et in _GUARANTOR_SUCCESS_CONTEXTUAL_ALIASES:
+            if not _context_establishes_full_repayment(db, row, meta):
+                ambiguous_repayment_events_preserved += 1
+                continue
+            et = EV_GUARANTOR_SUCCESS
+            contextual_legacy_guarantor_success_counted += 1
+
         if et not in counts:
             continue
+
+        lifecycle_decision = resolve_trust_event_lifecycle(db, row, consumer="trust_score")
+        if not lifecycle_decision.usable_for_scoring:
+            lifecycle_limited_event_count += 1
+            continue
+
+        if et in {EV_BORROWER_FULL_REPAID, EV_GUARANTOR_SUCCESS, EV_DEFAULT}:
+            outcome_key = _outcome_key(row, kind=et, meta=meta)
+            if (
+                et == EV_BORROWER_FULL_REPAID
+                and raw_et in _FULL_REPAYMENT_CONTEXTUAL_ALIASES
+                and outcome_key in canonical_full_repayment_keys
+            ):
+                duplicate_outcome_events_skipped += 1
+                continue
+            if outcome_key in counted_outcome_keys:
+                duplicate_outcome_events_skipped += 1
+                continue
+            counted_outcome_keys.add(outcome_key)
 
         counts[et] += 1
         if et in {
@@ -310,7 +506,6 @@ def recompute_trust_for_user(
             EV_IDENTITY_PHOTO_NEEDS_MORE,
             EV_IDENTITY_PHOTO_REVIEW_CORRECTED,
         }:
-            meta = _safe_event_meta(row)
             try:
                 check_id = int(meta.get("verification_check_id") or 0)
             except Exception:
@@ -326,7 +521,6 @@ def recompute_trust_for_user(
                     photo_review_state_by_check[check_id] = "reopened"
 
         if et == EV_COMMUNITY_CONFIRMATION_REVIEW_RESOLVED:
-            meta = _safe_event_meta(row)
             if meta.get("affects_trust_reading") is True:
                 review_delta_total += _explicit_trust_delta(meta)
                 impact = str(meta.get("trust_impact") or "").strip().lower()
@@ -564,6 +758,21 @@ def recompute_trust_for_user(
             "community_confirmation_review_negative": review_negative,
             "full_repayments_reversed": full_repayments_rev,
             "guarantor_success_reversed": guarantor_success_rev,
+            "lifecycle_limited_events_excluded": lifecycle_limited_event_count,
+            "ambiguous_repayment_events_preserved": ambiguous_repayment_events_preserved,
+            "partial_repayment_events_preserved": partial_repayment_events_preserved,
+            "duplicate_outcome_events_skipped": duplicate_outcome_events_skipped,
+            "contextual_legacy_full_repayments_counted": contextual_legacy_full_repayments_counted,
+            "contextual_legacy_guarantor_success_counted": contextual_legacy_guarantor_success_counted,
+        },
+        "normalization": {
+            "borrower_full_repayment_unconditional_aliases": sorted(_FULL_REPAYMENT_UNCONDITIONAL_ALIASES),
+            "borrower_full_repayment_contextual_aliases": sorted(_FULL_REPAYMENT_CONTEXTUAL_ALIASES),
+            "guarantor_success_unconditional_aliases": sorted(_EVENT_ALIASES[EV_GUARANTOR_SUCCESS]),
+            "guarantor_success_contextual_aliases": sorted(_GUARANTOR_SUCCESS_CONTEXTUAL_ALIASES),
+            "partial_or_ambiguous_repayment_events_not_scored": sorted(_PARTIAL_OR_AMBIGUOUS_REPAYMENT_EVENTS),
+            "default_aliases": sorted(_DEFAULT_ALIASES),
+            "dedupe_rule": "Borrower full repayment counts once per subject_user_id+loan_id when loan_id exists; guarantor success counts once per subject_user_id+loan_id+guarantor/support identity; canonical current evidence takes precedence over contextual legacy equivalents on the same loan.",
         },
         "gains": {
             "borrower": str(_q(gain_borrower)),

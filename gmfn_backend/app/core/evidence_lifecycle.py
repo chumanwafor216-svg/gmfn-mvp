@@ -1,0 +1,65 @@
+﻿from __future__ import annotations
+
+ACTIVE = "active"
+DISPUTED = "disputed"
+REVERSED = "reversed"
+CORRECTED = "corrected"
+SUPERSEDED = "superseded"
+RESOLVED = "resolved"
+STALE = "stale"
+EXPIRED = "expired"
+REVOKED = "revoked"
+NOT_MEASURED_YET = "not_measured_yet"
+
+LIFECYCLE_STATES = {
+    ACTIVE,
+    DISPUTED,
+    REVERSED,
+    CORRECTED,
+    SUPERSEDED,
+    RESOLVED,
+    STALE,
+    EXPIRED,
+    REVOKED,
+    NOT_MEASURED_YET,
+}
+
+RESOLUTION_UPHELD = "upheld"
+RESOLUTION_REVERSED = "reversed"
+RESOLUTION_UNRESOLVED = "unresolved"
+RESOLUTION_INSUFFICIENT_EVIDENCE = "insufficient_evidence"
+RESOLUTION_SETTLED_WITHOUT_FINDING = "settled_without_finding"
+
+DISPUTE_RESOLUTIONS = {
+    RESOLUTION_UPHELD,
+    RESOLUTION_REVERSED,
+    RESOLUTION_UNRESOLVED,
+    RESOLUTION_INSUFFICIENT_EVIDENCE,
+    RESOLUTION_SETTLED_WITHOUT_FINDING,
+}
+
+MARKER_DISPUTE = "dispute"
+MARKER_REVERSAL = "reversal"
+MARKER_CORRECTION = "correction"
+MARKER_SUPERSESSION = "supersession"
+MARKER_EXPIRY = "expiry"
+MARKER_REVOCATION = "revocation"
+MARKER_RESOLUTION = "resolution"
+
+LIFECYCLE_MARKER_TYPES = {
+    MARKER_DISPUTE,
+    MARKER_REVERSAL,
+    MARKER_CORRECTION,
+    MARKER_SUPERSESSION,
+    MARKER_EXPIRY,
+    MARKER_REVOCATION,
+    MARKER_RESOLUTION,
+}
+
+SOURCE_TRUST_EVENT = "trust_event"
+SOURCE_REPAYMENT = "repayment"
+SOURCE_LOAN = "loan"
+SOURCE_PROTECTED_TRADE = "protected_trade"
+SOURCE_TRUST_SLIP = "trust_slip"
+SOURCE_IDENTITY_CHECK = "identity_verification_check"
+SOURCE_COMMUNITY_CONFIRMATION_REVIEW = "community_confirmation_review_case"

@@ -181,6 +181,29 @@ def create_repayment(
                     commit=False,
                     refresh=False,
                 )
+                log_trust_event(
+                    db,
+                    event_type="guarantor_success",
+                    clan_id=clan_id,
+                    loan_id=int(loan.id),
+                    guarantor_id=int(getattr(g, "id", 0) or 0),
+                    actor_user_id=_uid(payer),
+                    subject_user_id=int(getattr(g, "guarantor_user_id", 0) or 0),
+                    meta={
+                        "reason": "loan_fully_repaid",
+                        "trust_delta": "0.03",
+                        "borrower_user_id": borrower_user_id,
+                        "released_amount": str(locked),
+                        "source_event": "loan_full_repayment",
+                    },
+                    dedupe_key=(
+                        "guarantor_success:"
+                        f"loan:{int(loan.id)}:"
+                        f"guarantor:{int(getattr(g, 'id', 0) or 0)}"
+                    ),
+                    commit=False,
+                    refresh=False,
+                )
 
         log_loan_repaid(
             db,

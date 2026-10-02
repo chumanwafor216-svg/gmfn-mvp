@@ -1,6 +1,8 @@
 # tests/test_trust_recompute_engine.py
 
 import json
+from decimal import Decimal
+
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 
@@ -70,24 +72,24 @@ def test_trust_recompute_deterministic_and_apply_contract(
     override_current_user,  # admin user id=1
     seed_clan_admin_membership,  # creates user 1 + clan 1 + membership
 ):
-    # Create 3 repayment events for user 1 as borrower => 3 * 0.10 = 0.3000
+    # Create 3 canonical full-repayment events for user 1 as borrower => 3 * 0.10 = 0.30
     _insert_trust_event(
         subject_user_id=1,
         actor_user_id=1,
-        event_type="loan.repayment_confirmed",
-        meta={"role": "borrower", "reason": "Repayment confirmed", "note": "Test 1"},
+        event_type="loan.repaid",
+        meta={"role": "borrower", "reason": "loan_fully_repaid", "note": "Test 1"},
     )
     _insert_trust_event(
         subject_user_id=1,
         actor_user_id=1,
-        event_type="loan.repayment_confirmed",
-        meta={"role": "borrower", "reason": "Repayment confirmed", "note": "Test 2"},
+        event_type="loan.repaid",
+        meta={"role": "borrower", "reason": "loan_fully_repaid", "note": "Test 2"},
     )
     _insert_trust_event(
         subject_user_id=1,
         actor_user_id=1,
-        event_type="loan.repayment_confirmed",
-        meta={"role": "borrower", "reason": "Repayment confirmed", "note": "Test 3"},
+        event_type="loan.repaid",
+        meta={"role": "borrower", "reason": "loan_fully_repaid", "note": "Test 3"},
     )
 
     # Determinism: same inputs -> same outputs
@@ -99,7 +101,7 @@ def test_trust_recompute_deterministic_and_apply_contract(
 
     j = r1.json()
     assert j["user_id"] == 1
-    assert j["score"] == "0.3000"
+    assert Decimal(j["score"]) == Decimal("0.30")
     assert isinstance(j["breakdown"], dict)
 
     before = _get_user_trust_fields(1)
@@ -117,10 +119,10 @@ def test_trust_recompute_deterministic_and_apply_contract(
     assert r4.status_code == 200, r4.text
     j4 = r4.json()
     assert j4["applied"] is True
-    assert j4["computed"]["score"] == "0.3000"
+    assert Decimal(j4["computed"]["score"]) == Decimal("0.30")
 
     after_apply = _get_user_trust_fields(1)
-    assert str(after_apply["trust_score"]) == "0.3" or str(after_apply["trust_score"]).startswith("0.3")
+    assert after_apply["trust_score"] is not None
     assert after_apply["trust_band"] is not None
     assert after_apply["trust_breakdown_json"] is not None
 

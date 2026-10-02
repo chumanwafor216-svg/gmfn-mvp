@@ -50,73 +50,35 @@ def recompute_trust_for_user(
     user_id: int,
     limit: Optional[int] = None,
 ) -> TrustRecomputeResult:
-    q = (
+    from app.services.trust_score_service import recompute_trust_for_user as canonical_recompute
+
+    rows = (
         db.query(TrustEvent)
         .filter(TrustEvent.subject_user_id == int(user_id))
         .order_by(TrustEvent.id.asc())
+        .all()
     )
-
-    if limit is not None:
-        safe_limit = max(1, min(int(limit), 50000))
-        q = q.limit(safe_limit)
-
-    rows = q.all()
-
-    score = Decimal("0")
-    counts: dict[str, int] = {}
-    delta_by_type: dict[str, str] = {}
-
-    for ev in rows:
-        et = (ev.event_type or "").strip()
-        counts[et] = counts.get(et, 0) + 1
-
-        meta = _safe_meta(getattr(ev, "meta_json", None))
-        role = str(meta.get("role") or "").strip().lower()
-
-        delta = Decimal("0")
-        et_lower = et.lower()
-
-        if role == "borrower":
-            if "repay" in et_lower:
-                delta = BORROWER_REPAYMENT_DELTA
-        elif role == "guarantor":
-            if "repay" in et_lower:
-                delta = GUARANTOR_REPAYMENT_DELTA
-        else:
-            if "repay" in et_lower:
-                if "guarantor" in et_lower:
-                    delta = GUARANTOR_REPAYMENT_DELTA
-                else:
-                    delta = BORROWER_REPAYMENT_DELTA
-
-        if delta != Decimal("0"):
-            score = _qd(score + delta)
-            current_total = Decimal(delta_by_type.get(et, "0"))
-            delta_by_type[et] = str(_qd(current_total + delta))
+    canonical = canonical_recompute(db, user_id=int(user_id))
 
     last_event_id = rows[-1].id if rows else None
-    final_score = _qd(score)
-    band = compute_trust_band(final_score)
-
-    breakdown = {
-        "ruleset": {
-            "borrower_repayment_delta": str(BORROWER_REPAYMENT_DELTA),
-            "guarantor_repayment_delta": str(GUARANTOR_REPAYMENT_DELTA),
-            "precision": str(TRUST_Q),
-            "ordering": "TrustEvent.id ASC",
-        },
-        "counts_by_event_type": counts,
-        "delta_by_event_type": delta_by_type,
-        "last_event_id_used": last_event_id,
+    score = str(canonical.get("score") or canonical.get("trust_score") or "0")
+    band = str(canonical.get("trust_band") or canonical.get("band") or compute_trust_band(Decimal(score)))
+    breakdown = dict(canonical)
+    breakdown["last_event_id_used"] = last_event_id
+    breakdown["event_count_used"] = len(rows)
+    breakdown["legacy_recompute_compatibility"] = {
+        "source": "canonical_lifecycle_aware_trust_score_service",
+        "legacy_independent_formula_removed": True,
+        "limit_requested": int(limit) if limit is not None else None,
+        "limit_applied": False,
+        "limit_note": "The legacy limit parameter is retained for API compatibility only; Trust Score recomputation uses the full lifecycle-aware ledger to avoid a second scoring model.",
         "event_count_used": len(rows),
-        "computed_band": band,
-        "computed_score": str(final_score),
-        "computed_score_int": _score_to_user_int(final_score),
+        "last_event_id_used": last_event_id,
     }
 
     return TrustRecomputeResult(
         user_id=int(user_id),
-        score=str(final_score),
+        score=score,
         band=band,
         breakdown=breakdown,
         event_count=len(rows),

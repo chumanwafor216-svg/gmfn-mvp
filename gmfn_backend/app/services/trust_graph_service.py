@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models import ClanMembership, Loan, LoanGuarantor, TrustEvent, User
 from app.services.cci_service import compute_cci_from_summary
+from app.services.evidence_lifecycle_service import filter_trust_events_for_consumer
 
 
 def _now_utc() -> datetime:
@@ -975,6 +976,11 @@ def build_trust_graph(
         .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
         .limit(max(1, min(int(limit_events), 2000)))
         .all()
+    )
+    trust_events = filter_trust_events_for_consumer(
+        db,
+        trust_events,
+        consumer="trust_graph",
     )
 
     user_ids: Set[int] = {root_user_id}

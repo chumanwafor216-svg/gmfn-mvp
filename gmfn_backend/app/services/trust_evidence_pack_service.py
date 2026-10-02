@@ -18,6 +18,7 @@ from app.services.trust_slip_evidence_pdf_service import build_trust_slip_pdf
 from app.services.trust_timeline_pdf_service import build_trust_timeline_pdf
 from app.services.trust_timeline_service import list_trust_timeline
 from app.services.trust_score_service import compute_trust_breakdown
+from app.services.evidence_lifecycle_service import resolve_trust_event_lifecycle
 
 
 # =========================
@@ -38,8 +39,9 @@ def _safe_json(meta: Any) -> Dict[str, Any]:
     return {}
 
 
-def _safe_event_export(row: TrustEvent) -> Dict[str, Any]:
+def _safe_event_export(db: Session, row: TrustEvent) -> Dict[str, Any]:
     meta = _safe_json(getattr(row, "meta", None))
+    lifecycle_decision = resolve_trust_event_lifecycle(db, row, consumer="public_evidence")
     has_private_context = any(
         getattr(row, field, None) not in (None, "")
         for field in ("loan_id", "clan_id", "guarantor_id", "actor_user_id", "subject_user_id")
@@ -48,6 +50,9 @@ def _safe_event_export(row: TrustEvent) -> Dict[str, Any]:
     out: Dict[str, Any] = {
         "event_type": row.event_type,
         "created_at": row.created_at.isoformat() if row.created_at else None,
+        "evidence_lifecycle_state": lifecycle_decision.current_state,
+        "evidence_lifecycle_resolution": lifecycle_decision.resolution,
+        "evidence_lifecycle_caution": lifecycle_decision.requires_caution_label,
     }
     if has_private_context:
         out["reference_label"] = "Private delivery/support record"
@@ -67,7 +72,7 @@ def _events_like(db: Session, *, user_id: int, prefix: str, limit: int = 100) ->
         .all()
     )
 
-    return [_safe_event_export(r) for r in rows]
+    return [_safe_event_export(db, r) for r in rows]
 
 
 def _latest_event(db: Session, *, user_id: int, event_type: str) -> Optional[Dict[str, Any]]:
@@ -82,7 +87,7 @@ def _latest_event(db: Session, *, user_id: int, event_type: str) -> Optional[Dic
     if not row:
         return None
 
-    return _safe_event_export(row)
+    return _safe_event_export(db, row)
 
 
 def _sha256_hex(data: bytes) -> str:

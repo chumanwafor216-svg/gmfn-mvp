@@ -121,7 +121,18 @@ def test_full_repayment_records_trust_evidence_and_releases_guarantor_lock(db):
     ]
     assert "repayment.created" in event_types
     assert "guarantee.released" in event_types
+    assert "guarantor_success" in event_types
     assert "loan.repaid" in event_types
+
+    guarantor_success_event = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.loan_id == int(loan.id))
+        .filter(TrustEvent.event_type == "guarantor_success")
+        .one()
+    )
+    assert guarantor_success_event.subject_user_id == int(_guarantor.id)
+    assert guarantor_success_event.guarantor_id == int(guarantor_row.id)
+    assert guarantor_success_event.meta["reason"] == "loan_fully_repaid"
 
     repaid_event = (
         db.query(TrustEvent)

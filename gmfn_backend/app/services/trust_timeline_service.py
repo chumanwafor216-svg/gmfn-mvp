@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, Literal
 from sqlalchemy.orm import Session
 
 from app.db.models import TrustEvent
+from app.services.evidence_lifecycle_service import resolve_trust_event_lifecycle
 
 Audience = Literal["user", "admin"]
 
@@ -215,6 +216,7 @@ def list_trust_timeline(
         raw_type = getattr(r, "event_type", "") or ""
         canonical = _normalize_event_type(raw_type)
         delta = _delta_for_event(canonical)
+        lifecycle_decision = resolve_trust_event_lifecycle(db, r, consumer="public_evidence" if audience == "user" else "decision_pack")
 
         meta = _parse_meta(getattr(r, "meta_json", None))
         reason = meta.get("reason") or (meta.get("meta", {}) or {}).get("reason")
@@ -225,6 +227,9 @@ def list_trust_timeline(
         if audience == "user" and is_follow_attention:
             reason = "Attention event"
             note = FOLLOW_ATTENTION_NOTE
+
+        if lifecycle_decision.requires_caution_label and not note:
+            note = "This evidence has a lifecycle limit and is not clean current evidence."
 
         if audience == "user":
             if _should_hide_for_user(raw_type):
@@ -262,6 +267,9 @@ def list_trust_timeline(
             "reason": reason,
             "note": note,
             "created_at": created_at.isoformat() if created_at else None,
+            "evidence_lifecycle_state": lifecycle_decision.current_state,
+            "evidence_lifecycle_resolution": lifecycle_decision.resolution,
+            "evidence_lifecycle_caution": lifecycle_decision.requires_caution_label,
         }
 
         if audience == "admin":
@@ -273,6 +281,8 @@ def list_trust_timeline(
                     "guarantor_id": guarantor_id,
                     "actor_user_id": getattr(r, "actor_user_id", None),
                     "subject_user_id": getattr(r, "subject_user_id", None),
+                    "evidence_lifecycle_marker_id": lifecycle_decision.marker_id,
+                    "evidence_lifecycle_reason": lifecycle_decision.reason,
                 }
             )
         elif loan_id or guarantor_id or payment_reference:

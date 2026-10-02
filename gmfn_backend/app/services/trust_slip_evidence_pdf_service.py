@@ -14,6 +14,7 @@ from reportlab.platypus import KeepTogether, ListFlowable, ListItem, Paragraph, 
 from sqlalchemy.orm import Session
 
 from app.db.models import TrustEvent
+from app.services.evidence_lifecycle_service import resolve_trust_event_lifecycle
 from app.services.institutional_pdf import (
     draw_institutional_footer,
     draw_institutional_header,
@@ -22,7 +23,7 @@ from app.services.institutional_pdf import (
 )
 
 
-CANONICAL_REPAYMENT_EVENTS = {"loan_repaid"}
+CANONICAL_REPAYMENT_EVENTS = {"loan_repaid", "loan.repaid"}
 LEGACY_REPAYMENT_EVENTS = {
     "loan_fully_repaid",
     "repaid",
@@ -56,6 +57,9 @@ def _find_latest_full_repayment_event(db: Session, user_id: int) -> Optional[Tru
 
     for row in rows:
         event_type = str(getattr(row, "event_type", "") or "").lower()
+        lifecycle_decision = resolve_trust_event_lifecycle(db, row, consumer="public_evidence")
+        if not lifecycle_decision.is_clean_current_evidence:
+            continue
         if event_type in CANONICAL_REPAYMENT_EVENTS:
             canonical_match = row
             break

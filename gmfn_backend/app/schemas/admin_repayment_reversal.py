@@ -12,3 +12,7 @@ class AdminRepaymentReverseIn(BaseModel):
     """
     note: str = Field(..., min_length=3)
     payment_reference: Optional[str] = None
+    repayment_id: Optional[int] = Field(
+        default=None,
+        description="Optional exact repayment row to lifecycle-mark as reversed when known.",
+    )

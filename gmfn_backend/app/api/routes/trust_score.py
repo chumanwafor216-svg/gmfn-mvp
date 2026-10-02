@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from decimal import Decimal, InvalidOperation
 from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -12,6 +11,7 @@ from app.core.auth import get_current_user
 from app.core.clan_auth import get_current_clan_membership
 from app.db.database import get_db
 from app.db.models import TrustEvent, User
+from app.services.trust_score_service import recompute_trust_for_user
 
 router = APIRouter(prefix="/trust", tags=["trust"])
 
@@ -38,85 +38,70 @@ def _to_iso(value: Any) -> Any:
     return value
 
 
-def _to_decimal(value: Any) -> Decimal:
-    try:
-        if isinstance(value, Decimal):
-            return value
-        if value is None:
-            return Decimal("0")
-        return Decimal(str(value))
-    except (InvalidOperation, TypeError, ValueError):
-        return Decimal("0")
-
-
-def _infer_delta(event_type: str, meta: Dict[str, Any]) -> Decimal:
-    t = str(event_type or "").strip().lower()
-
-    explicit = (
-        meta.get("trust_delta")
-        or meta.get("delta")
-        or meta.get("score_delta")
-        or meta.get("points_delta")
-    )
-    if explicit not in (None, ""):
-        return _to_decimal(explicit)
-
-    if t in {"loan_fully_repaid", "loan.repaid", "repayment.completed", "repayment.confirmed"}:
-        return Decimal("0.10")
-
-    if t in {"guarantor_success", "guarantor.repayment.confirmed", "guarantor.support.confirmed"}:
-        return Decimal("0.03")
-
-    if "default" in t:
-        return Decimal("-0.20")
-
-    if "fraud" in t:
-        return Decimal("-0.50")
-
-    if "missed" in t or "late" in t or "overdue" in t:
-        return Decimal("-0.05")
-
-    return Decimal("0")
-
-
-def _trust_band(score: Decimal) -> str:
-    if score >= Decimal("15.00"):
-        return "A"
-    if score >= Decimal("6.00"):
-        return "B"
-    if score >= Decimal("2.00"):
-        return "C"
-    return "D"
-
-
-def _compute_explained_from_events(events: list[TrustEvent]) -> Dict[str, Any]:
-    positives = Decimal("0")
-    negatives = Decimal("0")
-    score = Decimal("0")
-
+def _raw_event_counts(events: list[TrustEvent]) -> Dict[str, int]:
     counts: Dict[str, int] = {}
-
     for event in events:
         event_type = str(getattr(event, "event_type", "") or "")
-        meta = _safe_meta(getattr(event, "meta", None) or getattr(event, "meta_json", None))
-        delta = _infer_delta(event_type, meta)
-
         counts[event_type] = counts.get(event_type, 0) + 1
-        score += delta
+    return counts
 
-        if delta > 0:
-            positives += delta
-        elif delta < 0:
-            negatives += abs(delta)
+
+def _canonical_totals(canonical: Dict[str, Any]) -> tuple[str, str]:
+    gains = canonical.get("gains") if isinstance(canonical.get("gains"), dict) else {}
+    penalties = canonical.get("penalties") if isinstance(canonical.get("penalties"), dict) else {}
+    return str(gains.get("total") or "0.00"), str(penalties.get("total") or "0.00")
+
+
+def _canonical_score(canonical: Dict[str, Any]) -> str:
+    return str(canonical.get("score") or canonical.get("trust_score") or "0.00")
+
+
+def _canonical_band(canonical: Dict[str, Any]) -> str:
+    return str(canonical.get("trust_band") or canonical.get("band") or "D")
+
+
+def _build_explained_payload(
+    *,
+    db: Session,
+    clan: Any,
+    user: User,
+    events: list[TrustEvent],
+    last_events: list[TrustEvent],
+    include_global_events: bool,
+) -> Dict[str, Any]:
+    canonical = recompute_trust_for_user(db, user_id=int(user.id))
+    score = _canonical_score(canonical)
+    band = _canonical_band(canonical)
+    positives, negatives = _canonical_totals(canonical)
+    scoped_counts = _raw_event_counts(events)
 
     return {
-        "score": str(score),
-        "positives": str(positives),
-        "negatives": str(negatives),
-        "counts": counts,
-        "band": _trust_band(score),
+        "scope": {
+            "clan_id": int(clan.id),
+            "clan_name": getattr(clan, "name", None),
+            "include_global_events": include_global_events,
+            "score_source": "canonical_lifecycle_aware_trust_score_service",
+            "score_scope": "all_eligible_member_trust_evidence",
+            "event_listing_scope": "selected_clan_plus_global" if include_global_events else "selected_clan",
+        },
+        "user_id": int(user.id),
+        "email": getattr(user, "email", None),
+        "score": score,
+        "trust_score": score,
+        "band": band,
+        "trust_band": band,
+        "positives": positives,
+        "negatives": negatives,
+        "counts": scoped_counts,
+        "canonical_counts": canonical.get("counts", {}),
+        "computed": canonical,
+        "last_events": [_as_event_row(te) for te in reversed(last_events)],
+        "notes": [
+            "Score is canonical and lifecycle-aware, not route-local.",
+            "This endpoint is community-scoped for evidence listing using X-Clan-Id.",
+            "Use include_global_events=true to also include clan_id=NULL events in the event listing.",
+        ],
     }
-
 
 def _as_event_row(te: TrustEvent) -> Dict[str, Any]:
     return {
@@ -158,30 +143,16 @@ def get_my_trust_score_explained(
         q = q.filter(TrustEvent.clan_id == int(clan.id))
 
     events = q.order_by(TrustEvent.id.asc()).all()
-    summary = _compute_explained_from_events(events)
-
     last_events = q.order_by(TrustEvent.id.desc()).limit(limit).all()
 
-    return {
-        "scope": {
-            "clan_id": int(clan.id),
-            "clan_name": getattr(clan, "name", None),
-            "include_global_events": include_global_events,
-        },
-        "user_id": user_id,
-        "email": current_user.email,
-        "score": summary["score"],
-        "band": summary["band"],
-        "positives": summary["positives"],
-        "negatives": summary["negatives"],
-        "counts": summary["counts"],
-        "last_events": [_as_event_row(te) for te in reversed(last_events)],
-        "notes": [
-            "Score is rule-based, not ML.",
-            "This endpoint is community-scoped using X-Clan-Id.",
-            "Use include_global_events=true to also include clan_id=NULL events.",
-        ],
-    }
+    return _build_explained_payload(
+        db=db,
+        clan=clan,
+        user=current_user,
+        events=events,
+        last_events=last_events,
+        include_global_events=include_global_events,
+    )
 
 
 @router.get("/score/explained-clan/{user_id}", response_model=dict[str, Any])
@@ -217,25 +188,13 @@ def get_user_trust_score_explained_admin(
         q = q.filter(TrustEvent.clan_id == int(clan.id))
 
     events = q.order_by(TrustEvent.id.asc()).all()
-    summary = _compute_explained_from_events(events)
     last_events = q.order_by(TrustEvent.id.desc()).limit(limit).all()
 
-    return {
-        "scope": {
-            "clan_id": int(clan.id),
-            "clan_name": getattr(clan, "name", None),
-            "include_global_events": include_global_events,
-        },
-        "user_id": int(user_id),
-        "email": target.email,
-        "score": summary["score"],
-        "band": summary["band"],
-        "positives": summary["positives"],
-        "negatives": summary["negatives"],
-        "counts": summary["counts"],
-        "last_events": [_as_event_row(te) for te in reversed(last_events)],
-        "notes": [
-            "Score is rule-based, not ML.",
-            "This endpoint is community-scoped using X-Clan-Id.",
-        ],
-    }
+    return _build_explained_payload(
+        db=db,
+        clan=clan,
+        user=target,
+        events=events,
+        last_events=last_events,
+        include_global_events=include_global_events,
+    )
