@@ -61,6 +61,17 @@ def _add_active_membership(*, clan_id: int, user_id: int = 1, role: str = "membe
         db.close()
 
 
+def _verify_test_user_phone(*, user_id: int = 1) -> None:
+    db = SessionLocal()
+    try:
+        user = db.get(User, user_id)
+        assert user is not None
+        user.phone_e164 = "+15550000001"
+        user.phone_verified_at = datetime.now(timezone.utc)
+        db.commit()
+    finally:
+        db.close()
+
 def _trust_event_count() -> int:
     db = SessionLocal()
     try:
@@ -208,6 +219,7 @@ def test_trust_slip_reissue_uses_selected_member_community_anchor(
     seed_clan_member_membership,
     override_current_user_user,
 ):
+    _verify_test_user_phone()
     _create_trust_slip(code="REISSUE-OLD-COMMUNITY", clan_id=1)
     _add_active_membership(clan_id=2)
 
@@ -245,6 +257,7 @@ def test_trust_slip_reissue_rejects_non_member_selected_community(
     seed_clan_member_membership,
     override_current_user_user,
 ):
+    _verify_test_user_phone()
     _create_trust_slip(code="REISSUE-NON-MEMBER", clan_id=1)
 
     db = SessionLocal()
@@ -275,10 +288,84 @@ def test_trust_slip_reissue_rejects_non_member_selected_community(
     )
 
     assert response.status_code == 400, response.text
-    assert "not an active member" in response.text
+    detail = response.json()["detail"]
+    assert detail["code"] == "selected_community_membership_required"
+    assert "active membership" in detail["message"]
     assert _trust_slip_count() == 1
     assert _trust_event_count() == 0
 
+
+def test_trust_slip_reissue_issues_first_slip_when_prerequisites_valid(
+    client,
+    seed_clan_member_membership,
+    override_current_user_user,
+):
+    _verify_test_user_phone()
+
+    response = client.post(
+        "/trust-slips/me/reissue",
+        json={
+            "reason": "holder_requested_fresh_public_trustslip",
+            "force": True,
+            "community_id": 1,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["reissued"] is False
+    assert payload["issued"] is True
+    assert payload["clan_id"] == 1
+    assert payload["community_id"] == 1
+    assert payload["code"]
+    assert _trust_slip_count() == 1
+    assert _trust_event_count() == 1
+
+
+def test_trust_slip_reissue_missing_phone_returns_structured_blocker(
+    client,
+    seed_clan_member_membership,
+    override_current_user_user,
+):
+    response = client.post(
+        "/trust-slips/me/reissue",
+        json={
+            "reason": "holder_requested_fresh_public_trustslip",
+            "force": True,
+            "community_id": 1,
+        },
+    )
+
+    assert response.status_code == 400, response.text
+    detail = response.json()["detail"]
+    assert detail["code"] == "phone_unverified"
+    assert "Verify your phone" in detail["message"]
+    assert _trust_slip_count() == 0
+    assert _trust_event_count() == 0
+
+
+def test_trust_slip_reissue_invalid_community_returns_structured_blocker(
+    client,
+    seed_clan_member_membership,
+    override_current_user_user,
+):
+    _verify_test_user_phone()
+
+    response = client.post(
+        "/trust-slips/me/reissue",
+        json={
+            "reason": "holder_requested_fresh_public_trustslip",
+            "force": True,
+            "community_id": 999,
+        },
+    )
+
+    assert response.status_code == 400, response.text
+    detail = response.json()["detail"]
+    assert detail["code"] == "selected_community_not_found"
+    assert "active community" in detail["message"]
+    assert _trust_slip_count() == 0
+    assert _trust_event_count() == 0
 
 
 def test_trust_slip_payload_summarizes_notice_and_meeting_response_without_private_text(

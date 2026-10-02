@@ -60,6 +60,53 @@ def _is_admin(user: Any) -> bool:
     return str(getattr(user, "role", "") or "").lower() == "admin"
 
 
+def _trust_slip_issue_blocker_payload(exc: ValueError) -> Dict[str, str]:
+    raw = str(exc or "").strip()
+    lower = raw.lower()
+    code = "trustslip_issue_blocked"
+    message = "TrustSlip could not be issued right now. Check phone and community, then try again."
+    action = "Check TrustSlip setup"
+
+    if "phone" in lower:
+        code = "phone_unverified"
+        message = "Verify your phone first so GSN can issue your TrustSlip."
+        action = "Verify phone"
+    elif "selected community was not found" in lower:
+        code = "selected_community_not_found"
+        message = "Choose an active community before issuing TrustSlip."
+        action = "Choose community"
+    elif "selected community is not active" in lower:
+        code = "selected_community_inactive"
+        message = "Choose an active community before issuing TrustSlip."
+        action = "Choose active community"
+    elif "not an active member" in lower:
+        code = "selected_community_membership_required"
+        message = "You need active membership in that community before it can speak for this TrustSlip."
+        action = "Choose your active community"
+    elif "no active clan membership" in lower or "no active community" in lower:
+        code = "community_membership_required"
+        message = "Join or select an active community before issuing TrustSlip."
+        action = "Open community"
+    elif "user not found" in lower:
+        code = "account_not_found"
+        message = "Your account could not be confirmed right now. Sign in again and try once more."
+        action = "Sign in again"
+    elif "cannot reissue from" in lower:
+        code = "trustslip_not_reissuable"
+        message = "This TrustSlip cannot be reissued in its current state."
+        action = "Review TrustSlip"
+
+    return {
+        "code": code,
+        "message": message,
+        "action": action,
+    }
+
+
+def _trust_slip_issue_http_exception(exc: ValueError) -> HTTPException:
+    return HTTPException(status_code=400, detail=_trust_slip_issue_blocker_payload(exc))
+
+
 def _require_admin(user: Any) -> None:
     if not _is_admin(user):
         raise HTTPException(status_code=403, detail="Admin access required")
@@ -705,7 +752,7 @@ def _ensure_my_trust_slip_payload(
                 )
             )
         except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc))
+            raise _trust_slip_issue_http_exception(exc)
 
         issued_payload = issue_result.pop("_holder_payload", None)
         code = issue_result.get("code")
@@ -994,7 +1041,7 @@ def issue_my_trust_slip(
     try:
         result = issue_trust_slip_for_user(db, user_id=int(current_user.id))
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise _trust_slip_issue_http_exception(exc)
 
     code = result.get("code")
 
@@ -1135,7 +1182,7 @@ def reissue_my_trust_slip(
             event_type = "trust_slip.issued"
             was_reissue = False
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise _trust_slip_issue_http_exception(exc)
 
     log_trust_event(
         db,

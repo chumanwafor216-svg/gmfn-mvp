@@ -453,6 +453,32 @@ def recompute_trust_for_user(
     contextual_legacy_guarantor_success_counted = 0
     canonical_full_repayment_keys = _canonical_full_repayment_keys(rows)
     counted_outcome_keys: set[tuple[Any, ...]] = set()
+    identity_photo_review_event_types = {
+        EV_IDENTITY_PHOTO_VERIFIED,
+        EV_IDENTITY_PHOTO_VERIFIED_REV,
+        EV_IDENTITY_PHOTO_REJECTED,
+        EV_IDENTITY_PHOTO_NEEDS_MORE,
+        EV_IDENTITY_PHOTO_REVIEW_CORRECTED,
+    }
+
+    def _record_identity_photo_review_event(event_type: str, event_meta: Dict[str, Any]) -> None:
+        counts[event_type] += 1
+        try:
+            check_id = int(event_meta.get("verification_check_id") or 0)
+        except Exception:
+            check_id = 0
+        if check_id <= 0:
+            return
+        if event_type == EV_IDENTITY_PHOTO_VERIFIED:
+            photo_review_state_by_check[check_id] = "verify"
+        elif event_type == EV_IDENTITY_PHOTO_REJECTED:
+            photo_review_state_by_check[check_id] = "reject"
+        elif event_type == EV_IDENTITY_PHOTO_NEEDS_MORE:
+            photo_review_state_by_check[check_id] = "needs_more"
+        elif event_type in {EV_IDENTITY_PHOTO_VERIFIED_REV, EV_IDENTITY_PHOTO_REVIEW_CORRECTED}:
+            photo_review_state_by_check[check_id] = "reopened"
+
+
 
     for row in rows:
         raw_et = _raw_event_type(row)
@@ -482,6 +508,8 @@ def recompute_trust_for_user(
         lifecycle_decision = resolve_trust_event_lifecycle(db, row, consumer="trust_score")
         if not lifecycle_decision.usable_for_scoring:
             lifecycle_limited_event_count += 1
+            if et in identity_photo_review_event_types:
+                _record_identity_photo_review_event(et, meta)
             continue
 
         if et in {EV_BORROWER_FULL_REPAID, EV_GUARANTOR_SUCCESS, EV_DEFAULT}:
@@ -498,27 +526,10 @@ def recompute_trust_for_user(
                 continue
             counted_outcome_keys.add(outcome_key)
 
-        counts[et] += 1
-        if et in {
-            EV_IDENTITY_PHOTO_VERIFIED,
-            EV_IDENTITY_PHOTO_VERIFIED_REV,
-            EV_IDENTITY_PHOTO_REJECTED,
-            EV_IDENTITY_PHOTO_NEEDS_MORE,
-            EV_IDENTITY_PHOTO_REVIEW_CORRECTED,
-        }:
-            try:
-                check_id = int(meta.get("verification_check_id") or 0)
-            except Exception:
-                check_id = 0
-            if check_id > 0:
-                if et == EV_IDENTITY_PHOTO_VERIFIED:
-                    photo_review_state_by_check[check_id] = "verify"
-                elif et == EV_IDENTITY_PHOTO_REJECTED:
-                    photo_review_state_by_check[check_id] = "reject"
-                elif et == EV_IDENTITY_PHOTO_NEEDS_MORE:
-                    photo_review_state_by_check[check_id] = "needs_more"
-                elif et in {EV_IDENTITY_PHOTO_VERIFIED_REV, EV_IDENTITY_PHOTO_REVIEW_CORRECTED}:
-                    photo_review_state_by_check[check_id] = "reopened"
+        if et in identity_photo_review_event_types:
+            _record_identity_photo_review_event(et, meta)
+        else:
+            counts[et] += 1
 
         if et == EV_COMMUNITY_CONFIRMATION_REVIEW_RESOLVED:
             if meta.get("affects_trust_reading") is True:

@@ -1169,8 +1169,39 @@ function normalizeDashboardServerAttentionSignals(value: unknown): AttentionSpin
 
 function readableTrustStatus(classText: unknown): string {
   const classValue = safeStr(classText);
-  if (!classValue || classValue.toLowerCase() === "pending") {
-    return "Not enough info";
+  const lower = classValue.toLowerCase();
+  if (!classValue) {
+    return "Not shown yet";
+  }
+
+  if (
+    lower === "pending" ||
+    lower === "not shown yet" ||
+    lower === "not_shown_yet" ||
+    lower === "not measured yet" ||
+    lower === "not_measured_yet" ||
+    lower === "not calculated" ||
+    lower === "not_calculated" ||
+    lower === "unavailable" ||
+    lower === "api unavailable" ||
+    lower === "api_unavailable"
+  ) {
+    return "Not shown yet";
+  }
+
+  if (lower.includes("insufficient")) {
+    return "Insufficient evidence";
+  }
+
+  if (
+    lower === "needs review" ||
+    lower === "needs_review" ||
+    lower === "review required" ||
+    lower === "review_required" ||
+    lower === "requires review" ||
+    lower === "requires_review"
+  ) {
+    return "Needs review";
   }
 
   switch (classValue.toUpperCase()) {
@@ -1186,7 +1217,7 @@ function readableTrustStatus(classText: unknown): string {
     case "E":
       return "Developing";
     default:
-      return "Needs review";
+      return "Not shown yet";
   }
 }
 
@@ -1337,6 +1368,20 @@ function firstNumberLike(...values: unknown[]): number | null {
     if (!Number.isNaN(num)) return num;
   }
   return null;
+}
+
+function sumNumericRecordValues(value: unknown): number | null {
+  if (!value || typeof value !== "object") return null;
+  let total = 0;
+  let sawNumber = false;
+  for (const raw of Object.values(value as Record<string, unknown>)) {
+    const num = Number(raw);
+    if (!Number.isNaN(num)) {
+      total += num;
+      sawNumber = true;
+    }
+  }
+  return sawNumber ? total : null;
 }
 
 function positiveNumber(value: unknown): number {
@@ -2349,10 +2394,41 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
 
 function getOpenTrustState(
   me: any,
-  trustSlip: any,
+  _trustSlip: any,
+  trustExplanation: any,
   hasSelectedCommunity: boolean
 ): ReadingState {
+  const computed = trustExplanation?.computed || trustExplanation?.trust || {};
+  const explanationUnavailable = Boolean(
+    trustExplanation?.unavailable ||
+      trustExplanation?.status === "unavailable" ||
+      trustExplanation?.status === "api_unavailable"
+  );
+  const evidenceCount = firstNumberLike(
+    trustExplanation?.event_count,
+    trustExplanation?.events_count,
+    trustExplanation?.evidence_count,
+    trustExplanation?.identity_confidence?.event_count,
+    computed?.event_count,
+    computed?.events_count,
+    computed?.evidence_count,
+    sumNumericRecordValues(trustExplanation?.counts),
+    sumNumericRecordValues(computed?.counts)
+  );
+
   const rawClass = firstNonEmpty(
+    trustExplanation?.trust_band,
+    trustExplanation?.band,
+    trustExplanation?.trust_class,
+    trustExplanation?.class,
+    trustExplanation?.open_trust_class,
+    trustExplanation?.open_trust_band,
+    trustExplanation?.community_trust_class,
+    trustExplanation?.community_trust_band,
+    computed?.trust_band,
+    computed?.band,
+    computed?.trust_class,
+    computed?.class,
     me?.open_trust_class,
     me?.open_trust_band,
     me?.current_community_trust_class,
@@ -2361,39 +2437,96 @@ function getOpenTrustState(
     me?.community_trust_band,
     me?.selected_clan_trust_class,
     me?.selected_clan_trust_band,
-    trustSlip?.open_trust_class,
-    trustSlip?.open_trust_band,
-    trustSlip?.community_trust_class,
-    trustSlip?.community_trust_band,
     me?.trust_class,
-    me?.trust_band,
-    trustSlip?.trust_class,
-    trustSlip?.trust_band
+    me?.trust_band
   ).toUpperCase();
 
   const rawScore = firstNumberLike(
+    trustExplanation?.trust_score,
+    trustExplanation?.standing_score,
+    trustExplanation?.score,
+    trustExplanation?.open_trust_score,
+    trustExplanation?.community_trust_score,
+    computed?.trust_score,
+    computed?.standing_score,
+    computed?.score,
     me?.open_trust_score,
     me?.current_community_trust_score,
     me?.community_trust_score,
     me?.selected_clan_trust_score,
-    trustSlip?.open_trust_score,
-    trustSlip?.community_trust_score,
-    me?.trust_score,
-    trustSlip?.trust_score
+    me?.trust_score
   );
 
   const rawWhy = firstNonEmpty(
+    trustExplanation?.latest_reason,
+    trustExplanation?.reason,
+    trustExplanation?.explanation,
+    trustExplanation?.summary,
+    trustExplanation?.policy_note,
+    computed?.latest_reason,
+    computed?.reason,
+    computed?.explanation,
     me?.open_trust_reason,
     me?.current_community_trust_reason,
     me?.community_trust_reason,
     me?.selected_clan_trust_reason,
-    trustSlip?.open_trust_reason,
-    trustSlip?.community_trust_reason,
-    me?.trust_reason,
-    trustSlip?.trust_reason
+    me?.trust_reason
   );
 
   if (rawClass) {
+    const rawClassLower = rawClass.toLowerCase();
+    if (
+      rawClassLower.includes("insufficient") ||
+      rawClassLower === "not_measured_yet" ||
+      rawClassLower === "not measured yet" ||
+      rawClassLower === "not_calculated" ||
+      rawClassLower === "not calculated"
+    ) {
+      return {
+        classText: "Insufficient evidence",
+        postureSource: "-",
+        tone: "neutral",
+        statusText: "Insufficient evidence",
+        whyText:
+          rawWhy ||
+          "GSN has not measured enough community evidence to show a trust reading yet.",
+      };
+    }
+
+    if (
+      rawClassLower === "unavailable" ||
+      rawClassLower === "api_unavailable" ||
+      rawClassLower === "api unavailable"
+    ) {
+      return {
+        classText: "Unavailable",
+        postureSource: "-",
+        tone: "neutral",
+        statusText: "Trust reading unavailable right now",
+        whyText: "Some trust information couldn't be loaded right now.",
+      };
+    }
+
+    if (
+      rawClassLower === "needs_review" ||
+      rawClassLower === "needs review" ||
+      rawClassLower === "review_required" ||
+      rawClassLower === "review required" ||
+      rawClassLower === "requires_review" ||
+      rawClassLower === "requires review"
+    ) {
+      return {
+        classText: "Needs review",
+        postureSource:
+          rawScore === null || Number.isNaN(rawScore)
+            ? "-"
+            : String(Math.round(rawScore)),
+        tone: "yellow",
+        statusText: "Needs review",
+        whyText: rawWhy || "This trust reading has been marked for review.",
+      };
+    }
+
     if (rawClass === "A" || rawClass === "A+") {
       return {
         classText: rawClass,
@@ -2492,6 +2625,28 @@ function getOpenTrustState(
       whyText:
         rawWhy ||
         "Your current community reading shows pressure that needs attention.",
+    };
+  }
+
+  if (explanationUnavailable) {
+    return {
+      classText: "Unavailable",
+      postureSource: "-",
+      tone: "neutral",
+      statusText: "Trust reading unavailable right now",
+      whyText: "Some trust information couldn't be loaded right now.",
+    };
+  }
+
+  if (trustExplanation && evidenceCount !== null && evidenceCount <= 0) {
+    return {
+      classText: "Insufficient evidence",
+      postureSource: "-",
+      tone: "neutral",
+      statusText: "Insufficient evidence",
+      whyText:
+        rawWhy ||
+        "GSN has not measured enough community evidence to show a trust reading yet.",
     };
   }
 
@@ -3781,7 +3936,10 @@ export default function DashboardPage() {
             ? getClanTrustScoreExplained({
                 clan_id: selectedClanId,
                 limit: 8,
-              }).catch(() => null)
+              }).catch(() => ({
+                status: "unavailable",
+                unavailable: true,
+              }))
             : Promise.resolve(null),
         ]);
 
@@ -4266,8 +4424,8 @@ export default function DashboardPage() {
     [me, trustSlip, trustExplanation]
   );
   const openTrust = useMemo(
-    () => getOpenTrustState(me, trustSlip, Boolean(selectedClanId)),
-    [me, trustSlip, selectedClanId]
+    () => getOpenTrustState(me, trustSlip, trustExplanation, Boolean(selectedClanId)),
+    [me, trustSlip, trustExplanation, selectedClanId]
   );
 
   useEffect(() => {

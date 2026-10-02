@@ -661,6 +661,75 @@ function uniqueTrustSlipCommunityOptions(rows: any[]): TrustSlipCommunityOption[
   return options;
 }
 
+function parseTrustSlipIssueBlocker(error: any): any | null {
+  const candidates = [
+    error?.detail,
+    error?.message,
+    error?.response?.data?.detail,
+    error?.response?.data?.message,
+    error?.data?.detail,
+    error?.data?.message,
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    if (typeof candidate === "object") return candidate;
+    const text = safeStr(candidate);
+    if (!text) continue;
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed === "object") return parsed;
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+}
+
+function trustSlipIssueNoticeText(error: any): string {
+  const blocker = parseTrustSlipIssueBlocker(error);
+  const code = safeStr(blocker?.code || blocker?.reason).toLowerCase();
+
+  if (code === "phone_unverified") {
+    return "Verify your phone first so GSN can issue your TrustSlip.";
+  }
+  if (
+    code === "selected_community_not_found" ||
+    code === "selected_community_inactive" ||
+    code === "selected_community_membership_required" ||
+    code === "community_membership_required"
+  ) {
+    return firstTruthy(
+      blocker?.message,
+      "Choose an active community before issuing TrustSlip."
+    );
+  }
+  if (code === "trustslip_not_reissuable") {
+    return firstTruthy(
+      blocker?.message,
+      "This TrustSlip cannot be reissued in its current state."
+    );
+  }
+  if (code === "trustslip_issue_blocked" || code === "account_not_found") {
+    return firstTruthy(
+      blocker?.message,
+      "TrustSlip could not be issued right now. Check phone and community, then try again."
+    );
+  }
+
+  const status = Number(error?.status || error?.response?.status || 0);
+  if (status >= 500) {
+    return "Some TrustSlip information couldn't be loaded right now. Try again in a moment.";
+  }
+
+  return firstTruthy(
+    blocker?.message,
+    blocker?.detail,
+    error?.message,
+    "TrustSlip could not refresh. Try again in a moment."
+  );
+}
 function isMissingHolderName(value: any): boolean {
   const text = safeStr(value).toLowerCase();
   return [
@@ -2859,13 +2928,7 @@ export default function TrustSlipPage() {
         loadSeq === trustSlipLoadSeqRef.current &&
         contextKey === trustSlipContextRef.current
       ) {
-        showNotice(
-          "error",
-          firstTruthy(
-            error?.message,
-            "TrustSlip could not refresh. Try again in a moment."
-          )
-        );
+        showNotice("error", trustSlipIssueNoticeText(error));
       }
     } finally {
       if (loadSeq === trustSlipLoadSeqRef.current) {
