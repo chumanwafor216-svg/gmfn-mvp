@@ -596,13 +596,23 @@ function rowsOf(raw: any): any[] {
   if (Array.isArray(raw?.rows)) return raw.rows;
   if (Array.isArray(raw?.communities)) return raw.communities;
   if (Array.isArray(raw?.clans)) return raw.clans;
+  if (Array.isArray(raw?.memberships)) return raw.memberships;
   return [];
 }
 
 function normalizeTrustSlipCommunityOption(row: any): TrustSlipCommunityOption | null {
   if (!row || typeof row !== "object") return null;
 
-  const id = firstTruthy(row?.id, row?.clan_id, row?.community_id);
+  const community = row?.community || row?.clan || row?.marketplace_community || null;
+  const id = firstTruthy(
+    row?.id,
+    row?.clan_id,
+    row?.community_id,
+    row?.membership?.clan_id,
+    community?.id,
+    community?.clan_id,
+    community?.community_id
+  );
   if (!id) return null;
 
   const label = firstTruthy(
@@ -612,6 +622,13 @@ function normalizeTrustSlipCommunityOption(row: any): TrustSlipCommunityOption |
     row?.display_name,
     row?.title,
     row?.community_name,
+    row?.clan_name,
+    community?.label,
+    community?.marketplace_name,
+    community?.name,
+    community?.display_name,
+    community?.title,
+    community?.community_name,
     `Community ${id}`
   );
   const ref = firstTruthy(
@@ -620,6 +637,10 @@ function normalizeTrustSlipCommunityOption(row: any): TrustSlipCommunityOption |
     row?.community_code,
     row?.clan_code,
     row?.code,
+    community?.community_global_id,
+    community?.community_code,
+    community?.clan_code,
+    community?.code,
     id
   );
 
@@ -2803,12 +2824,13 @@ export default function TrustSlipPage() {
     setMerchantRailBusy(false);
 
     try {
+      const issueCommunityId = selectedTrustSlipIssueCommunityId || selectedClanId;
       const reissueResult = await api.reissueMyTrustSlip({
         reason: "holder_requested_fresh_public_trustslip",
         force: true,
-        community_id: selectedTrustSlipIssueCommunityId || undefined,
+        community_id: issueCommunityId || undefined,
       });
-      const data = await fetchTrustSlipPageData(selectedClanId, {
+      const data = await fetchTrustSlipPageData(issueCommunityId || selectedClanId, {
         forceFresh: true,
         networkFirst: true,
       });

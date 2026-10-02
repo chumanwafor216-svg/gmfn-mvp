@@ -1122,55 +1122,6 @@ function PublicCapabilitiesGuidePage({
                 {showAllPublicCapabilities ? "Hide core list" : "Core list"}
               </SecondaryButton>
             </div>
-
-            {!showAllPublicCapabilities ? (
-              <div style={publicGuideEvidenceCue()}>
-                <div
-                  style={{
-                    color: "#32465C",
-                    fontSize: 12.5,
-                    lineHeight: 1.34,
-                    fontWeight: 780,
-                    textAlign: "center",
-                  }}
-                >
-                  Each decision card keeps the question, the risk, and the
-                  evidence boundary together.
-                </div>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-                    gap: 6,
-                    marginTop: 9,
-                  }}
-                >
-                  {["Question", "Risk", "Evidence"].map((label) => (
-                    <span
-                      key={label}
-                      style={{
-                        minHeight: 30,
-                        borderRadius: 999,
-                        border: "1px solid rgba(18,49,77,0.10)",
-                        background: "rgba(255,255,255,0.74)",
-                        color: label === "Evidence" ? "#76591D" : "#12314D",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        padding: "7px 8px",
-                        fontSize: 10.5,
-                        fontWeight: 1000,
-                        lineHeight: 1,
-                        textAlign: "center",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ) : null}
           </section>
         ) : null}
 
