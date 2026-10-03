@@ -2638,10 +2638,9 @@ export default function TrustSlipPage() {
     useState<TrustSlipVisibilityScope>("community_specific");
   const [selectedIssuingCommunityOptionId, setSelectedIssuingCommunityOptionId] =
     useState("");
-  const [trustSlipSetupSubmitted, setTrustSlipSetupSubmitted] = useState(false);
+  const [trustSlipSetupSubmitted, setTrustSlipSetupSubmitted] = useState(true);
   const [activeTrustSlipPaperPack, setActiveTrustSlipPaperPack] =
     useState<TrustSlipPaperPackKey>("share");
-
   useEffect(() => {
     const requestedPack = new URLSearchParams(location.search).get("decision_pack");
     const matchedPack = GSN_DECISION_PACKS.find(
@@ -2673,6 +2672,7 @@ export default function TrustSlipPage() {
     decisionPackHistorySeqRef.current += 1;
     setConfirmationOutcome(null);
     setMerchantRailLink(null);
+    setTrustSlipSetupSubmitted(true);
   }, []);
 
   const applyTrustSlipPageData = useCallback((data: TrustSlipPageData) => {
@@ -3284,6 +3284,8 @@ export default function TrustSlipPage() {
   }, [publicDecisionPackQuery, summary, trustSlipCode]);
   const verifyUrl = useMemo(() => toFrontendAbsoluteUrl(verifyPath), [verifyPath]);
   const hasUsableTrustSlipShare = Boolean(trustSlipCode && verifyPath && verifyUrl);
+  const trustSlipHolderDocumentVisible = hasUsableTrustSlipShare && trustSlipSetupSubmitted;
+
   const merchantRailReleasePath = useMemo(
     () => (merchantRailLink?.path ? merchantReleaseDeskPath(merchantRailLink.path) : ""),
     [merchantRailLink?.path]
@@ -4881,7 +4883,7 @@ export default function TrustSlipPage() {
           }
         `}</style>
 
-        {!trustSlipSetupSubmitted ? (
+        {!trustSlipHolderDocumentVisible ? (
           <section
             data-gsn-trustslip-setup-only="true"
             style={{
@@ -5152,7 +5154,9 @@ export default function TrustSlipPage() {
                 {trustSlipCode ? (
                   <SecondaryButton
                     type="button"
-                    onClick={() => setTrustSlipSetupSubmitted(true)}
+                    onClick={() => {
+                      setTrustSlipSetupSubmitted(true);
+                    }}
                     fullWidth
                     stableHeight={isCompact ? 54 : 52}
                     debugId="trust-slip.setup.open-current"
@@ -6576,7 +6580,9 @@ export default function TrustSlipPage() {
                 </div>
                 <SecondaryButton
                   type="button"
-                  onClick={() => setTrustSlipSetupSubmitted(false)}
+                  onClick={() => {
+                    setTrustSlipSetupSubmitted(false);
+                  }}
                   fullWidth
                   stableHeight={isCompact ? 48 : 48}
                   debugId="trust-slip.paper.change-setup"

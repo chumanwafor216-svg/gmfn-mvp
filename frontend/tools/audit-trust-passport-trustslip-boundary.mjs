@@ -260,6 +260,33 @@ assertContains(
   /fetchTrustSlipPageData[\s\S]*?cacheBust\("\/trust-slips\/me\/summary"\)[\s\S]*?cacheBust\("\/trust-slips\/me"\)[\s\S]*?getMyTrustSlip/,
   "TrustSlip holder page must load signed-in holder summary/me data, not public verify data as the source of truth."
 );
+assertContains(
+  "trustSlip",
+  /const \[trustSlipSetupSubmitted, setTrustSlipSetupSubmitted\] = useState\(true\);[\s\S]*?const hasUsableTrustSlipShare = Boolean\(trustSlipCode && verifyPath && verifyUrl\);[\s\S]*?const trustSlipHolderDocumentVisible = hasUsableTrustSlipShare && trustSlipSetupSubmitted;/,
+  "TrustSlip holder document visibility must derive from backend-confirmed usable share state and the explicit setup/document state."
+);
+assertLineAbsent(
+  "trustSlip",
+  /trustSlipSetupForcedOpen|trustSlipSetupViewRequested/,
+  "TrustSlip holder setup/document visibility must not require a second setup override boolean."
+);
+assertContains(
+  "trustSlip",
+  /\{!trustSlipHolderDocumentVisible \? \([\s\S]*?data-gsn-trustslip-setup-only="true"[\s\S]*?Generate TrustSlip[\s\S]*?\) : \([\s\S]*?className="print-trust-document"/,
+  "TrustSlip holder must keep users in setup when no backend-confirmed usable TrustSlip code exists."
+);
+
+assertContains(
+  "trustSlip",
+  /const activeIssuingCommunityId = issuingCommunityId;[\s\S]*?if \(!activeIssuingCommunityId\) \{[\s\S]*?Choose an active community before generating TrustSlip[\s\S]*?api\.reissueMyTrustSlip\(\{[\s\S]*?community_id: activeIssuingCommunityId/,
+  "TrustSlip Generate must still require legitimate issuing-community state before POST /trust-slips/me/reissue."
+);
+
+assertContains(
+  "trustSlip",
+  /const hasUsableTrustSlipShare = Boolean\(trustSlipCode && verifyPath && verifyUrl\);[\s\S]*?disabled=\{!hasUsableTrustSlipShare[\s\S]*?\{hasUsableTrustSlipShare \? \([\s\S]*?debugId="trust-slip\.public-decision-pack\.open"/,
+  "TrustSlip Share/Open actions must stay gated by a backend-originated code and usable verify path."
+);
 
 assertContains(
   "trustSlip",
