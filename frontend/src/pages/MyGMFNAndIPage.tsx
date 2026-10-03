@@ -1103,20 +1103,6 @@ function publicGuideLightButton(primary = false): React.CSSProperties {
   };
 }
 
-function publicGuideEvidenceCue(): React.CSSProperties {
-  return {
-    justifySelf: "center",
-    width: "min(100%, 342px)",
-    borderRadius: 18,
-    border: "1px solid rgba(18,49,77,0.10)",
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.82) 0%, rgba(246,250,254,0.72) 100%)",
-    boxShadow: "0 10px 22px rgba(8,24,42,0.07)",
-    padding: "11px 12px 12px",
-    color: "#12314D",
-  };
-}
-
 function PublicCapabilitiesGuidePage({
   compact,
   ios,
@@ -1652,7 +1638,7 @@ export default function MyGMFNAndIPage() {
       marketplace: routeTarget("marketplace", selectedClanId, "my-gmfn.route.marketplace-target"),
       finance: routeTarget("finance", selectedClanId, "my-gmfn.route.finance-target"),
       loans: routeTarget("loans", selectedClanId, "my-gmfn.route.loans-target"),
-      guide: routeTarget("profile", selectedClanId, "my-gmfn.route.guide-target"),
+      guide: appendRouteQuery(routeTarget("profile", selectedClanId, "my-gmfn.route.guide-target"), { tab: "guide" }),
       settings: routeTarget("settings", selectedClanId, "my-gmfn.route.settings-target"),
       trust: routeTarget("trust", selectedClanId, "my-gmfn.route.trust-target"),
       demandBox: routeTarget("demandBox", selectedClanId, "my-gmfn.route.demand-box-target"),
@@ -1703,9 +1689,9 @@ export default function MyGMFNAndIPage() {
     const params = new URLSearchParams(location.search);
     return safeStr(params.get("tab")).toLowerCase();
   }, [isAppRoute, location.search]);
-  const activeTab = requestedTab === "settings" ? "settings" : "guide";
+  const activeTab = requestedTab === "settings" ? "settings" : requestedTab === "guide" ? "guide" : "home";
   const showMemberHomeSummary =
-    isAppRoute && ["home", "member-home", "summary"].includes(requestedTab);
+    isAppRoute && activeTab !== "settings";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2240,7 +2226,6 @@ export default function MyGMFNAndIPage() {
     ? "Photo/selfie recorded"
     : "Photo/selfie needed";
 
-  const capabilityCount = GMFN_CAPABILITY_COUNT;
   const filteredCapabilities = useMemo(() => {
     const query = safeStr(capabilitySearch).toLowerCase();
     return GMFN_CAPABILITIES.filter((item) => {

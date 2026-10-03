@@ -3284,7 +3284,10 @@ export default function TrustSlipPage() {
   }, [publicDecisionPackQuery, summary, trustSlipCode]);
   const verifyUrl = useMemo(() => toFrontendAbsoluteUrl(verifyPath), [verifyPath]);
   const hasUsableTrustSlipShare = Boolean(trustSlipCode && verifyPath && verifyUrl);
-  const trustSlipHolderDocumentVisible = hasUsableTrustSlipShare && trustSlipSetupSubmitted;
+  const hasUsableCurrentTrustSlipShare =
+    hasUsableTrustSlipShare && !trustSlipNeedsSelectedCommunityRefresh;
+  const trustSlipHolderDocumentVisible =
+    hasUsableCurrentTrustSlipShare && trustSlipSetupSubmitted;
 
   const merchantRailReleasePath = useMemo(
     () => (merchantRailLink?.path ? merchantReleaseDeskPath(merchantRailLink.path) : ""),
@@ -4609,7 +4612,7 @@ export default function TrustSlipPage() {
   ]);
 
   function buildPublicDecisionPackShareText() {
-    if (!hasUsableTrustSlipShare) return "";
+    if (!hasUsableCurrentTrustSlipShare) return "";
 
     return [
       "GSN public Decision Pack link",
@@ -4641,7 +4644,7 @@ export default function TrustSlipPage() {
   }
   async function sharePublicDecisionPack() {
     const text = buildPublicDecisionPackShareText();
-    if (!hasUsableTrustSlipShare || !text) {
+    if (!hasUsableCurrentTrustSlipShare || !text) {
       showNotice("error", "This TrustSlip link is not ready yet.");
       return;
     }
@@ -5138,7 +5141,7 @@ export default function TrustSlipPage() {
                       ? "Open Community"
                       : "Generate TrustSlip"}
                 </PrimaryButton>
-                {trustSlipCode ? (
+                {hasUsableCurrentTrustSlipShare ? (
                   <SecondaryButton
                     type="button"
                     onClick={() => void sharePublicDecisionPack()}
@@ -5151,7 +5154,7 @@ export default function TrustSlipPage() {
                     Share TrustSlip
                   </SecondaryButton>
                 ) : null}
-                {trustSlipCode ? (
+                {hasUsableCurrentTrustSlipShare ? (
                   <SecondaryButton
                     type="button"
                     onClick={() => {
@@ -6001,7 +6004,7 @@ export default function TrustSlipPage() {
               <CardActionRow>
                 <PrimaryButton
                   onClick={() => void sharePublicDecisionPack()}
-                  disabled={!hasUsableTrustSlipShare || trustSlipNeedsSelectedCommunityRefresh}
+                  disabled={!hasUsableCurrentTrustSlipShare}
                   stableHeight={isCompact ? 50 : 48}
                   minWidth={isCompact ? undefined : 176}
                   debugId="trust-slip.public-decision-pack.share"
@@ -6011,7 +6014,7 @@ export default function TrustSlipPage() {
                 </PrimaryButton>
                 <SecondaryButton
                   onClick={copyPublicDecisionPackShareNote}
-                  disabled={!hasUsableTrustSlipShare || trustSlipNeedsSelectedCommunityRefresh}
+                  disabled={!hasUsableCurrentTrustSlipShare}
                   stableHeight={isCompact ? 50 : 48}
                   minWidth={isCompact ? undefined : 176}
                   debugId="trust-slip.public-decision-pack.copy-note"
@@ -6019,7 +6022,7 @@ export default function TrustSlipPage() {
                 >
                   Copy message
                 </SecondaryButton>
-                {hasUsableTrustSlipShare ? (
+                {hasUsableCurrentTrustSlipShare ? (
                   <StableCtaLink
                     to={verifyPath}
                     target="_blank"
@@ -6254,7 +6257,7 @@ export default function TrustSlipPage() {
                       textTransform: "uppercase",
                     }}
                   >
-                    <span>GSN</span> - Public View
+                    <span>GSN</span> - Holder View
                     <br />
                     <span style={{ color: "#AFC4D9", fontWeight: 850, textTransform: "none", letterSpacing: 0 }}>
                       Record anchor {communityRef}
@@ -6696,7 +6699,7 @@ export default function TrustSlipPage() {
                     <CardActionRow>
                       <PrimaryButton
                         onClick={copyPublicDecisionPackShareNote}
-                        disabled={!hasUsableTrustSlipShare || trustSlipNeedsSelectedCommunityRefresh}
+                        disabled={!hasUsableCurrentTrustSlipShare}
                         stableHeight={isCompact ? 52 : 50}
                         minWidth={isCompact ? undefined : 176}
                         debugId="trust-slip.paper-pack.share.copy-note"
@@ -6705,7 +6708,7 @@ export default function TrustSlipPage() {
                         {trustSlipIconBadge("copy", isCompact ? 26 : 28, "blue")}
                         Copy message
                       </PrimaryButton>
-                      {hasUsableTrustSlipShare ? (
+                      {hasUsableCurrentTrustSlipShare ? (
                         <StableCtaLink
                           to={verifyPath}
                           target="_blank"
@@ -6938,7 +6941,7 @@ export default function TrustSlipPage() {
               ...trustSlipScrollClearance(isCompact),
               order: 1,
               gridColumn: "1 / -1",
-              display: "none",
+              display: "grid",
               gap: 12,
             }}
           >
@@ -7052,7 +7055,7 @@ export default function TrustSlipPage() {
               ...trustSlipScrollClearance(isCompact),
               order: 6,
               gridColumn: isCompact ? "1 / -1" : "2 / 3",
-              display: "none",
+              display: "grid",
               position: "relative",
               overflow: "hidden",
             }}
@@ -7198,7 +7201,7 @@ export default function TrustSlipPage() {
           <section
             style={{
               ...trustSlipScrollClearance(isCompact),
-              display: "none",
+              display: "grid",
             }}
           >
             <div
@@ -7327,7 +7330,7 @@ export default function TrustSlipPage() {
               </div>
               <SecondaryButton
                 onClick={() => {
-                  if (verifyPath) {
+                  if (hasUsableCurrentTrustSlipShare && verifyPath) {
                     navigateWithOrigin(navigate, verifyPath, location);
                     return;
                   }
@@ -7434,7 +7437,7 @@ export default function TrustSlipPage() {
           <section
             style={{
               ...trustSlipScrollClearance(isCompact),
-              display: "none",
+              display: "grid",
             }}
           >
             <div
@@ -7664,7 +7667,7 @@ export default function TrustSlipPage() {
               ...trustSlipScrollClearance(isCompact),
               order: 9,
               gridColumn: "1 / -1",
-              display: "none",
+              display: "grid",
             }}
           >
             <TrustPaperWatermark name="qr" color="#0B63D1" size={190} opacity={0.03} />
@@ -7692,7 +7695,7 @@ export default function TrustSlipPage() {
               </SecondaryButton>
               <SecondaryButton
                 onClick={() => {
-                  if (verifyPath) {
+                  if (hasUsableCurrentTrustSlipShare && verifyPath) {
                     navigateWithOrigin(navigate, verifyPath, location);
                     return;
                   }
@@ -7861,7 +7864,7 @@ export default function TrustSlipPage() {
             </div>
 
             <CardActionRow style={{ marginTop: 16 }}>
-              {hasUsableTrustSlipShare ? (
+              {hasUsableCurrentTrustSlipShare ? (
                 <StableCtaLink
                   to={verifyPath}
                   kind="primary"
@@ -8572,7 +8575,7 @@ export default function TrustSlipPage() {
               </div>
 
               <CardActionRow style={{ marginTop: 14 }}>
-                {hasUsableTrustSlipShare ? (
+                {hasUsableCurrentTrustSlipShare ? (
                   <StableCtaLink
                     to={verifyPath}
                     kind="primary"
@@ -8617,7 +8620,7 @@ export default function TrustSlipPage() {
                   Copy Verify Link
                 </SecondaryButton>
 
-                {hasUsableTrustSlipShare ? (
+                {hasUsableCurrentTrustSlipShare ? (
                   <StableCtaLink
                     to={verifyPath}
                     target="_blank"

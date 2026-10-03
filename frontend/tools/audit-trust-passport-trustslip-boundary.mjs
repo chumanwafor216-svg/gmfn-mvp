@@ -262,13 +262,18 @@ assertContains(
 );
 assertContains(
   "trustSlip",
-  /const \[trustSlipSetupSubmitted, setTrustSlipSetupSubmitted\] = useState\(true\);[\s\S]*?const hasUsableTrustSlipShare = Boolean\(trustSlipCode && verifyPath && verifyUrl\);[\s\S]*?const trustSlipHolderDocumentVisible = hasUsableTrustSlipShare && trustSlipSetupSubmitted;/,
-  "TrustSlip holder document visibility must derive from backend-confirmed usable share state and the explicit setup/document state."
+  /const \[trustSlipSetupSubmitted, setTrustSlipSetupSubmitted\] = useState\(true\);[\s\S]*?const trustSlipNeedsSelectedCommunityRefresh = Boolean\([\s\S]*?const hasUsableTrustSlipShare = Boolean\(trustSlipCode && verifyPath && verifyUrl\);[\s\S]*?const hasUsableCurrentTrustSlipShare =\s*hasUsableTrustSlipShare && !trustSlipNeedsSelectedCommunityRefresh;[\s\S]*?const trustSlipHolderDocumentVisible =\s*hasUsableCurrentTrustSlipShare && trustSlipSetupSubmitted;/,
+  "TrustSlip holder document visibility must require backend-confirmed share state, no selected-community refresh mismatch, and the explicit setup/document state."
 );
 assertLineAbsent(
   "trustSlip",
   /trustSlipSetupForcedOpen|trustSlipSetupViewRequested/,
   "TrustSlip holder setup/document visibility must not require a second setup override boolean."
+);
+assertNotContains(
+  "trustSlip",
+  /URLSearchParams\(location\.search\)[\s\S]{0,160}\.get\(["']code["']\)|requestedTrustSlipCode|const\s+trustSlipCode[\s\S]{0,320}location\.search/,
+  "Authenticated TrustSlip code authority must not come from the query string."
 );
 assertContains(
   "trustSlip",
@@ -284,8 +289,18 @@ assertContains(
 
 assertContains(
   "trustSlip",
-  /const hasUsableTrustSlipShare = Boolean\(trustSlipCode && verifyPath && verifyUrl\);[\s\S]*?disabled=\{!hasUsableTrustSlipShare[\s\S]*?\{hasUsableTrustSlipShare \? \([\s\S]*?debugId="trust-slip\.public-decision-pack\.open"/,
-  "TrustSlip Share/Open actions must stay gated by a backend-originated code and usable verify path."
+  /const hasUsableCurrentTrustSlipShare =\s*hasUsableTrustSlipShare && !trustSlipNeedsSelectedCommunityRefresh;[\s\S]*?function buildPublicDecisionPackShareText\(\) \{\s*if \(!hasUsableCurrentTrustSlipShare\) return "";[\s\S]*?if \(!hasUsableCurrentTrustSlipShare \|\| !text\) \{[\s\S]*?disabled=\{!hasUsableCurrentTrustSlipShare\}[\s\S]*?\{hasUsableCurrentTrustSlipShare \? \([\s\S]*?debugId="trust-slip\.public-decision-pack\.open"/,
+  "TrustSlip Share/Open actions must require backend-originated code/link state that is current for the selected community context."
+);
+assertContains(
+  "trustSlip",
+  /const trustSlipHolderDocumentVisible =\s*hasUsableCurrentTrustSlipShare && trustSlipSetupSubmitted;[\s\S]*?\{!trustSlipHolderDocumentVisible \? \([\s\S]*?\{hasUsableCurrentTrustSlipShare \? \([\s\S]*?debugId="trust-slip\.setup\.share-current"[\s\S]*?\{hasUsableCurrentTrustSlipShare \? \([\s\S]*?debugId="trust-slip\.setup\.open-current"/,
+  "TrustSlip setup screen must not share or open a previous TrustSlip after the selected community context requires refresh."
+);
+assertNotContains(
+  "trustSlip",
+  /\{trustSlipCode \? \([\s\S]*?debugId="trust-slip\.setup\.(share-current|open-current)"/,
+  "TrustSlip setup Share/Open-current actions must not be gated by code presence alone."
 );
 
 assertContains(
@@ -304,6 +319,22 @@ assertContains(
   /data-gsn-trust-document-certificate="trustslip-holder"[\s\S]*?<TrustDocumentConfidenceRibbon[\s\S]*?<TrustDocumentBoundaryPanel[\s\S]*?title="This TrustSlip confirms"[\s\S]*?<TrustDocumentBoundaryPanel[\s\S]*?title="This TrustSlip does not confirm"[\s\S]*?<TrustDocumentSecurityPanel[\s\S]*?<TrustDocumentFingerprint/,
   "TrustSlip holder page must keep core Trust Document Language primitives and confirms/does-not-confirm panels."
 );
+assertContains(
+  "trustSlip",
+  /data-gsn-trust-document-certificate="trustslip-holder"[\s\S]*?gridColumn: "1 \/ -1",[\s\S]*?display: "grid",[\s\S]*?<TrustDocumentConfidenceRibbon/,
+  "TrustSlip holder certificate must be visible after the authenticated usable-code gate, not hidden behind display none."
+);
+assertNotContains(
+  "trustSlip",
+  /data-gsn-trust-document-certificate="trustslip-holder"[\s\S]*?display: "none"/,
+  "TrustSlip holder certificate must not be hidden by CSS once the holder-document branch is selected."
+);
+assertContains(
+  "trustSlip",
+  /<span>GSN<\/span> - Holder View[\s\S]*?TrustSlip holder[\s\S]*?data-gsn-trustslip-paper-pack-shell="true"[\s\S]*?data-gsn-trust-document-certificate="trustslip-holder"/,
+  "Authenticated TrustSlip holder page must identify itself as the holder view and keep that surface distinct from public Verify."
+);
+
 assertContains(
   "trustSlip",
   /data-gsn-trust-document-certificate="trustslip-holder"[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipHolderConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Primary community evidence"[\s\S]*?trustSlipStatusLabel=\{trustSlipPublicStatus\}/,
@@ -367,7 +398,8 @@ assertContains(
   "trustSlip",
   /data-gsn-trustslip-holder-full-details=\{collapsed\.summary \? "collapsed" : "open"\}[\s\S]*?Full paper details[\s\S]*?debugId="trust-slip\.toggle-summary"[\s\S]*?debugId="trust-slip\.copy-gmfn-id"[\s\S]*?debugId="trust-slip\.print"[\s\S]*?debugId="trust-slip\.copy-snapshot"/,
   "TrustSlip holder page must move secondary copy, print, and snapshot controls into the collapsed Full paper details lane."
-);assertContains(
+);
+assertContains(
   "trustSlip",
   /data-gsn-trustslip-decision-pack-mechanics=\{[\s\S]*?collapsed\.decisionPackMechanics \? "collapsed" : "open"[\s\S]*?Pack evidence mechanics[\s\S]*?debugId="trust-slip\.toggle-decision-pack-mechanics"[\s\S]*?display: isCompact && collapsed\.decisionPackMechanics \? "none" : "grid"[\s\S]*?data-gsn-trustslip-decision-boundary="compact"[\s\S]*?display: isCompact && collapsed\.decisionPackMechanics \? "none" : "grid"/,
   "TrustSlip holder Decision Pack mechanics must stay collapsed on phone while desktop keeps the evidence rows and boundary visible."
@@ -376,7 +408,8 @@ assertContains(
   "trustSlipWithPrivatePreview",
   /data-gsn-trustslip-private-preview-drawer=\{[\s\S]*?collapsed\.decisionPackPrivatePreview \? "collapsed" : "open"[\s\S]*?Holder preview and history[\s\S]*?debugId="trust-slip\.toggle-private-decision-pack-preview"[\s\S]*?data-gsn-holder-private-decision-pack-evidence="true"[\s\S]*?display: isCompact && (?:collapsed\.decisionPackPrivatePreview|isCollapsed) \? "none" : "grid"[\s\S]*?data-gsn-decision-pack-access-ledger="holder"[\s\S]*?display: isCompact && (?:collapsed\.decisionPackPrivatePreview|isCollapsed) \? "none" : "grid"/,
   "TrustSlip holder private preview, consent history, and access ledger must stay behind one phone drawer."
-);assertContains(
+);
+assertContains(
   "trustSlip",
   /data-gsn-trustslip-holder-practical-evidence=\{[\s\S]*?isCompact && collapsed\.practicalEvidence \? "collapsed" : "open"[\s\S]*?Practical evidence summary[\s\S]*?debugId="trust-slip\.toggle-practical-evidence"[\s\S]*?!isCompact \|\| !collapsed\.practicalEvidence \?/,
   "TrustSlip holder practical evidence summary must stay collapsed on phone and open only after the holder taps the drawer."
@@ -524,7 +557,8 @@ assertContains(
   "trustSlip",
   /withPublicDecisionPackQuery[\s\S]*?decision_pack: selectedPurposeOption\.key[\s\S]*?access_purpose: selectedPurposeOption\.label[\s\S]*?recipient_question: selectedPurposeOption\.recipientQuestion[\s\S]*?decision_focus: selectedPurposeOption\.focus[\s\S]*?const verifyPath = useMemo[\s\S]*?withPublicDecisionPackQuery\(basePath, publicDecisionPackQuery\)/,
   "TrustSlip holder verify links and QR must carry the selected public Decision Pack context."
-);assertContains(
+);
+assertContains(
   "trustSlip",
   /const qrValue = firstTruthy\(verifyUrl, verifyPath, trustSlipCode\);/,
   "TrustSlip holder QR value must prefer the selected public verify URL before falling back to raw path or code."

@@ -153,6 +153,17 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
+  /const activeTab = requestedTab === "settings" \? "settings" : requestedTab === "guide" \? "guide" : "home";[\s\S]*?const showMemberHomeSummary =\s*isAppRoute && activeTab !== "settings";[\s\S]*?display: showMemberHomeSummary \? "grid" : "none",[\s\S]*?data-my-gsn-member-home="true"[\s\S]*?What Needs My Attention[\s\S]*?Your summary[\s\S]*?Discover[\s\S]*?Ask[\s\S]*?Offer[\s\S]*?What I've Done[\s\S]*?My Evidence[\s\S]*?Identity snapshot/,
+  "Authenticated My GSN/Profile must expose the member-home by default without requiring ?tab=home/member-home/summary."
+);
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  /guide: appendRouteQuery\(routeTarget\("profile", selectedClanId, "my-gmfn\.route\.guide-target"\), \{ tab: "guide" \}\),[\s\S]*?settings: routeTarget\("settings", selectedClanId, "my-gmfn\.route\.settings-target"\)/,
+  "My GSN must keep the decision guide and settings/profile editing reachable contextually after member-home becomes the default."
+);
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
   /data-my-gmfn-capabilities-shell="collapsed"[\s\S]*?GSN Core Capabilities[\s\S]*?data-my-gmfn-selected-capability="true"[\s\S]*?data-my-gmfn-setup-pack-shell="collapsed"[\s\S]*?GSN Setup Pack[\s\S]*?Full bank stays behind the setup pack[\s\S]*?data-my-gmfn-major-domains-shell="collapsed"/,
   "The signed-in command-centre guide must show the core set first and keep the full bank behind the setup-pack disclosure."
 );
