@@ -680,6 +680,24 @@ function trustSlipCodeFromResult(value: any): string {
   );
 }
 
+function trustSlipReissueSuccessNotice(value: any): string {
+  if (value && typeof value === "object") {
+    if (value.issued === true || value.reissued === true) {
+      return "Your TrustSlip is ready.";
+    }
+
+    const detail = safeStr(value.detail);
+    if (
+      value.issued === false ||
+      value.reissued === false ||
+      /no material trustslip change/i.test(detail)
+    ) {
+      return "Your TrustSlip is already up to date.";
+    }
+  }
+
+  return "Your TrustSlip is ready.";
+}
 function parseTrustSlipIssueBlocker(error: any): any | null {
   const candidates = [
     error?.detail,
@@ -2661,7 +2679,7 @@ export default function TrustSlipPage() {
     setMe(data.me);
     setCurrentClan(data.clan);
     setMemberCommunityOptions((current) => (data.clans.length ? data.clans : current));
-    setSummary(data.summary);
+    setSummary((current) => data.summary || current);
   }, []);
 
   const guideItems = useMemo(() => buildTrustSlipGuideItems(), []);
@@ -2742,7 +2760,7 @@ export default function TrustSlipPage() {
 
       try {
         const initialData = await fetchTrustSlipPageData(selectedClanId, {
-          includeCommunities: false,
+          includeCommunities: true,
           includeSummary: false,
         });
 
@@ -2951,10 +2969,22 @@ export default function TrustSlipPage() {
         force: true,
         community_id: activeIssuingCommunityId,
       });
+      const optimisticSummary = normalizeTrustSlipSummary({
+        ...reissueResult,
+        active: true,
+        status: firstTruthy(reissueResult?.status, "active"),
+        community_id: firstTruthy(reissueResult?.community_id, activeIssuingCommunityId),
+        clan_id: firstTruthy(reissueResult?.clan_id, activeIssuingCommunityId),
+      });
       const data = await fetchTrustSlipPageData(activeIssuingCommunityId, {
         forceFresh: true,
         networkFirst: true,
-      });
+      }).catch(() => ({
+        me,
+        clan: currentClan,
+        clans: memberCommunityOptions,
+        summary: optimisticSummary,
+      }));
       if (
         loadSeq !== trustSlipLoadSeqRef.current ||
         contextKey !== trustSlipContextRef.current
@@ -2984,12 +3014,7 @@ export default function TrustSlipPage() {
       }
       setTrustSlipSetupSubmitted(true);
       setActiveTrustSlipPaperPack("share");
-      showNotice(
-        "success",
-        visibilityScope === "community_specific"
-          ? `Fresh TrustSlip issued for ${selectedVerificationCommunityName}.`
-          : `Fresh TrustSlip issued from ${selectedVerificationCommunityName}.`
-      );
+      showNotice("success", trustSlipReissueSuccessNotice(reissueResult));
     } catch (error: any) {
       if (
         loadSeq === trustSlipLoadSeqRef.current &&

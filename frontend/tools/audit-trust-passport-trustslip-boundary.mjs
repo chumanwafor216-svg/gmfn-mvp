@@ -146,13 +146,13 @@ assertContains(
 
 assertContains(
   "api",
-  /export async function getMyTrustSlip\(\): Promise<any> \{[\s\S]*?cachedStartupSectionRead[\s\S]*?startupSectionCacheKey\("getMyTrustSlip"\)[\s\S]*?httpJson\("\/trust-slips\/me", "GET"\)[\s\S]*?\}/,
+  /export async function getMyTrustSlip\(params\?: \{ fresh\?: boolean \}\): Promise<any> \{[\s\S]*?if \(params\?\.fresh\) clearStartupSectionCacheByLabel\("getMyTrustSlip"\);[\s\S]*?return httpJson\("\/trust-slips\/me", "GET"\);[\s\S]*?\}/,
   "Signed-in holder TrustSlip lookup must keep using the authenticated /trust-slips/me wrapper."
 );
 
 assertContains(
   "api",
-  /export async function reissueMyTrustSlip[\s\S]*?return httpJson\("\/trust-slips\/me\/reissue", "POST"/,
+  /export async function reissueMyTrustSlip[\s\S]*?const result = await httpJson\("\/trust-slips\/me\/reissue", "POST"[\s\S]*?clearStartupSectionCacheByLabel\("getMyTrustSlip"\);[\s\S]*?return result;/,
   "TrustSlip reissue must remain a signed-in holder operation."
 );
 
@@ -265,6 +265,11 @@ assertContains(
   "trustSlip",
   /api\.reissueMyTrustSlip\([\s\S]*?reason: "holder_requested_fresh_public_trustslip"/,
   "TrustSlip holder refresh must keep using the explicit holder-requested reissue reason."
+);
+assertContains(
+  "trustSlip",
+  /function trustSlipReissueSuccessNotice\(value: any\): string \{[\s\S]*?value\.issued === true \|\| value\.reissued === true[\s\S]*?"Your TrustSlip is ready\."[\s\S]*?value\.issued === false \|\|[\s\S]*?value\.reissued === false \|\|[\s\S]*?no material trustslip change[\s\S]*?"Your TrustSlip is already up to date\."[\s\S]*?showNotice\("success", trustSlipReissueSuccessNotice\(reissueResult\)\)/,
+  "TrustSlip holder refresh must distinguish backend-issued/reissued success from an already-current TrustSlip without claiming fresh issuance from a code alone."
 );
 
 assertContains(
