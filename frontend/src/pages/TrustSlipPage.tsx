@@ -6548,7 +6548,7 @@ export default function TrustSlipPage() {
             style={{
               ...trustSlipPaperPanel("#FFFFFF"),
               ...trustSlipScrollClearance(isCompact),
-              order: 1,
+              order: 8,
               gridColumn: "1 / -1",
               display: "grid",
               gap: isCompact ? 12 : 14,
@@ -6567,7 +6567,7 @@ export default function TrustSlipPage() {
                 <div style={{ minWidth: 0 }}>
                   <div style={{ ...sectionLabel(), color: "#7A4A00" }}>TrustSlip map</div>
                   <div style={trustSlipPaperTitle(isCompact)}>
-                    {activeTrustSlipPaperPackOption.label} pack
+                    Secondary details map
                   </div>
                   <div
                     style={{
@@ -6578,7 +6578,7 @@ export default function TrustSlipPage() {
                       lineHeight: 1.35,
                     }}
                   >
-                    One pack opens at a time. The TrustSlip still carries the public link, holder, community, evidence, and limits.
+                    The full holder document is the main TrustSlip. Open one pack here when you need a focused view of sharing, holder, community, evidence, or limits.
                   </div>
                 </div>
                 <SecondaryButton

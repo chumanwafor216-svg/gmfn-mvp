@@ -331,8 +331,18 @@ assertNotContains(
 );
 assertContains(
   "trustSlip",
-  /<span>GSN<\/span> - Holder View[\s\S]*?TrustSlip holder[\s\S]*?data-gsn-trustslip-paper-pack-shell="true"[\s\S]*?data-gsn-trust-document-certificate="trustslip-holder"/,
+  /<span>GSN<\/span> - Holder View[\s\S]*?TrustSlip holder[\s\S]*?data-gsn-trust-document-certificate="trustslip-holder"/,
   "Authenticated TrustSlip holder page must identify itself as the holder view and keep that surface distinct from public Verify."
+);
+assertContains(
+  "trustSlip",
+  /data-gsn-trust-document-certificate="trustslip-holder"[\s\S]*?order: 1,[\s\S]*?gridColumn: "1 \/ -1",[\s\S]*?display: "grid"/,
+  "Authenticated TrustSlip holder certificate must be the primary visible holder document when the usable-current TrustSlip gate passes."
+);
+assertContains(
+  "trustSlip",
+  /data-gsn-trustslip-paper-pack-shell="true"[\s\S]*?order: 8,[\s\S]*?Secondary details map[\s\S]*?The full holder document is the main TrustSlip/,
+  "TrustSlip paper-pack shell must stay secondary and must not replace the full holder document as the primary experience."
 );
 
 assertContains(

@@ -479,20 +479,28 @@ async function openMoreLimits(page) {
   await page.locator("summary").filter({ hasText: "More limits" }).first().click();
 }
 async function openTrustSlipHolderFromSetup(page, options = {}) {
-  await expect(page.locator('[data-gsn-trustslip-setup-only="true"]')).toBeVisible({
-    timeout: 30000,
-  });
-  await expect(page.getByText("Choose purpose and community first.", { exact: true })).toBeVisible();
+  const setupPanel = page.locator('[data-gsn-trustslip-setup-only="true"]');
+  const holderCertificate = page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]');
 
-  if (options.setupOnly) return false;
-
-  const openCurrent = page.locator('[data-cta-id="trust-slip.setup.open-current"]');
-  if (await openCurrent.count()) {
-    await openCurrent.first().click();
-  } else {
-    await page.locator('[data-cta-id="trust-slip.setup.submit"]').click();
+  if (options.setupOnly) {
+    await expect(setupPanel).toBeVisible({ timeout: 30000 });
+    await expect(page.getByText("Choose purpose and community first.", { exact: true })).toBeVisible();
+    return false;
   }
 
+  if (await setupPanel.count()) {
+    await expect(setupPanel).toBeVisible({ timeout: 30000 });
+    await expect(page.getByText("Choose purpose and community first.", { exact: true })).toBeVisible();
+
+    const openCurrent = page.locator('[data-cta-id="trust-slip.setup.open-current"]');
+    if (await openCurrent.count()) {
+      await openCurrent.first().click();
+    } else {
+      await page.locator('[data-cta-id="trust-slip.setup.submit"]').click();
+    }
+  }
+
+  await expect(holderCertificate).toHaveCount(1, { timeout: 30000 });
   await expect(page.getByText("TrustSlip holder", { exact: true })).toBeVisible({
     timeout: 30000,
   });
@@ -843,32 +851,31 @@ async function runTrustPassportScenario(browser, baseURL) {
 
 async function runTrustSlipScenario(browser, baseURL) {
   const state = await newSignedInPage(browser);
-  await state.page.goto(`${baseURL}/app/trust-slip`, {
+  await state.page.goto(`${baseURL}/app/trust-slip?decision_pack=employment_decision`, {
     waitUntil: "domcontentloaded",
     timeout: 60000,
   });
 
-  const setupPackSelect = state.page.locator(
-    '[data-gsn-trustslip-purpose-mobile-select="setup"] select'
-  );
-  await expect(setupPackSelect).toHaveCount(1);
-  await expect(setupPackSelect).toBeVisible();
-  await expect(setupPackSelect.locator("option")).toHaveCount(10);
-  await setupPackSelect.selectOption("employment_decision");
+  await expect(state.page.locator('[data-gsn-trustslip-setup-only="true"]')).toHaveCount(0);
   await openTrustSlipHolderFromSetup(state.page);
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]')).toHaveCount(1);
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trust-passport"]')).toHaveCount(0);
   await expect(state.page.locator('[data-gsn-trustslip-purpose-desktop-buttons="true"]')).toHaveCount(0);
-  const selectedPackSummary = state.page.locator(
-    '[data-gsn-trustslip-purpose-selected-summary="true"]'
-  );
-  await expect(selectedPackSummary).toContainText("Employment Decision Pack");
-  await expect(selectedPackSummary).toContainText(
-    "Is there enough evidence to continue an employment conversation?"
-  );
-  await expect(selectedPackSummary).toContainText("Role, consistency");
   await assertTrustSlipQrCarriesSelectedDecisionPack(state.page, baseURL);
   await expect(state.page.locator('[data-gsn-trustslip-paper-pack-shell="true"]')).toBeVisible();
+  const holderDocumentOrder = await state.page.evaluate(() => {
+    const certificate = document.querySelector('[data-gsn-trust-document-certificate="trustslip-holder"]');
+    const pack = document.querySelector('[data-gsn-trustslip-paper-pack-shell="true"]');
+    return {
+      certificateTop: certificate?.getBoundingClientRect().top ?? Number.POSITIVE_INFINITY,
+      packTop: pack?.getBoundingClientRect().top ?? Number.POSITIVE_INFINITY,
+    };
+  });
+  if (!(holderDocumentOrder.certificateTop < holderDocumentOrder.packTop)) {
+    throw new Error(
+      `TrustSlip holder certificate must render before the secondary pack shell: ${JSON.stringify(holderDocumentOrder)}`
+    );
+  }
   await expect(state.page.locator('[data-gsn-trustslip-paper-pack-buttons="true"]')).toBeVisible();
   await expect(state.page.locator('[data-cta-id="trust-slip.paper-pack.share"]')).toBeVisible();
   await expect(state.page.locator('[data-cta-id="trust-slip.paper-pack.holder"]')).toBeVisible();
@@ -939,7 +946,7 @@ async function runTrustSlipStateScenario(browser, baseURL, scenario) {
   const state = await newSignedInPage(browser, {
     trustSlipSummary: trustSlipSummaryPayload(scenario.overrides),
   });
-  await state.page.goto(`${baseURL}/app/trust-slip`, {
+  await state.page.goto(`${baseURL}/app/trust-slip?decision_pack=employment_decision`, {
     waitUntil: "domcontentloaded",
     timeout: 60000,
   });
@@ -963,11 +970,16 @@ async function runTrustSlipStateScenario(browser, baseURL, scenario) {
       }
     }
   } else {
+    await expect(state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]')).toHaveCount(0);
     await expect(state.page.locator('[data-gsn-trust-document-certificate="trust-passport"]')).toHaveCount(0);
   }
 
   for (const text of scenario.visibleText) {
     await expect(state.page.getByText(text, { exact: false }).filter({ visible: true }).first()).toBeVisible();
+  }
+
+  for (const debugId of scenario.absentCtas || []) {
+    await expect(state.page.locator(`[data-cta-id="${debugId}"]`)).toHaveCount(0);
   }
 
   await waitForRequest(
@@ -1051,8 +1063,10 @@ async function main() {
         is_current: false,
         code: "",
         verification_code: "",
+        verification_token: "",
         token: "",
         public_verify_url: "",
+        merchant_view: { code: "", verification_code: "", verification_token: "", token: "", public_verify_url: "" },
         reason: "phone_unverified",
         detail: "Verify your phone number to activate TrustSlip portability.",
         phone_verified: false,
@@ -1069,6 +1083,28 @@ async function main() {
       ],
     });
     await runTrustSlipStateScenario(browser, baseURL, {
+      label: "stale selected-context TrustSlip holder",
+      overrides: {
+        community: "Previous Evidence Community",
+        community_id: 99,
+        clan_id: 99,
+        community_global_id: "GMFN-C-PREVIOUS-TRUSTSLIP",
+        community_code: "GMFN-C-PREVIOUS-TRUSTSLIP",
+      },
+      setupOnly: true,
+      absentCtas: [
+        "trust-slip.setup.share-current",
+        "trust-slip.setup.open-current",
+        "trust-slip.public-decision-pack.share",
+        "trust-slip.public-decision-pack.open",
+      ],
+      visibleText: [
+        "TrustSlip setup",
+        "Choose purpose and community first.",
+        "Generate TrustSlip",
+      ],
+    });
+    await runTrustSlipStateScenario(browser, baseURL, {
       label: "missing-code TrustSlip holder",
       overrides: {
         status: "active",
@@ -1077,16 +1113,16 @@ async function main() {
         is_current: true,
         code: "",
         verification_code: "",
+        verification_token: "",
         token: "",
         public_verify_url: "",
+        merchant_view: { code: "", verification_code: "", verification_token: "", token: "", public_verify_url: "" },
       },
-      paperPack: "limits",
-      openSecurityDetails: true,
+      setupOnly: true,
       visibleText: [
-        "Preparing",
-        "Waiting for a public code",
-        "No public TrustSlip code is available yet.",
-        "Code not ready",
+        "TrustSlip setup",
+        "Choose purpose and community first.",
+        "Generate TrustSlip",
       ],
     });
     await runTrustSlipStateScenario(browser, baseURL, {
