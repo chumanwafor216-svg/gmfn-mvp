@@ -24,8 +24,8 @@ assertContains(
 );
 
 assertContains(
-  /key: "profile"[\s\S]*?pathname === "\/app\/profile"[\s\S]*?import\("\.\.\/pages\/ProfilePage"\)/,
-  "Route preloading must warm the restored Profile page, not the My GSN member-home, when Profile is the target."
+  /key: "profile"[\s\S]*?pathname === "\/app\/profile"[\s\S]*?import\("\.\.\/pages\/MyGMFNAndIPage"\)/,
+  "Route preloading must warm the historical My GSN Identity surface when the compatibility Profile route is the target."
 );
 
 assertContains(

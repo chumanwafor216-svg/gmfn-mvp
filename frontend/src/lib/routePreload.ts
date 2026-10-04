@@ -180,7 +180,7 @@ const ROUTE_LOADERS: Array<{
   {
     key: "profile",
     match: (pathname) => pathname === "/app/profile",
-    load: () => import("../pages/ProfilePage"),
+    load: () => import("../pages/MyGMFNAndIPage"),
   },
   {
     key: "identity-home",

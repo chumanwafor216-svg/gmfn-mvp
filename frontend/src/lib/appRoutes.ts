@@ -40,7 +40,7 @@ export const APP_ROUTES = {
   NOTIFICATIONS: "/app/notifications",
   HELP_DESK: "/app/help",
   BUILD_FIRST_CIRCLE: "/app/build-first-circle",
-  PROFILE: "/app/profile",
+  PROFILE: "/app/my-gmfn-and-i?tab=guide",
   SETTINGS: "/app/my-gmfn-and-i?tab=settings",
   GUIDE: "/app/my-gmfn-and-i",
   ADMIN_COMMAND: "/app/command-center",

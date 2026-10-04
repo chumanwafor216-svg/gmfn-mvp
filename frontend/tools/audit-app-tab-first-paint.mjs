@@ -1,4 +1,4 @@
-/* global console, process, URL, localStorage, document */
+/* global console, process, URL, URLSearchParams, localStorage, document, window */
 
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -239,6 +239,114 @@ async function measureRoute(browser, baseURL, test) {
     loadingTextStillVisible,
   };
 }
+async function measureProfileBottomNavSettled(browser, baseURL) {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+  });
+  const page = await context.newPage();
+  await installApiMocks(page, "profile-settled");
+
+  await page.addInitScript(() => {
+    localStorage.setItem("access_token", "app-tab-first-paint-token");
+    localStorage.setItem("gmfn_selected_clan_id", "8");
+  });
+
+  await page.goto(`${baseURL}/app/dashboard?community=8`, {
+    waitUntil: "domcontentloaded",
+    timeout: 30000,
+  });
+  await page.waitForSelector('[data-cta-id="app-layout.bottom-nav.profile"]', {
+    timeout: MAX_FIRST_SURFACE_MS,
+  });
+  await page.click('[data-cta-id="app-layout.bottom-nav.profile"]');
+  await delay(10000);
+  await page.waitForSelector('[data-my-gsn-identity-status-grid="true"]', {
+    timeout: MAX_FIRST_SURFACE_MS,
+  });
+
+  const result = await page.evaluate(() => {
+    const text = document.body.textContent || "";
+    const memberHome = document.querySelector('[data-my-gsn-member-home="true"]');
+    return {
+      pathname: window.location.pathname,
+      search: window.location.search,
+      hasIdentityGrid: Boolean(document.querySelector('[data-my-gsn-identity-status-grid="true"]')),
+      hasMemberHome: Boolean(memberHome),
+      hasIdentityTitle: text.includes("My GSN Identity"),
+      hasReturnPath: text.includes("Return path") && text.includes("Back to Dashboard"),
+      hasAttention: text.includes("What Needs My Attention"),
+      hasMemberHomeHeadline: text.includes("Your communities. Your opportunities. Your activity. Your evidence."),
+      hasStandaloneProfileTitle: text.includes("My Profile"),
+    };
+  });
+
+  await context.close();
+
+  return {
+    name: "Profile bottom-nav settled guide identity",
+    passed:
+      result.pathname === "/app/my-gmfn-and-i" &&
+      new URLSearchParams(result.search).get("tab") === "guide" &&
+      result.hasIdentityGrid &&
+      result.hasIdentityTitle &&
+      result.hasReturnPath &&
+      !result.hasMemberHome &&
+      !result.hasAttention &&
+      !result.hasMemberHomeHeadline &&
+      !result.hasStandaloneProfileTitle,
+    result,
+  };
+}
+
+async function measureMyGsnMemberHomeSettled(browser, baseURL) {
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+  });
+  const page = await context.newPage();
+  await installApiMocks(page, "my-gsn");
+
+  await page.addInitScript(() => {
+    localStorage.setItem("access_token", "app-tab-first-paint-token");
+    localStorage.setItem("gmfn_selected_clan_id", "8");
+  });
+
+  await page.goto(`${baseURL}/app/my-gmfn-and-i?community=8`, {
+    waitUntil: "domcontentloaded",
+    timeout: 30000,
+  });
+  await delay(10000);
+  await page.waitForSelector('[data-my-gsn-member-home="true"]', {
+    timeout: MAX_FIRST_SURFACE_MS,
+  });
+
+  const result = await page.evaluate(() => {
+    const text = document.body.textContent || "";
+    return {
+      pathname: window.location.pathname,
+      search: window.location.search,
+      hasMemberHome: Boolean(document.querySelector('[data-my-gsn-member-home="true"]')),
+      hasAttention: text.includes("What Needs My Attention"),
+      hasMemberHomeHeadline: text.includes("Your communities. Your opportunities. Your activity. Your evidence."),
+    };
+  });
+
+  await context.close();
+
+  return {
+    name: "My GSN member-home settled default",
+    passed:
+      result.pathname === "/app/my-gmfn-and-i" &&
+      new URLSearchParams(result.search).get("tab") !== "guide" &&
+      result.hasMemberHome &&
+      result.hasAttention &&
+      result.hasMemberHomeHeadline,
+    result,
+  };
+}
 
 async function run() {
   let server;
@@ -265,18 +373,19 @@ async function run() {
       name: "Profile",
       mode: "profile",
       path: "/app/profile?community=8",
-      selector: '[data-cta-id="profile.save-account"]',
-      text: "My Profile",
-      loadingText: "Refreshing...",
+      selector: '[data-my-gsn-identity-status-grid="true"]',
+      text: "My GSN Identity",
+      loadingText: "Loading workspace settings",
       expectDelayed: false,
     },
     {
-      name: "My GSN Identity",
+      name: "My GSN member-home",
       mode: "my-gsn",
       path: "/app/my-gmfn-and-i?community=8",
-      selector: '[data-cta-id="my-gmfn.hero.dashboard"]',
-      text: "My GSN Identity",
+      selector: '[data-my-gsn-member-home="true"]',
+      text: "Your communities. Your opportunities. Your activity. Your evidence.",
       loadingText: "Loading workspace settings",
+      expectDelayed: false,
     },
     {
       name: "Trust Passport",
@@ -316,6 +425,11 @@ async function run() {
       results.push(await measureRoute(browser, baseURL, test));
     }
 
+    const settledResults = [
+      await measureProfileBottomNavSettled(browser, baseURL),
+      await measureMyGsnMemberHomeSettled(browser, baseURL),
+    ];
+
     const failures = results.filter(
       (result) =>
         result.firstSurfaceMs > MAX_FIRST_SURFACE_MS ||
@@ -326,13 +440,15 @@ async function run() {
         )
     );
 
-    if (failures.length) {
-      console.error("App tab first-paint audit failed:", { results, failures });
+    const settledFailures = settledResults.filter((result) => !result.passed);
+
+    if (failures.length || settledFailures.length) {
+      console.error("App tab first-paint audit failed:", { results, failures, settledResults, settledFailures });
       process.exit(1);
     }
 
     console.log(
-      `App tab first-paint audit passed with ${SECONDARY_DELAY_MS}ms delayed secondary calls: ${JSON.stringify(results)}.`
+      `App tab first-paint audit passed with ${SECONDARY_DELAY_MS}ms delayed secondary calls: ${JSON.stringify({ results, settledResults })}.`
     );
   } finally {
     if (browser) await browser.close().catch(() => {});

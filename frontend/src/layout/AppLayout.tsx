@@ -10,7 +10,7 @@ import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticI
 import WorkspaceSettingsBridge from "../components/WorkspaceSettingsBridge";
 import WorkspaceCompanionBridge from "../components/WorkspaceCompanionBridge";
 import { currentPath, isSafeInternalPath } from "../lib/nav";
-import { routeWithCommunity } from "../lib/appRoutes";
+import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import { communityIdFromSearch } from "../lib/communityRouteContext";
 import { publicShopPath } from "../lib/publicLinks";
 import { preloadCoreAppRoutes, preloadRouteForPath } from "../lib/routePreload";
@@ -341,25 +341,37 @@ function makeSettingsItem(): NavLinkItem {
     label: "Settings",
     to: "/app/my-gmfn-and-i?tab=settings",
     match: (pathname, search) =>
-      (pathname === "/app/my-gmfn-and-i" && search.includes("tab=settings")) ||
+      (pathname === "/app/my-gmfn-and-i" && routeSearchTab(search) === "settings") ||
       pathname === "/app/settings",
   };
+}
+
+function routeSearchTab(search: string): string {
+  try {
+    return String(new URLSearchParams(search || "").get("tab") || "")
+      .trim()
+      .toLowerCase();
+  } catch {
+    return "";
+  }
 }
 
 function makeGuideItem(): NavLinkItem {
   return {
     label: "My GSN Identity",
-    to: "/app/my-gmfn-and-i",
+    to: APP_ROUTES.PROFILE,
     match: (pathname, search) =>
-      pathname === "/app/my-gmfn-and-i" && !search.includes("tab=settings"),
+      pathname === "/app/my-gmfn-and-i" && routeSearchTab(search) === "guide",
   };
 }
 
 function makeProfileItem(): NavLinkItem {
   return {
     label: "Profile",
-    to: "/app/profile",
-    match: (pathname) => pathname === "/app/profile",
+    to: APP_ROUTES.PROFILE,
+    match: (pathname, search) =>
+      (pathname === "/app/my-gmfn-and-i" && routeSearchTab(search) === "guide") ||
+      pathname === "/app/profile",
   };
 }
 
@@ -729,24 +741,31 @@ function getSpecialRouteMeta(
     };
   }
 
-  if (pathname === "/app/my-gmfn-and-i" && search.includes("tab=settings")) {
+  if (pathname === "/app/my-gmfn-and-i" && routeSearchTab(search) === "settings") {
     return {
       section: "Account",
       page: "Settings",
     };
   }
 
-  if (pathname === "/app/my-gmfn-and-i") {
+  if (pathname === "/app/my-gmfn-and-i" && routeSearchTab(search) === "guide") {
     return {
       section: "Account",
       page: "My GSN Identity",
     };
   }
 
+  if (pathname === "/app/my-gmfn-and-i") {
+    return {
+      section: "Account",
+      page: "My GSN",
+    };
+  }
+
   if (pathname === "/app/profile") {
     return {
       section: "Account",
-      page: "Profile",
+      page: "My GSN Identity",
     };
   }
 
@@ -870,7 +889,7 @@ function getPageActions(
       makeCommunityItem(),
       { label: "Notifications", to: "/app/notifications" },
       makeDashboardItem(),
-      { label: "My GSN Identity", to: "/app/my-gmfn-and-i" },
+      makeGuideItem(),
     ]);
   }
 
@@ -984,11 +1003,11 @@ function getPageActions(
       { label: "Notifications", to: "/app/notifications" },
       makeCommunityItem(),
       makeMarketplaceItem(),
-      { label: "My GSN Identity", to: "/app/my-gmfn-and-i" },
+      makeGuideItem(),
     ]);
   }
 
-  if (pathname === "/app/my-gmfn-and-i" && search.includes("tab=settings")) {
+  if (pathname === "/app/my-gmfn-and-i" && routeSearchTab(search) === "settings") {
     return uniqueNavItems([
       makeDashboardItem(),
       makeCommunityItem(),

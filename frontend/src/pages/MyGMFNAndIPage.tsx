@@ -1695,7 +1695,9 @@ export default function MyGMFNAndIPage() {
   }, [isAppRoute, location.search]);
   const activeTab = requestedTab === "settings" ? "settings" : requestedTab === "guide" ? "guide" : "home";
   const showMemberHomeSummary =
-    isAppRoute && activeTab !== "settings";
+    isAppRoute && activeTab === "home";
+  const showIdentityGuideSurface =
+    isAppRoute && activeTab === "guide";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2482,9 +2484,15 @@ export default function MyGMFNAndIPage() {
 
   const topNavHomeTo = isAppRoute ? routes.dashboard : "/cover";
   const topNavHomeLabel = isAppRoute ? "Dashboard" : "Cover";
-  const topNavTitle = isAppRoute ? "My GSN" : "GSN Guide";
+  const topNavTitle = isAppRoute
+    ? showIdentityGuideSurface
+      ? "My GSN Identity"
+      : "My GSN"
+    : "GSN Guide";
   const topNavSubtitle = isAppRoute
-    ? "Communities, opportunities, activity, and evidence."
+    ? showIdentityGuideSurface
+      ? "Your identity, trust records, communities, shops, and opportunity guide."
+      : "Communities, opportunities, activity, and evidence."
     : `Understand what GSN can do before you sign in, enter a community, or move into protected pages.`;
   const publicGuideEntryItems = useMemo<NextActionGuideItem[]>(
     () => [
@@ -2753,7 +2761,7 @@ export default function MyGMFNAndIPage() {
       <section
         style={{
           ...appGuidePanel(isCompact),
-          display: showMemberHomeSummary ? "grid" : "none",
+          display: showMemberHomeSummary || showIdentityGuideSurface ? "grid" : "none",
         }}
       >
         <div style={appNavyCard(isCompact)}>
@@ -2782,7 +2790,7 @@ export default function MyGMFNAndIPage() {
                   textTransform: "uppercase",
                 }}
               >
-                My GSN
+                {showIdentityGuideSurface ? "Personal command centre" : "My GSN"}
               </div>
               <h1
                 style={{
@@ -2793,7 +2801,9 @@ export default function MyGMFNAndIPage() {
                   letterSpacing: 0,
                 }}
               >
-                Your communities. Your opportunities. Your activity. Your evidence.
+                {showIdentityGuideSurface
+                  ? "My GSN Identity"
+                  : "Your communities. Your opportunities. Your activity. Your evidence."}
               </h1>
               <div
                 style={{
@@ -2805,14 +2815,17 @@ export default function MyGMFNAndIPage() {
                   maxWidth: 780,
                 }}
               >
-                See what is happening across your communities, find what you need, offer what you can, and carry relevant evidence forward.
+                {showIdentityGuideSurface
+                  ? "Your identity, trust records, communities, shops, and opportunities in one place."
+                  : "See what is happening across your communities, find what you need, offer what you can, and carry relevant evidence forward."}
               </div>
             </div>
           </div>
 
-          <div
-            data-my-gsn-member-home="true"
-            style={{
+          {showMemberHomeSummary ? (
+            <div
+              data-my-gsn-member-home="true"
+              style={{
               marginTop: isCompact ? 14 : 18,
               display: "grid",
               gap: isCompact ? 12 : 14,
@@ -3136,6 +3149,7 @@ export default function MyGMFNAndIPage() {
               </div>
             </div>
           </div>
+          ) : null}
 
           <div
             style={{ marginTop: isCompact ? 14 : 18, color: "#9FB5CA", fontSize: 11, fontWeight: 1000, letterSpacing: 1.2, textTransform: "uppercase" }}
