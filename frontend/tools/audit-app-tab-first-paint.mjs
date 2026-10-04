@@ -126,7 +126,7 @@ function shouldDelay(path, mode) {
     );
   }
 
-  if (mode === "profile") {
+  if (mode === "my-gsn") {
     return /^\/trust/.test(path);
   }
 
@@ -262,8 +262,17 @@ async function run() {
       loadingText: "Loading your current community",
     },
     {
-      name: "Profile / My GSN Identity",
+      name: "Profile",
       mode: "profile",
+      path: "/app/profile?community=8",
+      selector: '[data-cta-id="profile.save-account"]',
+      text: "My Profile",
+      loadingText: "Refreshing...",
+      expectDelayed: false,
+    },
+    {
+      name: "My GSN Identity",
+      mode: "my-gsn",
       path: "/app/my-gmfn-and-i?community=8",
       selector: '[data-cta-id="my-gmfn.hero.dashboard"]',
       text: "My GSN Identity",

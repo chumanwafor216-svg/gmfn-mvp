@@ -22,6 +22,7 @@ import {
   getSelectedClanId,
   updateMyProfile,
 } from "../lib/api";
+import { APP_ROUTES } from "../lib/appRoutes";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
   brandHelperText,
@@ -1638,7 +1639,10 @@ export default function MyGMFNAndIPage() {
       marketplace: routeTarget("marketplace", selectedClanId, "my-gmfn.route.marketplace-target"),
       finance: routeTarget("finance", selectedClanId, "my-gmfn.route.finance-target"),
       loans: routeTarget("loans", selectedClanId, "my-gmfn.route.loans-target"),
-      guide: appendRouteQuery(routeTarget("profile", selectedClanId, "my-gmfn.route.guide-target"), { tab: "guide" }),
+      guide: appendRouteQuery(APP_ROUTES.GUIDE, {
+        community: selectedClanId || undefined,
+        tab: "guide",
+      }),
       settings: routeTarget("settings", selectedClanId, "my-gmfn.route.settings-target"),
       trust: routeTarget("trust", selectedClanId, "my-gmfn.route.trust-target"),
       demandBox: routeTarget("demandBox", selectedClanId, "my-gmfn.route.demand-box-target"),

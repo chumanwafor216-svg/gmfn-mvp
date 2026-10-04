@@ -154,13 +154,31 @@ assertContains(
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
   /const activeTab = requestedTab === "settings" \? "settings" : requestedTab === "guide" \? "guide" : "home";[\s\S]*?const showMemberHomeSummary =\s*isAppRoute && activeTab !== "settings";[\s\S]*?display: showMemberHomeSummary \? "grid" : "none",[\s\S]*?data-my-gsn-member-home="true"[\s\S]*?What Needs My Attention[\s\S]*?Your summary[\s\S]*?Discover[\s\S]*?Ask[\s\S]*?Offer[\s\S]*?What I've Done[\s\S]*?My Evidence[\s\S]*?Identity snapshot/,
-  "Authenticated My GSN/Profile must expose the member-home by default without requiring ?tab=home/member-home/summary."
+  "Authenticated My GSN must expose the member-home by default without requiring ?tab=home/member-home/summary."
 );
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /guide: appendRouteQuery\(routeTarget\("profile", selectedClanId, "my-gmfn\.route\.guide-target"\), \{ tab: "guide" \}\),[\s\S]*?settings: routeTarget\("settings", selectedClanId, "my-gmfn\.route\.settings-target"\)/,
-  "My GSN must keep the decision guide and settings/profile editing reachable contextually after member-home becomes the default."
+  /import \{ APP_ROUTES \} from "\.\.\/lib\/appRoutes";[\s\S]*?guide: appendRouteQuery\(APP_ROUTES\.GUIDE, \{[\s\S]*?community: selectedClanId \|\| undefined,[\s\S]*?tab: "guide",[\s\S]*?\}\),[\s\S]*?settings: routeTarget\("settings", selectedClanId, "my-gmfn\.route\.settings-target"\)/,
+  "My GSN must keep its decision guide reachable on the My GSN route after Profile is restored to /app/profile."
+);
+
+assertContains(
+  "frontend/src/lib/appRoutes.ts",
+  /PROFILE:\s*"\/app\/profile"[\s\S]*?SETTINGS:\s*"\/app\/my-gmfn-and-i\?tab=settings"[\s\S]*?GUIDE:\s*"\/app\/my-gmfn-and-i"/,
+  "Profile, Settings, and My GSN guide routes must remain distinct."
+);
+
+assertContains(
+  "frontend/src/App.tsx",
+  /const ProfilePage = React\.lazy\(\(\) => import\("\.\/pages\/ProfilePage"\)\);[\s\S]*?<Route path="profile" element=\{<ProfilePage \/>\} \/>[\s\S]*?<Route path="my-gmfn-and-i" element=\{<MyGMFNAndIPage \/>\} \/>/,
+  "The authenticated Profile route must mount ProfilePage directly while My GSN keeps its own route."
+);
+
+assertContains(
+  "frontend/src/layout/AppLayout.tsx",
+  /function makeProfileItem\(\): NavLinkItem \{[\s\S]*?label: "Profile",[\s\S]*?to: "\/app\/profile",[\s\S]*?match: \(pathname\) => pathname === "\/app\/profile"/,
+  "The shared Profile navigation item must open /app/profile, not the My GSN member-home."
 );
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",

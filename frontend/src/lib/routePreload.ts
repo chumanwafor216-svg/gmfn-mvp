@@ -178,6 +178,11 @@ const ROUTE_LOADERS: Array<{
     load: () => import("../pages/DemandBoxPage"),
   },
   {
+    key: "profile",
+    match: (pathname) => pathname === "/app/profile",
+    load: () => import("../pages/ProfilePage"),
+  },
+  {
     key: "identity-home",
     match: (pathname) => pathname === "/app/my-gmfn-and-i",
     load: () => import("../pages/MyGMFNAndIPage"),
@@ -247,7 +252,7 @@ const ROUTE_LOADERS: Array<{
 const PRIORITY_CORE_ROUTE_KEYS = [
   "community-home",
   "marketplace",
-  "identity-home",
+  "profile",
 ];
 
 const STANDARD_CORE_ROUTE_KEYS = [

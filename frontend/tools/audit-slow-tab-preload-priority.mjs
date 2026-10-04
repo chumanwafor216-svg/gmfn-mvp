@@ -14,13 +14,18 @@ function assertContains(pattern, message) {
 }
 
 assertContains(
-  /const PRIORITY_CORE_ROUTE_KEYS = \[[\s\S]*?"community-home"[\s\S]*?"marketplace"[\s\S]*?"identity-home"[\s\S]*?\];/,
+  /const PRIORITY_CORE_ROUTE_KEYS = \[[\s\S]*?"community-home"[\s\S]*?"marketplace"[\s\S]*?"profile"[\s\S]*?\];/,
   "Priority route list must keep Community Home, Marketplace, and Profile first."
 );
 
 assertContains(
   /const STANDARD_CORE_ROUTE_KEYS = \[[\s\S]*?"dashboard"[\s\S]*?"shop-gallery"[\s\S]*?"trust-slip"[\s\S]*?"finance"[\s\S]*?"loans"[\s\S]*?\];/,
   "Already-fast and secondary core routes must remain behind the owner-reported slow tabs."
+);
+
+assertContains(
+  /key: "profile"[\s\S]*?pathname === "\/app\/profile"[\s\S]*?import\("\.\.\/pages\/ProfilePage"\)/,
+  "Route preloading must warm the restored Profile page, not the My GSN member-home, when Profile is the target."
 );
 
 assertContains(

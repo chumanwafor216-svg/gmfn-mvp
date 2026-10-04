@@ -2021,6 +2021,7 @@ def store_trust_slip_snapshot(
     slip: TrustSlip,
     full_payload: Dict[str, Any],
     visibility_level: str,
+    commit: bool = True,
 ) -> Dict[str, Any]:
     merchant_view = build_trust_slip_visibility_view(full_payload, level=visibility_level)
 
@@ -2046,8 +2047,11 @@ def store_trust_slip_snapshot(
     slip.snapshot_checksum = checksum
 
     db.add(slip)
-    db.commit()
-    db.refresh(slip)
+    if commit:
+        db.commit()
+        db.refresh(slip)
+    else:
+        db.flush()
 
     snapshot["snapshot_checksum"] = checksum
     return snapshot
@@ -2059,6 +2063,7 @@ def ensure_trust_slip_snapshot(
     slip: TrustSlip,
     user: Optional[User],
     full_payload: Dict[str, Any],
+    commit: bool = True,
 ) -> Dict[str, Any]:
     existing = read_trust_slip_snapshot(slip)
     if existing:
@@ -2074,6 +2079,7 @@ def ensure_trust_slip_snapshot(
         slip=slip,
         full_payload=full_payload,
         visibility_level=visibility_level,
+        commit=commit,
     )
 
 
@@ -2638,21 +2644,27 @@ def issue_trust_slip_for_user(
         supersedes_trust_slip_id=None,
         superseded_by_trust_slip_id=None,
     )
-    db.add(slip)
-    db.commit()
-    db.refresh(slip)
+    try:
+        db.add(slip)
+        db.flush()
 
-    issued_payload = get_trust_slip_payload(
-        db,
-        user_id=uid,
-        preferred_clan_id=clan_id,
-    )
-    snapshot = store_trust_slip_snapshot(
-        db,
-        slip=slip,
-        full_payload=issued_payload,
-        visibility_level=_saved_visibility_level(user),
-    )
+        issued_payload = get_trust_slip_payload(
+            db,
+            user_id=uid,
+            preferred_clan_id=clan_id,
+        )
+        snapshot = store_trust_slip_snapshot(
+            db,
+            slip=slip,
+            full_payload=issued_payload,
+            visibility_level=_saved_visibility_level(user),
+            commit=False,
+        )
+        db.commit()
+        db.refresh(slip)
+    except Exception:
+        db.rollback()
+        raise
 
     result = {
         "ok": True,
@@ -2817,28 +2829,35 @@ def reissue_trust_slip(
         issued_reason=_safe_str(reason, "manual_reissue"),
         supersedes_trust_slip_id=int(current_slip.id) if current_slip else None,
     )
-    db.add(new_slip)
-    db.commit()
-    db.refresh(new_slip)
+    try:
+        db.add(new_slip)
+        db.flush()
 
-    if current_slip:
-        current_slip.is_current = False
-        current_slip.superseded_by_trust_slip_id = int(new_slip.id)
-        db.add(current_slip)
+        if current_slip:
+            current_slip.is_current = False
+            current_slip.superseded_by_trust_slip_id = int(new_slip.id)
+            db.add(current_slip)
+            db.flush()
+
+        new_payload = get_trust_slip_payload(
+            db,
+            user_id=uid,
+            preferred_clan_id=clan_id,
+        )
+        store_trust_slip_snapshot(
+            db,
+            slip=new_slip,
+            full_payload=new_payload,
+            visibility_level=_saved_visibility_level(user),
+            commit=False,
+        )
         db.commit()
-        db.refresh(current_slip)
-
-    new_payload = get_trust_slip_payload(
-        db,
-        user_id=uid,
-        preferred_clan_id=clan_id,
-    )
-    store_trust_slip_snapshot(
-        db,
-        slip=new_slip,
-        full_payload=new_payload,
-        visibility_level=_saved_visibility_level(user),
-    )
+        db.refresh(new_slip)
+        if current_slip:
+            db.refresh(current_slip)
+    except Exception:
+        db.rollback()
+        raise
 
     result = {
         "ok": True,

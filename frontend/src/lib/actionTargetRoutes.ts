@@ -266,6 +266,7 @@ const SAFE_STATIC_APP_PATHS = new Set([
   "loan-workbench",
   "guarantor-earnings",
   "guarantor-inbox",
+  "profile",
   "my-gmfn-and-i",
   "build-first-circle",
   "shop/me",

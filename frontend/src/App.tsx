@@ -119,6 +119,7 @@ const ExposureAdminPage = React.lazy(
 const AdminTrustGraphPage = React.lazy(
   () => import("./pages/AdminTrustGraphPage")
 );
+const ProfilePage = React.lazy(() => import("./pages/ProfilePage"));
 const MyGMFNAndIPage = React.lazy(() => import("./pages/MyGMFNAndIPage"));
 const TrustAnalyticsPage = React.lazy(
   () => import("./pages/TrustAnalyticsPage")
@@ -1239,7 +1240,7 @@ export default function App() {
         />
         <Route path="inbox" element={<PreserveRedirect to={APP_ROUTES.NOTIFICATIONS} />} />
 
-        <Route path="profile" element={<PreserveRedirect to={APP_ROUTES.PROFILE} />} />
+        <Route path="profile" element={<ProfilePage />} />
         <Route path="my-gmfn-and-i" element={<MyGMFNAndIPage />} />
         <Route
           path="my-gmfn-and-i/settings"

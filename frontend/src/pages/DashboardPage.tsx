@@ -1283,6 +1283,16 @@ function dashboardTrustSlipPendingFromError(err: any): any | null {
   if (status === 401 || status === 403) return null;
 
   const lower = dashboardTrustSlipErrorMessage(err).toLowerCase();
+  if (status >= 500 || lower.includes("http 5") || lower.includes("internal server error")) {
+    return {
+      ok: false,
+      active: false,
+      verified: false,
+      status: "unavailable",
+      reason: "trustslip_unavailable",
+      detail: "TrustSlip unavailable",
+    };
+  }
 
   if (lower.includes("phone")) {
     return {
@@ -1328,9 +1338,9 @@ function dashboardTrustSlipPendingFromError(err: any): any | null {
     ok: false,
     active: false,
     verified: false,
-    status: "pending",
-    reason: "trustslip_issue_blocked",
-    detail: "Setup needed",
+    status: "unavailable",
+    reason: "trustslip_unavailable",
+    detail: "TrustSlip unavailable",
   };
 }
 
@@ -4507,10 +4517,17 @@ export default function DashboardPage() {
   const trustSlipIssueDetail = safeStr(
     trustSlip?.detail || trustSlip?.issue_detail || trustSlip?.blocker_detail
   );
-  const trustSlipPendingValue = trustSlipIssueReason || trustSlip?.ok === false
+  const trustSlipUnavailable =
+    trustSlipIssueReason === "trustslip_unavailable" ||
+    safeStr(trustSlip?.status).toLowerCase() === "unavailable";
+  const trustSlipPendingValue = trustSlipUnavailable
+    ? "Unavailable"
+    : trustSlipIssueReason || trustSlip?.ok === false
     ? "Setup needed"
     : "Not issued yet";
-  const trustSlipPendingDetail = trustSlipIssueDetail ||
+  const trustSlipPendingDetail = trustSlipUnavailable
+    ? trustSlipIssueDetail || "Try again shortly"
+    : trustSlipIssueDetail ||
     (trustSlipIssueReason === "phone_unverified"
       ? "Verify phone"
       : trustSlipIssueReason === "community_membership_required"

@@ -5,8 +5,10 @@ import json
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
+from app.api.routes import trust_slips as trust_slips_route
 from app.db.database import SessionLocal
 from app.db.models import Clan, ClanMembership, CommunityConfirmationDecision, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, CommunityConfirmationReviewCase, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceRequest, MarketplaceReview, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare, User
+from app.services import trust_slips_services
 from app.services.trust_slips_services import get_trust_slip_payload
 
 
@@ -366,6 +368,172 @@ def test_trust_slip_reissue_invalid_community_returns_structured_blocker(
     assert "active community" in detail["message"]
     assert _trust_slip_count() == 0
     assert _trust_event_count() == 0
+
+
+def test_get_my_trust_slip_returns_existing_current_code_without_new_issue(
+    seed_clan_member_membership,
+):
+    _verify_test_user_phone()
+    _create_trust_slip(code="GET-ME-EXISTING", clan_id=1)
+
+    db = SessionLocal()
+    try:
+        user = db.get(User, 1)
+        payload = trust_slips_route._ensure_my_trust_slip_payload(db, current_user=user)
+    finally:
+        db.close()
+    assert payload["code"] == "GET-ME-EXISTING"
+    assert payload["verification_code"] == "GET-ME-EXISTING"
+    assert payload["public_verify_url"] == "/t/GET-ME-EXISTING"
+    assert _trust_slip_count() == 1
+    assert _trust_event_count() == 0
+
+
+def test_get_my_trust_slip_issues_first_slip_for_eligible_holder(
+    seed_clan_member_membership,
+):
+    _verify_test_user_phone()
+
+    db = SessionLocal()
+    try:
+        user = db.get(User, 1)
+        payload = trust_slips_route._ensure_my_trust_slip_payload(db, current_user=user)
+    finally:
+        db.close()
+    assert payload["code"]
+    assert payload["verification_code"] == payload["code"]
+    assert payload["public_verify_url"] == f"/t/{payload['code']}"
+    assert _trust_slip_count() == 1
+    assert _trust_event_count() == 1
+
+
+def test_get_my_trust_slip_refreshes_expired_current_slip(
+    seed_clan_member_membership,
+):
+    _verify_test_user_phone()
+    slip_id = _create_trust_slip(code="GET-ME-EXPIRED", clan_id=1)
+
+    db = SessionLocal()
+    try:
+        slip = db.get(TrustSlip, slip_id)
+        assert slip is not None
+        slip.expires_at = datetime.now(timezone.utc) - timedelta(days=1)
+        db.commit()
+
+        user = db.get(User, 1)
+        payload = trust_slips_route._ensure_my_trust_slip_payload(db, current_user=user)
+    finally:
+        db.close()
+    assert payload["code"]
+    assert payload["code"] != "GET-ME-EXPIRED"
+
+    db = SessionLocal()
+    try:
+        slips = db.query(TrustSlip).order_by(TrustSlip.id.asc()).all()
+        assert len(slips) == 2
+        assert slips[0].code == "GET-ME-EXPIRED"
+        assert slips[0].is_current is False
+        assert slips[1].code == payload["code"]
+        assert slips[1].is_current is True
+        assert slips[0].superseded_by_trust_slip_id == slips[1].id
+    finally:
+        db.close()
+
+
+def test_get_my_trust_slip_missing_phone_returns_pending_without_issue(
+    seed_clan_member_membership,
+):
+    db = SessionLocal()
+    try:
+        user = db.get(User, 1)
+        payload = trust_slips_route._ensure_my_trust_slip_payload(db, current_user=user)
+    finally:
+        db.close()
+
+    assert payload["ok"] is True
+    assert payload["active"] is False
+    assert payload["reason"] == "phone_unverified"
+    assert payload.get("verification_code") is None
+    assert payload.get("public_verify_url") is None
+    assert _trust_slip_count() == 0
+    assert _trust_event_count() == 0
+
+
+def test_trust_slip_first_issue_snapshot_failure_rolls_back_partial_current_slip(
+    seed_clan_member_membership,
+    monkeypatch,
+):
+    _verify_test_user_phone()
+
+    def fail_snapshot(*args, **kwargs):
+        raise RuntimeError("forced snapshot failure")
+
+    monkeypatch.setattr(trust_slips_services, "store_trust_slip_snapshot", fail_snapshot)
+
+    db = SessionLocal()
+    try:
+        try:
+            trust_slips_services.issue_trust_slip_for_user(db, user_id=1)
+        except RuntimeError as exc:
+            assert "forced snapshot failure" in str(exc)
+        else:
+            raise AssertionError("TrustSlip issue unexpectedly succeeded")
+    finally:
+        db.close()
+
+    db = SessionLocal()
+    try:
+        assert db.query(TrustSlip).count() == 0
+    finally:
+        db.close()
+
+
+def test_trust_slip_reissue_snapshot_failure_preserves_existing_current_slip(
+    seed_clan_member_membership,
+    monkeypatch,
+):
+    _verify_test_user_phone()
+    slip_id = _create_trust_slip(code="REISSUE-SNAPSHOT-OLD", clan_id=1)
+
+    db = SessionLocal()
+    try:
+        slip = db.get(TrustSlip, slip_id)
+        assert slip is not None
+        slip.snapshot_json = json.dumps({"snapshot_version": "test", "merchant_view": {}, "full_summary": {}})
+        db.commit()
+    finally:
+        db.close()
+
+    def fail_snapshot(*args, **kwargs):
+        raise RuntimeError("forced snapshot failure")
+
+    monkeypatch.setattr(trust_slips_services, "store_trust_slip_snapshot", fail_snapshot)
+
+    db = SessionLocal()
+    try:
+        try:
+            trust_slips_services.reissue_trust_slip(
+                db,
+                user_id=1,
+                reason="holder_requested_fresh_public_trustslip",
+            )
+        except RuntimeError as exc:
+            assert "forced snapshot failure" in str(exc)
+        else:
+            raise AssertionError("TrustSlip reissue unexpectedly succeeded")
+    finally:
+        db.close()
+
+    db = SessionLocal()
+    try:
+        slips = db.query(TrustSlip).order_by(TrustSlip.id.asc()).all()
+        assert len(slips) == 1
+        assert slips[0].code == "REISSUE-SNAPSHOT-OLD"
+        assert slips[0].is_current is True
+        assert slips[0].superseded_by_trust_slip_id is None
+    finally:
+        db.close()
+
 
 
 def test_trust_slip_payload_summarizes_notice_and_meeting_response_without_private_text(

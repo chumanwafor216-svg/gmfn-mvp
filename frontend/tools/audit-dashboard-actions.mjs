@@ -236,13 +236,17 @@ assertContains(
 );
 
 assertContains(
-  /function readableTrustStatus\(classText: unknown\)[\s\S]*?return "Not enough info"[\s\S]*?return "Building"[\s\S]*?return "Developing"/,
+  /function readableTrustStatus\(classText: unknown\): string \{[\s\S]*?return "Not shown yet"[\s\S]*?return "Needs review"[\s\S]*?return "Strong"[\s\S]*?return "Building"[\s\S]*?return "Developing"/,
   "Dashboard passport trust language must stay plain-language and non-numeric."
 );
 
 assertContains(
   /function getCciState\(me: any, trustSlip\?: any, trust\?: any\)[\s\S]*?trustSlip\?\.cci_score[\s\S]*?trust\?\.cci\?\.score[\s\S]*?trustSlip\?\.cci_band[\s\S]*?trust\?\.cci\?\.band/,
   "Dashboard CCI must read the same /me, TrustSlip, and trust-explanation evidence ladder as Marketplace."
+);
+assertContains(
+  /function dashboardTrustSlipPendingFromError\(err: any\): any \| null \{[\s\S]*?status >= 500[\s\S]*?reason: "trustslip_unavailable"[\s\S]*?detail: "TrustSlip unavailable"[\s\S]*?return \{[\s\S]*?status: "unavailable"[\s\S]*?reason: "trustslip_unavailable"[\s\S]*?const trustSlipUnavailable =[\s\S]*?trustSlipIssueReason === "trustslip_unavailable"[\s\S]*?const trustSlipPendingValue = trustSlipUnavailable[\s\S]*?\? "Unavailable"/,
+  "Dashboard must show backend/server TrustSlip failures as unavailable, not as setup-needed prerequisite states."
 );
 
 assertContains(

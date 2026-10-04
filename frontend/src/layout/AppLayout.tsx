@@ -358,8 +358,8 @@ function makeGuideItem(): NavLinkItem {
 function makeProfileItem(): NavLinkItem {
   return {
     label: "Profile",
-    to: "/app/my-gmfn-and-i",
-    match: (pathname) => pathname === "/app/my-gmfn-and-i",
+    to: "/app/profile",
+    match: (pathname) => pathname === "/app/profile",
   };
 }
 
@@ -740,6 +740,13 @@ function getSpecialRouteMeta(
     return {
       section: "Account",
       page: "My GSN Identity",
+    };
+  }
+
+  if (pathname === "/app/profile") {
+    return {
+      section: "Account",
+      page: "Profile",
     };
   }
 

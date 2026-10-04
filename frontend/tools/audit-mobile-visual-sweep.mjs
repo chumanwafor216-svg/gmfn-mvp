@@ -54,6 +54,7 @@ const routes = [
   "/app/guarantor-earnings",
   "/app/build-first-circle",
   "/app/help",
+  "/app/profile",
   "/app/my-gmfn-and-i",
   "/app/my-gmfn-and-i?tab=settings",
   "/app/command-center",
