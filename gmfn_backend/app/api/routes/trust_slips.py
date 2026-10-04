@@ -709,6 +709,58 @@ def _can_manage_trust_slip(
     return int(getattr(slip, "holder_user_id", 0) or 0) == int(current_user.id)
 
 
+def _is_valid_current_holder_trust_slip(
+    slip: Optional[TrustSlip],
+    *,
+    current_user: User,
+) -> bool:
+    if slip is None:
+        return False
+    if int(getattr(slip, "holder_user_id", 0) or 0) != int(current_user.id):
+        return False
+    if not bool(getattr(slip, "is_current", False)):
+        return False
+    if _trust_slip_needs_refresh(slip):
+        return False
+    status = _safe_str(getattr(slip, "status", "")).lower()
+    if status not in {"active", "issued"}:
+        return False
+    return bool(_safe_str(getattr(slip, "code", "")))
+
+
+def _current_trust_slip_identity_payload(
+    slip: TrustSlip,
+    *,
+    current_user: User,
+) -> Dict[str, Any]:
+    code = _safe_str(getattr(slip, "code", ""))
+    if not code:
+        raise HTTPException(status_code=500, detail="TrustSlip missing code")
+
+    clan_id = int(getattr(slip, "clan_id", 0) or 0) or None
+    created_at = getattr(slip, "created_at", None)
+    expires_at = getattr(slip, "expires_at", None)
+
+    return {
+        "ok": True,
+        "verified": True,
+        "active": True,
+        "code": code,
+        "verification_code": code,
+        "verification_token": code,
+        "token": code,
+        "public_verify_url": _verify_page_url(code),
+        "trust_slip_id": int(slip.id),
+        "clan_id": clan_id,
+        "community_id": clan_id,
+        "status": _safe_str(getattr(slip, "status", None), "active"),
+        "is_current": True,
+        "created_at": created_at.isoformat() if created_at else None,
+        "issued_at": created_at.isoformat() if created_at else None,
+        "expires_at": expires_at.isoformat() if expires_at else None,
+        "gmfn_id": getattr(current_user, "gmfn_id", None),
+    }
+
 def _ensure_my_trust_slip_payload(
     db: Session,
     *,
@@ -717,9 +769,14 @@ def _ensure_my_trust_slip_payload(
     if getattr(current_user, "id", None) is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
+    current = get_current_trust_slip_for_user(db, user_id=int(current_user.id))
+
     if (
-        not getattr(current_user, "phone_verified_at", None)
-        or not getattr(current_user, "phone_e164", None)
+        not _is_valid_current_holder_trust_slip(current, current_user=current_user)
+        and (
+            not getattr(current_user, "phone_verified_at", None)
+            or not getattr(current_user, "phone_e164", None)
+        )
     ):
         payload = _payload_with_identity(db, user_id=int(current_user.id))
         return {
@@ -733,7 +790,67 @@ def _ensure_my_trust_slip_payload(
             "merchant_verify_subscription_required": True,
         }
 
-    current = get_current_trust_slip_for_user(db, user_id=int(current_user.id))
+    if _is_valid_current_holder_trust_slip(current, current_user=current_user):
+        identity_payload = _current_trust_slip_identity_payload(
+            current,
+            current_user=current_user,
+        )
+        try:
+            payload = _payload_with_identity(db, user_id=int(current_user.id))
+        except Exception:
+            return {
+                **identity_payload,
+                "rich_evidence_status": "unavailable",
+                "rich_evidence_unavailable": True,
+                "rich_evidence_detail": (
+                    "TrustSlip code and current status are available, but the richer "
+                    "evidence summary could not be loaded right now."
+                ),
+                "evidence_summary": {
+                    "status": "unavailable",
+                    "plain_language": (
+                        "GSN could not load the richer TrustSlip evidence summary for "
+                        "this read. Use the code and public verification path, then "
+                        "refresh for the fuller evidence view."
+                    ),
+                },
+                "merchant_verify_active": False,
+                "merchant_verify_subscription_required": True,
+                "merchant_verify_detail": (
+                    "External merchant verification status could not be loaded with "
+                    "the richer TrustSlip evidence summary."
+                ),
+            }
+        code = identity_payload["code"]
+        try:
+            merchant_verify_active = _merchant_verify_active_for_holder(
+                db,
+                holder=current_user,
+            )
+            merchant_verify_detail = (
+                "External merchant verification is active."
+                if merchant_verify_active
+                else "External merchant verification requires an active merchant verification subscription."
+            )
+        except Exception:
+            merchant_verify_active = False
+            merchant_verify_detail = (
+                "External merchant verification status could not be loaded for this TrustSlip read."
+            )
+        return {
+            **payload,
+            **identity_payload,
+            "verification_token": code,
+            "verification_code": code,
+            "token": code,
+            "public_verify_url": _verify_page_url(code),
+            "rich_evidence_status": "available",
+            "rich_evidence_unavailable": False,
+            "merchant_verify_active": bool(merchant_verify_active),
+            "merchant_verify_subscription_required": not bool(merchant_verify_active),
+            "merchant_verify_detail": merchant_verify_detail,
+        }
+
     issued_payload: Optional[Dict[str, Any]] = None
     if not current or _trust_slip_needs_refresh(current):
         try:

@@ -389,6 +389,91 @@ def test_get_my_trust_slip_returns_existing_current_code_without_new_issue(
     assert _trust_event_count() == 0
 
 
+def _assert_existing_code_recovered_without_issue(data: dict, *, expected_code: str, expected_clan_id: int) -> None:
+    assert data["ok"] is True
+    assert data["code"] == expected_code
+    assert data["verification_code"] == expected_code
+    assert data["verification_token"] == expected_code
+    assert data["token"] == expected_code
+    assert data["public_verify_url"] == f"/t/{expected_code}"
+    assert data["clan_id"] == expected_clan_id
+    assert data["community_id"] == expected_clan_id
+    assert data["is_current"] is True
+    assert data["rich_evidence_unavailable"] is True
+    assert data["rich_evidence_status"] == "unavailable"
+    assert data["evidence_summary"]["status"] == "unavailable"
+    assert "merchant_view" not in data
+    assert "identity_context" not in data
+
+
+def test_get_my_trust_slip_recovers_existing_current_code_when_rich_payload_fails(
+    client,
+    seed_clan_member_membership,
+    override_current_user_user,
+    monkeypatch,
+):
+    _verify_test_user_phone()
+    slip_id = _create_trust_slip(code="GET-ME-RICH-FAIL", clan_id=1)
+    before_slips = _trust_slip_count()
+    before_events = _trust_event_count()
+
+    def fail_rich_payload(*args, **kwargs):
+        raise RuntimeError("forced rich TrustSlip payload failure")
+
+    monkeypatch.setattr(trust_slips_route, "_payload_with_identity", fail_rich_payload)
+
+    response = client.get("/trust-slips/me")
+
+    assert response.status_code == 200, response.text
+    data = response.json()
+    _assert_existing_code_recovered_without_issue(
+        data,
+        expected_code="GET-ME-RICH-FAIL",
+        expected_clan_id=1,
+    )
+    assert data["trust_slip_id"] == slip_id
+    assert _trust_slip_count() == before_slips
+    assert _trust_event_count() == before_events
+
+    db = SessionLocal()
+    try:
+        slip = db.get(TrustSlip, slip_id)
+        assert slip is not None
+        assert slip.code == "GET-ME-RICH-FAIL"
+        assert slip.is_current is True
+        assert slip.clan_id == 1
+        assert slip.superseded_by_trust_slip_id is None
+    finally:
+        db.close()
+
+
+def test_get_my_trust_slip_summary_recovers_existing_current_code_when_rich_payload_fails(
+    client,
+    seed_clan_member_membership,
+    override_current_user_user,
+    monkeypatch,
+):
+    _verify_test_user_phone()
+    _create_trust_slip(code="SUMMARY-RICH-FAIL", clan_id=1)
+    before_slips = _trust_slip_count()
+    before_events = _trust_event_count()
+
+    def fail_rich_payload(*args, **kwargs):
+        raise RuntimeError("forced rich TrustSlip payload failure")
+
+    monkeypatch.setattr(trust_slips_route, "_payload_with_identity", fail_rich_payload)
+
+    response = client.get("/trust-slips/me/summary")
+
+    assert response.status_code == 200, response.text
+    _assert_existing_code_recovered_without_issue(
+        response.json(),
+        expected_code="SUMMARY-RICH-FAIL",
+        expected_clan_id=1,
+    )
+    assert _trust_slip_count() == before_slips
+    assert _trust_event_count() == before_events
+
 def test_get_my_trust_slip_issues_first_slip_for_eligible_holder(
     seed_clan_member_membership,
 ):
