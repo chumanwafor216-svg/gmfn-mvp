@@ -385,6 +385,9 @@ export default function MarketplaceTradeEvidenceSection({
                   <span style={stableStatusPillStyle(Boolean(selectedProtectedTrade?.id))}>
                     {safeStr(selectedProtectedTrade?.trade_code) || "Choose record"}
                   </span>
+                  <span style={stableStatusPillStyle(Boolean(selectedProtectedTrade?.derived_outcome_state))}>
+                    Outcome: {safeStr(selectedProtectedTrade?.derived_outcome_label) || "In progress"}
+                  </span>
                   <span
                     style={stableStatusPillStyle(
                       Boolean(
@@ -795,8 +798,8 @@ export default function MarketplaceTradeEvidenceSection({
                         <span style={stableStatusPillStyle(Boolean(trade.status))}>
                           {safeStr(trade.status || "draft").replace(/_/g, " ")}
                         </span>
-                        <span style={stableStatusPillStyle(Boolean(trade.release_status))}>
-                          {safeStr(trade.release_status || "not requested").replace(/_/g, " ")}
+                        <span style={stableStatusPillStyle(Boolean(trade.derived_outcome_state))}>
+                          {safeStr(trade.derived_outcome_label) || "In progress"}
                         </span>
                       </div>
                     </div>

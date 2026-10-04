@@ -1174,7 +1174,7 @@ TRADE_FULFILLMENT_PACKS = {
     "supplier_decision",
     "business_partnership",
 }
-COMPLETED_TRADE_STATUSES = {"released", "completed", "closed", "fulfilled"}
+COMPLETED_TRADE_STATUSES = {"released", "completed", "fulfilled"}
 RELEASED_TRADE_STATUSES = {"released", "recorded", "approved"}
 RECEIPT_CONFIRMED_STATUSES = {"confirmed", "received", "delivered"}
 OPEN_TRADE_DISPUTE_STATUSES = {"open", "raised", "pending", "in_review", "unresolved"}
@@ -1761,6 +1761,15 @@ def _trade_status(row: ProtectedTradeRecord, field: str) -> str:
     return _clean(getattr(row, field, None), limit=40).lower()
 
 
+def _trade_has_completion_evidence(row: ProtectedTradeRecord) -> bool:
+    status = _trade_status(row, "status")
+    release_status = _trade_status(row, "release_status")
+    receipt_status = _trade_status(row, "receipt_status")
+    if status in COMPLETED_TRADE_STATUSES and release_status in RELEASED_TRADE_STATUSES:
+        return True
+    return release_status in RELEASED_TRADE_STATUSES and receipt_status in RECEIPT_CONFIRMED_STATUSES
+
+
 def _completed_work_meta_confirms(row: TrustEvent) -> bool:
     meta = getattr(row, "meta", None) or {}
     if not isinstance(meta, Mapping):
@@ -2091,7 +2100,7 @@ def _decision_pack_fulfillment_outcome_pointers(
     if seller_rows:
         released = sum(1 for row in seller_rows if _trade_status(row, "release_status") in RELEASED_TRADE_STATUSES)
         received = sum(1 for row in seller_rows if _trade_status(row, "receipt_status") in RECEIPT_CONFIRMED_STATUSES)
-        completed = sum(1 for row in seller_rows if _trade_status(row, "status") in COMPLETED_TRADE_STATUSES or getattr(row, "closed_at", None) is not None)
+        completed = sum(1 for row in seller_rows if _trade_has_completion_evidence(row))
         open_disputes = sum(1 for row in seller_rows if _trade_status(row, "dispute_status") in OPEN_TRADE_DISPUTE_STATUSES)
         resolved_disputes = sum(1 for row in seller_rows if _trade_status(row, "dispute_status") in RESOLVED_TRADE_DISPUTE_STATUSES)
         value = f"{len(seller_rows)} protected trade seller record{'s' if len(seller_rows) != 1 else ''} found"
@@ -2100,7 +2109,7 @@ def _decision_pack_fulfillment_outcome_pointers(
         if received:
             value = f"{value}; {received} show receipt or delivery confirmation"
         if completed:
-            value = f"{value}; {completed} show completed or closed status"
+            value = f"{value}; {completed} show completion backed by release/receipt evidence"
         if resolved_disputes:
             value = f"{value}; {resolved_disputes} dispute/correction status resolved or closed"
         if open_disputes:
@@ -2123,7 +2132,7 @@ def _decision_pack_fulfillment_outcome_pointers(
     if buyer_rows:
         released = sum(1 for row in buyer_rows if _trade_status(row, "release_status") in RELEASED_TRADE_STATUSES)
         received = sum(1 for row in buyer_rows if _trade_status(row, "receipt_status") in RECEIPT_CONFIRMED_STATUSES)
-        completed = sum(1 for row in buyer_rows if _trade_status(row, "status") in COMPLETED_TRADE_STATUSES or getattr(row, "closed_at", None) is not None)
+        completed = sum(1 for row in buyer_rows if _trade_has_completion_evidence(row))
         open_disputes = sum(1 for row in buyer_rows if _trade_status(row, "dispute_status") in OPEN_TRADE_DISPUTE_STATUSES)
         resolved_disputes = sum(1 for row in buyer_rows if _trade_status(row, "dispute_status") in RESOLVED_TRADE_DISPUTE_STATUSES)
         value = f"{len(buyer_rows)} protected trade buyer record{'s' if len(buyer_rows) != 1 else ''} found"
@@ -2132,7 +2141,7 @@ def _decision_pack_fulfillment_outcome_pointers(
         if received:
             value = f"{value}; {received} show receipt or delivery confirmation"
         if completed:
-            value = f"{value}; {completed} show completed or closed status"
+            value = f"{value}; {completed} show completion backed by release/receipt evidence"
         if resolved_disputes:
             value = f"{value}; {resolved_disputes} dispute/correction status resolved or closed"
         if open_disputes:

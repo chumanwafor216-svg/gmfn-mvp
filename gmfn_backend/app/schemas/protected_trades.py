@@ -189,5 +189,13 @@ class ProtectedTradeOut(BaseModel):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     closed_at: Optional[datetime] = None
+    derived_outcome_state: str = "UNCONFIRMED"
+    derived_outcome_label: str = "In progress"
+    evidence_basis: List[str] = Field(default_factory=list)
+    has_provider_release_event: bool = False
+    has_requester_receipt_event: bool = False
+    has_unresolved_dispute: bool = False
+    has_resolved_dispute_history: bool = False
+    derived_outcome_boundary_note: Optional[str] = None
     events: List[ProtectedTradeEventOut] = Field(default_factory=list)
     boundary_note: str

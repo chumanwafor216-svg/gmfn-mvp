@@ -6740,6 +6740,14 @@ export type ProtectedTradeRecord = {
   created_at?: string | null;
   updated_at?: string | null;
   closed_at?: string | null;
+  derived_outcome_state?: string | null;
+  derived_outcome_label?: string | null;
+  evidence_basis?: string[];
+  has_provider_release_event?: boolean;
+  has_requester_receipt_event?: boolean;
+  has_unresolved_dispute?: boolean;
+  has_resolved_dispute_history?: boolean;
+  derived_outcome_boundary_note?: string | null;
   events?: ProtectedTradeEventRecord[];
   boundary_note?: string | null;
 };

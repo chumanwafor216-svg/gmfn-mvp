@@ -230,12 +230,181 @@ def _resolve_source_handoff(
 
     return handoff
 
+RELEASE_RECORDED_VALUES = {"released", "recorded", "approved"}
+RECEIPT_CONFIRMED_VALUES = {"received", "confirmed", "delivered"}
+RECEIPT_NOT_RECEIVED_VALUES = {"not_received", "not received", "missing"}
+UNRESOLVED_DISPUTE_VALUES = {
+    "opened",
+    "open_note_added",
+    "open",
+    "raised",
+    "pending",
+    "in_review",
+    "under_review",
+    "unresolved",
+}
+RESOLVED_DISPUTE_VALUES = {"resolved", "closed", "settled"}
+CANCELLED_TRADE_VALUES = {"cancelled", "canceled"}
+DERIVED_OUTCOME_BOUNDARY_NOTE = (
+    "Derived from existing Protected Trade lifecycle fields and events. It does not "
+    "create a TrustEvent, rating, score, payment proof, delivery guarantee, or new "
+    "fulfilment workflow. Closed means lifecycle closure unless release and receipt "
+    "evidence independently establish fulfilment."
+)
+
+
+def _trade_state_value(trade: ProtectedTradeRecord, field_name: str) -> str:
+    return _safe_str(getattr(trade, field_name, "")).lower()
+
+
+def _event_actor_id(event: ProtectedTradeEvent) -> Optional[int]:
+    return _positive_int(getattr(event, "actor_user_id", None))
+
+
+def _event_of_type(event: ProtectedTradeEvent, event_key: str) -> bool:
+    return _event_key(getattr(event, "event_type", "")) == event_key
+
+
+def _has_actor_event(
+    events: Iterable[ProtectedTradeEvent],
+    *,
+    event_key: str,
+    actor_user_id: Optional[int],
+) -> bool:
+    if not actor_user_id:
+        return False
+    return any(
+        _event_of_type(event, event_key)
+        and _event_actor_id(event) == int(actor_user_id)
+        for event in events
+    )
+
+
+def derive_protected_trade_outcome(
+    trade: ProtectedTradeRecord,
+    *,
+    events: Optional[Iterable[ProtectedTradeEvent]] = None,
+) -> Dict[str, Any]:
+    """Return read-only outcome truth from existing ProtectedTrade state/events."""
+
+    event_rows = list(events or [])
+    seller_user_id = _positive_int(getattr(trade, "seller_user_id", None))
+    buyer_user_id = _positive_int(getattr(trade, "buyer_user_id", None))
+
+    status = _trade_state_value(trade, "status")
+    release_status = _trade_state_value(trade, "release_status")
+    receipt_status = _trade_state_value(trade, "receipt_status")
+    dispute_status = _trade_state_value(trade, "dispute_status")
+
+    has_release_evidence = release_status in RELEASE_RECORDED_VALUES
+    has_receipt_evidence = receipt_status in RECEIPT_CONFIRMED_VALUES
+    has_not_received = receipt_status in RECEIPT_NOT_RECEIVED_VALUES
+    has_unresolved_dispute = dispute_status in UNRESOLVED_DISPUTE_VALUES
+    has_resolved_dispute_history = dispute_status in RESOLVED_DISPUTE_VALUES or any(
+        _event_of_type(event, "dispute.resolved") for event in event_rows
+    )
+    has_cancelled = status in CANCELLED_TRADE_VALUES
+
+    has_provider_release_event = _has_actor_event(
+        event_rows,
+        event_key="release.recorded",
+        actor_user_id=seller_user_id,
+    )
+    has_requester_receipt_event = _has_actor_event(
+        event_rows,
+        event_key="receipt.confirmed",
+        actor_user_id=buyer_user_id,
+    )
+    has_release_event = any(_event_of_type(event, "release.recorded") for event in event_rows)
+    has_receipt_event = any(_event_of_type(event, "receipt.confirmed") for event in event_rows)
+    has_not_received_event = any(_event_of_type(event, "receipt.not_received") for event in event_rows)
+
+    evidence_basis: list[str] = []
+    if has_release_evidence:
+        evidence_basis.append("release_status records release/completion evidence")
+    if has_provider_release_event:
+        evidence_basis.append("seller/provider recorded release/completion")
+    elif has_release_event:
+        evidence_basis.append("release event exists but seller/provider actor provenance is not established")
+    elif has_release_evidence:
+        evidence_basis.append("release field exists without actor-specific release provenance")
+
+    if has_receipt_evidence:
+        evidence_basis.append("receipt_status records receipt/acceptance evidence")
+    if has_requester_receipt_event:
+        evidence_basis.append("buyer/requester confirmed receipt")
+    elif has_receipt_event:
+        evidence_basis.append("receipt event exists but buyer/requester actor provenance is not established")
+    elif has_receipt_evidence:
+        evidence_basis.append("receipt field exists without actor-specific receipt provenance")
+
+    if has_not_received:
+        evidence_basis.append("receipt_status records not received")
+    elif has_not_received_event:
+        evidence_basis.append("not-received event exists in trade history")
+    if has_unresolved_dispute:
+        evidence_basis.append("unresolved dispute is recorded")
+    if has_resolved_dispute_history:
+        evidence_basis.append("resolved dispute history is recorded")
+    if status == "closed" and not (has_release_evidence and has_receipt_evidence):
+        evidence_basis.append("closed lifecycle state is not treated as fulfilment by itself")
+    if has_cancelled:
+        evidence_basis.append("trade lifecycle is cancelled")
+
+    actor_provenance_available = bool(event_rows)
+    actor_provenance_supports_mutual = (
+        has_provider_release_event and has_requester_receipt_event
+    )
+    field_only_mutual = (
+        has_release_evidence and has_receipt_evidence and not actor_provenance_available
+    )
+
+    state = "UNCONFIRMED"
+    label = "In progress"
+    if has_cancelled:
+        state = "CANCELLED"
+        label = "Cancelled"
+    elif has_unresolved_dispute:
+        state = "DISPUTED"
+        label = "Disputed"
+    elif has_not_received:
+        state = "NOT_RECEIVED"
+        label = "Not received"
+    elif has_release_evidence and has_receipt_evidence and (
+        actor_provenance_supports_mutual or field_only_mutual
+    ):
+        state = "MUTUALLY_CONFIRMED"
+        if has_resolved_dispute_history:
+            label = "Mutually confirmed after resolved dispute"
+        elif field_only_mutual and not actor_provenance_supports_mutual:
+            label = "Release and receipt recorded"
+        else:
+            label = "Mutually confirmed"
+    elif has_provider_release_event:
+        state = "PROVIDER_REPORTED_COMPLETED"
+        label = "Provider recorded completion"
+    elif has_requester_receipt_event:
+        state = "REQUESTER_REPORTED_RECEIVED"
+        label = "Requester confirmed receipt"
+
+    return {
+        "derived_outcome_state": state,
+        "derived_outcome_label": label,
+        "evidence_basis": evidence_basis,
+        "has_provider_release_event": has_provider_release_event,
+        "has_requester_receipt_event": has_requester_receipt_event,
+        "has_unresolved_dispute": has_unresolved_dispute,
+        "has_resolved_dispute_history": has_resolved_dispute_history,
+        "derived_outcome_boundary_note": DERIVED_OUTCOME_BOUNDARY_NOTE,
+    }
 
 def trade_to_dict(
     trade: ProtectedTradeRecord,
     *,
     events: Optional[Iterable[ProtectedTradeEvent]] = None,
 ) -> Dict[str, Any]:
+    event_rows = list(events or [])
+    derived_outcome = derive_protected_trade_outcome(trade, events=event_rows)
     return {
         "id": int(trade.id),
         "trade_code": trade.trade_code,
@@ -263,7 +432,8 @@ def trade_to_dict(
         "created_at": trade.created_at,
         "updated_at": trade.updated_at,
         "closed_at": trade.closed_at,
-        "events": [event_to_dict(event) for event in events or []],
+        **derived_outcome,
+        "events": [event_to_dict(event) for event in event_rows],
         "boundary_note": BOUNDARY_NOTE,
     }
 

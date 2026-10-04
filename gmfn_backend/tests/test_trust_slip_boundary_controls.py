@@ -1570,7 +1570,7 @@ def test_public_verify_supplier_pack_surfaces_fulfillment_outcomes_without_trade
     assert "2 protected trade seller records found" in fulfillment["value"]
     assert "2 show release evidence" in fulfillment["value"]
     assert "1 show receipt or delivery confirmation" in fulfillment["value"]
-    assert "2 show completed or closed status" in fulfillment["value"]
+    assert "2 show completion backed by release/receipt evidence" in fulfillment["value"]
     assert "1 dispute/correction status resolved or closed" in fulfillment["value"]
     assert "1 still need dispute/correction review" in fulfillment["value"]
     assert "do not expose trade codes" in extract["fulfillment_outcome_boundary_note"]

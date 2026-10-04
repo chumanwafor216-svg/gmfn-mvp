@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 
 from fastapi.testclient import TestClient
 
 from app.db.database import SessionLocal
 from app.db.models import ProtectedTradeEvent, ProtectedTradeRecord, TrustEvent
+from app.services.protected_trade_service import trade_to_dict
 
 
 def _protected_trade_count() -> int:
@@ -69,6 +71,10 @@ def test_protected_trade_create_and_lifecycle_logs_trust_events(
     assert detail["status"] == "released"
     assert detail["payment_status"] == "claimed"
     assert detail["release_status"] == "released"
+    assert detail["derived_outcome_state"] == "PROVIDER_REPORTED_COMPLETED"
+    assert detail["derived_outcome_label"] == "Provider recorded completion"
+    assert detail["has_provider_release_event"] is True
+    assert detail["has_requester_receipt_event"] is False
     assert detail["expected_payment_id"] == 55
     assert [event["event_type"] for event in detail["events"]] == [
         "protected_trade.created",
@@ -250,3 +256,178 @@ def test_protected_trade_event_rejects_malformed_expected_payment_id(
     rejected_meta = client.post(f"/protected-trades/{trade_id}/events", json=payload)
     assert rejected_meta.status_code == 422, rejected_meta.text
     assert "meta must be an object" in rejected_meta.text
+
+
+def _derived_trade_dict(
+    db,
+    *,
+    code: str,
+    status: str = "draft",
+    release_status: str = "not_requested",
+    receipt_status: str = "not_confirmed",
+    dispute_status: str = "none",
+    events: list[tuple[str, int]] | None = None,
+    closed: bool = False,
+):
+    trade = ProtectedTradeRecord(
+        trade_code=code,
+        clan_id=1,
+        creator_user_id=1,
+        seller_user_id=1,
+        buyer_user_id=2,
+        item_title="Outcome provenance test",
+        currency="NGN",
+        status=status,
+        payment_status="not_started",
+        release_status=release_status,
+        receipt_status=receipt_status,
+        dispute_status=dispute_status,
+        closed_at=datetime.now(timezone.utc) if closed else None,
+    )
+    db.add(trade)
+    db.flush()
+    for event_type, actor_user_id in events or []:
+        normalized = event_type if event_type.startswith("protected_trade.") else f"protected_trade.{event_type}"
+        db.add(
+            ProtectedTradeEvent(
+                trade_id=trade.id,
+                actor_user_id=actor_user_id,
+                event_type=normalized,
+                status_to=status,
+                note="Outcome provenance test event",
+            )
+        )
+    db.flush()
+    event_rows = (
+        db.query(ProtectedTradeEvent)
+        .filter(ProtectedTradeEvent.trade_id == trade.id)
+        .order_by(ProtectedTradeEvent.id.asc())
+        .all()
+    )
+    return trade_to_dict(trade, events=event_rows)
+
+
+def test_protected_trade_derived_outcomes_use_existing_fields_and_actor_provenance(
+    seed_clan_member_membership,
+    seed_user2_non_member,
+):
+    with SessionLocal() as db:
+        trust_event_count = int(db.query(TrustEvent).count())
+
+        seller_release = _derived_trade_dict(
+            db,
+            code="GSN-TRADE-DERIVED-SELLER",
+            status="released",
+            release_status="released",
+            events=[("release.recorded", 1)],
+        )
+        assert seller_release["derived_outcome_state"] == "PROVIDER_REPORTED_COMPLETED"
+        assert seller_release["derived_outcome_label"] == "Provider recorded completion"
+        assert seller_release["has_provider_release_event"] is True
+
+        buyer_receipt = _derived_trade_dict(
+            db,
+            code="GSN-TRADE-DERIVED-BUYER",
+            status="received",
+            receipt_status="received",
+            events=[("receipt.confirmed", 2)],
+        )
+        assert buyer_receipt["derived_outcome_state"] == "REQUESTER_REPORTED_RECEIVED"
+        assert buyer_receipt["derived_outcome_label"] == "Requester confirmed receipt"
+        assert buyer_receipt["has_requester_receipt_event"] is True
+
+        mutual = _derived_trade_dict(
+            db,
+            code="GSN-TRADE-DERIVED-MUTUAL",
+            status="received",
+            release_status="released",
+            receipt_status="received",
+            events=[("release.recorded", 1), ("receipt.confirmed", 2)],
+        )
+        assert mutual["derived_outcome_state"] == "MUTUALLY_CONFIRMED"
+        assert mutual["derived_outcome_label"] == "Mutually confirmed"
+
+        disputed = _derived_trade_dict(
+            db,
+            code="GSN-TRADE-DERIVED-DISPUTED",
+            status="disputed",
+            release_status="released",
+            receipt_status="received",
+            dispute_status="opened",
+            events=[
+                ("release.recorded", 1),
+                ("receipt.confirmed", 2),
+                ("dispute.opened", 2),
+            ],
+        )
+        assert disputed["derived_outcome_state"] == "DISPUTED"
+        assert disputed["has_unresolved_dispute"] is True
+
+        not_received = _derived_trade_dict(
+            db,
+            code="GSN-TRADE-DERIVED-NOT-RECEIVED",
+            status="not_received",
+            receipt_status="not_received",
+            events=[("receipt.not_received", 2)],
+        )
+        assert not_received["derived_outcome_state"] == "NOT_RECEIVED"
+        assert not_received["derived_outcome_label"] == "Not received"
+
+        cancelled = _derived_trade_dict(
+            db,
+            code="GSN-TRADE-DERIVED-CANCELLED",
+            status="cancelled",
+        )
+        assert cancelled["derived_outcome_state"] == "CANCELLED"
+
+        closed_only = _derived_trade_dict(
+            db,
+            code="GSN-TRADE-DERIVED-CLOSED",
+            status="closed",
+            closed=True,
+        )
+        assert closed_only["derived_outcome_state"] == "UNCONFIRMED"
+        assert closed_only["derived_outcome_label"] == "In progress"
+        assert "closed lifecycle state is not treated as fulfilment by itself" in closed_only["evidence_basis"]
+
+        resolved_after_dispute = _derived_trade_dict(
+            db,
+            code="GSN-TRADE-DERIVED-RESOLVED",
+            status="received",
+            release_status="released",
+            receipt_status="received",
+            dispute_status="resolved",
+            events=[
+                ("release.recorded", 1),
+                ("receipt.confirmed", 2),
+                ("dispute.opened", 2),
+                ("dispute.resolved", 1),
+            ],
+        )
+        assert resolved_after_dispute["derived_outcome_state"] == "MUTUALLY_CONFIRMED"
+        assert resolved_after_dispute["derived_outcome_label"] == "Mutually confirmed after resolved dispute"
+        assert resolved_after_dispute["has_resolved_dispute_history"] is True
+
+        wrong_release_actor = _derived_trade_dict(
+            db,
+            code="GSN-TRADE-DERIVED-WRONG-RELEASE",
+            status="released",
+            release_status="released",
+            events=[("release.recorded", 2)],
+        )
+        assert wrong_release_actor["derived_outcome_state"] == "UNCONFIRMED"
+        assert wrong_release_actor["has_provider_release_event"] is False
+        assert "Provider recorded completion" != wrong_release_actor["derived_outcome_label"]
+
+        wrong_receipt_actor = _derived_trade_dict(
+            db,
+            code="GSN-TRADE-DERIVED-WRONG-RECEIPT",
+            status="received",
+            receipt_status="received",
+            events=[("receipt.confirmed", 1)],
+        )
+        assert wrong_receipt_actor["derived_outcome_state"] == "UNCONFIRMED"
+        assert wrong_receipt_actor["has_requester_receipt_event"] is False
+        assert "Requester confirmed receipt" != wrong_receipt_actor["derived_outcome_label"]
+
+        assert int(db.query(TrustEvent).count()) == trust_event_count
