@@ -6684,6 +6684,10 @@ export type ProtectedTradeCreatePayload = {
   amount?: string | null;
   currency?: string | null;
   meta?: Record<string, any> | null;
+  source_demand_id?: number | null;
+  source_match_product_id?: number | null;
+  source_match_shop_id?: number | null;
+  source_match_reason_codes?: string[] | null;
 };
 
 export type ProtectedTradeEventPayload = {
@@ -8099,6 +8103,34 @@ export type SupplyDemandMatchesResponse = {
   boundary_note?: string | null;
 };
 
+export type DemandSupplyTradeHandoffResponse = {
+  demand_id: number;
+  product_id: number;
+  shop_id: number;
+  clan_id: number;
+  demand_title: string;
+  product_title: string;
+  shop_name: string;
+  reason_codes?: string[] | null;
+  participant_role?: "buyer" | "seller" | null;
+  item_title: string;
+  source_marker?: string | null;
+  boundary_metadata?: Record<string, boolean> | null;
+  boundary_note?: string | null;
+};
+
+export async function getDemandSupplyTradeHandoff(
+  requestId: number,
+  productId: number,
+  params: { shop_id: number }
+): Promise<DemandSupplyTradeHandoffResponse> {
+  return httpJson(
+    `/marketplace/requests/${encodeURIComponent(String(requestId))}/supply-matches/${encodeURIComponent(String(productId))}/trade-handoff${buildQuery({
+      shop_id: params.shop_id,
+    })}`,
+    "GET"
+  );
+}
 export async function getDemandSupplyMatches(
   requestId: number,
   params?: { limit?: number }

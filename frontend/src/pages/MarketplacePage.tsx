@@ -49,6 +49,7 @@ import {
   createProtectedTrade,
   addProtectedTradeEvent,
   getDailyInsight,
+  getDemandSupplyTradeHandoff,
   getMarketWisdomRecommendation,
   getCommunityPackageStatus,
   getMarketplaceRepostTargetSuggestions,
@@ -84,6 +85,7 @@ import {
   recordMarketWisdomExposure,
   safeCopy,
   type ClanInviteRelationshipEvidencePayload,
+  type DemandSupplyTradeHandoffResponse,
   type ProtectedTradeEventRecord,
   type ProtectedTradeRecord,
 } from "../lib/api";
@@ -306,6 +308,11 @@ export type ProtectedTradeDraft = {
   currency: string;
   termsSummary: string;
   evidencePacketNote: string;
+  sourceDemandId?: string;
+  sourceMatchProductId?: string;
+  sourceMatchShopId?: string;
+  sourceMatchReasonCodes?: string[];
+  sourceMatchLabel?: string;
 };
 
 export type ProtectedTradeUserSide = "buyer" | "seller" | "participant";
@@ -4319,6 +4326,7 @@ export default function MarketplacePage() {
   const pendingMarketplaceSectionRef = useRef("");
   const pendingMarketplaceSectionForceRef = useRef(false);
   const routeHashLandingAppliedRef = useRef("");
+  const demandTradeHandoffAppliedRef = useRef("");
   const withdrawalHandoffAppliedRef = useRef("");
   const publicShopPrepareInFlightRef = useRef(false);
   const loadPageRequestRef = useRef(0);
@@ -4367,6 +4375,21 @@ export default function MarketplacePage() {
     return ["1", "true", "yes", "market_need_pulse"].includes(
       safeStr(query.get("ask_market") || query.get("market_need_pulse")).toLowerCase()
     );
+  }, [location.search]);
+  const routeDemandTradeHandoff = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    const source = safeStr(query.get("trade_source")).toLowerCase();
+    if (source !== "demand_supply_match") return null;
+    const demandId = positiveNumber(query.get("source_demand_id"));
+    const productId = positiveNumber(query.get("source_match_product_id"));
+    const shopId = positiveNumber(query.get("source_match_shop_id"));
+    if (!demandId || !productId || !shopId) return null;
+    const reasonCodes = safeStr(query.get("source_match_reason_codes"))
+      .split(",")
+      .map((item) => safeStr(item).toUpperCase())
+      .filter(Boolean)
+      .slice(0, 12);
+    return { demandId, productId, shopId, reasonCodes };
   }, [location.search]);
   const routeRepostHandoffProduct = useMemo(
     () =>
@@ -6818,10 +6841,14 @@ export default function MarketplacePage() {
       return;
     }
 
+    const sourceDemandId = positiveNumber(protectedTradeDraft.sourceDemandId);
+    const sourceProductId = positiveNumber(protectedTradeDraft.sourceMatchProductId);
+    const sourceShopId = positiveNumber(protectedTradeDraft.sourceMatchShopId);
+    const hasDemandSupplyHandoff = Boolean(sourceDemandId && sourceProductId && sourceShopId);
     const counterpartUserId = positiveNumber(
       protectedTradeDraft.counterpartUserId
     );
-    if (!counterpartUserId) {
+    if (!counterpartUserId && !hasDemandSupplyHandoff) {
       showNotice("error", "Choose the buyer or seller on the other side.");
       return;
     }
@@ -6847,14 +6874,20 @@ export default function MarketplacePage() {
       const created = await createProtectedTrade({
         clan_id: activeCommunityId,
         participant_role: protectedTradeDraft.role,
-        seller_user_id: isSeller ? undefined : counterpartUserId,
-        buyer_user_id: isSeller ? counterpartUserId : undefined,
+        seller_user_id: hasDemandSupplyHandoff ? undefined : isSeller ? undefined : counterpartUserId,
+        buyer_user_id: hasDemandSupplyHandoff ? undefined : isSeller ? counterpartUserId : undefined,
+        shop_id: hasDemandSupplyHandoff ? sourceShopId : undefined,
+        product_id: hasDemandSupplyHandoff ? sourceProductId : undefined,
+        source_demand_id: hasDemandSupplyHandoff ? sourceDemandId : undefined,
+        source_match_product_id: hasDemandSupplyHandoff ? sourceProductId : undefined,
+        source_match_shop_id: hasDemandSupplyHandoff ? sourceShopId : undefined,
+        source_match_reason_codes: hasDemandSupplyHandoff ? protectedTradeDraft.sourceMatchReasonCodes || [] : undefined,
         item_title: itemTitle,
         terms_summary: termsSummary,
         amount: safeStr(protectedTradeDraft.amount) || undefined,
         currency: safeStr(protectedTradeDraft.currency || "NGN").toUpperCase(),
         meta: {
-          source: "marketplace_trusted_trade_lane",
+          source: hasDemandSupplyHandoff ? "demand_supply_match" : "marketplace_trusted_trade_lane",
           community_name: communityName(selectedCommunity),
           minimum_trade_packet: {
             trade_context: "gsn_gsn",
@@ -6878,6 +6911,9 @@ export default function MarketplacePage() {
           not_bank_confirmation: true,
           not_delivery_guarantee: true,
           not_release_authority: true,
+          not_recommendation: hasDemandSupplyHandoff ? true : undefined,
+          not_endorsement: hasDemandSupplyHandoff ? true : undefined,
+          not_payment_proof: hasDemandSupplyHandoff ? true : undefined,
         },
       });
 
@@ -6892,6 +6928,11 @@ export default function MarketplacePage() {
         amount: "",
         termsSummary: "",
         evidencePacketNote: "",
+        sourceDemandId: "",
+        sourceMatchProductId: "",
+        sourceMatchShopId: "",
+        sourceMatchReasonCodes: [],
+        sourceMatchLabel: "",
       }));
       showNotice("success", "Protected trade record started.");
     } catch (err: any) {
@@ -7087,6 +7128,60 @@ export default function MarketplacePage() {
       ? "Owing"
       : "Balanced";
 
+  useEffect(() => {
+    const handoff = routeDemandTradeHandoff;
+    if (!handoff) return;
+    if (!sectionsOpen.trade || !showProtectedTradeCreateForm) return;
+
+    const token = `${handoff.demandId}:${handoff.productId}:${handoff.shopId}:${activeCommunityId || ""}`;
+    if (demandTradeHandoffAppliedRef.current === token) return;
+    demandTradeHandoffAppliedRef.current = token;
+
+    let alive = true;
+
+    getDemandSupplyTradeHandoff(handoff.demandId, handoff.productId, {
+      shop_id: handoff.shopId,
+    })
+      .then((serverHandoff: DemandSupplyTradeHandoffResponse) => {
+        if (!alive) return;
+        const itemTitle = safeStr(serverHandoff.item_title || serverHandoff.product_title);
+        const reasonCodes = Array.isArray(serverHandoff.reason_codes)
+          ? serverHandoff.reason_codes.map((item) => safeStr(item).toUpperCase()).filter(Boolean)
+          : handoff.reasonCodes;
+        setProtectedTradeDraft((prev) => ({
+          ...prev,
+          role: "buyer",
+          counterpartUserId: "",
+          itemTitle: itemTitle || prev.itemTitle,
+          currency: safeStr(prev.currency || "NGN").toUpperCase(),
+          sourceDemandId: String(serverHandoff.demand_id || handoff.demandId),
+          sourceMatchProductId: String(serverHandoff.product_id || handoff.productId),
+          sourceMatchShopId: String(serverHandoff.shop_id || handoff.shopId),
+          sourceMatchReasonCodes: reasonCodes,
+          sourceMatchLabel: `${safeStr(serverHandoff.shop_name) || "Matched shop"} - provider resolved by GSN`,
+        }));
+        showNotice("success", "Trade Evidence is ready to start from this DemandBox match.");
+      })
+      .catch((err: any) => {
+        if (!alive) return;
+        setProtectedTradeDraft((prev) => ({
+          ...prev,
+          sourceDemandId: "",
+          sourceMatchProductId: "",
+          sourceMatchShopId: "",
+          sourceMatchReasonCodes: [],
+          sourceMatchLabel: "",
+        }));
+        showNotice(
+          "error",
+          marketplaceErrorMessage(err, "DemandBox match could not prepare Trade Evidence.")
+        );
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [activeCommunityId, routeDemandTradeHandoff, sectionsOpen.trade, showNotice, showProtectedTradeCreateForm]);
   const currentMemberRole = useMemo(() => {
     const currentUserId = positiveNumber(me?.id || me?.user_id);
     const currentGmfn = safeStr(currentGmfnId).toUpperCase();

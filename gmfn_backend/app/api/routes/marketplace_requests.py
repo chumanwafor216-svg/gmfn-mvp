@@ -20,10 +20,12 @@ from app.services.demand_supply_intelligence_service import (
     PRODUCT_VISIBILITY_COMMUNITY,
     find_demands_for_supply,
     find_supply_for_demand,
+    resolve_demand_supply_trade_handoff,
 )
 from app.schemas.marketplace_requests import (
     DemandSupplyMatchesOut,
     DemandSupplyMatchOut,
+    DemandSupplyTradeHandoffOut,
     MarketplaceRequestCreate,
     MarketplaceRequestOut,
     MarketplaceRequestUpdateStatus,
@@ -899,6 +901,43 @@ def get_marketplace_request_supply_matches(
         count=len(items),
         matches=items,
     )
+
+@router.get(
+    "/{request_id}/supply-matches/{product_id}/trade-handoff",
+    response_model=DemandSupplyTradeHandoffOut,
+)
+def get_marketplace_request_trade_handoff(
+    request_id: int = Path(..., ge=1),
+    product_id: int = Path(..., ge=1),
+    shop_id: int = Query(..., ge=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _cleanup_expired_requests(db)
+    handoff = resolve_demand_supply_trade_handoff(
+        db,
+        demand_id=int(request_id),
+        product_id=int(product_id),
+        shop_id=int(shop_id),
+        current_user_id=int(current_user.id),
+    )
+    if not handoff:
+        raise HTTPException(status_code=404, detail="DemandBox match handoff not found")
+    if int(handoff.get("requester_user_id") or 0) != int(current_user.id):
+        raise HTTPException(status_code=403, detail="Only the requester can start trade evidence for this demand")
+
+    return DemandSupplyTradeHandoffOut(
+        demand_id=int(handoff.get("demand_id") or 0),
+        product_id=int(handoff.get("product_id") or 0),
+        shop_id=int(handoff.get("shop_id") or 0),
+        clan_id=int(handoff.get("clan_id") or 0),
+        demand_title=_safe_text(handoff.get("demand_title")) or "DemandBox request",
+        product_title=_safe_text(handoff.get("product_title")) or "Marketplace item",
+        shop_name=_safe_text(handoff.get("shop_name")) or "Marketplace shop",
+        reason_codes=[_safe_text(code) for code in handoff.get("reason_codes", []) if _safe_text(code)],
+        item_title=_safe_text(handoff.get("product_title")) or "Marketplace item",
+    )
+
 
 @router.get("/{request_id}", response_model=MarketplaceRequestOut)
 def get_marketplace_request(

@@ -586,6 +586,7 @@ export default function MarketplaceTradeEvidenceSection({
                 <select
                   {...marketplaceFieldTouchProps("marketplace.protected-trade.counterpart")}
                   value={protectedTradeDraft.counterpartUserId}
+                  disabled={Boolean(safeStr(protectedTradeDraft.sourceDemandId))}
                   onChange={(event) =>
                     setProtectedTradeDraft((prev) => ({
                       ...prev,
@@ -594,7 +595,7 @@ export default function MarketplaceTradeEvidenceSection({
                   }
                   style={{ ...inputStyle(), marginTop: 6 }}
                 >
-                  <option value="">Choose member</option>
+                  <option value="">{safeStr(protectedTradeDraft.sourceMatchLabel) || "Choose member"}</option>
                   {protectedTradeCounterpartOptions.map((row) => (
                     <option key={row.userId} value={row.userId}>
                       {row.name}

@@ -599,3 +599,187 @@ def test_demand_supply_attention_events_are_attention_only(client):
     assert _table_count("marketplace_attention_events") == 3
     assert _table_count("notifications") == 0
     assert _table_count("trust_events") == 0
+
+
+def test_demand_supply_trade_handoff_does_not_create_until_start_record(client, override_current_user_user):
+    _seed_base()
+    _seed_request(request_id=60)
+
+    assert _table_count("protected_trade_records") == 0
+    assert _table_count("protected_trade_events") == 0
+    assert _table_count("trust_events") == 0
+
+    matches_response = client.get("/marketplace/requests/60/supply-matches?limit=10")
+    assert matches_response.status_code == 200, matches_response.text
+    assert matches_response.json()["count"] == 1
+    assert _table_count("protected_trade_records") == 0
+
+    handoff_response = client.get(
+        "/marketplace/requests/60/supply-matches/100/trade-handoff?shop_id=10"
+    )
+    assert handoff_response.status_code == 200, handoff_response.text
+    handoff = handoff_response.json()
+    assert handoff["source_marker"] == "demand_supply_match"
+    assert handoff["product_id"] == 100
+    assert handoff["shop_id"] == 10
+    assert "seller_user_id" not in handoff
+    assert "requester_user_id" not in handoff
+    assert _table_count("protected_trade_records") == 0
+
+    attention_response = client.post(
+        "/marketplace/analytics/attention",
+        json={
+            "event_type": "supply_opened",
+            "shop_id": 10,
+            "product_id": 100,
+            "clan_id": 1,
+            "source": "demand_box_intelligence",
+            "client_event_id": "supply-opened-60-100",
+        },
+    )
+    assert attention_response.status_code == 200, attention_response.text
+    assert _table_count("protected_trade_records") == 0
+
+    create_response = client.post(
+        "/protected-trades",
+        json={
+            "clan_id": 1,
+            "participant_role": "buyer",
+            "source_demand_id": 60,
+            "source_match_product_id": 100,
+            "source_match_shop_id": 10,
+            "source_match_reason_codes": handoff["reason_codes"],
+            "item_title": handoff["item_title"],
+            "terms_summary": "Requester and provider agreed to inspect the plumbing issue before any payment.",
+            "currency": "NGN",
+            "meta": {
+                "source": "demand_supply_match",
+                "not_recommendation": True,
+                "not_endorsement": True,
+                "not_payment_proof": True,
+            },
+        },
+    )
+    assert create_response.status_code == 201, create_response.text
+    created = create_response.json()
+    assert created["buyer_user_id"] == 1
+    assert created["seller_user_id"] == 2
+    assert created["shop_id"] == 10
+    assert created["product_id"] == 100
+    assert created["amount"] is None
+    assert created["meta"]["source"] == "demand_supply_match"
+    assert created["meta"]["source_demand_id"] == 60
+    assert created["meta"]["source_match_product_id"] == 100
+    assert created["meta"]["source_match_shop_id"] == 10
+    assert created["meta"]["not_recommendation"] is True
+    assert created["meta"]["not_endorsement"] is True
+    assert created["meta"]["not_payment_proof"] is True
+    assert _table_count("protected_trade_records") == 1
+    assert _table_count("protected_trade_events") == 1
+
+    with SessionLocal() as db:
+        rows = db.execute(text("SELECT event_type, meta_json FROM trust_events ORDER BY id ASC")).fetchall()
+    assert [row[0] for row in rows] == ["protected_trade.created"]
+    assert "demand_supply_match" in (rows[0][1] or "")
+
+
+def test_demand_supply_trade_handoff_rejects_tampered_or_inaccessible_context(client, override_current_user_user):
+    _seed_base()
+    _seed_request(request_id=61)
+    _seed_request(
+        request_id=62,
+        user_id=2,
+        description="[GSN_VISIBILITY_SCOPE:protected_target] private plumbing request",
+    )
+
+    tampered_shop = client.post(
+        "/protected-trades",
+        json={
+            "clan_id": 1,
+            "participant_role": "buyer",
+            "source_demand_id": 61,
+            "source_match_product_id": 100,
+            "source_match_shop_id": 11,
+            "item_title": "Emergency Plumbing Repair",
+            "terms_summary": "Tampered shop should not create evidence.",
+            "currency": "NGN",
+        },
+    )
+    assert tampered_shop.status_code == 403, tampered_shop.text
+
+    protected_target = client.get(
+        "/marketplace/requests/62/supply-matches/100/trade-handoff?shop_id=10"
+    )
+    assert protected_target.status_code == 404, protected_target.text
+
+    inaccessible_create = client.post(
+        "/protected-trades",
+        json={
+            "clan_id": 1,
+            "participant_role": "buyer",
+            "source_demand_id": 62,
+            "source_match_product_id": 100,
+            "source_match_shop_id": 10,
+            "item_title": "Emergency Plumbing Repair",
+            "terms_summary": "Protected target should not create evidence.",
+            "currency": "NGN",
+        },
+    )
+    assert inaccessible_create.status_code == 403, inaccessible_create.text
+    assert _table_count("protected_trade_records") == 0
+    assert _table_count("trust_events") == 0
+
+
+def test_demand_supply_handoff_supports_services_and_products_without_mandatory_payment(client, override_current_user_user):
+    _seed_base()
+    cases = [
+        (70, 300, "Need painter for kitchen", "painting painter", "Painter on-site service", "Painting and painter service for homes"),
+        (71, 301, "Need remote tutor", "tutoring tutor", "Remote tutor listing", "Tutoring and tutor sessions online"),
+        (72, 302, "Need laptop delivered", "laptop", "Laptop delivery", "Laptop supply with delivery available"),
+    ]
+    for request_id, product_id, demand_title, category, product_title, product_description in cases:
+        _seed_request(
+            request_id=request_id,
+            title=demand_title,
+            description=demand_title,
+            category=category,
+            area=None,
+        )
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO marketplace_products (
+                        id, clan_id, shop_id, seller_user_id, title, description,
+                        price, currency, image_url, video_url, visibility_mode, is_active, created_at
+                    )
+                    VALUES (:id, 1, 10, 2, :title, :description, NULL, 'NGN', NULL, NULL, 'community_visible', 1, CURRENT_TIMESTAMP)
+                    """
+                ),
+                {"id": product_id, "title": product_title, "description": product_description},
+            )
+
+        response = client.post(
+            "/protected-trades",
+            json={
+                "clan_id": 1,
+                "participant_role": "buyer",
+                "source_demand_id": request_id,
+                "source_match_product_id": product_id,
+                "source_match_shop_id": 10,
+                "item_title": product_title,
+                "terms_summary": f"Requester and provider agreed the next step for {product_title}.",
+                "currency": "NGN",
+            },
+        )
+        assert response.status_code == 201, response.text
+        created = response.json()
+        assert created["amount"] is None
+        assert created["buyer_user_id"] == 1
+        assert created["seller_user_id"] == 2
+        assert created["product_id"] == product_id
+        assert created["meta"]["source"] == "demand_supply_match"
+
+    assert _table_count("protected_trade_records") == 3
+    assert _table_count("protected_trade_events") == 3
+    assert _table_count("trust_events") == 3

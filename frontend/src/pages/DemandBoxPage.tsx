@@ -1489,6 +1489,31 @@ export default function DemandBoxPage() {
     }).catch(() => null);
   }
 
+  function demandMatchSupplyPath(row: DemandRow, match: DemandSupplyMatchItem): string {
+    const basePath = safeStr(match.public_shop_path) || routes.marketplace;
+    if (!isMineRow(row, me)) return basePath;
+
+    const [pathAndSearch, hash = ""] = basePath.split("#", 2);
+    const [path, existingSearch = ""] = pathAndSearch.split("?", 2);
+    const params = new URLSearchParams();
+    new URLSearchParams(existingSearch).forEach((value, key) => params.set(key, value));
+    const clanId = positiveNumber(match.clan_id);
+    const demandId = positiveNumber(row?.id || match.demand_id);
+    const productId = positiveNumber(match.product_id);
+    const shopId = positiveNumber(match.shop_id);
+    if (clanId) params.set("community", String(clanId));
+    if (demandId) params.set("source_demand_id", String(demandId));
+    if (productId) params.set("source_match_product_id", String(productId));
+    if (shopId) params.set("source_match_shop_id", String(shopId));
+    params.set("trade_source", "demand_supply_match");
+    const reasonCodes = Array.isArray(match.reason_codes)
+      ? match.reason_codes.filter(Boolean).join(",")
+      : "";
+    if (reasonCodes) params.set("source_match_reason_codes", reasonCodes);
+    const query = params.toString();
+    return `${path}${query ? `?${query}` : ""}${hash ? `#${hash}` : ""}`;
+  }
+
   function toggleDemandMatches(row: DemandRow, matchState: DemandMatchState | null) {
     const rowId = positiveNumber(row?.id);
     if (!rowId || !matchState?.matches?.length) return;
@@ -1554,7 +1579,7 @@ export default function DemandBoxPage() {
           <div style={{ display: "grid", gap: 8 }}>
             {shownMatches.map((match) => {
               const labels = demandMatchReasonLabels(match);
-              const to = safeStr(match.public_shop_path) || routes.marketplace;
+              const to = demandMatchSupplyPath(row, match);
               return (
                 <div
                   key={`${match.product_id}-${match.shop_id}`}

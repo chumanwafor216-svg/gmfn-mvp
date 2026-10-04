@@ -58,6 +58,10 @@ class ProtectedTradeCreateIn(BaseModel):
     amount: Optional[Decimal] = None
     currency: str = Field("NGN", min_length=1, max_length=8)
     meta: Optional[Dict[str, Any]] = None
+    source_demand_id: Optional[int] = None
+    source_match_product_id: Optional[int] = None
+    source_match_shop_id: Optional[int] = None
+    source_match_reason_codes: Optional[List[str]] = None
 
     @field_validator(
         "clan_id",
@@ -67,6 +71,9 @@ class ProtectedTradeCreateIn(BaseModel):
         "product_id",
         "vault_access_link_id",
         "expected_payment_id",
+        "source_demand_id",
+        "source_match_product_id",
+        "source_match_shop_id",
         mode="before",
     )
     @classmethod
@@ -91,6 +98,18 @@ class ProtectedTradeCreateIn(BaseModel):
     @classmethod
     def _reject_amount_boundary_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_decimal_string(value, info.field_name)
+
+    @field_validator("source_match_reason_codes", mode="before")
+    @classmethod
+    def _reject_reason_codes_boundary_controls(cls, value: Any, info: Any) -> Any:
+        if value is None:
+            return value
+        if not isinstance(value, list):
+            raise ValueError("source_match_reason_codes must be a list.")
+        for item in value:
+            if not isinstance(item, str):
+                raise ValueError("source_match_reason_codes must contain text values.")
+        return value
 
     @field_validator("meta", mode="before")
     @classmethod

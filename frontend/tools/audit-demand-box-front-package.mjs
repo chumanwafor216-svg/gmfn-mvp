@@ -375,6 +375,10 @@ function requireApiPattern(pattern, message) {
     /StableCtaLink[\s\S]*?to=\{to\}[\s\S]*?Open supply/,
     "DemandBox possible matches must reuse an existing shop/product route instead of creating a new result page.",
   ],
+  [
+    /function demandMatchSupplyPath[\s\S]*?source_demand_id[\s\S]*?source_match_product_id[\s\S]*?source_match_shop_id[\s\S]*?trade_source[\s\S]*?demand_supply_match/,
+    "DemandBox Open supply must preserve non-authoritative source context for later Trade Evidence handoff.",
+  ],
 ].forEach(([pattern, message]) => requirePattern(pattern, message));
 requirePattern(
   /function demandReadyWhatsAppRecipient\(row: DemandRow\): string[\s\S]*?lower\.includes\("@"\) \|\| lower\.includes\("\.local"\)[\s\S]*?normalizeWhatsAppRecipient\(raw\)[\s\S]*?normalized\.length < 8/,
@@ -489,6 +493,10 @@ requirePattern(
   [
     /data-gsn-demand-supply-intelligence="true"[\s\S]*?reason_codes/i,
     "DemandBox possible matches must not expose raw reason-code machinery in the UI.",
+  ],
+  [
+    /data-gsn-demand-supply-intelligence="true"[\s\S]*?Open Trade Evidence/,
+    "DemandBox possible matches must keep Trade Evidence out of the initial discovery card.",
   ],
 ].forEach(([pattern, message]) => {
   const index = source.search(pattern);

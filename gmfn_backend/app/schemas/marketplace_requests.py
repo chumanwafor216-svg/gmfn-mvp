@@ -134,6 +134,32 @@ class DemandSupplyMatchOut(BaseModel):
     public_shop_path: Optional[str] = None
 
 
+class DemandSupplyTradeHandoffOut(BaseModel):
+    demand_id: int
+    product_id: int
+    shop_id: int
+    clan_id: int
+    demand_title: str
+    product_title: str
+    shop_name: str
+    reason_codes: list[str] = Field(default_factory=list)
+    participant_role: str = "buyer"
+    item_title: str
+    source_marker: str = "demand_supply_match"
+    boundary_metadata: dict[str, bool] = Field(
+        default_factory=lambda: {
+            "not_recommendation": True,
+            "not_endorsement": True,
+            "not_payment_proof": True,
+        }
+    )
+    boundary_note: str = (
+        "This handoff is a server-validated starting context for Trade Evidence only. "
+        "It does not create a protected trade record, prove fulfilment, recommend the provider, "
+        "endorse either party, or confirm payment."
+    )
+
+
 class DemandSupplyMatchesOut(BaseModel):
     request_id: int
     count: int

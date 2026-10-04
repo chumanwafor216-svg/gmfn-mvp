@@ -177,6 +177,47 @@ def find_demands_for_supply(
     return [match.to_dict() for match in matches]
 
 
+def resolve_demand_supply_trade_handoff(
+    db: Session,
+    *,
+    demand_id: int,
+    product_id: int,
+    shop_id: int,
+    current_user_id: int,
+) -> dict[str, Any] | None:
+    demand = db.get(MarketplaceRequest, int(demand_id))
+    if not demand or not _is_visible_live_demand(
+        db, demand, current_user_id=int(current_user_id)
+    ):
+        return None
+
+    row = (
+        db.query(MarketplaceProduct, MarketplaceShop)
+        .join(MarketplaceShop, MarketplaceShop.id == MarketplaceProduct.shop_id)
+        .filter(MarketplaceProduct.id == int(product_id))
+        .filter(MarketplaceShop.id == int(shop_id))
+        .first()
+    )
+    if not row:
+        return None
+
+    product, shop = row
+    if not _is_active_visible_supply(product=product, shop=shop):
+        return None
+
+    match = _build_match(demand=demand, product=product, shop=shop)
+    if not match:
+        return None
+
+    return {
+        **match.to_dict(),
+        "demand_title": _clean_text(getattr(demand, "title", None)) or "DemandBox request",
+        "requester_user_id": int(getattr(demand, "user_id", 0) or 0),
+        "seller_user_id": int(getattr(product, "seller_user_id", 0) or 0)
+        or int(getattr(shop, "owner_user_id", 0) or 0),
+    }
+
+
 def demand_supply_coverage_summary(
     db: Session,
     *,

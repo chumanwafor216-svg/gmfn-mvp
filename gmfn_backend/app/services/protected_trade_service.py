@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models import ProtectedTradeEvent, ProtectedTradeRecord, TrustEvent, User
 from app.schemas.protected_trades import ProtectedTradeCreateIn, ProtectedTradeEventIn
+from app.services.demand_supply_intelligence_service import resolve_demand_supply_trade_handoff
 from app.services.trust_events_services import log_trust_event
 
 
@@ -172,6 +173,64 @@ def _merge_meta(*items: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     return merged
 
 
+def _source_handoff_requested(payload: ProtectedTradeCreateIn) -> bool:
+    return any(
+        _positive_int(value)
+        for value in (
+            payload.source_demand_id,
+            payload.source_match_product_id,
+            payload.source_match_shop_id,
+        )
+    )
+
+
+def _reason_codes(values: Optional[Iterable[Any]]) -> list[str]:
+    out: list[str] = []
+    for value in values or []:
+        text = _safe_str(value).upper()
+        if text and text not in out:
+            out.append(text[:80])
+    return out[:12]
+
+
+def _resolve_source_handoff(
+    db: Session,
+    *,
+    payload: ProtectedTradeCreateIn,
+    actor_id: int,
+) -> Optional[Dict[str, Any]]:
+    if not _source_handoff_requested(payload):
+        return None
+
+    demand_id = _positive_int(payload.source_demand_id)
+    product_id = _positive_int(payload.source_match_product_id)
+    shop_id = _positive_int(payload.source_match_shop_id)
+    if not demand_id or not product_id or not shop_id:
+        raise ValueError("DemandBox match handoff needs demand, product, and shop identifiers.")
+
+    handoff = resolve_demand_supply_trade_handoff(
+        db,
+        demand_id=demand_id,
+        product_id=product_id,
+        shop_id=shop_id,
+        current_user_id=actor_id,
+    )
+    if not handoff:
+        raise PermissionError("DemandBox match handoff is not permitted.")
+    if int(handoff.get("requester_user_id") or 0) != int(actor_id):
+        raise PermissionError("Only the requester can start this DemandBox trade evidence record.")
+
+    seller_user_id = _positive_int(handoff.get("seller_user_id"))
+    if not seller_user_id:
+        raise ValueError("Matched supply provider could not be resolved.")
+    if payload.seller_user_id and _positive_int(payload.seller_user_id) != seller_user_id:
+        raise PermissionError("DemandBox match provider does not match the supplied seller.")
+    if payload.buyer_user_id and _positive_int(payload.buyer_user_id) != actor_id:
+        raise PermissionError("DemandBox match buyer must be the authenticated requester.")
+
+    return handoff
+
+
 def trade_to_dict(
     trade: ProtectedTradeRecord,
     *,
@@ -234,22 +293,50 @@ def create_trade(
     if not actor_id:
         raise PermissionError("Not authenticated")
 
-    role = _safe_str(payload.participant_role, "seller").lower()
+    source_handoff = _resolve_source_handoff(db, payload=payload, actor_id=actor_id)
+    role = "buyer" if source_handoff else _safe_str(payload.participant_role, "seller").lower()
     seller_user_id = _positive_int(payload.seller_user_id)
     buyer_user_id = _positive_int(payload.buyer_user_id)
-    if role == "seller" and seller_user_id is None:
-        seller_user_id = actor_id
-    if role == "buyer" and buyer_user_id is None:
+    clan_id = _positive_int(payload.clan_id)
+    shop_id = _positive_int(payload.shop_id)
+    product_id = _positive_int(payload.product_id)
+    source_meta: Dict[str, Any] = {}
+
+    if source_handoff:
+        seller_user_id = _positive_int(source_handoff.get("seller_user_id"))
         buyer_user_id = actor_id
+        clan_id = _positive_int(source_handoff.get("clan_id"))
+        shop_id = _positive_int(source_handoff.get("shop_id"))
+        product_id = _positive_int(source_handoff.get("product_id"))
+        source_meta = {
+            "source": "demand_supply_match",
+            "source_demand_id": _positive_int(source_handoff.get("demand_id")),
+            "source_match_product_id": product_id,
+            "source_match_shop_id": shop_id,
+            "source_match_reason_codes": _reason_codes(
+                payload.source_match_reason_codes or source_handoff.get("reason_codes")
+            ),
+            "source_demand_title": _safe_str(source_handoff.get("demand_title")) or None,
+            "source_product_title": _safe_str(source_handoff.get("product_title")) or None,
+            "source_shop_name": _safe_str(source_handoff.get("shop_name")) or None,
+            "not_recommendation": True,
+            "not_endorsement": True,
+            "not_payment_proof": True,
+        }
+    else:
+        if role == "seller" and seller_user_id is None:
+            seller_user_id = actor_id
+        if role == "buyer" and buyer_user_id is None:
+            buyer_user_id = actor_id
 
     trade = ProtectedTradeRecord(
         trade_code=_make_trade_code(),
-        clan_id=_positive_int(payload.clan_id),
+        clan_id=clan_id,
         creator_user_id=actor_id,
         seller_user_id=seller_user_id,
         buyer_user_id=buyer_user_id,
-        shop_id=_positive_int(payload.shop_id),
-        product_id=_positive_int(payload.product_id),
+        shop_id=shop_id,
+        product_id=product_id,
         vault_access_link_id=_positive_int(payload.vault_access_link_id),
         trust_slip_code=_safe_str(payload.trust_slip_code) or None,
         expected_payment_id=_positive_int(payload.expected_payment_id),
@@ -264,7 +351,7 @@ def create_trade(
         release_status="not_requested",
         receipt_status="not_confirmed",
         dispute_status="none",
-        meta_json=_json(payload.meta),
+        meta_json=_json(_merge_meta(source_meta, payload.meta)),
         created_at=_now_utc(),
         updated_at=_now_utc(),
     )
@@ -276,7 +363,7 @@ def create_trade(
         payload=ProtectedTradeEventIn(
             event_type="created",
             note="Protected trade record created.",
-            meta={"source": "protected_trade_create"},
+            meta=_merge_meta({"source": "protected_trade_create"}, source_meta),
         ),
         current_user=current_user,
         commit=False,
