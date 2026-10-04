@@ -2639,6 +2639,7 @@ export default function TrustSlipPage() {
   const [selectedIssuingCommunityOptionId, setSelectedIssuingCommunityOptionId] =
     useState("");
   const [trustSlipSetupSubmitted, setTrustSlipSetupSubmitted] = useState(true);
+  const trustSlipSetupControlsTouchedRef = useRef(false);
   const [activeTrustSlipPaperPack, setActiveTrustSlipPaperPack] =
     useState<TrustSlipPaperPackKey>("share");
   useEffect(() => {
@@ -2659,6 +2660,7 @@ export default function TrustSlipPage() {
   );
 
   const clearTrustSlipState = useCallback(() => {
+    trustSlipSetupControlsTouchedRef.current = false;
     setMe(null);
     setCurrentClan(null);
     setMemberCommunityOptions([]);
@@ -3108,6 +3110,9 @@ export default function TrustSlipPage() {
       ),
     [summary, currentClan, selectedClanId]
   );
+  const currentTrustSlipAnchorCommunityId = positiveNumberId(
+    firstTruthy(summary?.community_id, summary?.clan_id)
+  );
   const verificationCommunityOptions = useMemo(
     () =>
       uniqueTrustSlipCommunityOptions([
@@ -3143,6 +3148,29 @@ export default function TrustSlipPage() {
     fallbackVerificationCommunityId,
     selectedIssuingCommunityOptionId,
     verificationCommunityOptions,
+  ]);
+
+  useEffect(() => {
+    if (trustSlipSetupControlsTouchedRef.current) return;
+    if (!currentTrustSlipAnchorCommunityId) return;
+
+    const anchorOptionId = String(currentTrustSlipAnchorCommunityId);
+    const anchorIsVisible = verificationCommunityOptions.some(
+      (option) => option.id === anchorOptionId
+    );
+    if (!anchorIsVisible) return;
+
+    if (visibilityScope !== "community_specific") {
+      setVisibilityScope("community_specific");
+    }
+    if (selectedIssuingCommunityOptionId !== anchorOptionId) {
+      setSelectedIssuingCommunityOptionId(anchorOptionId);
+    }
+  }, [
+    currentTrustSlipAnchorCommunityId,
+    selectedIssuingCommunityOptionId,
+    verificationCommunityOptions,
+    visibilityScope,
   ]);
 
   const selectedVerificationCommunityOption = useMemo(
@@ -3188,9 +3216,6 @@ export default function TrustSlipPage() {
       : issuingCommunityId
         ? `All visible context can travel with the link, but this TrustSlip is still issued from ${selectedVerificationCommunityName}. It is not proof that every community gives the same judgement.`
         : "Choose an active community before using all visible community context.";
-  const currentTrustSlipAnchorCommunityId = positiveNumberId(
-    firstTruthy(summary?.community_id, summary?.clan_id)
-  );
   const trustSlipNeedsSelectedCommunityRefresh = Boolean(
     visibilityScope === "community_specific" &&
       issuingCommunityId &&
@@ -3287,7 +3312,7 @@ export default function TrustSlipPage() {
   const hasUsableCurrentTrustSlipShare =
     hasUsableTrustSlipShare && !trustSlipNeedsSelectedCommunityRefresh;
   const trustSlipHolderDocumentVisible =
-    hasUsableCurrentTrustSlipShare && trustSlipSetupSubmitted;
+    hasUsableTrustSlipShare && trustSlipSetupSubmitted;
 
   const merchantRailReleasePath = useMemo(
     () => (merchantRailLink?.path ? merchantReleaseDeskPath(merchantRailLink.path) : ""),
@@ -5000,10 +5025,11 @@ export default function TrustSlipPage() {
                   <select
                     aria-label="Choose Decision Pack"
                     value={selectedTrustSlipPurpose}
-                    onChange={(event) =>
-                      setSelectedTrustSlipPurpose(event.target.value as DecisionPackKey)
-                    }
-                    style={{
+                    onChange={(event) => {
+                    trustSlipSetupControlsTouchedRef.current = true;
+                    setSelectedTrustSlipPurpose(event.target.value as DecisionPackKey);
+                  }}
+                  style={{
                       width: "100%",
                       minHeight: 50,
                       borderRadius: 14,
@@ -5056,16 +5082,17 @@ export default function TrustSlipPage() {
                     aria-label="Choose TrustSlip community"
                     value={verificationScopeSelectValue}
                     onChange={(event) => {
-                      const value = event.target.value;
-                      if (value === "all_visible_communities") {
-                        setVisibilityScope("all_visible_communities");
-                        return;
-                      }
+                    const value = event.target.value;
+                    trustSlipSetupControlsTouchedRef.current = true;
+                    if (value === "all_visible_communities") {
+                      setVisibilityScope("all_visible_communities");
+                      return;
+                    }
 
-                      setVisibilityScope("community_specific");
-                      setSelectedIssuingCommunityOptionId(value.replace(/^community:/, ""));
-                    }}
-                    style={{
+                    setVisibilityScope("community_specific");
+                    setSelectedIssuingCommunityOptionId(value.replace(/^community:/, ""));
+                  }}
+                  style={{
                       width: "100%",
                       minHeight: 50,
                       borderRadius: 14,
@@ -5320,9 +5347,10 @@ export default function TrustSlipPage() {
                 <select
                   aria-label="Choose Decision Pack"
                   value={selectedTrustSlipPurpose}
-                  onChange={(event) =>
-                    setSelectedTrustSlipPurpose(event.target.value as DecisionPackKey)
-                  }
+                  onChange={(event) => {
+                    trustSlipSetupControlsTouchedRef.current = true;
+                    setSelectedTrustSlipPurpose(event.target.value as DecisionPackKey);
+                  }}
                   style={{
                     width: "100%",
                     minHeight: 48,
@@ -5405,7 +5433,10 @@ export default function TrustSlipPage() {
                     <ButtonComponent
                       key={option.key}
                       type="button"
-                      onClick={() => setSelectedTrustSlipPurpose(option.key)}
+                      onClick={() => {
+                        trustSlipSetupControlsTouchedRef.current = true;
+                        setSelectedTrustSlipPurpose(option.key);
+                      }}
                       stableHeight={52}
                       debugId={`trust-slip.purpose-select.${option.key}`}
                       style={{
@@ -5443,6 +5474,7 @@ export default function TrustSlipPage() {
                   value={verificationScopeSelectValue}
                   onChange={(event) => {
                     const value = event.target.value;
+                    trustSlipSetupControlsTouchedRef.current = true;
                     if (value === "all_visible_communities") {
                       setVisibilityScope("all_visible_communities");
                       return;

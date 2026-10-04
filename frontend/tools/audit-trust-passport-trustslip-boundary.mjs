@@ -262,8 +262,13 @@ assertContains(
 );
 assertContains(
   "trustSlip",
-  /const \[trustSlipSetupSubmitted, setTrustSlipSetupSubmitted\] = useState\(true\);[\s\S]*?const trustSlipNeedsSelectedCommunityRefresh = Boolean\([\s\S]*?const hasUsableTrustSlipShare = Boolean\(trustSlipCode && verifyPath && verifyUrl\);[\s\S]*?const hasUsableCurrentTrustSlipShare =\s*hasUsableTrustSlipShare && !trustSlipNeedsSelectedCommunityRefresh;[\s\S]*?const trustSlipHolderDocumentVisible =\s*hasUsableCurrentTrustSlipShare && trustSlipSetupSubmitted;/,
-  "TrustSlip holder document visibility must require backend-confirmed share state, no selected-community refresh mismatch, and the explicit setup/document state."
+  /const \[trustSlipSetupSubmitted, setTrustSlipSetupSubmitted\] = useState\(true\);[\s\S]*?const trustSlipSetupControlsTouchedRef = useRef\(false\);[\s\S]*?const trustSlipNeedsSelectedCommunityRefresh = Boolean\([\s\S]*?const hasUsableTrustSlipShare = Boolean\(trustSlipCode && verifyPath && verifyUrl\);[\s\S]*?const hasUsableCurrentTrustSlipShare =\s*hasUsableTrustSlipShare && !trustSlipNeedsSelectedCommunityRefresh;[\s\S]*?const trustSlipHolderDocumentVisible =\s*hasUsableTrustSlipShare && trustSlipSetupSubmitted;/,
+  "TrustSlip holder document visibility must require backend-confirmed code/link state while selected-context Share/Open keep the refresh freshness guard."
+);
+assertContains(
+  "trustSlip",
+  /const currentTrustSlipAnchorCommunityId = positiveNumberId\([\s\S]*?summary\?\.community_id, summary\?\.clan_id[\s\S]*?useEffect\(\(\) => \{[\s\S]*?if \(trustSlipSetupControlsTouchedRef\.current\) return;[\s\S]*?const anchorOptionId = String\(currentTrustSlipAnchorCommunityId\);[\s\S]*?setVisibilityScope\("community_specific"\);[\s\S]*?setSelectedIssuingCommunityOptionId\(anchorOptionId\);/,
+  "TrustSlip hydration must align setup controls to the persisted current TrustSlip anchor until the holder deliberately changes setup controls."
 );
 assertLineAbsent(
   "trustSlip",
@@ -294,8 +299,8 @@ assertContains(
 );
 assertContains(
   "trustSlip",
-  /const trustSlipHolderDocumentVisible =\s*hasUsableCurrentTrustSlipShare && trustSlipSetupSubmitted;[\s\S]*?\{!trustSlipHolderDocumentVisible \? \([\s\S]*?\{hasUsableCurrentTrustSlipShare \? \([\s\S]*?debugId="trust-slip\.setup\.share-current"[\s\S]*?\{hasUsableCurrentTrustSlipShare \? \([\s\S]*?debugId="trust-slip\.setup\.open-current"/,
-  "TrustSlip setup screen must not share or open a previous TrustSlip after the selected community context requires refresh."
+  /const hasUsableCurrentTrustSlipShare =\s*hasUsableTrustSlipShare && !trustSlipNeedsSelectedCommunityRefresh;[\s\S]*?\{!trustSlipHolderDocumentVisible \? \([\s\S]*?\{hasUsableCurrentTrustSlipShare \? \([\s\S]*?debugId="trust-slip\.setup\.share-current"[\s\S]*?\{hasUsableCurrentTrustSlipShare \? \([\s\S]*?debugId="trust-slip\.setup\.open-current"/,
+  "TrustSlip setup Share/Open-current actions must remain blocked when the selected community context requires refresh."
 );
 assertNotContains(
   "trustSlip",
@@ -582,6 +587,16 @@ assertContains(
   "smoke",
   /assertTrustSlipQrCarriesSelectedDecisionPack[\s\S]*?decision_pack: "employment_decision"[\s\S]*?trust-slip\.public-decision-pack\.open[\s\S]*?data-gsn-trustslip-qr-value[\s\S]*?TrustSlip QR value and public Decision Pack link diverged/,
   "TrustSlip holder browser smoke must prove the QR and public pack link carry the same selected Decision Pack URL."
+);
+assertContains(
+  "smoke",
+  /runTrustSlipRecoveredAnchorMismatchScenario[\s\S]*?selectedClanStorageId: homelandClanId[\s\S]*?trustSlipSummary: recoveredBlessedTrustSlipSummary\(\)[\s\S]*?toHaveValue\(`community:\$\{selectedClanId\}`\)[\s\S]*?trust-slip\.paper\.open-verify[\s\S]*?trust-slip\.paper\.change-setup[\s\S]*?setupScopeSelect\.selectOption\(`community:\$\{homelandClanId\}`\)[\s\S]*?trust-slip\.setup\.share-current[\s\S]*?toHaveCount\(0\)[\s\S]*?trustSlipReissueWriteCount\(state\.requestLog\) !== 0/,
+  "TrustSlip browser smoke must prove an incidental initial community mismatch aligns to the persisted TrustSlip anchor, and a later deliberate change blocks selected-context Share/Open without reissue."
+);
+assertContains(
+  "smoke",
+  /runTrustSlipSummaryAfterClanListScenario[\s\S]*?trustSlipSummaryGate[\s\S]*?trustSlipSummaryGate\.release\(\)[\s\S]*?toHaveValue\(`community:\$\{selectedClanId\}`\)[\s\S]*?runTrustSlipClanListAfterSummaryScenario[\s\S]*?clanListGate[\s\S]*?TrustSlip summary request before delayed clan-list release[\s\S]*?toHaveValue\(`community:\$\{selectedClanId\}`\)/,
+  "TrustSlip browser smoke must cover summary-after-clan-list and clan-list-after-summary hydration ordering."
 );
 assertContains(
   "trustSlip",

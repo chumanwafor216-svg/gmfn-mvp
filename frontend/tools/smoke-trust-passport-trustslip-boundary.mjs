@@ -7,7 +7,9 @@ import { createServer } from "vite";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const selectedClanId = 8;
+const homelandClanId = 7;
 const trustSlipCode = "GSN-TRUSTSLIP-BOUNDARY";
+const recoveredTrustSlipCode = "1SRYFELFCKU";
 
 function json(body, status = 200) {
   return {
@@ -59,7 +61,32 @@ function clanPayload() {
     member_count: 18,
   };
 }
+function homelandClanPayload() {
+  return {
+    id: homelandClanId,
+    clan_id: homelandClanId,
+    name: "Homeland isa Marketplace",
+    display_name: "Homeland isa Marketplace",
+    community_name: "Homeland isa Marketplace",
+    clan_code: "GMFN-C-HOMELAND",
+    community_code: "GMFN-C-HOMELAND",
+    gmfn_id: "GMFN-C-HOMELAND",
+    role: "member",
+    member_count: 22,
+  };
+}
 
+function blessedClanPayload() {
+  return {
+    ...clanPayload(),
+    name: "Blessed Satch family Marketplace",
+    display_name: "Blessed Satch family Marketplace",
+    community_name: "Blessed Satch family Marketplace",
+    clan_code: "GMFN-C-BLESSED-SATCH",
+    community_code: "GMFN-C-BLESSED-SATCH",
+    gmfn_id: "GMFN-C-BLESSED-SATCH",
+  };
+}
 function mergeTrustSlipSummary(base, overrides = {}) {
   const { merchant_summary: merchantOverrides, evidence_summary: evidenceOverrides, ...topLevel } = overrides;
   return {
@@ -280,8 +307,12 @@ function recomputePayload() {
 
 async function installApiMocks(page, requestLog, options = {}) {
   const trustSlipSummary = options.trustSlipSummary || trustSlipSummaryPayload();
+  const clanRows = options.clanRows || [clanPayload()];
   const secondaryReadGate = options.secondaryReadGate || null;
   const trustSlipSummaryGate = options.trustSlipSummaryGate || null;
+  const clanListGate = options.clanListGate || null;
+  const gateClanListAfter = options.gateClanListAfter ?? 0;
+  let clanListReadCount = 0;
 
   await page.route("**/*", async (route) => {
     const request = route.request();
@@ -307,7 +338,9 @@ async function installApiMocks(page, requestLog, options = {}) {
     }
 
     if (method === "GET" && path === "/clans/me") {
-      await route.fulfill(json([clanPayload()]));
+      clanListReadCount += 1;
+      if (clanListGate && clanListReadCount > gateClanListAfter) await clanListGate.wait();
+      await route.fulfill(json(clanRows));
       return;
     }
 
@@ -450,11 +483,11 @@ async function newSignedInPage(browser, options = {}) {
     deviceScaleFactor: 2,
     isMobile: true,
   });
-  await context.addInitScript(() => {
+  await context.addInitScript((selectedClanStorageId) => {
     localStorage.clear();
     localStorage.setItem("access_token", "SIGNED_IN_TRUST_BOUNDARY_TOKEN");
-    localStorage.setItem("gmfn_selected_clan_id", "8");
-  });
+    localStorage.setItem("gmfn_selected_clan_id", String(selectedClanStorageId));
+  }, options.selectedClanStorageId ?? selectedClanId);
   const page = await context.newPage();
   const consoleErrors = [];
   const pageErrors = [];
@@ -992,6 +1025,122 @@ async function runTrustSlipStateScenario(browser, baseURL, scenario) {
   await closeChecked(state, `${scenario.label} scenario`);
 }
 
+function trustSlipReissueWriteCount(requestLog) {
+  return requestLog.filter((entry) => entry.method === "POST" && entry.path === "/trust-slips/me/reissue").length;
+}
+
+function recoveredBlessedTrustSlipSummary(overrides = {}) {
+  return trustSlipSummaryPayload({
+    code: recoveredTrustSlipCode,
+    verification_code: recoveredTrustSlipCode,
+    verification_token: recoveredTrustSlipCode,
+    token: recoveredTrustSlipCode,
+    public_verify_url: `/t/${encodeURIComponent(recoveredTrustSlipCode)}`,
+    community: "Blessed Satch family Marketplace",
+    community_id: selectedClanId,
+    clan_id: selectedClanId,
+    community_global_id: "GMFN-C-BLESSED-SATCH",
+    community_code: "GMFN-C-BLESSED-SATCH",
+    merchant_summary: {
+      community: "Blessed Satch family Marketplace",
+    },
+    ...overrides,
+  });
+}
+
+async function runTrustSlipRecoveredAnchorMismatchScenario(browser, baseURL) {
+  const state = await newSignedInPage(browser, {
+    selectedClanStorageId: homelandClanId,
+    clanRows: [homelandClanPayload(), blessedClanPayload()],
+    trustSlipSummary: recoveredBlessedTrustSlipSummary(),
+  });
+  await state.page.goto(`${baseURL}/app/trust-slip?decision_pack=employment_decision`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60000,
+  });
+
+  const holderCertificate = state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]');
+  const setupPanel = state.page.locator('[data-gsn-trustslip-setup-only="true"]');
+  const scopeSelect = state.page.getByLabel("Choose TrustSlip verification scope");
+
+  await expect(holderCertificate).toHaveCount(1, { timeout: 30000 });
+  await expect(setupPanel).toHaveCount(0);
+  await expect(scopeSelect).toHaveValue(`community:${selectedClanId}`);
+  await expect(state.page.getByText(recoveredTrustSlipCode, { exact: false }).first()).toBeVisible();
+  await expect(state.page.getByRole("button", { name: /Community Blessed Satch family Marketplace/ })).toBeVisible();
+  await expect(state.page.locator('[data-cta-id="trust-slip.public-decision-pack.share"]').first()).toBeEnabled();
+  await expect(state.page.locator('[data-cta-id="trust-slip.public-decision-pack.open"]').first()).toHaveAttribute("href", new RegExp(recoveredTrustSlipCode));
+  await expect(state.page.locator('[data-cta-id="trust-slip.paper.open-verify"]').first()).toBeEnabled();
+  if (trustSlipReissueWriteCount(state.requestLog) !== 0) {
+    throw new Error("Recovered existing TrustSlip mismatch path must not POST /trust-slips/me/reissue.");
+  }
+
+  await state.page.locator('[data-cta-id="trust-slip.paper.change-setup"]').click();
+  await expect(setupPanel).toBeVisible({ timeout: 30000 });
+  const setupScopeSelect = state.page.locator('[data-gsn-trustslip-verification-scope="setup"] select');
+  await setupScopeSelect.selectOption(`community:${homelandClanId}`);
+  await expect(setupScopeSelect).toHaveValue(`community:${homelandClanId}`);
+  await expect(state.page.getByText("Generate TrustSlip", { exact: true })).toBeVisible();
+  await expect(state.page.locator('[data-cta-id="trust-slip.setup.share-current"]')).toHaveCount(0);
+  await expect(state.page.locator('[data-cta-id="trust-slip.setup.open-current"]')).toHaveCount(0);
+  await expect(state.page.locator('[data-cta-id="trust-slip.public-decision-pack.share"]').filter({ visible: true })).toHaveCount(0);
+  await expect(state.page.locator('[data-cta-id="trust-slip.public-decision-pack.open"]').filter({ visible: true })).toHaveCount(0);
+  if (trustSlipReissueWriteCount(state.requestLog) !== 0) {
+    throw new Error("Deliberate selected-community change must not auto issue or reissue TrustSlip.");
+  }
+assertSignedInHolderReads(state.requestLog, "recovered existing TrustSlip anchor mismatch");
+  assertNoPublicVerifyRead(state.requestLog, "recovered existing TrustSlip anchor mismatch");
+  await closeChecked(state, "recovered existing TrustSlip anchor mismatch scenario");
+}
+
+async function runTrustSlipSummaryAfterClanListScenario(browser, baseURL) {
+  const trustSlipSummaryGate = createApiGate();
+  const state = await newSignedInPage(browser, {
+    selectedClanStorageId: homelandClanId,
+    clanRows: [homelandClanPayload(), blessedClanPayload()],
+    trustSlipSummary: recoveredBlessedTrustSlipSummary(),
+    trustSlipSummaryGate,
+  });
+  await state.page.goto(`${baseURL}/app/trust-slip?decision_pack=employment_decision`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60000,
+  });
+
+  await expect(state.page.locator('[data-gsn-trustslip-setup-only="true"]')).toBeVisible({ timeout: 30000 });
+  trustSlipSummaryGate.release();
+  await expect(state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]')).toHaveCount(1, {
+    timeout: 30000,
+  });
+  await expect(state.page.getByLabel("Choose TrustSlip verification scope")).toHaveValue(`community:${selectedClanId}`);
+  await closeChecked(state, "TrustSlip summary-after-clan-list scenario");
+}
+
+async function runTrustSlipClanListAfterSummaryScenario(browser, baseURL) {
+  const clanListGate = createApiGate();
+  const state = await newSignedInPage(browser, {
+    selectedClanStorageId: homelandClanId,
+    clanRows: [homelandClanPayload(), blessedClanPayload()],
+    trustSlipSummary: recoveredBlessedTrustSlipSummary(),
+    clanListGate,
+    gateClanListAfter: 1,
+  });
+  await state.page.goto(`${baseURL}/app/trust-slip?decision_pack=employment_decision`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60000,
+  });
+
+  await waitForRequest(
+    state.requestLog,
+    (entry) => entry.method === "GET" && entry.path === "/trust-slips/me/summary",
+    "TrustSlip summary request before delayed clan-list release"
+  );
+  clanListGate.release();
+  await expect(state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]')).toHaveCount(1, {
+    timeout: 30000,
+  });
+  await expect(state.page.getByLabel("Choose TrustSlip verification scope")).toHaveValue(`community:${selectedClanId}`);
+  await closeChecked(state, "TrustSlip clan-list-after-summary scenario");
+}
 async function main() {
   let server;
   let browser;
@@ -1012,6 +1161,9 @@ async function main() {
     browser = await chromium.launch({ headless: true });
     await runTrustPassportScenario(browser, baseURL);
     await runTrustSlipScenario(browser, baseURL);
+    await runTrustSlipRecoveredAnchorMismatchScenario(browser, baseURL);
+    await runTrustSlipSummaryAfterClanListScenario(browser, baseURL);
+    await runTrustSlipClanListAfterSummaryScenario(browser, baseURL);
     await runTrustSlipStateScenario(browser, baseURL, {
       label: "expired TrustSlip holder",
       overrides: {
@@ -1080,28 +1232,6 @@ async function main() {
         "Choose purpose and community first.",
         "The full TrustSlip opens after GSN refreshes it for this exact choice.",
         "Verify phone",
-      ],
-    });
-    await runTrustSlipStateScenario(browser, baseURL, {
-      label: "stale selected-context TrustSlip holder",
-      overrides: {
-        community: "Previous Evidence Community",
-        community_id: 99,
-        clan_id: 99,
-        community_global_id: "GMFN-C-PREVIOUS-TRUSTSLIP",
-        community_code: "GMFN-C-PREVIOUS-TRUSTSLIP",
-      },
-      setupOnly: true,
-      absentCtas: [
-        "trust-slip.setup.share-current",
-        "trust-slip.setup.open-current",
-        "trust-slip.public-decision-pack.share",
-        "trust-slip.public-decision-pack.open",
-      ],
-      visibleText: [
-        "TrustSlip setup",
-        "Choose purpose and community first.",
-        "Generate TrustSlip",
       ],
     });
     await runTrustSlipStateScenario(browser, baseURL, {
