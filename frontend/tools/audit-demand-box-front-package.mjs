@@ -347,6 +347,34 @@ function requireApiPattern(pattern, message) {
     /debugId="demand-box\.hero-dashboard"/,
     "DemandBox dashboard escape must keep its stable debug id.",
   ],
+  [
+    /getDemandSupplyMatches/,
+    "DemandBox must use the O1B read API instead of deriving supply matches locally.",
+  ],
+  [
+    /data-gsn-demand-supply-intelligence="true"[\s\S]*?Possible matches · \{matchState\.count\}[\s\S]*?Based on your request and currently available supply\./,
+    "DemandBox O1C must stay a compact possible-match indicator inside existing request cards.",
+  ],
+  [
+    /function demandMatchReasonLabels[\s\S]*?SAME_COMMUNITY[\s\S]*?CATEGORY_MATCH[\s\S]*?AREA_COMPATIBLE/,
+    "DemandBox must translate deterministic reason codes into plain user language.",
+  ],
+  [
+    /event_type: "match_available"/,
+    "DemandBox must instrument match availability through existing marketplace attention events.",
+  ],
+  [
+    /"matches_opened"/,
+    "DemandBox must instrument match opening through existing marketplace attention events.",
+  ],
+  [
+    /"supply_opened"/,
+    "DemandBox must instrument supply opening through existing marketplace attention events.",
+  ],
+  [
+    /StableCtaLink[\s\S]*?to=\{to\}[\s\S]*?Open supply/,
+    "DemandBox possible matches must reuse an existing shop/product route instead of creating a new result page.",
+  ],
 ].forEach(([pattern, message]) => requirePattern(pattern, message));
 requirePattern(
   /function demandReadyWhatsAppRecipient\(row: DemandRow\): string[\s\S]*?lower\.includes\("@"\) \|\| lower\.includes\("\.local"\)[\s\S]*?normalizeWhatsAppRecipient\(raw\)[\s\S]*?normalized\.length < 8/,
@@ -453,6 +481,14 @@ requirePattern(
   [
     /cursor paging and direct handles are being built|full list controls are prepared|full list paging still need|Max loaded now: 200 per read/,
     "DemandBox must not expose raw implementation wording about unfinished cursor/direct-handle work.",
+  ],
+  [
+    /Possible matches[^\n]*\b(recommended|trusted|approved|best|guaranteed)\b/i,
+    "DemandBox possible matches must not use endorsement language.",
+  ],
+  [
+    /data-gsn-demand-supply-intelligence="true"[\s\S]*?reason_codes/i,
+    "DemandBox possible matches must not expose raw reason-code machinery in the UI.",
   ],
 ].forEach(([pattern, message]) => {
   const index = source.search(pattern);

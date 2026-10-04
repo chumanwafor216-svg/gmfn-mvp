@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from urllib.parse import quote
 from datetime import datetime, timedelta, timezone
 from typing import List
 
@@ -11,13 +12,22 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.db.database import get_db
-from app.db.models import Clan, ClanMembership, MarketplaceRequest, User, UserSettings
+from app.db.models import Clan, ClanMembership, MarketplaceProduct, MarketplaceRequest, MarketplaceShop, User, UserSettings
 from app.services.community_integrity_service import _user_settings_table_exists
 from app.services.community_domain_feature_policy import require_domain_demand_box_enabled
+from app.services.demand_supply_intelligence_service import (
+    PRODUCT_VISIBLE_MODES,
+    PRODUCT_VISIBILITY_COMMUNITY,
+    find_demands_for_supply,
+    find_supply_for_demand,
+)
 from app.schemas.marketplace_requests import (
+    DemandSupplyMatchesOut,
+    DemandSupplyMatchOut,
     MarketplaceRequestCreate,
     MarketplaceRequestOut,
     MarketplaceRequestUpdateStatus,
+    SupplyDemandMatchesOut,
 )
 
 router = APIRouter(prefix="/marketplace/requests", tags=["marketplace-requests"])
@@ -539,6 +549,103 @@ def _row_visible_to_user(
         return True
     return int(current_user_id) in _mentioned_member_ids(db, row)
 
+
+def _as_aware_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _require_visible_live_request_for_intelligence(
+    db: Session,
+    *,
+    request_id: int,
+    current_user_id: int,
+) -> MarketplaceRequest:
+    row = db.get(MarketplaceRequest, int(request_id))
+    if not row:
+        raise HTTPException(status_code=404, detail="Request not found")
+
+    clan_id = getattr(row, "clan_id", None)
+    if not clan_id or int(clan_id) not in _active_clan_ids_for_user(db, int(current_user_id)):
+        raise HTTPException(status_code=404, detail="Request not found")
+
+    if not _row_visible_to_user(db, row, current_user_id=int(current_user_id)):
+        raise HTTPException(status_code=404, detail="Request not found")
+
+    if _safe_text(getattr(row, "status", None)).lower() != "open":
+        raise HTTPException(status_code=404, detail="Request not found")
+
+    expires_at = getattr(row, "expires_at", None)
+    if expires_at is not None and _as_aware_utc(expires_at) < _now_utc():
+        raise HTTPException(status_code=404, detail="Request not found")
+
+    return row
+
+
+def _require_visible_supply_for_intelligence(
+    db: Session,
+    *,
+    product_id: int,
+    current_user_id: int,
+) -> MarketplaceProduct:
+    product = db.get(MarketplaceProduct, int(product_id))
+    if not product or not bool(getattr(product, "is_active", False)):
+        raise HTTPException(status_code=404, detail="Supply not found")
+
+    clan_id = getattr(product, "clan_id", None)
+    if not clan_id or int(clan_id) not in _active_clan_ids_for_user(db, int(current_user_id)):
+        raise HTTPException(status_code=404, detail="Supply not found")
+
+    visibility_mode = _safe_text(
+        getattr(product, "visibility_mode", None) or PRODUCT_VISIBILITY_COMMUNITY
+    ).lower()
+    if visibility_mode not in PRODUCT_VISIBLE_MODES:
+        raise HTTPException(status_code=404, detail="Supply not found")
+
+    shop = db.get(MarketplaceShop, int(getattr(product, "shop_id", 0) or 0))
+    if not shop or not bool(getattr(shop, "is_active", False)):
+        raise HTTPException(status_code=404, detail="Supply not found")
+
+    return product
+
+
+def _public_shop_path_for_match(db: Session, match: dict) -> str | None:
+    product_id = int(match.get("product_id") or 0)
+    shop_id = int(match.get("shop_id") or 0)
+    clan_id = int(match.get("clan_id") or 0)
+    if product_id <= 0 or shop_id <= 0:
+        return None
+
+    shop = db.get(MarketplaceShop, shop_id)
+    if not shop:
+        return None
+    owner = db.get(User, int(getattr(shop, "owner_user_id", 0) or 0))
+    owner_gsn_id = _safe_text(getattr(owner, "gmfn_id", None))
+    if not owner_gsn_id:
+        return None
+
+    query_parts = [f"product_id={product_id}"]
+    if clan_id > 0:
+        query_parts.append(f"clan_id={clan_id}")
+    query_parts.append("gsn_source=demand_box_match")
+    return f"/shop/{quote(owner_gsn_id)}?{'&'.join(query_parts)}"
+
+
+def _demand_supply_match_out(db: Session, match: dict) -> DemandSupplyMatchOut:
+    return DemandSupplyMatchOut(
+        demand_id=int(match.get("demand_id") or 0),
+        product_id=int(match.get("product_id") or 0),
+        shop_id=int(match.get("shop_id") or 0),
+        clan_id=int(match.get("clan_id") or 0),
+        demand_category=_safe_text(match.get("demand_category")) or None,
+        demand_area=_safe_text(match.get("demand_area")) or None,
+        product_title=_safe_text(match.get("product_title")) or "Marketplace item",
+        shop_name=_safe_text(match.get("shop_name")) or "Marketplace shop",
+        reason_codes=[_safe_text(code) for code in match.get("reason_codes", []) if _safe_text(code)],
+        public_shop_path=_public_shop_path_for_match(db, match),
+    )
+
 @router.post("", response_model=MarketplaceRequestOut)
 def create_marketplace_request(
     payload: MarketplaceRequestCreate,
@@ -738,6 +845,60 @@ def list_marketplace_requests(
 
     return [_to_out(db, row, current_user_id=int(current_user.id)) for row in rows]
 
+
+
+@router.get("/supply/{product_id}/demand-matches", response_model=SupplyDemandMatchesOut)
+def get_supply_demand_matches(
+    product_id: int = Path(..., ge=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    limit: int = Query(default=25, ge=1, le=50),
+):
+    _cleanup_expired_requests(db)
+    product = _require_visible_supply_for_intelligence(
+        db,
+        product_id=int(product_id),
+        current_user_id=int(current_user.id),
+    )
+    matches = find_demands_for_supply(
+        db,
+        product_id=int(product.id),
+        current_user_id=int(current_user.id),
+        limit=int(limit),
+    )
+    items = [_demand_supply_match_out(db, match) for match in matches]
+    return SupplyDemandMatchesOut(
+        product_id=int(product.id),
+        count=len(items),
+        matches=items,
+    )
+
+
+@router.get("/{request_id}/supply-matches", response_model=DemandSupplyMatchesOut)
+def get_marketplace_request_supply_matches(
+    request_id: int = Path(..., ge=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    limit: int = Query(default=25, ge=1, le=50),
+):
+    _cleanup_expired_requests(db)
+    row = _require_visible_live_request_for_intelligence(
+        db,
+        request_id=int(request_id),
+        current_user_id=int(current_user.id),
+    )
+    matches = find_supply_for_demand(
+        db,
+        demand_id=int(row.id),
+        current_user_id=int(current_user.id),
+        limit=int(limit),
+    )
+    items = [_demand_supply_match_out(db, match) for match in matches]
+    return DemandSupplyMatchesOut(
+        request_id=int(row.id),
+        count=len(items),
+        matches=items,
+    )
 
 @router.get("/{request_id}", response_model=MarketplaceRequestOut)
 def get_marketplace_request(

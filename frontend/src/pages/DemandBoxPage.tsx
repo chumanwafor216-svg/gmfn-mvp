@@ -16,17 +16,20 @@ import {
 } from "../lib/institutionalSurface";
 import {
   createMarketplaceRequest,
+  getDemandSupplyMatches,
   getCurrentClan,
   getMe,
   getSelectedClanId,
   listMyClans,
   listMyCommunityDomains,
   listMarketplaceRequests,
+  recordMarketplaceAttentionEvent,
   listClanMembers,
   selectClan,
   setSelectedClanId as persistSelectedClanId,
   safeCopy,
   updateMarketplaceRequestStatus,
+  type DemandSupplyMatchItem,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { buildGsnSnapshotPaper } from "../lib/gsnSnapshotPaper";
@@ -85,6 +88,13 @@ type DemandRow = {
 };
 
 type NoticeTone = "success" | "error";
+type DemandMatchState = {
+  loading: boolean;
+  loaded: boolean;
+  count: number;
+  matches: DemandSupplyMatchItem[];
+  error?: string | null;
+};
 type DemandPaperScope = "owner" | "community";
 type DemandNoticeExpiryPolicy = "standard" | "urgent" | "event" | "pinned";
 type DemandQueueLane = "open" | "tagged" | "for_me" | "mine" | "ask_community" | "urgent" | "categories";
@@ -680,6 +690,27 @@ function demandHasReadyWhatsApp(row: DemandRow): boolean {
   return Boolean(demandReadyWhatsAppRecipient(row));
 }
 
+function demandMatchReasonLabels(match: DemandSupplyMatchItem): string[] {
+  const codes = Array.isArray(match?.reason_codes) ? match.reason_codes : [];
+  const labels: string[] = [];
+  const category = firstTruthy(match?.demand_category, "Supply");
+
+  if (codes.includes("SAME_COMMUNITY")) labels.push("Same community");
+  if (codes.includes("CATEGORY_MATCH")) labels.push(`${category} match`);
+  if (codes.includes("AREA_COMPATIBLE")) labels.push("Area compatible");
+  if (!labels.length && codes.includes("LIVE_DEMAND")) labels.push("Live demand");
+
+  return labels.slice(0, 3);
+}
+
+function demandMatchStateForRow(
+  state: Record<string, DemandMatchState>,
+  row: DemandRow
+): DemandMatchState | null {
+  const rowId = positiveNumber(row?.id);
+  if (!rowId) return null;
+  return state[String(rowId)] || null;
+}
 function requesterName(row: DemandRow): string {
   return (
     firstTruthy(
@@ -774,6 +805,8 @@ export default function DemandBoxPage() {
   const [loadingMoreVisibleRows, setLoadingMoreVisibleRows] = useState(false);
   const [tagMembers, setTagMembers] = useState<DemandTagMember[]>([]);
   const [activeQueueLane, setActiveQueueLane] = useState<DemandQueueLane>("open");
+  const [demandMatchesById, setDemandMatchesById] = useState<Record<string, DemandMatchState>>({});
+  const [openMatchDemandId, setOpenMatchDemandId] = useState<number>(0);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -1439,6 +1472,128 @@ export default function DemandBoxPage() {
     );
   }
 
+
+  function trackDemandMatchAttention(
+    eventType: "matches_opened" | "supply_opened",
+    match: DemandSupplyMatchItem,
+    demandId: number
+  ) {
+    void recordMarketplaceAttentionEvent({
+      event_type: eventType,
+      shop_id: match.shop_id,
+      product_id: match.product_id,
+      clan_id: match.clan_id,
+      source: "demand_box_intelligence",
+      source_path: `/app/demand-box?demand_id=${demandId}`,
+      client_event_id: `demand-${eventType}-${demandId}-${match.product_id}`,
+    }).catch(() => null);
+  }
+
+  function toggleDemandMatches(row: DemandRow, matchState: DemandMatchState | null) {
+    const rowId = positiveNumber(row?.id);
+    if (!rowId || !matchState?.matches?.length) return;
+    const nextOpen = openMatchDemandId === rowId ? 0 : rowId;
+    setOpenMatchDemandId(nextOpen);
+    if (nextOpen) {
+      trackDemandMatchAttention("matches_opened", matchState.matches[0], rowId);
+    }
+  }
+
+  function renderDemandMatchPanel(
+    row: DemandRow,
+    matchState: DemandMatchState | null,
+    debugBase: string
+  ): React.ReactNode {
+    const rowId = positiveNumber(row?.id);
+    if (!rowId || !matchState?.loaded || matchState.count <= 0 || !matchState.matches.length) {
+      return null;
+    }
+
+    const open = openMatchDemandId === rowId;
+    const shownMatches = matchState.matches.slice(0, 3);
+
+    return (
+      <div
+        data-gsn-demand-supply-intelligence="true"
+        style={{
+          marginTop: 12,
+          ...innerCard("#F8FBFF"),
+          border: "1px solid rgba(13,95,168,0.12)",
+          display: "grid",
+          gap: 10,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            gap: 10,
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <div style={{ color: "#0B1F33", fontWeight: 900 }}>
+              Possible matches · {matchState.count}
+            </div>
+            <div style={{ marginTop: 3, ...helperText(), fontSize: 13 }}>
+              Based on your request and currently available supply.
+            </div>
+          </div>
+          <SecondaryButton
+            onClick={() => toggleDemandMatches(row, matchState)}
+            debugId={`${debugBase}.possible-matches`}
+            stableHeight={42}
+            style={{ minWidth: 154 }}
+          >
+            {open ? "Hide matches" : "View matches"}
+          </SecondaryButton>
+        </div>
+
+        {open ? (
+          <div style={{ display: "grid", gap: 8 }}>
+            {shownMatches.map((match) => {
+              const labels = demandMatchReasonLabels(match);
+              const to = safeStr(match.public_shop_path) || routes.marketplace;
+              return (
+                <div
+                  key={`${match.product_id}-${match.shop_id}`}
+                  style={{
+                    ...innerCard("#FFFFFF"),
+                    border: "1px solid rgba(13,95,168,0.10)",
+                    display: "grid",
+                    gap: 8,
+                  }}
+                >
+                  <div style={{ color: "#0B1F33", fontWeight: 900 }}>
+                    {firstTruthy(match.product_title, "Possible supply")}
+                  </div>
+                  <div style={{ ...helperText(), fontSize: 13 }}>
+                    {firstTruthy(match.shop_name, "Marketplace shop")}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {labels.map((label) => (
+                      <span key={label} style={badge(false)}>{label}</span>
+                    ))}
+                  </div>
+                  <StableCtaLink
+                    to={to}
+                    onClick={() => trackDemandMatchAttention("supply_opened", match, rowId)}
+                    debugId={`${debugBase}.supply.${match.product_id}`}
+                    stableHeight={46}
+                    style={demandActionStyle(46)}
+                  >
+                    {demandIconText("shop", "Open supply", 18)}
+                  </StableCtaLink>
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   function renderDemandRecord(
     row: DemandRow,
     scope: DemandPaperScope,
@@ -1470,6 +1625,7 @@ export default function DemandBoxPage() {
         : rowId
           ? visibleCopyDebugId
           : visibleFallbackCopyDebugId;
+    const matchState = demandMatchStateForRow(demandMatchesById, row);
 
     return (
       <div key={rowKey} style={recordCard()}>
@@ -1565,6 +1721,8 @@ export default function DemandBoxPage() {
             <span style={badge(false)}>{safeDateTime(row?.created_at)}</span>
           ) : null}
         </div>
+
+        {renderDemandMatchPanel(row, matchState, debugBase)}
 
         <div style={demandActionRowStyle(isCompact, 54, 156, 12)}>
           {canClose ? (
@@ -1706,6 +1864,68 @@ export default function DemandBoxPage() {
     ],
     [allOpenRows.length, askCommunityRows.length, categoryBuckets.length, myOpenRows.length, taggedRows.length, urgentRows.length, visibleRows.length]
   );
+  const visibleRowsForDemandIntelligence = useMemo(() => {
+    if (activeQueueLane === "categories") {
+      return categoryBuckets.flatMap((bucket) => bucket.rows.slice(0, 4)).slice(0, isCompact ? 12 : 24);
+    }
+    return (queueLaneRows[activeQueueLane] || []).slice(0, isCompact ? 12 : 24);
+  }, [activeQueueLane, categoryBuckets, isCompact, queueLaneRows]);
+
+  useEffect(() => {
+    const rowIds = visibleRowsForDemandIntelligence
+      .map((row) => positiveNumber(row?.id))
+      .filter((id) => id > 0);
+    const missingIds = rowIds.filter((id) => !demandMatchesById[String(id)]);
+    if (!missingIds.length) return;
+
+    setDemandMatchesById((current) => {
+      const next = { ...current };
+      for (const id of missingIds) {
+        next[String(id)] = { loading: true, loaded: false, count: 0, matches: [] };
+      }
+      return next;
+    });
+
+    for (const requestId of missingIds) {
+      void getDemandSupplyMatches(requestId, { limit: 6 })
+        .then((result) => {
+          const matches = Array.isArray(result?.matches) ? result.matches : [];
+          setDemandMatchesById((current) => ({
+            ...current,
+            [String(requestId)]: {
+              loading: false,
+              loaded: true,
+              count: Number(result?.count || matches.length || 0),
+              matches,
+            },
+          }));
+          const firstMatch = matches[0];
+          if (firstMatch) {
+            void recordMarketplaceAttentionEvent({
+              event_type: "match_available",
+              shop_id: firstMatch.shop_id,
+              product_id: firstMatch.product_id,
+              clan_id: firstMatch.clan_id,
+              source: "demand_box_intelligence",
+              source_path: `/app/demand-box?demand_id=${requestId}`,
+              client_event_id: `demand-match-available-${requestId}-${firstMatch.product_id}`,
+            }).catch(() => null);
+          }
+        })
+        .catch(() => {
+          setDemandMatchesById((current) => ({
+            ...current,
+            [String(requestId)]: {
+              loading: false,
+              loaded: true,
+              count: 0,
+              matches: [],
+              error: "unavailable",
+            },
+          }));
+        });
+    }
+  }, [demandMatchesById, visibleRowsForDemandIntelligence]);
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const queueMode = safeStr(params.get("queue") || "").toLowerCase();

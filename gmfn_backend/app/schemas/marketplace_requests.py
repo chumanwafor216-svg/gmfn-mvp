@@ -120,3 +120,35 @@ class MarketplaceRequestOut(BaseModel):
     visibility_scope: str = "community_visible"
 
     model_config = ConfigDict(from_attributes=True)
+
+class DemandSupplyMatchOut(BaseModel):
+    demand_id: int
+    product_id: int
+    shop_id: int
+    clan_id: int
+    demand_category: Optional[str] = None
+    demand_area: Optional[str] = None
+    product_title: str
+    shop_name: str
+    reason_codes: list[str] = Field(default_factory=list)
+    public_shop_path: Optional[str] = None
+
+
+class DemandSupplyMatchesOut(BaseModel):
+    request_id: int
+    count: int
+    matches: list[DemandSupplyMatchOut] = Field(default_factory=list)
+    boundary_note: str = (
+        "Possible matches are same-community supply signals only. "
+        "They are not recommendations, approvals, trust scores, paid ranking, or guarantees."
+    )
+
+
+class SupplyDemandMatchesOut(BaseModel):
+    product_id: int
+    count: int
+    matches: list[DemandSupplyMatchOut] = Field(default_factory=list)
+    boundary_note: str = (
+        "Possible demand matches are same-community live-demand signals only. "
+        "They are not recommendations, approvals, trust scores, paid ranking, or guarantees."
+    )

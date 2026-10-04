@@ -3,9 +3,19 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+
+import pytest
+from fastapi import HTTPException
 from sqlalchemy import text
 
+from app.api.routes import marketplace_requests
 from app.db.database import SessionLocal, engine
+
+class Obj:
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+
 from app.services.demand_supply_intelligence_service import (
     REASON_ACTIVE_SUPPLY,
     REASON_AREA_COMPATIBLE,
@@ -400,3 +410,192 @@ def test_intelligence_service_does_not_depend_on_paid_or_trust_ranking_engines()
     assert "spotlight" not in lowered
     assert "trust_score" not in lowered
     assert "cci" not in lowered
+
+
+def _table_count(table_name: str) -> int:
+    with engine.begin() as conn:
+        return int(conn.execute(text(f"SELECT COUNT(*) FROM {table_name}")).scalar_one())
+
+
+def _route_user(user_id: int) -> Obj:
+    return Obj(id=user_id, email=f"user-{user_id}@example.com", role="member")
+
+
+def test_demand_supply_read_api_returns_authorised_matches_without_private_contacts():
+    _seed_base()
+    _seed_request(request_id=40)
+
+    with SessionLocal() as db:
+        result = marketplace_requests.get_marketplace_request_supply_matches(
+            request_id=40,
+            db=db,
+            current_user=_route_user(1),
+            limit=10,
+        )
+
+    data = result.model_dump()
+    assert data["request_id"] == 40
+    assert data["count"] == 1
+    assert data["matches"][0]["product_id"] == 100
+    assert data["matches"][0]["shop_id"] == 10
+    assert data["matches"][0]["public_shop_path"] == (
+        "/shop/GSN-U-SELLER?product_id=100&clan_id=1&gsn_source=demand_box_match"
+    )
+    assert data["matches"][0]["reason_codes"] == [
+        REASON_SAME_COMMUNITY,
+        REASON_LIVE_DEMAND,
+        REASON_ACTIVE_SUPPLY,
+        REASON_CATEGORY_MATCH,
+        REASON_AREA_COMPATIBLE,
+    ]
+    assert "seller_user_id" not in data["matches"][0]
+    assert "requester_user_id" not in data["matches"][0]
+    assert "trust" not in str(data["matches"][0]).lower()
+    assert "cci" not in str(data["matches"][0]).lower()
+
+
+def test_demand_supply_read_api_empty_match_is_normal_200():
+    _seed_base()
+    _seed_request(request_id=41, category="tailoring", title="Need tailoring")
+
+    with SessionLocal() as db:
+        result = marketplace_requests.get_marketplace_request_supply_matches(
+            request_id=41,
+            db=db,
+            current_user=_route_user(1),
+            limit=10,
+        )
+
+    assert result.count == 0
+    assert result.matches == []
+
+
+def test_demand_supply_read_api_does_not_probe_inaccessible_or_closed_demand():
+    _seed_base()
+    _seed_request(request_id=42, clan_id=2, user_id=5)
+    _seed_request(request_id=43, status="fulfilled")
+    _seed_request(request_id=44, status="cancelled")
+    _seed_request(request_id=45, status="open", expires_delta=timedelta(hours=-1))
+
+    with SessionLocal() as db:
+        for request_id in [42, 43, 44, 45]:
+            with pytest.raises(HTTPException) as exc:
+                marketplace_requests.get_marketplace_request_supply_matches(
+                    request_id=request_id,
+                    db=db,
+                    current_user=_route_user(1),
+                    limit=10,
+                )
+            assert exc.value.status_code == 404
+
+
+def test_demand_supply_read_api_preserves_protected_target_visibility():
+    _seed_base()
+    _seed_request(
+        request_id=46,
+        title="Need plumbing help from @GSN-U-SELLER",
+        description="[GSN_VISIBILITY_SCOPE:protected_target]\n\nPrivate ask for @GSN-U-SELLER",
+        category="plumbing",
+    )
+
+    with SessionLocal() as db:
+        target_result = marketplace_requests.get_marketplace_request_supply_matches(
+            request_id=46,
+            db=db,
+            current_user=_route_user(2),
+            limit=10,
+        )
+        with pytest.raises(HTTPException) as exc:
+            marketplace_requests.get_marketplace_request_supply_matches(
+                request_id=46,
+                db=db,
+                current_user=_route_user(3),
+                limit=10,
+            )
+
+    assert target_result.count == 1
+    assert target_result.matches[0].product_id == 100
+    assert exc.value.status_code == 404
+
+
+def test_supply_to_demand_read_api_reuses_reciprocal_matching_boundary():
+    _seed_base()
+    _seed_request(request_id=47)
+    _seed_request(request_id=48, category="food", title="Need food")
+
+    with SessionLocal() as db:
+        result = marketplace_requests.get_supply_demand_matches(
+            product_id=100,
+            db=db,
+            current_user=_route_user(1),
+            limit=10,
+        )
+        with pytest.raises(HTTPException) as exc:
+            marketplace_requests.get_supply_demand_matches(
+                product_id=104,
+                db=db,
+                current_user=_route_user(1),
+                limit=10,
+            )
+
+    assert result.product_id == 100
+    assert [match.demand_id for match in result.matches] == [47]
+    assert exc.value.status_code == 404
+
+
+def test_demand_supply_match_read_does_not_create_notifications_or_trust_events():
+    _seed_base()
+    _seed_request(request_id=49)
+    before_notifications = _table_count("notifications")
+    before_trust_events = _table_count("trust_events")
+
+    with SessionLocal() as db:
+        marketplace_requests.get_marketplace_request_supply_matches(
+            request_id=49,
+            db=db,
+            current_user=_route_user(1),
+            limit=10,
+        )
+
+    assert _table_count("notifications") == before_notifications
+    assert _table_count("trust_events") == before_trust_events
+
+
+def test_demand_supply_attention_events_are_attention_only(client):
+    _seed_base()
+    _seed_request(request_id=50)
+    payloads = [
+        {
+            "event_type": "match_available",
+            "shop_id": 10,
+            "product_id": 100,
+            "clan_id": 1,
+            "source": "demand_box_intelligence",
+            "client_event_id": "match-available-50-100",
+        },
+        {
+            "event_type": "matches_opened",
+            "shop_id": 10,
+            "product_id": 100,
+            "clan_id": 1,
+            "source": "demand_box_intelligence",
+            "client_event_id": "matches-opened-50-100",
+        },
+        {
+            "event_type": "supply_opened",
+            "shop_id": 10,
+            "product_id": 100,
+            "clan_id": 1,
+            "source": "demand_box_intelligence",
+            "client_event_id": "supply-opened-50-100",
+        },
+    ]
+
+    for payload in payloads:
+        response = client.post("/marketplace/analytics/attention", json=payload)
+        assert response.status_code == 200, response.text
+        assert response.json()["recorded"] is True
+
+    assert _table_count("marketplace_attention_events") == 3
+    assert _table_count("notifications") == 0
+    assert _table_count("trust_events") == 0

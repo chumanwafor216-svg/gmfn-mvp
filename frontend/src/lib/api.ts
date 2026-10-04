@@ -6551,7 +6551,10 @@ export async function recordMarketplaceAttentionEvent(payload: {
     | "spotlight_shop_click"
     | "contact_tap"
     | "share_action"
-    | "recommendation_actioned";
+    | "recommendation_actioned"
+    | "match_available"
+    | "matches_opened"
+    | "supply_opened";
   shop_id?: number | null;
   product_id?: number | null;
   broadcast_id?: number | null;
@@ -8069,6 +8072,56 @@ export async function getMarketplaceRequest(
   );
 }
 
+export type DemandSupplyMatchItem = {
+  demand_id: number;
+  product_id: number;
+  shop_id: number;
+  clan_id: number;
+  demand_category?: string | null;
+  demand_area?: string | null;
+  product_title: string;
+  shop_name: string;
+  reason_codes?: string[] | null;
+  public_shop_path?: string | null;
+};
+
+export type DemandSupplyMatchesResponse = {
+  request_id: number;
+  count: number;
+  matches: DemandSupplyMatchItem[];
+  boundary_note?: string | null;
+};
+
+export type SupplyDemandMatchesResponse = {
+  product_id: number;
+  count: number;
+  matches: DemandSupplyMatchItem[];
+  boundary_note?: string | null;
+};
+
+export async function getDemandSupplyMatches(
+  requestId: number,
+  params?: { limit?: number }
+): Promise<DemandSupplyMatchesResponse> {
+  return httpJson(
+    `/marketplace/requests/${encodeURIComponent(String(requestId))}/supply-matches${buildQuery({
+      limit: params?.limit ?? 6,
+    })}`,
+    "GET"
+  );
+}
+
+export async function getSupplyDemandMatches(
+  productId: number,
+  params?: { limit?: number }
+): Promise<SupplyDemandMatchesResponse> {
+  return httpJson(
+    `/marketplace/requests/supply/${encodeURIComponent(String(productId))}/demand-matches${buildQuery({
+      limit: params?.limit ?? 6,
+    })}`,
+    "GET"
+  );
+}
 export async function updateMarketplaceRequestStatus(
   requestId: number,
   status: "fulfilled" | "cancelled"
