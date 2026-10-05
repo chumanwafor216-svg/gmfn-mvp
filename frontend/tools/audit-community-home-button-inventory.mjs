@@ -102,8 +102,12 @@ assertNotContains(
   "Community Home must not convert a net financial position into a proven payment action or claim all community actions are clear."
 );
 assertContains(
-  /const financeNeedsReview = netMoneyPosition < 0[\s\S]*?Finance needs review[\s\S]*?No payment action shown/,
+  /const financeNeedsReview = netMoneyPosition < 0[\s\S]*?Finance needs review[\s\S]*?Payments · No action shown/,
   "Community Home finance pointer must use neutral finance-review language because netMoneyPosition is a balance signal, not an actionable due-task contract."
+);
+assertContains(
+  /function communityPassiveStatusRowStyle\(\): React\.CSSProperties \{[\s\S]*?boxShadow: "none"[\s\S]*?\}[\s\S]*?function communityPassiveStatusIconStyle/,
+  "Community Home passive payment status must render as a compact non-action strip rather than inheriting action-card shadow or icon-bubble treatment."
 );
 const actionPattern = /<StableButton\b[\s\S]*?(?:\/>|<\/StableButton>)/g;
 const actions = [];

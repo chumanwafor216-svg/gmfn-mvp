@@ -1030,15 +1030,42 @@ function communityToolRowStyle(): React.CSSProperties {
 
 function communityPassiveStatusRowStyle(): React.CSSProperties {
   return {
-    ...communityToolRowStyle(),
+    position: "relative",
+    zIndex: 20,
+    width: "100%",
+    display: "grid",
     gridTemplateColumns: "auto minmax(0, 1fr)",
+    gap: 8,
+    alignItems: "center",
+    minHeight: 46,
+    boxSizing: "border-box",
+    borderRadius: 14,
+    padding: "8px 10px",
+    color: "#07172C",
+    textAlign: "left",
     cursor: "default",
     pointerEvents: "none",
-    border: "1px solid rgba(16,37,59,0.08)",
+    border: "1px solid rgba(16,37,59,0.07)",
     background:
       "linear-gradient(180deg, rgba(248,251,255,0.94) 0%, rgba(241,247,255,0.90) 100%)",
-    boxShadow:
-      "inset 0 1px 0 rgba(255,255,255,0.92), 0 8px 18px rgba(10,24,49,0.035)",
+    overflow: "hidden",
+    overflowAnchor: "none",
+    boxShadow: "none",
+  };
+}
+
+function communityPassiveStatusIconStyle(): React.CSSProperties {
+  return {
+    flex: "0 0 auto",
+    width: 24,
+    height: 24,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#35637F",
+    fontSize: 16,
+    lineHeight: 1,
+    overflow: "hidden",
   };
 }
 
@@ -5246,27 +5273,27 @@ export default function CommunityHomePage() {
                     data-debug-id="community-home.summary.no-urgent-actions"
                     style={communityPassiveStatusRowStyle()}
                   >
-                    <span style={communityActionIcon(false)}>
-                      {communityIconGlyph("financeInstitution", 34)}
+                    <span style={communityPassiveStatusIconStyle()}>
+                      {communityIconGlyph("financeInstitution", 20)}
                     </span>
                     <span style={{ minWidth: 0 }}>
                       <span
                         style={{
                           ...brandClampLines(1),
                           color: "#07172C",
-                          fontSize: isCompact ? 14.5 : 16,
+                          fontSize: isCompact ? 13.5 : 14,
                           fontWeight: 950,
                           lineHeight: 1.2,
                         }}
                       >
-                        No payment action shown
+                        Payments · No action shown
                       </span>
                       <span
                         style={{
                           ...brandClampLines(2),
-                          marginTop: 4,
+                          marginTop: 2,
                           color: "#617085",
-                          fontSize: isCompact ? 12 : 13,
+                          fontSize: isCompact ? 11.5 : 12,
                           fontWeight: 720,
                           lineHeight: 1.35,
                         }}

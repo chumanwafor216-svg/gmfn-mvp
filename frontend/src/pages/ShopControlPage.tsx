@@ -4829,6 +4829,12 @@ export default function ShopControlPage() {
       debugId: "shop-control.more.paid-repost",
     },
     {
+      label: "Marketplace capacity",
+      detail: "Extra shop blocks, member places, ROSCA yearly, and meeting packs.",
+      to: routes.communityPackages,
+      debugId: "shop-control.more.community-packages",
+    },
+    {
       label: "Shop analytics",
       detail: "Signals and experiments, not sales proof.",
       to: routes.shopSummary,
@@ -7051,8 +7057,8 @@ export default function ShopControlPage() {
               debugId="shop-control.more-tools.toggle"
               stableHeight={44}
               style={{
-                display: "flex",
-                justifyContent: "space-between",
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1fr) auto",
                 gap: 10,
                 alignItems: "center",
                 color: "#0B2D4A",
@@ -7060,7 +7066,12 @@ export default function ShopControlPage() {
                 fontWeight: 950,
               }}
             >
-              <span>{labelWithIcon("shield", "More owner tools")}</span>
+              <span style={{ display: "grid", gap: 2, minWidth: 0 }}>
+                <span>{labelWithIcon("shield", "More owner tools")}</span>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "#617085", fontSize: 11.5, fontWeight: 820 }}>
+                  Vault · Spotlight plans · Repost · Capacity · Analytics
+                </span>
+              </span>
               <span style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>Progressive</span>
             </StableDisclosureSummary>
             <div style={{ marginTop: 12, ...controlGrid(isCompact, 186) }}>

@@ -388,13 +388,13 @@ assertShopContains(
 );
 
 assertShopContains(
-  /const progressiveOwnerTools = \[[\s\S]*?debugId: "shop-control\.more\.details"[\s\S]*?debugId: "shop-control\.more\.vault"[\s\S]*?debugId: "shop-control\.more\.subscription-spotlight"[\s\S]*?debugId: "shop-control\.more\.paid-repost"[\s\S]*?debugId: "shop-control\.more\.analytics"[\s\S]*?debugId: "shop-control\.more\.trade-evidence"/,
+  /const progressiveOwnerTools = \[[\s\S]*?debugId: "shop-control\.more\.details"[\s\S]*?debugId: "shop-control\.more\.vault"[\s\S]*?debugId: "shop-control\.more\.subscription-spotlight"[\s\S]*?debugId: "shop-control\.more\.paid-repost"[\s\S]*?debugId: "shop-control\.more\.community-packages"[\s\S]*?debugId: "shop-control\.more\.analytics"[\s\S]*?debugId: "shop-control\.more\.trade-evidence"/,
   "Shop Control advanced owner tools must remain reachable through progressive disclosure instead of dominating the first view."
 );
 
 assertShopContains(
-  /activeOwnerLayer === "overview"[\s\S]*?<div style=\{\{ \.\.\.sectionLabel\(\), color: "#F6D77A" \}\}>My Shop<\/div>[\s\S]*?debugId=\{ownerPrimaryAction\.debugId\}[\s\S]*?debugId=\{card\.debugId\}[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId="shop-control\.more-tools\.toggle"[\s\S]*?More owner tools[\s\S]*?debugId=\{tool\.debugId\}/,
-  "Shop Control first view must render My Shop orientation, one primary action, compact status cards, and progressive owner tools."
+  /activeOwnerLayer === "overview"[\s\S]*?<div style=\{\{ \.\.\.sectionLabel\(\), color: "#F6D77A" \}\}>My Shop<\/div>[\s\S]*?debugId=\{ownerPrimaryAction\.debugId\}[\s\S]*?debugId=\{card\.debugId\}[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId="shop-control\.more-tools\.toggle"[\s\S]*?More owner tools[\s\S]*?Vault · Spotlight plans · Repost · Capacity · Analytics[\s\S]*?debugId=\{tool\.debugId\}/,
+  "Shop Control first view must render My Shop orientation, one primary action, compact status cards, and descriptive progressive owner tools."
 );
 
 assertShopDoesNotContain(
