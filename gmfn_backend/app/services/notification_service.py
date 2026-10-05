@@ -7,7 +7,7 @@ from urllib.parse import parse_qs, urlparse
 from sqlalchemy.orm import Session
 
 from app.core.auth import is_user_activation_pending
-from app.db.models import Clan, ClanJoinRequest, ClanMembership, User
+from app.db.models import Clan, ClanJoinRequest, ClanMembership, RoscaParticipant, RoscaRun, User
 from app.db.notification_models import Notification
 from app.services.web_push_service import dispatch_web_push_for_notification
 
@@ -105,6 +105,64 @@ def _relay_offer_id_from_action_url(action_url: Any) -> int:
             return offer_id
     return 0
 
+
+def _rosca_run_id_from_action_url(action_url: Any) -> int:
+    raw = _safe_str(action_url)
+    if not raw or "rosca_run_id" not in raw:
+        return 0
+
+    parsed = urlparse(raw)
+    run_values = parse_qs(parsed.query).get("rosca_run_id") or []
+    for value in run_values:
+        try:
+            run_id = int(value)
+        except (TypeError, ValueError):
+            continue
+        if run_id > 0:
+            return run_id
+    return 0
+
+
+def _rosca_invitation_status_for_notification(
+    db: Session,
+    notification: Notification,
+) -> Dict[str, Any]:
+    if _safe_str(notification.kind).lower() != "participant_rosca.invitation":
+        return {}
+
+    run_id = _rosca_run_id_from_action_url(notification.action_url)
+    if run_id <= 0:
+        return {"rosca_invitation": {"status": "unavailable", "actionable": False}}
+
+    try:
+        run = db.get(RoscaRun, int(run_id))
+        participant = (
+            db.query(RoscaParticipant)
+            .filter(
+                RoscaParticipant.rosca_run_id == int(run_id),
+                RoscaParticipant.user_id == int(notification.user_id),
+            )
+            .first()
+        )
+        participant_status = _safe_str(getattr(participant, "status", None)).lower()
+        run_status = _safe_str(getattr(run, "status", None)).lower()
+        actionable = bool(
+            run
+            and participant
+            and participant_status == "invited"
+            and run_status in {"draft", "inviting", "ready_to_activate"}
+            and not bool(notification.is_read)
+        )
+        return {
+            "rosca_invitation": {
+                "run_id": int(run_id),
+                "status": participant_status or "missing",
+                "run_status": run_status or "missing",
+                "actionable": actionable,
+            }
+        }
+    except Exception:
+        return {"rosca_invitation": {"run_id": int(run_id), "status": "unavailable", "actionable": False}}
 
 def _relay_offer_status_for_notification(
     db: Session,
@@ -248,6 +306,9 @@ def normalize_notification_action(
         "open payment",
     }:
         return url, "Open Money Out"
+
+    if _safe_str(kind).lower() == "participant_rosca.invitation":
+        return url or "/app/commitments", "Review invitation"
 
     if _safe_str(kind).lower() == "opportunity_relay.offer":
         return url or "/app/notifications", "Help connect"
@@ -437,6 +498,10 @@ def list_my_notifications(
             action_url=r.action_url,
             action_label=r.action_label,
         )
+        rosca_invitation_status = _rosca_invitation_status_for_notification(db, r)
+        if rosca_invitation_status and not rosca_invitation_status.get("rosca_invitation", {}).get("actionable"):
+            normalized_action_url = None
+            normalized_action_label = None
         items.append(
             {
                 "id": int(r.id),
@@ -454,6 +519,7 @@ def list_my_notifications(
                     else {}
                 ),
                 **_relay_offer_status_for_notification(db, r),
+                **rosca_invitation_status,
             }
         )
 

@@ -368,6 +368,7 @@ const DASHBOARD_TARGETS = {
   COMMUNITY: "/app/community",
   MARKETPLACE: "/app/marketplace",
   FINANCE: "/app/finance",
+  COMMITMENTS: "/app/commitments",
   MONEY_IN: "/app/payment/pool",
   MONEY_OUT: "/app/withdrawal-instructions",
   TRUST: "/app/trust",
@@ -404,6 +405,10 @@ const EXACT_TARGET_ALIASES: Record<string, string> = {
   "open-finance": DASHBOARD_TARGETS.FINANCE,
   "finance-overview": DASHBOARD_TARGETS.FINANCE,
   "finance-meter": DASHBOARD_TARGETS.FINANCE,
+
+  commitments: DASHBOARD_TARGETS.COMMITMENTS,
+  "focus-commitments": DASHBOARD_TARGETS.COMMITMENTS,
+  "my-commitments": DASHBOARD_TARGETS.COMMITMENTS,
 
   "money-in": DASHBOARD_TARGETS.MONEY_IN,
   "payment/pool": DASHBOARD_TARGETS.MONEY_IN,
@@ -10858,6 +10863,18 @@ export default function DashboardPage() {
                 )}
               >
                 {focusComposerOpen ? "Close composer" : "Add commitment"}
+              </StableButton>
+              <StableButton
+                debugId="dashboard.focus.open-commitments"
+                type="button"
+                onClick={(event) => openDashboardRoute(event, DASHBOARD_TARGETS.COMMITMENTS)}
+                onPointerDown={consumeDashboardPointerEvent}
+                style={focusCommitmentButton({
+                  background: "linear-gradient(180deg, #EFF6FF 0%, #DBEAFE 100%)",
+                  border: "1px solid rgba(37,99,235,0.18)",
+                })}
+              >
+                Open Commitments
               </StableButton>
             </div>
 

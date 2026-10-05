@@ -22,6 +22,7 @@
     "audit:entry-auth": "node tools/audit-entry-auth-contracts.mjs",
     "audit:route-fallthrough": "node tools/audit-route-fallthrough.mjs",
     "audit:surface-ownership": "node tools/audit-surface-ownership-contract.mjs",
+    "audit:commitments-surface": "node tools/audit-commitments-surface.mjs",
     "audit:spotlight-controls": "node tools/audit-spotlight-controls.mjs",
     "audit:spotlight-quota": "node tools/audit-spotlight-quota-suspension.mjs",
     "audit:spotlight-system-feed": "node tools/audit-spotlight-system-feed.mjs",

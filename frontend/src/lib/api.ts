@@ -7184,6 +7184,169 @@ export async function recordRoscaCyclePayout(payload: {
   );
 }
 
+export type ParticipantRoscaRunOut = {
+  id: number;
+  public_id: string;
+  status: string;
+  name: string;
+  amount: string | number;
+  currency: string;
+  frequency_unit: string;
+  frequency_interval: number;
+  participant_count_required: number;
+  round_count: number;
+  start_rule: string;
+  start_at?: string | null;
+  rotation_method: string;
+  terms_version: number;
+  terms_hash: string;
+  origin_clan_id?: number | null;
+  created_by_user_id: number;
+  coordinator_user_id: number;
+  external_money_moved_by_gsn: boolean;
+  activated_at?: string | null;
+  cancelled_at?: string | null;
+  completed_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  participants: ParticipantRoscaParticipantOut[];
+  obligations: ParticipantRoscaObligationOut[];
+  boundary_note?: string;
+};
+
+export type ParticipantRoscaParticipantOut = {
+  id: number;
+  user_id: number;
+  role: string;
+  status: string;
+  rotation_position?: number | null;
+  accepted_terms_version?: number | null;
+  accepted_terms_hash?: string | null;
+  accepted_at?: string | null;
+  acceptance_source?: string | null;
+  invited_at?: string | null;
+  responded_at?: string | null;
+};
+
+export type ParticipantRoscaObligationOut = {
+  id: number;
+  rosca_run_id: number;
+  participant_id: number;
+  user_id: number;
+  round_number: number;
+  obligation_type: string;
+  amount: string | number;
+  currency: string;
+  amount_recorded: string | number;
+  amount_outstanding: string | number;
+  due_at?: string | null;
+  state: string;
+  external_reference?: string | null;
+  reported_by_user_id?: number | null;
+  reported_at?: string | null;
+  confirmed_by_user_id?: number | null;
+  confirmed_at?: string | null;
+};
+
+export async function listMyParticipantRoscaRuns(): Promise<{
+  count: number;
+  runs: ParticipantRoscaRunOut[];
+}> {
+  return httpJson("/rosca-runs/me", "GET");
+}
+
+export async function getParticipantRoscaRun(runId: number | string): Promise<ParticipantRoscaRunOut> {
+  return httpJson(`/rosca-runs/${encodeURIComponent(String(runId))}`, "GET");
+}
+
+export async function createParticipantRoscaDraft(payload: {
+  name: string;
+  amount: string;
+  currency?: string | null;
+  frequency_unit?: string | null;
+  frequency_interval?: number | null;
+  participant_count_required: number;
+  round_count: number;
+  start_rule?: string | null;
+  start_at?: string | null;
+  rotation_method?: string | null;
+  origin_clan_id?: number | null;
+  note?: string | null;
+}): Promise<ParticipantRoscaRunOut> {
+  return httpJson("/rosca-runs/drafts", "POST", {
+    name: payload.name,
+    amount: payload.amount,
+    currency: payload.currency || "GBP",
+    frequency_unit: payload.frequency_unit || "monthly",
+    frequency_interval: payload.frequency_interval ?? 1,
+    participant_count_required: payload.participant_count_required,
+    round_count: payload.round_count,
+    start_rule: payload.start_rule || "on_all_acceptance",
+    start_at: payload.start_at || null,
+    rotation_method: payload.rotation_method || "explicit_order",
+    origin_clan_id: payload.origin_clan_id ?? null,
+    note: payload.note ?? null,
+  });
+}
+
+export async function inviteParticipantRoscaParticipant(payload: {
+  run_id: number;
+  invitee_gsn_id: string;
+  rotation_position: number;
+  role?: string | null;
+}): Promise<ParticipantRoscaParticipantOut> {
+  return httpJson(`/rosca-runs/${encodeURIComponent(String(payload.run_id))}/invitations`, "POST", {
+    invitee_gsn_id: payload.invitee_gsn_id,
+    rotation_position: payload.rotation_position,
+    role: payload.role || "participant",
+  });
+}
+
+export async function acceptParticipantRoscaInvitation(payload: {
+  run_id: number;
+  terms_version: number;
+  terms_hash: string;
+}): Promise<ParticipantRoscaParticipantOut> {
+  return httpJson(`/rosca-runs/${encodeURIComponent(String(payload.run_id))}/participants/me/accept`, "POST", {
+    terms_version: payload.terms_version,
+    terms_hash: payload.terms_hash,
+    acceptance_source: "app",
+  });
+}
+
+export async function declineParticipantRoscaInvitation(payload: {
+  run_id: number;
+  reason?: string | null;
+}): Promise<ParticipantRoscaParticipantOut> {
+  return httpJson(`/rosca-runs/${encodeURIComponent(String(payload.run_id))}/participants/me/decline`, "POST", {
+    reason: payload.reason ?? null,
+  });
+}
+
+export async function activateParticipantRoscaRun(runId: number | string): Promise<ParticipantRoscaRunOut> {
+  return httpJson(`/rosca-runs/${encodeURIComponent(String(runId))}/activate`, "POST");
+}
+
+export async function recordParticipantRoscaContribution(payload: {
+  run_id: number;
+  obligation_id: number;
+  amount_recorded: string;
+  external_reference?: string | null;
+  note?: string | null;
+}): Promise<ParticipantRoscaObligationOut> {
+  return httpJson(
+    `/rosca-runs/${encodeURIComponent(String(payload.run_id))}/obligations/${encodeURIComponent(
+      String(payload.obligation_id)
+    )}/contribution-records`,
+    "POST",
+    {
+      amount_recorded: payload.amount_recorded,
+      external_reference: payload.external_reference ?? null,
+      note: payload.note ?? null,
+    }
+  );
+}
+
 export async function getMarketplaceShopSpotlightStatus(shopId: number): Promise<any> {
   return httpJson(
     `/marketplace/shops/${encodeURIComponent(String(shopId))}/spotlight-status`,

@@ -45,6 +45,7 @@ const WelcomePage = React.lazy(() => import("./pages/WelcomePage"));
 const LoginPage = React.lazy(() => import("./pages/LoginPage"));
 const JoinEntryPage = React.lazy(() => import("./pages/JoinEntryPage"));
 const DashboardPage = React.lazy(() => import("./pages/DashboardPage"));
+const CommitmentsPage = React.lazy(() => import("./pages/CommitmentsPage"));
 const CommunityHomePage = React.lazy(() => import("./pages/CommunityHomePage"));
 const ClansPage = React.lazy(() => import("./pages/ClansPage"));
 const LoansPage = React.lazy(() => import("./pages/LoansPage"));
@@ -752,6 +753,7 @@ export default function App() {
       <Route path="/my-gmfn-and-i" element={<PreserveRedirect to="/guide" />} />
 
       <Route path="/dashboard" element={<PreserveRedirect to={APP_ROUTES.DASHBOARD} />} />
+      <Route path="/commitments" element={<PreserveRedirect to={APP_ROUTES.COMMITMENTS} />} />
       <Route path="/notifications" element={<PreserveRedirect to={APP_ROUTES.NOTIFICATIONS} />} />
       <Route path="/help" element={<PreserveRedirect to={APP_ROUTES.HELP_DESK} />} />
       <Route path="/support-desk" element={<PreserveRedirect to={APP_ROUTES.HELP_DESK} />} />
@@ -996,6 +998,7 @@ export default function App() {
         <Route index element={<Navigate to="dashboard" replace />} />
 
         <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="commitments" element={<CommitmentsPage />} />
         <Route path="home" element={<PreserveRedirect to={APP_ROUTES.DASHBOARD} />} />
         <Route
           path="main-dashboard"

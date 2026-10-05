@@ -26,6 +26,7 @@ from app.services.participant_rosca_service import (
     accept_invitation,
     activate_run,
     create_draft_run,
+    cancel_run,
     decline_invitation,
     get_visible_run,
     invite_participant,
@@ -169,6 +170,19 @@ def revoke_participant_rosca_invitation(
         raise
     return RoscaParticipantOut(**participant_to_response(participant))
 
+
+@router.post("/{run_id}/cancel", response_model=RoscaRunOut)
+def cancel_participant_rosca_run(
+    run_id: int = Path(..., ge=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        run = cancel_run(db, run_id=int(run_id), current_user_id=int(current_user.id))
+    except Exception as exc:
+        _raise_rosca_error(exc)
+        raise
+    return RoscaRunOut(**run_to_response(db, run))
 
 @router.post("/{run_id}/activate", response_model=RoscaRunOut)
 def activate_participant_rosca_run(

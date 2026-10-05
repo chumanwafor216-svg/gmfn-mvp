@@ -12,6 +12,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.models import RoscaObligation, RoscaParticipant, RoscaRun, User
+from app.db.notification_models import Notification
+from app.services.notification_service import create_notification
 
 RUN_DRAFT = "draft"
 RUN_INVITING = "inviting"
@@ -33,6 +35,8 @@ OBLIGATION_PAYOUT = "payout"
 OBLIGATION_SCHEDULED = "scheduled"
 OBLIGATION_REPORTED = "reported"
 OBLIGATION_CONFIRMED = "confirmed"
+
+ROSCA_INVITATION_NOTIFICATION_KIND = "participant_rosca.invitation"
 
 TERMINAL_PARTICIPANT_STATES = {
     PARTICIPANT_DECLINED,
@@ -135,6 +139,96 @@ def _apply_terms(run: RoscaRun, payload: Any, *, next_version: Optional[int] = N
     run.terms_hash = terms_hash(snapshot)
     run.external_money_moved_by_gsn = False
 
+
+
+def _rosca_invitation_action_url(run_id: int) -> str:
+    return f"/app/commitments?rosca_run_id={int(run_id)}"
+
+
+def _coordinator_label(db: Session, run: RoscaRun) -> str:
+    coordinator = db.get(User, int(run.coordinator_user_id)) if run.coordinator_user_id else None
+    if coordinator is None:
+        return "Your coordinator"
+    return (
+        str(getattr(coordinator, "display_name", "") or "").strip()
+        or str(getattr(coordinator, "gmfn_id", "") or "").strip()
+        or "Your coordinator"
+    )
+
+
+def _ensure_invitation_notification(db: Session, *, run: RoscaRun, participant: RoscaParticipant) -> None:
+    action_url = _rosca_invitation_action_url(int(run.id))
+    existing = (
+        db.query(Notification)
+        .filter(
+            Notification.user_id == int(participant.user_id),
+            Notification.kind == ROSCA_INVITATION_NOTIFICATION_KIND,
+            Notification.action_url == action_url,
+        )
+        .order_by(Notification.id.desc())
+        .first()
+    )
+    if existing:
+        return
+
+    coordinator_label = _coordinator_label(db, run)
+    run_name = str(run.name or "ROSCA").strip() or "ROSCA"
+    create_notification(
+        db,
+        user_id=int(participant.user_id),
+        kind=ROSCA_INVITATION_NOTIFICATION_KIND,
+        title="ROSCA invitation",
+        message=f"{coordinator_label} invited you to {run_name}.",
+        action_url=action_url,
+        action_label="Review invitation",
+        commit=False,
+        refresh=False,
+    )
+
+
+def _stale_invitation_notifications_for_participant(
+    db: Session,
+    *,
+    run_id: int,
+    user_id: int,
+    now: Optional[datetime] = None,
+) -> int:
+    action_url = _rosca_invitation_action_url(int(run_id))
+    timestamp = now or now_utc()
+    rows = (
+        db.query(Notification)
+        .filter(
+            Notification.user_id == int(user_id),
+            Notification.kind == ROSCA_INVITATION_NOTIFICATION_KIND,
+            Notification.action_url == action_url,
+            Notification.is_read == False,  # noqa: E712
+        )
+        .all()
+    )
+    for row in rows:
+        row.is_read = True
+        row.read_at = timestamp
+        db.add(row)
+    return len(rows)
+
+
+def stale_invitation_notifications_for_run(db: Session, *, run_id: int, now: Optional[datetime] = None) -> int:
+    action_url = _rosca_invitation_action_url(int(run_id))
+    timestamp = now or now_utc()
+    rows = (
+        db.query(Notification)
+        .filter(
+            Notification.kind == ROSCA_INVITATION_NOTIFICATION_KIND,
+            Notification.action_url == action_url,
+            Notification.is_read == False,  # noqa: E712
+        )
+        .all()
+    )
+    for row in rows:
+        row.is_read = True
+        row.read_at = timestamp
+        db.add(row)
+    return len(rows)
 
 def _participant_out(row: RoscaParticipant) -> Dict[str, Any]:
     return {
@@ -358,6 +452,9 @@ def invite_participant(db: Session, run_id: int, current_user_id: int, payload: 
     existing = _participant_for_user(db, run.id, invitee.id)
     if existing:
         if getattr(payload, "idempotency_key", None) and existing.idempotency_key == payload.idempotency_key:
+            _ensure_invitation_notification(db, run=run, participant=existing)
+            db.commit()
+            db.refresh(existing)
             return existing
         raise ParticipantRoscaConflict("This participant is already invited to the run")
     if int(payload.rotation_position) > int(run.round_count):
@@ -398,6 +495,7 @@ def invite_participant(db: Session, run_id: int, current_user_id: int, payload: 
     if run.status == RUN_DRAFT:
         run.status = RUN_INVITING
     run.updated_at = now_utc()
+    _ensure_invitation_notification(db, run=run, participant=participant)
     try:
         db.commit()
     except IntegrityError as exc:
@@ -410,6 +508,8 @@ def invite_participant(db: Session, run_id: int, current_user_id: int, payload: 
 def accept_invitation(db: Session, run_id: int, current_user_id: int, payload: Any) -> RoscaParticipant:
     run = _require_run(db, run_id)
     participant = _participant_for_user(db, run.id, current_user_id)
+    if run.status in {RUN_ACTIVE, RUN_COMPLETED, RUN_CANCELLED}:
+        raise ParticipantRoscaConflict("This invitation is no longer active")
     if not participant:
         raise ParticipantRoscaForbidden("Only the intended participant can accept this ROSCA invitation")
     if participant.status == PARTICIPANT_ACCEPTED:
@@ -437,6 +537,12 @@ def accept_invitation(db: Session, run_id: int, current_user_id: int, payload: A
         }
     )
     _maybe_ready(db, run)
+    _stale_invitation_notifications_for_participant(
+        db,
+        run_id=int(run.id),
+        user_id=int(current_user_id),
+        now=participant.accepted_at,
+    )
     db.commit()
     db.refresh(participant)
     return participant
@@ -445,14 +551,17 @@ def accept_invitation(db: Session, run_id: int, current_user_id: int, payload: A
 def decline_invitation(db: Session, run_id: int, current_user_id: int, payload: Any) -> RoscaParticipant:
     run = _require_run(db, run_id)
     participant = _participant_for_user(db, run.id, current_user_id)
+    if run.status in {RUN_ACTIVE, RUN_COMPLETED, RUN_CANCELLED}:
+        raise ParticipantRoscaConflict("This invitation is no longer active")
     if not participant:
         raise ParticipantRoscaForbidden("Only the intended participant can decline this ROSCA invitation")
     if participant.status == PARTICIPANT_DECLINED:
+        _stale_invitation_notifications_for_participant(db, run_id=int(run.id), user_id=int(current_user_id))
+        db.commit()
+        db.refresh(participant)
         return participant
     if participant.status in {PARTICIPANT_REVOKED, PARTICIPANT_REMOVED, PARTICIPANT_WITHDRAWN}:
         raise ParticipantRoscaConflict("This invitation is no longer active")
-    if run.status == RUN_ACTIVE:
-        raise ParticipantRoscaConflict("Active ROSCA participation cannot be declined through invitation flow")
     participant.status = PARTICIPANT_DECLINED
     participant.responded_at = now_utc()
     participant.idempotency_key = payload.idempotency_key or participant.idempotency_key
@@ -465,6 +574,12 @@ def decline_invitation(db: Session, run_id: int, current_user_id: int, payload: 
         }
     )
     _maybe_ready(db, run)
+    _stale_invitation_notifications_for_participant(
+        db,
+        run_id=int(run.id),
+        user_id=int(current_user_id),
+        now=participant.responded_at,
+    )
     db.commit()
     db.refresh(participant)
     return participant
@@ -483,15 +598,44 @@ def revoke_invitation(db: Session, run_id: int, participant_id: int, current_use
     if not participant:
         raise ParticipantRoscaNotFound("Participant not found")
     if participant.status == PARTICIPANT_REVOKED:
+        _stale_invitation_notifications_for_participant(db, run_id=int(run.id), user_id=int(participant.user_id))
+        db.commit()
+        db.refresh(participant)
         return participant
     participant.status = PARTICIPANT_REVOKED
     participant.revoked_at = now_utc()
     participant.meta_json = _safe_meta({**participant.meta, "portable_negative_evidence": False, "creates_trust_events": False})
     _maybe_ready(db, run)
+    _stale_invitation_notifications_for_participant(
+        db,
+        run_id=int(run.id),
+        user_id=int(participant.user_id),
+        now=participant.revoked_at,
+    )
     db.commit()
     db.refresh(participant)
     return participant
 
+
+def cancel_run(db: Session, run_id: int, current_user_id: int) -> RoscaRun:
+    run = _require_run(db, run_id)
+    _require_coordinator(run, current_user_id)
+    if run.status == RUN_CANCELLED:
+        stale_invitation_notifications_for_run(db, run_id=int(run.id))
+        db.commit()
+        db.refresh(run)
+        return run
+    if run.status in {RUN_ACTIVE, RUN_COMPLETED}:
+        raise ParticipantRoscaConflict("Active or completed ROSCA runs cannot be cancelled through invitation flow")
+    cancelled_at = now_utc()
+    run.status = RUN_CANCELLED
+    run.cancelled_at = cancelled_at
+    run.updated_at = cancelled_at
+    run.meta_json = _safe_meta({**run.meta, "portable_negative_evidence": False, "creates_trust_events": False})
+    stale_invitation_notifications_for_run(db, run_id=int(run.id), now=cancelled_at)
+    db.commit()
+    db.refresh(run)
+    return run
 
 def _accepted_participants(db: Session, run: RoscaRun) -> List[RoscaParticipant]:
     return (

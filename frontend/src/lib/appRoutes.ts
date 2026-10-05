@@ -18,6 +18,7 @@ export const APP_ROUTES = {
   PAYOUT_DETAILS: "/app/payout-details",
   PAYMENT_RAILS: "/app/payment-rails",
   FINANCE: "/app/finance",
+  COMMITMENTS: "/app/commitments",
   DEMAND_BOX: "/app/demand-box",
   WHATSAPP_BRIDGE: "/app/whatsapp-bridge",
   TRUST: "/app/trust",

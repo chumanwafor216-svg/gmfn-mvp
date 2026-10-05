@@ -170,6 +170,7 @@ assertDashboardSliceStaysInert(
   "dashboard.focus.toggle",
   "dashboard.focus.composer.toggle",
   "dashboard.focus.composer.save",
+  "dashboard.focus.open-commitments",
 ].forEach((debugId) => {
   assertContains(
     new RegExp(`debugId="${debugId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`),

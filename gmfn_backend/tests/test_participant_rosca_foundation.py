@@ -390,3 +390,155 @@ def test_obligation_uniqueness_is_enforced_per_participant_round_and_type(client
             )
 
     _clear_current_user_override()
+
+
+def _notification_rows() -> list[dict]:
+    with engine.begin() as conn:
+        rows = conn.execute(
+            text(
+                """
+                SELECT id, user_id, kind, title, message, action_url, action_label, is_read
+                FROM notifications
+                ORDER BY id ASC
+                """
+            )
+        ).mappings().all()
+    return [dict(row) for row in rows]
+
+
+def _rosca_notification_for_user(client, user_id: int, run_id: int) -> dict:
+    _override_current_user(user_id)
+    response = client.get("/notifications/me")
+    assert response.status_code == 200, response.text
+    items = [
+        item
+        for item in response.json()["items"]
+        if item["kind"] == "participant_rosca.invitation"
+        and item.get("rosca_invitation", {}).get("run_id") == int(run_id)
+    ]
+    assert len(items) == 1
+    return items[0]
+
+
+def test_participant_rosca_invitation_creates_one_privacy_safe_notification_and_attention(client):
+    _seed_base()
+    run = _create_run(client)
+    invite = _invite(client, run["id"], "GSN-U-A", 1)
+
+    rows = _notification_rows()
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["user_id"] == 2
+    assert row["kind"] == "participant_rosca.invitation"
+    assert row["title"] == "ROSCA invitation"
+    assert row["message"] == "Coordinator invited you to Participant ROSCA."
+    assert row["action_url"] == f"/app/commitments?rosca_run_id={run['id']}"
+    assert row["action_label"] == "Review invitation"
+    assert row["is_read"] in {False, 0}
+    flat = str(row).lower()
+    assert "gsn-u-a" not in flat
+    assert "participant-a@example" not in flat
+    assert "participant_id" not in row["action_url"]
+    assert "invitee" not in row["action_url"]
+
+    item = _rosca_notification_for_user(client, 2, run["id"])
+    assert item["action_label"] == "Review invitation"
+    assert item["action_url"] == f"/app/commitments?rosca_run_id={run['id']}"
+    assert item["rosca_invitation"] == {
+        "run_id": run["id"],
+        "status": "invited",
+        "run_status": "inviting",
+        "actionable": True,
+    }
+
+    _override_current_user(2)
+    attention = client.get("/attention-spine/me")
+    assert attention.status_code == 200, attention.text
+    notification_signals = [signal for signal in attention.json()["signals"] if signal["id"].startswith("notification:")]
+    assert any(signal["summary"] == "ROSCA invitation" and signal["actionTo"] == f"/app/commitments?rosca_run_id={run['id']}" for signal in notification_signals)
+
+    _override_current_user(3)
+    other_user_notifications = client.get("/notifications/me")
+    assert other_user_notifications.status_code == 200, other_user_notifications.text
+    assert [item for item in other_user_notifications.json()["items"] if item["kind"] == "participant_rosca.invitation"] == []
+    other_user_run = client.get(f"/rosca-runs/{run['id']}")
+    assert other_user_run.status_code == 403
+    other_user_accept = client.post(
+        f"/rosca-runs/{run['id']}/participants/me/accept",
+        json={"terms_version": run["terms_version"], "terms_hash": run["terms_hash"], "acceptance_source": "app"},
+    )
+    assert other_user_accept.status_code == 403
+    assert _table_count("trust_events") == 0
+
+    _override_current_user(1)
+    retry = client.post(
+        f"/rosca-runs/{run['id']}/invitations",
+        json={"invitee_gsn_id": "GSN-U-A", "rotation_position": 1, "idempotency_key": "invite-GSN-U-A-1"},
+    )
+    assert retry.status_code == 200, retry.text
+    assert _table_count("notifications") == 1
+    assert _table_count("trust_events") == 0
+
+    _clear_current_user_override()
+
+
+def test_participant_rosca_accept_decline_revoke_and_cancel_stale_invitation_notifications(client):
+    _seed_base()
+    accepted_run = _create_run(client)
+    _invite(client, accepted_run["id"], "GSN-U-A", 1)
+    accepted_item = _rosca_notification_for_user(client, 2, accepted_run["id"])
+    assert accepted_item["rosca_invitation"]["actionable"] is True
+
+    _accept(client, accepted_run, 2)
+    accepted_after = _rosca_notification_for_user(client, 2, accepted_run["id"])
+    assert accepted_after["is_read"] is True
+    assert accepted_after["action_url"] is None
+    assert accepted_after["action_label"] is None
+    assert accepted_after["rosca_invitation"]["status"] == "accepted"
+    assert accepted_after["rosca_invitation"]["actionable"] is False
+
+    declined_run = _create_run(client)
+    _invite(client, declined_run["id"], "GSN-U-B", 1)
+    _override_current_user(3)
+    declined = client.post(
+        f"/rosca-runs/{declined_run['id']}/participants/me/decline",
+        json={"reason": "Not now", "idempotency_key": "decline-notification-3"},
+    )
+    assert declined.status_code == 200, declined.text
+    declined_after = _rosca_notification_for_user(client, 3, declined_run["id"])
+    assert declined_after["is_read"] is True
+    assert declined_after["action_url"] is None
+    assert declined_after["rosca_invitation"]["status"] == "declined"
+    assert declined_after["rosca_invitation"]["actionable"] is False
+
+    revoked_run = _create_run(client)
+    revoked_participant = _invite(client, revoked_run["id"], "GSN-U-A", 1)
+    _override_current_user(1)
+    revoked = client.post(f"/rosca-runs/{revoked_run['id']}/participants/{revoked_participant['id']}/revoke")
+    assert revoked.status_code == 200, revoked.text
+    revoked_after = _rosca_notification_for_user(client, 2, revoked_run["id"])
+    assert revoked_after["is_read"] is True
+    assert revoked_after["action_url"] is None
+    assert revoked_after["rosca_invitation"]["status"] == "revoked"
+    assert revoked_after["rosca_invitation"]["actionable"] is False
+
+    cancelled_run = _create_run(client)
+    _invite(client, cancelled_run["id"], "GSN-U-B", 1)
+    _override_current_user(1)
+    cancelled = client.post(f"/rosca-runs/{cancelled_run['id']}/cancel")
+    assert cancelled.status_code == 200, cancelled.text
+    assert cancelled.json()["status"] == "cancelled"
+    cancelled_after = _rosca_notification_for_user(client, 3, cancelled_run["id"])
+    assert cancelled_after["is_read"] is True
+    assert cancelled_after["action_url"] is None
+    assert cancelled_after["rosca_invitation"]["run_status"] == "cancelled"
+    assert cancelled_after["rosca_invitation"]["actionable"] is False
+
+    late_accept = client.post(
+        f"/rosca-runs/{cancelled_run['id']}/participants/me/accept",
+        json={"terms_version": cancelled_run["terms_version"], "terms_hash": cancelled_run["terms_hash"], "acceptance_source": "app"},
+    )
+    assert late_accept.status_code == 403 or late_accept.status_code == 409
+    assert _table_count("trust_events") == 0
+
+    _clear_current_user_override()
