@@ -162,9 +162,6 @@ assertDashboardSliceStaysInert(
   "dashboard.trust-detail.toggle",
   "dashboard.trust-action.trust-slip",
   "dashboard.apps.toggle",
-  "dashboard.spotlight.restore",
-  "dashboard.spotlight.restore.empty-card",
-  "dashboard.spotlight.whatsapp",
   "dashboard.demand.toggle",
   "dashboard.demand.primary",
   "dashboard.inbox.toggle",
@@ -215,13 +212,12 @@ assertEngineContains(
   "Dashboard attention engine must keep notifications-source alerts tied back to the notifications page."
 );
 
-assertContains(
-  /const showSpotlight = false;[\s\S]*?const dashboardSpotlightCompactTitle[\s\S]*?debugId="dashboard\.spotlight\.restore\.empty-card"[\s\S]*?onClick=\{openDashboardSpotlightGuide\}[\s\S]*?Open Spotlight/,
-  "Dashboard Spotlight must stay a compact status pointer to the canonical Spotlight surface, not an embedded Spotlight screen."
+assertNotContains(
+  /dashboard\.spotlight\.|activeSpotlight|getMarketplaceBroadcasts|synthetic-spotlight/,
+  "Dashboard must not keep a visible, hidden, fetched, or synthetic Spotlight surface after Spotlight moved to the Shop ecosystem."
 );
-
 assertContains(
-  /const dashboardHasActionableAttention =[\s\S]*?dashboardPulseSummary\.workCount > 0[\s\S]*?dashboardPulsePrimarySignal\?\.kind === "action"[\s\S]*?dashboardPulsePrimaryTo !== ""[\s\S]*?const dashboardAttentionOrder = dashboardHasActionableAttention \? 10 : 40[\s\S]*?const dashboardIdentityOrder = dashboardHasActionableAttention \? 20 : 10[\s\S]*?const dashboardToolsOrder = dashboardHasActionableAttention \? 30 : 20[\s\S]*?const dashboardSpotlightOrder = dashboardHasActionableAttention \? 40 : 30/,
+  /const dashboardHasActionableAttention =[\s\S]*?dashboardPulseSummary\.workCount > 0[\s\S]*?dashboardPulsePrimarySignal\?\.kind === "action"[\s\S]*?dashboardPulsePrimaryTo !== ""[\s\S]*?const dashboardAttentionOrder = dashboardHasActionableAttention \? 10 : 40[\s\S]*?const dashboardIdentityOrder = dashboardHasActionableAttention \? 20 : 10[\s\S]*?const dashboardToolsOrder = dashboardHasActionableAttention \? 30 : 20/,
   "Dashboard first-view hierarchy must let a genuine actionable Attention item outrank identity/status/tools without treating quiet states as urgent."
 );
 
@@ -234,16 +230,10 @@ assertContains(
   /data-dashboard-passport-reference="gsn-trust-card"[\s\S]*?order: dashboardIdentityOrder,[\s\S]*?padding: dashboardIdentityCompact \? 8 : isPhone \? 12 : 16/,
   "Dashboard identity/trust pack must demote to compact orientation when an actionable Attention item leads."
 );
-assertContains(
-  /source_shop_whatsapp_number[\s\S]*?function openSpotlightWhatsApp\(event\?: React\.SyntheticEvent<HTMLElement>\)[\s\S]*?buildWhatsAppChatUrl[\s\S]*?debugId="dashboard\.spotlight\.whatsapp"/,
-  "Dashboard keeps legacy Spotlight contact source code dormant, but the visible S2B card routes to the canonical Spotlight surface."
-);
-
 assertNotContains(
-  /debugId="dashboard\.spotlight\.open-shop"|debugId="dashboard\.spotlight\.open-marketplace"/,
-  "Dashboard live Spotlight must not render the redundant Open Shop / Marketplace button row under the media screen."
+  /source_shop_whatsapp_number|openSpotlightWhatsApp|buildWhatsAppChatUrl|debugId="dashboard\.spotlight\./,
+  "Dashboard must not keep dormant Spotlight contact or action code after Spotlight ownership moved to Shop Control."
 );
-
 assertContains(
   /debugId=\{`dashboard\.passport-signal\.\$\{item\.label\.toLowerCase\(\)\}`\}/,
   "Dashboard passport signal buttons must keep dynamic debug IDs."
@@ -306,8 +296,8 @@ assertNotContains(
 );
 
 assertContains(
-  /Your visible community evidence is steady[\s\S]*?Fix evidence first[\s\S]*?current evidence reading is under pressure[\s\S]*?Open Trust Passport[\s\S]*?evidence pressure in your community[\s\S]*?Evidence pressure should be handled before new exposure[\s\S]*?evidence signals around this seller[\s\S]*?GSN evidence signal[\s\S]*?Evidence warning[\s\S]*?Evidence pressure is shaping the current reading[\s\S]*?Local evidence is how[\s\S]*?weakens the evidence reading now[\s\S]*?TrustSlip evidence look less steady/,
-  "Dashboard must keep evidence-reading language across CCI fallback, repair notice, spotlight, demand, and warning cards."
+  /Your visible community evidence is steady[\s\S]*?Fix evidence first[\s\S]*?current evidence reading is under pressure[\s\S]*?Open Trust Passport[\s\S]*?evidence pressure in your community[\s\S]*?Evidence pressure should be handled before new exposure[\s\S]*?GSN evidence signal[\s\S]*?Evidence warning[\s\S]*?Evidence pressure is shaping the current reading[\s\S]*?Local evidence is how[\s\S]*?weakens the evidence reading now[\s\S]*?TrustSlip evidence look less steady/,
+  "Dashboard must keep evidence-reading language across CCI fallback, repair notice, demand, and warning cards."
 );
 
 assertContains(

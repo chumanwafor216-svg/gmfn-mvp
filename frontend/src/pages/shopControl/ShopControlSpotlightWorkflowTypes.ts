@@ -41,12 +41,21 @@ export type ShopControlSpotlightBroadcast = {
   id: number;
   shop_id?: number | null;
   message?: string | null;
+  body?: string | null;
   image_url?: string | null;
   video_url?: string | null;
   priority_mode?: string | null;
   visibility_scope?: string | null;
   expires_at?: string | null;
   created_at?: string | null;
+  source_shop_name?: string | null;
+  source_clan_name?: string | null;
+  source_product_title?: string | null;
+  source_product_description?: string | null;
+  source_product_price?: string | number | null;
+  source_product_currency?: string | null;
+  source_product_category?: string | null;
+  rotation_weight?: number | string | null;
 };
 
 export type ShopControlSpotlightFeedback = {
@@ -55,6 +64,8 @@ export type ShopControlSpotlightFeedback = {
 } | null;
 
 export type ShopControlSpotlightRoutes = {
+  freeSpotlight: string;
+  shopGallery: string;
   subscriptionSpotlight: string;
 };
 

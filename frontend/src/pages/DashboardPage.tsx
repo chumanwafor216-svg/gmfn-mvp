@@ -2,9 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import GSNBrandMark from "../components/GSNBrandMark";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PictureFrameToolsControl from "../components/PictureFrameToolsControl";
-import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { StableButton, StableDisclosureSummary } from "../components/StableButton";
-import SystemPictureFrame from "../components/SystemPictureFrame";
 import { useLocation, useNavigate } from "react-router-dom";
 import { navigateWithOrigin } from "../lib/nav";
 import {
@@ -13,13 +11,11 @@ import {
   getCurrentClan,
   getDailyInsight,
   getMarketWisdomRecommendation,
-  getMarketplaceBroadcasts,
   getMe,
   getMyAttentionSpine,
   getMyNotifications,
   getMyRoscaObligations,
   getMyTrustSlip,
-  getPublicMarketplaceShopByGmfnId,
   getSelectedClanId,
   getStoredGmfnId,
   setSelectedClanId,
@@ -45,8 +41,6 @@ import {
   marketWisdomPairFromDailyInsight,
   type MarketWisdomPair,
 } from "../lib/marketWisdom";
-import { publicShopPath, publicShopSharePath } from "../lib/publicLinks";
-import { buildWhatsAppChatUrl } from "../lib/whatsappLinks";
 import {
   buildDashboardNextRouteCopy,
   buildDashboardTrustAttentionCore,
@@ -72,14 +66,9 @@ import {
   markDashboardAttentionShown,
   normalizeDashboardAttentionStoredState,
 } from "../lib/dashboardAttentionEngine";
-import { prepareSpotlightImageFile } from "../lib/spotlightMediaPrep";
-import {
-  buildSpotlightRotationQueue,
-  spotlightRotationWeight,
-  SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
-  SPOTLIGHT_PILOT_REFRESH_MS,
-  SPOTLIGHT_PILOT_ROTATION_MS,
-} from "../lib/spotlightPilot";
+import { prepareSpotlightImageFile as prepareDashboardAvatarImageFile } from "../lib/spotlightMediaPrep";
+
+
 import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
 const DashboardToolsSection = React.lazy(() =>
@@ -88,46 +77,6 @@ const DashboardToolsSection = React.lazy(() =>
 const DashboardInboxSection = React.lazy(() =>
   import("../components/dashboard/DashboardInboxSection")
 );
-
-type SpotlightItem = {
-  id?: number;
-  title?: string | null;
-  message?: string | null;
-  body?: string | null;
-  image_url?: string | null;
-  image?: string | null;
-  video_url?: string | null;
-  source_shop_name?: string | null;
-  source_shop_whatsapp_number?: string | null;
-  source_clan_name?: string | null;
-  source_clan_id?: number | string | null;
-  source_marketplace_id?: number | string | null;
-  clan_id?: number | string | null;
-  marketplace_id?: number | string | null;
-  author_name?: string | null;
-  author_gmfn_id?: string | null;
-  trust_band?: string | null;
-  trust_score?: number | string | null;
-  price?: string | number | null;
-  currency?: string | null;
-  source_product_title?: string | null;
-  source_product_description?: string | null;
-  source_product_price?: string | number | null;
-  source_product_currency?: string | null;
-  source_product_category?: string | null;
-  source_product_availability?: string | null;
-  spotlight_owner?: string | null;
-  spotlight_community?: string | null;
-  source_product_id?: number | string | null;
-  source_product_block?: number | string | null;
-  source_product_slot_number?: number | string | null;
-  priority_mode?: string | null;
-  priorityMode?: string | null;
-  rotation_weight?: number | string | null;
-  rotationWeight?: number | string | null;
-  created_at?: string | null;
-  expires_at?: string | null;
-};
 
 type JoinRequestItem = {
   id?: number;
@@ -163,7 +112,6 @@ type DemandItem = {
   created_at?: string | null;
   allow_trust_credit?: boolean;
 };
-
 type NoticeItem = {
   id?: number;
   kind?: string;
@@ -184,7 +132,6 @@ type ReadingState = {
 };
 
 type DashboardUIState = {
-  spotlightMinimized: boolean;
   routesExpanded: boolean;
   appsExpanded: boolean;
   inboxExpanded: boolean;
@@ -419,7 +366,6 @@ const PRE_AUTH_ROUTE_PREFIXES = ["cover", "welcome", "login"];
 const DASHBOARD_TARGETS = {
   DASHBOARD: "/app/dashboard",
   COMMUNITY: "/app/community",
-  COMMUNITY_SPOTLIGHT: "/app/community?guide=spotlight",
   MARKETPLACE: "/app/marketplace",
   FINANCE: "/app/finance",
   MONEY_IN: "/app/payment/pool",
@@ -844,7 +790,6 @@ function helperText(): React.CSSProperties {
 type DashboardSignalName =
   | "marketplace"
   | "demand"
-  | "spotlight"
   | "trust"
   | "community"
   | "shop"
@@ -868,9 +813,6 @@ function dashboardActionSignal(label: string): DashboardSignalName {
     case "Create Demand":
     case "Create Your Demand":
       return "demand";
-    case "Your Spotlight":
-    case "Spotlight":
-      return "spotlight";
     case "Your Trust Events":
     case "Trust Events":
       return "trust";
@@ -905,8 +847,6 @@ function dashboardSectionSignal(label: string): DashboardSignalName {
       return "compass";
     case "Your Identity Passport":
       return "trust";
-    case "Your Spotlight":
-      return "spotlight";
     case "Your DemandBox":
       return "package";
     case "What needs your attention":
@@ -953,8 +893,7 @@ function DashboardSignalIcon({
   const iconMap: Record<DashboardSignalName, GsnIconName> = {
     marketplace: "marketplace",
     demand: "document",
-    spotlight: "megaphone",
-    trust: "shield",
+      trust: "shield",
     community: "community",
     shop: "shop",
     alerts: "alert",
@@ -1430,113 +1369,6 @@ function uniqueDashboardDemandItems(items: DemandItem[]): DemandItem[] {
   return out;
 }
 
-function spotlightPriceLine(price: unknown, currency: unknown): string {
-  const priceText = safeStr(price);
-  const currencyText = safeStr(currency);
-  if (priceText && currencyText) return `${currencyText} ${priceText}`;
-  return priceText || currencyText;
-}
-
-function normalizeSpotlightItem(raw: any): SpotlightItem | null {
-  const source = raw?.item || raw?.broadcast || raw;
-  if (!source || typeof source !== "object") return null;
-
-  const id = positiveNumber(source.id);
-  const clanId = source.clan_id ?? source.clanId ?? source.source_clan_id;
-  const sourceClanId =
-    source.source_clan_id ?? source.sourceClanId ?? source.clan_id;
-
-  return {
-    id: id || undefined,
-    title:
-      safeStr(
-        source.spotlight_title ||
-          source.spotlightTitle ||
-          source.source_product_title ||
-          source.sourceProductTitle ||
-          source.title
-      ) || null,
-    message: safeStr(source.message || source.content || source.text) || null,
-    body:
-      safeStr(
-        source.spotlight_description ||
-          source.spotlightDescription ||
-          source.source_product_description ||
-          source.sourceProductDescription ||
-          source.body ||
-          source.description
-      ) || null,
-    image_url: safeStr(source.image_url || source.imageUrl) || null,
-    image: safeStr(source.image || source.image_url || source.imageUrl) || null,
-    video_url: safeStr(source.video_url || source.videoUrl) || null,
-    source_shop_name:
-      safeStr(source.source_shop_name || source.sourceShopName) || null,
-    source_shop_whatsapp_number:
-      safeStr(
-        source.source_shop_whatsapp_number ||
-          source.sourceShopWhatsAppNumber ||
-          source.source_shop_whatsapp ||
-          source.shop_whatsapp_number ||
-          source.whatsapp_number
-      ) || null,
-    source_clan_name:
-      safeStr(source.source_clan_name || source.sourceClanName) || null,
-    source_clan_id: sourceClanId ?? null,
-    source_marketplace_id:
-      source.source_marketplace_id ?? source.sourceMarketplaceId ?? null,
-    clan_id: clanId ?? null,
-    marketplace_id: source.marketplace_id ?? source.marketplaceId ?? null,
-    author_name: safeStr(source.author_name || source.authorName) || null,
-    author_gmfn_id:
-      safeStr(source.author_gmfn_id || source.authorGmfnId) || null,
-    trust_band: safeStr(source.trust_band || source.trustBand) || null,
-    trust_score: source.trust_score ?? source.trustScore ?? null,
-    price: source.price ?? null,
-    currency: safeStr(source.currency) || null,
-    source_product_title:
-      safeStr(source.source_product_title || source.sourceProductTitle) || null,
-    source_product_description:
-      safeStr(source.source_product_description || source.sourceProductDescription) || null,
-    source_product_price:
-      source.source_product_price ?? source.sourceProductPrice ?? null,
-    source_product_currency:
-      safeStr(source.source_product_currency || source.sourceProductCurrency) || null,
-    source_product_category:
-      safeStr(source.source_product_category || source.sourceProductCategory) || null,
-    source_product_availability:
-      safeStr(source.source_product_availability || source.sourceProductAvailability) || null,
-    spotlight_owner:
-      safeStr(source.spotlight_owner || source.spotlightOwner) || null,
-    spotlight_community:
-      safeStr(source.spotlight_community || source.spotlightCommunity) || null,
-    source_product_id:
-      source.source_product_id ?? source.sourceProductId ?? null,
-    source_product_block:
-      source.source_product_block ?? source.sourceProductBlock ?? null,
-    source_product_slot_number:
-      source.source_product_slot_number ?? source.sourceProductSlotNumber ?? null,
-    priority_mode: safeStr(source.priority_mode || source.priorityMode) || null,
-    priorityMode: safeStr(source.priorityMode || source.priority_mode) || null,
-    rotation_weight: source.rotation_weight ?? source.rotationWeight ?? null,
-    rotationWeight: source.rotationWeight ?? source.rotation_weight ?? null,
-    created_at: safeStr(source.created_at || source.createdAt) || null,
-    expires_at: safeStr(source.expires_at || source.expiresAt) || null,
-  };
-}
-
-function spotlightSortTime(item: SpotlightItem | null): number {
-  return (
-    toDateSafe(item?.created_at)?.getTime() ||
-    positiveNumber(item?.id) ||
-    0
-  );
-}
-
-function spotlightIsActive(item: SpotlightItem | null): boolean {
-  const expiresAt = toDateSafe(item?.expires_at);
-  return !expiresAt || expiresAt.getTime() > Date.now();
-}
-
 function formatReadingScore(rawScore: unknown, scoreNum: number | null): string {
   if (
     rawScore === null ||
@@ -1561,71 +1393,6 @@ function cciDisplayText(cci: ReadingState): string {
   }
 
   return readableTrustStatus(classText);
-}
-
-function spotlightEvidencePostureLabel(
-  item: SpotlightItem | null | undefined
-): string {
-  const bandText = safeStr(item?.trust_band);
-  const scoreText = safeStr(item?.trust_score);
-
-  if (!bandText && !scoreText) return "Member evidence";
-
-  const label = getContextualEvidencePosture(
-    scoreText || null,
-    bandText || undefined
-  ).shortLabel;
-
-  return label && label !== "Not shown" ? label : "Member evidence";
-}
-
-function spotlightPublishKey(item: SpotlightItem): string {
-  const publishedParts = [
-    item.author_gmfn_id,
-    item.created_at,
-    item.message,
-    item.image_url || item.image,
-    item.video_url,
-    item.source_product_id,
-  ].map(safeStr);
-
-  if (publishedParts.some(Boolean)) {
-    return `published:${publishedParts.join("|")}`;
-  }
-
-  return `row:${safeStr(item.id)}`;
-}
-
-function uniqueSpotlightItems(rawItems: any[]): SpotlightItem[] {
-  const seen = new Set<string>();
-  const items: SpotlightItem[] = [];
-
-  for (const rawItem of rawItems) {
-    const item = normalizeSpotlightItem(rawItem);
-    if (!item || !spotlightIsActive(item)) continue;
-
-    const key = spotlightPublishKey(item);
-    if (!key || seen.has(key)) continue;
-
-    seen.add(key);
-    items.push(item);
-  }
-
-  return items.sort((a, b) => {
-    const weightDelta = spotlightRotationWeight(b) - spotlightRotationWeight(a);
-    if (weightDelta !== 0) return weightDelta;
-    return spotlightSortTime(b) - spotlightSortTime(a);
-  });
-}
-
-function normalizePublicShopSpotlights(raw: any): SpotlightItem[] {
-  const candidates = [
-    raw?.primary_broadcast,
-    raw?.primaryBroadcast,
-    ...(Array.isArray(raw?.broadcasts) ? raw.broadcasts : []),
-    ...(Array.isArray(raw?.items) ? raw.items : []),
-  ];
-  return uniqueSpotlightItems(candidates);
 }
 
 function dashboardAvatarStorageKeysForUser(user: any): string[] {
@@ -1760,14 +1527,6 @@ function latestDashboardAttentionQuietMs(
   );
 }
 
-function readLocalString(key: string): string {
-  try {
-    if (typeof window === "undefined") return "";
-    return String(window.localStorage.getItem(key) || "").trim();
-  } catch {
-    return "";
-  }
-}
 
 function initialsFromName(name: string): string {
   const parts = safeStr(name).split(/\s+/).filter(Boolean);
@@ -1820,7 +1579,7 @@ function apiOrigin(): string {
     : "";
 }
 
-function resolveSpotlightAssetUrl(value?: string | null): string {
+function resolveDashboardAssetUrl(value?: string | null): string {
   const raw = safeStr(value);
   if (!raw) return "";
 
@@ -1837,37 +1596,8 @@ function resolveSpotlightAssetUrl(value?: string | null): string {
   if (!origin) return raw;
   return `${origin}${raw.startsWith("/") ? raw : `/${raw}`}`;
 }
-
-function buildResolvedSpotlightCandidates(src: string): string[] {
-  const raw = safeStr(src);
-  if (!raw) return [];
-
-  const candidates = [resolveSpotlightAssetUrl(raw), raw];
-
-  if (
-    raw.startsWith("/") &&
-    !raw.startsWith("//") &&
-    typeof window !== "undefined" &&
-    window.location
-  ) {
-    candidates.push(`${window.location.origin}${raw}`);
-    candidates.push(`${window.location.origin.replace(/:\d+$/, ":8012")}${raw}`);
-  }
-
-  return [...new Set(candidates.filter(Boolean))];
-}
-
-function getStoredCommunitySpotlightImage(clanId: number): string {
-  if (!clanId) return "";
-
-  return firstNonEmpty(
-    readLocalString(`gmfn.marketplace.communityPicture.${clanId}`),
-    readLocalString(`gmfn.communityHome.spotlightImage.${clanId}`)
-  );
-}
-
 function resolveDashboardAvatarSrc(user: any): string {
-  return resolveSpotlightAssetUrl(
+  return resolveDashboardAssetUrl(
     firstNonEmpty(
       user?.profile_image_url,
       user?.avatar_url,
@@ -1910,47 +1640,6 @@ function safeDateTime(x: unknown): string {
   const d = new Date(raw);
   if (!Number.isFinite(d.getTime())) return raw;
   return d.toLocaleString();
-}
-
-function describeSpotlightExpiry(item: SpotlightItem | null): {
-  chip: string;
-  detail: string;
-  urgent: boolean;
-} {
-  const expiresAt = toDateSafe(item?.expires_at);
-  if (!expiresAt) {
-    return {
-      chip: "Live now",
-      detail: "No end time is visible for this spotlight yet.",
-      urgent: false,
-    };
-  }
-
-  const now = new Date();
-  const diffMs = expiresAt.getTime() - now.getTime();
-  const diffHours = diffMs / (1000 * 60 * 60);
-
-  if (diffMs <= 0) {
-    return {
-      chip: "Run ended",
-      detail: `This spotlight reached its end time at ${safeDateTime(expiresAt)}.`,
-      urgent: true,
-    };
-  }
-
-  if (diffHours <= 24) {
-    return {
-      chip: "Ends soon",
-      detail: `This spotlight is scheduled to end at ${safeDateTime(expiresAt)}.`,
-      urgent: true,
-    };
-  }
-
-  return {
-    chip: "Live now",
-    detail: `This spotlight is scheduled to end at ${safeDateTime(expiresAt)}.`,
-    urgent: false,
-  };
 }
 
 function toDateSafe(value: unknown): Date | null {
@@ -2752,13 +2441,10 @@ function dashboardNoticeSource(text: string, target: string): string {
 
   if (
     textContainsAny(joined, [
-      "spotlight",
       "broadcast",
-      "shop spotlight",
-      "market spotlight",
     ])
   ) {
-    return "Your Spotlight";
+    return "Your Shop";
   }
 
   if (
@@ -2841,8 +2527,6 @@ function dashboardNoticeScore(
         source === "Focus Commitments" ||
         source === "Your Focus Commitments"
       ? 12
-      : source === "Spotlight Demand" || source === "Your Spotlight"
-      ? 6
       : 0;
 
   return bucketScore + unreadScore + sourceScore;
@@ -2868,39 +2552,8 @@ function sortDashboardNoticeItems(rows: DashboardNoticeItem[]): DashboardNoticeI
   });
 }
 
-function spotlightMarketplaceTo(item: SpotlightItem | null): string {
-  const verifiedClanId = positiveNumber(item?.source_clan_id || item?.clan_id);
-
-  if (verifiedClanId > 0) {
-    return `/app/marketplace/community/${verifiedClanId}`;
-  }
-
-  return DASHBOARD_TARGETS.MARKETPLACE;
-}
-
-function spotlightShopTo(item: SpotlightItem | null): string {
-  const gmfnId = safeStr(item?.author_gmfn_id || "");
-  if (!gmfnId) return "";
-
-  const clanId = positiveNumber(item?.source_clan_id || item?.clan_id);
-  const productId = positiveNumber(item?.source_product_id);
-  const block =
-    positiveNumber(item?.source_product_block) ||
-    positiveNumber(item?.source_product_slot_number);
-
-  return productId || block || clanId
-    ? publicShopSharePath({
-        gmfnId,
-        clanId: clanId || undefined,
-        productId: productId || undefined,
-        block: block || undefined,
-      })
-    : publicShopPath(gmfnId);
-}
-
 function defaultDashboardUIState(): DashboardUIState {
   return {
-    spotlightMinimized: false,
     routesExpanded: false,
     appsExpanded: false,
     inboxExpanded: false,
@@ -2934,9 +2587,6 @@ function normalizeDashboardUIState(raw: unknown): DashboardUIState {
   const src = (raw ?? {}) as Partial<DashboardUIState>;
 
   return {
-    spotlightMinimized: Boolean(
-      src.spotlightMinimized ?? base.spotlightMinimized
-    ),
     routesExpanded: Boolean(src.routesExpanded ?? base.routesExpanded),
     appsExpanded: Boolean(src.appsExpanded ?? base.appsExpanded),
     inboxExpanded: Boolean(src.inboxExpanded ?? base.inboxExpanded),
@@ -3252,7 +2902,6 @@ function getUserOperationalClass(params: {
   trustSlipCode: string;
   pendingRequestsCount: number;
   demandItems: DemandItem[];
-  activeSpotlight: SpotlightItem | null;
   gmfnId: string;
   dashboardNoticeSummary: DashboardNoticeSummary;
 }): UserOperationalClass {
@@ -3280,7 +2929,7 @@ function getUserOperationalClass(params: {
     return "demand";
   }
 
-  if (params.activeSpotlight || safeStr(params.gmfnId)) {
+  if (safeStr(params.gmfnId)) {
     return "seller";
   }
 
@@ -3681,10 +3330,6 @@ export default function DashboardPage() {
     () => dashboardUserStorageIdentity(me),
     [me]
   );
-  const dashboardGmfnId = useMemo(
-    () => firstNonEmpty(me?.gmfn_id, me?.gmfnId, me?.gmfnID),
-    [me]
-  );
   const dashboardIdentityReady = dashboardStorageIdentity !== "visitor";
   const dashboardAttentionStorageKey = useMemo(
     () =>
@@ -3732,15 +3377,6 @@ export default function DashboardPage() {
   }, [dashboardAvatarLocalFallbackStorageKey, me]);
   const dashboardAttentionStorageKeyRef = useRef(dashboardAttentionStorageKey);
 
-  const [spotlights, setSpotlights] = useState<SpotlightItem[]>([]);
-  const [spotlightLoading, setSpotlightLoading] = useState<boolean>(false);
-  const [spotlightIndex, setSpotlightIndex] = useState<number>(0);
-  const [, setSpotlightQueueTotal] = useState<number>(0);
-  const [latestSpotlightSnapshot, setLatestSpotlightSnapshot] =
-    useState<SpotlightItem | null>(null);
-  const spotlightsRef = useRef<SpotlightItem[]>([]);
-  const latestSpotlightSnapshotRef = useRef<SpotlightItem | null>(null);
-
   const [pendingRequests, setPendingRequests] = useState<JoinRequestItem[]>([]);
   const [notices, setNotices] = useState<NoticeItem[]>([]);
   const [noticesLoading, setNoticesLoading] = useState<boolean>(false);
@@ -3758,10 +3394,7 @@ export default function DashboardPage() {
     null
   );
   const marketWisdomExposureRef = useRef<string>("");
-  const marketWisdomRecommendationKeyRef = useRef<string>("");
-  const [sellerIdentityDockOpen, setSellerIdentityDockOpen] =
-    useState<boolean>(true);
-  const [demandGuideOpen] = useState<boolean>(false);
+  const marketWisdomRecommendationKeyRef = useRef<string>("");  const [demandGuideOpen] = useState<boolean>(false);
 
   const [avatarSrc, setAvatarSrc] = useState<string>("");
   const [failedAvatarSrc, setFailedAvatarSrc] = useState<string>("");
@@ -4005,136 +3638,6 @@ export default function DashboardPage() {
       alive = false;
     };
   }, [selectedClanId]);
-
-  useEffect(() => {
-    spotlightsRef.current = spotlights;
-  }, [spotlights]);
-
-  useEffect(() => {
-    latestSpotlightSnapshotRef.current = latestSpotlightSnapshot;
-  }, [latestSpotlightSnapshot]);
-
-  useEffect(() => {
-    let alive = true;
-    let refreshTimer: number | null = null;
-
-    async function refreshSpotlights() {
-      if (!alive) return;
-      if (
-        spotlightsRef.current.length === 0 &&
-        !latestSpotlightSnapshotRef.current
-      ) {
-        setSpotlightLoading(true);
-      }
-
-      try {
-        const res = await getMarketplaceBroadcasts({
-          clan_id: null,
-          active_only: true,
-          limit: 20,
-        });
-
-        if (!alive) return;
-
-        const rawItems: SpotlightItem[] = Array.isArray(res)
-          ? res
-          : Array.isArray((res as any)?.items)
-          ? (res as any).items
-          : [];
-        const items = uniqueSpotlightItems(rawItems);
-
-        setSpotlights(buildSpotlightRotationQueue(items));
-        setSpotlightQueueTotal(items.length);
-
-        if (items.length > 0) {
-          setLatestSpotlightSnapshot(items[0] || null);
-          return;
-        }
-
-        if (dashboardGmfnId) {
-          const publicShopRes = await getPublicMarketplaceShopByGmfnId(
-            dashboardGmfnId,
-            {
-              product_limit: 1,
-              broadcast_limit: 24,
-            }
-          ).catch(() => null);
-
-          if (!alive) return;
-
-          const publicShopSpotlights =
-            normalizePublicShopSpotlights(publicShopRes);
-
-          if (publicShopSpotlights.length > 0) {
-            setSpotlights(buildSpotlightRotationQueue(publicShopSpotlights));
-            setSpotlightQueueTotal(publicShopSpotlights.length);
-            setLatestSpotlightSnapshot(publicShopSpotlights[0] || null);
-            return;
-          }
-        }
-
-        const recentRes = await getMarketplaceBroadcasts({
-          clan_id: null,
-          active_only: false,
-          limit: 5,
-        });
-
-        if (!alive) return;
-
-        const rawRecentItems: SpotlightItem[] = Array.isArray(recentRes)
-          ? recentRes
-          : Array.isArray((recentRes as any)?.items)
-          ? (recentRes as any).items
-          : [];
-        const recentItems = uniqueSpotlightItems(rawRecentItems);
-
-        setLatestSpotlightSnapshot(recentItems[0] || null);
-        setSpotlightQueueTotal(0);
-      } catch {
-        // Keep the current spotlight state if the refresh fails temporarily.
-      } finally {
-        if (alive) {
-          setSpotlightLoading(false);
-        }
-      }
-    }
-
-    void refreshSpotlights();
-
-    function handleVisibilityRefresh() {
-      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
-        return;
-      }
-
-      void refreshSpotlights();
-    }
-
-    if (typeof window !== "undefined") {
-      window.addEventListener("focus", handleVisibilityRefresh);
-      refreshTimer = window.setInterval(() => {
-        void refreshSpotlights();
-      }, SPOTLIGHT_PILOT_REFRESH_MS);
-    }
-
-    if (typeof document !== "undefined") {
-      document.addEventListener("visibilitychange", handleVisibilityRefresh);
-    }
-
-    return () => {
-      alive = false;
-
-      if (typeof window !== "undefined") {
-        window.removeEventListener("focus", handleVisibilityRefresh);
-        if (refreshTimer !== null) {
-          window.clearInterval(refreshTimer);
-        }
-      }
-
-      if (typeof document !== "undefined") {
-        document.removeEventListener("visibilitychange", handleVisibilityRefresh);
-      }
-    };
-  }, [dashboardGmfnId, selectedClanId]);
 
   useEffect(() => {
     let alive = true;
@@ -4407,27 +3910,12 @@ export default function DashboardPage() {
   }, [selectedClanId]);
 
   useEffect(() => {
-    if (spotlights.length <= 1) return;
-
-    const timer = window.setInterval(() => {
-      setSpotlightIndex((prev) => (prev + 1) % spotlights.length);
-    }, SPOTLIGHT_PILOT_ROTATION_MS);
-
-    return () => window.clearInterval(timer);
-  }, [spotlights.length]);
-
-  useEffect(() => {
     const timer = window.setInterval(() => {
       setMarketWisdomIndex((prev) => prev + 1);
     }, MARKET_WISDOM_ROTATION_MS);
 
     return () => window.clearInterval(timer);
   }, []);
-
-  const activeSpotlight = useMemo(() => {
-    if (spotlights.length === 0) return null;
-    return spotlights[spotlightIndex % spotlights.length] || spotlights[0];
-  }, [spotlights, spotlightIndex]);
 
   const cci = useMemo(
     () => getCciState(me, trustSlip, trustExplanation),
@@ -4448,7 +3936,6 @@ export default function DashboardPage() {
           hour,
           unread: notices.filter((n) => !n?.is_read).length,
           pendingRequests: pendingRequests.length,
-          hasSpotlight: Boolean(activeSpotlight),
           hasGmfnId: Boolean(me?.gmfn_id),
           trustTone: cci.tone,
           previousId: (prev as any)?.id,
@@ -4459,7 +3946,6 @@ export default function DashboardPage() {
     marketWisdomIndex,
     notices,
     pendingRequests.length,
-    activeSpotlight,
     me,
     cci.tone,
   ]);
@@ -4622,69 +4108,6 @@ export default function DashboardPage() {
       borderRadius: isPhone ? 10 : 11,
       lineHeight: 1.08,
     });
-
-  const storedCommunitySpotlightImage = useMemo(() => {
-    const spotlightClanId = positiveNumber(
-      activeSpotlight?.source_clan_id || activeSpotlight?.clan_id || selectedClanId
-    );
-
-    return firstNonEmpty(
-      getStoredCommunitySpotlightImage(spotlightClanId),
-      getStoredCommunitySpotlightImage(selectedClanId)
-    );
-  }, [activeSpotlight, selectedClanId]);
-
-  const spotlightImageSrc = safeStr(
-    activeSpotlight?.image_url ||
-      activeSpotlight?.image ||
-      storedCommunitySpotlightImage ||
-      ""
-  );
-
-  const spotlightImageCandidates = useMemo(
-    () => buildResolvedSpotlightCandidates(spotlightImageSrc),
-    [spotlightImageSrc]
-  );
-  const spotlightVideoSrc = safeStr(activeSpotlight?.video_url || "");
-  const spotlightVideoCandidates = useMemo(
-    () => buildResolvedSpotlightCandidates(spotlightVideoSrc),
-    [spotlightVideoSrc]
-  );
-  const spotlightVideoCandidate = spotlightVideoCandidates[0] || "";
-  const spotlightHasMedia =
-    spotlightImageCandidates.length > 0 || Boolean(spotlightVideoCandidate);
-  const spotlightExpiryStatus = useMemo(
-    () => describeSpotlightExpiry(activeSpotlight),
-    [activeSpotlight]
-  );
-  const latestSpotlightStatus = useMemo(
-    () => describeSpotlightExpiry(latestSpotlightSnapshot),
-    [latestSpotlightSnapshot]
-  );
-  const spotlightProductName = safeStr(
-    activeSpotlight?.source_product_title ||
-      activeSpotlight?.title ||
-      activeSpotlight?.message ||
-      "Your community Spotlight"
-  );
-  const spotlightProductDescription = safeStr(
-    activeSpotlight?.source_product_description ||
-      activeSpotlight?.body ||
-      activeSpotlight?.message ||
-      ""
-  );
-  const spotlightProductPrice =
-    spotlightPriceLine(
-      activeSpotlight?.source_product_price ?? activeSpotlight?.price,
-      activeSpotlight?.source_product_currency ?? activeSpotlight?.currency
-    ) || "Price on request";
-  const spotlightPriceIsVisible = Boolean(
-    spotlightProductPrice && spotlightProductPrice !== "Price on request"
-  );
-  const spotlightDescriptionIsDuplicatePrice =
-    spotlightPriceIsVisible &&
-    safeStr(spotlightProductDescription).toLowerCase() ===
-      safeStr(spotlightProductPrice).toLowerCase();
 
   const myShopLink = "/app/shop-control";
 
@@ -4926,28 +4349,6 @@ export default function DashboardPage() {
       );
     }
 
-    if (activeSpotlight) {
-      pushItem(
-        makeItem({
-          id: `synthetic-spotlight-${safeStr(activeSpotlight.id || spotlightIndex)}`,
-          title: safeStr(
-            activeSpotlight.title ||
-              activeSpotlight.message ||
-              "Your Marketplace Spotlight is live"
-          ),
-          detail: safeStr(
-              activeSpotlight.body ||
-              activeSpotlight.message ||
-              "Your Spotlight is live in the marketplace. Watch the visibility, demand, and evidence signals around this seller."
-          ),
-          ctaLabel: "Open your Marketplace",
-          ctaTo: spotlightMarketplaceTo(activeSpotlight),
-          source: "Your Spotlight",
-          bucket: "watch",
-        })
-      );
-    }
-
     const trustNotice = buildDashboardTrustNoticeCopy({
       openTrust,
       cci,
@@ -5095,8 +4496,6 @@ export default function DashboardPage() {
     unreadCount,
     pendingRequests,
     demandItems,
-    activeSpotlight,
-    spotlightIndex,
     openTrust,
     cci,
     trustExplainer,
@@ -5574,7 +4973,6 @@ export default function DashboardPage() {
     const signals = [
       unreadCount > 0 ? "unread-community-notices" : "",
       pendingRequests.length > 0 ? "pending-community-review" : "",
-      activeSpotlight ? "active-spotlight" : "",
       !me?.gmfn_id ? "missing-gsn-id" : "",
       cci.tone === "yellow" || cci.tone === "red" ? `trust-${cci.tone}` : "",
       demandItems.length > 0 ? "open-demand" : "",
@@ -5585,9 +4983,7 @@ export default function DashboardPage() {
       selectedClanId ? `community-${selectedClanId}` : "no-community",
       signals.join(",") || "general",
     ].join("|");
-    const key = `${context}|${unreadCount}|${pendingRequests.length}|${Boolean(
-      activeSpotlight
-    )}|${safeStr(cci.tone)}|${demandItems.length}|${urgentDemandItems.length}`;
+    const key = `${context}|${unreadCount}|${pendingRequests.length}|false|${safeStr(cci.tone)}|${demandItems.length}|${urgentDemandItems.length}`;
 
     if (marketWisdomRecommendationKeyRef.current === key) return;
     marketWisdomRecommendationKeyRef.current = key;
@@ -5609,7 +5005,6 @@ export default function DashboardPage() {
 
     return () => window.clearTimeout(timer);
   }, [
-    activeSpotlight,
     cci.tone,
     demandItems.length,
     me,
@@ -5641,7 +5036,6 @@ export default function DashboardPage() {
     const seed = [
       activeWisdomTitle,
       activeWisdomCategory,
-      activeSpotlight?.id,
       urgentDemandItems.length,
       demandItems.length,
       pendingRequests.length,
@@ -5657,7 +5051,6 @@ export default function DashboardPage() {
       getFeaturedGmfnCapability(seed)
     );
   }, [
-    activeSpotlight?.id,
     activeWisdomCapability,
     activeWisdomCategory,
     activeWisdomTitle,
@@ -5695,10 +5088,6 @@ export default function DashboardPage() {
   }, [activeWisdomCategory]);
 
   const marketWisdomNowLine = useMemo(() => {
-    if (activeSpotlight) {
-      return "Your Spotlight is live. Check seller trust before the next move.";
-    }
-
     if (urgentDemandItems.length > 0) {
       return "Urgent demand is live. Check timing and response now.";
     }
@@ -5735,7 +5124,7 @@ export default function DashboardPage() {
       case "trade":
         return "Use this before trade, pricing, or the next seller decision.";
       case "visibility":
-        return "Use this before spotlight, display, or seller-reach decisions.";
+        return "Use this before display, promotion, or seller-reach decisions.";
       case "finance":
         return "Use this before contribution, borrowing, or repayment decisions.";
       case "support":
@@ -5750,7 +5139,6 @@ export default function DashboardPage() {
         return "Use this to steady the next move before you act.";
     }
   }, [
-    activeSpotlight,
     activeWisdomCategory,
     cci.tone,
     dashboardNoticeSummary.counts.unread,
@@ -5766,7 +5154,6 @@ export default function DashboardPage() {
     const seed = [
       activeWisdomTitle,
       activeWisdomCategory,
-      activeSpotlight?.id,
       urgentDemandItems.length,
       demandItems.length,
       pendingRequests.length,
@@ -5787,7 +5174,6 @@ export default function DashboardPage() {
 
     return `My GSN and I keeps the ${GMFN_CAPABILITY_COUNT} core capabilities visible behind this reading.`;
   }, [
-    activeSpotlight?.id,
     activeWisdomCategory,
     activeWisdomGuideCapability,
     activeWisdomTitle,
@@ -5802,16 +5188,6 @@ export default function DashboardPage() {
   ]);
 
   const marketWisdomAttentionState = useMemo(() => {
-    if (activeSpotlight) {
-      return {
-        label: "Spotlight live",
-        detail: "Live seller visibility is shaping the current reading.",
-        accent: "#A16207",
-        border: "rgba(184,137,45,0.18)",
-        background:
-          "linear-gradient(180deg, rgba(248,222,141,0.24) 0%, rgba(255,255,255,0.96) 100%)",
-      };
-    }
 
     if (urgentDemandItems.length > 0) {
       return {
@@ -5899,7 +5275,6 @@ export default function DashboardPage() {
         "linear-gradient(180deg, rgba(219,234,254,0.90) 0%, rgba(255,255,255,0.96) 100%)",
     };
   }, [
-    activeSpotlight,
     activeWisdomCategoryLabel,
     cci.tone,
     dashboardNoticeSummary.counts.unread,
@@ -6163,7 +5538,6 @@ export default function DashboardPage() {
   const dashboardAttentionOrder = dashboardHasActionableAttention ? 10 : 40;
   const dashboardIdentityOrder = dashboardHasActionableAttention ? 20 : 10;
   const dashboardToolsOrder = dashboardHasActionableAttention ? 30 : 20;
-  const dashboardSpotlightOrder = dashboardHasActionableAttention ? 40 : 30;
   const dashboardIdentityCompact = isPhone && dashboardHasActionableAttention;
   const userOperationalClass = useMemo(
     () =>
@@ -6173,8 +5547,7 @@ export default function DashboardPage() {
         trustSlipCode,
         pendingRequestsCount: pendingRequests.length,
         demandItems,
-        activeSpotlight,
-        gmfnId,
+      gmfnId,
         dashboardNoticeSummary,
       }),
     [
@@ -6183,7 +5556,6 @@ export default function DashboardPage() {
       trustSlipCode,
       pendingRequests.length,
       demandItems,
-      activeSpotlight,
       gmfnId,
       dashboardNoticeSummary,
     ]
@@ -6350,13 +5722,8 @@ export default function DashboardPage() {
     "focus",
   ].includes(attentionDisplaySignal.sourceKind);
 
-  const attentionCanSurfaceWithSpotlight =
-    attentionPopupVisible ||
-    (attentionAutoOpenAllowed && attentionDisplaySignal.shouldShow);
-
   const attentionSurfaceVisible =
     attentionDisplaySignal.active &&
-    (!activeSpotlight || attentionCanSurfaceWithSpotlight) &&
     (attentionPopupVisible ||
       (!attentionAutoOpenAllowed && !attentionQuietActive) ||
       (attentionDisplaySignal.shouldShow && !attentionQuietActive));
@@ -6408,7 +5775,6 @@ export default function DashboardPage() {
         items: [
           { label: "Marketplace", to: DASHBOARD_TARGETS.MARKETPLACE },
           { label: "DemandBox", to: DASHBOARD_TARGETS.DEMAND_BOX },
-          { label: "Spotlight", to: DASHBOARD_TARGETS.COMMUNITY_SPOTLIGHT },
           { label: "Shop", to: DASHBOARD_TARGETS.SHOP_ME },
         ],
       },
@@ -6482,12 +5848,6 @@ export default function DashboardPage() {
     dashboardIdentityReady,
   ]);
 
-  function updateUiState(patch: Partial<DashboardUIState>) {
-    setUiState((prev) => ({
-      ...prev,
-      ...patch,
-    }));
-  }
 
   function toggleUiStateFlag(key: keyof DashboardUIState) {
     setUiState((prev) => ({
@@ -6581,86 +5941,6 @@ export default function DashboardPage() {
     );
   }
 
-  function goPrevSpotlight(event?: React.SyntheticEvent<HTMLElement>) {
-    runDashboardUiMutation(event, () => {
-      if (spotlights.length <= 1) return;
-      setSpotlightIndex((prev) => (prev <= 0 ? spotlights.length - 1 : prev - 1));
-    });
-  }
-
-  function goNextSpotlight(event?: React.SyntheticEvent<HTMLElement>) {
-    runDashboardUiMutation(event, () => {
-      if (spotlights.length <= 1) return;
-      setSpotlightIndex((prev) => (prev >= spotlights.length - 1 ? 0 : prev + 1));
-    });
-  }
-
-  function openDashboardSpotlightGuide(
-    event?: React.SyntheticEvent<HTMLElement>
-  ) {
-    openDashboardRoute(event, DASHBOARD_TARGETS.COMMUNITY_SPOTLIGHT);
-  }
-
-  function minimizeSpotlight(event?: React.SyntheticEvent<HTMLElement>) {
-    runDashboardUiMutation(event, () =>
-      updateUiState({ spotlightMinimized: true })
-    );
-  }
-
-  function openSpotlightShop(event?: React.SyntheticEvent<HTMLElement>) {
-    consumeDashboardButtonEvent(event);
-    if (Date.now() < dashboardTapLockUntilRef.current) return;
-    const spotlightGmfnId = safeStr(activeSpotlight?.author_gmfn_id || "");
-    if (!spotlightGmfnId) return;
-
-    navigateWithOrigin(navigate, spotlightShopTo(activeSpotlight), location);
-  }
-
-  function openSpotlightWhatsApp(event?: React.SyntheticEvent<HTMLElement>) {
-    consumeDashboardButtonEvent(event);
-    if (Date.now() < dashboardTapLockUntilRef.current) return;
-    const spotlightTitle = safeStr(
-      activeSpotlight?.title ||
-        activeSpotlight?.message ||
-        "this GSN Spotlight"
-    );
-    const spotlightShop = safeStr(
-      activeSpotlight?.source_shop_name ||
-        activeSpotlight?.author_name ||
-        "this GSN shop"
-    );
-    const message = `Hello, I found ${spotlightShop} on GSN Spotlight. I am asking about: ${spotlightTitle}.`;
-    const chatUrl = buildWhatsAppChatUrl(
-      activeSpotlight?.source_shop_whatsapp_number,
-      message
-    );
-
-    if (chatUrl && typeof window !== "undefined") {
-      window.open(chatUrl, "_blank", "noopener,noreferrer");
-      return;
-    }
-
-    openSpotlightShop(event);
-  }
-
-  function openSpotlightMarketplace(
-    event?: React.SyntheticEvent<HTMLElement>
-  ) {
-    openDashboardRoute(event, spotlightMarketplaceTo(activeSpotlight));
-  }
-
-  function openSellerIdentityDock(
-    event?: React.SyntheticEvent<HTMLButtonElement>
-  ) {
-    runDashboardUiMutation(event, () => setSellerIdentityDockOpen(true));
-  }
-
-  function closeSellerIdentityDock(
-    event?: React.SyntheticEvent<HTMLButtonElement>
-  ) {
-    runDashboardUiMutation(event, () => setSellerIdentityDockOpen(false));
-  }
-
   function openTrackedApp(app: AppUseRecord) {
     if (Date.now() < dashboardTapLockUntilRef.current) return;
     navigateWithOrigin(navigate, app.to, location);
@@ -6751,7 +6031,7 @@ export default function DashboardPage() {
     }
 
     try {
-      const prepared = await prepareSpotlightImageFile(file, {
+      const prepared = await prepareDashboardAvatarImageFile(file, {
         maxBytes: DASHBOARD_AVATAR_MAX_BYTES,
         maxDimension: DASHBOARD_AVATAR_MAX_DIMENSION,
       });
@@ -7206,50 +6486,6 @@ export default function DashboardPage() {
       ? "#FCD34D"
       : "#93C5FD";
 
-  const showSpotlight = false;
-  const dashboardSpotlightCompactTitle = spotlightLoading
-    ? "Checking your Spotlight"
-    : activeSpotlight
-    ? safeStr(
-        activeSpotlight.title ||
-          activeSpotlight.message ||
-          "Your community Spotlight"
-      )
-    : latestSpotlightSnapshot
-    ? "No live Spotlight for you"
-    : "No Spotlight is live right now";
-  const dashboardSpotlightCompactDetail = spotlightLoading
-    ? "GSN is checking your current Spotlight status."
-    : activeSpotlight
-    ? `${safeStr(
-        activeSpotlight.source_shop_name ||
-          activeSpotlight.author_name ||
-          "Your community seller"
-      )} - ${safeStr(
-        activeSpotlight.source_clan_name ||
-          currentCommunityName(currentClan, selectedClanId)
-      )}`
-    : latestSpotlightSnapshot
-    ? latestSpotlightStatus.detail
-    : "Open Spotlight when you want to publish or review promotion.";
-  const showLegacySpotlightDock = Boolean(
-    (globalThis as any).__GSN_LEGACY_SPOTLIGHT_DOCK
-  );
-  const dashboardSpotlightMinHeight = isCompact ? 80 : 106;
-  const dashboardSpotlightRadius = isCompact ? 20 : 24;
-  const dashboardSpotlightTopInset = isCompact ? 6 : 8;
-  const dashboardSpotlightBottomInset = isCompact ? 6 : 8;
-  const dashboardSpotlightScreenHeight = isPhone
-    ? 318
-    : isCompact
-    ? 286
-    : 340;
-  const dashboardSpotlightTitleSize = isPhone ? 16 : isCompact ? 18 : 22;
-  const dashboardSpotlightBodyFontSize = isPhone
-    ? 12.25
-    : isCompact
-    ? 12.5
-    : 13.5;
   const dashboardPhoneButton: React.CSSProperties = isPhone
     ? {
         minHeight: 40,
@@ -7318,7 +6554,7 @@ export default function DashboardPage() {
       maxWidth: "100%",
       ...overrides,
     });
-  const spotlightWhiteButton = (
+  const dashboardWhiteButton = (
     overrides: React.CSSProperties = {}
   ): React.CSSProperties =>
     dashboardFillButton(
@@ -10016,1318 +9252,6 @@ export default function DashboardPage() {
       </section>
       <section
         style={{
-          ...pageCard(
-            "radial-gradient(circle at 12% 0%, rgba(214,170,69,0.10) 0%, rgba(214,170,69,0) 30%), linear-gradient(180deg, #FFFFFF 0%, #FFFEFA 58%, #F8FBFF 100%)"
-          ),
-          order: dashboardSpotlightOrder,
-          position: "relative",
-          border: "1px solid rgba(184,137,45,0.28)",
-          padding: isPhone ? 12 : isCompact ? 18 : 20,
-          borderRadius: isPhone ? 24 : 28,
-          boxShadow:
-            "0 22px 46px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.92)",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: isPhone ? 5 : 6,
-            background:
-              "linear-gradient(90deg, #0B63D1 0%, #F3D06A 44%, #0F3B74 100%)",
-          }}
-        />
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: isPhone ? 8 : 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-          >
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "auto minmax(0, 1fr)",
-                gap: isPhone ? 12 : 14,
-                alignItems: "center",
-                minWidth: 0,
-              }}
-            >
-              <span
-                aria-hidden="true"
-                style={{
-                  width: isPhone ? 52 : 58,
-                  height: isPhone ? 52 : 58,
-                  borderRadius: 999,
-                  display: "grid",
-                  placeItems: "center",
-                  border: "1px solid rgba(214,170,69,0.24)",
-                  background:
-                    "linear-gradient(180deg, #FFFFFF 0%, #FFF8E8 100%)",
-                  boxShadow:
-                    "0 14px 26px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.92)",
-                }}
-              >
-                <GsnLegacyIcon name="megaphone" size={isPhone ? 34 : 38} />
-              </span>
-              <div style={{ minWidth: 0 }}>
-                <div
-                  style={{
-                    color: "#07172C",
-                    fontSize: isPhone ? 22 : 28,
-                    fontWeight: 1000,
-                    letterSpacing: 0,
-                    lineHeight: 1.05,
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Your Spotlight
-                </div>
-              <div
-                style={{
-                  marginTop: isPhone ? 6 : 8,
-                  color: "#8A651E",
-                  fontSize: isPhone ? 12.5 : 13.5,
-                  fontWeight: 850,
-                  lineHeight: 1.25,
-                }}
-              >
-                Spotlight status
-              </div>
-              </div>
-            </div>
-
-          <div
-            style={{
-              display: "flex",
-              gap: isPhone ? 6 : 8,
-              flexWrap: "wrap",
-              alignItems: "center",
-            }}
-          >
-            {showSpotlight && spotlights.length > 1 ? (
-              <>
-                <StableButton
-                  debugId="dashboard.spotlight.previous"
-                  type="button"
-                  onClick={goPrevSpotlight}
-                  onPointerDown={consumeDashboardPointerEvent}
-                  style={spotlightWhiteButton({
-                    width: "auto",
-                    minWidth: isPhone ? 92 : 120,
-                  })}
-                >
-                  Previous
-                </StableButton>
-
-                <span
-                  style={{
-                    ...badge(false),
-                    minHeight: isPhone ? 46 : 40,
-                    padding: isPhone ? "10px 12px" : "8px 14px",
-                    borderRadius: isPhone ? 15 : 15,
-                    background:
-                      "linear-gradient(180deg, #FFFFFF 0%, #F4F8FC 100%)",
-                    color: "#123055",
-                    boxShadow:
-                      "0 10px 20px rgba(10,24,49,0.05), inset 0 1px 0 rgba(255,255,255,0.86)",
-                  }}
-                >
-                  Spotlight {(spotlightIndex % spotlights.length) + 1} / {spotlights.length}
-                </span>
-
-                <StableButton
-                  debugId="dashboard.spotlight.next"
-                  type="button"
-                  onClick={goNextSpotlight}
-                  onPointerDown={consumeDashboardPointerEvent}
-                  style={spotlightWhiteButton({
-                    width: "auto",
-                    minWidth: isPhone ? 74 : 104,
-                  })}
-                >
-                  Next
-                </StableButton>
-              </>
-            ) : null}
-
-            {showSpotlight && !activeSpotlight ? (
-              <StableButton
-                debugId="dashboard.spotlight.restore"
-                type="button"
-                onClick={openDashboardSpotlightGuide}
-                onPointerDown={consumeDashboardPointerEvent}
-                style={dashboardStableActionFrame(secondaryBtn(false))}
-              >
-                Open Spotlight
-              </StableButton>
-            ) : null}
-          </div>
-        </div>
-
-        {!showSpotlight ? (
-          <div
-            style={{
-              marginTop: 16,
-              ...innerCard("#FFFFFF"),
-              border: "1px solid rgba(11,99,209,0.10)",
-            }}
-          >
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr"
-                  : "minmax(0, 1.15fr) auto",
-                gap: 12,
-                alignItems: "center",
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    fontSize: 20,
-                    lineHeight: 1.25,
-                  }}
-                >
-                  {dashboardSpotlightCompactTitle}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 8,
-                    ...helperText(),
-                    maxWidth: 760,
-                  }}
-                >
-                  {dashboardSpotlightCompactDetail}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                  justifyContent: isCompact ? "flex-start" : "flex-end",
-                }}
-              >
-                <StableButton
-                  debugId="dashboard.spotlight.restore.empty-card"
-                  type="button"
-                  onClick={openDashboardSpotlightGuide}
-                  onPointerDown={consumeDashboardPointerEvent}
-                  style={dashboardStableActionFrame(primaryBtn(false))}
-                >
-                  Open Spotlight
-                </StableButton>
-              </div>
-            </div>
-          </div>
-        ) : spotlightLoading ? (
-          <div style={{ marginTop: 16, color: "#64748B" }}>
-            Loading your Spotlight...
-          </div>
-        ) : activeSpotlight ? (
-          <>
-            <div
-              style={{
-                marginTop: isPhone ? 10 : 16,
-                ...innerCard(
-                  "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,252,245,0.98) 56%, rgba(248,251,255,0.98) 100%)"
-                ),
-                border: "1px solid rgba(184,137,45,0.30)",
-                padding: isPhone ? 8 : 12,
-                borderRadius: isPhone ? 20 : 22,
-                boxShadow:
-                  "0 18px 34px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.92)",
-              }}
-            >
-              <div
-                style={{
-                  position: "relative",
-                  minHeight: dashboardSpotlightScreenHeight,
-                  padding: isPhone ? 8 : 10,
-                  borderRadius: isPhone ? 18 : 22,
-                  overflow: "hidden",
-                  border: "1px solid rgba(184,137,45,0.48)",
-                  outline: "1px solid rgba(255,255,255,0.72)",
-                  outlineOffset: "-5px",
-                  background:
-                    "linear-gradient(180deg, #FDFBF6 0%, #F5FAFF 100%)",
-                  boxShadow:
-                    "0 16px 30px rgba(10,24,49,0.14), inset 0 0 0 1px rgba(214,170,69,0.12), inset 0 1px 0 rgba(255,255,255,0.86)",
-                }}
-              >
-                <SpotlightMediaFrame
-                  imageCandidates={spotlightImageCandidates}
-                  videoUrl={spotlightVideoCandidate}
-                  videoPoster={spotlightImageCandidates[0] || ""}
-                  alt={safeStr(
-                    activeSpotlight?.title ||
-                      activeSpotlight?.message ||
-                      "Spotlight"
-                  )}
-                  frameStyle={{
-                    width: "100%",
-                    height: dashboardSpotlightScreenHeight,
-                    minHeight: dashboardSpotlightScreenHeight,
-                    borderRadius: isPhone ? 14 : 16,
-                    background: "transparent",
-                    zIndex: 2,
-                    boxShadow:
-                      "inset 0 0 0 1px rgba(255,255,255,0.18), 0 0 0 1px rgba(2,12,27,0.22)",
-                  }}
-                  mediaStyle={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                  }}
-                  contentPadding={0}
-                  showVideoControls={false}
-                  autoPlayVideo={Boolean(spotlightVideoCandidate)}
-                  mutedVideo={Boolean(spotlightVideoCandidate)}
-                  loopVideo={Boolean(spotlightVideoCandidate)}
-                  showAudioUnlock={Boolean(spotlightVideoCandidate)}
-                  audioUnlockLabel="Sound on"
-                  audioUnlockOffLabel="Muted"
-                  audioUnlockErrorLabel="Play"
-                  audioUnlockStyle={{
-                    top: isPhone ? 12 : 18,
-                    right: isPhone ? 12 : 18,
-                    minWidth: isPhone ? 44 : 52,
-                    width: isPhone ? 44 : 52,
-                    minHeight: isPhone ? 44 : 52,
-                    height: isPhone ? 44 : 52,
-                    maxHeight: isPhone ? 44 : 52,
-                    padding: 0,
-                    borderRadius: 999,
-                    fontSize: 0,
-                    border: "1px solid rgba(214,170,69,0.66)",
-                    background:
-                      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,248,232,0.96) 100%)",
-                    color: "#07172C",
-                    boxShadow:
-                      "0 12px 22px rgba(2,12,27,0.30), inset 0 1px 0 rgba(255,255,255,0.92)",
-                  }}
-                  maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
-                  fallback={
-                    <div
-                      style={{
-                        width: "100%",
-                        height: dashboardSpotlightScreenHeight,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "#F8FBFF",
-                        fontWeight: 900,
-                        letterSpacing: 0.8,
-                        fontSize: isPhone ? 18 : 24,
-                      }}
-                    >
-                      GSN Spotlight
-                    </div>
-                  }
-                />
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: isPhone ? 8 : 10,
-                    borderRadius: isPhone ? 14 : 16,
-                    pointerEvents: "none",
-                    background:
-                      "linear-gradient(180deg, rgba(6,19,34,0.08) 0%, rgba(6,19,34,0.04) 38%, rgba(6,19,34,0.76) 100%)",
-                  }}
-                />
-                <div
-                  style={{
-                    position: "absolute",
-                    left: isPhone ? 18 : 22,
-                    right: isPhone ? 18 : 22,
-                    bottom: isPhone ? 16 : 18,
-                    zIndex: 5,
-                    display: "grid",
-                    gridTemplateColumns: "minmax(0, 1fr) auto",
-                    gap: isPhone ? 8 : 10,
-                    alignItems: "end",
-                    pointerEvents: "none",
-                  }}
-                >
-                {spotlightPriceIsVisible ? (
-                  <div
-                    style={{
-                      gridColumn: 1,
-                      gridRow: 1,
-                      justifySelf: "start",
-                      alignSelf: "end",
-                      minHeight: isPhone ? 40 : 44,
-                      maxWidth: "100%",
-                      padding: isPhone ? "8px 12px" : "9px 15px",
-                      borderRadius: 999,
-                      background:
-                        "linear-gradient(180deg, rgba(255,248,230,0.98) 0%, rgba(255,255,255,0.96) 100%)",
-                      border: "1px solid rgba(214,170,69,0.66)",
-                      color: "#08233A",
-                      boxShadow:
-                        "0 14px 26px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.92)",
-                      fontSize: isPhone ? 14 : 15.5,
-                      fontWeight: 950,
-                      lineHeight: 1,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {spotlightProductPrice}
-                  </div>
-                ) : null}
-                <StableButton
-                  debugId="dashboard.spotlight.whatsapp"
-                  type="button"
-                  onClick={openSpotlightWhatsApp}
-                  onPointerDown={consumeDashboardPointerEvent}
-                  stableHeight={52}
-                  style={{
-                    gridColumn: 2,
-                    gridRow: 1,
-                    justifySelf: "end",
-                    minWidth: isPhone ? 112 : 136,
-                    width: "auto",
-                    minHeight: isPhone ? 44 : 48,
-                    padding: isPhone ? "7px 10px" : "8px 14px",
-                    borderRadius: 999,
-                    background:
-                      "linear-gradient(180deg, #09233C 0%, #061827 100%)",
-                    border: "1px solid rgba(214,170,69,0.60)",
-                    color: "#FFFFFF",
-                    boxShadow:
-                      "0 14px 26px rgba(2,12,27,0.32), inset 0 1px 0 rgba(255,255,255,0.18)",
-                    fontSize: isPhone ? 13.2 : 14.5,
-                    fontWeight: 950,
-                    whiteSpace: "nowrap",
-                    pointerEvents: "auto",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: isPhone ? 5 : 7,
-                  }}
-                >
-                  <GsnLegacyIcon name="phone" size={isPhone ? 22 : 26} />
-                  <span>WhatsApp</span>
-                  <span aria-hidden="true" style={{ fontSize: isPhone ? 20 : 23 }}>
-                    &gt;
-                  </span>
-                </StableButton>
-                </div>
-                <div
-                  style={{
-                    position: "absolute",
-                    left: isPhone ? 18 : 22,
-                    right: isPhone ? 122 : 146,
-                    bottom: isPhone ? 17 : 20,
-                    display: "none",
-                    gap: 4,
-                    color: "#FFFFFF",
-                    pointerEvents: "none",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontWeight: 900,
-                      fontSize: dashboardSpotlightTitleSize,
-                      lineHeight: 1.15,
-                      textShadow: "0 10px 22px rgba(0,0,0,0.34)",
-                    }}
-                  >
-                    {safeStr(
-                      activeSpotlight.title ||
-                        activeSpotlight.message ||
-                        "Your community Spotlight"
-                    )}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: isPhone ? 12 : 13,
-                      lineHeight: 1.32,
-                      color: "rgba(255,255,255,0.88)",
-                      fontWeight: 800,
-                      textShadow: "0 8px 18px rgba(0,0,0,0.34)",
-                    }}
-                  >
-                    {safeStr(
-                      activeSpotlight.source_shop_name ||
-                        activeSpotlight.author_name ||
-                        "Your community seller"
-                    )}{" "}
-                    -{" "}
-                    {safeStr(
-                      activeSpotlight.source_clan_name ||
-                        currentCommunityName(currentClan, selectedClanId)
-                    )}
-                  </div>
-                </div>
-
-                <div style={{ display: "none" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: isPhone ? 6 : 8,
-                      flexWrap: "wrap",
-                      alignItems: "center",
-                    }}
-                  >
-                    <span style={badge(true)}>
-                      {spotlightEvidencePostureLabel(activeSpotlight)}
-                    </span>
-                    <span
-                      style={{
-                        ...badge(false),
-                        background: spotlightExpiryStatus.urgent
-                          ? "rgba(249,115,22,0.10)"
-                          : "rgba(11,99,209,0.08)",
-                        color: spotlightExpiryStatus.urgent ? "#9A3412" : "#1D4ED8",
-                      }}
-                    >
-                      {spotlightExpiryStatus.chip}
-                    </span>
-                    {!isPhone ? (
-                      <span
-                        style={{
-                          ...badge(false),
-                          background: spotlightHasMedia
-                            ? "rgba(15,59,116,0.08)"
-                            : "rgba(249,115,22,0.10)",
-                          color: spotlightHasMedia ? "#0F3B74" : "#9A3412",
-                        }}
-                      >
-                        {spotlightHasMedia ? "Media ready" : "Media unavailable"}
-                      </span>
-                    ) : null}
-                    {!isCompact ? (
-                      <span style={badge(false)}>
-                        {safeDateTime(activeSpotlight.created_at) || "-"}
-                      </span>
-                    ) : null}
-                  </div>
-
-                  <div
-                    style={{
-                      color: "#0B1F33",
-                      fontWeight: 900,
-                      fontSize: dashboardSpotlightTitleSize,
-                      lineHeight: 1.15,
-                      maxWidth: 760,
-                    }}
-                  >
-                    {safeStr(
-                      activeSpotlight.title ||
-                        activeSpotlight.message ||
-                        "Your community Spotlight"
-                    )}
-                  </div>
-
-                  <div
-                    style={{
-                      ...helperText(),
-                      ...dashboardPhoneHelper,
-                      maxWidth: 820,
-                    }}
-                  >
-                    {safeStr(
-                      activeSpotlight.source_shop_name ||
-                        activeSpotlight.author_name ||
-                        "Your community seller"
-                    )}{" "}
-                    •{" "}
-                    {safeStr(
-                      activeSpotlight.source_clan_name ||
-                        currentCommunityName(currentClan, selectedClanId)
-                    )}
-                  </div>
-
-                  {safeStr(activeSpotlight.body || "") ? (
-                    <div
-                      style={{
-                        color: "#475569",
-                        fontSize: dashboardSpotlightBodyFontSize,
-                        lineHeight: isPhone ? 1.45 : 1.65,
-                        maxWidth: 860,
-                        display: "-webkit-box",
-                        WebkitBoxOrient: "vertical",
-                        WebkitLineClamp: isCompact ? 2 : 3,
-                        overflow: "hidden",
-                      }}
-                    >
-                      {safeStr(activeSpotlight.body || "")}
-                    </div>
-                  ) : null}
-
-                  <div
-                    style={{
-                      color: spotlightExpiryStatus.urgent ? "#9A3412" : "#1D4ED8",
-                      fontSize: isPhone ? 12.5 : 13,
-                      fontWeight: 700,
-                    }}
-                  >
-                    {spotlightExpiryStatus.detail}
-                  </div>
-
-                </div>
-              </div>
-              <div
-                style={{
-                  marginTop: isPhone ? 10 : 12,
-                  display: "grid",
-                  gap: isPhone ? 8 : 10,
-                  padding: isPhone ? "2px 2px 0" : "4px 4px 0",
-                }}
-              >
-                <div
-                  style={{
-                    color: "#0B1F33",
-                    fontWeight: 950,
-                    fontSize: isPhone ? 26 : 30,
-                    lineHeight: 1.08,
-                  }}
-                >
-                  {spotlightProductName}
-                </div>
-
-                {spotlightProductDescription &&
-                spotlightProductDescription !== spotlightProductName &&
-                !spotlightDescriptionIsDuplicatePrice ? (
-                  <div
-                    style={{
-                      color: "#475569",
-                      fontSize: isPhone ? 15 : dashboardSpotlightBodyFontSize,
-                      fontWeight: 760,
-                      lineHeight: isPhone ? 1.35 : 1.45,
-                      display: "-webkit-box",
-                      WebkitBoxOrient: "vertical",
-                      WebkitLineClamp: 2,
-                      overflow: "hidden",
-                    }}
-                  >
-                    {spotlightProductDescription}
-                  </div>
-                ) : null}
-
-              </div>
-            </div>
-
-            {showLegacySpotlightDock ? ((activeSpotlight: SpotlightItem) => (
-          <div
-            style={{
-              marginTop: 16,
-              display: "grid",
-              gridTemplateColumns:
-                isCompact || !sellerIdentityDockOpen
-                  ? "1fr"
-                  : "minmax(0, 1.08fr) minmax(320px, 0.92fr)",
-              gap: 14,
-              alignItems: "start",
-            }}
-          >
-            <SystemPictureFrame
-              outerStyle={{
-                minHeight: dashboardSpotlightMinHeight,
-                borderRadius: dashboardSpotlightRadius,
-                border: "1px solid rgba(184,137,45,0.32)",
-                outline: "1px solid rgba(255,255,255,0.14)",
-                outlineOffset: "-8px",
-                background:
-                  "linear-gradient(180deg, #081625 0%, #0D2742 42%, #0F3B74 74%, #0B63D1 100%)",
-                boxShadow:
-                  "0 34px 70px rgba(2,12,27,0.30), 0 14px 34px rgba(15,59,116,0.20), inset 0 0 0 1px rgba(255,255,255,0.10), inset 0 1px 0 rgba(255,255,255,0.16)",
-              }}
-              innerStyle={{
-                minHeight: dashboardSpotlightMinHeight,
-                borderRadius: dashboardSpotlightRadius,
-                border: "none",
-                background:
-                  "linear-gradient(180deg, #081625 0%, #0D2742 42%, #0F3B74 74%, #0B63D1 100%)",
-              }}
-            >
-              {spotlightImageCandidates.length > 0 || spotlightVideoCandidate ? (
-                <SpotlightMediaFrame
-                  imageCandidates={spotlightImageCandidates}
-                  videoUrl={spotlightVideoCandidate}
-                  videoPoster={spotlightImageCandidates[0] || ""}
-                  alt={safeStr(
-                    activeSpotlight?.title ||
-                      activeSpotlight?.message ||
-                      "Spotlight"
-                  )}
-                  frameStyle={{
-                    width: "100%",
-                    height: "100%",
-                    minHeight: dashboardSpotlightMinHeight,
-                    borderRadius: dashboardSpotlightRadius,
-                    background: "transparent",
-                    zIndex: 2,
-                  }}
-                  mediaStyle={{
-                    width: "100%",
-                    height: "100%",
-                    minHeight: dashboardSpotlightMinHeight,
-                  }}
-                  contentPadding={isCompact ? 12 : 16}
-                  showVideoControls={false}
-                  autoPlayVideo={Boolean(spotlightVideoCandidate)}
-                  mutedVideo={Boolean(spotlightVideoCandidate)}
-                  loopVideo={Boolean(spotlightVideoCandidate)}
-                  showAudioUnlock={Boolean(spotlightVideoCandidate)}
-                  audioUnlockLabel="Sound on"
-                  audioUnlockOffLabel="Muted"
-                  audioUnlockErrorLabel="Play"
-                  audioUnlockStyle={{
-                    top: isPhone ? 14 : 16,
-                    right: isPhone ? 14 : 16,
-                    minWidth: isPhone ? 40 : 44,
-                    width: isPhone ? 40 : 44,
-                    minHeight: isPhone ? 40 : 44,
-                    height: isPhone ? 40 : 44,
-                    maxHeight: isPhone ? 40 : 44,
-                    padding: 0,
-                    borderRadius: 999,
-                    fontSize: 0,
-                    color: "#07172C",
-                    background:
-                      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,248,232,0.96) 100%)",
-                    border: "1px solid rgba(214,170,69,0.66)",
-                    boxShadow: "0 12px 22px rgba(2,12,27,0.30)",
-                  }}
-                  maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
-                  fallback={
-                    <div
-                      style={{
-                        minHeight: dashboardSpotlightMinHeight,
-                        width: "100%",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 10,
-                        padding: isCompact ? 16 : 22,
-                        textAlign: "center",
-                        color: "#F8FBFF",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: isCompact ? 54 : 66,
-                          height: isCompact ? 54 : 66,
-                          borderRadius: 999,
-                          border: "1px solid rgba(255,255,255,0.20)",
-                          background:
-                            "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18) 0%, rgba(212,175,55,0.12) 32%, rgba(11,31,51,0.22) 100%)",
-                          boxShadow:
-                            "0 14px 28px rgba(2,12,27,0.26), inset 0 1px 0 rgba(255,255,255,0.08)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          fontWeight: 900,
-                          fontSize: isCompact ? 18 : 22,
-                          letterSpacing: 0.8,
-                        }}
-                      >
-                        GSN
-                      </div>
-
-                      <div
-                        style={{
-                          fontWeight: 900,
-                          fontSize: isCompact ? 13 : 15,
-                          lineHeight: 1.45,
-                          maxWidth: 380,
-                        }}
-                      >
-                        Spotlight is live, but the media file is unavailable right
-                        now.
-                      </div>
-
-                      <div
-                        style={{
-                          fontSize: isCompact ? 11.5 : 12.5,
-                          lineHeight: 1.6,
-                          color: "rgba(231,238,248,0.90)",
-                          maxWidth: 420,
-                        }}
-                      >
-                        Re-open or republish the spotlight media from Community
-                        Home or Shop Control if you want the picture to appear
-                        again.
-                      </div>
-                    </div>
-                  }
-                />
-              ) : null}
-
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background:
-                    "linear-gradient(180deg, rgba(4,18,33,0.06) 0%, rgba(4,18,33,0.18) 14%, rgba(4,18,33,0.44) 46%, rgba(4,18,33,0.84) 82%, rgba(2,10,20,0.94) 100%)",
-                }}
-              />
-
-              <div
-                style={{
-                  position: "absolute",
-                  top: dashboardSpotlightTopInset,
-                  left: dashboardSpotlightTopInset,
-                  right: dashboardSpotlightTopInset,
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: 10,
-                  flexWrap: "wrap",
-                  alignItems: "flex-start",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 8,
-                    flexWrap: "wrap",
-                    justifyContent: "flex-end",
-                    alignItems: "center",
-                  }}
-                >
-                  <span
-                    style={{
-                      ...badge(false),
-                      background: "rgba(255,255,255,0.12)",
-                      color: "#FFFFFF",
-                      backdropFilter: "blur(10px)",
-                    }}
-                  >
-                    {spotlightEvidencePostureLabel(activeSpotlight)}
-                  </span>
-
-                  <span
-                    style={{
-                      ...badge(false),
-                      background: spotlightExpiryStatus.urgent
-                        ? "rgba(251,146,60,0.22)"
-                        : "rgba(255,255,255,0.12)",
-                      color: "#FFFFFF",
-                      backdropFilter: "blur(10px)",
-                    }}
-                  >
-                    {spotlightExpiryStatus.chip}
-                  </span>
-
-                  {!isCompact ? (
-                    <span
-                      style={{
-                        ...badge(false),
-                        background: "rgba(255,255,255,0.12)",
-                        color: "#FFFFFF",
-                        backdropFilter: "blur(10px)",
-                      }}
-                    >
-                      {safeDateTime(activeSpotlight.created_at) || "-"}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  position: "absolute",
-                  right: isCompact ? 8 : 14,
-                  top: isCompact ? 42 : "50%",
-                  transform: isCompact ? "none" : "translateY(-50%)",
-                  zIndex: 3,
-                  display: "grid",
-                  gap: isCompact ? 6 : 8,
-                }}
-              >
-                {!sellerIdentityDockOpen ? (
-                  <StableButton
-                    debugId="dashboard.spotlight.seller.open-details"
-                    type="button"
-                    onClick={openSellerIdentityDock}
-                    onPointerDown={consumeDashboardPointerEvent}
-                    style={dashboardStableActionFrame({
-                      minWidth: isCompact ? 82 : 118,
-                      minHeight: isCompact ? 36 : 44,
-                      padding: isCompact ? "6px 10px" : "9px 15px",
-                      borderRadius: 999,
-                      border: "1px solid rgba(255,255,255,0.38)",
-                      background:
-                        "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(233,241,251,0.94) 48%, rgba(173,201,236,0.88) 100%)",
-                      color: "#0D2B4A",
-                      fontSize: isCompact ? 10.5 : 12.5,
-                      fontWeight: 900,
-                      letterSpacing: 0.3,
-                      cursor: "pointer",
-                      touchAction: "manipulation",
-                      boxShadow:
-                        "0 16px 28px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.94), inset 0 -10px 18px rgba(15,59,116,0.12)",
-                      backdropFilter: "blur(12px)",
-                      textTransform: "uppercase",
-                    })}
-                  >
-                    Open seller details
-                  </StableButton>
-                ) : null}
-
-                <StableButton
-                  debugId="dashboard.spotlight.legacy.minimize"
-                  type="button"
-                  onClick={minimizeSpotlight}
-                  onPointerDown={consumeDashboardPointerEvent}
-                  style={dashboardStableActionFrame({
-                      minWidth: isCompact ? 82 : 118,
-                    minHeight: isCompact ? 34 : 38,
-                    padding: isCompact ? "6px 10px" : "7px 14px",
-                    borderRadius: 999,
-                    border: "1px solid rgba(255,255,255,0.36)",
-                    background:
-                      "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(231,237,245,0.92) 52%, rgba(187,198,212,0.86) 100%)",
-                    color: "#314559",
-                    fontSize: isCompact ? 10.5 : 11.5,
-                    fontWeight: 900,
-                    letterSpacing: 0.25,
-                    cursor: "pointer",
-                    touchAction: "manipulation",
-                    boxShadow:
-                      "0 12px 22px rgba(2,12,27,0.18), inset 0 1px 0 rgba(255,255,255,0.96), inset 0 -8px 14px rgba(100,116,139,0.12)",
-                    backdropFilter: "blur(12px)",
-                    textTransform: "uppercase",
-                  })}
-                >
-                  Minimize
-                </StableButton>
-              </div>
-
-              <div
-                style={{
-                  position: "absolute",
-                  left: isCompact ? 12 : 18,
-                  right: isCompact ? 12 : 18,
-                  bottom: dashboardSpotlightBottomInset,
-                  display: "grid",
-                  gap: isCompact ? 5 : 8,
-                }}
-              >
-                <div
-                  style={{
-                    color: "rgba(255,255,255,0.92)",
-                    fontSize: isCompact ? 10.5 : 12,
-                    fontWeight: 800,
-                    letterSpacing: 0.35,
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {safeStr(
-                    activeSpotlight!.source_shop_name ||
-                      activeSpotlight!.author_name ||
-                      "Your community seller"
-                  )}
-                </div>
-
-                <div
-                  style={{
-                    color: "#FFFFFF",
-                    fontWeight: 900,
-                    fontSize: dashboardSpotlightTitleSize,
-                    lineHeight: isCompact ? 1.02 : 1.06,
-                    maxWidth: isCompact ? 520 : 760,
-                    display: "-webkit-box",
-                    WebkitBoxOrient: "vertical",
-                    WebkitLineClamp: isCompact ? 2 : 3,
-                    overflow: "hidden",
-                    textShadow: "0 10px 28px rgba(0,0,0,0.32)",
-                  }}
-                >
-                  {safeStr(
-                    activeSpotlight!.title ||
-                      activeSpotlight!.message ||
-                      "Your community Spotlight"
-                  )}
-                </div>
-
-                {!isCompact && safeStr(activeSpotlight!.body || "") ? (
-                  <div
-                    style={{
-                      color: "rgba(255,255,255,0.90)",
-                      fontSize: dashboardSpotlightBodyFontSize,
-                      lineHeight: 1.56,
-                      maxWidth: 720,
-                      display: "-webkit-box",
-                      WebkitBoxOrient: "vertical",
-                      WebkitLineClamp: 2,
-                      overflow: "hidden",
-                    }}
-                  >
-                    {safeStr(activeSpotlight!.body || "")}
-                  </div>
-                ) : null}
-              </div>
-            </SystemPictureFrame>
-
-            {sellerIdentityDockOpen ? (
-              <div
-                style={{
-                  position: "relative",
-                  ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
-                  border: "1px solid rgba(184,137,45,0.18)",
-                  boxShadow: "0 24px 46px rgba(15,59,116,0.10), inset 0 1px 0 rgba(255,255,255,0.72)",
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: isCompact
-                      ? "1fr"
-                      : "minmax(0, 0.92fr) minmax(0, 1.08fr)",
-                    gap: 16,
-                    alignItems: "start",
-                  }}
-                >
-                  <div
-                    style={{
-                      ...innerCard(
-                        "linear-gradient(180deg, #0D1B2A 0%, #12293F 100%)"
-                      ),
-                      border: "1px solid rgba(212,175,55,0.24)",
-                      boxShadow: "0 18px 36px rgba(2,12,27,0.24)",
-                    }}
-                  >
-                    <div
-                      style={{
-                        color: "#F8FBFF",
-                        fontWeight: 900,
-                        fontSize: 20,
-                        lineHeight: 1.3,
-                      }}
-                    >
-                      {safeStr(
-                        activeSpotlight.source_shop_name ||
-                          activeSpotlight.author_name ||
-                          "Your community seller"
-                      )}
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 10,
-                        display: "flex",
-                        gap: 8,
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <span style={badge(true)}>
-                        {spotlightEvidencePostureLabel(activeSpotlight)}
-                      </span>
-                      <span
-                        style={{
-                          ...badge(false),
-                          background: "rgba(212,175,55,0.10)",
-                          color: "#F6D77A",
-                        }}
-                      >
-                        {safeStr(
-                          activeSpotlight.source_clan_name ||
-                            currentCommunityName(currentClan, selectedClanId)
-                        )}
-                      </span>
-                    </div>
-
-                    <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-                      <div
-                        style={statTile(
-                          "rgba(255,255,255,0.05)",
-                          "1px solid rgba(212,175,55,0.12)"
-                        )}
-                      >
-                        <DashboardSectionLabel label="Your community" />
-                        <div
-                          style={{
-                            marginTop: 8,
-                            color: "#F8FBFF",
-                            fontWeight: 900,
-                            lineHeight: 1.32,
-                          }}
-                        >
-                          {safeStr(
-                            activeSpotlight.source_clan_name ||
-                              currentCommunityName(currentClan, selectedClanId)
-                          )}
-                        </div>
-                      </div>
-
-                      <div
-                        style={statTile(
-                          "rgba(255,255,255,0.05)",
-                          "1px solid rgba(212,175,55,0.12)"
-                        )}
-                      >
-                        <DashboardSectionLabel label="Posted" />
-                        <div
-                          style={{
-                            marginTop: 8,
-                            color: "#F8FBFF",
-                            fontWeight: 900,
-                            lineHeight: 1.32,
-                          }}
-                        >
-                          {safeDateTime(activeSpotlight.created_at) || "-"}
-                        </div>
-                      </div>
-
-                      {safeStr(activeSpotlight.author_gmfn_id || "") ? (
-                        <div
-                          style={statTile(
-                            "rgba(255,255,255,0.05)",
-                            "1px solid rgba(212,175,55,0.12)"
-                          )}
-                        >
-                          <DashboardSectionLabel label="Seller GSN ID" />
-                          <div
-                            style={{
-                              marginTop: 8,
-                              color: "#F8FBFF",
-                              fontWeight: 900,
-                              lineHeight: 1.32,
-                              wordBreak: "break-word",
-                            }}
-                          >
-                            {safeStr(activeSpotlight.author_gmfn_id || "")}
-                          </div>
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      ...innerCard(
-                        "linear-gradient(180deg, #0D1B2A 0%, #12293F 100%)"
-                      ),
-                      border: "1px solid rgba(212,175,55,0.24)",
-                      boxShadow: "0 18px 36px rgba(2,12,27,0.24)",
-                    }}
-                  >
-                    <DashboardSectionLabel label="Actions" />
-
-                    <div
-                      style={{
-                        marginTop: 10,
-                        color: "#F8FBFF",
-                        fontSize: 14,
-                        lineHeight: 1.72,
-                      }}
-                    >
-                      {spotlightExpiryStatus.detail}
-                    </div>
-
-                    {spotlightVideoCandidate ? (
-                      <div
-                        style={{
-                          marginTop: 12,
-                          display: "flex",
-                          gap: 8,
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <span
-                          style={{
-                            ...badge(false),
-                            background: "rgba(255,255,255,0.12)",
-                            color: "#FFFFFF",
-                            backdropFilter: "blur(10px)",
-                          }}
-                        >
-                          Your short video Spotlight
-                        </span>
-                      </div>
-                    ) : null}
-
-                    <div
-                      style={{
-                        marginTop: 14,
-                        display: "grid",
-                        gap: 10,
-                      }}
-                    >
-                      <StableButton
-                        debugId="dashboard.spotlight.seller.open-marketplace"
-                        type="button"
-                        onClick={openSpotlightMarketplace}
-                        onPointerDown={consumeDashboardPointerEvent}
-                        style={dashboardStableActionFrame(secondaryBtn(false))}
-                      >
-                        Open your Marketplace
-                      </StableButton>
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 10,
-                        display: "flex",
-                        justifyContent: "flex-end",
-                      }}
-                    >
-                      <StableButton
-                        debugId="dashboard.spotlight.seller.close"
-                        type="button"
-                        onClick={closeSellerIdentityDock}
-                        onPointerDown={consumeDashboardPointerEvent}
-                        style={dashboardStableActionFrame({
-                          ...subtleBtn(false),
-                          minHeight: isCompact ? 32 : 34,
-                          minWidth: isCompact ? 70 : 78,
-                          padding: isCompact ? "5px 9px" : "6px 10px",
-                          borderRadius: 10,
-                          border: "1px solid rgba(255,255,255,0.24)",
-                          background:
-                            "linear-gradient(180deg, rgba(248,250,253,0.98) 0%, rgba(225,232,241,0.96) 52%, rgba(177,191,207,0.90) 100%)",
-                          color: "#314559",
-                          boxShadow:
-                            "0 10px 18px rgba(2,12,27,0.16), inset 0 1px 0 rgba(255,255,255,0.96)",
-                          fontSize: isCompact ? 10.5 : 11.5,
-                          letterSpacing: 0.2,
-                          touchAction: "manipulation",
-                          textTransform: "uppercase",
-                        })}
-                      >
-                        Close
-                      </StableButton>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-            ) : null}
-          </div>
-            ))(activeSpotlight!) : null}
-          </>
-        ) : latestSpotlightSnapshot ? (
-          <div
-            style={{
-              marginTop: 16,
-              ...innerCard("#FFFFFF"),
-              border: "1px solid rgba(11,99,209,0.10)",
-              display: "grid",
-              gap: 12,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
-                alignItems: "center",
-              }}
-            >
-              <span style={badge(true)}>No live Spotlight for you</span>
-              <span
-                style={{
-                  ...badge(false),
-                  background: latestSpotlightStatus.urgent
-                    ? "rgba(249,115,22,0.10)"
-                    : "rgba(11,99,209,0.08)",
-                  color: latestSpotlightStatus.urgent ? "#9A3412" : "#1D4ED8",
-                }}
-              >
-                {latestSpotlightStatus.chip}
-              </span>
-            </div>
-
-            <div
-              style={{
-                color: "#0B1F33",
-                fontWeight: 900,
-                fontSize: 20,
-                lineHeight: 1.25,
-              }}
-            >
-              {safeStr(
-                latestSpotlightSnapshot.title ||
-                  latestSpotlightSnapshot.message ||
-                  "Your most recent community Spotlight"
-              )}
-            </div>
-
-            <div style={{ ...helperText(), maxWidth: 820 }}>
-              {safeStr(
-                latestSpotlightSnapshot.source_shop_name ||
-                  latestSpotlightSnapshot.author_name ||
-                  "Your community seller"
-              )}{" "}
-              -{" "}
-              {safeStr(
-                latestSpotlightSnapshot.source_clan_name ||
-                  currentCommunityName(currentClan, selectedClanId)
-              )}
-            </div>
-
-            <div
-              style={{
-                color: latestSpotlightStatus.urgent ? "#9A3412" : "#1D4ED8",
-                fontSize: 13,
-                fontWeight: 700,
-              }}
-            >
-              {latestSpotlightStatus.detail}
-            </div>
-
-            <div style={{ ...helperText(), maxWidth: 860 }}>
-              Your last Spotlight has ended. Open your Community Home when you want
-              to publish your next Spotlight.
-            </div>
-
-            <div
-              style={{
-                ...dashboardActionGrid(isCompact ? 128 : 152),
-              }}
-            >
-              <StableButton
-                debugId="dashboard.spotlight.latest.open-marketplace"
-                type="button"
-                onClick={(event) =>
-                  openDashboardRoute(
-                    event,
-                    spotlightMarketplaceTo(latestSpotlightSnapshot)
-                  )
-                }
-                onPointerDown={consumeDashboardPointerEvent}
-                style={dashboardFillButton(secondaryBtn(false))}
-              >
-                Open your Marketplace
-              </StableButton>
-              <StableButton
-                debugId="dashboard.spotlight.latest.open-tasks"
-                type="button"
-                onClick={openDashboardSpotlightGuide}
-                onPointerDown={consumeDashboardPointerEvent}
-                style={dashboardFillButton(secondaryBtn(false))}
-              >
-                Open your Spotlight tasks
-              </StableButton>
-            </div>
-          </div>
-        ) : (
-          <div style={{ marginTop: 16, color: "#64748B" }}>
-            No Spotlight is live for you right now.
-          </div>
-        )}
-      </section>
-
-      <section
-        style={{
           ...pageCard(demandSurfaceChrome.shellBg),
           order: 50,
           border: demandSurfaceChrome.shellBorder,
@@ -11958,7 +9882,7 @@ export default function DashboardPage() {
                     }
                     onPointerDown={consumeDashboardPointerEvent}
                     style={{
-                      ...spotlightWhiteButton({
+                      ...dashboardWhiteButton({
                         ...dashboardPhoneButton,
                         width: "100%",
                         minHeight: isPhone ? 50 : 54,
@@ -12049,7 +9973,7 @@ export default function DashboardPage() {
                   openDashboardRoute(event, demandPrimaryActionTo)
                 }
                 onPointerDown={consumeDashboardPointerEvent}
-                style={spotlightWhiteButton({
+                style={dashboardWhiteButton({
                   ...dashboardPhoneButton,
                   width: isPhone ? "min(100%, 230px)" : "min(100%, 260px)",
                   minWidth: isPhone ? 168 : 176,

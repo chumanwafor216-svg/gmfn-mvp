@@ -40,6 +40,18 @@ function assertLineNotContains(file, pattern, message) {
   });
 }
 
+function assertNotContains(file, pattern, message) {
+  const text = read(file);
+  if (pattern.test(text)) {
+    findings.push({
+      file,
+      line: 1,
+      message,
+      text: "Forbidden pattern was found.",
+    });
+  }
+}
+
 assertContains(
   "gmfn_backend/app/api/routes/marketplace.py",
   /if shop is not None:[\s\S]*?if priority_mode != SPOTLIGHT_PAID and visibility_scope == "direct_communities":[\s\S]*?target_clan_ids = \[[\s\S]*?_get_active_clan_ids_for_user\([\s\S]*?user_id=int\(current_user\.id\)[\s\S]*?if _shop_is_visible_in_clan\(db, shop=shop, clan_id=int\(clan_id\)\)/,
@@ -70,46 +82,26 @@ assertContains(
   "Network Repost must not count as an active direct paid Subscription Spotlight for the same shop."
 );
 
-assertContains(
+assertNotContains(
   "frontend/src/pages/DashboardPage.tsx",
-  /const res = await getMarketplaceBroadcasts\(\{[\s\S]*?clan_id: null,[\s\S]*?active_only: true,[\s\S]*?limit: 20,[\s\S]*?\}\)/,
-  "Dashboard active Spotlight must read the authenticated all-active-communities feed, not a selected-community-only feed."
+  /getMarketplaceBroadcasts|activeSpotlight|buildSpotlightRotationQueue|SPOTLIGHT_PILOT_REFRESH_MS|SPOTLIGHT_PILOT_ROTATION_MS|synthetic-spotlight|dashboard\.spotlight\./,
+  "Dashboard must not fetch, rotate, render, or synthesize Spotlight now that Spotlight belongs to the Shop ecosystem."
 );
-
-assertContains(
-  "frontend/src/pages/DashboardPage.tsx",
-  /const recentRes = await getMarketplaceBroadcasts\(\{[\s\S]*?clan_id: null,[\s\S]*?active_only: false,[\s\S]*?limit: 5,[\s\S]*?\}\)/,
-  "Dashboard recent Spotlight fallback must use the same all-active-communities feed."
-);
-
 assertLineNotContains(
   "frontend/src/pages/DashboardPage.tsx",
   /getMarketplaceBroadcasts\(\{[^}]*clan_id:\s*selectedClanId/,
-  "Dashboard Spotlight must not drift back to selectedClanId-only fetches."
+  "Dashboard must not reintroduce selected-community Spotlight feed fetches."
 );
 
 assertContains(
-  "frontend/src/pages/DashboardPage.tsx",
-  /source_product_category\?:[\s\S]*?function spotlightPriceLine\([\s\S]*?const spotlightProductName = safeStr\([\s\S]*?activeSpotlight\?\.source_product_title[\s\S]*?const spotlightProductPrice =[\s\S]*?Price on request[\s\S]*?const showSpotlight = false;[\s\S]*?const dashboardSpotlightCompactTitle[\s\S]*?debugId="dashboard\.spotlight\.restore\.empty-card"[\s\S]*?Open Spotlight/,
-  "Dashboard active Spotlight must keep signed-in feed data available while rendering a compact Spotlight status pointer instead of an embedded seller/contact home."
+  "frontend/src/pages/shopControl/ShopControlSpotlightWorkflow.tsx",
+  /data-spotlight-owner-frame="rich-live"[\s\S]*?<SpotlightMediaFrame[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?debugId="shop-control\.spotlight\.live\.preview-shop"[\s\S]*?debugId="shop-control\.spotlight\.live\.open-publisher"[\s\S]*?debugId="shop-control\.spotlight\.live\.take-down"/,
+  "Shop Control must own the rich owner-facing live Spotlight frame with media, sound control, public shop preview, publisher access, and take-down."
 );
-
-assertContains(
-  "frontend/src/pages/DashboardPage.tsx",
-  /const attentionSurfaceVisible =[\s\S]*?attentionDisplaySignal\.active &&[\s\S]*?\(!activeSpotlight \|\| attentionCanSurfaceWithSpotlight\)/,
-  "Dashboard attention guide may surface when the compact Spotlight pointer is not acting as a full embedded Spotlight screen."
-);
-
 assertLineNotContains(
   "frontend/src/pages/DashboardPage.tsx",
   /\["Marketplace", spotlightMarketplaceName\]|\["Shop", spotlightShopName\]/,
-  "Dashboard active Spotlight body must not restore visible Marketplace/Shop source fact tiles."
-);
-
-assertLineNotContains(
-  "frontend/src/pages/DashboardPage.tsx",
-  /dashboard\.spotlight\.guide|Sharing matters|Community display|Rotates every/,
-  "Dashboard active Spotlight must not restore the exposed guide, schedule, rotation, market, upload, or shop controls under the billboard."
+  "Dashboard must not restore visible Spotlight Marketplace/Shop source fact tiles."
 );
 
 assertContains(
@@ -587,12 +579,11 @@ assertContains(
   "Frontend Spotlight pilot controls must keep the shared paid rotation queue helper."
 );
 
-assertContains(
+assertNotContains(
   "frontend/src/pages/DashboardPage.tsx",
-  /buildSpotlightRotationQueue[\s\S]*?spotlightRotationWeight[\s\S]*?const weightDelta = spotlightRotationWeight\(b\) - spotlightRotationWeight\(a\)[\s\S]*?setSpotlights\(buildSpotlightRotationQueue\(items\)\)/,
-  "Dashboard Spotlight rotation must preserve paid rotation weighting without changing the feed source."
+  /buildSpotlightRotationQueue|spotlightRotationWeight|setSpotlights\(/,
+  "Dashboard must not keep Spotlight rotation state after the ownership transfer."
 );
-
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
   /buildSpotlightRotationQueue[\s\S]*?rotationWeight\?: number[\s\S]*?const rotationBroadcasts = buildSpotlightRotationQueue\(normalizedBroadcasts\)[\s\S]*?setCommunitySpotlights\(rotationBroadcasts\)/,
@@ -615,5 +606,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  "Spotlight system feed audit passed: shop-owned placement, daily identity quota, paid/repost separation, and Dashboard/Public Shop feed parity are caged."
+  "Spotlight system feed audit passed: shop-owned placement, daily identity quota, paid/repost separation, Dashboard absence, and Public Shop visitor parity are caged."
 );

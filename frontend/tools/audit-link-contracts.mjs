@@ -1058,12 +1058,11 @@ assertContains(
   "Community Marketplace Spotlight must preserve backend source community/product/block truth and deep-link network placements to the exact public shop community/block."
 );
 
-assertContains(
+assertNotContains(
   "src/pages/DashboardPage.tsx",
-  /import \{ publicShopPath, publicShopSharePath \} from "\.\.\/lib\/publicLinks";[\s\S]*?source_product_id\?: number \| string \| null;[\s\S]*?source_product_block\?: number \| string \| null;[\s\S]*?source_product_slot_number\?: number \| string \| null;[\s\S]*?source_product_id:[\s\S]*?source\.source_product_id \?\? source\.sourceProductId \?\? null,[\s\S]*?source_product_block:[\s\S]*?source\.source_product_block \?\? source\.sourceProductBlock \?\? null,[\s\S]*?source_product_slot_number:[\s\S]*?source\.source_product_slot_number \?\? source\.sourceProductSlotNumber \?\? null,[\s\S]*?function spotlightShopTo\(item: SpotlightItem \| null\): string \{[\s\S]*?const clanId = positiveNumber\(item\?\.source_clan_id \|\| item\?\.clan_id\);[\s\S]*?publicShopSharePath\(\{[\s\S]*?gmfnId,[\s\S]*?clanId: clanId \|\| undefined,[\s\S]*?productId: productId \|\| undefined,[\s\S]*?block: block \|\| undefined,[\s\S]*?\}\)[\s\S]*?navigateWithOrigin\(navigate, spotlightShopTo\(activeSpotlight\), location\)/,
-  "Dashboard Spotlight must keep source community/product/block fields and open paid outside spotlight placements at the exact public shop community/block."
+  /spotlightShopTo|publicShopSharePath\(|activeSpotlight|dashboard\.spotlight\./,
+  "Dashboard must not keep Spotlight public-shop handoff code after Spotlight moved to the Shop ecosystem."
 );
-
 assertContains(
   "src/pages/CommunityHomePage.tsx",
   /sourceProductId\?: number;[\s\S]*?sourceProductBlock\?: number;[\s\S]*?sourceProductSlotNumber\?: number;[\s\S]*?sourceProductId:[\s\S]*?row\?\.source_product_id \|\| row\?\.sourceProductId[\s\S]*?sourceProductBlock:[\s\S]*?row\?\.source_product_block \|\| row\?\.sourceProductBlock[\s\S]*?sourceProductSlotNumber:[\s\S]*?row\?\.source_product_slot_number \|\| row\?\.sourceProductSlotNumber/,

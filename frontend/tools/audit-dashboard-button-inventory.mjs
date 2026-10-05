@@ -179,10 +179,10 @@ while ((match = nativeFieldPattern.exec(dashboardSource))) {
 }
 
 const expected = {
-  StableButton: 50,
+  StableButton: 39,
   StableDisclosureSummary: 2,
   PictureFrameToolsControl: 2,
-  EffectiveDashboardActionRoots: 60,
+  EffectiveDashboardActionRoots: 49,
 };
 const expectedWholeMobileRouteActionRoots =
   expected.EffectiveDashboardActionRoots + expectedMobileShellActionCount;
@@ -283,18 +283,17 @@ assertContains(
   /debugId="dashboard\.inbox\.toggle"[\s\S]*?data-debug-id="dashboard\.my-pulse"[\s\S]*?My Pulse[\s\S]*?\["red", "yellow", "green"\]/,
   "Dashboard My Pulse must live inside What needs your attention, not as a separate attention destination."
 );
-assertContains(
-  /const showSpotlight = false;[\s\S]*?const dashboardSpotlightCompactTitle[\s\S]*?debugId="dashboard\.spotlight\.restore\.empty-card"[\s\S]*?onClick=\{openDashboardSpotlightGuide\}[\s\S]*?Open Spotlight/,
-  "Dashboard Spotlight must render as a compact status/pointer, not as an embedded seller/shop detail home."
+assertNotContains(
+  /dashboard\.spotlight\.|activeSpotlight|getMarketplaceBroadcasts|synthetic-spotlight/,
+  "Dashboard must not keep Spotlight buttons, fetches, or synthetic attention after Spotlight moved to the Shop ecosystem."
 );
-
 assertContains(
   /const dashboardPulsePrimaryTo =[\s\S]*?DASHBOARD_TARGETS\.WHAT_MATTERS_NOW[\s\S]*?const dashboardPulseInlineItemsVisible =[\s\S]*?dashboardPulsePrimaryTo === ""[\s\S]*?debugId="dashboard\.my-pulse\.primary"[\s\S]*?aria-expanded=\{false\}[\s\S]*?openDashboardRoute\(event, dashboardPulsePrimaryTo\)[\s\S]*?\{dashboardPulseInlineItemsVisible \? \([\s\S]*?data-debug-id="dashboard\.my-pulse\.items"/,
   "Dashboard My Pulse must open the highest-priority/canonical attention target instead of revealing a competing in-Dashboard queue."
 );
 
 assertContains(
-  /const dashboardHasActionableAttention =[\s\S]*?dashboardPulseSummary\.workCount > 0[\s\S]*?dashboardPulsePrimarySignal\?\.kind === "action"[\s\S]*?dashboardPulsePrimaryTo !== ""[\s\S]*?const dashboardAttentionOrder = dashboardHasActionableAttention \? 10 : 40[\s\S]*?const dashboardIdentityOrder = dashboardHasActionableAttention \? 20 : 10[\s\S]*?const dashboardToolsOrder = dashboardHasActionableAttention \? 30 : 20[\s\S]*?const dashboardSpotlightOrder = dashboardHasActionableAttention \? 40 : 30/,
+  /const dashboardHasActionableAttention =[\s\S]*?dashboardPulseSummary\.workCount > 0[\s\S]*?dashboardPulsePrimarySignal\?\.kind === "action"[\s\S]*?dashboardPulsePrimaryTo !== ""[\s\S]*?const dashboardAttentionOrder = dashboardHasActionableAttention \? 10 : 40[\s\S]*?const dashboardIdentityOrder = dashboardHasActionableAttention \? 20 : 10[\s\S]*?const dashboardToolsOrder = dashboardHasActionableAttention \? 30 : 20/,
   "Dashboard first-view hierarchy must put a genuine action-kind Attention pointer before identity/status/tools, while quiet states keep ordinary orientation first."
 );
 
@@ -304,8 +303,8 @@ assertContains(
 );
 
 assertContains(
-  /data-dashboard-passport-reference="gsn-trust-card"[\s\S]*?order: dashboardIdentityOrder,[\s\S]*?padding: dashboardIdentityCompact \? 8 : isPhone \? 12 : 16[\s\S]*?order: dashboardToolsOrder,[\s\S]*?order: dashboardSpotlightOrder,/,
-  "Dashboard status/orientation, tools, and Spotlight must follow the conditional Attention hierarchy without expanding duplicate homes."
+  /data-dashboard-passport-reference="gsn-trust-card"[\s\S]*?order: dashboardIdentityOrder,[\s\S]*?padding: dashboardIdentityCompact \? 8 : isPhone \? 12 : 16[\s\S]*?order: dashboardToolsOrder,/,
+  "Dashboard status/orientation and tools must follow the conditional Attention hierarchy without expanding duplicate homes."
 );
 assertContains(
   /const dashboardPulseSecondaryTo =[\s\S]*?DASHBOARD_TARGETS\.WHAT_MATTERS_NOW[\s\S]*?debugId="dashboard\.my-pulse\.secondary"[\s\S]*?openDashboardRoute\(event, dashboardPulseSecondaryTo\)/,
@@ -365,7 +364,6 @@ const frontToInnerOrder = [
   { label: "trust detail", pattern: /^dashboard\.trust-detail\./ },
   { label: "trust actions", pattern: /^dashboard\.trust-action\./ },
   { label: "apps hub", pattern: /^dashboard\.apps\./ },
-  { label: "spotlight", pattern: /^dashboard\.spotlight\./ },
   { label: "demand box", pattern: /^dashboard\.demand\./ },
   { label: "inbox", pattern: /^dashboard\.inbox\./ },
   { label: "market wisdom", pattern: /^dashboard\.market-wisdom\./ },

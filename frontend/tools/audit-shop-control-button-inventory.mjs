@@ -36,11 +36,11 @@ const findings = [];
 
 const expectedSourceActions = {
   PrimaryButton: 12,
-  SecondaryButton: 25,
+  SecondaryButton: 26,
   SubtleButton: 3,
-  StableButton: 5,
+  StableButton: 6,
   StableCtaLink: 10,
-  total: 55,
+  total: 57,
 };
 const expectedNativeFieldCount = 26;
 const expectedFileInputActionRoots = 2;
@@ -414,6 +414,10 @@ assertShopContains(
   "Shop Control paid spotlight and subscription surfaces must use institutional finance imagery instead of generic card imagery."
 );
 
+assertShopContains(
+  /data-spotlight-owner-frame="rich-live"[\s\S]*?<SpotlightMediaFrame[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?debugId="shop-control\.spotlight\.live\.preview-shop"[\s\S]*?debugId="shop-control\.spotlight\.live\.open-publisher"[\s\S]*?debugId="shop-control\.spotlight\.live\.take-down"/,
+  "Shop Control must own the rich owner-facing live Spotlight frame with media, public shop preview, publisher access, and take-down."
+);
 assertShopContains(
   /debugId="shop-control\.spotlight\.media\.both"[\s\S]*?inlineIcon\("image"\)[\s\S]*?inlineIcon\("video"\)[\s\S]*?<span>Picture \+ video<\/span>/,
   "Shop Control Picture + video choice must show both picture and video 3D meaning icons."

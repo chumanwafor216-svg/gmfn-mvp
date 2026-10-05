@@ -7,7 +7,69 @@ import {
 } from "../../components/StableButton";
 import { GsnLegacyIcon } from "../../components/GsnLegacyIcon";
 import { navigateWithOrigin } from "../../lib/nav";
-import type { ShopControlSpotlightWorkflowProps } from "./ShopControlSpotlightWorkflowTypes";
+import type { ShopControlSpotlightBroadcast, ShopControlSpotlightWorkflowProps } from "./ShopControlSpotlightWorkflowTypes";
+
+function safeSpotlightText(value: unknown): string {
+  return String(value ?? "").trim();
+}
+
+function spotlightPriceLine(price: unknown, currency: unknown): string {
+  const priceText = safeSpotlightText(price);
+  const currencyText = safeSpotlightText(currency);
+  if (priceText && currencyText) return `${currencyText} ${priceText}`;
+  return priceText || currencyText;
+}
+
+function formatSpotlightDate(value: unknown): string {
+  const raw = safeSpotlightText(value);
+  if (!raw) return "";
+  const parsed = new Date(raw);
+  if (!Number.isFinite(parsed.getTime())) return raw;
+  return parsed.toLocaleString();
+}
+
+function liveSpotlightStatus(item: ShopControlSpotlightBroadcast | null) {
+  const expiresRaw = safeSpotlightText(item?.expires_at);
+  if (!expiresRaw) {
+    return {
+      chip: "Live now",
+      detail: "No end time is visible for this Spotlight yet.",
+      urgent: false,
+    };
+  }
+
+  const expiresAt = new Date(expiresRaw);
+  if (!Number.isFinite(expiresAt.getTime())) {
+    return {
+      chip: "Live now",
+      detail: `Expiry: ${expiresRaw}`,
+      urgent: false,
+    };
+  }
+
+  const diffMs = expiresAt.getTime() - Date.now();
+  if (diffMs <= 0) {
+    return {
+      chip: "Ended",
+      detail: `This Spotlight ended at ${formatSpotlightDate(expiresAt)}.`,
+      urgent: true,
+    };
+  }
+
+  if (diffMs <= 24 * 60 * 60 * 1000) {
+    return {
+      chip: "Ends soon",
+      detail: `Scheduled to end at ${formatSpotlightDate(expiresAt)}.`,
+      urgent: true,
+    };
+  }
+
+  return {
+    chip: "Live now",
+    detail: `Scheduled to end at ${formatSpotlightDate(expiresAt)}.`,
+    urgent: false,
+  };
+}
 
 export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlightWorkflowProps) {
   const {
@@ -159,38 +221,229 @@ export default function ShopControlSpotlightWorkflow(props: ShopControlSpotlight
         </div>
       ) : null}
 
-      {currentActiveSpotlight ? (
-        <div
-          style={{
-            marginTop: 14,
-            ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
-            border: "1px solid rgba(11,31,51,0.08)",
-          }}
-        >
-          <div style={sectionLabel()}>{labelWithIcon("megaphone", "Live now")}</div>
-          <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900, fontSize: 16 }}>
-            {firstTruthy(currentActiveSpotlight?.message, "Live spotlight is active.")}
-          </div>
-          <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-            Take it down first if the media or wording is wrong. After it is down,
-            publish the corrected Spotlight from this page.
-            {currentLiveSpotlightIsPaid
-              ? " Paid Spotlight payments are not refunded by this action."
-              : ""}
-          </div>
-          <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-start" }}>
-            <SecondaryButton
-              type="button"
-              onClick={() => handleTakeDownCurrentSpotlight()}
-              disabled={takingDownSpotlight || creatingSpotlight}
-              debugId="shop-control.spotlight.live.take-down"
-            >
-              {takingDownSpotlight ? "Taking down..." : "Take down live Spotlight"}
-            </SecondaryButton>
-          </div>
-        </div>
-      ) : null}
+      {currentActiveSpotlight ? (() => {
+        const liveStatus = liveSpotlightStatus(currentActiveSpotlight);
+        const liveTitle = firstTruthy(
+          currentActiveSpotlight?.source_product_title,
+          currentActiveSpotlight?.message,
+          "Live Spotlight"
+        );
+        const liveBody = firstTruthy(
+          currentActiveSpotlight?.source_product_description,
+          currentActiveSpotlight?.body,
+          currentActiveSpotlight?.message,
+          "Your Spotlight is live in the shop ecosystem."
+        );
+        const livePrice = spotlightPriceLine(
+          currentActiveSpotlight?.source_product_price,
+          currentActiveSpotlight?.source_product_currency
+        );
+        const liveCommunity = firstTruthy(
+          currentActiveSpotlight?.source_clan_name,
+          communityName
+        );
+        const liveShopName = firstTruthy(
+          currentActiveSpotlight?.source_shop_name,
+          shop?.name,
+          shopName,
+          "Your shop"
+        );
 
+        return (
+          <div
+            data-spotlight-owner-frame="rich-live"
+            style={{
+              marginTop: 14,
+              ...innerCard(
+                "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,250,238,0.98) 48%, rgba(239,247,255,0.98) 100%)"
+              ),
+              border: "1px solid rgba(184,137,45,0.24)",
+              boxShadow:
+                "0 20px 42px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.92)",
+            }}
+          >
+            <div style={sectionLabel()}>
+              {labelWithIcon("megaphone", "Live owner Spotlight")}
+            </div>
+            <div
+              style={{
+                marginTop: 10,
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.16fr) minmax(260px, 0.84fr)",
+                gap: isCompact ? 12 : 16,
+                alignItems: "stretch",
+              }}
+            >
+              <div
+                style={{
+                  position: "relative",
+                  minHeight: isCompact ? 236 : 286,
+                  borderRadius: isCompact ? 20 : 24,
+                  overflow: "hidden",
+                  border: "1px solid rgba(184,137,45,0.34)",
+                  background: "linear-gradient(180deg, #0B1F33 0%, #061827 100%)",
+                  boxShadow:
+                    "0 18px 36px rgba(6,24,39,0.18), inset 0 1px 0 rgba(255,255,255,0.10)",
+                }}
+              >
+                <SpotlightMediaFrame
+                  imageUrl={currentActiveSpotlight?.image_url || ""}
+                  videoUrl={currentActiveSpotlight?.video_url || ""}
+                  videoPoster={currentActiveSpotlight?.image_url || ""}
+                  alt={liveTitle}
+                  frameStyle={{
+                    width: "100%",
+                    height: isCompact ? 236 : 286,
+                    minHeight: isCompact ? 236 : 286,
+                    borderRadius: isCompact ? 20 : 24,
+                    background: "transparent",
+                  }}
+                  mediaStyle={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  contentPadding={0}
+                  showVideoControls={false}
+                  autoPlayVideo={Boolean(currentActiveSpotlight?.video_url)}
+                  mutedVideo={Boolean(currentActiveSpotlight?.video_url)}
+                  loopVideo={Boolean(currentActiveSpotlight?.video_url)}
+                  showAudioUnlock={Boolean(currentActiveSpotlight?.video_url)}
+                  audioUnlockLabel="Sound on"
+                  audioUnlockOffLabel="Muted"
+                  audioUnlockErrorLabel="Play"
+                  audioUnlockStyle={{
+                    top: 12,
+                    right: 12,
+                    minWidth: 46,
+                    width: 46,
+                    height: 46,
+                    borderRadius: 999,
+                    padding: 0,
+                    fontSize: 0,
+                    border: "1px solid rgba(214,170,69,0.58)",
+                    background:
+                      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,248,232,0.96) 100%)",
+                    color: "#07172C",
+                    boxShadow:
+                      "0 12px 22px rgba(2,12,27,0.28), inset 0 1px 0 rgba(255,255,255,0.92)",
+                  }}
+                  maxVideoSeconds={spotlightPilotMaxVideoSeconds}
+                  fallback={
+                    <div
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        minHeight: isCompact ? 236 : 286,
+                        display: "grid",
+                        placeItems: "center",
+                        padding: 22,
+                        color: "#F8FBFF",
+                        textAlign: "center",
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 950, fontSize: isCompact ? 19 : 24 }}>
+                          Spotlight media unavailable
+                        </div>
+                        <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5, color: "rgba(231,238,248,0.88)" }}>
+                          The live Spotlight is still recorded. Republish if the media needs replacing.
+                        </div>
+                      </div>
+                    </div>
+                  }
+                />
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    pointerEvents: "none",
+                    background:
+                      "linear-gradient(180deg, rgba(6,19,34,0.04) 0%, rgba(6,19,34,0.18) 42%, rgba(6,19,34,0.82) 100%)",
+                  }}
+                />
+                <div
+                  style={{
+                    position: "absolute",
+                    left: 16,
+                    right: 16,
+                    bottom: 14,
+                    display: "grid",
+                    gap: 7,
+                    color: "#FFFFFF",
+                    pointerEvents: "none",
+                  }}
+                >
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{ ...badge(true), color: "#07172C" }}>{liveStatus.chip}</span>
+                    <span style={{ ...badge(false), background: "rgba(255,255,255,0.14)", color: "#FFFFFF" }}>
+                      {currentLiveSpotlightIsPaid ? "Paid Spotlight" : "Free Spotlight"}
+                    </span>
+                    {livePrice ? (
+                      <span style={{ ...badge(false), background: "rgba(255,248,232,0.92)", color: "#08233A" }}>
+                        {livePrice}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div style={{ fontSize: isCompact ? 22 : 28, fontWeight: 1000, lineHeight: 1.06 }}>
+                    {liveTitle}
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 850, color: "rgba(255,255,255,0.90)" }}>
+                    {liveShopName} - {liveCommunity}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", alignContent: "space-between", gap: 14 }}>
+                <div>
+                  <div style={{ color: "#07172C", fontWeight: 950, fontSize: isCompact ? 20 : 24, lineHeight: 1.12 }}>
+                    {liveTitle}
+                  </div>
+                  <div style={{ marginTop: 9, ...helperText(), fontSize: 13.5 }}>
+                    {liveBody}
+                  </div>
+                  <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <span style={badge(false)}>{liveStatus.detail}</span>
+                    <span style={badge(false)}>
+                      {currentActiveSpotlight?.visibility_scope === "marketplace_repost"
+                        ? "Repost placement"
+                        : "Shop Spotlight"}
+                    </span>
+                  </div>
+                  <div style={{ marginTop: 10, ...helperText(), fontSize: 12.5 }}>
+                    Take it down first if the media or wording is wrong. After it is down,
+                    publish the corrected Spotlight from this page.
+                    {currentLiveSpotlightIsPaid
+                      ? " Paid Spotlight payments are not refunded by this action."
+                      : ""}
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                  <StableButton
+                    type="button"
+                    onClick={() => navigateWithOrigin(navigate, routes.shopGallery, location)}
+                    debugId="shop-control.spotlight.live.preview-shop"
+                  >
+                    Preview public shop
+                  </StableButton>
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => setSpotlightFlowStep("upload")}
+                    debugId="shop-control.spotlight.live.open-publisher"
+                  >
+                    Open publisher
+                  </SecondaryButton>
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => handleTakeDownCurrentSpotlight()}
+                    disabled={takingDownSpotlight || creatingSpotlight}
+                    debugId="shop-control.spotlight.live.take-down"
+                  >
+                    {takingDownSpotlight ? "Taking down..." : "Take down live Spotlight"}
+                  </SecondaryButton>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })() : null}
       {spotlightPublishFeedback ? (
         <div style={{ marginTop: 14, ...noticeCard(spotlightPublishFeedback.tone) }}>
           {spotlightPublishFeedback.text}

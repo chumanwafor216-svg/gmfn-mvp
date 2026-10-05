@@ -127,12 +127,6 @@ const requiredDashboardPatterns = [
     message:
       "Dashboard app launcher section must follow the conditional first-view hierarchy while staying below the phone rail and clear of bottom navigation.",
   },
-  {
-    pattern:
-      /<SpotlightMediaFrame[\s\S]*?frameStyle=\{\{[\s\S]*?zIndex: 2[\s\S]*?showVideoControls=\{false\}[\s\S]*?autoPlayVideo=\{Boolean\(spotlightVideoCandidate\)\}[\s\S]*?mutedVideo=\{Boolean\(spotlightVideoCandidate\)\}[\s\S]*?loopVideo=\{Boolean\(spotlightVideoCandidate\)\}[\s\S]*?showAudioUnlock=\{Boolean\(spotlightVideoCandidate\)\}[\s\S]*?audioUnlockLabel="Sound on"[\s\S]*?audioUnlockOffLabel="Muted"[\s\S]*?audioUnlockStyle=\{\{[\s\S]*?right: isPhone \? 12 : 18[\s\S]*?width: isPhone \? 44 : 52[\s\S]*?height: isPhone \? 44 : 52[\s\S]*?maxHeight: isPhone \? 44 : 52[\s\S]*?maxVideoSeconds=\{SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS\}/,
-    message:
-      "Dashboard Spotlight primary media preview must expose an in-frame Sound on/Muted control for video without moving outside the screen.",
-  },
 ];
 
 for (const check of requiredDashboardPatterns) {
@@ -145,12 +139,12 @@ for (const check of requiredDashboardPatterns) {
   });
 }
 
-if (/dashboard\.spotlight\.guide|Sharing matters|Rotates every/.test(dashboardSource)) {
+if (/dashboard\.spotlight\.|<SpotlightMediaFrame|activeSpotlight|getMarketplaceBroadcasts|synthetic-spotlight|dashboard\.spotlight\.guide|Sharing matters|Rotates every/.test(dashboardSource)) {
   findings.push({
     file: dashboardFile,
     line: 1,
     message:
-      "Dashboard Spotlight must not restore the old guide row, rotation copy, or extra phone actions under the live billboard.",
+      "Dashboard must not keep Spotlight media, guide, fetch, synthetic attention, or phone actions after Spotlight moved to Shop Control.",
     text: "Forbidden Dashboard Spotlight guide pattern was found.",
   });
 }
