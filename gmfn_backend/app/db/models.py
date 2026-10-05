@@ -7,6 +7,7 @@ from typing import Any, Dict, Optional
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     Column,
     DateTime,
     ForeignKey,
@@ -4408,6 +4409,346 @@ class OpportunityRelayOffer(Base):
 
     def _set_meta(self, value: Optional[Dict[str, Any]]) -> None:
         self.meta_json = json.dumps(value) if value is not None else None
+
+    meta = synonym("meta_json", descriptor=property(_get_meta, _set_meta))
+
+
+class RoscaRun(Base):
+    __tablename__ = "rosca_runs"
+
+    __table_args__ = (
+        UniqueConstraint("public_id", name="uq_rosca_runs_public_id_v1"),
+        CheckConstraint(
+            "status IN ('draft', 'inviting', 'ready_to_activate', 'active', 'completed', 'cancelled')",
+            name="ck_rosca_runs_status_v1",
+        ),
+        CheckConstraint(
+            "start_rule IN ('on_all_acceptance', 'on_date_after_all_acceptance', 'manual_activate_after_all_acceptance')",
+            name="ck_rosca_runs_start_rule_v1",
+        ),
+        CheckConstraint("amount > 0", name="ck_rosca_runs_amount_positive_v1"),
+        CheckConstraint("round_count >= 2", name="ck_rosca_runs_round_count_v1"),
+        CheckConstraint("participant_count_required >= 2", name="ck_rosca_runs_participant_count_v1"),
+        CheckConstraint("frequency_interval >= 1", name="ck_rosca_runs_frequency_interval_v1"),
+        Index("ix_rosca_runs_coordinator_status_v1", "coordinator_user_id", "status"),
+        Index("ix_rosca_runs_creator_status_v1", "created_by_user_id", "status"),
+        Index("ix_rosca_runs_origin_status_v1", "origin_clan_id", "status"),
+        Index("ix_rosca_runs_terms_hash_v1", "terms_hash"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    public_id: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    created_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    coordinator_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    origin_clan_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("clans.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    currency: Mapped[str] = mapped_column(String(8), nullable=False, default="NGN", server_default="NGN")
+    frequency_unit: Mapped[str] = mapped_column(String(24), nullable=False, default="monthly", server_default="monthly")
+    frequency_interval: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    round_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    participant_count_required: Mapped[int] = mapped_column(Integer, nullable=False)
+    start_rule: Mapped[str] = mapped_column(
+        String(48),
+        nullable=False,
+        default="on_all_acceptance",
+        server_default="on_all_acceptance",
+    )
+    start_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    rotation_method: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="explicit_order",
+        server_default="explicit_order",
+    )
+    terms_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    terms_snapshot_json: Mapped[str] = mapped_column(Text, nullable=False)
+    terms_hash: Mapped[str] = mapped_column(String(96), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="draft",
+        server_default="draft",
+        index=True,
+    )
+    external_money_moved_by_gsn: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="0",
+    )
+    activated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    cancelled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    meta_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+
+    created_by = relationship("User", foreign_keys=[created_by_user_id])
+    coordinator = relationship("User", foreign_keys=[coordinator_user_id])
+    origin_clan = relationship("Clan")
+
+    def _get_terms_snapshot(self) -> Dict[str, Any]:
+        try:
+            raw = json.loads(self.terms_snapshot_json or "{}")
+        except Exception:
+            return {}
+        return raw if isinstance(raw, dict) else {}
+
+    def _set_terms_snapshot(self, value: Optional[Dict[str, Any]]) -> None:
+        self.terms_snapshot_json = json.dumps(value or {}, sort_keys=True, separators=(",", ":"))
+
+    terms_snapshot = synonym("terms_snapshot_json", descriptor=property(_get_terms_snapshot, _set_terms_snapshot))
+
+    def _get_meta(self) -> Dict[str, Any]:
+        if not self.meta_json:
+            return {}
+        try:
+            raw = json.loads(self.meta_json)
+        except Exception:
+            return {}
+        return raw if isinstance(raw, dict) else {}
+
+    def _set_meta(self, value: Optional[Dict[str, Any]]) -> None:
+        self.meta_json = json.dumps(value, sort_keys=True) if value is not None else None
+
+    meta = synonym("meta_json", descriptor=property(_get_meta, _set_meta))
+
+
+class RoscaParticipant(Base):
+    __tablename__ = "rosca_participants"
+
+    __table_args__ = (
+        UniqueConstraint("rosca_run_id", "user_id", name="uq_rosca_participants_run_user_v1"),
+        UniqueConstraint("invitation_token_hash", name="uq_rosca_participants_invitation_token_v1"),
+        CheckConstraint(
+            "role IN ('coordinator', 'participant')",
+            name="ck_rosca_participants_role_v1",
+        ),
+        CheckConstraint(
+            "status IN ('invited', 'accepted', 'declined', 'revoked', 'removed', 'withdraw_requested', 'withdrawn')",
+            name="ck_rosca_participants_status_v1",
+        ),
+        Index("ix_rosca_participants_user_status_v1", "user_id", "status"),
+        Index("ix_rosca_participants_run_status_v1", "rosca_run_id", "status"),
+        Index(
+            "uq_rosca_participants_run_rotation_active_v1",
+            "rosca_run_id",
+            "rotation_position",
+            unique=True,
+            sqlite_where=text("rotation_position IS NOT NULL AND status IN ('invited', 'accepted')"),
+            postgresql_where=text("rotation_position IS NOT NULL AND status IN ('invited', 'accepted')"),
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    rosca_run_id: Mapped[int] = mapped_column(
+        ForeignKey("rosca_runs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    role: Mapped[str] = mapped_column(String(24), nullable=False, default="participant", server_default="participant")
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="invited", server_default="invited", index=True)
+    rotation_position: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    invited_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    invited_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+    responded_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    removed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    accepted_terms_version: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    accepted_terms_hash: Mapped[Optional[str]] = mapped_column(String(96), nullable=True)
+    accepted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    acceptance_source: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
+    idempotency_key: Mapped[Optional[str]] = mapped_column(String(96), nullable=True)
+    invitation_token_hash: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    invitee_identifier_hash: Mapped[Optional[str]] = mapped_column(String(128), nullable=True, index=True)
+    meta_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+
+    rosca_run = relationship("RoscaRun")
+    user = relationship("User", foreign_keys=[user_id])
+    invited_by = relationship("User", foreign_keys=[invited_by_user_id])
+
+    def _get_meta(self) -> Dict[str, Any]:
+        if not self.meta_json:
+            return {}
+        try:
+            raw = json.loads(self.meta_json)
+        except Exception:
+            return {}
+        return raw if isinstance(raw, dict) else {}
+
+    def _set_meta(self, value: Optional[Dict[str, Any]]) -> None:
+        self.meta_json = json.dumps(value, sort_keys=True) if value is not None else None
+
+    meta = synonym("meta_json", descriptor=property(_get_meta, _set_meta))
+
+
+class RoscaObligation(Base):
+    __tablename__ = "rosca_obligations"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "rosca_run_id",
+            "participant_id",
+            "round_number",
+            "obligation_type",
+            name="uq_rosca_obligations_run_participant_round_type_v1",
+        ),
+        CheckConstraint("round_number >= 1", name="ck_rosca_obligations_round_v1"),
+        CheckConstraint("amount >= 0", name="ck_rosca_obligations_amount_v1"),
+        CheckConstraint("amount_recorded >= 0", name="ck_rosca_obligations_amount_recorded_v1"),
+        CheckConstraint("amount_outstanding >= 0", name="ck_rosca_obligations_amount_outstanding_v1"),
+        CheckConstraint(
+            "obligation_type IN ('contribution', 'payout')",
+            name="ck_rosca_obligations_type_v1",
+        ),
+        CheckConstraint(
+            "state IN ('scheduled', 'reported', 'confirmed')",
+            name="ck_rosca_obligations_state_v1",
+        ),
+        Index("ix_rosca_obligations_user_state_v1", "user_id", "state"),
+        Index("ix_rosca_obligations_run_round_v1", "rosca_run_id", "round_number"),
+        Index("ix_rosca_obligations_due_state_v1", "due_at", "state"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    rosca_run_id: Mapped[int] = mapped_column(
+        ForeignKey("rosca_runs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    participant_id: Mapped[int] = mapped_column(
+        ForeignKey("rosca_participants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    round_number: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    obligation_type: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    currency: Mapped[str] = mapped_column(String(8), nullable=False, default="NGN", server_default="NGN")
+    amount_recorded: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=0, server_default="0")
+    amount_outstanding: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=0, server_default="0")
+    due_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    state: Mapped[str] = mapped_column(String(32), nullable=False, default="scheduled", server_default="scheduled", index=True)
+    external_reference: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    reported_by_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    reported_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    confirmed_by_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    confirmed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    correction_of_obligation_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("rosca_obligations.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    evidence_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    meta_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+
+    rosca_run = relationship("RoscaRun")
+    participant = relationship("RoscaParticipant")
+    user = relationship("User", foreign_keys=[user_id])
+    reported_by = relationship("User", foreign_keys=[reported_by_user_id])
+    confirmed_by = relationship("User", foreign_keys=[confirmed_by_user_id])
+
+    def _get_evidence(self) -> Dict[str, Any]:
+        if not self.evidence_json:
+            return {}
+        try:
+            raw = json.loads(self.evidence_json)
+        except Exception:
+            return {}
+        return raw if isinstance(raw, dict) else {}
+
+    def _set_evidence(self, value: Optional[Dict[str, Any]]) -> None:
+        self.evidence_json = json.dumps(value, sort_keys=True) if value is not None else None
+
+    evidence = synonym("evidence_json", descriptor=property(_get_evidence, _set_evidence))
+
+    def _get_meta(self) -> Dict[str, Any]:
+        if not self.meta_json:
+            return {}
+        try:
+            raw = json.loads(self.meta_json)
+        except Exception:
+            return {}
+        return raw if isinstance(raw, dict) else {}
+
+    def _set_meta(self, value: Optional[Dict[str, Any]]) -> None:
+        self.meta_json = json.dumps(value, sort_keys=True) if value is not None else None
 
     meta = synonym("meta_json", descriptor=property(_get_meta, _set_meta))
 
