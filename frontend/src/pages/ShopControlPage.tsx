@@ -6968,7 +6968,7 @@ export default function ShopControlPage() {
                 {firstTruthy(shop?.name, "Shop not set up")}
               </div>
               <div style={{ marginTop: 8, ...helperText(), maxWidth: 760, color: "#D7E3F1", lineHeight: 1.45 }}>
-                Operate your public shop, public blocks, and current promotion from one place.
+                Manage your shop, public content, and Spotlight.
               </div>
               <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <span style={badge(publicShopReady)}>{labelWithIcon("shop", publicShopReady ? "Public shop ready" : "Setup needed")}</span>
@@ -7058,7 +7058,7 @@ export default function ShopControlPage() {
               stableHeight={44}
               style={{
                 display: "grid",
-                gridTemplateColumns: "minmax(0, 1fr) auto",
+                gridTemplateColumns: "minmax(0, 1fr)",
                 gap: 10,
                 alignItems: "center",
                 color: "#0B2D4A",
@@ -7072,7 +7072,7 @@ export default function ShopControlPage() {
                   Vault · Spotlight plans · Repost · Capacity · Analytics
                 </span>
               </span>
-              <span style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>Progressive</span>
+
             </StableDisclosureSummary>
             <div style={{ marginTop: 12, ...controlGrid(isCompact, 186) }}>
               {progressiveOwnerTools.map((tool) => (
@@ -7092,9 +7092,7 @@ export default function ShopControlPage() {
                 </StableCtaLink>
               ))}
             </div>
-            <div style={{ marginTop: 10, ...helperText(), fontSize: 12.5, lineHeight: 1.35 }}>
-              These tools stay behind a deliberate open step. Shop Diary blocks are public content; Trade Evidence is formal bilateral evidence in Marketplace.
-            </div>
+
           </details>
         </div>
       </section>

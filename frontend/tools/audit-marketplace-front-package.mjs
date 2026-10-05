@@ -265,8 +265,8 @@ assertNotContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /Focus your work[\s\S]*?Open one lane at a time\. Everything else steps back\./,
-  "Marketplace front package must keep the one-lane focus guide."
+  /debugId="marketplace\.job\.find-people-services"[\s\S]*?debugId="marketplace\.job\.ask-for-something"[\s\S]*?debugId="marketplace\.job\.community-board"[\s\S]*?data-marketplace-wisdom-lens="true"/,
+  "Marketplace front package must keep the human-job cards without the removed non-action focus guide."
 );
 
 assertContains(

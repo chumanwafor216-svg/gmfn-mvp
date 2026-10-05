@@ -45,8 +45,8 @@ assertContains(
 );
 
 assertContains(
-  /Focus your work[\s\S]*?Open one lane at a time\. Everything else steps back\./,
-  "Marketplace front door must keep the non-action focus guide after the grouped lane cards."
+  /debugId="marketplace\.job\.find-people-services"[\s\S]*?debugId="marketplace\.job\.ask-for-something"[\s\S]*?debugId="marketplace\.job\.community-board"[\s\S]*?data-marketplace-wisdom-lens="true"/,
+  "Marketplace front door must keep grouped lane cards without restoring the non-action focus guide."
 );
 
 assertContains(

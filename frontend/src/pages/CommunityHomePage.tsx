@@ -4843,7 +4843,7 @@ export default function CommunityHomePage() {
 
           <React.Suspense fallback={null}>
             <NextActionGuide
-              title="Community entry"
+              title="My Communities"
               storageKey="gmfn.communityHome.nextActionGuide.v1"
               compact={isCompact}
               items={communityNextActionItems}
@@ -5066,7 +5066,7 @@ export default function CommunityHomePage() {
                 maxWidth: 880,
               }}
             >
-              Choose where you belong, then enter one community marketplace.
+              Choose a community.
             </div>
 
             <div
@@ -5106,16 +5106,6 @@ export default function CommunityHomePage() {
                     {selectedClanName || "Choose a community"}
                   </div>
                 </div>
-                <span
-                  style={{
-                    ...badge(true),
-                    background: "#EAF3FF",
-                    color: "#0B2D4A",
-                    border: "1px solid rgba(13,95,168,0.16)",
-                  }}
-              >
-                Community entry
-              </span>
             </div>
 
               <div style={{ marginTop: isCompact ? 8 : 10, display: "grid", gap: 8 }}>
@@ -5167,8 +5157,8 @@ export default function CommunityHomePage() {
                       }}
                     >
                       {selectedClanName
-                        ? `Enter ${selectedClanName} with this community selected.`
-                        : "Select a community first, then enter its marketplace."}
+                        ? "Enter this community."
+                        : "Select a community first."}
                     </span>
                   </span>
                   <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>
@@ -5221,7 +5211,7 @@ export default function CommunityHomePage() {
                         lineHeight: 1.35,
                       }}
                     >
-                      {combinedCommunityListCount} visible {combinedCommunityListCount === 1 ? "community/domain" : "communities/domains"}. Setup and governance stay with Community Domain; active work opens in Marketplace.
+                      {combinedCommunityListCount} visible {combinedCommunityListCount === 1 ? "community" : "communities"}.
                     </span>
                   </span>
                   <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 22, fontWeight: 950 }}>
@@ -5288,18 +5278,6 @@ export default function CommunityHomePage() {
                       >
                         Payments · No action shown
                       </span>
-                      <span
-                        style={{
-                          ...brandClampLines(2),
-                          marginTop: 2,
-                          color: "#617085",
-                          fontSize: isCompact ? 11.5 : 12,
-                          fontWeight: 720,
-                          lineHeight: 1.35,
-                        }}
-                      >
-                        Bulletin responses and other community work stay in their canonical surfaces.
-                      </span>
                     </span>
                   </div>
                 )}
@@ -5341,7 +5319,7 @@ export default function CommunityHomePage() {
                           lineHeight: 1.35,
                         }}
                       >
-                        Operator setup, policy, billing, and capacity stay in Community Domain.
+                        Admin / Billing / Policy
                       </span>
                     </span>
                     <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>

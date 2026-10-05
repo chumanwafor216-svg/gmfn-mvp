@@ -388,7 +388,7 @@ assertContains(
 );
 
 assertContains(
-  /listMyCommunityDomains[\s\S]*?const \[communityDomainCount, setCommunityDomainCount\] = useState<number \| null>\(null\)[\s\S]*?const \[communityDomainRows, setCommunityDomainRows\] = useState<CommunityDomainListRow\[\]>\(\[\]\)[\s\S]*?normalizeCommunityDomainListRow[\s\S]*?setCommunityDomainRows\(normalizedDomainRows\)[\s\S]*?setCommunityDomainCount\(Array\.isArray\(domainRows\) \? normalizedDomainRows\.length : null\)[\s\S]*?My Communities[\s\S]*?debugId="community-home\.selected\.open-marketplace"[\s\S]*?openSelectedMarketplace\(event\)[\s\S]*?debugId="community-home\.summary\.visible-communities"[\s\S]*?View communities[\s\S]*?visible[\s\S]*?Setup and governance stay with Community Domain; active work opens in Marketplace\./,
+  /listMyCommunityDomains[\s\S]*?const \[communityDomainCount, setCommunityDomainCount\] = useState<number \| null>\(null\)[\s\S]*?const \[communityDomainRows, setCommunityDomainRows\] = useState<CommunityDomainListRow\[\]>\(\[\]\)[\s\S]*?normalizeCommunityDomainListRow[\s\S]*?setCommunityDomainRows\(normalizedDomainRows\)[\s\S]*?setCommunityDomainCount\(Array\.isArray\(domainRows\) \? normalizedDomainRows\.length : null\)[\s\S]*?My Communities[\s\S]*?debugId="community-home\.selected\.open-marketplace"[\s\S]*?openSelectedMarketplace\(event\)[\s\S]*?debugId="community-home\.summary\.visible-communities"[\s\S]*?View communities[\s\S]*?visible[\s\S]*?community/,
   "Community Home summary must make selected community entry primary while keeping ordinary communities and Community Domains in one explicit disclosure room."
 );
 

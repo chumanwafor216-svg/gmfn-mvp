@@ -392,8 +392,8 @@ assertContains(
 );
 
 assertContains(
-  /Focus your work[\s\S]*?Open one lane at a time\. Everything else steps back\./,
-  "Marketplace front door must keep the focus-your-work guide after the human-job cards."
+  /debugId="marketplace\.job\.find-people-services"[\s\S]*?debugId="marketplace\.job\.ask-for-something"[\s\S]*?debugId="marketplace\.job\.community-board"[\s\S]*?data-marketplace-wisdom-lens="true"/,
+  "Marketplace front door must keep the human-job cards and move directly into compact follow-on context."
 );
 
 assertContains(

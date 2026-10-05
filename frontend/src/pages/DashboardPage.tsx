@@ -4876,7 +4876,7 @@ export default function DashboardPage() {
       : "A demand request is live in your community."
     : "Create your demand when you need help.";
   const demandGuideBody =
-    "Your DemandBox is personal: you say what you need, and your GSN evidence signal shows who is asking. Your community name shows where you are sending it from. Payment terms and TrustSlip expectations help both sides agree before work starts.";
+    "State the need, community, payment terms, TrustSlip expectations, and GSN evidence signal before work starts.";
 
   const demandSurfaceChrome = useMemo(() => {
     if (urgentDemandItems.length > 0) {

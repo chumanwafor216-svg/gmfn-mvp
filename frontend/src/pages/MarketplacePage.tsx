@@ -8655,7 +8655,7 @@ export default function MarketplacePage() {
                 Ask for something
               </span>
               <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                Open the community DemandBox pathway for requests.
+                Create or manage a request.
               </span>
               {!isCompact ? (
                 <span style={marketplaceFrontTagRowStyle(isCompact)}>
@@ -8871,84 +8871,6 @@ export default function MarketplacePage() {
             </StableButton>
           </div>
         </details>
-        <div
-          style={{
-            marginTop: 14,
-            borderRadius: 18,
-            border: "1px solid rgba(11,99,209,0.14)",
-            background:
-              "linear-gradient(180deg, rgba(240,247,255,0.98) 0%, rgba(229,240,250,0.96) 100%)",
-            padding: isCompact ? "11px 12px" : "12px 14px",
-            display: "grid",
-            gridTemplateColumns: isCompact
-              ? "40px minmax(0, 1fr)"
-              : "44px minmax(0, 1fr) repeat(3, minmax(120px, 1fr))",
-            gap: 10,
-            alignItems: "center",
-            overflow: "hidden",
-            overflowAnchor: "none",
-          }}
-        >
-          <span
-            aria-hidden="true"
-            style={{
-              width: isCompact ? 38 : 42,
-              height: isCompact ? 38 : 42,
-              borderRadius: 14,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#FFFFFF",
-              background:
-                "linear-gradient(180deg, #0B63D1 0%, #08315E 100%)",
-              boxShadow:
-                "0 10px 18px rgba(10,24,49,0.14), inset 0 1px 0 rgba(255,255,255,0.22)",
-            }}
-          >
-            <MarketplaceGlyph name="spark" size={isCompact ? 22 : 24} />
-          </span>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ ...sectionLabel(), color: "#0B4EA2" }}>
-              Focus your work
-            </div>
-            <div
-              style={{
-                marginTop: 4,
-                color: "#173750",
-                fontSize: isCompact ? 13 : 14,
-                fontWeight: 800,
-                lineHeight: 1.35,
-                overflowWrap: "break-word",
-              }}
-            >
-              Open one lane at a time. Everything else steps back.
-            </div>
-          </div>
-          {!isCompact
-            ? [
-                ["Marketplace type", "Standard"],
-                ["Owner", canManageMarketplaceLinks ? "Admin" : "Member"],
-                ["Member since", "Active"],
-              ].map(([label, value]) => (
-                <div key={label} style={{ minWidth: 0 }}>
-                  <div style={{ ...sectionLabel(), color: "#617085" }}>
-                    {label}
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 4,
-                      color: "#07172C",
-                      fontSize: 14,
-                      fontWeight: 950,
-                      lineHeight: 1.15,
-                    }}
-                  >
-                    {value}
-                  </div>
-                </div>
-              ))
-            : null}
-        </div>
 
         <div
           data-marketplace-wisdom-lens="true"
