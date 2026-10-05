@@ -13,7 +13,7 @@ const findings = [];
 const expectedStableButtonTemplateCount = 40;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
-const expectedFrontQuickActionCount = 4;
+const expectedFrontQuickActionCount = 0;
 const expectedSpotlightGuidedActionCount = 5;
 const expectedGroupedLaneRowCount = 23;
 const expectedExpandedRouteLocalActionTemplates = 51;
@@ -97,6 +97,13 @@ assertContains(
 assertNotContains(
   /wider trust record|trust story|trust strength/i,
   "Community Home must not frame Trust Passport navigation as a trust story or trust-strength verdict."
+);assertNotContains(
+  /payment action requires you|No urgent community actions/,
+  "Community Home must not convert a net financial position into a proven payment action or claim all community actions are clear."
+);
+assertContains(
+  /const financeNeedsReview = netMoneyPosition < 0[\s\S]*?Finance needs review[\s\S]*?No payment action shown/,
+  "Community Home finance pointer must use neutral finance-review language because netMoneyPosition is a balance signal, not an actionable due-task contract."
 );
 const actionPattern = /<StableButton\b[\s\S]*?(?:\/>|<\/StableButton>)/g;
 const actions = [];
@@ -170,12 +177,10 @@ for (const action of actions) {
 
 const frontToInnerOrder = [
   { label: "empty state", pattern: /^community-home\.empty\./ },
+  { label: "selected marketplace entry", pattern: /^community-home\.selected\.open-marketplace/ },
   { label: "visible marketplace summary", pattern: /^community-home\.summary\.visible-communities/ },
-  { label: "finance summary", pattern: /^community-home\.finance-summary\./ },
-  { label: "trust summary", pattern: /^community-home\.trust-summary\./ },
   { label: "notice board", pattern: /^community-home\.notice\./ },
   { label: "contact community", pattern: /^community-home\.contact\./ },
-  { label: "front next actions", pattern: /^community-home\.next-action\./ },
   { label: "spotlight guided lane", pattern: /^community-home\.spotlight-guided\./ },
   { label: "grouped command lanes", pattern: /^community-home\.lane\./ },
   { label: "spotlight status", pattern: /^community-home\.spotlight-status\./ },
@@ -213,10 +218,9 @@ const nextActionGuideItemCount = countIdsInBlock(
   /const communityNextActionItems = useMemo<NextActionGuideItem\[]>\([\s\S]*?\n {2}\);/,
   "NextActionGuide item manifest"
 );
-const frontQuickActionCount = countIdsInBlock(
-  /\{\[\s*\{[\s\S]*?id: "communities"[\s\S]*?id: "marketplace-tools"[\s\S]*?id: "subscriptions"[\s\S]*?id: "trust-finance"[\s\S]*?\]\.map\(\(item\) => \(/,
-  "front command-lane grid"
-);
+const frontQuickActionCount = (
+  source.match(/debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}/g) || []
+).length;
 const spotlightGuidedActionCount = countIdsInBlock(
   /const spotlightHandleItems = useMemo<NextActionGuideItem\[]>\([\s\S]*?\n {2}\);/,
   "spotlight guided action manifest"
@@ -334,9 +338,9 @@ assertContains(
   "Community Home marketplace-capacity guide item must open the Shop Control capacity lane."
 );
 
-assertContains(
-  /\{\[\s*\{[\s\S]*?id: "communities"[\s\S]*?lane: "communities"[\s\S]*?id: "marketplace-tools"[\s\S]*?lane: "marketplaceTools"[\s\S]*?id: "subscriptions"[\s\S]*?lane: "subscriptions"[\s\S]*?id: "trust-finance"[\s\S]*?lane: "trustFinance"[\s\S]*?\]\.map\(\(item\) => \([\s\S]*?debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}[\s\S]*?openActionLaneFromButton\(event, item\.lane as CollapseKey\)/,
-  "Community Home front quick-action grid must keep exactly the four grouped command lanes before deeper tools."
+assertNotContains(
+  /debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}/,
+  "Community Home initial surface must not expose the old four-lane Verification tools launcher grid."
 );
 
 assertContains(
@@ -365,8 +369,8 @@ assertContains(
 );
 
 assertContains(
-  /listMyCommunityDomains[\s\S]*?const \[communityDomainCount, setCommunityDomainCount\] = useState<number \| null>\(null\)[\s\S]*?const \[communityDomainRows, setCommunityDomainRows\] = useState<CommunityDomainListRow\[\]>\(\[\]\)[\s\S]*?normalizeCommunityDomainListRow[\s\S]*?setCommunityDomainRows\(normalizedDomainRows\)[\s\S]*?setCommunityDomainCount\(Array\.isArray\(domainRows\) \? normalizedDomainRows\.length : null\)[\s\S]*?Marketplace Communities \/ Community Domains[\s\S]*?debugId="community-home\.summary\.visible-communities"[\s\S]*?\{combinedCommunityListCount\} marketplace[\s\S]*?communities\/domains[\s\S]*?Marketplace communities and Community Domains together\. Setup and governance stay here; active work opens in Marketplace\./,
-  "Community Home summary must place ordinary marketplace communities and Community Domains in one room, while preserving the setup/governance versus Marketplace boundary."
+  /listMyCommunityDomains[\s\S]*?const \[communityDomainCount, setCommunityDomainCount\] = useState<number \| null>\(null\)[\s\S]*?const \[communityDomainRows, setCommunityDomainRows\] = useState<CommunityDomainListRow\[\]>\(\[\]\)[\s\S]*?normalizeCommunityDomainListRow[\s\S]*?setCommunityDomainRows\(normalizedDomainRows\)[\s\S]*?setCommunityDomainCount\(Array\.isArray\(domainRows\) \? normalizedDomainRows\.length : null\)[\s\S]*?My Communities[\s\S]*?debugId="community-home\.selected\.open-marketplace"[\s\S]*?openSelectedMarketplace\(event\)[\s\S]*?debugId="community-home\.summary\.visible-communities"[\s\S]*?Change the selected community\. Setup and governance stay with Community Domain; active work opens in Marketplace\./,
+  "Community Home summary must make selected community entry primary while keeping ordinary communities and Community Domains in one selectable room."
 );
 
 assertNotContains(
@@ -385,8 +389,16 @@ assertContains(
 );
 
 assertContains(
-  /id: "communities"[\s\S]*?lane: "communities"[\s\S]*?title: "Marketplaces"[\s\S]*?Marketplace communities[\s\S]*?title: "Choose marketplace"[\s\S]*?title: "Create marketplace"[\s\S]*?title: "Set up Community Domain"[\s\S]*?routes\.communityDomainCommand[\s\S]*?title: "Join marketplace"/,
-  "Community Home grouped lane must show marketplace-community wording and keep Set up Community Domain beside the create/join marketplace choices."
+  /function defaultCollapseState\(\): CollapseState \{[\s\S]*?communities: false,[\s\S]*?marketplaceTools: true,[\s\S]*?subscriptions: true,[\s\S]*?trustFinance: true[\s\S]*?function normalizeCollapseState\(raw: any\): CollapseState \{[\s\S]*?communities: Boolean\(raw\?\.communities \?\? base\.communities\)[\s\S]*?marketplaceTools: true,[\s\S]*?subscriptions: true,[\s\S]*?trustFinance: true/,
+  "Community Home must open the community picker while forcing deprecated Marketplace/Subscription/Trust tool lanes closed even when old local storage exists."
+);
+assertContains(
+  /\{!collapsed\.marketplaceTools \|\|[\s\S]*?!collapsed\.subscriptions \|\|[\s\S]*?!collapsed\.trustFinance \? \([\s\S]*?id="community-home-action-lanes"/,
+  "Community Home action lanes must not render merely because the community list is open."
+);
+assertNotContains(
+  /\{!collapsed\.communities \|\|[\s\S]*?id="community-home-action-lanes"/,
+  "Community Home must not treat the open community picker as permission to show duplicate tool lanes."
 );
 
 assertContains(
@@ -510,9 +522,9 @@ assertContains(
 );
 
 
-assertContains(
-  /function communityQuickActionButton\([\s\S]*?height: isCompact \? 58 : 100[\s\S]*?minHeight: isCompact \? 58 : 100[\s\S]*?maxHeight: isCompact \? 58 : 100[\s\S]*?overflow: "hidden"[\s\S]*?function communityQuickActionIcon\([\s\S]*?width: 25,[\s\S]*?height: 25,[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?"repeat\(4, minmax\(0, 1fr\)\)"[\s\S]*?debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}/,
-  "Community Home front command-lane buttons must keep fixed phone geometry."
+assertNotContains(
+  /function communityQuickActionButton|function communityQuickActionIcon/,
+  "Community Home must not keep route-local quick-action helpers for the retired front launcher grid."
 );
 
 assertContains(

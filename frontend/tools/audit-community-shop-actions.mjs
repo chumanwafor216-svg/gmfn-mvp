@@ -156,8 +156,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.spotlight-guided\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.communities\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.marketplace-tools\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.subscriptions\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.trust-finance\.\$\{item\.id\}`\}/,
-  "Community Home dynamic action groups must use item-based debug IDs."
+  /debugId=\{`community-home\.spotlight-guided\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.communities\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.marketplace-tools\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.subscriptions\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.trust-finance\.\$\{item\.id\}`\}/,
+  "Community Home retained deep action groups must use item-based debug IDs while the retired front launcher grid stays absent."
 );
 
 assertContains(

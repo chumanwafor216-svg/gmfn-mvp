@@ -179,13 +179,13 @@ async function run() {
     const result = await page.evaluate(() => {
       const text = document.body.textContent || "";
       const required = [
-        "Marketplace Communities / Community Domains",
+        "My Communities",
         "Homeland isa Marketplace",
+        "Open Marketplace",
         "Marketplace workspace for this community",
         "Pillar of Hope",
         "Community Domain marketplace workspace",
         "Marketplace ready",
-        "Set up Community Domain",
         "Setup Domain",
         "Setup needed",
       ];

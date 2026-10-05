@@ -1121,51 +1121,6 @@ function collapseButtonRow(): React.CSSProperties {
   };
 }
 
-function communityQuickActionButton(
-  primary = false,
-  isCompact = false
-): React.CSSProperties {
-  return {
-    ...communityActionStyle("secondary"),
-    width: "100%",
-    height: isCompact ? 58 : 100,
-    minHeight: isCompact ? 58 : 100,
-    maxHeight: isCompact ? 58 : 100,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: isCompact ? 3 : 7,
-    padding: isCompact ? "5px 6px" : "11px 8px",
-    textAlign: "center",
-    flexDirection: "column",
-    background: primary
-      ? "linear-gradient(180deg, #F1F7FF 0%, #E6F1FF 100%)"
-      : "linear-gradient(180deg, #FFFFFF 0%, #F5FAFF 100%)",
-    color: "#07172C",
-    border: primary
-      ? "1px solid rgba(13,95,168,0.16)"
-      : "1px solid rgba(16,37,59,0.10)",
-    overflow: "hidden",
-  };
-}
-
-function communityQuickActionIcon(
-  primary = false,
-  isCompact = false
-): React.CSSProperties {
-  return {
-    ...communityActionIcon(primary),
-    ...(isCompact
-      ? {
-          width: 25,
-          height: 25,
-          borderRadius: 10,
-          boxShadow:
-            "0 6px 12px rgba(13,95,168,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
-        }
-      : {}),
-  };
-}
-
 function communityActionIcon(primary = false): React.CSSProperties {
   return {
     flex: "0 0 auto",
@@ -1897,7 +1852,7 @@ function waitForCommunityHomeFirstPaint(): Promise<void> {
 
 function defaultCollapseState(): CollapseState {
   return {
-    communities: true,
+    communities: false,
     marketplaceTools: true,
     subscriptions: true,
     trustFinance: true,
@@ -1909,9 +1864,9 @@ function normalizeCollapseState(raw: any): CollapseState {
 
   return {
     communities: Boolean(raw?.communities ?? base.communities),
-    marketplaceTools: Boolean(raw?.marketplaceTools ?? base.marketplaceTools),
-    subscriptions: Boolean(raw?.subscriptions ?? base.subscriptions),
-    trustFinance: Boolean(raw?.trustFinance ?? base.trustFinance),
+    marketplaceTools: true,
+    subscriptions: true,
+    trustFinance: true,
   };
 }
 
@@ -2787,6 +2742,20 @@ export default function CommunityHomePage() {
   }, [selectedClanId, sortedCommunityDomainRows]);
   const primaryCommunityDomainRow =
     selectedCommunityDomainRow || sortedCommunityDomainRows[0] || null;
+  const selectedCommunityRoleLabel = firstTruthy(
+    selectedClan?.membership_role,
+    selectedClan?.member_role,
+    selectedClan?.participant_role,
+    selectedClan?.role,
+    selectedClan ? "Member" : "No community selected"
+  );
+  const selectedCommunityStatusLabel = firstTruthy(
+    (selectedClan as any)?.status,
+    selectedCommunityDomainRow?.status,
+    selectedClan ? "Active" : "Choose a community"
+  );
+  const financeNeedsReview = netMoneyPosition < 0;
+  const canManageCommunity = Boolean(isCommunityNoticeOfficer || primaryCommunityDomainRow);
 
   const communityNextActionItems = useMemo<NextActionGuideItem[]>(
     () => [
@@ -4488,27 +4457,6 @@ export default function CommunityHomePage() {
     setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
-  function openActionLaneFromButton(
-    event: React.SyntheticEvent<HTMLElement> | undefined,
-    key: CollapseKey
-  ) {
-    consumeCommunityButtonEvent(event);
-    setGuidedActionFamilyFocus(null);
-    setCollapsed((prev) => {
-      const willOpen = prev[key];
-      const next: CollapseState = {
-        ...prev,
-        communities: true,
-        marketplaceTools: true,
-        subscriptions: true,
-        trustFinance: true,
-      };
-      next[key] = !willOpen;
-      return next;
-    });
-    revealCommunityTarget(["community-home-action-lanes", "community-home-community-list"]);
-  }
-
   function toggleSectionFromButton(
     event: React.SyntheticEvent<HTMLElement> | undefined,
     key: CollapseKey
@@ -5040,7 +4988,7 @@ export default function CommunityHomePage() {
 
           <React.Suspense fallback={null}>
             <NextActionGuide
-              title="Verification tools"
+              title="Community entry"
               storageKey="gmfn.communityHome.nextActionGuide.v1"
               compact={isCompact}
               items={communityNextActionItems}
@@ -5261,8 +5209,7 @@ export default function CommunityHomePage() {
                 maxWidth: 880,
               }}
             >
-              Choose your active community and move into its marketplace, tools,
-              and trust records.
+              Choose where you belong, then enter one community marketplace.
             </div>
 
             <div
@@ -5288,7 +5235,7 @@ export default function CommunityHomePage() {
               >
                 <div>
                   <div style={{ ...sectionLabel(), color: "#E0B95D" }}>
-                    Your GSN Trust Passport
+                    My Communities
                   </div>
                   <div
                     style={{
@@ -5299,7 +5246,7 @@ export default function CommunityHomePage() {
                       lineHeight: 1.18,
                     }}
                   >
-                    Marketplace Communities / Community Domains
+                    {selectedClanName || "Choose a community"}
                   </div>
                 </div>
                 <span
@@ -5310,11 +5257,68 @@ export default function CommunityHomePage() {
                     border: "1px solid rgba(226,192,106,0.24)",
                   }}
               >
-                Live overview
+                Community entry
               </span>
             </div>
 
               <div style={{ marginTop: isCompact ? 10 : 14, display: "grid", gap: 9 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                  }}
+                >
+                  <span style={badge(Boolean(selectedClan))}>{selectedCommunityRoleLabel}</span>
+                  <span style={badge(Boolean(selectedClan))}>{selectedCommunityStatusLabel}</span>
+                  <span style={badge(combinedCommunityListCount > 0)}>
+                    {combinedCommunityListCount} visible {combinedCommunityListCount === 1 ? "community" : "communities"}
+                  </span>
+                </div>
+
+                <StableButton
+                  type="button"
+                  debugId="community-home.selected.open-marketplace"
+                  onClick={(event) => void openSelectedMarketplace(event)}
+                  aria-disabled={!selectedClanId || undefined}
+                  style={communityToolRowStyle()}
+                >
+                  <span style={communityActionIcon(true)}>
+                    {communityIconGlyph("shop", 34)}
+                  </span>
+                  <span style={{ minWidth: 0 }}>
+                    <span
+                      style={{
+                        ...brandClampLines(1),
+                        color: "#07172C",
+                        fontSize: isCompact ? 15 : 17,
+                        fontWeight: 950,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      Open Marketplace
+                    </span>
+                    <span
+                      style={{
+                        ...brandClampLines(2),
+                        marginTop: 4,
+                        color: "#617085",
+                        fontSize: isCompact ? 12 : 13,
+                        fontWeight: 720,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {selectedClanName
+                        ? `Enter ${selectedClanName} with this community selected.`
+                        : "Select a community first, then enter its marketplace."}
+                    </span>
+                  </span>
+                  <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>
+                    {">"}
+                  </span>
+                </StableButton>
+
                 <StableButton
                   type="button"
                   debugId="community-home.summary.visible-communities"
@@ -5356,7 +5360,7 @@ export default function CommunityHomePage() {
                         lineHeight: 1.35,
                       }}
                     >
-                      Marketplace communities and Community Domains together. Setup and governance stay here; active work opens in Marketplace.
+                      Change the selected community. Setup and governance stay with Community Domain; active work opens in Marketplace.
                     </span>
                   </span>
                   <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>
@@ -5364,100 +5368,133 @@ export default function CommunityHomePage() {
                   </span>
                 </StableButton>
 
-                <StableButton
-                  type="button"
-                  debugId="community-home.finance-summary.open"
-                  onClick={(event) => openCommunityRoute(event, routes.finance)}
-                  style={communityToolRowStyle()}
-                >
-                  <span style={communityActionIcon(false)}>
-                    {communityIconGlyph("financeInstitution", 34)}
-                  </span>
-                  <span style={{ minWidth: 0 }}>
-                    <span
-                      style={{
-                        ...brandClampLines(1),
-                        color: "#07172C",
-                        fontSize: isCompact ? 14.5 : 16,
-                        fontWeight: 950,
-                        lineHeight: 1.2,
-                      }}
-                    >
-                      Finance: {moneyPositionLabel}
+                {financeNeedsReview ? (
+                  <StableButton
+                    type="button"
+                    debugId="community-home.finance-summary.open"
+                    onClick={(event) => openCommunityRoute(event, routes.finance)}
+                    style={communityToolRowStyle()}
+                  >
+                    <span style={communityActionIcon(false)}>
+                      {communityIconGlyph("financeInstitution", 34)}
                     </span>
-                    <span
-                      style={{
-                        ...brandClampLines(2),
-                        marginTop: 4,
-                        color: "#617085",
-                        fontSize: isCompact ? 12 : 13,
-                        fontWeight: 720,
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      {moneyPositionDetail}. Open Finance for pool and support detail.
+                    <span style={{ minWidth: 0 }}>
+                      <span
+                        style={{
+                          ...brandClampLines(1),
+                          color: "#07172C",
+                          fontSize: isCompact ? 14.5 : 16,
+                          fontWeight: 950,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        Finance needs review
+                      </span>
+                      <span
+                        style={{
+                          ...brandClampLines(2),
+                          marginTop: 4,
+                          color: "#617085",
+                          fontSize: isCompact ? 12 : 13,
+                          fontWeight: 720,
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        {moneyPositionDetail}. Open Finance for the full record.
+                      </span>
                     </span>
-                  </span>
-                  <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>
-                    {">"}
-                  </span>
-                </StableButton>
-              </div>
+                    <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>
+                      {">"}
+                    </span>
+                  </StableButton>
+                ) : (
+                  <div
+                    data-debug-id="community-home.summary.no-urgent-actions"
+                    style={{
+                      ...communityToolRowStyle(),
+                      cursor: "default",
+                    }}
+                  >
+                    <span style={communityActionIcon(false)}>
+                      {communityIconGlyph("financeInstitution", 34)}
+                    </span>
+                    <span style={{ minWidth: 0 }}>
+                      <span
+                        style={{
+                          ...brandClampLines(1),
+                          color: "#07172C",
+                          fontSize: isCompact ? 14.5 : 16,
+                          fontWeight: 950,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        No payment action shown
+                      </span>
+                      <span
+                        style={{
+                          ...brandClampLines(2),
+                          marginTop: 4,
+                          color: "#617085",
+                          fontSize: isCompact ? 12 : 13,
+                          fontWeight: 720,
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        Bulletin responses and other community work stay in their canonical surfaces.
+                      </span>
+                    </span>
+                  </div>
+                )}
 
-              <StableButton
-                type="button"
-                debugId="community-home.trust-summary.open"
-                onClick={(event) => openCommunityRoute(event, routes.trust)}
-                style={{
-                  ...communityToolRowStyle(),
-                  marginTop: isCompact ? 10 : 14,
-                  borderRadius: 18,
-                  background:
-                    "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(237,245,255,0.94) 100%)",
-                  border: "1px solid rgba(226,192,106,0.18)",
-                  boxShadow:
-                    "0 12px 22px rgba(2,12,27,0.18), inset 0 1px 0 rgba(255,255,255,0.92)",
-                }}
-              >
-                <span
-                  style={{
-                    ...communityActionIcon(true),
-                  }}
-                >
-                  {communityIconGlyph("shield", 34)}
-                </span>
-                <span style={{ minWidth: 0 }}>
-                  <span
-                    style={{
-                      ...brandClampLines(2),
-                      color: "#07172C",
-                      fontSize: isCompact ? 14.5 : 16,
-                      fontWeight: 950,
-                      lineHeight: 1.2,
-                    }}
+                {canManageCommunity ? (
+                  <StableButton
+                    type="button"
+                    debugId="community-home.operator.manage"
+                    onClick={(event) =>
+                      openCommunityRoute(
+                        event,
+                        primaryCommunityDomainRow?.dashboardPath || routes.communityDomainCommand
+                      )
+                    }
+                    style={communityToolRowStyle()}
                   >
-                    Trust summary
-                  </span>
-                  <span
-                    style={{
-                      ...brandClampLines(2),
-                      marginTop: 4,
-                      color: "#617085",
-                      fontSize: isCompact ? 12 : 13,
-                      fontWeight: 720,
-                      lineHeight: 1.35,
-                    }}
-                  >
-                    Evidence strength across all communities.
-                  </span>
-                </span>
-                <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>
-                  {">"}
-                </span>
-              </StableButton>
+                    <span style={communityActionIcon(false)}>
+                      {communityIconGlyph("shield", 34)}
+                    </span>
+                    <span style={{ minWidth: 0 }}>
+                      <span
+                        style={{
+                          ...brandClampLines(1),
+                          color: "#07172C",
+                          fontSize: isCompact ? 14.5 : 16,
+                          fontWeight: 950,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        Manage Community
+                      </span>
+                      <span
+                        style={{
+                          ...brandClampLines(2),
+                          marginTop: 4,
+                          color: "#617085",
+                          fontSize: isCompact ? 12 : 13,
+                          fontWeight: 720,
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        Operator setup, policy, billing, and capacity stay in Community Domain.
+                      </span>
+                    </span>
+                    <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>
+                      {">"}
+                    </span>
+                  </StableButton>
+                ) : null}
             </div>
           </div>
         </div>
+      </div>
       </section>
       ) : null}
 
@@ -6040,109 +6077,6 @@ export default function CommunityHomePage() {
         </section>
       ) : null}
 
-      {!spotlightGuidanceSuspendedView ? (
-        <section style={{ ...communityBlockCard("raised"), order: 10 }}>
-          <div
-            style={{
-              display: "grid",
-              gap: isCompact ? 10 : 12,
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  color: "#07172C",
-                  fontSize: isCompact ? 22 : 26,
-                  fontWeight: 950,
-                  lineHeight: 1.12,
-                }}
-              >
-                Verification tools
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "repeat(2, minmax(0, 1fr))"
-                  : "repeat(4, minmax(0, 1fr))",
-                gap: isCompact ? 6 : 12,
-                alignItems: "stretch",
-              }}
-            >
-              {[
-                {
-                  id: "communities",
-                  lane: "communities",
-                  icon: "community",
-                  title: "Marketplaces",
-                  primary: true,
-                },
-                {
-                  id: "marketplace-tools",
-                  lane: "marketplaceTools",
-                  icon: "shop",
-                  title: "Work tools",
-                },
-                {
-                  id: "subscriptions",
-                  lane: "subscriptions",
-                  icon: "financeInstitution",
-                  title: "Dues & access",
-                },
-                {
-                  id: "trust-finance",
-                  lane: "trustFinance",
-                  icon: "shield",
-                  title: "Trust evidence",
-                },
-              ].map((item) => (
-                <StableButton
-                  key={item.id}
-                  type="button"
-                  debugId={`community-home.next-action.${item.id}`}
-                  aria-expanded={!collapsed[item.lane as CollapseKey]}
-                  aria-controls="community-home-action-lanes"
-                  onClick={(event) =>
-                    openActionLaneFromButton(event, item.lane as CollapseKey)
-                  }
-                  style={{
-                    ...communityQuickActionButton(
-                      Boolean(item.primary) || !collapsed[item.lane as CollapseKey],
-                      isCompact
-                    ),
-                  }}
-                >
-                  <span
-                    style={communityQuickActionIcon(
-                      Boolean(item.primary),
-                      isCompact
-                    )}
-                  >
-                    {communityIconGlyph(item.icon as CommunityIconMark, isCompact ? 16 : 22)}
-                  </span>
-                  <span style={{ minWidth: 0 }}>
-                    <span
-                      style={{
-                        ...brandClampLines(2),
-                        fontSize: isCompact ? 10.5 : 14,
-                        fontWeight: 940,
-                        lineHeight: isCompact ? 1.05 : 1.15,
-                        whiteSpace: "normal",
-                        wordBreak: "normal",
-                      }}
-                    >
-                      {item.title}
-                    </span>
-                  </span>
-                </StableButton>
-              ))}
-            </div>
-          </div>
-        </section>
-      ) : null}
-
       {spotlightGuidanceSuspendedView ? (
         <section
           id="community-home-spotlight-guided-lane"
@@ -6156,7 +6090,7 @@ export default function CommunityHomePage() {
               alignItems: "start",
             }}
           >
-            <div style={sectionLabel()}>Verification tools</div>
+            <div style={sectionLabel()}>Spotlight</div>
             <div
               style={{
                 display: "flex",
@@ -6293,8 +6227,7 @@ export default function CommunityHomePage() {
 
       {!spotlightGuidanceSuspendedView ? (
       <>
-      {!collapsed.communities ||
-      !collapsed.marketplaceTools ||
+      {!collapsed.marketplaceTools ||
       !collapsed.subscriptions ||
       !collapsed.trustFinance ? (
         <section
