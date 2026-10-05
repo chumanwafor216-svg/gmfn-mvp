@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
@@ -22,6 +22,7 @@ from app.services.invite_analytics_service import (
 )
 from app.services.evidence_pack_pdf_service import build_clan_evidence_pack_pdf
 from app.services.loan_evidence_pack_pdf_service import build_loan_evidence_pack_pdf
+from app.services.demand_intelligence_service import build_demand_intelligence_for_community
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -40,6 +41,46 @@ def _ensure_clan_admin_or_platform_admin(db: Session, *, current_user: User, cla
     is_community_admin = bool(membership) and str(getattr(membership, "role", "") or "").lower() == "admin"
     if not (is_platform_admin or is_community_admin):
         raise HTTPException(status_code=403, detail="Community admin or platform admin only")
+
+
+def _active_clan_membership(db: Session, *, current_user: User, clan_id: int) -> ClanMembership | None:
+    return (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.user_id == int(current_user.id),
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+    )
+
+
+def _demand_intelligence_visibility_user_id(
+    db: Session,
+    *,
+    current_user: User,
+    clan_id: int,
+) -> int:
+    membership = _active_clan_membership(db, current_user=current_user, clan_id=clan_id)
+    if membership:
+        return int(current_user.id)
+
+    is_platform_admin = str(getattr(current_user, "role", "") or "").lower() == "admin"
+    if not is_platform_admin:
+        raise HTTPException(status_code=403, detail="Community admin or platform admin only")
+
+    row = (
+        db.query(ClanMembership.user_id)
+        .filter(
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .order_by(ClanMembership.id.asc())
+        .first()
+    )
+    if row:
+        return int(row[0])
+    return int(current_user.id)
 
 
 def _ensure_can_view_loan_evidence(db: Session, *, current_user: User, loan: Loan) -> None:
@@ -105,6 +146,25 @@ def clan_trust_events(
     _ensure_clan_admin_or_platform_admin(db, current_user=user, clan_id=int(clan_id))
     limit = max(1, min(int(limit), 1000))
     return get_trust_events_timeline(db, clan_id=clan_id, limit=limit, event_type=event_type)
+
+
+@router.get("/clans/{clan_id}/demand-intelligence", response_model=dict[str, Any])
+def community_demand_intelligence(
+    clan_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    _ensure_clan_admin_or_platform_admin(db, current_user=user, clan_id=int(clan_id))
+    visibility_user_id = _demand_intelligence_visibility_user_id(
+        db,
+        current_user=user,
+        clan_id=int(clan_id),
+    )
+    return build_demand_intelligence_for_community(
+        db,
+        current_user_id=int(visibility_user_id),
+        clan_id=int(clan_id),
+    )
 
 
 @router.get("/clans/{clan_id}/invites/recent-joins.csv")
