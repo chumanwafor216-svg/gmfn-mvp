@@ -12,6 +12,8 @@ import {
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { refreshGsnAppBadge } from "../lib/appBadge";
 import {
+  acceptOpportunityRelayOffer,
+  declineOpportunityRelayOffer,
   getMyNotifications,
   getMySettings,
   getSelectedClanId,
@@ -31,7 +33,17 @@ import {
 } from "../lib/guidance";
 import type { ActionResponse } from "../lib/actionResponseProtocol";
 
-type RawNotificationRow = {
+type RelayNoticeFields = {
+  relayOfferId?: number;
+  relayStatus?: string;
+  relayCategory?: string;
+  relayArea?: string;
+  relayExpiresAt?: string;
+};
+
+type ActionableNotice = GuidanceNotice & RelayNoticeFields;
+
+type RawNotificationRow = RelayNoticeFields & {
   id: string;
   kind: string;
   kindLabel: string;
@@ -577,6 +589,9 @@ function notificationKindLabel(raw: any, fallback: string): string {
   if (kind === "community_member_witness.outcome_updated") {
     return "Witness result";
   }
+  if (kind === "opportunity_relay.offer") {
+    return "Connection relay";
+  }
   return fallback;
 }
 
@@ -650,7 +665,139 @@ function joinReviewKindLabel(raw: any): string {
   return "Join update";
 }
 
+function positiveInt(value: any): number {
+  const parsed = Number(value || 0);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.trunc(parsed) : 0;
+}
+
+function relayOfferIdFromTarget(target: any): number {
+  const raw = safeStr(target);
+  if (!raw || !raw.includes("relay_offer_id")) return 0;
+  try {
+    const parsed = new URL(raw, "http://local");
+    return positiveInt(parsed.searchParams.get("relay_offer_id"));
+  } catch {
+    return 0;
+  }
+}
+
+function relayFieldsFromRaw(raw: any): RelayNoticeFields {
+  const relayOffer = raw?.relay_offer || raw?.relayOffer || {};
+  const relayOfferId =
+    positiveInt(relayOffer?.offer_id) ||
+    positiveInt(raw?.relayOfferId) ||
+    relayOfferIdFromTarget(raw?.action_url || raw?.cta_to || raw?.ctaTo || raw?.to);
+
+  return {
+    relayOfferId: relayOfferId || undefined,
+    relayStatus: firstTruthy(relayOffer?.status, raw?.relayStatus),
+    relayCategory: firstTruthy(relayOffer?.opportunity_category, raw?.relayCategory),
+    relayArea: firstTruthy(relayOffer?.opportunity_area, raw?.relayArea),
+    relayExpiresAt: firstTruthy(relayOffer?.expires_at, raw?.relayExpiresAt),
+  };
+}
+
+function relayOfferIdFromNotice(notice: Partial<ActionableNotice> | null | undefined): number {
+  return (
+    positiveInt(notice?.relayOfferId) ||
+    relayOfferIdFromTarget((notice as any)?.ctaTo || (notice as any)?.cta_to || (notice as any)?.to)
+  );
+}
+
+function isRelayOfferNotice(notice: Partial<ActionableNotice> | null | undefined): boolean {
+  return (
+    safeStr(notice?.kind).toLowerCase() === "opportunity_relay.offer" ||
+    relayOfferIdFromNotice(notice) > 0
+  );
+}
+
+function relayOfferStatus(notice: Partial<ActionableNotice> | null | undefined): string {
+  return safeStr(notice?.relayStatus || (notice as any)?.relay_status).toLowerCase();
+}
+
+function isActiveRelayOfferNotice(notice: Partial<ActionableNotice> | null | undefined): boolean {
+  if (!isRelayOfferNotice(notice) || relayOfferIdFromNotice(notice) <= 0) return false;
+  const status = relayOfferStatus(notice);
+  return !status || status === "offered" || status === "active" || status === "pending";
+}
+
+function relayOfferStatusText(notice: Partial<ActionableNotice> | null | undefined): string {
+  const status = relayOfferStatus(notice);
+  if (status === "accepted") {
+    return "Connection helped. GSN can now look for relevant supply in the connected community.";
+  }
+  if (status === "declined") {
+    return "Not now saved. This relay offer is no longer waiting on you.";
+  }
+  if (status === "expired") return "This relay offer has expired.";
+  if (status === "cancelled") return "This relay offer has been cancelled.";
+  if (status === "unavailable" || status === "stale") return "This relay offer is no longer available.";
+  return "This relay offer is no longer active.";
+}
+
+function relayTimeRemainingText(expiresAt: any): string {
+  const raw = safeStr(expiresAt);
+  if (!raw) return "Response window set by GSN.";
+  const expires = new Date(raw);
+  if (!Number.isFinite(expires.getTime())) return `Expires ${raw}.`;
+  const diffMs = expires.getTime() - Date.now();
+  if (diffMs <= 0) return "Expired.";
+  const minutes = Math.ceil(diffMs / 60000);
+  if (minutes < 60) return `Expires in ${minutes} minute${minutes === 1 ? "" : "s"}.`;
+  const hours = Math.ceil(minutes / 60);
+  if (hours < 48) return `Expires in ${hours} hour${hours === 1 ? "" : "s"}.`;
+  const days = Math.ceil(hours / 24);
+  return `Expires in ${days} day${days === 1 ? "" : "s"}.`;
+}
+
+function relayNoticeDetail(fields: RelayNoticeFields): string {
+  const category = safeStr(fields.relayCategory) || "General opportunity";
+  const area = safeStr(fields.relayArea);
+  const areaText = area ? ` Broad area: ${area}.` : "";
+  return (
+    `Category: ${category}.${areaText} ${relayTimeRemainingText(fields.relayExpiresAt)} ` +
+    "A legitimate opportunity may be able to move through communities you belong to. " +
+    "Helping connect lets GSN look for relevant supply in the connected community. " +
+    "It is not a recommendation, endorsement, payment proof, TrustScore, or CCI signal."
+  );
+}
+
+function rawRowToGuidanceNotice(row: RawNotificationRow): ActionableNotice {
+  return normalizeGuidanceNotice({
+    id: row.id,
+    kind: row.kind,
+    title: row.title,
+    detail: row.detail,
+    ctaLabel: row.ctaLabel,
+    ctaTo: row.ctaTo,
+    bucket: "actNow" as GuidanceInboxBucketKey,
+    unread: row.unread,
+    relayOfferId: row.relayOfferId,
+    relayStatus: row.relayStatus,
+    relayCategory: row.relayCategory,
+    relayArea: row.relayArea,
+    relayExpiresAt: row.relayExpiresAt,
+  }) as ActionableNotice;
+}
+
 function normalizeRawNotificationRow(raw: any): RawNotificationRow {
+  if (safeStr(raw?.kind).toLowerCase() === "opportunity_relay.offer") {
+    const ctaTo = resolveNoticeTarget(raw);
+    const relayFields = relayFieldsFromRaw(raw);
+    return {
+      id: firstTruthy(raw?.id, raw?.notification_id, raw?.title, raw?.message),
+      kind: "opportunity_relay.offer",
+      kindLabel: "Connection relay",
+      title: firstTruthy(raw?.title, "Help connect"),
+      detail: relayNoticeDetail(relayFields),
+      ctaLabel: "Help connect",
+      ctaTo,
+      unread: !raw?.is_read,
+      createdAt: firstTruthy(raw?.created_at),
+      ...relayFields,
+    };
+  }
+
   if (isJoinReviewNotification(raw)) {
     const isReview = isJoinReviewRequestNotification(raw);
     const isRejected = isJoinReviewRejectedNotification(raw);
@@ -704,6 +851,7 @@ function normalizeRawNotificationRow(raw: any): RawNotificationRow {
     ctaTo,
     unread: !raw?.is_read,
     createdAt: firstTruthy(raw?.created_at),
+    ...relayFieldsFromRaw(raw),
   };
 }
 
@@ -730,11 +878,11 @@ function isTrustOnboardingRow(row: RawNotificationRow | null | undefined): boole
   );
 }
 
-function normalizeGuidanceNotice(item: GuidanceNotice): GuidanceNotice {
+function normalizeGuidanceNotice(item: GuidanceNotice): ActionableNotice {
   return {
     ...item,
     ctaTo: normalizeActionTargetPath(item.ctaTo),
-  };
+  } as ActionableNotice;
 }
 
 function bucketTitle(bucket: GuidanceInboxBucketKey): string {
@@ -945,7 +1093,7 @@ export default function NotificationsPage() {
     []
   );
   const [rawLoading, setRawLoading] = useState(false);
-  const [selectedNotice, setSelectedNotice] = useState<GuidanceNotice | null>(null);
+  const [selectedNotice, setSelectedNotice] = useState<ActionableNotice | null>(null);
   const [selectedBucket, setSelectedBucket] =
     useState<GuidanceInboxBucketKey | null>(null);
   const [actionNotice, setActionNotice] = useState<ActionResponse | null>(null);
@@ -1076,6 +1224,23 @@ export default function NotificationsPage() {
     [rawNotifications, settings.unreadFirst]
   );
 
+  const requestedRelayOfferId = useMemo(
+    () => relayOfferIdFromTarget(location.search),
+    [location.search]
+  );
+
+  useEffect(() => {
+    if (!requestedRelayOfferId) return;
+    const relayRow = rawNotifications.find(
+      (row) => relayOfferIdFromNotice(row) === requestedRelayOfferId
+    );
+    if (!relayRow) return;
+
+    setCollapsed((prev) => ({ ...prev, focus: false, buckets: false }));
+    setSelectedBucket("actNow");
+    setSelectedNotice(rawRowToGuidanceNotice(relayRow));
+  }, [requestedRelayOfferId, rawNotifications]);
+
   const onboardingTrustNotice = useMemo(() => {
     const preferred = rawNotifications.find(
       (row) => isTrustOnboardingRow(row) && row.unread
@@ -1154,9 +1319,98 @@ export default function NotificationsPage() {
     });
   }
 
+  function markNoticeReviewedLocally(id: string, relayStatus?: string) {
+    if (!id) return;
+
+    setGuidanceSnapshot((prev) => markGuidanceSnapshotReadLocally(prev, id));
+    setRawNotifications((prev) =>
+      prev.map((item) =>
+        safeStr(item.id) === id
+          ? { ...item, unread: false, relayStatus: relayStatus || item.relayStatus }
+          : item
+      )
+    );
+    setSelectedNotice((prev) =>
+      prev && safeStr(prev.id) === id
+        ? { ...prev, unread: false, relayStatus: relayStatus || prev.relayStatus }
+        : prev
+    );
+    void refreshGsnAppBadge();
+  }
+
+  function relayActionErrorText(err: any): string {
+    const status = Number(err?.status || 0);
+    const message = safeStr(err?.message).toLowerCase();
+
+    if (status === 403 || message.includes("membership")) {
+      return "GSN could not confirm your bridge membership for this relay offer now. The offer has not been treated as accepted.";
+    }
+    if (status === 404) {
+      return "This relay offer is no longer available.";
+    }
+    if (status === 409 || message.includes("expired") || message.includes("no longer active")) {
+      return "This relay offer is no longer active. It may have expired, been cancelled, the source demand may have closed, or another bridge may already have helped.";
+    }
+    return "GSN could not update this relay offer. Check your connection and try again.";
+  }
+
+  async function handleRelayOfferAction(
+    notice: Partial<ActionableNotice>,
+    action: "accept" | "decline"
+  ) {
+    const offerId = relayOfferIdFromNotice(notice);
+    const noticeId = safeStr(notice.id);
+    if (!offerId) {
+      setActionNotice({
+        tone: "error",
+        text: "This relay offer is missing its server offer reference.",
+      });
+      return;
+    }
+
+    try {
+      if (action === "accept") {
+        await acceptOpportunityRelayOffer(offerId);
+        markNoticeReviewedLocally(noticeId, "accepted");
+        setActionNotice({
+          tone: "success",
+          text: "Connection helped. GSN can now look for relevant supply in the connected community.",
+        });
+        return;
+      }
+
+      await declineOpportunityRelayOffer(offerId, { decline_reason: "Not now" });
+      markNoticeReviewedLocally(noticeId, "declined");
+      setActionNotice({
+        tone: "success",
+        text: "Not now saved. This relay offer will no longer wait on you.",
+      });
+    } catch (err: any) {
+      const status = Number(err?.status || 0);
+      if (status === 404 || status === 409) {
+        markNoticeReviewedLocally(noticeId, "unavailable");
+      }
+      setActionNotice({
+        tone: status === 403 ? "error" : "info",
+        text: relayActionErrorText(err),
+      });
+    }
+  }
+
   async function handlePrimaryNoticeAction(notice: GuidanceNotice) {
     const normalizedNotice = normalizeGuidanceNotice(notice);
     const noticeId = safeStr(normalizedNotice.id);
+
+    if (isActiveRelayOfferNotice(normalizedNotice)) {
+      await handleRelayOfferAction(normalizedNotice, "accept");
+      return;
+    }
+
+    if (isRelayOfferNotice(normalizedNotice)) {
+      setSelectedNotice(normalizedNotice);
+      setActionNotice({ tone: "info", text: relayOfferStatusText(normalizedNotice) });
+      return;
+    }
 
     if (settings.openActionsDirectly) {
       if (/^\d+$/.test(noticeId)) {
@@ -1597,24 +1851,52 @@ export default function NotificationsPage() {
                   stableHeight={54}
                   debugId="notifications.focus.primary"
                 >
-                  {notificationIconText("navigation", focusNotice.ctaLabel)}
+                  {notificationIconText(
+                    "navigation",
+                    isActiveRelayOfferNotice(focusNotice)
+                      ? "Help connect"
+                      : isRelayOfferNotice(focusNotice)
+                      ? "Review status"
+                      : focusNotice.ctaLabel
+                  )}
                 </PrimaryButton>
 
                 <StableCtaLink
                   to={focusNotice.ctaTo}
                   stableHeight={50}
                   debugId="notifications.focus.open-page"
+                  onClick={(event) => {
+                    if (!isRelayOfferNotice(focusNotice)) return;
+                    event.preventDefault();
+                    if (isActiveRelayOfferNotice(focusNotice)) {
+                      void handleRelayOfferAction(focusNotice, "accept");
+                      return;
+                    }
+                    setSelectedNotice(focusNotice as ActionableNotice);
+                    setActionNotice({ tone: "info", text: relayOfferStatusText(focusNotice) });
+                  }}
                 >
-                  {notificationIconText("navigation", "Open page")}
+                  {notificationIconText(
+                    "navigation",
+                    isActiveRelayOfferNotice(focusNotice)
+                      ? "Help connect"
+                      : isRelayOfferNotice(focusNotice)
+                      ? "Review status"
+                      : "Open page"
+                  )}
                 </StableCtaLink>
 
-                {focusNotice.unread && /^\d+$/.test(safeStr(focusNotice.id)) ? (
+                {(isActiveRelayOfferNotice(focusNotice) || (!isRelayOfferNotice(focusNotice) && focusNotice.unread && /^\d+$/.test(safeStr(focusNotice.id)))) ? (
                   <SecondaryButton
-                    onClick={() => void markAsRead(safeStr(focusNotice.id))}
+                    onClick={() =>
+                      isActiveRelayOfferNotice(focusNotice)
+                        ? void handleRelayOfferAction(focusNotice, "decline")
+                        : void markAsRead(safeStr(focusNotice.id))
+                    }
                     stableHeight={50}
                     debugId="notifications.focus.mark-read"
                   >
-                    {notificationIconText("check", "Mark as read")}
+                    {notificationIconText("check", isActiveRelayOfferNotice(focusNotice) ? "Not now" : "Mark as read")}
                   </SecondaryButton>
                 ) : null}
               </div>
@@ -1807,25 +2089,43 @@ export default function NotificationsPage() {
           <div style={{ marginTop: 8, ...helperText() }}>
             {selectedNotice.detail}
           </div>
+          {isRelayOfferNotice(selectedNotice) && !isActiveRelayOfferNotice(selectedNotice) ? (
+            <div style={{ marginTop: 10, ...innerCard("#F8FBFF") }}>
+              <div style={helperText()}>{relayOfferStatusText(selectedNotice)}</div>
+            </div>
+          ) : null}
           <div style={{ marginTop: 14, ...actionRow(isPhone) }}>
-            <StableCtaLink
-              to={selectedNotice.ctaTo}
-              kind="primary"
-              stableHeight={52}
-              debugId="notifications.selected.open"
-            >
-              {notificationIconText(
-                "navigation",
-                selectedNotice.ctaLabel || "Open page"
-              )}
-            </StableCtaLink>
-            {selectedNotice.unread && /^\d+$/.test(safeStr(selectedNotice.id)) ? (
+            {isActiveRelayOfferNotice(selectedNotice) || !isRelayOfferNotice(selectedNotice) ? (
+              <StableCtaLink
+                to={selectedNotice.ctaTo}
+                kind="primary"
+                stableHeight={52}
+                debugId="notifications.selected.open"
+                onClick={(event) => {
+                  if (!isActiveRelayOfferNotice(selectedNotice)) return;
+                  event.preventDefault();
+                  void handleRelayOfferAction(selectedNotice, "accept");
+                }}
+              >
+                {notificationIconText(
+                  "navigation",
+                  isActiveRelayOfferNotice(selectedNotice)
+                    ? "Help connect"
+                    : selectedNotice.ctaLabel || "Open page"
+                )}
+              </StableCtaLink>
+            ) : null}
+            {(isActiveRelayOfferNotice(selectedNotice) || (!isRelayOfferNotice(selectedNotice) && selectedNotice.unread && /^\d+$/.test(safeStr(selectedNotice.id)))) ? (
               <SecondaryButton
-                onClick={() => void markAsRead(safeStr(selectedNotice.id))}
+                onClick={() =>
+                  isActiveRelayOfferNotice(selectedNotice)
+                    ? void handleRelayOfferAction(selectedNotice, "decline")
+                    : void markAsRead(safeStr(selectedNotice.id))
+                }
                 stableHeight={52}
                 debugId="notifications.selected.mark-read"
               >
-                {notificationIconText("check", "Mark as read")}
+                {notificationIconText("check", isActiveRelayOfferNotice(selectedNotice) ? "Not now" : "Mark as read")}
               </SecondaryButton>
             ) : null}
             <SubtleButton
@@ -1874,7 +2174,13 @@ export default function NotificationsPage() {
                     >
                       {notificationIconText(
                         settings.openActionsDirectly ? "navigation" : "eye",
-                        settings.openActionsDirectly ? notice.ctaLabel : "Review first"
+                        isActiveRelayOfferNotice(notice)
+                          ? "Help connect"
+                          : isRelayOfferNotice(notice)
+                          ? "Review status"
+                          : settings.openActionsDirectly
+                          ? notice.ctaLabel
+                          : "Review first"
                       )}
                     </PrimaryButton>
 
@@ -1882,17 +2188,26 @@ export default function NotificationsPage() {
                       to={notice.ctaTo}
                       stableHeight={52}
                       debugId={`notifications.notice.${notice.id}.open-page`}
+                      onClick={(event) => {
+                        if (!isRelayOfferNotice(notice)) return;
+                        event.preventDefault();
+                        setSelectedNotice(notice as ActionableNotice);
+                      }}
                     >
-                      {notificationIconText("navigation", "Open page")}
+                      {notificationIconText("navigation", isRelayOfferNotice(notice) ? "Review offer" : "Open page")}
                     </StableCtaLink>
 
-                    {notice.unread && /^\d+$/.test(safeStr(notice.id)) ? (
+                    {(isActiveRelayOfferNotice(notice) || (!isRelayOfferNotice(notice) && notice.unread && /^\d+$/.test(safeStr(notice.id)))) ? (
                       <SubtleButton
-                        onClick={() => void markAsRead(safeStr(notice.id))}
+                        onClick={() =>
+                          isActiveRelayOfferNotice(notice)
+                            ? void handleRelayOfferAction(notice, "decline")
+                            : void markAsRead(safeStr(notice.id))
+                        }
                         stableHeight={52}
                         debugId={`notifications.notice.${notice.id}.mark-read`}
                       >
-                        {notificationIconText("check", "Mark as read")}
+                        {notificationIconText("check", isActiveRelayOfferNotice(notice) ? "Not now" : "Mark as read")}
                       </SubtleButton>
                     ) : null}
                   </div>
@@ -1994,7 +2309,13 @@ export default function NotificationsPage() {
                   fullWidth
                   stableHeight={isPhone ? 188 : 158}
                   debugId={`notifications.feed.${item.id}.open`}
-                  onClick={() => {
+                  onClick={(event) => {
+                    if (isRelayOfferNotice(item)) {
+                      event.preventDefault();
+                      setSelectedBucket("actNow");
+                      setSelectedNotice(rawRowToGuidanceNotice(item));
+                      return;
+                    }
                     if (item.unread && /^\d+$/.test(safeStr(item.id))) {
                       void markAsRead(safeStr(item.id));
                     }
@@ -2019,7 +2340,9 @@ export default function NotificationsPage() {
                     }}
                   >
                     <div style={compactPanelTitle()}>{item.title}</div>
-                    <span style={{ ...badge(false), flexShrink: 0 }}>Open</span>
+                    <span style={{ ...badge(false), flexShrink: 0 }}>
+                      {isRelayOfferNotice(item) ? "Review" : "Open"}
+                    </span>
                   </div>
                   <div style={{ marginTop: 8, ...helperText() }}>
                     {settings.notificationsMode === "detailed"

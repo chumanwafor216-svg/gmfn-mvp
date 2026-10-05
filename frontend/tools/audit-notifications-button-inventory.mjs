@@ -371,6 +371,21 @@ assertContains(
   "Notifications primary action must navigate directly before local review-state repaint when direct-open mode is on."
 );
 
+assertContains(
+  /function isActiveRelayOfferNotice\(notice: Partial<ActionableNotice>[\s\S]*?relayOfferIdFromNotice\(notice\) <= 0[\s\S]*?relayOfferStatus\(notice\)[\s\S]*?status === "offered"[\s\S]*?status === "active"[\s\S]*?status === "pending"/,
+  "Relay offer actionability must be guarded by a single active-state predicate, not only by kind or offer id."
+);
+
+assertContains(
+  /if \(isActiveRelayOfferNotice\(normalizedNotice\)\) \{[\s\S]*?handleRelayOfferAction\(normalizedNotice, "accept"\)[\s\S]*?if \(isRelayOfferNotice\(normalizedNotice\)\) \{[\s\S]*?relayOfferStatusText\(normalizedNotice\)/,
+  "Notifications primary relay handling must accept only active offers and show terminal status for stale relay notices."
+);
+
+assertContains(
+  /isRelayOfferNotice\(selectedNotice\) && !isActiveRelayOfferNotice\(selectedNotice\)[\s\S]*?relayOfferStatusText\(selectedNotice\)[\s\S]*?isActiveRelayOfferNotice\(selectedNotice\) \|\| !isRelayOfferNotice\(selectedNotice\)[\s\S]*?isActiveRelayOfferNotice\(selectedNotice\)[\s\S]*?"Not now"/,
+  "Selected terminal relay notices must render status only; Help connect and Not now controls must require active relay state."
+);
+
 assertPolicyContains(
   /verificationRequestFocus[\s\S]*?verification_request[\s\S]*?sectionLabel=\{memberWitnessFocus \|\| verificationRequestFocus \? "GSN evidence" : "Community confirmation"\}[\s\S]*?title=\{memberWitnessFocus \? "Member Witness" : verificationRequestFocus \? "Verification Request" : "Instant Confirmation Policy"\}[\s\S]*?Review responder readiness before this public request continues\.[\s\S]*?community-confirmation-policy\.verification-request\.review-routing[\s\S]*?Review responders[\s\S]*?community-confirmation-policy\.verification-request\.open-inbox[\s\S]*?!memberWitnessFocus && !verificationRequestFocus \? \([\s\S]*?<ExplainToggle[\s\S]*?!memberWitnessFocus && !verificationRequestFocus \? \([\s\S]*?Who can answer for this community\?[\s\S]*?id="community-confirmation-policy-switches"/,
   "Community Confirmation Policy must show a focused public verification request landing with immediate responder actions before the policy switches, without the generic policy hero in focused mode."

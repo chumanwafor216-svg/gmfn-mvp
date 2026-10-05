@@ -89,6 +89,49 @@ def _join_request_id_from_action_url(action_url: Any) -> int:
     return 0
 
 
+def _relay_offer_id_from_action_url(action_url: Any) -> int:
+    raw = _safe_str(action_url)
+    if not raw or "relay_offer_id" not in raw:
+        return 0
+
+    parsed = urlparse(raw)
+    offer_values = parse_qs(parsed.query).get("relay_offer_id") or []
+    for value in offer_values:
+        try:
+            offer_id = int(value)
+        except (TypeError, ValueError):
+            continue
+        if offer_id > 0:
+            return offer_id
+    return 0
+
+
+def _relay_offer_status_for_notification(
+    db: Session,
+    notification: Notification,
+) -> Dict[str, Any]:
+    if _safe_str(notification.kind).lower() != "opportunity_relay.offer":
+        return {}
+
+    offer_id = _relay_offer_id_from_action_url(notification.action_url)
+    if offer_id <= 0:
+        return {"relay_offer": None}
+
+    try:
+        from app.services.opportunity_relay_service import (
+            relay_offer_to_bridge_payload,
+        )
+
+        from app.db.models import OpportunityRelayOffer
+
+        offer = db.get(OpportunityRelayOffer, int(offer_id))
+        if not offer or int(getattr(offer, "bridge_user_id", 0) or 0) != int(notification.user_id):
+            return {"relay_offer": None}
+        return {"relay_offer": relay_offer_to_bridge_payload(db, offer)}
+    except Exception:
+        return {"relay_offer": None}
+
+
 def _join_request_status_for_notification(
     db: Session,
     notification: Notification,
@@ -205,6 +248,9 @@ def normalize_notification_action(
         "open payment",
     }:
         return url, "Open Money Out"
+
+    if _safe_str(kind).lower() == "opportunity_relay.offer":
+        return url or "/app/notifications", "Help connect"
 
     return url, label
 
@@ -407,6 +453,7 @@ def list_my_notifications(
                     if str(r.kind) == "approval_request"
                     else {}
                 ),
+                **_relay_offer_status_for_notification(db, r),
             }
         )
 

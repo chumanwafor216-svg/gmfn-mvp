@@ -4188,6 +4188,230 @@ class MarketplaceRequest(Base):
     user = relationship("User")
 
 
+class OpportunityRelayRun(Base):
+    __tablename__ = "opportunity_relay_runs"
+
+    __table_args__ = (
+        Index("ix_opportunity_relay_runs_source_v1", "source_type", "source_id"),
+        Index(
+            "ix_opportunity_relay_runs_origin_target_status_v1",
+            "origin_clan_id",
+            "target_clan_id",
+            "status",
+        ),
+        Index("ix_opportunity_relay_runs_target_status_v1", "target_clan_id", "status"),
+        Index("ix_opportunity_relay_runs_creator_status_v1", "created_by_user_id", "status"),
+        Index("ix_opportunity_relay_runs_expires_status_v1", "expires_at", "status"),
+        Index(
+            "uq_opportunity_relay_run_active_scope_v1",
+            "source_type",
+            "source_id",
+            "origin_clan_id",
+            "target_clan_id",
+            unique=True,
+            sqlite_where=text("status IN ('open', 'boundary_crossed')"),
+            postgresql_where=text("status IN ('open', 'boundary_crossed')"),
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    source_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    source_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    origin_clan_id: Mapped[int] = mapped_column(
+        ForeignKey("clans.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    target_clan_id: Mapped[int] = mapped_column(
+        ForeignKey("clans.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    created_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    status: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="open",
+        server_default="open",
+        index=True,
+    )
+    privacy_mode: Mapped[str] = mapped_column(
+        String(40),
+        nullable=False,
+        default="bridge_minimum",
+        server_default="bridge_minimum",
+    )
+    response_window_seconds: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=259200,
+        server_default="259200",
+    )
+    max_active_offers: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=3,
+        server_default="3",
+    )
+    offered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+    boundary_crossed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
+    cancelled_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        index=True,
+    )
+    boundary_crossed_by_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    meta_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+
+    def _get_meta(self) -> Dict[str, Any]:
+        if not self.meta_json:
+            return {}
+        try:
+            raw = json.loads(self.meta_json)
+        except Exception:
+            return {}
+        return raw if isinstance(raw, dict) else {}
+
+    def _set_meta(self, value: Optional[Dict[str, Any]]) -> None:
+        self.meta_json = json.dumps(value) if value is not None else None
+
+    meta = synonym("meta_json", descriptor=property(_get_meta, _set_meta))
+
+
+class OpportunityRelayOffer(Base):
+    __tablename__ = "opportunity_relay_offers"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "relay_run_id",
+            "bridge_user_id",
+            name="uq_opportunity_relay_offer_run_bridge_v1",
+        ),
+        UniqueConstraint(
+            "relay_run_id",
+            "bridge_user_id",
+            "idempotency_key",
+            name="uq_opportunity_relay_offer_idempotency_v1",
+        ),
+        Index("ix_opportunity_relay_offers_run_status_v1", "relay_run_id", "status"),
+        Index("ix_opportunity_relay_offers_bridge_status_v1", "bridge_user_id", "status"),
+        Index("ix_opportunity_relay_offers_expires_status_v1", "expires_at", "status"),
+        Index(
+            "uq_opportunity_relay_offer_one_accepted_v1",
+            "relay_run_id",
+            unique=True,
+            sqlite_where=text("status = 'accepted'"),
+            postgresql_where=text("status = 'accepted'"),
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    relay_run_id: Mapped[int] = mapped_column(
+        ForeignKey("opportunity_relay_runs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    bridge_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    status: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="offered",
+        server_default="offered",
+        index=True,
+    )
+    offered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+    responded_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        index=True,
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        index=True,
+    )
+    decline_reason: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    notification_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("notifications.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    idempotency_key: Mapped[Optional[str]] = mapped_column(String(96), nullable=True)
+    meta_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+
+    relay_run = relationship("OpportunityRelayRun")
+
+    def _get_meta(self) -> Dict[str, Any]:
+        if not self.meta_json:
+            return {}
+        try:
+            raw = json.loads(self.meta_json)
+        except Exception:
+            return {}
+        return raw if isinstance(raw, dict) else {}
+
+    def _set_meta(self, value: Optional[Dict[str, Any]]) -> None:
+        self.meta_json = json.dumps(value) if value is not None else None
+
+    meta = synonym("meta_json", descriptor=property(_get_meta, _set_meta))
+
+
 class UserSettings(Base):
     __tablename__ = "user_settings"
 

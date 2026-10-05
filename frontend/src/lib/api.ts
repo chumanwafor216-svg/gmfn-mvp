@@ -5701,6 +5701,24 @@ export async function getMyUnreadNotificationCount(): Promise<any> {
   return httpJson("/notifications/me/unread-count", "GET");
 }
 
+export async function acceptOpportunityRelayOffer(offerId: number | string): Promise<any> {
+  return httpJson(
+    `/opportunity-relays/offers/${encodeURIComponent(String(offerId))}/accept`,
+    "POST"
+  );
+}
+
+export async function declineOpportunityRelayOffer(
+  offerId: number | string,
+  payload?: { decline_reason?: string | null }
+): Promise<any> {
+  return httpJson(
+    `/opportunity-relays/offers/${encodeURIComponent(String(offerId))}/decline`,
+    "POST",
+    { decline_reason: payload?.decline_reason ?? "Not now" }
+  );
+}
+
 export async function getMyAttentionSpine(params?: {
   clan_id?: number | null;
   limit?: number;

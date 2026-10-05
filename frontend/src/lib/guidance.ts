@@ -48,6 +48,11 @@ export type GuidanceNotice = {
   ctaTo: string;
   bucket: GuidanceInboxBucketKey;
   unread?: boolean;
+  relayOfferId?: number;
+  relayStatus?: string;
+  relayCategory?: string;
+  relayArea?: string;
+  relayExpiresAt?: string;
 };
 
 export type GuidanceTrustJourneyItem = {
@@ -829,6 +834,10 @@ function normalizeNoticeCtaLabel(ctaTo: string, rawLabel: any): string {
     return "Open Focus Commitments";
   }
 
+  if (direct.toLowerCase() === "help connect") {
+    return "Help connect";
+  }
+
   if (targetPath === GUIDANCE_TARGETS.HELP_DESK) {
     return "Open Help Desk";
   }
@@ -915,6 +924,10 @@ function bucketFromNotification(raw: any): GuidanceInboxBucketKey {
     .join(" ")
     .toLowerCase();
 
+  if (text.includes("opportunity_relay.offer") || text.includes("help connect")) {
+    return "actNow";
+  }
+
   if (text.includes("support_case.admin_reply") || text.includes("support_case.admin_attachment")) {
     return "actNow";
   }
@@ -984,15 +997,77 @@ function bucketFromNotification(raw: any): GuidanceInboxBucketKey {
   return "generalUpdates";
 }
 
-function normalizeNotificationNotice(raw: any): GuidanceNotice {
-  const title = supportDisplayText(firstTruthy(raw?.title, raw?.kind, "Update"));
-  const detail = supportDisplayText(
-    firstTruthy(
-      raw?.message,
-      raw?.detail,
-      "Review this update and continue from the right page."
-    )
+function relayOfferIdFromRaw(raw: any): number {
+  const direct = Number(raw?.relay_offer?.offer_id || raw?.relayOfferId || 0);
+  if (Number.isFinite(direct) && direct > 0) return direct;
+
+  const actionUrl = firstTruthy(raw?.action_url, raw?.cta_to, raw?.ctaTo, raw?.to);
+  if (!actionUrl || !actionUrl.includes("relay_offer_id")) return 0;
+
+  try {
+    const parsed = new URL(actionUrl, "http://local");
+    const value = Number(parsed.searchParams.get("relay_offer_id") || 0);
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function relayNotificationFields(raw: any): Partial<GuidanceNotice> {
+  if (safeStr(raw?.kind).toLowerCase() !== "opportunity_relay.offer") return {};
+  const relayOffer = raw?.relay_offer || {};
+  const relayOfferId = relayOfferIdFromRaw(raw);
+  return {
+    relayOfferId: relayOfferId || undefined,
+    relayStatus: firstTruthy(relayOffer?.status),
+    relayCategory: firstTruthy(relayOffer?.opportunity_category),
+    relayArea: firstTruthy(relayOffer?.opportunity_area),
+    relayExpiresAt: firstTruthy(relayOffer?.expires_at),
+  };
+}
+
+function relayTimeRemainingText(expiresAt: any): string {
+  const raw = safeStr(expiresAt);
+  if (!raw) return "Response window set by GSN.";
+  const expires = new Date(raw);
+  if (!Number.isFinite(expires.getTime())) return `Expires ${raw}.`;
+  const diffMs = expires.getTime() - Date.now();
+  if (diffMs <= 0) return "Expired.";
+  const minutes = Math.ceil(diffMs / 60000);
+  if (minutes < 60) return `Expires in ${minutes} minute${minutes === 1 ? "" : "s"}.`;
+  const hours = Math.ceil(minutes / 60);
+  if (hours < 48) return `Expires in ${hours} hour${hours === 1 ? "" : "s"}.`;
+  const days = Math.ceil(hours / 24);
+  return `Expires in ${days} day${days === 1 ? "" : "s"}.`;
+}
+
+function relayNoticeDetail(fields: Partial<GuidanceNotice>): string {
+  const category = safeStr(fields.relayCategory) || "General opportunity";
+  const area = safeStr(fields.relayArea);
+  const areaText = area ? ` Broad area: ${area}.` : "";
+  return (
+    `Category: ${category}.${areaText} ${relayTimeRemainingText(fields.relayExpiresAt)} ` +
+    "A legitimate opportunity may be able to move through communities you belong to. " +
+    "Helping connect lets GSN look for relevant supply in the connected community. " +
+    "It is not a recommendation, endorsement, payment proof, TrustScore, or CCI signal."
   );
+}
+
+function normalizeNotificationNotice(raw: any): GuidanceNotice {
+  const relayFields = relayNotificationFields(raw);
+  const isRelayOffer = safeStr(raw?.kind).toLowerCase() === "opportunity_relay.offer";
+  const title = isRelayOffer
+    ? supportDisplayText(firstTruthy(raw?.title, "Help connect"))
+    : supportDisplayText(firstTruthy(raw?.title, raw?.kind, "Update"));
+  const detail = isRelayOffer
+    ? relayNoticeDetail(relayFields)
+    : supportDisplayText(
+        firstTruthy(
+          raw?.message,
+          raw?.detail,
+          "Review this update and continue from the right page."
+        )
+      );
   const kind = firstTruthy(raw?.kind, title);
   const bucket = bucketFromNotification(raw);
   const ctaTo = resolveNoticeTarget(raw);
@@ -1006,6 +1081,7 @@ function normalizeNotificationNotice(raw: any): GuidanceNotice {
     ctaTo,
     bucket,
     unread: !raw?.is_read,
+    ...relayFields,
   };
 }
 

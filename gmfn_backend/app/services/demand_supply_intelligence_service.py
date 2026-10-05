@@ -13,6 +13,7 @@ from app.db.models import (
     MarketplaceProduct,
     MarketplaceRequest,
     MarketplaceShop,
+    OpportunityRelayRun,
     User,
 )
 
@@ -21,6 +22,7 @@ REASON_LIVE_DEMAND = "LIVE_DEMAND"
 REASON_ACTIVE_SUPPLY = "ACTIVE_SUPPLY"
 REASON_CATEGORY_MATCH = "CATEGORY_MATCH"
 REASON_AREA_COMPATIBLE = "AREA_COMPATIBLE"
+REASON_RELAY_BOUNDARY_CROSSED = "RELAY_BOUNDARY_CROSSED"
 
 PRODUCT_VISIBILITY_COMMUNITY = "community_visible"
 PRODUCT_VISIBLE_MODES = {PRODUCT_VISIBILITY_COMMUNITY, "community", "public"}
@@ -116,16 +118,33 @@ def find_supply_for_demand(
     ):
         return []
 
-    matches: list[DemandSupplyMatch] = []
-    for product, shop in _active_visible_supply_rows(
+    supply_clan_ids = [int(demand.clan_id)]
+    for target_clan_id in _relay_authorized_target_clan_ids_for_demand(
         db,
-        clan_id=int(demand.clan_id),
+        demand=demand,
+        current_user_id=int(current_user_id),
     ):
-        match = _build_match(demand=demand, product=product, shop=shop)
-        if match:
-            matches.append(match)
-        if len(matches) >= limit:
-            break
+        if target_clan_id not in supply_clan_ids:
+            supply_clan_ids.append(int(target_clan_id))
+
+    matches: list[DemandSupplyMatch] = []
+    for supply_clan_id in supply_clan_ids:
+        relay_authorized = int(supply_clan_id) != int(demand.clan_id)
+        for product, shop in _active_visible_supply_rows(
+            db,
+            clan_id=int(supply_clan_id),
+        ):
+            match = _build_match_for_supply_clan(
+                demand=demand,
+                product=product,
+                shop=shop,
+                supply_clan_id=int(supply_clan_id),
+                relay_authorized=relay_authorized,
+            )
+            if match:
+                matches.append(match)
+            if len(matches) >= limit:
+                return [match.to_dict() for match in matches]
     return [match.to_dict() for match in matches]
 
 
@@ -162,6 +181,7 @@ def find_demands_for_supply(
         .order_by(MarketplaceRequest.created_at.desc(), MarketplaceRequest.id.desc())
         .all()
     )
+    seen_demand_ids: set[int] = set()
     for demand in demands:
         if not _is_visible_live_demand(
             db,
@@ -172,6 +192,26 @@ def find_demands_for_supply(
         match = _build_match(demand=demand, product=product, shop=shop)
         if match:
             matches.append(match)
+            seen_demand_ids.add(int(demand.id))
+        if len(matches) >= limit:
+            return [match.to_dict() for match in matches]
+
+    for demand in _relay_authorized_source_demands_for_target_clan(
+        db,
+        target_clan_id=int(product.clan_id),
+    ):
+        if int(demand.id) in seen_demand_ids:
+            continue
+        match = _build_match_for_supply_clan(
+            demand=demand,
+            product=product,
+            shop=shop,
+            supply_clan_id=int(product.clan_id),
+            relay_authorized=True,
+        )
+        if match:
+            matches.append(match)
+            seen_demand_ids.add(int(demand.id))
         if len(matches) >= limit:
             break
     return [match.to_dict() for match in matches]
@@ -205,7 +245,18 @@ def resolve_demand_supply_trade_handoff(
     if not _is_active_visible_supply(product=product, shop=shop):
         return None
 
-    match = _build_match(demand=demand, product=product, shop=shop)
+    relay_authorized = int(product.clan_id or 0) in _relay_authorized_target_clan_ids_for_demand(
+        db,
+        demand=demand,
+        current_user_id=int(current_user_id),
+    )
+    match = _build_match_for_supply_clan(
+        demand=demand,
+        product=product,
+        shop=shop,
+        supply_clan_id=int(product.clan_id or 0),
+        relay_authorized=relay_authorized,
+    )
     if not match:
         return None
 
@@ -216,6 +267,34 @@ def resolve_demand_supply_trade_handoff(
         "seller_user_id": int(getattr(product, "seller_user_id", 0) or 0)
         or int(getattr(shop, "owner_user_id", 0) or 0),
     }
+
+
+def find_relay_supply_target_candidates(
+    db: Session,
+    *,
+    demand: MarketplaceRequest,
+    target_clan_ids: Iterable[int],
+    limit_per_clan: int = 1,
+) -> dict[int, int]:
+    results: dict[int, int] = {}
+    for target_clan_id in sorted({int(value) for value in target_clan_ids if int(value) > 0}):
+        if int(target_clan_id) == int(getattr(demand, "clan_id", 0) or 0):
+            continue
+        count = 0
+        for product, shop in _active_visible_supply_rows(db, clan_id=int(target_clan_id)):
+            if _build_match_for_supply_clan(
+                demand=demand,
+                product=product,
+                shop=shop,
+                supply_clan_id=int(target_clan_id),
+                relay_authorized=True,
+            ):
+                count += 1
+                if count >= int(limit_per_clan):
+                    break
+        if count > 0:
+            results[int(target_clan_id)] = count
+    return results
 
 
 def demand_supply_coverage_summary(
@@ -296,7 +375,26 @@ def _build_match(
     product: MarketplaceProduct,
     shop: MarketplaceShop,
 ) -> DemandSupplyMatch | None:
-    if int(demand.clan_id or 0) != int(product.clan_id or 0):
+    return _build_match_for_supply_clan(
+        demand=demand,
+        product=product,
+        shop=shop,
+        supply_clan_id=int(demand.clan_id or 0),
+        relay_authorized=False,
+    )
+
+
+def _build_match_for_supply_clan(
+    *,
+    demand: MarketplaceRequest,
+    product: MarketplaceProduct,
+    shop: MarketplaceShop,
+    supply_clan_id: int,
+    relay_authorized: bool = False,
+) -> DemandSupplyMatch | None:
+    if int(product.clan_id or 0) != int(supply_clan_id or 0):
+        return None
+    if not relay_authorized and int(demand.clan_id or 0) != int(product.clan_id or 0):
         return None
     if not _category_compatible(demand=demand, product=product, shop=shop):
         return None
@@ -307,6 +405,8 @@ def _build_match(
         REASON_ACTIVE_SUPPLY,
         REASON_CATEGORY_MATCH,
     ]
+    if relay_authorized:
+        reason_codes.append(REASON_RELAY_BOUNDARY_CROSSED)
     if _area_compatible(demand=demand, product=product, shop=shop):
         reason_codes.append(REASON_AREA_COMPATIBLE)
 
@@ -314,7 +414,7 @@ def _build_match(
         demand_id=int(demand.id),
         product_id=int(product.id),
         shop_id=int(shop.id),
-        clan_id=int(demand.clan_id),
+        clan_id=int(supply_clan_id),
         demand_category=_clean_text(getattr(demand, "category", None)) or None,
         demand_area=_clean_text(getattr(demand, "area", None)) or None,
         product_title=_clean_text(getattr(product, "name", None)) or "Marketplace item",
@@ -349,6 +449,57 @@ def _is_visible_live_demand(
             or int(current_user_id) in _mentioned_member_ids(db, demand)
         )
     return True
+
+
+def _relay_authorized_target_clan_ids_for_demand(
+    db: Session,
+    *,
+    demand: MarketplaceRequest,
+    current_user_id: int,
+) -> list[int]:
+    if int(getattr(demand, "user_id", 0) or 0) != int(current_user_id):
+        return []
+    rows = (
+        db.query(OpportunityRelayRun.target_clan_id)
+        .filter(
+            OpportunityRelayRun.source_type == "marketplace_request",
+            OpportunityRelayRun.source_id == int(demand.id),
+            OpportunityRelayRun.origin_clan_id == int(getattr(demand, "clan_id", 0) or 0),
+            OpportunityRelayRun.status == "boundary_crossed",
+            OpportunityRelayRun.boundary_crossed_at.isnot(None),
+        )
+        .distinct()
+        .all()
+    )
+    return [int(row[0]) for row in rows]
+
+
+def _relay_authorized_source_demands_for_target_clan(
+    db: Session,
+    *,
+    target_clan_id: int,
+) -> list[MarketplaceRequest]:
+    return (
+        db.query(MarketplaceRequest)
+        .join(
+            OpportunityRelayRun,
+            (OpportunityRelayRun.source_type == "marketplace_request")
+            & (OpportunityRelayRun.source_id == MarketplaceRequest.id),
+        )
+        .filter(
+            OpportunityRelayRun.target_clan_id == int(target_clan_id),
+            OpportunityRelayRun.status == "boundary_crossed",
+            OpportunityRelayRun.boundary_crossed_at.isnot(None),
+            MarketplaceRequest.status == OPEN_DEMAND_STATUS,
+            (MarketplaceRequest.expires_at.is_(None)) | (MarketplaceRequest.expires_at >= _now_utc()),
+            or_(
+                MarketplaceRequest.description.is_(None),
+                ~MarketplaceRequest.description.contains(PROTECTED_TARGET_MARKER),
+            ),
+        )
+        .order_by(MarketplaceRequest.created_at.desc(), MarketplaceRequest.id.desc())
+        .all()
+    )
 
 
 def _mentioned_member_ids(db: Session, demand: MarketplaceRequest) -> set[int]:
