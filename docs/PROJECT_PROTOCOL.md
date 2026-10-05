@@ -20,11 +20,15 @@ Before doing route-purpose work, navigation restructuring, marketplace/community
 ownership changes, or page-responsibility changes, also read:
 
 - `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`
+- `docs/GSN_SURFACE_OWNERSHIP_CONTRACT.md`
 - `docs/GUIDED_WORK_SURFACE_PROTOCOL.md`
 - `docs/GSN_MOBILE_UI_PROTOCOL.md`
 - `docs/GSN_PRODUCTION_POLISH_STANDARD.md`
 - `docs/TRUST_DOCUMENT_LANGUAGE_PROTOCOL.md`
 - `docs/APP_WIDE_AUDIT_PROTOCOL.md`
+
+For surface simplification, page ownership, and duplicate-capability decisions,
+`docs/GSN_SURFACE_OWNERSHIP_CONTRACT.md` is the canonical record of one surface, one primary human job, one primary action.
 
 For Marketplace page-composition work specifically, also read:
 

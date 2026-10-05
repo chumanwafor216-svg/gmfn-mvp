@@ -25,6 +25,8 @@ It is the working architecture basis for:
 - trust and finance interpretation
 - future implementation and review work
 
+For simplification and duplicate-surface decisions, `docs/GSN_SURFACE_OWNERSHIP_CONTRACT.md` records the current ownership contract for which surface owns each ordinary-member or operator job.
+
 For the innovation-case, investor, policy, development-finance, TrustSlip, and
 merchant-verification meaning of this architecture, also read:
 

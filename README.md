@@ -13,6 +13,8 @@ It is the current authoritative skeleton for how Community Home, Marketplace,
 Shop Gallery, Finance, Trust Passport, TrustSlip, CCI, Dashboard, and Admin fit
 together.
 
+For surface simplification, route ownership, duplicate capability placement, or ordinary-member/operator separation work, also read `docs/GSN_SURFACE_OWNERSHIP_CONTRACT.md`. It records the rule that one surface has one primary human job and one primary action, while deeper system capabilities stay preserved behind the correct canonical home.
+
 For mobile UI density, screenshot readiness, lane collapse, and action-surface
 work, also read `docs/GSN_MOBILE_UI_PROTOCOL.md`.
 
