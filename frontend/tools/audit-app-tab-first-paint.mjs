@@ -329,8 +329,13 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
       pathname: window.location.pathname,
       search: window.location.search,
       hasMemberHome: Boolean(document.querySelector('[data-my-gsn-member-home="true"]')),
+      hasPersonalOrientation: Boolean(document.querySelector('[data-my-gsn-personal-orientation="true"]')),
+      hasCanonicalPointers: Boolean(document.querySelector('[data-my-gsn-canonical-pointers="true"]')),
       hasAttention: text.includes("What Needs My Attention"),
       hasMemberHomeHeadline: text.includes("Your communities. Your opportunities. Your activity. Your evidence."),
+      hasNotificationsPointer: text.includes("What Matters Now"),
+      hasDemandBoxPointer: text.includes("Need something?"),
+      hasIdentityPointer: text.includes("Open My GSN Identity"),
     };
   });
 
@@ -342,8 +347,13 @@ async function measureMyGsnMemberHomeSettled(browser, baseURL) {
       result.pathname === "/app/my-gmfn-and-i" &&
       new URLSearchParams(result.search).get("tab") !== "guide" &&
       result.hasMemberHome &&
-      result.hasAttention &&
-      result.hasMemberHomeHeadline,
+      result.hasPersonalOrientation &&
+      result.hasCanonicalPointers &&
+      result.hasNotificationsPointer &&
+      result.hasDemandBoxPointer &&
+      result.hasIdentityPointer &&
+      !result.hasAttention &&
+      !result.hasMemberHomeHeadline,
     result,
   };
 }
@@ -383,7 +393,7 @@ async function run() {
       mode: "my-gsn",
       path: "/app/my-gmfn-and-i?community=8",
       selector: '[data-my-gsn-member-home="true"]',
-      text: "Your communities. Your opportunities. Your activity. Your evidence.",
+      text: "Your personal orientation and pointers to the right GSN surface.",
       loadingText: "Loading workspace settings",
       expectDelayed: false,
     },

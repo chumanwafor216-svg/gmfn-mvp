@@ -155,14 +155,15 @@ type MemberOpportunityModel = {
   unavailableSources: MemberOpportunitySource[];
 };
 
-type MemberHomeAction = {
+type MemberHomePointer = {
   id: string;
   title: string;
   detail: string;
-  meta: string;
+  meta?: string;
   to: string;
   debugId: string;
-  cta?: string;
+  cta: string;
+  primary?: boolean;
 };
 
 const SETTINGS_STORAGE_KEY = "gmfn.myGmfnAndI.settings.v2";
@@ -248,32 +249,6 @@ function queueKeysOf(row: DemandSummaryRow): string[] {
     : [];
 }
 
-function demandCommunityId(row: DemandSummaryRow): number {
-  return firstPositiveNumber(row?.clan_id, row?.community_id, row?.marketplace_id);
-}
-
-function spotlightCommunityId(row: SpotlightSummaryRow): number {
-  return firstPositiveNumber(row?.clan_id, row?.source_clan_id, row?.community_id);
-}
-
-
-function demandCommunityName(row: DemandSummaryRow, fallback = "Community"): string {
-  return firstTruthy(row?.marketplace_name, row?.community_name, row?.clan_name, row?.source_label) || fallback;
-}
-
-function spotlightCommunityName(row: SpotlightSummaryRow, fallback = "Community"): string {
-  return firstTruthy(row?.marketplace_name, row?.community_name, row?.clan_name) || fallback;
-}
-
-function demandTitle(row: DemandSummaryRow): string {
-  return firstTruthy(row?.title, row?.need_type, row?.category) || "Open request";
-}
-
-function demandDetail(row: DemandSummaryRow): string {
-  const detail = firstTruthy(row?.description, row?.need_type, row?.category);
-  return detail || "Open need from a community you can access.";
-}
-
 function isTaggedDemand(row: DemandSummaryRow): boolean {
   return row?.is_tagged_for_me === true || queueKeysOf(row).includes("tagged_for_me");
 }
@@ -288,36 +263,6 @@ function isMineDemand(row: DemandSummaryRow, me: any): boolean {
       row?.mine === true ||
       (meGmfnId && requesterGmfnId && meGmfnId === requesterGmfnId) ||
       (meId && requesterId && meId === requesterId)
-  );
-}
-
-function spotlightTitle(row: SpotlightSummaryRow): string {
-  return (
-    firstTruthy(
-      row?.spotlight_title,
-      row?.spotlightTitle,
-      row?.source_product_title,
-      row?.sourceProductTitle,
-      row?.source_shop_name,
-      row?.sourceShopName,
-      row?.message,
-      row?.content,
-      row?.text
-    ) || "Community spotlight"
-  );
-}
-
-function spotlightDetail(row: SpotlightSummaryRow): string {
-  return (
-    firstTruthy(
-      row?.spotlight_description,
-      row?.spotlightDescription,
-      row?.message,
-      row?.content,
-      row?.text,
-      row?.source_shop_name,
-      row?.sourceShopName
-    ) || "Community visibility update."
   );
 }
 
@@ -470,9 +415,9 @@ function memberHomeCard(compact = false, accent = false): React.CSSProperties {
   };
 }
 
-function memberHomeActionLink(compact = false): React.CSSProperties {
+function memberHomePointerLink(compact = false, primary = false): React.CSSProperties {
   return {
-    minHeight: compact ? 108 : 116,
+    minHeight: compact ? 88 : 98,
     borderRadius: 18,
     justifyContent: "flex-start",
     alignItems: "stretch",
@@ -481,23 +426,10 @@ function memberHomeActionLink(compact = false): React.CSSProperties {
     fontSize: compact ? 13 : 14,
     lineHeight: 1.3,
     overflow: "hidden",
-  };
-}
-
-function memberHomeMetaChip(): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    maxWidth: "100%",
-    borderRadius: 999,
-    padding: "5px 8px",
-    color: "#334155",
-    background: "rgba(232,240,252,0.92)",
-    fontSize: 10.5,
-    fontWeight: 950,
-    lineHeight: 1.1,
-    overflowWrap: "anywhere",
+    borderColor: primary ? "rgba(214,170,69,0.42)" : undefined,
+    background: primary
+      ? "linear-gradient(180deg, rgba(255,248,225,0.98) 0%, rgba(255,255,255,0.995) 100%)"
+      : undefined,
   };
 }
 
@@ -2298,17 +2230,10 @@ export default function MyGMFNAndIPage() {
   );
   const ownShopName = firstTruthy(ownShopRecord?.name, ownShopRecord?.shop_name, ownShopRecord?.title) || "Shop tools";
   const visibleRequests = memberOpportunity.visibleRequests.filter((row) => !isMineDemand(row, me));
-  const taggedRequests = visibleRequests.filter(isTaggedDemand).slice(0, 3);
-  const discoveryRequests = visibleRequests
-    .filter((row) => !isTaggedDemand(row))
-    .slice(0, 3);
-  const myOpenRequests = memberOpportunity.myOpenRequests.slice(0, 3);
-  const concreteSpotlights = memberOpportunity.spotlights
-    .filter(spotlightHasConcreteContext)
-    .slice(0, 3);
-  const communityVisibilityUpdates = memberOpportunity.spotlights
-    .filter((row) => !spotlightHasConcreteContext(row))
-    .slice(0, 2);
+  const taggedRequestCount = visibleRequests.filter(isTaggedDemand).length;
+  const myOpenRequestCount = memberOpportunity.myOpenRequests.length;
+  const myClosedRequestCount = memberOpportunity.myClosedRequests.length;
+  const concreteSpotlightCount = memberOpportunity.spotlights.filter(spotlightHasConcreteContext).length;
   const memberOpportunityStillLoading =
     memberOpportunityLoading || (!memberOpportunity.loaded && isAppRoute);
   const memberOpportunityPartialUnavailable =
@@ -2336,152 +2261,145 @@ export default function MyGMFNAndIPage() {
     return routeTarget("shop", communityId || selectedClanId, "my-gmfn.member-home.shop");
   }
 
-  function spotlightRouteFor(communityId = selectedOrFirstCommunityId): string {
-    return routeTarget("freeSpotlight", communityId || selectedClanId, "my-gmfn.member-home.spotlight");
-  }
+  const attentionStatus = memberOpportunityStillLoading
+    ? "Checking"
+    : memberOpportunitySourceUnavailable("visibleRequests", "myOpenRequests")
+      ? "Source unavailable"
+      : taggedRequestCount + myOpenRequestCount > 0
+        ? `${taggedRequestCount + myOpenRequestCount} waiting`
+        : "Nothing urgent here";
+  const demandStatus = memberOpportunityStillLoading
+    ? "Checking"
+    : memberOpportunitySourceUnavailable("myOpenRequests") && myOpenRequestCount <= 0
+      ? "Unavailable"
+      : myOpenRequestCount > 0
+        ? `${myOpenRequestCount} open need${myOpenRequestCount === 1 ? "" : "s"}`
+        : "No open need";
+  const opportunityStatus = memberOpportunityStillLoading
+    ? "Checking"
+    : memberOpportunitySourceUnavailable("visibleRequests", "spotlights")
+      ? "Source unavailable"
+      : taggedRequestCount + concreteSpotlightCount > 0
+        ? `${taggedRequestCount + concreteSpotlightCount} signal${taggedRequestCount + concreteSpotlightCount === 1 ? "" : "s"}`
+        : "Open source pages";
+  const communityStatus = memberOpportunityStillLoading
+    ? "Checking"
+    : memberOpportunitySourceUnavailable("communities") && memberCommunityCount <= 0
+      ? "Unavailable"
+      : memberCommunityCount > 0
+        ? `${memberCommunityCount} active`
+        : "No active community";
+  const closedActivityStatus = memberOpportunityStillLoading
+    ? "Checking"
+    : memberOpportunitySourceUnavailable("myClosedRequests") && myClosedRequestCount <= 0
+      ? "Unavailable"
+      : `${myClosedRequestCount} closed request${myClosedRequestCount === 1 ? "" : "s"}`;
 
-  const attentionActions: MemberHomeAction[] = [
-    ...taggedRequests.map((row, index) => {
-      const communityId = demandCommunityId(row) || selectedOrFirstCommunityId;
-      return {
-        id: `tagged-${row.id || index}`,
-        title: demandTitle(row),
-        detail: demandDetail(row),
-        meta: `Tagged for you - ${demandCommunityName(row, communityLabel)}`,
-        to: appendRouteQuery(demandBoxRouteFor(communityId), { request_id: row.id || undefined, queue: "tagged" }),
-        debugId: `my-gmfn.member-home.attention.tagged-${index}`,
-        cta: "Review",
-      };
-    }),
-    ...myOpenRequests.map((row, index) => {
-      const communityId = demandCommunityId(row) || selectedOrFirstCommunityId;
-      return {
-        id: `mine-${row.id || index}`,
-        title: demandTitle(row),
-        detail: demandDetail(row),
-        meta: `Your open need - ${demandCommunityName(row, communityLabel)}`,
-        to: appendRouteQuery(demandBoxRouteFor(communityId), { request_id: row.id || undefined, queue: "mine" }),
-        debugId: `my-gmfn.member-home.attention.mine-${index}`,
-        cta: "Open",
-      };
-    }),
-  ].slice(0, 4);
+  const memberHomePointers: MemberHomePointer[] = [
+    {
+      id: "identity",
+      title: "Open My GSN Identity",
+      detail: "See your GSN ID, identity evidence, main context, and guide without turning Profile into a dashboard.",
+      meta: identityStatus,
+      to: routes.guide,
+      debugId: "my-gmfn.member-home.pointer.identity",
+      cta: "Open Identity",
+      primary: true,
+    },
+    {
+      id: "attention",
+      title: "What Matters Now",
+      detail: "Review the full action queue in Notifications. My GSN shows the pointer, not another inbox.",
+      meta: attentionStatus,
+      to: APP_ROUTES.NOTIFICATIONS,
+      debugId: "my-gmfn.member-home.pointer.notifications",
+      cta: "Open Notifications",
+      primary: true,
+    },
+    {
+      id: "demand",
+      title: "Need something?",
+      detail: "DemandBox owns requests, possible matches, privacy, and request status.",
+      meta: demandStatus,
+      to: demandBoxRouteFor(selectedOrFirstCommunityId, "ask_community"),
+      debugId: "my-gmfn.member-home.pointer.demand-box",
+      cta: "Open DemandBox",
+    },
+    {
+      id: "community",
+      title: "Explore your communities",
+      detail: "Community Home is the place to enter communities and continue member work.",
+      meta: communityStatus,
+      to: routes.community,
+      debugId: "my-gmfn.member-home.pointer.community",
+      cta: "Open Community Home",
+    },
+    {
+      id: "marketplace",
+      title: "Find marketplace activity",
+      detail: "Marketplace keeps community opportunities and supply in their operating context.",
+      meta: opportunityStatus,
+      to: marketplaceRouteFor(selectedOrFirstCommunityId),
+      debugId: "my-gmfn.member-home.pointer.marketplace",
+      cta: "Open Marketplace",
+    },
+    {
+      id: "offer",
+      title: "Manage what you offer",
+      detail: "Shop Control owns your shop, products, public offer setup, and Spotlight tools.",
+      meta: hasOwnShop ? ownShopName : "Shop tools",
+      to: shopRouteFor(selectedOrFirstCommunityId),
+      debugId: "my-gmfn.member-home.pointer.shop-control",
+      cta: "Open Shop Control",
+    },
+    {
+      id: "evidence",
+      title: "Evidence posture",
+      detail: "Trust Passport is the fuller private evidence record. My GSN keeps only the pointer.",
+      meta: trustPassportStatus,
+      to: routes.trust,
+      debugId: "my-gmfn.member-home.pointer.trust-passport",
+      cta: "Open Trust Passport",
+    },
+    {
+      id: "settings",
+      title: "Settings",
+      detail: "Adjust your display name and calm workspace preferences from the account settings branch.",
+      meta: settings.openActionsDirectly ? "Open directly" : "Review first",
+      to: routes.settings,
+      debugId: "my-gmfn.member-home.pointer.settings",
+      cta: "Open Settings",
+    },
+  ];
 
-  const discoverActions: MemberHomeAction[] = [
-    ...discoveryRequests.map((row, index) => {
-      const communityId = demandCommunityId(row) || selectedOrFirstCommunityId;
-      return {
-        id: `request-${row.id || index}`,
-        title: demandTitle(row),
-        detail: demandDetail(row),
-        meta: `Request - ${demandCommunityName(row, communityLabel)}`,
-        to: appendRouteQuery(demandBoxRouteFor(communityId), { request_id: row.id || undefined, queue: "discover" }),
-        debugId: `my-gmfn.member-home.discover.request-${index}`,
-        cta: "See request",
-      };
-    }),
-    ...concreteSpotlights.map((row, index) => {
-      const communityId = spotlightCommunityId(row) || selectedOrFirstCommunityId;
-      return {
-        id: `spotlight-${row.id || index}`,
-        title: spotlightTitle(row),
-        detail: spotlightDetail(row),
-        meta: `Linked spotlight - ${spotlightCommunityName(row, communityLabel)}`,
-        to: marketplaceRouteFor(communityId),
-        debugId: `my-gmfn.member-home.discover.spotlight-${index}`,
-        cta: "Open Marketplace",
-      };
-    }),
-  ].slice(0, 4);
-
-  const actActions: MemberHomeAction[] = [
-    ...taggedRequests.slice(0, 2).map((row, index) => {
-      const communityId = demandCommunityId(row) || selectedOrFirstCommunityId;
-      return {
-        id: `act-tagged-${row.id || index}`,
-        title: demandTitle(row),
-        detail: "Start from the originating community context before contacting or responding.",
-        meta: demandCommunityName(row, communityLabel),
-        to: appendRouteQuery(demandBoxRouteFor(communityId), { request_id: row.id || undefined, queue: "tagged" }),
-        debugId: `my-gmfn.member-home.act.tagged-${index}`,
-        cta: "Act there",
-      };
-    }),
-    ...concreteSpotlights.slice(0, 2).map((row, index) => {
-      const communityId = spotlightCommunityId(row) || selectedOrFirstCommunityId;
-      return {
-        id: `act-spotlight-${row.id || index}`,
-        title: spotlightTitle(row),
-        detail: "Open the source community or Marketplace surface before deciding what to do.",
-        meta: spotlightCommunityName(row, communityLabel),
-        to: marketplaceRouteFor(communityId),
-        debugId: `my-gmfn.member-home.act.spotlight-${index}`,
-        cta: "Open",
-      };
-    }),
-  ].slice(0, 3);
-
-  function renderMemberAction(action: MemberHomeAction) {
+  function renderMemberHomePointer(pointer: MemberHomePointer) {
     return (
       <StableCtaLink
-        key={action.id}
-        to={action.to}
-        kind="secondary"
-        debugId={action.debugId}
-        style={memberHomeActionLink(isCompact)}
+        key={pointer.id}
+        to={pointer.to}
+        kind={pointer.primary ? "primary" : "secondary"}
+        debugId={pointer.debugId}
+        style={memberHomePointerLink(isCompact, Boolean(pointer.primary))}
       >
-        <span style={{ display: "grid", gap: 8, minWidth: 0, width: "100%" }}>
-          <span style={memberHomeMetaChip()}>{action.meta}</span>
-          <strong style={{ color: "#07172C", fontSize: isCompact ? 14 : 15, lineHeight: 1.18, overflowWrap: "anywhere" }}>
-            {action.title}
+        <span style={{ display: "grid", gap: 7, minWidth: 0, width: "100%" }}>
+          {pointer.meta ? (
+            <span style={{ color: pointer.primary ? "#6B4F09" : "#64748B", fontSize: 11, fontWeight: 1000, textTransform: "uppercase", overflowWrap: "anywhere" }}>
+              {pointer.meta}
+            </span>
+          ) : null}
+          <strong style={{ color: "#07172C", fontSize: isCompact ? 14.5 : 16, lineHeight: 1.18, overflowWrap: "anywhere" }}>
+            {pointer.title}
           </strong>
-          <span style={{ color: "#526174", fontSize: isCompact ? 12.5 : 13.5, fontWeight: 750, lineHeight: 1.35, overflowWrap: "anywhere" }}>
-            {action.detail}
+          <span style={{ color: "#526174", fontSize: isCompact ? 12.5 : 13.5, fontWeight: 750, lineHeight: 1.34, overflowWrap: "anywhere" }}>
+            {pointer.detail}
           </span>
           <span style={{ marginTop: "auto", color: "#8A6A16", fontSize: 12, fontWeight: 1000 }}>
-            {action.cta || "Open"} {">"}
+            {pointer.cta} {">"}
           </span>
         </span>
       </StableCtaLink>
     );
   }
-
-  function renderEmptyMemberCard(title: string, detail: string, to?: string, debugId?: string) {
-    const content = (
-      <span style={{ display: "grid", gap: 8, minWidth: 0 }}>
-        <strong style={{ color: "#07172C", fontSize: isCompact ? 14 : 15, lineHeight: 1.2 }}>{title}</strong>
-        <span style={{ color: "#526174", fontSize: isCompact ? 12.5 : 13.5, fontWeight: 750, lineHeight: 1.35 }}>{detail}</span>
-        {to ? <span style={{ color: "#8A6A16", fontSize: 12, fontWeight: 1000 }}>Open {">"}</span> : null}
-      </span>
-    );
-
-    if (to && debugId) {
-      return (
-        <StableCtaLink to={to} kind="secondary" debugId={debugId} style={memberHomeActionLink(isCompact)}>
-          {content}
-        </StableCtaLink>
-      );
-    }
-
-    return <div style={memberHomeCard(isCompact)}>{content}</div>;
-  }
-
-  function renderLoadingMemberCard(title = "Loading this section") {
-    return renderEmptyMemberCard(
-      title,
-      "My GSN is checking records you can already access."
-    );
-  }
-
-  function renderUnavailableMemberCard(to?: string, debugId?: string) {
-    return renderEmptyMemberCard(
-      "Some information couldn't be loaded right now.",
-      "Successful records are still shown. Open the source page if you need the full record now.",
-      to,
-      debugId
-    );
-  }
-
   const topNavHomeTo = isAppRoute ? routes.dashboard : "/cover";
   const topNavHomeLabel = isAppRoute ? "Dashboard" : "Cover";
   const topNavTitle = isAppRoute
@@ -2803,7 +2721,7 @@ export default function MyGMFNAndIPage() {
               >
                 {showIdentityGuideSurface
                   ? "My GSN Identity"
-                  : "Your communities. Your opportunities. Your activity. Your evidence."}
+                  : "My GSN"}
               </h1>
               <div
                 style={{
@@ -2817,7 +2735,7 @@ export default function MyGMFNAndIPage() {
               >
                 {showIdentityGuideSurface
                   ? "Your identity, trust records, communities, shops, and opportunities in one place."
-                  : "See what is happening across your communities, find what you need, offer what you can, and carry relevant evidence forward."}
+                  : "Your personal orientation and pointers to the right GSN surface."}
               </div>
             </div>
           </div>
@@ -2825,332 +2743,106 @@ export default function MyGMFNAndIPage() {
           {showMemberHomeSummary ? (
             <div
               data-my-gsn-member-home="true"
+              data-my-gsn-member-home-mode="personal-orientation"
               style={{
-              marginTop: isCompact ? 14 : 18,
-              display: "grid",
-              gap: isCompact ? 12 : 14,
-            }}
-          >
-            <div
-              style={{
+                marginTop: isCompact ? 14 : 18,
                 display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "1.25fr 1fr",
-                gap: 12,
+                gap: isCompact ? 12 : 14,
               }}
             >
-              <div style={innerCard("rgba(255,255,255,0.98)")}>
-                <div style={sectionLabel()}>What Needs My Attention</div>
-                <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
-                  Tagged requests and your open needs come first.
-                </h2>
-                <div
-                  style={{
-                    marginTop: 12,
-                    display: "grid",
-                    gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
-                    gap: 10,
-                  }}
-                >
-                  {memberOpportunityStillLoading ?
-                    renderLoadingMemberCard("Loading your community signals") :
-                    attentionActions.length ?
-                      attentionActions.map(renderMemberAction) :
-                      memberOpportunitySourceUnavailable("visibleRequests", "myOpenRequests") ?
-                        renderUnavailableMemberCard(
-                          demandBoxRouteFor(selectedOrFirstCommunityId),
-                          "my-gmfn.member-home.attention.unavailable"
-                        ) :
-                        renderEmptyMemberCard(
-                          memberCommunityCount > 0 ? "Nothing urgent found here" : "No community context yet",
-                          memberCommunityCount > 0
-                            ? "No tagged DemandBox request or open need from you is visible in this summary right now."
-                            : "Join or create a community before My GSN can summarize community opportunities.",
-                          memberCommunityCount > 0 ? demandBoxRouteFor(selectedOrFirstCommunityId) : routes.community,
-                          "my-gmfn.member-home.attention.empty"
-                        )}
-                </div>
-
-              </div>
-
-              <div style={innerCard("rgba(255,255,255,0.98)")}>
-                <div style={sectionLabel()}>Your summary</div>
-                <div
-                  style={{
-                    marginTop: 10,
-                    display: "grid",
-                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                    gap: 8,
-                  }}
-                >
-                  {[
-                    [
-                      "Communities",
-                      memberOpportunityStillLoading
-                        ? "Loading"
-                        : memberOpportunitySourceUnavailable("communities") && memberCommunityCount <= 0
-                          ? "Unavailable"
-                          : memberCommunityCount > 0
-                            ? String(memberCommunityCount)
-                            : "None yet",
-                    ],
-                    [
-                      "Tagged",
-                      memberOpportunityStillLoading
-                        ? "Loading"
-                        : memberOpportunitySourceUnavailable("visibleRequests") && taggedRequests.length <= 0
-                          ? "Unavailable"
-                          : String(taggedRequests.length),
-                    ],
-                    [
-                      "My open needs",
-                      memberOpportunityStillLoading
-                        ? "Loading"
-                        : memberOpportunitySourceUnavailable("myOpenRequests") && memberOpportunity.myOpenRequests.length <= 0
-                          ? "Unavailable"
-                          : String(memberOpportunity.myOpenRequests.length),
-                    ],
-                    [
-                      "Linked spotlights",
-                      memberOpportunityStillLoading
-                        ? "Loading"
-                        : memberOpportunitySourceUnavailable("spotlights") && concreteSpotlights.length <= 0
-                          ? "Unavailable"
-                          : String(concreteSpotlights.length),
-                    ],
-                  ].map(([label, value]) => (
-                    <div key={label} style={memberHomeCard(isCompact, label === "Tagged" && taggedRequests.length > 0)}>
-                      <div style={{ color: "#64748B", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase" }}>
-                        {label}
-                      </div>
-                      <div style={{ marginTop: 6, color: "#07172C", fontSize: isCompact ? 17 : 20, fontWeight: 1000 }}>
-                        {value}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ marginTop: 10, ...helperText(), color: "#526174" }}>
-                  This is a routing summary from existing community records, not a ranking or endorsement.
-                </div>
-              </div>
-            </div>
-
-            {memberOpportunityPartialUnavailable ? (
               <div
-                data-my-gsn-member-opportunity-partial="true"
+                data-my-gsn-personal-orientation="true"
                 style={{
-                  borderRadius: 16,
-                  border: "1px solid rgba(214,170,69,0.28)",
-                  background: "rgba(255,249,232,0.96)",
-                  padding: isCompact ? "10px 12px" : "12px 14px",
-                  color: "#7A4A00",
-                  fontSize: isCompact ? 12 : 13,
-                  fontWeight: 850,
-                  lineHeight: 1.35,
-                }}
-              >
-                Some information couldn't be loaded right now. Successful records are still shown.
-              </div>
-            ) : null}
-
-            <div style={innerCard("rgba(255,255,255,0.98)")}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                <div>
-                  <div style={sectionLabel()}>Discover</div>
-                  <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
-                    Requests and linked opportunity signals from your communities.
-                  </h2>
-                </div>
-                <StableCtaLink
-                  to={demandBoxRouteFor(selectedOrFirstCommunityId)}
-                  kind="secondary"
-                  debugId="my-gmfn.member-home.discover.see-all"
-                  style={{ minHeight: 42, borderRadius: 999, padding: "8px 12px", fontSize: 12 }}
-                >
-                  See all
-                </StableCtaLink>
-              </div>
-              <div
-                style={{
-                  marginTop: 12,
                   display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
-                  gap: 10,
+                  gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 0.95fr) minmax(0, 1.05fr)",
+                  gap: 12,
                 }}
               >
-                {memberOpportunityStillLoading ?
-                  renderLoadingMemberCard("Loading discoverable records") :
-                  discoverActions.length ?
-                    discoverActions.map(renderMemberAction) :
-                    memberOpportunitySourceUnavailable("visibleRequests", "spotlights") ?
-                      renderUnavailableMemberCard(
-                        marketplaceRouteFor(selectedOrFirstCommunityId),
-                        "my-gmfn.member-home.discover.unavailable"
-                      ) :
-                      renderEmptyMemberCard(
-                        "No discoverable requests found here",
-                        "My GSN is not inventing opportunities. Use DemandBox or Marketplace to see the full source surfaces.",
-                        marketplaceRouteFor(selectedOrFirstCommunityId),
-                        "my-gmfn.member-home.discover.empty"
-                      )}
-              </div>
-              {communityVisibilityUpdates.length ? (
-                <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
-                  <div style={sectionLabel()}>Community visibility</div>
-                  {communityVisibilityUpdates.map((row, index) => (
-                    <div key={row.id || index} style={{ ...memberHomeCard(isCompact), minHeight: "auto" }}>
-                      <strong style={{ color: "#07172C", fontSize: 14 }}>{spotlightTitle(row)}</strong>
-                      <div style={{ marginTop: 5, color: "#526174", fontSize: 12.5, fontWeight: 750 }}>
-                        {spotlightCommunityName(row, communityLabel)} - update only, not classified here as an opportunity.
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
-                gap: 12,
-              }}
-            >
-              <div style={innerCard("rgba(255,255,255,0.98)")}>
-                <div style={sectionLabel()}>Ask</div>
-                <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>Find what you need through your communities.</h2>
-                <p style={{ margin: "8px 0 0", ...helperText(), color: "#526174" }}>
-                  DemandBox remains the need/request-first surface. Your own open needs are summarized here, then handled there.
-                </p>
-                <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
-                  <StableCtaLink
-                    to={demandBoxRouteFor(selectedOrFirstCommunityId, "ask_community")}
-                    kind="primary"
-                    debugId="my-gmfn.member-home.ask.open"
-                    style={{ minHeight: 48, borderRadius: 16, justifyContent: "center" }}
+                <div style={innerCard("rgba(255,255,255,0.98)")}>
+                  <div style={sectionLabel()}>Personal orientation</div>
+                  <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
+                    Your identity context, then the right GSN surface.
+                  </h2>
+                  <div style={{ marginTop: 10, ...helperText(), color: "#526174" }}>
+                    My GSN keeps a compact personal overview. Detailed work stays in its canonical home.
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 12,
+                      display: "grid",
+                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                      gap: 8,
+                    }}
                   >
-                    Ask through DemandBox
-                  </StableCtaLink>
-                  {memberOpportunityStillLoading ? (
-                    <div style={{ ...memberHomeCard(isCompact), minHeight: "auto" }}>
-                      <strong style={{ color: "#07172C", fontSize: 14 }}>Loading open needs</strong>
-                      <div style={{ marginTop: 5, color: "#526174", fontSize: 12.5, fontWeight: 750 }}>
-                        My GSN is checking DemandBox records you can already access.
+                    {[
+                      ["GSN ID", gmfnId || "Not issued yet"],
+                      ["Communities", communityStatus],
+                      ["Main context", communityLabel],
+                      ["Evidence", trustPassportStatus],
+                    ].map(([label, value]) => (
+                      <div key={label} style={{ ...memberHomeCard(isCompact), minHeight: isCompact ? 74 : 82 }}>
+                        <div style={{ color: "#64748B", fontSize: 10.5, fontWeight: 1000, textTransform: "uppercase" }}>
+                          {label}
+                        </div>
+                        <div style={{ marginTop: 6, color: "#07172C", fontSize: isCompact ? 13 : 15, fontWeight: 1000, lineHeight: 1.18, overflowWrap: "anywhere" }}>
+                          {value}
+                        </div>
                       </div>
-                    </div>
-                  ) : memberOpportunitySourceUnavailable("myOpenRequests") && memberOpportunity.myOpenRequests.length <= 0 ? (
-                    <div style={{ ...memberHomeCard(isCompact), minHeight: "auto" }}>
-                      <strong style={{ color: "#07172C", fontSize: 14 }}>Open needs unavailable</strong>
-                      <div style={{ marginTop: 5, color: "#526174", fontSize: 12.5, fontWeight: 750 }}>
-                        Some information couldn't be loaded right now.
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ ...memberHomeCard(isCompact), minHeight: "auto" }}>
-                      <strong style={{ color: "#07172C", fontSize: 14 }}>{memberOpportunity.myOpenRequests.length} open need{memberOpportunity.myOpenRequests.length === 1 ? "" : "s"}</strong>
-                      <div style={{ marginTop: 5, color: "#526174", fontSize: 12.5, fontWeight: 750 }}>
-                        Contact and response details remain inside authorized DemandBox paths.
-                      </div>
-                    </div>
-                  )}
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <div style={innerCard("rgba(255,255,255,0.98)")}>
-                <div style={sectionLabel()}>Offer</div>
-                <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>Offer value through existing product, service, skill, and help surfaces.</h2>
-                <p style={{ margin: "8px 0 0", ...helperText(), color: "#526174" }}>
-                  Phase 1 uses existing destinations only. It does not create a universal capacity object.
-                </p>
-                <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 8 }}>
-                  <StableCtaLink
-                    to={shopRouteFor(selectedOrFirstCommunityId)}
-                    kind="secondary"
-                    debugId="my-gmfn.member-home.offer.shop"
-                    style={{ minHeight: 52, borderRadius: 16, justifyContent: "center" }}
+                <div style={innerCard("rgba(255,255,255,0.98)")}>
+                  <div style={sectionLabel()}>Canonical pointers</div>
+                  <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
+                    Go to the owner surface for real work.
+                  </h2>
+                  <div style={{ marginTop: 10, ...helperText(), color: "#526174" }}>
+                    Attention, needs, communities, offers, and evidence stay available without turning My GSN into another dashboard.
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 12,
+                      display: "grid",
+                      gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                      gap: 10,
+                    }}
+                    data-my-gsn-canonical-pointers="true"
                   >
-                    {hasOwnShop ? `Open ${ownShopName}` : "Open Shop tools"}
-                  </StableCtaLink>
-                  <StableCtaLink
-                    to={spotlightRouteFor(selectedOrFirstCommunityId)}
-                    kind="secondary"
-                    debugId="my-gmfn.member-home.offer.spotlight"
-                    style={{ minHeight: 52, borderRadius: 16, justifyContent: "center" }}
-                  >
-                    Spotlight tools
-                  </StableCtaLink>
-                </div>
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr 1fr",
-                gap: 12,
-              }}
-            >
-              <div style={innerCard("rgba(255,255,255,0.98)")}>
-                <div style={sectionLabel()}>Act</div>
-                <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>Open the source context before you decide.</h2>
-                <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
-                  {memberOpportunityStillLoading ?
-                    renderLoadingMemberCard("Loading action signals") :
-                    actActions.length ?
-                      actActions.map(renderMemberAction) :
-                      memberOpportunitySourceUnavailable("visibleRequests", "spotlights") ?
-                        renderUnavailableMemberCard(
-                          routes.community,
-                          "my-gmfn.member-home.act.unavailable"
-                        ) :
-                        renderEmptyMemberCard(
-                          "No immediate action signal",
-                          "Use Community Home, Marketplace, or DemandBox when you are ready to act in a specific community.",
-                          routes.community,
-                          "my-gmfn.member-home.act.empty"
-                        )}
-                </div>
-              </div>
-
-              <div style={innerCard("rgba(255,255,255,0.98)")}>
-                <div style={sectionLabel()}>What I've Done</div>
-                <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>Activity that current records can honestly summarize.</h2>
-                <div style={{ marginTop: 12, ...memberHomeCard(isCompact), minHeight: "auto" }}>
-                  <strong style={{ color: "#07172C", fontSize: 15 }}>
-                    {memberOpportunityStillLoading
-                      ? "Loading activity records"
-                      : memberOpportunitySourceUnavailable("myClosedRequests") && memberOpportunity.myClosedRequests.length <= 0
-                        ? "Closed requests unavailable"
-                        : `${memberOpportunity.myClosedRequests.length} closed request${memberOpportunity.myClosedRequests.length === 1 ? "" : "s"}`}
-                  </strong>
-                  <div style={{ marginTop: 6, color: "#526174", fontSize: 12.5, fontWeight: 750, lineHeight: 1.35 }}>
-                    {memberOpportunityStillLoading
-                      ? "My GSN is checking completed DemandBox records you can already access."
-                      : memberOpportunitySourceUnavailable("myClosedRequests") && memberOpportunity.myClosedRequests.length <= 0
-                        ? "Some information couldn't be loaded right now."
-                        : "Useful outcomes and repeat behaviour are not summarized here yet because Phase 1 does not add new outcome measurement."}
+                    {memberHomePointers.map(renderMemberHomePointer)}
                   </div>
                 </div>
               </div>
 
-              <div style={innerCard("rgba(255,255,255,0.98)")}>
-                <div style={sectionLabel()}>My Evidence</div>
-                <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>{trustPassportStatus}</h2>
-                <p style={{ margin: "8px 0 0", ...helperText(), color: "#526174" }}>
-                  Evidence is context with provenance, not a judgement of your overall trustworthiness.
-                </p>
-                <StableCtaLink
-                  to={routes.trust}
-                  kind="secondary"
-                  debugId="my-gmfn.member-home.evidence.open"
-                  style={{ marginTop: 12, minHeight: 48, borderRadius: 16, justifyContent: "center" }}
+              {memberOpportunityPartialUnavailable ? (
+                <div
+                  data-my-gsn-member-opportunity-partial="true"
+                  style={{
+                    borderRadius: 16,
+                    border: "1px solid rgba(214,170,69,0.28)",
+                    background: "rgba(255,249,232,0.96)",
+                    padding: isCompact ? "10px 12px" : "12px 14px",
+                    color: "#7A4A00",
+                    fontSize: isCompact ? 12 : 13,
+                    fontWeight: 850,
+                    lineHeight: 1.35,
+                  }}
                 >
-                  Open Trust Passport
-                </StableCtaLink>
+                  Some information couldn't be loaded right now. Open the source page if you need the full record.
+                </div>
+              ) : null}
+
+              <div style={innerCard("rgba(255,255,255,0.98)")} data-my-gsn-activity-note="quiet">
+                <div style={sectionLabel()}>Activity note</div>
+                <h2 style={{ ...memberHomeSectionTitle(), marginTop: 8 }}>
+                  {closedActivityStatus}
+                </h2>
+                <p style={{ margin: "8px 0 0", ...helperText(), color: "#526174" }}>
+                  Closed requests are only a quiet activity signal here. They are not a Trust Passport judgement or proof of quality.
+                </p>
               </div>
             </div>
-          </div>
           ) : null}
-
           <div
             style={{ marginTop: isCompact ? 14 : 18, color: "#9FB5CA", fontSize: 11, fontWeight: 1000, letterSpacing: 1.2, textTransform: "uppercase" }}
           >

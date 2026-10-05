@@ -153,10 +153,21 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /const activeTab = requestedTab === "settings" \? "settings" : requestedTab === "guide" \? "guide" : "home";[\s\S]*?const showMemberHomeSummary =\s*isAppRoute && activeTab === "home";[\s\S]*?const showIdentityGuideSurface =\s*isAppRoute && activeTab === "guide";[\s\S]*?display: showMemberHomeSummary \|\| showIdentityGuideSurface \? "grid" : "none",[\s\S]*?\{showMemberHomeSummary \? \([\s\S]*?data-my-gsn-member-home="true"[\s\S]*?What Needs My Attention[\s\S]*?Your summary[\s\S]*?Discover[\s\S]*?Ask[\s\S]*?Offer[\s\S]*?What I've Done[\s\S]*?My Evidence[\s\S]*?\) : null\}[\s\S]*?Identity snapshot/,
-  "Authenticated My GSN must expose member-home only on its default home branch while guide/profile mode keeps the identity surface."
+  /const activeTab = requestedTab === "settings" \? "settings" : requestedTab === "guide" \? "guide" : "home";[\s\S]*?const showMemberHomeSummary =\s*isAppRoute && activeTab === "home";[\s\S]*?const showIdentityGuideSurface =\s*isAppRoute && activeTab === "guide";/,
+  "My GSN must keep member-home and identity guide as explicit route-state branches."
 );
 
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  /const memberHomePointers: MemberHomePointer\[\][\s\S]*?APP_ROUTES\.NOTIFICATIONS[\s\S]*?my-gmfn\.member-home\.pointer\.demand-box[\s\S]*?my-gmfn\.member-home\.pointer\.community[\s\S]*?my-gmfn\.member-home\.pointer\.marketplace[\s\S]*?my-gmfn\.member-home\.pointer\.shop-control[\s\S]*?my-gmfn\.member-home\.pointer\.trust-passport[\s\S]*?my-gmfn\.member-home\.pointer\.settings/,
+  "Default My GSN must keep canonical pointers to Notifications, DemandBox, Community, Marketplace, Shop Control, Trust Passport, and Settings."
+);
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  /display: showMemberHomeSummary \|\| showIdentityGuideSurface \? "grid" : "none",[\s\S]*?\{showMemberHomeSummary \? \([\s\S]*?data-my-gsn-member-home="true"[\s\S]*?data-my-gsn-member-home-mode="personal-orientation"[\s\S]*?data-my-gsn-personal-orientation="true"[\s\S]*?data-my-gsn-canonical-pointers="true"[\s\S]*?\) : null\}[\s\S]*?Identity snapshot/,
+  "Authenticated My GSN default home must render personal orientation and canonical pointers before the shared identity surface."
+);
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
   /import \{ APP_ROUTES \} from "\.\.\/lib\/appRoutes";[\s\S]*?guide: appendRouteQuery\(APP_ROUTES\.GUIDE, \{[\s\S]*?community: selectedClanId \|\| undefined,[\s\S]*?tab: "guide",[\s\S]*?\}\),[\s\S]*?settings: routeTarget\("settings", selectedClanId, "my-gmfn\.route\.settings-target"\)/,
