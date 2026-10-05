@@ -153,7 +153,7 @@ assertContains(
 
 assertContains(
   "public/sw.js",
-  /const CACHE_VERSION = "gsn-pwa-shell-v17"[\s\S]*?"\/cover\?source=pwa"[\s\S]*?"\/gsn-app-icon-ios-180-v14\.png"[\s\S]*?"\/gsn-app-icon-192-v14\.png"[\s\S]*?"\/gsn-app-icon-512-v14\.png"[\s\S]*?if \(url\.pathname\.startsWith\("\/api"\)\) return;[\s\S]*?if \(url\.pathname\.startsWith\("\/uploads"\)\) return;[\s\S]*?request\.mode === "navigate"[\s\S]*?url\.pathname === "\/welcome"[\s\S]*?entryFrom !== "cover"[\s\S]*?Response\.redirect\(target\.toString\(\), 302\)/,
+  /const CACHE_VERSION = "gsn-pwa-shell-v\d+"[\s\S]*?"\/cover\?source=pwa"[\s\S]*?"\/gsn-app-icon-ios-180-v14\.png"[\s\S]*?"\/gsn-app-icon-192-v14\.png"[\s\S]*?"\/gsn-app-icon-512-v14\.png"[\s\S]*?if \(url\.pathname\.startsWith\("\/api"\)\) return;[\s\S]*?if \(url\.pathname\.startsWith\("\/uploads"\)\) return;[\s\S]*?request\.mode === "navigate"[\s\S]*?url\.pathname === "\/welcome"[\s\S]*?entryFrom !== "cover"[\s\S]*?Response\.redirect\(target\.toString\(\), 302\)/,
   "The GSN service worker must support app-shell install without caching private API or uploaded user data."
 );
 
@@ -331,22 +331,28 @@ assertContains(
   "Community Home Free Spotlight actions must route directly to the canonical Shop Control spotlight publisher instead of falling through to the local overview or public fallback."
 );
 
-assertContains(
+assertNotContains(
   "src/pages/CommunityHomePage.tsx",
-  /function spotlightBelongsToCurrentUser[\s\S]*?author_user_id[\s\S]*?author_gmfn_id[\s\S]*?currentGmfnKey/,
-  "Community Home Owner Spotlight Status must compare broadcast authorship with the signed-in member before rendering spotlight media."
+  /getMarketplaceBroadcasts/,
+  "Community Home must not fetch live Spotlight broadcasts after Spotlight ownership moved to Shop Control."
+);
+
+assertNotContains(
+  "src/pages/CommunityHomePage.tsx",
+  /SpotlightMediaFrame/,
+  "Community Home must not render the rich Spotlight media frame after Spotlight ownership moved to Shop Control."
+);
+
+assertNotContains(
+  "src/pages/CommunityHomePage.tsx",
+  /function spotlightBelongsToCurrentUser|activeCommunitySpotlight|setActiveCommunitySpotlight|activeSpotlight|buildSpotlightRotationQueue|SPOTLIGHT_PILOT_REFRESH_MS|SPOTLIGHT_PILOT_ROTATION_MS/,
+  "Community Home must not own active Spotlight state, authorship filtering, refresh, or rotation after Spotlight ownership moved to Shop Control."
 );
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /const ownerRows = rows\.filter[\s\S]*?spotlightBelongsToCurrentUser\(row, owner\.userId, owner\.gmfnKey\)[\s\S]*?setActiveCommunitySpotlightTotal\(normalizedRows\.length\)/,
-  "Community Home Owner Spotlight Status must count only current-member-authored live spotlights, not the selected community's public total."
-);
-
-assertContains(
-  "src/pages/CommunityHomePage.tsx",
-  /Your spotlight in this community[\s\S]*?Other members' live spotlights still belong on public[\s\S]*?Dashboard and Public Shop/,
-  "Community Home Owner Spotlight Status copy must make the owner scope clear and avoid presenting another member's spotlight as personal page content."
+  /shopSpotlight:\s*routeTarget\(\s*"shop"[\s\S]*?OWNER_SHOP_HASHES\.freeSpotlight[\s\S]*?freeSpotlight:\s*routeTarget\(\s*"freeSpotlight"[\s\S]*?subscriptionSpotlight:\s*routeTarget\(\s*"subscriptionSpotlight"/,
+  "Community Home Spotlight-family pointers must route to canonical Shop and Shop Control ownership."
 );
 
 assertContains(
@@ -1060,13 +1066,8 @@ assertContains(
 
 assertNotContains(
   "src/pages/DashboardPage.tsx",
-  /spotlightShopTo|publicShopSharePath\(|activeSpotlight|dashboard\.spotlight\./,
-  "Dashboard must not keep Spotlight public-shop handoff code after Spotlight moved to the Shop ecosystem."
-);
-assertContains(
-  "src/pages/CommunityHomePage.tsx",
-  /sourceProductId\?: number;[\s\S]*?sourceProductBlock\?: number;[\s\S]*?sourceProductSlotNumber\?: number;[\s\S]*?sourceProductId:[\s\S]*?row\?\.source_product_id \|\| row\?\.sourceProductId[\s\S]*?sourceProductBlock:[\s\S]*?row\?\.source_product_block \|\| row\?\.sourceProductBlock[\s\S]*?sourceProductSlotNumber:[\s\S]*?row\?\.source_product_slot_number \|\| row\?\.sourceProductSlotNumber/,
-  "Community Home spotlight normalization must preserve source product/block fields for any future exact-block spotlight actions."
+  /getMarketplaceBroadcasts|SpotlightMediaFrame|spotlightShopTo|publicShopSharePath\(|activeSpotlight|dashboard\.spotlight\.|synthetic-spotlight|buildSpotlightRotationQueue|SPOTLIGHT_PILOT_REFRESH_MS|SPOTLIGHT_PILOT_ROTATION_MS/,
+  "Dashboard must not keep Spotlight fetch, render, public-shop handoff, synthetic-attention, refresh, or rotation ownership after Spotlight moved to the Shop ecosystem."
 );
 
 assertContains(
