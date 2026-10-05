@@ -3761,7 +3761,7 @@ export default function DashboardPage() {
   const marketWisdomRecommendationKeyRef = useRef<string>("");
   const [sellerIdentityDockOpen, setSellerIdentityDockOpen] =
     useState<boolean>(true);
-  const [demandGuideOpen, setDemandGuideOpen] = useState<boolean>(false);
+  const [demandGuideOpen] = useState<boolean>(false);
 
   const [avatarSrc, setAvatarSrc] = useState<string>("");
   const [failedAvatarSrc, setFailedAvatarSrc] = useState<string>("");
@@ -6136,24 +6136,35 @@ export default function DashboardPage() {
         .slice(0, 12),
     [dashboardPulseSummary.signals]
   );
-  const dashboardPulsePrimaryLabel = uiState.pulseExpanded
-    ? "Hide items"
-    : dashboardPulseVisibleSignals.length > 0
-    ? `Show ${dashboardPulseVisibleSignals.length} item${dashboardPulseVisibleSignals.length === 1 ? "" : "s"}`
-    : "Show reading";
-  const dashboardPulseSecondaryTo =
-    dashboardNoticeTotalCount > 0
-      ? DASHBOARD_TARGETS.WHAT_MATTERS_NOW
-      : dashboardPulsePrimarySignal?.actionTo &&
-        dashboardPulsePrimarySignal.actionTo !== DASHBOARD_TARGETS.DASHBOARD
+  const dashboardPulsePrimaryTo =
+    dashboardPulsePrimarySignal?.actionTo &&
+    dashboardPulsePrimarySignal.actionTo !== DASHBOARD_TARGETS.DASHBOARD
       ? dashboardPulsePrimarySignal.actionTo
-      : "";
-  const dashboardPulseSecondaryLabel =
-    dashboardPulseSecondaryTo === DASHBOARD_TARGETS.WHAT_MATTERS_NOW
-      ? "Action Inbox"
-      : dashboardPulseSecondaryTo
-      ? dashboardPulsePrimarySignal?.actionLabel || dashboardNoticePrimaryActionLabel
-      : "";
+      : DASHBOARD_TARGETS.WHAT_MATTERS_NOW;
+  const dashboardPulsePrimaryLabel =
+    dashboardPulsePrimarySignal?.actionLabel ||
+    dashboardNoticePrimaryActionLabel ||
+    "Open next item";
+  const dashboardPulseSecondaryTo =
+    dashboardPulsePrimaryTo === DASHBOARD_TARGETS.WHAT_MATTERS_NOW
+      ? ""
+      : DASHBOARD_TARGETS.WHAT_MATTERS_NOW;
+  const dashboardPulseSecondaryLabel = dashboardPulseSecondaryTo
+    ? "What Matters Now"
+    : "";
+  const dashboardPulseInlineItemsVisible =
+    uiState.pulseExpanded && dashboardPulsePrimaryTo === "";
+  const dashboardAttentionQueueVisible =
+    uiState.inboxExpanded && dashboardPulsePrimaryTo === "";
+  const dashboardHasActionableAttention =
+    dashboardPulseSummary.workCount > 0 &&
+    dashboardPulsePrimarySignal?.kind === "action" &&
+    dashboardPulsePrimaryTo !== "";
+  const dashboardAttentionOrder = dashboardHasActionableAttention ? 10 : 40;
+  const dashboardIdentityOrder = dashboardHasActionableAttention ? 20 : 10;
+  const dashboardToolsOrder = dashboardHasActionableAttention ? 30 : 20;
+  const dashboardSpotlightOrder = dashboardHasActionableAttention ? 40 : 30;
+  const dashboardIdentityCompact = isPhone && dashboardHasActionableAttention;
   const userOperationalClass = useMemo(
     () =>
       getUserOperationalClass({
@@ -6594,16 +6605,6 @@ export default function DashboardPage() {
     runDashboardUiMutation(event, () =>
       updateUiState({ spotlightMinimized: true })
     );
-  }
-
-  function restoreSpotlight(event?: React.SyntheticEvent<HTMLElement>) {
-    runDashboardUiMutation(event, () =>
-      updateUiState({ spotlightMinimized: false })
-    );
-  }
-
-  function toggleDemandGuide(event?: React.SyntheticEvent<HTMLElement>) {
-    runDashboardUiMutation(event, () => setDemandGuideOpen((open) => !open));
   }
 
   function openSpotlightShop(event?: React.SyntheticEvent<HTMLElement>) {
@@ -7205,7 +7206,32 @@ export default function DashboardPage() {
       ? "#FCD34D"
       : "#93C5FD";
 
-  const showSpotlight = Boolean(activeSpotlight) || !uiState.spotlightMinimized;
+  const showSpotlight = false;
+  const dashboardSpotlightCompactTitle = spotlightLoading
+    ? "Checking your Spotlight"
+    : activeSpotlight
+    ? safeStr(
+        activeSpotlight.title ||
+          activeSpotlight.message ||
+          "Your community Spotlight"
+      )
+    : latestSpotlightSnapshot
+    ? "No live Spotlight for you"
+    : "No Spotlight is live right now";
+  const dashboardSpotlightCompactDetail = spotlightLoading
+    ? "GSN is checking your current Spotlight status."
+    : activeSpotlight
+    ? `${safeStr(
+        activeSpotlight.source_shop_name ||
+          activeSpotlight.author_name ||
+          "Your community seller"
+      )} - ${safeStr(
+        activeSpotlight.source_clan_name ||
+          currentCommunityName(currentClan, selectedClanId)
+      )}`
+    : latestSpotlightSnapshot
+    ? latestSpotlightStatus.detail
+    : "Open Spotlight when you want to publish or review promotion.";
   const showLegacySpotlightDock = Boolean(
     (globalThis as any).__GSN_LEGACY_SPOTLIGHT_DOCK
   );
@@ -8084,16 +8110,17 @@ export default function DashboardPage() {
             ...pageCard(
               "radial-gradient(circle at 18% 0%, rgba(11,99,209,0.12) 0%, rgba(11,99,209,0) 34%), linear-gradient(180deg, #F4FAFF 0%, #EAF3FF 100%)"
             ),
-            order: 10,
+            order: dashboardIdentityOrder,
             width: "100%",
             maxWidth: isPhone ? "100%" : 520,
             margin: "0 auto",
-            padding: isPhone ? 12 : 16,
-            borderRadius: isPhone ? 28 : 34,
+            padding: dashboardIdentityCompact ? 8 : isPhone ? 12 : 16,
+            borderRadius: dashboardIdentityCompact ? 20 : isPhone ? 28 : 34,
             border: "1px solid rgba(255,255,255,0.82)",
             display: "grid",
-            boxShadow:
-              "0 24px 54px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.94)",
+            boxShadow: dashboardIdentityCompact
+              ? "0 12px 28px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.94)"
+              : "0 24px 54px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.94)",
           }}
         >
           <div
@@ -8101,13 +8128,23 @@ export default function DashboardPage() {
               position: "relative",
               order: 10,
               display: "grid",
-              gridTemplateColumns: isPhone
+              gridTemplateColumns: dashboardIdentityCompact
+                ? "minmax(0, 1fr) 96px"
+                : isPhone
                 ? "minmax(0, 1fr) minmax(112px, 132px)"
                 : "minmax(0, 1fr) 170px",
-              gap: isPhone ? 12 : 18,
+              gap: dashboardIdentityCompact ? 9 : isPhone ? 12 : 18,
               alignItems: "start",
-              padding: isPhone ? "16px 14px 7px" : "22px 22px 9px",
-              borderRadius: isPhone ? "20px 20px 0 0" : "24px 24px 0 0",
+              padding: dashboardIdentityCompact
+                ? "10px 10px 5px"
+                : isPhone
+                ? "16px 14px 7px"
+                : "22px 22px 9px",
+              borderRadius: dashboardIdentityCompact
+                ? "16px 16px 0 0"
+                : isPhone
+                ? "20px 20px 0 0"
+                : "24px 24px 0 0",
               border: "1px solid rgba(16,37,59,0.08)",
               borderBottom: "0",
               background:
@@ -8135,13 +8172,13 @@ export default function DashboardPage() {
               </div>
               <div
                 style={{
-                  marginTop: isPhone ? 10 : 12,
+                  marginTop: dashboardIdentityCompact ? 6 : isPhone ? 10 : 12,
                   color: DASHBOARD_BRAND.ink,
-                  fontSize: isPhone ? 30 : 39,
+                  fontSize: dashboardIdentityCompact ? 20 : isPhone ? 30 : 39,
                   fontWeight: 1000,
-                  lineHeight: 1.02,
+                  lineHeight: dashboardIdentityCompact ? 1.05 : 1.02,
                   textWrap: "balance",
-                  maxWidth: isPhone ? 188 : 360,
+                  maxWidth: dashboardIdentityCompact ? 150 : isPhone ? 188 : 360,
                 }}
               >
                 <span style={{ display: "block" }}>Your trust</span>
@@ -9886,8 +9923,12 @@ export default function DashboardPage() {
           ...pageCard(
             "linear-gradient(180deg, #FFFDF6 0%, #F8FBFF 48%, #EEF6FF 100%)"
           ),
-          order: 20,
-          marginTop: isPhone ? 18 : undefined,
+          order: dashboardToolsOrder,
+          marginTop: dashboardHasActionableAttention && isPhone
+            ? 8
+            : isPhone
+            ? 18
+            : undefined,
           border: "1px solid rgba(214,170,69,0.24)",
           borderRadius: isPhone ? 20 : 24,
           padding: isPhone ? 14 : 18,
@@ -9978,7 +10019,7 @@ export default function DashboardPage() {
           ...pageCard(
             "radial-gradient(circle at 12% 0%, rgba(214,170,69,0.10) 0%, rgba(214,170,69,0) 30%), linear-gradient(180deg, #FFFFFF 0%, #FFFEFA 58%, #F8FBFF 100%)"
           ),
-          order: 30,
+          order: dashboardSpotlightOrder,
           position: "relative",
           border: "1px solid rgba(184,137,45,0.28)",
           padding: isPhone ? 12 : isCompact ? 18 : 20,
@@ -10056,7 +10097,7 @@ export default function DashboardPage() {
                   lineHeight: 1.25,
                 }}
               >
-                Live community spotlight
+                Spotlight status
               </div>
               </div>
             </div>
@@ -10069,7 +10110,7 @@ export default function DashboardPage() {
               alignItems: "center",
             }}
           >
-            {spotlights.length > 1 ? (
+            {showSpotlight && spotlights.length > 1 ? (
               <>
                 <StableButton
                   debugId="dashboard.spotlight.previous"
@@ -10115,15 +10156,15 @@ export default function DashboardPage() {
               </>
             ) : null}
 
-            {!showSpotlight ? (
+            {showSpotlight && !activeSpotlight ? (
               <StableButton
                 debugId="dashboard.spotlight.restore"
                 type="button"
-                onClick={restoreSpotlight}
+                onClick={openDashboardSpotlightGuide}
                 onPointerDown={consumeDashboardPointerEvent}
                 style={dashboardStableActionFrame(secondaryBtn(false))}
               >
-                Show Spotlight screen
+                Open Spotlight
               </StableButton>
             ) : null}
           </div>
@@ -10156,11 +10197,7 @@ export default function DashboardPage() {
                     lineHeight: 1.25,
                   }}
                 >
-                  {safeStr(
-                    activeSpotlight?.title ||
-                      activeSpotlight?.message ||
-                      "Your community Spotlight"
-                  )}
+                  {dashboardSpotlightCompactTitle}
                 </div>
 
                 <div
@@ -10170,16 +10207,7 @@ export default function DashboardPage() {
                     maxWidth: 760,
                   }}
                 >
-                  {safeStr(
-                    activeSpotlight?.source_shop_name ||
-                      activeSpotlight?.author_name ||
-                      "Your community seller"
-                  )}{" "}
-                  -{" "}
-                  {safeStr(
-                    activeSpotlight?.source_clan_name ||
-                      currentCommunityName(currentClan, selectedClanId)
-                  )}
+                  {dashboardSpotlightCompactDetail}
                 </div>
               </div>
 
@@ -10194,11 +10222,11 @@ export default function DashboardPage() {
                 <StableButton
                   debugId="dashboard.spotlight.restore.empty-card"
                   type="button"
-                  onClick={restoreSpotlight}
+                  onClick={openDashboardSpotlightGuide}
                   onPointerDown={consumeDashboardPointerEvent}
                   style={dashboardStableActionFrame(primaryBtn(false))}
                 >
-                  Show Spotlight screen
+                  Open Spotlight
                 </StableButton>
               </div>
             </div>
@@ -11319,8 +11347,8 @@ export default function DashboardPage() {
         <StableButton
           debugId="dashboard.demand.toggle"
           type="button"
-          aria-expanded={demandGuideOpen}
-          onClick={toggleDemandGuide}
+          aria-expanded={false}
+          onClick={(event) => openDashboardRoute(event, demandPrimaryActionTo)}
           onPointerDown={consumeDashboardPointerEvent}
           style={dashboardAccordionButtonStyle(
             demandSurfaceChrome.chipBorder,
@@ -11378,9 +11406,9 @@ export default function DashboardPage() {
 
           <span
             aria-hidden="true"
-            style={dashboardAccordionChevronStyle(demandGuideOpen)}
+            style={dashboardAccordionChevronStyle(false)}
           >
-            <DashboardChevronIcon expanded={demandGuideOpen} />
+            <DashboardChevronIcon expanded={false} />
           </span>
         </StableButton>
 
@@ -12040,10 +12068,23 @@ export default function DashboardPage() {
       <section
         style={{
           ...pageCard(notificationSurfaceChrome.shellBg),
-          order: 40,
-          border: notificationSurfaceChrome.shellBorder,
-          padding: isPhone ? 13 : 20,
-          borderRadius: isPhone ? 22 : 26,
+          order: dashboardAttentionOrder,
+          border: dashboardHasActionableAttention
+            ? "1px solid rgba(184,137,45,0.38)"
+            : notificationSurfaceChrome.shellBorder,
+          padding: dashboardHasActionableAttention && isPhone
+            ? 14
+            : isPhone
+            ? 13
+            : 20,
+          borderRadius: dashboardHasActionableAttention && isPhone
+            ? 24
+            : isPhone
+            ? 22
+            : 26,
+          boxShadow: dashboardHasActionableAttention
+            ? "0 18px 38px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.90)"
+            : undefined,
         }}
       >
         <div
@@ -12058,12 +12099,8 @@ export default function DashboardPage() {
         <StableButton
           debugId="dashboard.inbox.toggle"
           type="button"
-          aria-expanded={uiState.inboxExpanded}
-          onClick={(event) =>
-            runDashboardUiMutation(event, () =>
-              toggleUiStateFlag("inboxExpanded")
-            )
-          }
+          aria-expanded={false}
+          onClick={(event) => openDashboardRoute(event, DASHBOARD_TARGETS.WHAT_MATTERS_NOW)}
           onPointerDown={consumeDashboardPointerEvent}
           style={dashboardAccordionButtonStyle(
             notificationSurfaceChrome.chipBorder,
@@ -12119,9 +12156,9 @@ export default function DashboardPage() {
 
           <span
             aria-hidden="true"
-            style={dashboardAccordionChevronStyle(uiState.inboxExpanded)}
+            style={dashboardAccordionChevronStyle(false)}
           >
-            <DashboardChevronIcon expanded={uiState.inboxExpanded} />
+            <DashboardChevronIcon expanded={false} />
           </span>
         </StableButton>
 
@@ -12220,15 +12257,13 @@ export default function DashboardPage() {
             <StableButton
               debugId="dashboard.my-pulse.primary"
               type="button"
-              aria-expanded={uiState.pulseExpanded}
-              onClick={(event) =>
-                runDashboardUiMutation(event, () =>
-                  toggleUiStateFlag("pulseExpanded")
-                )
-              }
+              aria-expanded={false}
+              onClick={(event) => openDashboardRoute(event, dashboardPulsePrimaryTo)}
               onPointerDown={consumeDashboardPointerEvent}
               style={{
-                ...secondaryBtn(false),
+                ...(dashboardHasActionableAttention
+                  ? primaryBtn(false)
+                  : secondaryBtn(false)),
                 minHeight: isPhone ? 38 : 42,
                 minWidth: isPhone ? 0 : 136,
                 width: "100%",
@@ -12258,7 +12293,7 @@ export default function DashboardPage() {
             ) : null}
           </div>
 
-          {uiState.pulseExpanded ? (
+          {dashboardPulseInlineItemsVisible ? (
             <div
               data-debug-id="dashboard.my-pulse.items"
               style={{
@@ -12361,7 +12396,7 @@ export default function DashboardPage() {
           ) : null}
         </div>
 
-        {uiState.inboxExpanded ? (
+        {dashboardAttentionQueueVisible ? (
           <React.Suspense
             fallback={
               <div

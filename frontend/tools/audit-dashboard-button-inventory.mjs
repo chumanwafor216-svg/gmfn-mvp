@@ -262,36 +262,54 @@ assertContains(
   "Dashboard My Pulse must read server-owned Attention Spine signals before adding local fallback signals."
 );
 assertContains(
-  /function isDashboardDemandMine\(item: DemandItem, user: any\): boolean \{[\s\S]*?requester_gmfn_id[\s\S]*?requester_email[\s\S]*?\}/,
+  /function isDashboardDemandMine\(item: DemandItem, user: any\): boolean \{[\s\S]*?item\?\.is_mine === true \|\| item\?\.mine === true[\s\S]*?requester_user_id[\s\S]*?requester_gmfn_id[\s\S]*?myGsnId[\s\S]*?\}/,
   "Dashboard must be able to separate the current user's own DemandBox rows from responder-facing rows."
 );
 
 assertContains(
-  /const \[visibleRows, myRows\] = await Promise\.all\(\[[\s\S]*?listMarketplaceRequests\(\{[\s\S]*?clan_id: selectedClanId \|\| undefined,[\s\S]*?status: "open"[\s\S]*?mine_only: false[\s\S]*?limit: 200[\s\S]*?listMarketplaceRequests\(\{[\s\S]*?clan_id: selectedClanId \|\| undefined,[\s\S]*?status: "open"[\s\S]*?mine_only: true[\s\S]*?limit: 200[\s\S]*?setDemandItems\([\s\S]*?uniqueDashboardDemandItems\(\[[\s\S]*?Array\.isArray\(myRows\)[\s\S]*?Array\.isArray\(visibleRows\)[\s\S]*?\}\, \[selectedClanId\]\);/,
+  /const \[visibleRows, myRows\] = await Promise\.all\(\[[\s\S]*?listMarketplaceRequests\(\{[\s\S]*?clan_id: selectedClanId \|\| undefined,[\s\S]*?status: "open"[\s\S]*?mine_only: false[\s\S]*?limit: 200[\s\S]*?listMarketplaceRequests\(\{[\s\S]*?clan_id: selectedClanId \|\| undefined,[\s\S]*?status: "open"[\s\S]*?mine_only: true[\s\S]*?limit: 200[\s\S]*?setDemandItems\([\s\S]*?uniqueDashboardDemandItems\(\[[\s\S]*?Array\.isArray\(myRows\)[\s\S]*?Array\.isArray\(visibleRows\)[\s\S]*?\}, \[selectedClanId\]\);/,
   "Dashboard DemandBox summary must include the current user's own open rows and selected-community visible rows, then dedupe them before counting."
 );
 
 assertContains(
-  /DemandBox queue[\s\S]*?Showing \{demandItems\.length\} open request[\s\S]*?maxHeight: isPhone \? 390 : 480[\s\S]*?demandItems\.map\(\(item, itemIndex\) => \{[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId=\{`dashboard\.demand\.queue\.item\.\$\{itemIndex \+ 1\}`\}[\s\S]*?Item detail:/,
-  "Dashboard DemandBox expanded state must show a scroll-bounded numbered request queue with stable dropdown details for each request."
+  /debugId="dashboard\.demand\.toggle"[\s\S]*?aria-expanded=\{false\}[\s\S]*?openDashboardRoute\(event, demandPrimaryActionTo\)[\s\S]*?\{demandGuideOpen \? \([\s\S]*?DemandBox queue[\s\S]*?dashboard\.demand\.queue\.item/,
+  "Dashboard DemandBox must be a compact route pointer; the old embedded request queue must stay out of the visible Dashboard branch."
 );
 assertContains(
   /const demandBoxQueueTo = appendDashboardQueryParam\([\s\S]*?routeTarget\("demandBox", selectedClanId, "dashboard\.demand\.queue-target"\)[\s\S]*?"queue"[\s\S]*?"open"/,
-  "Dashboard Open queue action must route DemandBox into open queue mode."
+  "Dashboard DemandBox pointer may route to the canonical DemandBox open queue without duplicating request details on Dashboard."
 );
 assertContains(
   /debugId="dashboard\.inbox\.toggle"[\s\S]*?data-debug-id="dashboard\.my-pulse"[\s\S]*?My Pulse[\s\S]*?\["red", "yellow", "green"\]/,
   "Dashboard My Pulse must live inside What needs your attention, not as a separate attention destination."
 );
-
 assertContains(
-  /debugId="dashboard\.my-pulse\.primary"[\s\S]*?toggleUiStateFlag\("pulseExpanded"\)[\s\S]*?data-debug-id="dashboard\.my-pulse\.items"[\s\S]*?dashboardPulseVisibleSignals\.map/,
-  "Dashboard My Pulse primary action must reveal the current signal list in place."
+  /const showSpotlight = false;[\s\S]*?const dashboardSpotlightCompactTitle[\s\S]*?debugId="dashboard\.spotlight\.restore\.empty-card"[\s\S]*?onClick=\{openDashboardSpotlightGuide\}[\s\S]*?Open Spotlight/,
+  "Dashboard Spotlight must render as a compact status/pointer, not as an embedded seller/shop detail home."
 );
 
 assertContains(
-  /debugId="dashboard\.my-pulse\.secondary"[\s\S]*?openDashboardRoute\(event, dashboardPulseSecondaryTo\)/,
-  "Dashboard My Pulse secondary action may route to the deeper owner screen after the in-place reading is available."
+  /const dashboardPulsePrimaryTo =[\s\S]*?DASHBOARD_TARGETS\.WHAT_MATTERS_NOW[\s\S]*?const dashboardPulseInlineItemsVisible =[\s\S]*?dashboardPulsePrimaryTo === ""[\s\S]*?debugId="dashboard\.my-pulse\.primary"[\s\S]*?aria-expanded=\{false\}[\s\S]*?openDashboardRoute\(event, dashboardPulsePrimaryTo\)[\s\S]*?\{dashboardPulseInlineItemsVisible \? \([\s\S]*?data-debug-id="dashboard\.my-pulse\.items"/,
+  "Dashboard My Pulse must open the highest-priority/canonical attention target instead of revealing a competing in-Dashboard queue."
+);
+
+assertContains(
+  /const dashboardHasActionableAttention =[\s\S]*?dashboardPulseSummary\.workCount > 0[\s\S]*?dashboardPulsePrimarySignal\?\.kind === "action"[\s\S]*?dashboardPulsePrimaryTo !== ""[\s\S]*?const dashboardAttentionOrder = dashboardHasActionableAttention \? 10 : 40[\s\S]*?const dashboardIdentityOrder = dashboardHasActionableAttention \? 20 : 10[\s\S]*?const dashboardToolsOrder = dashboardHasActionableAttention \? 30 : 20[\s\S]*?const dashboardSpotlightOrder = dashboardHasActionableAttention \? 40 : 30/,
+  "Dashboard first-view hierarchy must put a genuine action-kind Attention pointer before identity/status/tools, while quiet states keep ordinary orientation first."
+);
+
+assertContains(
+  /order: dashboardAttentionOrder,[\s\S]*?data-debug-id="dashboard\.my-pulse"[\s\S]*?\.\.\.\(dashboardHasActionableAttention[\s\S]*?\? primaryBtn\(false\)[\s\S]*?: secondaryBtn\(false\)\)/,
+  "Dashboard My Pulse primary action must become the visual primary CTA only when actionable attention exists."
+);
+
+assertContains(
+  /data-dashboard-passport-reference="gsn-trust-card"[\s\S]*?order: dashboardIdentityOrder,[\s\S]*?padding: dashboardIdentityCompact \? 8 : isPhone \? 12 : 16[\s\S]*?order: dashboardToolsOrder,[\s\S]*?order: dashboardSpotlightOrder,/,
+  "Dashboard status/orientation, tools, and Spotlight must follow the conditional Attention hierarchy without expanding duplicate homes."
+);
+assertContains(
+  /const dashboardPulseSecondaryTo =[\s\S]*?DASHBOARD_TARGETS\.WHAT_MATTERS_NOW[\s\S]*?debugId="dashboard\.my-pulse\.secondary"[\s\S]*?openDashboardRoute\(event, dashboardPulseSecondaryTo\)/,
+  "Dashboard My Pulse secondary action must keep the canonical What Matters Now route reachable when the primary item points elsewhere."
 );
 assertContains(
   /debugId="dashboard\.market-wisdom\.open-focus-commitments"[\s\S]*?onClick=\{\(event\) =>[\s\S]*?openDashboardRoute\([\s\S]*?event,[\s\S]*?`\$\{DASHBOARD_TARGETS\.DASHBOARD\}#focus-commitments`[\s\S]*?\)[\s\S]*?\}[\s\S]*?Open Focus Commitments/,

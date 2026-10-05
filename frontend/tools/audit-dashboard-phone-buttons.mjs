@@ -123,9 +123,9 @@ const requiredDashboardPatterns = [
   },
   {
     pattern:
-      /order: 20,[\s\S]*?marginTop: isPhone \? [0-9]+ : undefined,[\s\S]*?debugId="dashboard\.apps\.toggle"/,
+      /const dashboardToolsOrder = dashboardHasActionableAttention \? 30 : 20;[\s\S]*?order: dashboardToolsOrder,[\s\S]*?marginTop: dashboardHasActionableAttention && isPhone[\s\S]*?\? 8[\s\S]*?: isPhone[\s\S]*?\? 18[\s\S]*?: undefined,[\s\S]*?debugId="dashboard\.apps\.toggle"/,
     message:
-      "Dashboard app launcher section must stay below the initial phone rail instead of landing half-covered by bottom navigation.",
+      "Dashboard app launcher section must follow the conditional first-view hierarchy while staying below the phone rail and clear of bottom navigation.",
   },
   {
     pattern:

@@ -90,14 +90,14 @@ assertLineNotContains(
 
 assertContains(
   "frontend/src/pages/DashboardPage.tsx",
-  /source_product_category\?:[\s\S]*?function spotlightPriceLine\([\s\S]*?const spotlightProductName = safeStr\([\s\S]*?activeSpotlight\?\.source_product_title[\s\S]*?const spotlightProductPrice =[\s\S]*?Price on request[\s\S]*?const spotlightPriceIsVisible = Boolean[\s\S]*?spotlightProductPrice !== "Price on request"[\s\S]*?spotlightPriceIsVisible \? \([\s\S]*?\{spotlightProductPrice\}[\s\S]*?debugId="dashboard\.spotlight\.whatsapp"/,
-  "Dashboard active Spotlight billboard must keep the product title, optional sender price chip, and WhatsApp contact without restoring source/status clutter."
+  /source_product_category\?:[\s\S]*?function spotlightPriceLine\([\s\S]*?const spotlightProductName = safeStr\([\s\S]*?activeSpotlight\?\.source_product_title[\s\S]*?const spotlightProductPrice =[\s\S]*?Price on request[\s\S]*?const showSpotlight = false;[\s\S]*?const dashboardSpotlightCompactTitle[\s\S]*?debugId="dashboard\.spotlight\.restore\.empty-card"[\s\S]*?Open Spotlight/,
+  "Dashboard active Spotlight must keep signed-in feed data available while rendering a compact Spotlight status pointer instead of an embedded seller/contact home."
 );
 
 assertContains(
   "frontend/src/pages/DashboardPage.tsx",
-  /const attentionSurfaceVisible =[\s\S]*?attentionDisplaySignal\.active &&[\s\S]*?!activeSpotlight &&/,
-  "Dashboard attention guide must stay hidden while a live Spotlight is showing so it cannot look like a Spotlight Active button."
+  /const attentionSurfaceVisible =[\s\S]*?attentionDisplaySignal\.active &&[\s\S]*?\(!activeSpotlight \|\| attentionCanSurfaceWithSpotlight\)/,
+  "Dashboard attention guide may surface when the compact Spotlight pointer is not acting as a full embedded Spotlight screen."
 );
 
 assertLineNotContains(

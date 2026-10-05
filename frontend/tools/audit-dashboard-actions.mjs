@@ -216,13 +216,27 @@ assertEngineContains(
 );
 
 assertContains(
-  /const DASHBOARD_UI_STORAGE_KEY = "gmfn\.dashboard\.ui\.v8";[\s\S]*?function restoreSpotlight\(event\?: React\.SyntheticEvent<HTMLElement>\)[\s\S]*?updateUiState\(\{ spotlightMinimized: false \}\)[\s\S]*?const showSpotlight = Boolean\(activeSpotlight\) \|\| !uiState\.spotlightMinimized;[\s\S]*?debugId="dashboard\.spotlight\.restore"[\s\S]*?Show Spotlight screen[\s\S]*?debugId="dashboard\.spotlight\.restore\.empty-card"[\s\S]*?Show Spotlight screen/,
-  "Dashboard Spotlight must reset old minimized UI state and provide a direct Show Spotlight screen restore action."
+  /const showSpotlight = false;[\s\S]*?const dashboardSpotlightCompactTitle[\s\S]*?debugId="dashboard\.spotlight\.restore\.empty-card"[\s\S]*?onClick=\{openDashboardSpotlightGuide\}[\s\S]*?Open Spotlight/,
+  "Dashboard Spotlight must stay a compact status pointer to the canonical Spotlight surface, not an embedded Spotlight screen."
 );
 
 assertContains(
+  /const dashboardHasActionableAttention =[\s\S]*?dashboardPulseSummary\.workCount > 0[\s\S]*?dashboardPulsePrimarySignal\?\.kind === "action"[\s\S]*?dashboardPulsePrimaryTo !== ""[\s\S]*?const dashboardAttentionOrder = dashboardHasActionableAttention \? 10 : 40[\s\S]*?const dashboardIdentityOrder = dashboardHasActionableAttention \? 20 : 10[\s\S]*?const dashboardToolsOrder = dashboardHasActionableAttention \? 30 : 20[\s\S]*?const dashboardSpotlightOrder = dashboardHasActionableAttention \? 40 : 30/,
+  "Dashboard first-view hierarchy must let a genuine actionable Attention item outrank identity/status/tools without treating quiet states as urgent."
+);
+
+assertContains(
+  /order: dashboardAttentionOrder,[\s\S]*?data-debug-id="dashboard\.my-pulse"[\s\S]*?\.\.\.\(dashboardHasActionableAttention[\s\S]*?\? primaryBtn\(false\)[\s\S]*?: secondaryBtn\(false\)\)/,
+  "Dashboard actionable Attention pointer must be visually primary only when real work exists."
+);
+
+assertContains(
+  /data-dashboard-passport-reference="gsn-trust-card"[\s\S]*?order: dashboardIdentityOrder,[\s\S]*?padding: dashboardIdentityCompact \? 8 : isPhone \? 12 : 16/,
+  "Dashboard identity/trust pack must demote to compact orientation when an actionable Attention item leads."
+);
+assertContains(
   /source_shop_whatsapp_number[\s\S]*?function openSpotlightWhatsApp\(event\?: React\.SyntheticEvent<HTMLElement>\)[\s\S]*?buildWhatsAppChatUrl[\s\S]*?debugId="dashboard\.spotlight\.whatsapp"/,
-  "Dashboard live Spotlight must expose the media-attached WhatsApp action tied to the current source shop."
+  "Dashboard keeps legacy Spotlight contact source code dormant, but the visible S2B card routes to the canonical Spotlight surface."
 );
 
 assertNotContains(
