@@ -9,7 +9,6 @@ const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const marketplaceBoardFile = "src/pages/marketplace/MarketplaceBoardSection.tsx";
 const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
 const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
-const marketplaceDemandFile = "src/pages/marketplace/MarketplaceDemandSection.tsx";
 const marketplaceRoscaFile = "src/pages/marketplace/MarketplaceRoscaSection.tsx";
 const marketplaceToolsFile = "src/pages/marketplace/MarketplaceToolsSection.tsx";
 const marketplaceTradeEvidenceFile = "src/pages/marketplace/MarketplaceTradeEvidenceSection.tsx";
@@ -18,14 +17,12 @@ const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), 
 const marketplaceBoardSource = readFileSync(join(frontendRoot, marketplaceBoardFile), "utf8");
 const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
 const marketplaceSupportSource = readFileSync(join(frontendRoot, marketplaceSupportFile), "utf8");
-const marketplaceDemandSource = readFileSync(join(frontendRoot, marketplaceDemandFile), "utf8");
 const marketplaceRoscaSource = readFileSync(join(frontendRoot, marketplaceRoscaFile), "utf8");
 const marketplaceToolsSource = readFileSync(join(frontendRoot, marketplaceToolsFile), "utf8");
 const marketplaceTradeEvidenceSource = readFileSync(join(frontendRoot, marketplaceTradeEvidenceFile), "utf8");
 const marketplaceSource = marketplacePageSource
   .replace(/<MarketplaceBoardSection[\s\S]*?\/>/, marketplaceBoardSource)
   .replace(/<MarketplaceMembersSection[\s\S]*?\/>/, marketplaceMembersSource)
-  .replace(/<MarketplaceDemandSection[\s\S]*?\/>/, marketplaceDemandSource)
   .replace(/<MarketplaceRoscaSection[\s\S]*?\/>/, marketplaceRoscaSource)
   .replace(/<MarketplaceToolsSection[\s\S]*?\/>/, marketplaceToolsSource)
   .replace(/<MarketplaceTradeEvidenceSection[\s\S]*?\/>/, marketplaceTradeEvidenceSource)
@@ -162,7 +159,6 @@ const expectedSurfaceIds = [
   "marketplace.trade.evidence-module",
   "marketplace.members.visible-members-module",
   "marketplace.board.module",
-  "marketplace.demand.module",
   "marketplace.support.selected-module",
   "marketplace.support.path-chooser",
   "marketplace.support.financial-support-module",
@@ -172,6 +168,17 @@ const expectedSurfaceIds = [
   "marketplace.network-repost.surface",
   "marketplace.network-repost.payment-actions",
 ];
+
+if (surfaceUses.some((match) => match[1] === "marketplace.demand.module")) {
+  addFinding(
+    marketplaceFile,
+    marketplaceSource,
+    marketplaceSource.search(/marketplace\.demand\.module/),
+    "Marketplace must not keep tap metadata for the removed duplicate Demand lane.",
+    "marketplace.demand.module"
+  );
+}
+
 for (const id of expectedSurfaceIds) {
   if (!surfaceUses.some((match) => match[1] === id)) {
     addFinding(

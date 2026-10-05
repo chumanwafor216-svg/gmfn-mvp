@@ -9,18 +9,15 @@ const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const marketplaceToolsFile = "src/pages/marketplace/MarketplaceToolsSection.tsx";
 const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
 const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
-const marketplaceDemandFile = "src/pages/marketplace/MarketplaceDemandSection.tsx";
 const marketplaceTradeEvidenceFile = "src/pages/marketplace/MarketplaceTradeEvidenceSection.tsx";
 const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const marketplaceToolsSource = readFileSync(join(frontendRoot, marketplaceToolsFile), "utf8");
 const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
 const marketplaceSupportSource = readFileSync(join(frontendRoot, marketplaceSupportFile), "utf8");
-const marketplaceDemandSource = readFileSync(join(frontendRoot, marketplaceDemandFile), "utf8");
 const marketplaceTradeEvidenceSource = readFileSync(join(frontendRoot, marketplaceTradeEvidenceFile), "utf8");
 const source = marketplacePageSource
   .replace(/<MarketplaceToolsSection\b[\s\S]*?\n\s*\/>/, marketplaceToolsSource)
   .replace(/<MarketplaceMembersSection\b[\s\S]*?\n\s*\/>/, marketplaceMembersSource)
-  .replace(/<MarketplaceDemandSection\b[\s\S]*?\n\s*\/>/, marketplaceDemandSource)
   .replace(/<MarketplaceSupportSection\b[\s\S]*?\n\s*\/>/, marketplaceSupportSource)
   .replace(/<MarketplaceTradeEvidenceSection\b[\s\S]*?\n\s*\/>/, marketplaceTradeEvidenceSource);
 const findings = [];
@@ -93,8 +90,8 @@ assertContains(
 );
 
 assertContains(
-  /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState \{[\s\S]*?money: key === "money"[\s\S]*?rosca: key === "rosca"[\s\S]*?tools: key === "tools"[\s\S]*?members: key === "members"[\s\S]*?demand: key === "demand"[\s\S]*?support: key === "support"/,
-  "Opening Trade Evidence must use the focused one-lane state, leaving unrelated lanes stepped back."
+  /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState \{[\s\S]*?money: key === "money"[\s\S]*?rosca: key === "rosca"[\s\S]*?tools: key === "tools"[\s\S]*?members: key === "members"[\s\S]*?support: key === "support"/,
+  "Opening Trade Evidence must use the focused one-lane state, leaving unrelated remaining lanes stepped back."
 );
 
 assertContains(
@@ -238,7 +235,7 @@ if (!tradeEvidenceSection.text) {
     addFinding(
       tradeEvidenceSection.start,
       "Trade Evidence detail section must not embed DemandBox.",
-      "DemandBox owns its own marketplace-local lane between Trade & Shops and Support."
+      "DemandBox owns request lifecycle; Marketplace may only route or show read-only Board signals."
     );
   }
 
@@ -267,13 +264,13 @@ if (!tradeEvidenceSection.text) {
   }
 }
 
-const memberShopSection = sectionBetween(
-  /id="marketplace-members-shops"/,
-  /id="marketplace-demand-box"/
-);
+const memberShopSection = {
+  text: marketplaceMembersSource,
+  start: source.indexOf('id="marketplace-members-shops"'),
+};
 
-if (!memberShopSection.text) {
-  addFinding(-1, "Members & Shops detail section must exist before DemandBox.");
+if (!/id="marketplace-members-shops"/.test(memberShopSection.text)) {
+  addFinding(-1, "Members & Shops detail section must exist.");
 } else {
   [
     /Community Members & Shops/,
@@ -314,24 +311,12 @@ if (!memberShopSection.text) {
   }
 }
 
-const demandSection = sectionBetween(
-  /id="marketplace-demand-box"/,
-  /id="marketplace-loans-support"/
-);
-if (demandSection.text) {
-  [
-    /marketplace\.demand\.module/,
-    /marketplaceDepartmentShellStyle\("demand", isCompact\)/,
-    /Local needs and offers/,
-  ].forEach((pattern) => {
-    if (!pattern.test(demandSection.text)) {
-      addFinding(
-        demandSection.start,
-        "DemandBox must remain a visibly separate marketplace department.",
-        pattern.toString()
-      );
-    }
-  });
+if (/MarketplaceDemandSection|id="marketplace-demand-box"|marketplace\.demand\.|marketplaceDepartmentShellStyle\("demand", isCompact\)/.test(source)) {
+  addFinding(
+    source.search(/MarketplaceDemandSection|id="marketplace-demand-box"|marketplace\.demand\.|marketplaceDepartmentShellStyle\("demand", isCompact\)/),
+    "Marketplace must not keep a duplicate DemandBox department after DemandBox became the canonical request owner.",
+    "DemandBox should be reached through marketplace.job.ask-for-something and legacy #marketplace-demand-box handoff."
+  );
 }
 
 const supportSection = sectionBetween(

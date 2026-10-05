@@ -1,140 +1,118 @@
 /* global console, process */
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const marketplaceBoardFile = "src/pages/marketplace/MarketplaceBoardSection.tsx";
-const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
-const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
 const marketplaceDemandFile = "src/pages/marketplace/MarketplaceDemandSection.tsx";
-const marketplaceTradeEvidenceFile = "src/pages/marketplace/MarketplaceTradeEvidenceSection.tsx";
 const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const marketplaceBoardSource = readFileSync(join(frontendRoot, marketplaceBoardFile), "utf8");
-const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
-const marketplaceSupportSource = readFileSync(join(frontendRoot, marketplaceSupportFile), "utf8");
-const marketplaceDemandSource = readFileSync(join(frontendRoot, marketplaceDemandFile), "utf8");
-const marketplaceTradeEvidenceSource = readFileSync(join(frontendRoot, marketplaceTradeEvidenceFile), "utf8");
-const source = marketplacePageSource
-  .replace(/<MarketplaceBoardSection\b[\s\S]*?\n\s*\/>/, marketplaceBoardSource)
-  .replace(/<MarketplaceMembersSection\b[\s\S]*?\n\s*\/>/, marketplaceMembersSource)
-  .replace(/<MarketplaceDemandSection\b[\s\S]*?\n\s*\/>/, marketplaceDemandSource)
-  .replace(/<MarketplaceSupportSection\b[\s\S]*?\n\s*\/>/, marketplaceSupportSource)
-  .replace(/<MarketplaceTradeEvidenceSection\b[\s\S]*?\n\s*\/>/, marketplaceTradeEvidenceSource);
 const findings = [];
 
-function lineAt(index) {
+function lineAt(source, index) {
   return source.slice(0, index).split(/\r?\n/).length;
 }
 
-function addFinding(index, message, text = "Expected pattern was not found.") {
+function addFinding(file, source, index, message, text = "Expected pattern was not found.") {
   findings.push({
-    file: marketplaceFile,
-    line: index >= 0 ? lineAt(index) : 1,
+    file,
+    line: index >= 0 ? lineAt(source, index) : 1,
     message,
     text: text.replace(/\s+/g, " ").slice(0, 260),
   });
 }
 
-function sectionBetween(startPattern, endPattern) {
-  const start = source.search(startPattern);
-  if (start === -1) return { text: "", start: -1 };
-  const rest = source.slice(start);
-  const end = rest.search(endPattern);
-  return {
-    text: end === -1 ? rest : rest.slice(0, end),
-    start,
-  };
+function assertContains(file, source, pattern, message) {
+  if (pattern.test(source)) return;
+  addFinding(file, source, -1, message);
+}
+
+function assertNotContains(file, source, pattern, message) {
+  let match;
+  while ((match = pattern.exec(source))) {
+    addFinding(file, source, match.index, message, match[0]);
+  }
+}
+
+const demandComponentPath = join(frontendRoot, marketplaceDemandFile);
+if (existsSync(demandComponentPath)) {
+  addFinding(
+    marketplaceDemandFile,
+    marketplacePageSource,
+    0,
+    "Marketplace must not keep a duplicate DemandBox lane component after DemandBox became the canonical request lifecycle owner.",
+    marketplaceDemandFile
+  );
 }
 
 const intentItemsBlock =
-  source.match(/const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem\[\] = \[[\s\S]*?\n\];/)?.[0] ||
+  marketplacePageSource.match(/const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem\[\] = \[[\s\S]*?\n\];/)?.[0] ||
   "";
 
-const iconMapBlock =
-  source.match(/const MARKETPLACE_GLYPH_ICON_MAP = \{[\s\S]*?\n\} satisfies Record<MarketplaceGlyphName, GsnIconName>;/)?.[0] ||
-  "";
+assertContains(
+  marketplaceFile,
+  marketplacePageSource,
+  /id: "demand"[\s\S]*?intent: "demandBox"[\s\S]*?visible: false/,
+  "DemandBox must remain searchable from More but hidden from the visible More button grid."
+);
 
-if (!/id: "demand"[\s\S]*?intent: "demandBox"[\s\S]*?visible: false/.test(intentItemsBlock)) {
+assertContains(
+  marketplaceFile,
+  marketplacePageSource,
+  /debugId="marketplace\.job\.ask-for-something"[\s\S]*?aria-label="Ask for something through DemandBox"[\s\S]*?onClick=\{\(event\) => openMarketplaceCta\(event, "demandBox"\)\}[\s\S]*?Ask for something[\s\S]*?DemandBox[\s\S]*?Request lifecycle/,
+  "Marketplace Ask for something must route directly to canonical DemandBox with selected-community CTA context."
+);
+
+assertContains(
+  marketplaceFile,
+  marketplacePageSource,
+  /currentHash !== "marketplace-demand-box"[\s\S]*?clearCurrentMarketplaceHashEntry\(\)[\s\S]*?resolveCtaTarget\("demandBox", \{[\s\S]*?communityId: activeCommunityId[\s\S]*?debugId: "marketplace\.route\.demandBox\.deep-link"/,
+  "Legacy Marketplace demand hash links must hand off to canonical DemandBox while preserving selected-community context."
+);
+
+assertContains(
+  marketplaceFile,
+  marketplacePageSource,
+  /function clearCurrentMarketplaceHashEntry\(\)[\s\S]*?window\.history\.replaceState[\s\S]*?`\$\{window\.location\.pathname\}\$\{window\.location\.search\}`/,
+  "Marketplace demand deep-link handoff must rewrite the hash entry first so browser Back can return naturally to Marketplace."
+);
+
+assertContains(
+  marketplaceFile,
+  marketplacePageSource,
+  /text\.includes\("demand"\)[\s\S]*?return makeCtaAction\([\s\S]*?"demandBox"[\s\S]*?"Open DemandBox"/,
+  "Marketplace Wisdom demand/request actions must route to DemandBox instead of reopening a local Demand lane."
+);
+
+assertNotContains(
+  marketplaceFile,
+  marketplacePageSource,
+  /MarketplaceDemandSection|<MarketplaceDemandSection\b|sectionsOpen\.demand|onToggleDemand|marketplace\.demand\.|openMarketplaceSection\([^\n]*"demand"|demand: "marketplace-demand-box"|demand: false/g,
+  "Marketplace must not keep local Demand lane render/state/action ownership."
+);
+
+assertContains(
+  marketplaceBoardFile,
+  marketplaceBoardSource,
+  /DemandBox signals[\s\S]*?read-only\s+[\s\S]*?pointers[\s\S]*?responding, contact, terms, and closure stay[\s\S]*?inside[\s\S]*?DemandBox[\s\S]*?Respond in DemandBox/,
+  "Marketplace Board may keep DemandBox signals only as read-only contextual pointers into DemandBox."
+);
+
+if (!/id: "demand"/.test(intentItemsBlock)) {
   addFinding(
-    source.indexOf(intentItemsBlock),
-    "DemandBox must stay searchable from More but hidden from the visible More button grid.",
+    marketplaceFile,
+    marketplacePageSource,
+    marketplacePageSource.indexOf(intentItemsBlock),
+    "Marketplace intent manifest must still include the hidden DemandBox intent for search/More handoff.",
     intentItemsBlock
   );
 }
 
-if (!/demand: "marketplace"/.test(iconMapBlock)) {
-  addFinding(
-    source.indexOf(iconMapBlock),
-    "DemandBox must use a trade/request icon, not the Spotlight megaphone.",
-    iconMapBlock
-  );
-}
-
-const moreVisibleBlock =
-  source.match(
-    /marketplaceIntentItems[\s\S]*?\.filter\(\(item\) => item\.visible !== false\)[\s\S]*?debugId=\{`marketplace\.intent\.\$\{item\.id\}`\}/
-  )?.[0] || "";
-
-if (!moreVisibleBlock) {
-  addFinding(-1, "Marketplace Tools helper must still filter hidden intent items.");
-}
-
-const trustedTradeSection = sectionBetween(
-  /id="marketplace-members-shops"/,
-  /id="marketplace-demand-box"/
-);
-
-if (!trustedTradeSection.text) {
-  addFinding(-1, "Trade & Shops section must exist before DemandBox.");
-} else if (/DemandBox|marketplace\.members\.demand-box|Post a local need or offer request for this marketplace/.test(trustedTradeSection.text)) {
-  addFinding(
-    trustedTradeSection.start,
-    "DemandBox must not be embedded inside the Trade & Shops lane.",
-    trustedTradeSection.text
-  );
-}
-
-const demandSection = sectionBetween(
-  /id="marketplace-demand-box"/,
-  /id="marketplace-loans-support"/
-);
-
-if (!demandSection.text) {
-  addFinding(-1, "DemandBox section must exist before Support.");
-} else {
-  [
-    /id: "demand"[\s\S]*?intent: "demandBox"[\s\S]*?visible: false/,
-    /demand: "marketplace"/,
-    /id="marketplace-demand-box"/,
-    /<MarketplaceGlyph name="demand" size=\{26\} \/>/,
-    /DemandBox[\s\S]*?Local needs and offers, separate from ROSCA savings and Support[\s\S]*?requests[\s\S]*?Standalone lane/,
-    /Local needs and offers[\s\S]*?what is needed, wanted,[\s\S]*?available, or being sourced/,
-    /debugId="marketplace\.demand\.toggle"/,
-    /debugId="marketplace\.demand\.open"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Open DemandBox/,
-  ].forEach((pattern) => {
-    if (!pattern.test(source) && !pattern.test(demandSection.text)) {
-      addFinding(
-        demandSection.start,
-        "DemandBox must be a separate marketplace-local lane with a direct route action.",
-        pattern.toString()
-      );
-    }
-  });
-
-  if (/debugId="marketplace\.tile\.demand"/.test(source)) {
-    addFinding(
-      source.search(/debugId="marketplace\.tile\.demand"/),
-      "DemandBox must remain an inner lane, not return as a front tile.",
-      "Demand is searchable from More and opens through marketplace.demand.open."
-    );
-  }
-}
-
 if (findings.length > 0) {
-  console.error("Marketplace DemandBox lane audit failed:");
+  console.error("Marketplace DemandBox ownership audit failed:");
   for (const finding of findings) {
     console.error(
       `- ${finding.file}:${finding.line} ${finding.message}\n  ${finding.text}`
@@ -143,4 +121,4 @@ if (findings.length > 0) {
   process.exit(1);
 }
 
-console.log("Marketplace DemandBox lane audit passed.");
+console.log("Marketplace DemandBox ownership audit passed.");

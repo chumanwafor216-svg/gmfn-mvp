@@ -10,7 +10,6 @@ const marketplaceBoardFile = "src/pages/marketplace/MarketplaceBoardSection.tsx"
 const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
 const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
 const marketplaceMoneyFile = "src/pages/marketplace/MarketplaceMoneySection.tsx";
-const marketplaceDemandFile = "src/pages/marketplace/MarketplaceDemandSection.tsx";
 const marketplaceRoscaFile = "src/pages/marketplace/MarketplaceRoscaSection.tsx";
 const marketplaceToolsFile = "src/pages/marketplace/MarketplaceToolsSection.tsx";
 const marketplaceTradeEvidenceFile = "src/pages/marketplace/MarketplaceTradeEvidenceSection.tsx";
@@ -40,7 +39,6 @@ function read(relativePath) {
       [/<MarketplaceMembersSection[\s\S]*?\/>/, marketplaceMembersFile],
       [/<MarketplaceSupportSection[\s\S]*?\/>/, marketplaceSupportFile],
       [/<MarketplaceMoneySection[\s\S]*?\/>/, marketplaceMoneyFile],
-      [/<MarketplaceDemandSection[\s\S]*?\/>/, marketplaceDemandFile],
       [/<MarketplaceRoscaSection[\s\S]*?\/>/, marketplaceRoscaFile],
       [/<MarketplaceToolsSection[\s\S]*?\/>/, marketplaceToolsFile],
       [/<MarketplaceTradeEvidenceSection[\s\S]*?\/>/, marketplaceTradeEvidenceFile],

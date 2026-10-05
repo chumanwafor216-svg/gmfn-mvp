@@ -13,7 +13,6 @@ const marketplaceMoneyFile = "src/pages/marketplace/MarketplaceMoneySection.tsx"
 const marketplaceRoscaFile = "src/pages/marketplace/MarketplaceRoscaSection.tsx";
 const marketplaceToolsFile = "src/pages/marketplace/MarketplaceToolsSection.tsx";
 const marketplaceTradeEvidenceFile = "src/pages/marketplace/MarketplaceTradeEvidenceSection.tsx";
-const marketplaceDemandFile = "src/pages/marketplace/MarketplaceDemandSection.tsx";
 const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const marketplaceBoardSource = readFileSync(join(frontendRoot, marketplaceBoardFile), "utf8");
 const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
@@ -22,7 +21,6 @@ const marketplaceMoneySource = readFileSync(join(frontendRoot, marketplaceMoneyF
 const marketplaceRoscaSource = readFileSync(join(frontendRoot, marketplaceRoscaFile), "utf8");
 const marketplaceToolsSource = readFileSync(join(frontendRoot, marketplaceToolsFile), "utf8");
 const marketplaceTradeEvidenceSource = readFileSync(join(frontendRoot, marketplaceTradeEvidenceFile), "utf8");
-const marketplaceDemandSource = readFileSync(join(frontendRoot, marketplaceDemandFile), "utf8");
 const source = marketplacePageSource
   .replace(/<MarketplaceBoardSection\b[\s\S]*?\n\s*\/>/, marketplaceBoardSource)
   .replace(/<MarketplaceMembersSection\b[\s\S]*?\n\s*\/>/, marketplaceMembersSource)
@@ -30,11 +28,10 @@ const source = marketplacePageSource
   .replace(/<MarketplaceMoneySection\b[\s\S]*?\n\s*\/>/, marketplaceMoneySource)
   .replace(/<MarketplaceRoscaSection\b[\s\S]*?\n\s*\/>/, marketplaceRoscaSource)
   .replace(/<MarketplaceToolsSection\b[\s\S]*?\n\s*\/>/, marketplaceToolsSource)
-  .replace(/<MarketplaceTradeEvidenceSection\b[\s\S]*?\n\s*\/>/, marketplaceTradeEvidenceSource)
-  .replace(/<MarketplaceDemandSection\b[\s\S]*?\n\s*\/>/, marketplaceDemandSource);
+  .replace(/<MarketplaceTradeEvidenceSection\b[\s\S]*?\n\s*\/>/, marketplaceTradeEvidenceSource);
 const findings = [];
 
-const expectedStableActionCount = 93;
+const expectedStableActionCount = 91;
 const expectedNativeFieldCount = 37;
 const allowedBusyDisabledExpressions = new Set([
   "creatingRepostPaymentInstruction",

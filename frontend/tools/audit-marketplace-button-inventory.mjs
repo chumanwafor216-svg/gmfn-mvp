@@ -10,7 +10,6 @@ const marketplaceBoardFile = "src/pages/marketplace/MarketplaceBoardSection.tsx"
 const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
 const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
 const marketplaceMoneyFile = "src/pages/marketplace/MarketplaceMoneySection.tsx";
-const marketplaceDemandFile = "src/pages/marketplace/MarketplaceDemandSection.tsx";
 const marketplaceRoscaFile = "src/pages/marketplace/MarketplaceRoscaSection.tsx";
 const marketplaceToolsFile = "src/pages/marketplace/MarketplaceToolsSection.tsx";
 const marketplaceTradeEvidenceFile = "src/pages/marketplace/MarketplaceTradeEvidenceSection.tsx";
@@ -23,7 +22,6 @@ const marketplaceBoardSource = readFileSync(join(frontendRoot, marketplaceBoardF
 const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
 const marketplaceSupportSource = readFileSync(join(frontendRoot, marketplaceSupportFile), "utf8");
 const marketplaceMoneySource = readFileSync(join(frontendRoot, marketplaceMoneyFile), "utf8");
-const marketplaceDemandSource = readFileSync(join(frontendRoot, marketplaceDemandFile), "utf8");
 const marketplaceRoscaSource = readFileSync(join(frontendRoot, marketplaceRoscaFile), "utf8");
 const marketplaceToolsSource = readFileSync(join(frontendRoot, marketplaceToolsFile), "utf8");
 const marketplaceTradeEvidenceSource = readFileSync(join(frontendRoot, marketplaceTradeEvidenceFile), "utf8");
@@ -31,7 +29,6 @@ const source = marketplacePageSource
   .replace(/<MarketplaceBoardSection[\s\S]*?\/>/, marketplaceBoardSource)
   .replace(/<MarketplaceMembersSection[\s\S]*?\/>/, marketplaceMembersSource)
   .replace(/<MarketplaceSupportSection[\s\S]*?\/>/, marketplaceSupportSource)
-  .replace(/<MarketplaceDemandSection[\s\S]*?\/>/, marketplaceDemandSource)
   .replace(/<MarketplaceRoscaSection[\s\S]*?\/>/, marketplaceRoscaSource)
   .replace(/<MarketplaceToolsSection[\s\S]*?\/>/, marketplaceToolsSource)
   .replace(/<MarketplaceTradeEvidenceSection[\s\S]*?\/>/, marketplaceTradeEvidenceSource)
@@ -44,11 +41,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 93;
+const expectedStableActionCount = 91;
 const expectedNativeFieldCount = 37;
 const expectedSourceBreakdown = {
   front: 5,
-  body: 88,
+  body: 86,
 };
 const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
@@ -382,8 +379,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.job\.ask-for-something"[\s\S]*?aria-label="Ask for something through DemandBox"[\s\S]*?openMarketplaceSection\(event, "demand", "marketplace-demand-box"\)[\s\S]*?Ask for something[\s\S]*?DemandBox/,
-  "Marketplace Ask for something job must open the Demand lane without taking over DemandBox lifecycle ownership."
+  /debugId="marketplace\.job\.ask-for-something"[\s\S]*?aria-label="Ask for something through DemandBox"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Ask for something[\s\S]*?DemandBox/,
+  "Marketplace Ask for something job must route directly to canonical DemandBox."
 );
 
 assertContains(
@@ -426,8 +423,8 @@ assertContains(
   "Marketplace Trade Evidence must cap the first visible member list and tuck the rest behind a compact disclosure."
 );
 assertContains(
-  /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState \{[\s\S]*?money: key === "money"[\s\S]*?rosca: key === "rosca"[\s\S]*?tools: key === "tools"[\s\S]*?members: key === "members"[\s\S]*?trade: key === "trade"[\s\S]*?demand: key === "demand"[\s\S]*?support: key === "support"[\s\S]*?function touchedMarketplaceSectionState[\s\S]*?\[key\]: true/,
-  "Marketplace Support must no longer open Members visually; each major lane must focus one open body."
+  /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState \{[\s\S]*?money: key === "money"[\s\S]*?rosca: key === "rosca"[\s\S]*?tools: key === "tools"[\s\S]*?members: key === "members"[\s\S]*?trade: key === "trade"[\s\S]*?support: key === "support"[\s\S]*?function touchedMarketplaceSectionState[\s\S]*?\[key\]: true/,
+  "Marketplace sections must focus exactly one remaining Marketplace-owned lane body."
 );
 
 assertContains(
@@ -635,17 +632,14 @@ if (!tradeEvidenceSection) {
   }
 }
 
-const memberShopSection = sectionBetween(
-  /id="marketplace-members-shops"/,
-  /id="marketplace-demand-box"/
-);
+const memberShopSection = marketplaceMembersSource;
 
-if (!memberShopSection) {
+if (!/id="marketplace-members-shops"/.test(memberShopSection)) {
   findings.push({
-    file: marketplaceFile,
+    file: marketplaceMembersFile,
     line: 1,
     message: "Marketplace Community Members & Shops section was not found for scoped button auditing.",
-    text: "Expected id=\"marketplace-members-shops\" before id=\"marketplace-demand-box\".",
+    text: "Expected id=\"marketplace-members-shops\" in MarketplaceMembersSection.",
   });
 } else {
   [
@@ -687,49 +681,10 @@ if (!memberShopSection) {
   }
 }
 
-const demandSection = sectionBetween(
-  /id="marketplace-demand-box"/,
-  /id="marketplace-loans-support"/
+assertNotContains(
+  /MarketplaceDemandSection|id="marketplace-demand-box"|debugId="marketplace\.demand\.|openMarketplaceSection\(event, "demand", "marketplace-demand-box"\)|sectionsOpen\.demand/g,
+  "Marketplace must not keep local Demand lane render/state/action ownership."
 );
-
-if (!demandSection) {
-  findings.push({
-    file: marketplaceFile,
-    line: 1,
-    message: "Marketplace DemandBox section was not found for scoped button auditing.",
-    text: "Expected id=\"marketplace-demand-box\" before id=\"marketplace-loans-support\".",
-  });
-} else {
-  const demandActionIds = [
-    ...demandSection.matchAll(/debugId="(marketplace\.demand\.[^"]+)"/g),
-  ].map((item) => item[1]);
-  const expectedDemandActionIds = [
-    "marketplace.demand.toggle",
-    "marketplace.demand.open",
-  ];
-
-  if (demandActionIds.join("|") !== expectedDemandActionIds.join("|")) {
-    findings.push({
-      file: marketplaceFile,
-      line: lineAt(source.indexOf(demandSection)),
-      message: "Marketplace DemandBox section must expose only the audited demand actions in order.",
-      text: `found=${demandActionIds.join(", ") || "none"}`,
-    });
-  }
-
-  if (
-    !/marketplace\.demand\.module[\s\S]*?Local needs and offers[\s\S]*?Use this when people here should see what is needed, wanted,[\s\S]*?Open DemandBox/.test(
-      demandSection
-    )
-  ) {
-    findings.push({
-      file: marketplaceFile,
-      line: lineAt(source.indexOf(demandSection)),
-      message: "Marketplace DemandBox section must stay a concise local request launcher.",
-      text: "Expected local needs/offers department shell and Open DemandBox action.",
-    });
-  }
-}
 
 const supportSection = sectionBetween(
   /id="marketplace-loans-support"/,
@@ -973,8 +928,6 @@ const expectedOrder = [
     "marketplace.member.*.shop",
     /debugId=\{`marketplace\.member\.\$\{row\.gmfnId[\s\S]{0,140}\}\.shop`\}/
   ),
-  exactDebugId("marketplace.demand.toggle"),
-  exactDebugId("marketplace.demand.open"),
   exactDebugId("marketplace.support.toggle"),
   exactDebugId("marketplace.support.open-loan-support"),
   exactDebugId("marketplace.support.open-rosca"),

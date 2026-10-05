@@ -11,7 +11,6 @@ export type MarketplaceActionKind = "primary" | "secondary" | "soft";
 export type MarketplaceDepartmentTone =
   | "trade"
   | "members"
-  | "demand"
   | "support"
   | "rosca"
   | "neutral";
@@ -23,7 +22,6 @@ export type MarketplaceSectionKey =
   | "tools"
   | "members"
   | "trade"
-  | "demand"
   | "support";
 
 export type SupportDeskMode = "choices" | "loan";

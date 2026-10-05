@@ -7,20 +7,17 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
-const marketplaceDemandFile = "src/pages/marketplace/MarketplaceDemandSection.tsx";
 const marketplaceToolsFile = "src/pages/marketplace/MarketplaceToolsSection.tsx";
 const marketplaceTradeEvidenceFile = "src/pages/marketplace/MarketplaceTradeEvidenceSection.tsx";
 const packageFile = "package.json";
 const protocolFile = "../docs/GUIDED_WORK_SURFACE_PROTOCOL.md";
 const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
-const marketplaceDemandSource = readFileSync(join(frontendRoot, marketplaceDemandFile), "utf8");
 const marketplaceToolsSource = readFileSync(join(frontendRoot, marketplaceToolsFile), "utf8");
 const marketplaceTradeEvidenceSource = readFileSync(join(frontendRoot, marketplaceTradeEvidenceFile), "utf8");
 const packageSource = readFileSync(join(frontendRoot, packageFile), "utf8");
 const protocolSource = readFileSync(join(frontendRoot, protocolFile), "utf8");
 const marketplaceSource = marketplacePageSource
-  .replace(/<MarketplaceDemandSection\b[\s\S]*?\n\s*\/>/, marketplaceDemandSource)
   .replace(/<MarketplaceToolsSection\b[\s\S]*?\n\s*\/>/, marketplaceToolsSource)
   .replace(/<MarketplaceTradeEvidenceSection\b[\s\S]*?\n\s*\/>/, marketplaceTradeEvidenceSource);
 const findings = [];
@@ -251,8 +248,22 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /debugId="marketplace\.job\.ask-for-something"[\s\S]*?Ask for something[\s\S]*?openMarketplaceSection\(event, "demand", "marketplace-demand-box"\)[\s\S]*?id="marketplace-demand-box"[\s\S]*?debugId="marketplace\.demand\.open"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Open DemandBox/,
-  "Ask for something may open the Demand lane, but DemandBox remains the canonical request lifecycle destination."
+  /debugId="marketplace\.job\.ask-for-something"[\s\S]*?Ask for something[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?DemandBox[\s\S]*?Request lifecycle/,
+  "Ask for something must route directly to canonical DemandBox instead of opening a duplicate Marketplace Demand lane."
+);
+
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /currentHash !== "marketplace-demand-box"[\s\S]*?clearCurrentMarketplaceHashEntry\(\)[\s\S]*?resolveCtaTarget\("demandBox", \{[\s\S]*?communityId: activeCommunityId/,
+  "Legacy Marketplace Demand deep links must hand off to canonical DemandBox with selected-community context."
+);
+
+assertNotContains(
+  marketplaceFile,
+  marketplaceSource,
+  /MarketplaceDemandSection|id="marketplace-demand-box"|debugId="marketplace\.demand\.|openMarketplaceSection\(event, "demand", "marketplace-demand-box"\)|sectionsOpen\.demand/g,
+  "Marketplace must not render or own a duplicate full DemandBox lane."
 );
 
 assertNotContains(

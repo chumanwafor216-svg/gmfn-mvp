@@ -137,9 +137,6 @@ const MarketplaceMoneySection = lazy(
   () => import("./marketplace/MarketplaceMoneySection")
 );
 
-const MarketplaceDemandSection = lazy(
-  () => import("./marketplace/MarketplaceDemandSection")
-);
 
 const MarketplaceRoscaSection = lazy(
   () => import("./marketplace/MarketplaceRoscaSection")
@@ -565,7 +562,8 @@ type MarketplaceNoticeModalMode = "notice" | "market_need_pulse";
 type SectionState = Record<MarketplaceSectionKey, boolean>;
 
 type MarketplaceWisdomAction = {
-  key: keyof SectionState;
+  key?: keyof SectionState;
+  intent?: CtaIntent;
   sectionId: string;
   label: string;
   detail: string;
@@ -669,7 +667,6 @@ const DEFAULT_SECTION_STATE: SectionState = {
   tools: false,
   members: false,
   trade: false,
-  demand: false,
   support: false,
 };
 
@@ -692,7 +689,6 @@ const MARKETPLACE_SECTION_ANCHORS: Record<keyof SectionState, string> = {
   tools: "marketplace-owned-links",
   members: "marketplace-members-shops",
   trade: "marketplace-trade-evidence",
-  demand: "marketplace-demand-box",
   support: "marketplace-loans-support",
 };
 
@@ -704,7 +700,6 @@ function focusedMarketplaceSectionState(key: keyof SectionState): SectionState {
     tools: key === "tools",
     members: key === "members",
     trade: key === "trade",
-    demand: key === "demand",
     support: key === "support",
   };
 }
@@ -724,7 +719,6 @@ function normalizeMarketplaceSectionState(
 ): SectionState {
   if (!state) return DEFAULT_SECTION_STATE;
   if (state.support) return focusedMarketplaceSectionState("support");
-  if (state.demand) return focusedMarketplaceSectionState("demand");
   if (state.trade) return focusedMarketplaceSectionState("trade");
   if (state.rosca) return focusedMarketplaceSectionState("rosca");
   if (state.members) return focusedMarketplaceSectionState("members");
@@ -1004,6 +998,24 @@ function marketplaceWisdomActionFor(
     background,
   });
 
+  const makeCtaAction = (
+    intent: CtaIntent,
+    sectionId: string,
+    label: string,
+    detail: string,
+    glyph: MarketplaceGlyphName,
+    color: string,
+    background: string
+  ): MarketplaceWisdomAction => ({
+    intent,
+    sectionId,
+    label,
+    detail,
+    glyph,
+    color,
+    background,
+  });
+
   if (
     text.includes("support") ||
     text.includes("loan") ||
@@ -1043,8 +1055,8 @@ function marketplaceWisdomActionFor(
     text.includes("request") ||
     text.includes("opportunity")
   ) {
-    return makeAction(
-      "demand",
+    return makeCtaAction(
+      "demandBox",
       "marketplace-demand-box",
       "Open DemandBox",
       "Turn the market need into one clear local request or offer.",
@@ -2583,12 +2595,6 @@ function marketplaceDepartmentShellStyle(
       background:
         "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(241,250,245,0.95) 100%)",
       shadow: "0 16px 34px rgba(37,166,90,0.09)",
-    },
-    demand: {
-      border: "1px solid rgba(214,170,69,0.24)",
-      background:
-        "linear-gradient(180deg, rgba(255,253,247,0.99) 0%, rgba(250,244,226,0.95) 100%)",
-      shadow: "0 16px 34px rgba(184,135,30,0.09)",
     },
     support: {
       border: "1px solid rgba(37,166,90,0.20)",
@@ -5222,6 +5228,18 @@ export default function MarketplacePage() {
     );
   }
 
+  function clearCurrentMarketplaceHashEntry() {
+    if (typeof window === "undefined") return;
+    const currentHash = safeStr(window.location.hash).replace(/^#/, "");
+    if (!currentHash) return;
+
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${window.location.search}`
+    );
+  }
+
   function openMarketplaceRoute(
     event: React.SyntheticEvent<HTMLElement> | undefined,
     to: string
@@ -5285,6 +5303,25 @@ export default function MarketplacePage() {
       })
     );
   }
+
+  useEffect(() => {
+    const currentHash = safeStr(location.hash).replace(/^#/, "");
+    if (currentHash !== "marketplace-demand-box") return;
+
+    clearCurrentMarketplaceHashEntry();
+    navigateToCta(
+      navigate,
+      {
+        pathname: location.pathname,
+        search: location.search,
+        hash: "",
+      },
+      resolveCtaTarget("demandBox", {
+        communityId: activeCommunityId,
+        debugId: "marketplace.route.demandBox.deep-link",
+      })
+    );
+  }, [activeCommunityId, location.hash, location.pathname, location.search, navigate]);
 
   const cancelMarketplaceSectionScroll = useCallback(() => {
     if (scrollFrameRef.current !== null) {
@@ -7400,8 +7437,18 @@ export default function MarketplacePage() {
         public_id: marketplaceWisdomPublicId,
         action: "acted_on",
         clan_id: activeCommunityId,
-        outcome_signal: `marketplace_lens_${marketplaceWisdomAction.key}`,
+        outcome_signal: `marketplace_lens_${marketplaceWisdomAction.key || marketplaceWisdomAction.intent}`,
       }).catch(() => null);
+    }
+
+    if (marketplaceWisdomAction.intent) {
+      openMarketplaceCta(event, marketplaceWisdomAction.intent);
+      return;
+    }
+
+    if (!marketplaceWisdomAction.key) {
+      showNotice("error", "This marketplace action is not ready yet.");
+      return;
     }
 
     openMarketplaceSection(
@@ -8636,9 +8683,7 @@ export default function MarketplacePage() {
             type="button"
             debugId="marketplace.job.ask-for-something"
             aria-label="Ask for something through DemandBox"
-            onClick={(event) =>
-              openMarketplaceSection(event, "demand", "marketplace-demand-box")
-            }
+            onClick={(event) => openMarketplaceCta(event, "demandBox")}
             style={marketplaceFrontLaneCardStyle(isCompact)}
           >
             <span
@@ -9549,21 +9594,6 @@ export default function MarketplacePage() {
           />
         </Suspense>
       ) : null}
-      {sectionsOpen.demand ? (
-        <Suspense fallback={null}>
-          <MarketplaceDemandSection
-            isCompact={isCompact}
-            isOpen={sectionsOpen.demand}
-            activeCommunityId={activeCommunityId}
-            activeCommunityName={activeCommunityName}
-            currentGmfnId={currentGmfnId}
-            marketplaceSurfaceTouchProps={marketplaceSurfaceTouchProps}
-            onToggleDemand={(event) => toggleSectionFromButton(event, "demand")}
-            openMarketplaceCta={openMarketplaceCta}
-          />
-        </Suspense>
-      ) : null}
-
       {sectionsOpen.support ? (
         <Suspense fallback={null}>
           <MarketplaceSupportSection

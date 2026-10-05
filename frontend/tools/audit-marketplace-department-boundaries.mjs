@@ -9,20 +9,17 @@ const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const marketplaceBoardFile = "src/pages/marketplace/MarketplaceBoardSection.tsx";
 const marketplaceMembersFile = "src/pages/marketplace/MarketplaceMembersSection.tsx";
 const marketplaceSupportFile = "src/pages/marketplace/MarketplaceSupportSection.tsx";
-const marketplaceDemandFile = "src/pages/marketplace/MarketplaceDemandSection.tsx";
 const marketplaceTradeEvidenceFile = "src/pages/marketplace/MarketplaceTradeEvidenceSection.tsx";
 const marketplaceSupportTypesFile = "src/pages/marketplace/MarketplaceSupportTypes.ts";
 const marketplacePageSource = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const marketplaceBoardSource = readFileSync(join(frontendRoot, marketplaceBoardFile), "utf8");
 const marketplaceMembersSource = readFileSync(join(frontendRoot, marketplaceMembersFile), "utf8");
 const marketplaceSupportSource = readFileSync(join(frontendRoot, marketplaceSupportFile), "utf8");
-const marketplaceDemandSource = readFileSync(join(frontendRoot, marketplaceDemandFile), "utf8");
 const marketplaceTradeEvidenceSource = readFileSync(join(frontendRoot, marketplaceTradeEvidenceFile), "utf8");
 const marketplaceSupportTypesSource = readFileSync(join(frontendRoot, marketplaceSupportTypesFile), "utf8");
 const source = `${marketplaceSupportTypesSource}` + marketplacePageSource
   .replace(/<MarketplaceBoardSection\b[\s\S]*?\n\s*\/>/, marketplaceBoardSource)
   .replace(/<MarketplaceMembersSection\b[\s\S]*?\n\s*\/>/, marketplaceMembersSource)
-  .replace(/<MarketplaceDemandSection\b[\s\S]*?\n\s*\/>/, marketplaceDemandSource)
   .replace(/<MarketplaceSupportSection\b[\s\S]*?\n\s*\/>/, marketplaceSupportSource)
   .replace(/<MarketplaceTradeEvidenceSection\b[\s\S]*?\n\s*\/>/, marketplaceTradeEvidenceSource);
 const findings = [];
@@ -63,14 +60,38 @@ function sectionBetween(startPattern, endPattern) {
 }
 
 assertContains(
-  /type MarketplaceDepartmentTone[\s\S]*?\| "trade"[\s\S]*?\| "members"[\s\S]*?\| "demand"[\s\S]*?\| "support"[\s\S]*?\| "rosca"/,
-  "Marketplace department tones must cover the major marketplace arms."
+  /type MarketplaceDepartmentTone[\s\S]*?\| "trade"[\s\S]*?\| "members"[\s\S]*?\| "support"[\s\S]*?\| "rosca"/,
+  "Marketplace department tones must cover the remaining major Marketplace-owned arms."
 );
 
+const departmentToneBlock =
+  source.match(/type MarketplaceDepartmentTone =[\s\S]*?;/)?.[0] || "";
+const sectionKeyBlock =
+  source.match(/export type MarketplaceSectionKey =[\s\S]*?;/)?.[0] || "";
+
+if (/\| "demand"/.test(departmentToneBlock) || /\| "demand"/.test(sectionKeyBlock)) {
+  addFinding(
+    source.indexOf(departmentToneBlock || sectionKeyBlock),
+    "Demand must not remain a Marketplace-owned department or section key.",
+    `${departmentToneBlock}
+${sectionKeyBlock}`
+  );
+}
+
 assertContains(
-  /function marketplaceDepartmentShellStyle\([\s\S]*?MarketplaceDepartmentTone[\s\S]*?trade:[\s\S]*?members:[\s\S]*?demand:[\s\S]*?support:[\s\S]*?rosca:/,
-  "Marketplace must keep one shared shell helper for department separation."
+  /function marketplaceDepartmentShellStyle\([\s\S]*?MarketplaceDepartmentTone[\s\S]*?trade:[\s\S]*?members:[\s\S]*?support:[\s\S]*?rosca:/,
+  "Marketplace must keep one shared shell helper for remaining Marketplace-owned department separation."
 );
+
+const departmentShellBlock =
+  source.match(/function marketplaceDepartmentShellStyle\([\s\S]*?function marketplaceDepartmentHeaderStyle/)?.[0] || "";
+if (/\bdemand:/.test(departmentShellBlock)) {
+  addFinding(
+    source.indexOf(departmentShellBlock),
+    "Marketplace department shell must not keep styling for the removed duplicate Demand lane.",
+    departmentShellBlock
+  );
+}
 
 assertContains(
   /function marketplaceDepartmentHeaderStyle\([\s\S]*?borderBottom: "1px solid rgba\(16,37,59,0\.08\)"/,
@@ -87,11 +108,6 @@ const expectedModules = [
     id: "marketplace.members.visible-members-module",
     tone: "members",
     label: "Visible members",
-  },
-  {
-    id: "marketplace.demand.module",
-    tone: "demand",
-    label: "Local needs and offers",
   },
   {
     id: "marketplace.support.financial-support-module",
@@ -169,24 +185,24 @@ if (!tradeToMembersSection.text) {
   }
 }
 
-const membersToDemandSection = sectionBetween(
+const membersToSupportSection = sectionBetween(
   /id="marketplace-members-shops"/,
-  /id="marketplace-demand-box"/
+  /id="marketplace-loans-support"/
 );
 
-if (!membersToDemandSection.text) {
-  addFinding(-1, "Members & Shops section must exist before DemandBox.");
-} else if (!membersToDemandSection.text.includes("marketplace.members.visible-members-module")) {
+if (!membersToSupportSection.text) {
+  addFinding(-1, "Members & Shops section must exist before Support.");
+} else if (!membersToSupportSection.text.includes("marketplace.members.visible-members-module")) {
   addFinding(
-    membersToDemandSection.start,
-    "Visible Members must stay inside the Members & Shops section before DemandBox.",
-    "Expected marketplace.members.visible-members-module before id=\"marketplace-demand-box\"."
+    membersToSupportSection.start,
+    "Visible Members must stay inside the Members & Shops section before Support.",
+    "Expected marketplace.members.visible-members-module before id=\"marketplace-loans-support\"."
   );
 }
 
 assertNotContains(
-  /marketplace\.members\.demand-box|Post a local need or offer request for this marketplace/,
-  "DemandBox must not be embedded inside Trade Evidence or Visible Members."
+  /MarketplaceDemandSection|id="marketplace-demand-box"|marketplace\.demand\.|marketplace\.members\.demand-box|Post a local need or offer request for this marketplace/,
+  "DemandBox must not be embedded inside Marketplace lanes after DemandBox became canonical owner."
 );
 
 assertContains(
