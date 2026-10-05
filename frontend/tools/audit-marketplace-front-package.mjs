@@ -119,7 +119,7 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /marketplaceHeroShellStyle[\s\S]*?MARKETPLACE[\s\S]*?activeCommunityName[\s\S]*?Trade\. Finance\. Members\. Records\.[\s\S]*?marketplaceHeroStatsStyle[\s\S]*?marketplaceFrontSummaryGridStyle[\s\S]*?Finance Summary[\s\S]*?marketplaceFinanceSummaryValue[\s\S]*?Finance details[\s\S]*?Owing total[\s\S]*?Locked by guarantees[\s\S]*?Current guarantee earning/,
+  /marketplaceHeroShellStyle[\s\S]*?MARKETPLACE[\s\S]*?activeCommunityName[\s\S]*?One community\. Choose one job at a time\.[\s\S]*?marketplaceHeroStatsStyle[\s\S]*?marketplaceFrontSummaryGridStyle[\s\S]*?Finance Summary[\s\S]*?marketplaceFinanceSummaryValue[\s\S]*?Finance details[\s\S]*?Owing total[\s\S]*?Locked by guarantees[\s\S]*?Current guarantee earning/,
   "Marketplace front package must use a premium identity hero with local Trust/CCI stats and one finance summary disclosure."
 );
 
@@ -146,28 +146,22 @@ assertNotContains(
 
 [
   {
-    id: "marketplace.tile.support-money-group",
-    glyph: "pool",
-    label: "Support & Money Trust",
-    tags: ["Money & Trust", "Support"],
-  },
-  {
-    id: "marketplace.tile.board-members-group",
+    id: "marketplace.job.find-people-services",
     glyph: "members",
-    label: "Official Board & Members/Shops",
-    tags: ["Official Board", "Community Members & Shops"],
+    label: "Find people & services",
+    tags: ["Members", "Shops & services"],
   },
   {
-    id: "marketplace.row.records-links",
-    glyph: "links",
-    label: "Marketplace Tools",
-    tags: ["Verify", "Invite", "Shop Face"],
+    id: "marketplace.job.ask-for-something",
+    glyph: "demand",
+    label: "Ask for something",
+    tags: ["DemandBox", "Request lifecycle"],
   },
   {
-    id: "marketplace.tile.marketing-tools",
-    glyph: "repost",
-    label: "Marketing Tools",
-    tags: ["Repost", "Spotlight", "Evidence"],
+    id: "marketplace.job.community-board",
+    glyph: "notice",
+    label: "Community board",
+    tags: ["Notices", "Board"],
   },
 ].forEach((card) => {
   const pattern = new RegExp(
@@ -180,30 +174,36 @@ assertNotContains(
     marketplaceFile,
     marketplaceSource,
     pattern,
-    `Marketplace grouped front card must keep ${card.label} with audited pictogram and tags.`
+    `Marketplace human-job front card must keep ${card.label} with audited pictogram and tags.`
   );
 });
 
+assertNotContains(
+  marketplaceFile,
+  marketplaceSource,
+  /debugId="marketplace\.(?:tile\.support-money-group|tile\.board-members-group|row\.records-links|tile\.marketing-tools)"|Support & Money Trust|Official Board & Members\/Shops/g,
+  "Marketplace neutral front door must not restore the old technical engine-group cards."
+);
 const compactHiddenFrontTagRows = (
   marketplaceSource.match(
     /!\s*isCompact\s*\?\s*\(\s*<span style=\{marketplaceFrontTagRowStyle\(isCompact\)\}>/g
   ) || []
 ).length;
-if (compactHiddenFrontTagRows < 4) {
+if (compactHiddenFrontTagRows < 3) {
   addFinding(
     marketplaceFile,
     marketplaceSource,
     -1,
-    "Marketplace front card tag rows must stay hidden on compact screens so mobile cards do not show truncated pill text.",
-    `Expected at least 4 compact-hidden front tag rows, found ${compactHiddenFrontTagRows}.`
+    "Marketplace human-job front card tag rows must stay hidden on compact screens so mobile cards do not show truncated pill text.",
+    `Expected at least 3 compact-hidden front tag rows, found ${compactHiddenFrontTagRows}.`
   );
 }
 
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /debugId="marketplace\.tile\.board-members-group"[\s\S]*?Official Board & Members\/Shops[\s\S]*?frontDomainGroup === "supportMoney"[\s\S]*?: \([\s\S]*?debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open community domains, members, and shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?Members & Shops/,
-  "Community Members & Shops must open from the Official Board & Members/Shops group into the domain, visible member, and shop directory lane."
+  /debugId="marketplace\.job\.find-people-services"[\s\S]*?openMarketplaceSection[\s\S]*?"members"[\s\S]*?"marketplace-members-shops"[\s\S]*?Find people & services[\s\S]*?Members[\s\S]*?Shops & services/,
+  "Find people & services must open the community-bound directory lane from the human-job front door."
 );
 
 assertNotContains(
@@ -216,8 +216,8 @@ assertNotContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /debugId="marketplace\.tile\.marketing-tools"[\s\S]*?Marketing Tools[\s\S]*?Repost, Spotlight, and trade evidence\.[\s\S]*?debugId="marketplace\.marketing\.trade-evidence"[\s\S]*?openMarketplaceSection\(event, "trade", "marketplace-trade-evidence"\)[\s\S]*?Trade Evidence/,
-  "Marketing Tools must include the Trade Evidence launcher while preserving the dedicated evidence lane."
+  /debugId="marketplace\.progressive\.trade-evidence"[\s\S]*?openMarketplaceSection\(event, "trade", "marketplace-trade-evidence"\)[\s\S]*?Trade Evidence/,
+  "Trade Evidence must remain reachable only through progressive or contextual evidence intent, not as a neutral front-door job."
 );
 
 assertContains(
@@ -251,8 +251,8 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /id="marketplace-demand-box"[\s\S]*?Local needs and offers, separate from ROSCA savings and Support\s+requests\.[\s\S]*?marketplace\.demand\.module[\s\S]*?marketplaceDepartmentShellStyle\("demand", isCompact\)[\s\S]*?Local needs and offers[\s\S]*?debugId="marketplace\.demand\.open"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Open DemandBox/,
-  "DemandBox must remain a separate marketplace-local department without appearing as a hero/front tile."
+  /debugId="marketplace\.job\.ask-for-something"[\s\S]*?Ask for something[\s\S]*?openMarketplaceSection\(event, "demand", "marketplace-demand-box"\)[\s\S]*?id="marketplace-demand-box"[\s\S]*?debugId="marketplace\.demand\.open"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Open DemandBox/,
+  "Ask for something may open the Demand lane, but DemandBox remains the canonical request lifecycle destination."
 );
 
 assertNotContains(

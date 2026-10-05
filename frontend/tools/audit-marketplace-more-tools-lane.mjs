@@ -84,8 +84,8 @@ if (visibleIds.join("|") !== expectedVisibleIds.join("|")) {
 });
 
 assertContains(
-  /debugId="marketplace\.row\.records-links"[\s\S]*?Marketplace Tools[\s\S]*?Access, public links, and helper tools\.[\s\S]*?Verify[\s\S]*?Invite[\s\S]*?Create[\s\S]*?Shop Face/,
-  "Marketplace Tools front card must absorb the old More helper entry while Community Domains stay with Community Members & Shops."
+  /data-gmfn-debug-id="marketplace\.progressive-tools"[\s\S]*?More marketplace tools[\s\S]*?debugId="marketplace\.progressive\.tools"[\s\S]*?Access links/,
+  "More marketplace tools must be progressive access rather than a permanent neutral front-door card."
 );
 
 assertContains(

@@ -78,13 +78,13 @@ assertNotContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.marketing-tools"[\s\S]*?Marketing Tools[\s\S]*?Repost, Spotlight, and trade evidence\.[\s\S]*?debugId="marketplace\.marketing\.trade-evidence"[\s\S]*?openMarketplaceSection\(event, "trade", "marketplace-trade-evidence"\)[\s\S]*?Trade Evidence/,
-  "Marketing Tools must launch Trade Evidence while the evidence section remains separate from other Marketplace lanes."
+  /debugId="marketplace\.progressive\.trade-evidence"[\s\S]*?openMarketplaceSection\(event, "trade", "marketplace-trade-evidence"\)[\s\S]*?Trade Evidence/,
+  "Trade Evidence must be available through progressive evidence intent while staying separate from other Marketplace lanes."
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.board-members-group"[\s\S]*?Official Board & Members\/Shops[\s\S]*?frontDomainGroup === "supportMoney"[\s\S]*?: \([\s\S]*?debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open community domains, members, and shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?Members & Shops/,
-  "Community Members & Shops must stay behind the Official Board & Members/Shops group and still open the community-bound directory."
+  /debugId="marketplace\.job\.find-people-services"[\s\S]*?openMarketplaceSection[\s\S]*?"members"[\s\S]*?"marketplace-members-shops"[\s\S]*?Find people & services[\s\S]*?Members/,
+  "Community Members & Shops must open from the human Find people & services job and stay separate from Trade Evidence."
 );
 
 assertContains(

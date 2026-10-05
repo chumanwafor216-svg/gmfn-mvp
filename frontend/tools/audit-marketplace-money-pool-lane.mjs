@@ -40,8 +40,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.support-money-group"[\s\S]*?Support & Money Trust[\s\S]*?Money routes, trust standing, and support requests\.[\s\S]*?frontDomainGroup === "supportMoney"[\s\S]*?debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money and trust tools for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"money",\s*"marketplace-money-routes"\s*\)[\s\S]*?Money & Trust/,
-  "Money & Trust must stay behind the Support & Money Trust group and keep the guided money route lane."
+  /debugId="marketplace\.context\.money"[\s\S]*?aria-label="Open marketplace money routes"[\s\S]*?openMarketplaceSection\(\s*event,\s*"money",\s*"marketplace-money-routes"\s*\)[\s\S]*?Money/,
+  "Money must stay contextual/progressive and keep the guided money route lane."
 );
 
 assertContains(

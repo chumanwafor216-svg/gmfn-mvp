@@ -251,7 +251,7 @@ async function run() {
       waitUntil: "networkidle",
       timeout: 60000,
     });
-    await page.waitForSelector('[data-cta-id="marketplace.tile.marketing-tools"]', {
+    await page.waitForSelector('[data-cta-id="marketplace.job.find-people-services"]', {
       timeout: 30000,
     });
     await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => {});
@@ -269,11 +269,11 @@ async function run() {
         "Trust",
         "Wider",
         "Insufficient",
-        "Support & Money Trust",
-        "Official Board & Members/Shops",
-        "Marketplace Tools",
-        "Marketing Tools",
-        "Spotlight",
+        "Find people & services",
+        "Ask for something",
+        "Community board",
+        "More marketplace tools",
+        "One community. Choose one job at a time.",
       ];
       const missing = required.filter((item) => !text.includes(item));
       const overflow = Array.from(document.querySelectorAll("main *"))
@@ -324,8 +324,7 @@ async function run() {
       process.exit(1);
     }
 
-    await page.locator('[data-cta-id="marketplace.tile.board-members-group"]').click();
-    await page.locator('[data-cta-id="marketplace.tile.members"]').click();
+    await page.locator('[data-cta-id="marketplace.job.find-people-services"]').click();
     await page.waitForFunction(
       () =>
         (document.getElementById("marketplace-members-shops")?.textContent || "").includes(
@@ -369,11 +368,24 @@ async function run() {
       waitUntil: "networkidle",
       timeout: 60000,
     });
-    await page.waitForSelector('[data-cta-id="marketplace.tile.board-members-group"]', {
+    await page.waitForSelector('[data-cta-id="marketplace.job.find-people-services"]', {
       timeout: 30000,
     });
-    await page.locator('[data-cta-id="marketplace.tile.board-members-group"]').click();
-    await page.locator('[data-cta-id="marketplace.tile.members"]').click();
+    await page.locator('[data-cta-id="marketplace.job.community-board"]').click();
+    await page.waitForFunction(
+      () =>
+        (document.getElementById("marketplace-official-board")?.textContent || "").includes(
+          "Official Board"
+        ),
+      null,
+      { timeout: 30000 }
+    );
+    await page.screenshot({
+      path: join(screenshotDir, "marketplace-board-390x844.png"),
+      fullPage: false,
+    });
+
+    await page.locator('[data-cta-id="marketplace.job.find-people-services"]').click();
     await page.waitForFunction(
       () =>
         (document.getElementById("marketplace-members-shops")?.textContent || "").includes(

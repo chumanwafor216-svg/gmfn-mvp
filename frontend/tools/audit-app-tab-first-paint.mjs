@@ -375,8 +375,8 @@ async function run() {
       name: "Marketplace",
       mode: "marketplace",
       path: "/app/marketplace?community=8",
-      selector: '[data-cta-id="marketplace.tile.marketing-tools"]',
-      text: "Marketplace Tools",
+      selector: '[data-cta-id="marketplace.job.find-people-services"]',
+      text: "Find people & services",
       loadingText: "Loading your current community",
     },
     {

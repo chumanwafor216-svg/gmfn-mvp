@@ -155,7 +155,7 @@ async function main() {
   const joinFormAlreadyOpen = await sender.isVisible().catch(() => false);
 
   if (!joinFormAlreadyOpen && !(await joinChooser.first().isVisible().catch(() => false))) {
-    await clickByDebugId(page, "marketplace.row.records-links");
+    await clickByDebugId(page, "marketplace.progressive.tools");
   }
   if (!(await sender.isVisible().catch(() => false))) {
     await clickByDebugId(page, "marketplace.links.choose.join");

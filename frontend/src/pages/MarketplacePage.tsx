@@ -574,8 +574,6 @@ type MarketplaceWisdomAction = {
   background: string;
 };
 
-type FrontDomainGroup = "supportMoney" | "boardMembers" | null;
-
 export type LinkCenterTool =
   | "join"
   | "verify"
@@ -4314,8 +4312,6 @@ export default function MarketplacePage() {
     useState<SectionState>(DEFAULT_SECTION_STATE);
   const [supportDeskMode, setSupportDeskMode] =
     useState<SupportDeskMode>("choices");
-  const [frontDomainGroup, setFrontDomainGroup] =
-    useState<FrontDomainGroup>(null);
   const [intentQuery, setIntentQuery] = useState("");
   const [intentGuideOpen] = useState(false);
 
@@ -5027,7 +5023,6 @@ export default function MarketplacePage() {
       setSupportDeskMode("choices");
     }
     toggleSection(key);
-    setFrontDomainGroup(null);
     if (willOpen) {
       scheduleMarketplaceSectionScroll(MARKETPLACE_SECTION_ANCHORS[key]);
     } else {
@@ -7376,13 +7371,18 @@ export default function MarketplacePage() {
       null
     );
   }, [latestRoscaCycle]);
+  const hasMarketplaceMoneySupportContext =
+    hasMoneyOutSupportTask ||
+    activeLoanCount > 0 ||
+    Boolean(nextRoscaPayoutRound) ||
+    roscaYearlyActive ||
+    localNetPosition < 0;
   function openMarketplaceSection(
     event: React.SyntheticEvent<HTMLElement> | undefined,
     key: keyof SectionState,
     sectionId: string
   ) {
     consumeMarketplaceButtonEvent(event);
-    setFrontDomainGroup(null);
     setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, key));
     setSectionsOpen(focusedMarketplaceSectionState(key));
     if (key === "support") {
@@ -7390,16 +7390,6 @@ export default function MarketplacePage() {
     }
     clearStaleMarketplaceHash(sectionId);
     scheduleMarketplaceSectionScroll(sectionId);
-  }
-
-  function openFrontDomainGroup(
-    event: React.SyntheticEvent<HTMLElement> | undefined,
-    group: Exclude<FrontDomainGroup, null>
-  ) {
-    consumeMarketplaceButtonEvent(event);
-    clearMarketplaceHash();
-    setSectionsOpen(DEFAULT_SECTION_STATE);
-    setFrontDomainGroup((current) => (current === group ? null : group));
   }
 
   function openMarketplaceWisdomLens(
@@ -8522,7 +8512,7 @@ export default function MarketplacePage() {
                   lineHeight: 1.35,
                 }}
               >
-                Trade. Finance. Members. Records.
+                One community. Choose one job at a time.
               </div>
             </div>
 
@@ -8597,53 +8587,17 @@ export default function MarketplacePage() {
           </div>
         </div>
 
-        <div style={marketplaceFrontLaneGridStyle(isCompact)}>
+        <div
+          data-gmfn-debug-id="marketplace.human-job-front-door"
+          style={marketplaceFrontLaneGridStyle(isCompact)}
+        >
           <StableButton
             type="button"
-            debugId="marketplace.tile.support-money-group"
-            aria-label="Open Support and Money Trust choices for this marketplace"
-            aria-expanded={frontDomainGroup === "supportMoney"}
-            onClick={(event) => openFrontDomainGroup(event, "supportMoney")}
-            style={marketplaceFrontLaneCardStyle(isCompact)}
-          >
-            <span
-              aria-hidden="true"
-              style={marketplaceFrontLaneIconStyle(
-                "linear-gradient(180deg, #0B63D1 0%, #0B3323 100%)",
-                isCompact
-              )}
-            >
-              <MarketplaceGlyph name="pool" size={isCompact ? 26 : 34} />
-            </span>
-            <span style={marketplaceOsRowTextStackStyle()}>
-              <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                Support & Money Trust
-              </span>
-              <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                Money routes, trust standing, and support requests.
-              </span>
-              {!isCompact ? (
-                <span style={marketplaceFrontTagRowStyle(isCompact)}>
-                  <span style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE", isCompact)}>
-                    Money & Trust
-                  </span>
-                  <span style={marketplaceFrontTagStyle("#1D6D46", "#E5F4EC", isCompact)}>
-                    Support
-                  </span>
-                </span>
-              ) : null}
-            </span>
-            <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-              <MarketplaceGlyph name="chevron" size={18} />
-            </span>
-          </StableButton>
-
-          <StableButton
-            type="button"
-            debugId="marketplace.tile.board-members-group"
-            aria-label="Open Official Board and Community Members and Shops choices"
-            aria-expanded={frontDomainGroup === "boardMembers"}
-            onClick={(event) => openFrontDomainGroup(event, "boardMembers")}
+            debugId="marketplace.job.find-people-services"
+            aria-label="Find people, services, and shops in this marketplace"
+            onClick={(event) =>
+              openMarketplaceSection(event, "members", "marketplace-members-shops")
+            }
             style={marketplaceFrontLaneCardStyle(isCompact)}
           >
             <span
@@ -8657,18 +8611,18 @@ export default function MarketplacePage() {
             </span>
             <span style={marketplaceOsRowTextStackStyle()}>
               <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                Official Board & Members/Shops
+                Find people & services
               </span>
               <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                Notices, known members, domains, and public shops.
+                Visible members, shops, and services in this community.
               </span>
               {!isCompact ? (
                 <span style={marketplaceFrontTagRowStyle(isCompact)}>
                   <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
-                    Official Board
+                    Members
                   </span>
                   <span style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}>
-                    Community Members & Shops
+                    Shops & services
                   </span>
                 </span>
               ) : null}
@@ -8680,39 +8634,36 @@ export default function MarketplacePage() {
 
           <StableButton
             type="button"
-            debugId="marketplace.row.records-links"
-            aria-label="Open marketplace tools, access and public links"
+            debugId="marketplace.job.ask-for-something"
+            aria-label="Ask for something through DemandBox"
             onClick={(event) =>
-              openMarketplaceSection(event, "tools", "marketplace-owned-links")
+              openMarketplaceSection(event, "demand", "marketplace-demand-box")
             }
             style={marketplaceFrontLaneCardStyle(isCompact)}
           >
             <span
               aria-hidden="true"
               style={marketplaceFrontLaneIconStyle(
-                "linear-gradient(180deg, #158BA0 0%, #075064 100%)",
+                "linear-gradient(180deg, #0B63D1 0%, #075064 100%)",
                 isCompact
               )}
             >
-              <MarketplaceGlyph name="links" size={isCompact ? 26 : 34} />
+              <MarketplaceGlyph name="demand" size={isCompact ? 26 : 34} />
             </span>
             <span style={marketplaceOsRowTextStackStyle()}>
               <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                Marketplace Tools
+                Ask for something
               </span>
               <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                Access, public links, and helper tools.
+                Open the community DemandBox pathway for requests.
               </span>
               {!isCompact ? (
                 <span style={marketplaceFrontTagRowStyle(isCompact)}>
                   <span style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}>
-                    Verify
+                    DemandBox
                   </span>
-                  <span style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}>
-                    Invite
-                  </span>
-                  <span style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}>
-                    Shop Face
+                  <span style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE", isCompact)}>
+                    Request lifecycle
                   </span>
                 </span>
               ) : null}
@@ -8724,40 +8675,36 @@ export default function MarketplacePage() {
 
           <StableButton
             type="button"
-            debugId="marketplace.tile.marketing-tools"
-            aria-label="Open Marketing Tools for this marketplace"
-            onClick={(event) => {
-              openMarketplaceSection(event, "tools", "marketplace-owned-links");
-              setActiveLinkCenterTool("repost");
-            }}
+            debugId="marketplace.job.community-board"
+            aria-label="Open the community board"
+            onClick={(event) =>
+              openMarketplaceSection(event, "board", "marketplace-official-board")
+            }
             style={marketplaceFrontLaneCardStyle(isCompact)}
           >
             <span
               aria-hidden="true"
               style={marketplaceFrontLaneIconStyle(
-                "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)",
+                "linear-gradient(180deg, #158BA0 0%, #061827 100%)",
                 isCompact
               )}
             >
-              <MarketplaceGlyph name="repost" size={isCompact ? 26 : 34} />
+              <MarketplaceGlyph name="notice" size={isCompact ? 26 : 34} />
             </span>
             <span style={marketplaceOsRowTextStackStyle()}>
               <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                Marketing Tools
+                Community board
               </span>
               <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                Repost, Spotlight, and trade evidence.
+                Notices, history, and member-facing board actions.
               </span>
               {!isCompact ? (
                 <span style={marketplaceFrontTagRowStyle(isCompact)}>
-                  <span style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}>
-                    Repost
-                  </span>
-                  <span style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}>
-                    Spotlight
+                  <span style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}>
+                    Notices
                   </span>
                   <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
-                    Evidence
+                    Board
                   </span>
                 </span>
               ) : null}
@@ -8768,81 +8715,162 @@ export default function MarketplacePage() {
           </StableButton>
         </div>
 
-        {frontDomainGroup ? (
+        {hasMarketplaceMoneySupportContext ? (
           <div
-            data-gmfn-debug-id="marketplace.front-domain-choices"
+            data-gmfn-debug-id="marketplace.context.money-support"
             style={{
               marginTop: 10,
               borderRadius: 18,
-              border: "1px solid rgba(214,170,69,0.22)",
+              border: "1px solid rgba(11,99,209,0.14)",
               background:
-                "linear-gradient(180deg, rgba(255,253,247,0.99) 0%, rgba(247,251,255,0.98) 100%)",
+                "linear-gradient(180deg, rgba(240,247,255,0.98) 0%, rgba(247,251,255,0.98) 100%)",
               padding: isCompact ? 10 : 12,
               display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
-              gap: 8,
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+              gap: 10,
+              alignItems: "center",
               overflow: "hidden",
               overflowAnchor: "none",
             }}
           >
-            {frontDomainGroup === "supportMoney" ? (
-              <>
-                <StableButton
-                  type="button"
-                  debugId="marketplace.tile.support"
-                  aria-label="Open Support for this marketplace"
-                  onClick={(event) =>
-                    openMarketplaceSection(event, "support", "marketplace-loans-support")
-                  }
-                  stableHeight={isCompact ? 54 : 58}
-                  style={marketplaceInlineActionStyle("primary", false, isCompact)}
-                >
-                  Support
-                </StableButton>
-                <StableButton
-                  type="button"
-                  debugId="marketplace.tile.money"
-                  aria-label="Open Money and trust tools for this marketplace"
-                  onClick={(event) =>
-                    openMarketplaceSection(event, "money", "marketplace-money-routes")
-                  }
-                  stableHeight={isCompact ? 54 : 58}
-                  style={marketplaceInlineActionStyle("secondary", false, isCompact)}
-                >
-                  Money & Trust
-                </StableButton>
-              </>
-            ) : (
-              <>
-                <StableButton
-                  type="button"
-                  debugId="marketplace.tile.official-board"
-                  aria-label="Open the official community board for this marketplace"
-                  onClick={(event) =>
-                    openMarketplaceSection(event, "board", "marketplace-official-board")
-                  }
-                  stableHeight={isCompact ? 54 : 58}
-                  style={marketplaceInlineActionStyle("secondary", false, isCompact)}
-                >
-                  Official Board
-                </StableButton>
-                <StableButton
-                  type="button"
-                  debugId="marketplace.tile.members"
-                  aria-label="Open community domains, members, and shops"
-                  onClick={(event) =>
-                    openMarketplaceSection(event, "members", "marketplace-members-shops")
-                  }
-                  stableHeight={isCompact ? 54 : 58}
-                  style={marketplaceInlineActionStyle("primary", false, isCompact)}
-                >
-                  Members & Shops
-                </StableButton>
-              </>
-            )}
+            <div style={{ minWidth: 0 }}>
+              <div style={{ ...sectionLabel(), color: "#0B4EA2" }}>
+                Money & support
+              </div>
+              <div style={{ marginTop: 4, ...helperText(), fontSize: 12.5 }}>
+                Review current money, ROSCA, or support context for this community.
+              </div>
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(112px, 1fr))",
+                gap: 8,
+                width: isCompact ? "100%" : "auto",
+              }}
+            >
+              <StableButton
+                type="button"
+                debugId="marketplace.context.money"
+                aria-label="Open marketplace money routes"
+                onClick={(event) =>
+                  openMarketplaceSection(event, "money", "marketplace-money-routes")
+                }
+                stableHeight={isCompact ? 54 : 58}
+                style={marketplaceInlineActionStyle("secondary", false, isCompact)}
+              >
+                Money
+              </StableButton>
+              <StableButton
+                type="button"
+                debugId="marketplace.context.support"
+                aria-label="Open marketplace support"
+                onClick={(event) =>
+                  openMarketplaceSection(event, "support", "marketplace-loans-support")
+                }
+                stableHeight={isCompact ? 54 : 58}
+                style={marketplaceInlineActionStyle("secondary", false, isCompact)}
+              >
+                Support
+              </StableButton>
+              <StableButton
+                type="button"
+                debugId="marketplace.context.rosca"
+                aria-label="Open marketplace ROSCA"
+                onClick={(event) =>
+                  openMarketplaceSection(event, "rosca", "marketplace-rosca")
+                }
+                stableHeight={isCompact ? 54 : 58}
+                style={marketplaceInlineActionStyle("secondary", false, isCompact)}
+              >
+                ROSCA
+              </StableButton>
+            </div>
           </div>
         ) : null}
 
+        <details
+          data-gmfn-debug-id="marketplace.progressive-tools"
+          style={{
+            marginTop: 10,
+            borderRadius: 18,
+            border: "1px solid rgba(214,170,69,0.18)",
+            background: "rgba(255,253,247,0.72)",
+            padding: isCompact ? "8px 10px" : "10px 12px",
+            overflow: "hidden",
+            overflowAnchor: "none",
+          }}
+        >
+          <StableDisclosureSummary
+            debugId="marketplace.progressive-tools.toggle"
+            stableHeight={44}
+            style={{
+              color: "#173750",
+              fontSize: 13,
+              fontWeight: 950,
+            }}
+          >
+            More marketplace tools
+          </StableDisclosureSummary>
+          <div
+            style={{
+              marginTop: 10,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "repeat(4, minmax(0, 1fr))",
+              gap: 8,
+            }}
+          >
+            <StableButton
+              type="button"
+              debugId="marketplace.progressive.money-support"
+              aria-label="Open money and support routes"
+              onClick={(event) =>
+                openMarketplaceSection(event, "support", "marketplace-loans-support")
+              }
+              stableHeight={isCompact ? 54 : 58}
+              style={marketplaceInlineActionStyle("secondary", false, isCompact)}
+            >
+              Money & support
+            </StableButton>
+            <StableButton
+              type="button"
+              debugId="marketplace.progressive.tools"
+              aria-label="Open marketplace access and public links"
+              onClick={(event) =>
+                openMarketplaceSection(event, "tools", "marketplace-owned-links")
+              }
+              stableHeight={isCompact ? 54 : 58}
+              style={marketplaceInlineActionStyle("secondary", false, isCompact)}
+            >
+              Access links
+            </StableButton>
+            <StableButton
+              type="button"
+              debugId="marketplace.progressive.marketing"
+              aria-label="Open marketplace owner marketing tools"
+              onClick={(event) => {
+                openMarketplaceSection(event, "tools", "marketplace-owned-links");
+                setActiveLinkCenterTool("repost");
+              }}
+              stableHeight={isCompact ? 54 : 58}
+              style={marketplaceInlineActionStyle("secondary", false, isCompact)}
+            >
+              Marketing tools
+            </StableButton>
+            <StableButton
+              type="button"
+              debugId="marketplace.progressive.trade-evidence"
+              aria-label="Open Trade Evidence intentionally"
+              onClick={(event) =>
+                openMarketplaceSection(event, "trade", "marketplace-trade-evidence")
+              }
+              stableHeight={isCompact ? 54 : 58}
+              style={marketplaceInlineActionStyle("secondary", false, isCompact)}
+            >
+              Trade Evidence
+            </StableButton>
+          </div>
+        </details>
         <div
           style={{
             marginTop: 14,

@@ -70,8 +70,8 @@ assertNotContains(
 );
 
 assertContains(
-  /debugId="marketplace\.row\.records-links"[\s\S]*?Marketplace Tools[\s\S]*?Access, public links, and helper tools\./,
-  "Fuller evidence and trust routes must remain under Marketplace Tools, not inside the front summary."
+  /data-gmfn-debug-id="marketplace\.progressive-tools"[\s\S]*?More marketplace tools[\s\S]*?placeholder="Try: trust, identity, evidence, messages\.\.\."/,
+  "Fuller evidence and trust routes must remain in progressive marketplace tools, not inside the front summary."
 );
 
 if (findings.length > 0) {

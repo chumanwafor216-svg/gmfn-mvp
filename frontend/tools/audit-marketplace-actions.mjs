@@ -173,7 +173,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /id: "rosca"[\s\S]*?to: "#marketplace-rosca"[\s\S]*?debugId="marketplace\.tile\.support"[\s\S]*?Support[\s\S]*?id="marketplace-rosca"[\s\S]*?debugId="marketplace\.rosca\.activate-yearly"[\s\S]*?debugId="marketplace\.rosca\.start-cycle"[\s\S]*?debugId="marketplace\.rosca\.record-payout"[\s\S]*?marketplace\.support\.path-chooser[\s\S]*?ROSCA[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)/,
+  /id: "rosca"[\s\S]*?to: "#marketplace-rosca"[\s\S]*?debugId="marketplace\.context\.rosca"[\s\S]*?openMarketplaceSection[\s\S]*?"rosca"[\s\S]*?"marketplace-rosca"[\s\S]*?id="marketplace-rosca"[\s\S]*?debugId="marketplace\.rosca\.activate-yearly"[\s\S]*?debugId="marketplace\.rosca\.start-cycle"[\s\S]*?debugId="marketplace\.rosca\.record-payout"[\s\S]*?marketplace\.support\.path-chooser[\s\S]*?ROSCA[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection[\s\S]*?"rosca"[\s\S]*?"marketplace-rosca"/,
   "Marketplace ROSCA must stay reachable as its own desk, keep the ROSCA intent anchor, and keep stable yearly/start/payout controls."
 );
 
@@ -469,7 +469,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /debugId="marketplace\.tile\.support-money-group"[\s\S]*?Support & Money Trust[\s\S]*?frontDomainGroup === "supportMoney"[\s\S]*?debugId="marketplace\.tile\.money"[\s\S]*?Money & Trust[\s\S]*?id="marketplace-money-routes"[\s\S]*?Money Out[\s\S]*?to=\{marketplaceMoneyOutTo\}[\s\S]*?debugId="marketplace\.money\.money-out-destination"[\s\S]*?Open Withdrawal/,
+  /debugId="marketplace\.context\.money"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?id="marketplace-money-routes"[\s\S]*?Money Out[\s\S]*?to=\{marketplaceMoneyOutTo\}[\s\S]*?debugId="marketplace\.money\.money-out-destination"[\s\S]*?Open Withdrawal/,
   "Marketplace normal withdrawal must remain available inside the Money & Trust lane, not as a separate busy front-door button or a Support & Loans opener."
 );
 

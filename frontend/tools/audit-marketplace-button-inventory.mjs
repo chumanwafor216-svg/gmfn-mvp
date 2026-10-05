@@ -44,11 +44,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 91;
+const expectedStableActionCount = 93;
 const expectedNativeFieldCount = 37;
 const expectedSourceBreakdown = {
-  front: 13,
-  body: 78,
+  front: 5,
+  body: 88,
 };
 const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
@@ -377,13 +377,23 @@ if (visibleIntentActionCount !== expectedVisibleIntentActionCount) {
 }
 
 assertContains(
-  /debugId="marketplace\.tile\.support-money-group"[\s\S]*?aria-label="Open Support and Money Trust choices for this marketplace"[\s\S]*?openFrontDomainGroup\(event, "supportMoney"\)[\s\S]*?Support & Money Trust[\s\S]*?Money routes, trust standing, and support requests\.[\s\S]*?Money & Trust[\s\S]*?Support[\s\S]*?frontDomainGroup === "supportMoney"[\s\S]*?debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money and trust tools for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"money",\s*"marketplace-money-routes"\s*\)[\s\S]*?Money & Trust/,
-  "Marketplace Money & Trust must sit behind the Support & Money Trust group and still open the money route lane."
+  /debugId="marketplace\.job\.find-people-services"[\s\S]*?aria-label="Find people, services, and shops in this marketplace"[\s\S]*?openMarketplaceSection\(event, "members", "marketplace-members-shops"\)[\s\S]*?Find people & services[\s\S]*?Shops & services/,
+  "Marketplace Find people & services job must open the community-bound members and shops lane."
+);
+
+assertContains(
+  /debugId="marketplace\.job\.ask-for-something"[\s\S]*?aria-label="Ask for something through DemandBox"[\s\S]*?openMarketplaceSection\(event, "demand", "marketplace-demand-box"\)[\s\S]*?Ask for something[\s\S]*?DemandBox/,
+  "Marketplace Ask for something job must open the Demand lane without taking over DemandBox lifecycle ownership."
+);
+
+assertContains(
+  /debugId="marketplace\.job\.community-board"[\s\S]*?aria-label="Open the community board"[\s\S]*?openMarketplaceSection\(event, "board", "marketplace-official-board"\)[\s\S]*?Community board/,
+  "Marketplace Community board job must open the marketplace-local board lane."
 );
 
 assertContains(
   /Focus your work[\s\S]*?Open one lane at a time\. Everything else steps back\./,
-  "Marketplace front door must keep the focus-your-work guide after the grouped lane cards."
+  "Marketplace front door must keep the focus-your-work guide after the human-job cards."
 );
 
 assertContains(
@@ -392,8 +402,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.support-money-group"[\s\S]*?Support & Money Trust[\s\S]*?frontDomainGroup === "supportMoney"[\s\S]*?debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?Support/,
-  "Marketplace Support must sit behind the Support & Money Trust group and still open support directly while ROSCA stays inside the support lane."
+  /debugId="marketplace\.context\.money"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?debugId="marketplace\.context\.support"[\s\S]*?openMarketplaceSection\(event, "support", "marketplace-loans-support"\)[\s\S]*?debugId="marketplace\.context\.rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)/,
+  "Marketplace money, support, and ROSCA routes must remain reachable through contextual state, not as permanent front-door engine cards."
 );
 
 assertContains(
@@ -401,31 +411,20 @@ assertContains(
   "Marketplace front stats must expose local Trust and CCI-backed wider posture, while finance detail stays inside one disclosure."
 );
 
-assertContains(
-  /debugId="marketplace\.tile\.board-members-group"[\s\S]*?aria-label="Open Official Board and Community Members and Shops choices"[\s\S]*?openFrontDomainGroup\(event, "boardMembers"\)[\s\S]*?Official Board & Members\/Shops[\s\S]*?Official Board[\s\S]*?Community Members & Shops[\s\S]*?frontDomainGroup === "supportMoney"[\s\S]*?: \([\s\S]*?debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open community domains, members, and shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?Members & Shops/,
-  "Marketplace Community Members & Shops must sit behind the Official Board & Members/Shops group and still open the community-bound directory."
-);
-
-assertContains(
-  /debugId="marketplace\.tile\.board-members-group"[\s\S]*?Official Board & Members\/Shops[\s\S]*?frontDomainGroup === "supportMoney"[\s\S]*?: \([\s\S]*?debugId="marketplace\.tile\.official-board"[\s\S]*?aria-label="Open the official community board for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"board",\s*"marketplace-official-board"\s*\)[\s\S]*?Official Board/,
-  "Marketplace Official Board must sit behind the Official Board & Members/Shops group and still open the marketplace-local board."
-);
-
 assertNotContains(
-  /debugId="marketplace\.tile\.trade-evidence"/g,
-  "Marketplace front must not expose Trade Evidence as a duplicate card once it is grouped under Marketing Tools."
+  /debugId="marketplace\.(?:tile\.support-money-group|tile\.board-members-group|row\.records-links|tile\.marketing-tools|tile\.trade-evidence)"/g,
+  "Marketplace front must not restore the old technical engine-group cards or duplicate Trade Evidence card."
+);
+
+assertContains(
+  /debugId="marketplace\.progressive\.tools"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?debugId="marketplace\.progressive\.marketing"[\s\S]*?setActiveLinkCenterTool\("repost"\)[\s\S]*?debugId="marketplace\.progressive\.trade-evidence"[\s\S]*?openMarketplaceSection\(event, "trade", "marketplace-trade-evidence"\)/,
+  "Marketplace tools, marketing, and Trade Evidence must be progressive access, not neutral member front-door jobs."
 );
 
 assertContains(
   /visibleTradeMemberRows = memberRows\.slice\(0, isCompact \? 3 : 5\)[\s\S]*?hiddenTradeMemberRows = memberRows\.slice\(visibleTradeMemberRows\.length\)[\s\S]*?visibleTradeShopCount = memberRows\.filter\(\(row\) => row\.shopTo\)\.length/,
   "Marketplace Trade Evidence must cap the first visible member list and tuck the rest behind a compact disclosure."
 );
-
-assertContains(
-  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open marketplace tools, access and public links"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Marketplace Tools[\s\S]*?Access, public links, and helper tools\.[\s\S]*?Verify[\s\S]*?Invite[\s\S]*?Create[\s\S]*?Shop Face/,
-  "Marketplace Tools grouped card must open marketplace-owned links and advertise verify, invite, create, shop sharing, and helper tools without Community Domain entries."
-);
-
 assertContains(
   /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState \{[\s\S]*?money: key === "money"[\s\S]*?rosca: key === "rosca"[\s\S]*?tools: key === "tools"[\s\S]*?members: key === "members"[\s\S]*?trade: key === "trade"[\s\S]*?demand: key === "demand"[\s\S]*?support: key === "support"[\s\S]*?function touchedMarketplaceSectionState[\s\S]*?\[key\]: true/,
   "Marketplace Support must no longer open Members visually; each major lane must focus one open body."
@@ -886,14 +885,17 @@ assertFileContains(
 const expectedOrder = [
   exactDebugId("marketplace.empty.community-home"),
   exactDebugId("marketplace.empty.dashboard"),
-  exactDebugId("marketplace.tile.support-money-group"),
-  exactDebugId("marketplace.tile.board-members-group"),
-  exactDebugId("marketplace.row.records-links"),
-  exactDebugId("marketplace.tile.marketing-tools"),
-  exactDebugId("marketplace.tile.support"),
-  exactDebugId("marketplace.tile.money"),
-  exactDebugId("marketplace.tile.official-board"),
-  exactDebugId("marketplace.tile.members"),
+  exactDebugId("marketplace.job.find-people-services"),
+  exactDebugId("marketplace.job.ask-for-something"),
+  exactDebugId("marketplace.job.community-board"),
+  exactDebugId("marketplace.context.money"),
+  exactDebugId("marketplace.context.support"),
+  exactDebugId("marketplace.context.rosca"),
+  exactDebugId("marketplace.progressive-tools.toggle"),
+  exactDebugId("marketplace.progressive.money-support"),
+  exactDebugId("marketplace.progressive.tools"),
+  exactDebugId("marketplace.progressive.marketing"),
+  exactDebugId("marketplace.progressive.trade-evidence"),
   exactDebugId("marketplace.row.wisdom-action"),
   exactDebugId("marketplace.intent.submit"),
   dynamicDebugId(

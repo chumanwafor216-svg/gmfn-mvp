@@ -47,8 +47,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support for this marketplace"[\s\S]*?openMarketplaceSection\(event, "support", "marketplace-loans-support"\)[\s\S]*?Support[\s\S]*?marketplace\.support\.path-chooser[\s\S]*?Loan Support[\s\S]*?ROSCA[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?Open ROSCA/,
-  "ROSCA must stay reachable from the Support doorway as a separate path, not as the same Loan Support surface."
+  /debugId="marketplace\.context\.rosca"[\s\S]*?aria-label="Open marketplace ROSCA"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?marketplace\.support\.path-chooser[\s\S]*?Loan Support[\s\S]*?ROSCA[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?Open ROSCA/,
+  "ROSCA must stay reachable as a contextual marketplace route and from the Support chooser as a separate path, not as the same Loan Support surface."
 );
 
 assertContains(

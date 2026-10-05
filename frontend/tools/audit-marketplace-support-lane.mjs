@@ -63,8 +63,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.support-money-group"[\s\S]*?Support & Money Trust[\s\S]*?frontDomainGroup === "supportMoney"[\s\S]*?debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?Support/,
-  "Support must stay behind the Support & Money Trust group and open support directly instead of presenting ROSCA as the same public choice."
+  /debugId="marketplace\.context\.support"[\s\S]*?aria-label="Open marketplace support"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?Support/,
+  "Support must stay contextual/progressive and open the guided support lane directly."
 );
 
 assertContains(
@@ -203,7 +203,7 @@ if (!supportSection.text) {
     /firstTruthy\(item\?\.purpose, item\?\.title, "Support item"\)/,
     /Requested by: \$\{item\.borrower_name\}/,
     /Supporter: \$\{item\.guarantor_name\}/,
-    /suggested support amount first[\s\S]*?Suggested support: \{safeStr\(item\.recommendedPledge\)\}/,
+    /Possible support: \{safeStr\(item\.recommendedPledge\)\}/,
   ].forEach((pattern) => {
     if (!pattern.test(supportSection.text)) {
       addFinding(

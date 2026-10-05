@@ -34,7 +34,7 @@ const source = marketplacePageSource
   .replace(/<MarketplaceDemandSection\b[\s\S]*?\n\s*\/>/, marketplaceDemandSource);
 const findings = [];
 
-const expectedStableActionCount = 91;
+const expectedStableActionCount = 93;
 const expectedNativeFieldCount = 37;
 const allowedBusyDisabledExpressions = new Set([
   "creatingRepostPaymentInstruction",

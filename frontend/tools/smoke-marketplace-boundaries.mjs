@@ -266,7 +266,10 @@ async function run() {
     waitUntil: "networkidle",
     timeout: 60000,
   });
-  await page.locator('[data-cta-id="marketplace.tile.marketing-tools"]').click({
+  await page.locator('[data-cta-id="marketplace.progressive-tools.toggle"]').click({
+    timeout: 30000,
+  });
+  await page.locator('[data-cta-id="marketplace.progressive.marketing"]').click({
     timeout: 30000,
   });
   await waitForDebugSelector(
@@ -404,10 +407,7 @@ async function run() {
     waitUntil: "networkidle",
     timeout: 60000,
   });
-  await page.locator('[data-cta-id="marketplace.tile.board-members-group"]').click({
-    timeout: 30000,
-  });
-  await page.locator('[data-cta-id="marketplace.tile.members"]').click({
+  await page.locator('[data-cta-id="marketplace.job.find-people-services"]').click({
     timeout: 30000,
   });
   await waitForDebugSelector(
@@ -469,14 +469,17 @@ async function run() {
       })
     );
   });
-  await page.goto(`${baseURL}/app/marketplace?community=8#marketplace-loans-support`, {
+  await page.goto(`${baseURL}/app/marketplace?community=8`, {
     waitUntil: "networkidle",
     timeout: 60000,
   });
-  await page.locator('[data-cta-id="marketplace.tile.support-money-group"]').click({
-    timeout: 30000,
-  });
-  await page.locator('[data-cta-id="marketplace.tile.support"]').click({
+
+  await page
+    .locator('[data-gmfn-debug-id="marketplace.progressive-tools"]')
+    .evaluate((element) => {
+      element.open = true;
+    });
+  await page.locator('[data-cta-id="marketplace.progressive.money-support"]').click({
     timeout: 30000,
   });
   await waitForDebugSelector(
