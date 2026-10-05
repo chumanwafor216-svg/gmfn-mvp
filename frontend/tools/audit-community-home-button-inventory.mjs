@@ -10,7 +10,7 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 40;
+const expectedStableButtonTemplateCount = 41;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 0;
@@ -364,13 +364,13 @@ assertContains(
 );
 
 assertContains(
-  /debugId="community-home\.summary\.visible-communities"[\s\S]*?aria-expanded=\{!collapsed\.communities\}[\s\S]*?aria-controls="community-home-communities-panel"[\s\S]*?openCommunityHomeSection\([\s\S]*?"community-home-community-list"[\s\S]*?"communities"/,
-  "Community Home visible-communities summary must be a real stable action that opens the community list, not a button-looking inert row."
+  /debugId="community-home\.summary\.visible-communities"[\s\S]*?aria-expanded=\{!collapsed\.communities\}[\s\S]*?aria-controls="community-home-communities-panel"[\s\S]*?if \(!collapsed\.communities\)[\s\S]*?communities: true[\s\S]*?openCommunityHomeSection\([\s\S]*?"community-home-community-list"[\s\S]*?"communities"[\s\S]*?Close communities[\s\S]*?View communities[\s\S]*?!collapsed\.communities \? "\^" : "v"/,
+  "Community Home visible-communities summary must use explicit open/close disclosure state, not a permanent navigation chevron."
 );
 
 assertContains(
-  /listMyCommunityDomains[\s\S]*?const \[communityDomainCount, setCommunityDomainCount\] = useState<number \| null>\(null\)[\s\S]*?const \[communityDomainRows, setCommunityDomainRows\] = useState<CommunityDomainListRow\[\]>\(\[\]\)[\s\S]*?normalizeCommunityDomainListRow[\s\S]*?setCommunityDomainRows\(normalizedDomainRows\)[\s\S]*?setCommunityDomainCount\(Array\.isArray\(domainRows\) \? normalizedDomainRows\.length : null\)[\s\S]*?My Communities[\s\S]*?debugId="community-home\.selected\.open-marketplace"[\s\S]*?openSelectedMarketplace\(event\)[\s\S]*?debugId="community-home\.summary\.visible-communities"[\s\S]*?Change the selected community\. Setup and governance stay with Community Domain; active work opens in Marketplace\./,
-  "Community Home summary must make selected community entry primary while keeping ordinary communities and Community Domains in one selectable room."
+  /listMyCommunityDomains[\s\S]*?const \[communityDomainCount, setCommunityDomainCount\] = useState<number \| null>\(null\)[\s\S]*?const \[communityDomainRows, setCommunityDomainRows\] = useState<CommunityDomainListRow\[\]>\(\[\]\)[\s\S]*?normalizeCommunityDomainListRow[\s\S]*?setCommunityDomainRows\(normalizedDomainRows\)[\s\S]*?setCommunityDomainCount\(Array\.isArray\(domainRows\) \? normalizedDomainRows\.length : null\)[\s\S]*?My Communities[\s\S]*?debugId="community-home\.selected\.open-marketplace"[\s\S]*?openSelectedMarketplace\(event\)[\s\S]*?debugId="community-home\.summary\.visible-communities"[\s\S]*?View communities[\s\S]*?visible[\s\S]*?Setup and governance stay with Community Domain; active work opens in Marketplace\./,
+  "Community Home summary must make selected community entry primary while keeping ordinary communities and Community Domains in one explicit disclosure room."
 );
 
 assertNotContains(
@@ -379,8 +379,8 @@ assertNotContains(
 );
 
 assertContains(
-  /\{!collapsed\.communities \? \([\s\S]*?id="community-home-community-list"[\s\S]*?id="community-home-communities-panel"[\s\S]*?sortedClans\.map[\s\S]*?Marketplace workspace for this community[\s\S]*?Open Marketplace[\s\S]*?sortedCommunityDomainRows\.map[\s\S]*?Community Domain marketplace workspace[\s\S]*?Marketplace ready[\s\S]*?Setup needed[\s\S]*?debugId=\{`community-home\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}[\s\S]*?openCommunityDomainMarketplace\(event, row\)[\s\S]*?\{row\.marketplaceReady \? "Open Marketplace" : "Open Setup"\}/,
-  "Community Home opened list must show ordinary marketplace communities and Community Domains together after the single Live overview opener, with active domains using the strict Marketplace selection handoff and no per-row billing/settings controls."
+  /\{!collapsed\.communities \? \([\s\S]*?id="community-home-community-list"[\s\S]*?id="community-home-communities-panel"[\s\S]*?debugId="community-home\.communities\.close"[\s\S]*?Close communities[\s\S]*?sortedClans\.map[\s\S]*?Marketplace workspace for this community[\s\S]*?Open Marketplace[\s\S]*?sortedCommunityDomainRows\.map[\s\S]*?Community Domain marketplace workspace[\s\S]*?Marketplace ready[\s\S]*?Setup needed[\s\S]*?debugId=\{`community-home\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}[\s\S]*?openCommunityDomainMarketplace\(event, row\)[\s\S]*?\{row\.marketplaceReady \? "Open Marketplace" : "Open Setup"\}/,
+  "Community Home opened list must show ordinary marketplace communities and Community Domains together after the single Live overview opener, include an explicit close control, and keep active domains using the strict Marketplace selection handoff with no per-row billing/settings controls."
 );
 
 assertContains(

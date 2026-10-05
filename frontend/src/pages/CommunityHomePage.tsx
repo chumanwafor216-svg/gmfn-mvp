@@ -804,10 +804,10 @@ function communityHeroStyle(isCompact: boolean): React.CSSProperties {
     borderRadius: isCompact ? 22 : 30,
     border: "1px solid rgba(226,192,106,0.26)",
     background:
-      "radial-gradient(circle at 14% -10%, rgba(214,170,69,0.18) 0%, rgba(214,170,69,0.00) 26%), radial-gradient(circle at 88% 4%, rgba(54,105,151,0.18) 0%, rgba(54,105,151,0.00) 34%), linear-gradient(180deg, #06101A 0%, #08233A 48%, #061827 100%)",
-    padding: isCompact ? 12 : 20,
+      "radial-gradient(circle at 14% -10%, rgba(242,199,102,0.20) 0%, rgba(242,199,102,0.00) 28%), radial-gradient(circle at 88% 4%, rgba(112,169,219,0.22) 0%, rgba(112,169,219,0.00) 36%), linear-gradient(180deg, #0B3D66 0%, #0E5B92 54%, #0B2D4A 100%)",
+    padding: isCompact ? 10 : 16,
     boxShadow:
-      "0 24px 50px rgba(6,24,39,0.26), inset 0 1px 0 rgba(255,255,255,0.10)",
+      "0 18px 34px rgba(6,24,39,0.18), inset 0 1px 0 rgba(255,255,255,0.14)",
     overflow: "hidden",
   };
 }
@@ -964,7 +964,7 @@ function communityActionStyle(
         : "1px solid rgba(255,255,255,0.16)",
       background: disabled
         ? "#CBD5E1"
-        : "linear-gradient(180deg, #0B2D4A 0%, #08233A 100%)",
+        : "linear-gradient(180deg, #135A94 0%, #0B3D66 100%)",
       color: "#F8FBFF",
       fontWeight: 900,
       fontSize: 13.5,
@@ -981,7 +981,7 @@ function communityActionStyle(
       opacity: disabled ? 0.86 : 1,
       boxShadow: disabled
         ? "none"
-        : "0 5px 0 rgba(7,24,39,0.22), 0 14px 26px rgba(10,24,49,0.18), inset 0 1px 0 rgba(255,255,255,0.10)",
+        : "0 4px 0 rgba(9,54,90,0.20), 0 10px 20px rgba(10,24,49,0.13), inset 0 1px 0 rgba(255,255,255,0.14)",
       lineHeight: 1.18,
     };
   }
@@ -1179,6 +1179,20 @@ function communityToolRowStyle(): React.CSSProperties {
     transition: "none",
     boxShadow:
       "0 12px 24px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.84)",
+  };
+}
+
+function communityPassiveStatusRowStyle(): React.CSSProperties {
+  return {
+    ...communityToolRowStyle(),
+    gridTemplateColumns: "auto minmax(0, 1fr)",
+    cursor: "default",
+    pointerEvents: "none",
+    border: "1px solid rgba(16,37,59,0.08)",
+    background:
+      "linear-gradient(180deg, rgba(248,251,255,0.94) 0%, rgba(241,247,255,0.90) 100%)",
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.92), 0 8px 18px rgba(10,24,49,0.035)",
   };
 }
 
@@ -5214,14 +5228,14 @@ export default function CommunityHomePage() {
 
             <div
               style={{
-                marginTop: isCompact ? 10 : 16,
+                marginTop: isCompact ? 8 : 12,
                 ...innerCard(
-                  "linear-gradient(180deg, rgba(9,31,51,0.96) 0%, rgba(6,24,39,0.98) 100%)"
+                  "linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(239,247,255,0.94) 100%)"
                 ),
-                padding: isCompact ? 11 : 16,
-                border: "1px solid rgba(226,192,106,0.26)",
+                padding: isCompact ? 9 : 12,
+                border: "1px solid rgba(226,192,106,0.18)",
                 boxShadow:
-                  "0 18px 34px rgba(2,12,27,0.28), inset 0 1px 0 rgba(255,255,255,0.08)",
+                  "0 10px 20px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.94)",
               }}
             >
               <div
@@ -5234,13 +5248,13 @@ export default function CommunityHomePage() {
                 }}
               >
                 <div>
-                  <div style={{ ...sectionLabel(), color: "#E0B95D" }}>
+                  <div style={{ ...sectionLabel(), color: "#48657D" }}>
                     My Communities
                   </div>
                   <div
                     style={{
                       marginTop: 5,
-                      color: "#F8FBFF",
+                      color: "#07172C",
                       fontSize: isCompact ? 17 : 20,
                       fontWeight: 950,
                       lineHeight: 1.18,
@@ -5252,16 +5266,16 @@ export default function CommunityHomePage() {
                 <span
                   style={{
                     ...badge(true),
-                    background: "rgba(255,255,255,0.10)",
-                    color: "#F8FBFF",
-                    border: "1px solid rgba(226,192,106,0.24)",
+                    background: "#EAF3FF",
+                    color: "#0B2D4A",
+                    border: "1px solid rgba(13,95,168,0.16)",
                   }}
               >
                 Community entry
               </span>
             </div>
 
-              <div style={{ marginTop: isCompact ? 10 : 14, display: "grid", gap: 9 }}>
+              <div style={{ marginTop: isCompact ? 8 : 10, display: "grid", gap: 8 }}>
                 <div
                   style={{
                     display: "flex",
@@ -5324,14 +5338,19 @@ export default function CommunityHomePage() {
                   debugId="community-home.summary.visible-communities"
                   aria-expanded={!collapsed.communities}
                   aria-controls="community-home-communities-panel"
-                  onClick={(event) =>
+                  onClick={(event) => {
+                    consumeCommunityButtonEvent(event);
+                    if (!collapsed.communities) {
+                      setCollapsed((prev) => ({ ...prev, communities: true }));
+                      return;
+                    }
                     openCommunityHomeSection(
-                      event,
+                      undefined,
                       "community-home-community-list",
                       "communities",
                       true
-                    )
-                  }
+                    );
+                  }}
                   style={communityToolRowStyle()}
                 >
                   <span style={communityActionIcon(true)}>
@@ -5347,8 +5366,7 @@ export default function CommunityHomePage() {
                         lineHeight: 1.2,
                       }}
                     >
-                      {combinedCommunityListCount} marketplace{" "}
-                      {combinedCommunityListCount === 1 ? "community/domain" : "communities/domains"}
+                      {!collapsed.communities ? "Close communities" : "View communities"}
                     </span>
                     <span
                       style={{
@@ -5360,11 +5378,11 @@ export default function CommunityHomePage() {
                         lineHeight: 1.35,
                       }}
                     >
-                      Change the selected community. Setup and governance stay with Community Domain; active work opens in Marketplace.
+                      {combinedCommunityListCount} visible {combinedCommunityListCount === 1 ? "community/domain" : "communities/domains"}. Setup and governance stay with Community Domain; active work opens in Marketplace.
                     </span>
                   </span>
-                  <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>
-                    {">"}
+                  <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 22, fontWeight: 950 }}>
+                    {!collapsed.communities ? "^" : "v"}
                   </span>
                 </StableButton>
 
@@ -5410,10 +5428,7 @@ export default function CommunityHomePage() {
                 ) : (
                   <div
                     data-debug-id="community-home.summary.no-urgent-actions"
-                    style={{
-                      ...communityToolRowStyle(),
-                      cursor: "default",
-                    }}
+                    style={communityPassiveStatusRowStyle()}
                   >
                     <span style={communityActionIcon(false)}>
                       {communityIconGlyph("financeInstitution", 34)}
@@ -7090,6 +7105,17 @@ export default function CommunityHomePage() {
             id="community-home-communities-panel"
             style={{ marginTop: isCompact ? 10 : 16, display: "grid", gap: 10 }}
           >
+            <StableButton
+              type="button"
+              debugId="community-home.communities.close"
+              onClick={(event) => {
+                consumeCommunityButtonEvent(event);
+                setCollapsed((prev) => ({ ...prev, communities: true }));
+              }}
+              style={communityActionStyle("soft")}
+            >
+              Close communities
+            </StableButton>
             {sortedClans.map((clan, index) => {
               const clanId = getClanId(clan);
               const active = clanId > 0 && clanId === getClanId(selectedClan);

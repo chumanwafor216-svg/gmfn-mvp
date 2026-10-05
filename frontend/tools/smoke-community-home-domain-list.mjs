@@ -182,6 +182,7 @@ async function run() {
         "My Communities",
         "Homeland isa Marketplace",
         "Open Marketplace",
+        "Close communities",
         "Marketplace workspace for this community",
         "Pillar of Hope",
         "Community Domain marketplace workspace",
@@ -237,6 +238,21 @@ async function run() {
       console.error("Community Home domain list smoke failed:", result);
       process.exit(1);
     }
+
+    await page.locator('[data-cta-id="community-home.communities.close"]').click();
+    await page.waitForFunction(
+      () => !(document.body.textContent || "").includes("Pillar of Hope"),
+      null,
+      { timeout: 30000 }
+    );
+    await page
+      .locator('[data-cta-id="community-home.summary.visible-communities"]')
+      .click();
+    await page.waitForFunction(
+      () => (document.body.textContent || "").includes("Pillar of Hope"),
+      null,
+      { timeout: 30000 }
+    );
 
     await page.locator('[data-cta-id="community-home.domain.13.open"]').click();
     await page.waitForURL(/\/app\/marketplace\?community=13/, {
