@@ -18,7 +18,7 @@ function json(body, status = 200) {
   };
 }
 
-async function installApiMocks(page) {
+async function installApiMocks(page, controls = {}) {
   const me = {
     id: 216,
     user_id: 216,
@@ -63,16 +63,22 @@ async function installApiMocks(page) {
     const url = new URL(route.request().url());
     const path = url.pathname.replace(/^\/api/, "");
 
-    if (path === "/auth/me") return route.fulfill(json(me));
+    if (path === "/auth/me") {
+      if (controls.authGate) await controls.authGate;
+      controls.authResolved = true;
+      return route.fulfill(json(me));
+    }
     if (path === "/clans/me") return route.fulfill(json(clans));
     if (path === "/community-domains/my") {
       return route.fulfill(json({ items: domains }));
     }
     const clanSelectMatch = path.match(/^\/clans\/(\d+)\/select\/?$/);
     if (clanSelectMatch) {
+      controls.selectClanCalls.push(Number(clanSelectMatch[1]));
       return route.fulfill(json({ selected_clan_id: Number(clanSelectMatch[1]) }));
     }
     if (path === "/clans/select" || path === "/clans/select/") {
+      controls.selectClanCalls.push(8);
       return route.fulfill(json({ selected_clan_id: 8 }));
     }
     if (/^\/community-notices/.test(path)) {
@@ -96,6 +102,7 @@ async function installApiMocks(page) {
       return route.fulfill(json({ items: [], shops: [] }));
     }
     if (/^\/marketplace\/broadcasts/.test(path)) {
+      if (controls.communityPhase) controls.communitySpotlightFetchCount += 1;
       return route.fulfill(json({ items: [], broadcasts: [] }));
     }
     if (/^\/trust-score\/clan/.test(path) || /^\/trust/.test(path)) {
@@ -135,7 +142,18 @@ async function run() {
       isMobile: true,
     });
 
-    await installApiMocks(page);
+    let releaseAuth = () => {};
+    const controls = {
+      authGate: new Promise((resolve) => {
+        releaseAuth = resolve;
+      }),
+      authResolved: false,
+      communityPhase: true,
+      communitySpotlightFetchCount: 0,
+      selectClanCalls: [],
+    };
+
+    await installApiMocks(page, controls);
     await page.addInitScript(() => {
       localStorage.setItem("access_token", "local-community-home-domain-token");
       localStorage.setItem("gmfn_selected_clan_id", "8");
@@ -151,9 +169,42 @@ async function run() {
     });
 
     await page.goto(`${baseURL}/app/community?community=8`, {
-      waitUntil: "networkidle",
+      waitUntil: "domcontentloaded",
       timeout: 60000,
     });
+    await page.waitForSelector('[data-cta-id="community-home.summary.visible-communities"]', {
+      timeout: 30000,
+    });
+
+    if (controls.authResolved) {
+      console.error("Community Home first usable state waited for /auth/me.");
+      process.exit(1);
+    }
+    if (controls.communitySpotlightFetchCount !== 0) {
+      console.error("Community Home fetched Spotlight broadcasts during entry.", controls);
+      process.exit(1);
+    }
+
+    releaseAuth();
+    await page.waitForTimeout(100);
+
+    const selectCallsBeforeOpen = controls.selectClanCalls.length;
+    controls.communityPhase = false;
+    await page.locator('[data-cta-id="community-home.selected.open-marketplace"]').click();
+    await page.waitForURL(/\/app\/marketplace/, { timeout: 30000 });
+    if (controls.selectClanCalls.length !== selectCallsBeforeOpen) {
+      console.error(
+        "Community Home repeated selectClan before opening already-selected Marketplace.",
+        controls
+      );
+      process.exit(1);
+    }
+
+    await page.goto(`${baseURL}/app/community?community=8`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60000,
+    });
+    controls.communityPhase = true;
     await page.waitForSelector('[data-cta-id="community-home.summary.visible-communities"]', {
       timeout: 30000,
     });

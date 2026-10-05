@@ -104,10 +104,10 @@ assertLineNotContains(
   "Dashboard must not restore visible Spotlight Marketplace/Shop source fact tiles."
 );
 
-assertContains(
+assertNotContains(
   "frontend/src/pages/CommunityHomePage.tsx",
-  /type ActiveCommunitySpotlight = \{[\s\S]*?title: string;[\s\S]*?description: string;[\s\S]*?price: string;[\s\S]*?currency: string;[\s\S]*?category: string;[\s\S]*?availability: string;[\s\S]*?ownerName: string;[\s\S]*?communityName: string;[\s\S]*?function normalizeActiveCommunitySpotlight[\s\S]*?source_product_title[\s\S]*?source_product_description[\s\S]*?source_product_price[\s\S]*?source_product_currency[\s\S]*?source_product_category[\s\S]*?source_product_availability[\s\S]*?Price on request[\s\S]*?Availability shown by owner/,
-  "Community Home active Spotlight must visibly render structured product/service title, description, price, category, availability, owner, and community."
+  /getMarketplaceBroadcasts|ActiveCommunitySpotlight|SpotlightMediaFrame|SPOTLIGHT_PILOT_REFRESH_MS|SPOTLIGHT_PILOT_ROTATION_MS|activeCommunitySpotlight/,
+  "Community Home must not fetch, rotate, or render live Spotlight data now that Spotlight ownership lives in Shop."
 );
 
 assertContains(
@@ -125,7 +125,7 @@ assertContains(
 assertContains(
   "frontend/src/pages/ShopGalleryPage.tsx",
   /async function loadViewerSpotlightRows\(\)[\s\S]*?if \(!getAccessToken\(\)\) return null;[\s\S]*?const res = await getMarketplaceBroadcasts\(\{[\s\S]*?clan_id: null,[\s\S]*?active_only: true,[\s\S]*?limit: 24,[\s\S]*?\}\)/,
-  "Signed-in Public Shop Spotlight must read the same all-active-communities broadcast feed used by Dashboard."
+  "Signed-in Public Shop Spotlight must read the all-active-communities broadcast feed now owned by Shop/Public Shop surfaces."
 );
 
 assertContains(

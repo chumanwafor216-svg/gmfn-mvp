@@ -291,6 +291,21 @@ assertContains(
 assertContains(
   /function communityNoticeListParams\(clanId: number\)[\s\S]*?scope: "my_communities" as const[\s\S]*?limit: COMMUNITY_NOTICE_ACTIVE_LIMIT/,
   "Community Home Bulletin must read the signed-in member's all-communities notice feed while preserving selected-community posting controls."
+);assertContains(
+  /markCommunityHomePerformance\("route-mounted"\)[\s\S]*?clansRes = await listMyClans\(\)[\s\S]*?markCommunityHomePerformance\("clans-request-completed"[\s\S]*?setClans\(rows\)[\s\S]*?setSelectedClan\(current\)[\s\S]*?setLoading\(false\)[\s\S]*?markCommunityHomePerformance\("first-usable-state"[\s\S]*?void getMe\(\)/,
+  "Community Home first usable state must be gated by /clans/me, with /auth/me loading only after clans release the page."
+);
+assertNotContains(
+  /Promise\.all\(\[[\s\S]{0,300}?getMe\(\)[\s\S]{0,300}?listMyClans\(\)/,
+  "Community Home must not make /auth/me part of the hard first-usable loading gate."
+);
+assertNotContains(
+  /getMarketplaceBroadcasts|ActiveCommunitySpotlight|SpotlightMediaFrame|SPOTLIGHT_PILOT_REFRESH_MS|SPOTLIGHT_PILOT_ROTATION_MS/,
+  "Community Home must not fetch, rotate, or render owner Spotlight broadcast data now that Spotlight belongs to Shop."
+);
+assertContains(
+  /function openSelectedMarketplace[\s\S]*?const persistedClanId = Number\(getSelectedClanId\(\) \|\| 0\)[\s\S]*?const selectRequired = persistedClanId !== selectedClanId[\s\S]*?if \(selectRequired\)[\s\S]*?await selectClan\(selectedClanId\)[\s\S]*?markCommunityHomePerformance\("select-clan-skipped"[\s\S]*?navigateWithOrigin\(\s*navigate,\s*routes\.marketplace,\s*location\s*\)/,
+  "Community Home Open Marketplace must skip redundant selectClan POST only when the selected clan is already persisted, while preserving the select-before-navigation handoff when needed."
 );
 assertContains(
   /function noticeClanId[\s\S]*?item\?\.clan_id[\s\S]*?item\?\.source_community_id[\s\S]*?getClanId\(fallbackClan\)/,

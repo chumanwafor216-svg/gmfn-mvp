@@ -18,7 +18,6 @@ import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import { gsnGovernanceErrorMessage } from "../lib/structuredErrors";
 import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import {
-  getMarketplaceBroadcasts,
   getMyMarketplaceShop,
   getMarketplaceShopByGmfnId,
   getMe,
@@ -45,12 +44,6 @@ import {
   type AttentionSpineUrgency,
 } from "../lib/attentionSpine";
 import {
-  SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
-  SPOTLIGHT_PILOT_REFRESH_MS,
-  SPOTLIGHT_PILOT_ROTATION_MS,
-  SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL,
-} from "../lib/spotlightPilot";
-import {
   OWNER_SHOP_HANDLES,
   OWNER_SHOP_HASHES,
   PAID_REPOST_HASH,
@@ -66,9 +59,6 @@ const CommunityNoticeModal = React.lazy(() =>
 );
 const NextActionGuide = React.lazy(() =>
   import("../components/NextActionGuide")
-);
-const SpotlightMediaFrame = React.lazy(() =>
-  import("../components/SpotlightMediaFrame")
 );
 
 type ClanItem = {
@@ -149,27 +139,6 @@ const COMMUNITY_HOME_ACTION_LANES: CollapseKey[] = [
   "trustFinance",
 ];
 
-type ActiveCommunitySpotlight = {
-  id?: number;
-  authorUserId?: number;
-  authorGmfnId: string;
-  message: string;
-  imageUrl: string;
-  videoUrl: string;
-  title: string;
-  description: string;
-  price: string;
-  currency: string;
-  category: string;
-  availability: string;
-  ownerName: string;
-  communityName: string;
-  sourceProductId?: number;
-  sourceProductBlock?: number;
-  sourceProductSlotNumber?: number;
-  expiresAt: string;
-  createdAt: string;
-};
 
 type CommunityNoticeItem = {
   clan_id?: number | string | null;
@@ -475,129 +444,6 @@ function readLocalText(key: string): string {
   } catch {
     return "";
   }
-}
-
-function spotlightPriceLine(price: any, currency: any): string {
-  const priceText = safeStr(price);
-  const currencyText = safeStr(currency);
-  if (priceText && currencyText) return `${currencyText} ${priceText}`;
-  return priceText || currencyText;
-}
-
-function normalizeGmfnKey(value: any): string {
-  const raw = safeStr(value).toUpperCase();
-  if (!raw) return "";
-  return raw.replace(/^GSN-/, "GMFN-");
-}
-
-function getCurrentUserId(user: any): number {
-  return Number(user?.id || user?.user_id || user?.userId || 0) || 0;
-}
-
-function getCurrentGmfnKey(user: any): string {
-  return normalizeGmfnKey(
-    firstTruthy(
-      user?.gmfn_id,
-      user?.gmfnId,
-      user?.global_member_id,
-      user?.member_global_id,
-      user?.member_id
-    )
-  );
-}
-
-function spotlightBelongsToCurrentUser(
-  row: any,
-  currentUserId: number,
-  currentGmfnKey: string
-): boolean {
-  if (!row) return false;
-
-  const authorUserId =
-    Number(row?.author_user_id || row?.authorUserId || row?.user_id || 0) || 0;
-  const authorGmfnKey = normalizeGmfnKey(
-    firstTruthy(
-      row?.author_gmfn_id,
-      row?.authorGmfnId,
-      row?.gmfn_id,
-      row?.owner_gmfn_id,
-      row?.ownerGmfnId
-    )
-  );
-
-  if (currentUserId && authorUserId && authorUserId === currentUserId) {
-    return true;
-  }
-
-  return Boolean(
-    currentGmfnKey && authorGmfnKey && authorGmfnKey === currentGmfnKey
-  );
-}
-
-function normalizeActiveCommunitySpotlight(
-  row: any
-): ActiveCommunitySpotlight | null {
-  if (!row) return null;
-
-  return {
-    id: Number(row?.id || 0) || undefined,
-    authorUserId:
-      Number(row?.author_user_id || row?.authorUserId || row?.user_id || 0) ||
-      undefined,
-    authorGmfnId: firstTruthy(row?.author_gmfn_id, row?.authorGmfnId),
-    message: safeStr(row?.message || ""),
-    imageUrl: toBackendAssetUrl(safeStr(row?.image_url || row?.imageUrl || "")),
-    videoUrl: toBackendAssetUrl(safeStr(row?.video_url || row?.videoUrl || "")),
-    title: firstTruthy(
-      row?.source_product_title,
-      row?.sourceProductTitle,
-      row?.spotlight_title,
-      row?.spotlightTitle,
-      row?.message
-    ),
-    description: firstTruthy(
-      row?.source_product_description,
-      row?.sourceProductDescription,
-      row?.spotlight_description,
-      row?.spotlightDescription,
-      row?.message
-    ),
-    price: firstTruthy(row?.source_product_price, row?.sourceProductPrice),
-    currency: firstTruthy(row?.source_product_currency, row?.sourceProductCurrency),
-    category: firstTruthy(
-      row?.source_product_category,
-      row?.sourceProductCategory,
-      "Spotlight item"
-    ),
-    availability: firstTruthy(
-      row?.source_product_availability,
-      row?.sourceProductAvailability
-    ),
-    ownerName: firstTruthy(
-      row?.spotlight_owner,
-      row?.spotlightOwner,
-      row?.source_shop_name,
-      row?.sourceShopName,
-      row?.author_name,
-      row?.authorName
-    ),
-    communityName: firstTruthy(
-      row?.spotlight_community,
-      row?.spotlightCommunity,
-      row?.source_clan_name,
-      row?.sourceClanName
-    ),
-    sourceProductId:
-      Number(row?.source_product_id || row?.sourceProductId || 0) || undefined,
-    sourceProductBlock:
-      Number(row?.source_product_block || row?.sourceProductBlock || 0) ||
-      undefined,
-    sourceProductSlotNumber:
-      Number(row?.source_product_slot_number || row?.sourceProductSlotNumber || 0) ||
-      undefined,
-    expiresAt: safeStr(row?.expires_at || row?.expiresAt || ""),
-    createdAt: safeStr(row?.created_at || row?.createdAt || ""),
-  };
 }
 
 function getClanId(clan: ClanItem | null | undefined): number {
@@ -1849,6 +1695,43 @@ function writeLocalJSON(key: string, value: any) {
   }
 }
 
+type CommunityHomePerformanceStage =
+  | "route-mounted"
+  | "clans-request-completed"
+  | "selected-community-resolved"
+  | "first-usable-state"
+  | "open-marketplace-clicked"
+  | "select-clan-required"
+  | "select-clan-skipped"
+  | "marketplace-navigation-initiated";
+
+function markCommunityHomePerformance(
+  stage: CommunityHomePerformanceStage,
+  detail: Record<string, unknown> = {}
+): void {
+  if (
+    typeof window === "undefined" ||
+    !["localhost", "127.0.0.1"].includes(window.location.hostname)
+  ) {
+    return;
+  }
+
+  const markName = `community-home:${stage}`;
+  try {
+    window.performance?.mark?.(markName, { detail });
+  } catch {
+    try {
+      window.performance?.mark?.(markName);
+    } catch {
+      // performance marks are development-only diagnostics.
+    }
+  }
+
+  if (typeof console !== "undefined" && typeof console.debug === "function") {
+    console.debug(`[CommunityHome] ${stage}`, detail);
+  }
+}
+
 function waitForCommunityHomeFirstPaint(): Promise<void> {
   if (typeof window === "undefined") return Promise.resolve();
 
@@ -1861,6 +1744,19 @@ function waitForCommunityHomeFirstPaint(): Promise<void> {
     }
 
     finish();
+  });
+}
+
+function waitForCommunityHomeDeferredRead(): Promise<void> {
+  if (typeof window === "undefined") return Promise.resolve();
+
+  return new Promise((resolve) => {
+    const requestIdle = (window as any).requestIdleCallback;
+    if (typeof requestIdle === "function") {
+      requestIdle(() => resolve(), { timeout: 1000 });
+      return;
+    }
+    window.setTimeout(resolve, 250);
   });
 }
 
@@ -1894,6 +1790,7 @@ export default function CommunityHomePage() {
   });
 
   const [me, setMe] = useState<any>(null);
+  const [meLoaded, setMeLoaded] = useState(false);
   const [clans, setClans] = useState<ClanItem[]>([]);
   const [communityDomainCount, setCommunityDomainCount] = useState<number | null>(null);
   const [communityDomainRows, setCommunityDomainRows] = useState<CommunityDomainListRow[]>([]);
@@ -1930,6 +1827,7 @@ export default function CommunityHomePage() {
   const [communityBulletinSettingsOpen, setCommunityBulletinSettingsOpen] = useState(false);
   const [poolSummary, setPoolSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [clansLoadError, setClansLoadError] = useState("");
   const [changingClanId, setChangingClanId] = useState<number>(0);
 
   const [notice, setNotice] = useState<{
@@ -1937,20 +1835,6 @@ export default function CommunityHomePage() {
     text: string;
   } | null>(null);
 
-  const [activeCommunitySpotlight, setActiveCommunitySpotlight] =
-    useState<ActiveCommunitySpotlight | null>(null);
-  const [activeCommunitySpotlights, setActiveCommunitySpotlights] = useState<
-    ActiveCommunitySpotlight[]
-  >([]);
-  const [activeCommunitySpotlightIndex, setActiveCommunitySpotlightIndex] =
-    useState(0);
-  const [activeCommunitySpotlightTotal, setActiveCommunitySpotlightTotal] =
-    useState(0);
-  const [activeCommunitySpotlightLoading, setActiveCommunitySpotlightLoading] =
-    useState(false);
-  const [activeCommunitySpotlightSyncIssue, setActiveCommunitySpotlightSyncIssue] =
-    useState("");
-  const activeCommunitySpotlightsRef = useRef<ActiveCommunitySpotlight[]>([]);
 
   const applyCommunityNoticeListResponse = useCallback(
     (res: any) => {
@@ -2098,69 +1982,103 @@ export default function CommunityHomePage() {
   useEffect(() => {
     let alive = true;
 
+    markCommunityHomePerformance("route-mounted");
+    setLoading(true);
+
     (async () => {
-      setLoading(true);
+      let clansRes: any = { items: [] };
+      let clansError = "";
 
       try {
-        const [meRes, clansRes] = await Promise.all([
-          getMe().catch(() => null),
-          listMyClans().catch(() => ({ items: [] })),
-        ]);
+        clansRes = await listMyClans();
+      } catch (error: any) {
+        clansError =
+          safeStr(error?.message) ||
+          "GSN could not load your marketplace communities right now.";
+      }
 
-        const rows: ClanItem[] = Array.isArray(clansRes)
-          ? clansRes
-          : Array.isArray(clansRes?.items)
-          ? clansRes.items
-          : [];
+      markCommunityHomePerformance("clans-request-completed", {
+        failed: Boolean(clansError),
+      });
 
-        const storedId = Number(getSelectedClanId() || 0);
-        const current =
-          rows.find((item) => getClanId(item) === storedId) || rows[0] || null;
+      const rows: ClanItem[] = Array.isArray(clansRes)
+        ? clansRes
+        : Array.isArray(clansRes?.items)
+        ? clansRes.items
+        : [];
 
-        if (!alive) return;
+      const storedId = Number(getSelectedClanId() || 0);
+      const current =
+        rows.find((item) => getClanId(item) === storedId) || rows[0] || null;
 
-        setMe(meRes || null);
-        setClans(rows);
-        setSelectedClan(current);
-        setLoading(false);
+      if (!alive) return;
 
-        if (current) {
-          const currentId = getClanId(current);
+      setClans(rows);
+      setSelectedClan(current);
+      setClansLoadError(clansError);
+      markCommunityHomePerformance("selected-community-resolved", {
+        selectedClanId: current ? getClanId(current) : null,
+        communityCount: rows.length,
+      });
+      setLoading(false);
+      markCommunityHomePerformance("first-usable-state", {
+        selectedClanId: current ? getClanId(current) : null,
+        communityCount: rows.length,
+      });
 
-          if (currentId && currentId !== storedId) {
-            void selectClan(currentId).catch(() => null);
-          }
+      void getMe()
+        .then((meRes) => {
+          if (alive) setMe(meRes || null);
+        })
+        .catch(() => null)
+        .finally(() => {
+          if (alive) setMeLoaded(true);
+        });
+
+      if (current) {
+        const currentId = getClanId(current);
+
+        if (currentId && currentId !== storedId) {
+          markCommunityHomePerformance("select-clan-required", {
+            reason: "initial-fallback-persistence",
+            selectedClanId: currentId,
+            storedId,
+          });
+          void selectClan(currentId).catch(() => null);
         }
+      }
 
-        await waitForCommunityHomeFirstPaint();
-        if (!alive) return;
+      await waitForCommunityHomeFirstPaint();
+      await waitForCommunityHomeDeferredRead();
+      if (!alive) return;
 
-        const domainsRes = await listMyCommunityDomains().catch(() => ({
-          items: null,
-        }));
+      const domainsRes = await listMyCommunityDomains().catch(() => ({
+        items: null,
+      }));
 
-        if (!alive) return;
+      if (!alive) return;
 
-        const domainRows = Array.isArray(domainsRes)
-          ? domainsRes
-          : Array.isArray(domainsRes?.items)
-          ? domainsRes.items
-          : null;
+      const domainRows = Array.isArray(domainsRes)
+        ? domainsRes
+        : Array.isArray(domainsRes?.items)
+        ? domainsRes.items
+        : null;
 
-        const normalizedDomainRows = Array.isArray(domainRows)
-          ? domainRows
-              .map(normalizeCommunityDomainListRow)
-              .filter((row): row is CommunityDomainListRow => Boolean(row))
-          : [];
+      const normalizedDomainRows = Array.isArray(domainRows)
+        ? domainRows
+            .map(normalizeCommunityDomainListRow)
+            .filter((row): row is CommunityDomainListRow => Boolean(row))
+        : [];
 
-        setCommunityDomainRows(normalizedDomainRows);
-        setCommunityDomainCount(Array.isArray(domainRows) ? normalizedDomainRows.length : null);
-      } finally {
+      setCommunityDomainRows(normalizedDomainRows);
+      setCommunityDomainCount(Array.isArray(domainRows) ? normalizedDomainRows.length : null);
+    })()
+      .catch(() => null)
+      .finally(() => {
         if (alive) {
           setLoading(false);
         }
-      }
-    })();
+      });
 
     return () => {
       alive = false;
@@ -2671,8 +2589,6 @@ export default function CommunityHomePage() {
     me?.member_id,
     me?.id
   );
-  const currentUserId = useMemo(() => getCurrentUserId(me), [me]);
-  const currentGmfnKey = useMemo(() => getCurrentGmfnKey(me), [me]);
   const communityNextActionIntro =
     "Choose the verification or work evidence you need. GSN checks the first required step, then opens the right community, trust, finance, support, or notice path.";
   const spotlightGuidanceSuspendedView = guidedActionFamilyFocus === "spotlight";
@@ -2731,8 +2647,8 @@ export default function CommunityHomePage() {
     netMoneyPosition < 0
       ? `${formatGlobalAmount(Math.abs(netMoneyPosition))} visible obligation`
       : `${formatSignedGlobalAmount(netMoneyPosition)} net visible record`;
-  const communityHomeOwnerName = resolveMemberName(me);
-  const communityHomeNeedsDisplayName = !hasHumanMemberName(me);
+  const communityHomeOwnerName = meLoaded ? resolveMemberName(me) : "GSN Identity loading";
+  const communityHomeNeedsDisplayName = meLoaded && !hasHumanMemberName(me);
   const communityCountFromSummary = Number(poolSummary?.communities_count || clans.length || 0);
   const combinedCommunityDomainCount =
     communityDomainCount === null ? communityDomainRows.length : communityDomainCount;
@@ -3285,133 +3201,6 @@ export default function CommunityHomePage() {
     }
   }
 
-  useEffect(() => {
-    activeCommunitySpotlightsRef.current = activeCommunitySpotlights;
-  }, [activeCommunitySpotlights]);
-
-  async function refreshActiveCommunitySpotlight(
-    clanId: number,
-    owner: { userId: number; gmfnKey: string }
-  ) {
-    if (!clanId || (!owner.userId && !owner.gmfnKey)) {
-      setActiveCommunitySpotlight(null);
-      setActiveCommunitySpotlights([]);
-      setActiveCommunitySpotlightIndex(0);
-      setActiveCommunitySpotlightTotal(0);
-      setActiveCommunitySpotlightLoading(false);
-      setActiveCommunitySpotlightSyncIssue("");
-      return;
-    }
-
-    if (activeCommunitySpotlightsRef.current.length === 0) {
-      setActiveCommunitySpotlightLoading(true);
-    }
-
-    try {
-      const res = await getMarketplaceBroadcasts({
-        clan_id: clanId,
-        active_only: true,
-        limit: 12,
-      }).catch((err) => ({
-        items: [],
-        __failed: String(err?.message || err || "Spotlight refresh failed."),
-      }));
-
-      const rows = Array.isArray((res as any)?.items)
-        ? (res as any).items
-        : Array.isArray(res)
-        ? res
-        : [];
-
-      const ownerRows = rows.filter((row: any) =>
-        spotlightBelongsToCurrentUser(row, owner.userId, owner.gmfnKey)
-      );
-      const normalizedRows = ownerRows
-        .map((row: any) => normalizeActiveCommunitySpotlight(row))
-        .filter(Boolean) as ActiveCommunitySpotlight[];
-
-      setActiveCommunitySpotlights(normalizedRows);
-      setActiveCommunitySpotlightTotal(normalizedRows.length);
-      setActiveCommunitySpotlightIndex((prev) =>
-        normalizedRows.length > 0 ? prev % normalizedRows.length : 0
-      );
-      setActiveCommunitySpotlightSyncIssue(safeStr((res as any)?.__failed || ""));
-    } finally {
-      setActiveCommunitySpotlightLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (activeCommunitySpotlights.length === 0) {
-      setActiveCommunitySpotlight(null);
-      return;
-    }
-
-    setActiveCommunitySpotlight(
-      activeCommunitySpotlights[
-        activeCommunitySpotlightIndex % activeCommunitySpotlights.length
-      ] || activeCommunitySpotlights[0]
-    );
-  }, [activeCommunitySpotlightIndex, activeCommunitySpotlights]);
-
-  useEffect(() => {
-    if (activeCommunitySpotlights.length <= 1) return;
-
-    const timer = window.setInterval(() => {
-      setActiveCommunitySpotlightIndex(
-        (prev) => (prev + 1) % activeCommunitySpotlights.length
-      );
-    }, SPOTLIGHT_PILOT_ROTATION_MS);
-
-    return () => window.clearInterval(timer);
-  }, [activeCommunitySpotlights.length]);
-
-  useEffect(() => {
-    const clanId = getClanId(selectedClan);
-    const owner = { userId: currentUserId, gmfnKey: currentGmfnKey };
-
-    if (!clanId || (!owner.userId && !owner.gmfnKey)) {
-      setActiveCommunitySpotlight(null);
-      setActiveCommunitySpotlights([]);
-      setActiveCommunitySpotlightIndex(0);
-      setActiveCommunitySpotlightTotal(0);
-      setActiveCommunitySpotlightLoading(false);
-      return;
-    }
-
-    let alive = true;
-
-    async function loadIfAlive() {
-      if (!alive) return;
-      await refreshActiveCommunitySpotlight(clanId, owner);
-    }
-
-    void loadIfAlive();
-
-    const timer = window.setInterval(() => {
-      void loadIfAlive();
-    }, SPOTLIGHT_PILOT_REFRESH_MS);
-
-    function handleFocusRefresh() {
-      void loadIfAlive();
-    }
-
-    function handleVisibilityRefresh() {
-      if (typeof document !== "undefined" && document.visibilityState === "visible") {
-        void loadIfAlive();
-      }
-    }
-
-    window.addEventListener("focus", handleFocusRefresh);
-    document.addEventListener("visibilitychange", handleVisibilityRefresh);
-
-    return () => {
-      alive = false;
-      window.clearInterval(timer);
-      window.removeEventListener("focus", handleFocusRefresh);
-      document.removeEventListener("visibilitychange", handleVisibilityRefresh);
-    };
-  }, [currentGmfnKey, currentUserId, selectedClan]);
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
@@ -4901,16 +4690,39 @@ export default function CommunityHomePage() {
     event?: React.SyntheticEvent<HTMLElement>
   ) {
     consumeCommunityButtonEvent(event);
+    markCommunityHomePerformance("open-marketplace-clicked", {
+      selectedClanId,
+    });
 
     if (!selectedClanId || !selectedClan) {
       showNotice("error", "Select a community first.");
       return;
     }
 
-    setChangingClanId(selectedClanId);
+    const persistedClanId = Number(getSelectedClanId() || 0);
+    const selectRequired = persistedClanId !== selectedClanId;
+
+    if (selectRequired) {
+      setChangingClanId(selectedClanId);
+    }
 
     try {
-      await selectClan(selectedClanId);
+      if (selectRequired) {
+        markCommunityHomePerformance("select-clan-required", {
+          reason: "open-marketplace-persistence",
+          selectedClanId,
+          persistedClanId,
+        });
+        await selectClan(selectedClanId);
+      } else {
+        markCommunityHomePerformance("select-clan-skipped", {
+          selectedClanId,
+        });
+      }
+
+      markCommunityHomePerformance("marketplace-navigation-initiated", {
+        selectedClanId,
+      });
       navigateWithOrigin(
         navigate,
         routes.marketplace,
@@ -4922,7 +4734,9 @@ export default function CommunityHomePage() {
         safeStr(err?.message) || "Selected community could not be opened."
       );
     } finally {
-      setChangingClanId(0);
+      if (selectRequired) {
+        setChangingClanId(0);
+      }
     }
   }
 
@@ -5013,7 +4827,7 @@ export default function CommunityHomePage() {
           </React.Suspense>
 
           <section style={communityBlockCard("blue")}>
-            <div style={sectionLabel()}>No marketplace communities yet</div>
+            <div style={sectionLabel()}>{clansLoadError ? "Community list unavailable" : "No marketplace communities yet"}</div>
 
             <div
               style={{
@@ -5025,7 +4839,7 @@ export default function CommunityHomePage() {
                 maxWidth: 760,
               }}
             >
-              You do not have any visible marketplace communities in Community Home yet.
+              {clansLoadError || "You do not have any visible marketplace communities in Community Home yet."}
             </div>
 
             <div
@@ -5037,7 +4851,9 @@ export default function CommunityHomePage() {
                 maxWidth: 680,
               }}
             >
-              Create or join first. Your marketplace communities will appear here.
+              {clansLoadError
+                ? "Try again from Dashboard or use create/join if you still need a community."
+                : "Create or join first. Your marketplace communities will appear here."}
             </div>
 
             <RealLifeMeaningGuide
@@ -6475,10 +6291,7 @@ export default function CommunityHomePage() {
                       icon: "megaphone",
                       id: "spotlight-status",
                       title: "Owner spotlight status",
-                      detail:
-                        activeCommunitySpotlightTotal > 0
-                          ? "Your spotlight is live."
-                          : "No owner spotlight live.",
+                      detail: "Manage owner Spotlight from Shop Control.",
                       onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                         openCommunityHomeSection(
                           event,
@@ -6840,7 +6653,30 @@ export default function CommunityHomePage() {
                 border: "1px solid rgba(11,31,51,0.08)",
               }}
             >
-              <div style={sectionLabel()}>Your spotlight in this community</div>
+              <div style={sectionLabel()}>Spotlight lives in Shop</div>
+              <div
+                style={{
+                  marginTop: 10,
+                  color: "#07172C",
+                  fontSize: 16,
+                  fontWeight: 900,
+                  lineHeight: 1.4,
+                }}
+              >
+                Manage live promotions from Shop Control.
+              </div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#5F7287",
+                  fontSize: 14,
+                  lineHeight: 1.55,
+                }}
+              >
+                Community Home keeps the entry point light. Spotlight status,
+                media, expiry, and take-down controls belong inside the Shop
+                owner workflow.
+              </div>
               <div
                 style={{
                   marginTop: 10,
@@ -6849,193 +6685,9 @@ export default function CommunityHomePage() {
                   gap: 8,
                 }}
               >
-                <span style={badge(true)}>
-                  {activeCommunitySpotlightTotal ||
-                    activeCommunitySpotlights.length}{" "}
-                  owner live / queued
-                </span>
-                {activeCommunitySpotlights.length > 1 ? (
-                  <span style={badge(false)}>
-                    Showing{" "}
-                    {(activeCommunitySpotlightIndex %
-                      activeCommunitySpotlights.length) +
-                      1}{" "}
-                    of {activeCommunitySpotlights.length}
-                  </span>
-                ) : null}
-                <span style={badge(false)}>
-                  Rotates every {SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL} seconds
-                </span>
+                <span style={badge(false)}>Shop-owned</span>
+                <span style={badge(false)}>No Community Home live feed</span>
               </div>
-
-              {activeCommunitySpotlightLoading ? (
-                <div
-                  style={{
-                    marginTop: 10,
-                    color: "#5F7287",
-                    fontSize: 14,
-                    lineHeight: 1.75,
-                  }}
-                >
-                  Refreshing live spotlight state...
-                </div>
-              ) : activeCommunitySpotlight ? (
-                <>
-                  <div style={{ marginTop: 12 }}>
-                    <React.Suspense fallback={null}>
-                      <SpotlightMediaFrame
-                        imageUrl={activeCommunitySpotlight.imageUrl}
-                        videoUrl={activeCommunitySpotlight.videoUrl}
-                        videoPoster={activeCommunitySpotlight.imageUrl}
-                        alt="Your live community spotlight"
-                        frameStyle={{
-                          minHeight: 180,
-                          maxHeight: 260,
-                          borderRadius: 18,
-                          border: "1px solid rgba(212,175,55,0.14)",
-                          background:
-                            "linear-gradient(180deg, rgba(24,58,88,0.98) 0%, rgba(38,84,122,0.98) 100%)",
-                        }}
-                        mediaStyle={{
-                          minHeight: 180,
-                          maxHeight: 260,
-                        }}
-                        showVideoControls={Boolean(
-                          activeCommunitySpotlight.videoUrl
-                        )}
-                        autoPlayVideo={Boolean(activeCommunitySpotlight.videoUrl)}
-                        mutedVideo={Boolean(activeCommunitySpotlight.videoUrl)}
-                        loopVideo={Boolean(activeCommunitySpotlight.videoUrl)}
-                        showAudioUnlock={Boolean(activeCommunitySpotlight.videoUrl)}
-                        audioUnlockLabel="Sound on"
-                        maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
-                        fallback={
-                          <div
-                            style={{
-                              padding: 20,
-                              textAlign: "center",
-                              color: "#D7E3F1",
-                              fontWeight: 800,
-                              fontSize: 14,
-                              lineHeight: 1.7,
-                            }}
-                          >
-                            Live spotlight has no media yet.
-                          </div>
-                        }
-                      />
-                    </React.Suspense>
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 10,
-                      color: "#07172C",
-                      fontSize: 16,
-                      fontWeight: 900,
-                      lineHeight: 1.4,
-                    }}
-                  >
-                    {activeCommunitySpotlight.title || "Your spotlight is live."}
-                  </div>
-                  {activeCommunitySpotlight.description ? (
-                    <div
-                      style={{
-                        marginTop: 6,
-                        color: "#526579",
-                        fontSize: 13.5,
-                        fontWeight: 760,
-                        lineHeight: 1.45,
-                        display: "-webkit-box",
-                        WebkitBoxOrient: "vertical",
-                        WebkitLineClamp: isCompact ? 3 : 2,
-                        overflow: "hidden",
-                      }}
-                    >
-                      {activeCommunitySpotlight.description}
-                    </div>
-                  ) : null}
-                  <div
-                    style={{
-                      marginTop: 10,
-                      display: "grid",
-                      gridTemplateColumns: isCompact
-                        ? "repeat(2, minmax(0, 1fr))"
-                        : "repeat(4, minmax(0, 1fr))",
-                      gap: 8,
-                    }}
-                  >
-                    <span style={badge(false)}>
-                      {activeCommunitySpotlight.ownerName || "Owner shown by GSN"}
-                    </span>
-                    <span style={badge(false)}>
-                      {activeCommunitySpotlight.communityName ||
-                        selectedClanName ||
-                        "Selected community"}
-                    </span>
-                    <span style={badge(true)}>
-                      {spotlightPriceLine(
-                        activeCommunitySpotlight.price,
-                        activeCommunitySpotlight.currency
-                      ) || "Price on request"}
-                    </span>
-                    <span style={badge(false)}>
-                      {activeCommunitySpotlight.availability ||
-                        activeCommunitySpotlight.category ||
-                        "Availability shown by owner"}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 10,
-                      display: "flex",
-                      gap: 8,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <span style={badge(true)}>Active now</span>
-                    {activeCommunitySpotlight.videoUrl ? (
-                      <span style={badge(false)}>Short video live</span>
-                    ) : activeCommunitySpotlight.imageUrl ? (
-                      <span style={badge(false)}>Image live</span>
-                    ) : null}
-                    {activeCommunitySpotlight.expiresAt ? (
-                      <span style={badge(false)}>
-                        Expires:{" "}
-                        {new Date(
-                          activeCommunitySpotlight.expiresAt
-                        ).toLocaleString()}
-                      </span>
-                    ) : (
-                      <span style={badge(false)}>No expiry set</span>
-                    )}
-                  </div>
-                </>
-              ) : activeCommunitySpotlightSyncIssue ? (
-                <div
-                  style={{
-                    marginTop: 10,
-                    color: "#5F7287",
-                    fontSize: 14,
-                    lineHeight: 1.75,
-                  }}
-                >
-                  Spotlight status could not be confirmed.
-                  <div style={{ marginTop: 8, color: "#8A1C1C" }}>
-                    Refresh note: {activeCommunitySpotlightSyncIssue}
-                  </div>
-                </div>
-              ) : (
-                <div
-                  style={{
-                    marginTop: 10,
-                    color: "#5F7287",
-                    fontSize: 14,
-                    lineHeight: 1.75,
-                  }}
-                >
-                  You have no spotlight live in this community right now.
-                </div>
-              )}
             </div>
 
             <div
