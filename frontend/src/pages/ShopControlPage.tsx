@@ -55,7 +55,7 @@ import {
   SPOTLIGHT_MAX_VIDEO_BYTES,
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
 } from "../lib/spotlightPilot";
-import { publicFrontendUrl } from "../lib/publicLinks";
+import { publicFrontendUrl, publicShopPath } from "../lib/publicLinks";
 import { institutionalBlueRailShell } from "../lib/institutionalSurface";
 import { getRealLifeTrustGuidance } from "../lib/realLifeTrustGuidance";
 import { marketplaceGovernanceErrorMessage } from "../lib/structuredErrors";
@@ -78,9 +78,7 @@ import {
 import {
   OWNER_SHOP_HASHES,
   PAID_REPOST_HASH,
-  SHOP_CONTROL_SHORTCUTS,
   ownerShopLayerForTarget,
-  type ShopControlShortcutId,
 } from "../lib/ownerShopHandles";
 import type {
   ShopControlSpotlightFeedback,
@@ -629,13 +627,6 @@ function isMerchantReleaseControlTarget(targetId: unknown): boolean {
     normalized.includes("release")
   );
 }
-
-const SHOP_CONTROL_SHORTCUT_ICONS: Record<ShopControlShortcutId, GsnIconName> = {
-  "shop-billboard": "shop",
-  "shop-diaries": "document",
-  "shop-summary": "chart",
-  "community-package": "financeInstitution",
-};
 
 const SPOTLIGHT_ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const SPOTLIGHT_ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
@@ -1189,29 +1180,6 @@ function controlIconTile(
     >
       <GsnLegacyIcon name={name} size={size} />
     </div>
-  );
-}
-
-function heroShortcutIconTile(name: GsnIconName): React.ReactNode {
-  return (
-    <span
-      aria-hidden="true"
-      style={{
-        width: 38,
-        height: 38,
-        borderRadius: 14,
-        display: "inline-grid",
-        placeItems: "center",
-        flex: "0 0 auto",
-        background: "rgba(255,255,255,0.98)",
-        border: "1px solid rgba(246,215,122,0.30)",
-        boxShadow:
-          "0 12px 24px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.96)",
-        color: "#7A4A00",
-      }}
-    >
-      <GsnLegacyIcon name={name} size={32} />
-    </span>
   );
 }
 
@@ -3911,17 +3879,6 @@ export default function ShopControlPage() {
       alive = false;
     };
   }, [shopControlPolicyCommunityId]);
-  const shopHeroShortcuts: Array<{
-    label: string;
-    icon: GsnIconName;
-    to: string;
-  }> = SHOP_CONTROL_SHORTCUTS.map((item) => ({
-    label: item.label,
-    icon: SHOP_CONTROL_SHORTCUT_ICONS[item.id],
-    to: routeTarget("shop", effectiveShopClanId, `shop-control.route.${item.id}`, {
-      hash: item.hash,
-    }),
-  }));
   const merchantReleaseHashFocused = useMemo(() => {
     const sectionParam = new URLSearchParams(location.search).get("section");
     const rawTargetId =
@@ -4742,6 +4699,148 @@ export default function ShopControlPage() {
         };
     }
   }, [routes.freeSpotlight, routes.shopAssets, routes.shopDetails, routes.shopGallery, routes.tradeEvidence, shopAnalyticsWisdom.diagnosisCode, shopAnalyticsWisdom.primaryActionLabel]);
+  const ownerShopGsnId = firstTruthy(shop?.owner_gmfn_id, shop?.gmfn_id, me?.gmfn_id);
+  const ownerPublicShopPath = ownerShopGsnId ? publicShopPath(ownerShopGsnId) : "";
+  const shopRecordReady = Boolean(shop?.id);
+  const publicShopReady = Boolean(shopRecordReady && ownerPublicShopPath);
+  const spotlightStatusLabel = currentActiveSpotlight ? "Live" : "Inactive";
+  const spotlightStatusDetail = currentActiveSpotlight
+    ? firstTruthy(
+        safeDateTime(currentActiveSpotlight.expires_at)
+          ? `Ends ${safeDateTime(currentActiveSpotlight.expires_at)}`
+          : "Live now",
+        "Live now"
+      )
+    : "No active promotion";
+  const productStatusLabel = occupiedPublicProductSlotCount > 0
+    ? `${occupiedPublicProductSlotCount}/${publicProductSlotsTotal} public blocks`
+    : "No public items";
+  const shopDiaryStatusLabel = occupiedPublicProductSlotCount > 0
+    ? `${occupiedPublicProductSlotCount} public content block${occupiedPublicProductSlotCount === 1 ? "" : "s"}`
+    : "No public content yet";
+  const vaultStatusLabel = vaultProducts.length > 0
+    ? `${vaultProducts.length} private offer${vaultProducts.length === 1 ? "" : "s"}`
+    : "Private offers optional";
+  const ownerPrimaryAction = useMemo(() => {
+    if (!shopRecordReady) {
+      return {
+        label: "Set up shop",
+        to: routes.shopDetails,
+        detail: "Create the shop record and public face first.",
+        debugId: "shop-control.orientation.primary.setup",
+      };
+    }
+    if (occupiedPublicProductSlotCount <= 0) {
+      return {
+        label: "Add product or service",
+        to: routes.shopGallery,
+        detail: "Add one public block before promoting the shop.",
+        debugId: "shop-control.orientation.primary.products",
+      };
+    }
+    if (currentActiveSpotlight) {
+      return {
+        label: "Manage Spotlight",
+        to: routes.freeSpotlight,
+        detail: "Review the live promotion or take it down.",
+        debugId: "shop-control.orientation.primary.spotlight",
+      };
+    }
+    if (ownerPublicShopPath) {
+      return {
+        label: "Open public shop",
+        to: ownerPublicShopPath,
+        detail: "Review what visitors can see.",
+        debugId: "shop-control.orientation.primary.public-shop",
+      };
+    }
+    return {
+      label: "Review shop details",
+      to: routes.shopDetails,
+      detail: "Finish the public shop identity.",
+      debugId: "shop-control.orientation.primary.details",
+    };
+  }, [currentActiveSpotlight, occupiedPublicProductSlotCount, ownerPublicShopPath, routes.freeSpotlight, routes.shopDetails, routes.shopGallery, shopRecordReady]);
+  const ownerOrientationCards = [
+    {
+      key: "public-shop",
+      icon: "shop" as GsnIconName,
+      label: "Public shop",
+      value: publicShopReady ? "Ready" : "Setup needed",
+      detail: publicShopReady ? "Visitor-facing shop link is available." : "Save shop details before visitors can inspect it.",
+      to: publicShopReady ? ownerPublicShopPath : routes.shopDetails,
+      action: publicShopReady ? "Open" : "Set up",
+      debugId: "shop-control.orientation.public-shop",
+    },
+    {
+      key: "products",
+      icon: "document" as GsnIconName,
+      label: "Products/services",
+      value: productStatusLabel,
+      detail: "Managed in Pictures & Products.",
+      to: routes.shopGallery,
+      action: "Manage",
+      debugId: "shop-control.orientation.products",
+    },
+    {
+      key: "spotlight",
+      icon: "megaphone" as GsnIconName,
+      label: "Spotlight",
+      value: spotlightStatusLabel,
+      detail: spotlightStatusDetail,
+      to: routes.freeSpotlight,
+      action: "Manage",
+      debugId: "shop-control.orientation.spotlight",
+    },
+    {
+      key: "diary",
+      icon: "copy" as GsnIconName,
+      label: "Shop Diary",
+      value: shopDiaryStatusLabel,
+      detail: "Public blocks and ordinary shop content, not formal evidence.",
+      to: routes.shopGallery,
+      action: "Review",
+      debugId: "shop-control.orientation.diary",
+    },
+  ];
+  const progressiveOwnerTools = [
+    {
+      label: "Shop details",
+      detail: "Name, contact and public picture.",
+      to: routes.shopDetails,
+      debugId: "shop-control.more.details",
+    },
+    {
+      label: "Vault private offers",
+      detail: vaultStatusLabel,
+      to: routes.vaultControl,
+      debugId: "shop-control.more.vault",
+    },
+    {
+      label: "Subscription Spotlight",
+      detail: "Paid priority lane stays separate from free Spotlight.",
+      to: routes.subscriptionSpotlight,
+      debugId: "shop-control.more.subscription-spotlight",
+    },
+    {
+      label: "Paid repost",
+      detail: "Send one public block into a permitted marketplace lane.",
+      to: routes.paidRepost,
+      debugId: "shop-control.more.paid-repost",
+    },
+    {
+      label: "Shop analytics",
+      detail: "Signals and experiments, not sales proof.",
+      to: routes.shopSummary,
+      debugId: "shop-control.more.analytics",
+    },
+    {
+      label: "Trade Evidence",
+      detail: "Formal bilateral records stay in Marketplace.",
+      to: routes.tradeEvidence,
+      debugId: "shop-control.more.trade-evidence",
+    },
+  ];
   const trackMarketIntelligenceAction = useCallback(
     (actionKey: string) => {
       const activeShopId = Number(shop?.id || 0);
@@ -6816,12 +6915,12 @@ export default function ShopControlPage() {
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
-      {activeOwnerLayer === "overview" || activeOwnerLayer === "products" ? (
+      {activeOwnerLayer === "overview" ? (
       <section
         id="shop-control-summary"
         style={{
           ...pageCard(
-            "radial-gradient(circle at 12% 0%, rgba(217,172,51,0.14) 0%, rgba(217,172,51,0) 28%), linear-gradient(180deg, #071827 0%, #0B2942 56%, #123A59 100%)"
+            "radial-gradient(circle at 12% 0%, rgba(217,172,51,0.12) 0%, rgba(217,172,51,0) 30%), linear-gradient(180deg, #071827 0%, #0B2942 56%, #123A59 100%)"
           ),
           position: "relative",
           overflow: "hidden",
@@ -6831,90 +6930,161 @@ export default function ShopControlPage() {
           aria-hidden="true"
           style={{
             position: "absolute",
-            right: isCompact ? 10 : 16,
-            top: isCompact ? 14 : -10,
-            opacity: 0.08,
+            right: isCompact ? 10 : 18,
+            top: isCompact ? 12 : -12,
+            opacity: 0.06,
             pointerEvents: "none",
             transform: isCompact ? "rotate(-6deg)" : "rotate(-4deg)",
           }}
         >
-          <GSNBrandMark width={isCompact ? 112 : 168} height={isCompact ? 140 : 210} />
+          <GSNBrandMark width={isCompact ? 104 : 154} height={isCompact ? 130 : 192} />
         </div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr",
-            gap: 16,
-            alignItems: "start",
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
-          <div>
-            <div style={{ ...sectionLabel(), color: "#F6D77A" }}>Owner shop control</div>
-
-            <div
-              style={{
-                marginTop: 10,
-                color: "#F8FBFF",
-                fontWeight: 900,
-                fontSize: isCompact ? 28 : 34,
-                lineHeight: 1.1,
-                textTransform: "uppercase",
-              }}
-            >
-              {firstTruthy(shop?.name, "My Shop")}
+        <div style={{ position: "relative", zIndex: 1, display: "grid", gap: 14 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 220px",
+              gap: 14,
+              alignItems: "end",
+            }}
+          >
+            <div>
+              <div style={{ ...sectionLabel(), color: "#F6D77A" }}>My Shop</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#F8FBFF",
+                  fontWeight: 950,
+                  fontSize: isCompact ? 28 : 34,
+                  lineHeight: 1.05,
+                }}
+              >
+                {firstTruthy(shop?.name, "Shop not set up")}
+              </div>
+              <div style={{ marginTop: 8, ...helperText(), maxWidth: 760, color: "#D7E3F1", lineHeight: 1.45 }}>
+                Operate your public shop, public blocks, and current promotion from one place.
+              </div>
+              <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <span style={badge(publicShopReady)}>{labelWithIcon("shop", publicShopReady ? "Public shop ready" : "Setup needed")}</span>
+                <span style={badge(occupiedPublicProductSlotCount > 0)}>{labelWithIcon("document", productStatusLabel)}</span>
+                <span style={badge(Boolean(currentActiveSpotlight))}>{labelWithIcon("megaphone", `Spotlight ${spotlightStatusLabel}`)}</span>
+              </div>
             </div>
-
             <div
               style={{
-                marginTop: 12,
-                ...helperText(),
-                maxWidth: 860,
-                color: "#D7E3F1",
+                ...innerCard("rgba(255,255,255,0.96)"),
+                border: "1px solid rgba(246,215,122,0.22)",
+                boxShadow: "0 18px 36px rgba(2,12,27,0.18)",
               }}
             >
-              Use only the shop setup tools here: public shop face, products,
-              and shop details.
-            </div>
-
-            <div
-              style={{
-                marginTop: 16,
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "repeat(2, minmax(0, 1fr))"
-                  : "repeat(auto-fit, minmax(138px, 1fr))",
-                gap: 8,
-              }}
-              aria-label="Shop control shortcuts"
-            >
-              {shopHeroShortcuts.map((item) => (
-                <StableCtaLink
-                  key={item.label}
-                  to={item.to}
-                  kind="soft"
-                  fullWidth
-                  debugId={`shop-control.hero-shortcut.${item.label.toLowerCase().replace(/\s+/g, "-")}`}
-                  style={{
-                    minHeight: 58,
-                    padding: "9px 10px",
-                    border: "1px solid rgba(246,215,122,0.28)",
-                    background:
-                      "linear-gradient(180deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.05) 100%)",
-                    color: "#F8FBFF",
-                    boxShadow:
-                      "0 8px 18px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.16)",
-                    gap: 8,
-                  }}
-                >
-                  {heroShortcutIconTile(item.icon)}
-                  <span>{item.label}</span>
-                </StableCtaLink>
-              ))}
+              <div style={sectionLabel()}>Next action</div>
+              <div style={{ marginTop: 8, color: "#07172C", fontSize: 18, fontWeight: 950, lineHeight: 1.15 }}>
+                {ownerPrimaryAction.label}
+              </div>
+              <div style={{ marginTop: 7, ...helperText(), fontSize: 12.5, lineHeight: 1.35 }}>
+                {ownerPrimaryAction.detail}
+              </div>
+              <StableCtaLink
+                to={ownerPrimaryAction.to}
+                kind="primary"
+                fullWidth
+                stableHeight={isCompact ? 52 : 48}
+                debugId={ownerPrimaryAction.debugId}
+                style={{ marginTop: 12 }}
+              >
+                {ownerPrimaryAction.label}
+              </StableCtaLink>
             </div>
           </div>
 
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "repeat(4, minmax(0, 1fr))",
+              gap: 10,
+            }}
+          >
+            {ownerOrientationCards.map((card) => (
+              <div
+                key={card.key}
+                style={{
+                  ...innerCard("linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(245,250,255,0.94) 100%)"),
+                  minHeight: isCompact ? 118 : 142,
+                  display: "grid",
+                  alignContent: "space-between",
+                  gap: 10,
+                }}
+              >
+                <div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    {inlineIcon(card.icon, "#0F5EAA", 15)}
+                    <div style={{ ...sectionLabel(), color: "#27496A" }}>{card.label}</div>
+                  </div>
+                  <div style={{ marginTop: 8, color: "#07172C", fontSize: 17, fontWeight: 950, lineHeight: 1.15 }}>
+                    {card.value}
+                  </div>
+                  <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.32 }}>
+                    {card.detail}
+                  </div>
+                </div>
+                <StableCtaLink
+                  to={card.to}
+                  kind="secondary"
+                  fullWidth
+                  stableHeight={42}
+                  debugId={card.debugId}
+                  style={{ fontSize: 12, borderRadius: 14 }}
+                >
+                  {card.action}
+                </StableCtaLink>
+              </div>
+            ))}
+          </div>
+
+          <details
+            style={{
+              ...innerCard("linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,251,255,0.92) 100%)"),
+              border: "1px solid rgba(246,215,122,0.18)",
+            }}
+          >
+            <StableDisclosureSummary
+              debugId="shop-control.more-tools.toggle"
+              stableHeight={44}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 10,
+                alignItems: "center",
+                color: "#0B2D4A",
+                fontSize: 13,
+                fontWeight: 950,
+              }}
+            >
+              <span>{labelWithIcon("shield", "More owner tools")}</span>
+              <span style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>Progressive</span>
+            </StableDisclosureSummary>
+            <div style={{ marginTop: 12, ...controlGrid(isCompact, 186) }}>
+              {progressiveOwnerTools.map((tool) => (
+                <StableCtaLink
+                  key={tool.debugId}
+                  to={tool.to}
+                  kind="secondary"
+                  fullWidth
+                  stableHeight={isCompact ? 58 : 54}
+                  debugId={tool.debugId}
+                  style={{ justifyContent: "flex-start", textAlign: "left", padding: "8px 10px" }}
+                >
+                  <span style={{ display: "grid", gap: 2, minWidth: 0 }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 950 }}>{tool.label}</span>
+                    <span style={{ color: "#617085", fontSize: 11, fontWeight: 780, lineHeight: 1.2 }}>{tool.detail}</span>
+                  </span>
+                </StableCtaLink>
+              ))}
+            </div>
+            <div style={{ marginTop: 10, ...helperText(), fontSize: 12.5, lineHeight: 1.35 }}>
+              These tools stay behind a deliberate open step. Shop Diary blocks are public content; Trade Evidence is formal bilateral evidence in Marketplace.
+            </div>
+          </details>
         </div>
       </section>
       ) : null}

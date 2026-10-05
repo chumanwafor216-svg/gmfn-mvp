@@ -39,8 +39,8 @@ const expectedSourceActions = {
   SecondaryButton: 26,
   SubtleButton: 3,
   StableButton: 6,
-  StableCtaLink: 10,
-  total: 57,
+  StableCtaLink: 12,
+  total: 59,
 };
 const expectedNativeFieldCount = 26;
 const expectedFileInputActionRoots = 2;
@@ -70,6 +70,12 @@ function debugIdFrom(block) {
     ""
   ).replace(/\s+/g, " ");
 }
+
+const allowedDataDrivenShopControlDebugIds = new Set([
+  "ownerPrimaryAction.debugId",
+  "card.debugId",
+  "tool.debugId",
+]);
 
 function assertShopContains(
   pattern,
@@ -214,7 +220,7 @@ for (const action of actions) {
     });
   }
 
-  if (!/^shop-control\./.test(action.id)) {
+  if (!/^shop-control\./.test(action.id) && !allowedDataDrivenShopControlDebugIds.has(action.id)) {
     findings.push({
       file: shopControlFile,
       line: action.line,
@@ -238,7 +244,9 @@ const expectedActionOrder = [
   "shop-control.spotlight.preview.back",
   "shop-control.spotlight.preview.publish",
   "shop-control.spotlight.preview.cancel",
-  "shop-control.hero-shortcut.${item.label.toLowerCase().replace(/\\s+/g, \"-\")}",
+  "ownerPrimaryAction.debugId",
+  "card.debugId",
+  "tool.debugId",
   "shop-control.vault.pay-1-slot",
   "shop-control.vault.pay-2-slots",
   "shop-control.vault.manage-offers",
@@ -370,8 +378,28 @@ assertShopContains(
 );
 
 assertShopContains(
-  /SHOP_CONTROL_SHORTCUTS[\s\S]*?from "\.\.\/lib\/ownerShopHandles";[\s\S]*?const SHOP_CONTROL_SHORTCUT_ICONS:[\s\S]*?"shop-billboard": "shop"[\s\S]*?"shop-diaries": "document"[\s\S]*?"shop-summary": "chart"[\s\S]*?"community-package": "financeInstitution"[\s\S]*?const shopHeroShortcuts:[\s\S]*?SHOP_CONTROL_SHORTCUTS\.map/,
-  "Shop Control hero shortcuts must focus owner shop control: billboard, 6 Shop Diaries, summary, and Marketplace Capacity."
+  /const ownerPrimaryAction = useMemo\(\(\) => \{[\s\S]*?debugId: "shop-control\.orientation\.primary\.setup"[\s\S]*?debugId: "shop-control\.orientation\.primary\.products"[\s\S]*?debugId: "shop-control\.orientation\.primary\.spotlight"[\s\S]*?debugId: "shop-control\.orientation\.primary\.public-shop"[\s\S]*?debugId: "shop-control\.orientation\.primary\.details"/,
+  "Shop Control owner overview must derive one truthful primary next action from shop/product/Spotlight/public-shop state."
+);
+
+assertShopContains(
+  /const ownerOrientationCards = \[[\s\S]*?debugId: "shop-control\.orientation\.public-shop"[\s\S]*?debugId: "shop-control\.orientation\.products"[\s\S]*?debugId: "shop-control\.orientation\.spotlight"[\s\S]*?debugId: "shop-control\.orientation\.diary"/,
+  "Shop Control overview must expose compact Public shop, Products/services, Spotlight, and Shop Diary orientation cards."
+);
+
+assertShopContains(
+  /const progressiveOwnerTools = \[[\s\S]*?debugId: "shop-control\.more\.details"[\s\S]*?debugId: "shop-control\.more\.vault"[\s\S]*?debugId: "shop-control\.more\.subscription-spotlight"[\s\S]*?debugId: "shop-control\.more\.paid-repost"[\s\S]*?debugId: "shop-control\.more\.analytics"[\s\S]*?debugId: "shop-control\.more\.trade-evidence"/,
+  "Shop Control advanced owner tools must remain reachable through progressive disclosure instead of dominating the first view."
+);
+
+assertShopContains(
+  /activeOwnerLayer === "overview"[\s\S]*?<div style=\{\{ \.\.\.sectionLabel\(\), color: "#F6D77A" \}\}>My Shop<\/div>[\s\S]*?debugId=\{ownerPrimaryAction\.debugId\}[\s\S]*?debugId=\{card\.debugId\}[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId="shop-control\.more-tools\.toggle"[\s\S]*?More owner tools[\s\S]*?debugId=\{tool\.debugId\}/,
+  "Shop Control first view must render My Shop orientation, one primary action, compact status cards, and progressive owner tools."
+);
+
+assertShopDoesNotContain(
+  /shopHeroShortcuts|SHOP_CONTROL_SHORTCUTS|shop-control\.hero-shortcut/,
+  "Shop Control overview must not retain the old dashboard-style hero shortcut launcher."
 );
 
 assertOwnerShopHandlesContains(
@@ -404,10 +432,6 @@ assertShopContains(
   "Shop Control must use the shared ownerShopLayerForTarget hash router."
 );
 
-assertShopContains(
-  /function heroShortcutIconTile\([\s\S]*?width: 38,[\s\S]*?height: 38,[\s\S]*?background: "rgba\(255,255,255,0\.98\)"[\s\S]*?<GsnLegacyIcon name=\{name\} size=\{32\} \/>/,
-  "Shop Control hero shortcuts must use larger white 3D icon tiles instead of tiny unframed glyphs."
-);
 
 assertShopContains(
   /const spotlightLaneIcon: GsnIconName = spotlightModeIsPaid[\s\S]*?\? "financeInstitution"[\s\S]*?: "megaphone";[\s\S]*?controlIconTile\("financeInstitution", spotlightPriorityMode === "paid"\)[\s\S]*?labelWithIcon\("financeInstitution", "Spotlight Subscription"\)/,
