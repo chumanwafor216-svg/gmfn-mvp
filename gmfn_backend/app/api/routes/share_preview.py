@@ -14,8 +14,9 @@ from fastapi.responses import HTMLResponse, Response
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from sqlalchemy.orm import Session
 
-from app.db.models import Clan, ClanInvite, MarketplaceProduct, MarketplaceShop, User
+from app.db.models import Clan, ClanInvite, ClanMembership, MarketplaceProduct, MarketplaceShop, TrustSlip, User
 from app.deps import get_db
+from app.services.trust_slip_decision_packs import DECISION_PACKS, DecisionPackDefinition
 
 router = APIRouter(prefix="/share", tags=["share-preview"])
 
@@ -288,28 +289,34 @@ TRUSTSLIP_SHARE_QUERY_FIELDS = {
     "cl": "verification_community_label",
     "cr": "verification_community_ref",
 }
+TRUSTSLIP_SHARE_ERROR = "trustslip_share_reference_not_found"
+TRUSTSLIP_SHARE_SCOPES = {"community_specific", "all_visible", "public_decision_pack"}
+
+
+def _trustslip_share_not_found() -> None:
+    raise HTTPException(status_code=404, detail=TRUSTSLIP_SHARE_ERROR)
 
 
 def _decode_trustslip_share_ref(share_ref: str) -> dict[str, str]:
     clean_ref = _safe_str(share_ref)
     if not clean_ref or len(clean_ref) > 3000:
-        raise HTTPException(status_code=404, detail="trustslip_share_reference_not_found")
+        _trustslip_share_not_found()
     if any(char not in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_" for char in clean_ref):
-        raise HTTPException(status_code=404, detail="trustslip_share_reference_not_found")
+        _trustslip_share_not_found()
 
     try:
         padded = clean_ref + "=" * (-len(clean_ref) % 4)
         raw = base64.urlsafe_b64decode(padded.encode("ascii")).decode("utf-8")
         payload = json.loads(raw)
     except Exception as exc:
-        raise HTTPException(status_code=404, detail="trustslip_share_reference_not_found") from exc
+        raise HTTPException(status_code=404, detail=TRUSTSLIP_SHARE_ERROR) from exc
 
     if not isinstance(payload, dict) or _safe_str(payload.get("v")) not in {"1", "1.0"}:
-        raise HTTPException(status_code=404, detail="trustslip_share_reference_not_found")
+        _trustslip_share_not_found()
 
     code = _safe_str(payload.get("c"))
     if not code or any(char in code for char in "/?#\\"):
-        raise HTTPException(status_code=404, detail="trustslip_share_reference_not_found")
+        _trustslip_share_not_found()
 
     context: dict[str, str] = {"c": code}
     for key in ("p", "ap", "q", "f", "s", "vs", "vsl", "vsb", "cid", "cl", "cr"):
@@ -317,6 +324,131 @@ def _decode_trustslip_share_ref(share_ref: str) -> dict[str, str]:
         if value:
             context[key] = value[:500]
     return context
+
+
+def _trustslip_decision_pack_from_context(context: dict[str, str]) -> DecisionPackDefinition:
+    pack_key = _safe_str(context.get("p"))
+    for pack in DECISION_PACKS:
+        if pack.key == pack_key:
+            return pack
+    _trustslip_share_not_found()
+
+
+def _trustslip_clan_display_name(clan: Clan) -> str:
+    return (
+        _safe_str(getattr(clan, "marketplace_name", ""))
+        or _safe_str(getattr(clan, "name", ""))
+        or _safe_str(getattr(clan, "community_code", ""))
+        or f"Community {clan.id}"
+    )
+
+
+def _trustslip_lookup_by_code(db: Session, code: str) -> TrustSlip:
+    slip = db.query(TrustSlip).filter(TrustSlip.code == code).order_by(TrustSlip.id.desc()).first()
+    if not slip:
+        _trustslip_share_not_found()
+    return slip
+
+
+def _trustslip_lookup_clan(db: Session, *, clan_id: str = "", community_ref: str = "") -> Optional[Clan]:
+    by_id = None
+    clean_id = _safe_str(clan_id)
+    if clean_id:
+        try:
+            numeric_id = int(clean_id)
+        except ValueError:
+            _trustslip_share_not_found()
+        if numeric_id <= 0:
+            _trustslip_share_not_found()
+        by_id = db.query(Clan).filter(Clan.id == numeric_id).first()
+        if not by_id:
+            _trustslip_share_not_found()
+
+    by_ref = None
+    clean_ref = _safe_str(community_ref)
+    if clean_ref:
+        by_ref = db.query(Clan).filter(Clan.community_code == clean_ref).first()
+        if not by_ref:
+            _trustslip_share_not_found()
+
+    if by_id and by_ref and by_id.id != by_ref.id:
+        _trustslip_share_not_found()
+    return by_id or by_ref
+
+
+def _trustslip_resolve_preview_clan(db: Session, *, slip: TrustSlip, context: dict[str, str]) -> Clan:
+    requested_clan = _trustslip_lookup_clan(
+        db,
+        clan_id=_safe_str(context.get("cid")),
+        community_ref=_safe_str(context.get("cr")),
+    )
+    clan = requested_clan or db.query(Clan).filter(Clan.id == slip.clan_id).first()
+    if not clan:
+        _trustslip_share_not_found()
+
+    if clan.id == slip.clan_id:
+        return clan
+
+    membership = (
+        db.query(ClanMembership.id)
+        .filter(
+            ClanMembership.clan_id == clan.id,
+            ClanMembership.user_id == slip.holder_user_id,
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+    )
+    if not membership:
+        _trustslip_share_not_found()
+    return clan
+
+
+def _trustslip_scope(value: str, *, default: str = "community_specific") -> str:
+    scope = _safe_str(value)
+    return scope if scope in TRUSTSLIP_SHARE_SCOPES else default
+
+
+def _trustslip_scope_boundary(scope: str, community_label: str) -> str:
+    if scope == "all_visible":
+        return "The recipient view decides which public evidence is available for this TrustSlip."
+    if scope == "public_decision_pack":
+        return "The recipient view applies the public Decision Pack boundaries for this TrustSlip."
+    return f"Live confirmation requests should be answered by {community_label}."
+
+
+def _validated_trustslip_share_context(db: Session, share_ref: str) -> dict[str, Any]:
+    decoded = _decode_trustslip_share_ref(share_ref)
+    slip = _trustslip_lookup_by_code(db, decoded["c"])
+    pack = _trustslip_decision_pack_from_context(decoded)
+    clan = _trustslip_resolve_preview_clan(db, slip=slip, context=decoded)
+    community_label = _trustslip_clan_display_name(clan)
+    scope = _trustslip_scope(_safe_str(decoded.get("s")))
+    verification_scope = _trustslip_scope(_safe_str(decoded.get("vs")), default=scope)
+
+    context = dict(decoded)
+    context.update(
+        {
+            "c": slip.code,
+            "p": pack.key,
+            "ap": pack.label,
+            "q": pack.recipient_question,
+            "f": pack.focus,
+            "s": scope,
+            "vs": verification_scope,
+            "vsl": community_label,
+            "vsb": _trustslip_scope_boundary(verification_scope, community_label),
+            "cid": str(clan.id),
+            "cl": community_label,
+            "cr": _safe_str(clan.community_code),
+        }
+    )
+    return {
+        "context": context,
+        "pack": pack,
+        "clan": clan,
+        "community_label": community_label,
+        "slip": slip,
+    }
 
 
 def _trustslip_frontend_url(context: dict[str, str]) -> str:
@@ -342,15 +474,12 @@ def _trustslip_share_card_url(request: Request, share_ref: str) -> str:
     return f"{base}/share/trustslip/{quote(_safe_str(share_ref), safe='')}/card.png"
 
 
-def _trustslip_preview_payload(share_ref: str) -> dict[str, Any]:
-    context = _decode_trustslip_share_ref(share_ref)
-    purpose = _safe_str(context.get("ap")) or _safe_str(context.get("p"), "TrustSlip")
-    community = (
-        _safe_str(context.get("cl"))
-        or _safe_str(context.get("vsl"))
-        or _safe_str(context.get("cr"))
-        or _safe_str(context.get("s"), "Shared evidence")
-    )
+def _trustslip_preview_payload(db: Session, share_ref: str) -> dict[str, Any]:
+    resolved = _validated_trustslip_share_context(db, share_ref)
+    context = resolved["context"]
+    pack = resolved["pack"]
+    purpose = pack.label
+    community = resolved["community_label"]
     description_context = " - ".join(item for item in (purpose, community) if _safe_str(item))
     description = f"{description_context}. Open to review the shared evidence and its current status." if description_context else "Open to review the shared evidence and its current status."
     return {
@@ -862,8 +991,9 @@ def _draw_trustslip_card_png(payload: dict[str, str]) -> bytes:
 def public_trustslip_share_preview(
     share_ref: str,
     request: Request,
+    db: Session = Depends(get_db),
 ) -> HTMLResponse:
-    payload = _trustslip_preview_payload(share_ref)
+    payload = _trustslip_preview_payload(db, share_ref)
     target_url = payload["target_url"]
     share_url = _trustslip_share_page_url(request, share_ref)
     image_url = _trustslip_share_card_url(request, share_ref)
@@ -917,8 +1047,9 @@ def public_trustslip_share_preview(
 @router.get("/trustslip/{share_ref}/card.png")
 def public_trustslip_share_card_png(
     share_ref: str,
+    db: Session = Depends(get_db),
 ) -> Response:
-    payload = _trustslip_preview_payload(share_ref)
+    payload = _trustslip_preview_payload(db, share_ref)
     png = _draw_trustslip_card_png(payload)
     return Response(
         content=png,
