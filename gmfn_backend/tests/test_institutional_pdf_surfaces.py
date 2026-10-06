@@ -1007,7 +1007,7 @@ def test_analytics_evidence_downloads_use_gsn_filenames():
     assert "_ensure_can_view_complete_loan_evidence(db, current_user=user, loan=loan)" in text
     assert "build_clan_evidence_pack_pdf(db, clan_id=clan_id, redact=True)" in text
     assert "build_loan_evidence_pack_pdf(db, loan_id=loan_id, redact=True)" in text
-    assert text.count("_ensure_clan_admin_or_platform_admin(db, current_user=user, clan_id=int(clan_id))") == 6
+    assert text.count("_ensure_clan_admin_or_platform_admin(db, current_user=user, clan_id=int(clan_id))") == 7
     assert "gsn-community-{clan_id}-recent-invite-joins.csv" in text
     assert "gsn-community-{clan_id}-trust-events.csv" in text
     assert "gsn-community-{clan_id}-evidence-pack.pdf" in text

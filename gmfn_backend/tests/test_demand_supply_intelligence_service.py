@@ -11,6 +11,8 @@ from sqlalchemy import text
 from app.api.routes import marketplace_requests
 from app.db.database import SessionLocal, engine
 
+ROOT = Path(__file__).resolve().parents[1]
+
 class Obj:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
@@ -402,7 +404,7 @@ def test_stop_words_alone_cannot_create_a_demand_supply_match():
 
     assert matches == []
 def test_intelligence_service_does_not_depend_on_paid_or_trust_ranking_engines():
-    source = Path("gmfn_backend/app/services/demand_supply_intelligence_service.py").read_text()
+    source = (ROOT / "app/services/demand_supply_intelligence_service.py").read_text()
     lowered = source.lower()
 
     assert "featureentitlement" not in source

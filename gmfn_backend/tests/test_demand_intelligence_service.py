@@ -21,6 +21,8 @@ from app.services.demand_intelligence_service import (
 )
 
 
+ROOT = Path(__file__).resolve().parents[1]
+
 def _seed_base() -> None:
     with engine.begin() as conn:
         conn.execute(
@@ -383,7 +385,7 @@ def test_paid_spotlight_trustscore_cci_and_attention_do_not_influence_demand_int
         )
 
     result = _build()
-    source = Path("gmfn_backend/app/services/demand_intelligence_service.py").read_text().lower()
+    source = (ROOT / "app/services/demand_intelligence_service.py").read_text().lower()
 
     assert result["categories"][0]["plausible_supply_signal"] is True
     assert result["deferred_scope"]["paid_priority"] is False
