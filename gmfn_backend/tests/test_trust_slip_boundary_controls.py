@@ -5,6 +5,8 @@ import json
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
+from sqlalchemy import text
+
 from app.api.routes import trust_slips as trust_slips_route
 from app.db.database import SessionLocal
 from app.db.models import Clan, ClanMembership, CommunityConfirmationDecision, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, CommunityConfirmationReviewCase, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceRequest, MarketplaceReview, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare, User
@@ -616,6 +618,38 @@ def test_trust_slip_reissue_snapshot_failure_preserves_existing_current_slip(
         assert slips[0].code == "REISSUE-SNAPSHOT-OLD"
         assert slips[0].is_current is True
         assert slips[0].superseded_by_trust_slip_id is None
+    finally:
+        db.close()
+
+
+def test_trust_slip_optional_evidence_sql_error_is_labelled_without_poisoning_later_reads(
+    seed_clan_member_membership,
+    monkeypatch,
+):
+    _verify_test_user_phone()
+    _create_trust_slip(code="OPTIONAL-EVIDENCE-SAVEPOINT", clan_id=1)
+
+    def fail_capacity_read(db, user_id):
+        db.execute(text("SELECT * FROM definitely_missing_trustslip_optional_table"))
+
+    monkeypatch.setattr(trust_slips_services, "build_user_liquidity_profile", fail_capacity_read)
+
+    db = SessionLocal()
+    try:
+        payload = get_trust_slip_payload(db, user_id=1, preferred_clan_id=1)
+        assert payload["evidence_summary"]["capacity_context"] == {
+            "source": "liquidity_profile",
+            "source_note": "Liquidity and guarantee-capacity evidence could not be read for this TrustSlip.",
+            "plain_language": (
+                "This TrustSlip could not load current support-capacity evidence. "
+                "Ask for the fuller Trust Passport if the decision carries risk."
+            ),
+            "evidence_state": "unavailable",
+            "available": False,
+        }
+        assert payload["evidence_summary"]["community_participation"]["status_label"]
+        assert isinstance(payload["evidence_summary"]["community_participation"].get("rows"), list)
+        assert db.query(TrustEvent).count() >= 0
     finally:
         db.close()
 

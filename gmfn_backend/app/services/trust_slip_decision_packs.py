@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.db.models import ClanMembership, CommunityConfirmationDecision, CommunityConfirmationOutcome, CommunityConfirmationRequest, CommunityConfirmationResponse, CommunityConfirmationReviewCase, Loan, LoanGuarantor, MarketplaceProduct, MarketplaceRequest, MarketplaceReview, MarketplaceShop, PoolEvent, ProtectedTradeRecord, Repayment, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare
 from app.core.evidence_lifecycle import SOURCE_REPAYMENT
 from app.services.evidence_lifecycle_service import resolve_evidence_lifecycle, resolve_trust_event_lifecycle
+from app.services.legacy_user_id_match import legacy_user_id_text_match
 
 
 @dataclass(frozen=True)
@@ -1543,7 +1544,7 @@ def _decision_pack_guarantee_outcome_pointers(
     supported_query = (
         db.query(LoanGuarantor, Loan)
         .join(Loan, Loan.id == LoanGuarantor.loan_id)
-        .filter(Loan.borrower_user_id == int(holder_user_id))
+        .filter(legacy_user_id_text_match(Loan.borrower_user_id, holder_user_id))
     )
     if active_community_ids:
         supported_query = supported_query.filter(Loan.clan_id.in_(active_community_ids))
@@ -1643,7 +1644,9 @@ def _decision_pack_record_pointers(
 
     pointers: list[dict[str, Any]] = []
 
-    loan_query = db.query(Loan).filter(Loan.borrower_user_id == int(holder_user_id))
+    loan_query = db.query(Loan).filter(
+        legacy_user_id_text_match(Loan.borrower_user_id, holder_user_id)
+    )
     loan_query = _filter_to_active_communities(loan_query, Loan, active_community_ids=active_community_ids)
     loans = loan_query.order_by(Loan.created_at.desc(), Loan.id.desc()).limit(20).all()
     if loans:

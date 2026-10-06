@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import re
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -9,6 +10,7 @@ from decimal import Decimal
 from typing import Any, Dict, Optional
 
 from sqlalchemy import or_
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.core.auth import is_user_activation_pending
@@ -41,6 +43,7 @@ except Exception:
 
 SNAPSHOT_VERSION = "trustslip-snapshot/v2"
 PUBLIC_ACTIVITY_EXCLUDED_EVENT_TYPES = PUBLIC_MEMBER_ACTIVITY_EXCLUDED_EVENT_TYPES
+logger = logging.getLogger(__name__)
 
 
 def _now_utc() -> datetime:
@@ -200,6 +203,63 @@ def _safe_decimal(value: Any, default: str = "0.00") -> Decimal:
         return Decimal(str(value))
     except Exception:
         return Decimal(default)
+
+
+def _unavailable_optional_evidence(
+    *,
+    source: str,
+    source_note: str,
+    plain_language: str,
+    exc: Exception,
+) -> Dict[str, Any]:
+    logger.warning(
+        "Optional TrustSlip evidence reader failed: %s (%s)",
+        source,
+        exc.__class__.__name__,
+        exc_info=True,
+    )
+    return {
+        "source": source,
+        "source_note": source_note,
+        "plain_language": plain_language,
+        "evidence_state": "unavailable",
+        "available": False,
+    }
+
+
+def _read_optional_evidence_with_savepoint(
+    db: Session,
+    reader,
+    *,
+    source: str,
+    source_note: str,
+    plain_language: str,
+) -> Dict[str, Any]:
+    try:
+        nested = db.begin_nested()
+    except SQLAlchemyError:
+        raise
+
+    try:
+        with nested:
+            result = reader()
+    except SQLAlchemyError as exc:
+        if getattr(exc, "connection_invalidated", False):
+            raise
+        return _unavailable_optional_evidence(
+            source=source,
+            source_note=source_note,
+            plain_language=plain_language,
+            exc=exc,
+        )
+    except Exception as exc:
+        return _unavailable_optional_evidence(
+            source=source,
+            source_note=source_note,
+            plain_language=plain_language,
+            exc=exc,
+        )
+    return result
 
 
 def _mask_email(email: Optional[str]) -> Optional[str]:
@@ -2274,65 +2334,80 @@ def get_trust_slip_payload(
     }
 
     evidence_summary: Dict[str, Any] = {}
-    try:
+
+    def _capacity_context() -> Dict[str, Any]:
         liquidity = build_user_liquidity_profile(db, uid)
-        evidence_summary["capacity_context"] = {
+        return {
             "available_guarantee_capacity": liquidity.get("available_guarantee_capacity"),
             "current_locked_guarantees": liquidity.get("current_locked_guarantees"),
             "overexposure_ratio": liquidity.get("overexposure_ratio"),
             "risk_level": liquidity.get("risk_level"),
             "reasons": liquidity.get("reasons", []),
+            "evidence_state": "loaded",
+            "available": True,
         }
-    except Exception:
-        evidence_summary["capacity_context"] = {}
 
-    try:
+    evidence_summary["capacity_context"] = _read_optional_evidence_with_savepoint(
+        db,
+        _capacity_context,
+        source="liquidity_profile",
+        source_note="Liquidity and guarantee-capacity evidence could not be read for this TrustSlip.",
+        plain_language=(
+            "This TrustSlip could not load current support-capacity evidence. "
+            "Ask for the fuller Trust Passport if the decision carries risk."
+        ),
+    )
+
+    def _readiness_context() -> Dict[str, Any]:
         readiness = build_loan_readiness_plan(
             db,
             clan_id=int(clan_id),
             requested_amount=effective_limit,
             borrower_user_id=uid,
         )
-        evidence_summary["readiness_context"] = {
+        return {
             "recommendation": ((readiness.get("readiness") or {}).get("recommendation")),
             "readiness_score": ((readiness.get("readiness") or {}).get("readiness_score")),
             "reasons": ((readiness.get("readiness") or {}).get("reasons", [])),
             "estimated_guarantee_gap": ((readiness.get("coverage") or {}).get("estimated_guarantee_gap")),
             "capacity_ratio": ((readiness.get("coverage") or {}).get("capacity_ratio")),
             "coverable_now": ((readiness.get("coverage") or {}).get("coverable_now")),
-        }
-    except Exception:
-        evidence_summary["readiness_context"] = {}
-
-    try:
-        evidence_summary["commitment_discipline"] = _expected_payment_discipline(
-            db,
-            user_id=uid,
-        )
-    except Exception:
-        evidence_summary["commitment_discipline"] = {
-            "source": "expected_payments",
-            "source_note": "Expected-payment discipline could not be read for this TrustSlip.",
-            "plain_language": (
-                "This TrustSlip could not load recorded contribution or repayment expectations. "
-                "Ask for the fuller Trust Passport if the decision carries risk."
-            ),
+            "evidence_state": "loaded",
+            "available": True,
         }
 
-    try:
-        evidence_summary["personal_commitment_discipline"] = _personal_commitment_discipline(
-            db,
-            user_id=uid,
-        )
-    except Exception:
-        evidence_summary["personal_commitment_discipline"] = {
-            "source": "trust_events",
-            "source_note": "Personal commitment Trust Events could not be read for this TrustSlip.",
-            "plain_language": (
-                "This TrustSlip could not load personal commitment events. "
-                "Ask for the fuller Trust Passport if the decision depends on personal follow-through."
-            ),
-        }
+    evidence_summary["readiness_context"] = _read_optional_evidence_with_savepoint(
+        db,
+        _readiness_context,
+        source="loan_readiness_plan",
+        source_note="Loan-readiness evidence could not be read for this TrustSlip.",
+        plain_language=(
+            "This TrustSlip could not load current support-readiness evidence. "
+            "Ask for the fuller Trust Passport if the decision carries risk."
+        ),
+    )
+
+    evidence_summary["commitment_discipline"] = _read_optional_evidence_with_savepoint(
+        db,
+        lambda: _expected_payment_discipline(db, user_id=uid),
+        source="expected_payments",
+        source_note="Expected-payment discipline could not be read for this TrustSlip.",
+        plain_language=(
+            "This TrustSlip could not load recorded contribution or repayment expectations. "
+            "Ask for the fuller Trust Passport if the decision carries risk."
+        ),
+    )
+
+    evidence_summary["personal_commitment_discipline"] = _read_optional_evidence_with_savepoint(
+        db,
+        lambda: _personal_commitment_discipline(db, user_id=uid),
+        source="trust_events",
+        source_note="Personal commitment Trust Events could not be read for this TrustSlip.",
+        plain_language=(
+            "This TrustSlip could not load personal commitment events. "
+            "Ask for the fuller Trust Passport if the decision depends on personal follow-through."
+        ),
+    )
 
     community_participation_evidence = _community_participation_evidence_summary(
         db,

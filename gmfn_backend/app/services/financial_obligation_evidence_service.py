@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.db.bank_models import ExpectedPayment
 import app.db.models as db_models
+from app.services.legacy_user_id_match import legacy_user_id_text_match
 
 Loan = getattr(db_models, "Loan", None)
 LoanGuarantor = getattr(db_models, "LoanGuarantor", None)
@@ -82,7 +83,9 @@ def build_financial_obligation_evidence(
 
     completed_repayment_obligations = 0
     if Loan is not None:
-        loan_q = db.query(Loan).filter(Loan.borrower_user_id == int(user_id))
+        loan_q = db.query(Loan).filter(
+            legacy_user_id_text_match(Loan.borrower_user_id, user_id)
+        )
         if clan_id is not None:
             loan_q = loan_q.filter(Loan.clan_id == int(clan_id))
         for row in loan_q.limit(500).all():

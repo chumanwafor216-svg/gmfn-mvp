@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 import app.db.models as db_models
 from app.services.guarantor_selection_service import build_loan_guarantor_suggestions
+from app.services.legacy_user_id_match import legacy_user_id_text_match
 from app.services.liquidity_engine_service import _q2, _safe_decimal, _safe_int, build_clan_liquidity_snapshot
 
 Loan = getattr(db_models, "Loan", None)
@@ -169,7 +170,7 @@ def build_loan_readiness_plan(
         live_loan = (
             db.query(Loan)
             .filter(Loan.clan_id == int(clan_id))
-            .filter(Loan.borrower_user_id == int(borrower_user_id))
+            .filter(legacy_user_id_text_match(Loan.borrower_user_id, borrower_user_id))
             .filter(Loan.status.in_(["pending", "incomplete", "approved"]))
             .order_by(Loan.id.desc())
             .first()
