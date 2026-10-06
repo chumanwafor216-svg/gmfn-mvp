@@ -312,6 +312,72 @@ function tradeEvidenceExtract(overrides = {}) {
   };
   return base;
 }
+function tradeGapPlaceholders() {
+  return {
+    declared_claims: [
+      {
+        key: "declared_trade_gap",
+        label: "Declared trade/service claim",
+        status: "gap",
+        value: "No public declaration row is included in this extract.",
+        source: "trust_events_redacted_extract",
+        evidence_count: 0,
+        decision_use: "Gap placeholder only.",
+      },
+    ],
+    fulfillment_outcome_pointers: [
+      {
+        key: "fulfillment_gap",
+        label: "Fulfilment/correction outcome pointer",
+        status: "gap",
+        value: "No public fulfilment outcome row is included in this extract.",
+        source: "protected_trade_records",
+        evidence_count: 0,
+        decision_use: "Gap placeholder only.",
+      },
+    ],
+    completed_work_pointers: [
+      {
+        key: "completed_work_gap",
+        label: "Completed work/customer confirmation",
+        status: "gap",
+        value: "No public completed-work row is included in this extract.",
+        source: "trust_events+marketplace_reviews",
+        evidence_count: 0,
+        decision_use: "Gap placeholder only.",
+      },
+    ],
+    confirmation_pointers: [
+      {
+        key: "community_witness_outcome",
+        label: "Community witness outcome",
+        status: "gap",
+        value: "No public community witness response/outcome is included in this extract.",
+        source: "community_confirmation_requests",
+        evidence_count: 0,
+        decision_use: "Gap placeholder only.",
+      },
+    ],
+    issue_resolution_pointers: [
+      {
+        key: "issue_resolution_gap",
+        label: "Issue resolution pointer",
+        status: "gap",
+        value: "No public issue-resolution row is included in this extract.",
+        source: "community_confirmation_reviews",
+        evidence_count: 0,
+        decision_use: "Gap placeholder only.",
+      },
+    ],
+  };
+}
+
+function tradeEvidenceExtractWithGaps(overrides = {}) {
+  return tradeEvidenceExtract({
+    ...tradeGapPlaceholders(),
+    ...overrides,
+  });
+}
 
 function tradePublicVerifyPayload(overrides = {}) {
   const { evidenceExtract, decisionPackProfile, ...summaryOverrides } = overrides;
@@ -1856,6 +1922,9 @@ async function runPublicTradeEvidenceScenario(browser, baseURL, scenario) {
     );
 
     await expect(state.page.getByText(scenario.headline, { exact: false }).filter({ visible: true }).first()).toBeVisible({ timeout: 30000 });
+    for (const text of scenario.compactText || []) {
+      await expect(state.page.getByText(text, { exact: false }).filter({ visible: true }).first()).toBeVisible({ timeout: 30000 });
+    }
     if (scenario.openDetails) {
       await state.page.locator("summary").filter({ hasText: "Trade or Skilled Work Decision Pack" }).first().click();
       const evidenceDetails = state.page.locator("summary").filter({ hasText: "Decision evidence details" }).first();
@@ -1887,6 +1956,7 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
       }),
     },
     headline: "Trade evidence not shown; ask for confirmation",
+    compactText: ["does not show qualifying Trade records"],
     visibleText: ["Not shown: no qualifying Trade records"],
     absentText: ["Suitable for a low-risk trade check", "Use for low-risk decisions", "do not surface private note"],
   });
@@ -1909,15 +1979,27 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
       }),
     },
     headline: "Trade claim shown; completed-work proof still separate",
+    compactText: ["Declaration shown", "Repair service listing shown"],
     openDetails: true,
     visibleText: ["declaration is a claim pointer", "Repair service listing shown"],
     absentText: ["Suitable for a low-risk trade check"],
   });
 
   await runPublicTradeEvidenceScenario(browser, baseURL, {
-    label: "pending-confirmation-request-no-outcome",
+    label: "pending-confirmation-plus-work-and-gaps",
     payload: {
-      evidenceExtract: tradeEvidenceExtract({
+      evidenceExtract: tradeEvidenceExtractWithGaps({
+        completed_work_pointers: [
+          {
+            key: "completed_work_aggregate",
+            label: "Completed work/customer confirmation",
+            status: "available",
+            value: "2 completed-work outcome pointers shown",
+            source: "trust_events+marketplace_reviews",
+            evidence_count: 2,
+            decision_use: "Aggregate only; ask for direct confirmation.",
+          },
+        ],
         confirmation_pointers: [
           {
             key: "community_witness_outcome",
@@ -1931,39 +2013,17 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
         ],
       }),
     },
-    headline: "Trade confirmation request pending",
+    headline: "Trade work evidence shown; confirmation request pending",
+    compactText: ["Work record shown", "2 completed-work outcome pointers shown", "Confirmation request pending", "Limited or missing information also shown"],
     openDetails: true,
-    visibleText: ["request is recorded", "does not show a witness response or outcome", "1 community confirmation request is pending"],
-    absentText: ["Trade confirmation aggregate shown", "community witness evidence exists", "favourable confirmation exists"],
+    visibleText: ["available work records and pending confirmation requests must be read as separate evidence states", "1 community confirmation request is pending"],
+    absentText: ["community witness evidence exists", "favourable confirmation exists"],
   });
 
   await runPublicTradeEvidenceScenario(browser, baseURL, {
-    label: "response-outcome-aggregate-without-positivity",
+    label: "customer-feedback-caution-plus-confirmation-gap",
     payload: {
-      evidenceExtract: tradeEvidenceExtract({
-        confirmation_pointers: [
-          {
-            key: "community_witness_outcome",
-            label: "Community witness outcome",
-            status: "available",
-            value: "2 community confirmation responses/outcomes are available as an aggregate.",
-            source: "community_confirmation_requests",
-            evidence_count: 2,
-            decision_use: "Aggregate only; public view does not classify positivity.",
-          },
-        ],
-      }),
-    },
-    headline: "Trade confirmation aggregate shown; recipient still verifies",
-    openDetails: true,
-    visibleText: ["does not classify it as favourable", "2 community confirmation responses/outcomes"],
-    absentText: ["Suitable for a low-risk trade check", "favourable confirmation exists"],
-  });
-
-  await runPublicTradeEvidenceScenario(browser, baseURL, {
-    label: "completed-work-customer-feedback-caution",
-    payload: {
-      evidenceExtract: tradeEvidenceExtract({
+      evidenceExtract: tradeEvidenceExtractWithGaps({
         completed_work_pointers: [
           {
             key: "completed_work_customer_feedback",
@@ -1978,38 +2038,86 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
       }),
     },
     headline: "Trade customer-feedback caution shown; review context first",
+    compactText: ["Customer-feedback caution shown", "Customer feedback includes a caution marker", "Limited or missing information also shown", "Community witness outcome"],
     openDetails: true,
-    visibleText: ["not automatic proof of wrongdoing", "Customer feedback includes a caution marker"],
+    visibleText: ["not automatic proof of wrongdoing", "Community witness outcome"],
     absentText: ["unresolved dispute", "Suitable for a low-risk trade check"],
   });
 
   await runPublicTradeEvidenceScenario(browser, baseURL, {
-    label: "gap-row-positive-count-does-not-support",
+    label: "declaration-plus-completed-work-gap",
     payload: {
-      evidenceExtract: tradeEvidenceExtract({
-        completed_work_pointers: [
+      evidenceExtract: tradeEvidenceExtractWithGaps({
+        declared_claims: [
           {
-            key: "completed_work_gap",
-            label: "Completed work gap",
-            status: "gap",
-            value: "Historical work prose says records may exist.",
-            source: "trust_events_redacted_extract",
-            evidence_count: 3,
-            decision_use: "Gap only; do not treat the count as support.",
+            key: "shop_service_declaration",
+            label: "Declared work/service claim",
+            status: "available",
+            value: "Repair service listing shown",
+            source: "marketplace_shop",
+            evidence_count: 1,
+            decision_use: "Claim pointer only; ask for confirmation.",
           },
         ],
       }),
     },
-    headline: "Trade evidence row is limited; confirmation still needed",
+    headline: "Trade claim shown; completed-work proof still separate",
+    compactText: ["Declaration shown", "Repair service listing shown", "Limited or missing information also shown", "Completed work/customer confirmation"],
     openDetails: true,
-    visibleText: ["Counts or descriptive notes", "Historical work prose says records may exist"],
-    absentText: ["Trade outcome evidence shown", "completed-work aggregate exists"],
+    visibleText: ["Completed work/customer confirmation", "Repair service listing shown"],
+    absentText: ["Trade outcome evidence shown", "Suitable for a low-risk trade check"],
   });
 
   await runPublicTradeEvidenceScenario(browser, baseURL, {
-    label: "unresolved-review-limited-not-dispute",
+    label: "work-records-plus-pending-confirmation",
     payload: {
       evidenceExtract: tradeEvidenceExtract({
+        completed_work_pointers: [
+          {
+            key: "completed_work_aggregate",
+            label: "Completed work/customer confirmation",
+            status: "available",
+            value: "Protected trade work completed twice.",
+            source: "trust_events+marketplace_reviews",
+            evidence_count: 2,
+            decision_use: "Aggregate only; ask for direct confirmation.",
+          },
+        ],
+        confirmation_pointers: [
+          {
+            key: "community_witness_outcome",
+            label: "Community witness outcome",
+            status: "pending",
+            value: "1 community confirmation request is pending.",
+            source: "community_confirmation_requests",
+            evidence_count: 1,
+            decision_use: "Request recorded; response/outcome pending.",
+          },
+        ],
+      }),
+    },
+    headline: "Trade work evidence shown; confirmation request pending",
+    compactText: ["Work record shown", "Protected trade work completed twice", "Confirmation request pending"],
+    openDetails: true,
+    visibleText: ["pending request must not be read as a successful outcome", "Protected trade work completed twice"],
+    absentText: ["favourable confirmation exists"],
+  });
+
+  await runPublicTradeEvidenceScenario(browser, baseURL, {
+    label: "available-evidence-plus-unresolved-review-and-gaps",
+    payload: {
+      evidenceExtract: tradeEvidenceExtractWithGaps({
+        fulfillment_outcome_pointers: [
+          {
+            key: "fulfilled_protected_trade",
+            label: "Fulfilment/correction outcome pointer",
+            status: "available",
+            value: "Protected trade fulfilment completed",
+            source: "protected_trade_records",
+            evidence_count: 1,
+            decision_use: "Outcome context only; ask for confirmation.",
+          },
+        ],
         issue_resolution_pointers: [
           {
             key: "general_review_pointer",
@@ -2024,6 +2132,7 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
       }),
     },
     headline: "Trade review or correction pointer needs review",
+    compactText: ["Work record shown", "Protected trade fulfilment completed", "Review/correction context shown", "Limited or missing information also shown"],
     openDetails: true,
     visibleText: ["general review pointer is not treated as a trade-specific dispute", "One correction review is still open"],
     absentText: ["unresolved dispute", "Suitable for a low-risk trade check"],
@@ -2032,7 +2141,7 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
   await runPublicTradeEvidenceScenario(browser, baseURL, {
     label: "resolved-correction-not-unresolved",
     payload: {
-      evidenceExtract: tradeEvidenceExtract({
+      evidenceExtract: tradeEvidenceExtractWithGaps({
         issue_resolution_pointers: [
           {
             key: "general_review_pointer",
@@ -2047,9 +2156,22 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
       }),
     },
     headline: "Trade review or correction information shown as resolved",
+    compactText: ["Resolved/corrected context shown", "Earlier review was corrected", "Limited or missing information also shown"],
     openDetails: true,
     visibleText: ["resolved or corrected status", "Earlier review was corrected"],
     absentText: ["unresolved dispute", "needs review before relying"],
+  });
+
+  await runPublicTradeEvidenceScenario(browser, baseURL, {
+    label: "all-gap-successful-extract",
+    payload: {
+      evidenceExtract: tradeEvidenceExtractWithGaps(),
+    },
+    headline: "Trade evidence row is limited; confirmation still needed",
+    compactText: ["successful public extract includes only Trade-related rows", "Limited or missing information also shown", "Community witness outcome", "Completed work/customer confirmation"],
+    openDetails: true,
+    visibleText: ["Completed work/customer confirmation", "Community witness outcome"],
+    absentText: ["Trade evidence unavailable", "no qualifying public Trade records"],
   });
 
   await runPublicTradeEvidenceScenario(browser, baseURL, {
@@ -2062,8 +2184,33 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
       },
     },
     headline: "Trade evidence unavailable on this public view",
+    compactText: ["did not load in a usable form"],
     visibleText: ["Unavailable: Trade-specific public evidence was not included"],
     absentText: ["No qualifying public Trade records are included"],
+  });
+
+  await runPublicTradeEvidenceScenario(browser, baseURL, {
+    label: "unknown-row-state-unclassified",
+    payload: {
+      evidenceExtract: tradeEvidenceExtract({
+        completed_work_pointers: [
+          {
+            key: "completed_work_future_review",
+            label: "Completed work/customer confirmation",
+            status: "pilot_reviewing",
+            value: "A pilot review row is present but not classified.",
+            source: "trust_events+marketplace_reviews",
+            evidence_count: 1,
+            decision_use: "Unknown status only; do not classify as support or wrongdoing.",
+          },
+        ],
+      }),
+    },
+    headline: "Trade evidence row unclassified; confirmation needed",
+    compactText: ["structured status is not one this page can classify", "Unclassified row shown", "pilot_reviewing"],
+    openDetails: true,
+    visibleText: ["not treated as support, wrongdoing, or absence", "A pilot review row is present but not classified"],
+    absentText: ["No qualifying public Trade records", "Trade outcome evidence shown", "wrongdoing exists"],
   });
 
   await runPublicTradeEvidenceScenario(browser, baseURL, {
@@ -2085,6 +2232,7 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
       status: "replaced",
     },
     headline: "Fresh TrustSlip needed before trade evidence review",
+    compactText: ["not current"],
     visibleText: ["Request a fresh TrustSlip"],
     absentText: ["Trade confirmation aggregate shown; recipient still verifies"],
   });
@@ -2107,6 +2255,7 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
       }),
     },
     headline: "Trade outcome evidence shown; confirm before relying",
+    compactText: ["Work record shown", "Protected trade fulfilment completed"],
     openDetails: true,
     visibleText: ["Protected trade fulfilment completed", "direct customer or live community confirmation"],
     absentText: ["Suitable for a low-risk trade check"],
