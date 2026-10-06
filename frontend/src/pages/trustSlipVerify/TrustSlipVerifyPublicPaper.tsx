@@ -465,20 +465,79 @@ type TradeEvidenceReading = {
   summaryRows: Array<[string, string]>;
 };
 
-function structuredStatusIsCaution(value: unknown): boolean {
-  const status = safeText(value).toLowerCase();
-  return ["caution", "dispute", "open", "review", "unresolved", "blocked", "failed"].some((token) =>
-    status.includes(token)
-  );
-}
-
 function structuredKeyIsTradeCategory(value: unknown): boolean {
   const key = safeText(value).toLowerCase();
   return ["service_trade", "merchant_public_status", "relationship_evidence", "holder_role"].includes(key);
 }
 
-function visibleDecisionPointers<T extends PublicDecisionPointer>(rows: T[]): T[] {
-  return rows.filter((row) => hasVisibleDecisionEvidence(row.status, row.evidenceCount, row.value));
+type TradeStatusKind = "support" | "pending" | "gap" | "unavailable" | "caution" | "resolved" | "unknown";
+
+const TRADE_SUPPORT_STATUSES = new Set(["available", "visible", "present", "recorded", "complete", "completed", "fulfilled"]);
+const TRADE_PENDING_STATUSES = new Set(["pending", "requested", "awaiting", "awaiting_response", "awaiting_review"]);
+const TRADE_GAP_STATUSES = new Set(["gap", "missing", "not_shown", "not_available", "private_review_required", "restricted", "blocked"]);
+const TRADE_UNAVAILABLE_STATUSES = new Set(["unavailable", "incomplete", "failed", "error"]);
+const TRADE_CAUTION_STATUSES = new Set([
+  "caution",
+  "customer_feedback_caution",
+  "open_review",
+  "needs_review",
+  "review_required",
+  "caution_open_review",
+  "unresolved",
+]);
+const TRADE_RESOLVED_STATUSES = new Set(["resolved", "corrected", "resolved_correction", "correction_resolved"]);
+
+function normalizedTradeStatus(value: unknown): string {
+  return safeText(value).toLowerCase().replace(/[\s-]+/g, "_");
+}
+
+function tradeStatusKind(value: unknown): TradeStatusKind {
+  const status = normalizedTradeStatus(value);
+  if (!status) return "unknown";
+  if (TRADE_UNAVAILABLE_STATUSES.has(status)) return "unavailable";
+  if (TRADE_GAP_STATUSES.has(status)) return "gap";
+  if (TRADE_PENDING_STATUSES.has(status)) return "pending";
+  if (TRADE_CAUTION_STATUSES.has(status)) return "caution";
+  if (TRADE_RESOLVED_STATUSES.has(status)) return "resolved";
+  if (TRADE_SUPPORT_STATUSES.has(status)) return "support";
+  return "unknown";
+}
+
+function tradePointerIsDisplayable(row: PublicDecisionPointer): boolean {
+  return Boolean(
+    safeText(row.key) ||
+      safeText(row.label) ||
+      safeText(row.status) ||
+      safeText(row.value) ||
+      safeText(row.source) ||
+      positiveNumber(row.evidenceCount) > 0
+  );
+}
+
+function tradeDisplayPointers<T extends PublicDecisionPointer>(rows: T[]): T[] {
+  return rows.filter((row) => tradePointerIsDisplayable(row));
+}
+
+function tradeRowsByKind<T extends PublicDecisionPointer>(rows: T[], kinds: TradeStatusKind[]): T[] {
+  return tradeDisplayPointers(rows).filter((row) => kinds.includes(tradeStatusKind(row.status)));
+}
+
+function tradeSupportPointers<T extends PublicDecisionPointer>(rows: T[]): T[] {
+  return tradeRowsByKind(rows, ["support", "resolved"]);
+}
+
+function pointerValueText(rows: PublicDecisionPointer[], fallback: string): string {
+  const row = rows.find((candidate) => safeText(candidate.value) || safeText(candidate.decisionUse));
+  return firstTruthy(row?.value, row?.decisionUse, fallback);
+}
+
+function pointerSourceText(rows: PublicDecisionPointer[], fallback: string): string {
+  const row = rows.find((candidate) => safeText(candidate.source) || safeText(candidate.label));
+  return firstTruthy(row?.source, row?.label, fallback);
+}
+
+function isCommunityWitnessOutcome(row: PublicDecisionPointer): boolean {
+  return safeText(row.key).toLowerCase() === "community_witness_outcome";
 }
 
 function buildTradeEvidenceReading(params: {
@@ -491,17 +550,31 @@ function buildTradeEvidenceReading(params: {
   confirmationPointers: PublicDecisionPointer[];
   issueResolutionPointers: PublicDecisionPointer[];
 }): TradeEvidenceReading {
-  const visibleTradeCategories = visibleDecisionPointers(params.categories).filter((category) =>
+  const tradeCategories = tradeDisplayPointers(params.categories).filter((category) =>
     structuredKeyIsTradeCategory(category.key)
   );
-  const visibleDeclaredClaims = visibleDecisionPointers(params.declaredClaims);
-  const visibleFulfillment = visibleDecisionPointers(params.fulfillmentOutcomePointers);
-  const visibleCompletedWork = visibleDecisionPointers(params.completedWorkPointers);
-  const visibleConfirmations = visibleDecisionPointers(params.confirmationPointers);
-  const visibleIssues = visibleDecisionPointers(params.issueResolutionPointers);
-  const hasCaution = [...visibleFulfillment, ...visibleIssues].some((row) => structuredStatusIsCaution(row.status));
-  const hasDeclaredClaim = visibleDeclaredClaims.length > 0;
-  const hasTradeCategory = visibleTradeCategories.length > 0;
+  const supportTradeCategories = tradeSupportPointers(tradeCategories);
+  const supportDeclaredClaims = tradeSupportPointers(params.declaredClaims);
+  const supportFulfillment = tradeSupportPointers(params.fulfillmentOutcomePointers);
+  const supportCompletedWork = tradeSupportPointers(params.completedWorkPointers);
+  const pendingConfirmations = tradeRowsByKind(params.confirmationPointers, ["pending"]);
+  const supportConfirmations = tradeSupportPointers(params.confirmationPointers);
+  const resolvedIssues = tradeRowsByKind(params.issueResolutionPointers, ["resolved"]);
+  const cautionCompletedWork = tradeRowsByKind(params.completedWorkPointers, ["caution"]);
+  const cautionFulfillment = tradeRowsByKind(params.fulfillmentOutcomePointers, ["caution"]);
+  const cautionConfirmations = tradeRowsByKind(params.confirmationPointers, ["caution"]);
+  const cautionIssues = tradeRowsByKind(params.issueResolutionPointers, ["caution"]);
+  const limitedRows = tradeRowsByKind(
+    [
+      ...params.categories,
+      ...params.declaredClaims,
+      ...params.fulfillmentOutcomePointers,
+      ...params.completedWorkPointers,
+      ...params.confirmationPointers,
+      ...params.issueResolutionPointers,
+    ],
+    ["gap", "unavailable"]
+  );
 
   const unavailable: TradeEvidenceReading = {
     headline: "Trade evidence unavailable on this public view",
@@ -509,7 +582,7 @@ function buildTradeEvidenceReading(params: {
       "The public Trade evidence extract did not load in a usable form, so the reader should not treat missing details as a negative record or as confirmation.",
     evidenceStatement: "Unavailable: Trade-specific public evidence was not included in this view.",
     knownLimit: "Unavailable data is different from no qualifying records.",
-    unestablished: "Completed work, customer confirmation, dispute status, licence, insurance, safety outcome, and future quality remain unestablished here.",
+    unestablished: "Completed work, customer confirmation, review or correction status, licence, insurance, safety outcome, and future quality remain unestablished here.",
     nextCheck: "Ask the holder for a fresh public page, live community confirmation, or the fuller Trust Passport evidence before relying.",
     activityLimit:
       "For trade or skilled work, this page cannot currently show whether public Trade records were available. Do not infer suitability from community visibility alone.",
@@ -517,7 +590,7 @@ function buildTradeEvidenceReading(params: {
     quickTitle: "Evidence unavailable",
     snapshotRows: [
       ["Public Trade evidence", "Unavailable: Trade-specific public evidence was not included in this view."],
-      ["Still unestablished", "Completed work, customer confirmation, and any dispute/correction outcome remain unchecked here."],
+      ["Still unestablished", "Completed work, customer confirmation, and any review or correction outcome remain unchecked here."],
     ],
     summaryRows: [],
   };
@@ -535,54 +608,144 @@ function buildTradeEvidenceReading(params: {
 
   if (!params.extractAvailable) return unavailable;
 
-  if (hasCaution) {
+  if (limitedRows.length > 0 && !supportFulfillment.length && !supportCompletedWork.length && !supportConfirmations.length) {
+    const source = pointerSourceText(limitedRows, "public evidence extract");
     return {
-      headline: "Trade evidence needs review before relying",
+      headline: "Trade evidence row is limited; confirmation still needed",
       summary:
-        "Trade-related public evidence is shown, but a dispute, correction, or review-status pointer must be checked before any recipient relies on it.",
-      evidenceStatement: "Caution: a Trade outcome or issue-resolution pointer is visible and needs review.",
-      knownLimit: "The public page does not expose private allegations, notes, identities, prices, addresses, licences, insurance, or quality guarantees.",
-      unestablished: "Whether the issue is resolved enough for this recipient's decision remains unestablished here.",
-      nextCheck: "Review the correction/dispute outcome and ask live community or customer confirmation before relying.",
+        "This public view includes a Trade-related row whose structured status is a gap, unavailable, or restricted state. Counts or descriptive notes beside that row are not evidence of completed work or confirmation.",
+      evidenceStatement: `Limited: ${pointerValueText(limitedRows, "A Trade-related row is present but does not establish support.")}`,
+      knownLimit: `Source field: ${source}. The public page keeps this separate from loaded qualifying evidence.`,
+      unestablished: "Completed work, customer confirmation, review/correction outcome, licence, insurance, safety, and future quality remain unestablished here.",
+      nextCheck: "Ask for a fresh public extract or direct community/customer confirmation before relying.",
       activityLimit:
-        "For trade or skilled work, community visibility is only context. The caution pointer must be resolved before it supports a recipient decision.",
+        "For trade or skilled work, a positive count or explanatory note cannot override an explicit gap, unavailable, or restricted status.",
+      tone: "warning",
+      quickTitle: "Limited row only",
+      snapshotRows: [
+        ["Public Trade evidence", "Limited: structured status says this row is a gap, unavailable, or restricted."],
+        ["Still unestablished", "Counts or prose in that row do not prove completed work or confirmation."],
+      ],
+      summaryRows: [],
+    };
+  }
+
+  if (cautionCompletedWork.length > 0) {
+    return {
+      headline: "Trade customer-feedback caution shown; review context first",
+      summary:
+        "A completed-work or customer-feedback caution is visible. It is a prompt to inspect context, not automatic proof of wrongdoing or an open issue.",
+      evidenceStatement: `Caution: ${pointerValueText(cautionCompletedWork, "Customer-feedback caution is visible.")}`,
+      knownLimit: "The public page does not expose private reviewers, notes, prices, addresses, licence, insurance, or quality guarantees.",
+      unestablished: "Whether the caution affects this recipient's decision remains unestablished here.",
+      nextCheck: "Review the visible source text and ask for live community or customer confirmation before relying.",
+      activityLimit:
+        "For trade or skilled work, customer feedback caution is preserved as caution only; it is not relabelled as a dispute without structured support.",
+      tone: "warning",
+      quickTitle: "Feedback caution",
+      snapshotRows: [
+        ["Public Trade evidence", "Caution: customer-feedback context is visible."],
+        ["Still unestablished", "The public view does not classify the caution as wrongdoing or an open issue."],
+      ],
+      summaryRows: [],
+    };
+  }
+
+  if (cautionFulfillment.length > 0 || cautionConfirmations.length > 0 || cautionIssues.length > 0) {
+    const cautionRows = [...cautionFulfillment, ...cautionConfirmations, ...cautionIssues];
+    return {
+      headline: "Trade review or correction pointer needs review",
+      summary:
+        "A public-safe review, correction, or caution pointer is visible. The reader should inspect the context before relying on the TrustSlip for this Trade purpose.",
+      evidenceStatement: `Caution: ${pointerValueText(cautionRows, "A review/correction pointer is visible.")}`,
+      knownLimit: "The public page does not expose private allegations, notes, identities, prices, addresses, licences, insurance, or quality guarantees.",
+      unestablished: "Whether the pointer is resolved enough for this recipient's decision remains unestablished here unless the row explicitly says resolved or corrected.",
+      nextCheck: "Review the correction/review outcome and ask live community or customer confirmation before relying.",
+      activityLimit:
+        "For trade or skilled work, a general review pointer is not treated as a trade-specific dispute without structured support.",
       tone: "warning",
       quickTitle: "Review caution first",
       snapshotRows: [
-        ["Public Trade evidence", "Caution: visible Trade evidence includes a review, dispute, or correction pointer."],
+        ["Public Trade evidence", "Caution: visible evidence includes a review or correction pointer."],
         ["Still unestablished", "The public view does not establish that the concern is resolved for this decision."],
       ],
       summaryRows: [],
     };
   }
 
-  if (visibleConfirmations.length > 0) {
+  if (pendingConfirmations.length > 0) {
     return {
-      headline: "Trade confirmation evidence shown; recipient still verifies",
+      headline: "Trade confirmation request pending",
       summary:
-        "A public-safe community witness outcome for this Trade purpose is shown. It supports a follow-up check, not automatic approval or suitability.",
-      evidenceStatement: "Shown: a Trade-purpose community witness outcome is visible in the public evidence extract.",
-      knownLimit: "The public page does not reveal responders, private notes, licences, insurance, customer identities, or future work quality.",
-      unestablished: "Recipient-specific risk, licence, insurance, safety, and direct customer checks remain outside this public page.",
-      nextCheck: "Open the evidence details, then request live confirmation from the community or customer before relying.",
+        "A community confirmation request is recorded for this Trade purpose, but the public view does not show a witness response or outcome yet.",
+      evidenceStatement: `Pending: ${pointerValueText(pendingConfirmations, "Community confirmation request recorded; response or outcome is still pending.")}`,
+      knownLimit: "The request count is not a response count and is not proof of favourable confirmation.",
+      unestablished: "Completed work, witness response, customer confirmation, licence, insurance, safety, and future quality remain unestablished here.",
+      nextCheck: "Wait for the community confirmation outcome or ask for live customer/community confirmation before relying.",
       activityLimit:
-        "For trade or skilled work, community activity is only context; the confirmation pointer is the relevant public-safe Trade evidence to inspect.",
-      tone: "trust",
-      quickTitle: "Confirmation pointer shown",
+        "For trade or skilled work, a pending community request is a recorded follow-up path, not confirmation evidence.",
+      tone: "neutral",
+      quickTitle: "Request pending",
       snapshotRows: [
-        ["Public Trade evidence", "Shown: community witness evidence exists for this Trade purpose."],
-        ["Still unestablished", "Licence, insurance, safety, and future quality are not established by this page."],
+        ["Public Trade evidence", "Pending: a community confirmation request is recorded."],
+        ["Still unestablished", "No witness response or outcome is shown in this public view."],
       ],
       summaryRows: [],
     };
   }
 
-  if (visibleCompletedWork.length > 0 || visibleFulfillment.length > 0) {
+  if (resolvedIssues.length > 0) {
+    return {
+      headline: "Trade review or correction information shown as resolved",
+      summary:
+        "A public-safe review or correction pointer is visible with a resolved or corrected status. Treat it as source context to inspect, not as broad approval or proof that every future risk is gone.",
+      evidenceStatement: `Shown: ${pointerValueText(resolvedIssues, "Resolved or corrected review information is visible.")}`,
+      knownLimit: "The public page does not expose private notes, reviewer identities, licence, insurance, safety approval, or future work quality.",
+      unestablished: "Whether the resolved/corrected issue is relevant to this recipient's exact decision remains unestablished here.",
+      nextCheck: "Inspect the visible review/correction source and ask live community or customer confirmation before relying.",
+      activityLimit:
+        "For trade or skilled work, resolved/corrected context must not be called unresolved, but it still remains evidence to check.",
+      tone: "neutral",
+      quickTitle: "Resolved context",
+      snapshotRows: [
+        ["Public Trade evidence", "Shown: review or correction information is marked resolved/corrected."],
+        ["Still unestablished", "Future quality, licence, insurance, and safety are not established by this page."],
+      ],
+      summaryRows: [],
+    };
+  }
+
+  if (supportConfirmations.length > 0) {
+    const hasWitnessAggregate = supportConfirmations.some((row) => isCommunityWitnessOutcome(row));
+    return {
+      headline: "Trade confirmation aggregate shown; recipient still verifies",
+      summary:
+        "A public-safe community confirmation response/outcome aggregate is visible for this Trade purpose. The public view does not classify it as favourable confirmation or suitability.",
+      evidenceStatement: `Shown: ${pointerValueText(supportConfirmations, "Community confirmation response/outcome aggregate is visible.")}`,
+      knownLimit: hasWitnessAggregate
+        ? "The public page shows an aggregate witness-response/outcome pointer only; it does not reveal responders, private notes, licence, insurance, or quality guarantees."
+        : "The public page shows aggregate confirmation context only; it does not reveal responders, private notes, licence, insurance, or quality guarantees.",
+      unestablished: "Recipient-specific risk, licence, insurance, safety, future quality, and direct customer checks remain outside this public page.",
+      nextCheck: "Open the evidence details, then request live confirmation from the community or customer before relying.",
+      activityLimit:
+        "For trade or skilled work, the confirmation aggregate is a public-safe pointer to inspect, not an automatic approval or low-risk finding.",
+      tone: "trust",
+      quickTitle: "Confirmation aggregate",
+      snapshotRows: [
+        ["Public Trade evidence", "Shown: community confirmation response/outcome aggregate is visible."],
+        ["Still unestablished", "The aggregate is not classified here as favourable, complete, licensed, insured, or low risk."],
+      ],
+      summaryRows: [],
+    };
+  }
+
+  if (supportCompletedWork.length > 0 || supportFulfillment.length > 0) {
+    const outcomeRows = [...supportCompletedWork, ...supportFulfillment];
     return {
       headline: "Trade outcome evidence shown; confirm before relying",
       summary:
         "A public-safe Trade outcome or completed-work pointer is shown. It is evidence to inspect, not a claim that every job was independently customer-confirmed.",
-      evidenceStatement: "Shown: a Trade outcome or completed-work aggregate is visible in the public evidence extract.",
+      evidenceStatement: `Shown: ${pointerValueText(outcomeRows, "A Trade outcome or completed-work aggregate is visible.")}`,
       knownLimit: "The public page does not expose customers, reviewers, private notes, prices, addresses, licence, insurance, safety approval, or future quality.",
       unestablished: "Whether this exact recipient's work need is covered remains unestablished here.",
       nextCheck: "Inspect the visible pointer and ask for direct customer or live community confirmation before relying.",
@@ -598,12 +761,12 @@ function buildTradeEvidenceReading(params: {
     };
   }
 
-  if (hasDeclaredClaim) {
+  if (supportDeclaredClaims.length > 0) {
     return {
       headline: "Trade claim shown; completed-work proof still separate",
       summary:
         "A public declaration or listing is shown for Trade or skilled work. A declaration is a claim pointer, not proof that work was completed or independently confirmed.",
-      evidenceStatement: "Shown: a declared Trade/service/shop/listing claim is visible.",
+      evidenceStatement: `Shown: ${pointerValueText(supportDeclaredClaims, "A declared Trade/service/shop/listing claim is visible.")}`,
       knownLimit: "Declarations do not prove completed work, customer confirmation, licence, insurance, safety, or future quality.",
       unestablished: "Completed work and customer/community confirmation remain unestablished on this public page.",
       nextCheck: "Ask for completed-work evidence or live community/customer confirmation before relying.",
@@ -619,7 +782,7 @@ function buildTradeEvidenceReading(params: {
     };
   }
 
-  if (hasTradeCategory) {
+  if (supportTradeCategories.length > 0) {
     return {
       headline: "Trade activity category shown; confirmation still needed",
       summary:
@@ -646,7 +809,7 @@ function buildTradeEvidenceReading(params: {
       "This public view loaded successfully but does not show qualifying Trade records for the selected purpose. That is not the same as a negative finding.",
     evidenceStatement: "Not shown: no qualifying public Trade records are included in this view.",
     knownLimit: "No qualifying records means the public view is thin for Trade; it does not expose private records or prove the holder cannot do the work.",
-    unestablished: "Trade skill, completed work, customer confirmation, dispute status, licence, insurance, safety, and future quality remain unestablished here.",
+    unestablished: "Trade skill, completed work, customer confirmation, review/correction status, licence, insurance, safety, and future quality remain unestablished here.",
     nextCheck: "Ask for completed-work evidence, live community confirmation, or the fuller Trust Passport before relying.",
     activityLimit:
       "For trade or skilled work, basic membership or community activity is not Trade-skill confirmation unless public Trade records are shown.",

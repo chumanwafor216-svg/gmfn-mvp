@@ -4861,10 +4861,6 @@ export default function TrustSlipPage() {
         ? "Open to review shared evidence and current status. Some document details are still loading."
         : "Open to review shared evidence and current status.",
       "Evidence for judgement only; not approval, suitability, licence, insurance, payment instruction, or guarantee.",
-      housingExternalContact
-        ? `Optional external follow-up contact: ${housingExternalContact.label} | ${housingExternalContact.channel} | ${housingExternalContact.contact}`
-        : "",
-      housingExternalContact ? housingExternalContact.boundary : "",
       options.includeUrl ? verifyUrl : "",
     ];
 

@@ -1,6 +1,7 @@
 /* global console, process, setTimeout, URL, localStorage, document, window */
 
 import { chromium, expect } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer } from "vite";
@@ -10,6 +11,33 @@ const selectedClanId = 8;
 const homelandClanId = 7;
 const trustSlipCode = "GSN-TRUSTSLIP-BOUNDARY";
 const recoveredTrustSlipCode = "1SRYFELFCKU";
+function sourceBetween(source, startNeedle, endNeedle) {
+  const start = source.indexOf(startNeedle);
+  const end = source.indexOf(endNeedle, start + startNeedle.length);
+  if (start < 0 || end < 0) throw new Error(`Could not inspect source block between ${startNeedle} and ${endNeedle}.`);
+  return source.slice(start, end);
+}
+
+function assertPublicHousingShareContactBoundary() {
+  const source = readFileSync(join(frontendRoot, "src", "pages", "TrustSlipPage.tsx"), "utf8");
+  const publicShareBody = sourceBetween(
+    source,
+    "function buildPublicDecisionPackShareText",
+    "function copyPublicDecisionPackShareNote"
+  );
+  if (publicShareBody.includes("housingExternalContact") || publicShareBody.includes("Optional external follow-up contact")) {
+    throw new Error("Ordinary public Decision Pack share formatter still references holder-supplied external contact.");
+  }
+
+  const consentShareBody = sourceBetween(
+    source,
+    "function buildDecisionPackConsentShareText",
+    "function buildDecisionPackConsentExportText"
+  );
+  if (!consentShareBody.includes("housingExternalContact") || !consentShareBody.includes("Optional external follow-up contact")) {
+    throw new Error("Holder-consented Decision Pack export path no longer preserves optional external contact handling.");
+  }
+}
 
 function json(body, status = 200) {
   return {
@@ -1780,14 +1808,36 @@ async function runTrustSlipPurposeChangeShareScenario(browser, baseURL) {
   await expect(state.page.locator('[data-gsn-trustslip-primary-purpose="true"] select')).toHaveValue("housing_decision");
   await expect(state.page.locator('[data-cta-id="trust-slip.primary.open-link"]')).toHaveAttribute("href", /decision_pack=housing_decision/);
   await expect(state.page.locator('[data-cta-id="trust-slip.primary.share"]')).toBeEnabled();
+
+  assertPublicHousingShareContactBoundary();
+
   await state.page.locator('[data-cta-id="trust-slip.primary.share"]').click();
-  const sharePayloads = await state.page.evaluate(() => window.__gsnSharePayloads || []);
-  const latest = sharePayloads[sharePayloads.length - 1] || {};
+  let sharePayloads = await state.page.evaluate(() => window.__gsnSharePayloads || []);
+  let latest = sharePayloads[sharePayloads.length - 1] || {};
   if (!String(latest.url || "").includes("decision_pack=housing_decision")) {
     throw new Error(`Purpose change share link did not preserve housing purpose: ${JSON.stringify(latest)}`);
   }
   if (!String(latest.text || "").includes("Housing Decision Pack")) {
     throw new Error(`Purpose change share message did not preserve housing purpose: ${JSON.stringify(latest)}`);
+  }
+  if (String(latest.text || "").includes("Optional external follow-up contact")) {
+    throw new Error(`Ordinary Housing share leaked external-contact wording: ${JSON.stringify(latest)}`);
+  }
+
+  await state.page.locator('[data-gsn-trustslip-primary-purpose="true"] select').selectOption("trade_check");
+  await expect(state.page.locator('[data-gsn-trustslip-primary-purpose="true"] select')).toHaveValue("trade_check");
+  await expect(state.page.locator('[data-cta-id="trust-slip.primary.open-link"]')).toHaveAttribute("href", /decision_pack=trade_check/);
+  await state.page.locator('[data-cta-id="trust-slip.primary.share"]').click();
+  sharePayloads = await state.page.evaluate(() => window.__gsnSharePayloads || []);
+  latest = sharePayloads[sharePayloads.length - 1] || {};
+  if (!String(latest.url || "").includes("decision_pack=trade_check")) {
+    throw new Error(`Trade share link did not preserve Trade purpose: ${JSON.stringify(latest)}`);
+  }
+  if (!String(latest.text || "").includes("Trade or Skilled Work Decision Pack")) {
+    throw new Error(`Trade share message did not preserve Trade purpose: ${JSON.stringify(latest)}`);
+  }
+  if ((String(latest.text || "").match(/\/t\//g) || []).length !== 0) {
+    throw new Error(`Native Trade share text duplicated the TrustSlip URL: ${JSON.stringify(latest)}`);
   }
   const after = trustSlipReissueWriteCount(state.requestLog);
   if (after !== before) {
@@ -1865,61 +1915,107 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
   });
 
   await runPublicTradeEvidenceScenario(browser, baseURL, {
-    label: "completion-related-without-explicit-confirmation",
-    payload: {
-      evidenceExtract: tradeEvidenceExtract({
-        completed_work_pointers: [
-          {
-            key: "completed_work_aggregate",
-            label: "Completed work/customer confirmation",
-            status: "available",
-            value: "2 completed-work outcome pointers shown",
-            source: "trust_events+marketplace_reviews",
-            evidence_count: 2,
-            decision_use: "Aggregate only; ask for direct confirmation.",
-          },
-        ],
-      }),
-    },
-    headline: "Trade outcome evidence shown; confirm before relying",
-    openDetails: true,
-    visibleText: ["not a claim that every job was independently customer-confirmed", "2 completed-work outcome pointers shown"],
-    absentText: ["Trade confirmation evidence shown"],
-  });
-
-  await runPublicTradeEvidenceScenario(browser, baseURL, {
-    label: "explicit-confirmation-evidence",
+    label: "pending-confirmation-request-no-outcome",
     payload: {
       evidenceExtract: tradeEvidenceExtract({
         confirmation_pointers: [
           {
-            key: "trade_skill_check",
+            key: "community_witness_outcome",
             label: "Community witness outcome",
-            status: "available",
-            value: "Trade-skill witness outcome shown",
+            status: "pending",
+            value: "1 community confirmation request is pending.",
             source: "community_confirmation_requests",
             evidence_count: 1,
-            decision_use: "Aggregate witness context only.",
+            decision_use: "Request recorded; response/outcome pending.",
           },
         ],
       }),
     },
-    headline: "Trade confirmation evidence shown; recipient still verifies",
+    headline: "Trade confirmation request pending",
     openDetails: true,
-    visibleText: ["Trade-purpose community witness outcome", "Trade-skill witness outcome shown"],
-    absentText: ["Suitable for a low-risk trade check"],
+    visibleText: ["request is recorded", "does not show a witness response or outcome", "1 community confirmation request is pending"],
+    absentText: ["Trade confirmation aggregate shown", "community witness evidence exists", "favourable confirmation exists"],
   });
 
   await runPublicTradeEvidenceScenario(browser, baseURL, {
-    label: "unresolved-review",
+    label: "response-outcome-aggregate-without-positivity",
+    payload: {
+      evidenceExtract: tradeEvidenceExtract({
+        confirmation_pointers: [
+          {
+            key: "community_witness_outcome",
+            label: "Community witness outcome",
+            status: "available",
+            value: "2 community confirmation responses/outcomes are available as an aggregate.",
+            source: "community_confirmation_requests",
+            evidence_count: 2,
+            decision_use: "Aggregate only; public view does not classify positivity.",
+          },
+        ],
+      }),
+    },
+    headline: "Trade confirmation aggregate shown; recipient still verifies",
+    openDetails: true,
+    visibleText: ["does not classify it as favourable", "2 community confirmation responses/outcomes"],
+    absentText: ["Suitable for a low-risk trade check", "favourable confirmation exists"],
+  });
+
+  await runPublicTradeEvidenceScenario(browser, baseURL, {
+    label: "completed-work-customer-feedback-caution",
+    payload: {
+      evidenceExtract: tradeEvidenceExtract({
+        completed_work_pointers: [
+          {
+            key: "completed_work_customer_feedback",
+            label: "Completed work/customer feedback",
+            status: "customer_feedback_caution",
+            value: "Customer feedback includes a caution marker.",
+            source: "trust_events+marketplace_reviews",
+            evidence_count: 1,
+            decision_use: "Caution only; inspect context before relying.",
+          },
+        ],
+      }),
+    },
+    headline: "Trade customer-feedback caution shown; review context first",
+    openDetails: true,
+    visibleText: ["not automatic proof of wrongdoing", "Customer feedback includes a caution marker"],
+    absentText: ["unresolved dispute", "Suitable for a low-risk trade check"],
+  });
+
+  await runPublicTradeEvidenceScenario(browser, baseURL, {
+    label: "gap-row-positive-count-does-not-support",
+    payload: {
+      evidenceExtract: tradeEvidenceExtract({
+        completed_work_pointers: [
+          {
+            key: "completed_work_gap",
+            label: "Completed work gap",
+            status: "gap",
+            value: "Historical work prose says records may exist.",
+            source: "trust_events_redacted_extract",
+            evidence_count: 3,
+            decision_use: "Gap only; do not treat the count as support.",
+          },
+        ],
+      }),
+    },
+    headline: "Trade evidence row is limited; confirmation still needed",
+    openDetails: true,
+    visibleText: ["Counts or descriptive notes", "Historical work prose says records may exist"],
+    absentText: ["Trade outcome evidence shown", "completed-work aggregate exists"],
+  });
+
+  await runPublicTradeEvidenceScenario(browser, baseURL, {
+    label: "unresolved-review-limited-not-dispute",
     payload: {
       evidenceExtract: tradeEvidenceExtract({
         issue_resolution_pointers: [
           {
-            key: "open_trade_review",
+            key: "general_review_pointer",
             label: "Issue resolution pointer",
             status: "caution_open_review",
-            value: "One Trade correction review is still open",
+            value: "One correction review is still open.",
             source: "community_confirmation_reviews",
             evidence_count: 1,
             decision_use: "Resolve before relying.",
@@ -1927,10 +2023,33 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
         ],
       }),
     },
-    headline: "Trade evidence needs review before relying",
+    headline: "Trade review or correction pointer needs review",
     openDetails: true,
-    visibleText: ["dispute, correction, or review-status pointer", "One Trade correction review is still open"],
-    absentText: ["Suitable for a low-risk trade check"],
+    visibleText: ["general review pointer is not treated as a trade-specific dispute", "One correction review is still open"],
+    absentText: ["unresolved dispute", "Suitable for a low-risk trade check"],
+  });
+
+  await runPublicTradeEvidenceScenario(browser, baseURL, {
+    label: "resolved-correction-not-unresolved",
+    payload: {
+      evidenceExtract: tradeEvidenceExtract({
+        issue_resolution_pointers: [
+          {
+            key: "general_review_pointer",
+            label: "Issue resolution pointer",
+            status: "corrected",
+            value: "Earlier review was corrected by community record update.",
+            source: "community_confirmation_reviews",
+            evidence_count: 1,
+            decision_use: "Correction context only; inspect scope.",
+          },
+        ],
+      }),
+    },
+    headline: "Trade review or correction information shown as resolved",
+    openDetails: true,
+    visibleText: ["resolved or corrected status", "Earlier review was corrected"],
+    absentText: ["unresolved dispute", "needs review before relying"],
   });
 
   await runPublicTradeEvidenceScenario(browser, baseURL, {
@@ -1953,10 +2072,10 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
       evidenceExtract: tradeEvidenceExtract({
         confirmation_pointers: [
           {
-            key: "trade_skill_check",
+            key: "community_witness_outcome",
             label: "Community witness outcome",
             status: "available",
-            value: "Trade-skill witness outcome shown",
+            value: "Trade-skill witness aggregate shown",
             source: "community_confirmation_requests",
             evidence_count: 1,
           },
@@ -1967,7 +2086,7 @@ async function runPublicTradeEvidenceScenarios(browser, baseURL) {
     },
     headline: "Fresh TrustSlip needed before trade evidence review",
     visibleText: ["Request a fresh TrustSlip"],
-    absentText: ["Trade confirmation evidence shown; recipient still verifies"],
+    absentText: ["Trade confirmation aggregate shown; recipient still verifies"],
   });
 
   await runPublicTradeEvidenceScenario(browser, baseURL, {
